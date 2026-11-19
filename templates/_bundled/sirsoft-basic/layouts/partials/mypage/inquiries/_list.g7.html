@@ -64,7 +64,7 @@
                   <!-- audit:allow layout-list-context-navigate-merge-query 문의 대상 상품으로 이동 — 문의 목록과 다른 클러스터(상품 상세)로 나가는 이동이다. -->
                   <navigate/>
                 </on>
-                <img src="{{item.product.thumbnail_url}}" alt="{{item.product_name ?? ''}}" class="w-full h-full object-cover"/>
+                <img src="{{item.product.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{item.product_name ?? ''}}" class="w-full h-full object-cover"/>
               </a>
               <!-- 썸네일 없을 때 placeholder -->
               <div data-if="{{!item.product?.thumbnail_url}}" class="shrink-0 w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">

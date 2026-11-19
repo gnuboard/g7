@@ -1,0 +1,21 @@
+feature: 이커머스 환경설정 상단 탭과 하단 저장 버튼이 스크롤 중에도 화면에 고정된다
+
+description: |
+  환경설정 화면(admin_ecommerce_settings)은 탭이 많고 탭마다 본문이 길어, 상단 탭과 하단 저장 버튼이 스크롤과 함께
+  사라지면 다른 탭으로 옮기거나 저장하려고 맨 위·맨 아래까지 다시 움직여야 한다. 그래서 두 묶음을 고정 배치로 둔다.
+
+  결정 사항:
+    - 상단 탭은 폭 조건을 품은 의미 클래스 대신 `ecommerce:` 유틸리티로 펼쳐 쓴다. 엔진 responsive 구간 값은 className 을
+      통째로 바꾸므로, 고정 배치(`ecommerce:sticky ecommerce:top-0`)를 기본과 모든 구간 값에 함께 적는다 — 한 구간에서
+      빠지면 그 폭에서만 탭이 스크롤과 함께 사라진다.
+    - 하단 저장 버튼 묶음은 폭과 무관한 고정 묶음 클래스(`ecommerce-sticky-footer-buttons`)를 쓴다.
+
+axes:
+  area: [top_tabs, footer_buttons]
+
+effects:
+  - settings_top_tabs_stay_fixed_at_every_width
+  - settings_footer_buttons_stay_fixed
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsSticky.test.tsx

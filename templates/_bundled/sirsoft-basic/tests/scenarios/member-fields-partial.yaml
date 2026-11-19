@@ -1,0 +1,31 @@
+feature: 회원 항목 반복 조각은 서버가 준 항목 계약대로 칸을 그린다
+
+description: |
+  partials/member/_member_fields 조각의 구조 계약. 부르는 화면이 반복 변수 memberFieldGroup 으로 묶음(이름, 항목, 칸 배치 클래스)을 주고
+  computed memberFieldCtx 로 문맥(폼 이름, 오류, 비활성)을 준다. 조각은 항목을 돌며 라벨, 필수 별표,
+  유형 갈래(기본 입력칸, 주소, 파일, 확장 유형, 가입에서 받지 않는 유형), 잠금 사유별 안내, 안내, 오류 줄을 그린다.
+  파일 갈래는 내 정보 API 로 바로 올리고 지운 뒤 항목 데이터소스를 다시 받는다.
+
+axes:
+  part: [root, iteration, row, label, input, address, locked, file, extension, deferred, dark, agreement]
+
+effects:
+  - root_id_and_layout_follow_group
+  - iterates_group_fields_except_agreements
+  - row_and_error_ids_follow_field_key
+  - required_star_follows_field_required
+  - builtin_input_binds_by_field_name
+  - error_collects_sub_paths
+  - address_parts_bind_by_parts_paths
+  - locked_address_is_readonly_without_search
+  - locked_reason_picks_one_notice
+  - file_branch_lists_files_and_gates_add_by_count
+  - file_upload_posts_multipart_and_refetches_fields
+  - file_delete_sends_attachment_id_and_refetches_fields
+  - extension_type_slot_receives_field
+  - deferred_field_shows_notice_only
+  - every_color_class_has_dark_pair
+  - agreement_meta_shows_required_and_gated_link
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/member-fields-partial.test.ts

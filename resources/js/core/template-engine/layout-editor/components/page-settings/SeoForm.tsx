@@ -31,7 +31,7 @@ import { SeoBotPreviewPanel } from './SeoBotPreviewPanel';
 import type { BindingCandidate } from '../../spec/bindingCandidates';
 import type { DataSourceOption } from '../../spec/candidatePools';
 import { DataSourceChipLabel } from './DataSourceChipLabel';
-import { suffixed } from '../../../../support/assetUrl';
+import { suffixed, withBasePrefix } from '../../../../support/assetUrl';
 
 /** seo.extensions 칩 — `{type,id}` */
 export interface SeoExtensionRef {
@@ -216,7 +216,7 @@ export function SeoForm({
       if (ogPreviewFetcher) return ogPreviewFetcher(seoSnapshot);
       if (typeof fetch === 'undefined') return null;
       const res = await fetch(
-        `/api/admin/templates/${encodeURIComponent(templateIdentifier)}/editor/seo-og-preview`,
+        withBasePrefix(`/api/admin/templates/${encodeURIComponent(templateIdentifier)}/editor/seo-og-preview`),
         {
           method: 'POST',
           credentials: 'same-origin',

@@ -5,43 +5,55 @@ namespace Plugins\Sirsoft\PayNhnkcp\Tests\Feature\Controllers;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 use Mockery;
+use Mockery\MockInterface;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\ChargeAmount;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\OrderRecord;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentOutcome;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\WindowClosure;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Exceptions\ChargeNotResolvable;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
+/**
+ * 결제창 닫힘 보고 컨트롤러 테스트
+ *
+ * 컨트롤러는 이커머스 공개 결제 계약(`PaymentGatewayBridge`)만 부른다. 계약을 mock 해 주문 DTO 를 돌려주고,
+ * 실패 기록은 `markPaymentWindowClosed` 호출과 그 `WindowClosure` 필드로 단언한다.
+ */
 class PaymentCloseReportControllerTest extends PluginTestCase
 {
     /**
      * 주문 소유자의 닫힘 보고는 결제대기 주문을 실패·취소로 기록한다.
      *
-     * @effects close_report_marks_pending_order_failed_and_payment_cancelled
+     * @scenario context=paymentCallback_card, caller=ownership_verified_buyer, callback_state=approval_not_yet_attempted
+     *
+     * @effects close_report_marks_pending_order_failed_and_payment_cancelled,
+     *   legitimate_failure_is_recorded_by_ownership_verified_close_report
      *
      * @return void 반환값 없음
      */
     public function test_close_report_marks_pending_order_failed_and_payment_cancelled(): void
     {
-        $order = $this->makeOrder('ORD-KCP-CLOSE-001', 10000);
-        $this->actAsOrderOwner($order);
+        $owner = $this->actAsOrderOwner();
+        $order = $this->makeOrder('ORD-KCP-CLOSE-001', 10000, ['userId' => $owner->id]);
 
-        $orderService = Mockery::mock(OrderProcessingService::class);
-        $orderService->shouldReceive('findByOrderNumber')
+        $bridge = $this->bridgeReturning($order);
+        $bridge->shouldReceive('resolveChargeAmount')
             ->once()
             ->with('ORD-KCP-CLOSE-001')
-            ->andReturn($order);
-        $orderService->shouldReceive('failPayment')
+            ->andReturn(new ChargeAmount(10000, 'KRW'));
+        $bridge->shouldReceive('markPaymentWindowClosed')
             ->once()
-            ->with($order, 'USER_CANCEL', '사용자가 NHN KCP 결제창을 닫았습니다.')
-            ->andReturn($order);
-        $orderService->shouldReceive('recordPaymentCancellation')
-            ->once()
-            ->with($order, 'USER_CANCEL', 'kcp-window-closed')
-            ->andReturn($order);
-
-        $this->app->instance(OrderProcessingService::class, $orderService);
+            ->with('ORD-KCP-CLOSE-001', 'nhnkcp', Mockery::on(
+                fn (WindowClosure $closure): bool => $closure->code === 'USER_CANCEL'
+                    && $closure->message === '사용자가 NHN KCP 결제창을 닫았습니다.'
+                    && $closure->cancelMessage === 'kcp-window-closed'
+                    && $closure->failure?->status === PaymentStatusEnum::CANCELLED
+                    && $closure->failure->takeOverProvider
+            ))
+            ->andReturn(new PaymentOutcome(true, null, $order));
 
         $response = $this->postJson('/api/plugins/sirsoft-pay_nhnkcp/payment/close-report', [
             'oid' => 'ORD-KCP-CLOSE-001',
@@ -63,18 +75,15 @@ class PaymentCloseReportControllerTest extends PluginTestCase
      */
     public function test_close_report_rejects_amount_mismatch(): void
     {
-        $order = $this->makeOrder('ORD-KCP-CLOSE-002', 10000);
-        $this->actAsOrderOwner($order);
+        $owner = $this->actAsOrderOwner();
+        $order = $this->makeOrder('ORD-KCP-CLOSE-002', 10000, ['userId' => $owner->id]);
 
-        $orderService = Mockery::mock(OrderProcessingService::class);
-        $orderService->shouldReceive('findByOrderNumber')
+        $bridge = $this->bridgeReturning($order);
+        $bridge->shouldReceive('resolveChargeAmount')
             ->once()
             ->with('ORD-KCP-CLOSE-002')
-            ->andReturn($order);
-        $orderService->shouldNotReceive('failPayment');
-        $orderService->shouldNotReceive('recordPaymentCancellation');
-
-        $this->app->instance(OrderProcessingService::class, $orderService);
+            ->andReturn(new ChargeAmount(10000, 'KRW'));
+        $bridge->shouldNotReceive('markPaymentWindowClosed');
 
         $response = $this->postJson('/api/plugins/sirsoft-pay_nhnkcp/payment/close-report', [
             'oid' => 'ORD-KCP-CLOSE-002',
@@ -82,7 +91,7 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('errors.message.0', 'Payment amount does not match the order amount.');
+            ->assertJsonPath('errors.message.0', __('sirsoft-pay_nhnkcp::messages.responses.amount_mismatch'));
     }
 
     /**
@@ -94,20 +103,20 @@ class PaymentCloseReportControllerTest extends PluginTestCase
      */
     public function test_close_report_rejects_invalid_payment_currency_without_server_error(): void
     {
-        $order = $this->makeOrder('ORD-KCP-CLOSE-CURRENCY-001', 10000);
-        $order->currency = 'USD';
-        $order->currency_snapshot = self::invalidUsdCurrencySnapshot();
-        $this->actAsOrderOwner($order);
+        $owner = $this->actAsOrderOwner();
+        $order = $this->makeOrder('ORD-KCP-CLOSE-CURRENCY-001', 10000, [
+            'userId' => $owner->id,
+            'currency' => 'USD',
+            'currencySnapshot' => self::invalidUsdCurrencySnapshot(),
+        ]);
 
-        $orderService = Mockery::mock(OrderProcessingService::class);
-        $orderService->shouldReceive('findByOrderNumber')
+        $bridge = $this->bridgeReturning($order);
+        // 계약은 청구할 수 없는 결제 통화를 공개 예외(InvalidArgumentException 하위)로 알린다
+        $bridge->shouldReceive('resolveChargeAmount')
             ->once()
             ->with('ORD-KCP-CLOSE-CURRENCY-001')
-            ->andReturn($order);
-        $orderService->shouldNotReceive('failPayment');
-        $orderService->shouldNotReceive('recordPaymentCancellation');
-
-        $this->app->instance(OrderProcessingService::class, $orderService);
+            ->andThrow(ChargeNotResolvable::from(new \InvalidArgumentException('USD exchange rate is zero.')));
+        $bridge->shouldNotReceive('markPaymentWindowClosed');
 
         $response = $this->postJson('/api/plugins/sirsoft-pay_nhnkcp/payment/close-report', [
             'oid' => 'ORD-KCP-CLOSE-CURRENCY-001',
@@ -115,7 +124,7 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('errors.message.0', 'Payment currency is not chargeable.');
+            ->assertJsonPath('errors.message.0', __('sirsoft-pay_nhnkcp::messages.responses.currency_not_chargeable'));
     }
 
     /**
@@ -123,28 +132,27 @@ class PaymentCloseReportControllerTest extends PluginTestCase
      *
      * 연락처는 제3자도 알 수 있어 소유 증명이 아니다. 종전에는 이 요청이 주문을 취소시켰다.
      *
-     * @effects close_report_rejects_matching_buyer_contact_without_ownership
+     * @scenario context=paymentCallback_card, caller=ownership_verified_buyer, callback_state=approval_not_yet_attempted
+     *
+     * @effects close_report_rejects_matching_buyer_contact_without_ownership,
+     *   close_report_rejects_buyer_mismatch
      *
      * @return void 반환값 없음
      */
     public function test_close_report_rejects_matching_buyer_contact_without_ownership(): void
     {
-        $order = $this->makeOrder('ORD-KCP-CLOSE-003', 10000);
-        $order->setRelation('shippingAddress', new OrderAddress([
-            'address_type' => 'shipping',
-            'orderer_email' => 'buyer@example.com',
-            'orderer_phone' => '010-1234-5678',
-        ]));
+        $order = $this->makeOrder('ORD-KCP-CLOSE-003', 10000, [
+            'ordererEmail' => 'buyer@example.com',
+            'ordererPhone' => '010-1234-5678',
+        ]);
 
-        $orderService = Mockery::mock(OrderProcessingService::class);
-        $orderService->shouldReceive('findByOrderNumber')
+        $bridge = $this->bridgeReturning($order);
+        // 비회원 주문 — 조회 토큰이 없으므로 계약의 토큰 검증이 거짓이다
+        $bridge->shouldReceive('verifyGuestOrderToken')
             ->once()
-            ->with('ORD-KCP-CLOSE-003')
-            ->andReturn($order);
-        $orderService->shouldNotReceive('failPayment');
-        $orderService->shouldNotReceive('recordPaymentCancellation');
-
-        $this->app->instance(OrderProcessingService::class, $orderService);
+            ->with(null, 'ORD-KCP-CLOSE-003')
+            ->andReturn(false);
+        $bridge->shouldNotReceive('markPaymentWindowClosed');
 
         $response = $this->postJson('/api/plugins/sirsoft-pay_nhnkcp/payment/close-report', [
             'oid' => 'ORD-KCP-CLOSE-003',
@@ -154,7 +162,7 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(403)
-            ->assertJsonPath('errors.message.0', 'Order ownership verification failed.');
+            ->assertJsonPath('errors.message.0', __('sirsoft-pay_nhnkcp::messages.responses.ownership_verification_failed'));
     }
 
     /**
@@ -166,18 +174,12 @@ class PaymentCloseReportControllerTest extends PluginTestCase
      */
     public function test_close_report_ignores_order_that_is_no_longer_payable(): void
     {
-        $order = $this->makeOrder('ORD-KCP-CLOSE-004', 10000);
-        $order->order_status = OrderStatusEnum::PAYMENT_COMPLETE;
+        $order = $this->makeOrder('ORD-KCP-CLOSE-004', 10000, [
+            'orderStatus' => OrderStatusEnum::PAYMENT_COMPLETE,
+        ]);
 
-        $orderService = Mockery::mock(OrderProcessingService::class);
-        $orderService->shouldReceive('findByOrderNumber')
-            ->once()
-            ->with('ORD-KCP-CLOSE-004')
-            ->andReturn($order);
-        $orderService->shouldNotReceive('failPayment');
-        $orderService->shouldNotReceive('recordPaymentCancellation');
-
-        $this->app->instance(OrderProcessingService::class, $orderService);
+        $bridge = $this->bridgeReturning($order);
+        $bridge->shouldNotReceive('markPaymentWindowClosed');
 
         $response = $this->postJson('/api/plugins/sirsoft-pay_nhnkcp/payment/close-report', [
             'oid' => 'ORD-KCP-CLOSE-004',
@@ -201,20 +203,12 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         // race 재현: 승인 콜백이 payment 를 PAID 로 갱신했고 결제 예정액은 이미 0원이 됐으나,
         // order_status 관계가 아직 PENDING_ORDER 로 관측되는 순간에도 close-report 는 금액 불일치가
         // 아니라 결제 성공으로 판단해 무시해야 한다.
-        $order = $this->makeOrder('ORD-KCP-CLOSE-PAID-001', 0);
-        $order->setRelation('payment', new OrderPayment([
-            'payment_status' => PaymentStatusEnum::PAID,
-        ]));
+        $order = $this->makeOrder('ORD-KCP-CLOSE-PAID-001', 0, [
+            'payment' => $this->makePaymentRecord(['paymentStatus' => PaymentStatusEnum::PAID]),
+        ]);
 
-        $orderService = Mockery::mock(OrderProcessingService::class);
-        $orderService->shouldReceive('findByOrderNumber')
-            ->once()
-            ->with('ORD-KCP-CLOSE-PAID-001')
-            ->andReturn($order);
-        $orderService->shouldNotReceive('failPayment');
-        $orderService->shouldNotReceive('recordPaymentCancellation');
-
-        $this->app->instance(OrderProcessingService::class, $orderService);
+        $bridge = $this->bridgeReturning($order);
+        $bridge->shouldNotReceive('markPaymentWindowClosed');
 
         $response = $this->postJson('/api/plugins/sirsoft-pay_nhnkcp/payment/close-report', [
             'oid' => 'ORD-KCP-CLOSE-PAID-001',
@@ -236,22 +230,18 @@ class PaymentCloseReportControllerTest extends PluginTestCase
      */
     public function test_close_report_ignores_issued_vbank_waiting_deposit(): void
     {
-        $order = $this->makeOrder('ORD-KCP-CLOSE-VBANK-001', 10000);
-        $order->order_status = OrderStatusEnum::PENDING_PAYMENT;
-        $order->setRelation('payment', new OrderPayment([
-            'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
-        ]));
-        $this->actAsOrderOwner($order);
+        $owner = $this->actAsOrderOwner();
+        $order = $this->makeOrder('ORD-KCP-CLOSE-VBANK-001', 10000, [
+            'userId' => $owner->id,
+            'orderStatus' => OrderStatusEnum::PENDING_PAYMENT,
+            'payment' => $this->makePaymentRecord([
+                'paymentStatus' => PaymentStatusEnum::WAITING_DEPOSIT,
+                'paymentMethod' => 'vbank',
+            ]),
+        ]);
 
-        $orderService = Mockery::mock(OrderProcessingService::class);
-        $orderService->shouldReceive('findByOrderNumber')
-            ->once()
-            ->with('ORD-KCP-CLOSE-VBANK-001')
-            ->andReturn($order);
-        $orderService->shouldNotReceive('failPayment');
-        $orderService->shouldNotReceive('recordPaymentCancellation');
-
-        $this->app->instance(OrderProcessingService::class, $orderService);
+        $bridge = $this->bridgeReturning($order);
+        $bridge->shouldNotReceive('markPaymentWindowClosed');
 
         $response = $this->postJson('/api/plugins/sirsoft-pay_nhnkcp/payment/close-report', [
             'oid' => 'ORD-KCP-CLOSE-VBANK-001',
@@ -266,40 +256,59 @@ class PaymentCloseReportControllerTest extends PluginTestCase
     }
 
     /**
-     * 주문을 회원 소유로 만들고 그 회원으로 로그인합니다.
+     * 주문번호 조회가 주어진 주문 DTO 를 돌려주는 결제 계약 mock 을 컨테이너에 끼웁니다.
+     *
+     * @param  OrderRecord  $order  돌려줄 주문
+     * @return MockInterface 결제 계약 mock
+     */
+    private function bridgeReturning(OrderRecord $order): MockInterface
+    {
+        $bridge = Mockery::mock(PaymentGatewayBridge::class);
+        $bridge->shouldReceive('isClaimPaymentNumber')->andReturn(false);
+        $bridge->shouldReceive('findOrderByNumber')
+            ->once()
+            ->with($order->orderNumber, 'nhnkcp')
+            ->andReturn($order);
+
+        $this->app->instance(PaymentGatewayBridge::class, $bridge);
+
+        return $bridge;
+    }
+
+    /**
+     * 주문 소유 회원을 만들고 그 회원으로 로그인합니다.
      *
      * 소유자 확인이 이 테스트의 관심사가 아닐 때 게이트를 정당하게 통과시키기 위한 준비다.
      * 소유자 확인 자체는 PaymentCloseReportOwnershipTest 가 검증한다.
      *
-     * @param  Order  $order  대상 주문 (저장 여부 무관)
      * @return User 로그인한 소유 회원
      */
-    private function actAsOrderOwner(Order $order): User
+    private function actAsOrderOwner(): User
     {
         $owner = User::factory()->create();
-        $order->user_id = $owner->id;
         Sanctum::actingAs($owner);
 
         return $owner;
     }
 
     /**
-     * 저장하지 않은 결제대기 주문 모델을 만듭니다.
+     * 결제대기 주문 DTO 를 만듭니다. (결제 행은 이 PG 의 카드 결제대기)
      *
      * @param  string  $orderNumber  주문번호
      * @param  int  $amount  금액
-     * @return Order 생성한 주문
+     * @param  array<string, mixed>  $overrides  바꿀 필드
+     * @return OrderRecord 주문 DTO
      */
-    private function makeOrder(string $orderNumber, int $amount): Order
+    private function makeOrder(string $orderNumber, int $amount, array $overrides = []): OrderRecord
     {
-        $order = new Order;
-        $order->order_number = $orderNumber;
-        $order->order_status = OrderStatusEnum::PENDING_ORDER;
-        $order->currency = 'KRW';
-        $order->currency_snapshot = self::krwCurrencySnapshot();
-        $order->total_due_amount = $amount;
-
-        return $order;
+        return $this->makeOrderRecord(array_merge([
+            'orderNumber' => $orderNumber,
+            'orderStatus' => OrderStatusEnum::PENDING_ORDER,
+            'currency' => 'KRW',
+            'currencySnapshot' => self::krwCurrencySnapshot(),
+            'totalDueAmount' => (float) $amount,
+            'payment' => $this->makePaymentRecord(['orderNumber' => $orderNumber]),
+        ], $overrides));
     }
 
     /**

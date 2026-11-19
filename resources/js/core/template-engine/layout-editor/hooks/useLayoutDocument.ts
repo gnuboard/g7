@@ -25,10 +25,12 @@ import {
 import { trackEditorDocument } from '../devtools/editorTrackers';
 import {
   type EditorNode,
+  type ComponentPath,
   stripInheritedFromLayoutContent,
   stripInheritedNodes,
   findNodeByPath,
   patchNode,
+  inheritSourceIntoBranches,
 } from '../utils/layoutTreeUtils';
 import { parseEditorPath } from './useElementSelection';
 import { readSanctumToken } from '../utils/authToken';
@@ -36,6 +38,7 @@ import { getCacheBustNonce, bumpCacheBustNonce } from '../utils/editorCacheBust'
 import { hasPending, flushPending } from './pendingCustomTranslations';
 import { hasInflightCustomTextCommits, waitForInflightCustomTextCommits } from './inflightCustomTextCommits';
 import { suffixed } from '../../../support/assetUrl';
+import { withBasePrefix } from '../../../support/assetUrl';
 
 /**
  * 로드된 레이아웃 문서 — 백엔드 응답의 data 부분 (병합 + 확장 + 메타 포함)
@@ -77,7 +80,7 @@ export interface IterationEditContext {
   /** iteration 원본 노드의 에디터 path (`0.children.2` 등) */
   sourcePath: string;
   /** parseEditorPath 로 파싱한 인덱스 경로 (저장 시 노드 위치 탐색) */
-  sourceIndexPath: number[];
+  sourceIndexPath: ComponentPath;
   /** 호스트 레이아웃 원본 전체 (저장 시 iteration 원본 노드 children 만 갱신) */
   hostRaw: Record<string, unknown>;
 }
@@ -297,7 +300,12 @@ export function extractIterationSourcePath(path: string | null | undefined): str
  * 일원화해 useExtensionDocument(확장 문서)와도 같은 카운터를 공유한다.
  */
 
-export function useLayoutDocument(): UseLayoutDocumentResult {
+/**
+ * @param options.enabled false 면 레이아웃을 요청하지 않는다(기본 true). 문서 Provider 가 이미 같은 레이아웃을 받는
+ *   자리(PreviewCanvas 의 레거시 사본)에서 중복 요청을 막는다 — 편집기 첫 적재에서 같은 레이아웃을 두 번 받았다(#869).
+ */
+export function useLayoutDocument(options: { enabled?: boolean } = {}): UseLayoutDocumentResult {
+  const enabled = options.enabled !== false;
   const { state } = useLayoutEditor();
   const templateIdentifier = state.templateIdentifier;
   const layoutName = state.selectedRoute?.layoutName ?? null;
@@ -456,7 +464,7 @@ export function useLayoutDocument(): UseLayoutDocumentResult {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const response = await fetch(url, { headers, credentials: 'same-origin' });
+      const response = await fetch(withBasePrefix(url), { headers, credentials: 'same-origin' });
       const body = await response.json().catch(() => null);
 
       if (!response.ok) {
@@ -466,7 +474,12 @@ export function useLayoutDocument(): UseLayoutDocumentResult {
         return;
       }
 
-      const raw = (body && (body.data || body)) ?? {};
+      const rawBody = (body && (body.data || body)) ?? {};
+      // 공통 레이아웃·partial·확장 노드의 분기 children·footer 안 노드에도 출처 메타를 잇는다 — 서버는 children 에만
+      // 단다. 없으면 그 노드가 「잠금 없음」으로 판정돼 드래그 핸들·속성 편집이 열린다(#869).
+      const raw = Array.isArray((rawBody as any).components)
+        ? { ...(rawBody as Record<string, unknown>), components: inheritSourceIntoBranches((rawBody as any).components) }
+        : rawBody;
       const lockVersion =
         typeof (raw as any).lock_version === 'number' ? (raw as any).lock_version : 0;
 
@@ -577,8 +590,9 @@ export function useLayoutDocument(): UseLayoutDocumentResult {
   }, [templateIdentifier, layoutName, editMode, modalId, iterationSourcePath, cacheKey]);
 
   useEffect(() => {
+    if (!enabled) return;
     fetchDocument();
-  }, [fetchDocument]);
+  }, [fetchDocument, enabled]);
 
   /**
    * 강제 재로드 — 현재 캐시 엔트리를 비우고 서버 최신을 fetch.
@@ -918,7 +932,7 @@ export function useLayoutDocument(): UseLayoutDocumentResult {
 
       let response: Response;
       try {
-        response = await fetch(url, {
+        response = await fetch(withBasePrefix(url), {
           method: 'PUT',
           headers,
           credentials: 'same-origin',

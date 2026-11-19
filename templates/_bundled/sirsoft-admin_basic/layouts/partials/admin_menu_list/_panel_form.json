@@ -360,17 +360,9 @@
                                                 "placeholder": "$t:admin.menus.form.name_placeholder",
                                                 "maxLength": 100,
                                                 "required": true,
-                                                "layout": "tabs"
+                                                "layout": "tabs",
+                                                "error": "{{_global.formErrors?.name?.[0] ?? ''}}"
                                             }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "if": "{{_global.formErrors?.name}}",
-                                            "props": {
-                                                "className": "text-red-600 dark:text-red-400 text-xs"
-                                            },
-                                            "text": "{{_global.formErrors?.name?.[0] ?? ''}}"
                                         }
                                     ]
                                 }
@@ -864,6 +856,18 @@
                                                                 "className": "text-primary font-medium"
                                                             },
                                                             "text": "{{_global.selectedMenu?.creator?.name ?? 'System'}}"
+                                                        },
+                                                        {
+                                                            "comment": "실명 보조 줄. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 real_name 을 싣는다.",
+                                                            "id": "menu_form_creator_real_name",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!_global.selectedMenu?.creator?.real_name}}",
+                                                            "props": {
+                                                                "title": "$t:admin.common.real_name.label",
+                                                                "className": "block text-tertiary"
+                                                            },
+                                                            "text": "{{_global.selectedMenu?.creator?.real_name}}"
                                                         },
                                                         {
                                                             "type": "basic",

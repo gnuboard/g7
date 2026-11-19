@@ -50,9 +50,11 @@ vi.mock('../../basic/Icon', () => ({
 }));
 
 // Mock G7Core
-(window as Record<string, unknown>).G7Core = {
-  t: (key: string) => key,
-};
+Object.assign(window, {
+  G7Core: {
+    t: (key: string) => key,
+  },
+});
 
 import { ProductImageViewer } from '../ProductImageViewer';
 
@@ -89,6 +91,8 @@ describe('ProductImageViewer', () => {
   });
 
   describe('이미지 없음', () => {
+    // @scenario image_count=none
+    // @effects viewer_shows_placeholder_without_images
     it('이미지가 빈 배열이면 placeholder를 표시한다', () => {
       render(<ProductImageViewer images={[]} />);
       expect(screen.getByText('shop.no_image')).toBeInTheDocument();
@@ -96,6 +100,8 @@ describe('ProductImageViewer', () => {
   });
 
   describe('이미지 표시', () => {
+    // @scenario image_count=multiple
+    // @effects viewer_main_image_falls_back_to_download_url
     it('메인 이미지가 표시된다', () => {
       render(<ProductImageViewer images={mockImages} />);
       const images = screen.getAllByTestId('image');
@@ -103,12 +109,16 @@ describe('ProductImageViewer', () => {
       expect(images[0]).toHaveAttribute('src', '/api/modules/sirsoft-ecommerce/product-image/abc123');
     });
 
+    // @scenario image_count=single
+    // @effects viewer_main_image_prefers_url
     it('url이 존재하면 url을 우선 사용한다', () => {
       render(<ProductImageViewer images={[mockImages[1]]} />);
       const images = screen.getAllByTestId('image');
       expect(images[0]).toHaveAttribute('src', 'https://cdn.example.com/img2.jpg');
     });
 
+    // @scenario image_count=multiple
+    // @effects thumbnail_list_only_for_multiple_images
     it('이미지가 2개 이상이면 썸네일 리스트를 표시한다', () => {
       render(<ProductImageViewer images={mockImages} />);
       const images = screen.getAllByTestId('image');
@@ -116,6 +126,8 @@ describe('ProductImageViewer', () => {
       expect(images.length).toBe(4);
     });
 
+    // @scenario image_count=single
+    // @effects thumbnail_list_only_for_multiple_images
     it('이미지가 1개이면 썸네일 리스트를 표시하지 않는다', () => {
       render(<ProductImageViewer images={[mockImages[0]]} />);
       const images = screen.getAllByTestId('image');
@@ -125,6 +137,8 @@ describe('ProductImageViewer', () => {
   });
 
   describe('썸네일 클릭', () => {
+    // @scenario image_count=multiple
+    // @effects thumbnail_click_switches_main_image
     it('썸네일 클릭 시 메인 이미지가 변경된다', () => {
       render(<ProductImageViewer images={mockImages} />);
       const buttons = screen.getAllByRole('button');
@@ -138,6 +152,8 @@ describe('ProductImageViewer', () => {
   });
 
   describe('라이트박스', () => {
+    // @scenario image_count=multiple
+    // @effects main_image_click_opens_lightbox
     it('메인 이미지 클릭 시 라이트박스를 연다', () => {
       render(<ProductImageViewer images={mockImages} />);
       const buttons = screen.getAllByRole('button');

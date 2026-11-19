@@ -31,8 +31,9 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         $this->actAsOrderOwner($order);
 
         $orderService = Mockery::mock(OrderProcessingService::class);
+        // 결제 계약이 같은 요청 안에서 주문을 여러 번 조회한다(주문 조회·청구액·실패 기록) — 호출 수가 아니라 주문번호를 단언한다.
         $orderService->shouldReceive('findByOrderNumber')
-            ->once()
+            ->atLeast()->once()
             ->with('ORD-CLOSE-001')
             ->andReturn($order);
         $orderService->shouldReceive('failPayment')
@@ -70,8 +71,9 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         $this->actAsOrderOwner($order);
 
         $orderService = Mockery::mock(OrderProcessingService::class);
+        // 결제 계약이 같은 요청 안에서 주문을 여러 번 조회한다(주문 조회·청구액·실패 기록) — 호출 수가 아니라 주문번호를 단언한다.
         $orderService->shouldReceive('findByOrderNumber')
-            ->once()
+            ->atLeast()->once()
             ->with('ORD-CLOSE-002')
             ->andReturn($order);
         $orderService->shouldNotReceive('failPayment');
@@ -85,7 +87,7 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('errors.message.0', 'Payment amount does not match the order amount.');
+            ->assertJsonPath('errors.message.0', __('sirsoft-pay_kginicis::messages.responses.amount_mismatch'));
     }
 
     /**
@@ -102,8 +104,9 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         $this->actAsOrderOwner($order);
 
         $orderService = Mockery::mock(OrderProcessingService::class);
+        // 결제 계약이 같은 요청 안에서 주문을 여러 번 조회한다(주문 조회·청구액·실패 기록) — 호출 수가 아니라 주문번호를 단언한다.
         $orderService->shouldReceive('findByOrderNumber')
-            ->once()
+            ->atLeast()->once()
             ->with('ORD-CLOSE-CURRENCY-001')
             ->andReturn($order);
         $orderService->shouldNotReceive('failPayment');
@@ -117,7 +120,7 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('errors.message.0', 'Payment currency is not chargeable.');
+            ->assertJsonPath('errors.message.0', __('sirsoft-pay_kginicis::messages.responses.currency_not_chargeable'));
     }
 
     /**
@@ -132,8 +135,9 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         $order = $this->makeOrder('ORD-CLOSE-USD-001', 10000, 'USD');
 
         $orderService = Mockery::mock(OrderProcessingService::class);
+        // 결제 계약이 같은 요청 안에서 주문을 여러 번 조회한다(주문 조회·청구액·실패 기록) — 호출 수가 아니라 주문번호를 단언한다.
         $orderService->shouldReceive('findByOrderNumber')
-            ->once()
+            ->atLeast()->once()
             ->with('ORD-CLOSE-USD-001')
             ->andReturn($order);
         $orderService->shouldNotReceive('failPayment');
@@ -147,7 +151,7 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('errors.message.0', 'Standard KG Inicis close report is only available for KRW orders.');
+            ->assertJsonPath('errors.message.0', __('sirsoft-pay_kginicis::messages.responses.krw_only'));
     }
 
     /**
@@ -169,8 +173,9 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         ]));
 
         $orderService = Mockery::mock(OrderProcessingService::class);
+        // 결제 계약이 같은 요청 안에서 주문을 여러 번 조회한다(주문 조회·청구액·실패 기록) — 호출 수가 아니라 주문번호를 단언한다.
         $orderService->shouldReceive('findByOrderNumber')
-            ->once()
+            ->atLeast()->once()
             ->with('ORD-CLOSE-003')
             ->andReturn($order);
         $orderService->shouldNotReceive('failPayment');
@@ -186,7 +191,7 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(403)
-            ->assertJsonPath('errors.message.0', 'Order ownership verification failed.');
+            ->assertJsonPath('errors.message.0', __('sirsoft-pay_kginicis::messages.responses.ownership_verification_failed'));
     }
 
     /**
@@ -202,8 +207,9 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         $order->order_status = OrderStatusEnum::PAYMENT_COMPLETE;
 
         $orderService = Mockery::mock(OrderProcessingService::class);
+        // 결제 계약이 같은 요청 안에서 주문을 여러 번 조회한다(주문 조회·청구액·실패 기록) — 호출 수가 아니라 주문번호를 단언한다.
         $orderService->shouldReceive('findByOrderNumber')
-            ->once()
+            ->atLeast()->once()
             ->with('ORD-CLOSE-004')
             ->andReturn($order);
         $orderService->shouldNotReceive('failPayment');
@@ -239,13 +245,16 @@ class PaymentCloseReportControllerTest extends PluginTestCase
             'orderer_email' => 'buyer@example.com',
             'orderer_phone' => '010-1234-5678',
         ]));
+        // 결제 행은 이 결제사 것이다 — 계약은 다른 결제사의 결제 뒤 행을 보여 주지 않는다(조회 범위 규칙).
         $order->setRelation('payment', new OrderPayment([
+            'pg_provider' => 'kginicis',
             'payment_status' => PaymentStatusEnum::PAID,
         ]));
 
         $orderService = Mockery::mock(OrderProcessingService::class);
+        // 결제 계약이 같은 요청 안에서 주문을 여러 번 조회한다(주문 조회·청구액·실패 기록) — 호출 수가 아니라 주문번호를 단언한다.
         $orderService->shouldReceive('findByOrderNumber')
-            ->once()
+            ->atLeast()->once()
             ->with('ORD-CLOSE-PAID-001')
             ->andReturn($order);
         // 결제가 이미 성공했으므로 실패/취소 처리를 호출하면 안 된다.
@@ -322,6 +331,61 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         $this->assertSame('kakaopay', $payment->payment_meta['embedded_pg_provider'] ?? null);
         $this->assertSame('카카오페이', $payment->payment_meta['embedded_pg_provider_label'] ?? null);
         $this->assertSame('kginicis_kakaopay', $payment->payment_meta['close_report_payment_method'] ?? null);
+    }
+
+    /**
+     * 다른 결제사가 이미 가상계좌를 발급한 주문의 닫힘 보고는 무시하고, 그 결제사의 결제 행을 바꾸지 않는다.
+     *
+     * 결제 행이 다른 결제사 것이면 이커머스 계약이 쓰기를 `ProviderMismatch` 로 거부한다. 보고는 오류(500)가
+     * 아니라 「결제 대기 행이 아님」으로 끝나야 한다 — 나이스페이먼츠 닫힘 보고와 같은 응답이다.
+     *
+     * @effects close_report_ignores_order_issued_by_another_pg
+     *
+     * @return void 반환값 없음
+     */
+    public function test_close_report_ignores_order_issued_by_another_pg(): void
+    {
+        $owner = User::factory()->create();
+        Sanctum::actingAs($owner);
+
+        $order = OrderFactory::new()->create([
+            'user_id' => $owner->id,
+            'order_number' => 'ORD-CLOSE-FOREIGN-001',
+            'order_status' => OrderStatusEnum::PENDING_PAYMENT,
+            'currency' => 'KRW',
+            'currency_snapshot' => self::krwCurrencySnapshot(),
+            'subtotal_amount' => 10000,
+            'total_amount' => 10000,
+            'total_due_amount' => 10000,
+            'total_paid_amount' => 0,
+        ]);
+
+        $payment = OrderPaymentFactory::new()->create([
+            'order_id' => $order->id,
+            'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
+            'payment_method' => PaymentMethodEnum::VBANK,
+            'pg_provider' => 'nicepayments',
+            'transaction_id' => 'NICE-VBANK-TID-FOREIGN',
+            'vbank_issued_at' => now(),
+            'paid_amount_local' => 0,
+            'paid_at' => null,
+        ]);
+
+        $response = $this->postJson('/api/plugins/sirsoft-pay_kginicis/payment/close-report', [
+            'oid' => 'ORD-CLOSE-FOREIGN-001',
+            'price' => 10000,
+            'payment_method' => 'card',
+            'reason' => 'inicis-overlay-closed',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.status', 'ignored')
+            ->assertJsonPath('data.reason', 'payment_not_ready');
+
+        $payment->refresh();
+        $this->assertSame(PaymentStatusEnum::WAITING_DEPOSIT, $payment->payment_status);
+        $this->assertSame('nicepayments', $payment->pg_provider);
+        $this->assertSame(OrderStatusEnum::PENDING_PAYMENT, $order->fresh()->order_status);
     }
 
     /**

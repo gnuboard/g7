@@ -23,8 +23,8 @@
 import React, { useCallback, useState } from 'react';
 import { I18nTextField } from '../property-controls/I18nTextField';
 import { TagInputControl } from '../property-controls/TagInputControl';
-import { getWidget } from '../../spec/widgetRegistry';
-import type { EditorSpec } from '../../spec/specTypes';
+import { getWidget, type WidgetComponent } from '../../spec/widgetRegistry';
+import type { EditorControlSpec, EditorSpec } from '../../spec/specTypes';
 import { getControl } from '../../spec/editorSpecLoader';
 import type { BindingCandidate } from '../../spec/bindingCandidates';
 
@@ -239,8 +239,8 @@ function IconPickerCollapsible({
   icon: string;
   onChange: (v: unknown) => void;
   t: MetaFormProps['t'];
-  IconWidget: React.ComponentType<Record<string, unknown>>;
-  iconControl: Record<string, unknown>;
+  IconWidget: WidgetComponent;
+  iconControl: EditorControlSpec;
 }): React.ReactElement {
   const [open, setOpen] = useState(false);
   const glyph = icon ? (/\bfa-/.test(icon) ? <i className={icon} aria-hidden="true" /> : icon) : '📄';

@@ -135,6 +135,9 @@
                                     "name": "Img",
                                     "props": {
                                         "src": "{{attachment?.preview_url}}",
+                                        "thumbPreset": "sm",
+                                        "loading": "lazy",
+                                        "decoding": "async",
                                         "alt": "{{attachment?.original_filename}}",
                                         "className": "w-full h-full object-cover"
                                     }
@@ -260,6 +263,9 @@
                                     "name": "Img",
                                     "props": {
                                         "src": "{{attachment?.preview_url}}",
+                                        "thumbPreset": "sm",
+                                        "loading": "lazy",
+                                        "decoding": "async",
                                         "alt": "{{attachment?.original_filename}}",
                                         "className": "w-full h-full object-cover"
                                     }

@@ -11,7 +11,7 @@
  * `BootstrapFallbackDiagnosisTest` 가 잠근다).
  *
  * 서버 값은 직전의 비실행 데이터 블록 `<script type="application/json" id="g7-shell-head-data">`
- * 에서 읽는다(`cacheVersion`).
+ * 에서 읽는다(`cacheVersion`·`basePath`).
  *
  * 인라인 `onerror` 속성 대신 document 캡처 단계 `error` 리스너 하나로 받는다. `error` 는
  * 버블링하지 않지만 캡처 단계에서는 document 를 지난다.
@@ -136,9 +136,54 @@
         // window.G7Config(<body> 에서 정의) 가 아직 없기 때문 — 참조하면 항상 0 이 되어
         // 캐시 키가 어긋난다.
         var CACHE_VERSION = parseInt(headData.cacheVersion, 10) || 0;
+        // 사이트 경로 접두사 — CACHE_VERSION 과 같은 이유로 서버가 데이터 블록으로 넘긴다.
+        // 값은 서버의 `AssetUrl::basePrefix()` 를 그대로 부른다 (규칙 사본을 두지 않는다).
+        var BASE_PATH = headData.basePath;
 
         function storageKey() {
             return 'g7_asset_url_mode:' + CACHE_VERSION;
+        }
+
+        /**
+         * 경로 조각을 `?file=` 값으로 다시 인코딩한다 (TS 판본 `encodeFileQueryValue` 와 동일 규칙).
+         *
+         * 서버의 확장자 모드는 경로를 인코딩하지 않으므로 리터럴 `%` 가 든 파일명이 그대로
+         * 실려 온다. `decodeURIComponent` 를 무조건 부르면 그 입력에서 `URIError` 를 던지고,
+         * 이 함수는 CSS 자가 복구 핸들러 안에 있어 그 자리에서 스타일 복구가 죽는다.
+         */
+        function encodeFileQueryValue(filePath) {
+            var decoded = filePath;
+
+            try {
+                decoded = decodeURIComponent(filePath);
+            } catch (e) {
+                decoded = filePath;
+            }
+
+            // 서버의 `rawurlencode()`(RFC 3986)와 같은 결과를 낸다. `encodeURIComponent` 는
+            // `! * ' ( )` 를 남기므로, 그대로 두면 같은 파일에 대해 서버와 클라이언트가 서로
+            // 다른 URL 문자열을 만들어 HTTP 캐시 키가 둘로 갈린다.
+            return encodeURIComponent(decoded).replace(/[!'()*]/g, function (c) {
+                return '%' + c.charCodeAt(0).toString(16).toUpperCase();
+            });
+        }
+
+        /**
+         * 접두사 값을 비교 가능한 형태로 다듬는다.
+         *
+         * TS 판본 `assetUrl.ts::normalizeBasePath` 와 **같은 규칙**이어야 한다. 서버가 주는
+         * 값은 이미 정규형이지만, 두 구현 중 한쪽만 정규화하면 같은 입력에 서로 다른 URL 을
+         * 만들어 낼 수 있는 상태가 남는다 — 그 드리프트는 대조 테스트가 잡는다.
+         *
+         * @param value 접두사 원본
+         * @returns `''` 또는 `/` 로 시작하고 `/` 로 끝나지 않는 접두사
+         */
+        function normalizeBasePath(value) {
+            if (typeof value !== 'string' || value === '' || value === '/') return '';
+
+            var withLeading = value.charAt(0) === '/' ? value : '/' + value;
+
+            return withLeading.replace(/\/+$/, '');
         }
 
         /**
@@ -146,7 +191,7 @@
          *
          * `resources/js/core/support/assetUrl.ts::convertToCurrentMode` 와 **동일 규칙**이어야
          * 한다. 여기는 코어 번들 로드 전이라 import 가 불가능해 사본을 둔다 — 드리프트는
-         * `assetUrl.test.ts` 의 대조 케이스가 잡는다.
+         * `assetUrlRecovery.test.ts` 의 대조 케이스가 잡는다.
          *
          * 변환 대상이 아니면 null. 코어 엔진 번들(`/build/...`)은 public/ 의 실물 정적
          * 파일이라 변환하면 오히려 깨지므로 대상에서 제외된다.
@@ -166,6 +211,14 @@
                 url = url.slice(origin.length);
             }
 
+            // 하위 폴더 마운트 배치에서는 서버가 `/g7/api/…` 를 만든다. 접두사를 벗기지
+            // 않으면 어느 규칙도 매치되지 않아 자가 복구가 그 배치에서만 통째로 죽는다.
+            // 값은 서버가 주며(`AssetUrl::basePrefix()` 와 같은 값), TS 판본과 같은 규칙이다.
+            var basePath = normalizeBasePath(BASE_PATH);
+            if (basePath && (url === basePath || url.indexOf(basePath + '/') === 0)) {
+                url = url.slice(basePath.length);
+            }
+
             if (url.indexOf('/api/') !== 0) return null;
 
             var qi = url.indexOf('?');
@@ -174,19 +227,29 @@
 
             var bundle = path.match(/^\/api\/(modules|plugins)\/bundle\.(js|css)$/);
             if (bundle) {
-                return '/api/' + bundle[1] + '/bundle/' + bundle[2] + (query ? '?' + query : '');
+                return basePath + '/api/' + bundle[1] + '/bundle/' + bundle[2] + (query ? '?' + query : '');
             }
 
             var asset = path.match(/^\/api\/(templates|modules|plugins)\/assets\/([^/]+)\/(.+)$/);
             if (asset) {
-                return '/api/' + asset[1] + '/assets/' + asset[2] +
-                    '?' + FILE_QUERY_PARAM + '=' + encodeURIComponent(decodeURIComponent(asset[3])) +
+                return basePath + '/api/' + asset[1] + '/assets/' + asset[2] +
+                    '?' + FILE_QUERY_PARAM + '=' + encodeFileQueryValue(asset[3]) +
+                    (query ? '&' + query : '');
+            }
+
+            // 접미사 제거 규칙보다 **먼저** 본다 — 이 라우트의 무확장자 형태는 접미사를 떼는
+            // 형태가 아니라 `?file=` 이라, 순서가 뒤바뀌면 `/api/system/public-storage/theme.css` 가 `/api/system/public-storage/theme` 이
+            // 되어 404 가 된다. `resources/js/core/support/assetUrl.ts` 와 같은 순서다.
+            var publicStorage = path.match(/^\/api\/system\/public-storage\/(.+)$/);
+            if (publicStorage) {
+                return basePath + '/api/system/public-storage' +
+                    '?' + FILE_QUERY_PARAM + '=' + encodeFileQueryValue(publicStorage[1]) +
                     (query ? '&' + query : '');
             }
 
             var suffixed = path.match(/^(\/api\/.+)\.(json|js|css)$/);
             if (suffixed) {
-                return suffixed[1] + (query ? '?' + query : '');
+                return basePath + suffixed[1] + (query ? '?' + query : '');
             }
 
             return null;
@@ -211,6 +274,14 @@
                 url = url.slice(origin.length);
             }
 
+            // 하위 폴더 마운트 배치에서는 서버가 `/g7/build/ext/{v}/…` 를 렌더한다. 접두사를
+            // 벗겨 판정하고 결과에 다시 붙인다(toExtensionless 와 같은 규칙) — 벗기지 않으면 그
+            // 실패를 몰라보고, 붙이지 않으면 복구 주소가 사이트 밖을 가리켜 또 404 가 된다.
+            var basePath = normalizeBasePath(BASE_PATH);
+            if (basePath && (url === basePath || url.indexOf(basePath + '/') === 0)) {
+                url = url.slice(basePath.length);
+            }
+
             var match = url.match(/^\/build\/ext\/(\d+)\/(.+)$/);
             if (!match) return null;
 
@@ -222,17 +293,17 @@
             if (extensionAsset) {
                 // audit:allow asset-url-builder-required reason: 코어 번들 로드 전 셸 복구기 —
                 // import 불가라 규칙 사본을 직접 조립한다. 드리프트는 assetUrlRecovery.test.ts 대조가 잠근다.
-                return '/api/' + extensionAsset[1] + '/assets/' + extensionAsset[2] + '/' + extensionAsset[3] + '?v=' + version;
+                return basePath + '/api/' + extensionAsset[1] + '/assets/' + extensionAsset[2] + '/' + extensionAsset[3] + '?v=' + version;
             }
 
             var bundle = rest.match(/^bundles\/(modules|plugins)\.(js|css)$/);
             if (bundle) {
-                return '/api/' + bundle[1] + '/bundle.' + bundle[2] + '?v=' + version;
+                return basePath + '/api/' + bundle[1] + '/bundle.' + bundle[2] + '?v=' + version;
             }
 
             var templateFetch = rest.match(/^templates\/([^/]+)\/(routes\.json|components\.json|lang\/([A-Za-z0-9-]+)\.json)$/);
             if (templateFetch) {
-                return '/api/templates/' + templateFetch[1] + '/' +
+                return basePath + '/api/templates/' + templateFetch[1] + '/' +
                     templateFetch[2].replace(/\.json$/, '') + '.json?v=' + version;
             }
 

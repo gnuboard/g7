@@ -17,7 +17,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "text-center py-4"
+                        "className": "paykginicis:text-center paykginicis:py-4"
                     },
                     "children": [
                         {
@@ -25,14 +25,14 @@
                             "name": "Icon",
                             "props": {
                                 "name": "exclamation-circle",
-                                "className": "text-red-500 text-4xl mb-4"
+                                "className": "paykginicis:text-red-500 paykginicis:text-4xl paykginicis:leading-none paykginicis:mb-4"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-gray-700 dark:text-gray-300"
+                                "className": "paykginicis:text-gray-700 paykginicis:dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-pay_kginicis.payment_error.message"
                         },
@@ -41,7 +41,7 @@
                             "name": "P",
                             "if": "{{_local.paymentErrorMessage}}",
                             "props": {
-                                "className": "text-sm text-red-600 dark:text-red-400 mt-2"
+                                "className": "paykginicis:text-sm paykginicis:text-red-600 paykginicis:dark:text-red-400 paykginicis:mt-2"
                             },
                             "text": "{{_local.paymentErrorMessage}}"
                         }
@@ -51,7 +51,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-center mt-6"
+                        "className": "paykginicis:flex paykginicis:justify-center paykginicis:mt-6"
                     },
                     "children": [
                         {
@@ -78,7 +78,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                                "className": "paykginicis:px-6 paykginicis:py-2 paykginicis:bg-blue-600 paykginicis:text-white paykginicis:rounded-lg paykginicis:font-medium paykginicis:hover:bg-blue-700 paykginicis:transition-colors"
                             },
                             "text": "$t:common.confirm"
                         }

@@ -47,7 +47,8 @@ vi.mock('../template-engine/ComponentRegistry', () => {
 import { TemplateApp } from '../TemplateApp';
 import { DataSourceManager } from '../template-engine/DataSourceManager';
 import { initializeG7CoreGlobals } from '../template-engine/G7CoreGlobals';
-import { resetScrollMemoryForTesting } from '../routing/ScrollMemory';
+import { getScrollRecord, resetScrollMemoryForTesting, takeScrollRestoreTicket } from '../routing/ScrollMemory';
+import { AuthManager } from '../auth/AuthManager';
 import { resetDataSourceSnapshotsForTesting } from '../template-engine/dataSourceSnapshot';
 
 const tick = (ms = 20) => new Promise((r) => setTimeout(r, ms));
@@ -83,6 +84,7 @@ async function boot(templateConfig: Record<string, any> = {}): Promise<void> {
     const routes = [
         { path: '/', layout: 'home' },
         { path: '/shop/products/:id', layout: 'shop/show' },
+        { path: '/mypage', layout: 'mypage', auth_required: true },
     ];
     vi.mocked(globalThis.fetch).mockImplementation(async (url: any) => ({
         ok: true, status: 200, statusText: 'OK', headers: new Headers({ 'Content-Type': 'application/json' }),
@@ -134,6 +136,7 @@ describe('TemplateApp 뒤로 가기 스크롤 복원 (engine-v1.85.0)', () => {
             data_sources: [{ id: 'products', type: 'api', endpoint: '/api/products', loading_strategy: 'progressive' }],
         };
         layouts['shop/show'] = { layout_name: 'shop/show', components: [] };
+        layouts.mypage = { layout_name: 'mypage', components: [] };
         Object.defineProperty(document.documentElement, 'scrollHeight', {
             configurable: true,
             get: () => (window.location.pathname.startsWith('/shop/products') ? 1500 : homeHeight()),
@@ -349,5 +352,141 @@ describe('TemplateApp 뒤로 가기 스크롤 복원 (engine-v1.85.0)', () => {
         await tick(600);
 
         expect(page.y).toBe(0);
+    });
+
+    // 인증 확인 불가 화면(서버 일시 오류)은 화면 처리(handleRouteChange)를 거치지 않는다. 뒤로 가기 표시가 저장을 멈춘 채 그 화면으로
+    // 빠졌을 때: 표는 버리고(남으면 다음 화면 처리가 엉뚱한 화면을 복원), 저장은 멈춘 채 둔다(오류 화면 위치가 그 항목의 기억을 덮지 않게).
+    // 서버가 돌아와 같은 주소가 이동 표시 없이 다시 그려지면(언어 전환 재진입과 같은 길) 그 화면 처리가 저장을 다시 켠다.
+    // @scenario entry=popstate, content_timing=already_tall, config_layer=engine_default
+    // @effects auth_unavailable_screen_keeps_entry_scroll_record
+    it('뒤로 가기로 돌아온 화면이 인증 확인 불가 화면으로 빠지면 복원 표를 버리고 그 항목의 기억을 덮지 않으며, 같은 주소가 다시 그려지면 저장이 다시 돈다', async () => {
+        await boot();
+        const auth = AuthManager.getInstance();
+        const authenticated = vi.spyOn(auth, 'isAuthenticated').mockReturnValue(true);
+        vi.spyOn(auth, 'getAuthType').mockReturnValue('user');
+        const appRoot = (): HTMLElement => document.getElementById('app')!;
+
+        // 마이페이지를 1,800px 까지 내린 뒤 상품으로 떠난다
+        app.getRouter().navigate('/mypage');
+        await vi.waitFor(() => expect(window.location.pathname).toBe('/mypage'));
+        await tick(50);
+        userScrollTo(1800);
+        app.getRouter().navigate('/shop/products/sample-product-1');
+        await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/sample-product-1'));
+        await tick(50);
+        expect(getScrollRecord('url:/mypage')?.y).toBe(1800);
+
+        // 서버 일시 오류 — 인증 여부를 알 수 없다. 뒤로 가기로 마이페이지에 돌아온다
+        authenticated.mockReturnValue(false);
+        const recentlyUnavailable = vi.spyOn(auth, 'isRecentlyUnavailable').mockReturnValue(true);
+        const lastStatus = vi.spyOn(auth, 'getLastCheckStatus').mockReturnValue('unavailable');
+        page.y = 0;
+        traverseTo('/mypage');
+        await vi.waitFor(() => {
+            expect(appRoot().textContent).not.toBe('');
+            expect(appRoot().querySelector('#main')).toBeNull();
+        });
+
+        // ① 표가 남지 않는다
+        expect(takeScrollRestoreTicket()).toBeNull();
+        // ② 오류 화면(짧다 — 브라우저가 맨 위로 당긴다)에서 생긴 스크롤이 그 항목의 기억을 덮지 않는다
+        userScrollTo(0);
+        expect(getScrollRecord('url:/mypage')?.y).toBe(1800);
+
+        // ③ 서버가 돌아왔다 — 같은 주소가 이동 표시 없이 다시 그려지면(언어 전환 재진입) 이제 이 화면의 스크롤을 다시 기억한다
+        authenticated.mockReturnValue(true);
+        recentlyUnavailable.mockReturnValue(false);
+        lastStatus.mockReturnValue('authenticated');
+        await app.getRouter().navigateToCurrentPath();
+        await vi.waitFor(() => expect(appRoot().querySelector('#main')).not.toBeNull());
+        await tick(50);
+        userScrollTo(700);
+        expect(getScrollRecord('url:/mypage')?.y).toBe(700);
+    });
+
+    // 이동 표시 없는 화면 처리가 끝나기 전에 같은 처리가 한 번 더 시작되면(언어를 연달아 두 번 바꿈) 앞 처리는 밀려 저장을 켜지 못한다.
+    // 멈춘 저장을 다시 켤 책임이 앞 처리에만 있으면 뒤 처리가 화면을 그려도 저장이 꺼진 채 남는다 — 실제로 그려 낸 처리가 켠다.
+    // @scenario entry=popstate, content_timing=already_tall, config_layer=engine_default
+    // @effects auth_unavailable_screen_keeps_entry_scroll_record
+    it('인증 확인 불가 화면에서 이동 표시 없는 화면 처리가 연달아 두 번 시작돼 앞 처리가 밀려도, 그려진 화면에서 저장이 다시 돈다', async () => {
+        await boot();
+        const auth = AuthManager.getInstance();
+        const authenticated = vi.spyOn(auth, 'isAuthenticated').mockReturnValue(true);
+        vi.spyOn(auth, 'getAuthType').mockReturnValue('user');
+        const appRoot = (): HTMLElement => document.getElementById('app')!;
+
+        app.getRouter().navigate('/mypage');
+        await vi.waitFor(() => expect(window.location.pathname).toBe('/mypage'));
+        await tick(50);
+        userScrollTo(1800);
+        app.getRouter().navigate('/shop/products/sample-product-1');
+        await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/sample-product-1'));
+        await tick(50);
+
+        authenticated.mockReturnValue(false);
+        const recentlyUnavailable = vi.spyOn(auth, 'isRecentlyUnavailable').mockReturnValue(true);
+        const lastStatus = vi.spyOn(auth, 'getLastCheckStatus').mockReturnValue('unavailable');
+        page.y = 0;
+        traverseTo('/mypage');
+        await vi.waitFor(() => {
+            expect(appRoot().textContent).not.toBe('');
+            expect(appRoot().querySelector('#main')).toBeNull();
+        });
+
+        // 서버가 돌아왔다 — 첫 화면 처리가 레이아웃을 기다리는 사이 둘째가 시작된다
+        authenticated.mockReturnValue(true);
+        recentlyUnavailable.mockReturnValue(false);
+        lastStatus.mockReturnValue('authenticated');
+        const generationBefore = app.currentRouteChangeId;
+        const first = app.getRouter().navigateToCurrentPath();
+        const second = app.getRouter().navigateToCurrentPath();
+        // 둘째가 첫째를 밀었다(세대가 두 번 올랐다)
+        expect(app.currentRouteChangeId).toBe(generationBefore + 2);
+        await Promise.all([first, second]);
+        await vi.waitFor(() => expect(appRoot().querySelector('#main')).not.toBeNull());
+        await tick(50);
+
+        expect(getScrollRecord('url:/mypage')?.y).toBe(1800);
+        userScrollTo(700);
+        expect(getScrollRecord('url:/mypage')?.y).toBe(700);
+    });
+
+    // 같은 오류 화면에서 다른 주소로 떠나는 길(새 이동) — 라우터의 이동 표시가 저장을 다시 켠다
+    // @scenario entry=navigate, content_timing=already_tall, config_layer=engine_default
+    // @effects auth_unavailable_screen_keeps_entry_scroll_record
+    it('인증 확인 불가 화면에서 다른 화면으로 새로 이동하면 그 화면의 스크롤을 기억하고, 떠난 항목의 기억은 그대로다', async () => {
+        await boot();
+        const auth = AuthManager.getInstance();
+        const authenticated = vi.spyOn(auth, 'isAuthenticated').mockReturnValue(true);
+        vi.spyOn(auth, 'getAuthType').mockReturnValue('user');
+        const appRoot = (): HTMLElement => document.getElementById('app')!;
+
+        app.getRouter().navigate('/mypage');
+        await vi.waitFor(() => expect(window.location.pathname).toBe('/mypage'));
+        await tick(50);
+        userScrollTo(1800);
+        app.getRouter().navigate('/shop/products/sample-product-1');
+        await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/sample-product-1'));
+        await tick(50);
+
+        authenticated.mockReturnValue(false);
+        vi.spyOn(auth, 'isRecentlyUnavailable').mockReturnValue(true);
+        vi.spyOn(auth, 'getLastCheckStatus').mockReturnValue('unavailable');
+        page.y = 0;
+        traverseTo('/mypage');
+        await vi.waitFor(() => {
+            expect(appRoot().textContent).not.toBe('');
+            expect(appRoot().querySelector('#main')).toBeNull();
+        });
+
+        // 공개 화면(상품)으로 새로 이동한다 — 떠나는 순간에도 오류 화면 위치(0)를 마이페이지 기억에 적지 않는다
+        app.getRouter().navigate('/shop/products/sample-product-2');
+        await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/sample-product-2'));
+        await vi.waitFor(() => expect(appRoot().querySelector('#main')).not.toBeNull());
+        await tick(50);
+        expect(getScrollRecord('url:/mypage')?.y).toBe(1800);
+
+        userScrollTo(400);
+        expect(getScrollRecord('url:/shop/products/sample-product-2')?.y).toBe(400);
     });
 });

@@ -1,0 +1,13 @@
+<!-- 회원가입 폼의 결제 통화와 배송국가 칸에 방문자가 지금 보고 있던 값을 미리 넣어 두는 조각. 그리는 것은 없고 초기화 액션만 기여한다.
+  두 칸 자체는 회원 항목(core.user) 선언대로 가입 화면의 공용 조각이 그린다. 여기서는 헤더 셀렉터로 통화나 배송국가를
+  바꿔 둔 채 가입하면 그 선택이 계정에 그대로 남도록, 가입 폼 상태(`registerForm`)에 전역 값을 심는다.
+  심는 조건은 칸이 보이는 조건과 같다. 통화는 고를 수 있는 통화(기본 통화이거나 환율이 잡힌 통화)가 둘 이상이고 지금 값이
+  그 안에 있을 때, 배송국가는 해외배송을 켰고 지금 값이 활성 국가일 때다. 운영자가 가입 화면에서 칸을 꺼 두었으면
+  심은 값은 요청에 실려 가도 서버가 받지 않는다(가입 뒤 기본값 지정이 정한다).
+  호스트의 초기화(가입 폼 비우기)가 끝난 뒤에 돈다. -->
+<extension target-layout="auth/register" priority="330">
+  <init>
+    <set-state if="{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0).length > 1 &amp;&amp; (_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).some(c => (c.is_default || (c.exchange_rate ?? 0) > 0) &amp;&amp; c.code === _global.preferredCurrency)}}" target="local" registerForm.ecommerce_preferred_currency="{{_global.preferredCurrency}}"/>
+    <set-state if="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true &amp;&amp; (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === _global.preferredShippingCountry)}}" target="local" registerForm.ecommerce_preferred_shipping_country="{{_global.preferredShippingCountry}}"/>
+  </init>
+</extension>

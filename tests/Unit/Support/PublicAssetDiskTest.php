@@ -21,6 +21,8 @@ class PublicAssetDiskTest extends TestCase
      * @scenario public_asset_disk=unset
      *
      * @effects proxy_url_otherwise
+     *
+     * @return void 반환값 없음
      */
     public function test_unset_resolves_to_null(): void
     {
@@ -31,6 +33,10 @@ class PublicAssetDiskTest extends TestCase
 
     /**
      * 'none' 은 명시적 스트리밍 유지 선언이므로 null 이어야 합니다.
+     *
+     * @effects proxy_url_otherwise
+     *
+     * @return void 반환값 없음
      */
     public function test_none_resolves_to_null(): void
     {
@@ -45,6 +51,8 @@ class PublicAssetDiskTest extends TestCase
      * @scenario public_asset_disk=ghost_disk
      *
      * @effects proxy_url_otherwise
+     *
+     * @return void 반환값 없음
      */
     public function test_orphan_disk_resolves_to_null(): void
     {
@@ -55,6 +63,10 @@ class PublicAssetDiskTest extends TestCase
 
     /**
      * config 에 존재하는 디스크는 그대로 돌려주어야 합니다.
+     *
+     * @effects direct_url_when_row_matches_public_disk
+     *
+     * @return void 반환값 없음
      */
     public function test_existing_disk_resolves_to_itself(): void
     {
@@ -65,6 +77,10 @@ class PublicAssetDiskTest extends TestCase
 
     /**
      * override 가 비어 있지 않으면 코어 전역 설정보다 우선해야 합니다.
+     *
+     * @effects public_asset_disk_override_outranks_global_setting_and_none_forces_streaming
+     *
+     * @return void 반환값 없음
      */
     public function test_override_takes_precedence_over_global(): void
     {
@@ -75,6 +91,10 @@ class PublicAssetDiskTest extends TestCase
 
     /**
      * override 가 ''/null 이면 코어 전역 설정을 사용해야 합니다.
+     *
+     * @effects public_asset_disk_override_outranks_global_setting_and_none_forces_streaming
+     *
+     * @return void 반환값 없음
      */
     public function test_blank_override_falls_back_to_global(): void
     {
@@ -86,6 +106,10 @@ class PublicAssetDiskTest extends TestCase
 
     /**
      * override 로 'none' 을 주면 전역 설정이 있어도 스트리밍을 강제해야 합니다.
+     *
+     * @effects public_asset_disk_override_outranks_global_setting_and_none_forces_streaming
+     *
+     * @return void 반환값 없음
      */
     public function test_none_override_forces_streaming_over_global(): void
     {
@@ -97,6 +121,10 @@ class PublicAssetDiskTest extends TestCase
     /**
      * isCurrent() 는 resolve() 를 경유하므로 ''/'none'/고아 디스크가
      * 등가 비교로 통과하지 않아야 합니다.
+     *
+     * @effects public_asset_disk_is_current_rejects_blank_none_and_orphan
+     *
+     * @return void 반환값 없음
      */
     public function test_is_current_never_matches_blank_none_or_orphan(): void
     {
@@ -117,6 +145,10 @@ class PublicAssetDiskTest extends TestCase
 
     /**
      * memoize 금지 — 런타임 Config::set 변경이 즉시 반영되어야 합니다.
+     *
+     * @effects public_asset_disk_resolution_is_not_memoized
+     *
+     * @return void 반환값 없음
      */
     public function test_resolution_is_not_memoized(): void
     {

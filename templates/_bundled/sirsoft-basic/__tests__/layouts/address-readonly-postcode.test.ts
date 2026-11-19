@@ -53,9 +53,21 @@ describe('주소칸 읽기 전용 — 우편번호 플러그인 가드 (#822)', 
     // @scenario surface=profile_edit
     // @effects address_input_editable_without_postcode
     it('회원정보 수정(코어 화면)의 우편번호·주소 칸은 플러그인이 켜져 있을 때만 읽기 전용이다(이메일 칸은 그대로 읽기 전용)', () => {
+        // 주소 칸은 이제 공용 회원 항목 조각의 주소 갈래가 그린다(#490) — 칸 이름은 항목 계약의 부분 경로다.
         const edit = load('partials/mypage/profile/_edit');
-        expect(input(edit, 'zipcode').props.readOnly).toBe(POSTCODE_READONLY);
-        expect(input(edit, 'address').props.readOnly).toBe(POSTCODE_READONLY);
+        expect(JSON.stringify(edit)).toContain('"partial":"partials/member/_member_fields.json"');
+        const fields = load('partials/member/_member_fields');
+        const readOnly = (part: string, scope: { field: Node; _global: Node }): unknown => {
+            const expression = String(input(fields, `{{field.parts?.${part}}}`).props.readOnly).replace(/^\{\{/, '').replace(/\}\}$/, '');
+            // eslint-disable-next-line no-new-func
+            return new Function('field', '_global', `return (${expression});`)(scope.field, scope._global);
+        };
+        for (const part of ['zipcode', 'address']) {
+            expect(readOnly(part, { field: {}, _global: { activePlugins: ['sirsoft-daum_postcode'] } }), part).toBe(true);
+            expect(readOnly(part, { field: {}, _global: { activePlugins: [] } }), part).toBe(false);
+            // 잠긴 항목이면 플러그인과 무관하게 읽기 전용
+            expect(readOnly(part, { field: { readonly: true }, _global: { activePlugins: [] } }), part).toBe(true);
+        }
         const email = nodes(edit).find((n) => n.name === 'Input' && n.props?.type === 'email')!;
         expect(email.props.readOnly).toBe(true);
     });

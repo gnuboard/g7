@@ -16,6 +16,7 @@ use App\Exceptions\ConcurrentModificationException;
 use App\Extension\Helpers\LayoutFragmentSourceHelper;
 use App\Extension\HookManager;
 use App\Extension\Layout\LayoutRowSynchronizer;
+use App\Extension\Layout\LayoutSyncOptions;
 use App\Extension\Layout\LayoutSyncReport;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
@@ -26,6 +27,8 @@ use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ComputesLayoutContentHash;
 use App\Models\LayoutExtension;
 use App\Models\TemplateLayoutExtensionVersion;
+use App\Services\Layout\LayoutDeletionService;
+use App\Support\LayoutCompat\LegacyContractShim;
 use App\Support\LayoutEmptyObjects;
 use Composer\Semver\Semver;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -41,6 +44,14 @@ use Illuminate\Support\Facades\Log;
  */
 class LayoutExtensionService
 {
+    /**
+     * Modal 이 `children` 밖에서 그리는 컴포넌트 배열 props — 고정 하단과 제목 앞뒤 붙임.
+     *
+     * 확장점 채우기와 오버레이 대상 찾기가 이 자리도 걷는다. 걷지 않으면 확인 창 바닥 단추 줄의 확장점과
+     * 그 단추를 겨눈 오버레이가 조용히 빠진다(#869).
+     */
+    private const MODAL_SURFACE_PROPS = ['footer', 'titlePrefix', 'titleSuffix'];
+
     use ClearsTemplateCaches;
     use CollectsFragmentSources;
     use ComputesLayoutContentHash;
@@ -202,6 +213,12 @@ class LayoutExtensionService
 
         // scripts 배열 초기화 (기존 scripts 유지)
         $scripts = $layout['scripts'] ?? [];
+
+        // 0. 옛 템플릿 호환 — 7.1.x 화면 계약으로 만든 템플릿에 7.2.0 의 확장점·로그인 인계·재인증 자리를 채운다.
+        //    확장점이 생겨야 1단계가 그 자리에 조각을 붙인다. 편집 모드는 건너뛴다(저장 때 심 노드가 원본에 섞이지 않게).
+        if (! $withSourceMeta) {
+            $layout = (new LegacyContractShim)->apply($layout, $templateId);
+        }
 
         // 1. Extension Point 처리
         $layout = $this->applyExtensionPoints($layout, $templateId, $scripts, $withSourceMeta);
@@ -399,6 +416,13 @@ class LayoutExtensionService
 
             if (isset($component['children']) && is_array($component['children'])) {
                 $resultComponent['children'] = $this->applySourceMetaRecursively($component['children'], $sourceMeta);
+            }
+
+            // 주입된 Modal 의 고정 하단·제목 앞뒤 붙임 자식도 같은 확장의 노드다(#869 C3)
+            foreach (self::MODAL_SURFACE_PROPS as $surface) {
+                if (isset($component['props'][$surface]) && is_array($component['props'][$surface]) && array_is_list($component['props'][$surface])) {
+                    $resultComponent['props'][$surface] = $this->applySourceMetaRecursively($component['props'][$surface], $sourceMeta);
+                }
             }
 
             $result[] = $resultComponent;
@@ -747,6 +771,37 @@ class LayoutExtensionService
                     $withSourceMeta
                 );
             }
+
+            // 끌어 정렬 목록(`sortable`)의 행 템플릿은 `children`·props 가 아니라 노드의 `itemTemplate` 에 실린다.
+            // 그 안의 확장점(게시판 설정 반응 유형 표의 행마다 아이콘 업로더)이 채워지지 않으면 default 까지 사라진다.
+            if (isset($component['itemTemplate']) && is_array($component['itemTemplate']) && ! array_is_list($component['itemTemplate'])) {
+                $component['itemTemplate'] = $this->processExtensionPointsRecursive(
+                    [$component['itemTemplate']],
+                    $templateId,
+                    $dataSources,
+                    $scripts,
+                    $modals,
+                    $withSourceMeta
+                )[0];
+            }
+
+            // 반응형 재정의(`responsive.{구간}.children`)는 그 화면 폭에서 `children` 을 갈아 끼운다. 이 자리를 따라가지 않으면
+            // 재정의 안 확장점이 default 를 받지 못해 빈 칸으로 그려진다(게시판 설정 반응 유형의 좁은 화면 카드 업로더, #916 실측).
+            if (isset($component['responsive']) && is_array($component['responsive'])) {
+                foreach ($component['responsive'] as $breakpoint => $override) {
+                    if (! is_array($override) || ! isset($override['children']) || ! is_array($override['children'])) {
+                        continue;
+                    }
+                    $component['responsive'][$breakpoint]['children'] = $this->processExtensionPointsRecursive(
+                        $override['children'],
+                        $templateId,
+                        $dataSources,
+                        $scripts,
+                        $modals,
+                        $withSourceMeta
+                    );
+                }
+            }
         }
 
         return $components;
@@ -756,7 +811,8 @@ class LayoutExtensionService
      * 컴포넌트 props 안에 박힌 반복 렌더 템플릿의 확장점을 처리합니다.
      *
      * DataGrid·CardGrid 의 셀 템플릿(`columns[].cellChildren`·`cardColumns[].cellChildren`)과
-     * 확장 행·하위 행 템플릿(`expandChildren`·`subRowChildren`)은 `children` 이 아니라 props 에 실린다.
+     * 확장 행·하위 행 템플릿(`expandChildren`·`subRowChildren`), Modal 의 고정 하단·제목 앞뒤 붙임
+     * (`footer`·`titlePrefix`·`titleSuffix`)은 `children` 이 아니라 props 에 실린다.
      * `children` 만 따라 내려가면 그 안에 둔 확장점이 채워지지 않은 빈 자리로 남아, 주입한 조각과
      * `default` 폴백이 함께 화면에서 사라진다. 템플릿은 행마다 렌더되므로 주입 노드는 `row` 문맥을
      * 그대로 받는다(주입 데이터 소스는 레이아웃에 한 번만 병합된다).
@@ -792,7 +848,9 @@ class LayoutExtensionService
             }
         }
 
-        foreach (['expandChildren', 'subRowChildren'] as $templateKey) {
+        // 확장 행·하위 행 템플릿과 Modal 의 고정 하단·제목 앞뒤 붙임(`footer`·`titlePrefix`·`titleSuffix`)도
+        // 컴포넌트 배열이 props 에 실린다 — 고정 하단의 확장점(알림 템플릿 편집 창 바닥 단추 등)이 비지 않게 한다(#869)
+        foreach (['expandChildren', 'subRowChildren', ...self::MODAL_SURFACE_PROPS] as $templateKey) {
             if (isset($props[$templateKey]) && is_array($props[$templateKey]) && array_is_list($props[$templateKey])) {
                 $props[$templateKey] = $this->processExtensionPointsRecursive(
                     $props[$templateKey],
@@ -886,12 +944,13 @@ class LayoutExtensionService
                         ? $this->buildInjectedPropsMeta($overlay, $propsToInject)
                         : null;
 
+                    // 본문 트리를 먼저 찾고, 없을 때만 `modals` 갈래 창을 찾는다 — 첫 일치 노드 하나에만 주입(#869 C2)
                     $injected = $this->injectPropsAtTarget(
                         $layout['components'],
                         $targetId,
                         $propsToInject,
                         $injectMeta
-                    );
+                    ) || ($modals !== [] && $this->injectPropsAtTarget($modals, $targetId, $propsToInject, $injectMeta));
                 } else {
                     // 기존 컴포넌트 주입 로직
                     $components = $injection['components'] ?? [];
@@ -910,12 +969,13 @@ class LayoutExtensionService
                         );
                     }
 
+                    // 본문 트리를 먼저 찾고, 없을 때만 `modals` 갈래 창(본문·고정 하단·제목 붙임)을 찾는다(#869 C2)
                     $injected = $this->injectAtTarget(
                         $layout['components'],
                         $targetId,
                         $position,
                         $components
-                    );
+                    ) || ($modals !== [] && $this->injectAtTarget($modals, $targetId, $position, $components));
                 }
 
                 if (! $injected) {
@@ -1014,6 +1074,14 @@ class LayoutExtensionService
                     return true;
                 }
             }
+
+            // Modal 고정 하단·제목 앞뒤 붙임 — 확인 창 바닥 단추가 여기 놓인다(#869)
+            foreach (self::MODAL_SURFACE_PROPS as $surface) {
+                if (isset($component['props'][$surface]) && is_array($component['props'][$surface]) && array_is_list($component['props'][$surface])
+                    && $this->injectAtTarget($component['props'][$surface], $targetId, $position, $newComponents)) {
+                    return true;
+                }
+            }
         }
 
         return false;
@@ -1105,6 +1173,14 @@ class LayoutExtensionService
 
             if (isset($component['children']) && is_array($component['children'])) {
                 if ($this->injectPropsAtTarget($component['children'], $targetId, $propsToInject, $injectMeta)) {
+                    return true;
+                }
+            }
+
+            // Modal 고정 하단·제목 앞뒤 붙임 안의 노드도 대상이 된다(#869)
+            foreach (self::MODAL_SURFACE_PROPS as $surface) {
+                if (isset($component['props'][$surface]) && is_array($component['props'][$surface]) && array_is_list($component['props'][$surface])
+                    && $this->injectPropsAtTarget($component['props'][$surface], $targetId, $propsToInject, $injectMeta)) {
                     return true;
                 }
             }
@@ -1657,7 +1733,14 @@ class LayoutExtensionService
     public function isExtensionApplicableToTemplate(array $content, int $templateId): bool
     {
         if (isset($content['extension_point'])) {
-            return $this->layoutRepository->hasExtensionPoint($templateId, $content['extension_point']);
+            if ($this->layoutRepository->hasExtensionPoint($templateId, $content['extension_point'])) {
+                return true;
+            }
+
+            // 옛 템플릿 호환 — 7.2.0 확장점이 없는 옛 화면도 서빙 때 심이 자리를 채우므로, 호스트 화면이 있으면 등록해 둔다
+            $host = LegacyContractShim::EXTENSION_POINT_HOSTS[$content['extension_point']] ?? null;
+
+            return $host !== null && $this->layoutRepository->exists($templateId, $host);
         }
 
         if (isset($content['target_layout'])) {
@@ -1728,14 +1811,17 @@ class LayoutExtensionService
             return false;
         }
 
-        $existing->delete();
+        // 미리보기(dry-run)는 판정만 한다 — 지우지 않았으므로 「제거」 로그도 남기지 않는다.
+        if (LayoutSyncOptions::writes()) {
+            $existing->delete();
 
-        Log::info('오등록 레이아웃 확장 제거 (다른 템플릿엔 적용 가능)', [
-            'extension_id' => $existing->id,
-            'template_id' => $templateId,
-            'target_name' => $targetName,
-            'source' => $identifier,
-        ]);
+            Log::info('오등록 레이아웃 확장 제거 (다른 템플릿엔 적용 가능)', [
+                'extension_id' => $existing->id,
+                'template_id' => $templateId,
+                'target_name' => $targetName,
+                'source' => $identifier,
+            ]);
+        }
 
         return true;
     }
@@ -2320,7 +2406,8 @@ class LayoutExtensionService
      */
     public function forceDeleteBySource(LayoutSourceType $sourceType, string $identifier): int
     {
-        return $this->repository->forceDeleteBySource($sourceType, $identifier);
+        // 운영자가 고친 조각은 지우기 직전 스냅샷, 버전 이력은 명시 삭제
+        return app(LayoutDeletionService::class)->forceDeleteExtensionsBySource($sourceType, $identifier, 'uninstall');
     }
 
     /**
@@ -2593,6 +2680,11 @@ class LayoutExtensionService
                 continue;
             }
 
+            // 미리보기(dry-run)는 옛 행을 옮기지 않는다 — 판정은 뒤따르는 등록이 옛 행 기준으로 낸다.
+            if (! LayoutSyncOptions::writes()) {
+                continue;
+            }
+
             $this->repository->saveFragmentKey($legacy, $fileKey);
             $adopted++;
 
@@ -2666,9 +2758,11 @@ class LayoutExtensionService
      * @param  string  $templateIdentifier  템플릿 식별자
      * @param  int  $templateId  템플릿 ID
      * @param  array<string, array<int, string>>  $liveKeysByTarget  오버라이드 대상 식별자 → 소스에 실재하는 조각 키 목록
+     * @param  LayoutSyncMode  $mode  동기화 모드 — keep 이면 운영자가 고친 오버라이드 조각은 소스에서 빠져도 남긴다(`kept_removed`)
+     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
      * @return int 정리된 행 수
      */
-    public function removeOrphanTemplateOverrides(string $templateIdentifier, int $templateId, array $liveKeysByTarget): int
+    public function removeOrphanTemplateOverrides(string $templateIdentifier, int $templateId, array $liveKeysByTarget, LayoutSyncMode $mode = LayoutSyncMode::Overwrite, ?LayoutSyncReport $report = null): int
     {
         $live = array_map(static fn (array $keys): array => array_fill_keys($keys, true), $liveKeysByTarget);
         $deleted = 0;
@@ -2683,7 +2777,14 @@ class LayoutExtensionService
                 continue;
             }
 
-            $row->delete();
+            // 지우기(soft delete)·keep 보존·미리보기 판정은 동기화기 한 곳이 한다 — 모듈·플러그인 조각 정리와 같은 규칙.
+            $entry = $this->layoutSynchronizer->removeOrphanExtension($row, $templateIdentifier, $mode);
+            $report?->add($entry);
+
+            if ($entry->verdict !== 'deleted') {
+                continue;
+            }
+
             $deleted++;
 
             Log::info('고아 템플릿 오버라이드 행 정리 (소스에 없는 조각)', [

@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#831 |
 #   bcmath=absent × comparison=random 은 별도 PHP 프로세스를 2만 번 띄워야 해 재지 않는다. 비교식이
 #   bcmath 를 쓰지 않음은 absent × table(서브프로세스)과 NoBcmathUsageTest(정적)가 함께 잠근다.
 #   경계 모양(null·"0.00"·부동소수 오차·반올림 경계·대금액·음수)은 데이터 공급자 행으로 나눠 잰다.

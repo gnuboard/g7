@@ -57,6 +57,10 @@ effects:
   - regular_user_cannot_download_deleted_post_attachment
   - regular_user_can_download_normal_post_attachment_passes_gate
   - regular_user_cannot_preview_deleted_post_attachment
+  # #609 docblock 정리 때 사후 등재 — PostDeletedToggleTest 의 삭제 글/댓글 포함 토글 단언
+  - abilities_can_view_deleted_reflects_manager_permission
+  - include_deleted_toggle_lists_deleted_posts_for_manager_only
+  - include_deleted_comments_toggle_shows_deleted_comments_for_manager_only
 
 test_files:
   # 44 — 답글 폼 진입 차단 (백엔드)

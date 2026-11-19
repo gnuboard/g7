@@ -1,0 +1,44 @@
+<!-- 소셜 로그인 설정 — 알림 정의 초기화 확인 창. 손으로 고친 알림 설정을 플러그인이 제공하는 기본값으로
+  되돌린다. 되돌리면 그동안의 수정이 사라지므로 되묻는다. -->
+<partial description="알림 정의 기본값 복원 확인">
+  <modal data-type="composite" data-ref="modal_sl_notification_definition_reset" title="$t:sirsoft-social_login.admin.notifications.reset_modal.title" size="sm">
+    <p class="sl:text-gray-700 sl:dark:text-gray-300">$t:sirsoft-social_login.admin.notifications.reset_modal.confirm_message</p>
+    <div class="sl:mt-4 sl:p-3 sl:bg-gray-100 sl:dark:bg-gray-700 sl:rounded-lg">
+      <span class="sl-form-sub-label">$t:sirsoft-social_login.admin.notifications.reset_modal.target_label</span>
+      <span class="sl-text-primary sl:font-medium">{{_global.resetTargetName ?? ''}}</span>
+    </div>
+    <div class="sl-alert-danger">
+      <p class="sl-text-error-soft">$t:sirsoft-social_login.admin.notifications.reset_modal.warning_message</p>
+    </div>
+    <footer>
+      <button type="button" class="sl:px-4 sl:py-2 sl:bg-white sl:dark:bg-gray-800 sl:text-gray-700 sl:dark:text-gray-300 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:hover:bg-gray-50 sl:dark:hover:bg-gray-700 sl:disabled:opacity-50 sl:disabled:cursor-not-allowed" disabled="{{_global.isResettingNotification}}">
+        <on type="click">
+          <close-modal target="modal_sl_notification_definition_reset"/>
+        </on>
+        $t:common.cancel
+      </button>
+      <button type="button" class="sl-flex-center sl:gap-2 sl:px-4 sl:py-2 sl:bg-orange-700 sl:dark:bg-orange-700 sl:text-white sl:dark:text-white sl:rounded-lg sl:hover:bg-orange-800 sl:disabled:opacity-50 sl:disabled:cursor-not-allowed" disabled="{{_global.isResettingNotification}}">
+        <on type="click">
+          <!-- 초기화. 성공하면 알림 목록을 다시 불러 되돌아간 값을 보여 준다. -->
+          <sequence>
+            <set-state target="global" :isResettingNotification="true"/>
+            <api-call :auth_required="true" target="/api/admin/notification-definitions/{{_global.resetTargetId}}/reset" method="POST">
+              <success>
+                <set-state target="global" :isResettingNotification="false" :resetTargetId="null" resetTargetName=""/>
+                <refetch-data-source dataSourceId="slNotificationDefinitions"/>
+                <toast type="success" message="$t:sirsoft-social_login.admin.notifications.reset_success"/>
+                <close-modal target="modal_sl_notification_definition_reset"/>
+              </success>
+              <fail>
+                <set-state target="global" :isResettingNotification="false"/>
+                <toast type="error" message="{{error.message ?? '$t:sirsoft-social_login.admin.notifications.reset_failed'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isResettingNotification}}" name="spinner" class="sl-spinner-sm"/>
+        <span>{{_global.isResettingNotification ? '$t:sirsoft-social_login.admin.notifications.reset_modal.btn_confirming' : '$t:sirsoft-social_login.admin.notifications.reset_modal.btn_confirm'}}</span>
+      </button>
+    </footer>
+  </modal>
+</partial>

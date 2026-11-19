@@ -1,0 +1,18 @@
+feature: 정렬(sortable) 모듈 — 컨테이너, 아이템 래퍼, 컨텍스트
+
+description: |
+  @dnd-kit 기반 정렬 모듈의 단위 시험을 묶는다. SortableContainer 는 아이템을 그리고 onSortEnd 를 넘기며,
+  SortableItemWrapper 는 아이템을 sortable-item 래퍼로 감싼다. useSortableContext 는 공급자 밖에서 null, 안에서
+  컨텍스트를 준다. 통합 시험은 handle 옵션 전달, sortVersion 변경 시 리마운트, 빈 배열 처리를 본다.
+
+axes:
+  area: [container, item_wrapper, context, integration]
+
+effects:
+  - sortable_container_renders_and_reports_sort
+  - sortable_item_wrapper_wraps_item
+  - sortable_context_exposed_inside_provider
+  - sortable_parts_work_together
+
+test_files:
+  - resources/js/core/template-engine/__tests__/sortable.test.tsx

@@ -1,0 +1,40 @@
+feature: cache_put_key_index
+
+description: |
+  확장 캐시 드라이버의 flush() 는 키 색인에 적힌 키만 지운다. 수정 전에는 remember() 만 색인에 키를 적고
+  put()·putMany() 는 적지 않아, 모듈·플러그인을 비활성·제거해도(ModuleManager::flushModuleCache,
+  PluginManager::flushPluginCache) put() 로 둔 키가 남았다(실측: 재설치한 SSO 플러그인의 IdP 연속 실패 알림이
+  이전 IdP 의 억제 키에 막힘). 태그 지원 저장소도 flush() 가 같은 색인으로 지우므로 결함은 저장소와 무관하다.
+  모듈·플러그인 드라이버만 put()·putMany() 키를 소속 태그(접두사)로 적는다 — 코어 드라이버는 flush() 호출처가 없고
+  put() 키가 IP·URL·코드마다 고유라 적지 않는다. 색인 항목은 만료 시각을 함께 두고 쓸 때마다 지난 항목을 정리한다.
+  만료 시각이 없는 옛 형식(태그 배열 그대로) 항목도 읽어 지운다. 색인 쓰기 실패는 경고만 남기고 put() 결과를 바꾸지 않는다.
+  색인은 키 해시로 64조각(`g7:_idx:{접두사}:{0..63}`)에 나눠, 키가 많은 확장(게시판 조회수 중복 방지)에서도 put 한 번이
+  한 조각만 다시 쓴다(수정 전 단일 색인 5만 항목 실측 84ms). flush()·flushTags() 는 64조각과 옛 단일 색인을 모두 읽는다.
+
+axes:
+  case:
+    - file_put              # file 저장소, 플러그인 put
+    - file_put_many         # file 저장소, 플러그인 putMany
+    - tag_store_put         # 태그 지원 저장소(array), 모듈 put
+    - other_extension       # 다른 플러그인 put 키 격리
+    - core_put              # 코어 드라이버 put·putMany 미기록, remember 기록
+    - expired_entry         # 같은 조각에 쓸 때 만료 항목 정리
+    - legacy_format         # 옛 단일 색인·옛 항목 형식 읽기
+    - sharded               # 64조각 분산·flush 가 모든 조각을 지움
+    - index_write_failure   # 색인 쓰기만 실패하는 저장소
+
+exclusions:
+  - { case: file_put, reason: "제외 없음 — 사례 단일 축(저장소·드라이버·쓰기 종류·색인 상태 조합은 사례로 고정)" }
+
+effects:
+  - put_key_removed_by_flush               # put() 로 둔 키가 flush() 뒤 없다 (file·array 저장소 모두)
+  - put_many_keys_removed_by_flush         # putMany() 로 둔 키가 전부 flush() 뒤 없다
+  - other_extension_put_key_survives       # 다른 확장의 put() 키는 남는다
+  - core_put_not_indexed                   # 코어 드라이버 put()·putMany() 키는 색인에 없고 remember() 키는 있다
+  - expired_entries_pruned_on_write        # 쓸 때 만료 시각이 지난 항목(put·remember)이 색인에서 빠진다
+  - legacy_index_entries_flushed           # 옛 형식 항목을 flushTags()·flush() 가 지운다
+  - index_write_failure_keeps_put_result   # 색인 쓰기 실패에도 put() 는 true·값 유지·경고(operation=index) 1건
+  - index_sharded_by_key                   # 색인이 키 해시로 64조각에 나뉘고(옛 단일 색인엔 새로 안 적음) flush() 가 모든 조각을 지운다
+
+test_files:
+  - tests/Unit/Cache/CachePutKeyIndexTest.php

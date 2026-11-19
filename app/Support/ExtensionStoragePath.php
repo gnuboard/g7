@@ -48,13 +48,25 @@ class ExtensionStoragePath
     }
 
     /**
+     * 템플릿 저장 경로의 절대 경로를 반환합니다.
+     *
+     * @param  string  $identifier  템플릿 식별자 (예: sirsoft-basic)
+     * @param  string  $category  카테고리 (예: settings). 빈 문자열이면 템플릿 루트
+     * @return string 절대 경로 (존재 여부와 무관한 순수 계산)
+     */
+    public static function template(string $identifier, string $category = ''): string
+    {
+        return static::resolve('templates', $identifier, $category);
+    }
+
+    /**
      * 디스크 root 를 기준으로 `{root}/{identifier}[/{category}]` 를 조립합니다.
      *
      * root 는 `config/filesystems.php` 가 단일 출처다. 설정이 비어 있는 비정상 상황에서만
      * 운영 기본 레이아웃으로 되돌아간다 — 여기서 예외를 던지면 설정 파일 하나 때문에
      * 확장 기능 전체가 멈춘다.
      *
-     * @param  string  $disk  디스크 이름 (modules | plugins)
+     * @param  string  $disk  디스크 이름 (modules | plugins | templates)
      * @param  string  $identifier  확장 식별자
      * @param  string  $category  카테고리
      * @return string 절대 경로

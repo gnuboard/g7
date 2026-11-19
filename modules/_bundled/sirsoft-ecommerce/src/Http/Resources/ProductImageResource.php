@@ -22,7 +22,9 @@ class ProductImageResource extends BaseApiResource
             'id' => $this->id,
             'hash' => $this->hash,
             'original_filename' => $this->original_filename,
+            // 원본(공개 자산 디스크면 CDN 직접 주소) / 썸네일 기준(항상 API 서빙 주소)
             'download_url' => $this->download_url,
+            'preview_url' => $this->preview_url,
             'alt_text' => $this->alt_text,
             'alt_text_localized' => $this->alt_text_localized,
             'alt_text_current' => $this->getLocalizedAltText(),

@@ -1,0 +1,25 @@
+feature: 활동 로그 「삭제 직전 기록만 보기」 필터 — 주소·목록 요청·새로고침·초기화 (브라우저, #888)
+
+description: |
+  활동 로그 목록에서 「삭제 직전 기록만 보기」를 켜고 [검색]을 누르면 주소에 deletion_snapshot=1 이 실리고
+  목록 GET 요청에도 같은 파라미터가 간다. 그 주소로 새로고침하면 체크가 되살아나고 같은 조건으로 다시 받는다.
+  [초기화]는 체크를 풀고 주소·목록 요청에서 파라미터를 뺀다.
+
+# axis 의미:
+#   case — 재는 순서 하나 (켜고 검색 → 새로고침 → 초기화)
+axes:
+  case:
+    - search_reload_reset
+
+effects:
+  - deletion_snapshot_search_puts_flag_in_url
+  - deletion_snapshot_list_request_carries_flag
+  - deletion_snapshot_checked_after_reload
+  - deletion_snapshot_reset_clears_flag
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/activity-log-deletion-snapshot-filter.spec.ts
+
+notes: |
+  목록 응답은 고정한다(개발 DB 의 삭제 직전 기록 유무에 좌우되지 않도록) — 화면은 읽기만 한다.
+  서버 쪽 거르기(어떤 액션이 삭제 직전 기록인가)는 코어 Feature 테스트가 잰다.

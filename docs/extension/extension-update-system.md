@@ -13,6 +13,7 @@
 6. 확장 수정/개발은 _bundled 에서만 (활성 디렉토리 직접 수정 금지 → {type}:update 로 반영)
 7. DB/설정 구조 변경 시 업그레이드 스텝 작성 필수 (필요 판단은 "업그레이드 스텝이 필요한 경우" 표)
 8. 파일만 교체했으면: 훅·오토로드 캐시는 자동 감지(7.1.3+), 레이아웃·config·라우트·정적 게시·캐시는 명령 실행 ("파일만 교체했을 때" 표)
+9. GitHub·--zip 업데이트는 패키지 서명을 검증(7.2.0) — 미서명은 확인 후 계속(답할 수 없는 실행은 --allow-unsigned), 불일치·미신뢰 키는 차단. GitHub 는 태그 릴리스만 받음 (package-signing.md)
 ```
 
 ---
@@ -26,9 +27,9 @@
 5. [ExtensionBackupHelper](#5-extensionbackuphelper)
 6. [ExtensionPendingHelper](#6-extensionpendinghelper)
 7. [UpgradeStepInterface + UpgradeContext](#7-upgradestepinterface--upgradecontext)
-8. [번들 디렉토리 개발 워크플로우](#8-번들-디렉토리-개발-워크플로우-critical---mandatory)
+8. [번들 디렉토리 개발 워크플로우](#8-번들-디렉토리-개발-워크플로우)
 9. [개발자 버전 업데이트 가이드](#9-개발자-버전-업데이트-가이드)
-10. [템플릿 레이아웃 충돌 전략](#10-템플릿-레이아웃-충돌-전략)
+10. [레이아웃 충돌 전략 (3종 공통)](#10-레이아웃-충돌-전략-3종-공통)
 11. [Artisan 커맨드](#11-artisan-커맨드)
 12. [API 엔드포인트](#12-api-엔드포인트)
 13. [역할/권한/메뉴 동기화](#13-역할권한메뉴-동기화)
@@ -122,7 +123,33 @@
 
 사용 예: GitHub 에 임시 장애가 있거나 잘못된 태그가 퍼블리시되어 자동 경로가 실패할 때 `--source=bundled` 로 강제 설치, 반대로 긴급 핫픽스를 GitHub 태그로만 배포한 경우 `--source=github` 로 번들 폴백을 차단합니다.
 
-`module:update` / `plugin:update` / `template:update` 는 실행 전에 확인을 묻습니다. 스크립트나 `--no-interaction` 처럼 답할 수 없는 환경에서는 기본값(아니오)으로 취소되며, 7.1.6 부터는 「`--yes` 를 붙이세요」 경고와 함께 **종료 코드 1** 로 끝납니다(종전에는 종료 코드 0 이라 실행되지 않은 것을 알 수 없었습니다). 자동 실행에는 `--yes`(`-y`)를 붙입니다 — 확인에만 「예」로 답하고 버전 비교는 그대로 합니다. `--force` 도 확인을 건너뛰지만 버전 비교 없이 같은 판도 다시 적용하므로, 실제로 다시 적용할 확장에만 붙입니다. 언어팩 명령(`language-pack:update`)은 확인을 묻지 않습니다.
+#### GitHub 조회 실패 (`check_error`, 7.2.0)
+
+비대화형 실행(cron·스크립트)이 「확인했더니 최신」과 「확인하지 못함」을 가를 수 있도록, 업데이트 확인(`checkModuleUpdate` / `checkPluginUpdate` / `checkTemplateUpdate`)은 GitHub 조회에 실패하면 응답에 `check_error`(사유 문자열)를 더합니다. 예외를 던지지 않으므로 관리자 화면 호출부는 그대로 동작합니다.
+
+| 조회 결과 | `check_error` |
+| --- | --- |
+| 판을 받음 | 없음 |
+| 릴리스가 아직 없음 (HTTP 404) | 없음 (「업데이트 없음」과 같다) |
+| 연결 실패·404 가 아닌 실패 응답(403 요청 한도 초과·5xx 등)·저장소 주소 해석 실패 | 사유 문자열 |
+
+명령별 처리:
+
+| 명령 | `check_error` 가 있을 때 |
+| --- | --- |
+| `{type}:update --source=github` (`--dry-run` 포함) | 사유를 출력하고 **종료 코드 1** — 번들로 대체하지 않는다 |
+| `{type}:update` (소스 자동) | 번들 기준 판정은 그대로 두고 「GitHub 조회 실패, 번들 기준으로 판정」 경고 한 줄 |
+| `{type}:check-updates [identifier]` | 실패 표(식별자·사유)를 출력하고 **종료 코드 1**. 그 확장의 DB `update_available`·`latest_version`·`update_source` 는 갱신하지 않는다 — 번들에 더 새 판이 있어도 번들 판은 출력에만 보인다 |
+
+`checkAll{Type}ForUpdates()` 결과에는 조회에 실패한 확장 목록 `failures`(`identifier`·`reason`)가 함께 실린다. 업데이트 미리보기(API `…/update/preview`, CLI `--dry-run --json`)는 같은 사유를 `check_error`(없으면 `null`)로 싣는다. GitHub 요청 한도(비인증 시간당 60회)에 걸리면 `.env` 의 `G7_UPDATE_GITHUB_TOKEN` 을 설정한다.
+
+확장이 `GithubHelper::fetchLatestRelease($owner, $repo, $token)` 를 직접 부르면 반환 배열의 `status`(7.2.0)로 같은 구분을 한다 — 응답을 받았을 때의 HTTP 상태 코드이고 연결 실패면 `null` 이다. `version` 이 `null` 일 때 `status` 가 404 면 「릴리스가 아직 없음」, 그 밖의 상태(403 요청 한도 초과·5xx 등)나 `null`(연결 실패, `error` 에 사유)은 조회 실패로 다룬다.
+
+`module:update` / `plugin:update` / `template:update` 는 실행 전에 확인을 묻습니다. cron, CI, 원격 명령, `--no-interaction` 처럼 확인에 답할 수 없는 실행에서 `--yes`·`--force` 가 없으면 업데이트를 시작하지 않은 사유와 안내를 출력하고 **종료 코드 1** 로 끝나므로(아무것도 바뀌지 않음, 7.1.6 부터 — 종전에는 종료 코드 0 이라 실행되지 않은 것을 알 수 없었습니다) 자동 실행에는 `--yes`(`-y`, 7.1.6)를 붙입니다 — 확인에만 「예」로 답하고 버전 비교는 그대로 합니다. 터미널에서 직접 「아니오」를 답한 취소는 종료 코드 0 입니다. 제거 명령(`module:uninstall` / `plugin:uninstall` / `template:uninstall` / `language-pack:uninstall`)도 같은 규칙입니다. `--force` 는 확인 생략에 더해 같은 판 재적용·다운그레이드 허용·코어 호환 검사 생략·같은 판 업그레이드 스텝 재실행·멈춘 업데이트 정리를 함께 켜므로, 그 효과가 필요한 경우에만 붙입니다. 언어팩 명령(`language-pack:update`)은 확인을 묻지 않지만, 확장 일괄 갱신 스크립트를 같은 형태로 돌릴 수 있도록 `--yes` 를 받습니다(효과 없음). `--yes` 를 가진 명령은 모두 `-y` 축약도 받습니다.
+
+**미서명 패키지 확인 (7.2.0~)**: GitHub·`--zip` 소스가 서명되지 않은 패키지(또는 이 서버에 sodium 이 없어 검증할 수 없는 패키지)면 업데이트 확인과 별도로 계속할지 한 번 더 묻습니다. 답할 수 없는 실행은 `--allow-unsigned` 가 없으면 아무것도 바꾸지 않고 **종료 코드 1** 로 끝나며, `--force`·`--yes` 는 이 확인을 대신하지 않습니다(`--yes` 를 준 대화형 실행도 이 확인은 묻습니다). 그래서 미서명 판을 받을 수 있는 자동 실행에는 `--force` 와 함께 `--allow-unsigned` 를 명시합니다. 환경설정 > 보안 「미서명 패키지 차단」이 켜져 있으면 `--allow-unsigned` 도 무시되고, 서명 불일치·신뢰하지 않는 키는 어떤 옵션으로도 진행하지 않습니다. `--source=bundled` 는 코어와 함께 배포된 원본이라 이 확인이 없습니다(기록 `bundled`). 상세: [패키지 서명](package-signing.md)
+
+**활성 디렉토리만 사라진 확장의 복구 (7.2.0~)**: DB 에는 설치(활성 포함) 행이 남았는데 `modules/{id}`·`plugins/{id}`·`templates/{id}` 활성 디렉토리만 없으면, 번들 소스 업데이트(`{type}:update {id} --force --source=bundled`)와 기본 소스 업데이트가 `_pending`·`_bundled` 원본을 활성 디렉토리로 복사한 뒤 업데이트를 이어 갑니다. 활성 상태는 그대로입니다. 종전에는 업데이트는 「찾을 수 없습니다」, 설치는 「이미 설치되어 있습니다」로 막혀 되돌릴 길이 없었습니다. GitHub·ZIP 소스와 원본이 없는 확장은 종전처럼 실패합니다.
 
 #### 외부 ZIP 직접 지정 (`--zip`)
 
@@ -131,9 +158,12 @@
 | 값 | 동작 |
 | --- | --- |
 | `--zip=/path/to/ext.zip` | 지정 ZIP 을 추출하여 소스로 사용. `manifest.json`(module.json / plugin.json / template.json)의 `identifier` 가 대상 확장과 일치해야 하며, `version` 은 manifest 기준으로 자동 결정 |
+| `--signature=/path/to/ext.zip.sig.json` | `--zip` 의 서명 파일 (7.2.0). 생략하면 ZIP 옆 `<zip>.sig.json` 을 자동으로 쓰고, 그것도 없으면 미서명. 지정한 파일이 없으면 시작 전에 실패 |
+| `--allow-unsigned` | 미서명·검증 불가 ZIP 을 확인 없이 계속 (7.2.0, 위 「미서명 패키지 확인」) |
 
 동작 요약:
 
+0. ZIP 을 풀기 전에 서명 파일로 종류·식별자·크기·SHA-256·키 신뢰·서명을 검증하고, 백업 전에 멈춘다 (7.2.0 — [검증 순서](package-signing.md#검증-순서))
 1. `extractFromZip()` 이 ZIP 을 임시 디렉토리에 추출 (GitHub zipball 의 `owner-repo-hash/` 래퍼든 평탄 루트든 자동 감지)
 2. `prepareZipSource()` 가 manifest 존재·JSON 해석·identifier 일치·version 존재를 검증
 3. manifest 의 `version` 을 `$toVersion` 으로 채택하고 staging → 적용 → 마이그레이션 → upgrade step 순 진행
@@ -151,12 +181,14 @@
 1. Service 레이어에서 훅 발행: `core.{type}.before_check_updates`
 2. Manager의 `checkAll{Type}ForUpdates()` 호출
 3. 각 확장별 `check{Type}Update($identifier)` 실행
-4. DB에 `update_available`, `latest_version`, `update_source`, `github_changelog_url` 갱신
+4. DB에 `update_available`, `latest_version`, `update_source`, `github_changelog_url` 갱신 — GitHub 조회에 실패한 확장(`check_error`)은 갱신하지 않고(번들 대체 판정은 결과의 `details` 에만 싣는다) 결과의 `failures` 에 담는다
 5. 훅 발행: `core.{type}.after_check_updates`
 
 ### GitHub 아카이브 다운로드 및 해석
 
 GitHub 소스 업데이트 시 아카이브 URL 해석 → 다운로드 → 압축 해제 과정을 거칩니다:
+
+**태그 릴리스와 서명 자산 (7.2.0~)**: 받을 판의 태그 릴리스에 `{identifier}-{version}.zip` 과 `{identifier}-{version}.zip.sig.json` 이 짝으로 있으면 그 자산을 받아 풀기 전에 검증합니다. 짝이 없으면 아래 태그 zipball 을 미서명으로 받는데, 미서명 정책이 허락하지 않으면 **받기 전에** 멈춥니다(관리자 화면은 409 경고 창, 명령은 확인 질문). 릴리스·태그가 없으면 `main`·`master` 브랜치로 물러서지 않고 실패합니다. 상세: [패키지 서명 — GitHub 설치는 태그 릴리스만](package-signing.md#github-설치는-태그-릴리스만)
 
 **v접두사 자동 감지 및 태그 실재 검증** (`resolveGithubArchiveUrl`):
 
@@ -218,6 +250,7 @@ GitHub 소스 업데이트 시 아카이브 URL 해석 → 다운로드 → 압�
 - **이어 돌기**: 기록이 남아 있으면 다음 업데이트는 기록의 시작 판부터 스텝을 고르고, **끝낸 스텝은 건너뛴다** — 못 끝낸 스텝만 판 순서대로 한 번씩 돈다.
 - **지우는 시점**: 백업을 지울 때(파일·DB 판·스텝이 되돌릴 수 없게 끝났을 때).
 - **예외로 실패했을 때**: 파일을 백업으로 되돌렸고 끝낸 스텝이 없으면 지운다. 끝낸 스텝이 있으면 남긴다(다음 시도가 그 스텝을 건너뜀). 파일을 되돌리지 못했으면 남긴다.
+- **되돌리지 않는 것**: 실패 처리는 파일만 백업으로 되돌린다. 이미 적용된 마이그레이션과 끝낸 스텝의 데이터 변경은 되돌리지 않는다 — 되돌리기보다 고친 판으로 다시 업데이트해 **앞으로 고친다**(코어와 같은 원칙, [core-update-system.md](../backend/core-update-system.md) 「되돌리지 않는 것 — 적용된 마이그레이션」).
 - 기록을 읽거나 쓰지 못해도 업데이트는 막지 않는다 — 기록 없는 종전 동작으로 돌아가고 경고 로그를 남긴다.
 - 템플릿도 기록을 남긴다(스텝은 없으므로 파일 교체와 판 기록까지가 판 전환이다).
 
@@ -225,7 +258,8 @@ GitHub 소스 업데이트 시 아카이브 URL 해석 → 다운로드 → 압�
 
 - **마이그레이션**: 없음 (템플릿은 DB 스키마 미사용)
 - **업그레이드 스텝**: 없음
-- **레이아웃 전략**: `layout_strategy` 파라미터로 충돌 처리 (→ [10. 레이아웃 충돌 전략](#10-템플릿-레이아웃-충돌-전략))
+- **판 기록 시점**: 이전 상태 복원 → 레이아웃 갱신(활성일 때, 확장 조각 재등록 포함) → DB 판·메타데이터 기록 → 백업 삭제(진행 기록 삭제) 순서다. 새 판은 레이아웃 갱신을 마친 **뒤**에 적는다 — 레이아웃 갱신 도중 프로세스가 죽어도(catch 가 돌지 않는다) DB 판이 옛 판으로 남아 「업데이트 확인」이 같은 업데이트를 다시 잡고, 다음 업데이트가 진행 기록을 이어받아 레이아웃을 다시 갱신한다. 판을 먼저 적으면 판은 새 판인데 레이아웃은 옛 판으로 남고, 상태도 이미 복원된 뒤라 멈춘 업데이트 정리 대상도 아니어서 드러나지 않는다
+- **레이아웃 전략**: `layout_strategy` 파라미터로 충돌 처리 (→ [10. 레이아웃 충돌 전략](#10-레이아웃-충돌-전략-3종-공통))
 - **Roles/Permissions/Menus**: 없음
 
 ### 에러 발생 시
@@ -302,7 +336,7 @@ cleanup 로직은 정적 + 동적 식별자를 병합한 expected 목록을 기�
 `uninstallModule() / uninstallPlugin()` 은 `$deleteData` 파라미터로 데이터 삭제 범위를 분기한다:
 
 - `$deleteData=false` (기본): 권한·메뉴·역할 **보존** (재설치 시 사용자 역할 할당 복원 가능). 테이블/vendor/storage 도 보존.
-- `$deleteData=true`: 권한·메뉴·역할 + 테이블 + vendor + storage 전수 삭제.
+- `$deleteData=true`: 권한·메뉴·역할 + 테이블 + vendor + storage 전수 삭제. 그 확장이 소유한 역할은 다른 확장이 붙인 권한(`roles: ['*']` 등)·메뉴·회원 연결이 남아 있어도 떼고 지운다(7.2.0).
 
 동적 권한/역할/메뉴가 있는 모듈은 이 정책이 특히 중요하다. 사용자가 의도적으로 "데이터도 함께 삭제" 를 체크하지 않는 한 동적 엔티티는 유지된다.
 
@@ -623,6 +657,72 @@ class Upgrade_2_0_0 implements UpgradeStepInterface
 | 플러그인 | `php artisan plugin:check-updates sirsoft-payment` | `php artisan plugin:update sirsoft-payment` | `php artisan plugin:update sirsoft-payment --force` |
 | 템플릿 | `php artisan template:check-updates sirsoft-admin_basic` | `php artisan template:update sirsoft-admin_basic` | `php artisan template:update sirsoft-admin_basic --force` |
 
+### 같은 판인데 파일만 다를 때 — `extension:reset-files-from-bundled` (7.2.0)
+
+판 번호를 올리지 않은 번들 변경이나 DB 를 함께 쓰는 두 번째 서버에서는 활성 폴더가 옛 파일에 머문다. 이때 `--force` 업데이트는
+같은 판 업그레이드 스텝 재실행·코어 호환 검사 생략까지 함께 켜므로, 파일만 맞추려면 다음 명령을 쓴다. 방향은 늘 번들 폴더 →
+활성 폴더이며(운영자 `custom/` 은 보존) 활성 폴더를 직접 고친 내용은 사라진다. 확인 질문이 없으므로 사람이 읽는 출력은 바꾸기 전에
+방향과 교체 대상 수를 먼저 알린다(`--json` 출력에는 섞지 않는다). 예전 이름 `extension:sync-files` 도 같은 동작으로 남아 있다
+(명령 목록에서 숨김, 사람이 읽는 출력에 새 이름 안내).
+
+```bash
+php artisan extension:reset-files-from-bundled [identifier] [--type=module|plugin|template|language-pack] [--migrate] [--dry-run] [--json]
+```
+
+| 항목 | 동작 |
+| --- | --- |
+| 대상 | 설치된 확장(모듈·플러그인·템플릿·언어팩) 중 DB 판 = 번들 판이고 내용 해시가 다른 것. 해시는 상대경로 정렬 + 파일 sha256 합성이며 `vendor/`·`node_modules/`·`.git`·`custom/` 은 빼고 `dist/` 는 넣는다 |
+| 언어팩 | `lang-packs/_bundled/<id>` → `lang-packs/<id>`. 판 번호·DB 상태는 그대로이고, 교체 뒤 opcache·번역 레지스트리·번역기를 비우고 `ext.cache_version` 을 올려 화면 언어 파일을 새로 받게 한다. 판이 다르면 `language-pack:update` 를 안내한다 |
+| 레이아웃 병합 기준 | 모듈·플러그인·템플릿은 교체 직전 활성 폴더(이전 판)의 레이아웃·조각을 컴파일해, 병합 기준(`original_content`)이 비어 있고 원본 해시가 맞는 행에만 기준을 채운다 — 이어지는 keep 레이아웃 갱신이 운영자 수정본에 새 판을 병합할 수 있게(DB 를 함께 쓰는 서버에서는 다른 서버의 업데이트 백업이 이 서버 표의 기준을 채우지 않는다). 실패해도 파일 교체는 계속한다 |
+| 판이 다름 | 대상이 아니다 — 업데이트 명령을 안내하고, 확장을 지정했으면 종료 코드 1 |
+| 순서 | 작업 잠금 → `ExtensionPendingHelper::copyToActive()` 원자 교체(`custom/` 보존) → 오토로드·훅·config 캐시 → 라우트 캐시 → opcache → `ext.cache_version` 증가 |
+| `--migrate` | 그 확장의 미실행 마이그레이션만 실행 |
+| 건드리지 않는 것 | 판 번호·업그레이드 스텝·레이아웃 본문(본문·원본 해시·잠금 판은 그대로 — 비어 있는 병합 기준만 위 규칙으로 채운다) |
+| 종료 코드 | 교체 실패·잠금 경합·지정 확장이 대상 아님이면 1, 알 수 없는 `--type` 이면 2 |
+
+DB·캐시를 함께 쓰는 검수 서버가 먼저 업데이트한 판을 운영 서버에서 마무리할 때는 이 명령을 단독으로 부르지 말고
+`php artisan stage:apply-to-live` 를 쓴다 — 파일 맞추기 → 레이아웃 갱신(keep) → 미뤄 둔 정리 실행을 차례로 하고 실패한 단계에서 멈춘다.
+순서와 옵션은 [runtime-role.md](../backend/runtime-role.md) 「운영 서버 배포 순서」.
+
+### 설치 상태를 스크립트로 읽을 때 — `extension:list` (7.2.0)
+
+스크립트가 「이 확장이 설치·활성인가, 판은 몇인가」를 알려고 `*:install`·`*:activate` 를 먼저 쳐 보고 종료 코드로 상태를 추측하지 않도록, 읽기 전용 조회 명령을 둔다. `*:check-updates` 는 조회처럼 보이지만 DB 를 갱신하므로 상태 확인에 쓰지 않는다.
+
+```bash
+php artisan extension:list [--type=all|module|plugin|template|language-pack] [--json]
+```
+
+| 항목 | 동작 |
+| --- | --- |
+| 쓰기 | 없음 — DB·캐시·파일을 바꾸지 않고 GitHub 도 조회하지 않는다 |
+| 대상 | 설치된 확장(DB 행) + 번들(`_bundled`)에만 있고 설치되지 않은 확장(`status: not_installed`). 종류 → 식별자 순 |
+| `--json` 없음 | 같은 내용을 표로 출력 |
+| 종료 코드 | 0 성공 · 1 설치 전(확장 테이블 없음, `--json` 이면 `{"schema":1,"error":"not_installed",…}`) · 2 알 수 없는 `--type` |
+
+`--json` 형식(`schema: 1` 고정 — 키를 바꾸거나 빼면 `schema` 를 올린다):
+
+| 키 | 뜻 |
+| --- | --- |
+| `schema` | 형식 번호 (지금 1) |
+| `core_version` | 실행 중인 코어 판 (`config('app.version')`) |
+| `core_version_on_disk` | 디스크 `config/app.php` 의 기본값 — 실행 중인 값과 다르면 `.env` 의 `APP_VERSION`·config 캐시가 옛 판이다 |
+| `items[].identifier` · `type` | 식별자 · `module`·`plugin`·`template`·`language-pack` |
+| `items[].template_type` | 템플릿이면 `admin`·`user`, 그 밖은 `null` |
+| `items[].status` | DB 상태(`active`·`inactive`·`updating`·`installing`·`uninstalling`·`uninstalled`, 언어팩은 `installed`·`active` 등), 설치되지 않은 번들은 `not_installed` |
+| `items[].version` | DB 판 (설치 전이면 `null`) |
+| `items[].active_dir_version` | 활성 폴더 매니페스트 판 (폴더가 없으면 `null`) — DB 판과 다르면 파일만 바뀐 상태다 |
+| `items[].bundled_version` | `_bundled` 매니페스트 판 (없으면 `null`) |
+| `items[].update_available` | DB 에 저장된 값 그대로(다시 확인하지 않음). 언어팩은 저장된 `latest_version` 이 설치 판보다 높은지. 설치 전이면 `null` |
+| `items[].vendor_mode` | 모듈·플러그인의 Vendor 설치 모드, 그 밖은 `null` |
+| `items[].layout_modified_count` | 템플릿만 — 운영자가 고친 레이아웃 수, 그 밖은 `null` |
+
+```json
+{"schema":1,"core_version":"7.2.0","core_version_on_disk":"7.2.0","items":[
+  {"identifier":"sirsoft-board","type":"module","template_type":null,"status":"active","version":"1.3.0","active_dir_version":"1.3.0","bundled_version":"1.3.0","update_available":false,"vendor_mode":"auto","layout_modified_count":null},
+  {"identifier":"sirsoft-admin_basic","type":"template","template_type":"admin","status":"active","version":"1.2.0","active_dir_version":"1.2.0","bundled_version":"1.2.0","update_available":false,"vendor_mode":null,"layout_modified_count":0}
+]}
+```
+
 ### 예외: 초기 개발 (아직 _bundled에 미등록)
 
 신규 확장을 처음 개발할 때는 활성 디렉토리에서 직접 작업할 수 있습니다. 단, **최초 개발 완료 후 _bundled에 반영하는 시점부터** 이 규칙이 적용됩니다.
@@ -793,9 +893,18 @@ Body: { "layout_strategy": "keep" }
 
 **기준 찾기** — ① `original_content`(해시가 `original_content_hash` 와 맞을 때) ② 업데이트 직전 백업 디렉토리의 옛 파일을 컴파일해 해시가 맞으면 사용 ③ 현재 활성 파일(해시가 맞을 때) ④ 모두 실패하면 `kept_no_base`. 7.1.0 이전에 설치돼 `original_content` 가 비어 있는 행은 ②로 기준을 찾고, 한 번 병합되면 그 뒤로는 ①이 채워진다. 템플릿 오버라이드(`layouts/overrides/**`) 행은 7.1.0 이전에 원본 해시조차 없이 등록돼 운영자가 만든 화면(`kept_name_collision`)처럼 보이므로, 7.1.0 업그레이드 스텝이 활성 디렉토리의 오버라이드 파일로 원본 본문·해시를 채운다(파일과 이름이 맞는 행만 — 편집기에서 만든 화면은 그대로).
 
-**충돌 뒤 기준 이동** — 충돌이 난 행도 `original_content` 를 새 버전 원본으로 옮긴다. 겹친 새 버전 변경은 **한 번만 알린다** — 그 변경을 받으려면 그 화면만 「레이아웃 갱신」(덮어쓰기)하거나 편집기 버전 이력에서 고른다.
+**충돌 뒤 기준 이동** — 충돌이 난 행도 `original_content` 를 새 버전 원본으로 옮긴다. 겹친 새 버전 변경은 **한 번만 알린다** — 그 변경을 받으려면 그 화면만 「레이아웃 갱신」(덮어쓰기)하거나 갱신 창에서 그 화면에 「새 판 적용」을 고른다.
 
-**lock_version·버전 이력** — 병합으로 `content` 가 바뀌면 `lock_version` 을 +1 한다(편집기에 옛 판을 열어 둔 운영자의 저장은 409). 버전 이력에는 병합 직전 판(기준선)과 병합 판 두 행을 남기고, 병합 행의 `changes_summary.source = extension_update`.
+**lock_version·버전 이력** — 병합으로 `content` 가 바뀌면 `lock_version` 을 +1 한다(편집기에 옛 판을 열어 둔 운영자의 저장은 409). 버전 이력에는 병합 직전 판(기준선)과 병합 판 두 행을 남기고, 병합 행의 `changes_summary.source = extension_update`. 겹친 곳만 있어 본문이 그대로인 충돌은 되돌릴 판이 없으므로 버전 행을 남기지 않는다 — 충돌은 업데이트 결과와 활동 로그(`conflict_count`)로 알린다.
+
+**화면별 결정 값** — 관리자 [레이아웃 갱신]·업데이트 창의 화면별 선택과 API `decisions`·CLI `--decisions=<파일>` 은 `{ "<entries[].key>": "<값>" }` 꼴이다.
+값은 git 용어를 빌렸지만 방향은 고정이다 — `ours` = 지금 DB 의 운영자 판, `theirs` = 확장 파일의 새 판.
+
+| 값 | 화면 문구 | 동작 |
+| --- | --- | --- |
+| (키 없음) | 겹치지 않는 곳만 반영 (권장) | 기본 병합 — 겹친 곳은 운영자 판, 겹치지 않은 새 판 변경은 반영 |
+| `keep-ours` | 운영자 판 유지 | 그 화면을 운영자 판 그대로 둔다(새 판 변경 0) |
+| `take-theirs` | 새 판 적용 | 그 화면만 새 판으로 덮는다 — 덮기 직전 운영자 판은 버전 기록에 남는다 |
 
 ### 활성화·템플릿 전환도 운영자 수정을 보존한다
 
@@ -823,22 +932,25 @@ Body: { "layout_strategy": "keep" }
 
 | 커맨드 | 설명 |
 |--------|------|
-| `module:install [identifier] [--vendor-mode=auto] [--force]` | 모듈 설치 (`--force` 시 활성 디렉토리를 원본으로 덮어쓰고 재설치) |
+| `module:install [identifier] [--vendor-mode=auto] [--force] [--layout-source=auto\|json] [--with-dependencies] [--with-language-packs=none\|all\|식별자,…] [--rebuild-search-index]` | 모듈 설치 (`--force` 시 활성 디렉토리를 원본으로 덮어쓰고 재설치, `--with-dependencies`·`--with-language-packs` 는 7.1.4) |
 | `module:check-updates [identifier?]` | 모듈 업데이트 확인 (전체 또는 단일) |
-| `module:update [identifier] [--force] [--vendor-mode=auto] [--layout-strategy=overwrite]` | 모듈 업데이트 실행 |
-| `plugin:install [identifier] [--vendor-mode=auto] [--force]` | 플러그인 설치 (`--force` 동작은 모듈과 동일) |
+| `module:update [identifier] [--force] [--yes] [--source=auto\|bundled\|github] [--zip=] [--signature=] [--allow-unsigned] [--layout-strategy=overwrite\|keep] [--vendor-mode=auto] [--layout-source=auto\|json] [--dry-run [--json]] [--decisions=<파일>] [--rebuild-search-index]` | 모듈 업데이트 실행 |
+| `plugin:install [identifier] [--vendor-mode=auto] [--force] [--layout-source=auto\|json] [--with-dependencies] [--with-language-packs=none\|all\|식별자,…] [--rebuild-search-index]` | 플러그인 설치 (옵션 동작은 모듈과 동일) |
 | `plugin:check-updates [identifier?]` | 플러그인 업데이트 확인 (전체 또는 단일) |
-| `plugin:update [identifier] [--force] [--vendor-mode=auto] [--layout-strategy=overwrite]` | 플러그인 업데이트 실행 |
-| `template:install [identifier] [--force]` | 템플릿 설치 (`--force` 동작은 모듈과 동일) |
+| `plugin:update [identifier] [--force] [--yes] [--source=auto\|bundled\|github] [--zip=] [--signature=] [--allow-unsigned] [--layout-strategy=overwrite\|keep] [--vendor-mode=auto] [--layout-source=auto\|json] [--dry-run [--json]] [--decisions=<파일>] [--rebuild-search-index]` | 플러그인 업데이트 실행 |
+| `template:install [identifier] [--force] [--layout-source=auto\|json] [--with-dependencies] [--with-language-packs=none\|all\|식별자,…]` | 템플릿 설치 (옵션 동작은 모듈과 동일) |
 | `template:check-updates [identifier?]` | 템플릿 업데이트 확인 (전체 또는 단일) |
-| `template:update [identifier] [--force] [--layout-strategy=overwrite]` | 템플릿 업데이트 실행 |
+| `template:update [identifier] [--force] [--yes] [--source=auto\|bundled\|github] [--zip=] [--signature=] [--allow-unsigned] [--layout-strategy=overwrite\|keep] [--layout-source=auto\|json] [--dry-run [--json]] [--decisions=<파일>]` | 템플릿 업데이트 실행 |
+| `extension:list [--type=all\|module\|plugin\|template\|language-pack] [--json]` | 설치·번들 확장 상태 조회 (쓰기 없음, [형식](#설치-상태를-스크립트로-읽을-때--extensionlist-720)) |
 
-> 단일 `check-updates`는 `checkXxxUpdate()` 호출 후 커맨드에서 DB 갱신 (`updateByIdentifier()`)
-> `--layout-strategy`: 3종 공통. `overwrite` (기본) 또는 `keep` (운영자 수정본에 새 버전 3자 병합 + 결과 표 출력). 섹션 10 참조
+> 단일 `check-updates`는 `checkXxxUpdate()` 호출 후 커맨드에서 DB 갱신 (`updateByIdentifier()`). GitHub 조회에 실패한 확장이 있으면 실패 표 + 종료 코드 1 ([GitHub 조회 실패](#github-조회-실패-check_error-720))
+> `--layout-strategy`: 3종 공통. `overwrite` (기본) 또는 `keep` (운영자 수정본에 새 버전 3자 병합 + 결과 표 출력). 섹션 10 참조. 기본값은 `*:update` 기준이다 — `*:refresh-layout`(관리자 [레이아웃 갱신] 포함)은 7.2.0 부터 `keep` 이 기본이고 덮으려면 `--layout-strategy=overwrite`(API `layout_strategy=overwrite`)를 준다. 두 명령 모두 `--dry-run`(`--json`)으로 화면별 판정을 미리 보고 `--decisions=<파일>` 로 화면별 결정을 넘길 수 있다
 > `--layout-source`: 설치·업데이트·`refresh-layout` 9개 커맨드 공통. `auto`(`.g7.html` 우선) 또는 `json`(짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). **생략하면 설정 `LAYOUT_INSTALL_SOURCE`(`template.layout_markup.install_source`, 기본 `auto`)를 따른다**(7.1.1~ — 그 전에는 생략 시 항상 `auto` 여서 `.env` 의 `json` 이 덮였다)
 > 관리자 화면: 확장(템플릿·모듈·플러그인) 설치·업데이트·레이아웃 갱신 창의 접힌 「고급 설정」에서 같은 값을 고른다(자동(권장) / 원본 JSON 우선(문제 해결용)). 창을 열 때마다 자동으로 돌아가며, 고른 값은 요청 본문 `layout_source` 로 가서 **그 요청 동안만** 적용된다
 > `--vendor-mode`: 모듈/플러그인 전용. `auto|composer|bundled` — Vendor 설치 방식 선택 (템플릿 미지원)
+> `--zip`·`--signature`·`--allow-unsigned`(서명 옵션 7.2.0)·`--source`·`--yes`·`--dry-run`·`--decisions`·`--rebuild-search-index` 의 뜻과 제약은 [module-commands.md 「모듈 업데이트」](module-commands.md#모듈-업데이트)에 있다 — 플러그인·템플릿도 같다(`--vendor-mode`·`--rebuild-search-index` 는 템플릿에 없다)
 > `--force` (update): 버전 비교를 건너뛰고 강제 재설치 (파일 손상, 수동 수정 복원 시 사용)
+> `--allow-unsigned`·`--signature=` (update, 7.2.0): 미서명 패키지 확인과 `--zip` 의 서명 파일 지정 — §2 「미서명 패키지 확인」, [패키지 서명](package-signing.md#artisan-명령). install 은 `_bundled`·`_pending` 원본만 설치하므로 이 옵션이 없다
 > `--force` (install): 이미 설치된 확장이라도 `_bundled`/`_pending` 원본으로 활성 디렉토리를 덮어쓰고 재설치 — 불완전 활성 디렉토리(manifest 누락 등) 복구 시 사용
 > 코어 업데이트 (`core:update`) 완료 후에는 `_bundled` 에 새 버전이 있는 확장을 감지하여 일괄 업데이트 인터랙티브 프롬프트가 자동으로 표시됨
 > 7.1.1+ 코어 업데이트는 새 배포본의 `_bundled` 를 통째로 배치하지 않는다 — 설치된 확장·그 의존 번들·이미 디스크에 있는 번들만 갱신하고, 나머지는 운영자가 고른 것만 배치한다(`--bundled-sources`). 일괄 업데이트 대상은 원래 DB 에 설치된 확장뿐이라 이 판정과 겹치지 않는다. 배치하지 않은 번들은 나중에 `php artisan core:bundled-sources place <id>` 로 `_bundled` 에 놓은 뒤 `{type}:install` 로 설치한다([코어 업데이트 시스템 — 공식 번들 배치 판정](../backend/core-update-system.md#공식-번들-배치-판정-711))
@@ -855,7 +967,7 @@ Body: { "layout_strategy": "keep" }
 |--------|------|------|------|
 | POST | `/api/admin/modules/check-updates` | `core.modules.install` | 모듈 업데이트 일괄 확인 |
 | GET | `/api/admin/modules/{moduleName}/check-modified-layouts` | `core.modules.read` | 수정된 레이아웃 확인 |
-| POST | `/api/admin/modules/{moduleName}/update` | `core.modules.install` | 모듈 업데이트 실행 (`layout_strategy`, `vendor_mode` body) |
+| POST | `/api/admin/modules/{moduleName}/update` | `core.modules.install` | 모듈 업데이트 실행 (`layout_strategy`, `vendor_mode`, `allow_unsigned` body — 미서명이면 409 `package_unsigned`) |
 
 ### 플러그인
 
@@ -863,7 +975,7 @@ Body: { "layout_strategy": "keep" }
 |--------|------|------|------|
 | POST | `/api/admin/plugins/check-updates` | `core.plugins.install` | 플러그인 업데이트 일괄 확인 |
 | GET | `/api/admin/plugins/{pluginName}/check-modified-layouts` | `core.plugins.read` | 수정된 레이아웃 확인 |
-| POST | `/api/admin/plugins/{pluginName}/update` | `core.plugins.install` | 플러그인 업데이트 실행 (`layout_strategy`, `vendor_mode` body) |
+| POST | `/api/admin/plugins/{pluginName}/update` | `core.plugins.install` | 플러그인 업데이트 실행 (`layout_strategy`, `vendor_mode`, `allow_unsigned` body — 미서명이면 409 `package_unsigned`) |
 
 ### 템플릿
 
@@ -871,7 +983,9 @@ Body: { "layout_strategy": "keep" }
 |--------|------|------|------|
 | POST | `/api/admin/templates/check-updates` | `core.templates.install` | 템플릿 업데이트 일괄 확인 |
 | GET | `/api/admin/templates/{templateName}/check-modified-layouts` | `core.templates.read` | 수정된 레이아웃 확인 |
-| POST | `/api/admin/templates/{templateName}/update` | `core.templates.install` | 템플릿 업데이트 실행 (`layout_strategy` body) |
+| POST | `/api/admin/templates/{templateName}/update` | `core.templates.install` | 템플릿 업데이트 실행 (`layout_strategy`, `allow_unsigned` body — 미서명이면 409 `package_unsigned`) |
+
+> 세 업데이트 API 모두 서명 불일치·신뢰하지 않는 키는 422(`package_signature_invalid`·`package_signer_untrusted`)다. 응답 `errors.integrity` 형식: [패키지 서명 — 오류 응답](package-signing.md#오류-응답)
 
 ### 훅 (Hook)
 
@@ -1020,7 +1134,7 @@ class NotificationTemplate extends Model
 | ---- | -------------- | --------- |
 | `App\Models\NotificationTemplate` | `subject`, `body`, `click_url`, `recipients`, `is_active` | 코어 |
 | `App\Models\NotificationDefinition` | `name`, `is_active` | 코어 |
-| `App\Models\Schedule` | `expression`, `command`, `timeout`, `is_active` | 코어 (사전 설계, 시더 미존재) |
+| `App\Models\Schedule` | `expression`, `frequency`, `timeout`, `is_active`, `without_overlapping`, `on_one_server`, `dispatch_mode`, `queue_connection`, `queue_name`, `history_mode`, `notify_on_failure`, `run_in_maintenance` + 다국어 `label`·`description`(로케일 단위) | 코어 (7.2.0 — `CoreScheduleSeeder`·확장 `getSchedules()` 동기화) |
 | `Modules\Sirsoft\Board\Models\BoardType` | `name` | 게시판 모듈 |
 | `Modules\Sirsoft\Ecommerce\Models\ClaimReason` | `name`, `sort_order`, `is_active` | 이커머스 모듈 |
 
@@ -1082,43 +1196,53 @@ class Upgrade_1_3_0 implements UpgradeStepInterface
 
 > 파일: `app/Listeners/ExtensionUpdateQueueListener.php`
 
-모듈·플러그인에 **코드가 새로 들어오는 사건**(설치·활성화·업데이트 성공) 뒤 `Artisan::call('queue:restart')` 를 자동 실행합니다. 상주 큐 워커가 이전 코드(클래스·바인딩·리스너)로 계속 실행되는 문제를 방지합니다.
+세 확장 종류(모듈·플러그인·템플릿)의 설치·활성화·업데이트·제거가 성공하면 `Artisan::call('queue:restart')` 를 자동 실행합니다(제거와 템플릿은 7.2.0~). 상주 큐 워커가 이전 코드(클래스·바인딩·리스너)나 지운 확장의 코드로 계속 실행되는 문제를 방지합니다.
 
-- 구독 훅: `core.modules.after_install`·`after_activate`·`after_update`, `core.plugins.after_install`·`after_activate`·`after_update` (priority 100)
+- 구독 훅: `core.modules.after_install`·`after_activate`·`after_update`·`after_uninstall`, `core.plugins.after_install`·`after_activate`·`after_update`·`after_uninstall`, `core.templates.after_install`·`after_activate`·`after_version_update`·`after_uninstall` (priority 100). 템플릿 활성화 완료 훅은 식별자 없이 정보 배열 하나를 넘긴다
+- 플러그인 제거 완료 훅은 실패에도 발화하므로(인자 `$result`) 결과가 true 일 때만 재시작한다. 모듈·템플릿 제거 완료 훅은 성공일 때만 발화한다
 - **동기 실행(`'sync' => true`)**: 큐로 보내면 "큐 워커를 재시작하는 작업을 그 큐 워커가 실행" 하게 되고, CLI 커맨드는 실행 후 곧바로 종료되어 쌓인 작업을 처리할 주체가 없다
 - 진입점: 완료 훅을 Manager 가 발화하므로 어드민 UI 와 `module:update` 등 CLI 커맨드 양쪽에서 동작한다
-- 대상 밖: 템플릿(PHP 코드 없음), 제거·비활성화 — 상주 워커는 사라진 확장의 클래스를 메모리에 들고 있을 수 있으나 새로 실행되는 코드는 없다
-- `after_update` 는 "업데이트할 것 없음" 에서도 발화하므로 `result.success` 가 true 일 때만 재시작한다
+- 대상 밖: 비활성화. 켜진 확장의 제거는 비활성화를 먼저 거치지만 재시작 신호는 제거 완료 때 한 번이다
+- `after_update`·`after_version_update` 는 "업데이트할 것 없음" 에서도 발화하므로 `result.success` 가 true 일 때만 재시작한다
 - 실패 시: warning 로그만 기록 (예외 전파 안 함)
 - 자동 등록: `CoreServiceProvider::registerCoreHookListeners()` 스캔. **배포 시 `php artisan hooks:cache` 로 훅 캐시를 다시 굽는다** — 캐시(`bootstrap/cache/hooks.php`)는 파일 부재·손상에만 폴백하므로, 굽지 않으면 이전 구독(`sync` 없음)이 그대로 쓰인다
 
-### 확장 스케줄 등록
+### 확장 스케줄 동기화 (7.2.0~)
 
-> 파일: `routes/console.php`
+> 파일: `app/Extension/Helpers/ExtensionScheduleSyncHelper.php` · 상세: [module-schedules.md](module-schedules.md)
 
-활성 모듈/플러그인의 `getSchedules()` 메서드를 읽어 Laravel 스케줄러에 자동 등록합니다.
+7.2.0 부터 `routes/console.php` 는 확장 선언을 직접 읽지 않습니다. 모듈/플러그인의 `getSchedules()` 선언은 선언형 산출물 동기화(`syncDeclarativeArtifacts()`)의 마지막 단계에서 `schedules` 표의 행으로 동기화되고, 코어 스케줄러는 그 행을 읽어 실행합니다([scheduling.md](../backend/scheduling.md)).
 
 ```php
-// module.php에서 정의
+// module.php에서 정의 — 항목 키는 코어 카탈로그(config/core.php schedules)와 같고 name 을 더한다
 public function getSchedules(): array
 {
     return [
         [
+            'name' => 'sync-stock',
+            'type' => 'artisan',
+            'label' => ['ko' => '재고 동기화', 'en' => 'Sync stock'],
             'command' => 'sirsoft-ecommerce:sync-stock',
-            'schedule' => 'hourly',           // 또는 cron: '*/30 * * * *'
-            'description' => '재고 동기화',
-            'enabled_config' => 'sirsoft-ecommerce.stock.auto_sync',
+            'expression' => '0 * * * *',
+            'enabled_condition' => [
+                ['source' => 'module_setting', 'key' => 'stock.auto_sync', 'operator' => 'truthy', 'default' => true],
+            ],
         ],
     ];
 }
 ```
 
-- cron expression vs 메서드명 자동 분기
-- `enabled_config`: 확장 설정값으로 조건부 활성화
-- 중복 실행 방지(7.1.5 기본): 모든 확장 예약 작업에 `withoutOverlapping(1440)`·`onOneServer()` 를 건다. 이전 회차가 끝나지 않았으면 다음 회차를 건너뛰고, 다중 서버에서는 한 서버만 실행한다
+- 행 식별: (`module`|`plugin`, 확장 식별자, `name`). 업데이트 때 새 항목은 생성, 기존 항목은 운영자 수정(`user_overrides`)을 보존하며 갱신, 선언에서 빠진 항목은 이력과 함께 삭제
+- 명령·유형·이름·실행 조건·시간대는 선언이 소유한다(관리자 화면에서 잠김). 주기·실행 방식·명칭은 운영자가 바꾸고 보존된다
+- 빈 선언인데 기존 행이 있으면 정리를 막고 경고만 남긴다(데이터 손실 방어)
+- 비활성 확장의 행은 남지만 실행되지 않는다. 「데이터도 함께 삭제」로 제거하면 행·이력을 지운다
+- 업데이트는 선언 동기화를 업그레이드 스텝보다 먼저 한다 — 업그레이드 스텝이 옛 설정값을 행으로 옮길 수 있다
+- 7.1.x 형식(`schedule`·`enabled_config`·`description` 문자열)은 `normalizeLegacySchedules()` 가 새 형식으로 바꾼다. 이때 `name` 은 명령 문자열에서 만들어진다(`sirsoft-ecommerce:sync-stock` → `sirsoft-ecommerce-sync-stock`)
+- 7.1.x 형식 선언은 중복 실행 방지가 기본으로 걸린다(7.1.5 와 같은 기본값). `without_overlapping` 을 적지 않으면 잠금 유지 1440분으로, `on_one_server` 를 적지 않으면 한 서버에서만 실행으로 행이 만들어진다. 이전 회차가 끝나지 않았으면 다음 회차를 건너뛴다
   - `'without_overlapping' => false` 로 끈다. 정수(분)를 주면 그 시간 뒤 잠금이 만료된다
+  - 잠금은 실행이 끝나면 바로 풀린다. 끝나지 않은 실행의 잠금은 유지 시간이 지나면 만료되고, 큐 워커가 실행 도중 죽으면 작업의 실패 처리가 `ScheduleExecutor::markAbandoned()` 로 그 실행을 실패로 마감하면서 잠금을 강제로 푼다
   - `'on_one_server' => false` 로 끈다. 서버 사이 배제는 공유 캐시 스토어에서만 효력이 있다
-  - 비정상 종료로 남은 잠금은 만료 시간이 지나거나 `php artisan schedule:clear-cache` 로 풀린다(캐시 비우기로는 풀리지 않는다 — 잠금 폴더가 따로다)
+  - 새 형식(`name` 이 있는 선언)은 `without_overlapping` 을 적지 않으면 0(끔)이다 — [module-schedules.md](module-schedules.md)
 
 ---
 
@@ -1131,6 +1255,7 @@ public function getSchedules(): array
 | ExtensionPendingHelper | `app/Extension/Helpers/ExtensionPendingHelper.php` |
 | ExtensionRoleSyncHelper | `app/Extension/Helpers/ExtensionRoleSyncHelper.php` |
 | ExtensionMenuSyncHelper | `app/Extension/Helpers/ExtensionMenuSyncHelper.php` |
+| ExtensionScheduleSyncHelper | `app/Extension/Helpers/ExtensionScheduleSyncHelper.php` |
 | SettingsMigrator | `app/Extension/Helpers/SettingsMigrator.php` |
 | ExtensionUpdateQueueListener | `app/Listeners/ExtensionUpdateQueueListener.php` |
 | UpgradeStepInterface | `app/Contracts/Extension/UpgradeStepInterface.php` |

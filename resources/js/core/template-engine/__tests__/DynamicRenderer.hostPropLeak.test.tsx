@@ -1,8 +1,8 @@
 /**
  * DynamicRenderer.hostPropLeak.test.tsx
  *
- * @scenario leak_path=extension_point_host, prop_shape=object
- * @effects extension_point_host_clean, extension_point_host_keeps_dom_standard_attributes, icon_not_autobound, unmarked_component_still_autobinds
+ * 조합 요약(마커 아님 — 평문): leak_path=extension_point_host 와 form_auto_binding, prop_shape=object 와 array 와 primitive 와 dom_standard
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): extension_point_host_clean, extension_point_host_keeps_dom_standard_attributes, extension_point_host_class_expression_evaluated, icon_not_autobound, unmarked_component_still_autobinds
  *
  * 호스트 DOM 으로 새면 안 되는 props 두 갈래를 잠근다.
  *
@@ -85,6 +85,8 @@ describe('DynamicRenderer — 호스트 DOM prop 누출 차단', () => {
     );
 
   describe('① extension_point 컨테이너', () => {
+    // @scenario leak_path=extension_point_host, prop_shape=object
+    // @effects extension_point_host_clean
     it('객체/배열 props 가 호스트 div 속성으로 새지 않는다', () => {
       const componentDef: ComponentDefinition = {
         id: 'address_search_slot',
@@ -108,6 +110,8 @@ describe('DynamicRenderer — 호스트 DOM prop 누출 차단', () => {
       expect(el.getAttribute('readonlyfields')).toBeNull();
     });
 
+    // @scenario leak_path=extension_point_host, prop_shape=primitive
+    // @effects extension_point_host_clean
     it('원시값 페이로드도 호스트 속성으로 새지 않는다', () => {
       // `html_editor` 계열 확장점이 실제로 싣는 키들 — 전부 주입 자식이 소비하는 페이로드다.
       const componentDef: ComponentDefinition = {
@@ -140,6 +144,8 @@ describe('DynamicRenderer — 호스트 DOM prop 누출 차단', () => {
       }
     });
 
+    // @scenario leak_path=extension_point_host, prop_shape=dom_standard
+    // @effects extension_point_host_keeps_dom_standard_attributes
     it('DOM 표준 속성(data-*·aria-*·role·title)과 id·className 은 그대로 통과한다 (regression 가드)', () => {
       const componentDef: ComponentDefinition = {
         id: 'ep_passthrough',
@@ -165,6 +171,80 @@ describe('DynamicRenderer — 호스트 DOM prop 누출 차단', () => {
       expect(el.className).toContain('wrapper');
       expect(el.id).toBe('ep_passthrough');
     });
+
+    /**
+     * 호스트 className·DOM 속성의 `{{…}}` 는 평가된 값으로 붙는다 (engine-v1.94.0).
+     *
+     * 반복 컨텍스트(renderItemChildren)는 평가한 props 로 호스트를 만들었지만, 일반 경로는 평가 전 원본을 넘겨
+     * 게시판 관리자 글 상세 본문 확장점의 래퍼에 `{{post?.data?.content_mode`·`===`·`'html'` 같은 식 조각이 클래스로 붙었다.
+     *
+     * @scenario leak_path=extension_point_host, prop_shape=primitive
+     * @effects extension_point_host_class_expression_evaluated
+     */
+    it('className 의 단일 식은 평가된 값으로 붙는다', () => {
+      const componentDef: ComponentDefinition = {
+        id: 'ep_class_single',
+        type: 'extension_point',
+        name: 'html_content',
+        props: {
+          'data-testid': 'ep-class-single',
+          content: '{{post.content}}',
+          className: "{{_local.expanded ? 'prose' : 'collapsed-content'}}",
+        },
+      } as any;
+
+      renderDef(componentDef, { post: { content: '<p>본문</p>' }, _local: { expanded: false } });
+
+      const el = screen.getByTestId('ep-class-single');
+      expect(el.className).toBe('collapsed-content');
+      expect(el.className).not.toContain('{{');
+    });
+
+    /**
+     * @scenario leak_path=extension_point_host, prop_shape=primitive
+     * @effects extension_point_host_class_expression_evaluated
+     */
+    it('className 의 문자열 보간은 식 자리만 평가되고 나머지 클래스는 그대로다', () => {
+      const componentDef: ComponentDefinition = {
+        id: 'ep_class_interp',
+        type: 'extension_point',
+        name: 'html_content',
+        props: {
+          'data-testid': 'ep-class-interp',
+          className: "board:prose {{post.content_mode === 'html' ? 'board:prose-p:my-2' : ''}} board:max-w-none",
+        },
+      } as any;
+
+      renderDef(componentDef, { post: { content_mode: 'html' } });
+
+      const el = screen.getByTestId('ep-class-interp');
+      expect(el.className.split(/\s+/)).toEqual(['board:prose', 'board:prose-p:my-2', 'board:max-w-none']);
+    });
+
+    /**
+     * @scenario leak_path=extension_point_host, prop_shape=dom_standard
+     * @effects extension_point_host_class_expression_evaluated, extension_point_host_keeps_dom_standard_attributes
+     */
+    it('통과시키는 DOM 표준 속성의 식도 평가된다', () => {
+      const componentDef: ComponentDefinition = {
+        id: 'ep_attr_expr',
+        type: 'extension_point',
+        name: 'ep_attr_expr',
+        props: {
+          'data-testid': 'ep-attr-expr',
+          'data-mode': '{{post.content_mode}}',
+          'aria-label': '본문 {{post.title}}',
+          hidden: '{{post.is_hidden}}',
+        },
+      } as any;
+
+      renderDef(componentDef, { post: { content_mode: 'text', title: '공지', is_hidden: false } });
+
+      const el = screen.getByTestId('ep-attr-expr');
+      expect(el.getAttribute('data-mode')).toBe('text');
+      expect(el.getAttribute('aria-label')).toBe('본문 공지');
+      expect(el.hasAttribute('hidden')).toBe(false);
+    });
   });
 
   describe('② Form 자동 바인딩 대상 제한', () => {
@@ -188,6 +268,8 @@ describe('DynamicRenderer — 호스트 DOM prop 누출 차단', () => {
       },
     };
 
+    // @scenario leak_path=form_auto_binding, prop_shape=array, autobinding_declared=false
+    // @effects icon_not_autobound
     it('`autoBinding: false` 컴포넌트는 name 이 폼 필드와 겹쳐도 value 를 받지 않는다', () => {
       renderDef(
         formTree({
@@ -206,6 +288,8 @@ describe('DynamicRenderer — 호스트 DOM prop 누출 차단', () => {
       expect(el.className).toContain('fa-images');
     });
 
+    // @scenario leak_path=form_auto_binding, prop_shape=primitive, autobinding_declared=unset
+    // @effects unmarked_component_still_autobinds
     it('일반 폼 컨트롤의 자동 바인딩은 그대로 동작한다 (regression 가드)', () => {
       renderDef(
         formTree({

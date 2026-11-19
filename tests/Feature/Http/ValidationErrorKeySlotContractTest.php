@@ -92,8 +92,10 @@ class ValidationErrorKeySlotContractTest extends TestCase
             }
             foreach ($matches[1] as [$keyArg, $offset]) {
                 $calls++;
-                // 키를 돌려주는 메서드 호출(`…MessageKey(`)은 키다 — 변수와 그 밖의 호출만 잡는다
-                $returnsKey = (bool) preg_match('/MessageKey\(\$?\w*$/', trim($keyArg));
+                // 키를 고르는(돌려주는) 메서드 호출(`…MessageKey(`)은 번역 문장이 아니라 언어 키다 — 변수와 그 밖의 호출만 잡는다.
+                // 7.2.0 판정(수신 객체 경로 + 인자 무관)과 7.1.6 판정(인자 없음·변수 하나) 중 하나라도 맞으면 키로 본다
+                $returnsKey = preg_match('/^\$[\w>\-]+MessageKey\(/', trim($keyArg)) === 1
+                    || preg_match('/MessageKey\(\$?\w*$/', trim($keyArg)) === 1;
                 if (str_starts_with(trim($keyArg), '$') && ! $returnsKey) {
                     $violations[] = $file['rel'].':'.(substr_count(substr($source, 0, $offset), "\n") + 1);
                 }

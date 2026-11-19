@@ -20,6 +20,10 @@
 `sirsoft-verification_kginicis`와 마찬가지로 이 플러그인이 소유한 화면 레이아웃은 관리자
 설정 화면 하나뿐입니다 — 회원가입·마이페이지의 본인확인 UI는 §레이아웃 확장 조각 및 코어
 IDV 공통 팝업 UI로 존재합니다.
+
+화면 폭에 따라 달라지는 배치는 Tailwind 반응형 접두(`sm:`·`md:`·`lg:`)를 쓰지 않고 엔진 `responsive` 로 씁니다(예: `<responsive on="desktop" class="…"/>`, `on="640-"`). 갈래의 `class` 는 기본 `class` 를 통째로 바꾸므로 그 폭에서 필요한 토큰을 모두 적습니다.
+
+폭 미디어를 품은 의미 클래스 사본(`verification-nhnkcp-grid-3col-responsive`·`verification-nhnkcp-grid-2col-responsive`·`verification-nhnkcp-page-title`·`verification-nhnkcp-admin-page-content-responsive` 등)도 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="verificationnhnkcp:grid verificationnhnkcp:grid-cols-1 verificationnhnkcp:gap-4 verificationnhnkcp:items-start"` 에 `<responsive on="1024-" class="verificationnhnkcp:grid verificationnhnkcp:grid-cols-3 verificationnhnkcp:gap-4 verificationnhnkcp:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`verificationnhnkcp:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->
 
 ## 액션 핸들러
@@ -81,6 +85,8 @@ IDV 공통 팝업 UI로 존재합니다.
 <!-- @intent START -->
 제3자 SDK 스크립트가 목록에 없는 이유는 §전역 진입점과 동일합니다 — 인증 화면은 팝업
 안의 서버 렌더링 페이지이거나 모바일 리다이렉트 대상이라 프론트가 동적 로드할 자산이
-없습니다. CSS 산출물이 없는 것은 UI가 버튼·상태 카드 같은 최소한의 코어 컴포넌트로만
-구성되기 때문입니다.
+없습니다. CSS 산출물(`dist/css/plugin.css`, 원본 `resources/css/main.css`)은 이 플러그인 화면(환경설정 화면과
+본인인증 설정·마이페이지에 붙는 조각)의 스타일 전부를 싣습니다 — 템플릿 CSS 에 기대지 않고, 배치·색 유틸리티는 `verificationnhnkcp:`
+접두 Tailwind 빌드로, 템플릿에서 가져온 의미 클래스는 `verification-nhnkcp-*` 사본(가장 낮은 칸 `@layer g7-extension`)으로,
+경고·안내 글자색은 `verification-nhnkcp-tone-*` 손 CSS 로 둡니다. 다크 모드는 코어의 중립 표식(`data-g7-color-scheme`)을 따릅니다.
 <!-- @intent END -->

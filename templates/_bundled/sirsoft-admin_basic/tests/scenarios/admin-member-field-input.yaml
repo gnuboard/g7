@@ -1,0 +1,38 @@
+feature: 관리자 템플릿의 회원 항목 입력칸(MemberFieldInput)은 항목 계약의 유형대로 관리자 부품을 고르고 유형별 값 모양으로 내보낸다 (#490 6단계)
+
+description: |
+  관리자 회원 추가, 수정 화면이 쓰는 항목 1개짜리 입력 컴포넌트다. 어떤 입력칸을 그릴지는 서버가 준 항목 계약의 type 과
+  constraints 가 정한다. 내보내는 값 모양은 서버 검증 규칙과 같아야 한다(사용자 템플릿의 같은 이름 컴포넌트와 같은 계약).
+
+  관리자 템플릿의 부품 배정: 예/아니오는 Toggle(제한 값 widget 이 checkbox 면 체크박스), 하나 선택의 라디오 표시는 RadioGroup,
+  여러 개 선택의 목록 표시는 TagInput, 국가는 종전 회원 폼과 같은 SearchableDropdown 과 같은 국가 목록(회원 목록의 국가 필터와
+  같은 목록), 시간대는 전역 설정의 시간대 목록으로 검색되는 Select 다. 잠긴 항목(readonly)과 비활성(disabled)은 어느 부품이든
+  종전 회원 폼처럼 disabled 로 잠근다. 오류가 있으면 aria-invalid, aria-describedby 와 오류 테두리(input-error)를 단다.
+
+# axis 의미:
+#   case — 유형별 그리기와 값 모양, 오류 상태, 제한 값 widget 이 정하는 선택 목록(국가, 시간대), 잠금, 날짜 제한 값 해석, 항목 계약 없음
+axes:
+  case: [text, phone_email_url_number_date, number, textarea, boolean, choice_select, choice_radio, choice_other, multi_choice, multi_choice_list, date_range, error, widget_country, widget_timezone, readonly_lock, date_bounds, no_field]
+
+effects:
+  - text_input_emits_string_with_name
+  - html_input_type_follows_field_type
+  - number_shows_unit_and_step
+  - textarea_uses_rows
+  - boolean_uses_toggle_and_emits_true_false
+  - choice_select_emits_value_and_shows_default_without_emitting
+  - choice_radio_uses_radio_group_and_emits_value
+  - choice_other_emits_value_and_text
+  - multi_choice_checkbox_group_emits_array
+  - multi_choice_list_uses_tag_input
+  - date_range_emits_start_end
+  - error_marks_invalid_and_describedby
+  - country_widget_uses_searchable_dropdown_with_list_filter_countries
+  - country_codes_match_user_list_filter
+  - timezone_widget_is_searchable_and_reads_global_list
+  - readonly_or_disabled_locks_every_input_kind
+  - relative_date_bounds_resolve_to_today
+  - renders_nothing_without_field
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/MemberFieldInput.test.tsx

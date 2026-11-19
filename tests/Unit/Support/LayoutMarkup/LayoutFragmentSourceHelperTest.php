@@ -211,7 +211,7 @@ class LayoutFragmentSourceHelperTest extends TestCase
     /**
      * 읽기 캐시의 **키 계약**(경로|mtime|크기)을 관측합니다.
      *
-     * 37차 신설. 34차가 조각 컴파일 캐시에는 이 관측을 붙였는데(`MarkupPartialResolutionTest`)
+     * 앞서 조각 컴파일 캐시에는 이 관측을 붙였는데(`MarkupPartialResolutionTest`)
      * **동형 계약 둘이 무관측**으로 남아 있었다 — 여기(`LayoutFragmentSourceHelper::$readCache`)와
      * `CollectsFragmentSources::$fragmentCompileCache`. 캐시는 틀려도 초록인 종류의 코드다:
      * 키에서 mtime·크기를 빼면 **낡은 정의가 무한히 살아남고**, 캐시 조회를 지우면 성능만 나빠져

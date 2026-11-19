@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는 권한 복원 인프라의 신규 기능 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+# audit:allow test-scenario-coverage reason: issue:#609 본 매니페스트는 권한 복원 인프라의 신규 기능 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 
 feature: 코어 업그레이드 권한 복원 정합화 (storage/app 사용자 데이터 보존)
 
@@ -33,6 +34,7 @@ axes:
   storage_target: [logs, framework_cache, framework_sessions, app_modules, app_attachments, app_settings]
   seed_perms: [0700, 0755, 0775]
   sudo_simulation: [no_change, root_chown_subset, root_chown_all]
+  umask: ["0027", "0077"]   # 프로세스 umask — 웹서버 직접 서빙 파일·폴더의 새 권한 (7.1.6 재릴리즈, WebServedFileModeUnderUmaskTest)
 
 exclusions:
   - { parent_code_version: beta4_fix, sudo_simulation: root_chown_all, reason: "fix 된 부모는 storage/app 을 chown 자체 안 함 — sudo 시뮬레이션 의미 없음" }

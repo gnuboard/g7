@@ -53,6 +53,7 @@ export {
 
 export {
   mergeClasses,
+  splitExtensionClassPrefix,
   conditionalClass,
   joinClasses,
 } from './StyleHelpers';

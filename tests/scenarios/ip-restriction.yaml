@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 조건부다 — admin_list 는 관리자 표면에서만,
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#636 축은 조건부다 — admin_list 는 관리자 표면에서만,
 # rule 은 제외 경로가 아닌 표면에서만, ip_source 는 목록 대조가 일어날 때만 의미가 있다. 명목상 곱
 # (2×6×3×4×4 = 576)은 실체 없는 칸이 대부분이라 조합별 docblock 을 매핑할 대상이 없다. 실제 회귀
 # 가드는 effects 이며 전부 test_files 의 테스트에 @effects 로 귀속되어 있다(미검증 0건).

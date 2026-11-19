@@ -90,6 +90,17 @@ class NotificationTemplateRepository implements NotificationTemplateRepositoryIn
     }
 
     /**
+     * 템플릿 삭제 — 모델 단위로 지워 모델 이벤트(캐시 무효화)가 돈다.
+     *
+     * @param  NotificationTemplate  $template  삭제할 템플릿
+     * @return bool 삭제 성공 여부
+     */
+    public function delete(NotificationTemplate $template): bool
+    {
+        return (bool) $template->delete();
+    }
+
+    /**
      * 템플릿 생성 또는 수정.
      *
      * @param  array<string, mixed>  $attributes  찾을 조건

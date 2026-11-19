@@ -1,5 +1,10 @@
-<!-- 내 정보 수정 폼 본체. 값은 `user` 소스가 `initLocal` 로 채운 폼 상태에서 오고, 검증 오류는
-     서버가 돌려준 것을 그대로 칸마다 보여 준다. -->
+<!-- e2e:allow 이번 변경은 PUT /api/me 본문에 항목 정의 버전(fields_version)을 싣는 것뿐이다 — 본문 모양은 Vitest mypage-profile-dynamic-fields, 서버의 옛 화면 판정은 PHPUnit LegacyMemberFieldScreenTest 가 잠근다(화면 동작 불변).
+     내 정보 수정 폼 본체. 이름, 닉네임, 연락처, 위치, 서명, 자기소개와 운영자가 추가한 항목은 서버가 준 항목 계약(데이터소스 profileFields)대로
+     공용 조각(partials/member/_member_fields)이 카드마다 그린다 — 어떤 칸을 받고 무엇이 필수이고 무엇이 잠겼는지는 환경설정 > 회원이 정한다.
+     값은 `user` 소스가 `initLocal` 로 채운 폼 상태(profileEditForm)에서 오고, 검증 오류는 서버가 돌려준 것을 칸 아래에 보여 준다.
+     아바타와 이메일, 표시 이름 종류 선택 칸은 이 조각이 직접 그리고, 모듈과 플러그인이 선언한 항목은 확장별 카드(computed profileExtensionGroups)로 그린다.
+     저장 본문은 폼 상태를 그대로 보내되 표시 이름 종류(display_name_kind)만 가려 싣는다 — 고를 권한이 없으면 싣지 않고, 전에 고른 종류가 허용에서 빠진 채 다시 고르지 않았으면 싣지 않는다
+     (서버가 허용하지 않는 종류를 받으면 저장 전체를 거절한다. 싣지 않으면 지금 값을 그대로 둔다). 빈 값은 「고르지 않음」으로 보낸다. -->
 <partial _e2e_allow="e2e:allow S4-D15 — 배송국가 칸에 미적용 안내 문장 하나를 조건부로 더했다. 대체 검증: Vitest 조건 평가 + 전용 Chrome 실측(배송 가능 국가를 바꾸는 배타 창에서만 재현되어 공용 E2E 환경 설정을 바꿀 수 없다)" description="마이페이지 프로필 Edit 모드 (시안 기반 카드 분리 레이아웃)">
   <div data-if="{{_local?.isPasswordVerified}}" class="space-y-6">
     <blur-until-loaded sources="user"/>
@@ -50,30 +55,29 @@
         </button>
       </div>
     </div>
-    <!-- 전체 에러 메시지 박스 -->
-    <div data-if="{{_local.profileErrors &amp;&amp; Object.keys(_local.profileErrors).length > 0}}" class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+    <!-- 어느 칸에도 속하지 않는 오류만 모으는 상자 — 칸에 속한 오류는 그 칸 아래에 뜬다. 가르는 계산은 화면의 computed profileOrphanErrors. -->
+    <div data-if="{{($computed.profileOrphanErrors ?? []).length > 0}}" data-ref="profile_orphan_errors" class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
       <div class="flex items-start gap-3">
         <icon name="circle-exclamation" size="lg" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
         <div class="flex-1">
           <h4 class="text-sm font-semibold text-red-800 dark:text-red-200 mb-2">$t:common.validation_error_title</h4>
-          <ul data-each="message in Object.entries(_local.profileErrors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="list-disc list-inside space-y-1 text-sm text-red-700 dark:text-red-300">
-            <li class="text-sm text-red-700 dark:text-red-300">{{message}}</li>
+          <ul class="list-disc list-inside space-y-1 text-sm text-red-700 dark:text-red-300">
+            <li data-each="message in {{$computed.profileOrphanErrors ?? []}}" class="text-sm text-red-700 dark:text-red-300">{{message}}</li>
           </ul>
         </div>
       </div>
     </div>
     <!-- Form 래퍼 - 모든 카드를 감싸는 폼 -->
-    <form data-key="profileEditForm" id="profileEditForm" class="space-y-6">
+    <form data-key="profileEditForm" id="profileEditForm" :noValidate="true" class="space-y-6">
       <responsive on="portable" class="space-y-4"/>
       <on type="submit">
         <set-state target="local" :isSavingProfile="true" :profileErrors="null"/>
-        <api-call :auth_required="true" target="/api/me" method="PUT" body="{{_local?.profileEditForm}}">
+        <!-- 저장 본문에는 받은 회원 항목의 정의 버전(fields_version)을 얹는다 — 회원 항목을 그리는 화면이라는 표식이다.
+             표식 없는 요청은 서버가 옛 화면(7.1.x)으로 보고 운영자 추가 필수 항목을 건너뛴다. -->
+        <api-call :auth_required="true" target="/api/me" method="PUT" body="{{Object.assign(Object.fromEntries(Object.entries(_local?.profileEditForm ?? {}).filter(function(entry) { return entry[0] !== 'display_name_kind' || (profileFields?.data?.display_name?.can_choose === true &amp;&amp; (entry[1] == null || entry[1] === '' || (profileFields?.data?.display_name?.options ?? []).some(function(o) { return o.value === entry[1]; }))); })), profileFields?.data?.fields_version ? { fields_version: profileFields.data.fields_version } : {})}}">
           <success>
-            <!-- 결제 통화·배송국가는 위 회원정보 저장 요청에 함께 실려 이커머스가 코어 훅으로 저장했다. 여기서는
-                 화면 전역 선호값만 맞춘다 — 헤더 셀렉터·가격 표시가 새로고침 없이 바뀐 값을 따르게 하기 위해서다.
-                 이커머스가 없으면 폼에 두 칸이 없어 아무것도 하지 않는다. -->
-            <set-state if="{{_local?.profileEditForm?.ecommerce_preferred_currency}}" target="global" preferredCurrency="{{_local.profileEditForm.ecommerce_preferred_currency}}"/>
-            <set-state if="{{_local?.profileEditForm?.ecommerce_preferred_shipping_country}}" target="global" preferredShippingCountry="{{_local.profileEditForm.ecommerce_preferred_shipping_country}}"/>
+            <!-- 확장이 전역 상태에 둔 선호값(결제 통화, 배송 국가 등)은 아래 current_user 재조회를 그 확장이 지켜보다 맞춘다 — 코어 템플릿은 확장의 키를 모른다.
+                 같은 재조회가 헤더와 모바일 메뉴의 이름도 맞춘다 — 표시 이름 종류나 닉네임을 바꿔 저장하면 새로고침 없이 새 이름으로 바뀐다. -->
             <set-state target="local" :isSavingProfile="false" :profileErrors="null"/>
             <refetch-data-source dataSourceId="user"/>
             <refetch-data-source dataSourceId="current_user"/>
@@ -163,212 +167,79 @@
             </div>
             <p class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.profile.email_readonly_hint</p>
           </div>
-          <!-- 이름 / 닉네임 (2단 레이아웃) -->
-          <div class="grid grid-cols-2 gap-4">
-            <responsive on="portable" class="grid grid-cols-1 gap-3"/>
-            <!-- 이름 -->
-            <div class="space-y-1">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                <span>$t:mypage.profile.name</span>
-                <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
-              </label>
-              <input type="text" name="name" aria-label="$t:mypage.profile.name" value="{{user.data?.name ?? ''}}" placeholder="$t:mypage.profile.name_placeholder" :required="true" class="{{_local.profileErrors?.name ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent'}}"/>
-              <p data-if="{{_local.profileErrors?.name}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.name?.[0] ?? ''}}</p>
-            </div>
-            <!-- 닉네임 -->
-            <div class="space-y-1">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.nickname</label>
-              <input type="text" name="nickname" aria-label="$t:mypage.profile.nickname" value="{{user.data?.nickname ?? ''}}" placeholder="$t:mypage.profile.nickname_placeholder" class="{{_local.profileErrors?.nickname ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent'}}"/>
-              <p data-if="{{_local.profileErrors?.nickname}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.nickname?.[0] ?? ''}}</p>
-            </div>
+          <!-- 기본 묶음(이름, 닉네임) — 넓은 화면에서는 두 칸을 나란히, 좁은 화면에서는 한 줄씩 둔다. 운영자가 두 항목을 모두 끄면 아무것도 그리지 않는다. -->
+          <div data-each="memberFieldGroup in {{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'basic'; }).map(function(g) { return Object.assign({}, g, { className: 'grid grid-cols-2 gap-4', portableClassName: 'grid grid-cols-1 gap-3' }); })}}">
+            <include src="partials/member/_member_fields.g7.html"/>
+          </div>
+          <!-- 표시 이름 종류 선택 — 다른 회원에게 어떤 이름으로 보일지 회원이 고르는 칸(닉네임 아래). 운영자가 고를 수 있는 종류를 둘 이상 열어 두고 이 회원에게 고를 권한이 있을 때만(can_choose) 그린다.
+               첫 선택지(빈 값)는 「고르지 않음」으로, 회원 기본 종류로 보인다. 칸 아래 한 줄은 그 종류를 고르면 보일 이름이다 — 서버가 이 회원의 값으로 계산해 준 글자이고,
+               종류를 바꾸면 폼에 입력해 둔 이름, 닉네임으로 다시 계산을 맡긴다(글자를 칠 때마다 묻지 않고 종류를 바꿀 때만 묻는다).
+               전에 고른 종류가 허용에서 빠졌으면(value_unavailable) 다시 골라 달라고 알리고 전에 고른 종류의 이름을 보인다. 그동안은 회원 기본 종류로 보인다.
+               고른 종류가 닉네임이 필요한 종류면 닉네임을 입력해야 한다고 알린다(비워 두면 서버가 닉네임 칸 아래에 오류를 준다). -->
+          <div data-if="{{profileFields?.data?.display_name?.can_choose === true}}" data-ref="profile_display_name_field" class="space-y-1">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:member.display_name.label</label>
+            <select data-ref="profile_display_name_select" name="display_name_kind" :autoBinding="false" aria-label="$t:member.display_name.label" value="{{(profileFields?.data?.display_name?.options ?? []).some(function(o) { return o.value === _local.profileEditForm?.display_name_kind; }) ? _local.profileEditForm?.display_name_kind : ''}}" disabled="{{_local.isSavingProfile}}" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" options="{{[{ value: '', label: $t('member.display_name.option_default', { label: profileFields?.data?.display_name?.default_kind_label ?? '' }) }].concat((profileFields?.data?.display_name?.options ?? []).map(function(o) { return { value: o.value, label: o.label }; }))}}">
+              <on type="change">
+                <!-- 고른 종류를 폼 상태에 담고, 폼에 입력해 둔 이름과 닉네임으로 종류별 미리보기 이름을 서버에서 다시 받아 둔다. -->
+                <sequence>
+                  <set-state target="local" profileEditForm.display_name_kind="{{$event.target.value}}"/>
+                  <api-call :auth_required="true" target="/api/me/fields?preview_name={{encodeURIComponent(_local.profileEditForm?.name ?? '')}}&amp;preview_nickname={{encodeURIComponent(_local.profileEditForm?.nickname ?? '')}}" method="GET">
+                    <success>
+                      <set-state target="local" displayNamePreviews="{{Object.fromEntries((response?.data?.display_name?.options ?? []).map(function(o) { return [o.value, o.preview ?? '']; }))}}"/>
+                    </success>
+                  </api-call>
+                </sequence>
+              </on>
+            </select>
+            <p data-ref="profile_display_name_unavailable" data-if="{{profileFields?.data?.display_name?.value_unavailable === true &amp;&amp; !(profileFields?.data?.display_name?.options ?? []).some(function(o) { return o.value === _local.profileEditForm?.display_name_kind; })}}" role="status" class="text-xs text-yellow-700 dark:text-yellow-400 break-words">{{$t('member.display_name.reselect', { kind: profileFields?.data?.display_name?.unavailable_kind?.label ?? '', fallback: profileFields?.data?.display_name?.default_kind_label ?? '' })}}</p>
+            <p data-ref="profile_display_name_preview" data-if="{{((_local.displayNamePreviews ?? {})[$computed.displayNameSelected?.value] ?? $computed.displayNameSelected?.preview ?? '') !== ''}}" class="text-xs text-gray-500 dark:text-gray-400 break-words">{{$t('member.display_name.preview', { name: ((_local.displayNamePreviews ?? {})[$computed.displayNameSelected?.value] ?? $computed.displayNameSelected?.preview ?? '') })}}</p>
+            <p data-ref="profile_display_name_nickname_required" data-if="{{$computed.displayNameSelected?.requires_nickname === true}}" class="text-xs text-gray-500 dark:text-gray-400 break-words">$t:member.display_name.requires_nickname</p>
+            <span data-if="{{_local.profileErrors?.display_name_kind}}" data-ref="profile_display_name_error" class="text-red-600 dark:text-red-400 text-xs">{{_local.profileErrors?.display_name_kind?.[0] ?? ''}}</span>
           </div>
         </div>
       </div>
-      <!-- 2컬럼 카드 - 연락처 정보 / 위치 정보 -->
-      <div class="grid grid-cols-2 gap-6">
+      <!-- 연락처 카드와 위치 카드 — 둘 다 있으면 넓은 화면에서 나란히, 하나만 있으면 한 줄을 다 쓴다. 묶음에 항목이 없는 카드는 그리지 않는다. -->
+      <div data-if="{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'contact' || g.key === 'location'; })}}" class="{{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'contact' || g.key === 'location'; }).length === 2 ? 'grid grid-cols-2 gap-6' : 'grid grid-cols-1 gap-6'}}">
         <responsive on="portable" class="grid grid-cols-1 gap-4"/>
-        <!-- 연락처 정보 카드 -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <!-- 연락처 정보 카드 (휴대폰, 전화, 홈페이지) -->
+        <div data-if="{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'contact'; })}}" data-ref="profile_contact_card" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
           <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.profile.contact_info</h3>
-          <div class="space-y-4">
-            <!-- 휴대폰번호 -->
-            <div class="space-y-1">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.mobile</label>
-              <input type="tel" name="mobile" aria-label="$t:mypage.profile.mobile" value="{{user.data?.mobile ?? ''}}" placeholder="$t:mypage.profile.mobile_placeholder" class="{{_local.profileErrors?.mobile ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"/>
-              <p data-if="{{_local.profileErrors?.mobile}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.mobile?.[0] ?? ''}}</p>
-            </div>
-            <!-- 전화번호 -->
-            <div class="space-y-1">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.phone</label>
-              <input type="tel" name="phone" aria-label="$t:mypage.profile.phone" value="{{user.data?.phone ?? ''}}" placeholder="$t:mypage.profile.phone_placeholder" class="{{_local.profileErrors?.phone ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"/>
-              <p data-if="{{_local.profileErrors?.phone}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.phone?.[0] ?? ''}}</p>
-            </div>
-            <!-- 홈페이지 -->
-            <div class="space-y-1">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.homepage</label>
-              <input type="url" name="homepage" aria-label="$t:mypage.profile.homepage" value="{{user.data?.homepage ?? ''}}" placeholder="$t:mypage.profile.homepage_placeholder" class="{{_local.profileErrors?.homepage ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"/>
-              <p data-if="{{_local.profileErrors?.homepage}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.homepage?.[0] ?? ''}}</p>
-            </div>
+          <div data-each="memberFieldGroup in {{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'contact'; })}}">
+            <include src="partials/member/_member_fields.g7.html"/>
           </div>
         </div>
-        <!-- 위치 정보 카드 -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <!-- 위치 정보 카드 (언어, 국가, 시간대, 주소) -->
+        <div data-if="{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'location'; })}}" data-ref="profile_location_card" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
           <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.profile.location_info</h3>
-          <div class="space-y-4">
-            <!-- 국가 -->
-            <div class="space-y-1">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.country</label>
-              <select name="country" aria-label="$t:mypage.profile.country" value="{{user.data?.country ?? ''}}" class="w-full" options="{{[{ label: $t('mypage.profile.country_placeholder'), value: '' }].concat((_defines?.countryList ?? []).map(c => ({ value: c.code, label: $t('countries.' + c.code) })))}}"/>
-              <p data-if="{{_local.profileErrors?.country}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.country?.[0] ?? ''}}</p>
-            </div>
-            <!-- 언어 -->
-            <div class="space-y-1">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.language</label>
-              <select name="language" aria-label="$t:mypage.profile.language" value="{{user.data?.language ?? ''}}" class="w-full" options="{{[{ label: $t('mypage.profile.language_placeholder'), value: '' }].concat((_global.appConfig?.supportedLocales ?? []).map(l => ({ value: l, label: $t('languages.' + l) })))}}"/>
-              <p data-if="{{_local.profileErrors?.language}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.language?.[0] ?? ''}}</p>
-            </div>
-            <!-- 시간대 -->
-            <div class="space-y-1">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.timezone</label>
-              <select name="timezone" aria-label="$t:mypage.profile.timezone" value="{{user.data?.timezone ?? ''}}" class="w-full" options="{{_global.appConfig?.supportedTimezones ?? []}}" :searchable="true" searchPlaceholder="{{$t('common.search')}}"/>
-              <p data-if="{{_local.profileErrors?.timezone}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.timezone?.[0] ?? ''}}</p>
-            </div>
-            <!-- 주소 -->
-            <div class="space-y-1">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.address</label>
-              <!-- 우편번호 + 주소 검색 버튼 — 우편번호 검색 플러그인이 꺼져 있으면 직접 입력한다(readOnly 가 풀린다). 칸은 폼 자동 바인딩(profileEditForm)이라 친 값이 그대로 저장에 실린다. -->
-              <div class="flex gap-2">
-                <input type="text" name="zipcode" aria-label="$t:mypage.profile.zipcode" value="{{user.data?.zipcode ?? ''}}" placeholder="$t:mypage.profile.zipcode_placeholder" class="{{_local.profileErrors?.zipcode ? 'w-28 px-4 py-2.5 border border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-28 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}" readOnly="{{_global.activePlugins?.includes('sirsoft-daum_postcode') ?? true}}"/>
-                <extension-point name="address_search_slot" data-ref="profile_address_search_slot">
-                  <prop name="readOnlyFields">
-                    <item>zipcode</item>
-                    <item>address</item>
-                  </prop>
-                  <prop name="targetFields">
-                    <field name="zipcode" value="profileEditForm.zipcode"/>
-                    <field name="address" value="profileEditForm.address"/>
-                    <field name="region" value="profileEditForm.region"/>
-                    <field name="city" value="profileEditForm.city"/>
-                  </prop>
-                </extension-point>
-              </div>
-              <!-- 기본 주소 -->
-              <input type="text" name="address" aria-label="$t:mypage.profile.address" value="{{user.data?.address ?? ''}}" placeholder="$t:mypage.profile.address_placeholder" class="{{_local.profileErrors?.address ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}" readOnly="{{_global.activePlugins?.includes('sirsoft-daum_postcode') ?? true}}"/>
-              <!-- 상세 주소 -->
-              <input type="text" name="address_detail" aria-label="$t:mypage.profile.address_detail" value="{{user.data?.address_detail ?? ''}}" placeholder="$t:mypage.profile.address_detail_placeholder" class="{{_local.profileErrors?.address_detail ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"/>
-              <p data-if="{{_local.profileErrors?.zipcode || _local.profileErrors?.address || _local.profileErrors?.address_detail}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.zipcode?.[0] ?? _local.profileErrors?.address?.[0] ?? _local.profileErrors?.address_detail?.[0] ?? ''}}</p>
-            </div>
+          <div data-each="memberFieldGroup in {{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'location'; })}}">
+            <include src="partials/member/_member_fields.g7.html"/>
           </div>
         </div>
       </div>
-      <!-- 서명 및 자기소개 카드 -->
-      <div data-ref="profile_bio_card" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <!-- 추가 정보 카드 — 운영자가 환경설정에서 추가한 항목(파일 항목 포함). 항목이 없으면 그리지 않는다. -->
+      <div data-if="{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'extra'; })}}" data-ref="profile_extra_card" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+        <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:member.fields.section_extra</h3>
+        <div data-each="memberFieldGroup in {{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'extra'; })}}">
+          <include src="partials/member/_member_fields.g7.html"/>
+        </div>
+      </div>
+      <!-- 서명 및 자기소개 카드 — 두 항목이 모두 꺼져 있으면 그리지 않는다. 확장이 이 카드 뒤에 자기 카드를 붙이므로 노드와 이름은 그대로 둔다. -->
+      <div data-if="{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'profile'; })}}" data-ref="profile_bio_card" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
         <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.profile.section_signature_bio</h3>
-        <div class="space-y-4">
-          <!-- 서명 -->
-          <div class="space-y-1">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.signature</label>
-            <textarea name="signature" aria-label="$t:mypage.profile.signature" :rows="3" value="{{user.data?.signature ?? ''}}" placeholder="$t:mypage.profile.signature_placeholder" class="{{_local.profileErrors?.signature ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none'}}"/>
-            <p data-if="{{_local.profileErrors?.signature}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.signature?.[0] ?? ''}}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.profile.signature_hint</p>
-          </div>
-          <!-- 자기소개 -->
-          <div class="space-y-1">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.bio</label>
-            <textarea name="bio" aria-label="$t:mypage.profile.bio" :rows="5" value="{{user.data?.bio ?? ''}}" placeholder="$t:mypage.profile.bio_placeholder" class="{{_local.profileErrors?.bio ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none'}}"/>
-            <p data-if="{{_local.profileErrors?.bio}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.bio?.[0] ?? ''}}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.profile.bio_hint</p>
-          </div>
+        <div data-each="memberFieldGroup in {{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'profile'; })}}">
+          <include src="partials/member/_member_fields.g7.html"/>
         </div>
       </div>
-      <!-- 게시판 알림 설정 카드 (sirsoft-board 모듈 설치 시 표시) -->
-      <div data-if="{{user.data?.notify_comment !== undefined}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <!-- 확장별 카드 — 모듈과 플러그인이 회원 항목으로 선언한 칸(게시판 알림, 결제 통화, 배송 국가, 마케팅 동의 등)을 확장마다 한 카드로 그린다. 카드 제목은 그 확장의 이름이다.
+           값은 다른 칸과 같이 폼 상태에 실려 회원정보 저장 요청 한 번에 함께 간다. 선언한 확장이 없거나 꺼져 있으면 카드가 없다. -->
+      <div data-each="memberFieldGroup in {{$computed.profileExtensionGroups ?? []}}" data-ref="profile_extension_card_{{memberFieldGroup.key}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
-        <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
-          <responsive on="portable" class="flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"/>
-          <div class="flex items-center gap-2">
-            <icon name="bell" size="md" class="text-gray-600 dark:text-gray-400"/>
-            <h3 class="text-base font-semibold text-gray-900 dark:text-white">$t:mypage.notification_settings.title</h3>
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <responsive on="portable" class="grid grid-cols-1 gap-3"/>
-          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-            <!-- 저장값이 boolean 이 아닐 수 있는 구간(설정 미저장 등)에도 checked 가 확정되도록 명시 바인딩 — 자동바인딩은 boolean 일 때만 checked 로 붙는다 -->
-            <checkbox name="notify_post_complete" checked="{{!!_local.profileEditForm?.notify_post_complete}}" :autoBinding="false" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white">
-              <on type="change">
-                <set-state target="local" profileEditForm.notify_post_complete="{{$event.target.checked}}"/>
-              </on>
-            </checkbox>
-            <div>
-              <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.post_complete</span>
-              <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.post_complete_desc</span>
-            </div>
-          </label>
-          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-            <!-- 저장값이 boolean 이 아닐 수 있는 구간(설정 미저장 등)에도 checked 가 확정되도록 명시 바인딩 — 자동바인딩은 boolean 일 때만 checked 로 붙는다 -->
-            <checkbox name="notify_post_reply" checked="{{!!_local.profileEditForm?.notify_post_reply}}" :autoBinding="false" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white">
-              <on type="change">
-                <set-state target="local" profileEditForm.notify_post_reply="{{$event.target.checked}}"/>
-              </on>
-            </checkbox>
-            <div>
-              <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.post_reply</span>
-              <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.post_reply_desc</span>
-            </div>
-          </label>
-          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-            <!-- 저장값이 boolean 이 아닐 수 있는 구간(설정 미저장 등)에도 checked 가 확정되도록 명시 바인딩 — 자동바인딩은 boolean 일 때만 checked 로 붙는다 -->
-            <checkbox name="notify_comment" checked="{{!!_local.profileEditForm?.notify_comment}}" :autoBinding="false" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white">
-              <on type="change">
-                <set-state target="local" profileEditForm.notify_comment="{{$event.target.checked}}"/>
-              </on>
-            </checkbox>
-            <div>
-              <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.comment</span>
-              <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.comment_desc</span>
-            </div>
-          </label>
-          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-            <!-- 저장값이 boolean 이 아닐 수 있는 구간(설정 미저장 등)에도 checked 가 확정되도록 명시 바인딩 — 자동바인딩은 boolean 일 때만 checked 로 붙는다 -->
-            <checkbox name="notify_reply_comment" checked="{{!!_local.profileEditForm?.notify_reply_comment}}" :autoBinding="false" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white">
-              <on type="change">
-                <set-state target="local" profileEditForm.notify_reply_comment="{{$event.target.checked}}"/>
-              </on>
-            </checkbox>
-            <div>
-              <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.reply_comment</span>
-              <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.reply_comment_desc</span>
-            </div>
-          </label>
-        </div>
-      </div>
-      <!-- 결제 통화 카드 (A3·A5·D9 — 이커머스 설치 시에만). name 바인딩으로 profileEditForm 에 실려 회원정보 저장(PUT /api/me) 한 번에 함께 저장되고, 잘못된 값이면 그 요청의 검증 오류가 이 칸 아래에 뜬다. 게이트=이커머스 모듈 설치(_global.modules) — 코어 노출값이라 user 리소스 병합 타이밍과 무관하게 안정적 -->
-      <div data-if="{{_global.modules?.['sirsoft-ecommerce'] !== undefined}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
-        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
-          <icon name="coins" size="md" class="text-gray-600 dark:text-gray-400"/>
-          <h3 class="text-base font-semibold text-gray-900 dark:text-white">$t:mypage.currency_settings.title</h3>
-        </div>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">$t:mypage.currency_settings.description</p>
-        <select name="ecommerce_preferred_currency" aria-label="$t:mypage.currency_settings.title" value="{{user.data?.ecommerce_preferred_currency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0).map(c => ({ value: c.code, label: c.code + ' (' + (c.symbol ?? c.code) + ')' }))}}" class="w-full sm:w-64"/>
-        <p data-if="{{_local.profileErrors?.ecommerce_preferred_currency}}" class="mt-2 text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.ecommerce_preferred_currency?.[0] ?? ''}}</p>
-      </div>
-      <!-- 배송국가 설정 카드 (MP08 후속 — 이커머스 설치 + 해외배송 활성 시에만). name 바인딩으로 profileEditForm 에 실려 회원정보 저장 요청에 함께 간다 — 별도 저장 호출이 없다. -->
-      <div data-if="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
-        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
-          <icon name="earth-asia" size="md" class="text-gray-600 dark:text-gray-400"/>
-          <h3 class="text-base font-semibold text-gray-900 dark:text-white">$t:mypage.shipping_country_settings.title</h3>
-        </div>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">$t:mypage.shipping_country_settings.description</p>
-        <select name="ecommerce_preferred_shipping_country" aria-label="$t:mypage.shipping_country_settings.title" value="{{user.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}" class="w-full sm:w-64"/>
-        <!-- 저장된 국가가 지금 배송 불가면 콤보가 빈칸이 되므로, 그 국가가 적용되지 않는다는 것과 지금 적용 중인 국가를 알린다(다른 국가를 고르면 사라짐). -->
-        <p data-if="{{(_local.profileEditForm?.ecommerce_preferred_shipping_country ?? user.data?.ecommerce_preferred_shipping_country) !== undefined &amp;&amp; (_local.profileEditForm?.ecommerce_preferred_shipping_country ?? user.data?.ecommerce_preferred_shipping_country) !== null &amp;&amp; !(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === (_local.profileEditForm?.ecommerce_preferred_shipping_country ?? user.data?.ecommerce_preferred_shipping_country))}}" class="mt-2 text-sm text-amber-700 dark:text-amber-300">$t:mypage.shipping_country_settings.saved_not_applied|saved={{$localized((_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).find(c => c.code === (_local.profileEditForm?.ecommerce_preferred_shipping_country ?? user.data?.ecommerce_preferred_shipping_country))?.name, 'sirsoft-ecommerce::settings.countries.' + ((_local.profileEditForm?.ecommerce_preferred_shipping_country ?? user.data?.ecommerce_preferred_shipping_country) ?? '') + '.name') || (_local.profileEditForm?.ecommerce_preferred_shipping_country ?? user.data?.ecommerce_preferred_shipping_country)}}|applied={{(_global.availableShippingCountries ?? []).find(c => c.code === _global.preferredShippingCountry)?.name ?? _global.preferredShippingCountry ?? ''}}</p>
-        <p data-if="{{_local.profileErrors?.ecommerce_preferred_shipping_country}}" class="mt-2 text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.ecommerce_preferred_shipping_country?.[0] ?? ''}}</p>
+        <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700 break-words">{{memberFieldGroup.title}}</h3>
+        <include src="partials/member/_member_fields.g7.html"/>
       </div>
       <!-- 하단 버튼 그룹 -->
       <div class="flex justify-end gap-2">

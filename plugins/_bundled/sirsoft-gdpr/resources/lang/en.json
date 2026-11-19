@@ -53,7 +53,7 @@
         "too_long_session_storage": "Session storage — item cannot exceed 128 characters.",
         "too_long_cookie": "Cookie — item cannot exceed 128 characters.",
         "must_be_array": "Each storage scope must be an array of item names.",
-        "invalid_scope": "Unknown storage scope: :scope (only local storage, session storage and cookies are allowed)"
+        "invalid_scope": "Unknown storage scope: {scope} (only local storage, session storage and cookies are allowed)"
     },
     "settings": {
         "saved": "Settings have been saved.",
@@ -349,7 +349,8 @@
     "common": {
         "loading": "Loading...",
         "refresh": "Refresh",
-        "list_load_failed": "Could not load the list. Please try again in a moment."
+        "list_load_failed": "Could not load the list. Please try again in a moment.",
+        "real_name_sub": "Real name {{name}}"
     },
     "banner": {
         "re_appear_reason": "The cookie policy has been updated to version {version}. Please review your consent.",

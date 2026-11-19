@@ -1,0 +1,380 @@
+<!-- 큐 탭의 본문 — 큐 현황 카드 · 하위 탭(대기/실패/처리 기록) · 검색 필터 · 지금 하위 탭의 표.
+
+  ⓐ 하위 탭은 `query.view`(pending|failed|logs, 없으면 pending)다. 데이터소스도 같은 값으로 갈라져 있어
+     보고 있는 하위 탭의 목록만 부른다. 하위 탭을 바꾸면 **세 하위 탭이 함께 받는 조건(검색어·큐·연결)은 이어 가고**
+     그 하위 탭만 받는 조건(처리 결과·기간·정렬·쪽)은 버린다 — 앞 탭의 기간·결과를 들고 가면 서버가 모르는 값이 된다.
+     검색 대상 「오류 내용」은 대기 목록이 받지 않아 대기로 갈 때만 버린다.
+  ⓑ 필터는 스케줄 탭·쿠폰 목록과 같은 틀이다(검색줄 · 기본/상세 슬롯 · 검색편집 · 검색/초기화). 입력값은
+     `_local.queueFilter` 에 쌓였다가 검색 버튼·Enter 에서만 URL 로 나간다(`searchQueue`). 기본/상세 배치는
+     필터 표시 선택기(`admin_queue_filters`)가 브라우저에 남긴다. 큐·연결은 행을 따로 둔다.
+     지금 하위 탭에서 상세로 옮긴 행이 하나도 없으면 상세검색 버튼을 숨긴다(눌러도 빈 칸만 열렸다).
+  ⓒ 큐 현황은 스케줄 탭 상태 카드와 같은 4칸 카드다(드라이버 · 대기 · 실패 · 워커). 대기 건수·대기 목록은 database 드라이버에서만
+     셀 수 있다 — 다른 드라이버면 대기 칸에 「측정 불가」를, 대기 하위 탭에 안내 상자 하나를 띄운다.
+     기본 드라이버가 sync·null 이면 실패 작업을 다시 넣을 워커가 없어 재시도가 거절된다(경고만, 버튼은 그대로).
+     현황을 받지 못했으면(`_dataSourceErrors.queue_status`) 카드 대신 실패 안내 하나를 띄운다 — 받지 못한 값을 「측정 불가 / 0개 / 0/0」으로
+     그리면 실제 대기·실패와 다른 숫자를 보이게 된다. 「측정 불가」는 서버가 셀 수 없다고 답했을 때(`measurable === false`)만 쓴다. -->
+<partial name="tab_queue">
+  <div data-ref="tab_queue">
+    <!-- 큐 필터 표시 선택기 — 본체(스케줄 탭)와 별도 id 로 기본/상세 배치를 저장한다. 큐 탭에서만 그려지므로 이 조각에 둔다. -->
+    <filter-visibility-selector data-type="composite" data-ref="queue_filter_visibility_selector" id="admin_queue_filters" visibleFilters="{{_local.queueVisibleFilters}}">
+      <prop name="defaultFilters">
+        <item>queue</item>
+        <item>connection</item>
+        <item>date</item>
+      </prop>
+      <on type="change" event="onFilterVisibilityChange">
+        <!-- 화면에 세울 필터 목록만 바꾼다 — 저장은 컴포넌트가 사용자별 키로 직접 처리한다 -->
+        <set-state target="_local" queueVisibleFilters="{{$args[0]}}"/>
+      </on>
+    </filter-visibility-selector>
+    <div data-ref="queue_status_load_failed" data-if="{{!!_dataSourceErrors?.queue_status}}" role="alert" class="alert-danger mb-6">
+      <icon name="circle-exclamation" class="text-red-600 dark:text-red-400 flex-shrink-0"/>
+      <p class="text-error-soft">{{_dataSourceErrors?.queue_status?.status === 403 ? $t('admin.schedules.queue.notice.no_permission') : $t('admin.schedules.queue.errors.status_load_failed')}}</p>
+    </div>
+    <div data-ref="queue_status_cards" data-if="{{!_dataSourceErrors?.queue_status}}" class="grid-2col grid-cols-4 mb-6">
+      <responsive on="portable" class="grid grid-cols-2 gap-3 mb-4"/>
+      <div data-ref="queue_status_driver" class="admin-card">
+        <div class="flex-between">
+          <span class="text-label-subtle">$t:admin.schedules.queue.status.driver</span>
+          <icon name="server" class="text-xl text-gray-400 dark:text-gray-500"/>
+        </div>
+        <div class="text-page-heading mt-2 font-mono">{{queue_status?.data?.driver ?? '-'}}</div>
+        <p class="text-tertiary mt-1">$t:admin.schedules.queue.status.connection|connection={{queue_status?.data?.connection ?? '-'}}</p>
+      </div>
+      <div data-ref="queue_status_pending" class="admin-card">
+        <div class="flex-between">
+          <span class="text-label-subtle">$t:admin.schedules.queue.status.pending</span>
+          <icon name="hourglass-half" class="text-xl text-blue-500"/>
+        </div>
+        <div data-if="{{queue_status?.data?.measurable}}" class="text-page-heading mt-2">$t:admin.schedules.queue.status.count|count={{queue_status?.data?.pending_count ?? 0}}</div>
+        <div data-if="{{queue_status?.data?.measurable === false}}" class="mt-2 text-lg font-semibold text-gray-500 dark:text-gray-400">$t:admin.schedules.queue.status.unmeasurable</div>
+        <div data-if="{{queue_status?.data?.measurable === undefined}}" class="text-page-heading mt-2">-</div>
+      </div>
+      <div data-ref="queue_status_failed" class="admin-card">
+        <div class="flex-between">
+          <span class="text-label-subtle">$t:admin.schedules.queue.status.failed</span>
+          <icon name="circle-xmark" class="{{(queue_status?.data?.failed_count ?? 0) &gt; 0 ? 'text-xl text-red-500' : 'text-xl text-gray-400 dark:text-gray-500'}}"/>
+        </div>
+        <div class="{{(queue_status?.data?.failed_count ?? 0) &gt; 0 ? 'mt-2 text-2xl font-bold text-red-600 dark:text-red-400' : 'text-page-heading mt-2'}}"><blur-until-loaded sources="queue_status"/>$t:admin.schedules.queue.status.count|count={{queue_status?.data?.failed_count ?? 0}}</div>
+      </div>
+      <div data-ref="queue_status_workers" class="admin-card">
+        <div class="flex-between">
+          <span class="text-label-subtle">$t:admin.schedules.queue.status.workers</span>
+          <icon name="gears" class="text-xl text-gray-400 dark:text-gray-500"/>
+        </div>
+        <div class="text-page-heading mt-2"><blur-until-loaded sources="queue_status"/>{{queue_status?.data?.workers?.alive ?? 0}}/{{queue_status?.data?.workers?.registered ?? 0}}</div>
+        <p data-if="{{queue_status !== undefined &amp;&amp; (!((queue_status?.data?.workers?.warning_count ?? 0) &gt; 0))}}" class="text-tertiary mt-1">$t:admin.schedules.queue.status.workers_hint</p>
+        <p data-if="{{(queue_status?.data?.workers?.warning_count ?? 0) &gt; 0}}" class="mt-1 flex-center gap-1 text-xs font-medium text-yellow-700 dark:text-yellow-300">
+          <icon name="triangle-exclamation" class="text-xs"/>
+          <span>$t:admin.schedules.queue.status.worker_warnings|count={{queue_status?.data?.workers?.warning_count}}</span>
+        </p>
+      </div>
+    </div>
+    <div data-ref="queue_no_worker_notice" data-if="{{['sync', 'null'].includes(queue_status?.data?.driver)}}" role="status" class="alert-warning mb-4">
+      <icon name="triangle-exclamation" class="text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+      <p class="text-warning-soft">$t:admin.schedules.queue.notice.no_worker|driver={{queue_status?.data?.driver}}</p>
+    </div>
+    <div data-ref="queue_subtab_wrapper" class="mb-4">
+      <tab-navigation data-type="composite" data-ref="queue_subtab_navigation" activeTabId="{{query.view || 'pending'}}" variant="underline">
+        <prop name="tabs">
+          <item id="pending" href="/admin/schedules/queue?view=pending" label="$t:admin.schedules.queue.views.pending" iconName="hourglass-half"/>
+          <item id="failed" href="/admin/schedules/queue?view=failed" label="$t:admin.schedules.queue.views.failed" iconName="circle-xmark" badge="{{queue_status?.data?.failed_count ?? 0}}"/>
+          <item id="logs" href="/admin/schedules/queue?view=logs" label="$t:admin.schedules.queue.views.logs" iconName="list-check"/>
+        </prop>
+        <on type="change" event="onTabChange">
+          <!-- 하위 탭 전환 — 세 하위 탭이 함께 받는 조건(검색어·큐·연결)은 지금 걸린 값(query)으로 이어 가고, 그 탭만 받는 조건(처리 결과·기간)
+               입력과 고른 줄은 비운다. 정렬·쪽도 넘기지 않는다(정렬 기준이 하위 탭마다 다르다). 「오류 내용」 검색은 대기 목록이 받지 않아 대기로 갈 때만 버린다. -->
+          <sequence>
+            <set-state target="_local">
+              <field name="queueFilter">
+                <field name="searchField" value="{{query.search_field &amp;&amp; !($args[0] === 'pending' &amp;&amp; query.search_field === 'error') ? query.search_field : 'all'}}"/>
+                <field name="searchKeyword" value="{{query.search_keyword || ''}}"/>
+                <field name="queue" value="{{query.queue || 'all'}}"/>
+                <field name="connection" value="{{query.connection || 'all'}}"/>
+                <field name="status" value="all"/>
+                <field name="dateStart" value=""/>
+                <field name="dateEnd" value=""/>
+                <field name="dateQuick" value=""/>
+              </field>
+            </set-state>
+            <set-state target="global" :selectedFailedJobUuids="[]"/>
+            <!-- audit:allow layout-list-context-navigate-merge-query 하위 탭 전환 — 하위 탭마다 받는 조건(결과·기간·정렬 기준)이 달라 병합하면 앞 탭의 값이 422 를 부른다. 함께 받는 조건만 골라 싣는다. -->
+            <navigate path="/admin/schedules/queue" :mergeQuery="false" :replace="true">
+              <query view="{{$args[0]}}" search_field="{{query.search_field &amp;&amp; !($args[0] === 'pending' &amp;&amp; query.search_field === 'error') ? query.search_field : ''}}" search_keyword="{{query.search_keyword || ''}}" queue="{{query.queue || ''}}" connection="{{query.connection || ''}}"/>
+            </navigate>
+          </sequence>
+        </on>
+      </tab-navigation>
+    </div>
+    <div data-ref="queue_filter_card" class="admin-card">
+      <div data-ref="queue_slot_registration_area" class="hidden filter-grid" aria-hidden="true">
+        <div data-ref="queue_name_filter_row" data-slot="{{(_local.queueVisibleFilters || []).includes('queue') ? 'queue_basic_filters' : 'queue_detail_filters'}}" data-slot-order="1" class="flex flex-row gap-2 items-center">
+          <responsive on="portable" class="flex gap-2 flex-col items-start"/>
+          <input type="checkbox" class="{{_local.isQueueEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.queueVisibleFilters || []).includes('queue')}}" aria-label="$t:admin.schedules.filter.show_in_basic|label=$t:admin.schedules.queue.filter.queue">
+            <on type="change">
+              <!-- 큐 필터 노출 스위치. 상태만 바꾸고 저장은 필터 표시 선택기가 한다. -->
+              <set-state target="_local" queueVisibleFilters="{{(_local.queueVisibleFilters || []).includes('queue') ? (_local.queueVisibleFilters || []).filter(f => f !== 'queue') : [...(_local.queueVisibleFilters || []), 'queue']}}"/>
+            </on>
+          </input>
+          <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.queue.filter.queue</span>
+          <div class="flex-center flex-wrap gap-2">
+            <label class="flex-center gap-1 cursor-pointer">
+              <input type="radio" :autoBinding="false" name="queueName" value="all" checked="{{(_local.queueFilter?.queue || 'all') === 'all'}}" class="radio">
+                <on type="change">
+                  <!-- 큐 — 전체. 하나만 고르는 값이라 「전체」도 값(`all`)이고 서버는 `all` 을 조건 없음으로 본다. -->
+                  <set-state target="_local" queueFilter.queue="all"/>
+                </on>
+              </input>
+              <span class="text-body">$t:common.all</span>
+            </label>
+            <!-- 큐 이름은 등록 현황(queue_status.entries)에서 겹치지 않게 뽑는다 — 워커가 등록한 큐만 고를 수 있다. -->
+            <label data-each="queueName, $idx in {{[...new Set((queue_status?.data?.entries ?? []).map(e => e.queue))]}}" class="flex-center gap-1 cursor-pointer">
+              <input type="radio" :autoBinding="false" name="queueName" value="{{queueName}}" checked="{{_local.queueFilter?.queue === queueName}}" class="radio">
+                <on type="change">
+                  <!-- 등록된 큐 하나. -->
+                  <set-state target="_local" queueFilter.queue="{{queueName}}"/>
+                </on>
+              </input>
+              <span class="text-body font-mono">{{queueName}}</span>
+            </label>
+          </div>
+        </div>
+        <div data-ref="queue_connection_filter_row" data-slot="{{(_local.queueVisibleFilters || []).includes('connection') ? 'queue_basic_filters' : 'queue_detail_filters'}}" data-slot-order="2" class="flex flex-row gap-2 items-center">
+          <responsive on="portable" class="flex gap-2 flex-col items-start"/>
+          <input type="checkbox" class="{{_local.isQueueEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.queueVisibleFilters || []).includes('connection')}}" aria-label="$t:admin.schedules.filter.show_in_basic|label=$t:admin.schedules.queue.filter.connection">
+            <on type="change">
+              <!-- 연결 필터 노출 스위치. -->
+              <set-state target="_local" queueVisibleFilters="{{(_local.queueVisibleFilters || []).includes('connection') ? (_local.queueVisibleFilters || []).filter(f => f !== 'connection') : [...(_local.queueVisibleFilters || []), 'connection']}}"/>
+            </on>
+          </input>
+          <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.queue.filter.connection</span>
+          <div class="flex-center flex-wrap gap-2">
+            <!-- 연결 선택 — 같은 이름의 큐가 연결마다 따로 있을 수 있어 연결로 한 번 더 좁힌다. -->
+            <select data-ref="queue_connection_select" aria-label="$t:admin.schedules.queue.filter.connection" name="queueConnection" class="w-40" value="{{_local.queueFilter?.connection || 'all'}}" options="{{[{value: 'all', label: $t('admin.schedules.queue.filter.connection_all')}].concat((queue_status?.data?.connections ?? []).map(c => ({value: c, label: c})))}}">
+              <responsive on="portable" class="w-full"/>
+              <on type="change">
+                <!-- 연결 고르기 — 고르기만 하고 조회는 검색 버튼이 한다. -->
+                <set-state target="_local" queueFilter.connection="{{$event.target.value}}"/>
+              </on>
+            </select>
+          </div>
+        </div>
+        <div data-ref="queue_status_filter_row" data-if="{{query.view === 'logs'}}" data-slot="{{(_local.queueVisibleFilters || []).includes('status') ? 'queue_basic_filters' : 'queue_detail_filters'}}" data-slot-order="3" class="flex flex-row gap-2 items-center">
+          <responsive on="portable" class="flex gap-2 flex-col items-start"/>
+          <input type="checkbox" class="{{_local.isQueueEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.queueVisibleFilters || []).includes('status')}}" aria-label="$t:admin.schedules.filter.show_in_basic|label=$t:admin.schedules.queue.filter.result">
+            <on type="change">
+              <!-- 처리 결과 필터 노출 스위치(처리 기록 하위 탭에만 있다). -->
+              <set-state target="_local" queueVisibleFilters="{{(_local.queueVisibleFilters || []).includes('status') ? (_local.queueVisibleFilters || []).filter(f => f !== 'status') : [...(_local.queueVisibleFilters || []), 'status']}}"/>
+            </on>
+          </input>
+          <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.queue.filter.result</span>
+          <div class="flex-center flex-wrap gap-2">
+            <label class="flex-center gap-1 cursor-pointer">
+              <input type="radio" :autoBinding="false" name="queueLogStatus" value="all" checked="{{(_local.queueFilter?.status || 'all') === 'all'}}" class="radio">
+                <on type="change">
+                  <!-- 처리 결과 — 전체. -->
+                  <set-state target="_local" queueFilter.status="all"/>
+                </on>
+              </input>
+              <span class="text-body">$t:common.all</span>
+            </label>
+            <label class="flex-center gap-1 cursor-pointer">
+              <input type="radio" :autoBinding="false" name="queueLogStatus" value="processed" checked="{{_local.queueFilter?.status === 'processed'}}" class="radio">
+                <on type="change">
+                  <!-- 처리 완료 — 재시도 대기(release)는 기록하지 않으므로 끝까지 성공한 것만이다. -->
+                  <set-state target="_local" queueFilter.status="processed"/>
+                </on>
+              </input>
+              <span class="text-body">$t:admin.schedules.queue.log_status.processed</span>
+            </label>
+            <label class="flex-center gap-1 cursor-pointer">
+              <input type="radio" :autoBinding="false" name="queueLogStatus" value="failed" checked="{{_local.queueFilter?.status === 'failed'}}" class="radio">
+                <on type="change">
+                  <!-- 실패. -->
+                  <set-state target="_local" queueFilter.status="failed"/>
+                </on>
+              </input>
+              <span class="text-body">$t:admin.schedules.queue.log_status.failed</span>
+            </label>
+          </div>
+        </div>
+        <div data-ref="queue_date_filter_row" data-if="{{['failed', 'logs'].includes(query.view)}}" data-slot="{{(_local.queueVisibleFilters || []).includes('date') ? 'queue_basic_filters' : 'queue_detail_filters'}}" data-slot-order="4" class="flex flex-row gap-2 items-center">
+          <responsive on="portable" class="flex gap-2 flex-col items-start"/>
+          <input type="checkbox" class="{{_local.isQueueEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.queueVisibleFilters || []).includes('date')}}" aria-label="$t:admin.schedules.filter.show_in_basic|label={{query.view === 'logs' ? $t('admin.schedules.queue.filter.processed_at') : $t('admin.schedules.queue.filter.failed_at')}}">
+            <on type="change">
+              <!-- 기간 필터 노출 스위치. -->
+              <set-state target="_local" queueVisibleFilters="{{(_local.queueVisibleFilters || []).includes('date') ? (_local.queueVisibleFilters || []).filter(f => f !== 'date') : [...(_local.queueVisibleFilters || []), 'date']}}"/>
+            </on>
+          </input>
+          <!-- 실패 하위 탭은 실패 일시, 처리 기록 하위 탭은 처리 일시다 — 같은 입력칸이 하위 탭에 따라 다른 조건 키로 나간다(searchQueue). -->
+          <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>{{query.view === 'logs' ? $t('admin.schedules.queue.filter.processed_at') : $t('admin.schedules.queue.filter.failed_at')}}</span>
+          <div class="flex-center flex-wrap gap-2">
+            <div class="flex-center gap-2">
+              <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+              <input type="date" aria-label="$t:common.range_start|label={{query.view === 'logs' ? $t('admin.schedules.queue.filter.processed_at') : $t('admin.schedules.queue.filter.failed_at')}}" name="queueDateStart" value="{{_local.queueFilter?.dateStart || ''}}" class="input w-36">
+                <on type="change">
+                  <!-- 기간 시작. 직접 고르면 빠른 기간 버튼의 선택 표시를 지운다. -->
+                  <set-state target="_local" queueFilter.dateStart="{{$event.target.value}}" queueFilter.dateQuick=""/>
+                </on>
+              </input>
+              <span class="text-gray-400 dark:text-gray-500">~</span>
+              <input type="date" aria-label="$t:common.range_end|label={{query.view === 'logs' ? $t('admin.schedules.queue.filter.processed_at') : $t('admin.schedules.queue.filter.failed_at')}}" name="queueDateEnd" value="{{_local.queueFilter?.dateEnd || ''}}" class="input w-36">
+                <on type="change">
+                  <!-- 기간 종료. 한쪽만 채워도 조건이 선다. -->
+                  <set-state target="_local" queueFilter.dateEnd="{{$event.target.value}}" queueFilter.dateQuick=""/>
+                </on>
+              </input>
+            </div>
+            <div class="flex-center flex-wrap gap-1">
+              <button type="button" class="{{_local.queueFilter?.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+                <on type="click">
+                  <!-- 빠른 기간 — 핸들러가 계정 시간대 기준 시작·종료일을 날짜 형식으로 계산해 돌려주고 $prev 로 받아 담는다(인라인 날짜 계산은 브라우저 시간대라 하루 어긋날 수 있다). 오늘. -->
+                  <sequence>
+                    <action handler="setDateRange" preset="today" format="date"/>
+                    <set-state target="_local" queueFilter.dateQuick="{{$prev.preset}}" queueFilter.dateStart="{{$prev.startDate}}" queueFilter.dateEnd="{{$prev.endDate}}"/>
+                  </sequence>
+                </on>
+                $t:admin.schedules.filter.preset.today
+              </button>
+              <button type="button" class="{{_local.queueFilter?.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+                <on type="click">
+                  <!-- 일주일. -->
+                  <sequence>
+                    <action handler="setDateRange" preset="week" format="date"/>
+                    <set-state target="_local" queueFilter.dateQuick="{{$prev.preset}}" queueFilter.dateStart="{{$prev.startDate}}" queueFilter.dateEnd="{{$prev.endDate}}"/>
+                  </sequence>
+                </on>
+                $t:admin.schedules.filter.preset.week
+              </button>
+              <button type="button" class="{{_local.queueFilter?.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+                <on type="click">
+                  <!-- 1개월. -->
+                  <sequence>
+                    <action handler="setDateRange" preset="month" format="date"/>
+                    <set-state target="_local" queueFilter.dateQuick="{{$prev.preset}}" queueFilter.dateStart="{{$prev.startDate}}" queueFilter.dateEnd="{{$prev.endDate}}"/>
+                  </sequence>
+                </on>
+                $t:admin.schedules.filter.preset.month
+              </button>
+              <button type="button" class="{{_local.queueFilter?.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+                <on type="click">
+                  <!-- 3개월 — 처리 기록·실패 작업은 보관 기간(기본 7일, 최대 90일)이 지나면 지워지므로 이보다 긴 기간은 두지 않는다. -->
+                  <sequence>
+                    <action handler="setDateRange" preset="3months" format="date"/>
+                    <set-state target="_local" queueFilter.dateQuick="{{$prev.preset}}" queueFilter.dateStart="{{$prev.startDate}}" queueFilter.dateEnd="{{$prev.endDate}}"/>
+                  </sequence>
+                </on>
+                $t:admin.schedules.filter.preset.3months
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="queue_search_row" class="flex-center flex-wrap gap-3 mb-4">
+        <responsive on="portable" class="row-stack mb-4"/>
+        <div data-ref="queue_search_row_line1" class="flex-center flex-wrap gap-2 flex-1">
+          <responsive on="portable" class="flex gap-2 w-full"/>
+          <select data-ref="queue_search_field_select" name="queueSearchField" class="w-32" value="{{_local.queueFilter?.searchField || 'all'}}" aria-label="$t:admin.schedules.queue.search_fields.label" options="{{[{value: 'all', label: $t('admin.schedules.queue.search_fields.all')}, {value: 'job', label: $t('admin.schedules.queue.search_fields.job')}].concat(['failed', 'logs'].includes(query.view) ? [{value: 'error', label: $t('admin.schedules.queue.search_fields.error')}] : []).concat([{value: 'uuid', label: $t('admin.schedules.queue.search_fields.uuid')}])}}">
+            <responsive on="portable" class="w-24"/>
+            <on type="change">
+              <!-- 검색어를 어디서 찾을지 — 작업 이름(표시 이름·클래스), 오류 내용(실패·처리 기록만), UUID. 대기 목록에는 오류가 없다. -->
+              <set-state target="_local" queueFilter.searchField="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <input data-ref="queue_search_input" type="text" name="queueSearchKeyword" class="input flex-1 min-w-[200px]" placeholder="$t:admin.schedules.queue.search_placeholder" value="{{_local.queueFilter?.searchKeyword || ''}}">
+            <responsive on="portable" class="input flex-1"/>
+            <on type="change">
+              <!-- 타이핑은 담기만 한다 — 실제 조회는 Enter 나 검색 버튼이다. -->
+              <set-state target="_local" queueFilter.searchKeyword="{{$event.target.value}}"/>
+            </on>
+            <on type="keypress" key="Enter">
+              <action-ref name="searchQueue"/>
+            </on>
+          </input>
+        </div>
+        <div data-ref="queue_search_row_line2" class="flex-center gap-2 ml-auto">
+          <responsive on="portable" class="grid grid-cols-1 gap-2 w-full"/>
+          <button data-ref="queue_detail_search_toggle" data-if="{{_local.isQueueEditMode || (query.view === 'logs' ? ['queue', 'connection', 'status', 'date'] : (query.view === 'failed' ? ['queue', 'connection', 'date'] : ['queue', 'connection'])).some(f =&gt; !(_local.queueVisibleFilters || []).includes(f))}}" type="button" class="btn btn-outline flex-center gap-2">
+            <responsive on="portable" class="flex-center btn btn-outline justify-center gap-2 w-full"/>
+            <on type="click">
+              <!-- 상세 필터 펼침/접힘. 검색편집을 켜면 강제로 펼친다. -->
+              <set-state target="_local" showQueueDetailFilter="{{!_local.showQueueDetailFilter}}"/>
+            </on>
+            <span>$t:admin.schedules.action.advanced_search</span>
+            <icon name="{{_local.showQueueDetailFilter ? 'chevron-up' : 'chevron-down'}}" class="text-base"/>
+          </button>
+        </div>
+      </div>
+      <slot-container data-type="composite" data-ref="queue_basic_filters_section" slotId="queue_basic_filters" class="filter-grid"/>
+      <span data-ref="queue_detail_filter_title" data-if="{{_local.showQueueDetailFilter &amp;&amp; (_local.isQueueEditMode || (query.view === 'logs' ? ['queue', 'connection', 'status', 'date'] : (query.view === 'failed' ? ['queue', 'connection', 'date'] : ['queue', 'connection'])).some(f =&gt; !(_local.queueVisibleFilters || []).includes(f)))}}" class="block mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-body font-medium">$t:admin.schedules.filter.detail_title</span>
+      <slot-container data-type="composite" data-ref="queue_detail_filters_section" data-if="{{_local.showQueueDetailFilter}}" slotId="queue_detail_filters" class="filter-grid mt-2"/>
+      <div data-ref="queue_filter_actions" class="flex-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+        <responsive on="portable" class="row-stack border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"/>
+        <div data-ref="queue_filter_actions_row1" class="contents">
+          <responsive on="portable" class="flex gap-2 w-full"/>
+          <div data-ref="queue_edit_search_button_wrapper" class="flex-1">
+            <responsive on="portable" class="hidden"/>
+            <button data-ref="queue_edit_search_button_pc" type="button" class="{{_local.isQueueEditMode ? 'btn btn-primary flex-center gap-2' : 'btn btn-outline flex-center gap-2'}}">
+              <on type="click">
+                <!-- 검색편집을 켜면 상세 필터를 강제로 펼친다 — 숨겨 둔 필터를 꺼내려면 그것이 보여야 한다. 끌 때는 펼침 상태를 그대로 둔다. -->
+                <set-state target="_local" isQueueEditMode="{{!_local.isQueueEditMode}}" showQueueDetailFilter="{{!_local.isQueueEditMode ? true : _local.showQueueDetailFilter}}"/>
+              </on>
+              <icon name="sliders" class="text-base"/>
+              <span>$t:admin.schedules.action.edit_search</span>
+            </button>
+          </div>
+          <div class="flex-center justify-center gap-2 flex-1">
+            <responsive on="portable" class="contents"/>
+            <button data-ref="queue_search_button" type="button" class="btn btn-primary">
+              <responsive on="portable" class="btn btn-primary flex-1"/>
+              <on type="click">
+                <action-ref name="searchQueue"/>
+              </on>
+              $t:common.search
+            </button>
+            <!-- 필터 초기화(넓은 화면). 입력값과 URL 조건을 함께 비우고 지금 하위 탭만 남긴다(`resetQueue`). -->
+            <button data-ref="queue_reset_button_pc" type="button" class="btn btn-outline">
+              <responsive on="portable" class="hidden"/>
+              <on type="click">
+                <action-ref name="resetQueue"/>
+              </on>
+              $t:admin.schedules.action.reset
+            </button>
+          </div>
+          <div class="flex-1">
+            <responsive on="portable" class="hidden"/>
+          </div>
+        </div>
+        <div data-ref="queue_filter_actions_row2_mobile" class="hidden">
+          <responsive on="portable" class="flex gap-2 w-full"/>
+          <button data-ref="queue_edit_search_button_mobile" type="button" class="{{_local.isQueueEditMode ? 'btn btn-primary flex items-center justify-center gap-2 flex-1' : 'btn btn-outline flex items-center justify-center gap-2 flex-1'}}">
+            <on type="click">
+              <!-- 좁은 화면용 짝 검색편집 버튼. 넓은 화면 버튼과 같이 상세 필터를 강제로 펼친다. -->
+              <set-state target="_local" isQueueEditMode="{{!_local.isQueueEditMode}}" showQueueDetailFilter="{{!_local.isQueueEditMode ? true : _local.showQueueDetailFilter}}"/>
+            </on>
+            <icon name="sliders" class="text-base"/>
+            <span>$t:admin.schedules.action.edit_search</span>
+          </button>
+          <!-- 필터 초기화(좁은 화면). 반응형에서 버튼 배치가 달라 두 벌을 둔다. -->
+          <button data-ref="queue_reset_button_mobile" type="button" class="btn btn-outline flex-1">
+            <on type="click">
+              <action-ref name="resetQueue"/>
+            </on>
+            $t:admin.schedules.action.reset
+          </button>
+        </div>
+      </div>
+    </div>
+    <div data-ref="queue_grid_area">
+      <div data-ref="queue_pending_area" data-if="{{(query.view || 'pending') === 'pending'}}">
+        <include src="partials/admin_schedule_list/_queue_pending_grid.g7.html"/>
+      </div>
+      <div data-ref="queue_failed_area" data-if="{{query.view === 'failed'}}">
+        <include src="partials/admin_schedule_list/_queue_failed_grid.g7.html"/>
+      </div>
+      <div data-ref="queue_logs_area" data-if="{{query.view === 'logs'}}">
+        <include src="partials/admin_schedule_list/_queue_logs_grid.g7.html"/>
+      </div>
+    </div>
+  </div>
+</partial>

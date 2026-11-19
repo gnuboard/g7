@@ -1,0 +1,24 @@
+feature: 언어 전환(엔진을 내리고 같은 화면을 새로 마운트) 뒤 포커스가 body 로 빠지지 않고 전환 직전 요소로 돌아온다 (engine-v1.95.0)
+
+description: |
+  TemplateApp.changeLocale 은 destroyTemplate 뒤 같은 화면을 다시 그려 포커스가 body 로 빠진다. 언어 메뉴 부품은 부품 훅
+  (G7Core.locale.handoff)으로 되돌리지만, 레이아웃의 set-locale 단추(모바일 서랍 언어 칩 등)와 서드파티 레이아웃은 닿지 않는다.
+  엔진이 전환 직전 포커스 요소의 식별자(렌더러가 싣는 노드 id, 없으면 id 있는 조상과 그 안 순번)를 맡겼다가 다시 그린 뒤
+  되돌린다. 요소가 없으면 본문 시작점(main, role=main, #main_content), 그 사이 사용자나 부품 훅이 옮겼으면 건드리지 않는다.
+  축 target 은 전환 직전 포커스 자리다.
+
+axes:
+  target: [element_with_id, element_without_id, element_gone, moved_by_user_or_component, body]
+
+effects:
+  - focus_returns_to_same_element      # 다시 그린 같은 요소(새 노드)로 포커스가 돌아온다
+  - focus_falls_back_to_content_start  # 맡긴 요소가 없으면 본문 시작점으로 보낸다
+  - focus_left_alone_when_moved        # 사용자·부품 훅이 이미 옮겼거나 전환 전 포커스가 없었으면 건드리지 않는다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/TemplateApp.localeSwitchFocus.test.tsx
+
+validation:
+  browser_check: 사용자 모바일 서랍 언어 칩, 관리자 머리 언어 단추(set-locale)를 키보드로 눌러 전환한 뒤 포커스가 같은 단추에 있는지, 언어 메뉴(부품 훅)는 한 번만 옮기는지
+  note: |
+    fail-first: changeLocale 의 되돌리기 호출을 빼면 element_with_id·element_without_id·element_gone 3건 red.

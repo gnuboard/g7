@@ -12,7 +12,7 @@
  * 계약 단언에 더해, 실제 필드 서브트리를 createLayoutTest 로 렌더링해
  * 옵션 계산식($t 선두 + $localized 매핑)까지 검증한다.
  *
- * @effects settings_catalog_includes_plugin_registered_disks
+ * 효과 요약(마커 아님, 평문): settings_catalog_includes_plugin_registered_disks — 각 it 의 주석이 그 효과를 잰다
  */
 
 import React from 'react';
@@ -253,10 +253,10 @@ describe('CKEditor5 공개 자산 디스크 필드 — 렌더링', () => {
         testUtils = makeUtils();
         const { container } = await testUtils.render();
 
-        expect(container.querySelector('label.form-label')?.textContent ?? '').toContain(
+        expect(container.querySelector('label.ckeditor-form-label')?.textContent ?? '').toContain(
             '공개 자산 디스크',
         );
-        expect(container.querySelector('p.form-hint')?.textContent ?? '').toContain(
+        expect(container.querySelector('p.ckeditor-form-hint')?.textContent ?? '').toContain(
             '에디터 이미지 서빙 디스크를 오버라이드합니다.',
         );
         expect(() => testUtils!.assertNoValidationErrors()).not.toThrow();
@@ -288,8 +288,8 @@ describe('CKEditor5 공개 자산 디스크 필드 — 렌더링', () => {
         testUtils = makeUtils({ public_asset_disk: 'none', public_asset_disk_unavailable: 'gone_cdn' });
         const { container } = await testUtils.render();
 
-        // 경고 글자색은 이 확장에 CSS 빌드가 없어 관리자 템플릿 text-warning-soft 와 같은 색 팔레트(라이트·다크 짝)로 싣는다(#757)
-        const notice = container.querySelector('p.text-yellow-700');
+        // 경고 글자색은 관리자 템플릿 text-warning-soft 와 같은 색 팔레트(라이트·다크 짝)를 이 플러그인 접두 유틸리티로 싣는다(#757)
+        const notice = container.querySelector('p.ckeditor\\:text-yellow-700');
         expect(notice?.textContent).toContain('gone_cdn');
         expect(notice?.textContent).toContain('스트리밍');
     });
@@ -302,6 +302,6 @@ describe('CKEditor5 공개 자산 디스크 필드 — 렌더링', () => {
         testUtils = makeUtils({ public_asset_disk: 'fake_cdn' });
         const { container } = await testUtils.render();
 
-        expect(container.querySelector('p.text-yellow-700')).toBeNull();
+        expect(container.querySelector('p.ckeditor\\:text-yellow-700')).toBeNull();
     });
 });

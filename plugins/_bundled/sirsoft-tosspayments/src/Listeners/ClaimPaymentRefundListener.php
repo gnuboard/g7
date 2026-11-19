@@ -6,8 +6,8 @@ namespace Plugins\Sirsoft\Tosspayments\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Plugins\Sirsoft\Tosspayments\Services\TossPaymentsApiService;
 
 /**
@@ -24,6 +24,13 @@ use Plugins\Sirsoft\Tosspayments\Services\TossPaymentsApiService;
 class ClaimPaymentRefundListener implements HookListenerInterface
 {
     private const PG_PROVIDER_ID = 'tosspayments';
+
+    /**
+     * @param  PaymentGatewayBridge  $bridge  이커머스 공개 결제 계약 (클레임 결제 결제 통화 합계)
+     */
+    public function __construct(
+        private readonly PaymentGatewayBridge $bridge,
+    ) {}
 
     /**
      * 구독할 훅 매핑을 반환합니다.
@@ -45,6 +52,7 @@ class ClaimPaymentRefundListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — 개별 메서드에서 처리)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -150,7 +158,7 @@ class ClaimPaymentRefundListener implements HookListenerInterface
      */
     private function paidLocalTotal(ClaimPayment $payment): float
     {
-        return app(ClaimPaymentService::class)->resolvePaymentCurrencyTotal($payment);
+        return $this->bridge->claimPaymentTotals($payment)->paymentCurrencyTotal;
     }
 
     /**

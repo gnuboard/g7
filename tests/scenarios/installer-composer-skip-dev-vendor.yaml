@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: task-runner.php 는 진입과 함께 SSE 를 실행하는 파일이라 include 불가 — 조합은 순수 함수 단위 effect 로 검증하고, 분기 순서는 소스 문자열로 잠근다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#658 task-runner.php 는 진입과 함께 SSE 를 실행하는 파일이라 include 불가 — 조합은 순수 함수 단위 effect 로 검증하고, 분기 순서는 소스 문자열로 잠근다.
 
 feature: 인스톨러 vendor 재사용 경로의 개발용(require-dev) 패키지 감지·안내와 컴파일 캐시 정리
 
@@ -60,6 +60,9 @@ effects:
 
   # 실행되는 명령만이 아니라 실패 시 안내하는 명령까지 --no-dev 를 갖는다
   - installer_composer_commands_all_carry_no_dev
+  # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
+  - installer_reports_production_vendor_as_pass
+  - core_returns_unknown_for_broken_or_composer1_installed_json
 
 test_files:
   - tests/Feature/Installer/DevVendorDetectionTest.php

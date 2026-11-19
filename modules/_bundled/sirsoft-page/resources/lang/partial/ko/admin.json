@@ -138,6 +138,7 @@
       "view_page": "페이지 보기",
       "publish_changed": "발행 상태가 변경되었습니다.",
       "attachments": "첨부파일 ({{count}})",
+      "real_name_sub": "실명 {{name}}",
       "info": {
         "published_at": "발행일시",
         "created_at": "생성일",

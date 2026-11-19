@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\PayNicepayments\Listeners;
 
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
+use Modules\Sirsoft\Ecommerce\Contracts\Currency\PriceFormatter;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 
@@ -45,6 +46,7 @@ class CancelActivityLogListener implements HookListenerInterface
      * 기본 핸들러 (미사용)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -77,7 +79,7 @@ class CancelActivityLogListener implements HookListenerInterface
             'description_key' => 'sirsoft-pay_nicepayments::activity_log.description.payment_cancel',
             'description_params' => [
                 'order_number' => $order->order_number,
-                'refund_amount' => ecommerce_format_price((int) $refundAmount, $order->currency),
+                'refund_amount' => app(PriceFormatter::class)->format((int) $refundAmount, $order->currency),
             ],
             'properties' => [
                 'tid' => $payment->transaction_id,

@@ -1541,17 +1541,46 @@ class ExtensionDocScaffolder
                 continue;
             }
 
+            // 7.2.0 표준 키는 `expression`(cron)·`frequency`(30초 주기)다. 옛 형식 `schedule` 도 읽는다 —
+            // 주기 키를 빼면 주기 열이 '-' 가 되어 "주기를 선언하지 않았다" 와 구분되지 않는다.
+            $cycle = ($schedule['frequency'] ?? null) === 'everyThirtySeconds'
+                ? 'everyThirtySeconds'
+                : ($schedule['expression'] ?? $schedule['schedule'] ?? $schedule['cron'] ?? $schedule['frequency'] ?? '-');
+
             $rows[] = [
                 $this->code((string) ($schedule['name'] ?? $schedule['command'] ?? $key)),
-                // 표준 계약 키는 `schedule` 이다 (AbstractModule/AbstractPlugin 의 getSchedules()
-                // 주석과 routes/console.php 소비부가 SSoT). 이 키를 빼면 주기 열이 모든 확장에서
-                // 영구히 '-' 가 되는데, "주기를 선언하지 않았다" 와 구분되지 않는다.
-                $this->code((string) ($schedule['schedule'] ?? $schedule['expression'] ?? $schedule['cron'] ?? $schedule['frequency'] ?? '-')),
-                (string) ($schedule['description'] ?? '-'),
+                $this->code((string) $cycle),
+                $this->scheduleText($schedule['label'] ?? $schedule['description'] ?? null),
             ];
         }
 
         return $this->table(['스케줄', '주기', '설명'], $rows);
+    }
+
+    /**
+     * 스케줄 명칭·설명(문자열 또는 {로케일: 문자열})을 표 칸 문자열로 바꿉니다.
+     *
+     * @param  mixed  $value  label 또는 description 값
+     * @return string ko → en → 첫 값 순으로 고른 문자열, 없으면 '-'
+     */
+    private function scheduleText(mixed $value): string
+    {
+        if (is_string($value) && $value !== '') {
+            return $value;
+        }
+
+        if (is_array($value)) {
+            foreach (['ko', 'en'] as $locale) {
+                if (is_string($value[$locale] ?? null) && $value[$locale] !== '') {
+                    return $value[$locale];
+                }
+            }
+            $first = reset($value);
+
+            return is_string($first) && $first !== '' ? $first : '-';
+        }
+
+        return '-';
     }
 
     /**

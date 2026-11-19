@@ -1,0 +1,38 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#40 권한 없는 관리자에게는 필터 값이 무엇이든 조건을 걸지 않으므로(권한 축이 필터 축을 무력화) 두 축을 곱하면 같은 결과만 늘어난다 — 권한별 시험으로 나눴다.
+feature: social_login_user_list_extension
+coverage_strategy: pairwise
+description: |
+  관리자 회원 목록 확장. 「가입경로」 필터는 코어 확장 필터 통로(`ext_filters[]=sirsoft-social_login.provider={키}`)로 그 제공자 연결이
+  있는 회원만 남기고, 「소셜 연결」 열은 코어 목록 일괄 필터에서 페이지 회원 id 로 연결을 한 번만 조회해 행마다 제공자 목록을 붙인다.
+  회원 연결 열람 권한이 없는 관리자에게는 필터도 열도 적용하지 않는다. 화면 쪽(필터 선택·열 선택기·셀 배지)은 레이아웃 시험과 E2E 가 잰다.
+  E2E 는 꺼진 제공자에 연결된 회원을 필터로 찾고(요청의 확장 조건, 새로고침 복원), 회원 상세 탭에서 마지막 연결을 강제 해제하며,
+  연결 열람 권한이 없는 관리자에게 필터 행이 없고 상세 탭이 권한 안내만 보이는지 본다. 휴대폰 폭에서는 상세 탭이 표 대신 세로 카드로
+  바뀌어 [강제 해제]가 가로 스크롤 없이 보인다.
+axes:
+  surface: [admin_user_list, admin_user_detail]
+  actor: [accounts_viewer, accounts_unlinker, users_reader_only]
+  filter: [kakao, unknown, too_long, disabled_linked]
+  member: [passwordless_single_link]
+  viewport: [desktop, mobile]
+  route_id: [non_uuid, missing_uuid]
+effects:
+  - provider_filter_narrows
+  - column_rows_have_providers
+  - column_single_query
+  - unknown_provider_empty
+  - invalid_provider_422
+  - no_permission_no_filter
+  - no_permission_no_column
+  - user_list_filter_by_provider_sent
+  - user_list_filter_restored_after_reload
+  - admin_detail_tab_lists_links
+  - admin_force_unlink_last_link
+  - user_surface_hidden_without_accounts_view
+  - mobile_cards_replace_table
+  - card_unlink_in_viewport
+  - card_unlink_same_call
+  - admin_detail_bad_route_without_toast
+test_files:
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Listeners/UserListSocialTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Playwright/specs/admin/social-user-surface.spec.ts
+  - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/layouts/admin.test.ts

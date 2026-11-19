@@ -1,0 +1,27 @@
+# 시나리오 매니페스트 — KG이니시스 클레임 추가결제 승인 리스너
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: kginicis_claim_payment_approve_listener
+
+description: |
+  클레임 추가결제 승인은 이커머스의 `claim_payment.approve` 필터를 이니시스 승인 리스너가 받아 처리한다.
+  리스너는 컨테이너에서 풀려 이커머스 공개 계약을 주입받는다(#916 ②, 훅 인자 Model 은 읽기만).
+
+  - 승인 훅을 필터로 구독하고, 다른 결제사의 결제 건은 처리하지 않는다.
+  - 결제창 단계 실패는 결제사 결과 코드로 거절하고, 허용 목록 밖 승인 주소는 부르지 않고 거절한다(SSRF 방어).
+  - PC·모바일 승인 성공은 거래번호와 승인 금액을 돌려주고, PC 가상계좌 승인은 망취소 후 거절한다(입금 대기 수단 미지원).
+
+axes:
+  case: [hook_subscription, other_provider, window_failure, auth_url_outside_whitelist, pc_approved, pc_vbank, mobile_approved]
+
+effects:
+  - inicis_claim_approve_listener_subscribes_the_approve_filter       # 승인 훅을 필터로 구독
+  - inicis_claim_approve_listener_skips_other_providers               # 다른 결제사 결제 건은 handled=false 로 넘긴다
+  - inicis_claim_window_failure_is_rejected_with_the_pg_code          # 결제창 실패 → 결제사 코드로 거절
+  - inicis_claim_auth_url_outside_whitelist_is_rejected_without_call  # 허용 목록 밖 승인 주소는 HTTP 호출 없이 거절
+  - inicis_claim_pc_approval_returns_transaction_and_paid_amount      # PC 승인 성공 → 거래번호·승인 금액·원 응답
+  - inicis_claim_pc_vbank_approval_is_net_cancelled_and_rejected      # PC 가상계좌 승인 → 망취소 후 거절
+  - inicis_claim_mobile_approval_returns_transaction_and_paid_amount  # 모바일 승인 성공 → 거래번호·승인 금액
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/ClaimPaymentApproveListenerTest.php

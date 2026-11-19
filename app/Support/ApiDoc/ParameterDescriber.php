@@ -169,6 +169,8 @@ class ParameterDescriber
         'encryption' => '전송 암호화 방식 (tls/ssl)',
         'storage_driver' => '스토리지 드라이버 (local/s3)',
         'public_asset_disk' => '공개 자산 직접 URL 서빙 디스크 (none/public/s3 + 플러그인 등록 디스크)',
+        'file_delegation' => '웹서버 파일 위임 방식 (none/x-sendfile/x-accel-redirect)',
+        'file_delegation_accel_prefix' => 'nginx internal 위치 접두사 (x-accel-redirect 일 때 필수, 예: /_g7_sendfile/)',
         'cache_driver' => '캐시 드라이버 (file/redis/memcached)',
         'session_driver' => '세션 드라이버 (file/database/redis)',
         'queue_driver' => '큐 드라이버 (sync/database/redis)',
@@ -204,6 +206,8 @@ class ParameterDescriber
         'log_driver' => '로그 드라이버 (single/daily/stack)',
         'log_level' => '로그 레벨 (debug/info/warning/error 등)',
         'log_days' => '로그 파일 보관 일수',
+        'queue_job_log_enabled' => '큐 작업 처리 기록(성공·실패) 사용 여부',
+        'queue_record_retention_days' => '큐 처리 기록·실패 작업 공통 보관 기간 (일, 1~90)',
         'search_engine_driver' => '검색 엔진 드라이버 (Scout 엔진 선택)',
         'session_lifetime' => '세션 유효 시간 (분)',
 
@@ -248,8 +252,6 @@ class ParameterDescriber
         'og_image_default_width' => '기본 Open Graph 이미지 너비 (px)',
         'og_image_default_height' => '기본 Open Graph 이미지 높이 (px)',
         'sitemap_enabled' => 'sitemap.xml 생성 사용 여부',
-        'sitemap_schedule' => 'sitemap 자동 생성 주기',
-        'sitemap_schedule_time' => 'sitemap 자동 생성 시각',
         'sitemap_cache_ttl' => 'sitemap 캐시 유효 시간 (초)',
         'bot_detection_enabled' => '검색엔진 봇 감지 사용 여부 (봇 요청에 SEO 렌더링 적용)',
         'bot_detection_library_enabled' => '봇 감지 라이브러리 사용 여부 (User-Agent 목록 대신 라이브러리 판정)',
@@ -264,7 +266,6 @@ class ParameterDescriber
         'sql_query_log' => 'SQL 쿼리 로그 기록 여부',
         'outbound_proxy' => '외부 HTTP 호출이 경유할 프록시 주소 (디버그 모드에서만 적용)',
         'outbound_proxy_bypass' => '프록시를 경유하지 않을 호스트 목록',
-        'maintenance_mode' => '점검 모드 사용 여부 (사이트 접근 차단)',
         'force_https' => 'HTTPS 강제 리다이렉트 여부',
         'max_login_attempts' => '로그인 실패 허용 횟수 (초과 시 잠금)',
         'login_lockout_time' => '로그인 잠금 지속 시간 (분)',
@@ -276,11 +277,28 @@ class ParameterDescriber
         'image_quality' => '이미지 리사이즈 시 압축 품질 (1~100)',
         'image_max_width' => '이미지 리사이즈 최대 너비 (px)',
         'image_max_height' => '이미지 리사이즈 최대 높이 (px)',
+        // 이미지 썸네일 (근거: Settings\SaveSettingsRequest upload.thumbnail_*, #869)
+        'thumbnail_enabled' => '이미지 썸네일 사용 여부 (끄면 모든 이미지를 원본으로 낸다)',
+        'thumbnail_presets' => '썸네일 규격 표 (고정 5행·og·켜진 확장 규격·운영자 규격, 최대 settings_limits.upload_thumbnail_presets_max 행)',
+        'thumbnail_content_preset' => '본문 이미지에 쓸 썸네일 규격 이름 (사용 중인 규격만)',
+        'thumbnail_disk_public' => '공개 이미지 썸네일 저장 디스크 (thumbnails + 공개 자산 디스크)',
+        'thumbnail_disk_gated' => '권한이 걸린 이미지 썸네일 저장 디스크 (thumbnails, s3, 비공개 첨부 저장소 디스크. 공개 자산 디스크는 s3 외 불가)',
+        'thumbnail_prune_enabled' => '썸네일 정리 스케줄(thumbnails:prune --scheduled) 사용 여부',
+        'thumbnail_animated_original' => '움직이는 이미지(GIF·WebP·APNG)를 썸네일 대신 원본으로 낼지 (끄면 첫 프레임 썸네일, 기본 true)',
+        'thumbnail_generate_per_minute' => 'IP 하나가 1분에 새로 만들게 할 수 있는 썸네일 수 (1~10000, 비우면 .env G7_THUMBNAIL_GENERATE_PER_MINUTE 또는 120)',
+        'thumbnail_lock_wait_seconds' => '같은 썸네일을 다른 요청이 만들고 있을 때 기다리는 시간(초, 1~30, 비우면 .env G7_THUMBNAIL_LOCK_WAIT_SECONDS 또는 10)',
+        'thumbnail_max_source_pixels' => '썸네일을 만들 원본의 픽셀 수 상한 (1000000~100000000, 비우면 .env G7_THUMBNAIL_MAX_SOURCE_PIXELS 또는 16000000)',
+        'thumbnail_pregenerate_batch' => '「기존 이미지 썸네일 만들기」 한 번 호출이 처리하는 원본 수 (1~500, 비우면 .env G7_THUMBNAIL_PREGENERATE_BATCH 또는 20)',
+        'thumbnail_pregenerate_time_budget' => '「기존 이미지 썸네일 만들기」 한 번 호출의 시간 예산(초, 1~60, 비우면 .env G7_THUMBNAIL_PREGENERATE_TIME_BUDGET 또는 15)',
+        'thumbnail_purge_time_budget' => '썸네일 「비우기」 한 번 호출의 시간 예산(초, 1~60, 비우면 .env G7_THUMBNAIL_PURGE_TIME_BUDGET 또는 10)',
+        'image_driver' => '이미지 처리 엔진 (gd/imagick + 플러그인 등록 엔진, 이 서버에서 쓸 수 없는 코어 엔진은 422)',
 
         // 사이트 기본 정보 (근거: Settings general 그룹)
         'site_url' => '사이트 기본 URL',
         'site_description' => '사이트 설명',
         'site_logo' => '사이트 로고 이미지',
+        'site_favicon' => '사이트 파비콘 첨부 ID 배열 (최대 1개 — ico·png·svg·gif·jpg·jpeg·webp)',
+        'og_image_default' => '사이트 기본 공유(OG) 이미지 첨부 ID 배열',
         'admin_email' => '관리자 이메일 주소',
         'currency' => '통화 코드 (ISO 4217 — 예: KRW)',
     ];
@@ -366,6 +384,26 @@ class ParameterDescriber
                 'title' => 'SEO 메타 제목 (검색엔진/소셜 공유 표시 제목)',
                 'description' => 'SEO 메타 설명 (검색엔진/소셜 공유 표시 요약)',
                 'keywords' => 'SEO 메타 키워드 (검색엔진 노출 키워드, 쉼표 구분)',
+                default => null,
+            };
+        }
+
+        // 썸네일 규격 행 (근거: SaveSettingsRequest upload.thumbnail_presets.*.*, #869) — leaf 만으로는
+        // name·width 가 일반 「이름」「너비」로 축소된다.
+        if (str_ends_with($parent, 'thumbnail_presets.*')) {
+            return match ($leaf) {
+                'name' => '썸네일 규격 이름 (?size= 값, 운영자 규격은 ^[a-z][a-z0-9_]{1,31}$ · 예약어 xs/sm/md/lg/xl/og 제외, 고정·확장 행은 이름 고정)',
+                'source' => '썸네일 규격 출처 (core/custom/확장 식별자)',
+                'width' => '썸네일 가로 (px, 16~4096 — og 행 제외)',
+                'height' => '썸네일 세로 (px, 16~4096, fit=width 면 비움)',
+                'fit' => '맞춤 방식 (cover/contain/width)',
+                'anchor' => '자르기 기준점 (center/top/bottom/left/right)',
+                'quality' => '인코딩 품질 (1~100, 비우면 업로드 탭 이미지 품질)',
+                'format' => '출력 형식 (original/webp/avif)',
+                'upscale' => '원본이 규격보다 작을 때 확대 여부',
+                'pregenerate' => '원본 등록 직후 미리 생성 여부',
+                'numeric' => '?w= 숫자 요청 후보 여부',
+                'enabled' => '규격 사용 여부',
                 default => null,
             };
         }

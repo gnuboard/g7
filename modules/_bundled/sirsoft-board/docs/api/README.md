@@ -5,32 +5,17 @@
 >
 > **응답 문구**: `message` 의 언어와 개수에 따른 단수·복수(영어에서 1이면 단수, 0·2 이상이면 복수) 규칙은 코어와 같습니다 — [코어 API 안내 「로케일」](../../../../../docs/backend/api/README.md#로케일). 검증 오류(`errors`)·예외 문구 중 상한이 설정값인 것(첨부·이미지 개수 상한 등)도 그 값으로 고릅니다.
 >
-> **이슈 #524 주의**: `scraps.md` 행과 `board.md`·총계의 증분은 **손으로 넣었습니다**. `api:docgen` 기본
-> 모드는 파괴적 재생성 가드(`docs/backend/api-documentation.md`)가 막고 있어 이 블록만 다시 굽는 방법이
-> 없는데, 표에 없는 문서는 아무도 찾지 못하기 때문입니다. 가드가 풀려 생성기를 다시 돌리면 이 값들은
-> 생성기 산식으로 덮여도 무방합니다 — `scraps.md` 의 6개 절 중 회원용 2개는 `scrap.md` 와 겹칩니다.
->
-> **이슈 #525 주의**: `reports.md` 행의 7→9 와 총계의 +2 도 같은 이유로 **손으로 넣었습니다**.
-> 마이페이지 「내 신고」 2개(`GET /me/reports`·`DELETE /me/reports/{reportLogId}`)는 회원 인증과
-> 본인 소유 데이터가 필요해 `api:docgen` 의 실측 대상이 아니라, 생성기가 세지 못합니다.
->
-> **2026-09-16 (develop-7.1.0 2차 병합) 실측 대조**: `php artisan api:docgen --scope=module:sirsoft-board --check`
-> 결과 **drift 없음** — 이 문서가 코드 실측과 어긋나지 않음을 확인했습니다(병합으로 유입된 라우트 변경 없음).
-> 다만 아래 자동 생성 블록의 **선언 총계(문서 12 · 엔드포인트 94)가 표 실물(행 15 · 합 106)과 어긋나** 있습니다.
-> #524·#525 가 손으로 더한 행(`scraps`·`reaction*` 3종)이 표에는 들어갔지만 총계에는 반영되지 않은 상태이며,
-> 위 두 주의 항목이 밝힌 대로 이 블록은 `--check` 가드 때문에 부분 재생성이 불가합니다. 가드가 풀려
-> 생성기를 다시 돌리면 총계가 산식으로 바로잡힙니다 — 엔드포인트 문서 자체의 정확성과는 무관합니다.
->
 > **없는 게시판(`{slug}`)**: 게시판별 하위 경로(`boards/{slug}/posts/**`·`boards/{slug}/posts/{postId}/comments/**`·
 > `boards/{slug}/attachments/**`·`boards/{slug}/attachment/{hash}`·`boards/{slug}/comments/{commentId}/verify-password`·
 > 신고 접수(`boards/{slug}/posts/{postId}/reports`·`…/comments/{commentId}/reports`), 관리자
 > `admin/board/{slug}/posts/**`·`…/attachments/**`·`…/posts/{postId}/comments/**`)는 권한 검사보다 먼저 게시판
 > 존재를 확인해 없으면 **404** 로 끝냅니다. 게시판별 권한 식별자는 게시판이 있어야 생기므로, 종전에는 없는 게시판이
-> 비회원 401·회원/관리자 403 으로 보였습니다. 이 변경은 각 엔드포인트 절의 오류 응답 표에 아직 반영되지 않았습니다 —
-> 이 문서의 실측 재생성(`api:docgen`)은 개발 서버 실측이 필요해 손으로 이 안내만 더했습니다.
+> 비회원 401·회원/관리자 403 으로 보였습니다. 일부 엔드포인트 절의 오류 응답 표에는 이 404 가 따로 적혀 있지 않으므로 이 안내를 함께 보세요.
+
+> **숫자 번호 자리**: 경로의 번호 자리(`{id}`·`{postId}`·`{commentId}`·`{report}` 등)는 숫자만 받습니다. 숫자가 아닌 값(예: `…/attachments/abc`)은 라우트가 없는 것과 같아 **404** 입니다(7.1.6 까지는 일부 경로가 500 서버 오류였습니다).
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 12 · **엔드포인트 수**: 94
+- **문서 수**: 14 · **엔드포인트 수**: 111
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
@@ -38,20 +23,25 @@
 | [board.md](board.md) | `board` | 21 |
 | [board-activities.md](board-activities.md) | `board-activities` | 1 |
 | [board-types.md](board-types.md) | `board-types` | 4 |
-| [boards.md](boards.md) | `boards` | 37 |
+| [boards.md](boards.md) | `boards` | 43 |
 | [dashboard.md](dashboard.md) | `dashboard` | 4 |
 | [identity-policies.md](identity-policies.md) | `identity-policies` | 4 |
 | [my-comments.md](my-comments.md) | `my-comments` | 1 |
-| [reaction.md](reaction.md) | `reaction` | 3 |
 | [reaction-types.md](reaction-types.md) | `reaction-types` | 3 |
 | [reactions.md](reactions.md) | `reactions` | 6 |
 | [reports.md](reports.md) | `reports` | 9 |
-| [scrap.md](scrap.md) | `scrap` | 3 |
 | [scraps.md](scraps.md) | `scraps` | 6 |
-| [settings.md](settings.md) | `settings` | 5 |
+| [settings.md](settings.md) | `settings` | 6 |
 | [users.md](users.md) | `users` | 2 |
 
 <!-- @generated:end -->
+
+## 목차 표에 없는 안내 문서
+
+아래 두 문서는 생성 블록이 없는 짧은 위치 안내라 자동 목차에 잡히지 않습니다. 엔드포인트 설명은 목차의 다른 문서에 있는 생성 절이 담습니다.
+
+- [reaction.md](reaction.md): 게시글 반응과 댓글 반응, 관리자 반응 유형 목록의 요약과 위치. 생성 절은 [boards.md](boards.md)(게시글 반응, 댓글 반응)와 [reaction-types.md](reaction-types.md)(유형 목록)에 있습니다.
+- [scrap.md](scrap.md): 회원용 스크랩 토글, 목록, 개별 삭제, 선택 해제의 요약과 위치. 생성 절은 [boards.md](boards.md)(토글)와 [scraps.md](scraps.md)(목록, 해제)에 있습니다.
 
 ## 회원 이메일 노출 범위
 

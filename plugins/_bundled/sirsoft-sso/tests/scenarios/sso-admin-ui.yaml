@@ -1,0 +1,101 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 화면마다 따로 고른 입력 변수다 — 서로 곱하면 한 화면에 함께 있지 않은 조합(예: 로그인 버튼 + CSV 단계)이 대부분이라 명목상이다.
+feature: sso_admin_ui
+description: |
+  SSO 관리자 화면과 주입 조각의 구운 레이아웃 계약 — 설정(IdP 목록·편집 8하위탭·정책·보존), 회원 연결(추가·사전 등록·CSV·해제), 이력, 로그인 버튼, 마이페이지 카드, 회원 상세 탭, 회원 목록 필터·열, 관리자 핸들러(복사·CSV 읽기·결과 CSV).
+axes:
+  notice: [deactivate]
+  field: [deprovision_on_login]
+  attempt: [failed_with_summary]
+  screen: [plugin_settings, "accounts|logs", accounts, logs, "plugin_settings|accounts|logs"]
+  locale: ["ko|en"]
+  storage: [plugin_api]
+  tab: [idps, connection, roles, policy, retention, "attempts|scim", provisioning, diagnostics, "attributes|roles"]
+  view: ["list|edit"]
+  subtabs: ["8"]
+  schema: [driver]
+  viewer: ["delegate|super", delegate]
+  action: ["preview_impact|save", "add_existing|preregister", "link|unlink"]
+  routes: ["accounts|logs"]
+  csv: ["preview|execute|download"]
+  unlink: [last_method]
+  extension: [all]
+  surface: ["user|admin", mypage, admin_user_detail, admin_user_list, reauth_return, ]
+  filter: [idp, unlinked]
+  columns: ["department|title"]
+  value: ["comma|quote|formula|null"]
+  file: ["small|too_large"]
+  text: ["present|empty"]
+  result: ["already_linked|unknown_code|linked", "access_denied|ticket_invalid|unknown_code"]
+effects:
+  - unlinked_option_maps_to_ext_token
+  - deactivate_notice_always_shown
+  - on_login_fixed_on
+  - on_login_not_submitted
+  - response_summary_shown_when_present
+  - settings_i18n_keys_present
+  - uses_plugin_api_only
+  - no_core_settings_save
+  - list_hidden_while_editing
+  - edit_view_by_query
+  - eight_subtabs
+  - schema_driven_fields
+  - secrets_separate
+  - admin_rule_locked_for_delegate
+  - role_rules_locked_notice
+  - super_only_fields_disabled
+  - impact_endpoint_called
+  - save_uses_policy_body
+  - retention_fields_present
+  - operations_i18n_keys_present
+  - routes_declared_with_permission
+  - add_posts_user_or_new_user
+  - provision_gated
+  - preview_then_execute
+  - result_download
+  - last_method_warning_then_confirm
+  - two_tabs
+  - filters_by_query
+  - injection_i18n_keys_present
+  - buttons_above_social
+  - guard_param
+  - start_login_handler
+  - ticket_start
+  - unlink_block_shown
+  - priority_before_marketing
+  - tab_injected
+  - reads_user_sso
+  - email_differs_badge
+  - ext_filter_token
+  - grid_and_selector_both
+  - not_default_column
+  - csv_escaped
+  - formula_guarded
+  - text_into_local_state
+  - too_large_refused
+  - copied_toast
+  - empty_ignored
+  - empty_message_on_zero_rows
+  - no_colon_placeholder
+  - login_button_shows_idp_label
+  - every_param_substituted
+  - components_exist_in_template
+  - detail_rows_rendered
+  - unlink_enabled_by_ability
+  - cell_labels_deferred
+  - dates_formatted
+  - scim_first_issue_without_confirm
+  - link_error_toast
+  - unknown_code_generic
+  - reauth_error_toast
+  - reauth_screens_all_covered
+  - sp_info_copy_label_shown_from_640
+  - mapping_inputs_fixed_width_from_768
+  - ldap_test_inputs_third_width_from_640
+test_files:
+  - plugins/_bundled/sirsoft-sso/resources/js/__tests__/layouts/plugin-settings.test.tsx
+  - plugins/_bundled/sirsoft-sso/resources/js/__tests__/layouts/admin-screens.test.tsx
+  - plugins/_bundled/sirsoft-sso/resources/js/__tests__/layouts/injections.test.tsx
+  - plugins/_bundled/sirsoft-sso/resources/js/__tests__/handlers/admin.test.ts
+  - plugins/_bundled/sirsoft-sso/resources/js/__tests__/layouts/empty-states.test.tsx
+  - plugins/_bundled/sirsoft-sso/resources/js/__tests__/layouts/ui-placeholders.test.tsx
+  - plugins/_bundled/sirsoft-sso/resources/js/__tests__/layouts/template-components.test.tsx

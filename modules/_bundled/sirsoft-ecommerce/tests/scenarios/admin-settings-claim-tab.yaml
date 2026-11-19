@@ -77,36 +77,36 @@ effects:
   # 배지 색 어휘는 Enum 이 단일 출처이고 소비 화면이 둘이다. 사전이 어휘를 못 덮으면
   # 관리자는 무색 뱃지, 구매자는 default 색으로 조용히 뭉개진다.
   - claim_status_variant_vocabulary_covered_by_both_screens
-  # 15차: 화면 사본(프론트 partial enums.json)과 API 정본(백엔드 enums.php)이 같은 Enum 값을
+  # 화면 사본(프론트 partial enums.json)과 API 정본(백엔드 enums.php)이 같은 Enum 값을
   # 두 파일에 갖는다. 키 파리티 검사는 값을 대조하지 않으므로 갈리면 오류 없이 화면마다 다른 말이 나간다.
   - claim_enum_labels_agree_between_screen_and_api
   - settings_claim_reason_name_requires_current_locale
-  # 10차 B1 의 회귀 증명 — 기존 행(id 보유)은 현재 로케일 이름 필수를 면제받는다.
+  # 회귀 증명 — 기존 행(id 보유)은 현재 로케일 이름 필수를 면제받는다.
   - settings_claim_reason_name_required_locale_is_current_locale
-  # 11차: `id` 는 그 면제의 유일한 근거다. 실재하지 않는 id(다른 유형의 id 포함)는 면제만 받고 sync 에서
+  # `id` 는 그 면제의 유일한 근거다. 실재하지 않는 id(다른 유형의 id 포함)는 면제만 받고 sync 에서
   # create 로 흘러 이름 없는 사유를 만든다 — 422 로 거절한다.
   - settings_claim_reason_unknown_id_is_rejected
-  # 11차: 기존 행끼리 코드를 맞바꾸면 페이로드 안에서는 유일해도 행 단위 update 가 DB unique 에서 죽고,
+  # 기존 행끼리 코드를 맞바꾸면 페이로드 안에서는 유일해도 행 단위 update 가 DB unique 에서 죽고,
   # 그 시점엔 설정 파일이 이미 기록돼 반쪽 상태 + 500 이 남는다 — 파일 쓰기 전에 422 로 거절한다.
   - settings_claim_reason_code_swap_is_rejected_before_the_write
-  # 19차: 위 거절의 **음성 대조군**(200). 맞바꾸기 거절이 "같은 저장에서 지워지는 행의 코드를
+  # 위 거절의 **음성 대조군**(200). 맞바꾸기 거절이 "같은 저장에서 지워지는 행의 코드를
   # 물려받기" 까지 막으면 안 된다 — 삭제가 update 보다 먼저다. 이 200 케이스가 거절 effect 를
   # 마킹하고 있어 그 셀이 200 단언만으로 채워졌다(400/422 가드가 회귀해도 초록). 자기 계약을
   # 말하는 effect 로 분리한다.
   - settings_claim_reason_code_takeover_from_a_deleted_row_is_allowed
-  # 11차: 추가 폼이 코드 형식(서버 `ClaimReasonCodeFormat` 과 같은 규칙)을 미리 본다 — 형식 위반 코드가
+  # 추가 폼이 코드 형식(서버 `ClaimReasonCodeFormat` 과 같은 규칙)을 미리 본다 — 형식 위반 코드가
   # 행으로 들어가면 저장 422 가 행 번호 없이 배너로만 뜨고 코드 칸은 읽기 전용이라 그 자리에서 못 고친다.
   - settings_claim_reason_code_format_checked_before_add
-  # 15차: 인라인 추가 폼의 이름 시드가 활성 언어팩 전체에서 파생돼야 한다 — ko/en 리터럴이면
+  # 인라인 추가 폼의 이름 시드가 활성 언어팩 전체에서 파생돼야 한다 — ko/en 리터럴이면
   # 그 밖의 로케일 운영자는 입력칸도 언어 추가 버튼도 없어 폼을 확정할 수 없고, 그동안 [저장]은
   # 인라인 폼 가드에 막힌다(안내가 지시하는 동작이 수행 불가능해진다).
   - settings_inline_form_name_seed_derives_from_active_locales
-  # 15차: 경고 문구의 라벨 토큰과 사전 키가 같은 집합이어야 한다 — 개수 비교로는 개명이 통과하고
+  # 경고 문구의 라벨 토큰과 사전 키가 같은 집합이어야 한다 — 개수 비교로는 개명이 통과하고
   # 그때 운영자 화면에 키 원문이 뜬다. ja 팩도 모집단이다.
   - settings_save_pending_form_labels_match_dictionary_keys
-  # 12차: 추가 폼이 길이 50·유형 내 중복도 미리 보고, 서버가 행의 code 를 거절하면 표·카드가 그 행을 지목한다
+  # 추가 폼이 길이 50·유형 내 중복도 미리 보고, 서버가 행의 code 를 거절하면 표·카드가 그 행을 지목한다
   - settings_claim_reason_row_code_error_is_pointed_at_the_row
-  # 12차: 사유·배송사·배송유형 추가 폼을 연 채 페이지 [저장] 을 누르면 막고 경고한다 (통화 2축과 같은 가드)
+  # 사유·배송사·배송유형 추가 폼을 연 채 페이지 [저장] 을 누르면 막고 경고한다 (통화 2축과 같은 가드)
   - settings_save_is_blocked_while_an_inline_add_form_is_open
   - settings_claim_requires_update_permission
   # DoD 축 — 저장이 화면 밖에 도달하는지 (§7 S10)
@@ -118,7 +118,7 @@ effects:
   # 라벨을 잃고(원문 키 노출) 한 번 지우면 이 화면에서 다시 고를 수 없다.
   - settings_claim_charge_payment_method_options_do_not_filter_by_order_catalog_active
   - settings_claim_status_vocabulary_matches_server_gate
-  # 9차: 저장 한 번에 '꺼둔 것이 켜지는' 축과, 두 경로로 갈렸던 코드 형식.
+  # 저장 한 번에 '꺼둔 것이 켜지는' 축과, 두 경로로 갈렸던 코드 형식.
   # 셋 다 예외도 로그도 없이 운영자 의도와 반대로 동작하거나 탭을 영구 저장 불가로 만든다.
   - settings_claim_completion_defaults_reject_partial_map
   - settings_claim_reason_visibility_flags_reject_null
@@ -147,7 +147,7 @@ effects:
   - settings_claim_tab_renders_only_on_its_own_tab           # 탭 블록의 `if` 가 claim 탭으로 좁혀져 있다
   - settings_claim_inputs_all_locked_for_read_only_operator  # 7 파셜의 입력형 노드마다 isReadOnly 잠금 표현식
   # 모바일 카드의 error 바인딩이 선언되지 않은 반복 변수를 읽으면 표현식은 조용히 빈 문자열이 되고,
-  # 모바일에서만 어느 카드가 422 인지 표시되지 않는다 (10차 배송유형 카드 `$type` 오타).
+  # 모바일에서만 어느 카드가 422 인지 표시되지 않는다 (배송유형 카드 `$type` 오타).
   - settings_card_error_binding_uses_the_declared_item_var
   # 탭을 옮겼다 돌아오면 이전 입력이 안내 없이 되살아나던 자리 — 정리 범위가 각 폼의 [취소] 와 같아야 한다.
   - settings_tab_switch_clears_the_same_scope_as_each_form_cancel

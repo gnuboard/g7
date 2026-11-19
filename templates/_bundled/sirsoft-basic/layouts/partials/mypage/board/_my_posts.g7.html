@@ -4,7 +4,8 @@
 <partial description="마이페이지 내 게시글 활동 - 내가 쓴 글 탭">
   <div>
     <!-- 필터 영역 -->
-    <div class="flex flex-col sm:flex-row gap-3 mb-4">
+    <div class="flex flex-col gap-3 mb-4">
+      <responsive on="640-" class="flex flex-row gap-3 mb-4"/>
       <!-- 게시판 필터 -->
       <select aria-label="$t:mypage.board_activities.reactions.table.board" value="{{_global.myPostsBoard ?? ''}}" class="w-full min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" options="{{[{ value: '', label: '$t:mypage.board_activities.filter.all_boards' }].concat((boards?.data ?? []).map(board => ({ value: String(board?.slug ?? ''), label: board?.name })))}}">
         <on type="change">

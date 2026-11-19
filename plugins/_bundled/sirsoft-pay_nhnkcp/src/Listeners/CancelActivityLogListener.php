@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\PayNhnkcp\Listeners;
 
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
+use Modules\Sirsoft\Ecommerce\Contracts\Currency\PriceFormatter;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 
@@ -23,6 +24,13 @@ class CancelActivityLogListener implements HookListenerInterface
     use ResolvesActivityLogType;
 
     private const PG_PROVIDER_ID = 'nhnkcp';
+
+    /**
+     * @param  PriceFormatter  $priceFormatter  이커머스 가격 표기 계약
+     */
+    public function __construct(
+        private readonly PriceFormatter $priceFormatter,
+    ) {}
 
     /**
      * 구독할 훅 매핑 반환
@@ -44,6 +52,7 @@ class CancelActivityLogListener implements HookListenerInterface
      * 기본 핸들러 (미사용)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -76,7 +85,7 @@ class CancelActivityLogListener implements HookListenerInterface
             'description_key' => 'sirsoft-pay_nhnkcp::activity_log.description.payment_cancel',
             'description_params' => [
                 'order_number' => $order->order_number,
-                'refund_amount' => ecommerce_format_price((int) $refundAmount, $order->currency),
+                'refund_amount' => $this->priceFormatter->format((int) $refundAmount, $order->currency),
             ],
             'properties' => [
                 'tno' => $payment->transaction_id,

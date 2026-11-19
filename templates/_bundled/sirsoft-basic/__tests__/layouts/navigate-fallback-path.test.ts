@@ -108,7 +108,9 @@ describe('바깥 주소 navigate 의 fallbackPath', () => {
   it('화면마다 정상 착지점이 fallbackPath 다', () => {
     const shopGuestOrders = "{{(_global.shopBase ?? '') + '/guest/orders'}}";
     const expected: Record<string, string[]> = {
-      'partials/auth/_login_form.json': ['/', '/', '/', '/'],
+      // 로그인 완료 이동은 1.4.0 부터 로그인 화면의 명명 액션 applyLoginResult(로그인·로그인 인계 공용)에 있다
+      'partials/auth/_login_form.json': ['/', '/', '/'],
+      'auth/login.json': ['/'],
       'auth/identity_challenge.json': ['/'],
       'partials/board/show/modals/_password_verify_modal.json': ['/board/{{route.slug}}'],
       'partials/shop/_checkout_summary.json': ['{{_global.shopBase}}/orders/{{response.data.order.order_number}}/complete'],

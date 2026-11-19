@@ -6,6 +6,7 @@ use App\Extension\AbstractPlugin;
 use App\Services\SettingsService;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\AssertNoDuplicateInicisIdentity;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\ClaimInicisIdentityOnRegistering;
+use Plugins\Sirsoft\VerificationKginicis\Listeners\CleanInicisChallengeMappingsOnLogPurge;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\CleanInicisRecordOnUserDelete;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\CleanInicisRecordOnUserWithdraw;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\CompleteInicisRecordAfterRegister;
@@ -132,6 +133,7 @@ class Plugin extends AbstractPlugin
      *  - Phase C: RegisterInicisProviderListener (Provider 레지스트리 filter)
      *  - Phase D: CompleteInicisRecordAfterRegister (비로그인 가입 PII 흡수)
      *  - Phase F: CleanInicisRecordOnUserWithdraw / CleanInicisRecordOnUserDelete (PII 파기)
+     *  - 로그 파기: CleanInicisChallengeMappingsOnLogPurge (보관주기 로그 파기 직전 challenge 매핑 명시 삭제)
      *  - Phase G: AssertNoDuplicateInicisIdentity (가입 직전 동일인 차단)
      *  - 1.1.4: ClaimInicisIdentityOnRegistering (가입 트랜잭션 안 동일인 선점 — 동시 가입 경합 차단)
      *  - 설정 검증: ValidateInicisSettingsListener (라이브 모드 조건부 required filter)
@@ -145,6 +147,7 @@ class Plugin extends AbstractPlugin
             CompleteInicisRecordAfterRegister::class,
             CleanInicisRecordOnUserWithdraw::class,
             CleanInicisRecordOnUserDelete::class,
+            CleanInicisChallengeMappingsOnLogPurge::class,
             AssertNoDuplicateInicisIdentity::class,
             ClaimInicisIdentityOnRegistering::class,
             ValidateInicisSettingsListener::class,

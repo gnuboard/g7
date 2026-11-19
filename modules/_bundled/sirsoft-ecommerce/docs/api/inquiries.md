@@ -30,6 +30,145 @@
 ---
 
 ### GET /api/modules/sirsoft-ecommerce/admin/inquiries
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.inquiries.index -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.inquiries.index`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminInquiryController@index`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.inquiries.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| page | query | integer | 아니오 | min 1 | 조회할 페이지 번호 (1부터 시작) |
+| per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
+| sort | query | string | 아니오 | `created_at_desc`(기본), `created_at_asc` | 정렬 |
+| search_field | query | string | 아니오 | `member`, `member_id`, `email`, `product`, `content` | 검색 대상 |
+| search_keyword | query | string | 아니오 | max 100 | 검색어 |
+| user_id | query | integer | 아니오 | min 1 | user 식별자 |
+| user_uuid | query | string | 아니오 | — | 회원 한정 (회원 UUID, `uuid` 형식). 그런 회원이 없으면 빈 결과. `user_id` 가 함께 오면 `user_id` 가 우선 |
+| start_date | query | date | 아니오 | — | 조회 기간 시작일 (이 날짜 이후 데이터) |
+| end_date | query | date | 아니오 | — | 조회 기간 종료일 (이 날짜 이전 데이터) |
+| is_answered | query | boolean | 아니오 | `1`/`0` | 답변 여부. `false` 가 「미답변만」이라 비어 있음과 구분됩니다 |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/admin/inquiries?page=1&per_page=1&sort=created_at_desc&search_field=member&search_keyword=%EC%98%88%EC%8B%9C%EA%B0%92&user_id=1&user_uuid=%EC%98%88%EC%8B%9C%EA%B0%92&start_date=2026-01-01&end_date=2026-01-01&is_answered=1 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| number | integer | `166` | 목록에서의 순번 (페이지네이션 반영 행 번호 — HasRowNumber 파생) |
+| id | integer | `471` | 식별자 (삭제·답변이 받는 값) |
+| member | object | `{"uuid":"a2d5ad2e-4d99-46fe-9b64-d743f65f961f","name":"탈퇴…` | 회원. 비회원 문의거나 회원이 지워졌으면 `null` |
+| product | object | `{"id":513,"name":"무선 마우스 세트 #99","display_status":"visibl…` | 문의 대상 상품 (id · 이름 · 노출/판매 상태 라벨) |
+| content_excerpt | string | `제품 구매 후 하자가 발생한 경우 A/S나 보증이 어떻게 되는지 궁…` | 본문 요약 100자. 질문 글 타입을 해석할 수 없으면 `null` |
+| is_answered | boolean | `false` | 답변 여부 — 행 배지가 이 값으로 갈립니다 |
+| answered_at | string | `2026-08-29 11:19:33` | answered 일시 |
+| created_at | string | `2026-10-10 17:19:33` | 등록 시각 (뷰어 시간대) |
+| abilities | object | `{"can_reply":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
+
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "상품문의 목록을 조회했습니다.",
+    "data": {
+        "data": [
+            {
+                "number": 166,
+                "id": 471,
+                "member": null,
+                "product": {
+                    "id": 513,
+                    "name": "무선 마우스 세트 #99",
+                    "display_status": "visible",
+                    "display_status_label": "전시",
+                    "sales_status": "on_sale",
+                    "sales_status_label": "판매중"
+                },
+                "content_excerpt": "제품 구매 후 하자가 발생한 경우 A/S나 보증이 어떻게 되는지 궁금합니다.",
+                "is_answered": false,
+                "answered_at": null,
+                "created_at": "2026-10-10 17:19:33",
+                "abilities": {
+                    "can_reply": true,
+                    "can_delete": true
+                }
+            },
+            {
+                "number": 165,
+                "id": 470,
+                "member": {
+                    "uuid": "a2d5ad2e-4d99-46fe-9b64-d743f65f961f",
+                    "name": "탈퇴한 사용자",
+                    "email": "withdrawn_3360@removed.invalid",
+                    "is_withdrawn": true
+                },
+                "product": {
+                    "id": 513,
+                    "name": "무선 마우스 세트 #99",
+                    "display_status": "visible",
+                    "display_status_label": "전시",
+                    "sales_status": "on_sale",
+                    "sales_status_label": "판매중"
+                },
+                "content_excerpt": "사진에서 보이는 색상과 실제 상품의 색상이 다른 것 같습니다. 정확한 색상 확인 부탁드립니다.",
+                "is_answered": true,
+                "answered_at": "2026-08-29 11:19:33",
+                "created_at": "2026-10-10 17:19:33",
+                "abilities": {
+                    "can_reply": true,
+                    "can_delete": true
+                }
+            },
+            "... (총 25건 중 2건 표시)"
+        ],
+        "abilities": {
+            "can_manage": true,
+            "can_reply": true
+        },
+        "pagination": {
+            "current_page": 1,
+            "per_page": 25,
+            "from": 1,
+            "to": 25,
+            "has_more_pages": true,
+            "last_page": 7,
+            "total": 166,
+            "total_relation": "exact",
+            "total_is_exact": true,
+            "result_cap": 10000
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.inquiries.read`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
+
+<!-- @generated:end -->
+
+**설명**
 
 - **인증/권한**: `auth:sanctum` + `permission:admin,sirsoft-ecommerce.inquiries.read`
 - **권한 메모(1.3.0)**: 컬렉션 `abilities.can_reply`(= `inquiries.update`)와 행 `abilities.can_reply`·`abilities.can_delete` — 「답변」·「삭제」 행 동작 잠금 키.
@@ -67,6 +206,59 @@
 ---
 
 ### DELETE /api/modules/sirsoft-ecommerce/admin/inquiries/bulk
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.inquiries.bulk-destroy -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.inquiries.bulk-destroy`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminInquiryController@bulkDestroy`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.inquiries.delete`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| ids | query | array | 예 | min 1, max 100 | 대상 리소스 식별자 배열 (대량 작업 대상) |
+
+**요청 예시**
+
+```http
+DELETE /api/modules/sirsoft-ecommerce/admin/inquiries/bulk?ids=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| deleted_count | integer | `2` | 실제로 삭제된 문의 수. 삭제에 실패한 건은 빠집니다 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "2개의 상품문의를 삭제했습니다.",
+    "data": {
+        "deleted_count": 2
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.inquiries.delete`)이 없는 경우 |
+| 422 | Unprocessable Entity | `ids` 가 비었거나 100개를 넘는 경우, 중복 ID 또는 없는(이미 삭제된) 문의 ID 가 섞인 경우 (`error.errors` 에 필드별 메시지) |
+
+<!-- @generated:end -->
+
+**설명**
 
 - **권한**: `sirsoft-ecommerce.inquiries.delete`
 - 라우트는 `{inquiryId}` 보다 **먼저** 선언되어 있습니다 — 그러지 않으면 `bulk` 가 id 로 잡힙니다.
@@ -97,7 +289,7 @@
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| inquiryId | path | string | 예 | — | 대상 inquiry의 식별자 |
+| inquiryId | path | integer | 예 | — | 대상 inquiry의 식별자 |
 
 **요청 예시**
 
@@ -153,7 +345,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| inquiryId | path | string | 예 | — | 대상 inquiry의 식별자 |
+| inquiryId | path | integer | 예 | — | 대상 inquiry의 식별자 |
 
 **요청 예시**
 
@@ -209,7 +401,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| inquiryId | path | string | 예 | — | 대상 inquiry의 식별자 |
+| inquiryId | path | integer | 예 | — | 대상 inquiry의 식별자 |
 | content | body | string | 예 | min 1, max 5000 | 본문 내용 |
 
 **요청 예시**
@@ -258,15 +450,6 @@ _단건 응답: `data` 객체의 필드._
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) / 문의를 찾을 수 없거나(`문의를 찾을 수 없습니다.`) 문의 게시판이 설정되지 않은 경우(`문의 게시판이 설정되지 않았습니다.` — `board_not_configured`) / 이미 답변이 등록된 문의에 재등록을 시도한 경우(`이미 등록된 답변이 있습니다. 기존 답변을 수정하거나 삭제한 후 다시 등록해주세요.` — `reply_already_exists`) / 답변 게시글 생성에 실패한 경우(`답변 등록에 실패했습니다.`) — `ProductInquiryService::createReply()` 의 `ProductInquiryOperationException` |
 | 500 | Internal Server Error | 답변 등록 처리 중 예기치 못한 예외 (`답변 등록에 실패했습니다.`) |
 
-**오류 응답 예시** (이미 답변된 문의에 재등록 시 — 422)
-
-```json
-{
-    "success": false,
-    "message": "이미 등록된 답변이 있습니다. 기존 답변을 수정하거나 삭제한 후 다시 등록해주세요."
-}
-```
-
 <!-- @generated:end -->
 
 **설명** 관리자가 상품 문의에 답변을 등록합니다. `sirsoft-ecommerce.inquiries.update` 권한이 필요하며, `ProductInquiryService::createReply()` 가 `content`(1~5000자)로 답변을 저장하고 문의를 답변완료 상태로 전환한 뒤 `{id, is_answered}` 를 201 로 반환합니다. 문의당 답변은 1건만 유지되는 단일 답변 정책이라, 이미 답변완료(`is_answered=true`)인 문의에 재등록을 시도하면 `reply_already_exists` 사유의 422 로 거절됩니다 — 기존 답변을 수정(PUT)하거나 삭제(DELETE) 후 다시 등록해야 합니다. 문의 게시판이 미설정인 경우에도 `board_not_configured` 사유의 422 가 반환됩니다. 관리자가 고객 문의에 응대할 때 사용합니다.
@@ -282,7 +465,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| inquiryId | path | string | 예 | — | 대상 inquiry의 식별자 |
+| inquiryId | path | integer | 예 | — | 대상 inquiry의 식별자 |
 | content | body | string | 예 | min 1, max 5000 | 본문 내용 |
 
 **요청 예시**
@@ -468,7 +651,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -494,7 +677,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| inquiryId | path | string | 예 | — | 대상 inquiry의 식별자 |
+| inquiryId | path | integer | 예 | — | 대상 inquiry의 식별자 |
 
 **요청 예시**
 
@@ -550,10 +733,10 @@ _단건 응답: `data` 객체의 필드._
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| inquiryId | path | string | 예 | — | 대상 inquiry의 식별자 |
-| title | body | string | 아니오 | — | 문의 제목 (연동 게시판 Post 의 제목으로 저장. 게시판 설정에 따라 min/max 길이 규칙이 Filter 훅으로 추가됨) |
+| inquiryId | path | integer | 예 | — | 대상 inquiry의 식별자 |
+| title | body | string | 아니오 | min 2, max 200 | 문의 제목 (연동 게시판 Post 의 제목으로 저장. 게시판 설정에 따라 min/max 길이 규칙이 Filter 훅으로 추가됨) |
 | category | body | string | 아니오 | — | 문의 분류 (게시판 설정 기반 유형 슬러그, 연동 게시판 Post 로 저장) |
-| content | body | string | 예 | — | 문의 본문 (필수. 게시판 설정에 따라 min/max 길이 규칙이 Filter 훅으로 추가됨) |
+| content | body | string | 예 | min 10, max 10000 | 문의 본문 (필수. 게시판 설정에 따라 min/max 길이 규칙이 Filter 훅으로 추가됨) |
 | is_secret | body | boolean | 아니오 | — | 비밀글 여부 (게시판 비밀글 모드 설정에 따라 적용) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.inquiry.update_validation_rules`).
@@ -620,7 +803,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| inquiryId | path | string | 예 | — | 대상 inquiry의 식별자 |
+| inquiryId | path | integer | 예 | — | 대상 inquiry의 식별자 |
 
 **요청 예시**
 
@@ -676,7 +859,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| inquiryId | path | string | 예 | — | 대상 inquiry의 식별자 |
+| inquiryId | path | integer | 예 | — | 대상 inquiry의 식별자 |
 | content | body | string | 예 | min 1, max 5000 | 본문 내용 |
 
 **요청 예시**
@@ -740,7 +923,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| inquiryId | path | string | 예 | — | 대상 inquiry의 식별자 |
+| inquiryId | path | integer | 예 | — | 대상 inquiry의 식별자 |
 | content | body | string | 예 | min 1, max 5000 | 본문 내용 |
 
 **요청 예시**

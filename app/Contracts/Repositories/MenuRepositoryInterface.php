@@ -102,6 +102,14 @@ interface MenuRepositoryInterface
     public function delete(Menu $menu): bool;
 
     /**
+     * 메뉴에 걸린 메뉴 권한(`menu_permissions`)을 지웁니다 — 메뉴를 지우기 직전에 부른다(DB CASCADE 비의존).
+     *
+     * @param  Menu  $menu  대상 메뉴
+     * @return int 지운 행 수
+     */
+    public function deleteMenuPermissions(Menu $menu): int;
+
+    /**
      * 메뉴의 순서를 업데이트합니다.
      *
      * @param  array  $menuOrders  메뉴 ID와 순서 매핑 배열
@@ -146,9 +154,11 @@ interface MenuRepositoryInterface
      * 사용자가 접근 가능한 네비게이션용 메뉴들을 조회합니다.
      *
      * @param  User  $user  접근 권한을 확인할 사용자
+     * @param  array<int, string>|null  $loadedModuleIdentifiers  이 서버가 불러온 모듈 식별자 (null 이면 거르지 않음)
+     * @param  array<int, string>|null  $loadedPluginIdentifiers  이 서버가 불러온 플러그인 식별자 (null 이면 거르지 않음)
      * @return Collection 사용자가 접근 가능한 메뉴 컬렉션
      */
-    public function getAccessibleNavigationMenus(User $user): Collection;
+    public function getAccessibleNavigationMenus(User $user, ?array $loadedModuleIdentifiers = null, ?array $loadedPluginIdentifiers = null): Collection;
 
     /**
      * 메뉴를 생성하거나 업데이트합니다.

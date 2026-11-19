@@ -2,29 +2,20 @@
 
 namespace App\Rules;
 
-use App\Support\Filesystem\PathGuard;
+use App\Rules\Concerns\ValidatesExtensionAssetPath;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Support\Str;
 
+/**
+ * Module 자산 경로의 Path Traversal 방지 검증.
+ *
+ * 판정 본문은 형제 두 규칙과 **공유한다** (\App\Rules\Concerns\ValidatesExtensionAssetPath).
+ * 종전에는 세 클래스가 주석까지 같은 사본이었고, 한쪽에만 들어간 보강이 나머지 둘에서
+ * 누락되어 같은 입력이 통로마다 다르게 판정됐다.
+ */
 class SafeModulePath implements ValidationRule
 {
-    /**
-     * Path Traversal 패턴 목록
-     */
-    private const TRAVERSAL_PATTERNS = [
-        '../',
-        '..\\',
-        '//',
-        '%2e%2e%2f',  // URL encoded ../
-        '%2e%2e/',    // Partial URL encoded
-        '%2e%2e%5c',  // URL encoded ..\
-        '%2e%2e\\',   // Partial URL encoded
-        '..%2f',      // Mixed encoding
-        '..%5c',      // Mixed encoding
-        '.%2e/',      // Partial encoding
-        '.%2e\\',     // Partial encoding
-    ];
+    use ValidatesExtensionAssetPath;
 
     /**
      * 규칙을 만듭니다.
@@ -45,59 +36,6 @@ class SafeModulePath implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        if (! is_string($value)) {
-            $fail(__('validation.module_path.must_be_string'));
-
-            return;
-        }
-
-        // URL 디코딩 (다중 인코딩 공격 방지)
-        $decodedPath = $value;
-        $previousPath = '';
-
-        // 최대 5회 디코딩 (무한 루프 방지)
-        for ($i = 0; $i < 5 && $decodedPath !== $previousPath; $i++) {
-            $previousPath = $decodedPath;
-            $decodedPath = urldecode($decodedPath);
-        }
-
-        // Path Traversal 패턴 감지
-        $lowerPath = strtolower($decodedPath);
-        foreach (self::TRAVERSAL_PATTERNS as $pattern) {
-            if (Str::contains($lowerPath, strtolower($pattern))) {
-                $fail(__('validation.module_path.traversal_detected', ['pattern' => $pattern]));
-
-                return;
-            }
-        }
-
-        // 절대 경로 방지 (Windows와 Linux 모두 지원)
-        if (
-            Str::startsWith($decodedPath, '/') ||
-            Str::startsWith($decodedPath, '\\') ||
-            preg_match('/^[a-zA-Z]:/', $decodedPath)  // Windows 드라이브 문자
-        ) {
-            $fail(__('validation.module_path.absolute_path_not_allowed'));
-
-            return;
-        }
-
-        // NULL 바이트 공격 방지
-        if (Str::contains($decodedPath, "\0")) {
-            $fail(__('validation.module_path.null_byte_detected'));
-
-            return;
-        }
-
-        // 실제 경로 — 아직 없는 파일이면 가장 가까운 실재 상위 폴더 기준으로 정리한다(파일 존재 여부는 Controller 에서 체크).
-        $fullPath = PathGuard::resolve($this->basePath.'/'.$decodedPath);
-
-        // 기준 경로 외부 접근 방지 — 폴더 경계를 지킨다(문자열 접두 비교는 `base-x` 같은 형제 폴더를 통과시켰다, #144).
-        $realBasePath = realpath($this->basePath);
-        if ($realBasePath === false || ! PathGuard::isWithin($realBasePath, $fullPath)) {
-            $fail(__('validation.module_path.outside_base_directory'));
-
-            return;
-        }
+        $this->validateExtensionAssetPath($value, $fail, $this->basePath, 'validation.module_path');
     }
 }

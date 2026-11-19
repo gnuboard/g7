@@ -4,6 +4,7 @@ namespace Tests\Unit\Extension;
 
 use App\Extension\Helpers\CoreBackupHelper;
 use App\Extension\Helpers\FilePermissionHelper;
+use App\Extension\Helpers\StorageLinkHelper;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
@@ -22,6 +23,11 @@ class CoreBackupHelperTest extends TestCase
 
     private string $backupsBasePath;
 
+    /**
+     * 테스트용 원본 디렉토리를 만들고, 앞선 실행이 남긴 core_backups 산출물을 지워 개수 오염을 막는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,6 +43,11 @@ class CoreBackupHelperTest extends TestCase
         }
     }
 
+    /**
+     * 테스트용 원본 디렉토리와 core_backups 디렉토리를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (File::isDirectory($this->testBasePath)) {
@@ -56,6 +67,12 @@ class CoreBackupHelperTest extends TestCase
 
     /**
      * 전체 복원 성공 시 빈 배열을 반환하는지 검증합니다.
+     *
+     * @scenario backup_operation=restore
+     *
+     * @effects core_backup_restore_returns_no_failures_on_full_success
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_from_backup_returns_empty_array_on_full_success(): void
     {
@@ -89,6 +106,12 @@ class CoreBackupHelperTest extends TestCase
 
     /**
      * 백업에 없는 target은 건너뛰고 성공으로 처리하는지 검증합니다.
+     *
+     * @scenario backup_operation=restore
+     *
+     * @effects core_backup_restore_skips_targets_missing_from_backup
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_from_backup_skips_missing_targets(): void
     {
@@ -109,6 +132,12 @@ class CoreBackupHelperTest extends TestCase
 
     /**
      * 개별 target 복원 실패 시 나머지 target은 계속 복원되는지 검증합니다.
+     *
+     * @scenario backup_operation=restore
+     *
+     * @effects core_backup_restore_continues_after_a_target_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_continues_on_individual_target_failure(): void
     {
@@ -146,6 +175,12 @@ class CoreBackupHelperTest extends TestCase
     /**
      * 복원 실패한 target이 failedTargets 배열에 포함되는지 검증합니다.
      * 읽기 전용 디렉토리를 대상으로 실제 복원 실패를 유발합니다.
+     *
+     * @scenario backup_operation=restore
+     *
+     * @effects core_backup_restore_reports_failed_targets
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_reports_failed_targets(): void
     {
@@ -174,6 +209,12 @@ class CoreBackupHelperTest extends TestCase
 
     /**
      * targets에 vendor가 포함되면 vendor 디렉토리가 백업되는지 검증합니다.
+     *
+     * @scenario backup_operation=create
+     *
+     * @effects core_backup_includes_vendor_when_targeted
+     *
+     * @return void 반환값 없음
      */
     public function test_create_backup_includes_vendor_when_in_targets(): void
     {
@@ -197,6 +238,12 @@ class CoreBackupHelperTest extends TestCase
     /**
      * excludes에 vendor가 있으면 다른 target 내 vendor 하위 디렉토리가 제외되는지 검증합니다.
      * (vendor 자체가 target이면 최상위로 복사됨)
+     *
+     * @scenario backup_operation=create
+     *
+     * @effects core_backup_excludes_nested_vendor_dirs
+     *
+     * @return void 반환값 없음
      */
     public function test_create_backup_excludes_nested_vendor_dirs(): void
     {
@@ -226,6 +273,12 @@ class CoreBackupHelperTest extends TestCase
 
     /**
      * config targets에 vendor가 포함되지 않고 backup_only에 있는지 검증합니다.
+     *
+     * @scenario backup_operation=config
+     *
+     * @effects core_backup_config_keeps_vendor_backup_only
+     *
+     * @return void 반환값 없음
      */
     public function test_config_vendor_in_backup_only_not_targets(): void
     {
@@ -238,6 +291,12 @@ class CoreBackupHelperTest extends TestCase
 
     /**
      * config excludes에서 vendor가 제거되었는지 검증합니다.
+     *
+     * @scenario backup_operation=config
+     *
+     * @effects core_backup_config_keeps_vendor_backup_only
+     *
+     * @return void 반환값 없음
      */
     public function test_config_excludes_does_not_contain_vendor(): void
     {
@@ -252,6 +311,12 @@ class CoreBackupHelperTest extends TestCase
 
     /**
      * 백업 삭제가 정상 동작하는지 검증합니다.
+     *
+     * @scenario backup_operation=delete
+     *
+     * @effects core_backup_delete_removes_directory
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_backup_removes_directory(): void
     {
@@ -266,6 +331,12 @@ class CoreBackupHelperTest extends TestCase
 
     /**
      * 백업 목록이 올바르게 반환되는지 검증합니다.
+     *
+     * @scenario backup_operation=list
+     *
+     * @effects core_backup_list_returns_expected_structure
+     *
+     * @return void 반환값 없음
      */
     public function test_list_backups_returns_correct_structure(): void
     {
@@ -294,6 +365,12 @@ class CoreBackupHelperTest extends TestCase
      * 잔존시키면 이후 www-data 의 mkdir 이 실패한다. createBackup 은 백업 루트와 타임스탬프
      * 디렉토리 양쪽에 부모 소유권을 상속해야 한다. sudo 없는 환경에서 상속은 no-op 이므로
      * "백업 owner == 부모 owner" 가 항상 성립해야 한다 — 상속이 owner 를 잘못 바꾸면 깨짐.
+     *
+     * @scenario backup_operation=create
+     *
+     * @effects core_backup_inherits_parent_ownership
+     *
+     * @return void 반환값 없음
      */
     public function test_create_backup_inherits_parent_ownership(): void
     {
@@ -320,5 +397,39 @@ class CoreBackupHelperTest extends TestCase
         );
 
         CoreBackupHelper::deleteBackup($backupPath);
+    }
+
+    /**
+     * 문서 루트 안 손상 사본 판정이 **생산자 상수**(`StorageLinkHelper::DOCROOT_BROKEN_PREFIX`)를 본다.
+     *
+     * 리터럴 `'storage.broken.'` 사본이 남아 있으면 생산자가 규칙을 바꿀 때 롤백 경고의 모집단이
+     * 조용히 빈다. 실제 생산자 이름으로 만든 항목이 목록에 든다.
+     *
+     * @scenario backup_operation=restore
+     *
+     * @effects core_backup_restore_judges_docroot_residue_by_producer_prefix
+     *
+     * @return void 반환값 없음
+     */
+    public function test_restored_docroot_residue_is_judged_by_the_producer_prefix(): void
+    {
+        $source = (string) file_get_contents(base_path('app/Extension/Helpers/CoreBackupHelper.php'));
+
+        $this->assertStringNotContainsString("'storage.broken.'", $source, '생산자 접두사를 리터럴로 다시 적었다');
+        $this->assertStringContainsString('StorageLinkHelper::DOCROOT_BROKEN_PREFIX', $source, '판정이 생산자 상수를 참조하지 않는다');
+
+        $root = storage_path('framework/testing/core-backup-residue-'.uniqid());
+        $public = $root.DIRECTORY_SEPARATOR.'public';
+        File::ensureDirectoryExists($public);
+
+        $residue = $public.DIRECTORY_SEPARATOR.StorageLinkHelper::DOCROOT_BROKEN_PREFIX.'20260801010101-deadbeef';
+        File::ensureDirectoryExists($residue);
+        File::ensureDirectoryExists($public.DIRECTORY_SEPARATOR.'storage');
+
+        try {
+            $this->assertSame([$residue], CoreBackupHelper::restoredDocrootResidue($root));
+        } finally {
+            File::deleteDirectory($root);
+        }
     }
 }

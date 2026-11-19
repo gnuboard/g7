@@ -1,0 +1,25 @@
+feature: extension_asset_serving
+
+description: |
+  모듈·플러그인 자산 내려주기(`/api/modules/assets/…`, `/api/plugins/assets/…`) 가운데 7.2.0 이 더한 두 가지를 잠근다.
+  비활성 확장(모듈·플러그인)의 자산 요청은 파일을 내주지 않는다 — 디렉토리가 없는 식별자는 경로 밖 접근이 아니라
+  요청 규칙이 문자열 봉쇄만 유지하고, 서비스가 비활성 확장을 JSON 404 로 끝낸다(정적 서빙과 같은 응답). 이 응답 코드는 404 로 확정했다(2026-10-31) — 7.2.0(#798)의 422 대신 없는 자산과 같은 응답을 써 비활성 확장의 존재를 드러내지 않는다.
+  버전이 실린 주소의 자산은 immutable 캐시로 내준다(버전 없는 주소와 갈린다).
+
+  활성 확장의 JS·CSS·중첩 경로·허용 확장자, 캐시 헤더·ETag·304, 경로 이탈 차단 같은 공통 서빙 계약은
+  `module-asset-serving.yaml`·`plugin-asset-serving.yaml` 이, 소스맵 거부는 `production-sourcemap-exposure.yaml` 이,
+  모듈 운영자 맞춤 자산은 `custom-extension-assets.yaml` 이 소유한다. 같은 시험을 이 매니페스트가 겹쳐 소유하지 않는다.
+
+axes:
+  extension_type: [module, plugin]
+  request: [applies_immutable_caching_in_production]
+
+exclusions: []
+
+effects:
+  - inactive_extension_asset_request_rejected_as_json
+  - applies_immutable_caching_in_production
+
+test_files:
+  - tests/Feature/Module/ModuleAssetServingTest.php
+  - tests/Feature/Plugin/PluginAssetServingTest.php

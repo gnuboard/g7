@@ -12,14 +12,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-between mb-4"
+                "className": "ecommerce-flex-between ecommerce:mb-4"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "H2",
                     "props": {
-                        "className": "section-heading"
+                        "className": "ecommerce-section-heading"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.section_country_settings"
                 },
@@ -29,7 +29,7 @@
                     "name": "Div",
                     "if": "{{(_computed.addableCountries ?? []).length > 0}}",
                     "props": {
-                        "className": "flex-center gap-2"
+                        "className": "ecommerce-flex-center ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -48,7 +48,7 @@
                             ],
                             "props": {
                                 "aria-label": "$t:sirsoft-ecommerce.admin.shipping_policy.form.country_select_placeholder",
-                                "className": "input w-40 text-sm",
+                                "className": "ecommerce:h-9 ecommerce:w-40 ecommerce:text-sm",
                                 "value": "{{_local._selectedCountryToAdd ?? ''}}",
                                 "options": "{{[{value: '', label: '$t:sirsoft-ecommerce.admin.shipping_policy.form.country_select_placeholder'}].concat(_computed.addableCountryOptions ?? [])}}",
                                 "disabled": "{{_computed.isReadOnly}}"
@@ -81,7 +81,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-sm btn-primary disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "ecommerce-btn ecommerce-btn-sm ecommerce-btn-primary ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                 "disabled": "{{!_local._selectedCountryToAdd || _computed.isReadOnly}}"
                             },
                             "children": [
@@ -90,7 +90,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "plus",
-                                        "className": "text-xs mr-1"
+                                        "className": "ecommerce:text-xs ecommerce:mr-1"
                                     }
                                 },
                                 {
@@ -110,7 +110,7 @@
             "name": "Div",
             "if": "{{(_local.form?.country_settings ?? []).length === 0}}",
             "props": {
-                "className": "p-8 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg"
+                "className": "ecommerce:p-8 ecommerce:text-center ecommerce:border-2 ecommerce:border-dashed ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg"
             },
             "children": [
                 {
@@ -118,14 +118,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "globe",
-                        "className": "text-3xl text-gray-500 dark:text-gray-500 mb-2"
+                        "className": "ecommerce:text-3xl ecommerce:text-gray-500 ecommerce:dark:text-gray-500 ecommerce:mb-2"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-label-subtle"
+                        "className": "ecommerce-text-label-subtle"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.no_country_settings"
                 }
@@ -137,7 +137,7 @@
             "name": "Div",
             "if": "{{(_local.form?.country_settings ?? []).length > 0}}",
             "props": {
-                "className": "flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto"
+                "className": "ecommerce:flex ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:overflow-x-auto"
             },
             "children": [
                 {
@@ -160,7 +160,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "{{(_local.activeCountryTab ?? 0) === tabItem._idx ? 'px-4 py-2 text-sm font-medium border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 whitespace-nowrap' : 'px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 whitespace-nowrap'}}"
+                        "className": "{{(_local.activeCountryTab ?? 0) === tabItem._idx ? 'ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:border-b-2 ecommerce:border-blue-500 ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:whitespace-nowrap' : 'ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300 ecommerce:whitespace-nowrap'}}"
                     },
                     "children": [
                         {

@@ -1,0 +1,24 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험 주석(@scenario)에서 모은 입력 변종이고, 회귀 가드는 effects 다 — 모든 effect 가 test_files 의 @effects 로 귀속된다(#798 A1).
+
+feature: "회원 차단과 해제 공개 진입점 `UserService::blockUser()` / `unblockUser()` (#798 K10 · D7 · D21)"
+
+description: |
+  회원 차단과 해제 공개 진입점 `UserService::blockUser()` / `unblockUser()` (#798 K10 · D7 · D21)
+  차단은 이미 차단된 회원이어도 토큰을 전부 회수한다(프로비저닝이 다시 차단해도 남은 토큰이 없게). 액션 훅 두 개와 활동 로그 두 개가
+  남는다. 행위자가 없는 시스템 경로도 쓸 수 있고, 최고관리자는 대상이 될 수 없다.
+
+axes:
+  action: [block, reblock, unblock]
+  actor: [none]
+  target: [super_admin]
+
+effects:
+  - block_revokes_tokens
+  - reblock_revokes_again
+  - unblock_restores_active
+  - block_hooks_fired
+  - block_activity_logged
+  - super_admin_block_refused
+
+test_files:
+  - tests/Feature/User/UserBlockTest.php

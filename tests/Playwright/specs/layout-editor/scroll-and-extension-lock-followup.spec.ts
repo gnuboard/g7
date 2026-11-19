@@ -23,7 +23,10 @@ import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth'
 async function openBasicEditor(page: Page): Promise<void> {
   const token = issueToken('core.templates.layouts.edit');
   await authenticatePage(page, token);
-  await page.goto('/admin/layout-editor/sirsoft-basic?route=%2Fboards');
+  // 홈(`/`)은 미리보기 내용이 길어(1280×720 에서 문서 약 2,860px) 300px 스크롤 동안 트리가 담긴 본문 영역이 끝나지 않는다.
+  // 종전 `/boards` 는 게시판 목록(개발 사이트의 실제 게시판 수)에 따라 문서가 약 980px 이라, sticky 트리가 본문 끝에 걸려
+  // 함께 밀려 올라가 「트리 고정」 이 레이아웃 결함 없이도 깨졌다(2026-11-12 실측: 스크롤 257px 에서 트리 top 133 → -63).
+  await page.goto('/admin/layout-editor/sirsoft-basic?route=%2F');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
   // state 기본값은 'visible' 인데 프레임 하위 첫 노드는 빈 앵커(header_currency_inject_anchor)나
   // `hidden` 클래스 요소일 수 있어 끝내 visible 이 되지 않는다 — 렌더 완료 판정은 존재로 한다.
@@ -33,7 +36,25 @@ async function openBasicEditor(page: Page): Promise<void> {
   });
 }
 
-/** admin 풀스크린 레이아웃(h-screen 루트 + 확장 주입 마케팅 조각) 편집기 진입. */
+/**
+ * sirsoft-basic 마이페이지 «내 정보» 편집기 진입 — 화면 소유 노드(`mypage_tab_content`)에 이커머스 「기본 배송지」 카드가
+ * `target_layout` 주입(append_child)으로 붙는다. 그 카드는 조건 없이 그려지는 주입 조각이다.
+ *
+ * 종전에는 관리자 회원 폼에 마케팅 플러그인이 주입하던 동의 구획(`ext_marketing_form_content`)을 썼는데, 회원 항목 설정(#490)으로
+ * 마케팅 동의가 확장 조각이 아니라 코어 회원 항목 조각이 그리는 칸이 되면서 그 주입 조각이 없어졌다.
+ */
+async function openProfileEditor(page: Page): Promise<void> {
+  const token = issueToken('core.templates.layouts.edit');
+  await authenticatePage(page, token);
+  await page.goto('/admin/layout-editor/sirsoft-basic?route=%2Fmypage%2Fprofile');
+  await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
+  await page.waitForSelector('[data-testid="g7le-preview-frame"] [data-editor-path]', {
+    state: 'attached',
+    timeout: 30_000,
+  });
+}
+
+/** admin 풀스크린 레이아웃(h-screen 루트) 편집기 진입. */
 async function openAdminUserForm(page: Page): Promise<void> {
   const token = issueToken('core.templates.layouts.edit');
   await authenticatePage(page, token);
@@ -48,21 +69,24 @@ async function openAdminUserForm(page: Page): Promise<void> {
 }
 
 test.describe('@layout-editor 스크롤 + 확장 잠금 후속', () => {
-  /** @effects extension_node_context_menu_blocked, extension_node_blackbox_selection_normalized */
+  /**
+   * @scenario case=extension_blackbox_selection
+   * @effects extension_node_context_menu_blocked, extension_node_blackbox_selection_normalized
+   */
   test('확장 주입 조각 내부 자식 클릭 → 진입점 통짜 선택 + ⓘ 메뉴 차단 + 확장 편집 어포던스', async ({ page }) => {
-    await openAdminUserForm(page);
+    await openProfileEditor(page);
 
-    // 확장 진입점(sirsoft-marketing 주입 ext_marketing_form_content) — route 본문 안의 extension 조각.
+    // 확장 진입점(sirsoft-ecommerce 주입 ext_my_default_address_card) — route 본문 안의 extension 조각.
     // 그 내부 깊은 자식을 클릭해도 통짜(진입점) 선택되어야 한다.
     const result = await page.evaluate(async () => {
       const frame = document.querySelector('[data-testid="g7le-preview-frame"]')!;
-      // 확장 조각 진입점은 마케팅 동의 섹션 라벨을 포함한다(샘플 마케팅 플러그인 주입 섹션).
-      // 라벨은 다국어(`admin.users.form.sections.marketing_consent`)라 로케일에 묶지 않는다.
+      // 확장 조각 진입점은 카드 제목 「기본 배송지」를 포함한다.
+      // 제목은 다국어(`sirsoft-ecommerce.user_address_card.title`)라 로케일에 묶지 않는다.
       // 텍스트 기반으로 영역을 찾은 뒤 그 안 가장 깊은 자식(개별 텍스트 노드)을 클릭한다 —
       // 깊은 자식이 통짜(진입점) 단위로 정규화되어 선택되는지 검증.
       const candidates = Array.from(frame.querySelectorAll('[data-editor-path]')).filter(
         (e) =>
-          /마케팅 및 동의|Marketing & Consent/.test(e.textContent || '') &&
+          /기본 배송지|Default shipping address/.test(e.textContent || '') &&
           (e.textContent || '').length < 30,
       ) as HTMLElement[];
       const labelNode = candidates[candidates.length - 1];
@@ -92,7 +116,10 @@ test.describe('@layout-editor 스크롤 + 확장 잠금 후속', () => {
     expect(result.editExtension).toBe(true);
   });
 
-  /** @effects editor_canvas_single_window_scroll */
+  /**
+   * @scenario case=single_window_scroll
+   * @effects editor_canvas_single_window_scroll
+   */
   test('일반(min-h-screen) 페이지 — 캔버스 별도 스크롤 없음 + 브라우저 단일 스크롤 + 헤더/트리 고정', async ({ page }) => {
     await openBasicEditor(page);
 
@@ -126,7 +153,10 @@ test.describe('@layout-editor 스크롤 + 확장 잠금 후속', () => {
     expect(metrics.treeStaysFixed).toBe(true);
   });
 
-  /** @effects fullscreen_layout_expanded_in_editor */
+  /**
+   * @scenario case=fullscreen_expand
+   * @effects fullscreen_layout_expanded_in_editor
+   */
   test('admin 풀스크린(h-screen) 레이아웃 — 편집 캔버스에서 콘텐츠 자연 높이로 펼침(내부 스크롤 없음)', async ({ page }) => {
     await openAdminUserForm(page);
 

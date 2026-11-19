@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#831 |
 #   표면마다 입력 축이 다르다(코어 업데이트: 소스 종류×코어 확장 상태, 게이트: 선언 등급×경로, 대체 동작: 표면×확장 상태).
 #   한 매니페스트의 축 곱으로 묶으면 실재하지 않는 조합(GitHub × 목록 없음의 설치기 화면 등)이 생긴다.
 #   축은 각 테스트의 @scenario 로 표면별로 표시하고, 이 매니페스트는 effects 로 전수 검증한다.
@@ -19,6 +19,15 @@ description: |
 
 axes:
   surface: [ssot, installer, extension_gate, core_update, admin_display, fallback, static_lock]
+  # 표면별 입력 축 — 머리말대로 서로 곱하지 않는다. 값은 각 시험의 @scenario 마킹에서 도출.
+  list: [required, missing, custom_path, docs_table]                                  # SSoT 목록
+  entry: [web_and_cli]                                                                # 인스톨러 저장 진입
+  declaration: [require_and_suggest, absent]                                          # 확장 composer 선언
+  level: [require, suggest]                                                           # 게이트: 선언 등급
+  path: [install_activate, update, http, wiring]                                      # 게이트: 경로
+  source_kind: [source, zip, github]                                                  # 코어 업데이트: 소스 종류
+  core_extension: [present, missing, list_absent]                                     # 코어 업데이트: 새 코어 필수 확장
+  extension_state: [present, absent]                                                  # 대체 동작: 선택 확장 유무
 
 effects:
   - ssot_lists_sixteen_required_with_zip_and_pdo_mysql

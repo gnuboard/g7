@@ -7,13 +7,13 @@ namespace Plugins\Sirsoft\PayNhnkcp\Tests\Feature\Controllers;
 use App\Models\User;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Support\Facades\Hash;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\OrderAccess;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
 class UserReceiptControllerTest extends PluginTestCase
@@ -243,25 +243,17 @@ class UserReceiptControllerTest extends PluginTestCase
     }
 
     /**
-     * 주문의 비회원 조회 토큰을 발급합니다 — 전화번호 매칭(배송지 필요)을 우회하려고 서비스의 서명 규칙을 reflection 으로 직접 부른다.
+     * 주문의 비회원 조회 토큰을 이커머스 공개 결제 계약으로 발급합니다 — 주문 조회 화면의 비회원 인증(배송지 필요)을 거치지 않는다.
      *
      * @param  Order  $order  비회원 주문
      * @return string 조회 토큰
      */
     private function issueGuestToken($order): string
     {
-        $svc = app(GuestOrderAuthService::class);
-        $rc = new \ReflectionClass($svc);
-        $signMethod = $rc->getMethod('sign');
-        $signMethod->setAccessible(true);
-        $suffixMethod = $rc->getMethod('passwordHashSuffix');
-        $suffixMethod->setAccessible(true);
+        $issued = app(OrderAccess::class)->issueGuestOrderToken((string) $order->order_number);
+        $this->assertIsArray($issued, '비회원 주문이면 조회 토큰이 발급돼야 한다');
 
-        $expiresTs = time() + 1800;
-        $suffix = $suffixMethod->invoke($svc, $order);
-        $sig = $signMethod->invoke($svc, $order->order_number, (int) $order->id, $expiresTs, $suffix);
-
-        return $expiresTs.'|'.$sig;
+        return $issued['token'];
     }
 
     /**

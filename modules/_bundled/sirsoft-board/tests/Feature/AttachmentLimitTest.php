@@ -7,6 +7,7 @@ require_once __DIR__.'/../ModuleTestCase.php';
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Mockery;
 use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
@@ -69,6 +70,10 @@ class AttachmentLimitTest extends BoardTestCase
         $this->setGuestPermissions(['posts.read', 'posts.write']);
         $this->grantUserRolePermissions(['posts.read', 'posts.write', 'attachments.upload']);
 
+        // 임시 첨부 연결은 파일을 실제로 읽어 옮긴다 — 읽지 못한 행은 유실을 막으려고 건너뛴다.
+        // 연결 개수를 재는 시험이라 가짜 모듈 디스크에 임시 파일을 실제로 둔다.
+        Storage::fake('modules');
+
         $this->memberUser = User::factory()->create(['email' => 'attachment-limit@test.com']);
 
         $userRole = Role::where('identifier', 'user')->first();
@@ -87,6 +92,9 @@ class AttachmentLimitTest extends BoardTestCase
     private function seedTempAttachments(string $tempKey, int $count): void
     {
         for ($i = 0; $i < $count; $i++) {
+            $path = "{$this->getTestBoardSlug()}/temp/{$tempKey}/temp-{$i}.png";
+            Storage::disk('modules')->put("sirsoft-board/attachments/{$path}", 'png');
+
             Attachment::create([
                 'board_id' => 0,
                 'post_id' => null,
@@ -94,9 +102,11 @@ class AttachmentLimitTest extends BoardTestCase
                 // 실제 업로드처럼 올린 회원을 남긴다 — 번호(attachment_ids)로 잇는 경로는 올린 사람이 같을 때만 잇는다
                 'created_by' => $this->memberUser->id,
                 'collection' => 'attachments',
+                // 실제 업로드처럼 행이 파일이 놓인 디스크를 가리키게 한다(컬럼 기본값 local 은 다른 디스크다)
+                'disk' => 'modules',
                 'original_filename' => "temp-{$i}.png",
                 'stored_filename' => "temp-{$i}.png",
-                'path' => "{$this->getTestBoardSlug()}/temp/{$tempKey}/temp-{$i}.png",
+                'path' => $path,
                 'mime_type' => 'image/png',
                 'size' => 100,
                 'order' => $i,

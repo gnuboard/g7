@@ -671,10 +671,10 @@ class ProductController extends AdminBaseController
                 );
             }
 
-            // thumbnail_url 추가 (복제 모드 안내 박스용)
+            // thumbnail_url 추가 (복제 모드 안내 박스용) — 썸네일 기준 API 주소(preview_url) 우선
             $thumbnailImage = collect($copyData['images'] ?? [])->firstWhere('is_thumbnail', true)
                 ?? collect($copyData['images'] ?? [])->first();
-            $copyData['thumbnail_url'] = $thumbnailImage['download_url'] ?? null;
+            $copyData['thumbnail_url'] = $thumbnailImage['preview_url'] ?? $thumbnailImage['download_url'] ?? null;
 
             // 카테고리 정보 추가 (breadcrumb 포함, UI 표시용)
             if (! empty($copyData['category_ids']) && ($copyOptions['categories'] ?? true)) {
@@ -754,6 +754,7 @@ class ProductController extends AdminBaseController
                         'size' => $image->file_size,
                         'size_formatted' => $this->formatFileSize($image->file_size),
                         'download_url' => $image->download_url,
+                        'preview_url' => $image->preview_url,
                         'order' => $image->sort_order ?? 1,
                         'is_image' => str_starts_with($image->mime_type, 'image/'),
                         'is_thumbnail' => $image->is_thumbnail,

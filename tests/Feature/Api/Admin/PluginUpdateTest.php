@@ -269,7 +269,7 @@ class PluginUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(PluginService::class);
         $mockService->shouldReceive('updatePlugin')
-            ->with('test-plugin', Mockery::any(), 'overwrite', false)
+            ->with('test-plugin', Mockery::any(), 'overwrite', false, Mockery::type(\App\Extension\Integrity\PackageIntegrityOptions::class))
             ->once()
             ->andReturn([
                 'success' => true,
@@ -332,7 +332,7 @@ class PluginUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(PluginService::class);
         $mockService->shouldReceive('updatePlugin')
-            ->with('test-plugin', Mockery::any(), 'overwrite', false)
+            ->with('test-plugin', Mockery::any(), 'overwrite', false, Mockery::type(\App\Extension\Integrity\PackageIntegrityOptions::class))
             ->once()
             ->andReturn([
                 'success' => true,
@@ -380,7 +380,7 @@ class PluginUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(PluginService::class);
         $mockService->shouldReceive('updatePlugin')
-            ->with('nonexistent-plugin', Mockery::any(), 'overwrite', false)
+            ->with('nonexistent-plugin', Mockery::any(), 'overwrite', false, Mockery::type(\App\Extension\Integrity\PackageIntegrityOptions::class))
             ->once()
             ->andThrow(
                 ValidationException::withMessages([
@@ -405,7 +405,7 @@ class PluginUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(PluginService::class);
         $mockService->shouldReceive('updatePlugin')
-            ->with('test-plugin', Mockery::any(), 'overwrite', false)
+            ->with('test-plugin', Mockery::any(), 'overwrite', false, Mockery::type(\App\Extension\Integrity\PackageIntegrityOptions::class))
             ->once()
             ->andThrow(new \RuntimeException('Unexpected error'));
         $this->app->instance(PluginService::class, $mockService);
@@ -484,7 +484,7 @@ class PluginUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(PluginService::class);
         $mockService->shouldReceive('updatePlugin')
-            ->with('test-plugin', Mockery::any(), 'keep', false)
+            ->with('test-plugin', Mockery::any(), 'keep', false, Mockery::type(\App\Extension\Integrity\PackageIntegrityOptions::class))
             ->once()
             ->andReturn([
                 'success' => true,
@@ -594,7 +594,7 @@ class PluginUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(PluginService::class);
         $mockService->shouldReceive('updatePlugin')
-            ->with('test-plugin', Mockery::any(), 'keep', false)
+            ->with('test-plugin', Mockery::any(), 'keep', false, Mockery::type(\App\Extension\Integrity\PackageIntegrityOptions::class))
             ->once()
             ->andReturn([
                 'success' => true,
@@ -661,7 +661,7 @@ class PluginUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(PluginService::class);
         $mockService->shouldReceive('updatePlugin')
-            ->with('test-plugin', Mockery::any(), 'keep', false)
+            ->with('test-plugin', Mockery::any(), 'keep', false, Mockery::type(\App\Extension\Integrity\PackageIntegrityOptions::class))
             ->once()
             ->andReturn([
                 'success' => true,
@@ -692,7 +692,7 @@ class PluginUpdateTest extends TestCase
 
         $mockService = Mockery::mock(PluginService::class);
         $mockService->shouldReceive('updatePlugin')
-            ->with('test-plugin', Mockery::any(), 'keep', false)
+            ->with('test-plugin', Mockery::any(), 'keep', false, Mockery::type(\App\Extension\Integrity\PackageIntegrityOptions::class))
             ->once()
             ->andReturn(['success' => true, 'from_version' => '1.0.0', 'to_version' => '2.0.0', 'layout_strategy' => 'keep', 'layout_sync' => $report->toArray()]);
         $this->app->instance(PluginService::class, $mockService);
@@ -722,7 +722,7 @@ class PluginUpdateTest extends TestCase
 
         $mockService = Mockery::mock(PluginService::class);
         $mockService->shouldReceive('updatePlugin')
-            ->with('test-plugin', Mockery::any(), 'overwrite', false)
+            ->with('test-plugin', Mockery::any(), 'overwrite', false, Mockery::type(\App\Extension\Integrity\PackageIntegrityOptions::class))
             ->once()
             ->andReturn(['success' => true, 'from_version' => '1.0.0', 'to_version' => '2.0.0', 'layout_strategy' => 'overwrite', 'layout_sync' => $report->toArray()]);
         $this->app->instance(PluginService::class, $mockService);

@@ -30,6 +30,18 @@ import {
  */
 const MAIN_CSS = readFileSync(resolve(process.cwd(), 'resources/css/main.css'), 'utf8');
 
+/** 정규식 특수문자를 글자 그대로 맞추도록 이스케이프합니다. */
+const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * 다크 모드 짝 접미(정규식) — 템플릿 다크 클래스(`.dark`)가 아니라 중립 표식(`<html data-g7-color-scheme="dark">`) 규격.
+ * 「다크 안의 라이트」는 제외한다.
+ */
+const DARK_SUFFIX_RE = escapeRegExp(
+    ':is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"])'
+    + ':not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"]))'
+);
+
 /** 가짜 SDK 인스턴스 기록 */
 interface FakeInstance {
     config: any;
@@ -218,7 +230,7 @@ describe('우편번호 검색 창 표시 방식', () => {
 
             const area = row.nextElementSibling as HTMLElement;
             expect(area).not.toBeNull();
-            expect(area.classList.contains('g7-postcode-inline')).toBe(true);
+            expect(area.classList.contains('daumpostcode-inline')).toBe(true);
             expect(area.style.width).toBe('100%');
 
             expect(kakaoInstances).toHaveLength(1);
@@ -250,7 +262,7 @@ describe('우편번호 검색 창 표시 방식', () => {
 
             close.click();
 
-            expect(document.querySelector('.g7-postcode-inline')).toBeNull();
+            expect(document.querySelector('.daumpostcode-inline')).toBeNull();
             expect(document.activeElement).toBe(button);
             expect(button.getAttribute('aria-expanded')).toBe('false');
         });
@@ -293,7 +305,7 @@ describe('우편번호 검색 창 표시 방식', () => {
                 sigungu: '강남구',
             });
 
-            expect(document.querySelector('.g7-postcode-inline')).toBeNull();
+            expect(document.querySelector('.daumpostcode-inline')).toBeNull();
             expect(setLocal).toHaveBeenCalledWith({
                 'shipping.zipcode': '06236',
                 'shipping.address': '서울 강남구 테헤란로 152',
@@ -312,16 +324,16 @@ describe('우편번호 검색 창 표시 방식', () => {
             const action = { handler: 'openPostcode', params: { displayModePc: 'inline' } };
 
             await openPostcodeHandler(action, { event: clickEvent(button) } as any);
-            expect(document.querySelectorAll('.g7-postcode-inline')).toHaveLength(1);
+            expect(document.querySelectorAll('.daumpostcode-inline')).toHaveLength(1);
 
             await openPostcodeHandler(action, { event: clickEvent(button) } as any);
 
-            expect(document.querySelectorAll('.g7-postcode-inline')).toHaveLength(0);
+            expect(document.querySelectorAll('.daumpostcode-inline')).toHaveLength(0);
             expect(kakaoInstances).toHaveLength(1);
             expect(button.getAttribute('aria-expanded')).toBe('false');
 
             await openPostcodeHandler(action, { event: clickEvent(button) } as any);
-            expect(document.querySelectorAll('.g7-postcode-inline')).toHaveLength(1);
+            expect(document.querySelectorAll('.daumpostcode-inline')).toHaveLength(1);
             expect(kakaoInstances).toHaveLength(2);
         });
 
@@ -338,7 +350,7 @@ describe('우편번호 검색 창 표시 방식', () => {
                 { event: clickEvent(button) } as any
             );
 
-            expect((group.nextElementSibling as HTMLElement)?.classList.contains('g7-postcode-inline')).toBe(true);
+            expect((group.nextElementSibling as HTMLElement)?.classList.contains('daumpostcode-inline')).toBe(true);
         });
 
         /**
@@ -355,7 +367,7 @@ describe('우편번호 검색 창 표시 방식', () => {
                 { event: clickEvent(document.getElementById('btn')!) } as any
             );
 
-            expect((host.nextElementSibling as HTMLElement)?.classList.contains('g7-postcode-inline')).toBe(true);
+            expect((host.nextElementSibling as HTMLElement)?.classList.contains('daumpostcode-inline')).toBe(true);
         });
 
         /**
@@ -371,8 +383,8 @@ describe('우편번호 검색 창 표시 방식', () => {
             await openPostcodeHandler(action, { event: clickEvent(button) } as any);
 
             expect(document.querySelectorAll('style')).toHaveLength(0);
-            expect(MAIN_CSS).toMatch(/\.dark \.g7-postcode-inline\s*\{[^}]*border-color/);
-            expect(MAIN_CSS).toMatch(/\.dark \.g7-postcode-inline\s*\{[^}]*background/);
+            expect(MAIN_CSS).toMatch(new RegExp(`^\\.daumpostcode-inline${DARK_SUFFIX_RE}\\s*\\{[^}]*border-color`, 'm'));
+            expect(MAIN_CSS).toMatch(new RegExp(`^\\.daumpostcode-inline${DARK_SUFFIX_RE}\\s*\\{[^}]*background`, 'm'));
         });
 
         /**
@@ -384,7 +396,7 @@ describe('우편번호 검색 창 표시 방식', () => {
 
             await openPostcodeHandler({ handler: 'openPostcode', params: { displayModePc: 'inline' } }, {} as any);
 
-            expect(document.querySelector('.g7-postcode-inline')).toBeNull();
+            expect(document.querySelector('.daumpostcode-inline')).toBeNull();
             expect(document.getElementById('daum-postcode-overlay')).not.toBeNull();
             expect(kakaoInstances[0].embed).toHaveBeenCalledTimes(1);
         });
@@ -404,10 +416,11 @@ describe('우편번호 검색 창 표시 방식', () => {
             // 설정값은 CSS 변수로 싣고, 「화면 크기와 견줘 작은 쪽」 규칙은 플러그인 CSS 파일에 있다
             const layer = document.getElementById('daum-postcode-layer')!;
 
+            expect(layer.classList.contains('daumpostcode-layer')).toBe(true);
             expect(layer.style.getPropertyValue('--dp-width')).toBe('500px');
             expect(layer.style.getPropertyValue('--dp-height')).toBe('600px');
-            expect(MAIN_CSS).toMatch(/#daum-postcode-layer\s*\{[^}]*width: min\(var\(--dp-width[^)]*\), calc\(100vw - 32px\)\)/);
-            expect(MAIN_CSS).toMatch(/#daum-postcode-layer\s*\{[^}]*height: min\(var\(--dp-height[^)]*\), calc\(100vh - 96px\)\)/);
+            expect(MAIN_CSS).toMatch(/^\.daumpostcode-layer\s*\{[^}]*width: min\(var\(--dp-width[^)]*\), calc\(100vw - 32px\)\)/m);
+            expect(MAIN_CSS).toMatch(/^\.daumpostcode-layer\s*\{[^}]*height: min\(var\(--dp-height[^)]*\), calc\(100vh - 96px\)\)/m);
             expect(kakaoInstances).toHaveLength(1);
             expect(kakaoInstances[0].embed).toHaveBeenCalledWith(layer);
         });
@@ -461,7 +474,7 @@ describe('우편번호 검색 창 표시 방식', () => {
             const layer = document.getElementById('daum-postcode-layer')!;
             expect(layer.style.getPropertyValue('--dp-width')).toBe('700px');
             expect(layer.style.getPropertyValue('--dp-height')).toBe('800px');
-            expect(document.querySelector('.g7-postcode-inline')).toBeNull();
+            expect(document.querySelector('.daumpostcode-inline')).toBeNull();
         });
 
         /**
@@ -474,7 +487,7 @@ describe('우편번호 검색 창 표시 방식', () => {
 
             await openPostcodeHandler(both('inline', 'fullscreen'), { event: clickEvent(button) } as any);
 
-            expect((row.nextElementSibling as HTMLElement)?.classList.contains('g7-postcode-inline')).toBe(true);
+            expect((row.nextElementSibling as HTMLElement)?.classList.contains('daumpostcode-inline')).toBe(true);
             expect(document.getElementById('daum-postcode-overlay')).toBeNull();
         });
 
@@ -488,7 +501,7 @@ describe('우편번호 검색 창 표시 방식', () => {
 
             await openPostcodeHandler(both('popup', 'inline'), { event: clickEvent(button) } as any);
 
-            expect((row.nextElementSibling as HTMLElement)?.classList.contains('g7-postcode-inline')).toBe(true);
+            expect((row.nextElementSibling as HTMLElement)?.classList.contains('daumpostcode-inline')).toBe(true);
             expect(kakaoInstances[0].open).not.toHaveBeenCalled();
         });
 
@@ -507,10 +520,10 @@ describe('우편번호 검색 창 표시 방식', () => {
             expect(dialog.getAttribute('role')).toBe('dialog');
             expect(dialog.getAttribute('aria-modal')).toBe('true');
             // 화면 전체를 덮는 규칙은 클래스로 건다(style 속성 문자열을 쓰지 않는다)
-            expect(dialog.classList.contains('g7-postcode-inline-fullscreen')).toBe(true);
+            expect(dialog.classList.contains('daumpostcode-inline-fullscreen')).toBe(true);
             expect(dialog.hasAttribute('style')).toBe(false);
-            expect(MAIN_CSS).toMatch(/^\.g7-postcode-inline-fullscreen\s*\{[^}]*position: fixed/m);
-            expect(MAIN_CSS).toMatch(/^\.g7-postcode-inline-fullscreen\s*\{[^}]*inset: 0/m);
+            expect(MAIN_CSS).toMatch(/^\.daumpostcode-inline-fullscreen\s*\{[^}]*position: fixed/m);
+            expect(MAIN_CSS).toMatch(/^\.daumpostcode-inline-fullscreen\s*\{[^}]*inset: 0/m);
 
             expect(dialog.textContent).toContain('주소 검색');
             const close = dialog.querySelector('button') as HTMLButtonElement;
@@ -612,7 +625,7 @@ describe('우편번호 검색 창 표시 방식', () => {
             (window as any).G7Core.plugin.getSettings = () => ({});
             const { row, button } = mountAddressGroup();
             await openPostcodeHandler({ handler: 'openPostcode', params: {} }, { event: clickEvent(button) } as any);
-            expect((row.nextElementSibling as HTMLElement)?.classList.contains('g7-postcode-inline')).toBe(true);
+            expect((row.nextElementSibling as HTMLElement)?.classList.contains('daumpostcode-inline')).toBe(true);
 
             setViewportWidth(1280);
             await openPostcodeHandler({ handler: 'openPostcode', params: {} }, {} as any);

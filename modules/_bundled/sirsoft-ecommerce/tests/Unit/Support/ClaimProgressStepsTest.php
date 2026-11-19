@@ -27,7 +27,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * @scenario claim_type=exchange, claim_type=cancel
  *
- * @effects claim_progress_steps_carry_icon_and_variant,
+ * 효과 요약(마커 아님 — 평문): claim_progress_steps_carry_icon_and_variant,
  *   claim_progress_steps_single_source_for_admin_and_user,
  *   claim_progress_cancel_has_two_stages
  */

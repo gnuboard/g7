@@ -9,9 +9,10 @@
 ```text
 1. DTO 두 패턴 — Value Object(불변 1회 전달) vs Data Carrier(다단계 변형/누적). 도메인 본질에 맞게 선택
 2. 위치: app/{도메인}/DTO/ 또는 app/Extension/{영역}/DTO/, 모듈/플러그인은 src/DTO/. 네이밍 접미사(Dto/Data) 금지
+   예외: 다른 확장에 공개하는 계약 DTO 는 계약 옆 src/Contracts/{영역}/Data/, 한 영역만 쓰는 값은 그 영역 폴더(예: app/Extension/Integrity/)
 3. 외부 라이브러리(Spatie Data 등) 도입 금지 — readonly class + constructor promotion 으로 충분
 4. Eloquent 모델 직렬화는 ApiResource, 모델 아닌 값 묶음만 DTO. 두 계층 겹치지 않음
-5. 모든 DTO 는 toArray() 정의. fromArray() 는 캐시·스냅샷 재구성 필요할 때만
+5. 응답·로그·저장 직렬화에 실리는 DTO 만 toArray() 정의(실리지 않으면 두지 않는다). fromArray() 는 캐시·스냅샷 재구성 필요할 때만
 ```
 
 ---
@@ -39,8 +40,13 @@ DTO 는 계층 간 데이터 전달용 객체로, **Eloquent 모델이 아닌 �
 |------|------|------|------|
 | `app/Extension/IdentityVerification/DTO/` | 2 | Value Object | 본인인증 challenge/result — provider 가 만들어 한 번 전달 |
 | `app/Extension/Layout/DTO/` | 2 | Value Object | 레이아웃 3자 병합 결과(`LayoutMergeResult`)·행별 동기화 결과(`LayoutSyncEntry`) — 병합기·동기화기가 만들어 보고서·활동 로그로 전달 (#727) |
+| `app/Thumbnails/DTO/` | 4 | Value Object | 썸네일 규격·원본·결과·잘라낼 영역 — 레지스트리·제공자가 만들어 생성기·엔진으로 전달 (#869) |
 | `app/Auth/DTO/` | 1 | Value Object | 로그인 관문의 비밀번호 변경 요구(`PasswordChangeRequirement` — 사유·연기 가능 여부·만료일) — 만료 정책 서비스가 만들어 로그인 관문으로 전달 (#736) |
 | `modules/_bundled/sirsoft-ecommerce/src/DTO/` | 21 | Data Carrier | 주문 9단계 계산 파이프라인 — 단계마다 변형/누적, 캐시·스냅샷 재구성 |
+| `app/Extension/Integrity/` | 4 | Value Object | 패키지 무결성 — 검증 결과(`PackageVerification`, 설치 응답·진행 기록에 실려 `toArray()` 있음)·검증 기대값(`PackageExpectation`)·검증 옵션(`PackageIntegrityOptions`)·받은 패키지(`AcquiredPackage`). 영역 전용 값이라 영역 폴더에 둔다 (#916) |
+| `app/CoreUpdate/` | 1 | Value Object | 코어 업데이트 실행 옵션(`CoreUpdateOptions`) — 단계 사이 진행 기록에 실려 `toArray()` 있음. 영역 전용 값이라 영역 폴더에 둔다 |
+| `modules/_bundled/sirsoft-ecommerce/src/Contracts/{Payment,Catalog,Currency}/Data/` | 26 | Value Object | 다른 확장(PG·히어로·환율 플러그인)에 공개하는 결제·카탈로그·환율 계약의 반환·요청 값. 응답·로그에 통째로 실리지 않아 `toArray()` 없음. 같은 폴더의 `MetaEncoding` 은 계약 전용 Enum (#916) |
+| `modules/_bundled/sirsoft-board/src/Contracts/Data/` | 1 | Value Object | 게시판 공개 계약 `BoardDirectory` 의 게시판 요약(`BoardSummary`) (#916) |
 
 ---
 
@@ -218,6 +224,15 @@ class OrderCalculationResult
 | 코어 공통 | `app/DTO/` (도메인 분류가 모호한 범용 DTO 한정 — 가급적 도메인 하위로) |
 | 모듈/플러그인 | `{확장 루트}/src/DTO/` (예: `modules/_bundled/sirsoft-ecommerce/src/DTO/`) |
 
+예외 두 가지는 위 표보다 우선합니다.
+
+| 예외 | DTO 위치 | 이유 |
+|------|---------|------|
+| 다른 확장에 공개하는 계약의 값 | 계약 인터페이스 옆 `{확장 루트}/src/Contracts/{영역}/Data/` (예: `src/Contracts/Payment/Data/PaymentRecord`) | manifest `public_api.namespaces` 에 `Contracts` 하나만 적어도 계약과 그 값이 함께 공개된다. `src/DTO/` 에 두면 내부 DTO 까지 공개하거나 클래스를 하나씩 적어야 한다 ([public_api 필드](../extension/module-basics.md#public_api-필드-선택)) |
+| 한 영역만 쓰는 값 | 그 영역 폴더 (예: `app/Extension/Integrity/PackageVerification`, `app/CoreUpdate/CoreUpdateOptions`) | 영역 밖에서 쓰지 않는 값을 `DTO/` 하위로 떼면 영역의 클래스가 두 폴더로 갈린다. 같은 이유로 영역 전용 Enum 도 영역 폴더에 둘 수 있다 ([enum.md](enum.md#파일-위치)) |
+
+예외로 둔 값도 네이밍·외부 라이브러리·검증·불변성 규칙은 그대로 따릅니다.
+
 ### 네이밍
 
 - ✅ 의미 단어만: `VerificationChallenge`, `OrderCalculationResult`, `ShippingAddress`
@@ -231,7 +246,9 @@ class OrderCalculationResult
 
 ### 직렬화
 
-- 모든 DTO 는 `toArray(): array` 정의 — `ResponseHelper::success(..., $dto->toArray())` 패턴 통일
+- 응답·로그·저장(진행 기록·캐시) 직렬화에 **통째로 실리는** DTO 는 `toArray(): array` 를 정의한다 — `ResponseHelper::success(..., $dto->toArray())` 패턴 통일
+- 직렬화에 실리지 않고 칸만 읽히는 DTO(계약 반환값, 요청 묶음, 클로저를 품은 값)는 `toArray()` 를 두지 않는다 — 쓰이지 않는 직렬화 형태는 계약 표면만 늘리고, 클로저는 의미 있게 직렬화할 수 없다
+- 나중에 직렬화에 싣게 되면 그 변경에서 `toArray()` 를 더하고 테스트로 형태를 잠근다
 - `JsonSerializable` 인터페이스 구현은 **필요 시점에만** (DTO 가 직접 `json_encode()` 대상이 되어야 할 때)
 - `fromArray()` 는 캐시·스냅샷 재구성 필요 시에만 (패턴 B 한정 권장)
 

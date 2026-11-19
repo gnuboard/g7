@@ -32,7 +32,7 @@ test.describe('쇼핑몰 환경설정 여백·정렬', () => {
         return [id, cs.paddingTop, cs.paddingBottom];
       });
       const card = document.getElementById('claim_complete_defaults_card')!;
-      const lastHint = card.querySelector('#claim_complete_restore_stock_field .form-hint')!;
+      const lastHint = card.querySelector('#claim_complete_restore_stock_field .ecommerce-form-hint')!;
       return {
         paddings,
         lastHintToBorder: Math.round(card.getBoundingClientRect().bottom - lastHint.getBoundingClientRect().bottom),
@@ -58,11 +58,11 @@ test.describe('쇼핑몰 환경설정 여백·정렬', () => {
     for (const subTab of ['exchange', 'return', 'refund']) {
       await page.goto(`${SETTINGS_URL}?tab=claim&sub_tab=${subTab}`);
       const panel = page.locator(`#claim_${subTab}_reason_panel`);
-      await expect(panel.locator('.card-header button')).toBeVisible({ timeout: 30_000 });
+      await expect(panel.locator('.ecommerce-card-header button')).toBeVisible({ timeout: 30_000 });
 
       const m = await panel.evaluate((el) => {
-        const card = el.querySelector('.admin-card')!.getBoundingClientRect();
-        const header = el.querySelector('.card-header')!;
+        const card = el.querySelector('.ecommerce-admin-card')!.getBoundingClientRect();
+        const header = el.querySelector('.ecommerce-card-header')!;
         const title = header.querySelector('h3')!.getBoundingClientRect();
         const button = header.querySelector('button')!.getBoundingClientRect();
         return { rightInset: Math.round(card.right - button.right), titleToButton: Math.round(button.left - title.right) };
@@ -115,7 +115,7 @@ test.describe('쇼핑몰 환경설정 여백·정렬', () => {
     await authenticatePage(page, settingsToken);
     await page.goto(`${SETTINGS_URL}?tab=order_settings`);
     const list = page.locator('#payment_methods_scroll');
-    await expect(list.locator('[data-sortable-item] .excel-card').first()).toBeVisible({ timeout: 30_000 });
+    await expect(list.locator('[data-sortable-item] .ecommerce-excel-card').first()).toBeVisible({ timeout: 30_000 });
 
     const m = await list.evaluate((el) => {
       const rows = [...el.querySelectorAll(':scope > [data-sortable-item]')].map((r) => r.getBoundingClientRect());

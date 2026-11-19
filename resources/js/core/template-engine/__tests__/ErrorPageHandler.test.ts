@@ -477,4 +477,75 @@ describe('ErrorPageHandler', () => {
       expect(fetched).toEqual(['cart', 'boards']);
     });
   });
+
+  describe('코드 레이아웃이 없을 때의 대체 (#869 λ 4부 18)', () => {
+    const configWith = (layouts: Record<string, string> | null) => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ success: true, data: layouts === null ? {} : { error_config: { layouts } } }),
+      });
+    };
+    const makeHandler = (fallback: (code: number) => void) => new ErrorPageHandler({
+      templateId: 'sirsoft-basic',
+      layoutLoader: mockLayoutLoader,
+      locale: 'ko',
+      debug: false,
+      renderFunction: mockRenderFunction,
+      dataSourceManager: mockDataSourceManager,
+      globalState,
+      renderBuiltinFallback: fallback,
+    } as any);
+
+    // @scenario case=missing_code_layout
+    // @effects missing_code_falls_back_to_default_layout
+    it('코드 레이아웃이 없으면 error_config.layouts.default 레이아웃으로 그린다', async () => {
+      configWith({ 404: 'errors/404', 500: 'errors/500', default: 'errors/default' });
+      (mockLayoutLoader.loadLayout as any).mockResolvedValue({ version: '1.0.0', layout_name: 'errors/default', components: [] });
+      const fallback = vi.fn();
+
+      const rendered = await makeHandler(fallback).renderError(400, 'main_content');
+
+      expect(rendered).toBe(true);
+      expect(mockLayoutLoader.loadLayout).toHaveBeenCalledWith('sirsoft-basic', 'errors/default');
+      expect(renderCallArgs?.dataContext?.errorCode).toBe(400);
+      expect(fallback).not.toHaveBeenCalled();
+    });
+
+    // @scenario case=missing_code_layout
+    // @effects missing_code_falls_back_to_builtin_display
+    it('default 도 없으면 엔진 내장 오류 화면으로 그린다(빈 화면으로 끝나지 않는다)', async () => {
+      configWith({ 404: 'errors/404', 403: 'errors/403', 500: 'errors/500' });
+      const fallback = vi.fn();
+
+      const rendered = await makeHandler(fallback).renderError(400, 'main_content');
+
+      expect(rendered).toBe(true); // 결함: false — 아무것도 그리지 않았다
+      expect(fallback).toHaveBeenCalledWith(400);
+      expect(mockRenderFunction).not.toHaveBeenCalled();
+    });
+
+    // @scenario case=missing_code_layout
+    // @effects missing_code_falls_back_to_builtin_display
+    it('error_config 가 없는 템플릿도 엔진 내장 오류 화면으로 그린다', async () => {
+      configWith(null);
+      const fallback = vi.fn();
+
+      const rendered = await makeHandler(fallback).renderError(404, 'app');
+
+      expect(rendered).toBe(true);
+      expect(fallback).toHaveBeenCalledWith(404);
+    });
+
+    // @scenario case=missing_code_layout
+    // @effects missing_code_falls_back_to_builtin_display
+    it('그리기 직전 판정이 거짓이면(경로가 바뀜) 대체 화면도 그리지 않는다', async () => {
+      configWith({ 404: 'errors/404' });
+      const fallback = vi.fn();
+
+      const rendered = await makeHandler(fallback).renderError(400, 'main_content', () => false);
+
+      expect(rendered).toBe(false);
+      expect(fallback).not.toHaveBeenCalled();
+    });
+  });
 });

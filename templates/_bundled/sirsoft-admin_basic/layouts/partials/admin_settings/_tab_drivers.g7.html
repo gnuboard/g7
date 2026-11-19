@@ -3,7 +3,9 @@
   이 탭만의 규칙이 하나 있다 — **접속 정보를 바꾸면 연결 시험을 통과해야 저장 버튼이 풀린다**.
   판정은 이 조각이 아니라 부모 화면의 저장 버튼 잠금 조건에 있고, 그쪽이 처음 값(`originalDrivers`)과
   지금 값을 견줘 "바뀐 항목인데 시험 성공 기록이 없다" 를 본다. 여기서는 시험을 눌러 그 기록을 남긴다.
-  큐 카드의 「큐 워커」 구역(#139)은 워커를 돌리는 연결·큐를 등록하고 상태(queueStatus 데이터 소스)를 보여 준다 — 등록 판정·오류는 서버가 한다. -->
+  큐 카드의 「큐 워커」 구역(#139)은 워커를 돌리는 연결·큐를 등록하고 상태(queueStatus 데이터 소스)를 보여 준다 — 등록 판정·오류는 서버가 한다.
+  큐 카드 끝의 「처리 기록」 구역은 Job 처리 기록 켜기와 기록·실패 작업 보관 기간(일)을 고친다. -->
+
 <partial description="환경설정 드라이버 탭 콘텐츠">
   <div data-ref="tab_content_drivers" data-if="{{(_global.activeSettingsTab || query.tab) === 'drivers'}}">
     <div data-ref="card_storage_settings" class="admin-card">
@@ -15,7 +17,8 @@
             <span>$t:admin.settings.drivers.storage.driver</span>
             <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.storage_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
           </label>
-          <div class="w-full md:w-64">
+          <div class="w-full">
+            <responsive on="768-" class="w-64"/>
             <select name="drivers.storage_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.storage_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.storage_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.storage ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
             <span data-if="{{_local.errors?.['drivers.storage_driver']}}" class="form-error">{{_local.errors?.['drivers.storage_driver']?.[0] ?? ''}}</span>
             <p data-ref="unavailable_driver_notice_storage" data-if="{{!!_local.form?.drivers?.storage_driver &amp;&amp; !(_local.form?.available_drivers?.storage ?? []).some(d => d.id === _local.form?.drivers?.storage_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-storage">
@@ -26,13 +29,15 @@
           </div>
         </div>
         <!-- 공개 자산 스토리지만 s3 인 구성(파일 스토리지는 로컬)에서도 접속 정보를 입력해야 하므로 두 축 중 하나라도 s3 면 노출한다 -->
-        <div data-ref="s3_settings" data-if="{{_local.form?.drivers?.storage_driver === 's3' || _local.form?.drivers?.public_asset_disk === 's3'}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
+        <div data-ref="s3_settings" data-if="{{_local.form?.drivers?.storage_driver === 's3' || _local.form?.drivers?.public_asset_disk === 's3' || _local.form?.drivers?.private_attachment_disk === 's3'}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
           <div class="py-3">
             <label class="form-label">
               <span>$t:admin.settings.drivers.storage.s3_bucket</span>
               <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.s3_bucket'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </label>
-            <input type="text" name="drivers.s3_bucket" placeholder="my-bucket" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_bucket'] === true}}" class="{{_local.errors?.['drivers.s3_bucket'] ? 'input-error md:w-64' : 'md:w-64'}}"/>
+            <input type="text" name="drivers.s3_bucket" placeholder="my-bucket" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_bucket'] === true}}" class="{{_local.errors?.['drivers.s3_bucket'] ? 'input-error' : ''}}">
+              <responsive on="768-" class="{{_local.errors?.['drivers.s3_bucket'] ? 'input-error w-64' : 'w-64'}}"/>
+            </input>
             <span data-if="{{_local.errors?.['drivers.s3_bucket']}}" class="form-error">{{_local.errors?.['drivers.s3_bucket']?.[0] ?? ''}}</span>
           </div>
           <div class="py-3">
@@ -40,7 +45,9 @@
               <span>$t:admin.settings.drivers.storage.s3_region</span>
               <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.s3_region'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </label>
-            <input type="text" name="drivers.s3_region" placeholder="ap-northeast-2" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_region'] === true}}" class="{{_local.errors?.['drivers.s3_region'] ? 'input-error md:w-64 font-mono' : 'md:w-64 font-mono'}}"/>
+            <input type="text" name="drivers.s3_region" placeholder="ap-northeast-2" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_region'] === true}}" class="{{_local.errors?.['drivers.s3_region'] ? 'input-error font-mono' : 'font-mono'}}">
+              <responsive on="768-" class="{{_local.errors?.['drivers.s3_region'] ? 'input-error w-64 font-mono' : 'w-64 font-mono'}}"/>
+            </input>
             <span data-if="{{_local.errors?.['drivers.s3_region']}}" class="form-error">{{_local.errors?.['drivers.s3_region']?.[0] ?? ''}}</span>
             <p class="text-hint mt-1">$t:admin.settings.drivers.storage.s3_region_desc</p>
           </div>
@@ -49,7 +56,9 @@
               <span>$t:admin.settings.drivers.storage.s3_access_key</span>
               <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.s3_access_key'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </label>
-            <input type="text" name="drivers.s3_access_key" placeholder="AKIAIOSFODNN7EXAMPLE" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_access_key'] === true}}" class="{{_local.errors?.['drivers.s3_access_key'] ? 'input-error md:w-80 font-mono' : 'md:w-80 font-mono'}}"/>
+            <input type="text" name="drivers.s3_access_key" placeholder="AKIAIOSFODNN7EXAMPLE" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_access_key'] === true}}" class="{{_local.errors?.['drivers.s3_access_key'] ? 'input-error font-mono' : 'font-mono'}}">
+              <responsive on="768-" class="{{_local.errors?.['drivers.s3_access_key'] ? 'input-error w-80 font-mono' : 'w-80 font-mono'}}"/>
+            </input>
             <span data-if="{{_local.errors?.['drivers.s3_access_key']}}" class="form-error">{{_local.errors?.['drivers.s3_access_key']?.[0] ?? ''}}</span>
           </div>
           <div class="py-3">
@@ -57,7 +66,9 @@
               <span>$t:admin.settings.drivers.storage.s3_secret_key</span>
               <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.s3_secret_key'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </label>
-            <input type="password" name="drivers.s3_secret_key" placeholder="********" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_secret_key'] === true}}" class="{{_local.errors?.['drivers.s3_secret_key'] ? 'input-error md:w-80 font-mono' : 'md:w-80 font-mono'}}"/>
+            <input type="password" name="drivers.s3_secret_key" placeholder="********" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_secret_key'] === true}}" class="{{_local.errors?.['drivers.s3_secret_key'] ? 'input-error font-mono' : 'font-mono'}}">
+              <responsive on="768-" class="{{_local.errors?.['drivers.s3_secret_key'] ? 'input-error w-80 font-mono' : 'w-80 font-mono'}}"/>
+            </input>
             <span data-if="{{_local.errors?.['drivers.s3_secret_key']}}" class="form-error">{{_local.errors?.['drivers.s3_secret_key']?.[0] ?? ''}}</span>
           </div>
           <div data-ref="s3_endpoint_field" class="py-3">
@@ -137,7 +148,8 @@
       <div class="row-stack">
         <div data-ref="field_public_asset_disk" class="">
           <label class="form-label">$t:admin.settings.drivers.public_asset.disk</label>
-          <div class="w-full md:w-64">
+          <div class="w-full">
+            <responsive on="768-" class="w-64"/>
             <select name="drivers.public_asset_disk" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['drivers.public_asset_disk']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.public_asset ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
             <span data-if="{{_local.errors?.['drivers.public_asset_disk']}}" class="form-error">{{_local.errors?.['drivers.public_asset_disk']?.[0] ?? ''}}</span>
             <p data-ref="unavailable_driver_notice_public_asset" data-if="{{!!_local.form?.drivers?.public_asset_disk &amp;&amp; !(_local.form?.available_drivers?.public_asset ?? []).some(d => d.id === _local.form?.drivers?.public_asset_disk)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-public_asset">
@@ -164,6 +176,189 @@
         </div>
       </div>
     </div>
+    <!-- 비공개 첨부 저장소 (#916) — 권한 확인 뒤 서버가 내려주는 원본(코어·게시판·페이지 첨부, 클레임 이미지, 본문 미디어, 내보내기 파일)의 디스크.
+         「기본」이면 지금까지처럼 사이트 스토리지 드라이버를 따른다. 플러그인이 비공개 디스크를 등록하면 선택지에 붙는다(available_drivers.private_attachment).
+         공개 자산과 같은 디스크를 고르면 저장은 되지만 버킷 공개 정책 위험을 알린다(D5). `.env` 로 디스크를 고정한 주체는 선택을 따르지 않으므로
+         `_meta.private_attachment.pins` 로 안내한다(D7). 옛 코어는 `_meta.private_attachment` 를 싣지 않으므로 `?.` 와 `?? []` 로 읽는다. -->
+    <div data-ref="card_private_attachment_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.drivers.private_attachment.title</h3>
+      <div class="card-description">$t:admin.settings.drivers.private_attachment.desc</div>
+      <div class="row-stack">
+        <div data-ref="field_private_attachment_disk" class="">
+          <label class="form-label">$t:admin.settings.drivers.private_attachment.disk</label>
+          <div class="w-full">
+            <responsive on="768-" class="w-64"/>
+            <select name="drivers.private_attachment_disk" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['drivers.private_attachment_disk']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.private_attachment ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
+            <span data-if="{{_local.errors?.['drivers.private_attachment_disk']}}" class="form-error">{{_local.errors?.['drivers.private_attachment_disk']?.[0] ?? ''}}</span>
+            <p data-ref="unavailable_driver_notice_private_attachment" data-if="{{!!_local.form?.drivers?.private_attachment_disk &amp;&amp; !(_local.form?.available_drivers?.private_attachment ?? []).some(d => d.id === _local.form?.drivers?.private_attachment_disk)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-private_attachment">
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
+              <span class="font-mono">{{_local.form?.drivers?.private_attachment_disk ?? ''}}</span>
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_suffix</span>
+            </p>
+          </div>
+        </div>
+        <p data-ref="private_attachment_same_disk_warning" data-if="{{!['', 'default'].includes(_local.form?.drivers?.private_attachment_disk ?? '') &amp;&amp; !['', 'none'].includes(_local.form?.drivers?.public_asset_disk ?? '') &amp;&amp; _local.form?.drivers?.private_attachment_disk === _local.form?.drivers?.public_asset_disk}}" class="text-warning-soft" data-testid="private-attachment-same-disk-warning">$t:admin.settings.drivers.private_attachment.same_disk_warning</p>
+        <div data-ref="private_attachment_s3_help" data-if="{{_local.form?.drivers?.private_attachment_disk === 's3'}}" class="text-sm text-gray-500 dark:text-gray-400">$t:admin.settings.drivers.private_attachment.s3_help</div>
+        <div data-ref="private_attachment_pins" data-if="{{(_local.form?._meta?.private_attachment?.pins ?? []).length > 0}}" class="row-stack" data-testid="private-attachment-pins">
+          <span class="text-secondary text-sm font-medium">$t:admin.settings.drivers.private_attachment.pins_title</span>
+          <div data-each="pin in _local.form._meta.private_attachment.pins" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+            <span data-if="{{pin.owner === 'core'}}" class="text-heading">$t:admin.settings.drivers.private_attachment.pin_core</span>
+            <span data-if="{{pin.owner !== 'core'}}" class="text-heading font-mono">{{pin.owner}}</span>
+            <span class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono">{{pin.env}}={{pin.disk}}</span>
+          </div>
+          <p class="text-label-subtle text-sm">$t:admin.settings.drivers.private_attachment.pins_hint</p>
+        </div>
+      </div>
+    </div>
+    <!-- 웹서버 파일 위임 (#878) — 로컬 파일 응답(확장 자산·번들, 공개 스토리지, 확장 아이콘, 본문의 로컬 미디어)을 PHP 대신
+         웹서버(Apache mod_xsendfile · nginx X-Accel-Redirect)가 보내게 한다. 기본은 「사용 안 함」이고 웹서버 설정이 함께 필요하다.
+         안내 문구의 경로·매핑은 `_meta.file_delegation`(지금 적용 중인 값 — 설치 위치 실경로)으로 채운다.
+         「설정 점검」(1단계)은 화면 값으로 웹서버 종류·모듈만 보고 판정하며 저장 버튼을 잠그지 않는다 — PHP 가 웹서버 구성을
+         확정할 수 없어서다. 「실제 전송 확인」(2단계)은 **저장된** 설정으로 작은 JSON 파일을 받아 본문이 오는지 본다. -->
+    <div data-ref="card_file_delegation_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.drivers.file_delegation.title</h3>
+      <div class="card-description">$t:admin.settings.drivers.file_delegation.desc</div>
+      <div class="row-stack">
+        <div data-ref="field_file_delegation" class="">
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.file_delegation.mode</span>
+            <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.file_delegation'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
+          <div class="w-full">
+            <responsive on="768-" class="w-64"/>
+            <select name="drivers.file_delegation" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.file_delegation'] === true}}" class="w-full" error="{{_local.errors?.['drivers.file_delegation']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.file_delegation ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
+            <span data-if="{{_local.errors?.['drivers.file_delegation']}}" class="form-error">{{_local.errors?.['drivers.file_delegation']?.[0] ?? ''}}</span>
+            <p data-ref="unavailable_driver_notice_file_delegation" data-if="{{!!_local.form?.drivers?.file_delegation &amp;&amp; !(_local.form?.available_drivers?.file_delegation ?? []).some(d => d.id === _local.form?.drivers?.file_delegation)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-file_delegation">
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
+              <span class="font-mono">{{_local.form?.drivers?.file_delegation ?? ''}}</span>
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_suffix</span>
+            </p>
+          </div>
+        </div>
+        <div data-ref="field_file_delegation_accel_prefix" data-if="{{_local.form?.drivers?.file_delegation === 'x-accel-redirect'}}" class="py-3">
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.file_delegation.accel_prefix</span>
+            <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.file_delegation_accel_prefix'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
+          <div class="w-full">
+            <input type="text" name="drivers.file_delegation_accel_prefix" placeholder="/_g7_sendfile/" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.file_delegation_accel_prefix'] === true}}" class="{{_local.errors?.['drivers.file_delegation_accel_prefix'] ? 'input-error font-mono' : 'font-mono'}}">
+              <responsive on="768-" class="{{_local.errors?.['drivers.file_delegation_accel_prefix'] ? 'input-error w-64 font-mono' : 'w-64 font-mono'}}"/>
+            </input>
+            <span data-if="{{_local.errors?.['drivers.file_delegation_accel_prefix']}}" class="form-error">{{_local.errors?.['drivers.file_delegation_accel_prefix']?.[0] ?? ''}}</span>
+            <p class="text-hint mt-1">$t:admin.settings.drivers.file_delegation.accel_prefix_desc</p>
+          </div>
+        </div>
+        <!-- Apache 안내 — XSendFilePath 는 설치 위치 실경로(심볼릭 링크를 푼 값)다. 앱이 X-Sendfile 에 싣는 경로도 실경로라 둘이 같아야 한다. -->
+        <div data-ref="file_delegation_apache_guide" data-if="{{_local.form?.drivers?.file_delegation === 'x-sendfile'}}" class="alert-info flex-start">
+          <icon name="circle-info" class="text-base text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+          <div class="min-w-0">
+            <p class="text-info-soft">$t:admin.settings.drivers.file_delegation.apache_guide</p>
+            <p class="font-mono text-xs mt-2 break-all">XSendFile On</p>
+            <p data-testid="file-delegation-apache-path" class="font-mono text-xs break-all">{{'XSendFilePath ' + (_local.form?._meta?.file_delegation?.base_path ?? '')}}</p>
+          </div>
+        </div>
+        <!-- nginx 안내 — 앱이 X-Accel-Mapping 을 스스로 만들므로 fastcgi_param 은 필요 없다. internal 이 빠지면 설치 위치 전체가 바깥에 열린다. -->
+        <div data-ref="file_delegation_nginx_guide" data-if="{{_local.form?.drivers?.file_delegation === 'x-accel-redirect'}}" class="alert-info flex-start">
+          <icon name="circle-info" class="text-base text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+          <div class="min-w-0">
+            <p class="text-info-soft">$t:admin.settings.drivers.file_delegation.nginx_guide</p>
+            <p data-testid="file-delegation-nginx-location" class="font-mono text-xs mt-2 break-all">{{'location ' + (_local.form?.drivers?.file_delegation_accel_prefix || _local.form?._meta?.file_delegation?.accel_prefix || '/_g7_sendfile/') + ' {'}}</p>
+            <p class="font-mono text-xs pl-4">internal;</p>
+            <p data-testid="file-delegation-nginx-alias" class="font-mono text-xs pl-4 break-all">{{'alias ' + (_local.form?._meta?.file_delegation?.nginx_alias_path ?? _local.form?._meta?.file_delegation?.base_path ?? '') + '/;'}}</p>
+            <!-- nginx 는 내부 이동 때 앱 응답의 X-Content-Type-Options·Content-Security-Policy 를 넘기지 않는다 — 내부 위치에서 다시 붙여야 유형 추측 차단과 공개 스토리지·본문 미디어의 CSP 가 유지된다. -->
+            <p data-testid="file-delegation-nginx-nosniff" class="font-mono text-xs pl-4 break-all">add_header X-Content-Type-Options "nosniff" always;</p>
+            <p data-testid="file-delegation-nginx-csp" class="font-mono text-xs pl-4 break-all">add_header Content-Security-Policy $upstream_http_content_security_policy always;</p>
+            <p class="font-mono text-xs">}</p>
+          </div>
+        </div>
+        <!-- 점검·확인 구역 — 화면 값이나 적용 중인 값 중 하나라도 위임이면 보인다(끄는 중에도 확인할 수 있게). -->
+        <div data-ref="file_delegation_check_section" data-if="{{(_local.form?.drivers?.file_delegation ?? 'none') !== 'none' || (_local.form?._meta?.file_delegation?.mode ?? 'none') !== 'none'}}" class="py-3 space-y-3">
+          <p class="text-hint">$t:admin.settings.drivers.file_delegation.test_hint</p>
+          <div class="flex-center gap-4 flex-wrap">
+            <button type="button" data-testid="file-delegation-test-button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'file_delegation')}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
+              <on type="click">
+                <!-- 1단계 정적 판정. 직전 결과를 먼저 지운다(S3 시험과 같은 형태). 결과 문구가 판정 사유라 그대로 보인다. -->
+                <sequence>
+                  <set-state target="local" testingDriver="file_delegation"/>
+                  <set-state target="local" :driverTestResults.file_delegation="null"/>
+                  <api-call target="/api/admin/settings/test-driver" :auth_required="true" method="POST">
+                    <success>
+                      <set-state target="local" driverTestResults.file_delegation="{{result.data.results.file_delegation}}"/>
+                      <toast type="{{result.data.results.file_delegation.success ? 'success' : 'error'}}" message="{{result.data.results.file_delegation.message}}"/>
+                      <set-state target="local" :testingDriver="null"/>
+                    </success>
+                    <fail>
+                      <set-state target="local">
+                        <field name="driverTestResults.file_delegation">
+                          <field name="success" :value="false"/>
+                          <field name="message" value="{{error.message ?? '$t:admin.settings.drivers.test_failed'}}"/>
+                        </field>
+                      </set-state>
+                      <toast type="error" message="{{error.message ?? '$t:admin.settings.drivers.test_failed'}}"/>
+                      <set-state target="local" :testingDriver="null"/>
+                    </fail>
+                    <body file_delegation="{{_local.form.drivers?.file_delegation ?? 'none'}}" file_delegation_accel_prefix="{{_local.form.drivers?.file_delegation_accel_prefix ?? ''}}"/>
+                  </api-call>
+                </sequence>
+              </on>
+              <icon data-if="{{_local.testingDriver !== 'file_delegation'}}" name="stethoscope" class="text-base"/>
+              <icon data-if="{{_local.testingDriver === 'file_delegation'}}" name="spinner" class="spinner-sm"/>
+              <span>{{_local.testingDriver === 'file_delegation' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.file_delegation.test_button'}}</span>
+            </button>
+            <button type="button" data-testid="file-delegation-probe-button" disabled="{{_local.testingDriver === 'file_delegation_probe'}}" class="px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100 text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
+              <on type="click">
+                <!-- 2단계 실제 전송 확인. 저장된(적용 중인) 위임 설정으로 작은 JSON 파일을 받는다. 웹서버가 위임 헤더를 소비하지 않으면
+                     본문이 비어 result 가 null 이 되고, nginx internal 위치가 없으면 404 로 fail 갈래에 온다 — 둘 다 실패다.
+                     위임이 꺼져 있거나(inactive) 파일이 매핑 밖(skipped)이라 PHP 가 보낼 응답이면 서버는 본문 대신 data.reason 을
+                     준다 — 웹서버가 보낸 것이 아니므로 성공으로 보이지 않고 그 사유를 보인다. -->
+                <sequence>
+                  <set-state target="local" testingDriver="file_delegation_probe"/>
+                  <set-state target="local" :fileDelegationProbe="null"/>
+                  <api-call target="/api/admin/settings/file-delegation-probe" :auth_required="true" method="GET">
+                    <success>
+                      <set-state target="local">
+                        <field name="fileDelegationProbe">
+                          <field name="success" value="{{result?.data?.probe === 'g7-file-delegation'}}"/>
+                          <field name="reason" value="{{result?.data?.probe === 'g7-file-delegation' ? null : (result?.data?.reason ?? null)}}"/>
+                        </field>
+                      </set-state>
+                      <toast type="{{result?.data?.probe === 'g7-file-delegation' ? 'success' : (result?.data?.reason === 'inactive' ? 'info' : 'error')}}" message="{{result?.data?.probe === 'g7-file-delegation' ? '$t:admin.settings.drivers.file_delegation.probe_ok' : (result?.data?.reason === 'inactive' ? '$t:admin.settings.drivers.file_delegation.probe_inactive' : (result?.data?.reason === 'skipped' ? '$t:admin.settings.drivers.file_delegation.probe_skipped' : '$t:admin.settings.drivers.file_delegation.probe_failed'))}}"/>
+                      <set-state target="local" :testingDriver="null"/>
+                    </success>
+                    <fail>
+                      <set-state target="local">
+                        <field name="fileDelegationProbe">
+                          <field name="success" :value="false"/>
+                        </field>
+                      </set-state>
+                      <toast type="error" message="$t:admin.settings.drivers.file_delegation.probe_failed"/>
+                      <set-state target="local" :testingDriver="null"/>
+                    </fail>
+                  </api-call>
+                </sequence>
+              </on>
+              <icon data-if="{{_local.testingDriver !== 'file_delegation_probe'}}" name="paper-plane" class="text-base"/>
+              <icon data-if="{{_local.testingDriver === 'file_delegation_probe'}}" name="spinner" class="spinner-sm"/>
+              <span>{{_local.testingDriver === 'file_delegation_probe' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.file_delegation.probe_button'}}</span>
+            </button>
+          </div>
+          <div data-ref="file_delegation_test_result" data-if="{{_local.driverTestResults?.file_delegation}}" class="{{_local.driverTestResults.file_delegation.success ? 'flex-start gap-2 text-green-700 dark:text-green-400' : 'flex-start gap-2 text-red-600 dark:text-red-400'}}">
+            <icon name="{{_local.driverTestResults.file_delegation.success ? 'check-circle' : 'circle-xmark'}}" class="text-xl flex-shrink-0"/>
+            <span class="text-sm font-medium">{{_local.driverTestResults.file_delegation.message ?? ''}}</span>
+          </div>
+          <p data-testid="file-delegation-test-mapping" data-if="{{_local.driverTestResults?.file_delegation?.details?.mode === 'x-accel-redirect' &amp;&amp; !!_local.driverTestResults?.file_delegation?.details?.accel_mapping}}" class="font-mono text-xs break-all">$t:admin.settings.drivers.file_delegation.test_mapping|mapping={{_local.driverTestResults?.file_delegation?.details?.accel_mapping ?? ''}}</p>
+          <div data-ref="file_delegation_probe_result" data-if="{{_local.fileDelegationProbe}}" class="{{_local.fileDelegationProbe.success ? 'flex-start gap-2 text-green-700 dark:text-green-400' : (_local.fileDelegationProbe.reason === 'inactive' ? 'flex-start gap-2 text-warning-soft' : 'flex-start gap-2 text-red-600 dark:text-red-400')}}">
+            <icon name="{{_local.fileDelegationProbe.success ? 'check-circle' : (_local.fileDelegationProbe.reason === 'inactive' ? 'circle-info' : 'circle-xmark')}}" class="text-xl flex-shrink-0"/>
+            <span class="text-sm font-medium">{{_local.fileDelegationProbe.success ? '$t:admin.settings.drivers.file_delegation.probe_ok' : (_local.fileDelegationProbe.reason === 'inactive' ? '$t:admin.settings.drivers.file_delegation.probe_inactive' : (_local.fileDelegationProbe.reason === 'skipped' ? '$t:admin.settings.drivers.file_delegation.probe_skipped' : '$t:admin.settings.drivers.file_delegation.probe_failed'))}}</span>
+          </div>
+          <p data-ref="file_delegation_saved_differs" data-if="{{(_local.form?.drivers?.file_delegation ?? 'none') !== (_local.form?._meta?.file_delegation?.mode ?? 'none')}}" class="text-warning-soft">$t:admin.settings.drivers.file_delegation.saved_differs</p>
+          <div data-ref="file_delegation_recover_hint" class="alert-warning flex-start">
+            <icon name="triangle-exclamation" class="text-base text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5"/>
+            <p>$t:admin.settings.drivers.file_delegation.recover_hint</p>
+          </div>
+        </div>
+      </div>
+    </div>
     <div data-ref="card_cache_settings" class="admin-card">
       <h3 class="card-title">$t:admin.settings.drivers.cache.title</h3>
       <div class="card-description">$t:admin.settings.drivers.cache.desc</div>
@@ -173,7 +368,8 @@
             <span>$t:admin.settings.drivers.cache.driver</span>
             <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.cache_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
           </label>
-          <div class="w-full md:w-64">
+          <div class="w-full">
+            <responsive on="768-" class="w-64"/>
             <select name="drivers.cache_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.cache_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.cache_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.cache ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
             <span data-if="{{_local.errors?.['drivers.cache_driver']}}" class="form-error">{{_local.errors?.['drivers.cache_driver']?.[0] ?? ''}}</span>
             <p data-ref="unavailable_driver_notice_cache" data-if="{{!!_local.form?.drivers?.cache_driver &amp;&amp; !(_local.form?.available_drivers?.cache ?? []).some(d => d.id === _local.form?.drivers?.cache_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-cache">
@@ -183,8 +379,16 @@
             </p>
           </div>
         </div>
-        <div data-ref="redis_settings" data-if="{{_local.form?.drivers?.cache_driver === 'redis'}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
-          <div class="grid-2col-responsive">
+        <!-- Redis 접속 칸은 캐시·세션·큐가 함께 쓰는 한 벌이다(서버가 같은 값을 세 자리에 주입하고, 연결 시험도 세 자리 중
+             하나만 redis 면 Redis 를 시험한다). 그래서 셋 중 하나라도 redis 면 보인다 — 캐시가 파일이어도 세션·큐용 접속값을
+             확인·시험할 수 있어야 한다. S3 칸(s3_settings)과 같은 규칙이다. -->
+        <div data-ref="redis_settings" data-if="{{_local.form?.drivers?.cache_driver === 'redis' || _local.form?.drivers?.session_driver === 'redis' || _local.form?.drivers?.queue_driver === 'redis'}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
+          <p data-ref="redis_shared_hint" data-if="{{_local.form?.drivers?.cache_driver !== 'redis'}}" class="flex-center text-xs text-blue-600 dark:text-blue-400 gap-1">
+            <icon name="info-circle" class="text-xs"/>
+            <span>$t:admin.settings.drivers.cache.redis_shared_hint</span>
+          </p>
+          <div class="grid grid-cols-1 gap-4">
+            <responsive on="768-" class="grid grid-cols-2 gap-4"/>
             <div class="py-3">
               <label class="form-label">
                 <span>$t:admin.settings.drivers.cache.redis_host</span>
@@ -202,7 +406,8 @@
               <span data-if="{{_local.errors?.['drivers.redis_port']}}" class="form-error">{{_local.errors?.['drivers.redis_port']?.[0] ?? ''}}</span>
             </div>
           </div>
-          <div class="grid-2col-responsive">
+          <div class="grid grid-cols-1 gap-4">
+            <responsive on="768-" class="grid grid-cols-2 gap-4"/>
             <div class="py-3">
               <label class="form-label">
                 <span>$t:admin.settings.drivers.cache.redis_password</span>
@@ -259,7 +464,8 @@
           </div>
         </div>
         <div data-ref="memcached_settings" data-if="{{_local.form?.drivers?.cache_driver === 'memcached'}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
-          <div class="grid-2col-responsive">
+          <div class="grid grid-cols-1 gap-4">
+            <responsive on="768-" class="grid grid-cols-2 gap-4"/>
             <div class="py-3">
               <label class="form-label">
                 <span>$t:admin.settings.drivers.cache.memcached_host</span>
@@ -325,7 +531,8 @@
             <span>$t:admin.settings.drivers.search_engine.driver</span>
             <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.search_engine_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
           </label>
-          <div class="w-full md:w-64">
+          <div class="w-full">
+            <responsive on="768-" class="w-64"/>
             <select name="drivers.search_engine_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.search_engine_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.search_engine_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.search ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
             <span data-if="{{_local.errors?.['drivers.search_engine_driver']}}" class="form-error">{{_local.errors?.['drivers.search_engine_driver']?.[0] ?? ''}}</span>
             <p data-ref="unavailable_driver_notice_search" data-if="{{!!_local.form?.drivers?.search_engine_driver &amp;&amp; !(_local.form?.available_drivers?.search ?? []).some(d => d.id === _local.form?.drivers?.search_engine_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-search">
@@ -342,6 +549,36 @@
         </div>
       </div>
     </div>
+    <!-- 이미지 처리 엔진 (#869) — 업로드 축소와 썸네일 생성이 같은 엔진을 쓴다. 선택지는 서버가 이 서버에서 쓸 수 있는
+         엔진만 내려 준다(GD·Imagick 중 확장이 없는 것은 빠지고, 플러그인 엔진이 더해진다). 저장값이 선택지에 없으면
+         다른 카드와 같은 「저장된 값 … (현재 사용할 수 없음)」 안내를 띄운다 — 그동안 서버는 GD 로 물러서 처리한다. -->
+    <div data-ref="card_image_driver_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.drivers.image.title</h3>
+      <div class="card-description">$t:admin.settings.drivers.image.desc</div>
+      <div class="row-stack">
+        <div data-ref="field_image_driver" class="">
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.image.driver</span>
+            <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.image_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
+          <div class="w-full">
+            <responsive on="768-" class="w-64"/>
+            <select name="drivers.image_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.image_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.image_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.image ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
+            <span data-if="{{_local.errors?.['drivers.image_driver']}}" class="form-error">{{_local.errors?.['drivers.image_driver']?.[0] ?? ''}}</span>
+            <p data-ref="unavailable_driver_notice_image" data-if="{{!!_local.form?.drivers?.image_driver &amp;&amp; !(_local.form?.available_drivers?.image ?? []).some(d => d.id === _local.form?.drivers?.image_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-image">
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
+              <span class="font-mono">{{_local.form?.drivers?.image_driver ?? ''}}</span>
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_suffix</span>
+            </p>
+          </div>
+          <p class="text-hint mt-2">$t:admin.settings.drivers.image.driver_desc</p>
+        </div>
+        <div class="alert-info">
+          <icon name="circle-info" class="text-base text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+          <p class="text-info-soft">$t:admin.settings.drivers.image.plugin_notice</p>
+        </div>
+      </div>
+    </div>
     <div data-ref="card_session_settings" class="admin-card">
       <h3 class="card-title">$t:admin.settings.drivers.session.title</h3>
       <div class="card-description">$t:admin.settings.drivers.session.desc</div>
@@ -351,7 +588,8 @@
             <span>$t:admin.settings.drivers.session.driver</span>
             <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.session_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
           </label>
-          <div class="w-full md:w-64">
+          <div class="w-full">
+            <responsive on="768-" class="w-64"/>
             <select name="drivers.session_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.session_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.session_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.session ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
             <span data-if="{{_local.errors?.['drivers.session_driver']}}" class="form-error">{{_local.errors?.['drivers.session_driver']?.[0] ?? ''}}</span>
             <p data-ref="unavailable_driver_notice_session" data-if="{{!!_local.form?.drivers?.session_driver &amp;&amp; !(_local.form?.available_drivers?.session ?? []).some(d => d.id === _local.form?.drivers?.session_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-session">
@@ -387,7 +625,8 @@
             <span>$t:admin.settings.drivers.queue.driver</span>
             <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.queue_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
           </label>
-          <div class="w-full md:w-64">
+          <div class="w-full">
+            <responsive on="768-" class="w-64"/>
             <select name="drivers.queue_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.queue_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.queue_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.queue ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
             <span data-if="{{_local.errors?.['drivers.queue_driver']}}" class="form-error">{{_local.errors?.['drivers.queue_driver']?.[0] ?? ''}}</span>
             <p data-ref="unavailable_driver_notice_queue" data-if="{{!!_local.form?.drivers?.queue_driver &amp;&amp; !(_local.form?.available_drivers?.queue ?? []).some(d => d.id === _local.form?.drivers?.queue_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-queue">
@@ -418,7 +657,8 @@
             <div data-ref="field_queue_connections">
               <label class="form-label">$t:admin.settings.drivers.queue.worker.connections.label</label>
               <p class="form-hint">$t:admin.settings.drivers.queue.worker.connections.desc</p>
-              <div data-testid="queue-connections-input" class="w-full md:w-2/3">
+              <div data-testid="queue-connections-input" class="w-full">
+                <responsive on="768-" class="w-2/3"/>
                 <tag-input data-type="composite" name="drivers.queue_connections" options="{{(_local.form?._meta?.queue_connection_options ?? []).map(o => ({value: o.name, label: o.name}))}}" placeholder="$t:admin.settings.drivers.queue.worker.connections.placeholder" noOptionsMessage="$t:admin.settings.drivers.queue.worker.connections.no_options" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}"/>
               </div>
               <p data-if="{{(_local.form?.drivers?.queue_connections ?? []).length > 0 &amp;&amp; !(_local.form?.drivers?.queue_connections ?? []).includes(_local.form?.drivers?.queue_driver)}}" data-testid="queue-default-missing" class="text-warning-soft mt-2">$t:admin.settings.drivers.queue.worker.connections.default_missing|driver={{_local.form?.drivers?.queue_driver ?? ''}}</p>
@@ -428,8 +668,9 @@
               <label class="form-label">$t:admin.settings.drivers.queue.worker.queues.label</label>
               <p class="form-hint">$t:admin.settings.drivers.queue.worker.queues.desc</p>
               <span data-if="{{(_computed.queueErrors?.namesRoot ?? []).length > 0}}" data-testid="queue-names-root-error" class="form-error">{{_computed.queueErrors?.namesRoot?.[0] ?? ''}}</span>
-              <div data-each="conn in _computed.queueConnectionList" data-testid="{{'queue-names-' + conn}}" class="flex flex-col md:flex-row md:items-start gap-2 py-2 border-l-2 border-blue-200 dark:border-blue-800 pl-3 mt-2">
-                <span class="text-sm font-mono text-gray-700 dark:text-gray-300 md:w-40 shrink-0 break-all">{{conn}}</span>
+              <div data-each="conn in _computed.queueConnectionList" data-testid="{{'queue-names-' + conn}}" class="flex flex-col gap-2 py-2 border-l-2 border-blue-200 dark:border-blue-800 pl-3 mt-2">
+                <responsive on="768-" class="flex flex-row items-start gap-2 py-2 border-l-2 border-blue-200 dark:border-blue-800 pl-3 mt-2"/>
+                <span class="text-sm font-mono text-gray-700 dark:text-gray-300 shrink-0 break-all"><responsive on="768-" class="text-sm font-mono text-gray-700 dark:text-gray-300 w-40 shrink-0 break-all"/>{{conn}}</span>
                 <div class="flex-1 min-w-0">
                   <tag-input data-type="composite" aria-label="$t:common.row_cell|row={{conn}}|column={{$t('admin.settings.drivers.queue.worker.queues.label')}}" value="{{_local.form?.drivers?.queue_names?.[conn] ?? (conn.endsWith('-long') ? ['long'] : ['default'])}}" :creatable="true" placeholder="$t:admin.settings.drivers.queue.worker.queues.placeholder" class="w-full" defaultVariant="green" disabled="{{_computed.isReadOnly}}">
                     <on type="change">
@@ -567,6 +808,46 @@
             </div>
           </div>
         </div>
+        <!-- 처리 기록·보관 기간 — 모든 Job 의 처리 완료·실패를 기록할지와, 그 기록과 실패 작업(failed_jobs)을 며칠 남길지(공통 1개, 기본 7일).
+             지난 기록은 정리 스케줄(queue-prune-records)이 지운다 — 그 다음 실행 일시를 안내 상자에 보인다. 한계값은 설정 응답의 limits 메타가 준다.
+             드라이버와 무관한 값이라 sync 여도 보인다. 기록 자체는 스케줄 관리 > 큐 > 처리 기록에서 본다. -->
+        <div data-ref="queue_record_section" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 row-stack">
+          <h4 class="text-heading">$t:admin.settings.drivers.queue.records.title</h4>
+          <div data-ref="toggle_queue_job_log_enabled" class="flex-between">
+            <div>
+              <span class="text-heading">$t:admin.settings.drivers.queue.records.job_log_enabled</span>
+              <p class="text-label-subtle">$t:admin.settings.drivers.queue.records.job_log_enabled_desc</p>
+            </div>
+            <toggle data-type="composite" name="drivers.queue_job_log_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+          <div data-ref="field_queue_record_retention_days">
+            <label class="form-label" htmlFor="drivers_queue_record_retention_days">$t:admin.settings.drivers.queue.records.retention_days</label>
+            <div class="flex-center gap-2">
+              <input id="drivers_queue_record_retention_days" type="number" name="drivers.queue_record_retention_days" placeholder="7" min="{{_local?.form?._meta?.limits?.drivers_queue_record_retention_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_queue_record_retention_days_max ?? 90}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.queue_record_retention_days'] ? 'input input-w-md input-error' : 'input input-w-md'}}"/>
+              <span class="text-sm text-gray-700 dark:text-gray-300">$t:admin.settings.drivers.queue.records.days_suffix</span>
+            </div>
+            <span data-if="{{_local.errors?.['drivers.queue_record_retention_days']}}" class="form-error">{{_local.errors?.['drivers.queue_record_retention_days']?.[0] ?? ''}}</span>
+            <p class="form-hint">$t:admin.settings.drivers.queue.records.retention_days_hint|min={{_local?.form?._meta?.limits?.drivers_queue_record_retention_days_min ?? 1}}|max={{_local?.form?._meta?.limits?.drivers_queue_record_retention_days_max ?? 90}}</p>
+          </div>
+          <!-- 처리 기록 보기 + 정리 스케줄 안내 — 기록을 보는 곳과 지우는 스케줄을 한 상자에 둔다(예전에는 같은 경로 문구가 토글 설명과 링크에 두 번 있었다). -->
+          <div data-ref="queue_records_schedule_notice" class="alert-info">
+            <div class="flex gap-3">
+              <icon name="circle-info" class="text-xl flex-shrink-0 mt-0.5"/>
+              <div class="min-w-0 space-y-1">
+                <p class="text-label-subtle">$t:admin.settings.drivers.queue.records.schedule_managed</p>
+                <p data-ref="queue_records_schedule_notice_next_run" data-if="{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'queue-prune-records')?.is_active !== false &amp;&amp; !!(coreSchedules?.data?.data ?? []).find(r => r.name === 'queue-prune-records')?.next_run_at}}" class="text-label-subtle flex-center flex-wrap gap-1">
+                  <span>$t:admin.settings.schedule_link.next_run</span>
+                  <span class="font-medium">{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'queue-prune-records')?.next_run_at | datetime}}</span>
+                </p>
+                <p data-ref="queue_records_schedule_notice_inactive" data-if="{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'queue-prune-records')?.is_active === false}}" class="text-label-subtle">$t:admin.settings.schedule_link.inactive</p>
+                <div class="flex-center flex-wrap gap-3">
+                  <a data-ref="queue_records_link" data-if="{{_global.adminQueueJobsReadable !== false}}" href="/admin/schedules/queue?view=logs" class="text-link">$t:admin.settings.drivers.queue.records.view_link</a>
+                  <a data-ref="queue_records_schedule_notice_link" data-if="{{current_user !== undefined &amp;&amp; (_computed.canReadSchedules !== false)}}" href="/admin/schedules?extension_type=core&amp;search_field=identifier&amp;search_keyword=queue-prune-records" class="text-link">$t:admin.settings.schedule_link.change</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div data-ref="card_log_settings" class="admin-card">
@@ -578,7 +859,8 @@
             <span>$t:admin.settings.drivers.log.driver</span>
             <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.log_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
           </label>
-          <div class="w-full md:w-64">
+          <div class="w-full">
+            <responsive on="768-" class="w-64"/>
             <select name="drivers.log_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.log_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.log_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.log ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
             <span data-if="{{_local.errors?.['drivers.log_driver']}}" class="form-error">{{_local.errors?.['drivers.log_driver']?.[0] ?? ''}}</span>
             <p data-ref="unavailable_driver_notice_log" data-if="{{!!_local.form?.drivers?.log_driver &amp;&amp; !(_local.form?.available_drivers?.log ?? []).some(d => d.id === _local.form?.drivers?.log_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-log">
@@ -593,7 +875,8 @@
             <span>$t:admin.settings.drivers.log.level</span>
             <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.log_level'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
           </label>
-          <div class="w-full md:w-64">
+          <div class="w-full">
+            <responsive on="768-" class="w-64"/>
             <select name="drivers.log_level" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.log_level'] === true}}" class="w-full" error="{{_local.errors?.['drivers.log_level']?.[0] ?? ''}}">
               <options>
                 <option value="debug">$t:admin.settings.drivers.log.levels.debug</option>
@@ -644,7 +927,8 @@
           <toggle data-type="composite" name="drivers.websocket_enabled" size="md" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_enabled'] === true}}"/>
         </div>
         <div data-ref="websocket_settings_detail" data-if="{{_local.form?.drivers?.websocket_enabled}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 gap-4">
+            <responsive on="768-" class="grid grid-cols-3 gap-4"/>
             <div class="py-3">
               <label class="form-label">
                 <span>$t:admin.settings.drivers.websocket.app_id</span>
@@ -673,7 +957,8 @@
               <span data-if="{{_local.errors?.['drivers.websocket_app_secret']}}" class="form-error">{{_local.errors?.['drivers.websocket_app_secret']?.[0] ?? ''}}</span>
             </div>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 gap-4">
+            <responsive on="768-" class="grid grid-cols-3 gap-4"/>
             <div class="py-3">
               <label class="form-label">$t:admin.settings.drivers.websocket.host</label>
               <input type="text" name="drivers.websocket_host" placeholder="localhost" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.websocket_host'] ? 'input-error' : ''}}"/>
@@ -707,7 +992,8 @@
           </div>
           <div data-ref="websocket_server_endpoint_section" class="mt-6 pt-4">
             <h4 class="text-body font-semibold mb-1">$t:admin.settings.drivers.websocket.server_endpoint_title</h4>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-3 gap-4"/>
               <div class="py-3">
                 <label class="form-label">
                   <span>$t:admin.settings.drivers.websocket.server_host</span>

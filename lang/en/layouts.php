@@ -114,7 +114,7 @@ return [
         'requires_hint' => 'These conditions are ignored for public routes, search bots and the sitemap, and the routes are served as is. Unless fixed, the screens stay visible even when the extension is turned off.',
         // `layout:audit-expressions`, `layout-versions:recalculate-diffs`, `layout-previews:cleanup` command output
         'audit_expressions' => [
-            'invalid_source' => '--source must be one of db|files|all.',
+            'invalid_source' => '--source must be one of db, files, all.',
             'summary' => 'Layouts scanned: :scanned · Violations: :violations',
             'headers' => [
                 'source' => 'Source',

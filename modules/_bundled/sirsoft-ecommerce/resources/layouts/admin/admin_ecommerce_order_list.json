@@ -175,6 +175,94 @@
                 }
             },
             "comment": "이 화면에 저장해 둔 검색 프리셋. 프리셋은 화면마다 따로 관리되므로 대상 화면을 지정해 받는다"
+        },
+        {
+            "id": "ecommerceExportCatalog",
+            "auto_fetch": false,
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerceExportCatalog",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/exports/catalog",
+            "auth_required": true,
+            "initGlobal": "ecommerceExportCatalog",
+            "params": {
+                "type": "{{_global.ecommerceExportContext?.type ?? ''}}",
+                "start_date": "{{_global.ecommerceExportContext?.filters?.start_date ?? ''}}",
+                "end_date": "{{_global.ecommerceExportContext?.filters?.end_date ?? ''}}"
+            },
+            "onSuccess": [
+                {
+                    "comment": "기본값 채우기 — 형식은 첫 형식, 행 단위는 서버 기본, 화면 컬럼은 목록에 보이던 컬럼(카탈로그에 있는 것만)이고 없으면 전부, 언어는 서버 기본.\n           기간이 필수인데 목록의 조회 기간을 쓸 수 없으면(없거나 1년 초과) 서버가 준 「오늘 포함 최근 1개월」을 채우고 안내를 켠다",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "ecommerceExportForm.format": "{{response?.data?.data?.formats?.[0]?.key ?? 'csv'}}",
+                        "ecommerceExportForm.row_unit": "{{response?.data?.data?.default_row_unit}}",
+                        "ecommerceExportForm.screen_columns": "{{(_global.ecommerceExportContext?.screen_columns ?? []).filter(k => (response?.data?.data?.screen_columns ?? []).some(c => c.key === k)).length > 0 ? (_global.ecommerceExportContext?.screen_columns ?? []).filter(k => (response?.data?.data?.screen_columns ?? []).some(c => c.key === k)) : (response?.data?.data?.screen_columns ?? []).map(c => c.key)}}",
+                        "ecommerceExportForm.locale": "{{response?.data?.data?.default_locale}}",
+                        "ecommerceExportForm.period": "{{(response?.data?.data?.list_period_usable === false && response?.data?.data?.default_period) ? response.data.data.default_period : (_global.ecommerceExportForm?.period ?? { mode: 'current' })}}",
+                        "ecommerceExportPeriodDefaulted": "{{(response?.data?.data?.list_period_usable === false && response?.data?.data?.default_period) ? true : false}}",
+                        "ecommerceExportIsEstimating": true
+                    }
+                },
+                {
+                    "comment": "첫 예상 건수 — 위에서 채운 기본값으로 예상 건수 데이터 소스를 부른다",
+                    "handler": "refetchDataSource",
+                    "params": {
+                        "dataSourceId": "ecommerceExportEstimateSource"
+                    }
+                }
+            ],
+            "comment": "창 카탈로그 — 목록 화면이 열릴 때는 받지 않고, [내보내기] 버튼이 유형을 깔고 창을 연 뒤 다시 받는다(데이터 소스는 레이아웃 최상위에만 둘 수 있어 세 목록 레이아웃이 같은 선언을 갖는다)"
+        },
+        {
+            "id": "ecommerceExportEstimateSource",
+            "auto_fetch": false,
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerceExportEstimateSource",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/exports/estimate",
+            "method": "POST",
+            "auth_required": true,
+            "params": {
+                "type": "{{_global.ecommerceExportContext?.type}}",
+                "format": "{{_global.ecommerceExportForm?.format}}",
+                "column_mode": "{{_global.ecommerceExportForm?.column_mode ?? 'current'}}",
+                "screen_columns": "{{_global.ecommerceExportForm?.screen_columns ?? []}}",
+                "fields": "{{_global.ecommerceExportForm?.fields ?? []}}",
+                "row_unit": "{{_global.ecommerceExportForm?.row_unit}}",
+                "scope": "{{_global.ecommerceExportForm?.scope ?? 'filter'}}",
+                "filters": "{{_global.ecommerceExportForm?.scope === 'selected' ? {} : (_global.ecommerceExportContext?.filters ?? {}) }}",
+                "selected_ids": "{{_global.ecommerceExportForm?.scope === 'selected' ? (_global.ecommerceExportContext?.selected_ids ?? []) : []}}",
+                "period": "{{_global.ecommerceExportForm?.scope === 'selected' ? null : (_global.ecommerceExportForm?.period ?? { mode: 'current' })}}",
+                "locale_mode": "{{_global.ecommerceExportForm?.locale_mode ?? 'locale'}}",
+                "locale": "{{_global.ecommerceExportForm?.locale}}"
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "merge": "shallow",
+                        "ecommerceExportEstimate": "{{response?.data?.data?.count ?? null}}",
+                        "ecommerceExportIsEstimating": false,
+                        "ecommerceExportEstimateFailed": false,
+                        "ecommerceExportErrors": "{{Object.fromEntries(Object.entries(_global.ecommerceExportErrors || []).filter(e => e[0] === 'reason'))}}"
+                    }
+                }
+            ],
+            "onError": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "merge": "shallow",
+                        "ecommerceExportEstimate": null,
+                        "ecommerceExportIsEstimating": false,
+                        "ecommerceExportEstimateFailed": true,
+                        "ecommerceExportErrors": "{{Object.fromEntries([...Object.entries(_global.ecommerceExportErrors || []).filter(e => e[0] === 'reason'), ...(error.errors ? Object.entries(error.errors) : [['_general', [error.message]]])])}}"
+                    }
+                }
+            ],
+            "comment": "예상 건수 — 요청 창이 조건을 바꿀 때마다 다시 부른다(본문은 이 한 곳에만 둔다 — 데이터 소스는 부르는 순간의 전역 값을 읽는다).\n       사유 오류(요청 때만 나온다)는 그대로 두고 나머지 오류는 이번 결과로 바꾼다. 첫 계산이 검증에서 걸리면(예: 목록 조건이 목록 검증을\n       통과하지 못한다) 그 사유를 보여 준다 — 「0」만 보이면 왜 비었는지 알 수 없다"
         }
     ],
     "initLocal": {
@@ -325,7 +413,7 @@
     },
     "init_actions": [
         {
-            "comment": "저장값이 **없는** 브라우저의 초기 컬럼 묶음. ColumnSelector 의 defaultColumns(_partial_filter_section.json)와 state.visibleColumns 세 곳이 같은 값이어야 한다 — DataGrid 는 required 를 보지 않고 visibleColumns 에 있는 field 만 그리므로, 여기 목록이 컬럼 field 와 어긋나면 그 컬럼은 신규 운영자에게만 조용히 사라진다. claim 은 기본 표시 컬럼이다(확정). 다만 표시 여부를 이 목록'만'이 정하는 것은 아니다 — ColumnSelector 는 브라우저 저장값(g7_columns_*)이 있으면 그것을 우선하고 신규 **정적** 컬럼을 자동으로 더하지 않는다(자동 포함은 dynamicColumns 전용). 그래서 컬럼 선택을 한 번이라도 만진 기존 운영자에게 claim 컬럼은 뜨지 않는다 — 기존 저장값을 건드리지 않는 것이 확정(7차 Q1)이므로 마이그레이션을 두지 않는다. 그리고 DataGrid 의 컬럼 12개 중 no 는 이 4출처 어디에도 없어 렌더되지 않는다(HEAD 선재, S16 소유). 표시 컬럼은 관리자 회원마다 갈린다(#639 ⑩) — 저장 키에 회원 uuid 를 넣는 핸들러(sirsoft-ecommerce.loadVisibleColumns)로 읽고, 회원 구분 없던 옛 키(g7_order_visible_columns)는 그 핸들러가 지운다. 레이아웃이 공용 키를 직접 읽으면 같은 브라우저의 다른 관리자 설정이 실린다.",
+            "comment": "저장값이 **없는** 브라우저의 초기 컬럼 묶음. ColumnSelector 의 defaultColumns(_partial_filter_section.json)와 state.visibleColumns 세 곳이 같은 값이어야 한다 — DataGrid 는 required 를 보지 않고 visibleColumns 에 있는 field 만 그리므로, 여기 목록이 컬럼 field 와 어긋나면 그 컬럼은 신규 운영자에게만 조용히 사라진다. claim 은 기본 표시 컬럼이다(확정). 다만 표시 여부를 이 목록'만'이 정하는 것은 아니다 — ColumnSelector 는 브라우저 저장값(g7_columns_*)이 있으면 그것을 우선하고 신규 **정적** 컬럼을 자동으로 더하지 않는다(자동 포함은 dynamicColumns 전용). 그래서 컬럼 선택을 한 번이라도 만진 기존 운영자에게 claim 컬럼은 뜨지 않는다 — 기존 저장값을 건드리지 않는 것이 확정이므로 마이그레이션을 두지 않는다. 그리고 DataGrid 의 컬럼 12개 중 no 는 이 4출처 어디에도 없어 렌더되지 않는다(HEAD 선재, S16 소유). 표시 컬럼은 관리자 회원마다 갈린다(#639 ⑩) — 저장 키에 회원 uuid 를 넣는 핸들러(sirsoft-ecommerce.loadVisibleColumns)로 읽고, 회원 구분 없던 옛 키(g7_order_visible_columns)는 그 핸들러가 지운다. 레이아웃이 공용 키를 직접 읽으면 같은 브라우저의 다른 관리자 설정이 실린다.",
             "handler": "sirsoft-ecommerce.loadVisibleColumns",
             "params": {
                 "defaultColumns": [
@@ -423,6 +511,15 @@
                 "target": "_local",
                 "key": "visibleFilters"
             }
+        },
+        {
+            "comment": "내보내기(#787) — 목록에 들어올 때 다른 화면에서 따라가던 진행 표시를 비운다(반복은 페이지가 바뀔 때 코어가 멈춘다)",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "ecommerceExportTracking": null,
+                "ecommerceExportTrackingDownloading": false
+            }
         }
     ],
     "slots": {
@@ -432,7 +529,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "ecommerce-admin-page-content"
                 },
                 "children": [
                     {
@@ -440,15 +537,22 @@
                         "id": "page_header",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "641-": {
+                                "props": {
+                                    "className": "ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-6"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "page-header"
+                            "className": "ecommerce:flex ecommerce:justify-between ecommerce:mb-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-3"
+                                    "className": "ecommerce-flex-center ecommerce:gap-3"
                                 },
                                 "children": [
                                     {
@@ -459,7 +563,7 @@
                                         "responsive": {
                                             "portable": {
                                                 "props": {
-                                                    "className": "btn-icon flex"
+                                                    "className": "ecommerce-btn-icon ecommerce:flex"
                                                 }
                                             }
                                         },
@@ -472,7 +576,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "btn-icon hidden",
+                                            "className": "ecommerce-btn-icon ecommerce:hidden ecommerce-hidden",
                                             "aria-label": "$t:common.back"
                                         },
                                         "children": [
@@ -481,7 +585,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "arrow-left",
-                                                    "className": "text-xl"
+                                                    "className": "ecommerce:text-xl"
                                                 }
                                             }
                                         ]
@@ -495,8 +599,15 @@
                                                 "id": "h_002_page_title",
                                                 "type": "basic",
                                                 "name": "H1",
+                                                "responsive": {
+                                                    "640-": {
+                                                        "props": {
+                                                            "className": "ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "page-title"
+                                                    "className": "ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.order.title"
                                             },
@@ -506,7 +617,7 @@
                                                 "type": "basic",
                                                 "name": "P",
                                                 "props": {
-                                                    "className": "page-description"
+                                                    "className": "ecommerce-page-description"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.order.description"
                                             }
@@ -517,8 +628,15 @@
                             {
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "641-": {
+                                        "props": {
+                                            "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "page-actions"
+                                    "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3 ecommerce:justify-start ecommerce:w-full"
                                 },
                                 "children": [
                                     {
@@ -540,7 +658,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-icon",
+                                            "className": "ecommerce-btn ecommerce-btn-icon ecommerce:shrink-0 ecommerce:whitespace-nowrap",
                                             "aria-label": "$t:common.refresh",
                                             "title": "$t:common.refresh"
                                         },
@@ -550,7 +668,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "arrows-rotate",
-                                                    "className": "text-xl"
+                                                    "className": "ecommerce:text-xl"
                                                 }
                                             }
                                         ]
@@ -567,12 +685,12 @@
                         "responsive": {
                             "portable": {
                                 "props": {
-                                    "className": "flex gap-2 mb-4"
+                                    "className": "ecommerce:flex ecommerce:gap-2 ecommerce:mb-4"
                                 }
                             }
                         },
                         "props": {
-                            "className": "hidden"
+                            "className": "ecommerce:hidden ecommerce-hidden"
                         },
                         "children": [
                             {
@@ -592,7 +710,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "btn btn-outline flex-1"
+                                    "className": "ecommerce-btn ecommerce-btn-outline ecommerce:flex-1"
                                 },
                                 "children": [
                                     {
@@ -600,7 +718,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "gear",
-                                            "className": "text-base"
+                                            "className": "ecommerce:text-base"
                                         }
                                     },
                                     {
@@ -624,7 +742,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "btn btn-outline flex-1"
+                                    "className": "ecommerce-btn ecommerce-btn-outline ecommerce:flex-1"
                                 },
                                 "children": [
                                     {
@@ -632,7 +750,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "list",
-                                            "className": "text-base"
+                                            "className": "ecommerce:text-base"
                                         }
                                     },
                                     {
@@ -652,7 +770,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mt-6"
+                            "className": "ecommerce:mt-6"
                         },
                         "children": [
                             {
@@ -691,6 +809,10 @@
         {
             "comment": "엑셀 내려받기 — 검색 결과 전체와 선택 건 중 무엇을 뽑을지 고른다",
             "partial": "partials/admin_ecommerce_order_list/_modal_excel_download.json"
+        },
+        {
+            "comment": "내보내기 요청 창 — 상품·주문·마일리지 목록이 함께 쓰는 공용 창(#787)",
+            "partial": "partials/admin_ecommerce_export/_modal_export_request.json"
         }
     ]
 }

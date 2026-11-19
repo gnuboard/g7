@@ -16,15 +16,17 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 응답은 200 이고 형태도 정상이라 기능 테스트로는 드러나지 않는다. 어느 경로를 타는지
  * 자체를 단언해야 회귀가 잡힌다.
  *
- * @scenario case=search_cursor_page_propagation
- *
- * @effects search_deep_page_link_keeps_offset,
- *          search_first_page_starts_cursor
+ * @scenario navigation=offset_page_number, position=middle, surface=module_search
  */
 class ProductSearchCursorDeepLinkTest extends ModuleTestCase
 {
     private ProductService $productService;
 
+    /**
+     * 컨테이너에서 상품 서비스를 꺼내 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -38,6 +40,8 @@ class ProductSearchCursorDeepLinkTest extends ModuleTestCase
      * 커서로 바꿔 버리면 링크가 가리키던 자리를 잃고 첫 페이지가 열린다.
      *
      * @effects search_deep_page_link_keeps_offset
+     *
+     * @return void 반환값 없음
      */
     public function test_deep_page_without_cursor_stays_on_offset(): void
     {
@@ -65,6 +69,8 @@ class ProductSearchCursorDeepLinkTest extends ModuleTestCase
      * 첫 커서가 만들어질 자리가 없어 화면이 영원히 offset 에 머문다.
      *
      * @effects search_first_page_starts_cursor
+     *
+     * @return void 반환값 없음
      */
     public function test_first_page_starts_cursor_mode(): void
     {
@@ -88,6 +94,8 @@ class ProductSearchCursorDeepLinkTest extends ModuleTestCase
      * 계산값(`_ft_score`) 정렬은 WHERE 경계로 쓸 수 없다.
      *
      * @effects search_deep_page_link_keeps_offset
+     *
+     * @return void 반환값 없음
      */
     public function test_relevance_sort_never_uses_cursor(): void
     {

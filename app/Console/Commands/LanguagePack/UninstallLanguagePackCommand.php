@@ -27,7 +27,8 @@ class UninstallLanguagePackCommand extends Command
     protected $signature = 'language-pack:uninstall
         {identifier : 언어팩 식별자}
         {--cascade : 코어 팩 제거 시 동일 locale 의 module/plugin/template 팩도 inactive 로 강등}
-        {--force : 확인 없이 즉시 제거}';
+        {--force : 확인 없이 즉시 제거}
+        {--y|yes : 확인 질문만 생략 (--force 의 다른 효과 없이)}';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service
@@ -56,10 +57,22 @@ class UninstallLanguagePackCommand extends Command
             return self::FAILURE;
         }
 
-        if (! $force && ! $this->unifiedConfirm(__('language_packs.commands.uninstall.confirm', ['identifier' => $identifier]), false)) {
-            $this->info(__('language_packs.commands.uninstall.cancelled'));
+        // 확인에 답할 수 없는 실행(cron, CI, 원격 명령, --no-interaction)은 종전에 기본값 「아니오」로 취소 문구만 내고
+        // 종료 코드 0 으로 끝나 자동화가 성공으로 읽었다. 그런 실행은 사유와 --force 안내를 남기고 실패로 끝낸다.
+        // 대화형에서 운영자가 직접 「아니오」를 답한 취소는 의도이므로 종전대로 0 이다.
+        if (! $force) {
+            if (! $this->canAnswerConfirmation()) {
+                return $this->refuseUnanswerableConfirmation(
+                    __('language_packs.commands.uninstall.confirm_unavailable', ['identifier' => $identifier]),
+                    __('language_packs.commands.uninstall.confirm_unavailable_hint', ['identifier' => $identifier]),
+                );
+            }
 
-            return $this->confirmAbortExitCode();
+            if (! $this->unifiedConfirm(__('language_packs.commands.uninstall.confirm', ['identifier' => $identifier]), false)) {
+                $this->info(__('language_packs.commands.uninstall.cancelled'));
+
+                return $this->confirmAbortExitCode();
+            }
         }
 
         try {

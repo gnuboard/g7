@@ -3,6 +3,8 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ValidationApi;
@@ -19,10 +21,17 @@ use ValidationApi;
  *  - 빈 입력 (시스템 기본 'composer' / 'php') → 통과 (실행은 환경 의존)
  *  - 정상 .phar 경로 + 잘못된 phpPath → exec 도달 전 차단
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class ComposerPathValidationTest extends TestCase
 {
     private static bool $loaded = false;
 
+    /**
+     * 인스톨러 검증 API 와 그 의존 상수, 함수를 클래스당 한 번만 로드합니다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         if (self::$loaded) {
@@ -62,6 +71,10 @@ class ComposerPathValidationTest extends TestCase
 
     /**
      * private 메서드 호출 헬퍼.
+     *
+     * @param  string  $method  호출할 ValidationApi private 메서드 이름
+     * @param  array  $args  메서드에 넘길 인자 목록
+     * @return array private 메서드의 반환 배열
      */
     private function invoke(string $method, array $args): array
     {
@@ -73,6 +86,15 @@ class ComposerPathValidationTest extends TestCase
         return $m->invokeArgs($api, $args);
     }
 
+    /**
+     * 공백이 든 임의 명령을 Composer 경로로 넣으면 exec 전에 거부되고 마커 파일이 생기지 않는다.
+     *
+     * @scenario composer_path_input=shell_injection_space, php_path_input=default_php
+     *
+     * @effects composer_path_with_space_is_rejected_before_exec, rce_payload_does_not_create_filesystem_marker
+     *
+     * @return void 반환값 없음
+     */
     public function test_composer_path_with_shell_injection_is_rejected_before_exec(): void
     {
         $marker = sys_get_temp_dir().'/g7_kve_test_'.bin2hex(random_bytes(4));
@@ -85,6 +107,15 @@ class ComposerPathValidationTest extends TestCase
         $this->assertFileDoesNotExist($marker, '검증 단계에서 exec 가 실행되지 않아야 함 (RCE 차단)');
     }
 
+    /**
+     * 세미콜론으로 명령을 잇는 Composer 경로는 거부되고 마커 파일이 생기지 않는다.
+     *
+     * @scenario composer_path_input=shell_injection_semicolon, php_path_input=default_php
+     *
+     * @effects composer_path_with_semicolon_is_rejected_before_exec, rce_payload_does_not_create_filesystem_marker
+     *
+     * @return void 반환값 없음
+     */
     public function test_composer_path_with_semicolon_injection_is_rejected(): void
     {
         $marker = sys_get_temp_dir().'/g7_kve_test_'.bin2hex(random_bytes(4));
@@ -96,6 +127,15 @@ class ComposerPathValidationTest extends TestCase
         $this->assertFileDoesNotExist($marker);
     }
 
+    /**
+     * 존재하지 않는 Composer 경로는 유효로 판정되지 않고 버전도 비어 있다.
+     *
+     * @scenario composer_path_input=nonexistent_path, php_path_input=default_php
+     *
+     * @effects composer_nonexistent_path_is_invalid
+     *
+     * @return void 반환값 없음
+     */
     public function test_composer_path_pointing_to_nonexistent_file_is_rejected(): void
     {
         $result = $this->invoke('validateComposerPath', ['/nonexistent/path/to/composer', 'php']);
@@ -104,6 +144,15 @@ class ComposerPathValidationTest extends TestCase
         $this->assertNull($result['version']);
     }
 
+    /**
+     * 디렉터리를 가리키는 Composer 경로는 유효로 판정되지 않는다.
+     *
+     * @scenario composer_path_input=directory_path, php_path_input=default_php
+     *
+     * @effects composer_directory_path_is_rejected_before_exec
+     *
+     * @return void 반환값 없음
+     */
     public function test_composer_path_pointing_to_directory_is_rejected(): void
     {
         $result = $this->invoke('validateComposerPath', [sys_get_temp_dir(), 'php']);
@@ -111,6 +160,15 @@ class ComposerPathValidationTest extends TestCase
         $this->assertFalse($result['valid']);
     }
 
+    /**
+     * 정상 .phar 경로라도 PHP 경로에 임의 명령이 들어 있으면 exec 전에 거부된다.
+     *
+     * @scenario composer_path_input=valid_phar, php_path_input=shell_injection
+     *
+     * @effects composer_valid_phar_with_invalid_php_path_is_rejected_before_exec, rce_payload_does_not_create_filesystem_marker
+     *
+     * @return void 반환값 없음
+     */
     public function test_phar_path_with_invalid_php_path_is_rejected_before_exec(): void
     {
         $marker = sys_get_temp_dir().'/g7_kve_test_'.bin2hex(random_bytes(4));
@@ -130,6 +188,15 @@ class ComposerPathValidationTest extends TestCase
         }
     }
 
+    /**
+     * PHP 경로에 임의 명령을 넣으면 exec 전에 거부되고 마커 파일이 생기지 않는다.
+     *
+     * @scenario php_path_input=shell_injection
+     *
+     * @effects php_path_with_shell_metachars_is_rejected_before_exec, rce_payload_does_not_create_filesystem_marker
+     *
+     * @return void 반환값 없음
+     */
     public function test_php_path_with_shell_injection_is_rejected_before_exec(): void
     {
         $marker = sys_get_temp_dir().'/g7_kve_test_'.bin2hex(random_bytes(4));
@@ -141,6 +208,15 @@ class ComposerPathValidationTest extends TestCase
         $this->assertFileDoesNotExist($marker);
     }
 
+    /**
+     * 존재하지 않는 PHP 경로는 유효로 판정되지 않는다.
+     *
+     * @scenario php_path_input=nonexistent_path
+     *
+     * @effects php_nonexistent_path_is_invalid
+     *
+     * @return void 반환값 없음
+     */
     public function test_php_path_pointing_to_nonexistent_file_is_rejected(): void
     {
         $result = $this->invoke('validatePhpPath', ['/nonexistent/path/to/php']);
@@ -148,6 +224,15 @@ class ComposerPathValidationTest extends TestCase
         $this->assertFalse($result['valid']);
     }
 
+    /**
+     * 빈 Composer 경로는 사전 거부되지 않고 시스템 기본 composer 로 시도한다.
+     *
+     * @scenario composer_path_input=empty, php_path_input=default_php
+     *
+     * @effects composer_empty_path_falls_back_to_system_composer
+     *
+     * @return void 반환값 없음
+     */
     public function test_empty_composer_path_falls_back_to_system_composer(): void
     {
         // 빈 입력은 'composer' 시스템 기본으로 시도 (실행 자체는 환경 의존)
@@ -181,11 +266,16 @@ class ComposerPathValidationTest extends TestCase
      * @scenario vector=validateComposerPath, payload_class=interpreter_plus_script
      *
      * @effects argument_injection_never_reaches_exec
+     *
+     * @return void 반환값 없음
      */
     public function test_interpreter_with_arbitrary_script_never_reaches_exec(): void
     {
         $marker = $this->argumentInjectionMarkerPath();
-        @unlink($marker);
+        // 없는 파일의 unlink 경고는 @ 로도 PHPUnit 경고로 남는다 — 있을 때만 지운다
+        if (is_file($marker)) {
+            unlink($marker);
+        }
 
         // 실행 파일 자리에는 이 환경에 실제로 존재하는 PHP 를 쓴다 — 검증을 통과하면
         // 실제로 실행되므로 "환경에 없어서 실패" 로 초록이 되는 가짜 통과를 배제한다.
@@ -201,7 +291,9 @@ class ComposerPathValidationTest extends TestCase
             $this->assertFalse($result['valid'], '인자 자리에 임의 스크립트를 넣은 입력이 유효로 판정됨');
             $this->assertFileDoesNotExist($marker, '페이로드가 exec 에 도달해 임의 스크립트가 실행됨');
         } finally {
-            @unlink($marker);
+            if (is_file($marker)) {
+                unlink($marker);
+            }
             @unlink($script);
         }
     }
@@ -217,6 +309,8 @@ class ComposerPathValidationTest extends TestCase
      * @scenario vector=validateComposerPath, payload_class=argument_injection_dash_r
      *
      * @effects leading_hyphen_token_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_leading_hyphen_token_is_rejected_in_the_argument_slot(): void
     {
@@ -231,6 +325,8 @@ class ComposerPathValidationTest extends TestCase
      * @scenario vector=validatePhpPath, payload_class=argument_injection_dash_r
      *
      * @effects php_slot_rejects_leading_hyphen
+     *
+     * @return void 반환값 없음
      */
     public function test_php_path_rejects_leading_hyphen_token(): void
     {
@@ -248,6 +344,8 @@ class ComposerPathValidationTest extends TestCase
      * @scenario vector=validateComposerPath, payload_class=relative_path
      *
      * @effects relative_and_traversal_paths_are_rejected
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('rejectedShapeProvider')]
     public function test_rejects_paths_outside_the_allowed_shape(string $payload, string $reason): void
@@ -270,6 +368,8 @@ class ComposerPathValidationTest extends TestCase
      * @scenario vector=validateComposerPath, payload_class=wrapper_script_name
      *
      * @effects legitimate_paths_still_reach_exec
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('acceptedShapeProvider')]
     public function test_legitimate_paths_are_not_rejected_before_exec(string $payload, string $reason): void
@@ -287,7 +387,7 @@ class ComposerPathValidationTest extends TestCase
     /**
      * 형태 규칙에 걸려야 하는 입력 목록.
      *
-     * @return array<string, array{string, string}>
+     * @return array<string, array{string, string}> 케이스 이름별 [경로, 사유] 목록
      */
     public static function rejectedShapeProvider(): array
     {
@@ -303,7 +403,7 @@ class ComposerPathValidationTest extends TestCase
     /**
      * 형태 규칙을 통과해야 하는 정상 입력 목록.
      *
-     * @return array<string, array{string, string}>
+     * @return array<string, array{string, string}> 케이스 이름별 [경로, 사유] 목록
      */
     public static function acceptedShapeProvider(): array
     {
@@ -324,6 +424,8 @@ class ComposerPathValidationTest extends TestCase
      *
      * 페이로드에는 따옴표를 넣을 수 없어(셸 메타문자 차단) 같은 경로를 `chr()` 연결로
      * 조립한다. 두 값이 어긋나면 증명이 성립하지 않으므로 여기서 한 번만 정의한다.
+     *
+     * @return string 마커 파일 절대 경로
      */
     private function argumentInjectionMarkerPath(): string
     {

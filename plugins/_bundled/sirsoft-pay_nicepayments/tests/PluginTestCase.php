@@ -87,6 +87,9 @@ abstract class PluginTestCase extends TestCase
 
         $this->app->register(EcommerceServiceProvider::class);
         $this->ensureEcommerceModuleReady();
+        // _bundled 테스트가 _bundled 의 lang 을 보도록 네임스페이스 등록 (nhnkcp·kginicis PluginTestCase 선례) —
+        // 설치본 lang 에 아직 없는 새 키(예: payment_methods.*.label)를 시험이 원문 키로 받지 않게
+        $this->app['translator']->addNamespace('sirsoft-pay_nicepayments', dirname(__DIR__).'/lang');
 
         $this->registerModuleRoutes();
         $this->registerPluginRoutes();

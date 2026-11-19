@@ -30,6 +30,10 @@
 
 레이아웃 JSON 만 고쳤다면 빌드는 필요 없고 `php artisan plugin:update sirsoft-ckeditor5 --force`
 로 반영합니다.
+
+화면 폭에 따라 배치가 바뀌는 곳(설정 화면의 칸 나눔)은 Tailwind 반응형 접두(`ckeditor:md:…` 등) 대신 엔진 `<responsive on="…">` 덮어쓰기로 씁니다. 덮어쓰기는 className 을 통째로 바꾸므로 그 구간에서 살아 있는 클래스를 모두 적습니다.
+
+폭 미디어를 품은 의미 클래스 사본(`ckeditor-grid-3col-responsive`·`ckeditor-grid-2col-responsive`·`ckeditor-page-title`·`ckeditor-admin-page-content-responsive` 등)도 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="ckeditor:grid ckeditor:grid-cols-1 ckeditor:gap-4 ckeditor:items-start"` 에 `<responsive on="1024-" class="ckeditor:grid ckeditor:grid-cols-3 ckeditor:gap-4 ckeditor:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`ckeditor:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->
 
 ## 액션 핸들러
@@ -58,6 +62,11 @@
 뒤에도 저장 계약을 지켜야 하며(`{name}_mode = 'text'`), 재시도로 편집기가 뜨면 그때 `_mode` 를
 `'html'` 로 되돌리면서 **그 사이에 쓴 내용을 승계**해야 합니다. 이 셋 중 하나라도 빠지면 사용자
 입력이 사라집니다.
+
+본체는 두 경로로 실립니다. 조각의 `scripts` 를 코어 레이아웃 스크립트 로더가 먼저 싣고, 그 로드가 끝내
+실패하면 `ensureCkeditorGlobal()` 이 한 번 직접 싣습니다. 직접 싣기로 편집기가 서면 코어 로더가 같은 본체에 대해
+띄운 실패 안내(`layout-script:ckeditor5_script`)는 사실이 아니므로 걷습니다(회복 직후 늦게 도착한 안내도 몇 초간
+살핍니다). 직접 싣기도 실패하면 그 안내는 그대로 두고 플러그인 안내(임시 입력창 전환)가 따로 뜹니다.
 
 `initEditor` 는 이미지 업로드 단추를 **관리자에게만** 붙입니다(1.1.3+). 이 플러그인의 업로드 주소는 관리자 전용
 (`auth:sanctum` + `admin`)이라, 사용자 화면에서 비회원·일반 회원에게 단추를 주면 누르는 순간 401·403 으로 실패합니다
@@ -135,6 +144,13 @@
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
+화면 스타일 `dist/css/plugin.css`(앞글자 `ckeditor`)는 설정·업로드 관리 화면의 클래스(`ckeditor:` 접두 유틸리티,
+`ckeditor-*` 의미 클래스)와 다국어 편집기 탭(`ckeditor-locale-tab*`)·아이콘(`ckeditor-icon--globe`·`--check`, CSS 마스크)·
+미디어 미리보기(`ckeditor-embed-preview*`)를 싣습니다. CKEditor 라이브러리 DOM(`.ck-*`·`.ck-content`)을 보정하는 규칙은
+라이브러리가 정한 이름이라 앞글자를 붙일 수 없으므로 이 파일에 두지 않고 핸들러가 싣습니다 — `<style>` 요소가 아니라 코어
+`G7Core.style.setRules`(생성형 스타일시트)로 싣습니다(아래 「인라인 스타일」). 다크 모드는 템플릿의 `.dark` 가 아니라 코어가 다는
+`<html data-g7-color-scheme="dark">` 표식을 봅니다.
+
 항목마다 성격이 다릅니다.
 
 | 경로 | 성격 |
@@ -157,19 +173,23 @@ html-editor.g7.html` 의 `scripts.src` · 소스 상수 · 테스트 단언. 하
 
 **이 플러그인의 코드는 인라인 스타일을 만들지 않습니다(1.1.4).** 엄격한 스타일 정책
 (`style-src 'self'; style-src-attr 'none'`)에서 `<style>` 요소, HTML 문자열의 `style="…"`, `setAttribute('style', …)`
-가 막히기 때문입니다. 종전에 핸들러가 `<style>` 로 싣던 규칙은 모두 `resources/css/main.css` 에 있습니다.
+가 막히기 때문입니다. 종전에 핸들러가 `<style>` 로 싣던 규칙은 두 곳으로 갈렸습니다 — 이 플러그인이 이름을 정하는
+클래스(`ckeditor-*`)는 `resources/css/main.css` 에, 라이브러리 DOM(`.ck-*`)을 꾸미는 규칙은 `resources/js/handlers/initEditor.ts`
+의 `LIBRARY_CSS` 에 있고 `applyLibraryStyles()` 가 코어 `G7Core.style.setRules('sirsoft-ckeditor5-library', …)` 로 싣습니다
+(확장 CSS 파일은 자기 이름공간 선택자만 싣는다 — 감사 룰 `extension-css-namespace`).
 
 | 종전 | 지금 |
 |---|---|
-| 읽기 화면 본문 보정 `<style>`(다크·표 너비·목록) | `main.css` 1·2절. 읽기 화면 전용 규칙은 `:where(:not(.ck-editor__editable))` 로 편집 영역을 뺀다 |
-| 다국어 탭 `<style>` | `main.css` 3절 |
-| 편집기 다크 변수 `<style>` + `<html>` class 관측자 | `main.css` 4절 `html.dark` 스코프 — 관측자 없음 |
-| 편집기 높이 `<style id="ckeditor5-height-style-…">` | 컨테이너의 `data-ckeditor5-min-height` 속성 + `--ckeditor5-min-height` 변수(해제 때 걷는다), 규칙은 `main.css` 5절 |
-| 미디어 미리보기 `style="…"` 문자열 | 클래스 `g7-ck-embed-preview`·`g7-ck-embed-preview__frame`, 규칙은 `main.css` 6절 |
+| 읽기 화면 본문 보정 `<style>`(다크·표 너비·목록) | `LIBRARY_CSS` 1·2절(`injectContentCss` 가 싣는다). 읽기 화면 전용 규칙은 `:where(:not(.ck-editor__editable))` 로 편집 영역을 뺀다 |
+| 다국어 탭 `<style>` | `main.css` 다국어 탭 절(`ckeditor-locale-tab*`) |
+| 편집기 다크 변수 `<style>` + `<html>` 관측자 | `LIBRARY_CSS` 3절 `html[data-g7-color-scheme="dark"]` 스코프 — 관측자 없음 |
+| 편집기 높이 `<style id="ckeditor5-height-style-…">` | 컨테이너의 `data-ckeditor5-min-height` 속성 + `--ckeditor5-min-height` 변수(해제 때 걷는다), 규칙은 `LIBRARY_CSS` 4절 |
+| 미디어 미리보기 `style="…"` 문자열 | 클래스 `ckeditor-embed-preview`·`ckeditor-embed-preview__frame`, 규칙은 `main.css` |
 
-`main.css` 를 고칠 때는 파일 머리말의 우선순위 규칙을 지킵니다. 이 파일은 부팅 때 실리고 동봉 `ckeditor5.css` 는 편집기·본문이
-뜰 때 뒤늦게 실리므로, 같은 우선순위면 동봉 CSS 가 이깁니다 — 그래서 다크가 아닌 보정 규칙에는 `:root ` 접두를 붙이고,
-CKEditor 변수 덮어쓰기는 `.dark` 가 아니라 `html.dark` 에 둡니다. 실행 중에 정해지는 값은 `el.style.x = …`·
+우선순위: 생성형 스타일시트는 문서의 스타일시트들 뒤에 적용되므로, 편집기·본문이 뜰 때 뒤늦게 실리는 동봉 `ckeditor5.css` 와
+같은 우선순위여도 `LIBRARY_CSS` 가 이깁니다. 다크가 아닌 보정 규칙의 `:root ` 접두는 그 위에 한 단계를 더 얹고, CKEditor 변수
+덮어쓰기는 동봉 CSS 의 `:root` 선언을 이기도록 `html[data-g7-color-scheme="dark"]`(요소 + 속성)에 둡니다. `main.css` 는 부팅 때
+실리므로 동봉 CSS 와 겹치는 미리보기 규칙에는 `:root ` 접두를 붙입니다. 실행 중에 정해지는 값은 `el.style.x = …`·
 `el.style.setProperty()` 로 싣습니다(정책이 막지 않습니다).
 
 편집 화면의 서식(정렬·들여쓰기·글자색·배경색·표 테두리·이미지 크기)은 CKEditor 가 요소의 `style` 속성으로 씁니다.

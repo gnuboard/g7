@@ -11,8 +11,12 @@
 import { ConsentBridge, consentGateRequired, type ConsentSource } from './consent';
 import { type AnalyticsClientSettings, isPrerendering, isWebDriver, shouldSkip } from './exclusions';
 import { resolvePageTitle, type TitleSource } from './pageTitle';
+import { withBasePrefix } from '../support/assetUrl';
 
-/** 수집 경로 */
+/**
+ * 수집 경로 — 앱 기준(접두사 없음). 보낼 때 `withBasePrefix()` 로 사이트 마운트 접두사를 붙인다. 붙이지 않으면 하위
+ * 폴더 배치(`https://host/g7/`)에서 전송이 사이트 밖으로 나가 통계가 조용히 0 이 된다(전송 실패는 화면에 드러나지 않는다).
+ */
 const COLLECT_ENDPOINT = '/api/analytics/collect';
 
 /** 수집 제외 토글 주소 — 서버가 `g7_analytics_optout` 쿠키를 심고 지운다. */
@@ -377,7 +381,7 @@ export class AnalyticsTracker {
 
       if (token) headers.Authorization = `Bearer ${token}`;
 
-      await fetch(OPT_OUT_ENDPOINT, { method, credentials: 'same-origin', headers });
+      await fetch(withBasePrefix(OPT_OUT_ENDPOINT), { method, credentials: 'same-origin', headers });
     } catch {
       // 제외 토글 실패는 화면에 드러나지 않는다 — 상태는 쿠키가 단일 출처다.
     }
@@ -595,7 +599,7 @@ export class AnalyticsTracker {
       if (token) headers.Authorization = `Bearer ${token}`;
 
       if (typeof fetch === 'function' && 'keepalive' in new Request('')) {
-        void fetch(COLLECT_ENDPOINT, {
+        void fetch(withBasePrefix(COLLECT_ENDPOINT), {
           method: 'POST',
           keepalive: true,
           credentials: 'same-origin',
@@ -608,7 +612,7 @@ export class AnalyticsTracker {
         return;
       }
 
-      navigator.sendBeacon?.(COLLECT_ENDPOINT, new Blob([body], { type: 'application/json' }));
+      navigator.sendBeacon?.(withBasePrefix(COLLECT_ENDPOINT), new Blob([body], { type: 'application/json' }));
     } catch {
       // 전송 실패가 화면에 드러나지 않는다.
     }

@@ -47,8 +47,11 @@ class SequenceServiceSiteTimezoneTest extends ModuleTestCase
     protected function tearDown(): void
     {
         Carbon::setTestNow();
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

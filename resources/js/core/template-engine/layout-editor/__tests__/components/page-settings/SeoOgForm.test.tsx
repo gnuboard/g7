@@ -15,7 +15,6 @@
  * @since engine-v1.50.0
  */
 
-import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 
@@ -37,6 +36,10 @@ const ogPreview: SeoPreviewRow[] = [
 ];
 
 describe('SeoOgForm — 3계층 + 출처 + override', () => {
+  /**
+   * @scenario subject=seo_og_form
+   * @effects seo_og_default_placeholder_and_core_badge
+   */
   it('① 빈 칸 placeholder=기본값 + ② 코어 출처 배지', () => {
     render(
       <SeoOgForm og={{}} twitter={{}} onChangeOg={vi.fn()} onChangeTwitter={vi.fn()} ogPreview={ogPreview} defaultsAvailable t={t} />,
@@ -47,6 +50,10 @@ describe('SeoOgForm — 3계층 + 출처 + override', () => {
     expect(screen.getByTestId('g7le-seo-og-site_name-overlay-source')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=seo_og_form
+   * @effects seo_og_source_chip_switches_to_revert
+   */
   it('#4 칸 안 어포던스 — 빈 칸=출처 칩, 값 입력(서버가 overriddenByLayout) 시 되돌리기로 전환', () => {
     const onChangeOg = vi.fn();
     const { rerender } = render(
@@ -74,6 +81,10 @@ describe('SeoOgForm — 3계층 + 출처 + override', () => {
   // SEO-B — base(공통 레이아웃) 상속 키는 〔공통 레이아웃〕 출처 칩 노출.
   // 서버 미리보기가 source='inherited' + overriddenByLayout=false 로 분류한 키는 이 화면이
   // 직접 채우지 않은 상속값 → 칩 노출 + 입력칸은 비움(effectiveValue 는 placeholder).
+  /**
+   * @scenario subject=seo_og_form
+   * @effects seo_og_inherited_key_chip_and_empty_input
+   */
   it('SEO-B: 상속(inherited) 출처 키 → 〔공통 레이아웃〕 칩 + 입력칸 비움', () => {
     const inheritedPreview: SeoPreviewRow[] = [
       { key: 'site_name', effectiveValue: '공통 사이트명', source: 'inherited', overriddenByLayout: false, inheritedFromBase: true, lockedByFilter: false },
@@ -95,6 +106,10 @@ describe('SeoOgForm — 3계층 + 출처 + override', () => {
     expect(input).toHaveAttribute('placeholder', '공통 사이트명');
   });
 
+  /**
+   * @scenario subject=seo_og_form
+   * @effects seo_og_type_inherited_source_inline
+   */
   it('SEO-B: og.type 상속 → select 라벨 옆 출처 + select 빈값(기본값 사용)', () => {
     const inheritedPreview: SeoPreviewRow[] = [
       { key: 'type', effectiveValue: 'website', source: 'inherited', overriddenByLayout: false, inheritedFromBase: true, lockedByFilter: false },
@@ -107,6 +122,10 @@ describe('SeoOgForm — 3계층 + 출처 + override', () => {
     expect(screen.getByTestId('g7le-seo-og-type-select')).toHaveValue('');
   });
 
+  /**
+   * @scenario subject=seo_og_form
+   * @effects seo_og_image_advanced_collapsible_patches
+   */
   it('고급 이미지 옵션 접이식(▸) — 펼친 뒤 세로·형식·보안 URL 노출 + 패치 (W1 L1179)', () => {
     const onChangeOg = vi.fn();
     render(<SeoOgForm og={{}} twitter={{}} onChangeOg={onChangeOg} onChangeTwitter={vi.fn()} ogPreview={ogPreview} defaultsAvailable t={t} />);
@@ -124,6 +143,10 @@ describe('SeoOgForm — 3계층 + 출처 + override', () => {
     expect(onChangeOg).toHaveBeenLastCalledWith({ image_type: 'image/png' });
   });
 
+  /**
+   * @scenario subject=seo_og_form
+   * @effects seo_og_image_advanced_open_when_filled
+   */
   it('고급 이미지 옵션 — 기존 값 있으면 기본 펼침 (W1)', () => {
     render(<SeoOgForm og={{ image_secure_url: 'https://x/y.png' }} twitter={{}} onChangeOg={vi.fn()} onChangeTwitter={vi.fn()} ogPreview={ogPreview} defaultsAvailable t={t} />);
     // 값 보유 → 접이식 기본 펼침(놓치지 않게).
@@ -132,6 +155,10 @@ describe('SeoOgForm — 3계층 + 출처 + override', () => {
     expect(screen.getByTestId('g7le-seo-og-image_secure_url-chip-input')).toHaveValue('https://x/y.png');
   });
 
+  /**
+   * @scenario subject=seo_og_form
+   * @effects seo_og_title_override_patch
+   */
   it('③④ og.title 입력 → 레이아웃 override 패치(I18nTextField)', () => {
     const onChangeOg = vi.fn();
     render(<SeoOgForm og={{}} twitter={{}} onChangeOg={onChangeOg} onChangeTwitter={vi.fn()} ogPreview={ogPreview} defaultsAvailable t={t} />);
@@ -139,6 +166,10 @@ describe('SeoOgForm — 3계층 + 출처 + override', () => {
     expect(onChangeOg).toHaveBeenLastCalledWith({ title: '[상품이름] 추천' });
   });
 
+  /**
+   * @scenario subject=seo_og_form
+   * @effects seo_og_image_data_chip_patch
+   */
   it('⑤ og.image = 데이터칩 값(DataChipValueInput) 입력 → 패치', () => {
     const onChangeOg = vi.fn();
     render(<SeoOgForm og={{}} twitter={{}} onChangeOg={onChangeOg} onChangeTwitter={vi.fn()} ogPreview={ogPreview} defaultsAvailable t={t} />);
@@ -149,6 +180,10 @@ describe('SeoOgForm — 3계층 + 출처 + override', () => {
 
   // site_name/locale 등 보조 텍스트 칸도 데이터 칩(단순 데이터 연동).
   // 평문은 종전처럼 그대로 패치(키화 0), 데이터(`{{...}}`)는 칩/표현식. 상속/출처 래핑은 유지.
+  /**
+   * @scenario subject=seo_og_form
+   * @effects seo_og_site_name_plain_and_data_patch
+   */
   it('og.site_name = 데이터칩 입력 → 평문/데이터 모두 패치(키화 0)', () => {
     const onChangeOg = vi.fn();
     render(<SeoOgForm og={{}} twitter={{}} onChangeOg={onChangeOg} onChangeTwitter={vi.fn()} ogPreview={ogPreview} defaultsAvailable t={t} />);
@@ -160,7 +195,12 @@ describe('SeoOgForm — 3계층 + 출처 + override', () => {
     expect(onChangeOg).toHaveBeenLastCalledWith({ site_name: '{{site.name}}' });
   });
 
-  it('⑥ filter 가 덮는 키(lockedByFilter)만 🔒 읽기전용, 안 덮는 키 편집 가능', () => {
+  /**
+   * @scenario subject=seo_og_form
+   * @effects seo_og_unlocked_keys_stay_editable
+   */
+  // 잠긴 키의 🔒 읽기전용은 바로 아래 「⑥ 잠긴 키는 읽기전용 값 표시」 시험이 잰다.
+  it('⑥ filter 가 덮지 않는 키(lockedByFilter=false)는 편집 입력칸을 유지한다', () => {
     render(<SeoOgForm og={{}} twitter={{}} onChangeOg={vi.fn()} onChangeTwitter={vi.fn()} ogPreview={ogPreview} defaultsAvailable t={t} />);
     // title 은 잠김 아님 → 입력칸 존재.
     expect(screen.getByTestId('g7le-seo-og-title-field-mock')).toBeInTheDocument();
@@ -168,6 +208,10 @@ describe('SeoOgForm — 3계층 + 출처 + override', () => {
     expect(screen.getByTestId('g7le-seo-og-site_name-chip-input')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=seo_og_form
+   * @effects seo_og_locked_key_read_only_value
+   */
   it('⑥ 잠긴 키는 읽기전용 값 표시(서버 effectiveValue)', () => {
     const lockedPreview: SeoPreviewRow[] = [
       { key: 'title', effectiveValue: '잠긴 제목', source: 'filter', overriddenByLayout: false, lockedByFilter: true },
@@ -179,6 +223,10 @@ describe('SeoOgForm — 3계층 + 출처 + override', () => {
     expect(screen.getByTestId('g7le-seo-og-locked-title')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=seo_og_form
+   * @effects seo_og_extra_array_serialized
+   */
   it('⑦ og.extra[] {property,content} 배열 직렬화', () => {
     const onChangeOg = vi.fn();
     render(<SeoOgForm og={{}} twitter={{}} onChangeOg={onChangeOg} onChangeTwitter={vi.fn()} ogPreview={ogPreview} defaultsAvailable t={t} />);
@@ -189,6 +237,10 @@ describe('SeoOgForm — 3계층 + 출처 + override', () => {
     expect(onChangeOg).toHaveBeenLastCalledWith({ extra: [{ property: 'og:price', content: '' }] });
   });
 
+  /**
+   * @scenario subject=seo_og_form
+   * @effects seo_og_twitter_extra_array_serialized
+   */
   it('⑦ twitter.extra[] {name,content} 배열', () => {
     const onChangeTwitter = vi.fn();
     render(<SeoOgForm og={{}} twitter={{}} onChangeOg={vi.fn()} onChangeTwitter={onChangeTwitter} ogPreview={ogPreview} twitterPreview={[]} defaultsAvailable t={t} />);
@@ -199,6 +251,10 @@ describe('SeoOgForm — 3계층 + 출처 + override', () => {
     expect(onChangeTwitter).toHaveBeenLastCalledWith({ extra: [{ name: 'twitter:label1', content: '' }] });
   });
 
+  /**
+   * @scenario subject=seo_og_form
+   * @effects seo_og_no_defaults_hides_placeholder_badge
+   */
   it('⑩ defaultsAvailable=false → 기본값 placeholder/배지 미표시', () => {
     render(<SeoOgForm og={{}} twitter={{}} onChangeOg={vi.fn()} onChangeTwitter={vi.fn()} ogPreview={ogPreview} defaultsAvailable={false} t={t} />);
     // placeholder 없음(기본값 미표시).
@@ -215,6 +271,10 @@ describe('SeoOgForm — 3계층 + 출처 + override', () => {
       { key: 'image_alt', effectiveValue: '베이직 티셔츠', source: 'module:sirsoft-ecommerce', overriddenByLayout: false, lockedByFilter: false, sourceExpr: '{{product.data.name}}', label: '상품 이름' },
     ];
 
+    /**
+     * @scenario subject=seo_og_form
+     * @effects seo_og_auto_value_link_chip_with_replace
+     */
     it('자동값(chipRow=image) → 입력칸 대신 연결 칩(라벨) + 출처 배지 + 바꾸기 버튼', () => {
       render(<SeoOgForm og={{}} twitter={{}} onChangeOg={vi.fn()} onChangeTwitter={vi.fn()} ogPreview={autoPreview} defaultsAvailable t={t} />);
       // 연결 칩 — 라벨("상품 대표 이미지") 표시, raw 표현식은 title 속성으로만.
@@ -226,12 +286,20 @@ describe('SeoOgForm — 3계층 + 출처 + override', () => {
       expect(screen.queryByTestId('g7le-seo-og-image-field-input')).not.toBeInTheDocument();
     });
 
+    /**
+     * @scenario subject=seo_og_form
+     * @effects seo_og_auto_i18n_row_link_chip_only
+     */
     it('자동값(i18nRow=image_alt) → 연결 칩 + I18nTextField 입력칸 미노출', () => {
       render(<SeoOgForm og={{}} twitter={{}} onChangeOg={vi.fn()} onChangeTwitter={vi.fn()} ogPreview={autoPreview} defaultsAvailable t={t} />);
       expect(screen.getByTestId('g7le-seo-og-image_alt-auto-chip')).toHaveTextContent('상품 이름');
       expect(screen.queryByTestId('g7le-seo-og-image_alt-field-mock')).not.toBeInTheDocument();
     });
 
+    /**
+     * @scenario subject=seo_og_form
+     * @effects seo_og_replace_enters_override
+     */
     it('"다른 데이터로 바꾸기" 클릭 → sourceExpr 을 레이아웃 값으로 채워 override 진입', () => {
       const onChangeOg = vi.fn();
       render(<SeoOgForm og={{}} twitter={{}} onChangeOg={onChangeOg} onChangeTwitter={vi.fn()} ogPreview={autoPreview} defaultsAvailable t={t} />);
@@ -240,6 +308,10 @@ describe('SeoOgForm — 3계층 + 출처 + override', () => {
       expect(onChangeOg).toHaveBeenLastCalledWith({ image: '{{product.data.thumbnail_url}}' });
     });
 
+    /**
+     * @scenario subject=seo_og_form
+     * @effects seo_og_override_shows_data_chip_input
+     */
     it('override 후(서버 overriddenByLayout=true) → 연결 칩 대신 DataChipValueInput(회귀: 자동 칩 고착 안 됨)', () => {
       const overridden: SeoPreviewRow[] = autoPreview.map((r) =>
         r.key === 'image' ? { ...r, source: 'layout', overriddenByLayout: true } : r,
@@ -251,6 +323,10 @@ describe('SeoOgForm — 3계층 + 출처 + override', () => {
       expect(within(screen.getByTestId('g7le-seo-og-image')).getByTestId('g7le-seo-og-image-field-edit-raw')).toBeInTheDocument();
     });
 
+    /**
+     * @scenario subject=seo_og_form
+     * @effects seo_og_no_source_expr_keeps_placeholder
+     */
     it('회귀: 메타 미동반(sourceExpr 없음) 모듈 출처는 종전 평문 placeholder 경로 유지', () => {
       const plain: SeoPreviewRow[] = [
         { key: 'image', effectiveValue: 'https://cdn/p.jpg', source: 'module:foo', overriddenByLayout: false, lockedByFilter: false },

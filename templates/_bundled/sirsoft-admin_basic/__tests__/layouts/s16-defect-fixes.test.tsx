@@ -15,6 +15,10 @@ import panelForm from '../../layouts/partials/admin_menu_list/_panel_form.json';
 import panelView from '../../layouts/partials/admin_menu_list/_panel_view.json';
 import scheduleHistory from '../../layouts/partials/admin_schedule_list/_modal_history.json';
 import tabSchedules from '../../layouts/partials/admin_schedule_list/_tab_schedules.json';
+// 일괄 상태변경 버튼은 7.2.0 에서 탭 조각에서 표 조각으로 옮겨졌다
+import scheduleDatagrid from '../../layouts/partials/admin_schedule_list/_partial_schedule_datagrid.json';
+import scheduleFilterSection from '../../layouts/partials/admin_schedule_list/_partial_filter_section.json';
+import scheduleStatusCard from '../../layouts/partials/admin_schedule_list/_status_card.json';
 import tabLanguagePacks from '../../layouts/partials/admin_settings/_tab_language_packs.json';
 import languagePackList from '../../layouts/admin_language_pack_list.json';
 import adminBase from '../../layouts/_admin_base.json';
@@ -65,21 +69,32 @@ describe('F15 — 미등록 핸들러 `if` (예약 작업 일괄 상태변경 �
     it('`if` 는 액션 핸들러가 아니다 — 어떤 액션도 handler:"if" 를 쓰지 않는다', () => {
         // ActionDispatcher 의 ActionType 유니온에 `if` 가 없다. `if` 는 액션의 **키**(조건)이지
         // 핸들러명이 아니므로, handler:"if" 액션은 dispatch 에서 아무 갈래도 타지 못하고 조용히 끝난다.
-        const offenders = collectActions(tabSchedules).filter((a) => a.handler === 'if');
+        const offenders = collectActions(scheduleDatagrid).filter((a) => a.handler === 'if');
 
         expect(offenders).toEqual([]);
     });
 
     /** @effects bulk_status_change_routes_through_conditions */
-    it('일괄 상태변경은 conditions 로 분기해 bulk-status 를 호출한다', () => {
-        const conditionActions = collectActions(tabSchedules).filter((a) => a.handler === 'conditions');
-        const bulkStatus = conditionActions.find((a) =>
-            JSON.stringify(a).includes('/api/admin/schedules/bulk-status'),
-        );
+    it('일괄 상태변경은 고른 방향이 있을 때만 bulk-status 를 호출한다(확인 창 경유)', () => {
+        // #17 후속: 일괄 적용은 확인 창을 거친다 — 표 위 버튼은 창만 열고, 호출은 창의 확인 버튼이 한다.
+        // 「방향(bulkStatusAction)이 없으면 보내지 않는다」는 옛 conditions 갈래의 보장은 두 버튼의 잠금이 진다.
+        const statusModal = require('../../layouts/partials/admin_schedule_list/_modal_bulk_status.json');
+        const findById = (n: any, id: string): any => {
+            if (!n || typeof n !== 'object') return null;
+            if (n.id === id) return n;
+            for (const v of Object.values(n)) {
+                const r = findById(v, id);
+                if (r) return r;
+            }
+            return null;
+        };
+        const apply = findById(scheduleDatagrid, 'bulk_status_apply');
+        expect(collectActions(apply).filter((a) => a.handler === 'apiCall')).toEqual([]);
+        expect(String(apply.props.disabled)).toContain('!_global.bulkStatusAction');
 
+        const bulkStatus = collectActions(statusModal).find((a) => a.handler === 'apiCall' && JSON.stringify(a).includes('/api/admin/schedules/bulk-status'));
         expect(bulkStatus).toBeDefined();
-        expect(Array.isArray(bulkStatus.conditions)).toBe(true);
-        expect(bulkStatus.conditions[0].if).toBe('{{_global.bulkStatusAction}}');
+        expect(String(findById(statusModal, 'schedule_bulk_status_submit').props.disabled)).toContain('!_global.bulkStatusAction');
     });
 });
 
@@ -185,6 +200,10 @@ describe('F12 — bare-node partial 의 meta.is_partial 선언', () => {
         // 그 결함을 고쳐 이관에 합류시키자 등록 집합 대조가 비로소 잡아냈다.
         ['_panel_menu_list', panelMenuList],
         ['_tab_schedules', tabSchedules],
+        // 7.2.0 분할로 생긴 조각들 — 같은 등록 집합 규칙을 지킨다
+        ['_partial_schedule_datagrid', scheduleDatagrid],
+        ['_partial_filter_section', scheduleFilterSection],
+        ['_status_card', scheduleStatusCard],
     ])('%s: 루트가 노드 하나인 partial 은 meta.is_partial 을 선언한다', (_name, layout: any) => {
         // 선언이 없으면 설치가 이 파일을 **독립 레이아웃으로 등록**한다. 이관하면 `<partial>` 컴파일이
         // is_partial 을 주입해 등록에서 빠지므로, 등록 집합이 이관 전후로 달라진다(F12).

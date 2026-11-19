@@ -15,11 +15,14 @@ use PHPUnit\Framework\Attributes\Test;
  * 로드된 images 첫 건의 URL 을 방출해 카테고리 og:image 의 생산자가 되는 계약을
  * 고정한다 (재쿼리 금지 — 로드된 관계에서만 선택).
  *
- * @effects category_detail_emits_thumbnail_url
+ * 효과 마킹은 그 효과를 **재는 메서드**의 docblock 에 둔다 (아래 두 테스트) — 클래스에만
+ * 달면 어느 테스트가 그것을 재는지 가리키지 못한다.
  */
 class PublicCategoryThumbnailTest extends ModuleTestCase
 {
     /**
+     * 썸네일 검증용 활성 루트 카테고리를 만든다.
+     *
      * @param  array  $attributes  덮어쓸 속성
      * @return Category 생성된 활성 카테고리
      */
@@ -36,7 +39,11 @@ class PublicCategoryThumbnailTest extends ModuleTestCase
     }
 
     /**
+     * 이미지가 있는 카테고리의 공개 상세 응답이 로드된 첫 이미지의 다운로드 주소를 thumbnail_url 로 내는지 확인한다.
+     *
      * @effects category_detail_emits_thumbnail_url
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function detail_emits_first_image_url_as_thumbnail(): void
@@ -66,7 +73,11 @@ class PublicCategoryThumbnailTest extends ModuleTestCase
     }
 
     /**
+     * 이미지가 없는 카테고리의 공개 상세 응답에 thumbnail_url 키가 있고 값이 null 인지 확인한다.
+     *
      * @effects category_detail_emits_thumbnail_url
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function detail_emits_null_thumbnail_without_images(): void

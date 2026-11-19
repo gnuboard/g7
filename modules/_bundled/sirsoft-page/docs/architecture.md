@@ -56,6 +56,10 @@ Listeners 5종은 별도 레인입니다 — 활동 로그·검색 결과 편입
 끝납니다.
 <!-- @intent END -->
 
+## 화면 주소 (7.2.0)
+
+서버가 만드는 페이지 화면 주소(검색 결과·사이트맵)는 `Support/PageScreenUrl` 이 화면 키 `page.show` 로 코어 `ScreenUrl` 을 거쳐 만든다 — 환경설정 「사용자 화면 URL」과 필터 훅 `core.screen_url.filter_path` 를 따른다. SEO 캐시 무효화는 그누보드7 화면의 봇 캐시라 필터를 거치지 않은 `PageScreenUrl::defaultPath()` 를 쓴다.
+
 ## 디렉토리
 
 <!-- @generated:directory-map START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->

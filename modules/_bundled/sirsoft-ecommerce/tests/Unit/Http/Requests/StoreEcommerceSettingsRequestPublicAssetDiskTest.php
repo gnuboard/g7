@@ -20,8 +20,6 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * 선택지는 코어 3종 + 플러그인 훅 등록 디스크라 정적 in 으로 고정할 수 없으므로,
  * 카탈로그 게터(SSoT)를 조회하는 closure 가 실제로 걸려 있는지를 고정한다.
- *
- * @effects invalid_disk_rejected_with_422, settings_catalog_includes_plugin_registered_disks
  */
 class StoreEcommerceSettingsRequestPublicAssetDiskTest extends ModuleTestCase
 {

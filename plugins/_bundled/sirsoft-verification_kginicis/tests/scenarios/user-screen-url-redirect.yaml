@@ -1,0 +1,14 @@
+feature: KG 이니시스 본인인증 — 브리지 대체 복귀 주소 — 화면 주소 헬퍼·사용자 화면 URL (#792)
+
+description: |
+  모바일 브리지가 복귀 주소를 못 찾을 때 가는 홈이 화면 주소 헬퍼(home)를 거치는지 잠근다.
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Unit/UserScreenUrlRedirectTest.php
+
+axes:
+  case:
+    - bridge_home
+
+effects:
+  - bridge_fallback_uses_home_helper

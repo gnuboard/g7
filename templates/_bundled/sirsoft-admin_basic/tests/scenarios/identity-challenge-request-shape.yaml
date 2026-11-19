@@ -15,7 +15,7 @@ description: |
 
 # axis 의미: 결함이 드러난 진입면(surface) 하나. 면마다 다른 계층(훅 인자 · challenge API · 화면 처리기 · 레이아웃)이라 곱해지지 않는다.
 axes:
-  surface: [launcher_policy_key, challenge_resend_layout, guest_password_flow_layout, launcher_link_claim, launcher_close_cleanup]
+  surface: [launcher_policy_key, challenge_resend_layout, guest_password_flow_layout, launcher_link_claim, launcher_close_cleanup, launcher_admin_scope, challenge_admin_scope_layout]
 
 effects:
   - fullpage_resend_keeps_provider_and_policy
@@ -26,6 +26,8 @@ effects:
   - resend_replaces_claim_secret                # 재전송 성공 시 새 건의 비밀값으로 갈아 끼운다
   - launcher_claims_link_verification_with_secret  # 링크 방식은 비밀값으로 결과를 물어 토큰을 받으면 이어 간다(인증번호 방식은 묻지 않음)
   - launcher_clears_challenge_namespace_after_close  # 결과 뒤 창이 닫히면 인증번호·건 번호 이름 공간을 비운다(열린 동안·다른 띄움이 새로 쓴 상태는 건드리지 않음)
+  - launcher_sends_admin_scope                   # launcher 의 challenge 요청은 관리자 화면에서 시작했음을 알린다(scope=admin) — 메일 확인 링크·사이트 링크가 사이트 주소 기준
+  - challenge_requests_send_admin_scope          # 레이아웃의 challenge 시작 호출(재전송·풀페이지·재인증)도 모두 scope=admin 을 싣는다
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/identityLauncher.policyKey.test.ts

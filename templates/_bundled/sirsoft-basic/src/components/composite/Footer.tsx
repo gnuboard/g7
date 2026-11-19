@@ -28,6 +28,7 @@ import { Ul } from '../basic/Ul';
 import { Li } from '../basic/Li';
 import { Footer as FooterBasic } from '../basic/Footer';
 import { Icon } from '../basic/Icon';
+import { BREAKPOINTS, containerPaddingClass, useViewportWidth } from '../layout/viewportWidth';
 import { Span } from '../basic/Span';
 
 // G7Core.t() 번역 함수 참조
@@ -35,11 +36,11 @@ const t = (key: string, params?: Record<string, string | number>) =>
   (window as any).G7Core?.t?.(key, params) ?? key;
 
 // G7 표준 반응형 breakpoint — 모바일(< 768) / 데스크톱(>= 1024).
-// 레이아웃 편집기 프리뷰 호환을 위해 Tailwind md:/lg:/sm: 미디어쿼리 대신
+// 레이아웃 편집기 프리뷰 호환을 위해 Tailwind 반응형 접두(미디어 쿼리) 대신
 // G7Core.useResponsive() width 기반 분기 사용 (편집 가능 템플릿은 G7 표준
 // responsive 만 허용 — viewport 미디어쿼리는 프리뷰 overrideWidth 를 무시).
-const TABLET_BREAKPOINT = 768;
-const DESKTOP_BREAKPOINT = 1024;
+const TABLET_BREAKPOINT = BREAKPOINTS.md;
+const DESKTOP_BREAKPOINT = BREAKPOINTS.lg;
 
 // G7Core.dispatch() navigate 헬퍼
 const navigate = (path: string) => {
@@ -50,12 +51,31 @@ const navigate = (path: string) => {
 };
 
 interface SocialLinks {
-  github?: string;
-  twitter?: string;
-  discord?: string;
-  facebook?: string;
+  youtube?: string;
   instagram?: string;
+  facebook?: string;
+  x?: string;
+  github?: string;
+  discord?: string;
+  blog?: string;
+  /** 옛 이름 — `x` 와 같은 아이콘 */
+  twitter?: string;
 }
+
+/**
+ * 소셜 링크 아이콘 — 상표 아이콘은 Font Awesome brands(`fab`) 묶음이라 스타일을 함께 준다.
+ * 블로그는 상표가 없어 일반(solid) 아이콘이다.
+ */
+const SOCIAL_ICONS: Record<keyof SocialLinks, { name: string; style: 'brands' | 'solid'; label: string }> = {
+  youtube: { name: 'youtube', style: 'brands', label: 'YouTube' },
+  instagram: { name: 'instagram', style: 'brands', label: 'Instagram' },
+  facebook: { name: 'facebook', style: 'brands', label: 'Facebook' },
+  x: { name: 'x-twitter', style: 'brands', label: 'X' },
+  twitter: { name: 'x-twitter', style: 'brands', label: 'X' },
+  github: { name: 'github', style: 'brands', label: 'GitHub' },
+  discord: { name: 'discord', style: 'brands', label: 'Discord' },
+  blog: { name: 'blog', style: 'solid', label: 'Blog' },
+};
 
 interface FooterLink {
   label: string;
@@ -72,10 +92,14 @@ interface FooterProps {
   siteName?: string;
   /** 사이트 설명 */
   siteDescription?: string;
-  /** 저작권 텍스트 */
+  /** 저작권 텍스트 — 운영자가 템플릿 설정(`footer.copyright`, 언어별)에 넣은 문구. 비면 기본 문구 */
   copyrightText?: string;
-  /** 소셜 미디어 링크 */
+  /** 기본 저작권 문구 — 번역 문구(`footer.copyright`). 운영자 문구가 없을 때 쓴다 */
+  defaultCopyrightText?: string;
+  /** 소셜 미디어 링크 — 템플릿 설정 `footer.social_*` (빈 값은 그리지 않는다) */
   socialLinks?: SocialLinks;
+  /** 「Powered by 그누보드7」 을 보일지 — 기본 true (템플릿 설정 `footer.show_powered_by`, #434) */
+  showPoweredBy?: boolean;
   /** 링크 그룹 (미지정 시 기본값 사용 — 직접 넘기면 아래 모듈 플래그와 무관하게 그대로 그린다) */
   linkGroups?: FooterLinkGroup[];
   /**
@@ -88,8 +112,10 @@ interface FooterProps {
   pageEnabled?: boolean;
   /**
    * 쇼핑몰 사업자 정보(법정 표시 항목) — 값이 있는 항목만 「라벨: 값」 줄로 그린다. 모두 비었거나 값이 오지 않으면
-   * 블록을 그리지 않는다. 레이아웃이 쇼핑몰 공개 설정(`basic_info`)을 그대로 넘긴다 — 운영자가 표시를 끄면
-   * 서버가 사업자 칸을 지워 보내므로 여기서는 값 유무만 본다.
+   * 블록을 그리지 않는다. 여기서는 값 유무만 본다.
+   * 기본 레이아웃(`_user_base`)은 이 값을 넘기지 않는다 — 쇼핑몰 모듈이 `user_global_footer` 자리에 사업자 정보를 직접 그리므로
+   * 여기서도 그리면 두 번 나온다. 속성은 7.1.6 에서 공개한 계약이라 남겨 둔다 — 이 값을 바인딩한 레이아웃은 쇼핑몰 조각과
+   * 함께 두 번 그리게 되므로 바인딩을 걷는다.
    */
   businessInfo?: FooterBusinessInfo | null;
   /** 추가 CSS 클래스 */
@@ -175,8 +201,10 @@ const Footer: React.FC<FooterProps> = ({
   siteName = '그누보드7',
   siteDescription,
   copyrightText,
+  defaultCopyrightText,
   businessInfo,
   socialLinks = {},
+  showPoweredBy = true,
   linkGroups,
   boardEnabled = true,
   pageEnabled = true,
@@ -186,14 +214,9 @@ const Footer: React.FC<FooterProps> = ({
   const currentYear = new Date().getFullYear();
 
   // G7 표준 반응형 — useResponsive() 로 프리뷰 overrideWidth 수신 (편집기 디바이스
-  // 전환에 정상 반응). hook 미주입 시 window.innerWidth fallback.
-  const G7Core = (window as any).G7Core;
+  // 전환에 정상 반응). hook 미주입 시 window.innerWidth, 둘 다 없으면 엔진 기본 폭(1024).
+  const width = useViewportWidth();
   const businessLines = buildBusinessLines(businessInfo);
-  const useResponsive = G7Core?.useResponsive as (() => { width: number }) | undefined;
-  const responsiveValue = useResponsive?.();
-  const width =
-    responsiveValue?.width ??
-    (typeof window !== 'undefined' ? window.innerWidth : DESKTOP_BREAKPOINT);
   const isMobile = width < TABLET_BREAKPOINT;
   const isDesktop = width >= DESKTOP_BREAKPOINT;
   // 링크 그룹 그리드 컬럼 — 모바일 1열 / 태블릿 2열 / 데스크톱 5열.
@@ -234,21 +257,12 @@ const Footer: React.FC<FooterProps> = ({
 
   const groups = linkGroups || defaultLinkGroups;
 
-  // 소셜 아이콘 이름 매핑
-  const socialIconMap: Record<keyof SocialLinks, string> = {
-    github: 'github',
-    twitter: 'twitter',
-    discord: 'discord',
-    facebook: 'facebook',
-    instagram: 'instagram',
-  };
-
   return (
     <FooterBasic
       {...((editorAttrs ?? {}) as Record<string, never>)}
       className={`bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 ${className}`}
     >
-      <Div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <Div className={`max-w-7xl mx-auto ${containerPaddingClass(width)} py-12`}>
         <Div
           className="grid gap-8"
           style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
@@ -261,22 +275,24 @@ const Footer: React.FC<FooterProps> = ({
               <P className="mt-2 text-sm text-gray-600 dark:text-gray-400 break-words">{siteDescription}</P>
             )}
 
-            {/* 소셜 링크 */}
-            <Div className="mt-4 flex items-center gap-4">
-              {Object.entries(socialLinks).map(([type, url]) =>
-                url ? (
+            {/* 소셜 링크 — 아는 종류만, 값이 있는 것만 */}
+            <Div className="mt-4 flex flex-wrap items-center gap-4" data-testid="footer-social-links">
+              {Object.entries(socialLinks).map(([type, url]) => {
+                const icon = SOCIAL_ICONS[type as keyof SocialLinks];
+
+                return url && icon ? (
                   <A
                     key={type}
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    aria-label={type}
+                    aria-label={icon.label}
                   >
-                    <Icon name={socialIconMap[type as keyof SocialLinks]} className="w-5 h-5" />
+                    <Icon name={icon.name} iconStyle={icon.style} className="w-5 h-5" />
                   </A>
-                ) : null
-              )}
+                ) : null;
+              })}
             </Div>
           </Div>
 
@@ -325,11 +341,13 @@ const Footer: React.FC<FooterProps> = ({
         >
           {/* 저작권 줄은 「Powered by」 와 같은 flex 줄이라 줄어들 수 있게 하고 아무 데서나 줄을 바꾼다(#143). */}
           <P className="text-sm text-gray-500 dark:text-gray-400 min-w-0 wrap-anywhere">
-            {copyrightText || `© ${currentYear} ${siteName}. All rights reserved.`}
+            {copyrightText || defaultCopyrightText || `© ${currentYear} ${siteName}. All rights reserved.`}
           </P>
-          <P className="text-sm text-gray-500 dark:text-gray-400">
-            {t('footer.powered_by')}
-          </P>
+          {showPoweredBy && (
+            <P className="text-sm text-gray-500 dark:text-gray-400" data-testid="footer-powered-by">
+              {t('footer.powered_by')}
+            </P>
+          )}
         </Div>
       </Div>
     </FooterBasic>

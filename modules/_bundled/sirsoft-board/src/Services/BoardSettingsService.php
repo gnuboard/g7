@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Board\Services;
 
 use App\Contracts\Extension\ModuleSettingsInterface;
-use Modules\Sirsoft\Board\Http\Requests\Admin\StoreBoardSettingsRequest;
 use App\Contracts\Repositories\NotificationDefinitionRepositoryInterface;
 use App\Exceptions\PermissionEscalationException;
 use App\Services\NotificationDefinitionService;
@@ -11,6 +10,8 @@ use App\Support\ExtensionStoragePath;
 use App\Traits\NormalizesSettingsData;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
+use Modules\Sirsoft\Board\Fields\GuestAuthorFields;
+use Modules\Sirsoft\Board\Http\Requests\Admin\StoreBoardSettingsRequest;
 
 /**
  * 게시판 모듈 환경설정 서비스
@@ -425,6 +426,53 @@ class BoardSettingsService implements ModuleSettingsInterface
             'sirsoft-board.reports.view',
             'sirsoft-board.reports.manage',
         ]);
+    }
+
+    /**
+     * 저장할 설정에서 비회원 작성자 항목 기본값을 정리합니다.
+     *
+     * 표의 행(`guest_author_field_rows`)은 화면용이라 저장하지 않고, 값은 이 집합에 있는 항목만 남기고 필수는 사용이
+     * 켜졌을 때만 켠다(게시판별 설정의 `BoardService` 정리와 같은 규칙).
+     *
+     * @param  array<string, mixed>  $settings  저장할 설정 배열(카테고리 => 값)
+     * @return array<string, mixed> 정리한 설정 배열
+     */
+    public function normalizeGuestAuthorDefaults(array $settings): array
+    {
+        if (! is_array($settings['basic_defaults'] ?? null)) {
+            return $settings;
+        }
+
+        Arr::forget($settings, 'basic_defaults.guest_author_field_rows');
+        if (array_key_exists('guest_author_fields', $settings['basic_defaults'])) {
+            $settings['basic_defaults']['guest_author_fields'] = app(GuestAuthorFields::class)
+                ->normalizeSettings($settings['basic_defaults']['guest_author_fields']) ?? [];
+        }
+
+        return $settings;
+    }
+
+    /**
+     * 설정 응답의 기본값에 비회원 작성자 항목 표를 덧붙입니다.
+     *
+     * 「게시판 기본 설정」의 비회원 작성자 항목 표는 새 게시판이 물려받는 사용, 필수를 정한다. 행(고정 항목, 출처, 잠금)은
+     * 항목 등록소에서 그때그때 만들고, 값은 저장된 기본값(없으면 항목 선언의 값)이다. 둘 다 설정 캐시에 넣지 않는다.
+     * 항목 집합이 이 서비스를 읽으므로 생성자 주입 대신 호출 때 꺼낸다(순환 주입 회피).
+     *
+     * @param  array<string, mixed>  $settings  설정 배열(카테고리 => 값)
+     * @return array<string, mixed> 표의 행과 값이 덧붙은 설정 배열
+     */
+    public function appendGuestAuthorDefaults(array $settings): array
+    {
+        $guestFields = app(GuestAuthorFields::class);
+        $values = $guestFields->defaultSettings();
+
+        $settings['basic_defaults'] = $settings['basic_defaults'] ?? [];
+        // 항목이 없으면 빈 객체로 내보낸다(빈 배열이면 화면이 목록으로 읽는다)
+        $settings['basic_defaults']['guest_author_fields'] = $values === [] ? new \stdClass : $values;
+        $settings['basic_defaults']['guest_author_field_rows'] = $guestFields->settingsRows(null);
+
+        return $settings;
     }
 
     /**

@@ -1,0 +1,15 @@
+feature: GDPR — 처리방침 주소 — 화면 주소 헬퍼·사용자 화면 URL (#792)
+
+description: |
+  메일용 처리방침 절대 주소와 옛 슬러그 경로가 화면 주소 헬퍼를 따르는지 잠근다.
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/UserScreenUrlRedirectTest.php
+
+axes:
+  case:
+    - privacy_url
+
+effects:
+  - privacy_url_uses_user_screen_url
+  - legacy_slug_uses_page_helper

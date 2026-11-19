@@ -93,6 +93,19 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public function findLatestVerifiedForUser(int $userId, string $providerId): ?IdentityVerificationLog
+    {
+        return IdentityVerificationLog::query()
+            ->where('user_id', $userId)
+            ->where('provider_id', $providerId)
+            ->where('status', IdentityVerificationStatus::Verified->value)
+            ->orderByDesc('verified_at')
+            ->first();
+    }
+
+    /**
      * 같은 프로바이더·수신 대상·목적으로 주어진 시각 이후에 발행된 가장 최근 challenge 를 찾습니다.
      * 발송이 실패로 끝난 challenge 는 제외합니다.
      *
@@ -139,6 +152,22 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
             ->where('status', IdentityVerificationStatus::Verified->value)
             ->whereNull('consumed_at')
             ->where('expires_at', '>', Carbon::now())
+            ->first();
+    }
+
+    /**
+     * 토큰으로 verified 상태의 challenge 를 소비·만료 여부와 무관하게 찾습니다.
+     *
+     * @param  string  $token  verification_token
+     * @param  string  $purpose  IDV 목적 (예: signup)
+     * @return IdentityVerificationLog|null 매칭 로그 또는 null
+     */
+    public function findVerifiedByToken(string $token, string $purpose): ?IdentityVerificationLog
+    {
+        return IdentityVerificationLog::query()
+            ->where('verification_token', $token)
+            ->where('purpose', $purpose)
+            ->where('status', IdentityVerificationStatus::Verified->value)
             ->first();
     }
 
@@ -323,13 +352,16 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
      * 지정된 일수 이전의 로그를 일괄 삭제합니다.
      *
      * @param  int  $days  보존 일수
+     * @param  \Closure(array<int, string>): void|null  $beforeEachBatch  배치마다 지우기 직전에 그 배치의 로그 ID 목록으로 부를 콜백
      * @return int 삭제된 행 수
      */
-    public function purgeOlderThan(int $days): int
+    public function purgeOlderThan(int $days, ?\Closure $beforeEachBatch = null): int
     {
         return $this->deleteInBatches(
             IdentityVerificationLog::query()
-                ->where('created_at', '<', Carbon::now()->subDays(max(1, $days)))
+                ->where('created_at', '<', Carbon::now()->subDays(max(1, $days))),
+            null,
+            $beforeEachBatch
         );
     }
 

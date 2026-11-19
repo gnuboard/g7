@@ -251,5 +251,68 @@
     "show_in_admin_menu_desc": "Show this board in the admin menu. Applied on save, added under the [Board Management] menu.",
     "menu_added_success": "Successfully added to admin menu.",
     "menu_add_failed": "Failed to add menu."
+  },
+  "display_name": {
+    "label": "Author Display Name",
+    "description": "Choose which name is shown for member authors on posts and comments in this board.",
+    "mode_label": "Author display name mode",
+    "kind_label": "Display name type to fix",
+    "kind_placeholder": "Select a type",
+    "modes": {
+      "inherit": "Follow site default",
+      "fixed": "Fix to a specific type",
+      "member": "Member's own choice"
+    },
+    "inherited_hint": "Currently applied: {{value}}",
+    "member_hint": "Shown with the display name each member chose in their profile.",
+    "requires_nickname_notice": "Fixing this type locks the member nickname field as enabled and required."
+  },
+  "guest_author_fields": {
+    "label": "Guest Author Fields",
+    "description": "Fields collected when a guest writes a post or comment. Name and password are always collected.",
+    "columns": {
+      "field": "Field",
+      "source": "Source",
+      "post_enabled": "Post: Use",
+      "post_required": "Post: Required",
+      "comment_enabled": "Comment: Use",
+      "comment_required": "Comment: Required",
+      "actions": "Actions"
+    },
+    "source": {
+      "board": "Board",
+      "custom": "Custom"
+    },
+    "fixed_hint": "Always used and required.",
+    "unavailable": "Unavailable",
+    "unavailable_hint": "The extension that provides this field is turned off.",
+    "add": {
+      "button": "Add field",
+      "title": "Add guest author field",
+      "notice": "The field is created turned off on every board. To use it on this board, turn on \"Use\" in the table and save the board.",
+      "key": "Key",
+      "key_hint": "Start with a lowercase letter; use lowercase letters, numbers, and underscores only. It cannot be changed later.",
+      "type": "Type",
+      "name": "Name",
+      "options": "Options",
+      "options_placeholder": "seoul=Seoul\nbusan=Busan",
+      "options_hint": "Write one option per line as \"value=name\". Values may use lowercase letters, numbers, underscores, and hyphens only.",
+      "success": "Field added."
+    },
+    "types": {
+      "text": "Single-line text",
+      "textarea": "Multi-line text",
+      "number": "Number",
+      "boolean": "Yes/No",
+      "date": "Date",
+      "phone": "Phone number",
+      "email": "Email",
+      "url": "URL",
+      "choice": "Single choice",
+      "multi_choice": "Multiple choice"
+    },
+    "delete": "Delete {{label}} field",
+    "delete_confirm": "Deleting the \"{{label}}\" field removes it from every board and also deletes the values guests entered for it. Delete it?",
+    "delete_success": "Field deleted."
   }
 }

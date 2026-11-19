@@ -1,5 +1,7 @@
 <?php
 
+// changelog:allow 무CLI 실행 모드 축의 신규 키 — 사용자 노출 경로 미구현 단계라 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재 (#609)
+
 return [
     // User related exceptions
     'cannot_delete_super_admin' => 'Super admin cannot be deleted.',
@@ -8,6 +10,8 @@ return [
     'cannot_modify_protected_role' => 'You do not have permission to modify a system or extension-owned role.',
     'cannot_delete_self' => 'You cannot delete your own account from the admin screen. Withdraw from My Page instead.',
     'role_active_state_locked' => 'The administrator role cannot be turned off. Turning it off would revoke the admin permissions of every operator.',
+    'login_method_required' => 'External authentication login requires a login method name (login_method, e.g. social:kakao).',
+    'external_step_redirect_not_same_origin' => 'The next-step path of an external credential verifier must be a path on this site (starting with /).',
 
     'circular_reference' => 'Layout circular reference detected: :trace',
     'max_depth_exceeded' => 'Layout nesting depth exceeds maximum allowed depth (:max).',
@@ -203,6 +207,7 @@ return [
         'unregistered_handler' => 'Unregistered handler: :handler — not a core, template, or extension handler.',
         'nesting_violation' => ':parent is not declared to accept :child as a child.',
         'responsive_breakpoint_mix' => 'The portable preset is mixed with the mobile/tablet presets — overlapping ranges make behavior hard to predict.',
+        'responsive_open_range_overlap' => 'The responsive ranges :keys on :name match at the same widths — the engine picks only one of them (custom ranges before presets, narrower before wider, and among ranges open at the top, the one written first) and lays only the values of that key over the defaults, so the values of the other keys are not used at those widths. Split them into non-overlapping closed ranges and keep only the topmost one open (e.g. 768-1023, 1024-).',
         'standalone_missing_global_host' => 'A standalone layout fires :handler but nothing reads its global state (:state) — nothing appears on screen. Extend a base layout or add a component that reads that state.',
         'switch_value_not_consumed' => '<switch value="…"> is not read by the engine — write the branch subject as <switch on="…"> so it reaches params.value.',
         'set_state_underscore_global_target' => 'setState target="_global" writes to local state, not global — use target="global" for global state.',
@@ -259,6 +264,18 @@ return [
         'composer_binary_not_found' => 'Composer binary not found. Set the COMPOSER_BINARY environment variable or add composer to your PATH.',
     ],
 
+    // 실행 모드(커맨드 러너) 관련 예외
+    'execution' => [
+        'spawn_unavailable' => 'This server cannot launch external processes (:reason). Check the execution mode.',
+        'spawn_failed' => 'Failed to start the command execution process: :command',
+    ],
+
+    // 스케줄 이벤트에서 Artisan 커맨드 되뽑기 실패
+    'schedule_extraction' => [
+        'not_artisan' => 'Not an Artisan command string (no php/artisan prefix).',
+        'command_name_missing' => 'Could not find the command name.',
+    ],
+
     // 스토리지 드라이버 경로 가드 예외
     'storage' => [
         'unsafe_path' => 'The storage path is not allowed.',
@@ -267,6 +284,23 @@ return [
     ],
 
     // SEO / Sitemap 관련 예외
+    // 파일 서빙 헬퍼 — 호출부 계약 위반 (개발자 대상)
+    'file_serving' => [
+        'meta_key_missing' => 'The file serving meta is missing a required key: :key',
+    ],
+
+    // 업그레이드 스텝 실행 대장 — 같은 DB 를 쓰는 다른 실행이 같은 스텝을 선점함 (콘솔·웹 업데이트 공통)
+    'upgrade_step_already_running' => 'Another run is executing the same upgrade step (:target :version :step) — run again after the update on the other server sharing this database finishes. If that run ended abnormally, run the update again with --force (a running mark older than :hours hours is reclaimed automatically by the next run).',
+
+    // 미뤄 둔 선언형 정리 — 대장 행의 정리 메서드가 허용 목록에 없음
+    'deferred_cleanup_helper_not_allowed' => 'Not run because the cleanup method is not on the allowlist: :helper',
+    'deferred_cleanup_core_resync_failed' => 'A step of the core declaration resync failed, so the cleanup was not finished (the row is kept): :message',
+    'deferred_cleanup_seeder_failed' => 'The seed cleanup seeder failed: :seeder (exit code :code)',
+    'deferred_cleanup_target_not_allowed' => 'Not run because the cleanup target cannot be run (a seeder the extension does not declare, or an unknown scope): :target',
+
+    // 실행 역할(stage/live)과 맞지 않는 레이아웃 테이블 쓰기
+    'stage_layout_write' => 'Tried to write to a layout table that does not match the runtime role: :table',
+
     'seo' => [
         'sitemap_write_failed' => 'Failed to write sitemap file: :path',
         'sitemap_gzip_failed' => 'Failed to compress sitemap child file: :file',

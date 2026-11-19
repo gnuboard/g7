@@ -2,11 +2,18 @@
 
 namespace App\Extension\Helpers;
 
+use App\Support\ExecutionEnvironment;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
 class FilePermissionHelper
 {
+    /** @var array<string, mixed>|null 직전 `swapDirectory()` 가 운영 자리를 비운 채 실패한 기록 */
+    protected static ?array $lastSwapFailure = null;
+
+    /** @var \Closure(string, string): bool|null 이름 바꾸기 대체 함수 (시험 전용) */
+    protected static ?\Closure $renamer = null;
+
     /**
      * 디렉토리를 재귀적으로 복사하면서 기존 파일/디렉토리의 퍼미션을 보존합니다.
      *
@@ -37,7 +44,8 @@ class FilePermissionHelper
      *                                               전체 파일 복사(기존 동작). 지정 시 이 맵에 없는 파일은 복사를 스킵한다 — 코어
      *                                               업데이트 증분 모드에서 "코어가 변경하지 않은 파일"을 건드리지 않기 위함. symlink
      *                                               는 이 필터의 영향을 받지 않고 항상 재생성된다(링크는 목록 산출 대상이 아님).
-     * @param  array<int, string>  $preserveLinkPaths  orphan 정리 시 삭제하지 않고 보존할
+     * @param  array<int, string>  $preserveLinkPaths  orphan 정리 시 삭제하지 않고 보존할 경로
+     *                                                 (링크 여부와 무관 — 그 경로가 일반 디렉토리여도 보존)
      *                                                 symlink/junction 의 상대경로 화이트리스트(이 디렉토리 루트 기준, 예 `['storage']`).
      *                                                 `removeOrphans=true` 라도 이 목록에 매칭되는 orphan 링크는 삭제하지 않는다 — 코어
      *                                                 업데이트 prune 모드에서 `public/storage` symlink 가 orphan 으로 판정되어 삭제되던
@@ -112,6 +120,638 @@ class FilePermissionHelper
         if ($removeOrphans && File::isDirectory($destination)) {
             static::removeOrphanItems($source, $destination, $excludes, $relativePath, $preserveTopLevelOrphans, $preserveLinkPaths, $skipPaths);
         }
+    }
+
+    /**
+     * 디렉토리를 나눠서 복사합니다 (백업·되돌리기의 커서 판).
+     *
+     * `copyDirectory()` 의 덮어쓰기 복사(고아 정리·증분 목록·건너뛸 경로 없이)와 같은 결과를 내되,
+     * `$shouldPause` 가 참을 돌려주면 그 자리에서 멈추고 마지막으로 끝낸 항목의 상대 경로를 커서로
+     * 돌려준다. 다음 호출이 그 커서를 넘기면 이어서 복사한다.
+     *
+     * 순서는 각 단계에서 이름을 정렬한 깊이 우선이다. 커서는 「여기까지 끝났다」는 경로라 요청 사이에
+     * 항목이 늘거나 줄어도 빠지는 항목이 없다(정렬 순서상 커서 뒤에 생긴 항목은 이어 갈 때 만난다).
+     * 멈춤은 항목 하나를 끝낸 뒤에만 묻는다 — 매 호출이 적어도 한 항목은 진행한다.
+     *
+     * 링크·정션은 `copyDirectory()` 와 같이 대상을 따라가지 않고 링크째 다시 만든다.
+     *
+     * @param  string  $source  원본 디렉토리
+     * @param  string  $destination  대상 디렉토리 (없으면 부모 권한을 물려받아 만든다)
+     * @param  array<int, string>  $excludes  제외할 이름 또는 경로 목록
+     * @param  string|null  $resumeAfter  직전 호출이 돌려준 커서 (처음이면 null)
+     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수 (null 이면 끝까지)
+     * @return array{done: bool, cursor: string|null, copied: int} 끝났는지, 이어 갈 커서, 이번에 처리한 항목 수
+     */
+    public static function copyDirectoryChunk(string $source, string $destination, array $excludes = [], ?string $resumeAfter = null, ?\Closure $shouldPause = null): array
+    {
+        $state = ['paused' => false, 'cursor' => $resumeAfter, 'copied' => 0];
+        $resume = $resumeAfter === null || $resumeAfter === '' ? null : explode('/', $resumeAfter);
+
+        static::copyDirectoryChunkLevel($source, $destination, $excludes, '', $resume, $shouldPause, $state);
+
+        return ['done' => ! $state['paused'], 'cursor' => $state['paused'] ? $state['cursor'] : null, 'copied' => $state['copied']];
+    }
+
+    /**
+     * `copyDirectoryChunk()` 의 한 단계(디렉토리 하나)를 처리합니다.
+     *
+     * @param  string  $source  원본 디렉토리
+     * @param  string  $destination  대상 디렉토리
+     * @param  array<int, string>  $excludes  제외할 이름 또는 경로 목록
+     * @param  string  $relativePath  복사 루트 기준 상대 경로
+     * @param  list<string>|null  $resume  커서를 경로 조각으로 나눈 것 (이 단계에서 이어 갈 자리가 없으면 null)
+     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수
+     * @param  array{paused: bool, cursor: string|null, copied: int}  $state  진행 상태 (참조)
+     * @return void 반환값 없음
+     */
+    protected static function copyDirectoryChunkLevel(string $source, string $destination, array $excludes, string $relativePath, ?array $resume, ?\Closure $shouldPause, array &$state): void
+    {
+        if (! File::isDirectory($destination)) {
+            static::createDirectoryInheritingParent($destination);
+        }
+
+        $names = [];
+        foreach (new \FilesystemIterator($source, \FilesystemIterator::SKIP_DOTS) as $item) {
+            $names[] = $item->getFilename();
+        }
+        sort($names, SORT_STRING);
+
+        $depth = $relativePath === '' ? 0 : substr_count($relativePath, '/') + 1;
+
+        foreach ($names as $name) {
+            $itemRelativePath = $relativePath === '' ? $name : $relativePath.'/'.$name;
+            $childResume = null;
+
+            if ($resume !== null) {
+                $compare = strcmp($name, (string) ($resume[$depth] ?? ''));
+
+                if ($compare < 0) {
+                    continue;
+                }
+
+                if ($compare === 0 && count($resume) === $depth + 1) {
+                    // 커서가 가리키는 항목 자체 — 앞 호출이 끝냈다.
+                    $resume = null;
+
+                    continue;
+                }
+
+                $childResume = $compare === 0 ? $resume : null;
+                $resume = null;
+            }
+
+            if (static::isExcluded($name, $itemRelativePath, $excludes)) {
+                continue;
+            }
+
+            $path = $source.DIRECTORY_SEPARATOR.$name;
+            $destPath = $destination.DIRECTORY_SEPARATOR.$name;
+            $handled = false;
+
+            if (is_link($path) || static::isReparsePoint($path)) {
+                if (static::copyLink($path, $destPath)) {
+                    $handled = true;
+                } elseif (! is_link($path)) {
+                    // 정션 재생성 실패 — `copyDirectory()` 와 같이 손상 없이 건너뛴다.
+                    $handled = true;
+                }
+            }
+
+            if (! $handled) {
+                if (is_dir($path)) {
+                    static::copyDirectoryChunkLevel($path, $destPath, $excludes, $itemRelativePath, $childResume, $shouldPause, $state);
+
+                    if ($state['paused']) {
+                        return;
+                    }
+                } else {
+                    static::copyFile($path, $destPath);
+                }
+            }
+
+            $state['copied']++;
+            $state['cursor'] = $itemRelativePath;
+
+            if ($shouldPause !== null && $shouldPause()) {
+                $state['paused'] = true;
+
+                return;
+            }
+        }
+    }
+
+    /**
+     * 디렉토리 트리를 나눠서 지웁니다 (큰 임시 폴더·백업 정리의 커서 판).
+     *
+     * 지운 항목은 사라지므로 커서가 필요 없다 — 다음 호출이 남은 것부터 다시 훑는다. 링크·정션은
+     * 대상을 따라가지 않고 링크 자체만 지운다(백업·전개본 안의 `public/storage` 정션이 운영 중인
+     * 업로드 폴더를 가리킨다). 멈춤은 항목 하나를 지운 뒤에만 묻는다.
+     *
+     * @param  string  $path  지울 경로
+     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수 (null 이면 끝까지)
+     * @return bool 다 훑었으면 true (지우지 못한 항목이 남았을 수 있다 — 호출부가 존재 여부로 확인)
+     */
+    public static function deleteDirectoryChunk(string $path, ?\Closure $shouldPause = null): bool
+    {
+        if (static::removeLinkEntry($path)) {
+            return true;
+        }
+
+        if (! file_exists($path)) {
+            return true;
+        }
+
+        if (! is_dir($path)) {
+            @unlink($path);
+
+            return true;
+        }
+
+        $paused = false;
+        static::deleteDirectoryChunkLevel($path, $shouldPause, $paused);
+
+        if (! $paused) {
+            @rmdir($path);
+        }
+
+        return ! $paused;
+    }
+
+    /**
+     * `deleteDirectoryChunk()` 의 한 단계를 처리합니다.
+     *
+     * @param  string  $directory  지울 디렉토리
+     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수
+     * @param  bool  $paused  멈췄는지 (참조)
+     * @return void 반환값 없음
+     */
+    protected static function deleteDirectoryChunkLevel(string $directory, ?\Closure $shouldPause, bool &$paused): void
+    {
+        $entries = @scandir($directory);
+
+        if ($entries === false) {
+            return;
+        }
+
+        foreach ($entries as $entry) {
+            if ($entry === '.' || $entry === '..') {
+                continue;
+            }
+
+            $path = $directory.DIRECTORY_SEPARATOR.$entry;
+
+            if (! static::removeLinkEntry($path)) {
+                if (is_dir($path)) {
+                    static::deleteDirectoryChunkLevel($path, $shouldPause, $paused);
+
+                    if ($paused) {
+                        return;
+                    }
+
+                    @rmdir($path);
+                } else {
+                    @unlink($path);
+                }
+            }
+
+            if ($shouldPause !== null && $shouldPause()) {
+                $paused = true;
+
+                return;
+            }
+        }
+    }
+
+    /**
+     * 경로가 링크·정션이면 링크 자체만 지웁니다 (대상은 건드리지 않는다).
+     *
+     * @param  string  $path  경로
+     * @return bool 링크·정션이었으면 true
+     */
+    protected static function removeLinkEntry(string $path): bool
+    {
+        if (! is_link($path) && ! static::isReparsePoint($path)) {
+            return false;
+        }
+
+        // Windows 의 디렉토리 링크·정션은 rmdir 로, 그 밖의 링크는 unlink 로 지운다 — 어느 쪽도 대상을 따라가지 않는다.
+        if (! @rmdir($path)) {
+            @unlink($path);
+        }
+
+        return true;
+    }
+
+    /**
+     * 트리를 나눠서 훑습니다 (소유권·권한 복원의 커서 판).
+     *
+     * 이름을 정렬한 깊이 우선 전위 순서로 루트 아래 항목마다 `$visit` 을 부르고, `$shouldPause` 가 참이면 마지막으로
+     * 방문한 항목의 상대 경로를 커서로 돌려준다. 다음 호출이 그 커서를 넘기면 이어 간다 — 커서 항목이 디렉토리면 그
+     * 하위부터 이어 간다. 링크·정션은 방문하되 따라 들어가지 않는다. `$descend` 가 거짓을 돌려준 디렉토리도 들어가지
+     * 않는다(소유권 보존 마커가 있는 서브트리 등). 루트 자신은 방문하지 않는다 — 호출부가 처음 호출에서 따로 처리한다.
+     *
+     * @param  string  $root  루트 디렉토리
+     * @param  string|null  $resumeAfter  직전 호출이 돌려준 커서 (처음이면 null)
+     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수 (null 이면 끝까지)
+     * @param  \Closure(string, string): void  $visit  항목 절대 경로와 상대 경로를 받는 함수
+     * @param  \Closure(string): bool|null  $descend  디렉토리에 들어갈지 정하는 함수 (null 이면 늘 들어간다)
+     * @return array{done: bool, cursor: string|null} 끝났는지와 이어 갈 커서
+     */
+    public static function walkTreeChunk(string $root, ?string $resumeAfter, ?\Closure $shouldPause, \Closure $visit, ?\Closure $descend = null): array
+    {
+        $state = ['paused' => false, 'cursor' => null];
+        $resume = $resumeAfter === null || $resumeAfter === '' ? null : explode('/', $resumeAfter);
+
+        if (is_dir($root) && ! is_link($root)) {
+            static::walkTreeChunkLevel($root, '', $resume, $shouldPause, $visit, $descend, $state);
+        }
+
+        return ['done' => ! $state['paused'], 'cursor' => $state['paused'] ? $state['cursor'] : null];
+    }
+
+    /**
+     * `walkTreeChunk()` 의 한 단계를 처리합니다.
+     *
+     * @param  string  $directory  디렉토리
+     * @param  string  $relativePath  루트 기준 상대 경로
+     * @param  list<string>|null  $resume  커서를 경로 조각으로 나눈 것
+     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수
+     * @param  \Closure  $visit  방문 함수
+     * @param  \Closure|null  $descend  들어갈지 정하는 함수
+     * @param  array{paused: bool, cursor: string|null}  $state  진행 상태 (참조)
+     * @return void 반환값 없음
+     */
+    protected static function walkTreeChunkLevel(string $directory, string $relativePath, ?array $resume, ?\Closure $shouldPause, \Closure $visit, ?\Closure $descend, array &$state): void
+    {
+        $entries = @scandir($directory);
+
+        if ($entries === false) {
+            return;
+        }
+
+        $names = array_values(array_filter($entries, static fn (string $e): bool => $e !== '.' && $e !== '..'));
+        sort($names, SORT_STRING);
+        $depth = $relativePath === '' ? 0 : substr_count($relativePath, '/') + 1;
+
+        foreach ($names as $name) {
+            $relative = $relativePath === '' ? $name : $relativePath.'/'.$name;
+            $path = $directory.DIRECTORY_SEPARATOR.$name;
+            $skipVisit = false;
+            $childResume = null;
+
+            if ($resume !== null) {
+                $compare = strcmp($name, (string) ($resume[$depth] ?? ''));
+
+                if ($compare < 0) {
+                    continue;
+                }
+
+                if ($compare === 0) {
+                    // 커서가 이 항목(이미 방문)이거나 그 아래다 — 방문은 건너뛰고 하위로 이어 간다.
+                    $skipVisit = true;
+                    $childResume = count($resume) > $depth + 1 ? $resume : null;
+                }
+
+                $resume = null;
+            }
+
+            if (! $skipVisit) {
+                $visit($path, $relative);
+                $state['cursor'] = $relative;
+
+                if ($shouldPause !== null && $shouldPause()) {
+                    $state['paused'] = true;
+
+                    return;
+                }
+            }
+
+            // 정션은 `is_dir()` 이 거짓이라 여기서 걸러진다 — 종전 재귀(`chownRecursiveInternal`)와 같은 판정이고,
+            // 항목마다 정션 판정(readlink)을 더하면 수만 항목 트리에서 훑기가 눈에 띄게 느려진다.
+            if (! is_link($path) && is_dir($path) && ($descend === null || $descend($path))) {
+                static::walkTreeChunkLevel($path, $relative, $childResume, $shouldPause, $visit, $descend, $state);
+
+                if ($state['paused']) {
+                    return;
+                }
+            }
+        }
+    }
+
+    /**
+     * 소유권 복원을 나눠서 합니다 (`chownRecursiveDetailed()` 의 커서 판).
+     *
+     * 판정은 `chownRecursiveDetailed()` 와 같다 — 소유자가 다르면 chown, 그룹은 따로 chgrp, `.preserve-ownership` 마커가
+     * 있는 서브트리는 건너뜀, 링크는 따라가지 않음. 집계는 `$report` 로 이어 받는다.
+     *
+     * @param  string  $root  대상 루트
+     * @param  int  $owner  소유자 UID
+     * @param  int|false  $group  그룹 GID
+     * @param  bool  $respectPreservationMarker  보존 마커 서브트리를 건너뛸지
+     * @param  string|null  $resumeAfter  직전 커서
+     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수
+     * @param  array<string, mixed>  $report  직전 집계 (처음이면 빈 배열)
+     * @return array{done: bool, cursor: string|null, report: array{changed: int, failed: int, failed_paths: list<string>, first_failure: string|null, skipped_subtrees: int}} 진행분
+     */
+    public static function chownRecursiveChunk(string $root, int $owner, int|false $group, bool $respectPreservationMarker, ?string $resumeAfter, ?\Closure $shouldPause, array $report = []): array
+    {
+        $report += ['changed' => 0, 'failed' => 0, 'failed_paths' => [], 'first_failure' => null, 'skipped_subtrees' => 0];
+
+        if (! function_exists('chown')) {
+            return ['done' => true, 'cursor' => null, 'report' => $report];
+        }
+
+        $isMarked = static fn (string $path): bool => $respectPreservationMarker
+            && is_dir($path) && ! is_link($path)
+            && @file_exists($path.DIRECTORY_SEPARATOR.'.preserve-ownership');
+
+        $apply = static function (string $path) use ($owner, $group, &$report): void {
+            $currentOwner = @fileowner($path);
+            if ($currentOwner !== false && $currentOwner !== $owner) {
+                if (@chown($path, $owner)) {
+                    $report['changed']++;
+                } else {
+                    if ($report['first_failure'] === null) {
+                        $report['first_failure'] = $path;
+                        Log::warning('chown 최초 실패', ['path' => $path, 'owner' => $owner]);
+                    }
+                    $report['failed']++;
+                    if (count($report['failed_paths']) < 50) {
+                        $report['failed_paths'][] = $path;
+                    }
+                }
+            }
+
+            if ($group !== false && function_exists('chgrp')) {
+                $currentGroup = @filegroup($path);
+                if ($currentGroup !== false && $currentGroup !== $group) {
+                    @chgrp($path, $group);
+                }
+            }
+        };
+
+        if ($resumeAfter === null) {
+            if ($isMarked($root)) {
+                $report['skipped_subtrees']++;
+
+                return ['done' => true, 'cursor' => null, 'report' => $report];
+            }
+
+            $apply($root);
+        }
+
+        $walk = static::walkTreeChunk(
+            $root,
+            $resumeAfter,
+            $shouldPause,
+            static function (string $path) use ($isMarked, $apply, &$report): void {
+                if ($isMarked($path)) {
+                    $report['skipped_subtrees']++;
+
+                    return;
+                }
+
+                $apply($path);
+            },
+            static fn (string $path): bool => ! $isMarked($path),
+        );
+
+        return ['done' => $walk['done'], 'cursor' => $walk['cursor'], 'report' => $report];
+    }
+
+    /**
+     * 그룹 쓰기 권한 정상화를 나눠서 합니다 (`syncGroupWritabilityDetailed()` 의 커서 판).
+     *
+     * 판정은 `syncGroupWritabilityDetailed()` 와 같다 — 루트가 g+w 일 때만(강제면 루트를 먼저 g+w 로) 하위 g-w 항목에
+     * g+w 를 더하고, 링크는 따라가지 않는다.
+     *
+     * @param  string  $root  대상 루트
+     * @param  bool  $force  루트가 g-w 여도 정상화할지
+     * @param  string|null  $resumeAfter  직전 커서
+     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수
+     * @param  array<string, mixed>  $report  직전 집계 (처음이면 빈 배열)
+     * @return array{done: bool, cursor: string|null, report: array{changed: int, failed: int, failed_paths: list<string>}} 진행분
+     */
+    public static function syncGroupWritabilityChunk(string $root, bool $force, ?string $resumeAfter, ?\Closure $shouldPause, array $report = []): array
+    {
+        $report += ['changed' => 0, 'failed' => 0, 'failed_paths' => []];
+
+        if (! function_exists('chmod') || ! is_dir($root)) {
+            return ['done' => true, 'cursor' => null, 'report' => $report];
+        }
+
+        if ($resumeAfter === null) {
+            $rootPerms = @fileperms($root);
+
+            if ($rootPerms === false) {
+                return ['done' => true, 'cursor' => null, 'report' => $report];
+            }
+
+            if (($rootPerms & 0020) === 0) {
+                if (! $force) {
+                    return ['done' => true, 'cursor' => null, 'report' => $report];
+                }
+
+                if (! @chmod($root, $rootPerms | 0020)) {
+                    $report['failed']++;
+                    $report['failed_paths'][] = $root;
+
+                    return ['done' => true, 'cursor' => null, 'report' => $report];
+                }
+            }
+        }
+
+        $walk = static::walkTreeChunk(
+            $root,
+            $resumeAfter,
+            $shouldPause,
+            static function (string $path) use (&$report): void {
+                if (is_link($path)) {
+                    return;
+                }
+
+                $perms = @fileperms($path);
+                if ($perms !== false && ($perms & 0020) === 0) {
+                    if (@chmod($path, $perms | 0020)) {
+                        $report['changed']++;
+                    } else {
+                        $report['failed']++;
+                        if (count($report['failed_paths']) < 50) {
+                            $report['failed_paths'][] = $path;
+                        }
+                    }
+                }
+            },
+        );
+
+        return ['done' => $walk['done'], 'cursor' => $walk['cursor'], 'report' => $report];
+    }
+
+    /**
+     * 부모 → 자식 디렉토리 체인의 그룹 쓰기를 맞춥니다 (재귀하지 않는다).
+     *
+     * 이웃한 두 단계마다, 부모가 g+w 이고 자식이 g-w 면 자식에 g+w 를 더한다 — `syncGroupWritability()` 와 같은
+     * 정책(부모가 g-w 면 운영자 정책으로 보고 손대지 않음, 다른 비트 무변경)이되 체인에 든 디렉토리만 본다. 새 폴더를
+     * 만들 자리의 부모 체인만 필요할 때 쓴다 — 그 아래 이미 있는 트리(옛 백업)를 훑지 않는다.
+     *
+     * @param  string  ...$directories  부모부터 자식 순서의 디렉토리
+     * @return int chmod 한 디렉토리 수
+     */
+    public static function promoteGroupWritableChain(string ...$directories): int
+    {
+        if (! function_exists('chmod')) {
+            return 0;
+        }
+
+        $changed = 0;
+        $count = count($directories);
+
+        for ($i = 1; $i < $count; $i++) {
+            $parent = $directories[$i - 1];
+            $child = $directories[$i];
+
+            if (! is_dir($parent) || ! is_dir($child) || is_link($child)) {
+                continue;
+            }
+
+            $parentPerms = @fileperms($parent);
+            $childPerms = @fileperms($child);
+
+            if ($parentPerms === false || $childPerms === false || ($parentPerms & 0020) === 0 || ($childPerms & 0020) !== 0) {
+                continue;
+            }
+
+            if (@chmod($child, $childPerms | 0020)) {
+                $changed++;
+            }
+        }
+
+        return $changed;
+    }
+
+    /**
+     * 운영 디렉토리를 다른 디렉토리로 통째로 바꿔 끼웁니다 (vendor 반영·되돌리기).
+     *
+     * 파일을 하나씩 복사하면 수만 개짜리 vendor 가 한 요청 시간 안에 끝나지 않고, 복사가 중간에 끊긴
+     * vendor 로는 다음 요청이 부팅조차 못 한다. 이름 바꾸기 두 번은 같은 파일 시스템 안에서 즉시 끝나고,
+     * 끝난 뒤의 운영 디렉토리는 언제나 한쪽 판 전체다.
+     *
+     * 바꿔 끼울 수 없으면(대상이 없음, 자리가 이미 있음, 이름 바꾸기 실패 — 다른 파일 시스템·쓰기 권한·
+     * Windows 의 사용 중 파일) 운영 디렉토리를 원래대로 둔 채 false 를 돌려준다. 호출부는 복사로 넘어간다.
+     *
+     * @param  string  $live  운영 디렉토리 (예: `vendor`)
+     * @param  string  $replacement  끼울 디렉토리 (성공하면 사라진다)
+     * @param  string  $parking  옛 운영 디렉토리를 옮겨 둘 자리 (없는 경로여야 한다)
+     * @return bool 바꿔 끼웠으면 true
+     */
+    public static function swapDirectory(string $live, string $replacement, string $parking): bool
+    {
+        static::$lastSwapFailure = null;
+
+        if (! is_dir($replacement) || is_link($replacement) || static::isReparsePoint($replacement)) {
+            return false;
+        }
+
+        if (file_exists($parking) || is_link($parking)) {
+            return false;
+        }
+
+        File::ensureDirectoryExists(dirname($parking));
+
+        $parked = false;
+
+        if (is_dir($live)) {
+            if (! static::renamePath($live, $parking)) {
+                return false;
+            }
+
+            $parked = true;
+        }
+
+        if (! static::renamePath($replacement, $live)) {
+            if ($parked && ! file_exists($live) && ! static::renamePath($parking, $live)) {
+                // 운영 디렉토리를 옮긴 뒤 새 것을 끼우지도, 옛 것을 되돌리지도 못했다 — 운영 자리가 비었다.
+                static::recordSwapFailure($live, $replacement, $parking);
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * 직전 `swapDirectory()` 가 운영 디렉토리를 비운 채 실패했으면 그 기록을 꺼내고 비웁니다.
+     *
+     * 기록이 있으면 운영 자리(`live`)가 비어 있을 수 있다. 호출부는 이 기록을 실행 기록·실패 리포트에 싣고, 옮겨 둔
+     * 자리(`parked`)를 되돌리기 원본으로 쓴다 — 운영자가 수동 복구를 판단할 근거가 된다.
+     *
+     * @return array{live: string, replacement: string, parked: string, live_exists: bool, replacement_exists: bool, parked_exists: bool}|null 기록 (없으면 null)
+     */
+    public static function takeLastSwapFailure(): ?array
+    {
+        $failure = static::$lastSwapFailure;
+        static::$lastSwapFailure = null;
+
+        return $failure;
+    }
+
+    /**
+     * 바꿔 끼우기 실패 기록을 남깁니다 (시험이 실패 갈래를 만들 때도 쓴다).
+     *
+     * @param  string  $live  운영 디렉토리
+     * @param  string  $replacement  끼우려던 디렉토리
+     * @param  string  $parking  옛 운영 디렉토리를 옮겨 둔 자리
+     * @return void 반환값 없음
+     */
+    public static function recordSwapFailureForTests(string $live, string $replacement, string $parking): void
+    {
+        static::recordSwapFailure($live, $replacement, $parking);
+    }
+
+    /**
+     * 이름 바꾸기 함수를 바꿔 끼웁니다 (시험 전용 — 사용 중 파일 같은 실패를 흉내 낸다).
+     *
+     * @param  \Closure(string, string): bool|null  $renamer  대체 함수 (null 이면 `rename`)
+     * @return void 반환값 없음
+     */
+    public static function useRenamerForTests(?\Closure $renamer): void
+    {
+        static::$renamer = $renamer;
+    }
+
+    /**
+     * 바꿔 끼우기 실패를 기록하고 오류 로그에 남깁니다.
+     *
+     * @param  string  $live  운영 디렉토리
+     * @param  string  $replacement  끼우려던 디렉토리
+     * @param  string  $parking  옛 운영 디렉토리를 옮겨 둔 자리
+     * @return void 반환값 없음
+     */
+    protected static function recordSwapFailure(string $live, string $replacement, string $parking): void
+    {
+        static::$lastSwapFailure = [
+            'live' => $live,
+            'replacement' => $replacement,
+            'parked' => $parking,
+            'live_exists' => is_dir($live),
+            'replacement_exists' => is_dir($replacement),
+            'parked_exists' => is_dir($parking),
+        ];
+
+        Log::error('디렉토리 바꿔 끼우기 실패 — 원래대로 되돌리지도 못해 운영 자리가 비었을 수 있다', static::$lastSwapFailure);
+    }
+
+    /**
+     * 이름을 바꿉니다 (시험이 실패를 흉내 낼 수 있게 한 곳으로 모은다).
+     *
+     * @param  string  $from  원래 경로
+     * @param  string  $to  새 경로
+     * @return bool 바꿨으면 true
+     */
+    protected static function renamePath(string $from, string $to): bool
+    {
+        return static::$renamer !== null ? (bool) (static::$renamer)($from, $to) : @rename($from, $to);
     }
 
     /**
@@ -205,12 +845,17 @@ class FilePermissionHelper
             File::deleteDirectory($destination);
         }
 
-        if (@symlink($target, $destination)) {
+        // `symlink` 가드 사유는 형제(`StorageLinkHelper::createLink`)와 같다 — `@` 는
+        // 진단 억제일 뿐이고 차단 환경에서는 이 호출이 `Error`(치명)다. 불가하면 아래
+        // junction 폴백을 거쳐 호출자의 일반 복사 폴백으로 넘어간다.
+        if (ExecutionEnvironment::hasFunction('symlink') && @symlink($target, $destination)) {
             return true;
         }
 
         // symlink 실패 + target 이 디렉토리 → Windows junction 으로 폴백 재생성.
-        if (PHP_OS_FAMILY === 'Windows' && is_dir($target)) {
+        // `exec` 차단 호스팅에서는 무가드 호출이 PHP 8 Error(치명)가 되므로 SSoT 판정을
+        // 거치고, 불가하면 일반 복사 폴백(호출자)으로 넘긴다 (G3 이관 — hosting-blocked-function 가드).
+        if (PHP_OS_FAMILY === 'Windows' && is_dir($target) && ExecutionEnvironment::hasFunction('exec')) {
             exec(
                 'cmd /c mklink /J '.escapeshellarg($destination).' '.escapeshellarg($target).' 2>&1',
                 $out,
@@ -240,7 +885,7 @@ class FilePermissionHelper
      * @param  array  $excludes  제외할 이름 또는 경로 목록
      * @param  string  $relativePath  현재 상대 경로
      * @param  bool  $preserveTopLevelOrphans  최상위 한 레벨의 orphan 보존 여부
-     * @param  array<int, string>  $preserveLinkPaths  삭제하지 않고 보존할 symlink/junction
+     * @param  array<int, string>  $preserveLinkPaths  삭제하지 않고 보존할 경로 (링크 여부 무관)
      *                                                 상대경로 화이트리스트(루트 기준). orphan 이 링크이면서 이 목록에 매칭되면 삭제하지
      *                                                 않고 보존한다 — `public/storage` symlink 보호(#43). 화이트리스트 밖 orphan 링크는 삭제.
      * @param  array<int, string>  $skipPaths  orphan 정리에서도 건너뛸 상대경로(루트 기준) — 복사를 건너뛴 경로는 지우지도 않는다
@@ -276,11 +921,22 @@ class FilePermissionHelper
                 // 보호 화이트리스트 매칭 링크/junction 은 orphan 이어도 보존 — 코어 업데이트
                 // prune 모드에서 `public/storage` symlink 가 릴리즈 소스에 없다는 이유로 삭제되어
                 // 업로드 파일이 404 되던 결함(#43) 차단. 화이트리스트 밖 orphan 링크는 아래에서 삭제.
+                // 보호는 **경로 기준**이다 — 링크일 때만 걸면 그 경로가 링크가 **아닌**
+                // 형태로 존재하는 사이트에서 보호가 통째로 빠진다. `public/storage` 가
+                // 일반 디렉토리인 상태(심볼릭 링크를 만들 수 없어 복사로 운영하거나,
+                // 7.1.0 정리 대상인 바로 그 상태)에서 종전 판정은 아래 `deleteDirectory()`
+                // 로 떨어져 **공개 업로드 전량이 영구 삭제**됐다. 그 경로는 릴리즈 소스에
+                // 없는 것이 정상이므로 orphan 판정은 언제나 참이다.
+                //
+                // `storage.broken.*` 도 같은 이유로 보존한다 — 7.1.0 마이그레이션이
+                // 「옮기기만 하고 지우지 않는다, 그 사본이 운영자에게 유일하게 남은
+                // 파일일 수 있다」를 불변식으로 선언했는데, 그 스텝은 이 정리보다
+                // **뒤에** 돌아 아무것도 보지 못한다.
                 if (
                     in_array($itemRelativePath, $preserveLinkPaths, true)
-                    && (is_link($destItem->getPathname()) || static::isReparsePoint($destItem->getPathname()))
+                    || static::isPreservedRuntimeResidue($itemRelativePath, $preserveLinkPaths)
                 ) {
-                    Log::info('removeOrphanItems: 보호 대상 orphan 링크 보존', [
+                    Log::info('removeOrphanItems: 보호 대상 orphan 보존', [
                         'path' => $destItem->getPathname(),
                         'relative' => $itemRelativePath,
                     ]);
@@ -389,6 +1045,30 @@ class FilePermissionHelper
             }
             static::inheritOwnershipFromParent($destination);
         }
+    }
+
+    /**
+     * 보호 경로가 남긴 **런타임 잔해**인지 판정합니다.
+     *
+     * `public/storage` 를 보호 목록에 넣은 배치에서는 그 경로의 손상 백업
+     * (`storage.broken.<타임스탬프>`)도 함께 보호해야 한다. 그 사본은 코어가 만든
+     * 것이고, 7.1.0 업그레이드 스텝이 문서 루트 밖으로 옮길 때까지 **운영자에게 남은
+     * 유일한 파일일 수 있다.** 그 스텝은 이 정리보다 뒤에 돌므로 여기서 지우면
+     * 스텝이 옮길 대상 자체가 사라진다.
+     *
+     * @param  string  $itemRelativePath  대상의 상대 경로
+     * @param  array<int, string>  $preservePaths  보호 경로 목록
+     * @return bool 보호 대상이면 true
+     */
+    protected static function isPreservedRuntimeResidue(string $itemRelativePath, array $preservePaths): bool
+    {
+        foreach ($preservePaths as $preserved) {
+            if (str_starts_with($itemRelativePath, $preserved.'.broken.')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

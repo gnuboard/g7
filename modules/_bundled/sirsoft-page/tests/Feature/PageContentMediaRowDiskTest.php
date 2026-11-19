@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Page\Tests\Feature;
 
+use App\Contracts\Extension\StorageInterface;
 use App\Extension\Storage\ModuleStorageDriver;
 use App\Models\User;
 use Illuminate\Support\Facades\Config;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Page\Models\Page;
 use Modules\Sirsoft\Page\Models\PageAttachment;
+use Modules\Sirsoft\Page\Services\ContentMedia\PageContentMediaFlow;
+use Modules\Sirsoft\Page\Services\PageAttachmentService;
 use Modules\Sirsoft\Page\Services\PageContentMediaService;
 use Modules\Sirsoft\Page\Services\PageService;
 use Modules\Sirsoft\Page\Tests\ModuleTestCase;
@@ -242,5 +245,47 @@ class PageContentMediaRowDiskTest extends ModuleTestCase
     private function driver(string $disk): ModuleStorageDriver
     {
         return new ModuleStorageDriver('sirsoft-page', $disk);
+    }
+
+    /**
+     * 페이지 첨부·본문 미디어 서비스는 비공개 첨부 저장소 선택을 따른다(「기본」이면 modules, #916).
+     *
+     * @scenario case=private_attachment_selection
+     *
+     * @effects page_private_services_follow_private_attachment_selection
+     *
+     * @return void 반환값 없음
+     */
+    public function test_services_follow_private_attachment_selection(): void
+    {
+        Config::set('filesystems.disks.page_private_alt', ['driver' => 'local', 'root' => storage_path('framework/testing/page_private_alt')]);
+        Config::set('core.storage.private_attachment_disk', '');
+        foreach ([PageAttachmentService::class, PageContentMediaFlow::class] as $class) {
+            $this->assertSame('modules', $this->injectedDisk(app($class)), $class.' 「기본」');
+        }
+
+        Config::set('core.storage.private_attachment_disk', 'page_private_alt');
+        foreach ([PageAttachmentService::class, PageContentMediaFlow::class] as $class) {
+            $this->assertSame('page_private_alt', $this->injectedDisk(app($class)), $class.' 선택');
+        }
+    }
+
+    /**
+     * 서비스에 주입된 스토리지의 디스크를 읽습니다(클래스 계층의 StorageInterface 속성).
+     *
+     * @param  object  $service  서비스
+     * @return string 디스크 이름
+     */
+    private function injectedDisk(object $service): string
+    {
+        for ($class = new \ReflectionClass($service); $class !== false; $class = $class->getParentClass()) {
+            foreach ($class->getProperties() as $property) {
+                $value = $property->getValue($service);
+                if ($value instanceof StorageInterface) {
+                    return $value->getDisk();
+                }
+            }
+        }
+        $this->fail('주입된 스토리지를 찾지 못했습니다: '.$service::class);
     }
 }

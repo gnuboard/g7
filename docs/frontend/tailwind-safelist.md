@@ -11,7 +11,7 @@ Tailwind CSS는 빌드 시 사용된 클래스만 포함합니다. JSON 레이�
 ```text
 1. Tailwind는 빌드 시 사용된 클래스만 CSS에 포함
 2. JSON 레이아웃의 클래스는 소스코드 스캔에서 누락됨
-3. 동적 클래스는 main.css의 @utility safelist에 등록 필수
+3. 동적 클래스는 템플릿 CSS 의 safelist에 등록 필수 (sirsoft-admin_basic 은 `semantic.css` — `main.css` 가 가져온다)
 4. 등록 전 기존 safelist 또는 사용 중인 클래스 확인
 5. 빌드 후 적용 확인 필수
 6. **`@import` 는 `@plugin`·`@config` 보다 먼저** — 뒤에 두면 그 파일이 통째로 사라진다 (§7)
@@ -96,7 +96,7 @@ grep "\.w-32" templates/sirsoft-admin_basic/dist/css/components.css
 ### 파일 위치
 
 ```
-templates/sirsoft-admin_basic/src/styles/main.css
+templates/sirsoft-admin_basic/src/styles/semantic.css   # main.css 가 @import — 템플릿 설정 화면 묶음도 같은 파일을 쓴다
 ```
 
 ### 구조
@@ -109,8 +109,8 @@ templates/sirsoft-admin_basic/src/styles/main.css
   /* UserStatus 상태별 버튼 색상 */
   @apply bg-yellow-600 hover:bg-yellow-700;
 
-  /* 2열 레이아웃용 반응형 클래스 */
-  @apply lg:flex-row lg:basis-2/5 lg:basis-3/5 lg:flex-shrink-0;
+  /* 2열 레이아웃 — 데스크톱 구간(responsive) 값에서 쓰는 클래스. 반응형 접두(lg: 등)는 등록하지 않는다 */
+  @apply flex-row basis-2/5 basis-3/5 flex-shrink-0;
 
   /* 사이드바 로고 이미지 크기 제한 */
   @apply max-h-10 max-h-8;
@@ -130,7 +130,7 @@ templates/sirsoft-admin_basic/src/styles/main.css
 
 ```bash
 # safelist 확인
-grep -n "원하는클래스" templates/sirsoft-admin_basic/src/styles/main.css
+grep -n "원하는클래스" templates/sirsoft-admin_basic/src/styles/semantic.css
 
 # TSX 파일에서 사용 여부 확인
 grep -r "원하는클래스" templates/sirsoft-admin_basic/src/components/
@@ -171,7 +171,7 @@ JSON 레이아웃에서 새 Tailwind 클래스 사용 시:
 ```
 □ 1. 기존 safelist에 해당 클래스가 있는지 확인
 □ 2. TSX/CSS 파일에서 이미 사용 중인지 확인
-□ 3. 없으면 main.css safelist에 추가 (용도 주석 포함)
+□ 3. 없으면 safelist에 추가 (용도 주석 포함 — sirsoft-admin_basic 은 semantic.css)
 □ 4. 템플릿 빌드 실행
 □ 5. 브라우저에서 적용 확인
 ```
@@ -186,7 +186,12 @@ JSON 레이아웃에서 새 Tailwind 클래스 사용 시:
 ❌ safelist 확인 없이 JSON에 새 Tailwind 클래스 사용
 ❌ 용도 주석 없이 safelist에 클래스 추가
 ❌ 빌드 없이 적용 확인 시도
+❌ 반응형 접두(sm: md: lg: xl: 2xl: min-[..]: max-[..]:) 클래스를 safelist 에 등록
 ```
+
+레이아웃은 Tailwind 반응형 접두를 쓰지 않고 화면 폭 분기를 `responsive` 구간 값으로 한다([반응형 레이아웃](responsive-layout.md)). 그래서 safelist 에는 구간 값에 들어가는 접두 없는 클래스(`flex-row` 등)만 등록한다.
+
+**폐지 예정 보존 블록(7.2.0 한정)**: 두 번들 템플릿의 스타일 진입점(`templates/_bundled/sirsoft-basic/src/styles/main.css`, `templates/_bundled/sirsoft-admin_basic/src/styles/main.css`)에는 `DEPRECATED-RESPONSIVE-START`~`END` 표식 사이에 반응형 접두 클래스를 모은 `@source inline(...)` 블록이 있다. 번들 레이아웃이 반응형 접두를 엔진 `responsive` 로 바꾸면서 레이아웃 스캔으로 들어오던 `md:w-96` 같은 클래스가 빌드 CSS 에서 빠지는데, 이미 설치한 사이트가 편집기로 고쳐 저장한 레이아웃과 사이트 자체 확장은 그 클래스를 계속 쓸 수 있어서 이번 버전에만 남긴다. 기준은 마지막 공개 출시본의 빌드 CSS 에 실제로 있던 이름이다. 출시본 확장 CSS 가 싣던 접두 없는 반응형 클래스(이커머스 `md:w-24` 등)는 지금 확장 접두 빌드가 만들 수 없어 관리자 템플릿 블록에 더한다. 출시된 적 없는 확장 접두 이름(`{접두}:lg:` 등)은 쓸 수 있었던 사이트가 없어 남기지 않는다. 반응형 접두가 아닌 일반 유틸리티도 출시본 빌드 CSS 에 있다가 번들 레이아웃이 더 쓰지 않아 빠진 것(관리자 42개, 사용자 34개 — `dark:bg-sky-700`·`grid-cols-[120px_1fr]` 등)은 같은 블록에 함께 남긴다(`deprecated-responsive-classes.mjs utilities` 로 뽑는다). 관리자 템플릿의 `SAFELIST-START`~`END` 생성 구간 밖에 있어 `extract-safelist.cjs` 가 덮어쓰지 않는다. 블록은 손으로 고치지 않고 `node scripts/extension-css/deprecated-responsive-classes.mjs inject` 로 다시 만들며, 다음 출시 이후 블록·기준 픽스처·시험(`scripts/extension-css/__tests__/deprecated-responsive-classes.test.mjs`)을 함께 지운다. 새 레이아웃은 이 블록에 기대지 않는다.
 
 ### 권장 사항
 
@@ -201,7 +206,7 @@ JSON 레이아웃에서 새 Tailwind 클래스 사용 시:
 
 | 상황 | 권장 방법 |
 |------|----------|
-| 여러 곳에서 반복 사용 | CSS 커스텀 클래스 정의 (예: `.filter-label`) |
+| 여러 곳에서 반복 사용 | CSS 커스텀 클래스 정의 (예: `.filter-field-label`) |
 | 특정 레이아웃에서만 오버라이드 | Safelist + JSON에서 클래스 추가 |
 | 일회성 스타일링 | Safelist + JSON에서 직접 사용 |
 

@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 명령(설치 3종·비밀번호·설정) × 입력 채널 × 대상 확장 상태의 곱은 명령마다 축이 달라 한 곱으로 전개하면 의미 없는 조합이 대부분이다. 명령별 대표 조합은 test_files 의 effects 로, 실제 서버 조합은 manual_verification(R1~R5 실측)으로 덮는다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#819 명령(설치 3종·비밀번호·설정) × 입력 채널 × 대상 확장 상태의 곱은 명령마다 축이 달라 한 곱으로 전개하면 의미 없는 조합이 대부분이다. 명령별 대표 조합은 test_files 의 effects 로, 실제 서버 조합은 manual_verification(R1~R5 실측)으로 덮는다.
 feature: 웹 전용이던 운영 절차의 터미널 명령 — 확장 연쇄 설치·관리자 비밀번호 재설정·설정 값 지정
 
 description: |
@@ -62,6 +62,13 @@ effects:
   - reset_password_console_skips_web_reset_guard_hook
   - reset_password_prints_extension_notices_from_filter
   - reset_password_reports_failure_without_change
+  # 5.2a 이메일 없이 최고관리자 재설정 (#790)
+  - reset_password_without_email_targets_single_super_admin_after_confirm
+  - reset_password_without_email_declined_changes_nothing
+  - reset_password_without_email_chooses_among_super_admins
+  - reset_password_without_email_unanswerable_lists_super_admins_and_fails
+  - reset_password_without_email_fails_when_no_super_admin
+  - reset_password_warns_when_status_still_blocks_login
   - reset_service_rolls_back_with_inside_transaction_failure
   - reset_service_fires_before_hook_only_for_mail_reset
   - reset_service_require_change_only_when_requested

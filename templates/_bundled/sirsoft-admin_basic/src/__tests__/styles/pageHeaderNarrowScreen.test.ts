@@ -12,7 +12,8 @@ import fs from 'fs';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
 
-const css = fs.readFileSync(path.resolve(__dirname, '../../styles/main.css'), 'utf8');
+// 주석은 선택자가 아니다 — 폐지 예정 면제 표식(`audit:allow …`) 같은 주석이 규칙 머리 앞에 있어도 선택자만 읽는다.
+const css = fs.readFileSync(path.resolve(__dirname, '../../styles/semantic.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
 /**
  * 640px 이하 미디어쿼리 블록 본문들을 돌려준다.
@@ -22,8 +23,7 @@ const css = fs.readFileSync(path.resolve(__dirname, '../../styles/main.css'), 'u
 function narrowBlocks(): string[] {
   const out: string[] = [];
   const re = /@media\s*\(max-width:\s*640px\)\s*\{/g;
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(css)) !== null) {
+  while (re.exec(css) !== null) {
     let depth = 1;
     let i = re.lastIndex;
     while (i < css.length && depth > 0) {

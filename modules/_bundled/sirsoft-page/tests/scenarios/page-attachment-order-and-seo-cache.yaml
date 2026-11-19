@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#609 |
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 #   본 매니페스트는 서로 독립적인 5개 페이지 검수 결함(첨부 URL 컨텍스트 6-1 / 첨부 순서 6-2 /
 #   수정→등록 폼 잔존 7 / SEO 캐시 무효화 12-2 / 버전 변경 필드 다국어 라벨 13)을 한 회귀
 #   매트릭스로 묶어 기록한다. 축(url_context/form_mode/upload_count/page_change/cached_entry)은
@@ -78,6 +79,9 @@ effects:
   - page_change_invalidates_page_show_layout_cache
   - page_change_invalidates_home_and_search_and_sitemap_cache
   - page_restore_invalidates_page_detail_seo_cache
+  - page_seo_listener_subscribes_page_lifecycle_hooks    # 생성, 수정, 삭제, 복원, 발행 훅을 우선순위 20 으로 구독한다
+  - page_change_without_page_or_slug_does_not_throw      # 페이지가 없거나 슬러그가 없어도 예외 없이 끝난다
+  - page_seo_listener_handle_is_callable                 # 인터페이스 필수 메서드 handle 이 있고 불러도 오류가 없다
   - page_restore_creates_new_version_and_preserves_history
   - page_version_changed_fields_render_localized_labels
   - attachment_size_or_ext_rejection_shows_error_toast

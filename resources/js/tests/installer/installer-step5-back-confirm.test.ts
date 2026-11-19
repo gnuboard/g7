@@ -13,12 +13,18 @@
  *
  * 화면은 설치 화면 뷰(5-installation.php)의 실패 버튼 마크업을 그대로 잘라 쓰고, installer.js 를 전역 스크립트로 평가한 뒤
  * 새로고침 복원 경로(상태 failed → 실패 화면)로 실패 화면을 띄운다.
+ *
+ * 화면(index.php)은 installation-monitor.js 를 installer.js 보다 먼저 싣는다 — 새로고침 복원 경로는 실패 문구 폴백 사슬을
+ * 모니터 모듈(G7InstallationMonitor.failurePayload)에서 빌려 쓰므로 같은 순서로 평가한다.
+ * 「설정으로 돌아가기」 버튼은 문구가 아니라 연결된 동작(data-action="goToSettingsWithConfirm")으로 찾는다 — 버튼 문구는
+ * 실제 동작(상태를 비우고 처음부터 다시)에 맞춰 「처음부터 다시」(failure_go_back)로 바뀌었고, 이 시험이 잠그는 것은 확인 창 문구다.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 
 const root = path.resolve(__dirname, '../../../..');
+const MONITOR_SOURCE = fs.readFileSync(path.join(root, 'public/install/assets/js/installation-monitor.js'), 'utf8');
 const INSTALLER_SOURCE = fs.readFileSync(path.join(root, 'public/install/assets/js/installer.js'), 'utf8');
 const VIEW_SOURCE = fs.readFileSync(path.join(root, 'public/install/views/5-installation.php'), 'utf8');
 
@@ -36,6 +42,7 @@ const LANG_KEYS = [
     'confirm_back_to_extension_selection',
     'back_to_extension_selection',
     'back_to_settings',
+    'failure_go_back',
     'retry_installation',
     'installation_failed',
     'dependency_precheck_failed',
@@ -49,6 +56,14 @@ function failureButtonsMarkup(lang: Record<string, string>): string {
 }
 
 const DB_NOTICE = '데이터베이스에 생성된 테이블은 자동으로 삭제되지 않습니다';
+
+/** 실패 화면의 「설정으로 돌아가기」(문구 failure_go_back) 버튼 — 연결된 동작 이름으로 찾는다. */
+function settingsButton(): HTMLElement {
+    const button = document.querySelector('#failure-section button[data-action="goToSettingsWithConfirm"]') as HTMLElement | null;
+    expect(button, '실패 화면에 goToSettingsWithConfirm 버튼이 없다').not.toBeNull();
+
+    return button!;
+}
 
 /**
  * 실패 상태로 Step 5 를 띄운다.
@@ -83,6 +98,8 @@ async function bootFailureScreen(state: Record<string, unknown>) {
     w.INSTALLER_TASKS = [];
     w.INSTALLER_TASK_GROUPS = [];
     w.INSTALLER_CSRF = 'tok';
+    // jsdom 에는 scrollIntoView 가 없다 — 실패 화면을 연 뒤 결과로 스크롤하는 호출이 던지지 않게 한다
+    (Element.prototype as any).scrollIntoView = vi.fn();
 
     const calls: string[] = [];
     w.fetch = vi.fn(async (url: string) => {
@@ -105,6 +122,8 @@ async function bootFailureScreen(state: Record<string, unknown>) {
         }
         original(type, cb, opts);
     }) as typeof document.addEventListener);
+    // index.php 의 적재 순서 그대로 — 모니터 모듈(window.G7InstallationMonitor)을 먼저 평가한다
+    new Function(MONITOR_SOURCE)();
     new Function(INSTALLER_SOURCE)();
     spy.mockRestore();
     handlers.forEach((h) => h());
@@ -190,8 +209,7 @@ describe('설치 실패 화면 — 되돌아가기 확인 창', () => {
         ['환경 설정(composer) 실패', { ...precheckFailedState, failed_task: 'composer_install', error_message_key: 'error_composer_install_failed', completed_tasks: ['composer_check'] }],
     ])('DB 작업 전 실패(%s)의 「설정으로 돌아가기」도 DB 정리 안내가 없다', async (_label, state) => {
         await bootFailureScreen(state);
-        const settings = Array.from(document.querySelectorAll('#failure-section button'))
-            .find((b) => b.textContent === koLang('back_to_settings')) as HTMLElement;
+        const settings = settingsButton();
 
         const messages = await clickAndCaptureConfirm(settings, false);
 
@@ -209,8 +227,7 @@ describe('설치 실패 화면 — 되돌아가기 확인 창', () => {
     ])('DB 작업 뒤 실패(%s)의 「설정으로 돌아가기」는 종전대로 DB 정리 안내를 보인다', async (_label, failedTask, key) => {
         await bootFailureScreen({ ...precheckFailedState, failed_task: failedTask, error_message_key: key });
         expect((document.getElementById('back-to-extensions-btn') as HTMLElement).classList.contains('hidden')).toBe(true);
-        const settings = Array.from(document.querySelectorAll('#failure-section button'))
-            .find((b) => b.textContent === koLang('back_to_settings')) as HTMLElement;
+        const settings = settingsButton();
 
         const messages = await clickAndCaptureConfirm(settings, false);
 

@@ -18,7 +18,6 @@
  * @vitest-environment jsdom
  */
 
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Header from '../Header';
@@ -110,7 +109,9 @@ describe('Header(PC) 긴 사이트 이름·사용자 이름', () => {
     );
     const label = screen.getByText(LONG_NAME);
     // truncate(nowrap) 이면 묶음의 최소 폭이 이름 전체(최대 128px)라 이름이 길수록 검색창이 좁아졌다(1024px 426→334 모사 실측)
-    expect(tokens(label)).toEqual(expect.arrayContaining(['sm:line-clamp-1', 'break-all', 'max-w-32', 'min-w-12']));
+    // 640px 이상은 엔진 폭으로 고른 접두 없는 line-clamp-1 (Tailwind 반응형 접두 대신)
+    expect(tokens(label)).toEqual(expect.arrayContaining(['line-clamp-1', 'break-all', 'max-w-32', 'min-w-12']));
+    expect(tokens(label)).not.toContain('hidden');
     expect(tokens(label)).not.toContain('truncate');
     expect(label.getAttribute('title')).toBe(LONG_NAME);
     fireEvent.click(label.closest('button')!);

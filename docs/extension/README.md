@@ -22,6 +22,7 @@
 |--------|---------------|
 | 코어(`app`·`config`·`routes`·`database`·`resources/js/core`)가 확장 식별자·네임스페이스·API 경로·훅 키·소유 테이블·이벤트 이름을 직접 적음 | 코어가 훅·필터·API 를 정의하고, 답하는 확장이 있는지는 그 계약으로 판정 |
 | 확장이 매니페스트 `dependencies` 에 선언하지 않은 다른 확장의 식별자·API 경로·번역 키·클래스를 사용 | 의존하는 확장은 `dependencies` 에 선언한다. 선언 없이 협력할 때는 상대가 내보내는 **훅 키**를 구독·호출한다 |
+| 의존을 선언한 확장이라도 그 확장의 내부 PHP 클래스(Model·Service·Repository)를 import·생성·정적 호출하거나 소유 테이블을 직접 조회·갱신 | 다른 확장은 그 확장이 manifest `public_api` 로 공개한 계약(인터페이스·DTO·Enum·공개 클래스)과 공개 훅·API 만 쓴다. 훅이 넘긴 `readonly_models` 는 타입힌트·속성 읽기만 한다 ([public_api 필드](module-basics.md#public_api-필드-선택)) |
 | 설치·런타임 경로가 `_bundled/`(동봉 원본)를 읽거나 활성본이 없을 때 `_bundled` 로 폴백 | 설치본(활성 디렉토리)과 설치 기록만 읽는다. `_bundled` 는 설치·업데이트 원본과 개발 도구만 읽는다 |
 | 코어가 특정 템플릿 식별자를 골라 기본값·문맥으로 사용 | 템플릿은 설치 기록·활성 상태·템플릿이 선언한 매니페스트로 결정한다 |
 
@@ -60,12 +61,21 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 | [module-layouts.md](module-layouts.md) | 레이아웃 등록, 오버라이드, 상속 |
 | [module-commands.md](module-commands.md) | Artisan 커맨드 (install, activate, uninstall) |
 | [module-i18n.md](module-i18n.md) | 백엔드/프론트엔드 다국어 분리 |
+| [module-schedules.md](module-schedules.md) | 확장 스케줄 선언 `getSchedules()` — 항목 키, `schedules` 표 동기화, 옛 형식 호환 (코어 7.2.0~) |
+| [module-settings.md](module-settings.md) | 모듈 환경설정 — defaults.json, SettingsService, 설정 화면 |
+| [module-assets.md](module-assets.md) | 프론트엔드 에셋(js·css)과 빌드, 핸들러 등록 규칙, 확장 CSS 자기 공급 규약(`assets.css.namespace`) |
+| [extension-components.md](extension-components.md) | 확장 컴포넌트 등록 — `{확장식별자}.{이름}`, 템플릿 전용 판본, 대체 권한은 템플릿 전용 |
+| [storage-driver.md](storage-driver.md) | 파일 저장 `StorageInterface` — 카테고리·경로, 비공개 첨부 저장소, 저장 파일명 확장자, 트랜잭션 파일 보상 |
+| [cache-driver.md](cache-driver.md) | 캐시 `CacheInterface` — 키 접두 격리, TTL 중앙 관리, 쓰기 실패 fail-soft |
+| [module-identity-settings.md](module-identity-settings.md) | 모듈·플러그인 본인인증 정책·목적 선언과 설정 탭, 도메인 액션 가드 |
 
 ### 레이아웃 확장
 
 | 문서 | 설명 |
 |------|------|
 | [layout-extensions.md](layout-extensions.md) | 동적 UI 주입 (Overlay, Extension Point), 템플릿 오버라이드 |
+| [attachment-uploader.md](attachment-uploader.md) | 첨부 업로더 확장점 `attachment_uploader` — 업로더 계약, 업로더 플러그인 규약, 놓인 자리와 제외 대상 |
+| [content-media.md](content-media.md) | 본문 미디어 업로드 계약 — 편집기 본문의 이미지·동영상·오디오를 확장이 자기 저장소·권한·정책으로 받는 계약(`ContentMediaRegistrar`·어댑터 `ContentMediaStore`) |
 
 ### 플러그인 개발
 
@@ -78,6 +88,11 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 | 문서 | 설명 |
 |------|------|
 | [extension-manager.md](extension-manager.md) | Composer 오토로드, 서비스 등록, hidden 필터링 |
+| [extension-update-system.md](extension-update-system.md) | 업데이트 감지·실행·롤백, `_bundled`/`_pending`, GitHub·`--zip` 업데이트 |
+| [upgrade-step-guide.md](upgrade-step-guide.md) | 업그레이드 스텝 작성 — 실행 경로(A·B·C), 로그, 핸드오프 |
+| [vendor-bundle.md](vendor-bundle.md) | Composer 를 쓸 수 없는 환경용 vendor 묶음 — 빌드·검증 명령, VendorMode |
+| [language-packs.md](language-packs.md) | 언어팩 — 보호 행, 설치·활성화 규칙, 업데이트 출처, 패키지 서명 |
+| [package-signing.md](package-signing.md) | 패키지 서명과 무결성 검증 — 서명 파일 형식, 제작자 서명 절차, 운영자 신뢰 키·미서명 정책, 검증 상태·오류 응답 |
 | [extension-icons.md](extension-icons.md) | 확장 아이콘 — 파일 관례·manifest icon 필드·규격·언어팩 합성 |
 
 ### 학습용 샘플
@@ -85,7 +100,8 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 | 문서 | 설명 |
 |------|------|
 | [sample-extensions.md](sample-extensions.md) | 학습용 최소 샘플 확장 4종 (gnuboard7-hello_*) — 계층 1:1 비교 레퍼런스 |
-| [admin-template-contract.md](admin-template-contract.md) | 관리자 템플릿 교체 계약 — 번들 확장 관리자 화면이 기대는 컴포넌트·공용 문구 키·스타일 클래스·조각 앵커 |
+| [admin-template-contract.md](admin-template-contract.md) | 관리자 템플릿 교체 계약 — 번들 확장 관리자 화면이 기대는 컴포넌트·공용 문구 키·조각 앵커, 선택 계약 확장 CSS 덮기 |
+| [user-template-contract.md](user-template-contract.md) | 사용자 템플릿 계약: 가입, 내 정보 화면의 앵커 5종, 회원 항목 확장점, 항목 그리기(공용 조각, 동의 구획, 추가 정보 입력 유도) |
 
 ### 템플릿 시스템
 
@@ -93,15 +109,21 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 |------|------|
 | [template-basics.md](template-basics.md) | Admin/User 템플릿, 메타데이터, 버전 히스토리 |
 | [template-routing.md](template-routing.md) | 라우트 정의, 언어 파일 경로 규칙 |
+| [template-settings.md](template-settings.md) | 템플릿 환경설정(defaults.json·설정 화면)·파비콘 우선순위 |
 | [template-security.md](template-security.md) | API 서빙, 파일 확장자 화이트리스트 |
 | [template-caching.md](template-caching.md) | 캐시 계층, 무효화 전략 |
 | [template-commands.md](template-commands.md) | Artisan 커맨드 (install, activate) |
+| [template-workflow.md](template-workflow.md) | 템플릿 개발 순서 — 필수 파일, 빌드 설정, 검증 순서, 설치 명령 |
+| [template-idv-bootstrap.md](template-idv-bootstrap.md) | 템플릿 본인인증 launcher 등록(`G7Core.identity.setLauncher`)과 모달 파셜 |
+| [editor-spec.md](editor-spec.md) | 레이아웃 편집기 스펙 `editor-spec.json` — 팔레트·스타일 컨트롤·레시피, 편집기 확장점 |
 
 ### 권한 및 메뉴 시스템
 
 | 문서 | 설명 |
 |------|------|
 | [permissions.md](permissions.md) | Role, Permission, 자동 관리 |
+| [display-name.md](display-name.md) | 표시 이름: 종류, 영역, 계산기, 검색과 정렬, 확장 등록 |
+| [field-sets.md](field-sets.md) | 항목 집합과 항목 선언: 집합, 항목, 유형, 핸들러 저장, 동기화, 기존 회원 입력 요구, 본인인증 값 연결 |
 | [menus.md](menus.md) | 메뉴 권한, 시더 |
 
 ### 확장 문서화
@@ -179,6 +201,17 @@ php artisan template:cache-clear             # 템플릿 캐시 정리
 ```bash
 php artisan extension:update-autoload   # Composer 오토로드 업데이트
 ```
+
+### 패키지 서명 (7.2.0)
+
+```bash
+php artisan extension:keygen --label=acme                 # 제작자 서명 키 만들기 (비밀키 파일 0600)
+php artisan extension:sign ./acme-shop --key=<키 파일>     # 결정적 ZIP + .sig.json 만들기 (ZIP 을 주면 서명만)
+php artisan extension:trust-key add <공개키> --label=acme --vendor=acme   # 운영자: 제작자 키 신뢰 등록
+php artisan extension:trust-key list                      # 내장 키·제작자 키 목록
+```
+
+상세: [package-signing.md](package-signing.md)
 
 ---
 

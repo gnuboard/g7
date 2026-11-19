@@ -1,0 +1,20 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험 주석(@scenario)에서 모은 입력 변종이고, 회귀 가드는 effects 다 — 모든 effect 가 test_files 의 @effects 로 귀속된다(#798 A1).
+
+feature: "최고관리자 지정 주입 차단 (#798 K15 · P9)"
+
+description: |
+  최고관리자 지정 주입 차단 (#798 K15 · P9)
+  확장이 회원 생성·수정 데이터 필터로 `is_super` 를 바꿔 넣어도 저장되지 않고 경고가 남는다. 필터 전 값(관리자가 요청한 값)은 그대로다.
+
+axes:
+  surface: [create, update]
+  injection: [filter, none]
+
+effects:
+  - create_injection_reverted
+  - injection_warned
+  - update_injection_reverted
+  - requested_is_super_kept
+
+test_files:
+  - tests/Feature/User/IsSuperInjectionGuardTest.php

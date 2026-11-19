@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { flushSync } from 'react-dom';
 import { render, fireEvent, screen } from '@testing-library/react';
 import { Modal } from '../Modal';
@@ -96,37 +96,40 @@ describe('[case:components-misc-modal-escape-closes-open-popup-and-modal] sirsof
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  /**
-   * 입력칸에 초점이 있는 팝업은 Esc 를 자기 요소에서 먼저 받아 목록을 닫는다 — 창이 bubble 단계에서 보면
-   * `aria-expanded` 가 이미 false 라 창까지 닫혔다(admin_basic 역할 일괄 변경 창 E2E 실측, 대칭 결함).
-   *
-   * @scenario popup=focused_input_closes_itself
-   * @effects escape_closes_popup_before_modal
-   */
-  it('팝업 입력칸이 Esc 를 먼저 받아 스스로 닫혀도 그 Esc 한 번에 창은 닫히지 않는다', () => {
-    const onClose = vi.fn();
-    render(
-      <Modal isOpen onClose={onClose} title="배송지 검색">
-        <input
-          role="combobox"
-          aria-haspopup="true"
-          aria-expanded="true"
-          aria-label="검색"
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') e.currentTarget.setAttribute('aria-expanded', 'false');
-          }}
-        />
-      </Modal>,
-    );
+  // 같은 증상의 후속 결함(창이 bubble 단계에서 판정) — 사례 8 이 따로 잠근다 (#869 N3, 종전에는 사례 2 와 같은 앵커)
+  describe('[case:components-misc-modal-escape-capture-before-focused-popup] 입력칸 팝업이 먼저 닫혀도 창은 capture 단계에서 판정한다', () => {
+    /**
+     * 입력칸에 초점이 있는 팝업은 Esc 를 자기 요소에서 먼저 받아 목록을 닫는다 — 창이 bubble 단계에서 보면
+     * `aria-expanded` 가 이미 false 라 창까지 닫혔다(admin_basic 역할 일괄 변경 창 E2E 실측, 대칭 결함).
+     *
+     * @scenario popup=focused_input_closes_itself
+     * @effects escape_closes_popup_before_modal
+     */
+    it('팝업 입력칸이 Esc 를 먼저 받아 스스로 닫혀도 그 Esc 한 번에 창은 닫히지 않는다', () => {
+      const onClose = vi.fn();
+      render(
+        <Modal isOpen onClose={onClose} title="배송지 검색">
+          <input
+            role="combobox"
+            aria-haspopup="true"
+            aria-expanded="true"
+            aria-label="검색"
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') e.currentTarget.setAttribute('aria-expanded', 'false');
+            }}
+          />
+        </Modal>,
+      );
 
-    const input = screen.getByRole('combobox', { name: '검색' });
-    fireEvent.keyDown(input, { key: 'Escape' });
+      const input = screen.getByRole('combobox', { name: '검색' });
+      fireEvent.keyDown(input, { key: 'Escape' });
 
-    expect(input.getAttribute('aria-expanded')).toBe('false');
-    expect(onClose).not.toHaveBeenCalled();
+      expect(input.getAttribute('aria-expanded')).toBe('false');
+      expect(onClose).not.toHaveBeenCalled();
 
-    fireEvent.keyDown(input, { key: 'Escape' });
-    expect(onClose).toHaveBeenCalledTimes(1);
+      fireEvent.keyDown(input, { key: 'Escape' });
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
   });
 
   /**

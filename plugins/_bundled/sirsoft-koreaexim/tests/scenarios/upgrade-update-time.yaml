@@ -1,0 +1,18 @@
+feature: koreaexim_upgrade_update_time_to_schedule
+description: |
+  1.0.1 업그레이드 스텝이 1.0.0 의 갱신 시각 설정(update_time, 한국시간 HH:mm)을 스케줄 관리의 정기 갱신 행으로
+  옮기고 옛 키를 지운다. 기본값(11:30)·형식 오류는 행을 그대로 두고, 운영자가 이미 행의 cron 을 바꿨으면 존중한다.
+  행이 없으면 키를 남겨 재실행으로 옮길 수 있게 한다. 다른 설정 키는 보존하고, 재실행은 아무것도 바꾸지 않는다.
+coverage_strategy: full
+axes:
+  stored_update_time: [absent, default, custom, invalid]
+  schedule_row: [present, operator_overridden, missing]
+effects:
+  - upgrade_moves_custom_time_to_schedule_row
+  - upgrade_keeps_operator_schedule
+  - upgrade_removes_legacy_key
+  - upgrade_keeps_key_when_row_missing
+  - upgrade_is_idempotent
+  - upgrade_skips_missing_or_broken_settings_file
+test_files:
+  - plugins/_bundled/sirsoft-koreaexim/tests/Unit/Upgrades/MoveUpdateTimeToScheduleTest.php

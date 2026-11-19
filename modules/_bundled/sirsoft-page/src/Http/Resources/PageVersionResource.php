@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Page\Http\Resources;
 
+use App\DisplayName\DisplayNameAreaRegistry;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Page\Services\PageContentMediaService;
@@ -34,9 +35,10 @@ class PageVersionResource extends BaseApiResource
             'content_mode' => $this->content_mode ?? 'html',
             'seo_meta' => $this->seo_meta,
             'changes_summary' => $this->changes_summary,
+            // 작성자 이름은 관리자 영역(`core:admin`) 표시 이름이고, 실명은 회원 조회 권한이 있을 때만 `real_name` 으로 더해진다.
             'creator' => $this->whenLoaded('creator', fn () => [
                 'uuid' => $this->creator->uuid,
-                'name' => $this->creator->name,
+                ...$this->memberNameFields($this->creator, $request, DisplayNameAreaRegistry::AREA_ADMIN),
             ]),
             'created_at' => $this->created_at
                 ? $this->formatDateTimeStringForUser($this->created_at)

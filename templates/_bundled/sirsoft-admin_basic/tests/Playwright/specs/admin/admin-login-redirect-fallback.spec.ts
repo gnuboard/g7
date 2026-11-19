@@ -91,7 +91,8 @@ test.describe('@sirsoft-admin_basic 관리자 로그인 복귀 주소 (#757 추�
     // @scenario redirect=rejected
     // @effects rejected_admin_login_redirect_lands_on_admin_home
     test(`거부되는 복귀 주소(${label})는 관리자 첫 화면 /admin 으로 내린다`, async ({ browser }) => {
-      expect(await loginWith(browser, value)).toBe('/admin');
+      // 첫 화면은 볼 수 있는 화면으로 곧바로 넘긴다(전체 권한 관리자 → 대시보드). 읽는 시점에 따라 둘 중 하나다 — 로그인 화면·사이트 첫 화면이 아니면 된다.
+      expect(['/admin', '/admin/dashboard']).toContain(await loginWith(browser, value));
     });
   }
 

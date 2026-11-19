@@ -21,6 +21,11 @@ class PageSitemapIndexTest extends ModuleTestCase
 {
     private SeoPageCacheListener $listener;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -32,14 +37,28 @@ class PageSitemapIndexTest extends ModuleTestCase
         $this->listener = new SeoPageCacheListener;
     }
 
+    /**
+     * 테스트가 바꾼 상태를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**
      * 발행된 페이지 생성/수정 시 색인(append)된다.
+     *
+     * @scenario trigger=listener, regen_mode=incremental
+     *
+     * @effects incremental_append_on_publish
+     *
+     * @return void 반환값 없음
      */
     public function test_published_page_is_indexed(): void
     {
@@ -55,6 +74,12 @@ class PageSitemapIndexTest extends ModuleTestCase
 
     /**
      * 미발행 페이지는 색인되지 않고, 발행→미발행 전환 시 색인이 제거된다.
+     *
+     * @scenario trigger=listener, regen_mode=incremental
+     *
+     * @effects incremental_remove_on_unpublish
+     *
+     * @return void 반환값 없음
      */
     public function test_unpublished_page_removes_index(): void
     {
@@ -67,6 +92,12 @@ class PageSitemapIndexTest extends ModuleTestCase
 
     /**
      * 페이지 삭제 시 색인이 제거된다.
+     *
+     * @scenario trigger=listener, regen_mode=incremental
+     *
+     * @effects incremental_remove_on_delete
+     *
+     * @return void 반환값 없음
      */
     public function test_page_delete_removes_index(): void
     {

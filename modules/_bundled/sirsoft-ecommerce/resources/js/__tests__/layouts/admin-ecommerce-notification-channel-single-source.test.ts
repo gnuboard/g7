@@ -23,7 +23,8 @@
  * 그래서 아래 두 단언은 소비와 전송을 **함께** 묶는다: templates 를 읽는 화면이면
  * 그 채널을 서버에 넘겨야 한다.
  *
- * @scenario resource=ecommerce_notification_definition,endpoint=admin_settings,observation=consumer_screen
+ * 대상(마커 아님 — 평문): ecommerce_notification_definition · admin_settings · consumer_screen.
+ * @scenario channel=mail
  * @effects ecommerce_notification_channel_reads_single_source, ecommerce_notification_list_requests_template_channel, ecommerce_notification_reset_button_uses_server_aggregate
  */
 

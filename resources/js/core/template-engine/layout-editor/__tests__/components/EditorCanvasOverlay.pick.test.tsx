@@ -21,7 +21,7 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, act, waitFor, fireEvent } from '@testing-library/react';
 import { EditorCanvasOverlay } from '../../components/EditorCanvasOverlay';
 import {
@@ -48,6 +48,11 @@ function buildDocCtx(initialComponents: EditorNode[]): UseLayoutDocumentResult {
     error: null,
     isDirty: false,
     saveSuccessCounter: 0,
+    patchDocumentRaw: () => {},
+    dirtyKeys: new Set<string>(),
+    dirtyLayoutNames: new Set<string>(),
+    invalidateCurrentCache: () => {},
+    reloadCounter: 0,
     reload: async () => {},
     patchLayout: (patcher) => {
       const current = (document.raw.components as EditorNode[]) ?? [];
@@ -169,6 +174,10 @@ describe('EditorCanvasOverlay — 컴포넌트 영역 pick 캔버스 수신부 (
     window.document.body.innerHTML = '';
   });
 
+  /**
+   * @scenario subject=editor_canvas_overlay_pick
+   * @effects overlay_pick_request_renders_banner
+   */
   it('① pick-request 수신 → pick 배너 렌더', async () => {
     const h = mountWithFrame([{ name: 'Form', props: { id: 'main-form' } }]);
     await waitFor(() => expect((window as any).__g7LayoutEditorHistory).toBeTruthy());
@@ -179,6 +188,10 @@ describe('EditorCanvasOverlay — 컴포넌트 영역 pick 캔버스 수신부 (
     h.unmount();
   });
 
+  /**
+   * @scenario subject=editor_canvas_overlay_pick
+   * @effects overlay_pick_id_node_replies_picked_and_exits
+   */
   it('② id 보유 노드 클릭 → 그 id 를 picked 회신 + 배너 사라짐(모드 종료)', async () => {
     const h = mountWithFrame([{ name: 'Form', props: { id: 'main-form' } }]);
     await waitFor(() => expect((window as any).__g7LayoutEditorHistory).toBeTruthy());
@@ -198,6 +211,10 @@ describe('EditorCanvasOverlay — 컴포넌트 영역 pick 캔버스 수신부 (
     h.unmount();
   });
 
+  /**
+   * @scenario subject=editor_canvas_overlay_pick
+   * @effects overlay_pick_node_without_id_keeps_mode
+   */
   it('③ id 미부여 노드 클릭 → 회신 없음(모드 유지, 배너 잔존)', async () => {
     const h = mountWithFrame([{ name: 'Div' }]); // id 없음(props.id/id 둘 다 부재)
     await waitFor(() => expect((window as any).__g7LayoutEditorHistory).toBeTruthy());
@@ -213,6 +230,10 @@ describe('EditorCanvasOverlay — 컴포넌트 영역 pick 캔버스 수신부 (
     h.unmount();
   });
 
+  /**
+   * @scenario subject=editor_canvas_overlay_pick
+   * @effects overlay_pick_auto_id_node_not_selectable
+   */
   it('③-b 자동 부여 id(auto_*) 노드 클릭 → 회신 없음(직접 부여 id 만 선택 가능)', async () => {
     // 편집기/렌더러가 자동 부여한 auto_ id 는 "유저 직접 부여"가 아니므로 선택 대상에서 제외.
     const h = mountWithFrame([{ name: 'Span', props: { id: 'auto_Span_ab12cd' } }]);
@@ -228,6 +249,10 @@ describe('EditorCanvasOverlay — 컴포넌트 영역 pick 캔버스 수신부 (
     h.unmount();
   });
 
+  /**
+   * @scenario subject=editor_canvas_overlay_pick
+   * @effects overlay_pick_escape_replies_cancelled
+   */
   it('④ Esc → cancelled 회신 + 모드 종료', async () => {
     const h = mountWithFrame([{ name: 'Form', props: { id: 'main-form' } }]);
     await waitFor(() => expect((window as any).__g7LayoutEditorHistory).toBeTruthy());
@@ -245,6 +270,10 @@ describe('EditorCanvasOverlay — 컴포넌트 영역 pick 캔버스 수신부 (
     h.unmount();
   });
 
+  /**
+   * @scenario subject=editor_canvas_overlay_pick
+   * @effects overlay_pick_cancel_button_replies_cancelled
+   */
   it('⑤ 취소 배너 버튼 → cancelled 회신 + 모드 종료', async () => {
     const h = mountWithFrame([{ name: 'Form', props: { id: 'main-form' } }]);
     await waitFor(() => expect((window as any).__g7LayoutEditorHistory).toBeTruthy());
@@ -262,6 +291,10 @@ describe('EditorCanvasOverlay — 컴포넌트 영역 pick 캔버스 수신부 (
     h.unmount();
   });
 
+  /**
+   * @scenario subject=editor_canvas_overlay_pick
+   * @effects overlay_pick_legacy_node_id_fallback
+   */
   it('⑥ node.id(레거시 위치)에서도 id 추출 — props.id 부재 시 폴백', async () => {
     const h = mountWithFrame([{ name: 'Form', id: 'legacy-id' } as never]);
     await waitFor(() => expect((window as any).__g7LayoutEditorHistory).toBeTruthy());
@@ -278,6 +311,10 @@ describe('EditorCanvasOverlay — 컴포넌트 영역 pick 캔버스 수신부 (
   // pick 모드에서는 일반 선택 어포던스(ⓘ/리사이즈/＋요소추가/↑타입칩/선택 실선)를 숨기고,
   // pick 전용 hover(id 보유=강조, id 없음=불가 안내)만 둔다.
 
+  /**
+   * @scenario subject=editor_canvas_overlay_pick
+   * @effects overlay_pick_mode_hides_select_affordances
+   */
   it('⑦ pick 모드 중에는 일반 선택 어포던스(ⓘ·＋요소추가)가 DOM 에 없다(영역 선택 전용)', async () => {
     // ElementOverlay/InsertionAffordances 를 pick 모드면 `!pickRequestId` 가드로 통째 미렌더.
     // jsdom 에선 일반 모드에서도 selectedBox 측정(rect=0)이 안 돼 어포던스가 안 뜨므로, 본 단위는
@@ -294,6 +331,10 @@ describe('EditorCanvasOverlay — 컴포넌트 영역 pick 캔버스 수신부 (
     h.unmount();
   });
 
+  /**
+   * @scenario subject=editor_canvas_overlay_pick
+   * @effects overlay_pick_end_restores_insertion_affordances
+   */
   it('⑧ pick 종료(취소) 후 일반 선택 어포던스 컨테이너(InsertionAffordances)가 복귀한다', async () => {
     // pick 모드 가드(`!pickRequestId`)가 모드 종료 시 풀려 일반 편집 UI 가 돌아오는지(영구 숨김
     // 아님) 확인. InsertionAffordances 는 points 가 있을 때만 렌더되나, pick 모드 동안 강제

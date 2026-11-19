@@ -6,6 +6,7 @@ use App\Enums\SitemapGenerationMode;
 use App\Extension\HookManager;
 use App\Seo\SitemapManager;
 use App\Seo\SitemapProgress;
+use App\Support\RuntimeRole;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -118,6 +119,12 @@ class GenerateSitemapJob implements ShouldBeUnique, ShouldQueue
      */
     public function handle(SitemapManager $manager): void
     {
+        if (RuntimeRole::isStage()) {
+            Log::info('[SEO] Sitemap generation skipped (stage runtime role)');
+
+            return;
+        }
+
         $result = $manager->regenerate($this->mode, $this->triggeredBy);
 
         if (($result['status'] ?? null) === 'disabled') {

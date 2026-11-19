@@ -1,3 +1,4 @@
+// e2e:allow #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
 /**
  * 클레임(교환/반품/취소·환불) 신청서 작성 핸들러 (회원 · 비회원 공용)
  *
@@ -22,7 +23,9 @@
 import type { ActionContext } from '../types';
 import { formatAmountInCurrency } from './calculateCurrencyPrices';
 import { claimRequestConfig, uploadPendingClaimFiles } from './claimImageHandlers';
+import { routePath } from '../apiUrl';
 import { guestClaimAuthRequiredMessage, isGuestOrderAuthFailure } from '../utils/guestOrderAuth';
+import { claimPgDispatchAction, claimPgDispatchFailureMessage } from '../utils/claimPgDispatch';
 
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:ClaimApply')) ?? {
     log: (...args: unknown[]) => console.log('[Ecom:ClaimApply]', ...args),
@@ -200,7 +203,8 @@ export function resolveClaimApplyRoute(): { claimType: string; preselected: stri
         return { claimType: '', preselected: '' };
     }
 
-    const segments = String(window.location.pathname || '').split('/').filter(Boolean);
+    // 화면 경로는 앱 기준(마운트 접두사를 벗긴 값)으로 읽는다 — 하위 폴더 배치의 접두사 구간이 경로 조각에 섞이지 않게.
+    const segments = String(routePath(window.location.pathname || '')).split('/').filter(Boolean);
     const applyIndex = segments.lastIndexOf('apply');
     const claimType = applyIndex >= 0 ? (segments[applyIndex + 1] ?? '') : '';
 
@@ -263,6 +267,7 @@ function readEngineRouteGeneration(): number | null {
  */
 export function captureRouteGeneration(): RouteGenerationToken {
     const href = typeof window !== 'undefined' && window.location
+        // base-path:allow 표식은 같은 화면의 브라우저 주소끼리 대조한다(뒤에 읽는 값도 location 그대로) — 벗기지 않는다.
         ? String(window.location.pathname ?? '') + String(window.location.search ?? '')
         : '';
 
@@ -298,7 +303,8 @@ export function isSameRouteGeneration(token: RouteGenerationToken): boolean {
 export function resolveClaimEditNumber(): string {
     if (typeof window === 'undefined' || !window.location) return '';
 
-    const segments = String(window.location.pathname || '').split('/').filter(Boolean);
+    // 화면 경로는 앱 기준(마운트 접두사를 벗긴 값)으로 읽는다.
+    const segments = String(routePath(window.location.pathname || '')).split('/').filter(Boolean);
     const editIndex = segments.lastIndexOf('edit');
 
     if (editIndex < 1) return '';
@@ -2234,10 +2240,29 @@ export async function submitClaimHandler(
         const data = response.data ?? {};
 
         if (data.requires_pg_payment && data.pg_payment_handler) {
-            await G7Core.dispatch?.({
-                handler: data.pg_payment_handler,
-                params: { pgPaymentData: data.pg_payment_data },
-            });
+            const pgResult = await G7Core.dispatch?.(
+                claimPgDispatchAction(data.pg_payment_handler, data.pg_payment_data)
+            );
+
+            // 신청은 이미 접수됐다. 결제 플러그인이 결제창을 열기 전에 실패하면 그 문구를 알리고 신청서 상세로 보낸다 —
+            // 결제 건은 결제 대기라 상세의 [결제하기]로 다시 낼 수 있다. 머물면 작성 화면이 다시 접수를 받는다(#855).
+            const pgFailure = claimPgDispatchFailureMessage(
+                pgResult,
+                t('sirsoft-ecommerce.user.claim.pay.failed', '결제를 시작하지 못했습니다.')
+            );
+
+            if (pgFailure !== null) {
+                G7Core.toast?.error?.(pgFailure);
+
+                const failurePath = resolveClaimSuccessPath(action.params?.successPath, data, action.params?.detailPathBase);
+
+                if (failurePath) {
+                    await G7Core.dispatch?.({
+                        handler: 'navigate',
+                        params: { path: failurePath },
+                    });
+                }
+            }
 
             return;
         }
@@ -2453,10 +2478,26 @@ export async function saveClaimEditHandler(
         const data = response.data ?? {};
 
         if (data.requires_pg_payment && data.pg_payment_handler) {
-            await G7Core.dispatch?.({
-                handler: data.pg_payment_handler,
-                params: { pgPaymentData: data.pg_payment_data },
-            });
+            const pgResult = await G7Core.dispatch?.(
+                claimPgDispatchAction(data.pg_payment_handler, data.pg_payment_data)
+            );
+
+            // 수정은 이미 저장됐다. 차액 결제창을 열기 전에 실패하면 문구를 알리고 신청서 상세로 보낸다(#855).
+            const pgFailure = claimPgDispatchFailureMessage(
+                pgResult,
+                t('sirsoft-ecommerce.user.claim.pay.failed', '결제를 시작하지 못했습니다.')
+            );
+
+            if (pgFailure !== null) {
+                G7Core.toast?.error?.(pgFailure);
+
+                if (action.params?.successPath) {
+                    await G7Core.dispatch?.({
+                        handler: 'navigate',
+                        params: { path: action.params.successPath },
+                    });
+                }
+            }
 
             return;
         }

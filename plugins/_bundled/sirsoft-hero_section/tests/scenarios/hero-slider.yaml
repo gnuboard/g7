@@ -1,0 +1,105 @@
+feature: HeroSlider 사용자 슬라이더 컴포넌트
+
+description: |
+  플러그인 소유 컴포넌트 `sirsoft-hero_section.HeroSlider` 의 렌더·동작 계약(Vitest, jsdom).
+  배너 0개면 아무것도 그리지 않고, 1개면 컨트롤·자동 재생이 없다. PC/모바일 이미지는 기기 판정(아래)으로 주 이미지 하나를 고르고(창 폭 source 를 두지 않는다),
+  버튼 문구가 있으면 버튼만, 없으면 슬라이드 전체가 링크다(새 창이면 rel="noopener noreferrer"). 전체 링크는 슬라이드를 덮는 빈 링크이고
+  문구는 그 위 형제라 문구를 눌러도 링크로 간다.
+  첫 슬라이드 이미지는 즉시, 나머지는 지연 로딩하고, width·height·aspect-ratio 로 화면 밀림을 막는다. 자동 재생은 마우스·포커스·일시정지 단추·
+  reduced-motion 에서 멈춘다. 관리자 미리보기(HeroBannerPreview)는 같은 렌더 함수를 쓴다.
+  넘김은 Swiper(무한 반복·손가락 넘기기·PC 마우스 끌기, 효과 slide·fade·cube·flip·coverflow·creative·none)가 맡고, 좌우 화살표·점 표시는 Swiper 기본 모양의 이름 붙은 단추다 — 단위 시험은 Swiper 대역으로 옵션·호출·장 번호 동기만 보고,
+  실제 넘김·자동 재생·쓸기는 e2e-flows.yaml 의 slider_* 흐름이 실브라우저에서 본다. 자동으로 넘어가는 동안 장 번호는 읽지 않는다.
+  장 번호(「3개 중 1번째」)와 캐러셀·슬라이드 역할 이름은 사이트 언어로 슬라이드 이름에만 두고, 방문자가 넘긴 때만 알림 칸에 3초 채운다.
+  제목은 한 번만 읽힌다(전체 링크면 링크 이름, 제목과 같은 대체 문구의 이미지는 장식). 점 표시는 10px 로 보이되 누를 자리는 24px(slider-a11y.spec.ts).
+  기기 모양(영역 비율·이미지와 영상 초점·문구 자리·탭 모양·화살표 숨김)은 CSS 화면 폭 미디어가 아니라 루트 클래스(hs-slider--mobile 0~767px,
+  hs-slider--portable 0~1023px)로 고른다. 판정은 미리보기 기기 고정(forceDevice) → 엔진 반응형 폭(G7Core.useResponsive) → 창 폭 순이고, 주 이미지와 영상 파일도 같은 판정을 쓴다.
+
+axes:
+  surface:
+    - admin_edit_link_for_editors
+    - renders_nothing_when_empty
+    - single_banner_hides_controls
+    - loop_and_touch_swipe_enabled
+    - main_image_device_from_engine_width
+    - picture_omits_mobile_source_when_missing
+    - text_visibility_color_align
+    - button_text_makes_button_link
+    - empty_button_makes_whole_slide_link
+    - new_window_sets_rel_noopener_noreferrer
+    - link_href_carries_site_mount_prefix
+    - autoplay_advances_by_interval
+    - autoplay_pauses_on_hover_and_focus
+    - pointer_click_does_not_hold_autoplay
+    - pause_button_toggles_autoplay
+    - reduced_motion_disables_autoplay
+    - effect_fade_and_none
+    - prev_next_buttons_and_keyboard
+    - carousel_aria_roles_and_counter
+    - counter_not_announced_while_autoplaying
+    - counter_announced_only_on_visitor_change
+    - title_read_once
+    - pagination_bullet_target_24px
+    - carousel_labels_follow_locale
+    - motion_does_not_make_text_scroll
+    - preview_static_without_swiper
+    - swiper_styles_vendor_asset
+    - index_resets_when_banners_change
+    - first_image_eager_rest_lazy
+    - next_slide_preloaded_before_transition
+    - hidden_slides_load_only_current_and_next
+    - images_have_dimensions_and_aspect_ratio
+    - aspect_ratio_falls_back_to_recommended
+    - preview_renders_device_frame
+    - preview_banners_text_coerced_to_string
+    - preview_recovers_after_render_error
+    - swiper_pagination_and_arrows
+    - swiper_extra_effects
+    - loading_skeleton_until_response
+    - loading_skeleton_remembers_slot
+    - device_class_from_engine_width
+    - device_class_force_device_first
+    - device_class_window_fallback
+    - video_device_from_engine_width
+    - device_breakpoints_match_engine_presets
+    - css_width_media_free
+    - loading_skeleton_skipped_without_banners
+
+effects:
+  - user_screen_reflects_admin_change
+  - test_data_cleaned_up
+  - accessible_carousel_semantics
+  - responsive_image_switch
+  - preview_survives_multilingual_fields
+  - device_layout_follows_engine_width
+  - slider_controls_follow_banner_count   # 배너 0장은 아무것도 그리지 않고, 1장은 화살표·점·자동 넘김·무한 반복을 끄고, 2장 이상만 켠다. 배너 목록이 바뀌면 첫 장으로 돌아간다
+  - banner_text_follows_display_settings   # 문구 표시 여부·색·정렬 설정이 그대로 그려진다
+  - banner_link_follows_link_settings   # 버튼 문구가 있으면 버튼만, 없으면 슬라이드 전체가 링크다. 새 창은 rel=noopener noreferrer, 사이트 안 주소는 마운트 접두사를 붙인다
+  - autoplay_follows_interval_and_visitor   # 자동 넘김은 설정 간격을 따르고 마우스·포커스·일시정지 단추·움직임 줄이기에 멈추며, 포인터 클릭은 넘김을 붙잡지 않는다
+  - transition_effect_follows_setting   # 전환 효과 설정이 Swiper effect·speed 로 옮겨지고 모르는 값은 slide 다
+  - slider_navigation_controls_operable   # 이전·다음 단추, 좌우 화살표 키, 점 단추로 장을 넘긴다
+  - preview_slider_moves_without_swiper   # iframe 미리보기에서는 Swiper 없이 화살표·점이 장을 옮긴다
+  - slide_images_load_by_priority   # 첫 장 이미지는 즉시·높은 우선순위, 다음 장은 전환 전에 미리, 나머지는 지연으로 받는다
+  - hidden_slide_media_deferred   # 전환 효과와 상관없이 지금 장·다음 장(과 한 번 받은 장)만 이미지·영상 주소를 붙이고, 점·이전으로 먼 장에 가면 그 장을 바로 붙인다. 편집 미리보기는 전부 붙인다
+  - loading_skeleton_reserves_slot   # 받는 중에는 같은 비율의 스켈레톤으로 자리를 잡고, 직전 방문의 모양(0건·화면 전체)과 표시 폭 힌트를 따른다
+  - admin_edit_link_shown_only_to_editors   # 수정 권한이 있을 때만(편집 미리보기 제외) 지금 보이는 배너의 관리자 수정 화면 링크를 새 탭으로 그린다
+  - slider_renders_without_asset_api   # 코어 자산 API 가 없으면 Swiper CSS 를 싣지 않고 바로 슬라이더를 그린다
+  - swiper_css_loaded_once_behind_skeleton   # 동봉 Swiper CSS 를 한 번만 싣고, 실릴 때까지 같은 폭의 스켈레톤을 둔 뒤 실린 link 를 옮기지 않고 슬라이더를 그린다
+  - swiper_css_failure_notified_with_retry   # Swiper CSS 를 끝내 못 실으면 다시 시도가 걸린 실패 알림을 내고 슬라이더는 그대로 그린다
+  - swiper_css_copied_once_into_preview   # 미리보기 iframe 에는 실린 Swiper CSS 를 한 번만 복사한다
+  - vendored_swiper_matches_package_version   # dist/vendor 에 동봉한 Swiper 판·CSS·라이선스가 package.json 의 swiper 판과 같다
+  - extension_css_free_of_swiper_classes   # 확장 CSS 와 컴포넌트는 Swiper 클래스를 걸지 않고 화살표·점을 자기 클래스로 그린다
+  - pagination_bullets_have_24px_touch_target   # 점 표시는 10px 로 보이되 누를 자리는 24px 이고 이웃 점과 겹치지 않는다
+  - carousel_labels_follow_site_locale   # 사이트 언어를 바꾸면 캐러셀·슬라이드 역할 이름과 장 번호도 그 언어로 읽는다
+  - motion_keeps_text_scroll_off   # 등장 효과가 재생되는 동안에도 문구 영역 스크롤이 켜지지 않고, 정말 긴 문구만 스크롤된다
+
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSlider.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroBannerPreview.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSwiperStyles.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSliderDeviceWidth.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/swiper-ui.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/admin-edit-link.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/loading-skeleton.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/slider-a11y.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/text-motion-scroll.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/hero-image-single-fetch.spec.ts

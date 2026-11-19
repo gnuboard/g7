@@ -14,6 +14,7 @@ import { renderItemChildren } from '../RenderHelpers';
 import { responsiveManager } from '../../ResponsiveManager';
 import { DataBindingEngine } from '../../DataBindingEngine';
 import { TranslationEngine } from '../../TranslationEngine';
+import type { ComponentDefinition } from '../../DynamicRenderer';
 
 /** 싱글톤(호스트) dispatcher 대역 — 셀이 여기에 묶이면 안 된다 */
 const singletonDispatcher = vi.hoisted(() => ({
@@ -39,7 +40,7 @@ const Box: React.FC<{ className?: string; onClick?: any; children?: React.ReactN
 const componentMap = { Box };
 
 /** 데스크톱 base · portable 오버라이드를 가진 셀 정의 */
-const responsiveCell = (testId = 'cell') => ({
+const responsiveCell = (testId = 'cell'): ComponentDefinition => ({
   id: testId,
   type: 'basic',
   name: 'Box',
@@ -77,7 +78,7 @@ describe('renderItemChildren — 렌더 환경(폭)', () => {
    * @effects preview_cell_render_follows_preview_width
    */
   it('T-R1 iteration 자식: 각 항목이 portable', () => {
-    const def = {
+    const def: ComponentDefinition = {
       id: 'it',
       type: 'basic',
       name: 'Box',
@@ -98,7 +99,7 @@ describe('renderItemChildren — 렌더 환경(폭)', () => {
    * @effects preview_cell_render_follows_preview_width
    */
   it('T-R1 중첩 재귀 자식도 같은 폭을 쓴다', () => {
-    const def = {
+    const def: ComponentDefinition = {
       id: 'outer',
       type: 'basic',
       name: 'Box',
@@ -153,7 +154,7 @@ describe('renderItemChildren — 렌더 환경(폭)', () => {
    * @effects preview_cell_render_follows_preview_width
    */
   it('T-R4 커스텀 범위 키 0-599: env 500 적용, 700 미적용', () => {
-    const def = {
+    const def: ComponentDefinition = {
       id: 'c',
       type: 'basic',
       name: 'Box',
@@ -186,7 +187,7 @@ describe('renderItemChildren — 렌더 환경(번역·액션·상태)', () => {
 
   afterEach(() => cleanup());
 
-  const deferCell = { id: 'tx', type: 'basic', name: 'Box', props: { 'data-testid': 'tx' }, text: '$t:defer:shop.fee' };
+  const deferCell: ComponentDefinition = { id: 'tx', type: 'basic', name: 'Box', props: { 'data-testid': 'tx' }, text: '$t:defer:shop.fee' };
 
   /**
    * @scenario content_locale=en, host_locale=ko, render_path=cell_defer
@@ -215,7 +216,7 @@ describe('renderItemChildren — 렌더 환경(번역·액션·상태)', () => {
     expect(screen.getByTestId('tx').textContent).toBe('배송비');
   });
 
-  const actionCell = {
+  const actionCell: ComponentDefinition = {
     id: 'btn',
     type: 'basic',
     name: 'Box',
@@ -255,7 +256,7 @@ describe('renderItemChildren — 렌더 환경(번역·액션·상태)', () => {
     const singleton = singletonDispatcher;
     singleton.bindActionsToProps.mockClear();
 
-    const nested = { id: 'wrap', type: 'basic', name: 'Box', children: [actionCell] };
+    const nested: ComponentDefinition = { id: 'wrap', type: 'basic', name: 'Box', children: [actionCell] };
     const nodes = renderItemChildren([nested], { row: {} }, componentMap, 'k', {
       renderEnv: { actionDispatcher: envDispatcher, isEditMode: true },
     });
@@ -278,7 +279,7 @@ describe('renderItemChildren — 렌더 환경(번역·액션·상태)', () => {
     const envDispatcher = makeDispatcher();
     const componentContext = { state: {}, setState: vi.fn() };
     const getRemountKey = vi.fn((id: string | undefined, fallback: string) => id ?? fallback);
-    const nested = { id: 'wrap', type: 'basic', name: 'Box', children: [{ ...actionCell, id: 'toggle_{{row.id}}' }] };
+    const nested: ComponentDefinition = { id: 'wrap', type: 'basic', name: 'Box', children: [{ ...actionCell, id: 'toggle_{{row.id}}' }] };
 
     const nodes = renderItemChildren([nested], { row: { id: 7 } }, componentMap, 'k', {
       renderEnv: { actionDispatcher: envDispatcher },
@@ -296,7 +297,7 @@ describe('renderItemChildren — 렌더 환경(번역·액션·상태)', () => {
    * @effects preview_render_env_does_not_merge_state
    */
   it('T-R7 renderEnv 만 주면 _local 이 바뀌지 않는다 (상태 병합은 componentContext 전용)', () => {
-    const probe = {
+    const probe: ComponentDefinition = {
       id: 'p',
       type: 'basic',
       name: 'Box',

@@ -15,26 +15,37 @@ use App\Http\Requests\Settings\SaveSettingsRequest;
 use App\Http\Requests\Settings\TestDriverConnectionRequest;
 use App\Http\Requests\Settings\TestMailRequest;
 use App\Http\Requests\Settings\TestOutboundProxyRequest;
+use App\Http\Requests\Settings\TestTrustedProxyRequest;
 use App\Http\Requests\Settings\UpdateSettingRequest;
 use App\Http\Resources\SettingsResource;
+use App\Http\Responses\DelegatedFileResponse;
 use App\Privacy\DormantAccountService;
 use App\Privacy\PrivacyRetentionManager;
 use App\Services\DriverConnectionTester;
 use App\Services\DriverRegistryService;
 use App\Services\ExtensionStaticCacheService;
+use App\Services\FaviconService;
 use App\Services\OutboundProxyTester;
 use App\Services\PasswordExpiryService;
 use App\Services\Queue\QueueWorkerRegistry;
 use App\Services\SearchHistoryService;
 use App\Services\SettingsService;
+use App\Services\TrustedProxyProbe;
 use App\Support\Csp\CspPolicyBuilder;
 use App\Support\EnvPriority;
+use App\Support\FileServing\FileDelegation;
 use App\Support\PublicDiskHardeningProbe;
+use App\Support\RuntimeRole;
 use App\Support\SearchScopes;
+use App\Support\ThumbnailDiskOptions;
 use App\Support\TrustedProxyDiagnostic;
+use App\Thumbnails\ImageProcessorResolver;
+use App\Thumbnails\ThumbnailPresetSettings;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * 관리자용 시스템 설정 컨트롤러
@@ -55,6 +66,7 @@ class SettingsController extends AdminBaseController
      * @param  DormantAccountService  $dormantAccountService  휴면 계정 생명주기 서비스
      * @param  PasswordExpiryService  $passwordExpiryService  비밀번호 만료 정책 서비스
      * @param  QueueWorkerRegistry  $queueWorkerRegistry  큐 워커 등록·상태 (#139)
+     * @param  TrustedProxyProbe  $trustedProxyProbe  신뢰 프록시 사전 검사
      * @param  SearchHistoryService  $searchHistoryService  최근 검색어 서비스 (개인정보 탭 범위 메타, 7.1.5)
      */
     public function __construct(
@@ -67,6 +79,7 @@ class SettingsController extends AdminBaseController
         private DormantAccountService $dormantAccountService,
         private PasswordExpiryService $passwordExpiryService,
         private QueueWorkerRegistry $queueWorkerRegistry,
+        private TrustedProxyProbe $trustedProxyProbe,
         private SearchHistoryService $searchHistoryService
     ) {
         parent::__construct();
@@ -85,8 +98,14 @@ class SettingsController extends AdminBaseController
      * - `consent_selection`: 지금 선택 상태 `{state, reason, provider_id, provider_label}`
      * - `queue_connection_options`: 큐 워커로 등록할 수 있는 연결 `[{name, driver}]` (sync·null 제외, #139)
      * - `csp`: 콘텐츠 보안 정책 섹션 메타 `{override, preview, auto_hosts, style_override, style_preview, style_auto_hosts}` (#158, 스타일 3키는 7.1.6)
+     * - `thumbnail_engine_available`: 이 서버에 쓸 수 있는 이미지 처리 엔진이 있는지 (없으면 업로드 탭이 「썸네일 없이 원본」 안내, #869)
+     * - `thumbnail_disk_options`: 썸네일 저장 위치 선택지 `{public: [{id, label}], gated: [{id, label}]}` — label 은 로케일 맵 (#869)
+     * - `thumbnail_server_defaults`: 업로드 탭 「고급」 칸(썸네일 서버 보호 값)을 비웠을 때 쓸 값 — `.env` G7_THUMBNAIL_* 가 있으면 그 값,
+     *   없으면 기본값. 화면은 이 값을 칸의 placeholder 로 보인다 (#869)
      * - `search_scopes`: 최근 검색어 범위 `[{scope, owner, owner_label, label, default_max_count, default_retention_days}]` (개인정보 탭, 7.1.5)
      * - `embed_extension_providers`: 확장이 제공한 외부 영상 서비스 `[{key, extension, id, name}]` (본문 콘텐츠 탭, 7.1.5 #883)
+     * - `file_delegation`: 웹서버 파일 위임 요약 `{mode, base_path, accel_prefix, accel_mapping, nginx_alias_path}` — 지금 적용 중인 값이다(저장값이
+     *   아니라 `.env` 잠금까지 반영한 config). 드라이버 탭이 웹서버 설정 안내를 실제 경로로 채운다 (#878)
      * - `public_disk_hardening`: `/storage` 직접 주소 보호 헤더 점검 결과 `{ok, nosniff, disposition, status, checked_at, rules_written}` 또는 null (드라이버 탭 경고, 7.1.6 — `rules_written=false` 는 규칙 파일을 지금 설정으로 쓰지 못함)
      *
      * @return array<string, mixed> 응답 메타 배열
@@ -110,10 +129,32 @@ class SettingsController extends AdminBaseController
             'consent_selection' => $consent->selection()->toArray(),
             'queue_connection_options' => $this->queueWorkerRegistry->registrableConnections(),
             'csp' => $this->buildCspMeta(),
+            // 파비콘 우선순위 안내(#434) — 일반 탭 파비콘 칸 아래 「현재 ○○ 화면은 △△ 템플릿 설정의 파비콘이 우선 적용됩니다」
+            'favicon' => $this->buildFaviconMeta(),
+            'thumbnail_engine_available' => app(ImageProcessorResolver::class)->resolve() !== null,
+            'thumbnail_disk_options' => app(ThumbnailDiskOptions::class)->all(),
+            'thumbnail_server_defaults' => array_map('intval', (array) config('core.thumbnail_server_defaults', [])),
             'search_scopes' => $this->searchHistoryService->settingsMeta(),
             'embed_extension_providers' => $this->settingsService->embedExtensionProviderOptions(),
+            'file_delegation' => FileDelegation::describe(),
+            // 비공개 첨부 저장소 카드(#916) — .env 로 고정된 주체, 저장된 선택이 이 서버에 없는 디스크인지
+            'private_attachment' => $this->settingsService->privateAttachmentMeta(),
             'public_disk_hardening' => PublicDiskHardeningProbe::cached(),
         ];
+    }
+
+    /**
+     * 파비콘 우선순위 요약 — 해석 실패(템플릿 행 없음 등)는 안내를 숨기는 null 로 (#434).
+     *
+     * @return array<string, mixed>|null 화면 종류별 요약
+     */
+    private function buildFaviconMeta(): ?array
+    {
+        try {
+            return app(FaviconService::class)->describe();
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     /**
@@ -148,6 +189,12 @@ class SettingsController extends AdminBaseController
      * `drivers.queue_names` 는 연결 => 큐 목록 맵이다 — 비었을 때 PHP 배열 그대로 내면 `[]` 가 돼 화면이 키를
      * 붙여도 저장 본문에서 사라진다(#758 과 같은 결함군). 그래서 늘 객체로 낸다.
      *
+     * 업로드 탭 썸네일 규격 표(#869)는 저장 행 그대로가 아니라 레지스트리가 합친 표(고정·og·켜진 확장·운영자, 행마다
+     * `kind`)로 낸다. 저장 행에는 og 와 확장 기본값이 없고, 키가 없는 기존 설치는 아예 비어 있기 때문이다.
+     * `thumbnail_presets` 와 `thumbnail_presets_rows` 에 같은 표를 싣는다 — 화면이 어느 쪽에 묶어도 저장 본문
+     * (`upload.thumbnail_presets`)과 오류 키(`upload.thumbnail_presets.{i}.name`)의 행 번호가 표와 같다.
+     * `thumbnail_presets_rows` 는 응답 전용이라 저장 때 버린다(SettingsService::prepareUploadThumbnailSettings).
+     *
      * @param  array<string, mixed>  $settings  getAllSettings() 결과
      * @return array<string, mixed> 응답용 설정
      */
@@ -156,6 +203,14 @@ class SettingsController extends AdminBaseController
         if (isset($settings['drivers']) && is_array($settings['drivers'])) {
             $settings['drivers']['queue_names'] = (object) (is_array($settings['drivers']['queue_names'] ?? null) ? $settings['drivers']['queue_names'] : []);
         }
+
+        if (! isset($settings['upload']) || ! is_array($settings['upload'])) {
+            $settings['upload'] = [];
+        }
+
+        $thumbnailRows = app(ThumbnailPresetSettings::class)->presentRows();
+        $settings['upload']['thumbnail_presets'] = $thumbnailRows;
+        $settings['upload']['thumbnail_presets_rows'] = $thumbnailRows;
 
         // 최근 검색어 범위 행(7.1.5) — 지금 선언된 범위마다 한 행, 선언 순서, 적용값으로 채운다(새로 켠 확장은 선언값).
         if (isset($settings['privacy']) && is_array($settings['privacy'])) {
@@ -179,7 +234,11 @@ class SettingsController extends AdminBaseController
             $settings = $this->presentSettings($this->settingsService->getAllSettings());
 
             return $this->success('settings.fetch_success',
-                (new SettingsResource($settings))->toArray(request())
+                (new SettingsResource($settings))->toArray(request()) + [
+                    // 이 요청을 처리한 서버의 값 — 공유 설정이 아니다. 여러 서버라면 스케줄을 돌리는 서버를 확인하라는 안내에 쓴다
+                    'scheduler_enabled_on_this_server' => RuntimeRole::schedulerEnabled(),
+                    'runtime_role' => RuntimeRole::current(),
+                ]
             );
         } catch (\Exception $e) {
             return $this->error('settings.fetch_failed', 500, $e->getMessage());
@@ -206,6 +265,14 @@ class SettingsController extends AdminBaseController
 
                 return $this->success('settings.save_success', [
                     'settings' => $allSettings,
+                    // 전역 상태(`_global.settings`)용 공개 설정 — 계산 필드(site_logo_url·site_favicon_url)가 실려 있다.
+                    // 화면이 저장 직후 `settings`(관리자 형태, 계산 필드 없음)로 전역을 덮으면 상단 로고가 새로고침 전까지 사라졌다(#434 S-3).
+                    'frontend_settings' => $this->settingsService->getFrontendSettings(),
+                    // 저장은 했지만 알려야 할 조합(#916 D5 — 비공개 첨부 저장소 = 공개 자산 디스크, D26 — 권한 썸네일 = 공개 자산 = s3)
+                    'warnings' => $this->settingsService->storageWarnings(
+                        is_array($allSettings['drivers'] ?? null) ? $allSettings['drivers'] : [],
+                        is_array($allSettings['upload'] ?? null) ? $allSettings['upload'] : [],
+                    ),
                 ]);
             } else {
                 return $this->error('settings.save_failed');
@@ -282,9 +349,16 @@ class SettingsController extends AdminBaseController
     /**
      * 신뢰 프록시(리버스 프록시) 설정 진단 결과를 조회합니다 (#124).
      *
-     * 읽기 전용이다 — 값 편집 엔드포인트는 두지 않는다. 이 값은 "앱이 프록시 없이 도달
-     * 가능한가" 라는 배포 구조 지식이 있어야 정할 수 있고, 웹에서 편집 가능해지면 관리자
-     * 계정 탈취가 곧 X-Forwarded-For 위조 경로가 된다. 편집은 `.env` 전용이다.
+     * 이 엔드포인트는 진단만 돌려준다. 값은 환경설정 > 고급의 신뢰 프록시 카드에서
+     * 저장하고(`debug.trusted_proxies`), 저장 전 확인은 {@see testTrustedProxy()} 가 맡는다.
+     *
+     * **편집을 화면에 연 이유(#609)**: 원래 이 값은 `.env` 전용이었다. 그 전제는 셸로
+     * `.env` 를 고칠 수 있다는 것인데, 무CLI·고정 docroot 설치에는 그 통로가 없어 진단이
+     * "고칠 수 없는 경고" 로 끝났다. 남는 위험 — 관리자 계정이 탈취되면 공격자가 신뢰
+     * 프록시를 열어 X-Forwarded-For 를 위조할 수 있다 — 은 사라지지 않았다. 다만 그 시점의
+     * 공격자는 이미 `core.settings.update` 를 쥐고 있어 메일·디버그·드라이버 설정까지
+     * 바꿀 수 있으므로, 이 키 하나를 잠가서 얻는 실익이 통로 부재의 대가보다 작다고 봤다.
+     * `.env` 를 배포 기준값으로 쓰는 설치는 `G7_ENV_PRIORITY` 로 이 키를 잠글 수 있다.
      *
      * 판정 대상은 관리자 브라우저의 **실제 요청**이므로 현재 요청을 그대로 쓴다.
      * 입력을 받지 않는 읽기 전용 조회라 FormRequest 를 두지 않는다.
@@ -294,6 +368,67 @@ class SettingsController extends AdminBaseController
     public function trustedProxy(): JsonResponse
     {
         return $this->success('common.success', TrustedProxyDiagnostic::forRequest(request()));
+    }
+
+    /**
+     * 웹서버 파일 위임이 실제로 동작하는지 확인할 작은 파일을 내보냅니다 (2단계 프로브, #878).
+     *
+     * 코어 파일 헬퍼(`fileResponse()`)를 그대로 지나므로 **저장된(적용 중인) 위임 설정**으로 나간다 — 위임이 켜져 있으면
+     * 앱은 본문 대신 `X-Sendfile`/`X-Accel-Redirect` 헤더만 세우고, 웹서버가 그 헤더를 소비해 파일을 보내야 본문이 도착한다.
+     * 화면은 받은 본문의 `data.probe` 값으로 판정한다 — 본문이 비었거나(웹서버가 헤더를 무시) 404(nginx internal 위치 없음)면
+     * 미구성이다. 서버가 자기 자신에게 요청을 보내는 판정은 아웃바운드 정책·공유 호스팅 제약 때문에 쓰지 않는다.
+     *
+     * 이 응답이 위임되지 않으면(적용 중인 방식이 「사용 안 함」이거나 파일이 매핑 밖) 파일을 PHP 가 보내게 되므로 본문을
+     * 내지 않고 `data.reason`(`inactive`·`skipped`)으로 알린다 — 본문이 도착하면 화면이 「웹서버가 보냈다」로 오판한다.
+     *
+     * 판정이 매번 새 응답이어야 하므로 `Cache-Control: no-store` 로 덮는다. 입력을 받지 않는 읽기 전용 조회다.
+     *
+     * @return BinaryFileResponse|Response|JsonResponse 프로브 파일 응답, 304 응답, 또는 위임 없음 결과
+     */
+    public function fileDelegationProbe(): BinaryFileResponse|Response|JsonResponse
+    {
+        $response = $this->fileResponse(
+            resource_path('probes/file-delegation-probe.json'),
+            'application/json',
+            0,
+            immutable: false,
+            skipCompression: true
+        );
+
+        if ($response instanceof DelegatedFileResponse
+            && ($outcome = $response->delegationOutcome(request())) !== DelegatedFileResponse::OUTCOME_APPLIED) {
+            $response = $this->success('common.success', ['probe' => null, 'delegated' => false, 'reason' => $outcome]);
+        }
+
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
+    }
+
+    /**
+     * 신뢰 프록시 후보값을 저장 전에 검사합니다 (#609).
+     *
+     * 저장하지 않고, 이번 요청에 그 값을 적용했을 때 방문자 IP·HTTPS 인식이 어떻게 해석되는지
+     * 돌려준다. 이 설정은 틀려도 오류를 내지 않으므로(방문자 IP 만 조용히 어긋난다) 저장 후에
+     * 알아차릴 단서가 없고, HTTPS 종단 구성에서 잘못 저장하면 관리자 화면 자체에 못 들어가
+     * 되돌릴 통로가 사라진다. 그 사고를 막는 자리다.
+     *
+     * 검사 대상은 저장된 설정이 아니라 이번 요청이 제출한 값이다.
+     *
+     * @param  TestTrustedProxyRequest  $request  검증된 요청
+     * @return JsonResponse 검사 결과
+     */
+    public function testTrustedProxy(TestTrustedProxyRequest $request): JsonResponse
+    {
+        $result = $this->trustedProxyProbe->probe(
+            $request,
+            (array) ($request->validated()['trusted_proxies'] ?? [])
+        );
+
+        // 후보값이 기대와 다른 결과를 내는 것은 요청 처리 실패가 아니라 진단 결과다 —
+        // 200 으로 결과를 돌려주고 판정은 페이로드의 `verdict` 가 말한다
+        // (아웃바운드 프록시 연결 테스트와 같은 규약).
+        return $this->success('settings.trusted_proxy_probe_'.$result['verdict'], $result);
     }
 
     /**
@@ -501,10 +636,10 @@ class SettingsController extends AdminBaseController
     public function regenerateAppKey(RegenerateAppKeyRequest $request): JsonResponse
     {
         try {
-            $result = $this->settingsService->regenerateAppKey($request->password);
+            $result = $this->settingsService->regenerateAppKey($request->validated());
 
             if (! $result['success']) {
-                return $this->error($result['error'], 401);
+                return $this->error($result['error'], $result['status'] ?? 401);
             }
 
             return $this->success('settings.app_key_regenerated', [

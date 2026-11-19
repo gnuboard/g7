@@ -41,6 +41,11 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
     /** @var MockInterface&StorageInterface */
     protected $storage;
 
+    /**
+     * 모의 스토리지를 주입한 ClaimAttachmentService 를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -59,19 +64,37 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
         $this->service = app(ClaimAttachmentService::class);
     }
 
+    /**
+     * Mockery 기대를 검증하고 닫은 뒤 부모 정리를 실행합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
+    /**
+     * 시험용 가짜 이미지 업로드 파일을 만듭니다.
+     *
+     * @param  string  $name  업로드 파일 이름
+     * @return UploadedFile 가짜 이미지 업로드 파일
+     */
     protected function image(string $name = 'claim.jpg'): UploadedFile
     {
         return UploadedFile::fake()->image($name, 640, 480);
     }
 
     /**
+     * 신청서 작성 중 올린 첨부가 미귀속 상태로 그 주문에 묶이고 업로더, 해시, 저장 경로가 기록되는지 확인
+     *
      * @effects pending_upload_is_bound_to_the_order
+     *
+     * @return void 반환값 없음
      */
     public function test_pending_upload_is_bound_to_the_order(): void
     {
@@ -88,7 +111,11 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 미귀속 업로드가 설정된 최대 장수를 넘으면 claim_image_limit_exceeded 로 거절되는지 확인
+     *
      * @effects pending_upload_respects_the_max_images_setting
+     *
+     * @return void 반환값 없음
      */
     public function test_pending_upload_respects_the_max_images_setting(): void
     {
@@ -103,7 +130,11 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 미귀속 첨부를 귀속하면 교환 신청서로 옮겨지고 정렬 순서가 1부터 매겨지며 미귀속 목록이 비는지 확인
+     *
      * @effects attach_pending_binds_images_to_the_claim
+     *
+     * @return void 반환값 없음
      */
     public function test_attach_pending_binds_images_to_the_claim(): void
     {
@@ -125,7 +156,11 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 다른 주문의 미귀속 첨부를 지목하면 claim_image_not_found 로 거절하고 그 첨부는 미귀속으로 남는지 확인
+     *
      * @effects attach_pending_rejects_images_of_another_order
+     *
+     * @return void 반환값 없음
      */
     public function test_attach_pending_rejects_images_of_another_order(): void
     {
@@ -143,7 +178,11 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 다른 회원이 올린 미귀속 첨부는 주문 소유자가 귀속하려 해도 거절되는지 확인
+     *
      * @effects attach_pending_rejects_images_uploaded_by_another_member
+     *
+     * @return void 반환값 없음
      */
     public function test_attach_pending_rejects_images_uploaded_by_another_member(): void
     {
@@ -160,7 +199,11 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 없는 ID 와 이미 귀속된 첨부를 지목하면 claim_image_not_found 로 거절되는지 확인
+     *
      * @effects attach_pending_rejects_unknown_ids_and_already_attached_images
+     *
+     * @return void 반환값 없음
      */
     public function test_attach_pending_rejects_unknown_ids_and_already_attached_images(): void
     {
@@ -176,7 +219,11 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
     }
 
     /**
+     * ID 목록이 비면 아무것도 귀속하지 않고 빈 목록을 돌려주는지 확인
+     *
      * @effects attach_pending_with_no_ids_is_a_no_op
+     *
+     * @return void 반환값 없음
      */
     public function test_attach_pending_with_no_ids_is_a_no_op(): void
     {
@@ -188,7 +235,11 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 비회원 주문의 미귀속 첨부가 회원 ID 없이 귀속되고 created_by 가 null 로 남는지 확인
+     *
      * @effects guest_pending_images_attach_with_the_order_token_alone
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_pending_images_attach_with_the_order_token_alone(): void
     {
@@ -203,7 +254,11 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 소유 판정이 미귀속은 업로더, 귀속은 신청자, 비회원은 주문 소속으로 갈리는지 확인
+     *
      * @effects owned_by_judges_pending_by_uploader_and_attached_by_requester
+     *
+     * @return void 반환값 없음
      */
     public function test_owned_by_judges_pending_by_uploader_and_attached_by_requester(): void
     {
@@ -229,7 +284,11 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 다운로드 게이트가 비로그인과 제3자를 막고 본인 또는 서명 요청만 통과시키며 없는 해시는 null 인지 확인
+     *
      * @effects download_gate_blocks_strangers_and_allows_owner_or_signature
+     *
+     * @return void 반환값 없음
      */
     public function test_download_gate_blocks_strangers_and_allows_owner_or_signature(): void
     {
@@ -248,7 +307,11 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 클레임 조회 권한을 가진 운영자는 서명 없이 다운로드 게이트를 통과하고 권한 없는 관리자는 막히는지 확인
+     *
      * @effects download_gate_lets_an_operator_with_claims_read_through_without_a_signature
+     *
+     * @return void 반환값 없음
      */
     public function test_download_gate_lets_an_operator_with_claims_read_through_without_a_signature(): void
     {
@@ -275,6 +338,8 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
 
     /**
      * 권한 판정 캐시를 비웁니다. (같은 테스트 안에서 열람자를 바꾸므로)
+     *
+     * @return void 반환값 없음
      */
     protected function clearClaimPermissionCache(): void
     {
@@ -284,7 +349,11 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 첨부 삭제가 저장 파일과 행을 함께 지우는지 확인
+     *
      * @effects delete_removes_the_file_and_the_row
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_removes_the_file_and_the_row(): void
     {
@@ -306,6 +375,8 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
      * 근거를 어디서도 되찾을 수 없다.
      *
      * @effects attachment_log_carries_the_uploader_type
+     *
+     * @return void 반환값 없음
      */
     public function test_attachment_logs_carry_the_uploader_type(): void
     {
@@ -348,7 +419,11 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 신청서 단위 삭제가 그 신청서의 첨부를 모두 지우고 삭제 건수를 돌려주는지 확인
+     *
      * @effects delete_for_claimable_removes_every_attachment_of_the_claim
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_for_claimable_removes_every_attachment_of_the_claim(): void
     {
@@ -363,7 +438,11 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 주문 삭제 뒤 반품 신청서 헤더와 귀속 첨부, 미귀속 첨부가 하나도 남지 않는지 확인
+     *
      * @effects deleting_an_order_leaves_no_orphan_claim_rows_or_attachments
+     *
+     * @return void 반환값 없음
      */
     public function test_deleting_an_order_leaves_no_orphan_claim_rows_or_attachments(): void
     {

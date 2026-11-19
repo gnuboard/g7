@@ -35,12 +35,23 @@ function flatten(node: Node | Node[] | undefined): Node[] {
   return [node, ...children];
 }
 
+/** 레이아웃 이름 붙은 액션(`named_actions`) — `actionRef` 는 런타임처럼 그 정의로 펼쳐 본다(7.2.0 `applyAdminLoginResult`). */
+const namedActions: Record<string, Action> = (adminLogin as any).named_actions ?? {};
+
 function flattenActions(actions: Action[] | Action | undefined): Action[] {
   if (!actions) return [];
-  return asArray<Action>(actions).flatMap((a) => [a, ...flattenActions(a.actions), ...flattenActions(a.onSuccess), ...flattenActions(a.onError)]);
+  return asArray<Action & { actionRef?: string }>(actions).flatMap((a) => {
+    if (a.actionRef) {
+      expect(namedActions[a.actionRef], `이름 붙은 액션 ${a.actionRef}`).toBeDefined();
+      return flattenActions(namedActions[a.actionRef]);
+    }
+    return [a, ...flattenActions(a.actions), ...flattenActions(a.onSuccess), ...flattenActions(a.onError)];
+  });
 }
 
 const STEP_ONE = '{{!_local.twoFactor?.required && !_local.passwordChange?.required}}';
+// 7.2.0 A1t — 이메일 판정이 외부 수단이면 비밀번호 칸, 찾기 링크, 로그인 버튼은 숨는다(1단계 조건에 판정 조건이 더해진다)
+const STEP_ONE_PASSWORD = "{{!_local.twoFactor?.required && !_local.passwordChange?.required && _global.adminLoginDiscovery?.method !== 'external'}}";
 const STEP_TWO = '{{_local.twoFactor?.required}}';
 const STEP_THREE = '{{_local.passwordChange?.required}}';
 
@@ -56,9 +67,11 @@ describe('sirsoft-admin_basic 관리자 로그인 — 비밀번호 변경 단계
    */
   it('세 단계의 블록 조건이 상보적이다 — 변경 단계 블록은 하나, 1단계 칸은 두 단계 모두가 아닐 때만', () => {
     const one = nodes.filter((n) => n.if === STEP_ONE).map((n) => n.id);
+    const onePassword = nodes.filter((n) => n.if === STEP_ONE_PASSWORD).map((n) => n.id);
     const three = nodes.filter((n) => n.if === STEP_THREE).map((n) => n.id);
 
-    expect(one).toEqual(expect.arrayContaining(['login_email_field', 'login_password_field', 'login_forgot_password', 'login_submit_button']));
+    expect(one).toEqual(expect.arrayContaining(['login_email_field']));
+    expect(onePassword).toEqual(expect.arrayContaining(['login_password_field', 'login_forgot_password', 'login_submit_button']));
     expect(three).toEqual(['login_password_change_step']);
     expect(nodes.filter((n) => n.if === STEP_TWO).map((n) => n.id)).toEqual(['login_two_factor_step']);
   });

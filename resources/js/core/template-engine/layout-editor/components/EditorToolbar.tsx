@@ -535,6 +535,10 @@ export function EditorToolbar(props: EditorToolbarProps = {}): React.ReactElemen
       style={{
         display: 'flex',
         alignItems: 'center',
+        // 셸 폭이 툴바 자연 폭(한국어 실측 1506px)보다 좁으면 줄 단위로 감는다(설계 확정 2026-11-08 「두 줄로
+        // 감기」). 항목은 아래 `.g7le-toolbar > *` 규칙으로 줄지 않으므로 글자 단위 줄바꿈("요 소 추 가")은
+        // 생기지 않고, 넘치는 항목만 다음 줄로 내려간다. gap 은 줄 사이에도 같다.
+        flexWrap: 'wrap',
         gap: 6,
         padding: '8px 12px',
         borderBottom: '1px solid #e2e8f0',
@@ -544,8 +548,12 @@ export function EditorToolbar(props: EditorToolbarProps = {}): React.ReactElemen
     >
       {/* 저장 스피너 회전 keyframe 과 툴바 압착 차단 규칙은 인라인 style 로 표현할 수 없어
           editorRuntimeStyles 의 TOOLBAR_STYLE_CSS 로 붙인다(위 useEffect — <style> 요소 없음).
-          셸 최소 너비(EDITOR_MIN_WIDTH) 안에서 각 항목은 자연 폭을 유지하고, 넘치는 만큼은
-          셸 가로 스크롤이 흡수한다. */}
+          툴바 압착 차단: 툴바는 flex row 라 기본값(flex-shrink:1)이면 창이 좁을 때
+          모든 항목의 폭이 깎이고 라벨이 글자 단위로 줄바꿈된다("요 소 추 가").
+          직접 자식 **전체**에 적용해야 한다 — 버튼마다 인라인 style 로 붙이면
+          자체 style 을 가진 하위 컴포넌트(TemplateSwitcher/LocaleSwitcher)와 이후 추가될
+          항목이 빠져 같은 결함이 재발한다. 각 항목은 자연 폭을 유지하고, 툴바(flex-wrap)가
+          모자란 폭에서 넘치는 항목을 다음 줄로 내린다(설계 확정 2026-11-08 「두 줄로 감기」). */}
       <button
         type="button"
         className="g7le-toolbar__route-tree-toggle"

@@ -17,9 +17,9 @@ use Tests\TestCase;
  * `User::withdraw()` 는 원값을 접미사로 보존한 채 탈퇴시키므로, 보존기간이 지난 뒤
  * **실제로 지우는** 이 단계가 없으면 "파기했다" 는 말이 사실이 아닙니다.
  *
- * @scenario target=privacy_withdrawn_users, row_age=within_retention, row_age=beyond_retention
+ * 축 요약(마커 아님 — 평문): target=privacy_withdrawn_users, row_age=within_retention, row_age=beyond_retention
  *
- * @effects withdrawn_residual_pii_is_erased_after_retention, withdrawn_erasure_is_idempotent
+ * 효과 요약(마커 아님 — 평문): withdrawn_residual_pii_is_erased_after_retention, withdrawn_erasure_is_idempotent
  */
 class WithdrawnUserRetentionTest extends TestCase
 {

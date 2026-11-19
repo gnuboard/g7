@@ -21,6 +21,7 @@ effects:
   - concurrent_update_api_responds_409
   - no_update_response_message_says_nothing_to_update
   - update_modal_treats_409_as_notice_and_shows_server_message
+  - update_modal_routes_integrity_409_to_panel_not_lock_notice  # 미서명 409(errors.package_unsigned)는 잠금 안내·오류 상자 없이 무결성 기록만 담는다 (#916 ④)
   # #161
   - lock_store_error_refuses_operation
   - lock_store_error_api_503_without_raw_error

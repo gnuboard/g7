@@ -37,7 +37,7 @@ use Tests\Support\GateTestPopulation;
  * `--filter` 는 **FQCN 정규식**이라 실제 실행 집합은 그 두 디렉토리와 무관하게 정해진다. 둘이
  * 갈리는 만큼이 사각이고, 실측하면 그 사각에 위반이 살아 있었다 —
  * `EnsureAdminOrderListTestBadgeLayoutListenerTest` 는 필터 `EnsureAdminOrder` 에 걸려 게이트
- * 안에서 도는데 매니페스트에 없었고, 자매 4파일이 30차에 `PluginTestCase` 로 전환된 뒤에도 홀로
+ * 안에서 도는데 매니페스트에 없었고, 자매 4파일이 `PluginTestCase` 로 전환된 뒤에도 홀로
  * 순수 `PHPUnit\Framework\TestCase` 로 남아 있었다. 같은 사각에 `tests/Unit/Enums` ·
  * `tests/Unit/Rules` 의 게이트 상주 테스트도 함께 들어 있었다(그쪽은 마침 등재돼 있었다).
  *
@@ -95,7 +95,7 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
         // ── develop 병합 유입분 (3·4·5차). 아래 22행은 이 트랙이 만든 것이 아니라 develop 라인이
         //    자기 트랙 테스트에 마킹을 달고 시나리오 매니페스트는 두지 않은 채 넘어온 것이다.
         //    귀속 실측: 전부 develop 계보 커밋(`2b38e15aa`·`03b48f76a`·`6217f4d78` 등)이 도입했고
-        //    5차 병합이 새로 들인 마킹 테스트는 0건이고 6·7차도 0건, 8차가 4건을 들였다(아래 별도 묶음). 소유 트랙이 매니페스트를 세우면 그 즉시
+        //    5차 병합이 새로 들인 마킹 테스트는 0건이고 6차와 7차 병합도 0건, 8차 병합에서 4건이 들어왔다(아래 별도 묶음). 소유 트랙이 매니페스트를 세우면 그 즉시
         //    "여기서도 빼라" 가 red 이므로, 이 목록은 늘지 않게만 잠그는 자리다.
         //    #745 가 게시판 매니페스트(`board-comment-on-post-state`·`board-upgrade-steps`)에 등재해
         //    `CommentPostStateTest`·`PlaintextPostPasswordRehashTest`·`PostListViewCountIndexUpgradeTest` 3행을 해소했다.
@@ -106,7 +106,11 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
         //    매니페스트는 두지 않았다. 귀속 실측: 커밋 `07fd45e6b`(#645) 도입, 이 트랙 변경 0.
         //    #789 가 게시판 매니페스트(`board-secret-thread-visibility`·`board-secret-content-bypass-paths`)에 등재해
         //    `SecretPostChildWriteGateTest`·`PostSecretVerifyPasswordTest` 2행을 해소했다.
+        //    issue609 가 PG 매니페스트(nhnkcp·nicepayments 의 `security-callback-defense`)와 코어 `installer-security-hardening`
+        //    에 등재해(develop-7.2.0 병합 2026-10-31 합류) `PreventsReplayCallbackTest` 2행·`CliInjectionDefenseTest`·
+        //    `AuthTokenDedupeKeyTest`·`InstallerStep3EnvValueGuardTest` 5행을 해소했다.
         //    #862 가 코어 매니페스트(`has-row-number-bounded-total`)에 등재해 `HasRowNumberBoundedTotalTest` 1행을 해소했다.
+        //    #857 이 KG이니시스 매니페스트(`security-callback-defense`)에 등재해 `VbankNotifyReplayTest` 1행을 해소했다.
         'modules/_bundled/sirsoft-board/tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',
         'modules/_bundled/sirsoft-board/tests/Unit/Repositories/UserCommentedActivityDeferredJoinTest.php' => '목록 지연 조인 트랙 소유 (그룹 쿼리 총 건수·컬럼 프루닝).',
         'modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductListPayloadSizeBenchmarkTest.php' => '목록 응답 축소 트랙 소유 (페이로드 바이트·쿼리 수).',
@@ -116,19 +120,13 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/PgProviderSupportedMethodsVocabularyTest.php' => 'PG 트랙 소유 (결제수단 어휘 일치).',
         'modules/_bundled/sirsoft-page/tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',
         'plugins/_bundled/sirsoft-gdpr/tests/Feature/GdprConsentAtomicityTest.php' => 'GDPR 트랙 소유 (동의 철회·삭제의 원자성).',
-        'plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/VbankNotifyReplayTest.php' => 'PG 트랙 소유 (가상계좌 통보 재생 방어).',
         'plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Support/BackendMessageKeyResolutionTest.php' => 'PG 트랙 소유 (백엔드 메시지 키의 로케일 해석).',
-        'plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Concerns/PreventsReplayCallbackTest.php' => 'PG 트랙 소유 (콜백 재생 방어).',
-        'plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Services/CliInjectionDefenseTest.php' => 'PG 트랙 소유 (CLI 인자 주입 방어).',
-        'plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Concerns/PreventsReplayCallbackTest.php' => 'PG 트랙 소유 (콜백 재생 방어).',
-        'plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Controllers/AuthTokenDedupeKeyTest.php' => 'PG 트랙 소유 (인증 토큰 중복 제거 키).',
-        'plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Listeners/CleanInicisRecordAtomicityTest.php' => '본인인증 트랙 소유 (인증 기록 정리의 원자성).',
+        //    #888 이 본인인증 두 플러그인 매니페스트(`record-cleanup`)에 등재해 `CleanInicisRecordAtomicityTest`·
+        //    `CleanKcpRecordAtomicityTest` 2행을 해소했다(develop-7.2.0 리베이스 2026-11-17 에서 반영).
         'plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/PluginCacheContextualBindingTest.php' => '확장 캐시 바인딩 트랙 소유 (플러그인 컨텍스추얼 바인딩).',
-        'plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Listeners/CleanKcpRecordAtomicityTest.php' => '본인인증 트랙 소유 (인증 기록 정리의 원자성).',
         'tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',
         'tests/Unit/Search/KeywordSearchTest.php' => '검색 트랙 소유 (키워드 술어의 활성 엔진 위임).',
         'tests/Unit/Services/LanguagePackServiceUpdateCheckScopeTest.php' => '언어팩 트랙 소유 (업데이트 확인 범위).',
-        'tests/Unit/Services/UserServiceWithdrawTest.php' => '회원 트랙 소유 (탈퇴 처리의 멱등성·컬럼 한계).',
     ];
 
     /**
@@ -178,7 +176,7 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * red 를 냈고, 옮겨진 뒤 이 목록은 `[]` 가 됐다. 종전 판본은 `assertNotEmpty($pending)` 하한을
      * 두고 *"전부 실행 가능해졌다면 이 테스트를 제거해야 한다"* 고 적었는데, 그대로 따르면 다음
      * 미착수 명령이 생겼을 때 **알려 줄 장치가 사라진다**. 반대로 하한만 지우면 `foreach` 가 빈
-     * 배열을 돌아 공허하게 참이 된다 — 34차가 이관 제외 대장에서 잡은 `assertSame([], [])` 형태다.
+     * 배열을 돌아 공허하게 참이 된다 — 이관 제외 대장에서 실제로 잡힌 `assertSame([], [])` 형태다.
      *
      * 그래서 하한을 지우되 관측력을 **판정식 자기시험**으로 옮긴다
      * ({@see test_pending_ledger_predicate_still_detects_a_runnable_command()}). 대장이 비어 있어도
@@ -320,7 +318,7 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
     /**
      * 게이트 필터 대안이 전부 살아 있다 (죽은 필터 = 죽은 축).
      *
-     * 필터 문자열이 낡으면 그 축은 조용히 0건이 된다 — 19차가 "가드가 죽어 후보 0건" 으로 겪은
+     * 필터 문자열이 낡으면 그 축은 조용히 0건이 된다 — 실제로 "가드가 죽어 후보 0건" 으로 겪은
      * 형태다. 각 대안이 선언 집합에서 최소 1건을 잡는지 확인한다.
      *
      * @scenario compile_unit=install,source_health=valid
@@ -358,7 +356,7 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      *
      * 모집단을 설정 파일에서 도출하는 대가는 **도출이 조용히 죽을 수 있다**는 것이다. 글롭이
      * 낡거나(`_bundled` 구조 변경) 파싱이 어긋나면 그 스위트가 통째로 0건이 되고, 그때 방향2 는
-     * "위반 없음" 을 돌려준다. 패턴별 하한을 두어 그 상태를 red 로 만든다 — 19차가 "가드가 죽어
+     * "위반 없음" 을 돌려준다. 패턴별 하한을 두어 그 상태를 red 로 만든다 — 실제로 "가드가 죽어
      * 후보 0건" 으로 겪은 형태를 이 축에서 되풀이하지 않기 위한 것이다.
      *
      * @scenario compile_unit=install,source_health=valid
@@ -458,7 +456,7 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
             }
 
             if ($found > 0) {
-                // 등재 사유를 실패 메시지에 실어 나른다 — 38차까지 `$reason` 이 순회에서만 꺼내지고
+                // 등재 사유를 실패 메시지에 실어 나른다 — 종전에는 `$reason` 이 순회에서만 꺼내지고
                 // 어디에도 쓰이지 않아, 면제가 낡았을 때 **왜 면제했는지**가 화면에 안 나왔다.
                 // 등록부의 사유 칸은 읽히지 않으면 주석과 다를 바 없다.
                 $stale[$pattern] = "{$found}건 발견 (등재 사유: {$reason})";
@@ -518,9 +516,9 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * *파일* 등재만 잠근다(`test_every_gate_resident_test_is_declared_in_manifest`). 그래서
      * **파일은 등재됐는데 그 파일이 새로 선언한 effect 는 미등재** 인 상태가 통과했다.
      *
-     * 실측 14건 중 하나가 37차 산출물이다(`fragment_helper_read_cache_is_keyed_by_path_mtime_size`
-     * — 37차 ⓕ 가 "조각 캐시 무관측" 을 고치며 신설). 즉 **직전 회차가 자기 산출물을 등재하지
-     * 못한 채 종료**했고 아무도 알리지 않았다. 30차가 게이트 소속을 양방향으로 잠근 것과 같은
+     * 실측 14건 중 하나가 직전 작업의 산출물이다(`fragment_helper_read_cache_is_keyed_by_path_mtime_size`
+     * — "조각 캐시 무관측" 을 고치며 신설). 즉 **직전 작업이 자기 산출물을 등재하지
+     * 못한 채 종료**했고 아무도 알리지 않았다. 게이트 소속을 양방향으로 잠근 것과 같은
      * 처치를 effect 축에 적용한다.
      *
      * 마킹 추출은 **재구현하지 않는다** — `@effects` 는 연속행(` *   tok,`)으로 이어질 수 있고
@@ -573,7 +571,7 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      *
      * ## 왜 이 방향이 또 필요한가
      *
-     * 38차가 세운 형제 축({@see test_declared_effects_cover_every_marked_effect()})은 방향은
+     * 먼저 세운 형제 축({@see test_declared_effects_cover_every_marked_effect()})은 방향은
      * 맞았지만 모집단이 **`test_files` 안**이다. 그래서 *등재된 파일이 새로 선언한 effect* 는
      * 잡아도, **파일 자체가 어느 매니페스트에도 없는** 경우는 구조적으로 보지 못한다 —
      * 그 파일의 마킹은 수집조차 되지 않으므로 차집합에 나타날 수 없다.
@@ -655,7 +653,7 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
             $inFiles = false;
 
             // 개행을 `\R` 로 자르지 않는다 — `/u` 없는 `\R` 은 **바이트** `\x85` 를 개행으로 보고,
-            // 그 바이트는 한국어 UTF-8 시퀀스 안에 흔히 들어 있다. 39차에 실제로 한글 주석 한 줄이
+            // 그 바이트는 한국어 UTF-8 시퀀스 안에 흔히 들어 있다. 실제로 한글 주석 한 줄이
             // 반토막 나면서 그 조각이 최상위 키로 오인돼 목록이 15건에서 끊겼다(선언 50여 건 중).
             foreach (preg_split('/\r\n|\r|\n/', (string) File::get(base_path($manifest))) as $line) {
                 if (preg_match('/^test_files:/', $line) === 1) {
@@ -756,8 +754,8 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * 구분자가 아니다(계획서 §"생성기·하네스 주의" 가 등재한 함정).
      *
      * 이 독블록에 태그 예시를 **리터럴로 적지 않는다** — 적으면 이 추출기가 자기 설명을 실제
-     * 마킹으로 읽어 자기 자신을 위반으로 만든다(신설 직후 실제로 그렇게 red 가 났다). 19차가
-     * "규약을 설명하는 독블록이 위반으로 잡히면 작성자가 설명을 지운다" 로 정리한 형태이므로,
+     * 마킹으로 읽어 자기 자신을 위반으로 만든다(신설 직후 실제로 그렇게 red 가 났다). 이는
+     * "규약을 설명하는 독블록이 위반으로 잡히면 작성자가 설명을 지운다" 로 정리된 형태이므로,
      * 설명을 지우는 대신 표기를 바꾼다.
      *
      * @param  string  $source  테스트 파일 전문

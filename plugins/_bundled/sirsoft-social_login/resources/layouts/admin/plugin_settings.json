@@ -1,0 +1,1092 @@
+{
+    "comment": "소셜 로그인 환경설정 — 제공자 탭(제공자별 자격증명·콜백 주소·연결 테스트), 정책 탭(사이트 전체 정책), 알림 탭(이 플러그인이 등록한 알림의\n     사용 여부·채널·템플릿). 제공자별 값은 설정 키가 아니라 제공자 테이블에 있어 플러그인 API 로 저장하고, 정책은 코어 플러그인 설정 API 로,\n     알림은 코어 알림 정의·템플릿 API 로 저장한다.\n     파일명이 계약이다 — `plugin_settings` 라야 코어 「플러그인 관리 → 설정」(/admin/plugins/sirsoft-social_login/settings)이 띄운다.",
+    "version": "1.0.0",
+    "layout_name": "plugin_settings",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-social_login.settings.title",
+        "description": "$t:sirsoft-social_login.settings.description"
+    },
+    "data_sources": [
+        {
+            "id": "settings",
+            "label_key": "$t:sirsoft-social_login.editor.data_source.settings",
+            "type": "api",
+            "endpoint": "/api/admin/plugins/{{route.identifier}}/settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "initLocal": "form",
+            "refetchOnMount": true,
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(저장 뒤 갱신 등) 실패는 받아 둔 값을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "comment": "정책 설정값 — 들어올 때마다 다시 받아 정책 폼 초기값으로 넣는다(저장 뒤 돌아왔을 때 낡은 값이 남지 않게)"
+        },
+        {
+            "id": "providers",
+            "label_key": "$t:sirsoft-social_login.editor.data_source.providers",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-social_login/admin/providers",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "comment": "제공자 목록 — 내장 4·일반 OIDC·확장 등록(읽기 전용). 비밀값은 마스크로만 온다. 저장·정렬·추가·삭제 뒤 다시 받는다"
+        },
+        {
+            "id": "slNotificationChannels",
+            "if": "{{query.tab === 'notifications'}}",
+            "label_key": "$t:sirsoft-social_login.admin.notifications.title",
+            "type": "api",
+            "endpoint": "/api/admin/notification-channels",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": {
+                    "channels": []
+                }
+            },
+            "comment": "알림 탭 — 코어 「알림 정의」 화면은 extension_type=core 로 코어 정의만 받으므로, 이 플러그인이 들인 정의는 여기서 자기 것만 받아 그린다\n       (형제: gdpr·환율 플러그인). 알림 탭에서만 받는다. 채널 목록은 다른 요청을 막지 않도록 progressive 로 받는다"
+        },
+        {
+            "id": "slNotificationDefinitions",
+            "if": "{{query.tab === 'notifications'}}",
+            "label_key": "$t:sirsoft-social_login.admin.notifications.title",
+            "type": "api",
+            "endpoint": "/api/admin/notification-definitions?extension_type=plugin&extension_identifier=sirsoft-social_login",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "template_channel": "all",
+                "per_page": 50
+            },
+            "fallback": {
+                "data": {
+                    "data": []
+                }
+            },
+            "errorHandling": {
+                "comment": "실패의 종류를 남긴다 — fallback 이 빈 목록을 주므로 이것이 없으면 403(알림 설정 권한 없음)도 「등록된 알림이 없습니다」로 보인다.\n         이 핸들러가 실패를 받아 끊으므로 설정 화면 전체 오류로 번지지 않는다",
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "slNotificationDefinitionsError": "forbidden"
+                    }
+                },
+                "default": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "slNotificationDefinitionsError": "failed"
+                    }
+                }
+            },
+            "comment": "켠 채널 전부의 템플릿을 한 번에 받는다(template_channel=all) — 이 인자가 없으면 응답의 templates 가 비어 편집 버튼이 그려지지 않는다"
+        }
+    ],
+    "initLocal": {
+        "editingKey": null,
+        "providerForm": {},
+        "providerFormOrigin": {},
+        "providerErrors": null,
+        "isSavingProvider": false,
+        "testResult": null,
+        "impact": null,
+        "showAddForm": false,
+        "newProvider": {
+            "key": "",
+            "label": {},
+            "client_id": "",
+            "client_secret": "",
+            "discovery_url": "",
+            "authorize_url": "",
+            "token_url": "",
+            "userinfo_url": "",
+            "jwks_url": "",
+            "issuer": ""
+        },
+        "newProviderErrors": null
+    },
+    "computed": {
+        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}",
+        "isNotificationReadOnly": "{{slNotificationDefinitions?.data?.abilities?.can_update !== true}}",
+        "canEditProviders": "{{providers?.data?.abilities?.can_update === true}}",
+        "sortableKeys": "{{(providers?.data?.providers ?? []).filter(p => !p.read_only).map(p => p.key)}}"
+    },
+    "permissions": [
+        "sirsoft-social_login.settings.view",
+        "core.plugins.read"
+    ],
+    "named_actions": {
+        "saveProvider": {
+            "comment": "제공자 1건 저장 — 편집 칸(_local.providerForm)을 그대로 보내고 목록을 다시 받는다. 요청 범위는 한 줄 문자열(scopes_text)로 가고 서버가 나눈다(표현식은 정규식을 쓸 수 없다).\n       영향 확인 칸의 [계속 저장]과 편집 칸의 [저장]이 함께 쓴다",
+            "handler": "sequence",
+            "actions": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "isSavingProvider": true,
+                        "providerErrors": null
+                    }
+                },
+                {
+                    "handler": "apiCall",
+                    "target": "/api/plugins/sirsoft-social_login/admin/providers/{{_local.editingKey}}",
+                    "auth_required": true,
+                    "params": {
+                        "method": "PUT",
+                        "body": "{{_local.providerForm}}"
+                    },
+                    "onSuccess": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "merge": "shallow",
+                                "isSavingProvider": false,
+                                "editingKey": null,
+                                "providerForm": {},
+                                "providerFormOrigin": {},
+                                "impact": null
+                            }
+                        },
+                        {
+                            "handler": "toast",
+                            "params": {
+                                "type": "success",
+                                "message": "$t:sirsoft-social_login.admin.providers.saved"
+                            }
+                        },
+                        {
+                            "handler": "refetchDataSource",
+                            "params": {
+                                "dataSourceId": "providers"
+                            }
+                        }
+                    ],
+                    "onError": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "isSavingProvider": false,
+                                "providerErrors": "{{error.errors}}"
+                            }
+                        },
+                        {
+                            "handler": "toast",
+                            "params": {
+                                "type": "error",
+                                "message": "{{error.message ?? '$t:sirsoft-social_login.admin.providers.save_failed'}}"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "plugin_settings_content",
+                "type": "basic",
+                "name": "Div",
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "sl:p-6 sl:min-h-screen sl:bg-gray-50 sl:dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "sl:p-8 sl:min-h-screen sl:bg-gray-50 sl:dark:bg-gray-900"
+                        }
+                    }
+                },
+                "props": {
+                    "className": "sl:p-4 sl:min-h-screen sl:bg-gray-50 sl:dark:bg-gray-900"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:sirsoft-social_login.settings.title",
+                            "description": "$t:sirsoft-social_login.settings.description",
+                            "backPath": "/admin/plugins",
+                            "backLabel": "$t:admin.plugins.back_to_list"
+                        }
+                    },
+                    {
+                        "id": "settings_tabs",
+                        "type": "composite",
+                        "name": "TabNavigation",
+                        "actions": [
+                            {
+                                "comment": "탭 전환은 주소의 tab 만 바꾼다 — 새로고침·뒤로 가기에도 같은 탭이 열린다",
+                                "type": "change",
+                                "event": "onTabChange",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/plugins/sirsoft-social_login/settings",
+                                    "query": {
+                                        "tab": "{{$args[0]}}"
+                                    }
+                                }
+                            }
+                        ],
+                        "props": {
+                            "className": "sl:mt-6",
+                            "activeTabId": "{{query.tab || 'providers'}}",
+                            "variant": "underline",
+                            "tabs": [
+                                {
+                                    "id": "providers",
+                                    "label": "$t:sirsoft-social_login.admin.tabs.providers"
+                                },
+                                {
+                                    "id": "policy",
+                                    "label": "$t:sirsoft-social_login.admin.tabs.policy"
+                                },
+                                {
+                                    "id": "notifications",
+                                    "label": "$t:sirsoft-social_login.admin.tabs.notifications"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "providers_tab",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{(query.tab || 'providers') === 'providers'}}",
+                        "props": {
+                            "className": "sl:mt-6 sl:space-y-4"
+                        },
+                        "children": [
+                            {
+                                "id": "providers_read_only_banner",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!_computed.canEditProviders && !!providers?.data}}",
+                                "props": {
+                                    "role": "status",
+                                    "className": "sl-alert-warning"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "lock",
+                                            "className": "sl:text-xl sl:leading-none sl:text-amber-600 sl:dark:text-amber-400 sl:flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "sl:text-sm sl:text-amber-800 sl:dark:text-amber-200"
+                                        },
+                                        "text": "$t:sirsoft-social_login.admin.providers.read_only"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "providers_loading",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!providers?.data}}",
+                                "props": {
+                                    "className": "sl:text-sm sl:text-gray-500 sl:dark:text-gray-400"
+                                },
+                                "text": "$t:common.loading"
+                            },
+                            {
+                                "id": "provider_card_{{provider.key}}",
+                                "type": "basic",
+                                "name": "Div",
+                                "iteration": {
+                                    "source": "providers?.data?.providers ?? []",
+                                    "item_var": "provider",
+                                    "index_var": "idx"
+                                },
+                                "dataKey": "{{provider.key}}",
+                                "props": {
+                                    "className": "sl:bg-white sl:dark:bg-gray-800 sl:rounded-lg sl:shadow-sm sl:border sl:border-gray-200 sl:dark:border-gray-700"
+                                },
+                                "children": [
+                                    {
+                                        "id": "provider_card_header_{{provider.key}}",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "sl:flex sl:flex-wrap sl:items-center sl:gap-3 sl:px-6 sl:pt-5"
+                                                }
+                                            }
+                                        },
+                                        "props": {
+                                            "className": "sl:flex sl:flex-wrap sl:items-center sl:gap-3 sl:px-4 sl:pt-5"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "sirsoft-social_login.ProviderMark",
+                                                "props": {
+                                                    "brand": "{{provider.brand}}",
+                                                    "label": "{{provider.display_label}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "sl:flex-1 sl:min-w-0"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "H2",
+                                                        "props": {
+                                                            "className": "sl:text-base sl:font-semibold sl:text-gray-900 sl:dark:text-white"
+                                                        },
+                                                        "text": "{{provider.display_label}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                                        },
+                                                        "text": "{{provider.key}} · {{$t('sirsoft-social_login.admin.providers.types.' + provider.type)}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{provider.enabled}}",
+                                                "props": {
+                                                    "className": "sl:inline-flex sl:items-center sl:px-2 sl:py-0.5 sl:rounded-full sl:text-xs sl:font-medium sl:bg-green-100 sl:text-green-800 sl:dark:bg-green-900/30 sl:dark:text-green-300"
+                                                },
+                                                "text": "$t:sirsoft-social_login.admin.providers.enabled"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{!provider.enabled}}",
+                                                "props": {
+                                                    "className": "sl:inline-flex sl:items-center sl:px-2 sl:py-0.5 sl:rounded-full sl:text-xs sl:font-medium sl:bg-gray-100 sl:text-gray-700 sl:dark:bg-gray-700 sl:dark:text-gray-300"
+                                                },
+                                                "text": "$t:sirsoft-social_login.admin.providers.disabled"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!provider.read_only}}",
+                                                "props": {
+                                                    "className": "sl:flex sl:items-center sl:gap-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "move_up_button_{{provider.key}}",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "위로 — 바로 위 제공자와 자리를 바꾼 키 순서를 저장한다",
+                                                                "type": "click",
+                                                                "handler": "apiCall",
+                                                                "target": "/api/plugins/sirsoft-social_login/admin/providers/reorder",
+                                                                "auth_required": true,
+                                                                "params": {
+                                                                    "method": "POST",
+                                                                    "body": {
+                                                                        "keys": "{{_computed.sortableKeys.map((k, j, a) => j === a.indexOf(provider.key) - 1 ? provider.key : (j === a.indexOf(provider.key) ? a[a.indexOf(provider.key) - 1] : k))}}"
+                                                                    }
+                                                                },
+                                                                "onSuccess": {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "providers"
+                                                                    }
+                                                                },
+                                                                "onError": {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message ?? '$t:sirsoft-social_login.admin.providers.save_failed'}}"
+                                                                    }
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "sl-btn-icon",
+                                                            "title": "$t:sirsoft-social_login.admin.providers.move_up",
+                                                            "aria-label": "$t:sirsoft-social_login.admin.providers.move_up",
+                                                            "disabled": "{{!_computed.canEditProviders || _computed.sortableKeys.indexOf(provider.key) <= 0}}"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "chevron-up",
+                                                                    "className": "sl:text-sm sl:leading-none"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "move_down_button_{{provider.key}}",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "아래로 — 바로 아래 제공자와 자리를 바꾼 키 순서를 저장한다",
+                                                                "type": "click",
+                                                                "handler": "apiCall",
+                                                                "target": "/api/plugins/sirsoft-social_login/admin/providers/reorder",
+                                                                "auth_required": true,
+                                                                "params": {
+                                                                    "method": "POST",
+                                                                    "body": {
+                                                                        "keys": "{{_computed.sortableKeys.map((k, j, a) => j === a.indexOf(provider.key) + 1 ? provider.key : (j === a.indexOf(provider.key) ? a[a.indexOf(provider.key) + 1] : k))}}"
+                                                                    }
+                                                                },
+                                                                "onSuccess": {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "providers"
+                                                                    }
+                                                                },
+                                                                "onError": {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message ?? '$t:sirsoft-social_login.admin.providers.save_failed'}}"
+                                                                    }
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "sl-btn-icon",
+                                                            "title": "$t:sirsoft-social_login.admin.providers.move_down",
+                                                            "aria-label": "$t:sirsoft-social_login.admin.providers.move_down",
+                                                            "disabled": "{{!_computed.canEditProviders || _computed.sortableKeys.indexOf(provider.key) === -1 || _computed.sortableKeys.indexOf(provider.key) >= _computed.sortableKeys.length - 1}}"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "chevron-down",
+                                                                    "className": "sl:text-sm sl:leading-none"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "provider_card_body_{{provider.key}}",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "sl:px-6 sl:py-4 sl:space-y-3"
+                                                }
+                                            }
+                                        },
+                                        "props": {
+                                            "className": "sl:px-4 sl:py-4 sl:space-y-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "provider_read_only_notice_{{provider.key}}",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{provider.read_only}}",
+                                                "props": {
+                                                    "className": "sl:text-sm sl:text-gray-600 sl:dark:text-gray-300"
+                                                },
+                                                "text": "$t:sirsoft-social_login.admin.providers.extension_notice"
+                                            },
+                                            {
+                                                "id": "credentials_unreadable_alert_{{provider.key}}",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{provider.credentials_unreadable}}",
+                                                "props": {
+                                                    "role": "alert",
+                                                    "className": "sl-alert-error"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "key",
+                                                            "className": "sl:text-red-600 sl:dark:text-red-400 sl:flex-shrink-0"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "sl:text-sm sl:text-red-800 sl:dark:text-red-200"
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.providers.credentials_unreadable"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "redirect_uri_row_{{provider.key}}",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "responsive": {
+                                                    "640-": {
+                                                        "props": {
+                                                            "className": "sl:flex sl:flex-row sl:items-center sl:gap-2"
+                                                        }
+                                                    }
+                                                },
+                                                "props": {
+                                                    "className": "sl:flex sl:flex-col sl:gap-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "responsive": {
+                                                            "640-": {
+                                                                "props": {
+                                                                    "className": "sl:text-xs sl:font-medium sl:text-gray-500 sl:dark:text-gray-400 sl:w-40 sl:flex-shrink-0"
+                                                                }
+                                                            }
+                                                        },
+                                                        "props": {
+                                                            "className": "sl:text-xs sl:font-medium sl:text-gray-500 sl:dark:text-gray-400 sl:flex-shrink-0"
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.providers.redirect_uri"
+                                                    },
+                                                    {
+                                                        "id": "redirect_uri_value_{{provider.key}}",
+                                                        "type": "basic",
+                                                        "name": "Code",
+                                                        "props": {
+                                                            "className": "sl:flex-1 sl:min-w-0 sl:break-all sl-break-all sl:text-xs sl:bg-gray-50 sl:dark:bg-gray-900 sl:text-gray-800 sl:dark:text-gray-200 sl:px-2 sl:py-1.5 sl:rounded"
+                                                        },
+                                                        "text": "{{provider.redirect_uri}}"
+                                                    },
+                                                    {
+                                                        "id": "copy_redirect_uri_button_{{provider.key}}",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "콜백 주소를 복사한다 — 제공자 콘솔에 그대로 붙여 넣는 값이다",
+                                                                "type": "click",
+                                                                "handler": "sirsoft-social_login.copyToClipboard",
+                                                                "params": {
+                                                                    "text": "{{provider.redirect_uri}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "sl-btn sl-btn-secondary sl:text-xs sl-flex-center sl:gap-1",
+                                                            "aria-label": "$t:sirsoft-social_login.admin.providers.copy"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "copy",
+                                                                    "iconStyle": "regular",
+                                                                    "className": "sl:text-xs sl:leading-none"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "responsive": {
+                                                                    "640-": {
+                                                                        "props": {
+                                                                            "className": "sl:inline"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "props": {
+                                                                    "className": "sl:hidden"
+                                                                },
+                                                                "text": "$t:sirsoft-social_login.admin.providers.copy"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "webhook_url_row_{{provider.key}}_{{hook.kind}}",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "iteration": {
+                                                    "source": "Object.keys(provider.webhook_urls ?? {}).map((kind) => ({ kind: kind, url: provider.webhook_urls[kind] }))",
+                                                    "item_var": "hook"
+                                                },
+                                                "responsive": {
+                                                    "640-": {
+                                                        "props": {
+                                                            "className": "sl:flex sl:flex-row sl:items-center sl:gap-2"
+                                                        }
+                                                    }
+                                                },
+                                                "props": {
+                                                    "className": "sl:flex sl:flex-col sl:gap-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "responsive": {
+                                                            "640-": {
+                                                                "props": {
+                                                                    "className": "sl:text-xs sl:font-medium sl:text-gray-500 sl:dark:text-gray-400 sl:w-40 sl:flex-shrink-0"
+                                                                }
+                                                            }
+                                                        },
+                                                        "props": {
+                                                            "className": "sl:text-xs sl:font-medium sl:text-gray-500 sl:dark:text-gray-400 sl:flex-shrink-0"
+                                                        },
+                                                        "text": "{{$t('sirsoft-social_login.admin.providers.webhook_kinds.' + hook.kind)}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Code",
+                                                        "props": {
+                                                            "className": "sl:flex-1 sl:min-w-0 sl:break-all sl-break-all sl:text-xs sl:bg-gray-50 sl:dark:bg-gray-900 sl:text-gray-800 sl:dark:text-gray-200 sl:px-2 sl:py-1.5 sl:rounded"
+                                                        },
+                                                        "text": "{{hook.url}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "웹훅 주소를 복사한다 — 제공자 콘솔의 웹훅 설정에 붙여 넣는 값이다",
+                                                                "type": "click",
+                                                                "handler": "sirsoft-social_login.copyToClipboard",
+                                                                "params": {
+                                                                    "text": "{{hook.url}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "sl-btn sl-btn-secondary sl:text-xs sl-flex-center sl:gap-1",
+                                                            "aria-label": "$t:sirsoft-social_login.admin.providers.copy"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "copy",
+                                                                    "iconStyle": "regular",
+                                                                    "className": "sl:text-xs sl:leading-none"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "responsive": {
+                                                                    "640-": {
+                                                                        "props": {
+                                                                            "className": "sl:inline"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "props": {
+                                                                    "className": "sl:hidden"
+                                                                },
+                                                                "text": "$t:sirsoft-social_login.admin.providers.copy"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "provider_notes_{{provider.key}}",
+                                                "type": "basic",
+                                                "name": "Ul",
+                                                "if": "{{(provider.notes?.length ?? 0) > 0}}",
+                                                "props": {
+                                                    "className": "sl-alert-info sl:flex-col sl:items-start sl:gap-1 sl:list-disc sl:pl-8"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Li",
+                                                        "iteration": {
+                                                            "source": "provider.notes",
+                                                            "item_var": "note"
+                                                        },
+                                                        "props": {
+                                                            "className": "sl:text-xs sl:text-blue-800 sl:dark:text-blue-200"
+                                                        },
+                                                        "text": "{{$t(note)}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "provider_last_status_{{provider.key}}",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "if": "{{!provider.read_only}}",
+                                                "props": {
+                                                    "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                                },
+                                                "text": "{{$t('sirsoft-social_login.admin.providers.last_success') + ': ' + (provider.last_success_at ?? '-') + ' · ' + $t('sirsoft-social_login.admin.providers.last_error') + ': ' + (provider.last_error_at ? provider.last_error_at + ' (' + (provider.last_error_code ?? '') + ')' : '-')}}"
+                                            },
+                                            {
+                                                "id": "provider_test_result_{{provider.key}}",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{_local.testResult?.key === provider.key}}",
+                                                "props": {
+                                                    "role": "status",
+                                                    "className": "{{_local.testResult?.ok ? 'sl-alert-success' : 'sl-alert-warning'}}"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "{{_local.testResult?.ok ? 'circle-check' : 'triangle-exclamation'}}",
+                                                            "className": "sl:flex-shrink-0"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "sl:text-sm"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "sl:font-medium"
+                                                                },
+                                                                "text": "{{$t('sirsoft-social_login.admin.providers.test_results.' + (_local.testResult?.result ?? 'unexpected'))}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{!!_local.testResult?.provider_code}}",
+                                                                "props": {
+                                                                    "className": "sl:text-xs"
+                                                                },
+                                                                "text": "{{$t('sirsoft-social_login.admin.providers.provider_code') + ': ' + _local.testResult?.provider_code}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "provider_actions_{{provider.key}}",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!provider.read_only}}",
+                                                "responsive": {
+                                                    "portable": {
+                                                        "comment": "휴대폰·태블릿 폭(portable, 1023px 이하)은 단추를 한 줄에 하나씩 전폭으로 쌓는다(와이어프레임)",
+                                                        "props": {
+                                                            "className": "sl:flex sl:flex-col sl:gap-2 sl:pt-1"
+                                                        }
+                                                    }
+                                                },
+                                                "props": {
+                                                    "className": "sl:flex sl:flex-wrap sl:gap-2 sl:pt-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "edit_provider_button_{{provider.key}}",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "이 카드만 편집 칸을 연다 — 지금 값을 편집 칸에 옮긴다(비밀값은 마스크 그대로, 바꾸지 않으면 유지된다).\n                       얕은 병합: 기본(깊은 병합)이면 앞서 연 카드에만 있던 이름 언어·버튼 색이 이 카드 편집 칸에 섞여 저장된다.\n                       [저장]이 띄운 영향 확인(계속 저장 있음)은 닫는다 — 남으면 그 카드의 [계속 저장]이 지금 여는 편집 칸을 저장한다",
+                                                                "type": "click",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "merge": "shallow",
+                                                                    "editingKey": "{{provider.key}}",
+                                                                    "providerErrors": null,
+                                                                    "impact": "{{_local.impact?.confirm === true ? null : _local.impact}}",
+                                                                    "providerForm": "{{Object.assign({}, provider, { scopes_text: (provider.scopes ?? []).join(' '), label: Object.assign({}, provider.label ?? {}) })}}",
+                                                                    "providerFormOrigin": "{{Object.assign({}, provider, { scopes_text: (provider.scopes ?? []).join(' '), label: Object.assign({}, provider.label ?? {}) })}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "sl-btn sl-btn-primary sl:text-sm",
+                                                            "disabled": "{{!_computed.canEditProviders}}"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-social_login.admin.providers.edit"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "test_provider_button_{{provider.key}}",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "연결 테스트 — 회원 동의 없이 자격증명·콜백 주소를 확인한다. 결과는 이 카드 아래에 보인다",
+                                                                "type": "click",
+                                                                "handler": "apiCall",
+                                                                "target": "/api/plugins/sirsoft-social_login/admin/providers/{{provider.key}}/test",
+                                                                "auth_required": true,
+                                                                "params": {
+                                                                    "method": "POST"
+                                                                },
+                                                                "onSuccess": {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "testResult": "{{Object.assign({ key: provider.key }, response.data)}}"
+                                                                    }
+                                                                },
+                                                                "onError": {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message ?? '$t:sirsoft-social_login.admin.providers.test_failed'}}"
+                                                                    }
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "sl-btn sl-btn-secondary sl:text-sm",
+                                                            "disabled": "{{!_computed.canEditProviders}}"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-social_login.admin.providers.test"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "test_login_button_{{provider.key}}",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "브라우저 테스트 로그인 창을 연다 — 실제 제공자 화면까지 왕복해 설정을 확인한다",
+                                                                "type": "click",
+                                                                "handler": "sirsoft-social_login.openTestLogin",
+                                                                "params": {
+                                                                    "provider": "{{provider.key}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "sl-btn sl-btn-secondary sl:text-sm",
+                                                            "disabled": "{{!_computed.canEditProviders}}"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-social_login.admin.providers.test_login"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "impact_button_{{provider.key}}",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "영향 보기 — 이 제공자로만 로그인하는 회원 수와 연결 회원 수를 이 카드의 확인 칸에 보인다(저장하지 않음)",
+                                                                "type": "click",
+                                                                "handler": "apiCall",
+                                                                "target": "/api/plugins/sirsoft-social_login/admin/providers/{{provider.key}}/impact",
+                                                                "auth_required": true,
+                                                                "params": {
+                                                                    "method": "GET"
+                                                                },
+                                                                "onSuccess": {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "impact": "{{Object.assign({ key: provider.key, label: provider.display_label, confirm: false }, response.data)}}"
+                                                                    }
+                                                                },
+                                                                "onError": {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message ?? '$t:sirsoft-social_login.admin.providers.save_failed'}}"
+                                                                    }
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "sl-btn sl-btn-secondary sl:text-sm"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-social_login.admin.providers.impact"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "delete_provider_button_{{provider.key}}",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "if": "{{provider.type === 'custom'}}",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "일반 OIDC 제공자를 지운다(확인 창을 거친다) — 성공하면 제공자 목록을 다시 받는다",
+                                                                "type": "click",
+                                                                "handler": "apiCall",
+                                                                "target": "/api/plugins/sirsoft-social_login/admin/providers/{{provider.key}}",
+                                                                "auth_required": true,
+                                                                "params": {
+                                                                    "method": "DELETE"
+                                                                },
+                                                                "confirm": "$t:sirsoft-social_login.admin.providers.delete_confirm",
+                                                                "onSuccess": [
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "success",
+                                                                            "message": "$t:sirsoft-social_login.admin.providers.deleted"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "refetchDataSource",
+                                                                        "params": {
+                                                                            "dataSourceId": "providers"
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "onError": {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message ?? '$t:sirsoft-social_login.admin.providers.save_failed'}}"
+                                                                    }
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "sl-btn sl-btn-danger sl:text-sm",
+                                                            "disabled": "{{!_computed.canEditProviders}}"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:common.delete"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "partial": "partials/plugin_settings/_provider_impact.json"
+                                            },
+                                            {
+                                                "partial": "partials/plugin_settings/_provider_editor.json"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "partial": "partials/plugin_settings/_provider_add.json"
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/plugin_settings/_policy_tab.json"
+                    },
+                    {
+                        "partial": "partials/plugin_settings/_notifications_tab.json"
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "comment": "알림 템플릿 편집 창 — 알림 탭의 템플릿 행 「템플릿 편집」에서 연다",
+            "partial": "partials/plugin_settings/_modal_notification_template_edit.json"
+        },
+        {
+            "comment": "템플릿 미리보기 창 — 편집 창 안의 미리보기 버튼이 연다. 편집 창이 만들어 둔 치환 결과를 보여 주기만 한다",
+            "partial": "partials/plugin_settings/_modal_notification_template_preview.json"
+        },
+        {
+            "comment": "알림 정의 기본값 복원 확인 창 — 알림 탭의 「기본값으로 되돌리기」가 대상 ID·이름을 전역에 넣고 연다",
+            "partial": "partials/plugin_settings/_modal_notification_definition_reset.json"
+        }
+    ]
+}

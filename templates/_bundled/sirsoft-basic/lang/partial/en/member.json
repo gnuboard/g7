@@ -1,0 +1,60 @@
+{
+  "display_name": {
+    "label": "Display name",
+    "option_default": "Default ({{label}})",
+    "preview": "Other members will see you as \"{{name}}\".",
+    "preview_sample": "Example: other members will see you like \"{{name}}\".",
+    "requires_nickname": "Enter a nickname to use this kind.",
+    "reselect": "The kind you chose before, \"{{kind}}\", is no longer available. Please choose again. Until then you are shown by the default kind ({{fallback}})."
+  },
+  "fields": {
+    "select_placeholder": "Select",
+    "other": "Other (enter your own)",
+    "other_input": "Enter {{label}}",
+    "other_placeholder": "Enter your own",
+    "range_start": "{{label}} start date",
+    "range_end": "{{label}} end date",
+    "zipcode": "Postal code",
+    "address": "Address",
+    "address_detail": "Address line 2",
+    "zipcode_label": "{{label}} postal code",
+    "address_label": "{{label}} address",
+    "address_detail_label": "{{label}} address line 2",
+    "upload_after_signup": "You can upload this from your profile after signing up.",
+    "signup_fields_changed": "The sign-up fields have changed. The form was reloaded. Please review your entries and submit again.",
+    "section_extra": "Additional information",
+    "locked_identity": "This field was confirmed by identity verification and cannot be edited here.",
+    "locked_admin_only": "Only an administrator can edit this field.",
+    "locked_until": "Next change available: {{date}}",
+    "locked_generic": "This field cannot be edited.",
+    "file_add": "Add file",
+    "file_add_label": "Add file for {{label}}",
+    "file_remove": "Remove {{name}}",
+    "file_rules": "Allowed extensions: {{extensions}} / Max size per file: {{size}}MB / Max files: {{count}}",
+    "agreement_required": "(Required)",
+    "agreement_optional": "(Optional)"
+  },
+  "required_info": {
+    "title": "Additional information",
+    "notice": "To keep using the service, please fill in the items below. ({{count}} items)",
+    "notice_one": "To keep using the service, please fill in the item below. ({{count}} item)",
+    "loading": "Loading the items to fill in.",
+    "save": "Save and continue",
+    "saving": "Saving",
+    "saved": "Your additional information has been saved.",
+    "remaining": "{{count}} required items are still empty.",
+    "remaining_one": "{{count}} required item is still empty.",
+    "logout": "Log out",
+    "pending_modal": {
+      "editor_label": "Additional information required dialog",
+      "title": "Additional information required",
+      "message": "You need to fill in additional information before using this feature. Fill it in now?",
+      "close": "Close",
+      "go": "Fill in now"
+    },
+    "identity": {
+      "expired": "Your identity verification has expired. Please verify your identity again.",
+      "invalid": "Your identity verification could not be confirmed. Please verify your identity again."
+    }
+  }
+}

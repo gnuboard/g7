@@ -1,0 +1,37 @@
+feature: 스케줄 DB 등록부 스키마·모델·조회 서비스 (이슈 #17, 7.2.0)
+
+description: |
+  schedules 확장 마이그레이션(000001~000003·000005)이 만든 스키마와 Schedule 모델 계약(K1),
+  조회 서비스 ScheduleLookupService(K4)를 고정한다.
+
+  적용 지점:
+    - 스키마: 실행 방식·이력 방식·실행 조건·다국어 명칭·시간대·커맨드 클래스 컬럼, without_overlapping 분 정수,
+      uq_schedules_owner_name, schedule_histories (schedule_id, started_at) 인덱스.
+      마이그레이션 왕복(up/down/up)·옛 형식 변환(1→1440·평문→JSON·중복 정리)은 DDL 이라 전용 DB 실측으로 확인한다(이력 문서).
+    - 모델: localizedLabel/Description, isOwned/ownerIsActive, scopeOwnedBy(null = 직접 등록), trackable·다국어 dot-path 수정 기록.
+    - 조회: findOwned · nextRunAt(행 시간대·30초 주기) · ownersSummary(코어→모듈→플러그인→custom).
+
+coverage_strategy: full
+
+axes:
+  owner: [core, module, plugin, custom]
+  frequency: [cron, every_thirty_seconds]
+
+effects:
+  - schema_has_registry_columns
+  - without_overlapping_is_minutes_integer
+  - owner_name_unique_index_exists
+  - history_schedule_started_index_exists
+  - label_resolves_locale_then_fallback_then_name
+  - owned_rows_report_owner_activity
+  - owned_by_scope_null_means_custom
+  - operator_edit_records_dot_path_overrides
+  - owners_summary_orders_core_extensions_custom
+  - next_run_respects_row_timezone_and_thirty_seconds
+  - find_owned_scopes_by_owner
+
+# E2E axis 없음: 화면 표면이 없는 데이터·서비스 계층이다(owners API·화면은 S5 매니페스트).
+
+test_files:
+  - tests/Feature/Database/ScheduleMigrationSchemaTest.php
+  - tests/Feature/Services/Schedule/ScheduleLookupServiceTest.php

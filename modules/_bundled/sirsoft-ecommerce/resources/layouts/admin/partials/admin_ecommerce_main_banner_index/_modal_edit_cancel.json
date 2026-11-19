@@ -22,7 +22,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "btn btn-outline"
+                    "className": "ecommerce-btn ecommerce-btn-outline"
                 },
                 "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.cancel"
             },
@@ -37,7 +37,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "btn btn-primary"
+                    "className": "ecommerce-btn ecommerce-btn-primary"
                 },
                 "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.confirm"
             }
@@ -48,7 +48,7 @@
             "type": "basic",
             "name": "P",
             "props": {
-                "className": "text-body"
+                "className": "ecommerce-text-body"
             },
             "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.message"
         },
@@ -56,7 +56,7 @@
             "type": "basic",
             "name": "P",
             "props": {
-                "className": "text-body mt-1"
+                "className": "ecommerce-text-body ecommerce:mt-1"
             },
             "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.sub_message"
         }

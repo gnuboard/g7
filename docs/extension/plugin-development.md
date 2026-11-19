@@ -251,7 +251,8 @@ class Plugin implements PluginInterface
 | 메서드 | 기본값 | 설명 |
 |--------|--------|------|
 | `install()` | `true` | 설치 로직 |
-| `uninstall()` | `true` | 제거 로직 |
+| `uninstall()` | `true` | 제거 로직 — 데이터 보존 제거에서도 매번 불린다 ([제거 훅](#제거-훅-uninstall-과-uninstalldata-720)) |
+| `uninstallData()` | 빈 동작 | 「데이터도 함께 삭제」를 고른 제거에서만 부르는 데이터 정리 (7.2.0+, [제거 훅](#제거-훅-uninstall-과-uninstalldata-720)) |
 | `activate()` | `true` | 활성화 로직 |
 | `deactivate()` | `true` | 비활성화 로직 |
 | `getDynamicTables()` | `[]` | 런타임 동적 생성 테이블 목록 (언인스톨 시 Manager가 삭제) |
@@ -267,6 +268,36 @@ class Plugin implements PluginInterface
 | `upgrades()` | `[]` | 업그레이드 스텝 (`upgrades/` 디렉토리 자동 발견). **`g7_version >= 7.0.0-beta.5` 인 플러그인은 신규 step 이 `AbstractUpgradeStep` 상속 의무** ([upgrade-step-guide §13](upgrade-step-guide.md)) — 미상속 시 `PluginManager::runUpgradeSteps` 가 `RuntimeException` throw |
 
 > **동적 식별자 보존 규칙**: `Permission::updateOrCreate()` / `Role::firstOrCreate()` 등으로 런타임에 생성한 엔티티는 업데이트 시 `cleanupStalePluginEntries` 에 의해 "정적 정의에 없는 고아 레코드" 로 판정되어 삭제될 위험이 있습니다. 이를 방지하려면 동적 식별자 목록을 위 3개 훅에서 반환하세요 — 정적 정의 + 동적 식별자가 병합된 expected 목록을 기준으로 판정되어 보존됩니다. 상세는 [extension-update-system.md](extension-update-system.md) 참조.
+
+### 제거 훅: uninstall() 과 uninstallData() (7.2.0+)
+
+제거는 운영자가 「데이터도 함께 삭제」를 골랐는지(`plugin:uninstall --delete-data`, 화면의 같은 옵션)에 따라 두 갈래로 나뉜다. `PluginManager` 가 부르는 순서는 다음과 같다.
+
+| 단계 | 데이터 보존 제거 | 데이터도 함께 삭제 |
+|------|------------------|--------------------|
+| 1. 동적 테이블 삭제·마이그레이션 롤백 | — | ✅ (트랜잭션 밖) |
+| 2. `uninstall()` | ✅ | ✅ |
+| 3. 권한·역할 삭제 | — | ✅ 코어 |
+| 4. 메뉴 삭제 | — | ✅ 코어 (운영자가 만든 자식 메뉴는 남긴다) |
+| 5. `uninstallData()` | — | ✅ |
+| 6. 본인확인 정책·항목 선언·알림 정의/템플릿·스케줄 삭제 | — | ✅ 코어 |
+| 7. 레이아웃·플러그인 행 삭제 | ✅ | ✅ |
+
+- `uninstall()` 은 **모든 제거에서** 불린다. 데이터를 남기는 제거에서도 돌기 때문에, 운영자가 다시 설치했을 때 이어 써야 할 것(메뉴, 운영자가 고친 템플릿, 코어 행에 적재한 값)을 여기서 지우면 안 된다. 다시 설치하면 되살아나는 것(캐시, 임시 파일 등)만 정리한다.
+- 플러그인이 **코어 행에 더한 데이터**(예: 코어 알림 정의에 붙인 자기 채널 템플릿)와, 운영자가 「데이터도 함께 삭제」를 골랐을 때만 사라져야 하는 것은 `uninstallData()` 에서 지운다.
+- 메뉴·권한·역할·본인확인 정책·항목 선언·알림 정의·스케줄은 코어가 데이터 삭제 경로에서만 지우므로 플러그인이 다시 지우지 않는다. 특히 **메뉴를 `uninstall()` 에서 지우지 않는다** — 데이터 보존 제거에서도 메뉴가 사라진다.
+- `uninstallData()` 가 불릴 때는 1단계에서 플러그인 자체 테이블이 이미 롤백돼 있다. 자기 테이블을 읽어야 하는 정리는 `getDynamicTables()`·마이그레이션 `down()` 으로 옮긴다.
+
+```php
+public function uninstallData(): void
+{
+    // 코어 알림 정의에 더한 이 플러그인 채널(sms·alimtalk)의 템플릿과 definitions.channels 항목을 걷어낸다 —
+    // 코어 행이라 마이그레이션 롤백으로 지워지지 않는다
+    $this->cleanupChannelContributions();
+}
+```
+
+실제 구현은 `plugins/_bundled/sirsoft-message_bizppurio/plugin.php` 의 `uninstallData()` 를 참고한다 (템플릿 삭제는 코어 `NotificationSyncHelper::cleanupStaleTemplates()` 를 쓴다).
 
 ---
 
@@ -378,7 +409,7 @@ plugins/_bundled/sirsoft-payment/
 │   └── layouts/                 # 레이아웃 파일
 │       └── admin/               # 관리자 레이아웃 (admin 템플릿 등록)
 │           ├── plugin_settings.g7.html  # 설정 페이지 레이아웃 (소스 SSoT)
-│           └── plugin_settings.json     # 짝 런타임 계약 (AbstractPlugin 이 직접 읽음 — 디스크 상주 필수)
+│           └── plugin_settings.json     # 짝 런타임 계약 (`layout:decompile --sync` 로 굽는다 — 소스가 없을 때의 대체 경로)
 ├── src/
 │   ├── Listeners/              # 이벤트(훅)를 처리하는 리스너
 │   └── Providers/              # 서비스 컨테이너에 기능을 등록하는 프로바이더
@@ -408,7 +439,7 @@ plugins/_bundled/sirsoft-payment/
 
 ---
 
-> 결제·본인인증처럼 외부로 복귀·콜백 주소를 보내거나 결과 화면으로 리다이렉트하는 플러그인은 그 주소를 `url()`·`redirect('/x')` 가 아니라 `SiteUrl::absolute()` 로 만든다 — [routing.md 「절대 URL 은 사이트 주소로 만든다」](../backend/routing.md#절대-url-은-사이트-주소로-만든다).
+> 결제·본인인증처럼 외부로 콜백·웹훅 주소를 보내는 플러그인은 그 주소를 `url()`·`redirect('/x')` 가 아니라 `SiteUrl::absolute()` 로 만든다. 결제 성공·실패 화면처럼 **회원이 브라우저로 여는 결과 화면**으로 리다이렉트할 때는 `ScreenUrl::toAbsolute()`(또는 화면 키 `ScreenUrl::absolute()`)로 만든다 — 환경설정 「사용자 화면 URL」(외부 화면)을 따라야 한다(7.2.0+). [routing.md 「절대 URL 은 사이트 주소로 만든다」](../backend/routing.md#절대-url-은-사이트-주소로-만든다), [개발자 화면 가이드 5절](../custom-development.md#5-화면-주소-키와-주소-필터).
 
 ## 서비스 프로바이더 작성
 
@@ -685,14 +716,14 @@ public function getHooks(): array
 
 ## 설정 레이아웃 파일 시스템
 
-플러그인 설정 UI는 레이아웃 소스(`plugin_settings.g7.html`)으로 정의하고, 그 짝 JSON(`plugin_settings.json`)이 런타임 계약이 됩니다. `AbstractPlugin`의 `getSettingsLayout()` 메서드가 그 JSON 경로를 반환하며, 파일이 존재하면 자동으로 설정 UI를 제공합니다.
+플러그인 설정 UI는 레이아웃 소스(`plugin_settings.g7.html`)로 정의합니다. `AbstractPlugin`의 `getSettingsLayout()` 은 소스 `.g7.html` 을 먼저 찾고, 없으면 짝 JSON(`plugin_settings.json`)을 찾아 그 경로를 돌려줍니다 — 둘 중 하나가 있으면 자동으로 설정 UI 를 제공합니다(코어 관리자 화면 `/admin/plugins/{identifier}/settings`).
 
 ### 핵심 원칙
 
 ```text
 필수: 설정 UI는 resources/layouts/admin/plugin_settings.g7.html 로 작성 (PHP 코드에 하드코딩 금지)
-필수: 짝 plugin_settings.json 을 함께 둔다 — AbstractPlugin::getSettingsLayout() 이 그 경로를 직접 읽으므로
-      DB 설치 레이아웃과 달리 .json 이 디스크에 있어야 한다
+권장: 짝 plugin_settings.json 도 `php artisan layout:decompile <경로> --sync` 로 구워 둔다 — 편집기·검증 도구가 짝을 읽고,
+      JSON 우선 설치 플래그를 켠 환경에서는 짝이 먼저 쓰인다(소스를 고쳤는데 짝을 안 구우면 낡은 화면이 나온다)
 ✅ 필수: 템플릿 오버라이드 우선순위 준수
 ```
 
@@ -703,14 +734,22 @@ public function getHooks(): array
 
 마크업 문법은 [layout-markup.md](../frontend/layout-markup.md), 산출 JSON 의 키 계약은 [layout-json.md](../frontend/layout-json.md) 를 따른다.
 
-`getSettingsLayout()` 은 DB 설치 레이아웃과 달리 파일을 직접 읽으므로 짝 `.json` 이 디스크에 있어야 한다.
+`getSettingsLayout()` 은 DB 설치 레이아웃과 달리 파일을 직접 읽는다. 후보 순서는 레이아웃 설치와 같은 규약(소스 `.g7.html` → 짝 `.json`)이다.
 
 ```php
-// AbstractPlugin 기본 구현
+// AbstractPlugin 기본 구현 (요지)
 public function getSettingsLayout(): ?string
 {
-    $path = $this->getBasePath() . '/resources/layouts/admin/plugin_settings.json';
-    return file_exists($path) ? $path : null;
+    $base = $this->getPluginPath().'/resources/layouts/admin/plugin_settings';
+
+    // 소스(.g7.html) 우선, 없으면 짝(.json) — JSON 우선 설치 플래그면 순서가 바뀐다
+    foreach ($this->layoutSourceCandidates($base.'.json') as $candidate) {
+        if (file_exists($candidate['path'])) {
+            return $candidate['path'];
+        }
+    }
+
+    return null;
 }
 
 // hasSettings()는 레이아웃 파일 존재 여부로 판단
@@ -733,7 +772,7 @@ public function hasSettings(): bool
 | 우선순위 | 경로 | 설명 |
 |----------|------|------|
 | 1순위 | `templates/{template}/layouts/plugins/{identifier}/admin/plugin_settings.json` | 템플릿 오버라이드 |
-| 2순위 | `plugins/{identifier}/resources/layouts/admin/plugin_settings.json` | 플러그인 기본 |
+| 2순위 | `plugins/{identifier}/resources/layouts/admin/plugin_settings.g7.html` → 없으면 짝 `plugin_settings.json` | 플러그인 기본 (소스를 먼저 찾는다) |
 
 ### 레이아웃 JSON 구조 (간소화 버전)
 
@@ -1109,16 +1148,18 @@ public function getPermissions(): array
 ```text
 ✅ 협력은 훅으로 — 코어가 소유한 계약 훅, 또는 상대 확장이 소유하고 문서화한 훅 키를 구독·호출
 ✅ 다른 확장을 이름으로 참조(식별자·네임스페이스·API 경로·번역 키·레이아웃 조각의 target_layout)하면 dependencies 또는 integrations 에 선언
+✅ PHP 로 다른 확장을 부를 때는 그 확장이 manifest public_api 로 공개한 계약(Contracts 인터페이스·DTO·Enum·공개 클래스)만 쓴다
 ❌ 선언하지 않은 확장의 클래스 import · API 경로 호출 · 번역 키 사용 · 그 확장 화면에 조각 끼우기
+❌ 의존을 선언했더라도 public_api 밖 클래스(Model·Service·Repository) import · 소유 테이블 DB::table 조회 · 훅이 넘긴 Model 로 save/update/query
 ```
 
-훅 키가 확장 사이의 계약입니다. 상대 확장이 설치되지 않았거나 다른 확장으로 대체된 사이트에서도 훅은 발화하지 않을 뿐 깨지지 않습니다. 반면 선언 없이 상대의 클래스·API 경로를 직접 쓰면 그 사이트에서 플러그인이 조용히 다르게 동작합니다.
+훅 키와 공개 계약이 확장 사이의 약속입니다. 상대 확장이 설치되지 않았거나 다른 확장으로 대체된 사이트에서도 훅은 발화하지 않을 뿐 깨지지 않습니다. 반면 선언 없이 상대의 클래스·API 경로를 직접 쓰면 그 사이트에서 플러그인이 조용히 다르게 동작합니다. 의존을 선언했어도 상대의 내부 구현(공개 API 로 선언하지 않은 클래스와 테이블)은 상대가 예고 없이 바꿀 수 있습니다 — 공개 범위는 [public_api 필드](module-basics.md#public_api-필드-선택)가 정합니다.
 
 ### 원칙
 
 #### 1. 격리성 (Isolation)
 
-다른 확장의 내부 구현(클래스·테이블·API 경로)에 기대지 않습니다. 상대가 내보내는 훅을 구독합니다.
+다른 확장의 내부 구현(공개 API 로 선언하지 않은 클래스·테이블·API 경로)에 기대지 않습니다. 상대가 내보내는 훅을 구독하거나, 상대가 `public_api` 로 공개한 계약 인터페이스를 서비스 컨테이너로 주입받습니다.
 
 ```php
 // ❌ DON'T: 선언하지 않은 다른 확장의 클래스·API 경로를 직접 사용
@@ -1337,8 +1378,17 @@ HookManager::doAction('vendor-sample_plugin.export.after_complete', $export);
 - 브라우저에서는 `G7Core.stateContracts.get(name)` · `list()` · `ownerOf(name)` 로 읽습니다(읽기 전용).
 - 코어의 `plugins`·`modules` 저장소에는 **자기 식별자 하위만** 씁니다(`plugins.{내 식별자}`). 통째로 다시 쓰면 그 사이 다른 확장이 바꾼
   값을 되돌립니다.
-- 정적 검사 `state-contract-write-ownership` 이 남의 계약 키에 허용 없이 쓰는 레이아웃을 막습니다. 남의 화면에 끼우는 조각의 전역 키
+- 정적 검사가 남의 계약 키에 허용 없이 쓰는 레이아웃을 막습니다. 남의 화면에 끼우는 조각의 전역 키
   규칙은 [레이아웃 확장 — 조각의 전역 상태 키 접두 규칙](layout-extensions.md#조각의-전역-상태-키-접두-규칙)입니다.
+
+### 공개 PHP 표면 (public_api)
+
+다른 확장이 이 플러그인의 PHP 클래스를 불러 써야 하면 `plugin.json` 의 `public_api` 로 공개 범위를 선언합니다(코어 7.2.0+,
+`getPublicApi()`). 모양·규칙은 모듈과 같습니다 — [public_api 필드](module-basics.md#public_api-필드-선택).
+
+반대로 이 플러그인이 다른 확장을 PHP 로 부를 때는 상대가 공개한 계약만 씁니다. 예를 들어 결제 플러그인은 이커머스
+`Contracts\Payment\PaymentGatewayBridge` 를, 배너 플러그인은 게시판 `Contracts\BoardDirectory`·이커머스 `Contracts\Catalog\*` 를
+생성자로 주입받습니다. 상대가 `integrations` 로만 연동되는 확장이면 그 계약이 바인딩돼 있는지(`app()->bound(...)`) 먼저 확인합니다.
 
 ### 최근 검색어 범위 (search_scopes)
 
@@ -1388,7 +1438,7 @@ HookManager::doAction('vendor-sample_plugin.export.after_complete', $export);
 | `history.pushState = …` 로 화면 이동 엿보기 | 레이아웃 조각, `G7Core.state.subscribe()` |
 | 주소 문자열 정규식(`/^\/shop\/…/`)으로 화면 판정 | 상태 계약(예: 기본 템플릿 `_global.shopBase`) |
 
-정적 검사 `extension-private-core-internals` 가 번들 확장의 `resources/js` 와 템플릿 `src` 에서 위 패턴을 막습니다. 템플릿 자기
+정적 검사가 번들 확장의 `resources/js` 와 템플릿 `src` 에서 위 패턴을 막습니다. 템플릿 자기
 컴포넌트가 원본을 호출하는 래퍼처럼 정당한 예외는 같은 줄 또는 바로 위 주석 줄에
 `audit:allow extension-private-core-internals reason: <사유>` 를 남깁니다.
 
@@ -1401,13 +1451,15 @@ HookManager::doAction('vendor-sample_plugin.export.after_complete', $export);
 | 커맨드 | 설명 |
 |--------|------|
 | `php artisan plugin:list` | 플러그인 목록 조회 |
-| `php artisan plugin:install [identifier]` | 플러그인 설치 (Composer 의존성 자동 설치 포함) |
+| `php artisan plugin:install [identifier]` | 플러그인 설치 (Composer 의존성 자동 설치 포함). `--with-dependencies`(필요한 의존 확장을 함께 설치·활성화)·`--with-language-packs=none\|all\|식별자,…`(번들 언어팩 함께 설치) — 7.1.4, `--force`(활성 디렉토리를 원본으로 덮고 재설치)·`--vendor-mode`·`--layout-source` |
+| `php artisan plugin:check-updates [identifier?]` | 플러그인 업데이트 확인 (GitHub 조회 실패 시 실패 표·종료 코드 1) |
+| `php artisan plugin:update [identifier]` | 플러그인 업데이트. `--yes`(확인만 생략)·`--source=auto\|bundled\|github`·`--zip=`·`--signature=`·`--allow-unsigned`(패키지 서명, 7.2.0)·`--layout-strategy=overwrite\|keep`·`--dry-run [--json]`·`--decisions=<파일>`(7.2.0) — 옵션 상세는 [module-commands.md 「모듈 업데이트」](module-commands.md#모듈-업데이트)(플러그인도 같다) |
 | `php artisan plugin:activate [identifier]` | 플러그인 활성화 (끌 때 함께 꺼진 언어팩도 함께 켬, `--without-language-packs` 로 생략). 필요한 의존 확장이 없거나 꺼져 있거나 버전이 모자라면 사유(미설치·비활성·버전 미달 설치 → 요구)를 출력하고 멈춘다 — `--force` 로 강제 활성화 |
 | `php artisan plugin:deactivate [identifier]` | 플러그인 비활성화 |
-| `php artisan plugin:uninstall [identifier]` | 플러그인 삭제 (--delete-data 시 vendor/ 삭제 포함) |
+| `php artisan plugin:uninstall [identifier]` | 플러그인 삭제 (--delete-data 시 vendor/ 삭제 포함). 확인에 답할 수 없는 실행(cron, CI, 원격 명령, `--no-interaction`)은 `--force` 가 없으면 사유를 출력하고 종료 코드 1 |
 | `php artisan plugin:composer-install [identifier]` | 플러그인 Composer 의존성 설치 |
 | `php artisan plugin:build [identifier]` | 플러그인 에셋 빌드 |
-| `php artisan plugin:refresh-layout [identifier?]` | 플러그인 레이아웃 갱신 |
+| `php artisan plugin:refresh-layout [identifier?]` | 플러그인 레이아웃 갱신. 기본은 운영자가 고친 화면 유지(`--layout-strategy=keep`, 7.2.0) — 파일 판으로 덮으려면 `--layout-strategy=overwrite`. `--dry-run`(식별자 필수, `--json`)으로 화면별 판정만 미리 보고, `--decisions=<파일>` 로 화면별 「새 판 적용(take-theirs)·내 수정 유지(keep-ours)」를 정해 실행한다 |
 | `php artisan plugin:cache-clear [identifier?]` | 플러그인 캐시 삭제 |
 | `php artisan plugin:seed [identifier]` | 플러그인 시더 실행 |
 
@@ -1437,6 +1489,8 @@ php artisan plugin:build [identifier]
 ```bash
 php artisan plugin:seed [identifier]
 ```
+
+`plugin:seed` 는 플러그인의 `Database\Seeders\DatabaseSeeder` 를 찾아 실행합니다(`--class` 를 주지 않았을 때). 설치와 업데이트는 `getSeeders()` 목록을 쓰지만, 언어팩을 켜고 끌 때 코어(`RunSeedersOnLanguagePackLifecycle`)는 이 명령으로 시더를 다시 돌려 새 언어의 시드 번역을 기존 행에 채웁니다. 다국어 행을 시딩하는 플러그인은 `database/seeders/DatabaseSeeder.php` 를 두고 `getSeeders()` 와 같은 시더를 실행해야 합니다 — 없으면 재시딩이 「시더 클래스를 찾을 수 없습니다」로 끝나 나중에 켠 언어가 기존 행에 들어가지 않습니다(설치 시험만으로는 드러나지 않습니다). 목록은 사본으로 두지 말고 `getSeeders()` 를 그대로 읽게 합니다.
 
 **옵션**:
 
@@ -1545,7 +1599,7 @@ php artisan plugin:seed sirsoft-payment --force
 | DB 스키마 변경 | ✅ (+ 마이그레이션) | 컬럼/테이블 구조 변경 |
 | 환경설정 구조 변경 | ✅ (SettingsMigrator) | 설정 키 이름/구조 변경 |
 | 기존 데이터 변환 | ✅ | 데이터 형식 변환, 기본값 |
-| 레이아웃 JSON 변경 | ❌ (자동 갱신) | refresh-layout에서 처리 |
+| 레이아웃 JSON 변경 | ❌ (자동 갱신) | 업데이트·refresh-layout에서 처리. `plugin:refresh-layout` 은 7.2.0 부터 운영자 수정 유지(keep)가 기본 — 덮으려면 `--layout-strategy=overwrite` |
 | PHP 코드만 변경 | ❌ | 버전만 올리면 됨 |
 
 > 상세: [extension-update-system.md](extension-update-system.md) "개발자 버전 업데이트 가이드" 참조
@@ -1677,6 +1731,8 @@ G7Core.state.setLocal(updates, options?: {
 - 일반적인 모든 플러그인. 엔진이 자동으로 정합성 확보
 - **초보자는 `selfManaged`를 몰라도 되고 모르는 편이 안전** (safe-by-default)
 
+**그 값을 읽는 쪽**: `render: false` 쓰기는 화면을 다시 그리지 않으므로, 같은 값을 props(`{{_local.form.content}}` 등)로 받는 **다른 컴포넌트**(미리보기·글자 수 표시 등)는 다른 입력이 화면을 다시 그릴 때까지 옛 값에 머문다. 입력 즉시 따라가야 하는 컴포넌트는 `G7Core.state.subscribe()` 로 그 경로를 받아 그린다 — `setGlobalState` 는 다시 그리기를 건너뛰기 전에 리스너를 부른다. 받은 값은 그때의 props 위에서만 쓰고 props 가 바뀌면 props 를 정본으로 돌린다(예: 팝업 플러그인 `PopupPreview` 의 본문 미리보기).
+
 ### 플러그인 개발 체크리스트
 
 새 플러그인이 폼 내부에서 `setLocal`을 쓰는 경우 다음을 확인:
@@ -1729,3 +1785,4 @@ G7Core.state.setLocal(
 - [활동 로그 시스템](../backend/activity-log.md) - 활동 로그 Listener, Per-Item Bulk 로깅 규칙
 - [module-basics.md](module-basics.md) - 모듈 개발 기초 (비교용)
 - [extension-update-system.md](extension-update-system.md) - 확장 업데이트 시스템
+- [개발자 화면 가이드](../custom-development.md) - 화면 주소 키·필터, 엔진 없는 화면이 부르는 결제·본인인증·쿠키 동의 API 순서

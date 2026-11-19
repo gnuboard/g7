@@ -15,6 +15,10 @@ use Tests\PureTestCase;
  * 콘솔 오류와 함께 빠졌다(그 템플릿의 기본 컴포넌트는 Div·Button·H1·H2·H3·A·Span·Img 8종). 사용자 화면은
  * 어느 사용자 템플릿에서나 있는 유틸리티 클래스와 기본 컴포넌트로 쓰고, 반복은 카드에 둔다.
  *
+ * 0.3.0: 그 「어느 템플릿에나 있는 유틸리티」도 템플릿 Tailwind 가 만든 것이라 스타일시트 없는 템플릿에서는
+ * 빠졌다. 클래스는 모듈 자기 CSS(resources/css/main.css)의 `hellomodule-*` 로 바꾸고, 메모 한 건은 모듈이
+ * 제공하는 MemoCard(composite)로 그린다 — 템플릿이 그 컴포넌트를 대체하면 레이아웃을 고치지 않아도 바뀐다.
+ *
  * @scenario-manifest tests/scenarios/user-memo-list-markup.yaml
  */
 class UserMemoListMarkupTest extends PureTestCase
@@ -58,7 +62,17 @@ class UserMemoListMarkupTest extends PureTestCase
     }
 
     /**
-     * 관리자 템플릿 전용 의미 클래스를 쓰지 않는다.
+     * 모듈 CSS 를 읽습니다.
+     *
+     * @return string CSS 원문
+     */
+    private function moduleCss(): string
+    {
+        return (string) file_get_contents(dirname(__DIR__, 3).'/resources/css/main.css');
+    }
+
+    /**
+     * 관리자 템플릿 전용 의미 클래스를 쓰지 않고, 쪽 제목은 모듈 CSS 의 제목 클래스를 쓴다.
      *
      * @scenario part=headings
      *
@@ -81,18 +95,18 @@ class UserMemoListMarkupTest extends PureTestCase
 
         $headings = array_values(array_filter(
             $this->collect($this->layout()),
-            fn (array $entry) => in_array($entry['node']['name'], ['H1', 'H2'], true)
+            fn (array $entry) => $entry['node']['name'] === 'H1'
         ));
-        $this->assertStringContainsString('font-bold', $headings[0]['node']['props']['className']);
-        $this->assertStringContainsString('font-semibold', $headings[1]['node']['props']['className']);
+        $this->assertSame('hellomodule-page__title', $headings[0]['node']['props']['className']);
+        $this->assertMatchesRegularExpression('/\.hellomodule-page__title\s*\{[^}]*font-weight:\s*700/', $this->moduleCss());
     }
 
     /**
-     * 반복은 카드에 붙고 카드 묶음(space-y-3)은 한 번만 그려진다.
+     * 반복은 모듈 MemoCard 에 붙고 카드 묶음(hellomodule-list)은 한 번만 그려진다.
      *
      * @scenario part=iteration
      *
-     * @effects memo_cards_repeat_inside_single_spaced_list
+     * @effects memo_cards_repeat_inside_single_spaced_list, memo_rendered_with_module_memo_card
      *
      * @return void 반환값 없음
      */
@@ -104,8 +118,12 @@ class UserMemoListMarkupTest extends PureTestCase
         ));
 
         $this->assertCount(1, $iterated);
-        $this->assertStringContainsString('p-4', $iterated[0]['node']['props']['className']);
-        $this->assertStringContainsString('space-y-3', (string) $iterated[0]['parent']);
+        $this->assertSame('composite', $iterated[0]['node']['type']);
+        $this->assertSame('gnuboard7-hello_module.MemoCard', $iterated[0]['node']['name']);
+        $this->assertSame("{{memo.title ?? ''}}", $iterated[0]['node']['props']['title']);
+        $this->assertSame("{{memo.content ?? ''}}", $iterated[0]['node']['props']['body']);
+        $this->assertSame('hellomodule-list', $iterated[0]['parent']);
+        $this->assertMatchesRegularExpression('/\.hellomodule-list > \* \+ \*\s*\{[^}]*margin-top/', $this->moduleCss());
     }
 
     /**

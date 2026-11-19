@@ -1,3 +1,6 @@
+// @scenario viewer=manager
+// (매니페스트 소속 표기 — 회차 16 W6: 선언된 파일은 마킹을 최소 1개 가진다)
+
 /**
  * @file board-search-secret-content-preview.test.tsx
  * @description 게시판 목록/검색 미리보기 비밀글·블라인드 차단 게이트 회귀 (이슈 #413-37)
@@ -55,6 +58,8 @@ function findByComment(root: unknown, commentText: string): Node[] {
 }
 
 describe('이슈 #413-37 — 게시판 카드 목록 미리보기 차단 게이트 (card/index.json)', () => {
+    // @scenario viewer=guest
+    // @effects secret_preview_empty_for_guest, blinded_preview_empty_in_list
     it('본문 요약 노드의 if 가 content_preview 존재에 의존한다 (빈 문자열이면 미렌더)', () => {
         const previews = findByComment(cardIndex, '본문 요약');
         expect(previews.length).toBeGreaterThan(0);
@@ -67,6 +72,8 @@ describe('이슈 #413-37 — 게시판 카드 목록 미리보기 차단 게이�
         }
     });
 
+    // @scenario viewer=guest
+    // @effects published_preview_visible_in_list
     it('본문 요약 노드는 content_preview 를 그대로 바인딩한다 (별도 가공 없이 빈 문자열 전달 시 빈 출력)', () => {
         const previews = findByComment(cardIndex, '본문 요약');
         expect(previews.length).toBeGreaterThan(0);

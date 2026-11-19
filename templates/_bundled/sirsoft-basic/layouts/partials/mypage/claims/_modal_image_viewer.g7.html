@@ -12,7 +12,7 @@
       <img data-if="{{!!_global.claimImageViewer?.url}}" src="{{_global.claimImageViewer?.url}}" alt="{{_global.claimImageViewer?.name ?? ''}}" class="w-full h-auto rounded-lg object-contain bg-gray-100 dark:bg-gray-900"/>
       <p data-if="{{!!_global.claimImageViewer?.name}}" class="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center break-all">{{_global.claimImageViewer?.name}}</p>
     </div>
-    <div class="flex justify-end px-4 pb-4">
+    <footer>
       <!-- 닫으면서 대상도 지운다 — 남기면 다음에 다른 사진으로 열었을 때 잠깐 앞 사진이 보인다. -->
       <button type="button" class="px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
         <on type="click">
@@ -21,6 +21,6 @@
         </on>
         $t:claim.detail.image_viewer_close
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

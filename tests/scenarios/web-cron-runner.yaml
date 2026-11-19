@@ -1,0 +1,289 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#609 이 기능의 축은 서로 독립이다 — 호출 주체·번호 상태·스케줄 계통·소급 창·실행 상한·설정 저장 경로는 한 조합 안에서 동시에 성립하지 않는다. pairwise 전개가 요구하는 16축 동시 마킹을 달면 그 테스트가 실제로 재지 않는 축까지 커버로 계상되어, 마커가 사실이 아니게 된다. 실제 커버는 test_files 가 축 단위로 나눠 담당하고(단위 8 + 레이아웃 1 + E2E 1), 상호작용이 실재하는 조합(소급 창 x 최소 간격, 실행 상한 x 이월, 권한 x 노출 통로)은 명시 케이스로 따로 잰다.
+
+feature: 예약 작업 웹 러너 (웹 크론 — A-5/A-6 · P5/G5)
+
+description: |
+  서버에 예약 실행(크론)을 걸 수 없는 호스팅에서 예약 작업을 주소 호출로 돌린다.
+  진입점은 둘(웹 크론 엔드포인트 · `g7:schedule-run` 커맨드)이고 본체는 하나다.
+
+  회귀 불변식 (계획서 A-5 · A-6 · §7.3 · §7.4):
+    1. 대상은 **등록된 스케줄에서 도출**한다 — 러너가 자체 목록을 두면 등록 전수를
+       고정한 가드가 무의미해지고 확장이 등록한 스케줄이 통째로 빠진다 (R17).
+    2. `when()`/`skip()` 은 **소급 실행에서도 실행 시점에** 평가한다 — 확장의
+       `enabled_config` 가 OFF 인데 웹 크론에서만 되살아나면 안 된다 (R16).
+    3. 중복 방지는 이벤트가 가진 mutex 를 그대로 쓴다 — 서버 크론과 웹 크론이 함께
+       걸린 환경에서 두 진입점이 같은 자물쇠를 본다 (R18). 자물쇠는 동시 실행만 막으므로,
+       서버 크론(`schedule:run`)이 돌린 작업도 같은 실행 기록에 남겨 웹 러너의 소급 창이
+       그 작업을 다시 돌리지 않게 한다 — 모든 예약이 멱등이라는 전제에 기대지 않는다.
+       최소 호출 간격도 판정과 기록을 한 잠금 안에서 해, 동시 호출 둘이 함께 통과하지 않는다.
+    4. 실행 창 소급 판정(D17): 호출 주기가 성겨 고정 시각을 지나쳐도 그 사이에 due 였던
+       작업을 **1회씩** 따라잡는다. 최소 호출 간격에 걸려 건너뛴 호출은 작업을 잃지
+       않는다 — 점검 시각이 전진하지 않아 다음 창이 그 구간을 덮는다.
+    5. 실행 상한에 걸리면 남은 작업은 다음 호출로 이월된다. 점검 시각을 전진시키면
+       그 잔여가 창 밖으로 밀려나 영영 실행되지 않는다.
+    6. 호출 번호는 **일반 설정 통로 어디에도 실리지 않는다** (D20) — 목록 조회·단건
+       조회·상태 조회 셋 다. 노출은 권한을 확인하는 전용 경로 한 곳뿐이다.
+    7. 인증을 통과하면 실행 0건이어도 **200** 이다 — 외부 크론 서비스는 비-200 을
+       장애로 보고 알림을 쏟는다. 인증 실패만 401/403.
+    8. 미실행 경고는 **실행 모드와 무관하게** 발화하고, 조치 안내 문구만 갈린다 (D30).
+    9. 되뽑기 실패는 조용히 건너뛰지 않는다 — 건너뛰면 그 예약이 오류 없이 사라진다.
+    10. DB 스케줄 계통은 이 안에서 연결하지 않는다 (D8). 붙일 때 보안 검증기를 반드시
+        경유해야 한다는 조건만 설계에 남긴다 (R15).
+    11. 7.2.0 에서 DB 스케줄은 등록기가 `schedule:{id}` 이벤트로 등록하므로 러너가 그 이벤트를 돈다.
+        그 실행의 이력은 실행기가 행 기준으로 한 건 남긴다 — 러너는 자기 이력을 따로 남기지 않고,
+        [지금 실행]의 계기(수동)와 누른 관리자를 실행기까지 넘기며, 실행기가 실패로 마감한 작업을
+        요약의 실패로 센다. 화면의 실행 이력은 두 출처를 함께 싣고 행 이력은 표시 명칭으로 부른다.
+
+axes:
+  caller: [panel, external, visit]                          # 호출 주체 — 관리자 화면 / 외부 크론 서비스 / 방문 트리거 폴백
+  entry_point: [web, cli]                                   # 진입점 둘 — 본체는 하나여야 한다
+  token: [valid, invalid, missing, rotated, unissued]       # 호출 번호 상태 (unissued = 발급 전 — 무인증 표면이 되면 안 된다)
+  token_channel: [query, header]                            # 번호 전달 통로 — 헤더를 못 쓰는 외부 서비스가 많아 둘 다 받는다
+  event_kind: [shell_event, callback_event, non_artisan]    # 스케줄 계통 — 되뽑기 대상 / in-process 그대로 / 되뽑기 불가(실패로 드러낸다)
+  catch_up: [on_time, missed_window, long_gap, beyond_cap]  # 소급 판정 (D17) — beyond_cap = 창 상한 밖(소급하지 않는다)
+  overlap: [none, filtered, other_server]                   # 실행 직전 판정 — 조건부 등록(R16) · 다중 서버(onOneServer)
+  runtime_budget: [within, exceeded]                        # 실행 상한 — 초과 시 이월
+  cron_mode: [auto, web, cron, both]                        # 실행 방식 설정 — cron 은 주소 호출을 실행으로 잇지 않는다
+  min_interval: [zero, within, elapsed]                     # 최소 호출 간격 — within 은 실행 없이 200
+  ip_allow_list: [empty, match, mismatch]                   # 허용 주소 (CIDR 포함)
+  execution_mode: [subprocess, inprocess]                   # 유효 실행 모드 — 경고 발화는 무관, 조치 문구만 분기 (D30)
+  actor_permission: [settings_read, settings_update, none]  # 관리자 API 권한 경계
+  stale_state: [never_run, recent, stale]                   # 미실행 경고 발화 조건 (D19)
+  setting_save_path: [bulk, single]                         # 설정 저장 두 경로 — 한쪽만 검증하면 다른 쪽이 우회로다
+  schedule_declaration: [declared, empty, explicit_class, unresolvable, core_vendor, regeneration_path]  # 확장 예약 커맨드 해석 입력 (D42) — 선언분만/선언 없음/클래스 명시/해석 불가/코어가 진 벤더 커맨드/오토로드 재생성 경로
+  # 브라우저에서만 재현되는 축
+  vector: [browser_reveal, browser_run_now, browser_detect]  # 화면 동선 — 가림/노출·지금 실행·다시 감지
+
+# 전 조합(1,680만 케이스)은 전개할 수 없다 — 축이 서로 독립이라 쌍 단위 커버로 충분하다.
+# 실제로 상호작용하는 조합(소급 창 × 최소 간격, 실행 상한 × 이월, 권한 × 노출 통로)은
+# test_files 가 명시 케이스로 따로 잰다.
+coverage_strategy: pairwise
+
+exclusions:
+  - { caller: visit, token: invalid, reason: "방문 트리거는 번호를 쓰지 않는다 — 설정과 최소 간격만 판정한다" }
+  - { entry_point: cli, token: invalid, reason: "CLI 진입점은 쉘 접근 자체가 인증이다 — 번호를 요구하지 않는다" }
+  - { event_kind: non_artisan, catch_up: beyond_cap, reason: "되뽑기 실패는 due 판정 이후 단계라 창 밖 이벤트에는 도달하지 않는다" }
+
+effects:
+  # 공개 설정 노출 — 실행 방식·크론 허용 IP·신뢰 프록시는 비로그인 응답에 싣지 않는다
+  - system_and_proxy_settings_stay_out_of_public_frontend_config
+  # 되뽑기 (A-5 ㉢)
+  - every_registered_shell_event_is_recoverable
+  - shell_event_command_is_recovered
+  - non_artisan_event_fails_loudly
+  # 대상 도출 (R17)
+  - runner_targets_are_derived_from_registration
+  - event_identity_key_is_stable_across_invocations
+  - event_identity_keys_do_not_collide
+  - runner_limits_come_from_config
+  # 실행 창 소급 (D17)
+  - missed_fixed_time_task_runs_on_next_call
+  - catch_up_does_not_duplicate
+  - periodic_task_runs_once_per_call
+  - throttled_calls_do_not_lose_work
+  - catch_up_is_bounded_by_the_window_cap
+  # 조건·상한
+  - conditional_registration_is_respected_on_catch_up
+  - runtime_limit_defers_remaining_work
+  - deferred_work_runs_on_the_next_call
+  - failed_task_does_not_stop_the_run
+  # 화면 표시 (D43 — G8 실측 F5·F6)
+  - schedule_history_name_is_human_readable
+  - schedule_status_times_use_the_site_timezone
+  - run_now_times_use_the_site_timezone
+  # 확장 예약 커맨드 해석 (D42 — G8 실측 F4)
+  - only_declared_schedule_commands_are_registered
+  - declared_schedule_command_is_resolvable_in_web_context
+  - declared_command_class_skips_the_lookup
+  - unresolvable_schedule_declaration_is_recorded
+  - core_registers_the_vendor_command_it_schedules
+  # 엔드포인트 접근·응답 계약
+  - missing_token_is_rejected
+  - invalid_token_is_rejected
+  - unissued_token_never_matches
+  - rotated_token_invalidates_the_previous_address
+  - authenticated_call_always_returns_200
+  - token_is_accepted_from_the_header
+  - disallowed_ip_is_rejected
+  - empty_ip_allow_list_permits_any_caller
+  - cron_only_mode_does_not_run_on_web_call
+  - throttled_call_returns_200_without_running
+  - call_after_the_interval_runs_again
+  - zero_interval_disables_throttling
+  - cron_route_has_no_static_extension
+  # 정책 해석
+  - default_mode_allows_web_calls
+  - unknown_mode_falls_back_to_auto
+  - only_cron_mode_closes_web_calls
+  - ip_allow_list_accepts_both_separators
+  - ip_allow_list_matches_by_range
+  - unknown_caller_ip_is_denied_when_a_list_exists
+  - min_interval_resolution_order_and_clamp
+  - visit_fallback_defaults_to_off
+  - ip_allow_list_rule_rejects_malformed_entries
+  # 관리자 API · 노출 (D20)
+  - status_response_excludes_the_cron_token
+  - settings_response_excludes_the_cron_token
+  - single_setting_read_cannot_reach_the_cron_token
+  - token_reveal_requires_update_permission
+  - token_reveal_returns_the_call_url
+  - token_rotation_replaces_the_call_url
+  - token_rotation_requires_update_permission
+  - detect_returns_the_reason_and_effective_mode
+  - detect_reason_is_localized_server_side
+  - run_now_requires_update_permission
+  - run_now_returns_a_summary
+  # 설정 저장 두 경로
+  - system_tab_save_persists_to_the_catalog
+  - invalid_cron_mode_is_rejected_on_bulk_save
+  - invalid_cron_mode_is_rejected_on_single_save
+  - invalid_ip_allow_list_is_rejected_on_both_paths
+  - min_interval_bounds_come_from_the_limits_table
+  # 진입점 둘 · 본체 하나
+  - cli_entry_point_runs_the_same_runner
+  - server_cron_run_is_not_repeated_by_the_web_runner     # schedule:run 이 돌린 작업을 웹 러너의 소급 창이 다시 돌리지 않는다
+  - concurrent_call_does_not_pass_the_interval_check_twice  # 간격 판정 잠금을 다른 호출이 쥔 동안의 호출은 실행 없이 min_interval
+  - both_entry_points_share_the_run_record
+  - web_entry_point_records_the_same_state
+  - cli_exit_code_reflects_failures
+  # 대시보드 경고 (D19 · D30)
+  - fresh_site_does_not_warn
+  - recent_run_does_not_warn
+  - stale_schedule_warns_in_every_execution_mode
+  - guidance_text_branches_by_execution_mode
+  - alert_is_appended_without_dropping_existing_alerts
+  - alert_carries_the_settings_path
+  - stale_threshold_comes_from_config
+  # 실행 무결성 — 「실행했다」고 보고한 것이 실제로 실행됐는가
+  - overlapping_callback_actually_executes
+  - overlapping_lock_is_released_after_run
+  - unparsable_expression_is_reported_not_dropped
+  - one_server_lock_keys_on_due_time_not_call_time
+  # 실행 이력 — 직전 1회 요약은 덮이므로 누적 기록이 따로 남는다
+  - each_run_leaves_one_history_row
+  - failed_run_history_carries_the_reason
+  - skipped_event_leaves_no_history_row
+  # DB 스케줄 이벤트 — 같은 실행을 두 기록에 다른 계기로 남기지 않는다
+  - database_schedule_run_leaves_one_history_row_with_the_runner_trigger
+  - database_schedule_failure_is_counted_as_failed
+  - database_schedule_outside_the_runner_stays_scheduled
+  - recent_history_names_registered_schedules_by_their_display_label
+  - recent_history_shows_a_running_entry_as_running
+  # 무인증 표면의 응답 계약
+  - oversized_token_is_unauthorized_not_unprocessable
+  - runner_failure_still_returns_200
+  - throttled_call_does_not_advance_the_checkpoint
+  # 큐 정책의 관측 확보 (A-6 · D6-a) — 정책은 바꾸지 않고 누락을 볼 수 있게만 한다
+  - notification_send_logs_the_intended_total
+  - notification_send_logs_sent_and_failed_counts
+  - notification_send_counters_are_incremented
+  # 자격증명 취급 — 되돌려도 초록이던 자리 (검증 R2 · 축 15·16)
+  - web_cron_token_is_compared_in_constant_time
+  - web_cron_token_matches_only_the_stored_value
+  - web_cron_token_absent_rejects_every_candidate
+  - web_cron_token_never_reaches_any_log
+  # 배포되는 기본값 자체를 잰다 (검증 R2 · 축 23)
+  - visit_fallback_ships_disabled_by_default
+  - visit_fallback_defaults_to_disabled_when_unset
+  # 상태 쓰기 실패가 드러나는가 (검증 R1 C-3 · R2 축 33)
+  - schedule_state_persist_success_leaves_no_failure_flag
+  - schedule_state_persist_failure_is_reported
+  - schedule_state_persist_flag_clears_after_recovery
+  # 큐 연결 기록 (A-6 · 검증 R2 축 28 — 이 매니페스트가 소유한다)
+  - inprocess_install_records_sync_queue_connection
+  - subprocess_install_leaves_queue_connection_untouched
+  - queue_connection_differs_between_execution_modes
+  - env_generation_never_redetects_the_execution_mode
+  - unresolved_execution_mode_leaves_queue_connection_untouched
+  # 브라우저 (E2E)
+  - cron_url_is_masked_until_revealed
+  - cron_url_is_fetched_on_demand
+  - run_now_executes_the_runner
+  - execution_reason_is_shown_on_screen
+  - in_flight_controls_are_blocked_until_the_call_returns
+  # 화면 구조 계약 (609 docblock 정리 — admin-settings-system-tab.test.tsx 가 이미 재던 효과를 선언으로 올린다)
+  - system_tab_tree_renders_only_on_the_system_tab         # 다른 탭 쿼리에서는 시스템 탭 트리가 그려지지 않는다
+  - system_tab_shows_the_never_run_notice                  # 마지막 실행 기록이 없으면 그 사실을 알리는 문구가 나온다
+  - token_rotate_modal_warns_and_calls_the_rotate_api      # 재발급 확인 모달이 경고 문구와 재발급 API 호출을 함께 갖는다
+  - token_rotate_modal_refreshes_the_parent_call_url       # 재발급 성공 시 모달이 아니라 부모 화면의 주소칸을 갱신한다
+  - dashboard_alert_color_follows_severity_not_name        # 대시보드 경고 색이 경고 이름 열거가 아니라 alert.type 심각도로 갈린다
+  - system_tab_inputs_disable_when_read_only               # 실행 방식 라디오가 읽기 전용 판정으로 비활성화된다
+  - cron_url_field_is_excluded_from_form_binding           # 호출 주소 입력란은 name 이 없고 폼 자동 바인딩에서 빠진다
+  - cron_url_copy_reports_clipboard_failure                # 클립보드에 넣지 못하면 성공이 아니라 실패 토스트를 띄운다
+  # 실행 이력 표 마이그레이션 재실행 가드 — 접두사가 있는 DB 에서도 이미 있는 인덱스·외래키를 본다
+  - schedule_history_migration_guard_sees_prefixed_index
+  - schedule_history_migration_guard_sees_schedule_foreign_key
+
+pending_effects:
+  # 아직 재는 테스트가 없는 효과 — 지우지 않고 원장으로 보존한다.
+  - name: visit_fallback_runs_after_the_response
+    reason: |
+      방문 트리거 폴백은 응답을 보낸 **뒤**(terminate)에 도는데, PHPUnit 의 요청
+      시뮬레이션은 terminate 를 거치지 않아 그 시점을 재현할 수 없다. 설정 판정
+      (visit_fallback_defaults_to_off · min_interval)은 정책 단위 테스트가 덮고,
+      실제 발화는 P0 격리 환경 실측(G8)이 담당한다.
+
+      [G8 실측 2026-09-02] **미커버.** 브라우저에서 「응답 이후에 돌았는가」를 관측할
+      수단이 없다 — 그 실행은 응답을 이미 보낸 뒤라 화면에도 응답에도 흔적이 없고,
+      상태 파일의 변화는 같은 창의 다른 호출과 구분되지 않는다. 대신 같은 러너를 쓰는
+      주소 호출 경로는 전 축을 실측했다(§9.11.2 T3·T4·T10).
+  - name: database_schedule_extension_point_requires_the_command_validator
+    reason: |
+      DB 스케줄 계통은 이 안에서 연결하지 않는다 (D8 — 별건). 붙일 때 보안 검증기를
+      경유해야 한다는 조건은 러너 주석이 소유하며, 그 경로가 생기는 공정이 이 효과를
+      재는 테스트를 함께 만든다 (R15).
+
+      [G8 실측 2026-09-02] 러너가 DB 스케줄을 집지 않는다는 전제는 그대로 성립했다.
+      다만 **기존 관리 화면의 검증기는 실측했다** — `shell` 타입은 생성 자체가 422 로
+      거부되고, 검증을 우회해 DB 에 직접 넣은 행을 실행하면 422 + 이력 `failed` 이며
+      차단 사유가 `error_output` 에 남는다(R15 회귀 축). 러너 경유 축은 여전히 미커버다.
+  - name: queue_drain_extension_point
+    reason: |
+      큐 소진(모아 처리) 경로는 만들지 않는다 (D22). 확장 지점만 러너 설계에 남겼고,
+      승계 조건(R22 컨텍스트 복원 · R23 전용 큐)은 A-6 문서가 소유한다.
+
+      [G8 실측 2026-09-02] **미커버 — 잴 대상이 없다.** 그 경로를 만들지 않기로 한
+      결정(D22)이 유지됐고, 실측 환경에서도 소진 경로가 존재하지 않는 것을 확인했다.
+      이 항목은 「아직 못 잰 효과」가 아니라 「그 경로가 생기는 공정이 함께 만들 효과」다.
+
+notes:
+  - 인스톨러의 QUEUE_CONNECTION=sync 기록(A-6)은 이 매니페스트가 소유한다. 종전 서술은 no-cli-installer-stepwise.yaml 로 넘긴다고 적었으나 그 매니페스트에 해당 축도 effect 도 없어 아무 데도 없는 상태였고, 18줄을 통째로 지워도 red 가 하나도 나지 않았다. 그 값을 쓰는 코드와 같은 자리에서 지킨다.
+  - 알림 발송 건수 로그(D6-a)는 정책 변경이 아니라 관측 확보다. 그 관측이 코드에 남아 있는지는 이 매니페스트가 재고(notification_send_* 3종), 발송 경로 자체의 계약은 guest-notification-delivery.yaml 이 소유한다.
+
+test_files:
+  - tests/Unit/Scheduling/ArtisanCommandExtractorTest.php
+  - tests/Unit/Scheduling/WebCronPolicyTest.php
+  - tests/Unit/Listeners/ScheduleHealthAlertListenerTest.php
+  - tests/Feature/Scheduling/ScheduleRunnerContractTest.php
+  - tests/Feature/Scheduling/ScheduleRunnerCatchUpTest.php
+  - tests/Feature/Scheduling/WebCronEndpointTest.php
+  - tests/Feature/Scheduling/SystemExecutionApiTest.php
+  - tests/Feature/Scheduling/ScheduleRunEntryPointParityTest.php
+  - tests/Feature/Scheduling/ScheduleRunnerIntegrityTest.php
+  - tests/Unit/Listeners/NotificationSendCountLogTest.php
+  - tests/Unit/Scheduling/WebCronTokenStoreTest.php
+  - tests/Unit/Scheduling/ScheduleRunStateTest.php
+  - tests/Feature/Settings/SystemSettingsPublicExposureTest.php
+  - tests/Feature/Database/AllowCodeSchedulesInScheduleHistoriesMigrationTest.php
+  - tests/Feature/Extension/ExtensionScheduleCommandResolutionTest.php
+  - tests/Unit/Installer/InstallerQueueConnectionSyncTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-system-tab.test.tsx
+  # 왕복 중 조작 차단은 번호를 다루는 버튼만의 계약이 아니다 — 환경설정 화면의 왕복 버튼
+  # 전수를 한자리에서 잠근다(E2E 가 실제로 눌러 보는 자리는 그중 하나뿐이다).
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-inflight-controls.test.ts
+  - tests/Playwright/specs/admin/system-tab-cron-settings.spec.ts
+
+rules_layer_coverage:
+  - rule: web-artisan-spawn-requires-runner
+    coverage: |
+      러너는 커맨드를 스폰하지 않는다 — `CommandRunnerResolver::resolve(Inprocess)` 가
+      돌려준 러너에게 넘긴다. 웹 크론의 존재 이유가 "스폰 불가" 이므로 이 경로는 모드
+      판정과 무관하게 언제나 in-process 다.
+  - rule: listener-must-implement-hooklistenerinterface
+    coverage: |
+      대시보드 경고 리스너는 HookListenerInterface 를 구현하고 `type: 'filter'` 를
+      명시한다 — 미명시 시 반환값이 버려져 경고가 조용히 사라진다.
+  - rule: dynamic-route-static-extension
+    coverage: |
+      웹 크론 주소는 정적 확장자로 끝나지 않으므로 이중 등록 헬퍼가 필요 없다.
+      그 성질 자체를 `cron_route_has_no_static_extension` 이 잰다.

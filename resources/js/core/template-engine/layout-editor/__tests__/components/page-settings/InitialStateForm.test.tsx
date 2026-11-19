@@ -11,7 +11,6 @@
  *  ⑥ 상속 🔗 배지 + 되돌림
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { InitialStateForm } from '../../../components/page-settings/InitialStateForm';
@@ -21,6 +20,10 @@ const t = (k: string) => k;
 beforeEach(() => cleanup());
 
 describe('InitialStateForm', () => {
+  /**
+   * @scenario subject=initial_state_form
+   * @effects init_state_form_renders_three_sections
+   */
   it('3섹션을 렌더한다', () => {
     render(<InitialStateForm raw={{ initLocal: { keyword: '' } }} patch={vi.fn()} t={t} />);
     expect(screen.getByTestId('g7le-initstate-section-local')).toBeInTheDocument();
@@ -28,6 +31,10 @@ describe('InitialStateForm', () => {
     expect(screen.getByTestId('g7le-initstate-section-isolated')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=initial_state_form
+   * @effects init_state_form_merges_legacy_state_with_notice
+   */
   it('initLocal/state 양쪽을 읽어 합산하고 state 정규화 안내를 표시한다', () => {
     render(<InitialStateForm raw={{ initLocal: { a: 1 }, state: { b: 2 } }} patch={vi.fn()} t={t} />);
     expect(screen.getByTestId('g7le-initstate-local-item-a')).toBeInTheDocument();
@@ -35,6 +42,10 @@ describe('InitialStateForm', () => {
     expect(screen.getByTestId('g7le-initstate-legacy-state')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=initial_state_form
+   * @effects init_state_form_add_value_patches_init_local
+   */
   it('값 추가 → initLocal 키 +1 패치', () => {
     const patch = vi.fn();
     render(<InitialStateForm raw={{ initLocal: { a: 1 } }} patch={patch} t={t} />);
@@ -43,6 +54,10 @@ describe('InitialStateForm', () => {
     expect(patch).toHaveBeenLastCalledWith('initLocal', { a: 1, page: '' });
   });
 
+  /**
+   * @scenario subject=initial_state_form
+   * @effects init_state_form_add_kind_select_default_values
+   */
   it('값 추가 종류 select — number 선택 시 0, list 선택 시 [] 기본값 생성 (W6)', () => {
     const patch = vi.fn();
     const { rerender } = render(<InitialStateForm raw={{ initLocal: {} }} patch={patch} t={t} />);
@@ -63,11 +78,19 @@ describe('InitialStateForm', () => {
     expect(patch).toHaveBeenLastCalledWith('initLocal', { items: [] });
   });
 
+  /**
+   * @scenario subject=initial_state_form
+   * @effects init_state_form_global_empty_degrade
+   */
   it('전역 0건 디그레이드 표시', () => {
     render(<InitialStateForm raw={{ initLocal: { a: 1 } }} patch={vi.fn()} t={t} />);
     expect(screen.getByTestId('g7le-initstate-global-empty')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=initial_state_form
+   * @effects init_state_form_code_toggle_shows_json
+   */
   it('각 값 [</>] 토글 → 그 값의 JSON 코드 미리보기 노출', () => {
     render(<InitialStateForm raw={{ initLocal: { filters: ['a', 'b'], flag: true } }} patch={vi.fn()} t={t} />);
     // 토글 전 코드 블록 없음.
@@ -84,6 +107,10 @@ describe('InitialStateForm', () => {
     expect(screen.getByTestId('g7le-initstate-code-block-flag').textContent).toBe('true');
   });
 
+  /**
+   * @scenario subject=initial_state_form
+   * @effects init_state_form_handwritten_binding_is_string_row
+   */
   it('표현식/고급 배지 행 0 — 손작성 {{}} 도 문자 행', () => {
     render(<InitialStateForm raw={{ initLocal: { weird: '{{ route.id }}' } }} patch={vi.fn()} t={t} />);
     expect(screen.queryByTestId('g7le-initstate-advanced-weird')).not.toBeInTheDocument();
@@ -91,6 +118,10 @@ describe('InitialStateForm', () => {
     expect((screen.getByTestId('g7le-initstate-type-weird') as HTMLSelectElement).value).toBe('string');
   });
 
+  /**
+   * @scenario subject=initial_state_form
+   * @effects init_state_form_inherited_badge_and_revert
+   */
   it('상속 키 🔗 배지 + 되돌림(자기 override 제거)', () => {
     const patch = vi.fn();
     render(
@@ -109,6 +140,10 @@ describe('InitialStateForm', () => {
     expect(patch).toHaveBeenLastCalledWith('initLocal', { own: 1 });
   });
 
+  /**
+   * @scenario subject=initial_state_form
+   * @effects init_state_form_duplicate_name_rejected_notice
+   */
   it('키 중복 이름 거부(추가 안 됨) + 안내 표시', () => {
     const patch = vi.fn();
     render(<InitialStateForm raw={{ initLocal: { a: 1 } }} patch={patch} t={t} />);
@@ -118,6 +153,10 @@ describe('InitialStateForm', () => {
     expect(screen.getByTestId('g7le-initstate-local-add-error')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=initial_state_form
+   * @effects init_state_form_empty_name_shows_notice
+   */
   it('이름 빈 칸으로 [값 추가] 클릭 → 무반응 대신 안내 표시 (값 추가 무반응 버그 수정)', () => {
     const patch = vi.fn();
     render(<InitialStateForm raw={{ initLocal: {} }} patch={patch} t={t} />);
@@ -130,6 +169,10 @@ describe('InitialStateForm', () => {
     expect(screen.queryByTestId('g7le-initstate-local-add-error')).toBeNull();
   });
 
+  /**
+   * @scenario subject=initial_state_form
+   * @effects init_state_form_code_mode_hides_block_ui
+   */
   it("'코드로' 토글 → JSON 텍스트 칸 노출, 블럭 UI 숨김", () => {
     render(<InitialStateForm raw={{ initLocal: { a: 1 } }} patch={vi.fn()} t={t} />);
     // 기본 블럭 모드 — 코드 칸 없음.
@@ -142,6 +185,10 @@ describe('InitialStateForm', () => {
     expect(screen.queryByTestId('g7le-initstate-local-add')).toBeNull();
   });
 
+  /**
+   * @scenario subject=initial_state_form
+   * @effects init_state_form_code_mode_valid_json_patches
+   */
   it('코드 모드 — 유효 JSON 편집 시 initLocal 패치', () => {
     const patch = vi.fn();
     render(<InitialStateForm raw={{ initLocal: { a: 1 } }} patch={patch} t={t} />);
@@ -150,6 +197,10 @@ describe('InitialStateForm', () => {
     expect(patch).toHaveBeenLastCalledWith('initLocal', { a: 1, b: 2 });
   });
 
+  /**
+   * @scenario subject=initial_state_form
+   * @effects init_state_form_code_mode_broken_json_blocked
+   */
   it('코드 모드 — 깨진 JSON 은 오류 표시 + 패치 차단(저장 차단)', () => {
     const patch = vi.fn();
     render(<InitialStateForm raw={{ initLocal: { a: 1 } }} patch={patch} t={t} />);
@@ -161,6 +212,10 @@ describe('InitialStateForm', () => {
   });
 
   // ── 회귀 ──
+  /**
+   * @scenario subject=initial_state_form
+   * @effects init_state_form_legacy_own_state_is_own
+   */
   it('legacy state 가 __editor.original.state(own.state)로 오면 자기 선언으로 분류(상속 🔗 아님)', () => {
     // 서버 라이브 형태: 병합본은 raw.initLocal, 자기 state 는 own.state(=__editor.original.state).
     render(
@@ -178,6 +233,10 @@ describe('InitialStateForm', () => {
     expect(screen.getByTestId('g7le-initstate-legacy-state')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=initial_state_form
+   * @effects init_state_form_legacy_state_edit_migrates
+   */
   it('legacy state 자기값 편집 → patch 발생(저장 가능) + state 키 정규화 이관', () => {
     const patch = vi.fn();
     render(
@@ -194,6 +253,10 @@ describe('InitialStateForm', () => {
     expect(patch).toHaveBeenCalledWith('initLocal', { searchQuery: 'hello' });
   });
 
+  /**
+   * @scenario subject=initial_state_form
+   * @effects init_state_form_name_identifier_validation
+   */
   it('값 이름 식별자 검증 — 한글/공백/숫자시작/하이픈 거부 + 안내', () => {
     const patch = vi.fn();
     render(<InitialStateForm raw={{ initLocal: {} }} patch={patch} t={t} />);
@@ -209,6 +272,10 @@ describe('InitialStateForm', () => {
     expect(patch).toHaveBeenLastCalledWith('initLocal', { valid_key$1: '' });
   });
 
+  /**
+   * @scenario subject=initial_state_form
+   * @effects init_state_form_code_mode_korean_key_blocked
+   */
   it('코드 모드 — 한글 키는 무효 처리(저장 차단)', () => {
     const patch = vi.fn();
     render(<InitialStateForm raw={{ initLocal: {} }} patch={patch} t={t} />);

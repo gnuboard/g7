@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Providers;
 
+use App\Extension\AbstractModule;
 use App\Extension\BaseModuleServiceProvider;
 use App\Helpers\ResponseHelper;
 use App\Seo\SitemapGenerator;
@@ -15,12 +16,17 @@ use Modules\Sirsoft\Board\Console\Commands\PlaywrightSeedBoardReaction;
 use Modules\Sirsoft\Board\Console\Commands\PlaywrightSeedBoardRetention;
 use Modules\Sirsoft\Board\Console\Commands\PlaywrightSeedBoardScrap;
 use Modules\Sirsoft\Board\Console\Commands\PruneAttachmentsCommand;
+use Modules\Sirsoft\Board\Contracts\BoardDirectory;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
+use Modules\Sirsoft\Board\Fields\GuestAuthorFields;
 use Modules\Sirsoft\Board\Repositories\AttachmentRepository;
+use Modules\Sirsoft\Board\Repositories\BoardPermissionRepository;
 use Modules\Sirsoft\Board\Repositories\BoardRepository;
 use Modules\Sirsoft\Board\Repositories\BoardStatRepository;
 use Modules\Sirsoft\Board\Repositories\BoardTypeRepository;
 use Modules\Sirsoft\Board\Repositories\CommentRepository;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
+use Modules\Sirsoft\Board\Repositories\Contracts\BoardPermissionRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardStatRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardTypeRepositoryInterface;
@@ -40,6 +46,7 @@ use Modules\Sirsoft\Board\Repositories\UserNotificationSettingRepository;
 use Modules\Sirsoft\Board\Seo\BoardSitemapContributor;
 use Modules\Sirsoft\Board\Services\AttachmentService;
 use Modules\Sirsoft\Board\Services\BoardService;
+use Modules\Sirsoft\Board\Services\Bridge\BoardDirectoryService;
 use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Services\ContentMedia\BoardContentMediaService;
 use Modules\Sirsoft\Board\Services\ContentMedia\BoardContentMediaStore;
@@ -65,10 +72,21 @@ class BoardServiceProvider extends BaseModuleServiceProvider
      *
      * @var array<int, class-string>
      */
-    protected array $storageServices = [
-        AttachmentService::class,
-        BoardService::class,
-        BoardContentMediaService::class,
+    protected array $storageServices = [];
+
+    /**
+     * 비공개 첨부 저장소를 따르는 서비스 (#916)
+     *
+     * 첨부·본문 미디어는 권한 확인 뒤 서버가 내려주는 비공개 원본이라, 관리자가 환경설정 > 드라이버 「비공개 첨부 저장소」에서
+     * 고른 디스크(「기본」이면 `modules`, `.env` `SIRSOFT_BOARD_ATTACHMENT_DISK` 고정이면 그 디스크)에 저장한다.
+     * 기존 행은 행 disk 로 서빙·삭제하므로 디스크를 바꿔도 옛 파일에 닿는다. 저장 경로 카테고리(`attachments`)는 그대로다.
+     *
+     * @var array<class-string, string>
+     */
+    protected array $storageCategoryServices = [
+        AttachmentService::class => AbstractModule::PRIVATE_ATTACHMENT_BINDING,
+        BoardService::class => AbstractModule::PRIVATE_ATTACHMENT_BINDING,
+        BoardContentMediaService::class => AbstractModule::PRIVATE_ATTACHMENT_BINDING,
     ];
 
     /**
@@ -95,6 +113,7 @@ class BoardServiceProvider extends BaseModuleServiceProvider
      */
     protected array $repositories = [
         AttachmentRepositoryInterface::class => AttachmentRepository::class,
+        BoardPermissionRepositoryInterface::class => BoardPermissionRepository::class,
         BoardRepositoryInterface::class => BoardRepository::class,
         BoardStatRepositoryInterface::class => BoardStatRepository::class,
         BoardTypeRepositoryInterface::class => BoardTypeRepository::class,
@@ -123,9 +142,26 @@ class BoardServiceProvider extends BaseModuleServiceProvider
     ];
 
     /**
+     * 서비스 등록
+     *
+     * @return void 반환값 없음
+     */
+    public function register(): void
+    {
+        parent::register();
+
+        // 게시판별 표시 이름 설정과 비회원 작성자 항목 설정을 요청 안에서 한 번만 읽는다(요청 단위).
+        $this->app->scoped(BoardDisplayNames::class);
+        $this->app->scoped(GuestAuthorFields::class);
+
+        // 다른 확장에 공개하는 조회 계약(module.json public_api) — 구현은 내부 저장소에 위임한다 (#916)
+        $this->app->bind(BoardDirectory::class, BoardDirectoryService::class);
+    }
+
+    /**
      * 서비스 부트스트랩
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function boot(): void
     {

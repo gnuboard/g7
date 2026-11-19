@@ -29,8 +29,8 @@ const keysIn = (source: string) => [...new Set(source.match(/mypage\.[a-z_0-9.]+
  * 보기 화면에만 있어도 되는 언어 키 — **항목이 아니라 그 화면의 장치**다.
  *
  * 화면 제목과 두 입구(비밀번호 변경·수정하기)는 보기 화면이 수정 화면으로 가는 길이라 수정
- * 화면에 다시 둘 자리가 없다. 통화·배송국가의 `edit_hint` 는 「고치려면 수정 화면으로」 라는
- * 안내라서, 정작 그 수정 화면에서는 같은 자리에 진짜 선택칸이 선다.
+ * 화면에 다시 둘 자리가 없다. 결제 통화와 배송 국가의 `edit_hint` 는 그 표시가 보기 화면에 박혀 있던
+ * 시절의 예외였다. 지금은 두 값을 확장별 카드가 항목 계약으로 그려 그 키가 화면에 없으므로 목록에서 뺐다(#490).
  *
  * 회원 탈퇴는 **일부러** 보기 화면에만 둔다. 되돌릴 수 없는 행위라 편집 중인 폼 옆에 두면
  * 저장하려던 손이 그 버튼에 닿는다 — 항목(고칠 값)이 아니라 행위이고, 그 행위의 확인 절차는
@@ -40,15 +40,74 @@ const VIEW_ONLY = [
   'mypage.profile.view_title',
   'mypage.profile.edit_button',
   'mypage.profile.change_password_button',
-  'mypage.currency_settings.edit_hint',
-  'mypage.shipping_country_settings.edit_hint',
   'mypage.profile.withdraw',
   'mypage.profile.withdraw_button',
   'mypage.profile.withdraw_warning',
   'mypage.profile.admin_cannot_withdraw',
 ];
 
+/** 본 레이아웃(데이터소스와 computed 를 가진 쪽) */
+const layout = (file: string) => JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../layouts/mypage', file), 'utf8'));
+const viewLayout = layout('profile.json');
+const editLayout = layout('profile-edit.json');
+
+/** 확장별 카드의 반복 원천 — 모듈과 플러그인이 선언한 항목을 확장마다 묶은 계산값을 통째로 돈다 */
+const EXTENSION_SOURCE = '{{$computed.profileExtensionGroups ?? []}}';
+
+/**
+ * 조각 안에서 반복 변수 memberFieldGroup 으로 그리는 묶음을 그려진 순서대로 모은다.
+ * 묶음 카드는 그 묶음 이름(contact 등)으로, 확장별 카드는 `extensions` 로 적는다. 둘 다 아니면 `?` 다.
+ */
+const groupKeysIn = (source: string): string[] => {
+  const keys: string[] = [];
+  const walk = (node: any) => {
+    if (Array.isArray(node)) return node.forEach(walk);
+    if (!node || typeof node !== 'object') return;
+    if (node.iteration?.item_var === 'memberFieldGroup') {
+      const loopSource = String(node.iteration.source);
+      keys.push(loopSource === EXTENSION_SOURCE ? 'extensions' : loopSource.match(/g\.key === '([a-z_]+)'/)?.[1] ?? '?');
+    }
+    walk(node.children);
+  };
+  walk(JSON.parse(source));
+  return keys;
+};
+
 describe('마이페이지 내 정보 보기 ↔ 수정 정합 (#599)', () => {
+  // @scenario surface=mypage_profile
+  // @effects mypage_profile_view_and_edit_share_field_source
+  it('회원 항목은 두 화면이 같은 원천에서 그린다 — 같은 데이터소스, 같은 묶음 계산, 같은 카드', () => {
+    // 회원 항목(연락처, 위치, 서명, 자기소개, 운영자 추가 항목)은 화면에 박혀 있지 않고 서버가 준 항목 계약을
+    // 돌며 그린다(#490). 그래서 이 항목들의 정합은 라벨 키가 아니라 「같은 원천을 같은 식으로 묶는가」 로 잠근다.
+    const fieldSource = (target: any) => (target.data_sources as any[]).find((item) => item.id === 'profileFields');
+    expect(fieldSource(viewLayout)?.endpoint).toBe('/api/me/fields');
+    expect(fieldSource(editLayout)?.endpoint).toBe(fieldSource(viewLayout)?.endpoint);
+    expect(viewLayout.computed.profileFieldGroups).toBe(editLayout.computed.profileFieldGroups);
+    // 모듈과 플러그인이 선언한 항목(게시판 알림, 결제 통화, 배송 국가 등)도 같은 식으로 확장마다 묶는다.
+    // 종전에는 이 값들이 두 화면에 따로 박혀 있어 라벨 키로 짝을 지었다.
+    expect(typeof editLayout.computed.profileExtensionGroups).toBe('string');
+    expect(viewLayout.computed.profileExtensionGroups).toBe(editLayout.computed.profileExtensionGroups);
+
+    // 보기 화면이 그리는 묶음은 수정 화면에도 모두 있고 순서도 같다(확장별 카드는 맨 뒤). 수정 화면에만 있는
+    // 기본 묶음(이름, 닉네임)은 보기 화면에서는 맨 위 프로필 카드가 이름 옆에 닉네임을 붙여 직접 보여 준다.
+    const viewGroups = groupKeysIn(view);
+    const editGroups = groupKeysIn(edit);
+    expect(viewGroups).toEqual(['contact', 'location', 'extra', 'profile', 'extensions']);
+    expect(editGroups).toEqual(['basic', ...viewGroups]);
+    expect(view).toContain('user.data?.name');
+    expect(view).toContain('user.data?.nickname');
+
+    // 한쪽 화면에만 박힌 확장 칸이 다시 생기면 두 화면의 항목이 어긋난다 — 어느 쪽에도 박힌 값이 없다
+    for (const text of [view, edit]) {
+      expect(text).not.toMatch(/notify_/);
+      expect(text).not.toContain('_global.modules');
+      expect(text).not.toMatch(/user\.data\?\.ecommerce_/);
+    }
+
+    expect(view).toContain('partials/member/_member_fields_view.json');
+    expect(edit).toContain('partials/member/_member_fields.json');
+  });
+
   // @scenario surface=mypage_profile
   // @effects mypage_profile_edit_carries_every_view_item
   it('보기 화면의 항목이 수정 화면에도 모두 있다', () => {

@@ -14,6 +14,10 @@ description: |
   않는다. 그래서 설정에 실린 ID 를 보호 목록으로 삼으며, 그 해석은 정리 서비스 자신이
   수행한다 — 호출자가 넘기는 값으로 두면 인자를 빠뜨린 호출 하나가 운영 중인 로고를 파기한다.
 
+  보호 목록은 설정 선언에서 파생한다(#434) — 코어 defaults.json frontend_schema 의 `transform: attachments` 키 전부
+  (로고·기본 공유 이미지·파비콘)와 템플릿 설정 저장 파일 전부(템플릿을 지웠어도 남은 설정 포함). 종전에는 로고 한 줄을
+  손으로 적어 기본 공유 이미지가 빠졌다.
+
   함께 고친 것: 로고 교체 시 구 로고가 설정에 재편입되던 결함. 종전 저장 흐름은 컬렉션
   전체를 다시 수집했으므로(방금 올린 로고가 제출 payload 에 아직 없어서), 운영자가 화면에서
   뺀 로고를 실제로 파기하지 않으면 교체할 때마다 파일·기록·설정 세 곳에 누적됐다.
@@ -23,7 +27,7 @@ axes:
   owner_state: [no_owner, has_owner]
   source_owner: [core, extension]
   age: [within_retention, past_retention]
-  protected: [not_protected, current_site_logo]
+  protected: [not_protected, current_site_logo, current_og_image_default, current_site_favicon, current_template_favicon]
 
 exclusions:
   - { owner_state: has_owner, source_owner: extension, reason: "소유자가 있으면 source 와 무관하게 대상이 아니다 — 코어 소유 1건으로 충분" }
@@ -32,6 +36,15 @@ exclusions:
   - { source_owner: extension, age: within_retention, reason: "확장 소유는 나이와 무관하게 코어 GC 대상이 아니다 — 경과분 1건으로 충분" }
   - { source_owner: extension, protected: current_site_logo, reason: "사이트 로고는 코어 소유 컬렉션이라 확장 소유와 양립하지 않는다" }
   - { protected: current_site_logo, age: within_retention, reason: "보호 목록은 보존기간 경과분에서만 판정에 관여한다 — 미경과분은 나이에서 이미 제외" }
+  - { owner_state: has_owner, protected: current_og_image_default, reason: "설정이 직접 참조하는 첨부는 소유자가 없다 — 로고와 같음" }
+  - { owner_state: has_owner, protected: current_site_favicon, reason: "로고와 같음" }
+  - { owner_state: has_owner, protected: current_template_favicon, reason: "로고와 같음" }
+  - { source_owner: extension, protected: current_og_image_default, reason: "코어 소유 컬렉션 — 로고와 같음" }
+  - { source_owner: extension, protected: current_site_favicon, reason: "코어 소유 컬렉션 — 로고와 같음" }
+  - { source_owner: extension, protected: current_template_favicon, reason: "코어 소유 컬렉션(source_type=core) — 로고와 같음" }
+  - { protected: current_og_image_default, age: within_retention, reason: "로고와 같음 — 미경과분은 나이에서 이미 제외" }
+  - { protected: current_site_favicon, age: within_retention, reason: "로고와 같음" }
+  - { protected: current_template_favicon, age: within_retention, reason: "로고와 같음" }
 
 sub_flows:
   - id: dry_run
@@ -56,6 +69,8 @@ sub_flows:
       - site_logo_stale_submitted_id_filtered
       - site_logo_untouched_when_not_submitted
       - site_logo_failed_save_keeps_removed_attachment
+      - site_logo_remove_expression_declared_in_layout          # 실제 레이아웃 파일(업로더 확장점 default 안 포함)에 로고 onRemove 식이 선언되어 있다
+      - site_logo_remove_expression_ignores_unknown_identifier  # 대상이 아닌 식별자로 통지되면 로고 목록에서 아무것도 빼지 않는다
   - id: settings_surface
     description: 화면 바인딩 키가 코어 기본값·서버 검증과 일치하는지
     effects:
@@ -70,6 +85,8 @@ effects:
   - core_orphan_prune_keeps_within_retention
   - core_orphan_prune_deletes_file
   - core_orphan_prune_deletes_soft_deleted
+  - core_orphan_prune_protects_declared_attachment_settings
+  - core_orphan_prune_protects_template_setting_attachments
 
 test_files:
   - tests/Feature/Console/PruneOrphanAttachmentsCommandTest.php

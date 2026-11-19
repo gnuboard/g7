@@ -183,6 +183,29 @@ _`getSettingsSchema()` 선언이 없습니다._
 `sirsoft-ecommerce.notification.channels` 필터를 **발송 경로와 같은 순서로** 거치므로, 화면 표시와
 실제 발송 채널이 갈라지지 않습니다. 이 모듈 필터만 직접 부르면 코어에 등록된 채널이 카드에서 빠집니다.
 
+**기능별 작성자 표시 이름(`display_name`)은 이 모듈의 설정 파일에 저장하지 않습니다.** 리뷰 설정 탭의 「작성자 표시 이름」
+(상품 후기)과 기본 정보 탭 상품 문의 구획의 같은 칸(상품 문의)은 저장 본문에 `display_name: { review: {mode, kind},
+inquiry: {mode, kind} }` 를 함께 싣습니다. 서버는 이 값을 설정 구역으로 보지 않고(`validatedSettings()` 에 들어가지 않습니다)
+코어 설정 `member.display_name_areas` 의 두 영역 키(`sirsoft-ecommerce:review`, `sirsoft-ecommerce:inquiry`)에 씁니다.
+환경설정의 회원 탭에서 같은 영역을 바꿔도 값이 하나이고, 닉네임이 필요한 종류로 고정하면 코어가 회원 항목의 닉네임을 잠급니다.
+
+| 값 | 뜻 |
+| --- | --- |
+| `mode: inherit` | 상위 영역을 따른다 (후기와 문의의 상위는 사이트 기본) |
+| `mode: fixed` + `kind` | 종류 하나로 고정한다. `kind` 는 지금 등록된 종류여야 한다 |
+| `mode: member` | 회원이 고른 종류로 보인다 |
+
+- 영역 묶음은 저장할 때 통째로 바뀌므로 `EcommerceDisplayNameSettingsService::save()` 가 지금 저장된 묶음 전체에 넘어온 기능의
+  영역만 덮어써서 넘깁니다. 다른 영역(코어, 게시판, 꺼진 확장)의 값이 지워지면 안 됩니다.
+- `display_name` 이 실려 오지 않은 저장(다른 탭)은 영역 설정을 건드리지 않습니다. 한 기능만 실려 오면 그 기능만 바꿉니다.
+- 방식이 고정이 아니면 `kind` 를 저장하지 않습니다.
+- 설정 조회와 저장 응답은 저장된 값(`display_name`)과 읽기 전용 목록(`display_name_options`: 고를 수 있는 종류와 미리보기,
+  상속을 다 따라간 지금 적용되는 값과 그 값을 정한 영역의 이름)을 함께 싣습니다. 목록은 저장 요청에 실려 와도 무시합니다.
+- 지금 적용되는 값의 방식이 「회원이 고른 값」이면 종류가 없으므로(`kind`, `kind_label` 이 null) 화면은 종류 대신 방식 이름으로
+  「지금 적용: 회원이 고른 값 (사이트 기본 설정 기준)」을 보입니다. 코어의 사이트 기본은 처음 방식이 「회원이 고른 값」이라 설정을 바꾸지 않은 사이트의 상품 후기가 이 경우입니다.
+- 저장하면 코어가 닉네임 항목 잠금 판정을 다시 하고 검색 엔진용으로 미리 그린 화면을 비웁니다.
+- 상품 문의의 기본값은 「가린 이름」 고정입니다(홍길동 → 홍*동). 종전에 문의 목록이 하던 가림과 같은 결과입니다.
+
 ### 터미널에서 설정 지정 (`settings:set --module=sirsoft-ecommerce`, 1.3.3 · 코어 7.1.4)
 
 코어 `php artisan settings:set --module=sirsoft-ecommerce {범주.항목} {값}` 은 이 모듈 설정 서비스의 선택 메서드
@@ -262,6 +285,27 @@ _`getSettingsSchema()` 선언이 없습니다._
 연간 개인정보 이용내역 통지(`core.privacy.notice_sections`)에는 `PrivacyRetentionListener` 가
 「주문 정보」 섹션을 수신자 로케일로 기여합니다 — 법정 보존(5년) 사실을 적고, 처리를 켰다면
 방식과 기간을 덧붙입니다. 개인 식별정보는 넣지 않습니다.
+
+### 내보내기 파일 보관 기간 (`basic_info.export_retention_days`, 이슈 #787)
+
+「기본 정보」 탭의 「내보내기 파일 보관 기간」이 저장하는 값입니다. 주문·상품·마일리지 목록에서 내보낸 파일을 완료 뒤
+며칠 동안 받을 수 있게 둘지 정합니다.
+
+| 키 | 기본값 | 의미 |
+|---|---|---|
+| `basic_info.export_retention_days` | `7` | 보관 기간(일). **1~30일** — 범위는 저장 요청(`StoreEcommerceSettingsRequest`)이 `limits.export_retention_days_min`·`_max`(config)로 검증하고, 판독부(`ExportService::retentionDays()`)는 값이 없거나 1 미만일 때만 기본 7일로 대신합니다 |
+
+- **언제 적용되나**: 파일이 완료되는 순간 `expires_at = 완료 시각 + 보관 기간`이 작업에 기록됩니다. 설정을 바꿔도
+  이미 만든 파일의 만료 시각은 그대로입니다(새로 만드는 파일부터 새 기간).
+- **정리**: 매시 정각 스케줄 `sirsoft-ecommerce:prune-exports`(스케줄 관리 「내보내기 파일 정리」)가 만료 시각이 지난 완료
+  파일을 지우고 작업을 「만료」로 바꿉니다. 만료 직후 받는 중인 요청과 겹치지 않게 10분(`PRUNE_GRACE_MINUTES`)을
+  더 기다립니다. 같은 명령이 작업 제한 시간(`JOB_TIMEOUT_SECONDS` 30분)에 5분을 더한 35분 넘게 「진행중」인 작업을 실패로 돌립니다. 대상이 없으면 아무 일도
+  하지 않으므로 별도 켜기·끄기 설정은 없습니다.
+- **정리 전에도 받기는 막힌다**: 만료 시각이 지나면 다운로드·일회용 주소 발급은 410(`file_expired`)으로 거절합니다 — 서버
+  스케줄러가 멈춰 파일이 남아 있어도 내려가지 않습니다(남는 것은 디스크 사용량뿐).
+- **기록은 남는다**: 작업 행과 다운로드 이력은 지우지 않습니다(누가 언제 무엇을 받았는지의 근거).
+- **모듈 비활성화·제거**: 비활성화할 때 만료 파일을 한 번 정리하고, 제거할 때는 데이터 유지 여부와 관계없이 내보낸 파일을
+  모두 지웁니다(파일을 못 지우면 제거를 멈춥니다 — 기록이 남아 있어 다시 제거하면 다시 지웁니다).
 <!-- @intent END -->
 
 ## 권한
@@ -292,6 +336,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 | `carts` | 장바구니 관리 | `read`, `manage` | `cart` |
 | `user-addresses` | 회원 배송지 관리 | `read`, `manage` | `user-address` |
 | `mileage` | 마일리지 관리 | `read`, `manage` | `mileage-transaction` |
+| `exports` | 내보내기 | `read`, `create`, `download`, `delete`, `personal_data` | `export` |
 | `user-currency` | 회원 결제 통화 관리 | `manage` | - |
 | `user-shipping-country` | 회원 배송국가 관리 | `manage` | - |
 <!-- @generated:permissions END -->
@@ -337,7 +382,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 <!-- @generated:menus START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 구분 | slug | 이름 | URL | 하위 |
 |---|---|---|---|---|
-| 관리자 | `sirsoft-ecommerce` | 이커머스 | - | 16개 |
+| 관리자 | `sirsoft-ecommerce` | 이커머스 | - | 17개 |
 <!-- @generated:menus END -->
 
 <!-- @intent START -->
@@ -411,11 +456,11 @@ IDV 정책의 라우트명 인덱스가 그 라우트를 찾지 못해, 보호�
 
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
-| `sirsoft-koreaexim` | 플러그인 | `>=1.3.0` |
-| `sirsoft-pay_kginicis` | 플러그인 | `>=1.3.3` |
-| `sirsoft-pay_nhnkcp` | 플러그인 | `>=1.3.3` |
-| `sirsoft-pay_nicepayments` | 플러그인 | `>=1.3.3` |
-| `sirsoft-tosspayments` | 플러그인 | `>=1.3.3` |
+| `sirsoft-koreaexim` | 플러그인 | `>=1.4.0` |
+| `sirsoft-pay_kginicis` | 플러그인 | `>=1.4.0` |
+| `sirsoft-pay_nhnkcp` | 플러그인 | `>=1.4.0` |
+| `sirsoft-pay_nicepayments` | 플러그인 | `>=1.4.0` |
+| `sirsoft-tosspayments` | 플러그인 | `>=1.4.0` |
 
 **함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)
 
@@ -428,8 +473,9 @@ IDV 정책의 라우트명 인덱스가 그 라우트를 찾지 못해, 보호�
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
 | `sirsoft-board` | 모듈 | `*` |
+| `sirsoft-hero_section` | 플러그인 | `>=1.4.0` |
 | `sirsoft-message_bizppurio` | 플러그인 | `*` |
-| `sirsoft-basic` | 템플릿 | `>=1.3.5` |
+| `sirsoft-basic` | 템플릿 | `>=1.4.0` |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->

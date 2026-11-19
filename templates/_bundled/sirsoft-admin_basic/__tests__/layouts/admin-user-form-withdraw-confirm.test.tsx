@@ -8,15 +8,25 @@
  * 합성 레이아웃이 아니라 **실제 admin_user_form.json 의 노드**를 그대로 렌더한다 —
  * 사본으로 검증하면 배포되는 레이아웃이 바뀌어도 초록으로 남는다.
  *
- * @scenario entry_point=admin_form_ui, target_account=normal, target_account=already_withdrawn, confirm_action=cancel, confirm_action=submit
- * @effects admin_form_shows_confirm_dialog_before_destructive_save, admin_form_cancel_leaves_user_untouched, admin_form_non_withdraw_status_saves_without_dialog, create_mode_hides_withdrawn_option
+ * 조합과 효과 표식은 그것을 재는 시험마다 단다.
  */
 
 import React from 'react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { createLayoutTest } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
+import { makeHarnessModal } from './harnessModal';
+
+// 엔진(코어)은 저장소 루트의 react 를, 진짜 Modal 은 이 템플릿 node_modules 의 react 를 읽어 사본이 둘이 된다 — 이 파일에서만
+// 템플릿 쪽 react 를 루트 사본으로 바꿔 낀다(productFormRouteSwitchInputResidue.test.tsx 와 같은 방식)
+vi.mock('react', async () => {
+  const p = await import('path');
+  const u = await import('url');
+  const dir = p.dirname(u.fileURLToPath(import.meta.url));
+
+  return import(/* @vite-ignore */ u.pathToFileURL(p.resolve(dir, '../../../../../node_modules/react/index.js')).href);
+});
 import userForm from '../../layouts/admin_user_form.json';
 
 type Json = Record<string, any>;
@@ -55,13 +65,8 @@ const TestButton: React.FC<any> = ({ children, onClick, disabled, className }) =
 );
 const TestIcon: React.FC<any> = ({ name }) => <i data-icon={name} />;
 const TestFragment: React.FC<any> = ({ children }) => <>{children}</>;
-const TestModal: React.FC<any> = ({ isOpen, title, children }) =>
-  isOpen ? (
-    <div role="dialog" data-testid="withdraw-confirm-dialog">
-      <div data-testid="withdraw-confirm-title">{title}</div>
-      {children}
-    </div>
-  ) : null;
+// 진짜 Modal — 확인·취소 단추가 고정 하단(props.footer)에 있어 Modal 이 그 자리를 그려야 보인다(#869 P1)
+const TestModal = makeHarnessModal({ testId: () => 'withdraw-confirm-dialog' });
 
 function setupRegistry(): ComponentRegistry {
   const registry = ComponentRegistry.getInstance();
@@ -136,6 +141,10 @@ describe('회원 수정 폼 — 탈퇴 저장 확인 절차', () => {
     fireEvent.click(buttons[0]);
   }
 
+  /**
+   * @scenario entry_point=admin_form_ui, target_account=normal, confirm_action=cancel
+   * @effects admin_form_shows_confirm_dialog_before_destructive_save, admin_form_cancel_leaves_user_untouched
+   */
   it('상태를 탈퇴로 바꿔 저장하면 확인 다이얼로그가 먼저 열리고 저장 요청은 나가지 않는다', async () => {
     await clickSave('withdrawn', 'active');
 
@@ -147,6 +156,10 @@ describe('회원 수정 폼 — 탈퇴 저장 확인 절차', () => {
     expect(saveRequests()).toHaveLength(0);
   });
 
+  /**
+   * @scenario entry_point=admin_form_ui, target_account=normal, confirm_action=submit
+   * @effects admin_form_shows_confirm_dialog_before_destructive_save
+   */
   it('확인 다이얼로그의 처리 버튼을 누르면 그때 저장 요청이 나간다', async () => {
     await clickSave('withdrawn', 'active');
 
@@ -166,6 +179,10 @@ describe('회원 수정 폼 — 탈퇴 저장 확인 절차', () => {
     });
   });
 
+  /**
+   * @scenario entry_point=admin_form_ui, target_account=normal, confirm_action=not_applicable
+   * @effects admin_form_non_withdraw_status_saves_without_dialog
+   */
   it('탈퇴 외 상태 저장은 다이얼로그 없이 즉시 요청한다', async () => {
     await clickSave('inactive', 'active');
 
@@ -176,6 +193,10 @@ describe('회원 수정 폼 — 탈퇴 저장 확인 절차', () => {
     expect(screen.queryByTestId('withdraw-confirm-dialog')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario entry_point=admin_form_ui, target_account=already_withdrawn, confirm_action=not_applicable
+   * @effects admin_form_non_withdraw_status_saves_without_dialog
+   */
   it('이미 탈퇴한 회원을 저장할 때는 다이얼로그를 다시 띄우지 않는다', async () => {
     await clickSave('withdrawn', 'withdrawn');
 
@@ -186,6 +207,10 @@ describe('회원 수정 폼 — 탈퇴 저장 확인 절차', () => {
     expect(screen.queryByTestId('withdraw-confirm-dialog')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario entry_point=admin_form_ui, target_account=normal, confirm_action=not_applicable
+   * @effects create_mode_hides_withdrawn_option
+   */
   it('등록 모드에서는 상태 셀렉트에 탈퇴 옵션이 없다', () => {
     const statusSelect = findById(userForm.slots.content, 'field_status');
     const optionsExpr = JSON.stringify(statusSelect);
@@ -205,6 +230,10 @@ describe('회원 수정 폼 — 탈퇴 저장 확인 절차', () => {
     expect(createBranch).not.toContain("value: 'withdrawn'");
   });
 
+  /**
+   * @scenario entry_point=admin_form_ui, target_account=normal, confirm_action=submit
+   * @effects admin_form_shows_confirm_dialog_before_destructive_save
+   */
   it('저장 버튼과 확인 다이얼로그가 완전히 같은 저장 요청을 보낸다', () => {
     // 저장 시퀀스는 두 곳에 복제되어 있다(다이얼로그를 거치는 경로 / 거치지 않는 경로).
     // 한쪽만 고치면 확인 절차를 거친 저장만 다른 본문을 보내게 되는데, 화면에는

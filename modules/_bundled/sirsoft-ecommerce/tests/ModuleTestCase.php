@@ -2,8 +2,10 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests;
 
+use App\Contracts\Repositories\FieldDefinitionRepositoryInterface;
 use App\Enums\ExtensionStatus;
 use App\Enums\PermissionType;
+use App\Extension\Helpers\FieldDefinitionSyncHelper;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Extension\ModuleManager;
@@ -31,7 +33,24 @@ use Modules\Sirsoft\Ecommerce\Providers\EcommerceServiceProvider;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
+use Tests\Concerns\RebuildsRouteNameLookups;
 use Tests\TestCase;
+
+// 이 파일은 PHPUnit 밖의 개발 환경 PHP 프로세스(Laravel VS Code 확장의 시험 탐색 등)도 읽는다. 그 프로세스에는 `tests/bootstrap.php` 가
+// 등록하는 `Modules\Sirsoft\Ecommerce\Tests\` 네임스페이스가 없어, 시험 클래스가 그 네임스페이스의 트레이트(`Concerns\BuildsClaimFlowOrders` 등)를
+// `use` 하면 잡을 수 없는 「Trait not found」 Fatal 로 개발 로그에 쌓였다. 그 네임스페이스만 이 디렉터리에서 찾는 보조 로더를 맨 뒤에 덧붙인다 —
+// 다른 로더가 먼저 찾으면 불리지 않는다.
+spl_autoload_register(static function (string $class): void {
+    $prefix = 'Modules\\Sirsoft\\Ecommerce\\Tests\\';
+    if (! str_starts_with($class, $prefix)) {
+        return;
+    }
+
+    $file = __DIR__.'/'.str_replace('\\', '/', substr($class, strlen($prefix))).'.php';
+    if (is_file($file)) {
+        require_once $file;
+    }
+});
 
 /**
  * Ecommerce 모듈 테스트 베이스 클래스
@@ -44,6 +63,7 @@ use Tests\TestCase;
  */
 abstract class ModuleTestCase extends TestCase
 {
+    use RebuildsRouteNameLookups;
     use RefreshDatabase;
 
     /**
@@ -377,6 +397,21 @@ abstract class ModuleTestCase extends TestCase
     }
 
     /**
+     * 이 모듈의 회원 항목 선언(`getFields()`)을 항목 정의 테이블에 동기화합니다.
+     *
+     * 설치와 갱신이 하는 선언 동기화를 테스트 DB 에서 재현한다. 회원 저장 경로(가입, 관리자 수정, 내 정보 수정)에서
+     * 결제 통화와 배송국가를 다루는 테스트가 setUp 에서 부른다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function syncMemberFieldDeclarations(): void
+    {
+        ModuleManager::invalidateModuleStatusCache();
+        $this->app->make(FieldDefinitionSyncHelper::class)->sync('module', 'sirsoft-ecommerce', (new Module)->getFields());
+        $this->app->make(FieldDefinitionRepositoryInterface::class)->forgetMemo();
+    }
+
+    /**
      * 모듈 예외 핸들러를 등록합니다.
      *
      * 테스트 환경에서 모듈의 커스텀 예외가 적절한 HTTP 응답으로 변환되도록 합니다.
@@ -455,6 +490,9 @@ abstract class ModuleTestCase extends TestCase
 
             $this->rebuildRouteNameLookups();
         }
+
+        // 라우트 캐시가 있는 머신에서 fluent `->name()` 등록분의 이름 조회를 살린다 (공유 trait).
+        $this->rebuildRouteNameLookups();
     }
 
     /**

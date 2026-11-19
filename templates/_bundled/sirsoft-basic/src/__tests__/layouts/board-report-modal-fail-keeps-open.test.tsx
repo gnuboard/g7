@@ -25,6 +25,7 @@ import {
 } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 
 import reportModal from '../../../layouts/partials/board/show/modals/_modal_report.json';
+import { renderModalFooterStandIn } from './modalFooterStandIn';
 
 const ENDPOINT = '/api/modules/sirsoft-board/boards/free/posts/5/reports';
 const POST = { data: { id: 5, board: { report_types: [{ value: 'spam', label: '스팸' }, { value: 'abuse', label: '욕설' }] } } };
@@ -37,8 +38,9 @@ const POST = { data: { id: 5, board: { report_types: [{ value: 'spam', label: '�
 function makeRegistry(): MockComponentRegistry {
     const registry = createMockComponentRegistryWithBasics();
     registry.register('basic', 'Icon', ({ className }: { className?: string }) => React.createElement('i', { className, 'aria-hidden': 'true' }));
-    registry.register('composite', 'Modal', ({ title, children }: { title?: string; children?: React.ReactNode }) =>
-        React.createElement('section', { role: 'dialog', 'aria-label': title }, children));
+    // 실물과 같이 고정 하단(footer)도 그린다 — 신고 창 단추가 고정 하단으로 옮겨 갔다(#869)
+    registry.register('composite', 'Modal', (props: any) =>
+        React.createElement('section', { role: 'dialog', 'aria-label': props.title }, props.children, renderModalFooterStandIn(props)));
     registry.register('composite', 'Avatar', () => null);
 
     return registry;

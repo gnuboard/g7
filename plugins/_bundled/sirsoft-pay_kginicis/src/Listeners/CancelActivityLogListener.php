@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\PayKginicis\Listeners;
 
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
+use Modules\Sirsoft\Ecommerce\Contracts\Currency\PriceFormatter;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 
@@ -27,6 +28,13 @@ class CancelActivityLogListener implements HookListenerInterface
     private const PG_PROVIDER_ID = 'kginicis';
 
     /**
+     * @param  PriceFormatter  $priceFormatter  이커머스 금액 표기 공개 계약
+     */
+    public function __construct(
+        private readonly PriceFormatter $priceFormatter,
+    ) {}
+
+    /**
      * 구독할 훅 매핑 반환
      *
      * @return array<string, array<string, mixed>> 훅 구독 설정
@@ -46,6 +54,7 @@ class CancelActivityLogListener implements HookListenerInterface
      * 기본 핸들러 (미사용)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -78,7 +87,7 @@ class CancelActivityLogListener implements HookListenerInterface
             'description_key' => 'sirsoft-pay_kginicis::activity_log.description.payment_cancel',
             'description_params' => [
                 'order_number' => $order->order_number,
-                'refund_amount' => ecommerce_format_price((int) $refundAmount, $order->currency),
+                'refund_amount' => $this->priceFormatter->format((int) $refundAmount, $order->currency),
             ],
             'properties' => [
                 'tid' => $payment->transaction_id,

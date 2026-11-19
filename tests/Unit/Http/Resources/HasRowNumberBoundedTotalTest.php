@@ -20,9 +20,9 @@ use Tests\PureTestCase;
  * 틀린 숫자를 내보내는 것보다 내보내지 않는 편이 낫다. `last_page` 를 모를 때 null 을
  * 내보내는 것과 같은 원칙으로, 잘린 총 건수에서는 순번을 null 로 둔다.
  *
- * @scenario case=row_number_bounded_total
+ * 소속 시나리오(마커 아님 — 평문): has-row-number-bounded-total (case 는 exact_total 과 truncated_total)
  *
- * @effects row_number_null_when_total_truncated,
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): row_number_null_when_total_truncated,
  *          row_number_exact_when_total_exact,
  *          row_number_ascending_unaffected_by_truncation
  */

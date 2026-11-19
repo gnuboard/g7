@@ -40,7 +40,8 @@ class AdminRoutePermissionTest extends PluginTestCase
             'api.plugins.sirsoft-pay_nhnkcp.admin.orders.transaction-status' => 'permission:admin,sirsoft-ecommerce.orders.read',
             'api.plugins.sirsoft-pay_nhnkcp.admin.orders.escrow-delivery.form' => 'permission:admin,sirsoft-ecommerce.orders.read',
             'api.plugins.sirsoft-pay_nhnkcp.admin.orders.escrow-delivery.register' => 'permission:admin,sirsoft-ecommerce.orders.update',
-            'api.plugins.sirsoft-pay_nhnkcp.admin.vbank.notify.url' => 'permission:admin,sirsoft-ecommerce.settings.read',
+            // 입금통보 주소는 플러그인 설정 화면이 보여 주는 안내라 화면 권한(core.plugins.read)으로도 읽는다(OR)
+            'api.plugins.sirsoft-pay_nhnkcp.admin.vbank.notify.url' => 'permission:admin,sirsoft-ecommerce.settings.read|core.plugins.read,false',
             // 시스템 점검은 플러그인 설정 화면 카드라 화면 권한(core.plugins.update)으로도 읽는다(OR, 7.1.0 abilities 게이트)
             'api.plugins.sirsoft-pay_nhnkcp.admin.health' => 'permission:admin,sirsoft-ecommerce.settings.read|core.plugins.update,false',
         ];
@@ -183,6 +184,30 @@ class AdminRoutePermissionTest extends PluginTestCase
         $this->actingAs($admin)
             ->getJson('/api/plugins/sirsoft-pay_nhnkcp/admin/vbank-notify-url')
             ->assertOk();
+    }
+
+    /**
+     * 「플러그인 보기」 권한만 있는 관리자도 설정 화면이 보여 주는 입금통보 주소를 받아야 합니다.
+     *
+     * 화면은 `core.plugins.read` 로 열리는데(읽기 전용) 주소 조회가 쇼핑몰 설정 읽기 권한만 받아, 들어갈 때마다
+     * 「해당 권한이 없습니다」 알림이 뜨고 주소 칸이 비었다. 시스템 점검(서버 경로를 싣는다)은 계속 수정 권한이
+     * 있어야 보며, 화면은 그 403 을 「볼 권한 없음」 안내로 바꿔 보여 준다.
+     *
+     * @scenario permission=plugins_read
+     *
+     * @effects plugin_view_admin_reaches_settings_screen_info
+     *
+     * @return void 반환값 없음
+     */
+    public function test_plugin_view_admin_reaches_vbank_notify_url_but_not_health(): void
+    {
+        $admin = $this->createAdminUser(['core.plugins.read']);
+        $base = '/api/plugins/sirsoft-pay_nhnkcp/admin';
+
+        $this->actingAs($admin)->getJson($base.'/vbank-notify-url')
+            ->assertOk()
+            ->assertJsonPath('data.url', url('/plugins/sirsoft-pay_nhnkcp/payment/vbank-notify'));
+        $this->actingAs($admin)->getJson($base.'/health')->assertForbidden();
     }
 
     /**

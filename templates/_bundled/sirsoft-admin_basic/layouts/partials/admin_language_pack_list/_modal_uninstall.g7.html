@@ -27,7 +27,7 @@
         <p class="mt-1 text-warning-soft">$t:admin.language_packs.modal.uninstall.cascade_hint</p>
       </div>
     </div>
-    <div class="flex justify-end gap-2 mt-6">
+    <footer>
       <button type="button" disabled="{{_global.isLanguagePackUninstalling}}" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
         <on event="onClick">
           <close-modal target="language_pack_uninstall_modal"/>
@@ -62,6 +62,6 @@
         <icon data-if="{{_global.isLanguagePackUninstalling}}" name="fas fa-spinner" class="animate-spin" size="sm"/>
         <span>{{_global.isLanguagePackUninstalling ? '$t:admin.language_packs.uninstalling' : '$t:admin.language_packs.actions.uninstall'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

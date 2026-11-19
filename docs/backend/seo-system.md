@@ -17,6 +17,8 @@
 10. Host 비신뢰: 봇 화면의 절대 URL·데이터소스 호출 주소는 요청 Host 가 아니라 APP_URL(SeoUrl) 기준. 동시 미스 렌더는 사이트 전체 상한(max_concurrent_renders) 안에서만
 ```
 
+> 개발자 화면(`routes/custom.php`, 7.2.0+)은 catch-all 을 거치지 않으므로 SEO 렌더를 받지 않는다 — 개발자 HTML 이 곧 봇이 보는 HTML 이다. 봇 판정 표식(`BotDetector::markBotRequest()`)과 방문 통계는 같이 받는다. sitemap 의 `loc` 은 「사용자 화면 URL」(비면 사이트 주소) 기준(`ScreenUrl::toAbsolute()`)이다. [개발자 화면 가이드](../custom-development.md#8-개발자-화면이-잃는-것)
+
 ## 아키텍처 개요
 
 ```
@@ -551,7 +553,7 @@ $meta['og'] = HookManager::applyFilters('core.seo.filter_og_data', $meta['og'], 
 |----|-----|-----|
 | `type` | string | og:type (product/article/website 등) |
 | `title` / `description` | string | 텍스트 |
-| `image` | string (절대 URL) | og:image |
+| `image` | string (절대 URL) | og:image — 조립은 `SiteUrl::absolute()` (아래 참조) |
 | `image_secure_url` | string | og:image:secure_url (HTTPS) |
 | `image_width` / `image_height` | int\|null | 픽셀 크기 |
 | `image_type` | string | image/jpeg 등 MIME |
@@ -570,6 +572,36 @@ $meta['og'] = HookManager::applyFilters('core.seo.filter_og_data', $meta['og'], 
 | `extra` | array<{name,content}> | 자유 twitter:* |
 
 **`$structured_data`**: Schema.org JSON-LD 배열 (`@type` 필수). 청취자가 자유롭게 키 추가/수정 가능. SeoRenderer 가 `@context: https://schema.org` 자동 prepend.
+
+### 절대 주소의 오리진과 마운트 접두사
+
+봇은 페이지 주소를 모른 채 색인하므로 `og:image` · `twitter:image` · `schema.image` · 봇 화면의 `src`/`href` 는 **오리진까지 붙은 절대 주소**여야 한다. 오리진은 요청이 아니라 사이트 주소(`APP_URL`)에서 온다 — 서버가 만드는 절대 주소는 `App\Support\SiteUrl` 이 단일 출처이고(봇 화면의 `SeoUrl` 도 여기에 위임한다), 요청 Host 로 폴백하지 않는다(아래 [「요청 Host 를 믿지 않습니다」](#요청-host-를-믿지-않습니다-seourl--데이터소스-호출-주소)). 회원이 브라우저로 여는 사용자 화면 주소는 `ScreenUrl` 로 만든다([routing.md 「절대 URL 은 사이트 주소로 만든다」](routing.md#절대-url-은-사이트-주소로-만든다)).
+
+하위 폴더 설치(`https://host/g7/`)에서는 그 조립에 함정이 둘 더 있고, 방향이 서로 반대라 한쪽만 막으면 다른 쪽이 남는다.
+
+| ❌ 금지 | 무슨 일이 벌어지나 |
+|--------|------------------|
+| `url($path)` | 그 값의 생산자(`Attachment::previewUrlForSlug()` 등)가 **이미 마운트 접두사를 실었다** — `url()` 이 한 번 더 실어 `/g7/g7/…` 로 404 |
+| `str_starts_with($v, 'http') ? $v : AssetUrl::absolute($v)` | 프로토콜 상대(`//cdn.x/y.png`)·상대 경로(`img.png`)·`data:` 를 오리진에 그대로 이어 붙인다. 루트 상대(`/images/logo.png`)에는 반대로 **접두사를 채우지 않는다** |
+
+`SiteUrl::absolute()` 가 그 단일 지점이다 — 하위 폴더 설치에서 이미 접두사가 붙은 경로(`/g7/…`)를 넘겨도 접두사를 다시 붙이지 않고, 이미 절대 주소인 값은 그대로 돌려준다. `AssetUrl::siteAbsolute()` 는 `SiteUrl::absolute()` 에 위임하는 호환용 이름이다. 오리진 없이 같은 사이트 안의 상대 경로만 필요하면 `AssetUrl::sitePath()`.
+
+**정본 주소(canonical · `og:url` · `hreflang` · 사이트맵 `<loc>`)도 같은 규칙이다.** 같은 페이지의 `og:image` 와 정본 주소가 서로 다른 오리진을 가리키면, TLS 를 앞단에서 끝내는 프록시(요청은 `http` 로 도착)나 내부 호스트명으로 도착하는 크롤러 요청에서 **한 페이지 안의 두 절대 주소가 서로 다른 오리진**을 가리키고, 사이트맵은 콘솔(`seo:generate-sitemap`)이 만들었는지 웹 요청이 만들었는지에 따라 오리진이 달라진다. 크롤러는 그것을 오류 없이 다른 사이트로 색인한다. `SeoRenderer`(canonical·og:url·hreflang)와 `SitemapGenerator`(정적 라우트·기여자 `url` → `loc`)는 사이트 주소 기준으로 만들며, 입력은 접두사 없는 요청 경로(`$request->getPathInfo()`)라 접두사는 한 번만 실린다. 기여자가 `loc` 을 직접 만들 때도 `url()` 이 아니라 `SiteUrl::absolute()` 를 쓴다 (아래 유즈케이스).
+
+정본 주소의 끝 슬래시는 화면 주소 규칙을 따른다 — 하위 폴더 설치의 **마운트 루트만** 끝 슬래시 형태(`https://host/g7/`, 로케일이면 `https://host/g7/?locale=en`)이고, 그 밖의 화면은 끝 슬래시가 없다. 웹서버가 폴더 주소 `…/g7` 을 `…/g7/` 로 301 하므로 접힌 형태를 정본으로 알리면 검색엔진이 그 주소마다 이동을 거치고, 엔진이 주소창에 두는 정본과도 갈린다. 루트 설치의 홈은 `https://host`(끝 슬래시 없음) 그대로다. `SeoRenderer` 는 `SeoUrl::canonical()`, `SitemapGenerator` 의 정적 라우트는 `SiteUrl::canonicalScreenForm()` 으로 이 형태를 만든다. `_global.site_url` 은 경로를 이어 붙이는 기준값이라 끝 슬래시 없는 사이트 주소 그대로다.
+
+같은 규칙을 지나는 서버측 절대 주소가 넷 더 있다 — 어느 하나라도 `url()` 이면 그 주소만 요청 호스트를 싣고, 접두사를 이미 품은 값에는 접두사가 한 번 더 실린다.
+
+| 지점 | 주소 | 어긋나면 |
+|------|------|---------|
+| `SitemapFileStore::childUrl()` | 사이트맵 **색인**의 자식 `<loc>` | 부모(색인)와 자식(항목)의 오리진이 한 사이트맵 안에서 갈린다 — 콘솔 생성이면 `http://localhost` |
+| `SitemapIndexer` → `SitemapGenerator::entryLoc()` | 증분 색인(리스너 경유)의 `url` → `loc` | 같은 리소스의 `<loc>` 이 전체 재생성과 증분에서 다르다. 규칙은 `entryLoc()` 하나가 소유한다 |
+| `DataSourceResolver` | 봇 렌더가 부르는 내부 API 주소 | `/g7/api/…` 를 품은 데이터소스가 `/g7/g7/api/…` 가 되어 봇 화면에서만 데이터가 빈다(fallback 이 오류를 흡수한다) |
+| `SeoRenderer` `_global.site_url` 폴백 | `general.site_url` 이 빈 사이트의 JSON-LD `WebSite.url` 등 | 같은 화면의 canonical 은 설정 오리진, `site_url` 은 요청 호스트 |
+
+알림·메일·비밀번호 재설정 링크와 결제·본인인증의 복귀·통보 주소도 같다(`SiteUrl`, 회원이 여는 화면은 `ScreenUrl`) — `config('app.url').'/path'` 는 `APP_URL` 의 후행 슬래시를 그대로 실어 `https://host/g7//login` 을 만들고, `url()` 은 요청 호스트를 싣는다. 저장 쪽에서는 `general.site_url` 이 후행 슬래시 없이 저장된다(요청 정규화).
+
+정적 검사는 봇 렌더러의 속성 조립 루프를 **도출**해 그 루프가 `src`/`href` 를 이 헬퍼로 처리하는지 판정한다 — 「`'src'` 리터럴이 있는 줄」을 모집단으로 삼으면 그 이름을 적지 않는 방출 지점이 구조적으로 보이지 않아, 실제로 네 번째 지점이 그렇게 누락된 적이 있다.
 
 **유즈케이스**:
 
@@ -626,7 +658,7 @@ $viewData = HookManager::applyFilters('core.seo.filter_view_data', $viewData, [
 
 ### 도메인 스키마 ownership — seoOgDefaults / seoTwitterDefaults / seoStructuredData
 
-모듈/플러그인은 `AbstractModule` / `AbstractPlugin` 의 다음 메서드를 오버라이드하여 자기 도메인의 OG/Twitter/JSON-LD 를 owned 한다. 레이아웃 JSON 직접 선언은 페이지별 override 가 꼭 필요할 때만 사용 (도메인 스키마는 모듈로 이전 — `seo-domain-schema-in-layout` 자동 검증이 자동 차단).
+모듈/플러그인은 `AbstractModule` / `AbstractPlugin` 의 다음 메서드를 오버라이드하여 자기 도메인의 OG/Twitter/JSON-LD 를 owned 한다. 레이아웃 JSON 직접 선언은 페이지별 override 가 꼭 필요할 때만 사용 (도메인 스키마는 모듈로 이전 — 정적 검사가 자동 차단).
 
 ```php
 class EcommerceModule extends AbstractModule
@@ -689,12 +721,12 @@ class EcommerceSitemapContributor extends AbstractSitemapContributor
     public function getIdentifier(): string { return 'sirsoft-ecommerce'; }
 
     // 한 건씩 yield — 1.4M 배열을 메모리에 만들지 않음. 쿼리는 Repository 의
-    // stream*ForSitemap() 위임(lazyById, service-direct-data-access 규율).
+    // stream*ForSitemap() 위임(lazyById — Service 직접 데이터 접근 금지 규율).
     // 리소스 단위 증분(SitemapIndexer) 매칭을 위해 resource_type/resource_id 를 함께 emit.
     public function getUrlsLazy(): iterable
     {
         foreach ($this->products->streamVisibleForSitemap() as $p) {
-            yield ['loc' => url("/shop/{$p->id}"), 'lastmod' => $p->updated_at?->toW3cString(),
+            yield ['loc' => SiteUrl::absolute("/shop/{$p->id}"), 'lastmod' => $p->updated_at?->toW3cString(),
                    'resource_type' => 'product', 'resource_id' => (string) $p->id];
         }
     }
@@ -820,6 +852,7 @@ sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
 **정적 화면 포함 조건**: 사용자 템플릿 라우트 중 아래를 모두 만족하는 화면만 사이트맵에 정적 항목으로 싣습니다. 봇 화면(SEO HTML)을 내는 기준과 같습니다.
 
 - 로그인 필요(`auth_required`)·비로그인 전용(`guest_only`) 화면이 아니고 레이아웃이 지정돼 있다.
+- 코어가 모든 템플릿에 덧붙이는 시스템 라우트(`meta.is_system_route: true`, 예: 미리보기 `*/preview/:token` 의 `__preview__`)가 아니다. 시스템 라우트는 저장된 레이아웃이 없어 SEO 선언 수집과 봇 렌더가 레이아웃을 읽기 전에 거른다(`TemplateRouteResolver::isSystemRoute()`). 경로 존재 판정(404)에는 그대로 남는다.
 - 경로에 동적 파라미터(`:id`)나 템플릿 표현식(`{{...}}`)이 없다. 앞의 `*/`(언어 접두사 자리)는 떼고, 끝·연속 슬래시는 정리한 정규형(`*/board//free/` → `/board/free`)으로 싣는다 — 끝·연속 슬래시 주소는 정규형으로 301 이동하기 때문이다.
 - 병합 레이아웃(부모 `extends` 반영)의 `meta.seo.enabled` 가 `true` 다. SEO 블록이 없는 화면(오류 화면·본인인증 화면처럼 `_user_base` 의 기본값을 그대로 쓰는 화면 포함)은 싣지 않는다.
 - `meta.seo.toggle_setting` 이 켜져 있다(예: 쇼핑몰 「검색 결과 SEO」를 끄면 `/search` 가 빠진다).
@@ -835,7 +868,7 @@ sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
 
 - **테이블**: `resource_type`/`resource_id`/`loc`/`loc_hash`(=`sha256(loc)`)/`lastmod`/`changefreq`/`priority`/`contributor`/`is_visible`. unique 는 `(resource_type, resource_id, loc_hash)` — `loc string(2048)` utf8mb4 는 InnoDB 키 길이(3072 byte)를 초과하므로 ascii 64 해시로 identity 를 유지합니다(상세: docs/database-guide.md).
 - **Repository**: `SitemapUrlRepositoryInterface`(`upsertForResource`=delete-후-insert 멱등 / `removeForResource` / `streamVisible`(lazyById) / `countVisible` / `replaceAllForContributor`). `SeoServiceProvider` 가 singleton 바인딩.
-- **인덱서**: `SitemapIndexer::indexResource($type,$model,$entries)` / `deindexResource($type,$model)` — 리스너가 직접 모델/DB 를 만지지 않고 이 서비스를 경유합니다(`service-direct-data-access` 규율). 제3자 확장은 filter 훅 `sitemap.index.collect_for_resource` 로 리소스→entries 를 가공/추가할 수 있습니다(docs/extension/hooks.md). 부모 리소스가 비공개·삭제·재공개되어 자식 수만 건을 한꺼번에 바꿀 때는 `deindexResources($type, $ids)` / `indexResources($type, $contributor, [$id => $entries])` 를 씁니다 — 리소스마다 부르면 큐 작업 시간 제한(기본 60초)을 넘길 수 있습니다(게시글 27,000건 실측: 건별 255초 / 묶음 7초). 묶음 색인도 filter 훅은 리소스마다 호출하고, 저장만 1,000건 단위 삭제·삽입으로 처리합니다.
+- **인덱서**: `SitemapIndexer::indexResource($type,$model,$entries)` / `deindexResource($type,$model)` — 리스너가 직접 모델/DB 를 만지지 않고 이 서비스를 경유합니다(Service 직접 데이터 접근 금지 규율). 제3자 확장은 filter 훅 `sitemap.index.collect_for_resource` 로 리소스→entries 를 가공/추가할 수 있습니다(docs/extension/hooks.md). 부모 리소스가 비공개·삭제·재공개되어 자식 수만 건을 한꺼번에 바꿀 때는 `deindexResources($type, $ids)` / `indexResources($type, $contributor, [$id => $entries])` 를 씁니다 — 리소스마다 부르면 큐 작업 시간 제한(기본 60초)을 넘길 수 있습니다(게시글 27,000건 실측: 건별 255초 / 묶음 7초). 묶음 색인도 filter 훅은 리소스마다 호출하고, 저장만 1,000건 단위 삭제·삽입으로 처리합니다.
 - **리스너**: 모듈 SEO 리스너가 `after_create/update/delete` 에서 공개상태를 판정해 index/deindex 하고 `GenerateSitemapJob::dispatch()`(유니크 락 디바운스)를 겁니다. 리소스 단위 증분에서 자식 파일 URL 수가 임계 미만으로 줄어드는 것(5000→4999)은 감안하며, 균등 재분배(리밸런싱)는 full 재생성 때만 합니다.
 
 ## 재생성 모드 (SitemapGenerationMode)
@@ -875,13 +908,29 @@ sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
 | sitemap_serve_stale_on_miss | boolean | true | 신선도 만료 시 기존 세트를 그대로 서빙(true) / 503 반환(false) |
 | sitemap_max_urls_per_contributor | integer | 0 | 수집기당 URL 상한 (0=무제한). 초과 시 경고 로그 + truncate |
 | sitemap_hreflang_enabled | boolean | true | 다국어 alternate(hreflang) 링크 출력 ON/OFF. 로케일 수가 `SitemapXmlRenderer::MAX_HREFLANG`(50) 초과 시 alternate 생략 |
-| sitemap_schedule | string | "daily" | 생성 주기 (hourly/daily/weekly) |
-| sitemap_schedule_time | string | "02:00" | 생성 시각 |
 | og_default_site_name | string | "" | og:site_name 기본값. 비면 `general.site_name` fallback |
 | og_image_default_width | integer | 1200 | og:image:width 기본값 (픽셀) |
 | og_image_default_height | integer | 630 | og:image:height 기본값 (픽셀) |
 | twitter_default_card | string | "summary_large_image" | twitter:card 기본 (summary/summary_large_image/app/player) |
 | twitter_default_site | string | "" | twitter:site 핸들 (예: @gnuboard). 비면 출력 생략 |
+
+`og_image_default_width/height` 는 이미지 썸네일의 코어 규격 `og`(자르기) 크기이기도 하다. `og:image`·`og:image:secure_url`·`twitter:image` 는 렌더 마지막(`SeoMetaResolver::renderOgHtml`·`renderTwitterHtml`)에서 등록된 서빙 경로의 주소면 `?size=og` 가 붙는다 — 선언한 `og:image:width/height` 와 실제 이미지 크기가 맞는다. 레이아웃이 `og.image_width`·`image_height` 를 직접 선언했으면 바꾸지 않고, 외부·정적 주소도 그대로다. 봇 화면의 본문 이미지(`HtmlSanitizer`)와 `Img` 의 `thumbPreset` 도 같은 규칙으로 `srcset`·`sizes`·`loading` 을 싣는다. 업로드 탭의 썸네일 설정을 바꾸거나 확장을 켜고 끄면 SEO 캐시를 비운다(봇 첫 요청이 잠시 느려진다). 자세한 계약은 [이미지 썸네일](image-thumbnails.md).
+
+### 사이트맵 생성 주기 (7.2.0~)
+
+사이트맵 정기 생성 주기·시각은 SEO 설정이 아니라 **관리자 > 스케줄 관리**의 코어 행 `sitemap-generate` 가 정합니다([scheduling.md](scheduling.md)). 7.1.x 의 `seo.sitemap_schedule`(hourly/daily/weekly)·`seo.sitemap_schedule_time`(HH:mm)은 더 이상 예약에 쓰이지 않습니다.
+
+| 항목 | 값 |
+| --- | --- |
+| 기본 일정 | `0 2 * * *` (매일 02:00, 사이트 설정 시간대) |
+| 유형 | job `App\Jobs\GenerateSitemapJob` — 큐로 보내기(전용 `sitemap` 큐, Job 의 재시도·중복 방지 그대로) |
+| 실행 조건 | `seo.sitemap_enabled` 가 켜져 있을 때만 (기본 true). 끄면 예약 생성을 건너뛴다 |
+| 중복 방지 | 30분 |
+| 생성 모드 | `auto` (위 「재생성 모드」 표의 스케줄러 행) |
+
+- 운영자가 스케줄 관리에서 바꾼 주기는 코어 업데이트가 덮지 않습니다.
+- 7.2.0 업그레이드는 저장된 주기가 기본(매일 02:00)과 다르면 그 값을 `sitemap-generate` 행의 cron 으로 옮기고(hourly → `0 * * * *`, daily → `분 시 * * *`, weekly → `분 시 * * 0`) 두 설정 키를 지웁니다.
+- 큐로 보낸 사이트맵 Job 의 결과는 스케줄 실행 이력이 아니라 스케줄 관리 「큐」 탭의 처리 기록에서 봅니다. 최종 실패 알림은 위 「완료/실패 알림」 규칙(관리자 수동 재생성만)을 따르고, 스케줄 실패 알림(`schedule_failed`)은 보내지 않습니다.
 
 ## 캐시 상한 (config/core.php `seo_cache_limits`)
 
@@ -1503,11 +1552,11 @@ data_source 정의에 `params` 필드가 있으면 해당 값을 해석하여 AP
     "type": "fields",
     "source": "$props_source",
     "link": {
-        "href": "/products/{id}",
-        "base_url": "$global:shopBase"
+        "href": "/products/{product_code|id}",
+        "base_url": "$prop:shopBase"
     },
     "fields": [
-        { "tag": "img", "attrs": { "src": "{thumbnail_url}", "alt": "{name_localized|name}" } },
+        { "tag": "img", "thumbPreset": "md", "attrs": { "src": "{thumbnail_url}", "alt": "{name_localized|name}", "loading": "lazy" } },
         { "tag": "h3", "content": "{name_localized|name}" },
         {
             "tag": "p",
@@ -1536,7 +1585,7 @@ data_source 정의에 `params` 필드가 있으면 해당 값을 해석하여 AP
 |----|------|------|
 | `link` | object | 모든 필드를 `<a>` 태그로 래핑 |
 | `link.href` | string | 링크 URL 패턴 — `{field}` 플레이스홀더 사용 (미해석 시 링크 미생성) |
-| `link.base_url` | string | URL 접두사 — `$global:key` 패턴으로 globalResolver 해석 가능 |
+| `link.base_url` | string | URL 접두사. `$prop:name` — 그 컴포넌트가 받은 prop 을 화면처럼 평가한 값(빈 문자열도 값 — 상점을 루트에 붙인 사이트). `$global:key` — 렌더 문맥 `_global.key`, 없으면 globalResolver(모듈·플러그인 설정 식). `$var:name` — 그 화면 `meta.seo.vars` 값. 그 밖은 글자 그대로 |
 
 **필드 속성**:
 
@@ -1545,6 +1594,7 @@ data_source 정의에 `params` 필드가 있으면 해당 값을 해석하여 AP
 | `tag` | string | HTML 태그 |
 | `content` | string | `{field\|alt}` 패턴으로 값 추출 (리터럴 혼합 가능: `{discount_rate}%`) |
 | `attrs` | object | 속성 기반 렌더링 (img 등) — `{field}` 패턴 |
+| `thumbPreset` | string | `tag: "img"` 항목의 썸네일 규격 — 템플릿 Img 의 `thumbPreset` 과 같은 계약. src 가 `?size=` 주소, srcset 이 2배 밀도 후보가 된다(같은 출처 + 등록된 서빙 경로만, `attrs.srcset` 을 적으면 그 값 유지). 속성으로는 나가지 않는다 |
 | `children` | array | 중첩 필드 그룹 — 자식 필드를 재귀 렌더링, 모든 자식이 빈 결과면 래퍼 태그 미출력 |
 | `if` | string | 조건부 렌더링 — `{field}` 값이 비어있으면 스킵 |
 | `class` | string | CSS class 속성 |
@@ -1556,8 +1606,8 @@ data_source 정의에 `params` 필드가 있으면 해당 값을 해석하여 AP
 **기대 출력** (위 설정 기준):
 ```html
 <article>
-  <a href="/shop/products/123">
-    <img src="/storage/thumb.jpg" alt="상품명">
+  <a href="/shop/products/P123">
+    <img src="https://example.com/api/modules/sirsoft-ecommerce/product-image/abc?size=md" srcset="https://example.com/api/modules/sirsoft-ecommerce/product-image/abc?size=md 1x, https://example.com/api/modules/sirsoft-ecommerce/product-image/abc?size=lg 2x" alt="상품명" loading="lazy">
     <h3>상품명</h3>
     <p><span>의류</span><span>나이키</span></p>
     <p><span>10,000원</span><del>15,000원</del><span>33%</span></p>
@@ -2113,7 +2163,7 @@ vars는 "정의 주체"에 따라 두 갈래로 나뉘며, 소비처도 분리�
 | 레이아웃 `meta.seo.vars` | `resolveSeoVars` → `htmlMapper->setSeoVars` | seo-config.json의 `format`/`fields` 렌더 모드 컴포넌트 |
 
 - **확장 SEO 설정 탭** ← 모듈 `seoVariables()` 기준. 운영자가 입력한 `meta_{page_type}_title` 등의 `{key}` 빈칸을 채움 (`data` 소스 변수가 여기로)
-- **seo-config.json** ← 레이아웃 `meta.seo.vars` 기준. `format` 모드 `{key}` 치환(ComponentHtmlMapper)과 `fields` 모드 link `base_url`(`$var:xxx`)에 사용
+- **seo-config.json** ← 레이아웃 `meta.seo.vars` 기준. `format` 모드 `{key}` 치환(ComponentHtmlMapper)과 `fields` 모드 link `base_url`(`$var:xxx`)에 사용. 화면 컴포넌트가 prop 으로 받는 값(상품 카드의 `shopBase`)은 `$prop:xxx` 로 읽어 화면마다 vars 를 두지 않는다
 
 겹치는 경우는 같은 변수를 **양쪽에 모두 선언**했을 때뿐입니다. 모듈이 정의한 변수는 레이아웃 `vars`에도 적지 않는 한 seo-config.json에서 쓸 수 없고, 레이아웃 임의 변수는 확장 SEO 탭에서 쓸 수 없습니다.
 

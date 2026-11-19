@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product,effects] reason: 판정 축(스코프 3 × 표기 2 × 잠금 2 × 설정상태 3)과 저장 축(요청 5)은 서로 독립이라 곱집합의 대부분이 성립하지 않는 조합이다 — 예컨대 "잠금 항목을 와일드카드로 적은 요청"은 입력 자체가 존재하지 않는다. 등록된 PHPUnit 60 + Vitest 190 + Playwright 3 = 253 케이스가 각 축의 경계값(스코프 넘나듦·와일드카드 앞부분 경계·설정 비었을 때 잠금 생존·설정 미도달 폴백·형식/스코프 위반·키 미전송)과 후속 효과 체인을 전부 덮는다.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: issue:#640 판정 축(스코프 3 × 표기 2 × 잠금 2 × 설정상태 3)과 저장 축(요청 5)은 서로 독립이라 곱집합의 대부분이 성립하지 않는 조합이다 — 예컨대 "잠금 항목을 와일드카드로 적은 요청"은 입력 자체가 존재하지 않는다. 등록된 PHPUnit 60 + Vitest 190 + Playwright 3 = 253 케이스가 각 축의 경계값(스코프 넘나듦·와일드카드 앞부분 경계·설정 비었을 때 잠금 생존·설정 미도달 폴백·형식/스코프 위반·키 미전송)과 후속 효과 체인을 전부 덮는다.
 
 feature: 필수 저장 항목 허용목록의 운영자 설정 이관
 
@@ -95,6 +95,9 @@ effects:
   - cleaner_scope_does_not_leak_across_storages
   - cleaner_locked_items_survive_missing_settings
 
+  # 출하 카탈로그 전량 — 미동의 상태에서 저장되고 다음 방문(회수)까지 남는다 (항목마다 기계 파생)
+  - shipped_catalog_items_survive_unconsented_write_and_cleanup
+
   # 서버 소비 (CookieConsentMiddleware)
   - middleware_passes_cookie_listed_in_operator_settings
   - middleware_removes_cookie_absent_from_settings
@@ -102,6 +105,8 @@ effects:
   - middleware_locked_cookies_survive_empty_settings
   - middleware_locked_cookies_cannot_be_removed_via_settings
   - middleware_session_cookie_name_resolved_at_runtime
+  - middleware_core_login_bind_cookie_survives_without_consent
+  - login_handoff_round_trip_without_consent
 
   # 저장 · 검증
   - update_persists_allowlist_per_scope
@@ -139,6 +144,9 @@ effects:
   - layout_provided_chips_read_response_not_form_state
   - layout_card_not_gated_behind_banner_toggle
   - layout_i18n_keys_exist_in_ko_and_en
+  # 2026-11-09 #869 κ2: 일괄 표식을 시험별로 가르며 드러난, 카드 시험이 실제로 재는 명제
+  - layout_necessary_storage_card_with_guidance_box   # 필수 저장 항목 카드와 그 안내 박스가 있다
+  - layout_taginput_reads_scope_value_and_catalog_suggestions   # 스코프 카드의 TagInput 이 그 스코프 폼 값과 출하 카탈로그 추천 목록을 읽는다
 
   # 브라우저 종단 (E2E)
   - e2e_allowlist_cards_render_three_scopes

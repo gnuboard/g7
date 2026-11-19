@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는 미등록 경로 404 응답 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+# audit:allow test-scenario-coverage reason: issue:#609 본 매니페스트는 미등록 경로 404 응답 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 
 feature: 미등록 경로 HTTP 404 응답 (soft 404 방지 — 공개#47)
 
@@ -41,12 +42,14 @@ effects:
   - trailing_slash_path_redirects_301_to_canonical
   - double_slash_path_redirects_301_collapsed
   - canonical_path_redirect_skipped_when_not_applicable
+  - canonical_path_redirect_skips_root_directory_delegation
   - canonical_path_middleware_ordered_before_analytics_and_seo
   - resolver_normalizes_trailing_slash
   - seo_render_and_cache_key_use_canonical_path
   - resolver_maps_url_to_layout_for_seo
   - resolver_identifies_extension_of_layout
   - resolver_skips_auth_and_guest_routes_for_seo
+  - resolver_skips_system_routes_for_seo
   - resolver_skips_system_routes   # 코어 미리보기 등 meta.is_system_route 는 봇 화면 매핑에서 뺀다(레이아웃 읽기 실패 로그 0)
   - resolver_returns_null_when_routes_unavailable
   - resolver_resolves_route_path_expressions

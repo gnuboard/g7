@@ -10,6 +10,8 @@ use App\Analytics\UrlNormalizer;
 use App\Contracts\Repositories\Analytics\ActionNameRepositoryInterface;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\MemberNamePresenter;
 use App\Enums\Analytics\VisitorType;
 use App\Extension\HookManager;
 use App\Models\User;
@@ -92,6 +94,9 @@ class RealtimeService
             ))))->all()
             : [];
 
+        // 이름은 관리자 영역의 표시 이름으로 나간다. 추가 항목 값이 필요한 설정이면 여기서 한 번에 읽는다.
+        app(MemberNamePresenter::class)->preload($memberMap, null, DisplayNameAreaRegistry::AREA_ADMIN);
+
         return [
             'count' => $this->visits->realtimeCount($minutes, $types),
             'window_minutes' => $minutes,
@@ -126,6 +131,9 @@ class RealtimeService
      * 같은 사람을 다르게 그리면 운영자가 같은 사람인지 알 수 없습니다. 이메일은 노출 정책을
      * 타는 값이라 싣지 않습니다 — 현재 접속자 표는 이름과 이동만 필요합니다.
      *
+     * 이름은 관리자 영역의 표시 이름입니다. 실명은 회원 조회 권한이 있는 관리자에게만, 표시 이름과 다를 때만
+     * `real_name` 으로 더해집니다.
+     *
      * @param  User|null  $user  회원
      * @return array<string, string>|null 간추린 회원 (회원 방문이 아니면 null)
      */
@@ -135,9 +143,12 @@ class RealtimeService
             return null;
         }
 
+        $names = app(MemberNamePresenter::class)->fields($user, null, DisplayNameAreaRegistry::AREA_ADMIN);
+
         return [
             'uuid' => (string) $user->uuid,
-            'name' => (string) $user->name,
+            'name' => (string) ($names['name'] ?? ''),
+            ...(isset($names['real_name']) ? ['real_name' => $names['real_name']] : []),
         ];
     }
 

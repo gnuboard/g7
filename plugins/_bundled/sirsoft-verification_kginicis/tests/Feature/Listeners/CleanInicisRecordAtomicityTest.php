@@ -10,6 +10,7 @@ use App\Services\IdentityLogService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Mockery;
 use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisIdentityLogQueryRepositoryInterface;
@@ -23,16 +24,21 @@ use RuntimeException;
  * record 파기와 로그 익명화는 함께 성공해야 한다 — 한쪽만 끝나면 파기된 것으로 보이는데
  * 이력에 식별자가 남거나, 그 반대가 된다.
  *
- * 함께, 보관주기 파기(identity:prune-logs)가 challenge 매핑까지 연쇄 삭제하는지 고정한다.
+ * 함께, 보관주기 파기(identity:prune-logs)가 challenge 매핑을 리스너로 명시 삭제하는지 고정한다
+ * (외래키 연쇄 삭제는 안전망일 뿐 삭제 경로가 아니다).
  *
- * @scenario trigger=withdraw, trigger=delete, trigger=prune_logs, failure_injection=log_anonymize_fails
- *
- * @effects record_purge_rolled_back, half_done_state_prevented, prune_logs_cascades_to_challenge_mappings
+ * 커버 축: trigger withdraw·delete·prune_logs (탈퇴·삭제는 로그 익명화 실패를 주입한다)
  */
 class CleanInicisRecordAtomicityTest extends PluginTestCase
 {
     /**
      * 로그 익명화가 실패하면 record 파기도 되돌아간다.
+     *
+     * @scenario trigger=withdraw
+     *
+     * @effects record_purge_rolled_back, half_done_state_prevented
+     *
+     * @return void 반환값 없음
      */
     public function test_record_purge_rolls_back_when_log_anonymize_fails(): void
     {
@@ -60,6 +66,12 @@ class CleanInicisRecordAtomicityTest extends PluginTestCase
 
     /**
      * 삭제 훅에서도 같은 원자성이 보장된다.
+     *
+     * @scenario trigger=delete
+     *
+     * @effects record_purge_rolled_back, half_done_state_prevented
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_hook_rolls_back_when_log_anonymize_fails(): void
     {
@@ -81,9 +93,18 @@ class CleanInicisRecordAtomicityTest extends PluginTestCase
     }
 
     /**
-     * B6 연쇄: 보관주기 파기가 challenge 매핑까지 함께 지운다.
+     * 보관주기 파기 직전 훅에서 리스너가 challenge 매핑을 명시 삭제한다 (#888).
+     *
+     * 외래키 검사를 꺼 DB 연쇄 삭제가 일어나지 않는 상태로 파기한다 — 그래도 매핑이 0건이면
+     * `core.identity_logs.before_purge` 리스너가 지운 것이다.
+     *
+     * @scenario trigger=prune_logs
+     *
+     * @effects prune_logs_deletes_challenge_mappings_explicitly
+     *
+     * @return void 반환값 없음
      */
-    public function test_prune_logs_cascades_to_challenge_mappings(): void
+    public function test_prune_logs_deletes_challenge_mappings_explicitly(): void
     {
         $expiredLog = $this->seedChallengeLog(now()->subDays(200));
         $recentLog = $this->seedChallengeLog(now()->subDays(10));
@@ -91,11 +112,17 @@ class CleanInicisRecordAtomicityTest extends PluginTestCase
         $this->assertDatabaseHas('inicis_challenge_mappings', ['challenge_id' => $expiredLog]);
         $this->assertDatabaseHas('inicis_challenge_mappings', ['challenge_id' => $recentLog]);
 
-        app(IdentityLogService::class)->purge(180);
+        // 외래키 연쇄 삭제를 끈다 — 매핑이 지워진다면 리스너가 지운 것이다
+        Schema::disableForeignKeyConstraints();
+        try {
+            app(IdentityLogService::class)->purge(180);
+        } finally {
+            Schema::enableForeignKeyConstraints();
+        }
 
         $this->assertDatabaseMissing('identity_verification_logs', ['id' => $expiredLog]);
-        // 실패 시: 이력은 파기됐는데 challenge 매핑이 고아로 남은 상태
-        $this->assertDatabaseMissing('inicis_challenge_mappings', ['challenge_id' => $expiredLog]);
+        // 실패 시: 이력은 파기됐는데 challenge 매핑이 고아로 남은 상태 (외래키 연쇄에만 기대던 상태)
+        $this->assertSame(0, DB::table('inicis_challenge_mappings')->where('challenge_id', $expiredLog)->count());
 
         // 보관기간 이내 이력과 그 매핑은 보존된다
         $this->assertDatabaseHas('identity_verification_logs', ['id' => $recentLog]);
@@ -106,6 +133,7 @@ class CleanInicisRecordAtomicityTest extends PluginTestCase
      * 본인확인 record 를 시드합니다.
      *
      * @param  User  $user  대상 사용자
+     * @return void 반환값 없음
      */
     private function seedRecordForUser(User $user): void
     {

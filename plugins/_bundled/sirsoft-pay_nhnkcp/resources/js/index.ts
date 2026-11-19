@@ -28,6 +28,7 @@ export function openExternalReceiptWindow(url: unknown, name: string, features: 
     const popup = window.open('', name, features);
     if (popup) {
         popup.opener = null;
+        // base-path:allow 위에서 https 절대 주소(PG 영수증)만 통과시켰다 — 사이트 경로가 아니다.
         popup.location.href = url;
     }
 

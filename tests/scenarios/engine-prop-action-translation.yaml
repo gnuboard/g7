@@ -1,0 +1,22 @@
+# 시나리오 매니페스트 — 컴포넌트 정의를 담은 prop 안 액션 정의의 렌더 시점 번역 (engine-v1.96.1, #916)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: engine_prop_action_translation
+
+description: |
+  렌더러는 props 를 바인딩 뒤 번역한다. 바인딩 단계(DataBindingEngine.resolveObject)와 반복 렌더(RenderHelpers.resolveValue)는
+  액션 정의를 건너뛰는데 번역 단계(DynamicRenderer.resolveTranslationsDeep)만 그 안까지 내려가, Modal `footer` 같은 prop 의 단추
+  액션에 든 `$t:키|이름={{response…}}` 를 응답이 오기 전 렌더 문맥으로 번역했다(설치 창 성공 토스트 「(서명자: )」).
+  번역 단계도 액션 정의를 건너뛰고, 같은 prop 안 컴포넌트 정의의 글자는 종전처럼 번역한다.
+  관리자 템플릿 설치 창의 실제 Modal 고정 하단 경로는 `templates/_bundled/sirsoft-admin_basic/tests/scenarios/admin-package-integrity.yaml` 이 소유한다.
+
+axes:
+  case: [footer_button_action, footer_component_text, raw_bound_action_object]
+
+effects:
+  - prop_action_definition_kept_raw        # prop 안 액션 정의(onSuccess 의 toast·setState 포함)는 원문 그대로 컴포넌트에 넘어간다
+  - prop_component_text_still_translated   # 같은 prop 안 컴포넌트 정의의 text·props `$t:` 는 렌더 시점에 번역된다
+  - raw_bound_action_markers_stripped      # `{{raw:식}}` 결과가 액션 모양 객체여도 원문 표식을 벗겨 넘긴다(반복 렌더 경로와 같다)
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.propActionTranslation.test.tsx

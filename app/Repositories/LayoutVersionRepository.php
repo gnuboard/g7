@@ -7,6 +7,7 @@ use App\Models\TemplateLayout;
 use App\Models\TemplateLayoutVersion;
 use App\Repositories\Concerns\CalculatesJsonContentDiff;
 use App\Support\LayoutEmptyObjects;
+use App\Support\LayoutErrorHandlingPrune;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
@@ -60,16 +61,18 @@ class LayoutVersionRepository implements LayoutVersionRepositoryInterface
     }
 
     /**
-     * 특정 레이아웃의 모든 버전 조회 (최신순)
+     * 특정 레이아웃의 버전 조회 (최신순, 본문 포함)
      *
      * @param  int  $layoutId  레이아웃 ID
+     * @param  int|null  $limit  조회할 최대 버전 수 (null 이면 전부)
      * @return Collection 버전 컬렉션
      */
-    public function getVersions(int $layoutId): Collection
+    public function getVersions(int $layoutId, ?int $limit = null): Collection
     {
         return $this->model
             ->where('layout_id', $layoutId)
             ->orderBy('version', 'desc')
+            ->when($limit !== null, fn ($query) => $query->limit($limit))
             ->get();
     }
 
@@ -122,7 +125,9 @@ class LayoutVersionRepository implements LayoutVersionRepositoryInterface
             // 버전 행·현재 행 모두 원문 그대로 읽는다 — 캐스트는 `{}` 를 `[]` 로 만들어 복원 한 번으로
             // 본 행의 빈 객체가 사라진다 (#758)
             $currentContent = LayoutEmptyObjects::rawPreserving($layout);
-            $restoredContent = LayoutEmptyObjects::rawPreserving($versionToRestore);
+            // 빈 동작 오류 코드는 편집기 저장 직렬화와 같은 규칙으로 지운다 — 그 규칙 이전에 저장된 버전을
+            // 복원해도 빈 항목이 되살아나 default 와 onError 처리를 가리지 않게 한다 (#869)
+            $restoredContent = LayoutErrorHandlingPrune::prune(LayoutEmptyObjects::rawPreserving($versionToRestore));
 
             // 3. 레이아웃을 복원할 content로 업데이트 — lock_version 도 올린다. 복원 직전 화면을 열어 둔
             //    다른 편집기가 옛 lock 으로 저장하면 409 가 나야 복원 결과가 조용히 덮이지 않는다.

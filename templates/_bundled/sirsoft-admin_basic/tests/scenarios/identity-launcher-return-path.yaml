@@ -1,0 +1,17 @@
+feature: 본인인증 launcher 의 복귀 경로 — 외부 재확인 뒤 지금 화면으로 돌아오기 (sirsoft-admin_basic, 7.2.0)
+
+description: |
+  428 을 받은 launcher 가 challenge 요청에 지금 화면 경로(`return_path`)를 싣는다. 서버가 외부 화면을 거치는 수단(회사 계정 다시 로그인,
+  소셜 다시 로그인)을 고르면 그 수단이 확인 뒤 이 경로로 돌려보낸다 — 싣지 않으면 서버 기본값(마이페이지·첫 화면)으로 떨어졌다.
+  같은 출처 경로+쿼리만(해시 없음), 지난 왕복의 결과 쿼리는 뺀다. 서버의 같은 출처 판정은 코어 `identity-per-user-fallback.yaml` 이 잰다.
+
+axes:
+  surface: [launcher_return_path]
+  page: [admin_user_form, query_with_previous_result, text_code]
+
+effects:
+  - launcher_sends_current_return_path        # challenge 요청 본문에 지금 화면 경로를 싣고 외부 수단 이동 주소로 보낸다
+  - launcher_return_path_drops_result_query   # 화면 쿼리는 남기고 verification_token·social_reauth·social_error·해시는 뺀다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/identityLauncher.returnPath.test.ts

@@ -74,6 +74,20 @@
 우회하지 않습니다 — 반품·교환의 환불 대상액은 `OrderAdjustmentService` 의 취소 계산을 그대로
 쓰고(`ReturnAdjustment` / `ExchangeAdjustment` 가 `OrderAdjustment` 를 상속), 클레임 배송비만
 `ClaimShippingFeeService` 가 주문 시점 배송정책 스냅샷에서 다시 산출합니다.
+
+**내보내기(상품·주문·마일리지 내역 → 파일)는 목록의 필터 경로를 그대로 지난다.** 파일 대상 행은
+각 목록 Repository 의 `newExportQuery($filters, $ids, $requester)` 가 목록과 같은 필터 메서드(`applyListFilters()`, 저장소 안쪽)로
+만들고, 권한 범위는 요청자를 인자로 건다(큐 작업에는 로그인 사용자가 없어 현재 사용자 기준이면 범위가 빠진다). 쿼리를 저장소 밖에서
+조립하지 않는다. `ExportSourceQueryParityTest` 가 축마다
+목록 결과와 같은지 잠급니다 — 필터를 복제하면 화면은 걸러진 건수인데 파일은 전건이 되는 어긋남이 조용히 생깁니다. 목록의 [내보내기] 버튼은
+다른 목록 버튼처럼 목록 응답의 `abilities.can_export` 로 보일지 정합니다. 파일은 큐 작업(`GenerateExportJob`)이
+요청 시각(`cutoff_at`) 기준으로 500행씩 순회해 비공개 기본 디스크 `exports` 카테고리에 쓰고, 내려받기는 60초·1회용 주소로만
+하며 받는 시점에 권한·범위·원본 조회 권한을 다시 봅니다. 작업 범위는 코어 표준 권한 범위입니다(`owner_key = requested_by`) — 역할 관리에서 권한마다 본인만/소유 역할/전체를 고르고, 기본은 관리자 전체·이커머스 관리자 본인만입니다(`Support\ExportAccess`). 별도 「전체 관리」 권한을 다시 만들지 않습니다.
+열은 `Exports\Declarations\*` 의 모델 선언(`type`·`personal` 필수)에서 오고, 선언도 제외 사유도 없는 컬럼은
+`ExportDeclarationCoverageTest` 가 잡습니다. 새 유형·형식·항목은 `sirsoft-ecommerce.export.*` 필터 훅으로 붙고, 모든 단계가
+액션 훅과 활동 로그를 남깁니다. 창과 진행 표시는 세 목록이 함께 쓰는 `partials/admin_ecommerce_export/*` 조각입니다. 목록 버튼은 창 조건(`_global.ecommerceExportContext`)을
+열 때마다 `merge="shallow"` 로 **통째로** 바꿉니다 — 기본 깊은 병합이면 지운 검색어·다른 목록의 조건이 남아 화면과 다른 파일이
+오류 없이 만들어집니다(`admin-export-request-and-manage.spec.ts` 가 잠금).
 <!-- @intent END -->
 
 ## 2. 디렉토리 지도
@@ -215,6 +229,56 @@ FormRequest → `CheckoutDataService`(주문서에 필요한 배송지·쿠폰·
 바꾸면 이 값이 비워지는데, 무조건 `required` 였을 때는 해외 배송지 주문이 「상세 주소를 입력해주세요.」로
 결제에서 막혔습니다. 국내 필드를 새로 더할 때도 같은 짝을 따릅니다.
 
+**회원의 결제 통화와 배송국가**: 두 값(`ecommerce_preferred_currency`, `ecommerce_preferred_shipping_country`)은
+`module.php` 의 `getFields()` 가 회원 항목 집합(`core.user`)에 선언한 항목입니다(선택 유형, `storage = handler`,
+`ui.group = shop`, 가입 요청의 옛 키 `preferred_currency`, `preferred_shipping_country` 수용). 코어가 가입, 관리자 수정,
+내 정보 수정의 검증 규칙을 만들고 회원 저장과 같은 트랜잭션에서 바뀐 칸만 `Fields\UserPreferenceFieldHandler::write()` 로
+넘깁니다. 값은 종전과 같이 `ecommerce_user_profiles` 의 회원별 한 행입니다. 관리자 회원 추가는 받지 않습니다
+(`ui.surfaces` 에 `admin_create` 없음). 추가와 가입 직후의 기본값은 `AssignDefault*OnRegisterListener` 가 정하고,
+이미 값이 있으면 건드리지 않습니다. 선택지는 선언에 두지 않고 `UserPreferenceFieldDefinitionListener` 가 요청마다
+사이트 설정에서 채웁니다(통화는 기본 통화이거나 환율이 잡힌 통화, 국가는 활성 국가). 같은 리스너가 고를 통화가
+하나뿐인 사이트의 가입 화면에서 통화를, 해외배송을 끈 사이트에서 배송국가를 빼고, 이커머스 권한이 없는 관리자에게는
+칸을 읽기 전용으로 냅니다. 관리자가 다른 회원의 값을 바꾸는 저장은 핸들러의 `extraRules()` 가 권한을 확인합니다.
+`UserCurrencyInfoListener`, `UserShippingCountryInfoListener` 는 `core.user.filter_resource_data` 만 구독해 회원 응답의
+최상위 키에 값을 싣습니다. 화면은 템플릿의 회원 항목 공용 조각이 그리며 이 모듈은 회원 폼에 칸을 넣지 않습니다.
+화면 전역 값(`_global.preferredCurrency`, `_global.preferredShippingCountry`)은 `_user_base` 대상 조각
+`user-account-preference-sync` 가 부르는 핸들러 `watchAccountPreferences` 가 로그인 회원 응답이 바뀔 때마다 맞춥니다.
+항목 이름과 안내 문구는 `src/lang/{언어}/fields.php` 에 있고 선언이 그 파일을 직접 읽습니다.
+해외배송을 끈 동안에는 배송국가의 「필수」를 적용하지 않습니다(운영자 표에는 잠금 사유로 보이고 저장된 값은 남습니다).
+어떤 화면에도 없는 칸이 미입력으로 판정되면 회원이 채울 칸이 없는 추가 정보 화면에 갇히기 때문입니다. 저장된 배송국가가
+지금 배송할 수 없는 국가면 같은 리스너가 내 정보 수정의 항목 안내에 「적용되지 않는다」는 문장을 싣습니다.
+
+**주문서 항목**: 주문서에서 받는 주문자와 배송지 항목은 항목 집합 `sirsoft-ecommerce.order_contact`(`getFieldSets()`)에
+모이고 창구는 `Fields\OrderContactFields` 한 곳입니다. 잠긴 항목(주문자 이름과 연락처, 수령인 이름과 연락처, 배송 주소)은
+`CreateOrderRequest` 의 고정 규칙이라 표에 잠긴 행으로만 보입니다. 설정 가능한 기본 항목(주문자 이메일, 상세 주소, 배송 메모)은
+기존 요청 키와 기존 컬럼을 그대로 쓰고, 사용과 필수만 항목 엔진에서 받아 `OrderContactFields::REQUEST_PATHS` 의 요청 경로에
+겁니다(꺼진 항목은 규칙에서 빠지고 요청에 실려 와도 저장하지 않습니다. 비회원의 주문자 이메일은 늘 필수입니다). 추가 항목
+(운영자가 추가한 항목, 다른 확장이 기여한 항목)의 요청 키는 `extra_fields.{키}` 이고 값은 `OrderProcessingService::createFromTempOrder()`
+의 주문 트랜잭션 안에서 공용 값 테이블(소유자 종류 `ecommerce_order`)에 저장합니다. 주문서 조회와 다시 계산 응답은
+`order_fields`, 주문 한 건의 응답(`OrderResource`, `GuestOrderResource`)은 `extra_fields` 를 싣고, 보유기간 처리와 주문 삭제가
+값을 함께 지웁니다. 설정을 바꾸지 않은 사이트의 주문 생성 규칙은 종전과 글자까지 같아야 합니다(테스트가 잠급니다).
+
+**회원 이름과 표시 이름**: 회원 이름을 응답이나 기록에 실을 때 `$user->name` 을 직접 읽지 않고 `Support\MemberDisplayName` 을
+거칩니다(코어 표시 이름 계산기의 얇은 창구). 영역은 `module.php` 의 `getDisplayNameAreas()` 가 선언한 셋입니다.
+`sirsoft-ecommerce:review`(사용자 화면의 상품 후기, 사이트 기본을 따름), `sirsoft-ecommerce:inquiry`(사용자 화면의 상품 문의,
+기본 「가린 이름」 고정. 종전 가림 함수를 대신하므로 문의 서비스는 회원 이름을 다시 가리지 않습니다), `sirsoft-ecommerce:admin`
+(관리자 화면과 새로 남기는 기록, 관리자 화면을 따름). 같은 Resource 를 사용자 화면과 관리자 화면이 함께 쓰면 요청이 관리자
+컨트롤러에 도달했는지로 영역을 가릅니다(`areaFor()`, `staffFields()`). 실명은 이름 키에 싣지 않고 `fields()` 가 조건이 맞을 때만
+별도 키(`real_name`, `author_real_name`, `user_real_name`, `granted_by_real_name`, `created_by_real_name`)로 더합니다. 조건은
+관리자 컨트롤러에 도달한 요청, 회원 조회 권한(`core.users.read`), 탈퇴 회원 아님, 표시 이름과 다른 비어 있지 않은 실명입니다.
+목록은 행을 만들기 전에 `preloadRelations()` 를 한 번 부르고(추가 항목을 표시 이름으로 쓰는 사이트에서 행 수만큼 쿼리가 늘지 않게),
+회원 관계의 컬럼 제한은 `'user:'.User::displayColumns()` 로 씁니다(`user:id,name` 꼴은 닉네임과 상태가 없어 계산할 수 없습니다).
+관리자 화면의 회원 검색은 `constrainUsersForAdmin()` 으로 이름과 닉네임을 함께 찾습니다. 표시 이름을 쓰지 않는 자리는 셋입니다.
+주문의 주문자 이름과 수령인(주문서에 적힌 값), 내보내기 이력의 요청자와 받은 사람(남긴 스냅샷 그대로. 새 기록만 그 시점의
+관리자 영역 표시 이름), 내보낸 파일의 회원 칸(실명. 이름이 없으면 빈 칸). 알림의 받는 사람 이름은 `'{recipient_name}'` 자리표시만
+싣고 코어가 받는 사람과 채널마다 풉니다. 받는 사람이 아닌 회원의 이름(`customer_name`, `requester_name`)은 `core:notification`
+영역으로 계산하고, 비회원은 주문서에 적힌 주문자 이름입니다. 후기와 문의의 기능별 설정은 쇼핑몰 환경설정(리뷰 설정 탭, 기본 정보 탭)의
+칸이지만 값은 이커머스 설정 파일이 아니라 코어 설정 `member.display_name_areas` 의 두 영역 키에 저장합니다
+(`EcommerceDisplayNameSettingsService` 가 저장된 묶음 전체에 두 영역만 덮어써 넘깁니다. 다른 영역이 지워지면 안 됩니다).
+그래서 인스턴스 판정(`instance_resolver`)과 사용처 목록(`used_kinds_provider`)을 두지 않고, 닉네임 항목 잠금과 추가 항목 삭제
+차단은 코어가 영역 설정을 직접 보고 판정합니다. 회원의 표시 이름이 바뀌면(`core.user.display_name_changed`)
+`SeoMemberDisplayNameCacheListener` 가 후기와 문의가 구워진 상품 상세 SEO 캐시(`shop/show`)를 비웁니다.
+
 **비회원 주문의 리뷰 플래그**: 리뷰는 회원만 씁니다(리뷰 저장 API 는 로그인 필요, 비회원 주문 상세에는
 리뷰 작성 창이 없음). 그래서 `OrderOptionResource::calculateCanWriteReview()` 는 비회원 주문의 품목이면
 guest 역할의 권한과 무관하게 `can_write_review=false` 를 냅니다 — 비회원 주문 응답
@@ -263,6 +327,8 @@ null 아님으로 가정하지 마세요 — 작성자 표시는 `ProductReview:
 지정하면 그 회원의 적립건만 연장합니다(`MileageTransactionRepositoryInterface::getRemainingLotsByIds(?int $userId, …)`).
 관리자 마일리지 내역 화면은 적립건만 보내고 회원을 지정하지 않습니다 — 고른 것 중 첫 건의 회원을 뽑아
 보내던 때는 나머지 회원의 적립건이 조용히 빠졌습니다.
+**기본 데이터 시더의 선언 정리(코어 7.2.0)**: 클레임 사유·배송사·배송 유형 시더는 선언에서 빠진 기본 행을 `GenericEntitySyncHelper::cleanupStale(..., ownerIdentifier: 'sirsoft-ecommerce')` 로 지운다 — 운영자가 고친 행(`user_overrides`)이면 지우기 직전 활동 로그 `entity.sync_deleted` 에 남는다.
+
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -270,14 +336,14 @@ null 아님으로 가정하지 마세요 — 작성자 표시는 `ProductReview:
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 605개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 227개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 50개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
-| 레이아웃 확장 | 17개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
+| 발행 훅 | 643개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 239개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 56개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 레이아웃 확장 | 16개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 3개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
-| 스케줄 | 12개 | [스케줄](docs/extension-points.md#스케줄) |
-| 알림 정의 | 55개 | [알림 정의](docs/extension-points.md#알림-정의) |
+| 스케줄 | 14개 | [스케줄](docs/extension-points.md#스케줄) |
+| 알림 정의 | 57개 | [알림 정의](docs/extension-points.md#알림-정의) |
 <!-- @generated:extension-points-summary END -->
 
 <!-- @intent START -->
@@ -296,6 +362,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 새 PG·결제수단 추가 | 결제수단 카탈로그에 능력 선언(`needs_pg`·`pg_locked`·`refund_method`·`auto_approve_refund` 등) + `payment.*` 6종 (이 모듈 수정 불필요) |
 | 그 수단의 환불을 운영자 승인 없이 자동 완료 | 카탈로그 `auto_approve_refund: true` 선언 — 운영자가 클레임 정책 탭에서 최종 결정 (`modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` "결제수단 능력 선언") |
 | 결제 직전/취소/입금확인에 본인인증 강제 | `getIdentityPolicies()` 가 선언한 4개 정책의 target 훅 (`checkout.before_payment` · `payment.before_cancel` · `payment.before_approve` · `payment.before_confirm_deposit`) — 기본 `enabled: false` |
+| 주문서에 항목 더하기 | 자기 `getFields()` 에 `field_set: 'sirsoft-ecommerce.order_contact'` 로 선언 (요청 키 `extra_fields.{키}`, 운영자 표와 주문서 화면과 저장은 이 모듈이 맡는다. `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` "주문서 항목 집합") |
 | 상품 문의를 다른 저장소로 | `inquiry.store_validation_rules` · `inquiry.update_validation_rules` + 게시판 측 `sirsoft-board.post.after_*` (`ProductInquiryBoardListener` 가 선례) |
 | 재고 차감/복원 시점 개입 | `stock.*` 4종 |
 | 클레임 신청서의 접수·전이·완료·철회·금액 수정에 개입 | `claim.exchange.*` · `claim.return.*` · `claim.refund.*` · `claim.cancel.*` (전이는 `status_changed` 한 축 + 승인·반려·철회·완료의 구체 훅이 함께 발화. `claim.refund.status_changed` 는 4번째 인수로 컨텍스트를 받아 자동 전이의 중간 알림만 억제한다) |
@@ -322,7 +389,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 - [ ] 업그레이드 스텝·데이터 마이그레이션이 설정 파일을 새로 쓰면(`File::put`) 바로 뒤에 `FilePermissionHelper::inheritOwnershipFromParent($path)` — `sudo` 코어 업데이트 안에서 root 로 실행되어 그 파일이 root 소유로 남으면 이후 웹 프로세스의 설정 저장이 영구 실패한다. 번들 확장 `upgrades/**` 전수를 파일시스템에서 파생해 검사하는 패리티 테스트가 누락을 잡는다
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:sirsoft-ecommerce` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스를 새로 쓰지 않았으면 빌드 없이 update 만, 새 클래스(`ecommerce:` 유틸리티·`ecommerce-*`)를 쓰면 `module:build` 로 자기 CSS 를 다시 만든다(「화면 클래스 규약」)
 - [ ] 레이아웃에 입력칸을 새로 그리면 화면 낭독기가 읽을 이름을 단다 — 제목이 표식 없는 span·표 열 머리면 그 제목 키로 `aria-label`, 체크박스·라디오 옆 글자는 칸과 한 `<label>` 로 감싸고, 목록형 선택칸(`options`·SearchableDropdown)은 placeholder 가 아니라 `aria-label`(정렬 `common.sort_order`·쪽당 개수 `common.per_page`·검색 대상 `common.search_field`)을 단다. 표·반복 행 칸은 「{행 이름} {열 이름}」(`common.row_cell`)으로, DataGrid 셀·펼침 안에서는 `$t:defer:` 로 쓰고(행 문맥 없이 먼저 번역되면 행 이름이 빈다), 행 선택을 켠 DataGrid 는 `rowLabelField` 를 화면에 보이는 식별자로 정한다. 잠금: `resources/js/__tests__/layouts/adminControlNames.test.ts`(#757)
 - [ ] 창(모달) 안에서 반복 행을 눌러 고르게 하면(회원 검색 결과 등) 그 행은 `<button type="button">`(또는 링크)로 그린다 — 클릭만 받는 `<div>` 는 Tab 으로 닿지 않아 키보드로 고를 수 없다. 단추 안에는 `<div>` 대신 `<span class="block">` 으로 줄을 나눈다. 보이는 제목 없이 placeholder 만 있는 숫자칸은 `aria-label` 을 단다(Playwright 접근 이름 계산은 숫자칸 placeholder 를 이름으로 치지 않는다). 잠금: `resources/js/__tests__/layouts/adminModalRowKeyboard.test.ts`
 - [ ] 클릭으로 무언가를 고르거나 펼치는 영역(필터 칩·기간 빠른 선택·구획 머리·목록 카드·사진)은 `<div>`·`<img>` 에 `<on type="click">` 을 달지 않고 `<button type="button">` 으로 그린다 — 고르는 칩·카드는 `aria-pressed`, 접는 머리는 `aria-expanded`, 스위치는 `role="switch"`·`aria-checked`. 관리자 `.button` 이 `inline-flex justify-center` 를 넣으므로 폭을 채우는 자리는 `w-full justify-start text-left`(앞선 CSS 가 display 를 정하던 `card-header` 는 `flex` 도) 를 함께 둔다. 표 행처럼 단추가 될 수 없는 자리는 자기 동작 없는 대리 단추(상태 속성 + 이름)를 품는다. 잠금: `resources/js/__tests__/layouts/adminClickOnlyKeyboard.test.tsx`
@@ -332,6 +399,9 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 - [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(#148)
 - [ ] 금액 계산 경로를 건드렸다면 여섯 소비 지점(상품 상세·장바구니·체크아웃·주문 생성·결제 검증·부분 취소)에 같은 결과가 도달하는지 확인
 - [ ] 통화가 관여하는 표시·기록을 추가할 때 다국어 문구는 `:amount` 로 중립, 과거 거래 표기는 `currency_snapshot` 경유
+- [ ] 회원 항목 선언(`getFields()`)을 바꿀 때는 `src/lang/{ko,en}/fields.php` 의 이름과 안내 문구, 값 핸들러(`Fields\UserPreferenceFieldHandler`), 선택지 리스너(`UserPreferenceFieldDefinitionListener`), 응답 리스너가 같은 키를 쓰는지 함께 확인한다. 두 칸의 검증이나 저장을 `core.user.*` 훅 리스너로 다시 만들지 않는다(이중 검증, 이중 저장)
+- [ ] 주문서에 칸을 더하거나 주문자, 배송지 칸의 필수 여부를 바꿀 때는 `CreateOrderRequest` 에 규칙을 직접 적지 말고 주문서 항목 집합(`Fields\OrderContactFields`, `module.php` 의 `orderContactFields()`)을 거친다. 잠긴 항목을 풀거나 새 항목을 잠글 때는 `OrderContactFields::LOCKED_FIELDS`, 선언의 `locks`, 요청의 고정 규칙을 함께 고친다
+- [ ] 로그인 회원이 부르는 쓰기 라우트를 더할 때는 「추가 정보를 채우기 전에도 반드시 돼야 하는가」를 판단한다. 돼야 하면 `Listeners\ExemptRequiredFieldsRoutesListener::ROUTES` 에 라우트 이름을 보탠다(결제 결과 처리, 화면 표시 설정). 새 거래를 만드는 요청은 보태지 않는다
 - [ ] 금전이 움직이는 훅(쿠폰·마일리지 차감/복원)을 구독·발행할 때 `'sync' => true` 확인
 - [ ] 마일리지 원장에 기록하는 경로를 추가하면 같은 트랜잭션 마지막에 잔액 캐시 재계산 동반
 - [ ] 목록 응답에 하위 컬렉션(옵션·이미지)을 실을 때 화면이 실제로 그리는 것만 — Repository 의 `relations:` 와 Resource 의 `whenLoaded` 를 함께 본다
@@ -350,6 +420,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @intent START -->
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
+| 상대 서명 URL(`temporarySignedRoute(..., absolute: false)`)을 그대로 응답에 싣기 | `AssetUrl::sitePath(URL::temporarySignedRoute(..., absolute: false))` | 상대 URL 생성은 요청의 마운트 접두사를 벗기므로 하위 폴더 설치에서 사이트 밖을 가리킨다. 서명은 접두사를 뺀 경로에 걸리고 검증(`hasValidSignature(absolute: false)`)도 접두사를 뺀 `Request::path()` 로 하므로, 서명된 값 밖에서 붙인 접두사는 서명을 깨지 않는다 |
 | 화면·서비스마다 금액을 다시 계산 (`합계 = 단가 × 수량` 재구현) | `OrderCalculationService::calculate()` 결과만 사용 | 계산이 여섯 지점에 흩어지면 화면 금액과 결제 금액이 갈라지고, 그 어긋남은 결제 완료 검증에서 `PaymentAmountMismatchException` 으로 뒤늦게 나타난다 |
 | 마일리지 잔액을 `ecommerce_mileage_balances` 에서 읽어 차감 가능 여부 판정 | 원장(`ecommerce_mileage_transactions`) `FOR UPDATE` 재검증 | 캐시는 단방향 파생물이라 동시 요청에서 뒤처질 수 있다 — 캐시를 근거로 차감하면 잔액이 음수가 된다 |
 | 마일리지 잔액 캐시를 서비스에서 직접 증감 | 원장에 기록한 뒤 같은 트랜잭션 마지막에 캐시 재계산 | 두 곳을 각각 갱신하면 원장 합계와 캐시가 어긋나고, 정합 교정 스케줄(`reconcile-mileage-balance`)이 매번 되돌린다 |
@@ -378,6 +449,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | PG 호출 뒤에 같은 트랜잭션에서 장부를 쓰기 | 되돌릴 수 있는 쓰기를 모두 끝낸 뒤 PG 를 마지막에 부르고, 완료는 그 행 UPDATE 1회 | PG 성공 뒤 쓰기가 실패하면 장부만 롤백되고 돈은 나간다 — NICE·KG·KCP 는 멱등키가 없어 재실행이 이중 환불이 된다 |
 | `DB::transaction(..., attempts>1)` 로 환불 실행 감싸기 | attempts 1 | 교착 재시도가 클로저를 다시 돌려 PG 를 두 번 부른다 |
 | 레이아웃·확장 조각의 메뉴·목록 단추에 폭(`w-full`·`flex-1`)만 주고 가로 정렬을 지정하지 않기 | 왼쪽에 둘 단추는 `justify-start` 를 함께 둔다 | 템플릿 기본 단추가 가운데 정렬을 넣는다(사용자 `Button` 의 `justify-center` 병합, 관리자 `.button`) — 헤더 통화·배송 국가 목록이 이렇게 가운데로 갔다 |
+| 현금영수증·결제 실패 이력의 사유 칸(`error_message`)에 프로바이더 예외 원문을 그대로 저장 | `CashReceiptService::providerExceptionResult()` — 운영 모드는 `cash_receipt.errors.issue_failed`·`cancel_failed`, 원문은 서버 로그(디버그 모드만 원문). 결제 플러그인은 결제대행사 거절 사유만 원문으로 넘긴다 | 이력 사유는 `CashReceiptResource` 로 관리자 주문 상세와 구매자 응답에 그대로 보인다 — 결제대행사 API 주소·cURL 문구·서버 경로가 화면에 나간다(#858) |
 <!-- @intent END -->
 
 ### 환불 후 주문 헤더 동기화 계약 (S3-D17)
@@ -404,10 +476,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 769개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 299개 | `vitest.config.ts` |
-| Playwright | 81개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 466개 | `tests/scenarios` |
+| PHPUnit | 822개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 322개 | `vitest.config.ts` |
+| Playwright | 85개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 527개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
@@ -442,26 +514,43 @@ cd modules/_bundled/sirsoft-ecommerce && npm run test:e2e -- specs/<대상>.spec
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
 
-## 확장 조각의 CSS 클래스 규약
+## 화면 클래스 규약 — 이 모듈이 자기 CSS 를 싣는다
 
-resources/extensions/ 아래 의 조각은 **다른 패키지의 화면 안에서** 그려진다. 그래서 여기 쓰는
-클래스는 그 화면을 소유한 **템플릿의 CSS 에 실재해야** 한다.
+관리자 레이아웃과 `resources/extensions/` 조각은 **템플릿 CSS 에 기대지 않는다.** 모든 클래스는 이
+모듈 앞글자를 쓰고, 규칙은 이 모듈의 `dist/css/module.css` 에 실재한다(manifest `assets.css.namespace: ecommerce`).
+조각은 다른 패키지(관리자·사용자 템플릿) 화면 안에서 그려지지만 같은 규칙이 그대로 적용된다.
 
-두 가지를 지킨다.
+1. **배치·색 유틸리티는 `ecommerce:` 접두 Tailwind 로 쓴다**(`ecommerce:flex ecommerce:dark:bg-gray-800`).
+   Tailwind 는 이 모듈의 작성 도구일 뿐이고(preflight 없음), `resources/css/main.css` 맨 앞 생성 블록이
+   `resources/{layouts,extensions,js}` 를 훑어 쓰인 클래스만 만든다. 새 클래스를 쓰면
+   `php artisan module:build sirsoft-ecommerce --production` 으로 CSS 를 다시 만들고 update 한다 — 빌드하지 않으면
+   그 스타일만 조용히 빠진다. 앞글자 없는 `flex` 를 쓰면 정적 검사가 막는다.
+2. **템플릿 의미 클래스는 `ecommerce-*` 사본을 쓴다**(`ecommerce-btn`·`ecommerce-input`·`ecommerce-card`).
+   정의는 `resources/css/g7-extension.generated.css`(생성 파일, 손으로 고치지 않는다)의 가장 낮은 칸
+   `@layer g7-extension` 에 있어 템플릿이 같은 이름을 덮을 수 있다. 템플릿 의미 클래스를 새로 가져오려면
+   원래 이름으로 적은 뒤 `node scripts/extension-css/convert-layout-classes.mjs modules/_bundled/sirsoft-ecommerce` 를
+   다시 돌린다(같은 입력이면 결과가 같다).
+3. **이 모듈 고유의 의미 색·국기는 손 CSS 다** — `resources/css/main.css` 의 생성 블록 아래.
+   - 의미 색 `ecommerce-tone-*`: `@layer g7-extension` 안. 색만 맡는다.
+   - 국기 `ecommerce-flag ecommerce-flag-{소문자 국가 코드}`(4:3), 정사각은 `ecommerce-flag--square` 를 더한다.
+     그림은 `dist/vendor/flag-icons/7.2.3/`(MIT)에 동봉한 두 글자 국가 코드 SVG 다. 템플릿의 국기 라이브러리 클래스(`fi`)는 쓰지 않는다.
+4. **다크 모드는 `ecommerce:dark:` 변형이나 중립 표식(`[data-g7-color-scheme="dark"]`)으로 쓴다.** 템플릿 표지
+   `.dark` 를 손 CSS 선택자에 쓰지 않는다.
+5. **화면 폭 분기는 반응형 접두(`ecommerce:md:w-64`) 대신 엔진 `responsive` 로 쓴다.** 기본 클래스는 가장 좁은
+   폭의 값으로 두고, 넓어지는 구간의 클래스 전체를 `<responsive on="768-" class="ecommerce:w-64"/>` 처럼 덮어쓴다
+   (구간 키는 `mobile`·`tablet`·`desktop`·`portable` 또는 `768-`·`640-1023` 같은 숫자 범위). 엔진은 고른 구간의
+   className 으로 통째로 바꾸므로 그 구간 값에는 기본 클래스도 함께 적는다. 식(`{{ }}`) 안 클래스 문자열에도
+   반응형 접두를 쓰지 않는다 — 폭마다 다른 값이 필요하면 구간마다 식을 따로 적는다. 정적 검사
+   (`layout-no-tailwind-breakpoint-variant`)가 `.g7.html` 과 짝 `.json` 의 반응형 접두를 막는다.
+   폭 조건을 품은 의미 클래스 사본(`ecommerce-filter-row`·`ecommerce-grid-2col-responsive`·`ecommerce-page-title`·
+   `ecommerce-search-bar`·`ecommerce-sticky-tab-nav-responsive`·`ecommerce-admin-page-content-responsive` 등)도 쓰지 않고,
+   그 모양을 `ecommerce:` 유틸리티와 구간 값으로 펼쳐 적는다(예 필터 줄: 기본 `ecommerce:flex ecommerce:flex-col ecommerce:gap-2`,
+   `768-` 구간 `ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center`). 필터 라벨(`ecommerce-filter-label`)·화면 머리
+   (`ecommerce-page-header(-padded)`)·머리 단추 묶음(`ecommerce-page-actions` — 직계 자식에 `ecommerce:shrink-0 ecommerce:whitespace-nowrap`)·
+   목록과 상세 3열 격자(`ecommerce-grid-cols-1-lg-3`·`ecommerce-col-span-1-lg`·`-2-lg`)·나눈 입력 칸(`ecommerce-input-split`)·넓은 화면 표
+   (`ecommerce-table-desktop`)도 기본 모양까지 펼친다. 이 사본들의 정의는 사이트에서 직접 고친 레이아웃의 호환을 위해 폐지 예정으로
+   남아 있을 뿐이다 — 새 레이아웃은 쓰지 않는다. 곁 라벨이 입력 칸 이름으로 이어지는 것은 템플릿 클래스(`filter-field-label`·`form-label`, 폐지 예정 `filter-label`)
+   와 `Label` 뿐이라, 필터의 목록형 선택칸에는 `aria-label` 을 단다. 알림 바로 뒤 2열 격자에 붙던 형제 규칙 여백(`ecommerce-alert-*:has(+…)`)은 펼치면 사라지므로 알림에 `ecommerce:mb-4` 를 직접 준다.
 
-1. **템플릿의 의미 클래스를 쓰지 않는다.** `flex-start` · `text-heading` · `section-heading-md`
-   같은 이름의 규칙은 `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `@layer components` 에만
-   있다. 사용자 템플릿(`sirsoft-basic`)에는 그 규칙이 없어 `display:flex` 같은 기본 배치까지
-   통째로 사라진다. 평범한 Tailwind 유틸로 쓴다(`flex items-start`).
-   슬롯 확장(`extension-point=`)은 한 조각이 관리자·사용자 양쪽에 들어가므로, 어느 한쪽의
-   어휘를 쓰면 **반드시** 다른 쪽이 깨진다.
-
-2. **새 유틸은 safelist 에 실린다.** 두 템플릿 모두 Tailwind 가 레이아웃을 스캔하지 않는다 —
-   `sirsoft-admin_basic` 은 `templates/_bundled/sirsoft-admin_basic/scripts/extract-safelist.cjs` 가(확장 조각 포함) 자동 생성하고,
-   `sirsoft-basic` 은 `templates/_bundled/sirsoft-basic/src/styles/safelist.txt` 를 손으로 단다. 새 클래스를 쓴 뒤에는
-   `php artisan template:build <템플릿>` 로 CSS 를 다시 만든다.
-
-이 규약을 어겨도 **빌드는 성공하고 경고도 없으며 테스트도 전부 초록이다** — 사람이 브라우저를
-열어야만 드러난다(2026-09-21, 마이페이지 「내 정보 수정」의 확장 카드에서 체크박스가 설명 위로
-떨어져 있었다). 그래서 확장 조각이 쓰는 클래스가 대상 템플릿의 CSS 에 실제로 만들어졌는지를
-정적 검사가 대조한다.
+정적 검사가 레이아웃·조각의 클래스 앞글자와 `dist/css` 실재를, CSS 선택자의 앞글자와 `.dark` 사용을 대조한다.
+규약 전문은 `docs/extension/module-assets.md` 「확장 CSS 자기 공급 규약」이다.

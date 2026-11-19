@@ -3,6 +3,7 @@
     "data_source": {
       "availableChannels": "利用可能なチャネル",
       "boardIdentityPolicies": "掲示板本人認証ポリシー",
+      "boardSchedules": "掲示板スケジュール",
       "boardIdentityPurposes": "掲示板本人認証目的",
       "boardNotificationDefinitions": "掲示板通知定義",
       "board_list_for_inquiry": "お問い合わせ掲示板一覧",

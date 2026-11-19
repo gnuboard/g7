@@ -17,6 +17,8 @@
   "primary_image": "代表画像",
   "set_as_primary": "代表画像として設定",
   "empty_file": "[{{name}}] 空のファイル（0バイト）はアップロードできません。",
+  "compression_failed": "[{{name}}] 画像を圧縮できませんでした。",
+  "upload_failed_save_stopped": "添付ファイルをアップロードできなかったため保存していません。失敗したファイルを再度アップロードするか外してから保存してください。",
   "invalid_file_type": "許可されていないファイル形式です。",
   "delete_failed": "ファイルの削除に失敗しました。"
 }

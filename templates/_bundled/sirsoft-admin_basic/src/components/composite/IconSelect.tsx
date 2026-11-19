@@ -5,6 +5,7 @@ import { Input } from '../basic/Input';
 import { Icon } from '../basic/Icon';
 import { Span } from '../basic/Span';
 import type { EditorAttrs } from '../../types';
+import { escapeToClose } from '../../support/keyboardActivation';
 
 export interface IconOption {
   value: string;
@@ -75,6 +76,8 @@ export const IconSelect: React.FC<IconSelectProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  // 여는 단추 — 고른 뒤 포커스를 돌려받는다(목록이 사라져 body 로 빠지지 않게, #869 키보드 접근)
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   // value가 faIcon 형식(fas fa-xxx) 또는 Lucide 형식(IconName)일 수 있음
   const selectedOption = options.find((opt) => {
@@ -112,14 +115,24 @@ export const IconSelect: React.FC<IconSelectProps> = ({
     onChange?.(faValue);
     setIsOpen(false);
     setSearchQuery('');
+    triggerRef.current?.focus();
   };
 
+  // 펼친 목록 안(검색칸, 아이콘 항목) 어디에서든 Esc 로 닫고 여는 단추로 돌아간다 — 종전에는 바깥 클릭으로만 닫혔다(#869)
+  const handleEscape = escapeToClose(isOpen, () => {
+    setIsOpen(false);
+    setSearchQuery('');
+  }, triggerRef);
+
   return (
-    <Div ref={dropdownRef} className={`relative ${className}`} id={id} {...editorAttrs}>
+    <Div ref={dropdownRef} className={`relative ${className}`} id={id} {...editorAttrs} onKeyDown={handleEscape}>
       <Button
+        ref={triggerRef}
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
         className={`
           w-full flex items-center justify-between px-3 py-2
           bg-white dark:bg-gray-800

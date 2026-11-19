@@ -183,13 +183,15 @@ class NotificationLinkContractTest extends TestCase
                 }
 
                 // 고정 경로(`/mypage` 등)는 그대로 둔다 — 수신자와 무관하게 한 곳으로 가는 알림이다.
-                // 변수를 쓴다면 링크 하나로 해석돼야 하므로 정확히 한 개이고 `_url` 로 끝나야 한다.
+                // 변수를 쓴다면 링크 하나로 해석돼야 하므로 정확히 한 개이고 `_url`(전체 주소) 또는
+                // `_path`(사이트 안 경로 — 관리자 알림센터처럼 같은 탭 이동을 경로로만 받는 화면용)로 끝나야 한다.
                 $placeholders = $this->extractPlaceholders($clickUrl);
                 if ($placeholders === []) {
                     continue;
                 }
 
-                if (count($placeholders) !== 1 || ! str_ends_with($placeholders[0], '_url')) {
+                $isLinkVariable = str_ends_with($placeholders[0], '_url') || str_ends_with($placeholders[0], '_path');
+                if (count($placeholders) !== 1 || ! $isLinkVariable) {
                     $malformed[] = "{$label} = {$clickUrl}";
                 }
             }
@@ -205,7 +207,7 @@ class NotificationLinkContractTest extends TestCase
         $this->assertSame(
             [],
             $malformed,
-            "click_url 의 변수는 링크 하나로 해석돼야 합니다(정확히 한 개 · `_url` 접미):\n - "
+            "click_url 의 변수는 링크 하나로 해석돼야 합니다(정확히 한 개 · `_url` 또는 `_path` 접미):\n - "
             .implode("\n - ", $malformed)
         );
     }

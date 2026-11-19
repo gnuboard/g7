@@ -2,17 +2,27 @@
 
 namespace App\Extension;
 
+use App\Console\Helpers\ArtisanCommandRunner;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Exceptions\PackageIntegrityException;
 use App\Exceptions\PhpExtensionRequirementException;
+use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\SafeArchiveExtractor;
+use App\Extension\Integrity\PackageAcquirer;
+use App\Extension\Integrity\PackageExpectation;
+use App\Extension\Integrity\PackageIntegrityOptions;
+use App\Extension\Integrity\PackageReleaseNotFoundException;
+use App\Extension\Integrity\PackageVerification;
+use App\Extension\Support\CarriedClassFileLedger;
 use App\Extension\Support\ExtensionFingerprint;
 use App\Extension\Support\LifecycleWarnings;
 use App\Rules\ValidExtensionIdentifier;
 use App\Support\AtomicBootstrapCache;
 use App\Support\CacheSelfHeal;
 use App\Support\ConfigCacheHelper;
+use App\Support\ExecutionEnvironment;
 use App\Support\PhpExtensionProbe;
 use Closure;
 use Composer\Autoload\ClassLoader;
@@ -30,6 +40,17 @@ use Symfony\Component\Process\Process;
  */
 class ExtensionManager
 {
+    /**
+     * Windows 에서 시스템 TEMP 를 쓸 수 없을 때 composer 에 넘기는 임시 디렉토리
+     * (`storage/` 기준 상대 경로).
+     *
+     * 이 디렉토리는 composer 가 채우고 아무도 비우지 않는다 — 정리 커맨드의 형제 대상군
+     * (`storage/app/temp`)과 경로가 달라 그 스캔의 모집단 밖이었다. 회수는
+     * `StorageLeftoverPruneService` 의 `storage_temp` 대상군이 맡고, 두 곳이 같은 값을
+     * 보도록 여기를 SSoT 로 둔다.
+     */
+    public const COMPOSER_FALLBACK_TEMP_DIR = 'temp';
+
     protected string $modulesPath;
 
     protected string $pluginsPath;
@@ -45,6 +66,20 @@ class ExtensionManager
      * @var array{fingerprint: array<string, string>, src_keys: array<int, string>}|null
      */
     private static ?array $registeredAutoloadState = null;
+
+    /**
+     * 설치 도중 늦게 등록한 확장 PSR-4 매핑 — 보조 로더({@see loadLateRegisteredExtensionClass()})가 쓴다.
+     *
+     * @var array<string, array<int, string>> 네임스페이스 접두사(끝 `\` 포함) → 디렉터리 절대 경로 목록
+     */
+    private static array $lateRegisteredPsr4 = [];
+
+    /**
+     * 부팅 오토로드가 실은 진입 파일(`module.php`·`plugin.php`)의 정의 지문 — 싣는 사이 파일이 바뀌었으면 `?`.
+     *
+     * @var array<string, string> 정규화한 절대 경로 → 지문
+     */
+    private static array $entryFileLoadHashes = [];
 
     /**
      * 확장 관리자를 생성합니다.
@@ -125,7 +160,7 @@ class ExtensionManager
             $pluginManager = app(PluginManager::class);
             $pluginManager->loadPlugins();
 
-            $hookCache->generate($moduleManager, $pluginManager);
+            $this->regenerateExtensionStaticCaches($moduleManager, $pluginManager);
         } catch (\Throwable $e) {
             // 훅 캐시 생성 실패는 치명적이지 않다 — 부팅 시 스캔 폴백이 안전망.
             Log::warning('훅 매핑 캐시 재생성 실패 (스캔 폴백으로 동작)', [
@@ -133,6 +168,101 @@ class ExtensionManager
             ]);
             LifecycleWarnings::current()->add('hook_cache', 'hooks.php', $e->getMessage());
         }
+    }
+
+    /**
+     * 교체가 남겨 둔 옛 클래스 파일을 정리 대기 목록에 적고, 훅 캐시를 새 프로세스로 다시 굽습니다.
+     *
+     * 업데이트·같은 판 강제 재적용 끝의 오토로드·훅 캐시 재생성 **뒤에** 부른다. 파일은 바로 지우지 않는다 — 재생성 전에 부팅해
+     * 옛 훅 목록·옛 소스 classmap 을 쥔 요청이 지운 뒤에 발화하면 같은 include 실패가 나기 때문이다(부하 시 정리 뒤 수 초 안에 실패).
+     * {@see CarriedClassFileLedger} 가 최장 요청 시간보다 충분히 뒤의 안전 지점(예약 `storage:prune-leftovers`, 다음 교체 기록)에서 지운다.
+     * 남아 있는 동안은 새 판 선언이 그 클래스를 부르지 않아 무해하다.
+     *
+     * 훅 캐시는 새 PHP 프로세스(`hooks:cache`)로 다시 굽는다 — 같은 판 강제 재적용은 이 프로세스가 부팅 때 읽은 옛 진입 클래스
+     * (같은 FQCN, 지운 리스너를 아직 등록)를 들고 있어, 이 프로세스로 구우면 지운 리스너가 `hooks.php` 에 남았다.
+     * 새 프로세스를 띄울 수 없는 호스팅은 이 프로세스로 굽는다(파일이 아직 있어 include 실패는 없다). 실패해도 업데이트는 끝난 것으로
+     * 둔다(경고).
+     *
+     * @param  string  $activePath  새 판 활성 디렉토리
+     * @param  array<int, string>  $carried  실어 둔 파일의 상대 경로
+     * @return void 반환값 없음
+     */
+    public function finishCarriedOverClassFiles(string $activePath, array $carried): void
+    {
+        try {
+            $ledger = app(CarriedClassFileLedger::class);
+            // 이 확장의 항목을 먼저 새 목록으로 바꾸고(빈 목록이면 지운다 — 새 판이 다시 출하한 파일은 목록에 없다) 그다음 안전 지점이
+            // 지난 다른 항목을 정리한다. 순서를 바꾸면 이 확장의 옛 항목이 새 판이 막 설치한 파일까지 지운다.
+            $ledger->record($activePath, $carried);
+            if ($ledger->sweep() !== []) {
+                // 지운 파일의 소스 classmap 항목을 걷는다
+                $this->generateAutoloadFile();
+            }
+
+            if ($carried === []) {
+                return;
+            }
+
+            $this->regenerateHookCacheInFreshProcess();
+
+            Log::info('확장 교체: 옛 클래스 파일을 정리 대기 목록에 적음 — 안전 지점에서 지운다', ['active' => $activePath, 'files' => $carried]);
+        } catch (\Throwable $e) {
+            Log::warning('확장 업데이트: 옛 클래스 파일 정리 실패 (파일이 남아도 동작 영향 없음)', [
+                'active' => $activePath,
+                'error' => $e->getMessage(),
+            ]);
+            LifecycleWarnings::current()->add('carried_class_files', basename($activePath), $e->getMessage());
+        }
+    }
+
+    /**
+     * 훅 매핑 캐시를 새 PHP 프로세스(`hooks:cache`)로 다시 굽습니다 — 띄울 수 없으면 이 프로세스로.
+     *
+     * 시험 환경에서는 실 캐시를 덮지 않도록 실행기를 바꿔 끼운 시험만 새 프로세스 경로를 탄다({@see regenerateHookCache()} 와 같은 원칙).
+     *
+     * @return void 반환값 없음
+     */
+    private function regenerateHookCacheInFreshProcess(): void
+    {
+        $runner = app(ArtisanCommandRunner::class);
+        $swapped = get_class($runner) !== ArtisanCommandRunner::class;
+
+        if (app()->environment('testing') && ! $swapped) {
+            return;
+        }
+
+        if ($swapped || $this->canSpawnProcess()) {
+            $result = $runner->runFresh('hooks:cache');
+            if ($result['exit_code'] === 0) {
+                return;
+            }
+            Log::warning('훅 캐시를 새 프로세스로 굽지 못해 이 프로세스로 굽습니다', ['output' => mb_substr($result['output'], 0, 500)]);
+        }
+
+        $this->regenerateHookCache();
+    }
+
+    /**
+     * 확장 수명주기에 묶인 정적 캐시를 전부 재생성합니다.
+     *
+     * **어떤 정적 캐시가 있는지 아는 지점은 여기 하나다.** 재생성을 부르는 곳은 둘이고
+     * (이 클래스의 `regenerateHookCache()` 와 `extension:update-autoload` 커맨드), 각자
+     * 캐시 목록을 들고 있으면 새 캐시가 추가될 때 한쪽만 갱신된다 — 실제로 예약 커맨드
+     * 매핑을 도입할 때 그 상태가 됐고, 커맨드 경로로 돈 사이트에서만 매핑이 비었다.
+     *
+     * 예외를 삼키지 않는다 — 호출부마다 실패를 다르게 다루기 때문이다(이 클래스는 경고 후
+     * 폴백, 커맨드는 실패 종료).
+     *
+     * @param  ModuleManager  $moduleManager  로드된 모듈 매니저
+     * @param  PluginManager  $pluginManager  로드된 플러그인 매니저
+     * @return void 반환값 없음
+     */
+    public function regenerateExtensionStaticCaches(
+        ModuleManager $moduleManager,
+        PluginManager $pluginManager,
+    ): void {
+        app(HookCacheManager::class)->generate($moduleManager, $pluginManager);
+        app(ScheduleCommandCacheManager::class)->generate($moduleManager, $pluginManager);
     }
 
     /**
@@ -151,6 +281,11 @@ class ExtensionManager
      */
     public function reregisterRuntimeAutoload(): void
     {
+        // 시험이 실제 캐시로 재등록하면 src_classmap 이 _bundled PSR-4 를 이겨 설치본을 읽는다(tests/bootstrap.php 가 _bundled 우선으로 이미 등록).
+        if ($this->writesRealCacheFileDuringTests()) {
+            return;
+        }
+
         if (! class_exists(ClassLoader::class, false)) {
             return;
         }
@@ -582,7 +717,11 @@ PHP;
             foreach ($autoloads['classmap'] as $file) {
                 $absolutePath = base_path($file);
                 if (file_exists($absolutePath) && ! self::isEntryClassDeclared($file)) {
+                    // 실은 정의의 지문을 싣기 전·후로 떠 둔다 — 그 사이 파일이 교체되면 실은 정의를 알 수 없다(「알 수 없음」).
+                    // 매니저가 이 클래스로 선언(훅 리스너 등)을 모을 때 옛 정의를 지금 정의로 보지 않게 한다.
+                    $before = @md5_file($absolutePath);
                     require_once $absolutePath;
+                    self::rememberEntryFileLoad($absolutePath, is_string($before) ? $before : null);
                 }
             }
         }
@@ -1049,6 +1188,126 @@ PHP;
     }
 
     /**
+     * 디렉토리 안의 파일을 이름 순으로 나열합니다 (`glob` 비사용).
+     *
+     * `glob` 은 일부 하드닝 프로필의 `disable_functions` 목록에 들어간다. 막힌 호스팅에서
+     * PHP 8 은 그 함수를 함수 테이블에서 제거하므로 호출이 `Error`(치명)가 되고, `@` 도
+     * `?:` 도 그것을 잡지 못한다 — 확장 업그레이드 스텝 발견·레이아웃 확장 로딩이 그
+     * 자리에서 죽는다. 이 안이 대상으로 삼는 제약 호스팅이 정확히 그 조합이라 그 경로들은
+     * `scandir` 로 나열한다. (`glob` 이 **항상** 막힌다는 뜻은 아니다 — 전역 가드 대상이
+     * 아니라는 정적 검사 쪽 판정은 그대로이고, 여기서는 그 판정과 무관하게 값싼 회피를
+     * 택했을 뿐이다.)
+     *
+     * 나열 규칙을 한 곳에 두는 이유: 종전에는 같은 루프가 네 벌이었고 그중 하나만
+     * `scandir` 로 옮겨져 있었다 — 옮긴 쪽이 읽히기 **전에** 옮기지 않은 쪽이 죽으므로
+     * 그 회피는 도달조차 하지 못했다.
+     *
+     * `.` 로 시작하는 항목은 배제한다. `glob('*.php')` 가 걸러 주던 에디터 잔해·AppleDouble
+     * (`._Foo.php`)이 `require_once` 대상이 되면 정렬상 가장 먼저 로드된다.
+     *
+     * @param  string  $directory  나열할 디렉토리 절대 경로
+     * @param  string  $suffix  파일명 끝 (예: `.php`, `.json`)
+     * @param  string  $prefix  파일명 시작 (빈 문자열이면 조건 없음)
+     * @return array<int, string> 이름 오름차순 절대 경로 목록
+     */
+    public static function listDirectoryFiles(string $directory, string $suffix, string $prefix = ''): array
+    {
+        if (! is_dir($directory)) {
+            return [];
+        }
+
+        // `scandir` 은 하드닝 프로필의 표준 차단 목록에 있고, PHP 8 은 차단 함수를 함수
+        // 테이블에서 지우므로 그 호출은 `Error`(치명)다. 이 두 나열기는 **웹 요청 안에서**
+        // 도는 소비처(잔여물 정리 예약 작업 6대상군 · 확장 스캔)가 부르는 공용 지점이라,
+        // 여기가 무가드면 그 소비처들이 자기 가드를 갖춰도 이 자리에서 함께 죽는다 —
+        // 실제로 프루너는 자기 안을 전부 대칭으로 갖춰 놓고 이 전이 지점을 타고 있었다.
+        // 나열할 수 없으면 「없음」이 아니라 **빈 목록**이며,
+        // 그 판정은 형제 가드(`StorageLeftoverPruneService`)와 같은 방향이다.
+        if (! ExecutionEnvironment::hasFunction('scandir')) {
+            return [];
+        }
+
+        $files = [];
+
+        foreach (scandir($directory) ?: [] as $entry) {
+            if (str_starts_with($entry, '.')) {
+                continue;
+            }
+
+            if ($prefix !== '' && ! str_starts_with($entry, $prefix)) {
+                continue;
+            }
+
+            if (! str_ends_with($entry, $suffix)) {
+                continue;
+            }
+
+            $candidate = $directory.DIRECTORY_SEPARATOR.$entry;
+
+            if (is_file($candidate)) {
+                $files[] = $candidate;
+            }
+        }
+
+        sort($files);
+
+        return $files;
+    }
+
+    /**
+     * 디렉토리 하위의 **디렉토리** 이름을 오름차순으로 나열합니다.
+     *
+     * 형제 `listDirectoryFiles()` 의 디렉토리 판본이다 — `glob('*', GLOB_ONLYDIR)` 를
+     * 쓰던 자리를 같은 이유로 대체한다. 나열 수단을 한 곳에 두면, 그 회피가 필요한
+     * 호스팅에서 「옮긴 지점보다 **먼저** 실행되는 옮기지 않은 지점」이 생기지 않는다.
+     *
+     * `.` 로 시작하는 항목은 배제한다(`.` `..` 및 에디터·VCS 잔해).
+     *
+     * @param  string  $directory  나열할 디렉토리 절대 경로
+     * @param  string  $prefix  디렉토리명 시작 (빈 문자열이면 조건 없음)
+     * @return array<int, string> 이름 오름차순 절대 경로 목록
+     */
+    public static function listDirectories(string $directory, string $prefix = ''): array
+    {
+        if (! is_dir($directory)) {
+            return [];
+        }
+
+        // `scandir` 은 하드닝 프로필의 표준 차단 목록에 있고, PHP 8 은 차단 함수를 함수
+        // 테이블에서 지우므로 그 호출은 `Error`(치명)다. 이 두 나열기는 **웹 요청 안에서**
+        // 도는 소비처(잔여물 정리 예약 작업 6대상군 · 확장 스캔)가 부르는 공용 지점이라,
+        // 여기가 무가드면 그 소비처들이 자기 가드를 갖춰도 이 자리에서 함께 죽는다 —
+        // 실제로 프루너는 자기 안을 전부 대칭으로 갖춰 놓고 이 전이 지점을 타고 있었다.
+        // 나열할 수 없으면 「없음」이 아니라 **빈 목록**이며,
+        // 그 판정은 형제 가드(`StorageLeftoverPruneService`)와 같은 방향이다.
+        if (! ExecutionEnvironment::hasFunction('scandir')) {
+            return [];
+        }
+
+        $directories = [];
+
+        foreach (scandir($directory) ?: [] as $entry) {
+            if (str_starts_with($entry, '.')) {
+                continue;
+            }
+
+            if ($prefix !== '' && ! str_starts_with($entry, $prefix)) {
+                continue;
+            }
+
+            $candidate = $directory.DIRECTORY_SEPARATOR.$entry;
+
+            if (is_dir($candidate)) {
+                $directories[] = $candidate;
+            }
+        }
+
+        sort($directories);
+
+        return $directories;
+    }
+
+    /**
      * 디렉토리명(vendor-name)을 네임스페이스(Vendor\Name)로 변환합니다.
      *
      * 하이픈('-')은 네임스페이스 구분자('\')로, 언더스코어('_')는 PascalCase 단어 경계로 처리됩니다.
@@ -1215,6 +1474,13 @@ PHP;
      * 설치 시점에는 autoload-extensions.php가 아직 갱신되지 않으므로,
      * 시더 실행 전에 해당 확장의 네임스페이스를 Composer ClassLoader에 등록해야 합니다.
      *
+     * 같은 매핑을 보조 로더에도 둔다. Composer ClassLoader 는 한 번 찾지 못한 클래스를 기억해 두고(이후
+     * `addPsr4()` 로 매핑을 더해도 그 클래스는 다시 찾지 않는다), 설치 전부터 활성 디렉토리가 있던 확장은
+     * 부팅 등록기(`ModuleServiceProvider::providerClassesIn()`)가 매핑 없이 프로바이더
+     * 클래스를 한 번 찾아본다. 앞 설치가 남긴 폴더 위에 다시 설치하면 그 「없음」 기억 때문에 프로바이더를
+     * 선등록하지 못해 시더가 저장소 인터페이스를 해석하지 못했다. 보조 로더는 Composer 로더가 놓친 클래스만
+     * 받으므로 정상 경로의 해석 순서는 바뀌지 않는다.
+     *
      * @param  string  $type  확장 타입 ('modules' 또는 'plugins')
      * @param  string  $dirName  확장 디렉토리명 (예: 'sirsoft-ecommerce')
      * @return void 반환값 없음
@@ -1242,12 +1508,103 @@ PHP;
                 $absolutePath = base_path("{$type}/{$dirName}/{$p}");
                 if (is_dir($absolutePath)) {
                     $loader->addPsr4($namespace, $absolutePath);
+                    self::rememberLateRegisteredPsr4((string) $namespace, $absolutePath);
                 }
             }
         }
 
         // PSR-4 만으로는 같은 프로세스의 앞선 실패 조회(설치 전 확인·고아 폴더 부팅 등)가 남긴 음성 캐시를 풀지 못한다 (#159)
         self::registerExtensionClassmapAt(base_path("{$type}/{$dirName}"), $loader);
+    }
+
+    /**
+     * 늦게 등록한 PSR-4 매핑을 보조 로더에 기록합니다 (보조 로더는 프로세스당 한 번 등록).
+     *
+     * @param  string  $namespace  네임스페이스 접두사
+     * @param  string  $absolutePath  디렉터리 절대 경로
+     * @return void 반환값 없음
+     */
+    private static function rememberLateRegisteredPsr4(string $namespace, string $absolutePath): void
+    {
+        $prefix = rtrim($namespace, '\\').'\\';
+        $directory = rtrim($absolutePath, '/\\');
+
+        if (self::$lateRegisteredPsr4 === []) {
+            spl_autoload_register([self::class, 'loadLateRegisteredExtensionClass']);
+        }
+
+        if (! in_array($directory, self::$lateRegisteredPsr4[$prefix] ?? [], true)) {
+            self::$lateRegisteredPsr4[$prefix][] = $directory;
+        }
+
+        // 긴 접두사부터 본다 — `…\Database\Seeders\` 가 `…\` 보다 먼저 맞아야 Composer 와 같은 파일을 고른다
+        uksort(self::$lateRegisteredPsr4, static fn (string $a, string $b): int => strlen($b) <=> strlen($a));
+    }
+
+    /**
+     * 진입 파일을 실은 정의의 지문을 기록합니다 — 싣기 전 지문과 실은 뒤 지문이 다르면 `?`(알 수 없음).
+     *
+     * @param  string  $absolutePath  진입 파일 절대 경로
+     * @param  string|null  $hashBeforeLoad  싣기 전 지문
+     * @return void 반환값 없음
+     */
+    public static function rememberEntryFileLoad(string $absolutePath, ?string $hashBeforeLoad): void
+    {
+        $after = @md5_file($absolutePath);
+        if (! is_string($after)) {
+            return;
+        }
+
+        self::$entryFileLoadHashes[self::normalizeEntryPath($absolutePath)] = ($hashBeforeLoad === $after) ? $after : '?';
+    }
+
+    /**
+     * 부팅 오토로드가 그 진입 파일을 실을 때의 정의 지문을 돌려줍니다 (기록이 없으면 null, 알 수 없으면 `?`).
+     *
+     * @param  string  $absolutePath  진입 파일 절대 경로
+     * @return string|null 지문
+     */
+    public static function entryFileLoadHash(string $absolutePath): ?string
+    {
+        return self::$entryFileLoadHashes[self::normalizeEntryPath($absolutePath)] ?? null;
+    }
+
+    /**
+     * 진입 파일 경로를 비교용으로 정규화합니다.
+     *
+     * @param  string  $path  경로
+     * @return string 정규화한 경로
+     */
+    private static function normalizeEntryPath(string $path): string
+    {
+        return strtolower(str_replace('\\', '/', $path));
+    }
+
+    /**
+     * Composer 로더가 찾지 못한 확장 클래스를 늦게 등록한 PSR-4 매핑으로 읽습니다 (보조 로더).
+     *
+     * @internal `spl_autoload_register()` 가 부르는 콜백이라 공개한다 — 확장 코드가 직접 부르지 않는다.
+     *
+     * @param  string  $class  클래스 전체 이름
+     * @return void 반환값 없음
+     */
+    public static function loadLateRegisteredExtensionClass(string $class): void
+    {
+        foreach (self::$lateRegisteredPsr4 as $prefix => $directories) {
+            if (! str_starts_with($class, $prefix)) {
+                continue;
+            }
+
+            $relative = str_replace('\\', DIRECTORY_SEPARATOR, substr($class, strlen($prefix))).'.php';
+            foreach ($directories as $directory) {
+                $file = $directory.DIRECTORY_SEPARATOR.$relative;
+                if (is_file($file)) {
+                    require_once $file;
+
+                    return;
+                }
+            }
+        }
     }
 
     /**
@@ -1677,9 +2034,13 @@ PHP;
 
         // 인스톨러(install-worker.php)와 동일한 환경변수 구성
         // 웹 서버 환경에서는 COMPOSER_HOME, TEMP 등이 없거나 쓰기 불가능할 수 있음
+        // `getenv` 도 호스팅이 막는 목록에 흔히 들어간다. 여기까지 왔다면 스폰은 가능한
+        // 환경이지만 두 함수의 차단 여부는 독립이므로(목록은 함수 단위다) 따로 판정한다 —
+        // 막힌 채로 부르면 이 요청이 `Error` 로 끝나고, 그 자리는 확장 설치의 마지막 단계다.
         $env = [];
+        $canReadEnv = ExecutionEnvironment::hasFunction('getenv');
         foreach (['PATH', 'SystemRoot', 'TEMP', 'TMP', 'APPDATA', 'LOCALAPPDATA', 'USERPROFILE'] as $key) {
-            $value = getenv($key);
+            $value = $canReadEnv ? getenv($key) : ($_SERVER[$key] ?? $_ENV[$key] ?? false);
             if ($value !== false) {
                 $env[$key] = $value;
             }
@@ -1701,7 +2062,7 @@ PHP;
         // Windows: TEMP 디렉토리가 없거나 쓰기 불가능하면 storage/temp 사용
         if (PHP_OS_FAMILY === 'Windows') {
             if (! isset($env['TEMP']) || ! is_dir($env['TEMP']) || ! is_writable($env['TEMP'])) {
-                $tempDir = storage_path('temp');
+                $tempDir = storage_path(self::COMPOSER_FALLBACK_TEMP_DIR);
                 if (! is_dir($tempDir)) {
                     @mkdir($tempDir, 0755, true);
                 }
@@ -1758,15 +2119,23 @@ PHP;
             }
         }
 
-        // 2. PATH에서 composer 검색
-        $whichCommand = PHP_OS_FAMILY === 'Windows' ? ['where', 'composer'] : ['which', 'composer'];
-        $process = new Process($whichCommand);
-        $process->run();
+        // 2. PATH에서 composer 검색.
+        //
+        // 탐색 자체가 서브프로세스를 띄우므로 스폰 가용성을 먼저 판정한다. Symfony Process 는
+        // `proc_open` 부재 시 `LogicException` 을 던지고, 그것은 `RuntimeException` 이 아니라
+        // 호출부(runComposerInstallAt)의 catch 를 **통과해 나간다** — 그러면 확장 설치가
+        // 「의존성을 못 깔았다」가 아니라 정체불명의 예외로 중단된다. 판정은
+        // ExecutionEnvironment 가 SSoT (function_exists + disable_functions 를 함께 본다).
+        if ($this->canSpawnProcess()) {
+            $whichCommand = PHP_OS_FAMILY === 'Windows' ? ['where', 'composer'] : ['which', 'composer'];
+            $process = new Process($whichCommand);
+            $process->run();
 
-        if ($process->isSuccessful()) {
-            $path = trim(explode("\n", trim($process->getOutput()))[0]);
-            if (! empty($path)) {
-                return $path;
+            if ($process->isSuccessful()) {
+                $path = trim(explode("\n", trim($process->getOutput()))[0]);
+                if (! empty($path)) {
+                    return $path;
+                }
             }
         }
 
@@ -1777,6 +2146,33 @@ PHP;
         }
 
         throw new \RuntimeException(__('exceptions.vendor.composer_binary_not_found'));
+    }
+
+    /**
+     * 이 환경에서 서브프로세스를 띄울 수 있는지 판정합니다.
+     *
+     * 테스트가 「스폰 불가 호스팅」을 재현하기 위한 이음매다 — `disable_functions` 는
+     * PHP_INI_SYSTEM 이라 런타임에 바꿀 수 없으므로, 그 환경을 단위 테스트로 잠그려면
+     * 판정을 덮어쓸 수 있는 지점이 필요하다.
+     *
+     * @return bool 서브프로세스 스폰 가능 여부
+     */
+    protected function canSpawnProcess(): bool
+    {
+        return ExecutionEnvironment::hasFunction('proc_open');
+    }
+
+    /**
+     * 이 환경에서 셸 명령을 실행할 수 있는지 판정합니다.
+     *
+     * `exec` 와 `proc_open` 은 `disable_functions` 에서 **별개 항목**이므로 따로 판정한다 —
+     * 한쪽만 막은 호스팅에서 다른 쪽 판정을 재사용하면 그 자리가 다시 치명 지점이 된다.
+     *
+     * @return bool 셸 명령 실행 가능 여부
+     */
+    protected function canRunShellCommand(): bool
+    {
+        return ExecutionEnvironment::hasFunction('exec');
     }
 
     /**
@@ -1972,6 +2368,112 @@ PHP;
     }
 
     /**
+     * GitHub 태그 릴리스에서 확장 업데이트 패키지를 받아 검증하고 풀어 둡니다 (7.2.0).
+     *
+     * 릴리스에 `{identifier}-{version}.zip` + `.sig.json` 짝이 있으면 그 자산을 받아 서명을 검증하고, 없으면 미서명 —
+     * 정책(운영자 확인·차단 스위치)이 허락할 때만 태그 zipball 을 받는다. 풀어 둔 뒤 manifest 식별자·버전을 서명과
+     * 대조한다. 업데이트 백업·상태 변경보다 **먼저** 부른다 — 미서명 확인(409)이 아무것도 바꾸지 않은 채로 끝나게 한다.
+     *
+     * 호출자는 돌려받은 `temp_dir` 을 정리해야 한다(예외 시에는 이 메서드가 정리).
+     *
+     * @param  string  $type  확장 종류 (module|plugin|template)
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $githubUrl  확장 GitHub 주소
+     * @param  string  $version  받을 버전
+     * @param  string  $manifestName  manifest 파일 이름
+     * @param  PackageIntegrityOptions  $options  운영자 선택
+     * @param  string  $token  GitHub 토큰
+     * @return array{temp_dir: string, extracted_dir: string, verification: PackageVerification} 받은 패키지
+     *
+     * @throws PackageIntegrityException 서명 불일치·미신뢰 키·미서명 확인 필요 시
+     * @throws \RuntimeException 주소 오류·릴리스 없음·다운로드·해제 실패 시
+     */
+    public function acquireGithubUpdate(
+        string $type,
+        string $identifier,
+        string $githubUrl,
+        string $version,
+        string $manifestName,
+        PackageIntegrityOptions $options,
+        string $token = '',
+    ): array {
+        if (! preg_match('#github\.com[/:]([^/]+)/([^/\.]+)#', $githubUrl, $matches)) {
+            throw new \RuntimeException(__('settings.core_update.invalid_github_url'));
+        }
+
+        [$owner, $repo] = [$matches[1], $matches[2]];
+        $tempDir = storage_path('app/temp/'.$type.'_update_'.uniqid());
+        // 부모 storage/app/temp 소유권까지 맞춘다 — sudo 코어 업데이트가 최초 생성자면 root 로 굳는다(#651)
+        ExtensionPendingHelper::ensureUpdateTempDirectory($tempDir);
+
+        try {
+            try {
+                $acquired = app(PackageAcquirer::class)->fromGithubRelease(
+                    $owner, $repo, $version, $token,
+                    PackageExpectation::forExtension($type, $identifier, $version),
+                    $options,
+                    $tempDir.DIRECTORY_SEPARATOR.'download',
+                );
+            } catch (PackageReleaseNotFoundException $e) {
+                // 확장 업데이트 문맥의 종전 문장을 유지한다 — 「추출 실패」가 아니라 「릴리스를 찾지 못함」
+                throw new \RuntimeException(__('settings.core_update.extension_release_not_found', [
+                    'repository' => $owner.'/'.$repo,
+                    'version' => $version,
+                ]), 0, $e);
+            }
+
+            $extractedDir = $this->extractFromZip($acquired->zipPath, $tempDir);
+            File::delete($acquired->zipPath);
+
+            $manifestPath = $extractedDir.DIRECTORY_SEPARATOR.$manifestName;
+            $manifest = File::exists($manifestPath) ? json_decode(File::get($manifestPath), true) : null;
+            $verification = app(PackageAcquirer::class)->confirmManifest($acquired->verification, is_array($manifest) ? $manifest : [], $options);
+
+            return ['temp_dir' => $tempDir, 'extracted_dir' => $extractedDir, 'verification' => $verification];
+        } catch (\Throwable $e) {
+            if (File::isDirectory($tempDir)) {
+                File::deleteDirectory($tempDir);
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * 외부 ZIP 업데이트 소스를 검증하고 스테이징 전단계까지 준비합니다 (7.2.0 — `prepareZipSource` + 서명 검증).
+     *
+     * 서명 파일은 `$options->signaturePath`, 없으면 ZIP 옆 `{zip}.sig.json` 을 자동으로 쓴다. 바이트 검증은 해제 전,
+     * manifest 대조는 해제 뒤에 한다.
+     *
+     * @param  string  $type  확장 종류 (module|plugin|template)
+     * @param  string  $zipPath  외부 ZIP 경로
+     * @param  string  $identifier  기대 식별자
+     * @param  string  $manifestName  manifest 파일 이름
+     * @param  PackageIntegrityOptions  $options  운영자 선택
+     * @return array{temp_dir: string, extracted_dir: string, to_version: string, manifest: array, verification: PackageVerification} 준비 결과
+     *
+     * @throws PackageIntegrityException 서명 불일치·미신뢰 키·미서명 확인 필요 시
+     * @throws \RuntimeException 추출·manifest 오류 시
+     */
+    public function prepareVerifiedZipSource(string $type, string $zipPath, string $identifier, string $manifestName, PackageIntegrityOptions $options): array
+    {
+        $acquirer = app(PackageAcquirer::class);
+        $verification = $acquirer->verifyLocalZip($zipPath, PackageExpectation::forExtension($type, $identifier), $options);
+
+        $prepared = $this->prepareZipSource($zipPath, $identifier, $manifestName);
+
+        try {
+            $prepared['verification'] = $acquirer->confirmManifest($verification, $prepared['manifest'], $options);
+        } catch (\Throwable $e) {
+            if (File::isDirectory($prepared['temp_dir'])) {
+                File::deleteDirectory($prepared['temp_dir']);
+            }
+            throw $e;
+        }
+
+        return $prepared;
+    }
+
+    /**
      * 외부 ZIP 파일을 추출하여 소스 디렉토리 경로를 반환합니다.
      *
      * GitHub zipball 처럼 owner-repo-hash/ 래퍼 디렉토리로 감싼 경우와
@@ -2078,7 +2580,7 @@ PHP;
     public function prepareZipSource(string $zipPath, string $identifier, string $manifestName): array
     {
         $tempDir = storage_path('app/temp/ext_zip_'.uniqid());
-        File::ensureDirectoryExists($tempDir);
+        ExtensionPendingHelper::ensureUpdateTempDirectory($tempDir);
 
         try {
             $extractedDir = $this->extractFromZip($zipPath, $tempDir);

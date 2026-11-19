@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 시각 회귀 없는 토큰 동치 시맨틱 자산 치환 — Playwright cross-product 가드 불필요. 자산 정의는 admin_basic main.css SSoT, 호출처는 자산명만 사용. board admin_board_settings.g7.html 은 옵션 B (responsive padding 유지) 결정에 따라 자식 padding 토큰을 root .admin-page-content-responsive 로 흡수 + sticky-section-header → sticky-tab-nav-responsive 변경 — 시각 동일.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#609 시각 회귀 없는 토큰 동치 시맨틱 자산 치환 — Playwright cross-product 가드 불필요. 자산 정의는 admin_basic main.css SSoT, 호출처는 자산명만 사용. board admin_board_settings.g7.html 은 옵션 B (responsive padding 유지) 결정에 따라 자식 padding 토큰을 root .admin-page-content-responsive 로 흡수 + sticky-section-header → sticky-tab-nav-responsive 변경 — 시각 동일.
 
 feature: 게시판/이커머스 어드민 페이지 root wrapper 시맨틱 자산 매핑 (#408 보강)
 
@@ -11,6 +11,12 @@ description: |
       .admin-page-content-responsive 매핑 + sticky-section-header 를
       .sticky-tab-nav-responsive (신설, -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8)
       로 변경 — responsive padding 정책 화면의 sticky 풀-bleed 복원
+      ※ 현행(2026-11-09 #869 확인): 이 결정은 이후 되돌려졌다. sticky 헤더는 좌우 -mx/px 덮어쓰기가
+        없는 변형 board-sticky-section-header 를 쓰고(자식 header_content 가 자체 padding 을 가져 겹침 방지,
+        admin_board_settings.g7.html:242, admin-board-settings.test.tsx 「sticky 헤더 구조가 올바르다」),
+        root 는 #816(확장이 자기 화면 CSS 를 싣는다) 이후 board: 접두 유틸리티로 p-4 / 640-1023 p-6 /
+        1024- p-8 을 직접 단다(admin_board_settings.g7.html:236-238). .sticky-tab-nav-responsive 는
+        admin_basic main.css 에 폐지 예정 호환용으로만 남아 있다.
     - ec admin_ecommerce_product_common_info_index / product_notice_index:
       .admin-page-content-viewport (신설, p-6 + h-[calc(100vh-64px)] + overflow-hidden)
       + responsive.portable 분기는 .admin-page-content-viewport-compact (신설, p-4 변형)
@@ -48,9 +54,17 @@ axes:
   viewport: [desktop, portable]
   theme: [light, dark]
 
-effects:
-  - board_settings_root_uses_admin_page_content_responsive_asset
-  - board_settings_sticky_header_uses_sticky_tab_nav_responsive_asset
+effects: []
+
+# 미작성 — 회차 16 W6 (G3): 아래 효과 전량은 아직 재는 테스트가 없다 (자산 정의는 main.css SSoT,
+# 검증은 브라우저 실측·frontend-change-requires-e2e 경로가 담당해 왔다). 재는 테스트가 생기면
+# effects 로 승격한다 — 지우지 않는다 (검사 도구가 개수를 노출한다). sticky_header 축은 후속
+# 결정으로 sticky-section-header 자산으로 재정착했다 (admin-board-settings.test.tsx 실측).
+pending_effects:
+  # 2026-11-09 #869 κ2: board_settings_root_uses_admin_page_content_responsive_asset,
+  # board_settings_sticky_header_uses_sticky_tab_nav_responsive_asset 두 항목을 걷었다. 되돌려진 결정을 적은 낡은 기록이다 —
+  # #816 이후 sticky 헤더는 board-sticky-section-header(admin_board_settings.g7.html:242), root 는 board: 접두 유틸리티
+  # (admin_board_settings.g7.html:236-242)를 쓴다.
   - board_settings_child_padding_tokens_absorbed_into_root_asset
   - ec_product_common_info_root_uses_admin_page_content_viewport_asset
   - ec_product_common_info_portable_uses_admin_page_content_viewport_compact_asset
@@ -60,7 +74,6 @@ effects:
   - admin_basic_main_css_defines_admin_page_content_viewport_with_p6_bg_h_calc_overflow
   - admin_basic_main_css_defines_admin_page_content_viewport_compact_with_p4_variant
   - admin_basic_main_css_defines_sticky_tab_nav_responsive_with_responsive_mx_px
-  - new_assets_documented_in_admin_basic_changelog
   - board_admin_card_equivalent_raw_panels_substituted_to_admin_card_asset
   - board_section_card_equivalent_raw_panels_substituted_to_section_card_asset
   - ec_admin_card_equivalent_raw_panels_substituted_to_admin_card_asset
@@ -101,7 +114,13 @@ effects:
   - card_title_card_description_assets_provide_uniform_bottom_margin_via_has_sibling_selector
   - admin_card_direct_section_title_section_description_renamed_to_card_title_card_description
 
-test_files: []
+# 회고·process 메모 — pending_effects 는 측정 가능한 긍정 단언만 담는다. 「문서에 적었다」
+# 같은 process 문장은 효과가 아니므로 notes 로 옮긴다.
+notes:
+  - new_assets_documented_in_admin_basic_changelog
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-settings.test.tsx
 
 validation:
   audit_rule: frontend-change-requires-e2e

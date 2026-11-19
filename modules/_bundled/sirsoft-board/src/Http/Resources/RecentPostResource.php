@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 
 /**
@@ -23,12 +24,18 @@ class RecentPostResource extends BaseApiResource
      */
     public function toArray(Request $request): array
     {
+        $displayNames = app(BoardDisplayNames::class);
+        $authorName = $displayNames->authorOf($this->resource, $displayNames->areaFor($request));
+        $realName = $displayNames->realName($this->user_id ? $this->user : null, $authorName, $request);
+
         return [
             'id' => $this->id,
             'board_slug' => $this->board?->slug,
             'board_name' => $this->board?->getLocalizedName(),
             'title' => $this->title,
-            'author_name' => $this->user?->name ?? $this->author_name,
+            // 회원 글은 관리자 화면의 표시 이름, 비회원 글은 입력한 이름. 실명은 회원 조회 권한이 있고 표시 이름과 다를 때만 더한다.
+            'author_name' => $authorName,
+            ...($realName !== null ? ['real_name' => $realName] : []),
             'comments_count' => $this->comments_count,
             'created_at' => $this->formatCreatedAtFormat(
                 $this->created_at,

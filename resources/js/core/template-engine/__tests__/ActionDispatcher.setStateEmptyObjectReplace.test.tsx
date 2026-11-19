@@ -14,7 +14,7 @@
  *
  * @scenario-manifest tests/scenarios/setstate-empty-object-replace.yaml
  *
- * @effects empty_object_clears_previous_value, non_empty_object_still_deep_merges
+ * 재는 효과: 빈 객체가 앞 값을 비움, 비어 있지 않은 객체는 종전처럼 깊게 병합 — 어느 시험이 무엇을 재는지는 각 it 주석의 표식이 가리킨다.
  *
  * @vitest-environment jsdom
  */
@@ -138,6 +138,8 @@ const click = (label: string): void => {
     const b = Array.from(document.querySelectorAll('button')).find((x) => (x.textContent ?? '') === label) as HTMLElement;
     fireEvent.click(b);
 };
+// 다시 그리기는 동적 import 뒤 startTransition 이라, 화면 단언은 고정 대기(종전 80ms) 대신 waitFor 로 커밋을 기다린다 — 여러 시험 파일을
+// 함께 돌리는 부하에서는 80ms 안에 커밋되지 않아 앞 화면을 읽고 깨졌다. settle 은 화면을 읽지 않는 쓰기 사이에만 쓴다
 const settle = () => new Promise((r) => setTimeout(r, 80));
 
 const KEYS = "Object.keys(_local.filters ?? {}).join(',') || 'EMPTY'";
@@ -162,10 +164,9 @@ describe('[case:state-setstate-47] setState deep 병합 — 빈 객체 `{}` 가 
         click('pick');
         await waitFor(() => expect(text('keys')).toBe('색상'));
         click('clear');
-        await settle();
 
         // 종전: 화면 「색상」(저장소 A 가 이김) · B `{색상:블랙}`
-        expect(text('keys')).toBe('EMPTY');
+        await waitFor(() => expect(text('keys')).toBe('EMPTY'), { timeout: 5_000 });
         expect(m.app.getGlobalState()._local.filters).toEqual({});
         expect((window as any).G7Core.state.getLocal().filters).toEqual({});
         expect(text('keep')).toBe('k');
@@ -201,13 +202,11 @@ describe('[case:state-setstate-47] setState deep 병합 — 빈 객체 `{}` 가 
         click('fill');
         await waitFor(() => expect(text('meta')).toBe('x'));
         click('clear-nested');
-        await settle();
-        expect(text('meta')).toBe('EMPTY');
+        await waitFor(() => expect(text('meta')).toBe('EMPTY'), { timeout: 5_000 });
         expect(text('opts')).toBe('y');
         expect(text('name')).toBe('n');
         click('clear-dot');
-        await settle();
-        expect(text('opts')).toBe('EMPTY');
+        await waitFor(() => expect(text('opts')).toBe('EMPTY'), { timeout: 5_000 });
         expect(m.app.getGlobalState()._local.form).toEqual({ name: 'n', meta: {}, opts: {} });
 
         // 프로토타입 없는 빈 객체 — 레이아웃 식 `Object.assign(Object.create(null), …)` 의 결과
@@ -231,12 +230,10 @@ describe('[case:state-setstate-47] setState deep 병합 — 빈 객체 `{}` 가 
         click('pick');
         await waitFor(() => expect(text('keys')).toBe('색상'));
         click('add');
-        await settle();
-        expect(text('keys')).toBe('색상,크기');
+        await waitFor(() => expect(text('keys')).toBe('색상,크기'), { timeout: 5_000 });
         expect(text('errs')).toBe('email');
         click('clear-errors');
-        await settle();
-        expect(text('errs')).toBe('EMPTY');
+        await waitFor(() => expect(text('errs')).toBe('EMPTY'), { timeout: 5_000 });
         expect(text('keys')).toBe('색상,크기');
     });
 
@@ -251,9 +248,8 @@ describe('[case:state-setstate-47] setState deep 병합 — 빈 객체 `{}` 가 
         click('pick');
         await waitFor(() => expect(text('keys')).toBe('색상'));
         click('spread-clear');
-        await settle();
         // 펼친 값을 선행 쓰기에서 빼면 B·getLocal 만 `{}` 이고 화면은 「색상」 으로 갈린다
-        expect(text('keys')).toBe('EMPTY');
+        await waitFor(() => expect(text('keys')).toBe('EMPTY'), { timeout: 5_000 });
         expect(m.app.getGlobalState()._local.filters).toEqual({});
         expect(m.app.getGlobalState()._local.touched).toBe(true);
     });
@@ -266,9 +262,8 @@ describe('[case:state-setstate-47] setState deep 병합 — 빈 객체 `{}` 가 
         await (window as any).G7Core.dispatch({ handler: 'setState', params: { target: 'local', filters: { 색상: '블랙' } } });
         await waitFor(() => expect(text('keys')).toBe('색상'));
         await (window as any).G7Core.dispatch({ handler: 'setState', params: { target: 'local', filters: {} } });
-        await settle();
+        await waitFor(() => expect(text('keys')).toBe('EMPTY'), { timeout: 5_000 });
         expect(m.app.getGlobalState()._local.filters).toEqual({});
-        expect(text('keys')).toBe('EMPTY');
     });
 
     // @scenario target=global, shape=top_level_empty
@@ -341,8 +336,7 @@ describe('[case:state-setstate-47] setState deep 병합 — 빈 객체 `{}` 가 
         click('pg-pick');
         await waitFor(() => expect(text('prefs')).toBe('a'));
         click('pg-clear');
-        await settle();
-        expect(text('prefs')).toBe('EMPTY');
+        await waitFor(() => expect(text('prefs')).toBe('EMPTY'), { timeout: 5_000 });
         expect(m.app.getGlobalState().prefs).toEqual({});
         expect((window as any).G7Core.state.get().prefs).toEqual({});
         expect(text('keepGlobal')).toBe('g');
@@ -403,13 +397,11 @@ describe('[case:state-setstate-47] setState deep 병합 — 빈 객체 `{}` 가 
         click('pick');
         await waitFor(() => expect(text('keys')).toBe('색상'));
         click('shallow');
-        await settle();
-        expect(text('keys')).toBe('EMPTY');
+        await waitFor(() => expect(text('keys')).toBe('EMPTY'), { timeout: 5_000 });
         expect(text('keep')).toBe('k');
         click('pick');
         await waitFor(() => expect(text('keys')).toBe('색상'));
         click('dot-target');
-        await settle();
-        expect(text('keys')).toBe('EMPTY');
+        await waitFor(() => expect(text('keys')).toBe('EMPTY'), { timeout: 5_000 });
     });
 });

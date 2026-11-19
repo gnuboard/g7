@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Seo 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -70,6 +70,8 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -138,6 +140,8 @@ HTTP/1.1 200
 | 500 | Internal Server Error | 캐시 무효화(`invalidateByLayout` / `clearAll`) 중 예외가 발생한 경우 (`messages.error_occurred`) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -210,6 +214,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 sitemap.xml 재생성을 큐에 예약합니다. 관리자 수동 재생성은 현 생성 상태와 무관하게 **항상 전체(full) 재생성**입니다. 응답은 예약 접수 결과이며 생성 완료를 의미하지 않습니다 — 실제 생성은 큐 워커가 `GenerateSitemapJob` 을 처리할 때 수행되고, 완료 후 마지막 생성 시각이 갱신됩니다.
@@ -226,6 +232,7 @@ sitemap.xml 재생성을 큐에 예약합니다. 관리자 수동 재생성은 �
 | --- | --- | --- |
 | 400 | `seo.sitemap_disabled` | SEO 설정에서 Sitemap 생성이 꺼져 있는 경우 |
 | 409 | `seo.sitemap_regenerate_in_progress` | 생성이 진행 중(`queued`·`running`·`writing`)이고 잠금이 잡혀 있는 경우 |
+| 409 | `errors.stage_role_locked_sitemap` | 검수 서버(실행 역할 `stage`)에서 요청한 경우 — 사이트맵은 운영 서버에서 다시 만든다 |
 | 409 | `seo.sitemap_regenerate_locked` | 진행 상태는 진행 중이 아닌데 잠금이 남아 있는 경우 — 다른 생성 작업이 큐에서 기다리는 중이거나, 큐 작업자가 강제 종료돼 이전 작업의 잠금만 남은 경우. 잠금은 최대 약 2시간 뒤 풀리며, 서버에서 `php artisan cache:clear` 로 즉시 풀 수 있습니다 |
 | 500 | `seo.sitemap_regenerate_failed` | 즉시 실행 큐에서 생성 잡이 실패한 경우(진행 상태 `failed`, 잠금은 풀려 다시 요청할 수 있음) |
 
@@ -270,7 +277,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "messages.success",
+    "message": "성공적으로 처리되었습니다.",
     "data": {
         "last_updated_at": "2026-08-04T12:53:51+00:00",
         "progress": {
@@ -297,6 +304,8 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -367,6 +376,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 SEO 캐시 적중 현황을 최근 7일 기준으로 전체·레이아웃별·모듈별로 조회합니다. 봇 대상 사전 렌더 캐시가 얼마나 효과적으로 재사용되는지(적중률, 렌더 비용 절감)를 모니터링하는 관리자 대시보드용 통계입니다.
@@ -426,6 +437,8 @@ HTTP/1.1 200
 | 500 | Internal Server Error | 워밍업 처리 중 예외가 발생한 경우 (`messages.error_occurred`) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 

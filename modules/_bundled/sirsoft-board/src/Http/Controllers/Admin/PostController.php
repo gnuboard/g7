@@ -13,6 +13,7 @@ use Modules\Sirsoft\Board\Exceptions\BoardNotFoundException;
 use Modules\Sirsoft\Board\Exceptions\DeletedContentBlindException;
 use Modules\Sirsoft\Board\Exceptions\PostHasRepliesException;
 use Modules\Sirsoft\Board\Exceptions\PostNotFoundException;
+use Modules\Sirsoft\Board\Fields\GuestAuthorFields;
 use Modules\Sirsoft\Board\Http\Requests\Admin\BulkPostActionRequest;
 use Modules\Sirsoft\Board\Http\Requests\Admin\PostFormDataRequest;
 use Modules\Sirsoft\Board\Http\Requests\Admin\PostFormMetaRequest;
@@ -170,6 +171,17 @@ class PostController extends AdminBaseController
                 foreach ($comments as $comment) {
                     $comment->is_already_reported_preloaded = in_array($comment->id, $reportedCommentIds);
                     $comment->my_reaction_type_id_preloaded = $myCommentReactions[$comment->id] ?? null;
+                }
+            }
+
+            // 비회원이 글과 댓글을 쓸 때 낸 항목 값(이메일 등)을 한꺼번에 읽어 둔다 — 리소스는 게시판 관리 권한(admin.manage)이
+            // 있을 때만 싣는다(IP 주소와 같은 기준). 댓글마다 따로 읽으면 댓글 수만큼 조회가 늘어난다.
+            $guestFields = app(GuestAuthorFields::class);
+            $post->guest_field_values_preloaded = $guestFields->valuesFor(collect([$post]))[$post->getKey()] ?? [];
+            if ($post->relationLoaded('comments')) {
+                $commentValues = $guestFields->valuesFor($post->comments);
+                foreach ($post->comments as $comment) {
+                    $comment->guest_field_values_preloaded = $commentValues[$comment->getKey()] ?? [];
                 }
             }
 

@@ -1,5 +1,5 @@
 {
-    "comment": "로그인 폼 조각 — 로그인 화면과 결제 진입 화면이 함께 쓴다. 진행 상태와 오류를 _local 이 아니라 _global 에 두는 것은 이 조각 밖(바깥 화면의 버튼 비활성화 등)에서도 읽기 때문이다.",
+    "comment": "로그인 폼 조각 — 로그인 화면(auth/login)이 쓴다. 성공 분기는 그 화면의 명명 액션 `applyLoginResult` 를 부른다. 진행 상태와 오류를 _local 이 아니라 _global 에 두는 것은 이 조각 밖(바깥 화면의 버튼 비활성화 등)에서도 읽기 때문이다.",
     "meta": {
         "is_partial": true,
         "description": "로그인 폼 (1단계 이메일/비밀번호 → 2단계 인증번호 → 비밀번호 변경)"
@@ -25,7 +25,9 @@
                         "target": "global",
                         "isLoggingIn": true,
                         "loginError": null,
-                        "loginErrors": null
+                        "loginErrors": null,
+                        "loginAlternateUrl": null,
+                        "loginAlternateLabel": null
                     }
                 },
                 {
@@ -39,110 +41,39 @@
                             "password": "{{form.password}}"
                         }
                     },
-                    "onSuccess": [
+                    "onSuccess": {
+                        "comment": "응답 분기(2단계 인증 · 비밀번호 변경 · 로그인 완료)는 로그인 화면의 명명 액션 `applyLoginResult` 가 맡는다 —\n                 로그인 인계 교환(`loginHandoff`, 화면 진입 시)도 같은 분기를 써서 두 경로가 갈라지지 않는다.",
+                        "actionRef": "applyLoginResult"
+                    },
+                    "onError": [
                         {
-                            "comment": "2단계 인증이 켜진 사이트는 아직 로그인이 끝나지 않았다 — 토큰도 사용자도 없다.",
                             "handler": "setState",
-                            "if": "{{response.two_factor_required}}",
                             "params": {
                                 "target": "global",
                                 "isLoggingIn": false,
-                                "twoFactor": {
-                                    "required": true,
-                                    "challenge_id": "{{response.challenge_id}}",
-                                    "provider_id": "{{response.provider_id}}",
-                                    "expires_at": "{{response.expires_at}}",
-                                    "code": "",
-                                    "error": null,
-                                    "verifying": false,
-                                    "resending": false,
-                                    "resent": false
-                                }
+                                "loginError": "{{error.message}}",
+                                "loginErrors": "{{error.errors}}"
                             }
                         },
                         {
-                            "comment": "비밀번호가 만료됐거나 관리자가 정해 준 비밀번호다 — 토큰 없이 변경 단계 식별자만 왔다.",
+                            "comment": "회사 계정 로그인이 강제된 계정(403 `auth.password_auth_disabled`) — 안내 문구는 위 오류 자리에, 그 수단으로 가는 버튼은 아래 자리에 싣는다(7.2.0).",
                             "handler": "setState",
-                            "if": "{{response.password_change_required}}",
+                            "if": "{{error.errors?.code === 'auth.password_auth_disabled'}}",
                             "params": {
                                 "target": "global",
-                                "isLoggingIn": false,
-                                "passwordChange": {
-                                    "required": true,
-                                    "challenge_id": "{{response.challenge_id}}",
-                                    "reason": "{{response.reason}}",
-                                    "can_postpone": "{{response.can_postpone}}",
-                                    "postpone_days": "{{response.postpone_days}}",
-                                    "expired_at": "{{response.expired_at}}",
-                                    "error": null,
-                                    "errors": null
-                                }
+                                "loginAlternateUrl": "{{error.errors?.redirect_url ?? null}}",
+                                "loginAlternateLabel": "{{error.errors?.method_label ? $localized(error.errors.method_label) : null}}"
                             }
                         },
                         {
-                            "handler": "setState",
-                            "if": "{{response.password_change_required}}",
+                            "comment": "사내 계정으로 처음 오는 사람처럼 동의·연결 확인 화면이 더 필요하다(409 `auth.external_step_required`) — 그 화면으로 이동한다.",
+                            "handler": "redirect",
+                            "if": "{{error.errors?.code === 'auth.external_step_required' && !!error.errors?.redirect_url}}",
                             "params": {
-                                "target": "local",
-                                "passwordChangeInput": null
-                            }
-                        },
-                        {
-                            "handler": "setState",
-                            "if": "{{!response.two_factor_required && !response.password_change_required}}",
-                            "params": {
-                                "target": "global",
-                                "currentUser": "{{response.user}}"
-                            }
-                        },
-                        {
-                            "handler": "setState",
-                            "if": "{{!response.two_factor_required && !response.password_change_required}}",
-                            "params": {
-                                "target": "global",
-                                "isLoggingIn": false
-                            }
-                        },
-                        {
-                            "comment": "로그인 직전에 비회원으로 발급받은 주문 조회 토큰은 회원 컨텍스트에 무효 — 잔존 시 동일 브라우저로 회원/비회원 페이지 동시 열람 가능. sessionStorage 3개 키 (token/orderNumber/expiresAt) 와 _global.guestOrderToken 을 한 번에 정리하는 모듈 커스텀 핸들러 사용.",
-                            "handler": "clearGuestOrderToken",
-                            "if": "{{!response.two_factor_required && !response.password_change_required}}"
-                        },
-                        {
-                            "handler": "toast",
-                            "if": "{{!response.two_factor_required && !response.password_change_required}}",
-                            "params": {
-                                "type": "success",
-                                "message": "$t:auth.login_success"
-                            }
-                        },
-                        {
-                            "comment": "휴면이 풀린 로그인에만 실린다 — 서버가 해제했을 때만 이 키를 보내므로\n                 평시 로그인에는 뜨지 않는다. 안내 없이 되돌리면 회원은 자기 계정이 잠겼다\n                 풀린 사실을 끝내 모른다.",
-                            "handler": "toast",
-                            "if": "{{!response.two_factor_required && !response.password_change_required && response.dormancy_restored}}",
-                            "params": {
-                                "type": "info",
-                                "message": "$t:auth.dormancy_restored"
-                            }
-                        },
-                        {
-                            "handler": "navigate",
-                            "if": "{{!response.two_factor_required && !response.password_change_required}}",
-                            "params": {
-                                "path": "{{query.redirect ?? '/'}}",
-                                "fallbackPath": "/"
+                                "url": "{{error.errors.redirect_url}}"
                             }
                         }
-                    ],
-                    "onError": {
-                        "handler": "setState",
-                        "params": {
-                            "target": "global",
-                            "isLoggingIn": false,
-                            "loginError": "{{error.message}}",
-                            "loginErrors": "{{error.errors}}"
-                        }
-                    }
+                    ]
                 },
                 {
                     "handler": "loginTwoFactor",
@@ -219,10 +150,11 @@
                             }
                         },
                         {
+                            "comment": "필수 항목이 비어 있는 회원은 추가 정보 입력 화면으로 — 로그인 화면의 applyLoginResult 최종 이동과 같은 식이다(이 성공 지점은 그 액션을 거치지 않는다).",
                             "handler": "navigate",
                             "if": "{{!response.password_change_required}}",
                             "params": {
-                                "path": "{{query.redirect ?? '/'}}",
+                                "path": "{{((response.pending_required_fields ?? []).length > 0 && (query.redirect ?? '').indexOf('/mypage/required-info') !== 0) ? '/mypage/required-info' + (query.redirect ? '?redirect=' + encodeURIComponent(query.redirect) : '') : (query.redirect ?? '/')}}",
                                 "fallbackPath": "/"
                             }
                         }
@@ -279,9 +211,10 @@
                             }
                         },
                         {
+                            "comment": "필수 항목이 비어 있는 회원은 추가 정보 입력 화면으로 — applyLoginResult 최종 이동과 같은 식.",
                             "handler": "navigate",
                             "params": {
-                                "path": "{{query.redirect ?? '/'}}",
+                                "path": "{{((response.pending_required_fields ?? []).length > 0 && (query.redirect ?? '').indexOf('/mypage/required-info') !== 0) ? '/mypage/required-info' + (query.redirect ? '?redirect=' + encodeURIComponent(query.redirect) : '') : (query.redirect ?? '/')}}",
                                 "fallbackPath": "/"
                             }
                         }
@@ -361,6 +294,39 @@
                         "className": "mt-1 text-sm text-red-700 dark:text-red-400"
                     },
                     "text": "$t:auth.locked_permanent"
+                },
+                {
+                    "comment": "비밀번호 로그인이 막힌 계정 — 그 계정의 로그인 수단으로 바로 가는 버튼(7.2.0)",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{!!_global.loginAlternateUrl}}",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "redirect",
+                            "params": {
+                                "url": "{{_global.loginAlternateUrl + (query.redirect ? (_global.loginAlternateUrl.includes('?') ? '&' : '?') + 'redirect=' + encodeURIComponent(query.redirect) : '')}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "mt-3 w-full py-2 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!_global.loginAlternateLabel}}",
+                            "text": "$t:auth.external.login_with|method={{_global.loginAlternateLabel}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!_global.loginAlternateLabel}}",
+                            "text": "$t:auth.external.login_with_company"
+                        }
+                    ]
                 }
             ]
         },
@@ -371,8 +337,10 @@
             "if": "{{!_global.twoFactor?.required && !_global.passwordChange?.required}}",
             "children": [
                 {
+                    "comment": "사내 아이디를 받는 외부 자격 증명(디렉터리 로그인)이 켜진 사이트는 이메일 형식을 강제하지 않는다 — 칸 이름은 email 그대로(7.2.0)",
                     "type": "basic",
                     "name": "Label",
+                    "if": "{{_global.appConfig?.auth?.login_identifier?.user !== 'email_or_username'}}",
                     "props": {
                         "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
                     },
@@ -380,12 +348,62 @@
                 },
                 {
                     "type": "basic",
-                    "name": "Input",
+                    "name": "Label",
+                    "if": "{{_global.appConfig?.auth?.login_identifier?.user === 'email_or_username'}}",
                     "props": {
-                        "aria-label": "$t:auth.email",
-                        "type": "email",
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                    },
+                    "text": "$t:auth.external.identifier"
+                },
+                {
+                    "type": "basic",
+                    "name": "Input",
+                    "actions": [
+                        {
+                            "comment": "이메일 먼저 입력(7.2.0) — 칸을 벗어날 때 값이 바뀌었으면 그 식별자의 로그인 수단을 묻는다. 회사 계정 도메인이면 비밀번호 칸 대신\n               「… 계정으로 계속」 버튼을 보인다. 판정은 도메인으로만 하므로 회원 유무가 드러나지 않는다. 실패하면 지금 화면 그대로다.",
+                            "event": "onBlur",
+                            "handler": "sequence",
+                            "if": "{{!!$event.target.value && $event.target.value !== _local.discoveryFor}}",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "discoveryFor": "{{$event.target.value}}"
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/auth/login/discover",
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "identifier": "{{$event.target.value}}"
+                                        }
+                                    },
+                                    "onSuccess": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "discovery": "{{response.data?.method === 'external' ? response.data : null}}"
+                                        }
+                                    },
+                                    "onError": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "discovery": null
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "aria-label": "{{_global.appConfig?.auth?.login_identifier?.user === 'email_or_username' ? $t('auth.external.identifier') : $t('auth.email')}}",
+                        "type": "{{_global.appConfig?.auth?.login_identifier?.user === 'email_or_username' ? 'text' : 'email'}}",
                         "name": "email",
-                        "placeholder": "$t:auth.email_placeholder",
+                        "placeholder": "{{_global.appConfig?.auth?.login_identifier?.user === 'email_or_username' ? $t('auth.external.identifier_placeholder') : $t('auth.email_placeholder')}}",
                         "className": "{{_global.loginErrors?.email ? 'w-full px-4 py-2 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'}}",
                         "required": true,
                         "disabled": "{{_global.isLoggingIn}}"
@@ -404,10 +422,98 @@
             ]
         },
         {
+            "comment": "회사 계정으로 계속(7.2.0) — 이메일 판정이 외부 수단이면 비밀번호 칸·로그인 버튼 대신 그 수단으로 보낸다",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!_global.twoFactor?.required && !_global.passwordChange?.required && _local.discovery?.method === 'external'}}",
+            "props": {
+                "className": "space-y-3"
+            },
+            "children": [
+                {
+                    "comment": "왜 비밀번호 칸이 사라졌는지 알린다(디자인 ②)",
+                    "id": "login_discovery_notice",
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm text-gray-600 dark:text-gray-300",
+                        "role": "status"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!_local.discovery?.label && !!$localized(_local.discovery.label)}}",
+                            "text": "$t:auth.external.discovered_notice|method={{$localized(_local.discovery?.label)}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!_local.discovery?.label || !$localized(_local.discovery.label)}}",
+                            "text": "$t:auth.external.discovered_notice_company"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "판정이 준 외부 수단 주소로 보낸다 — 돌아올 곳(redirect)이 있으면 이어 붙인다",
+                            "type": "click",
+                            "handler": "redirect",
+                            "params": {
+                                "url": "{{_local.discovery.redirect_url + (query.redirect ? (_local.discovery.redirect_url.includes('?') ? '&' : '?') + 'redirect=' + encodeURIComponent(query.redirect) : '')}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!_local.discovery?.label && !!$localized(_local.discovery.label)}}",
+                            "text": "$t:auth.external.continue_with|method={{$localized(_local.discovery?.label)}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!_local.discovery?.label || !$localized(_local.discovery.label)}}",
+                            "text": "$t:auth.external.continue_with_company"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "다른 이메일로 — 판정을 지워 비밀번호 칸으로 돌아간다",
+                            "type": "click",
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "discovery": null,
+                                "discoveryFor": null
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "w-full text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer"
+                    },
+                    "text": "$t:auth.external.use_other_email"
+                }
+            ]
+        },
+        {
             "comment": "비밀번호 입력 필드 (1단계)",
             "type": "basic",
             "name": "Div",
-            "if": "{{!_global.twoFactor?.required && !_global.passwordChange?.required}}",
+            "if": "{{!_global.twoFactor?.required && !_global.passwordChange?.required && _local.discovery?.method !== 'external'}}",
             "children": [
                 {
                     "type": "basic",
@@ -437,7 +543,7 @@
             "comment": "로그인 버튼 (1단계)",
             "type": "basic",
             "name": "Button",
-            "if": "{{!_global.twoFactor?.required && !_global.passwordChange?.required}}",
+            "if": "{{!_global.twoFactor?.required && !_global.passwordChange?.required && _local.discovery?.method !== 'external'}}",
             "props": {
                 "type": "submit",
                 "className": "w-full py-3 mt-12 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
@@ -641,8 +747,15 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "640-": {
+                            "props": {
+                                "className": "flex flex-row gap-2"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "flex flex-col sm:flex-row gap-2"
+                        "className": "flex flex-col gap-2"
                     },
                     "children": [
                         {
@@ -986,8 +1099,15 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "640-": {
+                            "props": {
+                                "className": "flex flex-row gap-2"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "flex flex-col sm:flex-row gap-2"
+                        "className": "flex flex-col gap-2"
                     },
                     "children": [
                         {
@@ -1045,9 +1165,10 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "필수 항목이 비어 있는 회원은 추가 정보 입력 화면으로 — applyLoginResult 최종 이동과 같은 식.",
                                                     "handler": "navigate",
                                                     "params": {
-                                                        "path": "{{query.redirect ?? '/'}}",
+                                                        "path": "{{((response.pending_required_fields ?? []).length > 0 && (query.redirect ?? '').indexOf('/mypage/required-info') !== 0) ? '/mypage/required-info' + (query.redirect ? '?redirect=' + encodeURIComponent(query.redirect) : '') : (query.redirect ?? '/')}}",
                                                         "fallbackPath": "/"
                                                     }
                                                 }

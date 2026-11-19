@@ -71,4 +71,20 @@ describe('장바구니 옵션 변경 실패 오류 칸', () => {
         expect(evalErrors({ message: '입력값을 확인하세요.', errors: { quantity: ['수량은 1 이상이어야 합니다.'] } }))
             .toEqual({ quantity: ['수량은 1 이상이어야 합니다.'] });
     });
+
+    /**
+     * @scenario rejection=required_fields_pending
+     * @effects pending_rejection_leaves_no_inline_error
+     */
+    it('추가 정보 미입력 거부(403 required_fields_pending)는 안내 창이 맡으므로 창 안 오류 칸을 비운다', () => {
+        // 안내 창과 함께 옵션 창 안에도 같은 문장이 인라인으로 보였다
+        expect(evalErrors({
+            message: '추가 정보를 입력해야 이용할 수 있습니다.',
+            error_code: 'required_fields_pending',
+            errors: null,
+            data: { pending_required_fields: ['homepage'] },
+        })).toBeNull();
+        // 다른 403 은 종전대로 일반 오류로 담는다
+        expect(evalErrors({ message: '권한이 없습니다.', error_code: 'forbidden' })).toEqual({ _general: '권한이 없습니다.' });
+    });
 });

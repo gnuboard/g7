@@ -8,7 +8,7 @@
  * 저장 대화상자를 띄우지 않는가), 그리고 **Monaco 안에서도 같은 동작이 나는가**. 창 리스너만
  * 달면 편집기에 포커스가 있을 때 동작이 갈린다.
  *
- * @scenario surface=code_editor,entry=direct
+ * 소속 시나리오(마커 아님 — 평문): code-editor-shortcuts
  * @effects code_editor_has_document_shortcuts
  *
  * 실행: `code-editor-*.spec.ts` 는 `--workers=1` 로 돌린다 — 사유는
@@ -44,7 +44,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 단축키', () => {
   /**
    * `Ctrl+S` 가 브라우저의 "페이지 저장" 을 띄우면 그 순간 편집 흐름이 끊긴다.
    *
-   * @scenario promise=ctrl_s_saves, surface=browser
+   * @scenario combo=mod_only, focus=editor
    *
    * @effects code_editor_ctrl_s_saves_and_prevents_browser_default
    */
@@ -87,7 +87,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 단축키', () => {
   });
 
   /**
-   * @scenario promise=shortcut_help, surface=browser
+   * @scenario combo=single_key, focus=document
    *
    * @effects code_editor_shortcut_help_lists_the_ssot
    */
@@ -118,7 +118,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 단축키', () => {
    * 아무 일도 없는 단축키가 된다(4차 재검증에서 실제로 그 상태였다). 편집기 안에 포커스가 있어도
    * 같은 동작이 나야 한다(Monaco 재바인딩).
    *
-   * @scenario promise=ctrl_k_focuses_search, surface=browser
+   * @scenario combo=mod_only, focus=document, focus=editor
    *
    * @effects code_editor_ctrl_k_focuses_the_file_search
    */
@@ -147,7 +147,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 단축키', () => {
   /**
    * 입력 자리에서는 `mod` 없는 단일 키를 가로채지 않는다 — 아니면 그 글자를 영영 칠 수 없다.
    *
-   * @scenario promise=no_misfire_while_typing, surface=browser
+   * @scenario combo=single_key, focus=search_input
    *
    * @effects code_editor_shortcuts_do_not_misfire_in_inputs
    */
@@ -165,7 +165,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 단축키', () => {
   });
 
   /**
-   * @scenario promise=word_wrap_toggle, surface=browser
+   * @scenario focus=document
    *
    * @effects code_editor_alt_z_toggles_word_wrap_and_remembers_it
    */
@@ -197,7 +197,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 단축키', () => {
    * 글자 크기 `Ctrl+=` / `Ctrl+-` (계획 §7.6 — 12~20px, 고른 값은 기억). 창 리스너와 Monaco 재바인딩
    * 양쪽에서 같은 동작이 나야 하고, 새로고침해도 기기 기본값(14)이 아니라 고른 값이 남아야 한다.
    *
-   * @scenario promise=font_size_shortcut, surface=browser
+   * @scenario combo=mod_only, focus=document, focus=editor
    *
    * @effects code_editor_ctrl_plus_minus_adjusts_font_size_and_remembers_it
    */
@@ -246,8 +246,6 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 단축키', () => {
 
   /**
    * `mod+w` 는 브라우저 탭을 닫는다 — 등록해 두면 사용자가 믿고 눌러 작업 중인 탭이 사라진다.
-   *
-   * @scenario promise=reserved_combos_are_not_registered, surface=browser
    *
    * @effects code_editor_avoids_browser_reserved_shortcuts
    */

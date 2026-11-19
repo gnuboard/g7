@@ -1,6 +1,6 @@
 # Vbank / 통보 수신 API 레퍼런스
 
-> **소유**: 플러그인 `sirsoft-pay_nhnkcp`. 이 문서는 결제대행사(NHN KCP) 서버가 직접 POST 로 보내는 통보 수신 경로를 서술한다. 브라우저가 접속하는 결제 콜백과는 접근 제어가 다르다.
+> **소유**: 플러그인 `sirsoft-pay_nhnkcp`. 이 문서는 결제대행사(NHN KCP) 서버가 직접 POST 로 보내는 통보 수신 경로를 서술한다. 브라우저가 접속하는 결제 콜백과는 접근 제어가 다르다. `@generated` 블록은 `php artisan api:docgen` 이 갱신하며, 사람이 작성한 설명은 보존된다.
 
 ---
 
@@ -32,6 +32,70 @@
 상세: [docs/backend/middleware.md "확장 미들웨어 선언 (self-gate)"](../../../../../docs/backend/middleware.md).
 
 **형식이 틀린 통보**: 필수 값이 없거나 형식이 다른 요청은 `422` JSON(`{success: false, message, errors}`)으로 끝난다 — 직전 페이지(Referer)·요청 Host 로 이동(302)하지 않는다. PG 에는 302 와 같은 실패라 재전송 동작은 바뀌지 않는다.
+
+---
+
+## 운영자에게 표시되는 통보 URL
+
+### GET /api/plugins/sirsoft-pay_nhnkcp/admin/vbank-notify-url
+<!-- @generated:start:api.plugins.sirsoft-pay_nhnkcp.admin.vbank.notify.url -->
+- **라우트명**: `api.plugins.sirsoft-pay_nhnkcp.admin.vbank.notify.url`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.settings.read|core.plugins.read,false` (OR — 플러그인 설정 화면 안내라 「플러그인 보기」로도 읽는다)
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/plugins/sirsoft-pay_nhnkcp/admin/vbank-notify-url HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| url | string | `https://example.com/plugins/sirsoft-pay_…` | 결제사가 입금 결과를 통보할 주소. 사이트가 하위 폴더에 설치돼 있어도 그 접두사를 포함한 절대 주소로 내려간다. |
+| escrow_common_notify_url | string | `https://example.com/plugins/sirsoft-pay_…` | escrow common notify URL |
+
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "data": {
+        "url": "https://api.example.com/plugins/sirsoft-pay_nhnkcp/payment/vbank-notify",
+        "escrow_common_notify_url": "https://api.example.com/plugins/sirsoft-pay_nhnkcp/payment/escrow-common-notify"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.settings.read`·`core.plugins.read`)이 모두 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+관리자 설정 화면은 이 경로로 위 두 통보 경로의 **전체 주소**를 받아 표시한다. 운영자는 그 값을 NHN KCP 상점관리자에 등록한다.
+
+주소는 **사이트 설정의 기준 주소**에서 만들어진다 — 이 요청이 어떤 호스트로 들어왔는지는 보지 않는다. 앞단에 프록시·로드밸런서를 두었거나 사이트가 하위 폴더(`https://example.com/shop/`)에 설치된 배치에서도 결제대행사가 실제로 접속할 수 있는 하나의 주소가 나오도록 하기 위함이다. 표시된 주소가 바깥에서 닿지 않는다면 먼저 **환경설정의 사이트 주소**가 실제 서비스 주소와 같은지 확인한다.
 
 ---
 

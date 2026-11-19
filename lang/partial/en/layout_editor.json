@@ -74,6 +74,13 @@
       },
       "empty": "No routes to display"
     },
+    "stage_banner": "Saved for review only — changes saved in this editor stay on this review (stage) server, are not applied to the live site, and are discarded on the next deployment.",
+    "spec_load_error": {
+      "title": "Could not load editor information.",
+      "message": "The component palette, style controls and state switcher are unavailable. Please try again.",
+      "retry": "Try again",
+      "retrying": "Reloading…"
+    },
     "fab": {
       "label": "Edit layout",
       "tooltip": "Open this screen in the layout editor"
@@ -164,6 +171,7 @@
     "chars_one": "({diff} char)",
     "saved_by": "Saved by {name}",
     "unknown_author": "Unknown",
+    "system_author": "System",
     "compare": "Compare",
     "comparing": "Comparing…",
     "diff_title": "Changes v{old} → v{new}",
@@ -220,7 +228,9 @@
   },
   "zoom": {
     "label": "Zoom",
-    "aria_label": "Canvas zoom slider"
+    "aria_label": "Canvas zoom slider",
+    "actual_size": "Actual size",
+    "actual_size_hint": "Show the preview at 1:1 without shrinking it. If it is wider than the canvas, the page scrolls horizontally."
   },
   "palette": {
     "title": "Add element",
@@ -437,7 +447,17 @@
     "bound_value": {
       "notice": "Bound to data (filled automatically)",
       "replace": "Replace with a fixed value",
-      "restore": "Restore the data binding"
+      "restore": "Restore the data binding",
+      "template_settings_notice": "Linked to the template settings — change it under Admin > Templates > Settings of this template.",
+      "open_template_settings": "Open settings"
+    },
+    "thumbnail_preset": {
+      "original": "Original",
+      "fit_cover": "Crop",
+      "fit_contain": "Fit",
+      "fit_width": "Width only",
+      "option_label": "{name} ({size} · {fit})",
+      "unknown": "{name} (not in use)"
     }
   },
   "recipe": {
@@ -1421,6 +1441,10 @@
     "login_password_change_postpone": {
       "label": "Postpone password change",
       "param_body": "Change request info"
+    },
+    "login_handoff": {
+      "label": "Sign in with handoff code",
+      "param_body": "Handoff request info"
     },
     "logout": {
       "label": "Handle logout",

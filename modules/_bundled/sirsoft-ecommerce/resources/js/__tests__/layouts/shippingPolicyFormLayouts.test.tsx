@@ -32,7 +32,7 @@ function findById(node: any, id: string): any {
     if (!node) return null;
     if (node.id === id) return node;
     if (Array.isArray(node.children)) {
-        for (const child of node.children) {
+        for (const child of [...node.children, ...(node.props?.footer ?? [])]) {
             const found = findById(child, id);
             if (found) return found;
         }
@@ -318,7 +318,7 @@ describe('shippingPolicyFormLayouts', () => {
         it('init_actions: 글로벌 상태 초기화 + 커스텀 핸들러 + 복사 모드 is_default 해제 + 신규 등록 회수지 허용', () => {
             // 개수·인덱스로 고정하지 않는다 — 같은 파일의 partial 순서 검사(아래)가 이미 남긴
             // 이유와 같다. 이 수는 계약이 아니라 당시 구조의 스냅샷이라, init_action 이 하나 늘 때마다
-            // 무관한 단언이 함께 깨진다(18차에 로케일 주입이 들어오며 실제로 그렇게 됐다).
+            // 무관한 단언이 함께 깨진다(로케일 주입이 들어오며 실제로 그렇게 됐다).
             // 계약은 "무엇이 있는가" 다. 한때 순서가 계약이던 로케일 주입 액션은 걷어냈다 — 표현식은
             // 엔진이 렌더·액션 컨텍스트에 넣어 주는 `$locale` 을 읽는다.
             const actions: any[] = mainLayout.init_actions;
@@ -1441,8 +1441,9 @@ describe('shippingPolicyFormLayouts', () => {
          * @effects shipping_policy_form_extra_fee_template_modal_crud
          */
         it('닫기 버튼 (footer)', () => {
-            const footer = findById(extraFeeTemplateModal, 'modal_footer');
-            expect(footer).toBeDefined();
+            // 닫기 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+            const footer = (extraFeeTemplateModal as any).props?.footer;
+            expect(footer?.length ?? 0).toBeGreaterThan(0);
             const json = JSON.stringify(footer);
             expect(json).toContain('"handler":"closeModal"');
         });
@@ -1640,9 +1641,9 @@ describe('shippingPolicyFormLayouts', () => {
         it('편집/삭제 버튼에 disabled:opacity-50 disabled:cursor-not-allowed 클래스', () => {
             const json = JSON.stringify(extraFeeTemplateModal);
             // pencil(편집) 버튼 disabled 스타일
-            expect(json).toContain('btn-icon text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed');
+            expect(json).toContain('ecommerce-btn-icon ecommerce:text-blue-600 ecommerce:hover:text-blue-700 ecommerce:dark:text-blue-400 ecommerce:dark:hover:text-blue-300 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed');
             // trash(삭제) 버튼 disabled 스타일
-            expect(json).toContain('btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed');
+            expect(json).toContain('ecommerce-btn-icon ecommerce:text-red-500 ecommerce:hover:text-red-700 ecommerce:dark:text-red-400 ecommerce:dark:hover:text-red-300 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed');
         });
 
         /**
@@ -1707,7 +1708,7 @@ describe('shippingPolicyFormLayouts', () => {
         });
     });
 
-    // ===== 등록/수정 안내 문구의 술어 (19차) =====
+    // ===== 등록/수정 안내 문구의 술어 =====
 
     describe('저장 성공 토스트는 route.id 로만 등록/수정을 가른다', () => {
         /**
@@ -1793,7 +1794,7 @@ describe('shippingPolicyFormLayouts', () => {
         it('삼항의 방향이 뒤집혀 있지 않다 (route.id 가 있으면 "수정")', () => {
             // 위 두 검사는 "`route.id ?` 를 쓴다" 와 "updated 문구를 쓴다" 만 본다 — 그래서
             // `route.id ? …created : …updated` 로 **뒤집어도 셋 다 통과**한다. 그 상태의 증상은
-            // 19차가 고친 결함과 정확히 같다(새로 만든 정책에 "수정되었습니다"). 방향까지 고정한다.
+            // 앞서 고친 결함과 정확히 같다(새로 만든 정책에 "수정되었습니다"). 방향까지 고정한다.
             for (const message of saveToastMessages()) {
                 const branches = /route\.id\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(message);
 

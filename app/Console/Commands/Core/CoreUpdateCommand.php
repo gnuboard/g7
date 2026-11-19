@@ -2,18 +2,27 @@
 
 namespace App\Console\Commands\Core;
 
+use App\Console\Commands\Concerns\HandlesPackageIntegrity;
 use App\Console\Commands\Core\Concerns\BundledExtensionUpdatePrompt;
 use App\Console\Commands\Core\Concerns\BundledSourcePlacementPrompt;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Exceptions\ExtensionOperationLockException;
+use App\Exceptions\PackageIntegrityException;
 use App\Exceptions\UpgradeHandoffException;
+use App\Execution\SubprocessCommandRunner;
 use App\Extension\CoreVersionChecker;
+use App\Extension\Custom\CustomPackageConflictChecker;
+use App\Extension\Custom\CustomUpdatePreflight;
+use App\Extension\Custom\CustomVendorService;
+use App\Extension\Helpers\BundledShippedManifest;
 use App\Extension\Helpers\CoreBackupHelper;
 use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Helpers\StorageLinkHelper;
+use App\Extension\Integrity\PackageIntegrityOptions;
+use App\Extension\Integrity\PackageVerification;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
@@ -25,6 +34,7 @@ use App\Services\Core\PhpRequirementPreflight;
 use App\Services\CoreUpdateService;
 use App\Support\ComposerInstallInfo;
 use App\Support\ConfigCacheHelper;
+use App\Support\ExecutionEnvironment;
 use App\Support\HookCacheFreshProcess;
 use App\Support\PackageManifestCacheHelper;
 use App\Support\RouteCacheHelper;
@@ -36,18 +46,22 @@ class CoreUpdateCommand extends Command
     use BundledExtensionUpdatePrompt;
     use BundledSourcePlacementPrompt;
     use ClearsTemplateCaches;
+    use HandlesPackageIntegrity;
     use HasUnifiedConfirm;
     use LocalizesDescription;
     use ReportsLifecycleWarnings;
 
     protected $signature = 'core:update
-        {--force : 버전 비교 없이 강제 업데이트}
+        {--y|yes : 진행 확인을 「예」로 처리 (cron·CI·원격 명령처럼 확인에 답할 수 없는 실행용. 없으면 그런 실행은 사유를 출력하고 실패 코드로 끝남)}
+        {--force : 버전 비교 없이 강제 업데이트 (진행 확인은 건너뛰지 않음 — --yes 참조)}
         {--no-backup : 백업 생성 건너뛰기}
         {--prune : 코어가 제거한 파일 정리 + targets 전체 덮어쓰기(기존 방식). 미지정 시 코어가 실제 변경/추가한 파일만 적용하고 나머지는 보존}
         {--no-maintenance : 유지보수 모드 활성화 건너뛰기}
         {--local : 로컬 코드베이스를 업데이트 소스로 사용 (GitHub 스킵)}
         {--source= : 수동 업데이트용 소스 디렉토리 경로 (GitHub 다운로드 대신 지정 디렉토리 사용)}
         {--zip= : 수동 업데이트용 ZIP 파일 경로 (GitHub 다운로드 대신 지정 ZIP 추출 사용)}
+        {--allow-unsigned : 서명되지 않은 배포본(또는 이 서버에서 서명을 검증할 수 없는 배포본)을 확인 없이 계속 — 답할 수 없는 실행은 이 옵션이 없으면 실패. --yes·--force 는 이 확인을 대신하지 않음. 환경설정 「미서명 패키지 차단」이 켜져 있으면 무시}
+        {--signature= : --zip 의 서명 파일(.sig.json) 경로 — 생략하면 ZIP 옆 <zip>.sig.json 을 자동으로 씀}
         {--vendor-mode=auto : vendor 설치 모드 (auto|composer|bundled)}
         {--bundled-sources= : 설치되지 않았고 이 프로젝트에도 없는 공식 번들 소스 처리 (none|all|식별자 목록, 쉼표 구분, type:id 허용). 미지정 시 대화형은 묻고 비대화형은 none}
         {--rebuild-search-index : 번들 확장 일괄 업데이트 후 색인이 누락된 검색 인덱스를 재생성 (인덱스가 잠기거나 재색인됩니다 — 운영 중에는 유지보수 시간에 수행하세요)}';
@@ -72,13 +86,56 @@ class CoreUpdateCommand extends Command
      */
     public function handle(CoreUpdateService $service): int
     {
+        // 같은 디스크를 동시에 바꾸는 두 실행은 서로의 백업을 파괴한다 — 한쪽이 이미
+        // 신 버전으로 바꾼 디스크를 다른 쪽이 「업데이트 이전 스냅샷」이라며 백업하고,
+        // 먼저 끝난 쪽이 아직 쓰고 있는 백업을 지운다. 그 뒤 남은 쪽이 실패하면 되돌릴
+        // 것이 없다. 본문에 반환 지점이 여럿이라 `finally` 로 해제를 보장한다
+        // (제품 결정 2026-08-26).
+        if (! $service->acquireRunLock()) {
+            $this->error((string) __('settings.core_update.already_running'));
+
+            return Command::FAILURE;
+        }
+
+        // 잠금을 **쓸 수 없어** 보호 없이 진행하는 경우가 있다(읽기 전용 storage 등).
+        // 그 경로는 `true` 를 돌려주므로 위 분기로는 구분되지 않고, 종전에는 사유가
+        // 로그 파일에만 남아 운영자 화면에 아무 표시가 없었다 — 두 창에서 동시에 눌러
+        // 백업이 서로 파괴되는 상태(잠금을 넣은 바로 그 사유)가 무경고로 재현된다.
+        foreach (CoreUpdateService::takeRunLockWarnings() as $warning) {
+            $this->warn('⚠ '.$warning);
+        }
+
+        // 지난 실행이 남긴 번들 출하 목록 사본을 버린다 — 이번 실행이 파일 적용 전에 실패해 되돌릴 때 목록이 후퇴하지 않게.
+        BundledShippedManifest::beginRun();
+
+        try {
+            return $this->runUpdate($service);
+        } finally {
+            $service->releaseRunLock();
+        }
+    }
+
+    /**
+     * 코어 업데이트 본문을 실행합니다 (잠금은 `handle()` 이 보유).
+     *
+     * @param  CoreUpdateService  $service  코어 업데이트 서비스
+     * @return int 종료 코드
+     */
+    protected function runUpdate(CoreUpdateService $service): int
+    {
         // 코어 업데이트 진행 플래그: 업데이트 중에는 일시적 버전 불일치로 인한 자동 비활성화를
         // 차단해야 한다 (CoreServiceProvider::validateAndDeactivateIncompatibleExtensions 및
         // spawn 자식이 모두 이 플래그를 감지). 커맨드 종료 시 프로세스 env 도 함께 소멸하므로
         // 정리 로직 불필요.
         $_ENV['G7_UPDATE_IN_PROGRESS'] = '1';
         $_SERVER['G7_UPDATE_IN_PROGRESS'] = '1';
-        putenv('G7_UPDATE_IN_PROGRESS=1');
+
+        // `putenv` 는 하드닝 프로필의 표준 차단 대상이다. 막힌 환경에서 무가드로 부르면
+        // 업데이트가 시작하자마자 `Error` 로 죽는다 — 위 두 줄이 이미 같은 사실을 심었고
+        // 소비처(`CoreServiceProvider::isCoreUpdateInProgress`)도 그 둘을 먼저 본다 (#609 D34).
+        if (ExecutionEnvironment::hasFunction('putenv')) {
+            putenv('G7_UPDATE_IN_PROGRESS=1');
+        }
 
         $backupPath = null;
         $maintenanceEnabled = false;
@@ -91,6 +148,8 @@ class CoreUpdateCommand extends Command
         $bundledPlan = null;
         $bundledRecordBackup = null;
         $bundledRecordWritten = false;
+        // 파일 적용 단계가 출력한 루트 진입·보호 파일·서버 설정 조각 안내 — 되돌리면 더는 사실이 아니므로 그 사실을 알린다
+        $applyRootFileWarnings = [];
         $planner = app(BundledSourcePlanner::class);
         $bundledOption = is_string($this->option('bundled-sources')) ? $this->option('bundled-sources') : null;
         // PHP 확장 사전점검(#151 D9) — --source/--zip 은 유지보수 전, 그 밖에는 Step 4 다운로드 직후
@@ -151,6 +210,13 @@ class CoreUpdateCommand extends Command
                 }
                 $zipPath = $resolvedZip;
             }
+
+            // 패키지 무결성 선택(--allow-unsigned·--signature) — 서명 파일이 없으면 시작하지 않는다(7.2.0)
+            $integrityOptions = $this->packageIntegrityOptionsFromInput();
+            if ($integrityOptions === null) {
+                return Command::FAILURE;
+            }
+            $zipVerification = null;
 
             // --bundled-sources 문법(유형명) 검사 — 유지보수 모드 전에 실패시킨다
             try {
@@ -252,8 +318,20 @@ class CoreUpdateCommand extends Command
             }
             $this->newLine();
 
-            if (! $this->unifiedConfirm(__('settings.core_update.console.confirm_update'), false)) {
-                return $this->confirmAbortExitCode();
+            // 확인에 답할 수 없는 실행(cron·CI·원격 명령·--no-interaction)은 종전에 기본값 「아니오」로
+            // 아무 출력 없이 0 으로 끝나 자동화가 성공으로 읽었다. 그런 실행은 사유와 --yes 안내를 남기고
+            // 실패로 끝낸다. 대화형에서 운영자가 직접 「아니오」를 답한 취소는 의도이므로 종전대로 0 이다.
+            if (! $this->option('yes')) {
+                if (! $this->canAnswerConfirmation()) {
+                    return $this->refuseUnanswerableConfirmation(
+                        __('settings.core_update.console.confirm_unavailable'),
+                        __('settings.core_update.console.confirm_unavailable_hint'),
+                    );
+                }
+
+                if (! $this->unifiedConfirm(__('settings.core_update.console.confirm_update'), false)) {
+                    return $this->confirmAbortExitCode();
+                }
             }
 
             // ── 공식 번들 배치 판정 (#146 D6) ──
@@ -281,6 +359,31 @@ class CoreUpdateCommand extends Command
                 }
             }
 
+            // ── custom 자리 사전 검사 (#792) ──
+            // 배포본이 custom 예약 자리에 파일을 싣거나 개발자 패키지(custom/composer.lock)가 새 코어와 맞지 않으면
+            // 유지보수 모드·백업·파일 적용 전에 멈춘다. --source 는 디렉터리, --zip 은 풀지 않고 읽는다.
+            // GitHub 다운로드·zip 을 못 읽은 경우는 Step 4 직후에 같은 검사를 한다. --local 은 배포본이 아니라
+            // 현재 작업본(개발자 custom 파일 포함)을 복제하므로 예약 자리 검사 대상이 아니다.
+            $customPreflightDone = (bool) $this->option('local');
+            if ($sourceDir || $zipPath) {
+                $preflight = app(CustomUpdatePreflight::class);
+                $preflightResult = $sourceDir ? $preflight->inspectDirectory($sourceDir) : $preflight->inspectZip($zipPath);
+                if ($preflightResult !== null) {
+                    $customPreflightDone = true;
+                    if (CustomUpdatePreflight::blocks($preflightResult)) {
+                        // --zip 은 아직 풀지 않아 $toVersion 이 현재 버전이다 — zip 안 버전으로 알려야 관리자 확인 창이
+                        // 같은 새 버전의 중단 기록으로 알아본다.
+                        if ($zipPath) {
+                            $toVersion = CustomUpdatePreflight::readVersionFromZip($zipPath) ?? $toVersion;
+                        }
+                        $this->reportCustomPreflightBlock($preflightResult, $toVersion, $log);
+                        $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, false);
+
+                        return Command::FAILURE;
+                    }
+                }
+            }
+
             // ── PHP 확장 사전점검 (#151 D9) — 새 코어 필수 확장이 없으면 유지보수 모드 전에 멈춘다 ──
             $earlyPhpResult = $sourceDir ? $phpPreflight->inspectDirectory($sourceDir) : ($zipPath ? $phpPreflight->inspectZip($zipPath) : null);
             if ($earlyPhpResult !== null) {
@@ -289,6 +392,40 @@ class CoreUpdateCommand extends Command
                     $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, false);
 
                     return Command::FAILURE;
+                }
+            }
+
+            // ── 패키지 서명 검증 (7.2.0) — 유지보수 모드 전에 멈춘다 ──
+            // --zip 은 해제 전 바이트를 검증하고, GitHub 다운로드는 릴리스의 서명 자산 유무로 미서명 정책을 먼저 묻는다
+            // (실제 검증은 내려받은 뒤). --source·--local 은 배포 패키지가 아니라 운영자가 둔 디렉토리라 대상이 아니다.
+            if ($zipPath || (! $sourceDir && ! $this->option('local'))) {
+                try {
+                    $integrityOptions = $this->runWithIntegrityConsent(function (PackageIntegrityOptions $integrity) use ($service, $zipPath, $toVersion, &$zipVerification) {
+                        if ($zipPath) {
+                            $zipVerification = $service->verifyCoreZipIntegrity($zipPath, $integrity);
+                        } else {
+                            $service->preflightReleaseIntegrity($toVersion, $integrity);
+                        }
+
+                        return $integrity;
+                    }, $integrityOptions);
+                } catch (PackageIntegrityException $e) {
+                    $this->error($e->getMessage());
+                    $log('패키지 서명 검증으로 중단: '.$e->integrityCode);
+                    $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, false);
+
+                    return Command::FAILURE;
+                } catch (\RuntimeException $e) {
+                    // 서명 파일을 읽지 못함 등 — 유지보수 모드 전이라 정리할 것이 없다(진행 표시줄도 아직 없다)
+                    $this->error($e->getMessage());
+                    $log('패키지 서명 검증 실패: '.$e->getMessage());
+                    $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, false);
+
+                    return Command::FAILURE;
+                }
+
+                if ($zipVerification !== null) {
+                    $this->renderPackageIntegrity($zipVerification->toArray());
                 }
             }
 
@@ -339,7 +476,9 @@ class CoreUpdateCommand extends Command
             if (! $this->option('no-maintenance')) {
                 $secret = $service->enableMaintenanceMode();
                 $maintenanceEnabled = true;
-                $log("유지보수 모드 활성화 (secret: {$secret})");
+                // 우회 비밀값은 업데이트 기록 파일에 남기지 않는다(저장소 폴더의 로그는 보호 규칙이
+                // 빠진 웹 서버에서 그대로 열린다). 실패 시 터미널 안내만 값을 보여 준다.
+                $log('유지보수 모드 활성화');
             }
 
             // ── Step 4: 다운로드 ──
@@ -367,6 +506,11 @@ class CoreUpdateCommand extends Command
                 $pendingPath = $service->extractZipToPending($zipPath, $onProgress);
                 $log("ZIP 추출 완료: {$pendingPath}");
 
+                // 서명된 버전과 푼 배포본의 config/app.php 버전 대조 (7.2.0)
+                if ($zipVerification instanceof PackageVerification) {
+                    $service->confirmCoreIntegrity($zipVerification, $pendingPath, $integrityOptions);
+                }
+
                 // 추출된 소스의 config/app.php 에서 toVersion 갱신
                 $zipConfigPath = $pendingPath.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'app.php';
                 if (file_exists($zipConfigPath)) {
@@ -382,9 +526,28 @@ class CoreUpdateCommand extends Command
                 $log('로컬 소스 복제 완료');
             } else {
                 $log("버전 {$toVersion} 다운로드 시작");
-                $pendingPath = $service->downloadUpdate($toVersion, $onProgress);
+                $pendingPath = $service->downloadUpdate($toVersion, $onProgress, $integrityOptions);
                 $log('다운로드 및 검증 완료');
             }
+
+            // custom 자리 사전 검사를 아직 못 한 경우(GitHub 다운로드·읽지 못한 zip): 받은 배포본으로 지금 한다.
+            // 아직 백업·파일 적용 전 — 받은 배포본만 지우고 유지보수를 풀어 아무것도 바꾸지 않고 끝낸다.
+            if (! $customPreflightDone) {
+                $preflightResult = app(CustomUpdatePreflight::class)->inspectDirectory($pendingPath);
+                if (CustomUpdatePreflight::blocks($preflightResult)) {
+                    $bar->clear();
+                    $service->cleanupPending($pendingPath);
+                    if ($maintenanceEnabled) {
+                        $service->disableMaintenanceMode();
+                        $maintenanceEnabled = false;
+                    }
+                    $this->reportCustomPreflightBlock($preflightResult, $toVersion, $log);
+                    $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, false);
+
+                    return Command::FAILURE;
+                }
+            }
+            CustomUpdatePreflight::clearRecord();
 
             // GitHub 다운로드 경로·zip 목록을 미리 못 읽은 경우: 받은 배포본으로 지금 판정한다(유지보수 중).
             if ($bundledPlan === null) {
@@ -512,6 +675,8 @@ class CoreUpdateCommand extends Command
                         $vendorResult->packageCount,
                     ));
                 } catch (VendorInstallException $e) {
+                    // vendor 설치 진행 표시가 개행 없이 끝난다 — 실패 문장이 막대 끝에 붙지 않게 한다
+                    $this->newLine();
                     $this->error(__('settings.core_update.console.vendor_install_failed', ['error' => $e->getMessage()]));
                     throw $e;
                 }
@@ -605,8 +770,22 @@ class CoreUpdateCommand extends Command
                 $log('코어 파일 덮어쓰기 시작 (백업 부재 — 전체 덮어쓰기로 회귀)');
             }
 
-            $service->applyUpdate($pendingPath, $onProgress, prune: $prune, applyList: $applyList, skipPaths: $bundledSkipPaths);
+            // 반환값이 계약이다 — 게터(`getLastRootFileWarnings()`)는 예외 경로(아래 catch)처럼
+            // 반환값을 손에 쥘 수 없는 자리의 편의다 (G3 회차 16 W2 C-6).
+            // 번들 출하 목록 — 이번 배포본이 놓는 번들 파일과 본문 해시. 증분 적용이 사이트의 직전 목록과 대조해 새 판이 지운
+            // 번들 파일을 정리하고 이 목록을 기록한다. 만들지 못하면 종전처럼 정리 없이 진행한다.
+            try {
+                $shippedFiles = BundledShippedManifest::collect($pendingPath, $bundledSkipPaths);
+            } catch (\Throwable $shippedError) {
+                $shippedFiles = null;
+                $log('번들 출하 목록 산출 실패 (정리 없이 진행): '.$shippedError->getMessage());
+            }
+
+            $applyResult = $service->applyUpdate($pendingPath, $onProgress, prune: $prune, applyList: $applyList, skipPaths: $bundledSkipPaths, shippedFiles: $shippedFiles);
             $log(sprintf('코어 파일 적용 완료 (미배치 공식 번들 %d개 건너뜀)', count($bundledSkipPaths)));
+            $this->surfaceWarnings($applyResult['root_file_warnings'], $log);
+            $applyRootFileWarnings = $applyResult['root_file_warnings'];
+            $this->surfaceBundledPrune((array) ($applyResult['bundled_prune'] ?? []), $log);
 
             // 미배치 공식 번들 기록 — 관리자 목록 안내와 core:bundled-sources 의 근거. 롤백 시 이전 기록으로 되돌린다.
             $bundledRecordBackup = is_file($planner->recordPath()) ? (string) file_get_contents($planner->recordPath()) : null;
@@ -629,6 +808,16 @@ class CoreUpdateCommand extends Command
                 // composer/bundled 모드 모두 _pending/vendor/ 가 구성되어 있으므로 공통 복사
                 $service->copyVendorFromPending($pendingPath, $onProgress);
                 $log('vendor 디렉토리 복사 완료');
+            }
+
+            // 개발자 전용 composer(custom/, #792) — 코어 vendor 와 별개라 코어가 건드리지 않는다. 설치본이
+            // custom/composer.lock 과 어긋나 있을 때만(첫 배포·묶음 교체 등) 같은 vendor 모드로 맞춘다.
+            $customVendorResult = app(CustomVendorService::class)->ensureInstalled($vendorMode);
+            if ($customVendorResult !== 'skipped:no-composer') {
+                $log('개발자 vendor(custom): '.$customVendorResult);
+            }
+            if (str_starts_with($customVendorResult, 'failed:')) {
+                $this->warn(__('settings.custom_reserved.vendor.install_failed', ['reason' => substr($customVendorResult, 7)]));
             }
 
             // ── Step 9: Migration + 역할/메뉴 동기화 ──
@@ -724,6 +913,7 @@ class CoreUpdateCommand extends Command
             // 경우에도, 첫 요청부터 `/storage/...` 가 200 을 반환하도록 링크를 재생성한다.
             StorageLinkHelper::ensurePublicStorageLink();
             $log('public/storage symlink 확인/복구 완료');
+            $this->surfaceDocrootExposureWarnings($log);
 
             $service->cleanupPending($pendingPath);
 
@@ -735,11 +925,9 @@ class CoreUpdateCommand extends Command
             // 여기부터는 새 버전이 적용된 상태다 — 뒤 단계가 실패해도 파일·배치 기록을 되돌리지 않는다
             $committed = true;
 
-            $stage = 'maintenance_off';
-            if ($maintenanceEnabled) {
-                $service->disableMaintenanceMode();
-                $maintenanceEnabled = false;
-            }
+            // 점검 모드는 번들 확장 일괄 업데이트까지 끝난 뒤에 푼다(아래 finally) — 종전에는 여기서 풀어, 새 코어와 옛 확장이
+            // 섞인 사이트가 일괄 업데이트 동안 열려 있었다(#888). 그 사이 마무리 단계가 실패하면
+            // reportPostCommitFailure() 가 아직 켜진 점검 모드를 푼다.
 
             // 모든 파일(코어 config/lang/vendor)이 안착한 뒤 config 캐시를 재생성한다.
             // clearAllCaches() 는 흐름 중간에서 stale 캐시를 비우기만 하므로, 여기서
@@ -785,12 +973,21 @@ class CoreUpdateCommand extends Command
             // 실제 업데이트가 수행된 경우 restoreOwnership 을 한 번 더 호출해 재복원한다.
             $coreLock?->keepAlive(force: true);
             $stage = 'bundled_extensions';
-            $promptResult = $this->runBundledExtensionUpdatePrompt(
-                app(ModuleManager::class),
-                app(PluginManager::class),
-                app(TemplateManager::class),
-                (bool) $this->option('force'),
-            );
+            try {
+                $promptResult = $this->runBundledExtensionUpdatePrompt(
+                    app(ModuleManager::class),
+                    app(PluginManager::class),
+                    app(TemplateManager::class),
+                    (bool) $this->option('force'),
+                );
+            } finally {
+                // 번들 일괄 업데이트가 끝나거나 실패·예외로 멈춰도 점검 모드는 여기서 반드시 푼다
+                if ($maintenanceEnabled) {
+                    $service->disableMaintenanceMode();
+                    $maintenanceEnabled = false;
+                    $log('유지보수 모드 해제 (번들 확장 일괄 업데이트 뒤)');
+                }
+            }
 
             // 공식 번들 처리 결과 4구분 요약 (#146 제안 5)
             $this->summarizeBundledPlacement($bundledPlan, $promptResult);
@@ -893,6 +1090,15 @@ class CoreUpdateCommand extends Command
             } catch (\Throwable $cleanupError) {
                 $log("핸드오프 cleanup 중 오류: {$cleanupError->getMessage()}");
                 $this->warn(__('settings.core_update.console.handoff_cleanup_failed', ['error' => $cleanupError->getMessage()]));
+            } finally {
+                // 배수는 **cleanup 성패와 무관**해야 한다. 이 시점의 버퍼에는 spawn 자식이
+                // `[DOCROOT_EXPOSURE]` 라인으로 실어 보낸 통보가 이미 담겨 있는데, 배수를
+                // try 안에 두면 그 앞의 어느 단계(버전 갱신·캐시 정리·소유권 복원·링크
+                // 복구)가 던지는 순간 「공개 파일 전량 사본이 지금 웹에서 열린다」가
+                // 콘솔·업데이트 기록 **양쪽에서** 사라진다 — 접두사를 모르는 구버전 부모가
+                // 원시 라인을 그대로 중계하던 것보다 못한 상태다. 형제 실패 경로(바깥
+                // `\Throwable` catch)는 이미 같은 이유로 배수 지점을 갖는다.
+                $this->surfaceDocrootExposureWarnings($log);
             }
 
             $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, true);
@@ -921,13 +1127,28 @@ class CoreUpdateCommand extends Command
             // 전면 500 차단 (7.0.9→7.0.10 실사례)
             app(CoreUpdateService::class)->normalizeRuntimeOwnershipAfterRootRun();
 
-            return Command::SUCCESS;
+            // 스텝이 남았다 — 성공(0)으로 끝내면 스크립트가 재개 명령을 건너뛴다(#888)
+            return $this->handoffExitCode();
 
         } catch (\Throwable $e) {
             $bar?->finish();
             $this->newLine(2);
 
             $log("오류 발생: {$e->getMessage()}");
+
+            // 복원 **이전**에 한 번 비운다. 이 실행에서 이미 판정된 루트 진입·보호
+            // 파일 결과는 그 자체로 운영자가 알아야 할 사실이고, `restoreFromBackup()` 은
+            // 경고 버퍼를 비우므로 그 뒤에만 출력하면 사라진다. 또 종전에는 이 출력이
+            // `if ($backupPath)` 블록 **안**에만 있어, `--no-backup` 으로 돈 실행은 롤백도
+            // 없는 부분 적용 상태가 남는데 그 사실이 통보에서만 빠졌다.
+            $applyRootFileWarnings = array_values(array_unique(array_merge($applyRootFileWarnings, $this->surfaceRootFileWarnings($service, $log, $applyRootFileWarnings))));
+
+            // 노출 통보도 같은 자리에서 낸다. 자식(`core:execute-upgrade-steps`)이 실어 보낸
+            // 것을 부모가 버퍼에 담아 두는데, 실패 경로에 배수 지점이 없으면 그 통보는
+            // 콘솔·업데이트 기록 **양쪽에서** 사라진다 — 접두사를 모르는 구버전 부모가
+            // 원시 라인을 그대로 중계하던 것보다 못한 상태가 된다. 롤백은 `public/storage`
+            // 를 다시 일반 디렉토리로 되돌릴 수 있는 바로 그 경로다.
+            $this->surfaceDocrootExposureWarnings($log);
 
             // 확정 뒤의 실패 — 새 버전은 이미 적용됐고 백업도 지웠다. 파일 복원·번들 배치 기록 되돌림·실패 기록을
             // 하면 「없는 백업에서 복원 완료」 같은 거짓 안내와 함께 새 상태를 옛 기록으로 덮게 된다.
@@ -950,8 +1171,23 @@ class CoreUpdateCommand extends Command
                 $this->warn(__('settings.core_update.console.restoring_backup'));
                 $log('백업 복원 시작');
 
+                // 반환값이 계약이다 — 게터(`getLastRootFileWarnings()`)는 커맨드의 편의이고, 커맨드마저
+                // 게터만 쓰면 반환값 축은 소비처가 0 이라 조용히 죽는다 (G3 회차 16 W2 C-6).
+                $restoreResult = ['failed_targets' => [], 'root_file_warnings' => []];
+
                 try {
-                    $failedTargets = $service->restoreFromBackup($backupPath, $onProgress);
+                    $restoreResult = $service->restoreFromBackup($backupPath, $onProgress);
+                    // 복원 진행 표시($onProgress → $bar->display())는 개행 없이 끝난다 — 다음 줄이 막대 끝에 붙지 않게 한다
+                    $this->newLine();
+                    $failedTargets = $restoreResult['failed_targets'];
+
+                    // 적용 단계에서 찍은 루트·서버 설정 조각 안내는 복원으로 해당 없어졌다 — 그 파일은 백업으로 돌아갔고
+                    // `.dist` 사본과 해시 원장은 복원이 걷었다. 위에 찍힌 「.dist 를 합친 뒤 지우세요」를 따르지 않게 알린다.
+                    if ($applyRootFileWarnings !== []) {
+                        $withdrawn = trans_count('settings.core_update.rollback_apply_warnings_withdrawn', ['count' => count($applyRootFileWarnings)]);
+                        $this->line($withdrawn);
+                        $log('[root-files] '.$withdrawn);
+                    }
 
                     if (empty($failedTargets)) {
                         $log('백업 복원 완료');
@@ -964,8 +1200,14 @@ class CoreUpdateCommand extends Command
                     }
                 } catch (\Throwable $restoreError) {
                     $log("백업 복원 실패: {$restoreError->getMessage()}");
+                    $this->newLine();
                     $this->error(__('settings.core_update.console.restore_failed', ['error' => $restoreError->getMessage()]));
                 }
+
+                // 되돌린 뒤 루트 진입·보호 파일이 사라졌다면 그 사실도 같은 통로로 출력한다.
+                // 업데이트 경로에만 배선이 있고 롤백 경로에는 없으면, 문서 루트가 프로젝트
+                // 루트인 사이트가 무방비가 된 사실이 로그 파일에만 남는다.
+                $this->surfaceWarnings($restoreResult['root_file_warnings'], $log);
 
                 // 롤백 직후 캐시 자동 정리 — 신 코드가 `bootstrap/cache/*.php` 에 cache 된 채로
                 // 남아 부팅 실패하는 회귀 차단. 운영자의 수동 `php artisan optimize:clear` 단계 제거.
@@ -1069,7 +1311,9 @@ class CoreUpdateCommand extends Command
      */
     private function spawnUpgradeStepsProcess(string $fromVersion, string $toVersion, bool $force, \Closure $log): bool
     {
-        if (! function_exists('proc_open')) {
+        // 가용성 판정은 SSoT 한 곳이 소유한다 — `function_exists` 만으로는 `disable_functions`
+        // 로 이름만 남겨 둔 호스팅을 구분하지 못한다 (#609 D34 이관 완료).
+        if (! ExecutionEnvironment::hasFunction('proc_open')) {
             return $this->failSpawnWithMode(
                 __('settings.core_update.console.spawn.proc_open_disabled'),
                 $log,
@@ -1124,7 +1368,10 @@ class CoreUpdateCommand extends Command
         //
         // APP_VERSION: Step 11 updateVersionInEnv 는 아직 실행 전이라 .env 는 fromVersion.
         // G7_UPDATE_IN_PROGRESS: CoreServiceProvider::validateAndDeactivate 가드가 참조.
-        $env = array_merge(getenv(), $_ENV, [
+        // `getenv` 자신도 하드닝 프로필이 막을 수 있다 — 그리고 이 자리는 `proc_open`
+        // 가드 **안쪽**이라 「proc_open 은 살아 있는데 getenv 만 막힌」 조합에서 그대로
+        // 치명 종료한다. 판정과 `$_SERVER` 폴백은 형제 러너가 SSoT 로 갖고 있다.
+        $env = array_merge(SubprocessCommandRunner::inheritedEnvironment(), [
             'APP_VERSION' => $toVersion,
             'G7_UPDATE_IN_PROGRESS' => '1',
         ]);
@@ -1175,6 +1422,7 @@ class CoreUpdateCommand extends Command
         $handoffPayload = null;
         $stepsExecuted = null;
         $stepsDiscovered = null;
+        $stepsSkipped = null;
         while (! feof($pipes[1])) {
             $line = fgets($pipes[1]);
             if ($line !== false) {
@@ -1201,6 +1449,26 @@ class CoreUpdateCommand extends Command
                     }
                 }
 
+                // 자식이 만든 「공개 파일이 지금 웹에서 열린다」 통보. 이 버퍼는 **소비자만**
+                // 비우는데 그 소비자가 부모 프로세스에만 있어, 자식이 담은 통보는 자식 종료와
+                // 함께 폐기되고 `upgrade` 로그 파일에만 남았다 — 콘솔에도 업데이트 기록에도
+                // 도달하지 않았다. 자식이 이 라인으로 실어 보내고 부모가 자기 통보와 같은
+                // 통로로 낸다.
+                if (str_starts_with($trimmed, '[DOCROOT_EXPOSURE] ')) {
+                    $json = substr($trimmed, strlen('[DOCROOT_EXPOSURE] '));
+                    $decoded = json_decode($json, true);
+
+                    if (is_array($decoded) && isset($decoded['warnings']) && is_array($decoded['warnings'])) {
+                        foreach ($decoded['warnings'] as $warning) {
+                            if (is_string($warning) && $warning !== '') {
+                                StorageLinkHelper::recordDocrootExposureWarning($warning);
+                            }
+                        }
+
+                        continue;
+                    }
+                }
+
                 if (str_starts_with($trimmed, '[STEPS_EXECUTED] ')) {
                     $json = substr($trimmed, strlen('[STEPS_EXECUTED] '));
                     $decoded = json_decode($json, true);
@@ -1211,8 +1479,13 @@ class CoreUpdateCommand extends Command
                         if (isset($decoded['discovered']) && is_int($decoded['discovered']) && $decoded['discovered'] >= 0) {
                             $stepsDiscovered = $decoded['discovered'];
                         }
+                        // skipped 는 실행 대장이 「이미 실행됨」으로 건너뛴 스텝 수 — 7.2.0 이후 자식만 발행한다
+                        if (isset($decoded['skipped']) && is_int($decoded['skipped']) && $decoded['skipped'] >= 0) {
+                            $stepsSkipped = $decoded['skipped'];
+                        }
                         $log('[spawn] 실행된 step 수: '.$stepsExecuted
-                            .($stepsDiscovered !== null ? " (발견 {$stepsDiscovered})" : ''));
+                            .($stepsDiscovered !== null ? " (발견 {$stepsDiscovered})" : '')
+                            .($stepsSkipped ? " (이미 실행돼 건너뜀 {$stepsSkipped})" : ''));
 
                         continue;
                     }
@@ -1235,6 +1508,7 @@ class CoreUpdateCommand extends Command
             $fromVersion,
             $toVersion,
             $log,
+            $stepsSkipped,
         );
     }
 
@@ -1288,6 +1562,9 @@ class CoreUpdateCommand extends Command
      *    애초에 없는 릴리즈 (예: 데이터/설정 변경 없는 패치). from<to 여도 실패 아님 (케이스 B).
      *  - discovered 신호 부재 (`null`, 구버전 자식) + executed=0 + from<to → 레거시 판정 유지
      *    (fail-fast). 신버전 자식은 항상 discovered 를 발행하므로 이 경로는 구버전 자식 한정.
+     *  - executed=0 이고 skipped>0 이며 skipped >= discovered → 정상 통과. DB 를 함께 쓰는 다른 서버·실행이
+     *    범위 안 스텝을 이미 끝내 실행 대장이 건너뛴 경우다(#888). 실패로 읽고 `--force` 재개를 안내하면 안내를
+     *    따른 운영자가 끝난 스텝을 다시 돌린다.
      *
      * @param  int  $exitCode  자식 프로세스 종료 코드
      * @param  array|null  $handoffPayload  파싱된 [HANDOFF] 페이로드 (없으면 null)
@@ -1296,6 +1573,7 @@ class CoreUpdateCommand extends Command
      * @param  string  $fromVersion  업그레이드 시작 버전
      * @param  string  $toVersion  업그레이드 대상 버전
      * @param  \Closure  $log  로그 수집 콜백
+     * @param  int|null  $stepsSkipped  실행 대장이 「이미 실행됨」으로 건너뛴 스텝 수 (7.2.0 이전 자식은 null)
      * @return bool spawn 성공 여부 (mode=fallback 실패 시 false — 호출자 in-process fallback)
      *
      * @throws UpgradeHandoffException 핸드오프 수신 또는 mode=abort 실패 시
@@ -1308,6 +1586,7 @@ class CoreUpdateCommand extends Command
         string $fromVersion,
         string $toVersion,
         \Closure $log,
+        ?int $stepsSkipped = null,
     ): bool {
         if ($exitCode === UpgradeHandoffException::EXIT_CODE && $handoffPayload !== null) {
             $log("spawn 핸드오프 종료 (exit={$exitCode})");
@@ -1337,6 +1616,15 @@ class CoreUpdateCommand extends Command
             // 스텝이 필요 없는 릴리즈(데이터/설정 변경 없음)를 실패로 오판하지 않는다.
             if ($stepsExecuted === 0 && $stepsDiscovered === 0) {
                 $log("spawn 완료 (exit=0, 실행할 스텝 없음 — 범위 내 스텝 파일 부재, from={$fromVersion} to={$toVersion})");
+
+                return true;
+            }
+
+            // executed=0 이지만 범위 안 스텝을 전부 다른 서버·실행이 이미 끝냈다 → 정상 통과 (실행 대장이 건너뜀).
+            if ($stepsExecuted === 0 && $stepsSkipped !== null && $stepsSkipped > 0
+                && ($stepsDiscovered === null || $stepsSkipped >= $stepsDiscovered)) {
+                $this->info(trans_choice('settings.core_update.console.spawn.steps_already_run', $stepsSkipped, ['count' => $stepsSkipped]));
+                $log("spawn 완료 (exit=0, 실행 0 — 같은 DB 의 다른 서버·실행이 이미 끝낸 스텝 건너뜀 {$stepsSkipped}, from={$fromVersion} to={$toVersion})");
 
                 return true;
             }
@@ -1389,14 +1677,10 @@ class CoreUpdateCommand extends Command
      */
     private function failSpawnWithMode(string $reason, \Closure $log, string $fromVersion, string $toVersion): bool
     {
-        $mode = config('app.update.spawn_failure_mode', 'fallback');
+        $mode = CoreUpdateService::spawnFailureMode();
 
         if ($mode === 'abort') {
-            $resumeCommand = sprintf(
-                'php artisan core:execute-upgrade-steps --from=%s --to=%s --force',
-                $fromVersion,
-                $toVersion,
-            );
+            $resumeCommand = CoreUpdateService::resumeCommand($fromVersion, $toVersion);
 
             $log("spawn 자식 실패 — {$reason}. fail-fast 모드 abort.");
 
@@ -1606,6 +1890,46 @@ class CoreUpdateCommand extends Command
     }
 
     /**
+     * custom 자리 사전 검사로 업데이트를 멈춘 이유를 출력하고 관리자 화면용 기록을 남깁니다.
+     *
+     * @param  array{reserved_files: array<int, string>, conflicts: array<int, array<string, string>>}  $result  검사 결과
+     * @param  string  $toVersion  시도한 새 코어 버전
+     * @param  \Closure  $log  업데이트 로그 기록 함수
+     * @return void 반환값 없음
+     */
+    private function reportCustomPreflightBlock(array $result, string $toVersion, \Closure $log): void
+    {
+        CustomUpdatePreflight::record($toVersion, $result);
+
+        $this->newLine();
+        $this->error(__('settings.core_update.custom_preflight_blocked', ['version' => $toVersion]));
+
+        if ($result['reserved_files'] !== []) {
+            $this->line(__('settings.core_update.reserved_paths_in_release', ['paths' => implode(', ', $result['reserved_files'])]));
+            $log('custom 예약 자리에 배포본 파일 — 업데이트 중단: '.implode(', ', $result['reserved_files']));
+        }
+
+        if ($result['conflicts'] !== []) {
+            $this->table(
+                [
+                    __('settings.core_update.custom_conflict_package'),
+                    __('settings.core_update.custom_conflict_reason'),
+                    __('settings.core_update.custom_conflict_core'),
+                ],
+                array_map(fn (array $c) => [
+                    $c['package'].' ('.$c['installed'].')',
+                    $c['type'] === CustomPackageConflictChecker::TYPE_DUPLICATE
+                        ? __('settings.core_update.custom_conflict_duplicate')
+                        : __('settings.core_update.custom_conflict_constraint', ['requires' => $c['requires'], 'constraint' => $c['constraint']]),
+                    $c['core_package'].' '.$c['core_version'],
+                ], $result['conflicts']),
+            );
+            $this->line(__('settings.core_update.custom_conflict_fix'));
+            $log('개발자 패키지 충돌 — 업데이트 중단: '.implode(', ', array_map(fn (array $c) => $c['package'].'→'.$c['core_package'], $result['conflicts'])));
+        }
+    }
+
+    /**
      * 업데이트 로그를 파일로 저장합니다.
      *
      * @param  array  $entries  로그 엔트리 목록
@@ -1616,10 +1940,9 @@ class CoreUpdateCommand extends Command
      */
     private function saveUpdateLog(array $entries, string $fromVersion, string $toVersion, bool $success): void
     {
-        // audit:allow datetime-display-user-timezone reason: 서버 로그·리포트 파일 — UTC 기록
-        $timestamp = date('Ymd_His');
-        $status = $success ? 'success' : 'failed';
-        $logPath = storage_path("logs/core_update_{$status}_{$timestamp}.log");
+        // 이름은 생산자 단일 지점이 만든다 — 정리 주체(`StorageLeftoverPruneService`)가
+        // 같은 규칙을 읽어야 이 로그가 회수 모집단에 든다.
+        $logPath = CoreUpdateService::updateReportPath($success ? 'success' : 'failed');
 
         $header = implode("\n", [
             '=== 그누보드7 코어 업데이트 로그 ===',
@@ -1691,6 +2014,15 @@ class CoreUpdateCommand extends Command
         // 코어('upgrade-*.log') + 확장('extension-upgrade-*.log') 두 채널의 daily 로그를 모두
         // 정합한다. glob 'upgrade-*.log' 는 'extension-' 접두사 파일을 매칭하지 못하므로
         // 두 패턴을 각각 순회한다.
+        //
+        // `glob` 은 하드닝 프로필이 흔히 막는 이름이고, 이 커맨드는 무CLI 환경에서
+        // `InProcessCommandRunner` 로 **웹 요청 안에서** 실행된다 — 막힌 호스팅에서는
+        // 함수 테이블에 없어 `Error`(치명)이고 `?: []` 는 그것을 막지 못한다(false 만 받는다).
+        // 소유권 정합은 실패해도 업데이트 자체를 되돌릴 이유가 없으므로 조용히 건너뛴다.
+        if (! ExecutionEnvironment::hasFunction('glob')) {
+            return;
+        }
+
         foreach (['upgrade-*.log', 'extension-upgrade-*.log'] as $pattern) {
             foreach (glob($logsDir.DIRECTORY_SEPARATOR.$pattern) ?: [] as $logFile) {
                 FilePermissionHelper::inheritOwnershipFromParent($logFile);
@@ -1794,6 +2126,13 @@ class CoreUpdateCommand extends Command
         if ($mode === 'non_root' || $mode === 'root_web_symmetric') {
             $this->line("  {$resumeCommand}");
 
+            // `APP_VERSION=<판> php artisan …` 접두는 POSIX 셸 문법이다 — PowerShell 에서는 명령 이름으로 읽혀 실행되지 않으므로
+            // 같은 명령의 PowerShell 형식도 함께 안내한다. sudo 분기(아래)는 POSIX 서버 전용이라 붙이지 않는다.
+            $powershell = self::powershellResumeCommand($resumeCommand);
+            if ($powershell !== null) {
+                $this->line('  '.__('settings.core_update.console.resume_command_powershell', ['command' => $powershell]));
+            }
+
             return;
         }
 
@@ -1811,6 +2150,21 @@ class CoreUpdateCommand extends Command
         $this->newLine();
         $this->warn('⚠ '.__('settings.core_update.console.resume_root_unknown_warning'));
         $this->warn('  '.__('settings.core_update.console.resume_root_unknown_hint'));
+    }
+
+    /**
+     * `APP_VERSION=<판> …` 접두가 붙은 재개 명령의 PowerShell 형식을 만듭니다 — 접두가 없으면 null(두 셸에서 같다).
+     *
+     * @param  string  $resumeCommand  POSIX 셸 재개 명령
+     * @return string|null `$env:APP_VERSION='<판>'; …` 형식, 접두가 없으면 null
+     */
+    private static function powershellResumeCommand(string $resumeCommand): ?string
+    {
+        if (! preg_match('/^APP_VERSION=(\S+)\s+(.+)$/', $resumeCommand, $m)) {
+            return null;
+        }
+
+        return sprintf("\$env:APP_VERSION='%s'; %s", $m[1], $m[2]);
     }
 
     /**
@@ -1834,6 +2188,118 @@ class CoreUpdateCommand extends Command
         $account = FilePermissionHelper::describeWebServerAccount();
 
         return [$account['mode'], $account['name']];
+    }
+
+    /**
+     * `public/storage` 복구가 문서 루트 **안**에 공개 파일 사본을 남겼으면 운영자에게 알립니다.
+     *
+     * 그 상태는 「지금 웹에서 열린다」는 뜻이라 형제 축(루트 진입·보호 파일)과 같은 위험
+     * 등급이다. 종전에는 그 사실이 `upgrade` 로그 채널에만 남아, 콘솔에는 「확인/복구 완료」만
+     * 뜨고 운영자는 노출을 알 수 없었다.
+     *
+     * @param  callable  $log  업데이트 기록 기록기
+     * @return void 반환값 없음
+     */
+    private function surfaceDocrootExposureWarnings(callable $log): void
+    {
+        $warnings = StorageLinkHelper::takeDocrootExposureWarnings();
+
+        if (empty($warnings)) {
+            return;
+        }
+
+        $this->newLine();
+        // 이 통로에는 등급이 다른 두 종류가 섞인다 — 「지금 웹에서 열린다」(웹 트리 안
+        // 폴백)와 「옮기는 데 성공했으니 확인 후 지워라」(정상 결과)다. 머리말이 전자를
+        // 단정하면 문서 루트가 `public/` 인 표준 배치(절대다수)에서 노출이 아닌 상태에
+        // 노출 경보가 뜬다. 형제 축(`surfaceRootFileWarnings`)이 같은 이유로 단정 대신
+        // 완화 표현을 쓴다 — 등급은 각 문구가 스스로 말한다.
+        $this->warn(__('settings.core_update.console.docroot_exposure_header'));
+        foreach ($warnings as $warning) {
+            $this->warn('  - '.$warning);
+            $log('[storage-link] '.$warning);
+        }
+        $this->newLine();
+    }
+
+    /**
+     * 루트 진입·보호 파일(`.htaccess`) 갱신 실패를 운영자에게 노출합니다.
+     *
+     * 이 갱신은 실패해도 업데이트를 세우지 않는다 — 다른 코어 파일은 이미 신 버전이라
+     * 여기서 중단하면 중간 상태가 남는다. 대신 **반드시 보이게** 한다: 종전에는 갱신기가
+     * 실패를 판정하고도 그 값을 호출부가 버려, 콘솔에는 「코어 파일 적용 완료」만 뜨고
+     * 보호 규칙은 구버전으로 남았다. `$log()` 로도 흘려 업데이트 기록에 남긴다 — 콘솔은
+     * 스크롤로 사라지지만 그 기록은 남는다.
+     *
+     * @param  CoreUpdateService  $service  경고를 누적한 서비스
+     * @param  callable  $log  업데이트 기록 기록기
+     * @param  list<string>  $alreadySurfaced  적용 단계가 이미 출력한 경고 — 다시 찍지 않는다
+     * @return list<string> 경고 버퍼 전체 — 뒤이은 되돌리기가 「해당 없어졌다」를 알릴 때 쓴다
+     */
+    private function surfaceRootFileWarnings(CoreUpdateService $service, callable $log, array $alreadySurfaced = []): array
+    {
+        // 예외 경로 전용 — 적용이 예외로 끊기면 반환값이 없어 게터로만 그 실행의 판정 결과를
+        // 되찾을 수 있다. 정상 경로·롤백 경로는 반환값(`root_file_warnings`)을 `surfaceWarnings()`
+        // 에 직접 넘긴다 (G3 회차 16 W2 C-6).
+        // 적용이 끝난 뒤의 실패(마이그레이션 등)에서는 버퍼가 적용 단계가 이미 찍은 안내를 그대로 들고 있다 — 같은 내용을
+        // 두 번 찍지 않도록 새 것만 출력한다(`.dist` 안내가 2회 찍히던 문제).
+        $warnings = array_values(array_filter($service->getLastRootFileWarnings(), 'is_string'));
+        $this->surfaceWarnings(array_values(array_diff($warnings, $alreadySurfaced)), $log);
+
+        return $warnings;
+    }
+
+    /**
+     * 번들 출하 목록 대조 결과(새 판이 지운 번들 파일 정리)를 콘솔과 업데이트 기록에 출력합니다.
+     *
+     * @param  array<string, mixed>  $report  `applyUpdate()` 반환값의 `bundled_prune`
+     * @param  callable  $log  업데이트 기록 기록기
+     * @return void 반환값 없음
+     */
+    private function surfaceBundledPrune(array $report, callable $log): void
+    {
+        $removed = array_values((array) ($report['removed'] ?? []));
+        $kept = array_values((array) ($report['kept_modified'] ?? []));
+
+        if ($removed !== []) {
+            $this->newLine();
+            $this->line(trans_count('settings.core_update.console.bundled_pruned', ['count' => count($removed)]));
+            $log(sprintf('새 판이 지운 번들 파일 %d개 정리: %s', count($removed), implode(', ', $removed)));
+        }
+
+        if ($kept !== []) {
+            $this->newLine();
+            $this->warn(trans_count('settings.core_update.console.bundled_prune_kept_modified', ['count' => count($kept)]));
+            foreach ($kept as $path) {
+                $this->warn('  - '.$path);
+            }
+            $log('새 판이 지운 번들 파일 중 고쳐진 것은 남김: '.implode(', ', $kept));
+        }
+    }
+
+    /**
+     * 루트 진입·보호 파일 경고 목록을 콘솔과 업데이트 기록에 출력합니다.
+     *
+     * @param  list<string>  $warnings  `applyUpdate()`/`restoreFromBackup()` 반환값의 `root_file_warnings`
+     * @param  callable  $log  업데이트 기록 기록기
+     * @return void 반환값 없음
+     */
+    private function surfaceWarnings(array $warnings, callable $log): void
+    {
+        if (empty($warnings)) {
+            return;
+        }
+
+        $this->newLine();
+        // 이 통로가 나르는 것은 실패만이 아니다 — 「마커가 없어 갱신하지 않았다」(코어 보호
+        // 규칙 미적용)와 「되돌린 뒤 파일이 없다」도 여기로 온다. 헤더가 실패만 말하면 그 둘이
+        // 실패로 읽히거나, 반대로 실패가 아니라는 이유로 이 통로에서 빠진다.
+        $this->warn(__('settings.core_update.console.root_files_header'));
+        foreach ($warnings as $warning) {
+            $this->warn('  - '.$warning);
+            $log('[root-files] '.$warning);
+        }
+        $this->newLine();
     }
 
     /**
@@ -1880,5 +2346,21 @@ class CoreUpdateCommand extends Command
         $this->newLine();
 
         $log(sprintf('권한 정상화 실패 %d 건 — 운영자 수동 복구 필요', count($warnings)));
+    }
+
+    /**
+     * 업그레이드 스텝 핸드오프로 멈춘 실행의 종료 코드를 정하고 안내 1줄을 남깁니다.
+     *
+     * 파일·설정은 새 버전이지만 스텝이 남아 재개 명령이 필요하다 — 단독 `core:execute-upgrade-steps` 가 같은 상황에서
+     * 돌려주는 값({@see UpgradeHandoffException::EXIT_CODE}, 75)과 맞춘다. 종전에는 0 이라 비대화형 스크립트가 성공으로
+     * 읽고 재개 명령을 건너뛰었다.
+     *
+     * @return int `UpgradeHandoffException::EXIT_CODE` (75)
+     */
+    protected function handoffExitCode(): int
+    {
+        $this->warn(__('settings.core_update.console.handoff_exit_code', ['code' => UpgradeHandoffException::EXIT_CODE]));
+
+        return UpgradeHandoffException::EXIT_CODE;
     }
 }

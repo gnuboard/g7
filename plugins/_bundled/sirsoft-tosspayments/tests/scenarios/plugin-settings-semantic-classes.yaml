@@ -1,0 +1,21 @@
+feature: 토스페이먼츠 환경설정 화면 — 의미 클래스 위치(#399 치환 밀림 교정)
+
+description: |
+  전수 의미 클래스화 때 한 칸씩 밀린 매핑을 원래대로 고정한다 — 입력 줄 = 3열 그리드, 섹션 제목 = 제목 클래스,
+  검증 오류 영역 = 오류 클래스. 시험 하나가 시나리오 하나다.
+
+axes:
+  case:
+    # plugins/_bundled/sirsoft-tosspayments/resources/js/__tests__/layouts/pluginSettingsSemanticClasses.test.tsx — 필드 행·섹션 제목·오류 영역이 제 의미 클래스
+    - semantic_c01
+    - semantic_c02
+    - semantic_c03
+    - semantic_c04
+    - semantic_c05
+    - semantic_c06
+
+effects:
+  - plugin_settings_semantic_classes_in_place   # 필드 행·섹션 제목·오류 영역이 제 의미 클래스
+
+test_files:
+  - plugins/_bundled/sirsoft-tosspayments/resources/js/__tests__/layouts/pluginSettingsSemanticClasses.test.tsx

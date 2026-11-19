@@ -58,7 +58,8 @@ class AdminAuthTest extends TestCase
     /**
      * 관리자도 공개 로그인 API 로 로그인하고, 받은 토큰으로 관리자 API 에 접근하는지 테스트
      *
-     * 관리자 전용 로그인 경로는 없다 — 관리자 화면의 로그인도 공개 로그인 API 를 쓴다.
+     * 관리자 전용 로그인 경로(라우트 `api.auth.admin.login`)는 따로 있다. 이 시험은 관리자 계정이 공개 로그인 API 로
+     * 로그인했을 때도 받은 토큰이 관리자 API 에서 통하는지를 본다.
      *
      * @scenario credential=admin_token, accept=json
      *

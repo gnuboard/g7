@@ -17,7 +17,10 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
     private const IDENTIFIER = 'sirsoft-message_bizppurio';
 
     /**
-     * @param  array<string, string>  $settings
+     * 주어진 설정 배열을 답하는 PluginSettingsService 모의 객체를 만든다.
+     *
+     * @param  array<string, string>  $settings  플러그인 설정값
+     * @return PluginSettingsService 모의 설정 서비스
      */
     private function makeSettings(array $settings): PluginSettingsService
     {
@@ -27,6 +30,11 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         return $mock;
     }
 
+    /**
+     * 비즈뿌리오 아이디와 API 키가 설정된 카카오 관리 API 클라이언트를 만든다.
+     *
+     * @return BizppurioKakaoApiClient 자격증명이 준비된 클라이언트
+     */
     private function client(): BizppurioKakaoApiClient
     {
         return new BizppurioKakaoApiClient(
@@ -34,6 +42,15 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         );
     }
 
+    /**
+     * 발신프로필 조회는 kapi 도메인의 profile/use 경로로 가고 bizId 와 apiKey 를 body 에 싣는다.
+     *
+     * @scenario case=kakao_sender_profiles
+     *
+     * @effects kakao_request_carries_biz_id_and_api_key_in_body
+     *
+     * @return void 반환값 없음
+     */
     public function test_발신프로필_조회는_bizid_apikey를_body에_싣는다(): void
     {
         Http::fake([
@@ -50,6 +67,15 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         });
     }
 
+    /**
+     * 템플릿 목록 조회는 senderKey 와 넘긴 조회 옵션, bizId 를 body 에 싣는다.
+     *
+     * @scenario case=kakao_template_list
+     *
+     * @effects kakao_template_list_carries_sender_key_and_options
+     *
+     * @return void 반환값 없음
+     */
     public function test_템플릿_목록은_senderkey를_포함한다(): void
     {
         Http::fake([
@@ -66,6 +92,15 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         });
     }
 
+    /**
+     * 템플릿 상세 조회는 응답의 data 를 그대로 돌려준다.
+     *
+     * @scenario case=kakao_template_detail
+     *
+     * @effects kakao_template_detail_returns_response_data
+     *
+     * @return void 반환값 없음
+     */
     public function test_템플릿_상세_조회(): void
     {
         Http::fake([
@@ -77,6 +112,15 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         $this->assertSame('TW_1', $result['data']['templateCode']);
     }
 
+    /**
+     * request() 는 넘긴 경로로 넘긴 body 를 그대로 보낸다.
+     *
+     * @scenario case=kakao_arbitrary_request
+     *
+     * @effects kakao_arbitrary_endpoint_request_forwards_body
+     *
+     * @return void 반환값 없음
+     */
     public function test_임의_엔드포인트_request_위임(): void
     {
         Http::fake([
@@ -89,6 +133,15 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
             && $request['templateName'] === 'T');
     }
 
+    /**
+     * API 키가 비어 있으면 호출하지 않고 BizppurioApiException 을 던진다.
+     *
+     * @scenario case=kakao_credentials_missing
+     *
+     * @effects kakao_missing_credentials_throws_api_exception
+     *
+     * @return void 반환값 없음
+     */
     public function test_자격증명_미설정시_예외(): void
     {
         $client = new BizppurioKakaoApiClient(
@@ -99,6 +152,15 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         $client->getSenderProfiles();
     }
 
+    /**
+     * HTTP 오류 응답이면 BizppurioApiException 을 던진다.
+     *
+     * @scenario case=kakao_http_failure
+     *
+     * @effects kakao_http_failure_throws_api_exception
+     *
+     * @return void 반환값 없음
+     */
     public function test_http_실패시_예외(): void
     {
         Http::fake(['kapi.ppurio.com/*' => Http::response([], 500)]);
@@ -107,6 +169,15 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         $this->client()->getSenderProfiles();
     }
 
+    /**
+     * HTTP 실패 응답에 message 와 code 가 있으면 예외에 그 문구, 결과코드, HTTP 상태를 싣는다.
+     *
+     * @scenario case=kakao_http_failure_with_message
+     *
+     * @effects kakao_http_failure_carries_message_code_and_status
+     *
+     * @return void 반환값 없음
+     */
     public function test_http_실패시_카카오_message와_code를_예외에_싣는다(): void
     {
         Http::fake([
@@ -126,6 +197,15 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         }
     }
 
+    /**
+     * HTTP 실패 응답에 message 가 없으면 번역된 일반 문구로 폴백하고 결과코드는 null, HTTP 상태는 그대로 싣는다.
+     *
+     * @scenario case=kakao_http_failure_without_message
+     *
+     * @effects kakao_http_failure_falls_back_to_generic_message
+     *
+     * @return void 반환값 없음
+     */
     public function test_http_실패_body에_message가_없으면_일반문구로_폴백한다(): void
     {
         Http::fake(['kapi.ppurio.com/*' => Http::response([], 500)]);
@@ -143,6 +223,15 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         }
     }
 
+    /**
+     * 템플릿 등록은 template/add 경로로 넘긴 필드와 인증값을 보낸다.
+     *
+     * @scenario case=kakao_template_add
+     *
+     * @effects kakao_template_add_posts_to_add_path
+     *
+     * @return void 반환값 없음
+     */
     public function test_템플릿_등록은_add_경로로_pos_t한다(): void
     {
         Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200'], 200)]);
@@ -163,6 +252,15 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         });
     }
 
+    /**
+     * 템플릿 수정은 template/update 경로로 넘긴 필드와 인증값을 보낸다.
+     *
+     * @scenario case=kakao_template_update
+     *
+     * @effects kakao_template_update_posts_to_update_path
+     *
+     * @return void 반환값 없음
+     */
     public function test_템플릿_수정은_update_경로로_pos_t한다(): void
     {
         Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200'], 200)]);
@@ -181,6 +279,15 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         });
     }
 
+    /**
+     * 템플릿 삭제는 template/delete 경로로 senderKey, templateCode, 인증값을 보낸다.
+     *
+     * @scenario case=kakao_template_delete
+     *
+     * @effects kakao_template_delete_posts_to_delete_path
+     *
+     * @return void 반환값 없음
+     */
     public function test_템플릿_삭제는_delete_경로로_pos_t한다(): void
     {
         Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200'], 200)]);
@@ -196,6 +303,15 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         });
     }
 
+    /**
+     * 템플릿 코드 중복 검증은 template/codeCheck 경로로 senderKey, templateCode, 인증값을 보낸다.
+     *
+     * @scenario case=kakao_template_code_check
+     *
+     * @effects kakao_template_code_check_posts_to_code_check_path
+     *
+     * @return void 반환값 없음
+     */
     public function test_템플릿_코드_중복검증은_code_check_경로로_pos_t한다(): void
     {
         Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200'], 200)]);
@@ -211,6 +327,15 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         });
     }
 
+    /**
+     * 검수 요청은 template/request 경로로 가고, 넘긴 comment 를 body 에 싣는다.
+     *
+     * @scenario case=kakao_inspection_request_with_comment
+     *
+     * @effects kakao_inspection_request_carries_comment
+     *
+     * @return void 반환값 없음
+     */
     public function test_검수요청은_comment를_포함해_request_경로로_pos_t한다(): void
     {
         Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200'], 200)]);
@@ -227,6 +352,15 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         });
     }
 
+    /**
+     * 검수 요청에 comment 를 넘기지 않으면 body 에 comment 키 자체를 싣지 않는다.
+     *
+     * @scenario case=kakao_inspection_request_without_comment
+     *
+     * @effects kakao_inspection_request_omits_comment_key_when_absent
+     *
+     * @return void 반환값 없음
+     */
     public function test_검수요청_comment_미전달시_comment_키를_싣지_않는다(): void
     {
         Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200'], 200)]);
@@ -241,6 +375,15 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         });
     }
 
+    /**
+     * 검수 취소는 template/cancel_request 경로로 senderKey, templateCode, 인증값을 보낸다.
+     *
+     * @scenario case=kakao_inspection_cancel
+     *
+     * @effects kakao_inspection_cancel_posts_to_cancel_request_path
+     *
+     * @return void 반환값 없음
+     */
     public function test_검수취소는_cancel_request_경로로_pos_t한다(): void
     {
         Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200'], 200)]);
@@ -256,6 +399,15 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         });
     }
 
+    /**
+     * 승인 취소는 template/cancel_approval 경로로 senderKey, templateCode, 인증값을 보낸다.
+     *
+     * @scenario case=kakao_approval_cancel
+     *
+     * @effects kakao_approval_cancel_posts_to_cancel_approval_path
+     *
+     * @return void 반환값 없음
+     */
     public function test_승인취소는_cancel_approval_경로로_pos_t한다(): void
     {
         Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200'], 200)]);
@@ -271,6 +423,15 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         });
     }
 
+    /**
+     * 휴면 해제는 template/release 경로로 senderKey, templateCode, 인증값을 보낸다.
+     *
+     * @scenario case=kakao_dormant_release
+     *
+     * @effects kakao_dormant_release_posts_to_release_path
+     *
+     * @return void 반환값 없음
+     */
     public function test_휴면해제는_release_경로로_pos_t한다(): void
     {
         Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200'], 200)]);
@@ -286,6 +447,15 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         });
     }
 
+    /**
+     * 템플릿 이미지 업로드는 파일과 인증값을 multipart 로 보내고, 응답 최상위의 image 주소를 돌려준다.
+     *
+     * @scenario case=kakao_template_image_upload
+     *
+     * @effects kakao_image_upload_sent_as_multipart_and_returns_top_level_image
+     *
+     * @return void 반환값 없음
+     */
     public function test_이미지_업로드는_multipart로_전송하고_최상위_image_필드를_반환한다(): void
     {
         // kapi 유일의 비-JSON(multipart) 엔드포인트 — 응답도 data 봉투가 아니라
@@ -330,9 +500,17 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         });
     }
 
+    /**
+     * 모의 객체 기대를 검증하고 닫는다. 검증이 실패해도 부모 정리는 반드시 실행한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 }

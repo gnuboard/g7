@@ -58,7 +58,7 @@ class CashReceiptVatSplitTest extends PluginTestCase
         $order = Order::factory()->create();
         OrderPayment::factory()->create(['order_id' => $order->id, 'pg_provider' => 'kginicis', 'transaction_id' => 'KG_TID_612_'.uniqid()]);
 
-        (new RegisterCashReceiptProviderListener)->issue(
+        app(RegisterCashReceiptProviderListener::class)->issue(
             ['success' => false, 'error_code' => null, 'error_message' => null, 'receipt_key' => null, 'receipt_url' => null, 'issue_number' => null, 'raw_response' => null],
             $order->fresh(['payment']),
             'kginicis',

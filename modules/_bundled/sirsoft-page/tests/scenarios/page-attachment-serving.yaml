@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#609 |
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 #   본 매니페스트는 첨부 서빙(preview 썸네일 / download 파일) 별건 결함의 serving_type ×
 #   published × viewer cross product 를 기록한다. preview 는 모든 조합에서 공개 서빙(200),
 #   download 는 published=200 무조건 / unpublished 는 page_reader admin 만 200·나머지 404 로
@@ -42,6 +43,8 @@ description: |
       권한으로 보호. 게시판·이커머스와 동일 수위.
 
 axes:
+  # G3 회차 16 W6 — 종전 마킹이 쓰던 이름을 선언으로 올린다 (선언 = 마킹). 값은 실제 마킹에서 도출.
+  surface: [admin_page_detail, page_show]
   serving_type: [preview, download]
   published: [published, unpublished]
   viewer: [guest, member, page_reader_admin]
@@ -59,12 +62,34 @@ effects:
   - download_icon_uses_valid_fa_name_not_heroicon
   - user_page_image_attachment_renders_preview_thumbnail
   - user_page_non_image_attachment_renders_file_icon
+  # 서빙 응답 계약 — 미리보기의 조건부 요청 판정(앞서 검증자를
+  # **내보내기**만 하고 **판정**을 빠뜨린 자리를 닫았다) + 형제 게시판·코어와의
+  # 강도 패리티(파일 이름 선언·행 disk·축소 후 size). 오류가 아니라 응답 헤더로만 드러나는
+  # 축이라 실제 HTTP 왕복과 서비스 계약 양쪽이 잰다.
+  - preview_matching_etag_returns_304_with_the_cache_headers_of_200
+  - preview_if_modified_since_alone_returns_304
+  - preview_non_matching_validator_returns_full_200
+  - download_disposition_is_built_by_the_storage_layer
+  - preview_does_not_override_the_storage_filename_declaration
+  - serving_follows_the_disk_recorded_on_the_row
+  - recorded_size_matches_stored_bytes_after_the_resize_path
+  # 609 docblock 정리 — 테스트가 이미 재던 효과를 선언으로 올린다.
+  # 다운로드 통로도 코어 서빙 헬퍼를 지나 검증자 일치 시 304 와 200 의 캐시 헤더를 그대로 싣는다.
+  - download_matching_etag_returns_304_with_the_cache_headers_of_200
+  # 첨부 서빙 응답은 `X-Content-Type-Options: nosniff` 를 선언한다.
+  - file_serving_response_declares_nosniff
+  # KVE-2026-1914 이후 현행 계약 — 미발행 페이지 이미지 썸네일도 비로그인에게 404 로 막힌다.
+  - preview_unpublished_blocked_404_for_guest
 
 test_files:
   - modules/_bundled/sirsoft-page/tests/Feature/User/PublicPageControllerTest.php
   - modules/_bundled/sirsoft-page/tests/Feature/Admin/PageControllerTest.php
   - modules/_bundled/sirsoft-page/resources/js/__tests__/layouts/admin-page-detail-attachment-download.test.tsx
   - templates/_bundled/sirsoft-basic/__tests__/layouts/page-attachment-download-handler.test.tsx
+  # 서빙 응답 계약 — 위 effects 와 짝을 이루는 파일. 등재되지 않으면 통째로 지워도 아무
+  # 검사도 울지 않는다.
+  - modules/_bundled/sirsoft-page/tests/Feature/User/PublicPageAttachmentConditionalRequestTest.php
+  - modules/_bundled/sirsoft-page/tests/Unit/Services/PageAttachmentServeContractTest.php
 
 notes: |
   회귀 가드 담당:

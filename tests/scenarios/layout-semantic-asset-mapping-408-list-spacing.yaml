@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 시각 회귀 없는 단순 spacing 토큰 추가. (1) list_info 헤더(count + per-page select 묶음)에 py-3 추가 (5건), (2) iteration 안의 admin-card 에 mb-3 override 추가 (7건) — 자산 default mb-6 보다 작게. 데이터/액션/i18n 키 모두 동일.
+# audit:allow test-scenario-coverage reason: issue:#609 시각 회귀 없는 단순 spacing 토큰 추가. (1) list_info 헤더(count + per-page select 묶음)에 py-3 추가 (5건), (2) iteration 안의 admin-card 에 mb-3 override 추가 (7건) — 자산 default mb-6 보다 작게. 데이터/액션/i18n 키 모두 동일.
 
 feature: 어드민 목록 화면의 list_info 헤더 + iteration admin-card 시각 여백 정합 (#408 보강)
 
@@ -46,7 +46,8 @@ effects:
   - list_info_header_keeps_flex_between_or_flex_center_gap_3_layout_unchanged
   - data_action_i18n_key_unchanged_across_all_12_modified_files
 
-test_files: []
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-settings.test.tsx
 
 validation:
   audit_rule: frontend-change-requires-e2e

@@ -92,8 +92,8 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 6개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 22개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 16개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 23개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 17개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 5개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -118,9 +118,11 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 - [ ] 업그레이드 스텝·데이터 마이그레이션이 설정 파일을 새로 쓰면(`File::put`) 바로 뒤에 `FilePermissionHelper::inheritOwnershipFromParent($path)` — `sudo` 코어 업데이트 안에서 root 로 실행되어 그 파일이 root 소유로 남으면 이후 웹 프로세스의 설정 저장이 영구 실패한다. 번들 확장 `upgrades/**` 전수를 파일시스템에서 파생해 검사하는 패리티 테스트가 누락을 잡는다
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-pay_kginicis` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 로그인한 회원이 부르는 쓰기 라우트(POST, PUT, PATCH, DELETE)를 더할 때 코어 필터 `core.required_fields.filter_exempt_routes` 에 보탤지 판단한다. 코어는 추가 정보를 아직 입력하지 않은 회원의 쓰기 요청을 403 `required_fields_pending` 으로 막는다. 그런 회원도 반드시 할 수 있어야 하는 요청(결제창 닫힘 보고처럼 이미 시작된 결제를 끝맺는 요청)이면 `src/Listeners/ExemptRequiredFieldsRoutesListener.php` 의 `ROUTES` 에 라우트 이름을 더하고, 사용자 콘텐츠를 만드는 요청이면 더하지 않는다
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스를 새로 쓰지 않았으면 빌드 없이 update 만, 새 클래스(`paykginicis:` 유틸리티·`pay-kginicis-*`)를 쓰면 `plugin:build` 로 자기 CSS 를 다시 만든다(「화면 클래스 규약」)
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 이커머스 주문·결제를 읽고 쓰는 코드는 공개 결제 계약(`Contracts\Payment\PaymentGatewayBridge` — 생성자 주입)만 쓴다. 계약에 없는 동작이 필요하면 이커머스 계약을 먼저 넓힌다(이 플러그인에서 Model 정적 조회·`DB::table`·이커머스 Service/Repository 를 쓰지 않는다). 확인: 정적 검사 `extension-internal-symbol-reference`·`controller-direct-data-access`·`service-direct-data-access` 위반 0
 - [ ] 승인/취소 흐름을 고칠 때 `before_*`/`after_*` 훅 순서와 우선순위(`PaymentRefundListener` < `CancelActivityLogListener`)를 유지 — 로그가 실제 처리보다 먼저 실행되면 안 된다
 - [ ] IP 화이트리스트(`InicisNotifyIpWhitelist`) 대상 라우트를 추가/변경하면 미들웨어 부착 대상(targets)도 함께 갱신
 - [ ] 새 결제수단·통화를 추가하면 그 결제수단의 콜백 URL을 관리자 설정 안내(README "콜백/통보 URL 등록")에도 반영
@@ -132,6 +134,7 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 <!-- @intent START -->
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
+| 상대 서명 URL(`temporarySignedRoute(..., absolute: false)`)을 그대로 응답에 싣기 | `AssetUrl::sitePath(URL::temporarySignedRoute(..., absolute: false))` | 상대 URL 생성은 요청의 마운트 접두사를 벗기므로 하위 폴더 설치에서 사이트 밖을 가리킨다. 서명은 접두사를 뺀 경로에 걸리고 검증(`hasValidSignature(absolute: false)`)도 접두사를 뺀 `Request::path()` 로 하므로, 서명된 값 밖에서 붙인 접두사는 서명을 깨지 않는다 |
 | 입금된 가상계좌 환불을 일반 경로(`/v2/pg/refund`)로, 계좌번호를 평문으로 보낸다 | `/v2/pg/refund/vacct`·`/v2/pg/partialRefund/vacct` + `refundAcctNum` AES-128-CBC·base64(현금영수증 `issueNumber` 와 같은 암호화) | KG이니시스 취소 매뉴얼의 가상계좌 환불 규격이다 — 어기면 환불이 거절되고 계좌번호가 평문으로 나간다 |
 | PG 콜백의 `authUrl`/`P_REQ_URL`/`netCancelUrl`을 화이트리스트 없이 그대로 호출 | KG 이니시스 허용 URL 목록과 대조 후에만 호출 | 콜백 파라미터를 신뢰하면 공격자가 임의 URL로 서버발 요청을 유도할 수 있다(SSRF) |
 | 동일 거래번호 콜백을 매번 재처리 | 콜백 재처리 방지 검사를 거친 뒤 처리 | 재처리를 막지 않으면 같은 결제가 중복 완료 처리되거나 중복 환불될 수 있다 |
@@ -149,6 +152,9 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 | 주문목록 「결제수단」 칸을 통째로 교체해 배지를 달기 | `columns._patch`(by: field) → `cellChildren._patch`(by: id) → `children._append` 로 자기 배지만 더한다 | 통째 교체는 함께 설치된 다른 결제 플러그인의 배지를 지운다 — priority 가 가장 높은 하나만 남는다. 호스트가 래퍼(`payment_method_cell`)와 라벨(`payment_method_label`)을 소유하므로 그 `id` 를 앵커로 쓴다(#599) |
 | 브라우저 코드에서 코어 비공개 내부(`window.__templateApp`, `localStorage.getItem('auth_token')` + 직접 Bearer, `window.fetch =`·`history.pushState =` 덮어쓰기)를 쓰거나 화면 주소 글자(`/shop/…`)로 화면을 알아보기 | 화면 덧붙임은 레이아웃 조각, 요청은 `G7Core.api`, 상태는 `G7Core.state.get()` 과 공개 상태 계약(`_global.guestOrderToken`·`_global.shopBase`), 결제수단 제한은 서버 훅 | 엔진이 내부를 바꾸면 조용히 깨지고(로그인 토큰 저장 방식, 401 처리 일원화), 덮어쓰기는 확장끼리 서로를 감싸 순서에 따라 동작이 바뀐다. 쇼핑몰 경로를 바꾼 설치본에서는 주소 매칭이 통째로 빠진다. 가드: 감사 룰 `extension-private-core-internals` (#639) |
 | 화면 확장(`resources/extensions/*.json`)의 표현식에서 **다른 결제 플러그인이 선언한 데이터소스**를 참조 | 자기 `data_sources[]` 에 선언한 것만 읽는다 | 그 플러그인이 없는 사이트에서는 미정의 참조가 되고, 표현식은 오류 없이 조용히 undefined 를 내므로 판정이 어긋나도 드러나지 않는다. 배지 문구는 이 플러그인 것으로 고정되어 있어 남의 PG 결제에 이 플러그인 이름이 붙기도 한다(#599) |
+| 관리자 응답 `errors` 에 예외 원문(`$e->getMessage()`)을 그대로 싣기 | 결제대행사 거절은 응답의 `resultMsg` 만 싣고, catch 한 예외는 번역된 일반 문구 + 서버 로그(디버그 모드만 원문). 확장 작업 실패 사유는 코어 `SafeExceptionMessage::for()` | `errors` 배열은 코어의 운영 모드 500 차단을 거치지 않는다 — 통신 예외의 결제대행사 API 주소·cURL 문구, DB 예외의 SQL·접속 정보가 그대로 화면에 나간다 |
+| 결제 환불·현금영수증 리스너 결과 `error_message`·CBT 대사 기록(`reason`·`refund_error`·`last_retry_error`)에 예외 원문을 그대로 싣기 | `DescribesRefundFailure::refundFailureReason()`·`pgFailureReason($e, 'cash_receipt.pg_failed')` — 거절(`KgInicisRejectedException`)만 resultMsg, 그 밖은 `refund.pg_failed`·`cash_receipt.pg_failed`. 대사 `reason` 은 `SafeExceptionMessage::for()`. 원문은 서버 로그(디버그 모드만 원문) | 환불 사유는 쇼핑몰 취소 안내로 회원·비회원·관리자 응답에, 현금영수증 사유는 이력으로 관리자 주문 상세·구매자 응답에, 대사 기록은 관리자 주문 상세 「사유」·「환불 오류」 칸에 그대로 보인다 — API 주소·cURL 문구, SQL·DB 접속 정보가 화면에 나간다 |
+| 이커머스 Model 정적 조회(`Order::query()`)·관계 빌더 쓰기(`$order->payment()->update()`)·`DB::table(이커머스 테이블)`·이커머스 Service/Repository 주입 | 공개 결제 계약 `PaymentGatewayBridge` 의 조회(`findOrderByNumber`·`findPaymentByOrderNumber` 등)와 쓰기(`completePayment`·`onVbankAccountIssued`·`mergePaymentMeta`·`mutatePaymentMetaWithLock`·`mutateOrderMetaWithLock` 등). 훅 인자 Model 은 속성 읽기만, 판정은 `describePayment()` DTO | 이커머스 내부 구현은 예고 없이 바뀐다. 계약은 결제사 범위(자기 결제 행만)·잠금·결제사 id 인수를 한 곳에서 지키고, 누적 meta 는 잠금 아래 계산해 경쟁 기록이 빠지지 않는다(#916) |
 | 독립 HTML(CBT 결제확인서 팝업 · 에스크로 구매확인 창)에 `<style>` 블록·`style="…"` 속성으로 모양 싣기 | 규칙은 `assets/bridge/receipt-popup.css`·`escrow-confirm.css`(빌드 대상 아님). 서버 페이지는 `BridgeScript::stylesheetTag()`, 팝업은 `G7Core.asset.plugin` 으로 만든 주소의 `<link>`(API 가 없는 코어에서는 링크 없이 그린다) | 스타일 보안 정책(`style-src 'self'`)에서 인라인 스타일이 막혀 창이 무스타일로 뜬다. 결제사 창 자체는 결제사 CSS 를 쓰므로 `plugin.json` 의 `trusted_style_hosts`(`stdpay.inicis.com`·`stgstdpay.inicis.com`)로 선언해 스타일 정책에 자동 허용되게 한다 — 결제사가 CSS 호스트를 바꾸면 이 선언을 `trusted_script_hosts` 와 함께 갱신한다 |
 <!-- @intent END -->
 
@@ -157,10 +163,10 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 62개 | `plugins/_bundled/sirsoft-pay_kginicis/tests` |
+| PHPUnit | 68개 | `plugins/_bundled/sirsoft-pay_kginicis/tests` |
 | Vitest | 35개 | `vitest.config.ts` |
 | Playwright | 1개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 56개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 68개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
@@ -195,36 +201,26 @@ cd plugins/_bundled/sirsoft-pay_kginicis && npm run test:e2e -- specs/<대상>.s
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
 
-## 확장 조각의 CSS 클래스 규약
+## 화면 클래스 규약 — 이 플러그인이 자기 CSS 를 싣는다
 
-resources/extensions/ 아래 의 조각은 **다른 패키지의 화면 안에서** 그려진다. 그래서 여기 쓰는
-클래스는 그 화면을 소유한 **템플릿의 CSS 에 실재해야** 한다.
+환경설정 레이아웃, `resources/extensions/` 조각(관리자 주문 목록·주문 상세, 마이페이지 주문 상세, 주문 완료 등 다른 패키지 화면 안에서 그려지는 것), 이커머스 결제수단 설정에 넣는 PHP 클래스 문자열은 **템플릿 CSS 에 기대지 않는다.** 모든 클래스는 이 플러그인 앞글자를 쓰고, 규칙은 이 플러그인의
+`dist/css/plugin.css` 에 실재한다(manifest `assets.css.namespace: pay-kginicis`). 템플릿이 어떤 CSS 라이브러리를 쓰든 같은 모양으로 보인다.
 
-두 가지를 지킨다.
+1. **배치·색 유틸리티는 `paykginicis:` 접두 Tailwind 로 쓴다**(`paykginicis:flex paykginicis:dark:text-gray-400`).
+   Tailwind 는 이 플러그인의 작성 도구일 뿐이고(preflight 없음), `resources/css/main.css` 맨 앞 생성 블록이
+   `resources/{layouts,extensions,js}` 와 `src`(PHP 가 내보내는 클래스)를 훑어 쓰인 클래스만 만든다. 새 클래스를 쓰면
+   `php artisan plugin:build sirsoft-pay_kginicis --production` 으로 CSS 를 다시 만들고 update 한다 — 빌드하지 않으면
+   그 스타일만 조용히 빠진다. 앞글자 없는 `flex` 를 쓰면 정적 검사가 막는다.
+2. **템플릿 의미 클래스는 `pay-kginicis-*` 사본을 쓴다**(`pay-kginicis-btn`·`pay-kginicis-form-label`·`pay-kginicis-section-heading-md`).
+   정의는 `resources/css/g7-extension.generated.css`(생성 파일, 손으로 고치지 않는다)의 가장 낮은 칸
+   `@layer g7-extension` 에 있어 템플릿이 같은 이름을 덮을 수 있다. 템플릿 의미 클래스를 새로 가져오려면
+   원래 이름으로 적은 뒤 `node scripts/extension-css/convert-layout-classes.mjs plugins/_bundled/sirsoft-pay_kginicis` 를
+   다시 돌린다(같은 입력이면 결과가 같다).
+3. **이 플러그인 고유의 의미 색과 상태 짝은 손 CSS 다** — `resources/css/main.css` 의 생성 블록 아래.
+   의미 글자색 `pay-kginicis-tone-*` 은 `@layer g7-extension` 안에 두고(색만 맡는다), 포커스·호버 같은 상태 짝은 층 없이 둔다. 일부 색을 16진수로 적은 것은 이전 판 빌드 산출과 화면 계산값을 같게 유지하려는 것이다.
+4. **다크 모드는 `paykginicis:dark:` 변형이나 중립 표식(`[data-g7-color-scheme="dark"]`)으로 쓴다.** 템플릿 표지
+   `.dark` 를 손 CSS 선택자에 쓰지 않는다.
+5. **아이콘에 글자 크기 유틸리티(`paykginicis:text-xl` 등)를 주면 `paykginicis:leading-none` 을 함께 준다** — 아이콘 글꼴 CSS 의
+   줄 높이(1)와 같게 맞춘다. 입력칸(`<input>`)에는 글자색 의미 클래스를 주지 않는다 — 템플릿 입력 컴포넌트가 자기 색을 정한다.
 
-1. **템플릿의 의미 클래스를 쓰지 않는다.** `flex-start` · `text-heading` · `section-heading-md`
-   같은 이름의 규칙은 `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `@layer components` 에만
-   있다. 사용자 템플릿(`sirsoft-basic`)에는 그 규칙이 없어 `display:flex` 같은 기본 배치까지
-   통째로 사라진다. 평범한 Tailwind 유틸로 쓴다(`flex items-start`).
-   슬롯 확장(`extension-point=`)은 한 조각이 관리자·사용자 양쪽에 들어가므로, 어느 한쪽의
-   어휘를 쓰면 **반드시** 다른 쪽이 깨진다.
-
-2. **새 유틸은 safelist 에 실린다.** 두 템플릿 모두 Tailwind 가 레이아웃을 스캔하지 않는다 —
-   `sirsoft-admin_basic` 은 `templates/_bundled/sirsoft-admin_basic/scripts/extract-safelist.cjs` 가(확장 조각 포함) 자동 생성하고,
-   `sirsoft-basic` 은 `templates/_bundled/sirsoft-basic/src/styles/safelist.txt` 를 손으로 단다. 새 클래스를 쓴 뒤에는
-   `php artisan template:build <템플릿>` 로 CSS 를 다시 만든다.
-
-이 규약을 어겨도 **빌드는 성공하고 경고도 없으며 테스트도 전부 초록이다** — 사람이 브라우저를
-열어야만 드러난다(2026-09-21, 마이페이지 「내 정보 수정」의 확장 카드에서 체크박스가 설명 위로
-떨어져 있었다). 그래서 확장 조각이 쓰는 클래스가 대상 템플릿의 CSS 에 실제로 만들어졌는지를
-정적 검사가 대조한다.
-
-### 환경설정 화면의 안내 글자색은 플러그인 CSS 가 제공한다
-
-`resources/layouts/admin/plugin_settings` 의 경고·성공·위험·안내 글자색은 관리자 템플릿의 의미 클래스(`text-warning-soft` 등)를
-쓰지 않고 이 플러그인의 `resources/css/main.css` 가 정의한 접두 클래스(`pay-kginicis-tone-*`, 다크 모드 짝 포함)를 쓴다.
-템플릿이 그 클래스의 이름이나 색을 바꾸면 이 화면의 색이 따라 바뀌기 때문이다(7.1.0 때 형제 플러그인의 라이브 모드
-경고 본문이 초록으로 바뀌었다). 이 화면에만 있는 임의값 배치(`grid-cols-[…]`·`min-w-[…]` 등)는 템플릿 CSS 에 만들어지지 않으므로
-같은 파일에 접두 클래스로 둔다. 다른 결제 플러그인도 같은 이름 체계를 쓰지만 서로의 클래스를 참조하지 않는다.
-CSS 를 고친 뒤에는 `php artisan plugin:build sirsoft-pay_kginicis --production` → `plugin:update` 로 `dist/css/plugin.css` 를 반영한다.
-가드: `resources/js/__tests__/layouts/pluginSettingsToneClasses.test.ts`.
+규약 전체는 [확장 CSS 자기 공급 규약](../../../docs/extension/module-assets.md#확장-css-자기-공급-규약), 변환 도구는 `scripts/extension-css/README.md`.

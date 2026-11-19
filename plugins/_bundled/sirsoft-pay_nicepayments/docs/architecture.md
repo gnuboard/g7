@@ -13,6 +13,10 @@
 
 이 플러그인도 결제 상태 자체는 소유하지 않습니다 — 주문·결제 테이블은 `sirsoft-ecommerce`
 소유이고, 이 플러그인은 그 상태를 나이스페이먼츠 API 와 어떻게 주고받는가만 책임집니다.
+주문·결제 행은 이커머스가 공개한 결제 계약(`Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge`,
+네 하위 인터페이스 `PaymentLookup`·`OrderAccess`·`ClaimPaymentLookup`·`PaymentLifecycle`)으로만 읽고 씁니다 —
+이커머스 내부 Service·Repository·테이블 이름을 직접 쓰지 않습니다. 재시도 가능 여부, 거래번호·금액·MID
+대조 같은 결제사 판정은 이 플러그인에 남고, 잠금(주문 → 결제 행)과 상태 전이·meta 기록은 계약이 맡습니다.
 
 시각 값은 결제 메타에 ISO8601(오프셋 포함)로 저장합니다. 요청 시각(`EdiDate`)은 PG 통신값이라 나이스페이 사양의
 시간대 확인 전까지 서버 시각 그대로 두고, 휴대폰 환불의 「같은 달」 판정은 PG·통신사 정산 월 규칙이라 한국 시간으로
@@ -23,13 +27,19 @@
 
 <!-- @intent START -->
 ```text
-Controller (PaymentCallbackController / AdminEscrowController / AdminTransactionController)
+Controller (PaymentCallbackController / AdminEscrowController / AdminTransactionController 등)
   → NicePaymentsApiService (인증 검증 · 승인/취소/단건조회 API 호출)
-  → sirsoft-ecommerce 의 Order/OrderPayment 모델 (직접 참조 — 이 플러그인 소유 모델 없음)
+  → sirsoft-ecommerce 공개 결제 계약 PaymentGatewayBridge (생성자 주입 — 이 플러그인 소유 모델 없음)
+      조회: OrderRecord·PaymentRecord·ClaimPaymentRecord DTO
+      쓰기: completePayment·onVbankAccountIssued·markPaymentWindowClosed 등 — 잠금 안 판정은 $guard 클로저
 
 Listener (RegisterPgProviderListener 등)
   → sirsoft-ecommerce 의 필터 훅에 등록 (컴파일 타임 결합 없음)
+  → 훅 인자 Order/OrderPayment/ClaimPayment 는 속성 읽기만, 판정 값은 계약의 describePayment()·resolveClaimCharge() 등
 ```
+
+이 플러그인의 공개 훅 `before_authorize`·`after_authorize`·`refund_failed` 는 종전대로 첫 인자로 주문 Model 을 넘깁니다
+(시그니처 유지). 승인 콜백은 그 Model 을 계약의 읽기 전용 조회(`OrderAccess::findOrderModel`)로 얻습니다.
 
 `PaymentCallbackController`가 인증 결과(`AuthResultCode`)를 먼저 판정하고 실패 시 승인
 API 호출 없이 조기 반환하는 것이 이 플러그인 계층 구조의 특징입니다 — 일반적인 "Controller

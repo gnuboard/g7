@@ -39,7 +39,8 @@ class RollbackStaleFilesCommand extends Command
 
     protected $signature = 'hotfix:rollback-stale-files
         {--backup= : 특정 백업 디렉토리 경로 지정 (미지정 시 가장 최근 백업 자동 선택)}
-        {--prune : 진단만이 아닌 실제 정리 수행 (확인 프롬프트 동반)}';
+        {--prune : 진단만이 아닌 실제 정리 수행 (확인 프롬프트 동반)}
+        {--y|yes : --prune 의 확인 질문에 「예」로 답하고 정리 (터미널 없는 실행용)}';
 
     /**
      * 백업 기준으로 잔존 파일 후보를 진단하고, `--prune` 이면 확인 후 정리합니다.
@@ -109,6 +110,16 @@ class RollbackStaleFilesCommand extends Command
         }
 
         $this->newLine();
+        // 확인에 답할 수 없는 실행(cron, CI, 원격 명령, --no-interaction)은 종전에 기본값 「아니오」로 취소 문구만 내고
+        // 종료 코드 0 으로 끝나 자동화가 성공으로 읽었다. 그런 실행은 사유와 터미널 실행 안내를 남기고 실패로 끝낸다.
+        // 대화형에서 운영자가 직접 「아니오」를 답한 취소는 의도이므로 종전대로 0 이다.
+        if (! $this->canAnswerConfirmation()) {
+            return $this->refuseUnanswerableConfirmation(
+                __('common.console.hotfix_rollback_stale_files.confirm_unavailable'),
+                __('common.console.hotfix_rollback_stale_files.confirm_unavailable_hint'),
+            );
+        }
+
         if (! $this->unifiedConfirm(__('common.console.hotfix_rollback_stale_files.confirm_prune'), false)) {
             $this->info(__('common.console.hotfix_rollback_stale_files.cancelled'));
 
@@ -166,8 +177,30 @@ class RollbackStaleFilesCommand extends Command
         if ($backups === []) {
             return null;
         }
-        // listBackups 는 정렬 보장이 약하므로 mtime 기준으로 다시 정렬
-        usort($backups, fn ($a, $b) => filemtime($b['path']) <=> filemtime($a['path']));
+        // listBackups 는 정렬 보장이 약하므로 mtime 기준으로 다시 정렬한다.
+        //
+        // 형제 선택기(`StorageLeftoverPruneService::pruneBackupSet`)와 **같은 규율**을 쓴다:
+        //   ① `filemtime()` 실패(`false`)를 보존 방향으로 접는다 — 접지 않으면 `false` 가
+        //      정수 비교에서 0 으로 강등돼 그 백업이 맨 뒤로 밀리고, 롤백이 **가장 최신이
+        //      아닌** 백업을 고른다(조회 실패는 「아주 오래됐다」가 아니다).
+        //   ② 마지막 결정자로 경로를 세워 **전순서**를 만든다 — `filemtime` 은 초 해상도라
+        //      같은 초에 만들어진 두 백업의 순서가 열거 순서에 좌우된다. 롤백 대상이
+        //      디렉토리 나열 순서로 갈리면 재현되지 않는 복구가 된다.
+        $mtime = static function (string $path): int {
+            $t = @filemtime($path);
+
+            return $t === false ? PHP_INT_MAX : $t;
+        };
+
+        usort($backups, static function (array $a, array $b) use ($mtime): int {
+            $byMtime = $mtime($b['path']) <=> $mtime($a['path']);
+
+            if ($byMtime !== 0) {
+                return $byMtime;
+            }
+
+            return strcmp((string) $b['path'], (string) $a['path']);
+        });
 
         return $backups[0]['path'] ?? null;
     }

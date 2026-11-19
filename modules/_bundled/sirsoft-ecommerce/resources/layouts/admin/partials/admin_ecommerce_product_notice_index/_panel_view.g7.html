@@ -5,46 +5,46 @@
   에 채워 넘긴다. 둘 다 서버 권한으로 잠긴다. -->
 <partial description="Product Notice Template View Panel - Read-only Details with Language Tabs">
   <div data-ref="view_panel" data-if="{{_global.selectedTemplateId &amp;&amp; _global.panelMode === 'view'}}">
-    <div data-ref="view_header" class="px-4 panel-header">
-      <h3 class="text-heading">$t:sirsoft-ecommerce.admin.product_notice_template.info.title</h3>
+    <div data-ref="view_header" class="ecommerce:px-4 ecommerce-panel-header">
+      <h3 class="ecommerce-text-heading">$t:sirsoft-ecommerce.admin.product_notice_template.info.title</h3>
     </div>
-    <div data-ref="view_content" class="p-4">
-      <div data-ref="template_name_display" class="flex-center gap-3 mb-4">
-        <h2 class="section-heading">{{$localized(_global.selectedTemplate?.name)}}</h2>
-        <span class="text-secondary dark:text-gray-300 px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700">{{_global.selectedTemplate?.fields_count ?? 0}}</span>
-        <span data-if="{{_global.selectedTemplate?.is_active}}" class="px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 rounded">$t:sirsoft-ecommerce.common.active</span>
-        <span data-if="{{!_global.selectedTemplate?.is_active}}" class="text-secondary dark:text-gray-300 px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded">$t:sirsoft-ecommerce.common.inactive</span>
+    <div data-ref="view_content" class="ecommerce:p-4">
+      <div data-ref="template_name_display" class="ecommerce-flex-center ecommerce:gap-3 ecommerce:mb-4">
+        <h2 class="ecommerce-section-heading">{{$localized(_global.selectedTemplate?.name)}}</h2>
+        <span class="ecommerce-text-secondary ecommerce:dark:text-gray-300 ecommerce:px-2 ecommerce:py-0.5 ecommerce:text-xs ecommerce:rounded-full ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700">{{_global.selectedTemplate?.fields_count ?? 0}}</span>
+        <span data-if="{{_global.selectedTemplate?.is_active}}" class="ecommerce:px-2 ecommerce:py-0.5 ecommerce:text-xs ecommerce:bg-green-100 ecommerce:dark:bg-green-900/20 ecommerce:text-green-800 ecommerce:dark:text-green-400 ecommerce:rounded">$t:sirsoft-ecommerce.common.active</span>
+        <span data-if="{{!_global.selectedTemplate?.is_active}}" class="ecommerce-text-secondary ecommerce:dark:text-gray-300 ecommerce:px-2 ecommerce:py-0.5 ecommerce:text-xs ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:rounded">$t:sirsoft-ecommerce.common.inactive</span>
       </div>
-      <tab-navigation data-type="composite" data-ref="language_tabs" tabs="{{($locales ?? []).map(l => ({ id: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}" activeTabId="{{_local.viewLocale ?? $locale}}" variant="underline" class="mb-4">
+      <tab-navigation data-type="composite" data-ref="language_tabs" tabs="{{($locales ?? []).map(l => ({ id: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}" activeTabId="{{_local.viewLocale ?? $locale}}" variant="underline" class="ecommerce:mb-4">
         <on type="change" event="onTabChange">
           <!-- 보기 언어 탭 — 이 패널 안에서만 쓰는 값이다. -->
           <set-state target="local" viewLocale="{{$args[0]}}"/>
         </on>
       </tab-navigation>
       <div data-ref="tab_content">
-        <div class="toggle-group">
-          <table class="w-full">
-            <thead class="bg-gray-50 dark:bg-gray-700">
+        <div class="ecommerce-toggle-group">
+          <table class="ecommerce:w-full">
+            <thead class="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700">
               <tr>
-                <th class="text-tertiary px-4 py-2 text-left font-medium uppercase w-16">$t:sirsoft-ecommerce.admin.product_notice_template.fields.order</th>
-                <th class="text-tertiary px-4 py-2 text-left font-medium uppercase">$t:sirsoft-ecommerce.admin.product_notice_template.fields.name</th>
-                <th class="text-tertiary px-4 py-2 text-left font-medium uppercase">$t:sirsoft-ecommerce.admin.product_notice_template.fields.content</th>
+                <th class="ecommerce-text-tertiary ecommerce:px-4 ecommerce:py-2 ecommerce:text-left ecommerce:font-medium ecommerce:uppercase ecommerce:w-16">$t:sirsoft-ecommerce.admin.product_notice_template.fields.order</th>
+                <th class="ecommerce-text-tertiary ecommerce:px-4 ecommerce:py-2 ecommerce:text-left ecommerce:font-medium ecommerce:uppercase">$t:sirsoft-ecommerce.admin.product_notice_template.fields.name</th>
+                <th class="ecommerce-text-tertiary ecommerce:px-4 ecommerce:py-2 ecommerce:text-left ecommerce:font-medium ecommerce:uppercase">$t:sirsoft-ecommerce.admin.product_notice_template.fields.content</th>
               </tr>
             </thead>
-            <tbody data-each="field, fieldIndex in {{_global.selectedTemplate?.fields ?? []}}" class="divider-list">
-              <tr class="bg-white dark:bg-gray-800">
-                <td class="px-4 py-3 text-label-subtle">{{fieldIndex + 1}}</td>
-                <td class="text-primary px-4 py-3 text-sm">{{field.name?.[_local.viewLocale ?? $locale] ?? '-'}}</td>
-                <td class="px-4 py-3 text-body">{{field.content?.[_local.viewLocale ?? $locale] ?? '-'}}</td>
+            <tbody data-each="field, fieldIndex in {{_global.selectedTemplate?.fields ?? []}}" class="ecommerce-divider-list">
+              <tr class="ecommerce:bg-white ecommerce:dark:bg-gray-800">
+                <td class="ecommerce:px-4 ecommerce:py-3 ecommerce-text-label-subtle">{{fieldIndex + 1}}</td>
+                <td class="ecommerce-text-primary ecommerce:px-4 ecommerce:py-3 ecommerce:text-sm">{{field.name?.[_local.viewLocale ?? $locale] ?? '-'}}</td>
+                <td class="ecommerce:px-4 ecommerce:py-3 ecommerce-text-body">{{field.content?.[_local.viewLocale ?? $locale] ?? '-'}}</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
-    <div data-ref="view_footer" class="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
-      <div class="flex-center gap-3">
-        <button type="button" disabled="{{_global.selectedTemplate?.abilities?.can_update !== true}}" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+    <div data-ref="view_footer" class="ecommerce:px-4 ecommerce:py-4 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
+      <div class="ecommerce-flex-center ecommerce:gap-3">
+        <button type="button" disabled="{{_global.selectedTemplate?.abilities?.can_update !== true}}" class="ecommerce:flex-1 ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce-text-body ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
           <on type="click">
             <!-- 편집 진입 — 보던 템플릿을 폼의 `_local.form` 에 부어 준다. 폼은 상세를 다시 부르지 않으므로 이 자리가 편집 초깃값의 유일한 출처다. -->
             <sequence>
@@ -54,7 +54,7 @@
           </on>
           $t:sirsoft-ecommerce.common.edit
         </button>
-        <button type="button" class="flex-1 px-4 py-2 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.selectedTemplate?.abilities?.can_delete !== true}}">
+        <button type="button" class="ecommerce:flex-1 ecommerce:px-4 ecommerce:py-2 ecommerce:text-red-700 ecommerce:dark:text-red-400 ecommerce:border ecommerce:border-red-300 ecommerce:dark:border-red-600 ecommerce:hover:bg-red-50 ecommerce:dark:hover:bg-red-900/20 ecommerce:rounded-lg ecommerce:transition-colors ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.selectedTemplate?.abilities?.can_delete !== true}}">
           <on type="click">
             <!-- 삭제 확인 창 열기 — 그 창은 조회를 하지 않으므로 보여 줄 이름과 지울 id 를 여기서 채워 넘긴다. -->
             <sequence>

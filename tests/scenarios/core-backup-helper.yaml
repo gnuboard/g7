@@ -1,0 +1,25 @@
+feature: 코어 백업 헬퍼 — 백업 생성, 복원, 삭제, 목록
+
+description: |
+  CoreBackupHelper 가 targets 기준으로 백업을 만들고, 복원 중 개별 target 실패가 전체를 멈추지 않으며
+  실패한 target 을 돌려주는지, vendor 를 targets 와 excludes 규칙대로 다루는지, 백업 삭제와 목록,
+  부모 소유권 상속, 문서 루트 손상 사본 판정이 생산자 상수를 보는지를 잰다.
+
+axes:
+  backup_operation: [create, restore, delete, list, config]
+
+effects:
+  - core_backup_restore_returns_no_failures_on_full_success
+  - core_backup_restore_skips_targets_missing_from_backup
+  - core_backup_restore_continues_after_a_target_failure
+  - core_backup_restore_reports_failed_targets
+  - core_backup_includes_vendor_when_targeted
+  - core_backup_excludes_nested_vendor_dirs
+  - core_backup_config_keeps_vendor_backup_only
+  - core_backup_delete_removes_directory
+  - core_backup_list_returns_expected_structure
+  - core_backup_inherits_parent_ownership
+  - core_backup_restore_judges_docroot_residue_by_producer_prefix
+
+test_files:
+  - tests/Unit/Extension/CoreBackupHelperTest.php

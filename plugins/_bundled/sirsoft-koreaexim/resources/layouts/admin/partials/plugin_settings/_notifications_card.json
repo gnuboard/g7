@@ -4,17 +4,18 @@
         "description": "환율 실패 알림의 발송 수단 복수 지정과 채널별 템플릿 활성화"
     },
     "comment": "실패 알림 카드 — 이 플러그인 소유 알림 정의마다 발송 채널(복수)을 고르고, 켠 채널의 템플릿을 활성화·편집한다. 채널 선택은 저장 버튼으로, 템플릿 활성화는 토글 즉시 서버에 반영한다",
+    "id": "koreaexim_notifications_card",
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card mb-4"
+        "className": "koreaexim-admin-card koreaexim:mb-4"
     },
     "children": [
         {
             "type": "basic",
             "name": "H3",
             "props": {
-                "className": "card-title"
+                "className": "koreaexim-card-title"
             },
             "text": "$t:sirsoft-koreaexim.notifications"
         },
@@ -24,7 +25,7 @@
             "name": "P",
             "if": "{{_local.koreaeximNotificationsForbidden === true}}",
             "props": {
-                "className": "form-hint"
+                "className": "koreaexim-form-hint"
             },
             "text": "$t:sirsoft-koreaexim.notifications_forbidden"
         },
@@ -42,7 +43,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-heading"
+                        "className": "koreaexim-text-heading"
                     },
                     "text": "{{$localized(def.name)}}"
                 },
@@ -51,7 +52,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "form-label mt-3"
+                        "className": "koreaexim-form-label koreaexim:mt-3"
                     },
                     "text": "$t:sirsoft-koreaexim.notification_channels"
                 },
@@ -65,22 +66,22 @@
                         "index_var": "chIdx"
                     },
                     "props": {
-                        "className": "flex-between p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg my-2"
+                        "className": "koreaexim-flex-between koreaexim:p-3 koreaexim:bg-gray-50 koreaexim:dark:bg-gray-900 koreaexim:border koreaexim:border-gray-200 koreaexim:dark:border-gray-700 koreaexim:rounded-lg koreaexim:my-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2"
+                                "className": "koreaexim-flex-center koreaexim:gap-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Icon",
                                     "props": {
-                                        "name": "{{ch.icon ?? 'fas fa-bell'}}",
-                                        "className": "text-gray-500 dark:text-gray-400"
+                                        "name": "{{ch.icon ?? 'bell'}}",
+                                        "className": "koreaexim:text-gray-500 koreaexim:dark:text-gray-400"
                                     }
                                 },
                                 {
@@ -91,7 +92,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-heading"
+                                                "className": "koreaexim-text-heading"
                                             },
                                             "text": "{{ch.name ?? ch.id}}"
                                         },
@@ -100,7 +101,7 @@
                                             "name": "Span",
                                             "if": "{{ch.source && ch.source !== 'core'}}",
                                             "props": {
-                                                "className": "text-hint block"
+                                                "className": "koreaexim-text-hint koreaexim:block"
                                             },
                                             "text": "{{ch.source_label ?? ch.source}}"
                                         },
@@ -110,9 +111,19 @@
                                             "name": "Span",
                                             "if": "{{(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) && !(def.templates ?? []).some(t => t.channel === ch.id)}}",
                                             "props": {
-                                                "className": "text-hint block text-amber-700 dark:text-amber-400"
+                                                "className": "koreaexim-text-hint koreaexim:block koreaexim:text-amber-700 koreaexim:dark:text-amber-400"
                                             },
                                             "text": "$t:sirsoft-koreaexim.channel_template_missing"
+                                        },
+                                        {
+                                            "comment": "저장으로 코어가 만든 빈 템플릿(운영자 생성)이 꺼져 있으면 아직 발송되지 않는다 — 채우고 켜도록 안내",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) && (def.templates ?? []).some(t => t.channel === ch.id && t.is_user_created && !t.is_active)}}",
+                                            "props": {
+                                                "className": "koreaexim-text-hint koreaexim:block koreaexim:text-amber-700 koreaexim:dark:text-amber-400"
+                                            },
+                                            "text": "$t:admin.settings.notification_definitions.user_template_inactive"
                                         }
                                     ]
                                 }
@@ -144,7 +155,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-center gap-2 my-2"
+                        "className": "koreaexim-flex-center koreaexim:gap-2 koreaexim:my-2"
                     },
                     "children": [
                         {
@@ -226,7 +237,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "koreaexim-btn koreaexim-btn-primary koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed",
                                 "disabled": "{{_computed.isNotificationReadOnly || _local.koreaeximSavingChannels !== null && _local.koreaeximSavingChannels !== undefined || !(JSON.stringify([...(_local.koreaeximChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())) || (_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).length === 0}}"
                             },
                             "children": [
@@ -236,7 +247,7 @@
                                     "if": "{{_local.koreaeximSavingChannels === def.id}}",
                                     "props": {
                                         "name": "spinner",
-                                        "className": "spinner-sm"
+                                        "className": "koreaexim-spinner-sm"
                                     }
                                 },
                                 {
@@ -276,7 +287,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "koreaexim-btn koreaexim-btn-secondary koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed",
                                 "disabled": "{{_local.koreaeximSavingChannels !== null && _local.koreaeximSavingChannels !== undefined}}"
                             },
                             "children": [
@@ -300,7 +311,7 @@
                         "index_var": "tplIdx"
                     },
                     "props": {
-                        "className": "flex flex-wrap items-center gap-3 my-3"
+                        "className": "koreaexim:flex koreaexim:flex-wrap koreaexim:items-center koreaexim:gap-3 koreaexim:my-3"
                     },
                     "children": [
                         {
@@ -327,13 +338,21 @@
                                             "dataSourceId": "koreaeximNotificationDefinitions"
                                         }
                                     },
-                                    "onError": {
-                                        "handler": "toast",
-                                        "params": {
-                                            "type": "error",
-                                            "message": "{{error.message}}"
+                                    "onError": [
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "remount",
+                                            "params": {
+                                                "componentId": "koreaexim_notifications_card"
+                                            }
                                         }
-                                    }
+                                    ]
                                 }
                             ],
                             "props": {
@@ -376,7 +395,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary",
+                                "className": "koreaexim-btn koreaexim-btn-secondary",
                                 "disabled": "{{_computed.isNotificationReadOnly}}"
                             },
                             "children": [
@@ -415,7 +434,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-secondary",
+                        "className": "koreaexim-btn koreaexim-btn-secondary",
                         "disabled": "{{_computed.isNotificationReadOnly}}"
                     },
                     "children": [

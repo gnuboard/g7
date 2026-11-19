@@ -10,21 +10,148 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-board.admin.settings.bulk_members.confirm_title",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "disabled": "{{_global.boardBulkMembers?.isApplying === true}}",
+                    "className": "board-btn board-btn-secondary board:disabled:opacity-50 board:disabled:cursor-not-allowed"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "id": "bulk_members_confirm_button",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "일괄 지정 실행. 진행 표시는 성공·실패·403 어느 갈래에서든 끈다. 버튼 잠금만으로는 같은 틱의 두 번째 클릭을 못 막아 300ms 디바운스로 연타를 한 번으로 모은다",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "boardBulkMembers.isApplying": true,
+                                    "boardBulkMembers.error": null
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/modules/sirsoft-board/admin/boards/bulk-members",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "POST",
+                                    "body": {
+                                        "apply_all": "{{_global.boardBulkMembers?.all !== false}}",
+                                        "board_ids": "{{_global.boardBulkMembers?.all === false ? (_global.boardBulkMembers?.boardIds ?? []) : undefined}}",
+                                        "user_uuids": "{{_global.boardBulkMembers?.userUuids ?? []}}",
+                                        "member_type": "{{_global.boardBulkMembers?.type ?? 'manager'}}",
+                                        "mode": "{{_global.boardBulkMembers?.mode ?? 'add'}}"
+                                    }
+                                },
+                                "onSuccess": {
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "boardBulkMembers.isApplying": false,
+                                                "boardBulkMembers.result": "{{response.data}}",
+                                                "boardBulkMembers.userUuids": [],
+                                                "boardBulkMembers.users": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "{{response.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ]
+                                },
+                                "onError": {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "boardBulkMembers.isApplying": false,
+                                        "boardBulkMembers.error": "{{error.errors?.user_uuids?.[0] ?? error.errors?.board_ids?.[0] ?? error.message ?? '$t:sirsoft-board.admin.settings.bulk_members.failed'}}"
+                                    }
+                                },
+                                "errorHandling": {
+                                    "403": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "boardBulkMembers.isApplying": false,
+                                            "boardBulkMembers.error": "{{error.message ?? '$t:auth.permission_denied'}}"
+                                        }
+                                    }
+                                }
+                            }
+                        ],
+                        "debounce": 300
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "disabled": "{{_global.boardBulkMembers?.isApplying === true}}",
+                    "className": "board-flex-center board:gap-1.5 board:px-4 board:py-2 board:bg-gray-900 board:dark:bg-white board:text-white board:dark:text-gray-900 board:rounded-lg board:hover:bg-gray-800 board:dark:hover:bg-gray-100 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.boardBulkMembers?.isApplying === true}}",
+                        "props": {
+                            "name": "spinner",
+                            "size": "sm",
+                            "spin": true
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:sirsoft-board.admin.settings.bulk_members.apply"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "space-y-3"
+                "className": "board:space-y-3"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-label"
+                        "className": "board-text-label"
                     },
                     "text": "{{_global.boardBulkMembers?.mode === 'remove' ? ((_global.boardBulkMembers?.type ?? 'manager') === 'step' ? $t:sirsoft-board.admin.settings.bulk_members.confirm_remove_step : $t:sirsoft-board.admin.settings.bulk_members.confirm_remove_manager) : ((_global.boardBulkMembers?.type ?? 'manager') === 'step' ? $t:sirsoft-board.admin.settings.bulk_members.confirm_add_step : $t:sirsoft-board.admin.settings.bulk_members.confirm_add_manager)}}"
                 },
@@ -32,14 +159,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                        "className": "board:text-sm board:text-gray-700 board:dark:text-gray-300"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "font-medium"
+                                "className": "board:font-medium"
                             },
                             "text": "$t:sirsoft-board.admin.settings.bulk_members.target_label"
                         },
@@ -48,7 +175,7 @@
                             "name": "Span",
                             "if": "{{_global.boardBulkMembers?.all !== false}}",
                             "props": {
-                                "className": "ml-2"
+                                "className": "board:ml-2"
                             },
                             "text": "$t:sirsoft-board.admin.settings.bulk_members.target_all"
                         },
@@ -57,7 +184,7 @@
                             "name": "Span",
                             "if": "{{_global.boardBulkMembers?.all === false}}",
                             "props": {
-                                "className": "ml-2"
+                                "className": "board:ml-2"
                             },
                             "text": "$t:sirsoft-board.admin.settings.bulk_members.boards_count|count={{(_global.boardBulkMembers?.boardIds ?? []).length}}"
                         }
@@ -67,7 +194,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex flex-wrap gap-1"
+                        "className": "board:flex board:flex-wrap board:gap-1"
                     },
                     "children": [
                         {
@@ -78,7 +205,7 @@
                                 "item_var": "member"
                             },
                             "props": {
-                                "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
+                                "className": "board:px-2 board:py-0.5 board:text-xs board:bg-gray-100 board:dark:bg-gray-700 board:text-gray-700 board:dark:text-gray-300 board:rounded"
                             },
                             "text": "{{member.name}}"
                         }
@@ -89,7 +216,7 @@
                     "name": "P",
                     "if": "{{_global.boardBulkMembers?.mode === 'remove' && (_global.boardBulkMembers?.type ?? 'manager') === 'manager'}}",
                     "props": {
-                        "className": "text-tertiary"
+                        "className": "board-text-tertiary"
                     },
                     "text": "$t:sirsoft-board.admin.settings.bulk_members.hint"
                 },
@@ -99,143 +226,9 @@
                     "name": "Div",
                     "if": "{{!!_global.boardBulkMembers?.error}}",
                     "props": {
-                        "className": "alert-danger text-sm"
+                        "className": "board-alert-danger board:text-sm"
                     },
                     "text": "{{_global.boardBulkMembers?.error}}"
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "disabled": "{{_global.boardBulkMembers?.isApplying === true}}",
-                        "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.cancel"
-                        }
-                    ]
-                },
-                {
-                    "id": "bulk_members_confirm_button",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "일괄 지정 실행. 진행 표시는 성공·실패·403 어느 갈래에서든 끈다. 버튼 잠금만으로는 같은 틱의 두 번째 클릭을 못 막아 300ms 디바운스로 연타를 한 번으로 모은다",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "boardBulkMembers.isApplying": true,
-                                        "boardBulkMembers.error": null
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/modules/sirsoft-board/admin/boards/bulk-members",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "POST",
-                                        "body": {
-                                            "apply_all": "{{_global.boardBulkMembers?.all !== false}}",
-                                            "board_ids": "{{_global.boardBulkMembers?.all === false ? (_global.boardBulkMembers?.boardIds ?? []) : undefined}}",
-                                            "user_uuids": "{{_global.boardBulkMembers?.userUuids ?? []}}",
-                                            "member_type": "{{_global.boardBulkMembers?.type ?? 'manager'}}",
-                                            "mode": "{{_global.boardBulkMembers?.mode ?? 'add'}}"
-                                        }
-                                    },
-                                    "onSuccess": {
-                                        "handler": "sequence",
-                                        "actions": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "boardBulkMembers.isApplying": false,
-                                                    "boardBulkMembers.result": "{{response.data}}",
-                                                    "boardBulkMembers.userUuids": [],
-                                                    "boardBulkMembers.users": []
-                                                }
-                                            },
-                                            {
-                                                "handler": "toast",
-                                                "params": {
-                                                    "type": "success",
-                                                    "message": "{{response.message}}"
-                                                }
-                                            },
-                                            {
-                                                "handler": "closeModal"
-                                            }
-                                        ]
-                                    },
-                                    "onError": {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "boardBulkMembers.isApplying": false,
-                                            "boardBulkMembers.error": "{{error.errors?.user_uuids?.[0] ?? error.errors?.board_ids?.[0] ?? error.message ?? '$t:sirsoft-board.admin.settings.bulk_members.failed'}}"
-                                        }
-                                    },
-                                    "errorHandling": {
-                                        "403": {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "boardBulkMembers.isApplying": false,
-                                                "boardBulkMembers.error": "{{error.message ?? '$t:auth.permission_denied'}}"
-                                            }
-                                        }
-                                    }
-                                }
-                            ],
-                            "debounce": 300
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "disabled": "{{_global.boardBulkMembers?.isApplying === true}}",
-                        "className": "flex-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.boardBulkMembers?.isApplying === true}}",
-                            "props": {
-                                "name": "spinner",
-                                "size": "sm",
-                                "spin": true
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:sirsoft-board.admin.settings.bulk_members.apply"
-                        }
-                    ]
                 }
             ]
         }

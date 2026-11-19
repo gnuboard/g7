@@ -48,7 +48,14 @@ export interface ToggleProps {
    * 바깥 작업이 진행 중인지 — true 면 잠그고(누를 수 없음, 금지 커서·흐린 트랙) 손잡이 자리에 스피너를 보인다(`aria-busy`).
    */
   pending?: boolean;
+  /**
+   * 스위치에 마우스를 올렸을 때 보일 안내(title) — 잠긴 스위치가 왜 잠겼는지(예: 검수 서버에서는 바꿀 수 없음) 알릴 때 쓴다.
+   */
+  title?: string;
 }
+
+/** 확정을 기다리는 스위치가 한 번 알린 뒤 다시 알리지 않는 시간(ms) — 바깥의 진행 중 표시가 늦거나 오지 않을 때의 상한 */
+const AWAIT_GUARD_MS = 3000;
 
 /**
  * Toggle 스위치 컴포넌트
@@ -78,11 +85,23 @@ export const Toggle: React.FC<ToggleProps> = ({
   editorAttrs,
   awaitConfirmation = false,
   pending = false,
+  title,
 }) => {
   // 진행 중이면 누를 수 없다 — 같은 스위치의 연속 클릭이 같은 작업을 거듭 보내지 않게 한다
   const locked = disabled || pending;
   // 내부 상태로 관리
   const [checked, setChecked] = useState(() => checkedProp ?? valueProp ?? false);
+
+  // 확정을 기다리는 스위치의 연타 가드 — 눌러서 알린 뒤 바깥이 진행 중(pending)을 그려 주기까지는 시간이 걸린다(행이 많은
+  // 표는 다시 그리는 데 1초를 넘기기도 한다). 그 사이의 클릭이 같은 작업을 거듭 보내지 않게, 알린 시각을 ref 에 적어 두고
+  // 진행 중 표시가 도착하거나 값이 바뀌거나 일정 시간이 지날 때까지 다시 알리지 않는다. ref 라 렌더를 기다리지 않는다.
+  const emittedAtRef = useRef<number | null>(null);
+  const isAwaitingOutside = () =>
+    awaitConfirmation && emittedAtRef.current !== null && Date.now() - emittedAtRef.current < AWAIT_GUARD_MS;
+  useEffect(() => {
+    // 바깥이 진행 중을 그렸거나(이제 pending 이 잠근다) 값을 바꿨으면 가드를 푼다
+    emittedAtRef.current = null;
+  }, [pending, checkedProp, valueProp]);
 
   // 이름: ariaLabel → 옆 라벨(label) → 행 제목(곁 라벨, aria-labelledby) → 마지막 수단으로 name.
   // 종전에는 곁 제목을 보지 않고 곧장 name(「security.force_https」 같은 필드 키)을 이름으로 달았다(7.1.0 실측).
@@ -117,7 +136,8 @@ export const Toggle: React.FC<ToggleProps> = ({
       setChecked(newChecked);
     }
 
-    if (onChange && !locked) {
+    if (onChange && !locked && !isAwaitingOutside()) {
+      if (awaitConfirmation) emittedAtRef.current = Date.now();
       // 템플릿 엔진의 actions는 이벤트 객체를 받으므로 항상 이벤트로 전달
       (onChange as any)(e);
     }
@@ -145,7 +165,7 @@ export const Toggle: React.FC<ToggleProps> = ({
   const currentSize = sizeClasses[size];
 
   const handleToggleClick = () => {
-    if (!locked) {
+    if (!locked && !isAwaitingOutside()) {
       const newChecked = !checked;
       if (!awaitConfirmation) {
         setChecked(newChecked);
@@ -153,6 +173,8 @@ export const Toggle: React.FC<ToggleProps> = ({
       if (onChange) {
         const G7Core = getG7Core();
         if (G7Core?.createChangeEvent) {
+          // 실제로 알릴 때만 가드를 세운다 — 알리지 못한 클릭이 뒤따르는 알림을 막으면 안 된다
+          if (awaitConfirmation) emittedAtRef.current = Date.now();
           (onChange as any)(G7Core.createChangeEvent({ checked: newChecked, name }));
         }
       }
@@ -190,6 +212,7 @@ export const Toggle: React.FC<ToggleProps> = ({
         aria-disabled={locked || undefined}
         aria-busy={pending || undefined}
         aria-label={ariaLabel ?? label ?? (useNameFallback ? name : undefined)}
+        title={title}
         tabIndex={locked ? -1 : 0}
         onKeyDown={handleToggleKeyDown}
         onClick={(e) => {

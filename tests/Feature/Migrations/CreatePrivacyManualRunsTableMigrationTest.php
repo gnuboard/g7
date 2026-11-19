@@ -14,9 +14,9 @@ use Tests\TestCase;
  * 테이블·컬럼 생성, up→down→up 왕복, 그리고 이 테이블을 읽는 저장소 호출(진행 중 기록 조회·대상별 최신 기록)이
  * 새로 만든 스키마 위에서 그대로 동작하는지를 고정한다 — 스키마만 맞고 저장소 쿼리가 깨지는 유형을 막는다.
  *
- * @scenario target_kind=retention_handler, toggle=off, actor=runner
+ * 축 요약(마커 아님 — 평문): target_kind=retention_handler, toggle=off, actor=runner
  *
- * @effects run_record_captures_count_and_failure
+ * 효과 요약(마커 아님 — 평문): run_record_captures_count_and_failure
  */
 class CreatePrivacyManualRunsTableMigrationTest extends TestCase
 {

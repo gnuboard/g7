@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 레이아웃 구조 계약 묶음이라 축이 화면 하나(주문 목록)다. 효과가 계약 묶음(검색·페이지네이션·필터·컬럼·셀)마다 하나씩이고 교차 조합이 없다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#599 레이아웃 구조 계약 묶음이라 축이 화면 하나(주문 목록)다. 효과가 계약 묶음(검색·페이지네이션·필터·컬럼·셀)마다 하나씩이고 교차 조합이 없다.
 feature: 관리자 주문 목록 레이아웃 구조 계약
 
 description: |

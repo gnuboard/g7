@@ -19,7 +19,7 @@
       <!-- 상품 정보 -->
       <div class="flex gap-4 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
         <div class="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
-          <img data-if="{{$parent._local.optionModal.targetItem?.thumbnail}}" src="{{$parent._local.optionModal.targetItem?.thumbnail}}" alt="{{$parent._local.optionModal.targetItem?.product_name}}" class="w-full h-full object-cover"/>
+          <img data-if="{{$parent._local.optionModal.targetItem?.thumbnail}}" src="{{$parent._local.optionModal.targetItem?.thumbnail}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{$parent._local.optionModal.targetItem?.product_name}}" class="w-full h-full object-cover"/>
           <div data-if="{{!$parent._local.optionModal.targetItem?.thumbnail}}" class="w-full h-full flex items-center justify-center">
             <icon name="image" size="lg" class="text-gray-500 dark:text-gray-400"/>
           </div>
@@ -132,8 +132,7 @@
         <p data-if="{{$parent._local.optionErrors?.quantity}}" class="text-sm text-red-600 dark:text-red-400 mt-1">{{Array.isArray($parent._local.optionErrors.quantity) ? $parent._local.optionErrors.quantity[0] : $parent._local.optionErrors.quantity}}</p>
       </div>
     </div>
-    <!-- 모달 푸터 -->
-    <div class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700">
+    <footer>
       <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_global.isUpdatingOption}}">
         <on type="click">
           <!-- 취소해도 오류 표시는 남으므로 걷어 낸 뒤 닫는다 — 다음에 열었을 때 지난 빨간 줄이 그대로 뜨지 않게 -->
@@ -165,9 +164,12 @@
                 <close-modal/>
               </success>
               <fail>
+                <!-- 추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다 -->
+                <open-modal if="{{error.error_code === 'required_fields_pending'}}" target="required_info_pending_modal"/>
                 <set-state target="global" :isUpdatingOption="false"/>
-                <!-- 도메인 거절(재고 부족·판매 중지 등)은 errors 에 code·message·unavailable_items(객체)·has_*(참거짓)를 함께 준다 — 통째로 펼치면 내부 코드와 객체가 목록에 그려지므로 사유 문장 하나만 담는다. 필드 검증 오류는 종전대로 -->
-                <set-state target="$parent._local" optionErrors="{{error.errors?.code ? { _general: error.errors.message ?? error.message } : (error.errors ?? { _general: error.message })}}"/>
+                <!-- 도메인 거절(재고 부족·판매 중지 등)은 errors 에 code·message·unavailable_items(객체)·has_*(참거짓)를 함께 준다 — 통째로 펼치면 내부 코드와 객체가 목록에 그려지므로 사유 문장 하나만 담는다. 필드 검증 오류는 종전대로.
+                     추가 정보 미입력 거부면 위의 안내 창이 맡으므로 창 안 오류 칸은 비운다(같은 문장이 두 번 보였다) -->
+                <set-state target="$parent._local" optionErrors="{{error.error_code === 'required_fields_pending' ? null : (error.errors?.code ? { _general: error.errors.message ?? error.message } : (error.errors ?? { _general: error.message }))}}"/>
               </fail>
               <body product_option_id="{{$parent._local.matchedOption?.id ?? $parent._local.optionModal.targetItem?.product_option_id}}" quantity="{{$parent._local.selectedQuantity ?? $parent._local.optionModal.targetItem?.quantity}}" additional_option_selections="{{Object.entries($parent._local.additionalSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: $parent._local.additionalCustomTexts?.[Number(gid)] }))}}"/>
               <field name="headers">
@@ -179,6 +181,6 @@
         <icon data-if="{{_global.isUpdatingOption}}" name="spinner" :spin="true" size="sm"/>
         <span>{{_global.isUpdatingOption ? '$t:common.processing' : '$t:shop.cart.option_modal.apply'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

@@ -56,12 +56,13 @@ class RedirectToCanonicalPathTest extends TestCase
      * @param  string  $requestUri  경로와 쿼리 원문 (예: `/admin/users/?b=2&a=1`)
      * @param  string  $method  HTTP 메서드
      * @param  array<string, string>  $headers  요청 헤더
+     * @param  array<string, string>  $server  추가 서버 변수 (웹 서버가 위임하며 싣는 환경변수 등)
      * @return TestResponse 응답
      */
-    private function send(string $requestUri, string $method = 'GET', array $headers = []): TestResponse
+    private function send(string $requestUri, string $method = 'GET', array $headers = [], array $server = []): TestResponse
     {
         $query = (string) parse_url('http://x'.$requestUri, PHP_URL_QUERY);
-        $request = Request::create(config('app.url').'/', $method, [], [], [], $this->transformHeadersToServerVars($headers));
+        $request = Request::create(config('app.url').'/', $method, [], [], [], array_merge($this->transformHeadersToServerVars($headers), $server));
         $request->server->set('REQUEST_URI', $requestUri);
         $request->server->set('QUERY_STRING', $query);
         parse_str($query, $params);
@@ -161,6 +162,33 @@ class RedirectToCanonicalPathTest extends TestCase
 
         $this->assertDirectoryExists(public_path('assets'));
         $this->assertNotSame(301, $this->send('/assets/')->getStatusCode());
+    }
+
+    /**
+     * 문서 루트 배치(프로젝트 폴더 = 문서 루트)에서 루트 실존 디렉토리 요청은 끝 슬래시를 떼지 않는다.
+     *
+     * Apache mod_dir 는 프로젝트 루트의 실존 디렉토리(`/templates`·`/docs`…)에 슬래시를 붙여 되던지고,
+     * 루트 `.htaccess` 는 그 요청을 위임하며 `G7_ROOTDIR` 표식을 싣는다(내부 리다이렉트를 지나 `REDIRECT_`
+     * 접두가 붙는다). 그 디렉토리는 `public/` 아래에 없으므로 이 미들웨어가 슬래시를 떼면 mod_dir 가 다시
+     * 붙여 무한 301 이 된다(실측: `/g7/docs` ↔ `/g7/docs/`). 표식이 없는 표준 배치는 종전처럼 정규형으로 보낸다.
+     *
+     * @scenario path_shape=trailing_slash
+     *
+     * @effects canonical_path_redirect_skips_root_directory_delegation
+     *
+     * @return void 반환값 없음
+     */
+    public function test_root_directory_delegation_keeps_trailing_slash(): void
+    {
+        $this->assertDirectoryDoesNotExist(public_path('templates'));
+
+        $this->assertNotSame(301, $this->send('/templates/', 'GET', [], ['REDIRECT_G7_ROOTDIR' => '1'])->getStatusCode());
+        $this->assertNotSame(301, $this->send('/docs/', 'GET', [], ['REDIRECT_REDIRECT_G7_ROOTDIR' => '1'])->getStatusCode());
+
+        $this->send('/templates/')
+            ->assertStatus(301)
+            ->assertHeader('Location', 'https://site.example.test/templates');
+        $this->send('/templates/', 'GET', [], ['REDIRECT_G7_ROOTDIR' => '0'])->assertStatus(301);
     }
 
     /**

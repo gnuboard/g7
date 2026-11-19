@@ -845,7 +845,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
                       tabIndex={-1}
                       aria-label={t('admin.templates.layout_edit.file.rename')}
                       title={t('admin.templates.layout_edit.file.rename')}
-                      className="px-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                      className="px-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer"
                       onClick={(event: React.MouseEvent) => {
                         event.stopPropagation();
                         onRename?.(node.key);
@@ -858,7 +858,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
                       tabIndex={-1}
                       aria-label={t('admin.templates.layout_edit.file.delete')}
                       title={t('admin.templates.layout_edit.file.delete')}
-                      className="px-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                      className="px-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer"
                       onClick={(event: React.MouseEvent) => {
                         event.stopPropagation();
                         onDelete?.(node.key);

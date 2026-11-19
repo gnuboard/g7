@@ -2,6 +2,7 @@ import React, { useEffect, useId, useRef } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
+import { useViewportWidth } from '../layout/viewportWidth';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -42,6 +43,40 @@ export interface ModalProps {
    */
   closeOnEscape?: boolean;
   children?: React.ReactNode;
+  /**
+   * 본문 스크롤 밖 고정 하단에 그릴 컴포넌트 배열(확인·취소 단추). `.g7.html` 의 `<footer>`(`<prop-footer>`).
+   *
+   * 본문 자식과 같은 데이터 컨텍스트·상태 범위로 그린다 — 단추가 창을 연 뒤 입력한 값을 읽는다.
+   * 렌더 폭 640px 이하에서는 세로로 쌓고 폭을 채운다(관리자 템플릿 Modal 과 같은 계약, #869).
+   */
+  footer?: any[];
+  /** DynamicRenderer용 데이터 컨텍스트 (내부 사용) */
+  __dataContext?: Record<string, any>;
+  /** DynamicRenderer용 번역 컨텍스트 (내부 사용) */
+  __translationContext?: any;
+  /**
+   * 엔진이 자동 주입하는 부모 컴포넌트 컨텍스트 (내부 사용) — 렌더 환경(레이아웃 편집기 미리보기의 레지스트리·
+   * dispatcher·편집 모드)과 Modal 노드의 확장 데이터 컨텍스트를 실어 온다.
+   */
+  __componentContext?: {
+    renderEnvRef?: {
+      current: {
+        componentRegistry?: any;
+        bindingEngine?: any;
+        translationEngine?: any;
+        actionDispatcher?: any;
+        isEditMode?: boolean;
+      } | null;
+    };
+    /** Modal 노드의 확장 데이터 컨텍스트 — 본문 자식이 받는 dataContext 와 같은 객체 */
+    parentDataContext?: Record<string, any>;
+    /**
+     * Modal 노드의 편집기 경로(레이아웃 편집기 미리보기에서만 값이 있다). footer 단추마다
+     * `${componentPath}.props.footer.${index}` 를 넘겨 편집기가 footer 단추를 고르게 한다(#141).
+     */
+    componentPath?: string;
+    [key: string]: any;
+  };
   /**
    * 이름 있는 크기 단계 — `width` 를 직접 적지 않고 고르는 자리.
    *
@@ -90,6 +125,9 @@ export const MODAL_SIZE_WIDTHS: Record<string, string> = {
  *   "children": [...]
  * }
  */
+/** 좁은 화면 상한(px, 포함) — 이 폭 이하에서는 바닥 단추를 세로로 쌓고 폭을 채운다(관리자 Modal 과 같은 값) */
+const NARROW_FOOTER_MAX_WIDTH = 640;
+
 /** 열린 모달 순서(맨 뒤가 맨 위) — Esc 는 맨 위 창만 처리한다. */
 const openModalStack: symbol[] = [];
 
@@ -104,11 +142,17 @@ export const Modal: React.FC<ModalProps> = ({
   showCloseButton = true,
   closeOnEscape = true,
   children,
+  footer,
   size,
   width,
   className = '',
   style,
+  __dataContext,
+  __translationContext,
+  __componentContext,
 }) => {
+  // 바닥 단추 줄 배치를 고르는 렌더 폭 — 엔진 폭(편집기 미리보기에서는 기기 폭) 우선
+  const renderWidth = useViewportWidth();
   // 너비 결정 순서: 명시 width > size 단계 > 종전 기본값.
   // size 를 모르는 값으로 적어도 기본값으로 떨어져 화면이 깨지지 않는다.
   const resolvedWidth = width ?? (size ? MODAL_SIZE_WIDTHS[size] : undefined) ?? '500px';
@@ -234,6 +278,41 @@ export const Modal: React.FC<ModalProps> = ({
   // z-index를 style에서 가져오거나 기본값 50 사용
   const zIndex = style?.zIndex ?? 50;
 
+  // footer 렌더링 헬퍼 (레이아웃 JSON 컴포넌트 배열 → DynamicRenderer)
+  const renderFooter = (components: any[] | undefined) => {
+    if (!components || components.length === 0) return null;
+
+    const g7Core = (window as any).G7Core;
+    const DynamicRenderer = g7Core?.getDynamicRenderer?.();
+    if (!DynamicRenderer) return null;
+
+    // 렌더 환경(이 Modal 을 그린 렌더러) > 호스트 값. 편집 모드면 액션을 바인딩하지 않는다.
+    const env = __componentContext?.renderEnvRef?.current ?? null;
+    // 편집기 경로 — 엔진이 실어 준 Modal 노드 경로 뒤에 `.props.footer.{index}` 를 붙인다(#141).
+    // 편집기는 이 표기를 `props.footer` 배열의 항목으로 읽어 children 과 같게 고르고 고친다.
+    // 경로가 없으면(일반 화면) 넘기지 않는다.
+    const ownerPath = __componentContext?.componentPath;
+    // 데이터 컨텍스트와 상태 범위는 엔진이 본문 자식을 그릴 때와 같게 준다 — Modal 노드의 확장 컨텍스트와 컴포넌트 컨텍스트
+    const footerDataContext = __dataContext ?? __componentContext?.parentDataContext ?? {};
+
+    return components.map((componentDef, index) => (
+      <DynamicRenderer
+        key={`footer-${index}`}
+        componentDef={componentDef}
+        {...(ownerPath ? { componentPath: `${ownerPath}.props.footer.${index}` } : {})}
+        dataContext={footerDataContext}
+        parentComponentContext={__componentContext}
+        translationContext={__translationContext}
+        registry={env?.componentRegistry ?? g7Core.getComponentRegistry?.()}
+        bindingEngine={env?.bindingEngine ?? g7Core.getDataBindingEngine?.()}
+        translationEngine={env?.translationEngine ?? g7Core.getTranslationEngine?.()}
+        actionDispatcher={env?.actionDispatcher ?? g7Core.getActionDispatcher?.()}
+        isRootRenderer={false}
+        isEditMode={env?.isEditMode}
+      />
+    ));
+  };
+
   return (
     <Div
       className="fixed inset-0 flex items-center justify-center"
@@ -298,6 +377,15 @@ export const Modal: React.FC<ModalProps> = ({
         <Div className="px-6 py-4 overflow-y-auto max-h-[calc(90vh-140px)]">
           {children}
         </Div>
+
+        {/* Footer — 본문 스크롤 영역 밖이라 내용이 길어도 단추가 항상 보인다.
+            640 이하에서는 단추를 세로로 쌓고 폭을 채운다 — 폭 미디어가 없는 바탕(`modal-footer-bar`)에 렌더 폭으로 더한다.
+            단추가 각자 `if` 로 모두 빠지면 줄이 비므로 `empty:hidden` 으로 테두리와 여백까지 숨긴다(#869 C1) */}
+        {footer && footer.length > 0 && (
+          <Div className={renderWidth <= NARROW_FOOTER_MAX_WIDTH ? 'modal-footer-bar empty:hidden flex-col gap-2 [&_button]:w-full' : 'modal-footer-bar empty:hidden'}>
+            {renderFooter(footer)}
+          </Div>
+        )}
       </Div>
     </Div>
   );

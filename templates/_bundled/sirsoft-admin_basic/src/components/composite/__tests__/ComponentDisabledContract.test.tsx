@@ -6,7 +6,6 @@
  * 권한 없는 운영자에게 편집·추가·삭제·대표 지정이 살아 있다(저장만 403). 여기서는 컴포넌트가
  * `disabled` 를 받으면 쓰기 동작을 모두 막는지를 잠근다.
  */
-import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { HtmlEditor } from '../HtmlEditor';
@@ -32,7 +31,7 @@ vi.mock('@dnd-kit/sortable', async (importOriginal) => {
 });
 
 describe('컴포넌트 disabled 계약', () => {
-  // @scenario component=HtmlEditor,disabled=true
+  // @scenario component=HtmlEditor,state=disabled
   // @effects html_editor_disabled_blocks_editing
   it('HtmlEditor 는 disabled 를 readOnly 와 같이 다룬다 — 본문을 편집할 수 없다', () => {
     const onChange = vi.fn();
@@ -43,7 +42,7 @@ describe('컴포넌트 disabled 계약', () => {
     expect(textarea.readOnly || textarea.disabled).toBe(true);
   });
 
-  // @scenario component=ChipCheckbox,disabled=true
+  // @scenario component=ChipCheckbox,state=disabled
   // @effects chip_checkbox_disabled_blocks_toggle
   it('ChipCheckbox 는 disabled 면 체크 입력을 막고 onChange 를 부르지 않는다', () => {
     const onChange = vi.fn();
@@ -55,7 +54,7 @@ describe('컴포넌트 disabled 계약', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  // @scenario component=DynamicFieldList,disabled=true
+  // @scenario component=DynamicFieldList,state=disabled
   // @effects dynamic_field_list_disabled_blocks_add_remove
   it('DynamicFieldList 는 disabled 를 readOnly 와 같이 다룬다 — 추가 버튼이 없다', () => {
     render(
@@ -70,7 +69,7 @@ describe('컴포넌트 disabled 계약', () => {
     expect(screen.queryByText('항목 추가')).toBeNull();
   });
 
-  // @scenario component=SortableThumbnailItem,disabled=true
+  // @scenario component=SortableThumbnailItem,state=disabled
   // @effects thumbnail_primary_button_disabled
   it('대표 이미지(★) 버튼은 disabled 면 눌리지 않는다', () => {
     const onPrimaryClick = vi.fn();

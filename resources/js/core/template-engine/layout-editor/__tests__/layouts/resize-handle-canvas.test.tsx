@@ -14,7 +14,7 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup, act, renderHook } from '@testing-library/react';
 import DynamicRenderer from '../../../DynamicRenderer';
 import { ComponentRegistry } from '../../../ComponentRegistry';
@@ -66,6 +66,10 @@ function renderCanvas(node: EditorNode) {
 }
 
 describe('캔버스 리사이즈 → 렌더 + 모달 양방향 동기 ', () => {
+  /**
+   * @scenario layer=canvas_render
+   * @effects resize_canvas_renders_new_width
+   */
   it('e 핸들 드래그 결과 노드가 캔버스에 변경된 width 로 렌더된다', () => {
     let patched: EditorNode = { name: 'Div', props: { style: { width: '100px', height: '50px' } } };
     const { result } = renderHook(() =>
@@ -91,6 +95,10 @@ describe('캔버스 리사이즈 → 렌더 + 모달 양방향 동기 ', () => {
     expect((el!.getAttribute('style') ?? '').replace(/\s/g, '')).toContain('width:160px');
   });
 
+  /**
+   * @scenario layer=canvas_render
+   * @effects resize_width_control_reads_back_resized_value
+   */
   it('리사이즈 결과 width 를 속성 모달 width 컨트롤이 같은 값으로 역해석한다 (양방향 동기)', () => {
     let patched: EditorNode = { name: 'Div', props: { style: { width: '120px' } } };
     const { result } = renderHook(() =>
@@ -114,6 +122,10 @@ describe('캔버스 리사이즈 → 렌더 + 모달 양방향 동기 ', () => {
     expect(resolved.value).toBe('150px'); // 120 + 30
   });
 
+  /**
+   * @scenario layer=canvas_render
+   * @effects resize_width_control_reads_canvas_size
+   */
   it('캔버스 노드의 현재 크기를 width 컨트롤이 역해석해 표시할 수 있다 (모달←캔버스 방향)', () => {
     // 캔버스에 width 150px 인 노드 → 같은 레시피로 역해석 시 모달 컨트롤이 그 값을 받는다
     const node: EditorNode = { name: 'Div', props: { style: { width: '150px' } } };
@@ -125,6 +137,10 @@ describe('캔버스 리사이즈 → 렌더 + 모달 양방향 동기 ', () => {
     expect(reverseResolve(node, widthControl)).toEqual({ value: '150px', matched: true });
   });
 
+  /**
+   * @scenario layer=canvas_render
+   * @effects resize_undeclared_axis_leaves_render_unchanged
+   */
   it('height 미선언 축의 n 핸들 드래그는 렌더 결과를 바꾸지 않는다 (축 게이팅)', () => {
     let patched: EditorNode = { name: 'Div', props: { style: { width: '100px' } } };
     const onResize = vi.fn((n: EditorNode) => {
@@ -142,6 +158,10 @@ describe('캔버스 리사이즈 → 렌더 + 모달 양방향 동기 ', () => {
     expect((patched.props?.style as Record<string, unknown>).width).toBe('100px'); // 불변
   });
 
+  /**
+   * @scenario layer=canvas_render
+   * @effects resize_axes_follow_declared_width_height_controls
+   */
   it('enabledAxes 가 스펙 선언을 반영한다 (핸들 표시 게이팅 근거)', () => {
     const { result } = renderHook(() =>
       useResizeHandles({ node: { name: 'Div' }, widthControl, heightControl: null, scale: 1, onResize: vi.fn() }),

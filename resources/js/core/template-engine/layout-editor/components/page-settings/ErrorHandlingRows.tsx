@@ -49,6 +49,12 @@ export interface ErrorHandlingRowsProps {
     code: string,
     action: ErrorAction | undefined,
     onPatch: (next: ErrorAction) => void,
+    /**
+     * 그 코드 키를 지운다 — 동작 편집기의 「설정 안 함」이 쓴다. 빈 동작(`{}`)을 patch 로 남기면 저장과
+     * 서버 검증이 그대로 싣고, 런타임 findHandler 가 참으로 보아 같은 맵 default 와 onError, 상위 기본
+     * 처리를 가린다(#869). [덮기]의 빈 동작 시작은 patch 경로라 영향이 없다.
+     */
+    onClear: () => void,
   ) => React.ReactNode;
   /** testid 접두사 */
   testIdPrefix?: string;
@@ -180,7 +186,7 @@ export function ErrorHandlingRows({
             ) : null}
             <div style={{ marginTop: 6 }}>
               {renderActionList ? (
-                renderActionList(code, action, (next) => patchCode(code, next))
+                renderActionList(code, action, (next) => patchCode(code, next), () => clearCode(code))
               ) : (
                 <pre
                   data-testid={`${testIdPrefix}-json-${code}`}

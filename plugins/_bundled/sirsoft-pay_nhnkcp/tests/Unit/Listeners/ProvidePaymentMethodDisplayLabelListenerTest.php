@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Tests\Unit\Listeners;
 
+use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Plugins\Sirsoft\PayNhnkcp\Listeners\ProvidePaymentMethodDisplayLabelListener;
 use Plugins\Sirsoft\PayNhnkcp\Plugin;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
@@ -19,12 +21,14 @@ class ProvidePaymentMethodDisplayLabelListenerTest extends PluginTestCase
     /**
      * 이 플러그인의 간편결제 결제 레코드 표본을 만듭니다.
      *
+     * 훅은 이커머스 결제 행 Model 을 넘긴다 — 저장하지 않은 Model 로 같은 속성을 채운다.
+     *
      * @param  string  $pgProvider  결제 레코드의 PG 식별자
-     * @return object 결제 레코드 (이커머스 OrderPayment 와 같은 속성)
+     * @return OrderPayment 결제 레코드 (저장하지 않음)
      */
-    private function easyPayPayment(string $pgProvider = 'nhnkcp'): object
+    private function easyPayPayment(string $pgProvider = 'nhnkcp'): OrderPayment
     {
-        return (object) [
+        return $this->paymentRow([
             'pg_provider' => $pgProvider,
             'payment_method' => 'card',
             'embedded_pg_provider' => 'payco',
@@ -33,7 +37,18 @@ class ProvidePaymentMethodDisplayLabelListenerTest extends PluginTestCase
                 'nhnkcp_easy_pay_provider' => 'payco',
                 'nhnkcp_easy_pay_label' => ['ko' => 'PAYCO (페이코)', 'en' => 'PAYCO'],
             ],
-        ];
+        ]);
+    }
+
+    /**
+     * 저장하지 않은 결제 행 Model 을 만듭니다.
+     *
+     * @param  array<string, mixed>  $attributes  속성
+     * @return OrderPayment 결제 행
+     */
+    private function paymentRow(array $attributes): OrderPayment
+    {
+        return (new OrderPayment)->forceFill(['payment_status' => PaymentStatusEnum::PAID] + $attributes);
     }
 
     /**
@@ -69,7 +84,7 @@ class ProvidePaymentMethodDisplayLabelListenerTest extends PluginTestCase
     {
         app()->setLocale('ko');
 
-        $label = (new ProvidePaymentMethodDisplayLabelListener)->provideDisplayLabel(null, $this->easyPayPayment());
+        $label = app(ProvidePaymentMethodDisplayLabelListener::class)->provideDisplayLabel(null, $this->easyPayPayment());
 
         $this->assertIsString($label);
         $this->assertStringStartsWith('PAYCO (페이코) (', $label);
@@ -86,15 +101,15 @@ class ProvidePaymentMethodDisplayLabelListenerTest extends PluginTestCase
      */
     public function test_leaves_other_pg_and_plain_payments_untouched(): void
     {
-        $listener = new ProvidePaymentMethodDisplayLabelListener;
+        $listener = app(ProvidePaymentMethodDisplayLabelListener::class);
 
         $this->assertNull($listener->provideDisplayLabel(null, $this->easyPayPayment('nicepayments')));
-        $this->assertNull($listener->provideDisplayLabel(null, (object) [
+        $this->assertNull($listener->provideDisplayLabel(null, $this->paymentRow([
             'pg_provider' => 'nhnkcp',
             'payment_method' => 'card',
             'embedded_pg_provider' => null,
             'payment_meta' => [],
-        ]));
+        ])));
         $this->assertNull($listener->provideDisplayLabel(null, null));
     }
 
@@ -109,7 +124,7 @@ class ProvidePaymentMethodDisplayLabelListenerTest extends PluginTestCase
      */
     public function test_keeps_a_label_provided_by_an_earlier_subscriber(): void
     {
-        $label = (new ProvidePaymentMethodDisplayLabelListener)->provideDisplayLabel('앞선 라벨', $this->easyPayPayment());
+        $label = app(ProvidePaymentMethodDisplayLabelListener::class)->provideDisplayLabel('앞선 라벨', $this->easyPayPayment());
 
         $this->assertSame('앞선 라벨', $label);
     }

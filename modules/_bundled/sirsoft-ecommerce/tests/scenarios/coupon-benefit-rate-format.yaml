@@ -1,5 +1,3 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 표면마다 값 축의 의미가 달라(다듬기 함수는 경계값, 문구는 정률·정액) 표면별 경로를 잠근다.
-
 feature: 쿠폰 혜택 문구의 할인율 표기
 
 description: |
@@ -9,6 +7,11 @@ description: |
 axes:
   surface: [decimal_trim, benefit_formatted, multi_currency_benefit]
   value: [boundary, rate, fixed]
+
+exclusions:
+  - { surface: decimal_trim, value: [rate, fixed], reason: "다듬기 함수는 숫자 문자열만 받는다 — 쿠폰 할인 종류(정률·정액)가 없는 표면이라 경계값 하나로 잰다" }
+  - { surface: [benefit_formatted, multi_currency_benefit], value: boundary, reason: "문구 표면의 입력은 쿠폰 할인 종류다 — 소수 경계값은 다듬기 함수(decimal_trim)가 잰다" }
+  - { surface: multi_currency_benefit, value: fixed, reason: "정액 문구는 이 변경이 손대지 않은 통화별 금액 서식 경로다 — 무변경 회귀 핀은 benefit_formatted×fixed 가 잡는다" }
 
 effects:
   - trailing_zero_and_dot_removed

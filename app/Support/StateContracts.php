@@ -73,6 +73,11 @@ class StateContracts
             'schema' => ['type' => 'object'],
             'writers' => [],
         ],
+        'templateSettings' => [
+            'description' => ['ko' => '활성 템플릿 공개 설정 (그 화면 종류의 템플릿 하나, #434)', 'en' => 'Public settings of the active template for this screen type (#434)'],
+            'schema' => ['type' => 'object'],
+            'writers' => [],
+        ],
         'appConfig' => [
             'description' => ['ko' => '앱 설정 (기기·환경)', 'en' => 'App configuration (device, environment)'],
             'schema' => ['type' => 'object'],

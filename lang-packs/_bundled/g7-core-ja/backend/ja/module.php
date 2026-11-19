@@ -38,4 +38,5 @@ return [
         'module_not_found' => 'モジュール :name が見つかりません。',
         'module_not_active' => 'モジュール :name は有効化されていません。',
     ],
+    'refresh_layouts_preview_success' => 'レイアウト更新プレビューを作成しました。',
 ];

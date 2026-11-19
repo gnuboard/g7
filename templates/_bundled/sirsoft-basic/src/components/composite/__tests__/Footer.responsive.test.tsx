@@ -7,7 +7,7 @@
  * 정상 반응한다. 본 테스트는 width 별 분기를 가드한다.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import Footer from '../Footer';
 
@@ -41,7 +41,10 @@ describe('Footer — G7 표준 responsive 분기', () => {
     vi.clearAllMocks();
   });
 
-  /** @scenario preview_device=desktop, custom_width_input=in_range */
+  /**
+   * @scenario preview_device=desktop, custom_width_input=in_range
+   * @effects template_component_follows_engine_responsive_width
+   */
   it('데스크톱(1280) — 링크 그룹 그리드 5열', () => {
     setWidth(1280);
     const { container } = render(<Footer />);
@@ -50,7 +53,10 @@ describe('Footer — G7 표준 responsive 분기', () => {
     expect(grid.style.gridTemplateColumns).toBe('repeat(5, minmax(0, 1fr))');
   });
 
-  /** @scenario preview_device=tablet, custom_width_input=in_range */
+  /**
+   * @scenario preview_device=tablet, custom_width_input=in_range
+   * @effects template_component_follows_engine_responsive_width
+   */
   it('태블릿(820) — 그리드 2열', () => {
     setWidth(820);
     const { container } = render(<Footer />);
@@ -58,7 +64,10 @@ describe('Footer — G7 표준 responsive 분기', () => {
     expect(grid.style.gridTemplateColumns).toBe('repeat(2, minmax(0, 1fr))');
   });
 
-  /** @scenario preview_device=mobile, custom_width_input=in_range */
+  /**
+   * @scenario preview_device=mobile, custom_width_input=in_range
+   * @effects template_component_follows_engine_responsive_width
+   */
   it('모바일(390) — 그리드 1열 + 저작권 영역 세로(column)', () => {
     setWidth(390);
     const { container } = render(<Footer />);
@@ -72,6 +81,10 @@ describe('Footer — G7 표준 responsive 분기', () => {
     expect(cols.length).toBeGreaterThan(0);
   });
 
+  /**
+   * @scenario preview_device=desktop, custom_width_input=in_range
+   * @effects template_component_follows_engine_responsive_width
+   */
   it('데스크톱 — 저작권 영역 flexDirection row', () => {
     setWidth(1280);
     const { container } = render(<Footer />);
@@ -81,6 +94,10 @@ describe('Footer — G7 표준 responsive 분기', () => {
     expect(rows.length).toBeGreaterThan(0);
   });
 
+  /**
+   * @scenario preview_device=desktop, custom_width_input=in_range
+   * @effects template_component_avoids_viewport_media_query_classes
+   */
   it('Footer 마크업에 Tailwind 반응형 그리드 클래스(md:grid-cols / lg:grid-cols)를 사용하지 않음', () => {
     setWidth(1280);
     const { container } = render(<Footer />);

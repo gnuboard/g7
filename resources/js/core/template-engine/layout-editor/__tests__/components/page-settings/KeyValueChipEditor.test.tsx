@@ -12,7 +12,6 @@
  * @since engine-v1.50.0
  */
 
-import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { KeyValueChipEditor, type KeyValueExtraItem } from '../../../components/page-settings/KeyValueChipEditor';
@@ -26,6 +25,10 @@ const candidates: BindingCandidate[] = [
 ];
 
 describe('KeyValueChipEditor — 렌더/편집', () => {
+  /**
+   * @scenario subject=key_value_chip_editor
+   * @effects kv_chip_renders_property_content_rows
+   */
   it('초기 배열을 property 키 + content 값 행으로 렌더한다', () => {
     const value: KeyValueExtraItem[] = [{ property: 'og:rating', content: '4.5' }];
     render(<KeyValueChipEditor value={value} onChange={vi.fn()} keyField="property" t={t} />);
@@ -35,6 +38,10 @@ describe('KeyValueChipEditor — 렌더/편집', () => {
     expect(screen.getByDisplayValue('4.5')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=key_value_chip_editor
+   * @effects kv_chip_add_row_serializes_property
+   */
   it('행 추가 → 키 입력 시 {property,content} 직렬화', () => {
     const onChange = vi.fn();
     render(<KeyValueChipEditor value={[]} onChange={onChange} keyField="property" t={t} />);
@@ -47,6 +54,10 @@ describe('KeyValueChipEditor — 렌더/편집', () => {
     expect(onChange).toHaveBeenLastCalledWith([{ property: 'og:rating', content: '' }]);
   });
 
+  /**
+   * @scenario subject=key_value_chip_editor
+   * @effects kv_chip_twitter_mode_uses_name_key
+   */
   it('twitter 모드는 name 키로 직렬화한다', () => {
     const onChange = vi.fn();
     render(<KeyValueChipEditor value={[{ name: 'twitter:label1', content: '가격' }]} onChange={onChange} keyField="name" t={t} />);
@@ -55,6 +66,10 @@ describe('KeyValueChipEditor — 렌더/편집', () => {
     expect(onChange).toHaveBeenLastCalledWith([{ name: 'twitter:label1', content: '무료배송' }]);
   });
 
+  /**
+   * @scenario subject=key_value_chip_editor
+   * @effects kv_chip_candidate_pick_writes_expr
+   */
   it('값 데이터칩 후보 선택 → content 에 표현식 기록', () => {
     const onChange = vi.fn();
     render(<KeyValueChipEditor value={[{ property: 'og:brand', content: '' }]} onChange={onChange} keyField="property" t={t} candidates={candidates} />);
@@ -65,6 +80,10 @@ describe('KeyValueChipEditor — 렌더/편집', () => {
     expect(onChange).toHaveBeenLastCalledWith([{ property: 'og:brand', content: '{{product.data.brand}}' }]);
   });
 
+  /**
+   * @scenario subject=key_value_chip_editor
+   * @effects kv_chip_remove_row_emits_rest
+   */
   it('행 삭제 → 그 행 제외한 배열 방출', () => {
     const onChange = vi.fn();
     render(
@@ -80,6 +99,10 @@ describe('KeyValueChipEditor — 렌더/편집', () => {
     expect(onChange).toHaveBeenLastCalledWith([{ property: 'b', content: '2' }]);
   });
 
+  /**
+   * @scenario subject=key_value_chip_editor
+   * @effects kv_chip_empty_key_row_excluded
+   */
   it('빈 키 행은 직렬화에서 제외한다', () => {
     const onChange = vi.fn();
     render(<KeyValueChipEditor value={[{ property: 'x', content: '1' }]} onChange={onChange} keyField="property" t={t} />);
@@ -90,6 +113,10 @@ describe('KeyValueChipEditor — 렌더/편집', () => {
 
   // (B)키·값을 세로 스택으로 배치해 각 입력기 affordance(🔍/ƒx/??/≡)가
   // 가로로 겹치지 않게 한다(기능 축소 0 — 둘 다 full DataChipValueInput). 행 내부 = flex-column.
+  /**
+   * @scenario subject=key_value_chip_editor
+   * @effects kv_chip_row_stacks_key_value_vertically
+   */
   it('(B) 행은 키·값을 세로 스택(flex-column)으로 배치 — 가로 겹침 방지', () => {
     // container 로 범위 한정 — 행 id 는 모듈 전역 seq 라 가변이고, batch 실행 시 다른 파일이
     // 남긴 동일 컴포넌트 DOM 과 정규식이 다중 매칭해 깨질 수 있다(격리). 이 render 의 container

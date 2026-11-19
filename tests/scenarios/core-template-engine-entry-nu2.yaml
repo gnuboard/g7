@@ -1,0 +1,35 @@
+feature: 템플릿 엔진 진입점(template-engine.ts) 단위 검사
+
+description: |
+  template-engine.ts 는 initTemplateEngine, renderTemplate, updateTemplateData, destroyTemplate, getState 를 공개하고
+  window.G7Core.TemplateEngine 으로도 노출한다. 초기화 옵션 검증과 실패 시 롤백, 렌더 입력 검증과 컨텍스트 구성,
+  렌더 전 업데이트 큐, startTransition 래핑, 로컬 초기값 슬롯 병합, 파괴 뒤 상태 초기화를 본다. 컴포넌트 로드는
+  TemplateApp 이 routes.json 과 병렬로 하므로 엔진 초기화는 컴포넌트를 로드하지 않는다. 이 매니페스트는 그 단위
+  시험 파일을 영역별로 소유한다(#869 표식 소급, 건너뛰던 5건은 현재 계약으로 살림).
+
+axes:
+  area: [init, render, update, destroy, get_state, global_exposure, error_handling, lifecycle, local_init]
+
+effects:
+  - engine_init_sets_state
+  - engine_init_validates_options
+  - engine_init_does_not_load_components
+  - engine_init_rolls_back_on_failure
+  - engine_init_retry_after_failure
+  - engine_render_validates_input
+  - engine_render_builds_contexts
+  - engine_render_sets_root_and_layout
+  - engine_render_warns_empty_components
+  - engine_root_reused
+  - engine_update_merges_data
+  - engine_update_queues_until_rendered
+  - engine_update_uses_transition
+  - engine_destroy_resets_state
+  - engine_state_readable
+  - engine_global_api_exposed
+  - engine_call_order_errors
+  - engine_full_lifecycle
+  - engine_local_init_slot_merge
+
+test_files:
+  - resources/js/core/__tests__/template-engine.test.ts

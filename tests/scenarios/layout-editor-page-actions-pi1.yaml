@@ -1,0 +1,138 @@
+# 레이아웃 편집기 페이지 설정 동작 목록과 오류 처리
+# #869 이월 0 회차(π1): tsc 정리 때 건드린 편집기 시험의 시나리오 표식 누락을 채우며 만든 매니페스트다.
+# 축 subject 는 각 시험 파일이 재는 대상(컴포넌트 또는 함수)이고, effects 는 시험 하나하나가 단언하는 동작이다.
+feature: layout_editor_page_actions_pi1
+
+description: |
+  페이지 설정의 동작 추가 피커, 동작 목록(요약, 드래그 순서, 삭제, 코드 보기, 컨텍스트 칩), 동작 파라미터 위젯 디스패치와 미리보기를 다룬다.
+  init_actions 폼과 부모 자식 상속 매트릭스(잠금, 자식 구간 patch, 3단 상속, 모달 호스트), 오류 처리 폼과 행(출처 배지, 오버라이드, 해제)을 함께 잰다.
+
+axes:
+  subject: [action_add_picker, action_list_builder, action_param_fields, action_preview, init_actions_inheritance, init_actions_form, error_handling_form, error_handling_rows, error_handling_unset, error_handling_save_prune, error_handling_template_override, page_settings_modal]
+
+effects:
+  - action_add_picker_groups_and_source_badges
+  - action_add_picker_search_filters
+  - action_add_picker_select_builds_action
+  - action_add_picker_empty_recipes_degrades
+  - action_add_picker_component_context_same_catalog
+  - action_list_summary_drag_reorder_remove
+  - action_list_dropline_marks_drop_target
+  - action_list_add_pushes_into_array
+  - action_list_code_view_shows_json
+  - action_list_empty_without_picker_no_items
+  - action_list_hide_add_picker
+  - action_list_single_code_button_per_card
+  - action_list_response_context_chips_offered
+  - action_list_no_context_no_response_chips
+  - action_list_context_chips_not_double_merged
+  - action_param_text_number_use_data_chip
+  - action_param_change_rebuilds_action
+  - action_param_key_value_chip_editor
+  - action_param_state_key_value_picker_and_block
+  - action_param_set_state_path_single_value
+  - action_param_set_state_path_keeps_shape
+  - action_param_api_body_key_value_no_object_leak
+  - action_param_state_object_value_nested_block
+  - action_param_select_toggle_not_chipped
+  - action_param_depends_on_hides_param
+  - action_param_unknown_widget_falls_to_data_chip
+  - action_param_local_storage_value_data_chip
+  - action_param_prose_param_stays_i18n_text
+  - action_if_toggle_uses_data_chip_input
+  - action_preview_friendly_summary
+  - action_preview_missing_required_notice
+  - action_preview_code_toggle_read_only_json
+  - action_preview_advanced_item_summary_and_code
+  - error_form_rows_from_config_without_maintenance
+  - error_form_source_badges
+  - error_form_handler_select_builds_action
+  - error_form_show_error_page_target_param
+  - error_form_navigate_toast_param_fields
+  - error_form_unset_handler_removes_code_key
+  - error_form_default_row_shadow_warning
+  - error_form_no_recipes_degrades
+  - error_rows_codes_build_rows_with_badges
+  - error_rows_inherited_override_revert_cover
+  - error_rows_local_mode_no_badges
+  - error_rows_delegates_action_list_render
+  - error_handling_rows_clear_drops_code_key
+  - error_rows_value_keys_build_rows
+  - init_inherit_parent_only_locked_group
+  - init_inherit_child_only_flat_mode
+  - init_inherit_both_split_groups_with_order
+  - init_inherit_parent_item_controls_absent
+  - init_inherit_child_remove_keeps_parent
+  - init_inherit_child_reorder_within_child
+  - init_inherit_base_group_read_only
+  - init_inherit_child_add_keeps_parent_source
+  - init_inherit_own_layer_only_flat_mode
+  - init_inherit_parent_advanced_locked_code_only
+  - init_inherit_extension_parent_still_locked
+  - init_inherit_three_levels_all_ancestors_locked
+  - init_inherit_if_badges_parent_locked_child_edit
+  - init_inherit_modal_host_patches_host_array
+  - init_actions_cards_with_source_badges
+  - init_actions_no_up_down_buttons
+  - init_actions_drag_reorders
+  - init_actions_dropline_marks_drop_target
+  - init_actions_remove_drops_item
+  - init_actions_if_condition_badge
+  - init_actions_edit_dispatches_param_widgets
+  - init_actions_advanced_item_code_and_drag_only
+  - init_actions_add_picker_pushes
+  - init_actions_inherit_groups_and_order_hint
+  - init_actions_inherit_base_locked_self_editable
+  - init_actions_inherit_base_group_read_only
+  - init_actions_inherit_self_remove_keeps_base
+  # 「설정 안 함」은 그 코드 키를 지운다(#869 결함 수정)와 그 근거
+  - error_unset_page_settings_removes_code_key
+  - error_unset_rows_on_clear_removes_key
+  - error_unset_data_source_saves_without_code_key
+  - error_unset_runtime_empty_entry_shadows_fallbacks
+  # 저장할 때 빈 오류 코드 항목을 지운다(설계 확정 2026-11-09)와 그 뒤 런타임 대체 처리
+  - save_prunes_empty_page_error_codes
+  - save_drops_empty_error_handling_map
+  - save_prunes_empty_data_source_error_codes
+  - save_prune_leaves_editor_document_untouched
+  - save_prune_keeps_layout_default_and_template_fallback
+  - save_prune_keeps_data_source_on_error
+  # 템플릿 설정 코드의 〔템플릿〕 출처와 [덮기], 레이아웃 선언 코드의 행(#869 λ 실측)
+  - error_template_code_without_page_action_offers_override_here
+  - error_layout_declared_code_gets_row
+  - error_shell_passes_template_config_codes_not_merged_keys
+  # 페이지 설정 셸(PageSettingsModal) — 이 파일을 건드리며 표식 부채를 함께 채웠다
+  - shell_renders_nine_tabs_meta_default
+  - shell_tab_click_switches_panel
+  - shell_initial_tab_opens_that_tab
+  - shell_tab_underline_longhand_only
+  - shell_tab_bar_overflow_y_hidden
+  - shell_overlay_tab_derives_base_and_own
+  - shell_overlay_tab_full_own_no_base
+  - shell_overlay_tab_all_inherited_empty_own
+  - shell_unreduced_items_badge_and_summary
+  - shell_no_advanced_hides_summary
+  - shell_title_uses_meta_title
+  - shell_title_falls_back_to_editor_label
+  - shell_title_falls_back_to_path
+  - shell_seo_extensions_fetched_into_form
+  - shell_seo_preview_gets_sample_context
+  - shell_close_buttons_call_on_close
+  - shell_forms_get_resolve_label
+  - shell_init_actions_camel_shown
+  - shell_init_actions_session_snake_wins
+  - shell_init_actions_empty_fallback
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/ActionAddPicker.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/ActionListBuilder.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/ActionParamFields.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/ActionPreview.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/init-actions-inheritance.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/InitActionsForm.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/ErrorHandlingForm.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/ErrorHandlingRows.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/ErrorHandlingUnsetClearsKey.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/errorHandlingSavePrune.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/ErrorHandlingTemplateOverride.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/PageSettingsModal.test.tsx

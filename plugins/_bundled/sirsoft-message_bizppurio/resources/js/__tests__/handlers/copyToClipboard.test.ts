@@ -19,10 +19,16 @@ describe('sirsoft-message_bizppurio copyToClipboard 핸들러', () => {
         Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
     });
 
+    /**
+     * @effects only_registered_handlers_used
+     */
     it('핸들러 맵에 copyToClipboard 로 등록된다 (등록 시 sirsoft-message_bizppurio. 접두)', () => {
         expect(handlerMap.copyToClipboard).toBe(copyToClipboardHandler);
     });
 
+    /**
+     * @effects copy_button_copies_report_url_to_clipboard
+     */
     it('전달받은 text 를 브라우저 클립보드에 복사한다', async () => {
         const writeText = vi.fn().mockResolvedValue(undefined);
         Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
@@ -33,6 +39,9 @@ describe('sirsoft-message_bizppurio copyToClipboard 핸들러', () => {
         expect(writeText).toHaveBeenCalledWith('https://example.test/notify');
     });
 
+    /**
+     * @effects copy_button_ignores_empty_text
+     */
     it('text 가 비어 있으면 클립보드를 호출하지 않는다', async () => {
         const writeText = vi.fn().mockResolvedValue(undefined);
         Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
@@ -43,6 +52,9 @@ describe('sirsoft-message_bizppurio copyToClipboard 핸들러', () => {
         expect(writeText).not.toHaveBeenCalled();
     });
 
+    /**
+     * @effects copy_button_falls_back_when_clipboard_api_missing
+     */
     it('클립보드 API 가 없으면 execCommand 폴백으로 복사한다', async () => {
         Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
         const execCommand = vi.fn().mockReturnValue(true);

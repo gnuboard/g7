@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\LayoutExtensionType;
 use App\Enums\LayoutSourceType;
+use App\Models\Concerns\UsesRuntimeRoleLayoutTable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -39,6 +40,7 @@ use Illuminate\Support\Carbon;
 class LayoutExtension extends Model
 {
     use HasFactory, SoftDeletes;
+    use UsesRuntimeRoleLayoutTable;
 
     /**
      * 테이블명

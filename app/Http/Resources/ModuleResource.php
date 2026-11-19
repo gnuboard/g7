@@ -32,6 +32,8 @@ class ModuleResource extends BaseApiResource
             'description' => $this->getLocalizedField('description'),
             'dependencies' => $this->getValue('dependencies', []),
             'integrations' => $this->getValue('integrations', []),
+            // 다른 확장에 공개하는 PHP 표면(manifest public_api) — 상세 「공개 API」 칸 (#916)
+            'public_api' => $this->getValue('public_api'),
             // 이 모듈을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
             'integrated_by' => $this->integratedBy('module'),
             'status' => $this->getValue('status'),
@@ -43,6 +45,9 @@ class ModuleResource extends BaseApiResource
             // 업데이트 관련 필드
             'update_available' => $this->getValue('update_available', false),
             'update_source' => $this->getValue('update_source'),
+            // 패키지 서명 검증 결과(verified·unsigned·unverifiable·bundled, 기록 없으면 null) — 상세 「패키지 서명」 배지 (7.2.0)
+            'integrity_status' => $this->getValue('integrity_status'),
+            'integrity_key_id' => $this->getValue('integrity_key_id'),
             'latest_version' => $this->getValue('latest_version'),
             'file_version' => $this->getValue('file_version'),
             'github_url' => $this->getValue('github_url'),
@@ -68,6 +73,9 @@ class ModuleResource extends BaseApiResource
             ...$this->phpExtensionRequirementFields('module'),
             // 레이아웃 갱신 응답에만 — 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
             ...(is_array($this->getValue('layout_warnings')) ? ['layout_warnings' => $this->getValue('layout_warnings')] : []),
+            // 레이아웃 갱신 응답에만 — 판정별 개수·충돌 화면(`layout_preview`)과 운영자 관련 행 보고(`layout_sync`)
+            ...(is_array($this->getValue('layout_preview')) ? ['layout_preview' => $this->getValue('layout_preview')] : []),
+            ...(is_array($this->getValue('layout_sync')) ? ['layout_sync' => $this->getValue('layout_sync')] : []),
             ...$this->resourceMeta($request),
         ];
     }
@@ -119,6 +127,8 @@ class ModuleResource extends BaseApiResource
             'requires_core' => $this->getValue('requires_core'),
             'dependencies' => $this->getValue('dependencies', []),
             'integrations' => $this->getValue('integrations', []),
+            // 다른 확장에 공개하는 PHP 표면(manifest public_api) — 상세 「공개 API」 칸 (#916)
+            'public_api' => $this->getValue('public_api'),
             // 이 모듈을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
             'integrated_by' => $this->integratedBy('module'),
             'status' => $this->getValue('status'),
@@ -136,6 +146,9 @@ class ModuleResource extends BaseApiResource
             // 업데이트 관련 필드
             'update_available' => $this->getValue('update_available', false),
             'update_source' => $this->getValue('update_source'),
+            // 패키지 서명 검증 결과(verified·unsigned·unverifiable·bundled, 기록 없으면 null) — 상세 「패키지 서명」 배지 (7.2.0)
+            'integrity_status' => $this->getValue('integrity_status'),
+            'integrity_key_id' => $this->getValue('integrity_key_id'),
             'latest_version' => $this->getValue('latest_version'),
             'file_version' => $this->getValue('file_version'),
             'github_changelog_url' => $this->getValue('github_changelog_url'),

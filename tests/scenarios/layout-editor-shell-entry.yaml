@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는(레이아웃 편집기 진입/셸/라우트 트리) 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트(Vitest + PHPUnit)로 커버. Phase 1 은 백엔드 source 태깅 + G7Config 메타 보강 + 프론트 셸 골격에 한정 — 캔버스 렌더는 Phase 2, 요소 배치는 Phase 3.
+# audit:allow test-scenario-coverage reason: issue:#609 본 매니페스트는(레이아웃 편집기 진입/셸/라우트 트리) 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트(Vitest + PHPUnit)로 커버. Phase 1 은 백엔드 source 태깅 + G7Config 메타 보강 + 프론트 셸 골격에 한정 — 캔버스 렌더는 Phase 2, 요소 배치는 Phase 3.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 앞선 정리에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 
 feature: 레이아웃 편집기 셸 + 진입 경로 + 라우트 트리
 
@@ -44,6 +45,9 @@ effects:
   - get_routes_data_with_modules_attaches_source_kind_and_identifier_to_plugin_routes
   - get_routes_data_with_modules_attaches_source_to_auto_plugin_settings_routes
   - get_routes_data_with_modules_preserves_meta_title_editor_label_hidden_parent
+  # 2026-11-13 issue490 커밋 전 점검: source 태깅 시험 두 파일이 재는 효과를 메서드 단위로 선언
+  - every_merged_route_carries_source_kind_and_identifier
+  - routes_request_for_unavailable_template_fails_unchanged_by_source_tagging
   - template_composer_exposes_active_modules_meta_with_identifier_display_name_version
   - template_composer_exposes_active_plugins_meta_with_identifier_display_name_version
   - user_template_composer_exposes_active_extensions_meta_same_shape
@@ -89,6 +93,15 @@ effects:
   - chrome_strings_render_via_layout_editor_t_keys_no_hardcoded_text
   - chrome_i18n_keys_have_ko_en_parity
   - session_expiry_returns_to_editor_in_same_tab_not_new_window
+  # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
+  - update_template_data_keeps_layout_editor_tree_mounted_in_editor_mode
+  - update_template_data_rerenders_normally_outside_editor_mode
+  # 반복 항목 편집 모드의 진입, 종료 복귀, 저장 반영 (브라우저)
+  - url_direct_entry_renders_iteration_mode_with_host
+  - exit_iteration_edit_returns_to_host_route
+  - iteration_save_invalidates_host_route_cache_and_busts_get
+  - double_click_plain_text_enters_inline_edit
+  - data_bound_node_shows_data_area_notice
 
 test_files:
   - tests/Feature/Api/Public/PublicTemplateRoutesSourceTaggingTest.php
@@ -104,6 +117,8 @@ test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/components/LayoutEditorChrome.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/i18n/chrome-i18n-coverage.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/devtools/editorTrackers.test.ts
+  - resources/js/core/__tests__/template-engine.layoutEditorRerender.test.tsx
+  - tests/Playwright/specs/layout-editor/iteration-edit-save-return-inline.spec.ts
 
 rules_layer_coverage:
   - rule: service-direct-data-access

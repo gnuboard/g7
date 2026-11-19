@@ -2,9 +2,11 @@
  * 마이페이지 배송지 수정 — 해외 주소 필드 표시/보존 E2E.
  * 템플릿 sirsoft-basic (유저 화면).
  *
- * @scenario address-overseas-edit
- * @effects overseas_edit_form_prefills_intl_fields,
- *          overseas_edit_save_preserves_city_state_postal_code
+ * @scenario mypage-address-overseas-edit
+ * 케이스(마커 아님 — 평문): address-overseas-edit
+ * 효과 요약(마커 아님 — 평문): overseas_edit_form_prefills_intl_fields,
+ *   overseas_edit_save_preserves_city_state_postal_code, overseas_address_card_shows_full_address
+ *   (각 효과는 T1~T3 의 시험 주석에 마킹)
  *
  * 배경: 배송지 조회 응답은 해외 주소를 city/state/postal_code 로 내려주지만 주소 폼의
  *       입력칸 이름은 intl_city/intl_state/intl_postal_code 다. 수정 진입에서 조회 응답

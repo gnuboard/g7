@@ -1,0 +1,51 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: 강제 꺼짐 + 비상 계정 2단계 요구)이 대부분이라 명목상이다.
+feature: sso_definitions
+description: |
+  SSO 선언 — 알림 정의 7종(모양, 훅, 본문 자리, 치환 값), 활동 로그 문구와 기록, 권한 6종과 라우트 권한, 발행 훅 설명 3로케일.
+axes:
+  locale: ["ko|en"]
+  actions: [all]
+  hook: ["after_link_jit_no_consent|after_deprovision|roles_after_sync|auth_login_failed", roles_after_sync]
+  skipped: [core_guard]
+  locales: ["ko|en|ja"]
+  hooks: [notification_and_log]
+  definitions: [all]
+  type: ["sso_password_reset_redirect|sso_super_admin_deprovisioned|sso_admin_withdraw_skipped|sso_idp_failures", "all_with_idp|password_reset_without_idp|deprovisioned_source", sso_password_reset_redirect, "sso_emergency_login|sso_cert_expiring"]
+  site_timezone: [Asia/Seoul]
+  guide_idp: ["ldap_username|ldap_email|oidc|none"]
+  request_locale: [en]
+  recipient: ["ko|en"]
+  declarations: [permissions]
+  routes: ["admin.*|me.*"]
+effects:
+  - roles_synced_with_skip_reason
+  - labels_present
+  - descriptions_present
+  - jit_and_consent_skipped_logged
+  - deprovisioned_logged
+  - roles_logged
+  - roles_logged_with_idp
+  - failure_logged
+  - label_resolved
+  - descriptions_complete
+  - arguments_documented
+  - seven_types
+  - hooks_declared
+  - placeholders_declared
+  - ko_en_present
+  - member_context
+  - super_admins_context
+  - withdraw_skip_separate
+  - values_filled
+  - notification_dates_in_site_timezone
+  - idp_label_follows_recipient
+  - fallback_follows_recipient
+  - source_follows_recipient
+  - reset_guide_matches_login_method
+  - six_admin_permissions
+  - route_permission_map
+test_files:
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Definitions/ActivityLogDefinitionsTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Definitions/HookDescriptionLocalesTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Definitions/NotificationDefinitionsTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Definitions/PermissionsTest.php

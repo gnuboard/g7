@@ -19,16 +19,29 @@ class NotificationChannelServiceTest extends TestCase
 {
     private NotificationChannelService $service;
 
+    /**
+     * 시험 대상 서비스를 새로 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->service = new NotificationChannelService;
     }
 
+    /**
+     * Mockery 기대를 검증하고 닫은 뒤 부모 정리를 실행한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**
@@ -38,6 +51,8 @@ class NotificationChannelServiceTest extends TestCase
      * 다시 쓰면 그 판정이 세 벌이 되고, 한쪽만 고쳐졌을 때 그 화면만 다른 편집기를 그린다.
      *
      * @effects notification_channel_meta_declares_template_editor
+     *
+     * @return void 반환값 없음
      */
     public function test_available_channels_declare_a_template_editor(): void
     {
@@ -52,6 +67,8 @@ class NotificationChannelServiceTest extends TestCase
      * 종전 플래그로 이미 편집기를 감추고 있는 채널이 이 변경으로 다시 드러나면 안 된다.
      *
      * @effects notification_channel_hidden_flag_maps_to_none
+     *
+     * @return void 반환값 없음
      */
     public function test_hidden_template_editor_flag_maps_to_none(): void
     {
@@ -74,6 +91,8 @@ class NotificationChannelServiceTest extends TestCase
      * 섞여 사용자 화면에 글자 그대로 보인다.
      *
      * @effects notification_channel_unknown_editor_falls_back_to_plain
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_template_editor_falls_back_to_plain(): void
     {
@@ -95,6 +114,8 @@ class NotificationChannelServiceTest extends TestCase
      * 코어 설정에서 채널이 활성화된 경우 true를 반환한다.
      *
      * @effects core_channel_enabled_when_flag_true
+     *
+     * @return void 반환값 없음
      */
     public function test_core_channel_enabled_when_is_active_true(): void
     {
@@ -112,6 +133,8 @@ class NotificationChannelServiceTest extends TestCase
      * 코어 설정에서 채널이 비활성화된 경우 false를 반환한다.
      *
      * @effects core_channel_disabled_when_flag_false
+     *
+     * @return void 반환값 없음
      */
     public function test_core_channel_disabled_when_is_active_false(): void
     {
@@ -132,6 +155,8 @@ class NotificationChannelServiceTest extends TestCase
      * 설정에 엔트리가 없으면 기본 활성(true) — 하위호환 + 신규 플러그인 채널 대응.
      *
      * @effects core_channel_defaults_to_enabled_without_an_entry
+     *
+     * @return void 반환값 없음
      */
     public function test_core_channel_defaults_to_enabled_when_entry_missing(): void
     {
@@ -149,6 +174,8 @@ class NotificationChannelServiceTest extends TestCase
      * notifications.channels 키 자체가 없으면(빈 배열) 모든 채널 활성.
      *
      * @effects core_channel_defaults_to_enabled_without_settings
+     *
+     * @return void 반환값 없음
      */
     public function test_core_channel_defaults_to_enabled_when_settings_empty(): void
     {
@@ -163,6 +190,8 @@ class NotificationChannelServiceTest extends TestCase
      * 모듈 경로: ModuleSettingsService를 통해 조회한다.
      *
      * @effects module_channel_reads_module_settings
+     *
+     * @return void 반환값 없음
      */
     public function test_module_channel_resolved_via_module_settings(): void
     {
@@ -187,6 +216,8 @@ class NotificationChannelServiceTest extends TestCase
      * 플러그인 경로: PluginSettingsService를 통해 조회한다.
      *
      * @effects plugin_channel_reads_plugin_settings
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_channel_resolved_via_plugin_settings(): void
     {
@@ -207,6 +238,8 @@ class NotificationChannelServiceTest extends TestCase
      * 모듈 식별자가 비어 있으면 기본 활성 반환.
      *
      * @effects module_without_identifier_defaults_to_enabled
+     *
+     * @return void 반환값 없음
      */
     public function test_module_without_identifier_returns_default_enabled(): void
     {
@@ -222,6 +255,8 @@ class NotificationChannelServiceTest extends TestCase
      * 동일 조합 반복 호출 시 캐시를 사용한다 (SettingsService 1회만 호출).
      *
      * @effects channel_enabled_lookup_is_memoized
+     *
+     * @return void 반환값 없음
      */
     public function test_memoizes_channel_enabled_lookup(): void
     {
@@ -247,6 +282,8 @@ class NotificationChannelServiceTest extends TestCase
      * clearChannelEnabledCache() 호출 시 캐시가 초기화된다.
      *
      * @effects channel_enabled_cache_can_be_cleared
+     *
+     * @return void 반환값 없음
      */
     public function test_clear_channel_enabled_cache(): void
     {
@@ -269,6 +306,8 @@ class NotificationChannelServiceTest extends TestCase
      * 설정 조회 중 예외 발생 시 기본 활성(true) 반환.
      *
      * @effects settings_failure_defaults_to_enabled
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_default_enabled_on_settings_service_exception(): void
     {
@@ -285,7 +324,8 @@ class NotificationChannelServiceTest extends TestCase
     /**
      * 코어 SettingsService 응답을 mocking 하는 헬퍼.
      *
-     * @param  array  $channels
+     * @param  array  $channels  설정이 돌려줄 채널 목록
+     * @return void 반환값 없음
      */
     private function mockCoreSettings(array $channels): void
     {

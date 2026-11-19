@@ -304,7 +304,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
    *
    * @effects claim_apply_total_charge_shows_secondary_currency
    */
-  it('교환 요약의 총 청구액·배송비 보조통화가 글자로 나온다 (3차 C1 회귀)', async () => {
+  it('교환 요약의 총 청구액·배송비 보조통화가 글자로 나온다 (회귀)', async () => {
     const { utils, container } = await renderPartial('_apply_summary.json', estimateState());
     active = utils;
 
@@ -348,7 +348,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
    *
    * @effects claim_apply_charge_axes_hidden_for_refund
    */
-  it('취소·환불은 총 청구액 줄이 서지 않고 환불 예정액 보조통화가 나온다 (3차 A1 회귀)', async () => {
+  it('취소·환불은 총 청구액 줄이 서지 않고 환불 예정액 보조통화가 나온다 (회귀)', async () => {
     const { utils, container } = await renderPartial(
       '_apply_summary.json',
       estimateState({ claimType: 'refund' })

@@ -93,6 +93,19 @@
           {{order.data.shipping_address?.delivery_memo_label ?? order.data.shipping_address?.delivery_memo ?? ''}}
         </span>
       </div>
+      <!-- 배송 추가 정보 — 운영자가 주문서에 더한 항목 가운데 배송지 구획에서 받은 값(값이 있는 것만 서버가 준다). 없으면 그리지 않는다 -->
+      <div data-if="{{(order.data.extra_fields ?? []).some(function(f) { return f.section === 'shipping'; })}}" data-ref="order_detail_extra_fields_shipping" class="space-y-3">
+        <div data-each="extraField in {{(order.data.extra_fields ?? []).filter(function(f) { return f.section === 'shipping'; })}}" data-ref="order_detail_extra_field_{{extraField.key}}" class="flex items-start">
+          <span class="w-28 flex-shrink-0 pr-2 text-gray-500 dark:text-gray-400 break-words">
+            <responsive on="portable" class="w-20 flex-shrink-0 pr-2 text-gray-500 dark:text-gray-400 text-sm break-words"/>
+            {{extraField.label}}
+          </span>
+          <span class="min-w-0 text-gray-900 dark:text-white break-words">
+            <responsive on="portable" class="min-w-0 text-gray-900 dark:text-white text-sm break-words"/>
+            {{extraField.display_value}}
+          </span>
+        </div>
+      </div>
     </div>
     <!-- 배송 현황 — 결제 완료 이후 OrderStatusEnum 값(payment_complete/shipping_hold/preparing/shipping_ready/shipping/delivered/confirmed)에서만 노출. pending_order/pending_payment 상태에서는 '배송대기' 라벨 노출이 사용자에게 모호하므로 비표시 (결제 안내가 우선). cancelled 도 비표시 — 취소된 주문은 배송 현황 무의미. (부분취소는 별도 상태가 아니라 잔여 옵션 기준 진행 상태로 환원되어 배송 현황이 정상 노출됨.) -->
     <div data-if="{{(order.data.shippings ?? []).length > 0 &amp;&amp; ['payment_complete','shipping_hold','preparing','shipping_ready','shipping','delivered','confirmed'].includes(order.data.order_status)}}" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">

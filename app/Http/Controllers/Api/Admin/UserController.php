@@ -4,11 +4,13 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Exceptions\Auth\PasswordAuthDisallowedException;
 use App\Exceptions\CannotDeleteSelfException;
 use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Exceptions\CannotModifySuperAdminException;
 use App\Exceptions\PermissionEscalationException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Requests\User\AdminUserFormFieldsRequest;
 use App\Http\Requests\User\BulkUpdateUserRolesRequest;
 use App\Http\Requests\User\BulkUpdateUserStatusRequest;
 use App\Http\Requests\User\CheckEmailRequest;
@@ -21,6 +23,7 @@ use App\Http\Requests\User\UserListRequest;
 use App\Http\Resources\UserCollection;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\MemberFieldSchemaService;
 use App\Services\UserService;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -37,9 +40,11 @@ class UserController extends AdminBaseController
      * 회원 도메인 서비스를 주입받습니다.
      *
      * @param  UserService  $userService  회원 조회·생성·수정·검색을 담당하는 서비스
+     * @param  MemberFieldSchemaService  $memberFieldSchema  회원 폼 화면의 항목 계약
      */
     public function __construct(
-        private UserService $userService
+        private UserService $userService,
+        private MemberFieldSchemaService $memberFieldSchema,
     ) {
         parent::__construct();
     }
@@ -63,6 +68,27 @@ class UserController extends AdminBaseController
             return $this->success(
                 'user.fetch_success',
                 $collection->withStatistics($statistics)
+            );
+        } catch (Exception $e) {
+            return $this->error('user.fetch_failed', 500, $e->getMessage());
+        }
+    }
+
+    /**
+     * 관리자 회원 폼·상세가 그릴 회원 항목과 정의 버전을 조회합니다.
+     *
+     * 회원을 주면(수정, 상세) 그 회원의 현재 값과 잠금, 항목 상태가 함께 온다. 주지 않으면 추가 화면용이다.
+     *
+     * @param  AdminUserFormFieldsRequest  $request  검증된 요청
+     * @param  User|null  $user  대상 회원 (추가 화면이면 null)
+     * @return JsonResponse 항목 계약 목록, 정의 버전, 회원의 항목 상태
+     */
+    public function formFields(AdminUserFormFieldsRequest $request, ?User $user = null): JsonResponse
+    {
+        try {
+            return $this->success(
+                'common.success',
+                $this->memberFieldSchema->forAdmin($user, $request->user())
             );
         } catch (Exception $e) {
             return $this->error('user.fetch_failed', 500, $e->getMessage());
@@ -110,12 +136,16 @@ class UserController extends AdminBaseController
             // withAdminInfo()를 호출하여 관리자용 상세 정보 및 모듈 훅 데이터 포함
             $resource = new UserResource($user);
 
-            // 비밀번호 상태(만료 판정)·최근 검색어는 상세에서만 덧붙인다 — withAdminInfo() 는 목록도 행마다 부른다(A13).
+            // 비밀번호 상태(만료 판정)·잠긴 칸·최근 검색어는 상세에서만 덧붙인다 — withAdminInfo() 는 목록도 행마다 부른다(A13, 7.2.0).
             return $this->success(
                 'user.fetch_success',
                 array_merge($resource->withAdminInfo(), [
                     'password_status' => $resource->passwordStatusArray(),
+                    'locked_fields' => $resource->adminLockedFields(),
+                    'locked_reasons' => (object) $resource->adminLockedReasons(),
                     'search_history' => $resource->searchHistoryArray(),
+                    // 운영자 추가 항목의 값 — 관리자 상세는 관리자만 열람 항목까지 싣는다(7.2.0)
+                    'custom_fields' => $resource->customFieldsArray(includeAdminOnly: true),
                 ])
             );
         } catch (Exception $e) {
@@ -145,6 +175,9 @@ class UserController extends AdminBaseController
             return $this->error('exceptions.cannot_grant_unheld_permission', 403);
         } catch (ValidationException $e) {
             return $this->error('user.update_failed', 422, $e->errors());
+        } catch (PasswordAuthDisallowedException $e) {
+            // 비밀번호 인증 정책 거절(회사 계정 전용 회원에게 비밀번호 지정) — 전역 렌더러가 403 + 안내 데이터로 답한다
+            throw $e;
         } catch (Exception $e) {
             return $this->error('user.update_failed', 500, $e);
         }
@@ -169,6 +202,30 @@ class UserController extends AdminBaseController
                 'auth.account_unlocked',
                 new UserResource($unlocked)
             );
+        } catch (CannotModifySuperAdminException $e) {
+            return $this->error('exceptions.cannot_modify_super_admin', 403);
+        } catch (Exception $e) {
+            return $this->error('user.update_failed', 500, $e);
+        }
+    }
+
+    /**
+     * 회원을 모든 기기에서 로그아웃시킵니다 (강제 로그아웃).
+     *
+     * 그 회원의 인증 토큰을 전부 지운다 — 다음 API 요청부터 401 이다. 하위 관리자는 최고관리자를 대상으로 하지 못한다.
+     *
+     * @param  User  $user  대상 회원
+     * @return JsonResponse 지운 토큰 수 (`data.revoked_count`)
+     *
+     * @since 7.2.0
+     */
+    public function revokeSessions(User $user): JsonResponse
+    {
+        try {
+            $actor = request()->user();
+            $count = $this->userService->revokeAllSessions($user, $actor instanceof User ? $actor : null);
+
+            return $this->success('user.sessions_revoked', ['revoked_count' => $count]);
         } catch (CannotModifySuperAdminException $e) {
             return $this->error('exceptions.cannot_modify_super_admin', 403);
         } catch (Exception $e) {

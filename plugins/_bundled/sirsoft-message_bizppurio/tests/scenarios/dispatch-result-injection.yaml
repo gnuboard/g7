@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#597 |
 #   A-2 는 코어 알림 발송 이력 화면에 비즈뿌리오 결과(도달·실패사유·잔액부족·대체발송)를 얹는
 #   작업이다(코어 앱·코어 테이블 무수정). axes cross product 의 런타임 효과는 계층별로 전수 가드된다:
 #     - 연결고리(코어 로그↔dispatch): NotificationLogLinkTest — 실제 훅 체인(after_log_sent/
@@ -75,10 +75,33 @@ effects:
   - non_low_balance_cell_omits_low_balance_badge
   - fallback_cell_renders_fallback_badge
   - unmatched_row_renders_empty_cell
+  # overlay 결과 컬럼 — 조회 방식·채널 가드·표시 갈래 (프론트, notification_log_result.test.tsx)
+  - result_column_fetches_recent_result_map_without_params  # 다른 데이터소스를 params 로 참조하면 응답 전 평가돼 빈 배열 전송
+  - result_cell_shown_only_for_bizppurio_channel_rows
+  - result_column_hidden_on_mail_and_database_tabs
+  - row_expand_appends_result_block_for_matched_rows
+  - result_badges_use_solid_dark_mode_colors
+  - inspection_mode_dispatch_shows_inspection_label
+  - live_mode_dispatch_keeps_status_label
+  - alimtalk_row_expand_renders_sent_content
+  - sent_content_omitted_for_sms_or_missing_content
   # e2e (실연동 단계 도입 예정 — 브라우저 왕복 커버 대상)
   - e2e_open_history_shows_result_column
   - e2e_result_cell_shows_status_reason_and_badges
   - e2e_member_recipient_links_to_user_detail
+  # 결과 조회 API, 최근 결과, 리포지토리 세부 (PHPUnit 이 이미 재던 것을 #609 에서 명시)
+  - lookup_rejects_unauthenticated_with_401
+  - recent_lookup_requires_messaging_view_permission
+  - recent_lookup_returns_result_map_without_params
+  - lookup_empty_log_ids_returns_200_with_empty_map
+  - lookup_failure_result_includes_reason_code_label
+  - find_by_log_ids_empty_input_returns_empty
+  - recent_linked_keyed_excludes_unlinked_and_keys_by_log_id
+  - recent_linked_keyed_respects_limit_newest_first
+  - inspection_mode_snapshot_included_in_result
+  - legacy_dispatch_without_inspection_snapshot_yields_null
+  - recent_results_returns_linked_results_keyed_by_log_id
+  - sent_content_included_in_result
 
 test_files:
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Notification/NotificationLogLinkTest.php

@@ -49,5 +49,8 @@
   },
   "sirsoft-ecommerce-inquiries": {
     "name": "商品問い合わせ管理"
+  },
+  "sirsoft-ecommerce-exports": {
+    "name": "エクスポート管理"
   }
 }

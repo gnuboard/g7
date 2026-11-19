@@ -70,9 +70,9 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | order_cancel_id | null | `null` | order cancel 식별자 (연관 리소스 참조) |
 | source_transaction_id | integer | `802` | source transaction 식별자 (연관 리소스 참조) |
 | granted_by | integer | `1209` | 부여 주체 식별자 (NULL=시스템 자동, user ID=관리자 수동 부여) — 관리자 응답에서만 값이 실리고 회원 마일리지 내역에서는 `null`(`granted_by_name`·`granted_by_uuid` 도 같다) |
-| granted_by_name | string | `최고관리자` | 부여 관리자 이름 (grantedByUser 관계 eager load 시에만 노출) |
+| granted_by_name | string | `최고관리자` | 부여 관리자의 표시 이름 (grantedByUser 관계 eager load 시에만 노출). 실명은 조건이 맞는 관리자 응답에만 `granted_by_real_name` 으로 더해진다([회원 이름과 표시 이름](README.md#회원-이름과-표시-이름)) |
 | granted_by_uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 부여 관리자 UUID (grantedByUser 관계 eager load 시에만 노출) |
-| user_name | string | `최고관리자` | 거래 대상 회원 이름 (user 관계 eager load 시에만 노출) |
+| user_name | string | `최고관리자` | 거래 대상 회원의 표시 이름 (user 관계 eager load 시에만 노출). 실명은 조건이 맞는 관리자 응답에만 `user_real_name` 으로 더해진다 |
 | user_uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 거래 대상 회원 UUID (user 관계 eager load 시에만 노출) |
 | order_number | null | `null` | 연관 주문번호 (order 관계 eager load 시에만 노출) |
 | description | string | `관리자 마일리지 차감 (300원)` | 설명 (다국어 필드는 로케일별 값 객체) |
@@ -219,9 +219,11 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.mileage.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+- **권한 메모(1.4.0)**: 목록 응답 `abilities.can_export`(= `sirsoft-ecommerce.exports.create`) — 목록 머리 줄 [내보내기] 버튼을 보일지 정하는 키. 실제 요청은 [exports.md](exports.md) 가 받는다.
 
 **설명** 관리자가 전체 회원의 마일리지 거래 원장을 검색·필터·페이지네이션으로 조회합니다. `permission:sirsoft-ecommerce.mileage.read` 권한이 필요하며, 회원(member·member_id·email)·주문번호 검색, type(earn·use·expire·adjust)·통화·기간 필터, 금액/생성일 정렬을 지원합니다. `UserMileageService::paginateAdminHistory()`가 조회하고 `MileageTransactionCollection`이 통화 필터 후보(`withCurrencies`)와 함께 직렬화합니다. 각 행은 원장 스냅샷(balance_after, remaining_amount 등)을 그대로 노출하며 원장은 불변입니다. 권한 범위가 「본인만」·「소유역할」 이면 그 범위 안의 행만 돌려줍니다(범위 밖 행은 목록·건수에서 빠집니다).
 
@@ -448,7 +450,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 | memo | body | string | 아니오 | max 1000 | 관리자 메모 보정값 (요청에 포함된 경우만 갱신, 빈 값으로 비우기 허용) |
 | expires_at | body | date | 아니오 | — | 만료일. 날짜만(`YYYY-MM-DD`) 보내면 사이트 시간대 그날 23:59:59 에 만료된다(수동 지급과 같은 규칙). 목록의 `expires_at_date` 를 그대로 다시 보내도 만료 시각이 바뀌지 않는다 |
 
@@ -582,7 +584,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 

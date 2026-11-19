@@ -1,0 +1,65 @@
+# 레이아웃 편집기 데이터 소스 패널과 페이지 설정 데이터 탭 시험 표식
+# #869 이월 0 회차(π1): tsc 정리 때 건드린 편집기 시험의 시나리오 표식 누락을 채우며 만든 매니페스트다.
+# 축 subject 는 각 시험 파일이 재는 대상(컴포넌트 또는 함수)이고, effects 는 시험 하나하나가 단언하는 동작이다.
+feature: layout_editor_data_sources_pi1
+
+description: |
+  DataSourcesPanel 이 자체와 상속 소스를 나누고 추가, 편집, 삭제, 검증, 요청 파라미터와 기본값 블럭 편집을 저장 페이로드로 옮기는지,
+  페이지 설정 데이터 탭이 패널을 임베드하고 전역 헤더와 스크립트를 읽기전용으로 보이는지를 잰다.
+
+axes:
+  subject: [data_sources_panel_enrich, data_sources_panel, data_source_tab]
+
+effects:
+  - ds_panel_form_renders_enriched_sections
+  - ds_panel_content_type_refetch_round_trip
+  - ds_panel_error_handling_code_adds_row
+  - ds_panel_websocket_kind_shows_channel_sections
+  - ds_panel_kind_switch_keeps_source_field
+  - ds_panel_split_own_from_editor_original
+  - ds_panel_split_missing_own_ids_as_inherited
+  - ds_panel_split_legacy_falls_back_to_top_level
+  - ds_panel_add_emits_merged_and_own
+  - ds_panel_add_each_type_saves_that_type
+  - ds_panel_label_key_dynamic_i18n_keeps_token
+  - ds_panel_empty_label_key_removed_on_save
+  - ds_panel_edit_keeps_unrelated_fields
+  - ds_panel_delete_removes_from_merged
+  - ds_panel_empty_id_errors_without_emit
+  - ds_panel_id_starting_with_digit_errors
+  - ds_panel_duplicate_own_id_errors
+  - ds_panel_duplicate_inherited_id_errors
+  - ds_panel_raw_params_parse_error
+  - ds_panel_raw_params_valid_json_saved_as_object
+  - ds_panel_inherited_has_no_edit_delete
+  - ds_panel_inherited_toggle_expands_info
+  - ds_panel_resolved_label_is_title_id_secondary
+  - ds_panel_unresolved_label_shows_id_title
+  - ds_panel_no_resolve_label_falls_back_to_t
+  - ds_panel_extension_source_shows_origin_badge
+  - ds_panel_module_badge_route_has_none
+  - ds_panel_header_footer_fixed_apart_from_body
+  - ds_panel_no_condition_spec_shows_no_condition
+  - ds_panel_condition_spec_renders_builder
+  - ds_panel_params_object_shown_as_kv_rows
+  - ds_panel_kv_params_saved_with_number_literals
+  - ds_panel_nested_params_start_in_raw_mode
+  - ds_panel_fallback_add_opens_recursive_editor
+  - ds_panel_nested_fallback_shown_as_blocks
+  - ds_panel_nested_fallback_save_keeps_structure
+  - ds_panel_fallback_string_leaf_uses_chip_input
+  - ds_panel_fallback_remove_drops_key
+  - ds_panel_fallback_preview_toggle_collapsed
+  - ds_panel_params_rows_show_json_preview
+  - ds_panel_endpoint_uses_chip_input
+  - ds_panel_new_source_condition_builder_works
+  - ds_panel_new_source_condition_saved_as_if
+  - ds_tab_embeds_data_sources_panel
+  - ds_tab_global_headers_read_only_section
+  - ds_tab_empty_headers_scripts_notice
+  - ds_tab_scripts_read_only_section
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/components/DataSourcesPanel.enrich.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/DataSourcesPanel.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/DataSourceTab.test.tsx

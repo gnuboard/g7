@@ -56,6 +56,7 @@ describe('layoutAttachments — 첨부 API 클라이언트', () => {
     vi.restoreAllMocks();
   });
 
+  /** @effects editor_attachment_client_preserves_server_issued_url_verbatim, proxy_url_otherwise */
   it('목록 응답의 프록시 URL 을 가공 없이 보존한다', async () => {
     (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
       jsonResponse({ success: true, data: [attachment(PROXY_URL)] }),
@@ -67,6 +68,7 @@ describe('layoutAttachments — 첨부 API 클라이언트', () => {
     if (result.ok) expect(result.data[0].url).toBe(PROXY_URL);
   });
 
+  /** @effects editor_attachment_client_preserves_server_issued_url_verbatim, direct_url_when_row_matches_public_disk, editor_thumbnail_renders_cross_origin */
   it('목록 응답의 교차 출처 CDN 절대 URL 을 가공 없이 보존한다', async () => {
     (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
       jsonResponse({ success: true, data: [attachment(CDN_URL)] }),
@@ -78,6 +80,7 @@ describe('layoutAttachments — 첨부 API 클라이언트', () => {
     if (result.ok) expect(result.data[0].url).toBe(CDN_URL);
   });
 
+  /** @effects editor_attachment_client_preserves_server_issued_url_verbatim, direct_url_when_row_matches_public_disk */
   it('업로드 응답의 CDN 절대 URL 을 가공 없이 보존한다', async () => {
     (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
       jsonResponse({ success: true, data: attachment(CDN_URL) }),
@@ -90,6 +93,7 @@ describe('layoutAttachments — 첨부 API 클라이언트', () => {
     if (result.ok) expect(result.data.url).toBe(CDN_URL);
   });
 
+  /** @effects editor_attachment_client_reports_missing_url_and_network_failure_as_errors */
   it('업로드 응답에 url 이 없으면 실패로 처리한다', async () => {
     (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
       jsonResponse({ success: true, data: { id: 1 } }),
@@ -101,6 +105,7 @@ describe('layoutAttachments — 첨부 API 클라이언트', () => {
     expect(result.ok).toBe(false);
   });
 
+  /** @effects editor_attachment_client_encodes_layout_name_and_deletes_by_attachment_id */
   it('레이아웃 이름의 slash 를 query 로 인코딩한다', async () => {
     (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
       jsonResponse({ success: true, data: [] }),
@@ -112,6 +117,7 @@ describe('layoutAttachments — 첨부 API 클라이언트', () => {
     expect(calledUrl).toContain('layout_name=auth%2Flogin');
   });
 
+  /** @effects editor_attachment_client_encodes_layout_name_and_deletes_by_attachment_id */
   it('삭제는 첨부 id 경로로 DELETE 를 보낸다', async () => {
     (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
       jsonResponse({ success: true }),
@@ -125,6 +131,7 @@ describe('layoutAttachments — 첨부 API 클라이언트', () => {
     expect((init as RequestInit).method).toBe('DELETE');
   });
 
+  /** @effects editor_attachment_client_reports_missing_url_and_network_failure_as_errors */
   it('네트워크 실패를 상태 0 의 에러로 돌려준다', async () => {
     (fetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('boom'));
 

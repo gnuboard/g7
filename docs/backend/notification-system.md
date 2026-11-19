@@ -9,7 +9,7 @@
 2. notification_definitions 테이블 = 알림 타입 SSoT (채널, 훅, 변수 정의)
 3. notification_templates 테이블 = 채널별 독립 템플릿 + 수신자 (mail/database/fcm)
 4. 훅 기반 트리거: NotificationHookListener가 template별 독립 발송
-5. 수신자 설정: template.recipients JSON으로 채널별 독립 수신자 (4종 타입)
+5. 수신자 설정: template.recipients JSON으로 채널별 독립 수신자 (5종 타입)
 6. 채널 확장: 채널 제공 확장은 코어 훅 `core.notification.channels` 하나에 답하고(도메인 비인지), 도메인은 `{hookPrefix}.notification.channels`로 좁힌다
 7. 전칭 규칙: 사용자·운영자에게 나가는 모든 발송 메시지는 알림 시스템의 정의·템플릿·채널 설정·디스패처를 경유한다.
    별도 발송 경로·별도 메시지 정의 테이블을 만들지 않는다. 예외는 아래 「예외」 표에 이유와 함께 등재해야 한다
@@ -259,6 +259,9 @@ notification_definitions 레코드:
 | `related_user` | 관련 사용자 | relation 키 | 문의 작성자 |
 | `role` | 역할 기반 | role identifier | admin, manager |
 | `specific_users` | 특정 사용자 | user UUID 배열 | ["uuid1", "uuid2"] |
+| `site_admin_email` | 사이트 관리자 이메일 (환경설정 > 일반 `general.admin_email`) | - | 운영 담당 메일함 |
+
+> `site_admin_email`(7.2.0, #888)은 설정의 관리자 이메일 한 곳을 **비회원 수신자**(`GuestNotifiable::fromSiteAdminEmail()`)로 만든다 — 비회원을 허용하는 채널(메일)만 받고, 사이트 알림처럼 회원 계정이 필요한 채널은 건너뛴다. 권한을 묻는 치환(관리자 화면 주소 등)은 `NotificationRecipientCapability` 가 거짓으로 판정한다. 값이 비었거나 형식이 틀리면 그 규칙은 0명이고 `Log::warning` 을 남긴다.
 
 > `trigger_user` 는 회원/비회원을 동일 규칙으로 처리합니다. context 에 `trigger_user_id` 가 있으면 회원(User), 없고 표준 키 `guest_recipient` 가 있으면 비회원([비회원 발송](#비회원게스트-알림-발송) 참조)으로 해석됩니다.
 
@@ -318,7 +321,91 @@ return [
 
 ### {recipient_name} 플레이스홀더
 
-복수 수신자 알림에서 `data.name`에 `{recipient_name}`을 설정하면, 발송 시 각 수신자의 이름으로 자동 치환됩니다.
+자료 추출 리스너는 받는 사람의 이름을 직접 읽어 넣지 않습니다. `data` 의 이름 칸에 `{recipient_name}`(`NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER`)을 넣어 두면 발송 직전에 받는 사람마다, 채널마다 그 사람의 표시 이름으로 바뀝니다.
+
+```php
+'data' => [
+    'name' => NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER,
+    'app_name' => config('app.name'),
+],
+```
+
+- 값이 `{recipient_name}` 인 칸은 키 이름과 무관하게 모두 바뀝니다(`name` 이 아닌 키에 넣어도 됩니다).
+- 이름은 표시 이름 영역 `core:notification:{채널}` 로 계산합니다(7.2.0). 운영자가 환경설정의 회원 탭에서 메일과 사이트 알림을 다르게 정하면 같은 사람에게 채널마다 다른 이름이 나갑니다. 채널 설정이 없으면 알림 공통(`core:notification`), 그것도 없으면 사이트 기본을 따릅니다. 채널 목록에 없는 채널은 알림 공통 영역으로 계산합니다.
+- 설정을 바꾸지 않은 사이트는 모든 영역이 「이름」이라 종전처럼 회원 이름이 나갑니다. 이름을 받지 않는 사이트의 회원은 닉네임, 아이디 가림 순서의 값이 나갑니다.
+- 회원이 아닌 수신자(비회원 주문 알림 등)는 수신자가 가진 이름이 그대로 나갑니다.
+- 수신자가 묶음 크기를 넘어 자식 잡으로 나뉘어도 같은 규칙으로 계산합니다.
+- 뒤따르는 필터 `{hook_prefix}.notification.personalize_data` 의 인자(`$data, $notifiable, $type, $context, $args`)는 그대로입니다. 구독자는 이름이 이미 바뀐 `$data` 를 받습니다.
+- 메일의 받는 사람 이름(To)도 메일 채널의 표시 이름입니다. 발송 이력에 남는 `recipient_name` 은 그 시점의 관리자 화면 영역(`core:admin`) 표시 이름입니다.
+
+받는 사람이 아닌 다른 회원의 이름(글쓴이, 댓글 작성자 등)을 `data` 에 실을 때는 알림 공통 영역으로 계산합니다.
+
+```php
+use App\Notifications\RecipientDisplayName;
+
+'data' => [
+    'name' => NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER,
+    'comment_author' => app(RecipientDisplayName::class)->ofMember($comment->user, $comment->author_name),
+],
+```
+
+| 메서드 | 쓰임 |
+| --- | --- |
+| `forChannel(object $notifiable, ?string $channel)` | 받는 사람의 그 채널 표시 이름 |
+| `ofMember(?User $user, ?string $guestName = null)` | 받는 사람이 아닌 회원의 이름. 회원이 없으면 넘겨준 이름 |
+| `forLog(object $notifiable)` | 발송 이력에 남길 이름 |
+| `areaForChannel(?string $channel)` | 채널의 표시 이름 영역 키 |
+
+### 회원 항목 변수 (7.2.0)
+
+템플릿의 제목, 본문, 이동 주소에서 받는 회원의 항목 값을 변수로 쓸 수 있습니다.
+
+| 변수 | 값 |
+| --- | --- |
+| `{member.display_name}` | 받는 사람의 그 채널 표시 이름 (`{recipient_name}` 자리표시자가 바뀐 값과 같습니다) |
+| `{member.<키>}` | 코어와 확장이 선언한 회원 항목의 값 (예: `{member.nickname}`, `{member.mobile}`) |
+| `{member.custom.<키>}` | 운영자가 환경설정의 회원 탭에서 추가한 항목의 값 |
+
+- 템플릿이 실제로 참조한 변수만 채웁니다. 참조가 없으면 항목 값을 읽지 않습니다.
+- 값은 수신자 묶음마다 한 번에 읽습니다(수신자 수만큼 조회하지 않습니다).
+- 「관리자만 열람」 항목과 파일, 이미지 항목은 변수가 되지 않습니다. 템플릿에 적어도 빈 글자로 나갑니다.
+- 지워졌거나 꺼진 항목의 변수도 빈 글자로 나갑니다(자리표시자가 글자 그대로 나가지 않습니다).
+- 회원이 아닌 수신자는 `{member.display_name}` 에 수신자가 가진 이름이 들어가고 나머지는 빈 글자입니다.
+- 값은 받는 사람의 언어로 만든 보기용 글자입니다(선택 항목은 선택지 이름).
+- 알림 `data` 가 같은 키(`member.…`)를 이미 실었으면 그 값을 그대로 둡니다.
+- 본인인증 알림(`identity.` 로 시작하는 종류)은 받는 사람이 회원으로 정해지기 전에 나가므로 회원 항목 변수를 쓰지 않습니다.
+
+필터:
+
+| 필터 | 인자 | 쓰임 |
+| --- | --- | --- |
+| `core.notification.filter_member_variable_keys` | `array $keys, string $type, string $channel` | 채울 변수 이름 목록(예: `member.custom.job`). 자기 문구를 바깥 서비스에 등록해 두어 코어가 템플릿을 읽지 못하는 확장 채널이 이름을 보탭니다. `member.` 로 시작하지 않는 이름은 버립니다 |
+| `core.notification.filter_template_variables` | `array $variables, NotificationDefinition $definition` | 템플릿 편집 화면의 변수 목록(`[{key, description, group?}]`). 코어가 정의의 선언 변수 뒤에 회원 공통 변수(`group: member`)를 덧붙인 다음 이 필터를 태웁니다 |
+
+```php
+// 확장 채널: 이 채널의 문구가 쓰는 회원 변수를 알려 준다
+HookManager::addFilter('core.notification.filter_member_variable_keys', function (array $keys, string $type, string $channel) {
+    return $channel === 'vendor_push' ? [...$keys, 'member.nickname'] : $keys;
+});
+```
+
+**없는 변수 경고**: 템플릿 저장(`PUT /api/admin/notification-templates/{template}`) 응답의 `data.warnings` 에 지금 없는 회원 항목 변수가 실립니다. 저장은 그대로 됩니다. 항목은 `{step: "template_variable", target: "member.custom.job", message, level: "warning"}` 모양이고 없으면 빈 배열입니다. 확장이 `core.notification.filter_template_variables` 로 더한 `member.…` 변수는 있는 것으로 봅니다.
+
+### 언어별 변수 값 (7.2.0)
+
+제목·본문 틀은 수신자 언어로 고르지만, 변수 값이 문자열이면 알림을 일으킨 요청의 언어 그대로 들어갑니다. 연동 이름·상품명처럼 언어마다 다른 값은 `data` 에 `{로케일: 문자열}` 배열로 넣습니다.
+
+```php
+'data' => [
+    'idp_label' => ['ko' => '회사 계정', 'en' => 'Company account'],
+    'count' => 3,
+],
+```
+
+- 값은 수신자 언어 → 사이트 기본 언어 → 영어 → 첫 유효값 순으로 고릅니다(빈 문자열·공백은 없는 값으로 봅니다).
+- 메일·사이트 알림의 제목·본문·`click_url`, 사이트 알림에 저장되는 `data`, 확장 채널 필터(`to_{채널}`)로 넘어가는 `data` 가 모두 같은 값을 씁니다.
+- 키가 로케일 모양(`ko`, `en`, `ja`, `zh-CN` …)이고 값이 문자열·숫자인 배열만 언어별 값으로 봅니다. 그 밖의 배열은 치환하지 않고 `{key}` 를 그대로 둡니다.
+- 문자열·숫자 변수는 종전과 같습니다.
 
 ### 알림 변수의 번역 문구 (7.1.5)
 
@@ -372,6 +459,8 @@ use App\Helpers\TimezoneHelper;
 
 전수는 `config/core.php` 의 `notification_definitions` 가 단독으로 소유한다 — 아래는 그중 인증·휴면 계열이다. 비밀번호 만료 2종(#736)은 `auth:process-password-expiry` 가 발행하며, 변경 화면 주소(`{action_url}`)가 수신자에 따라 다르다 — 관리자는 관리자 회원 수정 화면·관리자 로그인, 회원은 마이페이지 비밀번호 변경·로그인.
 
+> 알림 변수의 화면 주소(`{action_url}`·`{site_url}`, 확장의 `{post_url}`·`{order_url}` 등)는 화면 주소 헬퍼 `ScreenUrl` 로 만든다(7.2.0+). 회원에게 가는 링크는 환경설정 「사용자 화면 URL」(비면 사이트 주소), 운영자에게 가는 링크는 사이트 주소 기준이고, 경로는 필터 `core.screen_url.filter_path` 로 바꿀 수 있다. `.env` 의 `G7_PUBLIC_LINK_URL` 을 정하면 「사이트 주소」 자리가 그 주소로 바뀐다 — 공개 주소와 다른 주소로 띄운 서버가 보내는 링크도 공개 주소를 가리키게 하는 값이다. 알림 링크는 링크 변형(`ScreenUrl::absoluteForLinks()`·`toAbsoluteForLinks()`, 회원용 `{site_url}` 은 `ScreenUrl::userLinkBase()`, 운영자용 `{site_url}` 은 `SiteUrl::forOutboundLinks()`)으로 만든다 — 기본 변형(`ScreenUrl::absolute()`·`toAbsolute()`)은 결제·본인인증 뒤 브라우저 복귀용이라 이 값을 따르지 않는다. 확장이 새 알림 변수에 화면 주소를 넣을 때도 같은 헬퍼를 쓴다 — [라우팅 「절대 URL」](routing.md), [개발자 화면 가이드 5절](../custom-development.md#5-화면-주소-키와-주소-필터).
+
 | type | hooks | 채널 |
 |------|-------|------|
 | welcome | core.auth.after_register | mail, database |
@@ -382,6 +471,26 @@ use App\Helpers\TimezoneHelper;
 | dormant_pre_notice | core.privacy.dormant_pre_notice | mail, database |
 | dormant_converted | core.privacy.dormant_converted | mail, database |
 | dormant_withdraw_notice | core.privacy.dormant_withdraw_notice | mail, database |
+
+#### 예약 작업 실패 `schedule_failed` (7.2.0~)
+
+스케줄 실행기(`ScheduleExecutor`)가 실패마다 발화하는 `core.schedule.run_failed`(인자 `Schedule $schedule, ?ScheduleHistory $history, string $error`)를 구독하는 운영 알림이다. 방문자 통계 집계 실패(`analytics_archive_failed`)와 같은 구조다.
+
+| 항목 | 값 |
+|------|----|
+| hook_prefix · audience | `core.schedule` · `staff` |
+| hooks | `core.schedule.run_failed` |
+| 채널 · 수신자 | mail, database — 두 템플릿 모두 `role: admin` |
+| 변수 | `schedule_label`(표시 명칭) · `schedule_name`(식별자) · `owner`(코어·확장 이름·직접 등록) · `error`(500자에서 자름) · `failed_at`(사이트 시간대 `Y-m-d H:i`) · `schedule_url`(스케줄 관리 화면, 해당 작업 검색) · `app_name` · `site_url` |
+| database 알림 click_url | `{schedule_url}` |
+
+값은 `ScheduleNotificationDataListener`(`core.schedule.notification.extract_data` 필터)가 채우고, 보낼지는 `ScheduleFailureNotifier::shouldNotify()` 가 정한다. 보내지 않을 때는 `context.skip` 으로 발송을 멈춘다.
+
+- 스케줄의 「실패 시 알림」(`notify_on_failure`)이 꺼져 있으면 보내지 않는다.
+- 관리 화면 「즉시 실행」(수동 실행) 실패는 보내지 않는다 — 운영자가 결과를 화면에서 이미 본다.
+- job 유형 스케줄을 「큐로 보내기」로 실행하면 Job 을 큐에 넣는 데 성공한 시점에 스케줄 실행은 성공이므로 이 알림은 가지 않는다. Job 자체의 실패는 그 Job 의 재시도·실패 처리를 따르고, 큐 관리 화면의 실패 작업·처리 기록에서 본다.
+- 같은 스케줄은 사이트 시간대 기준 **하루 1회**만 보낸다. 캐시 키 `schedule:failure_notified:{id}:{Ymd}`(TTL 86400초)로 판정하고, 캐시 장애면 보낸다(놓치는 쪽이 더 해롭다).
+- 오류는 문자열로 넘긴다 — 큐로 가는 발송 리스너는 `Throwable` 을 직렬화하지 못한다.
 
 ### Board 7종
 
@@ -687,9 +796,20 @@ $helper->cleanupStaleDefinitions('module', $module->getIdentifier(), $definedTyp
 | 상황 | 동작 |
 |---|---|
 | 정의 신규 추가 | 생성 |
-| 정의 유지 + 사용자가 `name`/`is_active` 수정 | user_overrides 에 등록된 필드 보존, 나머지 갱신 |
+| 정의 유지 + 사용자가 `name`/`is_active`/`channels` 수정 | user_overrides 에 등록된 필드 보존, 나머지 갱신 (`channels` 는 7.2.0 부터, 순서만 바뀐 저장은 수정으로 치지 않는다) |
 | 정의 제거 (seeder 에 없음) | 삭제 + FK cascade 로 연결된 모든 template 자동 정리 |
-| 템플릿 채널 재구성 | 제거된 채널의 template 만 삭제, 유지된 채널은 user_overrides 보존 |
+| 템플릿 채널 재구성 | 제거된 채널의 template 만 삭제, 유지된 채널은 user_overrides 보존. 운영자가 만든 template(`is_user_created`)은 선언에 없어도 삭제하지 않는다 |
+| 운영자가 만든 채널을 확장이 나중에 선언 | 그 template 이 선언 행(`is_user_created=false`)이 된다. 운영자가 고친 칸은 user_overrides 로 보존 |
+
+### 운영자가 켠 발송 수단의 빈 템플릿 (7.2.0)
+
+발송은 템플릿 행이 있는 채널로만 나간다(`NotificationHookListener` 가 정의의 활성 template 을 순회). 그래서 확장이 어떤 채널의 template 을 선언하지 않았으면 운영자가 그 수단을 켜도 편집할 곳도 발송도 없었다 — 예: 관리자 알림(받는 사람 `role=admin` 뿐)은 비즈뿌리오가 문자·알림톡 template 을 덧붙이지 않는다.
+
+- **생성** — 정의 수정 API(`PUT /api/admin/notification-definitions/{id}`)가 `channels` 를 저장할 때, template 이 없는 채널마다 빈 행을 만든다: 제목 `null`, 본문 `[]`, 받는 사람 `[]`, `is_active=false`, `is_user_created=true`. 저장 버튼으로 모아 보내는 화면(gdpr·환율·소셜 로그인 알림 카드)과 스위치마다 즉시 보내는 화면(코어·게시판·이커머스 알림 탭의 「템플릿 만들기」 스위치)이 모두 이 API 를 지난다.
+- **켜기 검사** — `ToggleNotificationTemplateActiveRequest` 가 운영자가 만든 꺼진 template 을 켜는 요청에서 받는 사람 규칙이 없거나, 코어 편집 칸을 쓰는 채널인데 본문이 모든 언어에서 비면 422 로 거절한다. 채널 메타 `template_editor: none` 채널(본문을 확장이 자기 저장소에서 받음)은 받는 사람만 본다. 확장이 선언한 template 은 받는 사람 없이 쓰는 선언이 있어 검사하지 않는다.
+- **저장** — `template_editor: none` 채널의 template 은 `body` 를 생략하거나 빈 배열로 저장할 수 있다(그 확장의 저장 버튼이 받는 사람만 저장하려고 코어 저장 API 를 부를 때).
+- **끄기와 되돌리기** — 수단을 다시 빼도 행은 남는다. 정의·template 의 [기본값으로 되돌리기]는 선언된 기본값이 없으므로 만들었을 때의 빈 상태(꺼짐)로 되돌린다.
+- **화면** — template 응답에 `is_user_created` 가 실리고, 화면은 그 행이 꺼져 있으면 「빈 템플릿이 만들어졌습니다. 내용과 받는 사람을 채운 뒤 켜야 이 수단으로 발송됩니다.」 를 보인다. 켜기가 거절되면 스위치가 눌린 모양으로 남지 않도록 목록 상자를 `remount` 한다(엔진의 remount 키는 치환 전 원본 id 와 맞추므로 반복 안 동적 id 로는 다시 마운트되지 않는다 — 반복 밖 고정 id 상자를 대상으로 한다).
 
 ### 호출처
 
@@ -841,7 +961,7 @@ HookManager::addFilter(
 채널 템플릿 행(알림 설정 화면에 그려지는 채널별 제목·본문·수신자)을 정의에 미리 넣어야 하면 마찬가지로 **코어
 시딩 훅 하나**(`core.notification.filter_seed_definitions`)에 답합니다 — 위 [공통 시딩 훅](#공통-시딩-훅-710) 참조.
 
-GenericNotification의 `__call()`이 `toFcm()` 호출을 `{hookPrefix}.notification.to_fcm` Filter 훅으로 위임합니다.
+GenericNotification의 `__call()`이 `toFcm()` 호출을 `{hookPrefix}.notification.to_fcm` Filter 훅으로 위임합니다. 이 필터가 받는 `data` 는 [언어별 변수 값](#언어별-변수-값-720)을 수신자 언어로 고른 뒤의 값입니다. 채널 드라이버가 자체 템플릿으로 본문을 만들 때도 `getData()` 대신 `$notification->getDataFor($notifiable)` 로 같은 값을 받습니다.
 
 ---
 

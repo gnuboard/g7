@@ -34,8 +34,8 @@
 
 **이 템플릿은 방문자 화면 전용**이라 관리자 템플릿(`sirsoft-admin_basic`)과 컴포넌트 구성이
 크게 다릅니다. `DataGrid` · `AdminSidebar` · `MultilingualInput` 같은 관리 도구가 없고, 대신
-`ProductCard` · `ProductImageViewer` · `QuantitySelector` · `MobileNav` ·
-`SocialLoginButtons` 처럼 상점·게시판·인증 화면에 필요한 것들이 있습니다. **모듈이 방문자
+`ProductCard` · `ProductImageViewer` · `QuantitySelector` · `MobileNav` 처럼
+상점·게시판·인증 화면에 필요한 것들이 있습니다. **모듈이 방문자
 화면을 그리지 않고 API 만 제공하는 구조**(게시판·이커머스 모두 레이아웃이 전부 `admin` 그룹)
 이므로, 방문자가 보는 커머스·게시판 UI 는 사실상 이 템플릿의 컴포넌트가 전부입니다.
 
@@ -150,7 +150,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | 컴포넌트 | 설명 | 주요 Props | 바인딩 |
 |----------|------|-----------|--------|
 | `Icon` | FontAwesome 아이콘 | name | - |
-| `Img` | 이미지 | src, alt | - |
+| `Img` | 이미지 | src, alt, thumbPreset, loading(기본 lazy), decoding(기본 async) | - |
 
 #### 기타
 
@@ -180,7 +180,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
-| `Header` | 사이트 헤더 (로고, 네비게이션, 검색, 사용자 메뉴) | siteName, boardEnabled, shopEnabled, searchEnabled |
+| `Header` | 사이트 헤더 (로고, 네비게이션, 검색, 사용자 메뉴). 탭 줄은 `menu`(템플릿 설정 `header.menu` 를 `_user_base` 계산값 `siteMenu` 로 거른 값) 순서대로 그리고, 하위 메뉴가 있는 링크는 펼침 메뉴(Esc·바깥 누르기로 닫힘), 자동 항목 `home`·`popular`·`shop`·`boards` 는 그 자리에서 편다 | siteName, menu, boards, maxVisibleBoards, boardEnabled, shopEnabled, searchEnabled, seoMenuLinks(봇 화면 전용) |
 | `Footer` | 사이트 푸터 (저작권, 링크, 소셜, 사업자 정보) — `businessInfo` 의 값 있는 항목만 「라벨: 값」 줄로, 모두 비거나 `null` 이면 블록째 숨김 | siteName, boardEnabled, pageEnabled, businessInfo |
 | `MobileNav` | 모바일 네비게이션 드로어 — 번들 레이아웃은 쓰지 않는다(모바일 서랍은 `_user_base` 레이아웃 노드). 상점 링크가 `/shop` 고정이고 모듈 활성 props 가 없다 | - |
 
@@ -211,7 +211,6 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
-| `SocialLoginButtons` | 소셜 로그인 버튼 그룹 | providers |
 
 #### 사용자
 
@@ -226,10 +225,12 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
-| `HtmlContent` | HTML 안전 렌더링 (DOMPurify XSS 방지). 코어 7.1.5+ 는 「본문 콘텐츠」 규칙(`G7Core.contentPolicy.sanitize`)으로 정화하고 외부 영상(`oembed`)을 플레이어로 바꾼다 — `purifyConfig.FORBID_TAGS` 는 규칙이 풀지 않는다. 검색엔진 정화기(`HtmlSanitizer`)와 같은 규칙을 쓴다 | content, text, isHtml, purifyConfig |
+| `HtmlContent` | HTML 안전 렌더링 (DOMPurify XSS 방지). 코어 7.1.5+ 는 「본문 콘텐츠」 규칙(`G7Core.contentPolicy.sanitize`)으로 정화하고 외부 영상(`oembed`)을 플레이어로 바꾼다 — `purifyConfig.FORBID_TAGS` 는 규칙이 풀지 않는다. 검색엔진 정화기(`HtmlSanitizer`)와 같은 규칙을 쓴다 | content, text, isHtml, purifyConfig, imageSizes |
 | `HtmlEditor` | HTML/텍스트 에디터 (WYSIWYG, 미리보기) | name, value, placeholder, isHtml, showPreview, minHeight |
 | `RichTextEditor` | 리치 텍스트 에디터 | value, placeholder |
 | `ImageGallery` | 이미지 갤러리 (썸네일 + 메인 이미지) — 확대 창의 창 이름·단추 이름·「몇 장 중 몇 번째」 등 화면 읽기 이름은 `common.lightbox.*` 로 화면 언어를 따른다 | images |
+
+- **본문 이미지 srcset**: `HtmlContent` 는 서빙 경로 이미지의 `src` 를 본문 규격으로 바꾸고, img `width`(정수)를 알 때만 그 가로 **이하**의 숫자 규격 후보로 `srcset` 을 덮어쓴다. 후보 거르기는 코어 `G7Core.thumbnail.contentSrcsetWithin(src, width)` 한 곳이 하며(`src/support/contentImages.ts` → `src/support/thumbnail.ts` 어댑터), 봇 화면 `HtmlSanitizer` 와 같은 규칙이다. 그 함수가 없는 코어에서는 `srcset` 을 붙이지 않는다(원본보다 큰 후보를 싣지 않는다). 회귀 테스트: `src/components/composite/__tests__/ThumbnailComponents.test.tsx`.
 
 #### 파일/미디어
 
@@ -240,6 +241,9 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 - **키보드 초점 자리**: 항목의 「삭제」로 항목이 사라지면 초점은 다음 항목(없으면 이전 항목, 둘 다 없으면 「추가」 타일, 목록이 비면 드롭존)의 같은 단추로 간다. 빈 드롭존이나 「추가」 타일로 파일을 고른 뒤 그 요소가 사라지면 「추가」 타일(한도가 차서 없으면 새로 추가된 첫 항목)로 간다. 삭제 확인 창을 거친 삭제도 같다. 초점이 업로더 밖으로 나간 뒤에는 끌어오지 않는다. 자리 판정은 항목 루트의 `data-uploader-item` 과 단추의 `data-uploader-action`(`pick`·`add`·`primary`·`drag`·`download`·`retry`·`remove`)으로 하므로 이 표식을 지우지 않는다. 회귀 테스트: `src/components/composite/__tests__/FileUploaderFocusRecovery.test.tsx`.
 - **언어 전환 인계**: 화면 언어를 바꾸면 엔진이 같은 화면을 새로 마운트한다. 업로더는 언어 전환 중에 내려갈 때만 아직 올리지 않은 대기 파일과 끌어 놓은 순서를 `G7Core.locale.handoff` 에 맡기고(키: 경로 + collection + 업로드 시점), 새 인스턴스가 마운트 때 한 번 꺼내 이어 쓴다. 올리던 항목은 대기 상태로 되돌린다. 일반 화면 이동에서는 맡기지 않는다(engine-v1.79.0). 회귀 테스트: `src/components/composite/__tests__/FileUploaderLocaleHandoff.test.tsx`.
 - **생략한 배열 속성의 기본값**: `initialFiles`·`roleIds` 를 생략하면 모듈 상수인 얼린 빈 배열을 쓴다(렌더마다 새 배열을 기본값으로 만들면 `initialFiles` 동기화 effect 가 끝없이 돈다). 훅은 같은 ID 목록이 새 배열로 들어와도 이전 참조를 쓴다. 회귀 테스트: `src/components/composite/__tests__/FileUploaderDefaultInitialFiles.test.tsx`.
+- **업로드 주소(7.2.0)**: 기본 주소가 없다. `apiEndpoints.upload` 를 넘기지 않고 올리면 요청을 보내지 않고 그 파일을 실패로 두며 `onUploadError`(`attachment.upload_failed`)를 부르고 개발 모드 콘솔에 경고를 남긴다 — 종전 기본값 `/api/attachments*` 는 존재하지 않는 경로였다. `delete` 가 없으면 서버 삭제 없이 화면에서만 빼고, `reorder` 가 없거나 `null`·빈 문자열이면 정렬 요청을 보내지 않는다. 판정은 `utils.ts` 의 `resolveApiEndpoints`. 회귀 테스트: `src/components/composite/__tests__/FileUploaderNoDefaultEndpoint.test.tsx`, `FileUploaderReorderNull.test.tsx`.
+- **첨부 업로더 확장점**: 레이아웃의 업로더(글쓰기 첨부, 클레임 신청·리뷰 작성 사진)는 확장점 `attachment_uploader` 의 default 안에 있고 계약 `uploader` 를 함께 넘긴다. 업로더 플러그인이 `mode="replace"` 로 바꿀 수 있다 — 코어 문서 `docs/extension/attachment-uploader.md`.
+- **accept 판정**: 고른 파일이 `accept` 의 확장자(`.jpg`, 대소문자 무시), 정확한 MIME(`image/jpeg`), MIME 와일드카드(`image/*`, 주 형식을 `/` 까지 맞춤) 중 하나라도 맞으면 받고, 아니면 `attachment.file_type_not_allowed` 로 알린다. 판정 식은 `src/components/composite/FileUploader/utils.ts` 의 `isFileAccepted` 하나이고 훅과 시험이 같은 함수를 부른다. 회귀 테스트: `src/components/composite/__tests__/FileUploaderAcceptValidation.test.ts`.
 
 #### 네비게이션/피드백
 
@@ -247,6 +251,8 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 |----------|------|-----------|
 | `TabNavigation` | 탭 네비게이션 (underline/pills/enclosed) — 탭 항목에 `href` 를 주면 `<a role="tab">` 로 그려 새 탭으로 열 수 있다(보통 클릭은 onTabChange) | tabs, activeTabId, variant, onTabChange, hiddenTabIds, tabHrefMergeQuery(탭 주소에 현재 쿼리를 합침) |
 | `Pagination` | 페이지네이션 — `pageHref`(`{page}` 자리표시자)를 주면 번호·이전·다음이 링크(현재 쪽 `aria-current`), `pageHrefMergeQuery` 면 현재 쿼리 합침 | currentPage, totalPages, maxVisiblePages, showFirstLast, prevText, nextText, pageHref, pageHrefMergeQuery |
+
+> **TabNavigation 넘침 (1.4.0)**: 탭은 줄어들지 않으므로(`shrink-0`·`whitespace-nowrap`) 데스크톱 분기(기본 768px 이상)에서 탭 줄이 화면보다 넓으면 nav(`overflow-x-auto`)만 가로로 스크롤됩니다 — 페이지 전체가 밀리지 않습니다. 마운트·활성 탭 변경 때 활성 탭이 보이도록 탭 줄의 가로 위치만 옮깁니다(페이지 세로 스크롤은 그대로).
 
 > **TabNavigation `hiddenTabIds`**: 특정 조건에서 탭을 동적으로 숨길 때 사용합니다. 탭 아이템의 `id` 배열을 전달하면 해당 탭이 렌더링에서 제외됩니다.
 > ```json
@@ -260,17 +266,20 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 > ```
 | `SearchBar` | 검색 바 (자동완성 지원) | name, placeholder, value, showButton, suggestions, showSuggestions |
 | `RecentSearchCombobox` | 최근 검색어 펼침 목록을 가진 검색창 (1.3.1) — 머리글·모바일 서랍·통합검색 화면(`core.site`), 상품 목록·분류 화면(`sirsoft-ecommerce.products`), 게시판 목록 세 유형(`sirsoft-board.posts`) | scope(기본 `core.site`), name, value, submitEmpty(빈 제출도 `onSearch('')` — 목록 검색 조건 풀기, 기록 안 함), showClear(글자가 있을 때 × 지우기 단추·Esc 지우기 — 칸만 비우고 검색하지 않음, 게시판 목록), resultPath(주면 주소를 따라감 — 그 경로면 주소의 `name` 검색어, 다른 화면이면 빈칸. 머리글·모바일 서랍은 `/search`), placeholder, ariaLabel, showButton, buttonText, showIcon, inputClassName, buttonClassName · 이벤트 `onSearch`(`$args[0]` = 다듬은 검색어) |
-| `Modal` | 모달 다이얼로그 (ESC, 포커스 트랩) | isOpen, onClose, title, icon, iconClassName, size, width, className, style |
+| `Modal` | 모달 다이얼로그 (ESC, 포커스 트랩) | isOpen, onClose, title, icon, iconClassName, children, footer, size, width, className, style |
 | `ConfirmDialog` | 확인/취소 다이얼로그 | isOpen, onClose, title, message, confirmText, cancelText, ... |
 | `Toast` | 토스트 알림 | toasts, position, duration |
 | `ThemeToggle` | 테마 전환 토글 (auto/light/dark) | autoText, lightText, darkText |
 
+- `Modal` 의 `footer` 는 본문 스크롤 밖 고정 하단에 그린다. 레이아웃 편집기에서는 엔진이 준 Modal 노드 경로(`__componentContext.componentPath`)로 footer 단추마다 `{경로}.props.footer.{i}` 를 넘겨, 본문 children 과 같게 고르고 고칠 수 있다(경로가 없는 일반 화면에서는 넘기지 않음). 회귀 테스트: `src/components/composite/__tests__/Modal.footer.test.tsx`.
+- `Modal` 의 `footer` 는 `components.json` 의 `skipBindingKeys` 로 선언한다 — 엔진이 Modal 노드에서 그 안의 `{{…}}` 를 미리 풀지 않고 원문 정의를 넘겨, 고정 하단 렌더러가 본문 children 과 같은 데이터 문맥(`__componentContext.parentDataContext`, 상태 범위 `__componentContext`)과 같은 격리 범위에서 평가한다. 종전에는 Modal 노드 렌더러가 미리 풀어 Modal 자신의 `isolatedState` 처럼 본문만 보는 값이 고정 하단에서 비었다(#869). 회귀 테스트: `__tests__/layouts/modalFooterContextParity.test.tsx`
 - `Modal` 의 Esc 는 **창 안에 펼친 팝업이 있으면 팝업만 닫는다**(관리자 템플릿과 같은 규칙). 펼친 팝업은 `aria-haspopup` 과 `aria-expanded="true"` 를 함께 단 요소로 판정하므로, 창 안 드롭다운·메뉴는 이 두 속성을 트리거에 달고 자기 Esc 처리로 닫아야 한다. 키를 누른 순간(캡처 단계)의 펼침 여부로 판정하고, `aria-haspopup` 없는 펼침과 창 밖 팝업은 창 닫기를 막지 않는다. 회귀 테스트: `src/components/composite/__tests__/Modal.popupEscape.test.tsx`.
+- `Toast` 는 항목의 만든 시각(`createdAt`, 엔진 toast 핸들러가 넣음)부터 표시 시간(`duration`, 항목의 `duration` 이 우선)을 센다. 화면이 바뀌어 Toast 가 새로 마운트돼도 남은 시간만 보이고, 이미 지난 항목은 그리지 않고 `_global.toasts` 에서 지운다. 떠나는 Toast 는 타이머를 거둔다. 만든 시각이 없는 항목은 처음 받은 시각부터 센다. 회귀 테스트: `src/components/composite/__tests__/Toast.lifetime.test.tsx`.
 - **아이콘 단추와 상태 영역의 접근 이름**: `ThemeToggle` 단추는 `common.theme_select`(펼침 여부는 `aria-expanded`), `NotificationCenter` 항목 삭제 단추는 `common.delete_notification`, `PageSkeleton` 상태 영역은 `common.loading` 을 이름으로 단다. 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다. 이 이름을 영문 문자열로 되돌려 박지 않는다(한국어, 일본어 화면에서 영어로 읽힌다). 회귀 테스트: `src/components/composite/__tests__/AccessibleNameI18n.test.tsx`.
-- **최근 검색어 검색창 `RecentSearchCombobox` (1.3.1)**: 빈 칸에 초점을 두면 같은 범위(`scope`)의 최근 검색어가 펼쳐진다 — 항목별 삭제(× 단추 `search.history.delete`)·전체 삭제·자동 저장 끄기/켜기, 끈 상태에서는 목록 대신 안내(`search.history.auto_save_off_notice`). 목록·기록은 코어 엔진 `G7Core.useSearchHistory(scope)`(engine-v1.87.0, 코어 7.1.5)가 맡아 같은 범위의 검색창끼리 목록을 공유하고, 회원은 서버·비회원은 브라우저에 둔다. **기록은 검색창이 맡는다** — 제출(Enter·검색 단추·항목 선택)할 때 기록을 기다리지 않고 바로 `onSearch` 를 부르므로(회원 기록은 서버 응답을 기다리기 때문) 레이아웃은 `<on event="onSearch">` 에서 이동만 적고 `<record-search-keyword>` 를 같이 두지 않는다(이중 기록). `value`(주소의 q 등)는 보이기만 하고 기록하지 않는다. 엔진이 범위를 쓸 수 없다고 답하면(기능 꺼짐·미선언 범위·옛 엔진), 레이아웃 편집 모드(`editorAttrs`)·편집기 미리보기 화면(`_global.__isPreview`)이면 펼치지 않고 기록하지 않는 평범한 검색창이다. 접근성: 입력칸 `role="combobox"`·`aria-expanded`·`aria-controls`(목록 `listbox` 가 보일 때만 — 최근 검색어 0건·자동 저장 꺼짐으로 안내 상자만 보일 때는 팝업이 없으므로 `aria-expanded=false` 이고 없는 id 를 가리키지 않는다, 안내는 `role="status"`)·`aria-activedescendant`, 목록 `listbox`/`option`(이름 = 검색어). 키보드 ↑/↓ 이동, Enter 고른 항목 또는 입력한 검색어, Esc 닫고 초점 유지, Delete 고른 항목 삭제. 항목·단추 누름 영역 44px. `Header` 는 데스크톱 검색칸을 이 컴포넌트로 그리고 범위는 `searchHistoryScope`(기본 `core.site`)로 받는다. 회귀 테스트: `src/components/composite/__tests__/RecentSearchCombobox.test.tsx`, `__tests__/components/HeaderRecentSearch.test.tsx`, `__tests__/layouts/user-base-mobile-search.test.tsx`, E2E `tests/Playwright/specs/recent-search-combobox.spec.ts`. **주소 따라가기** — 화면을 옮겨도 다시 마운트되지 않는 머리글·모바일 서랍 검색창은 `resultPath="/search"` 를 받아, 통합검색 화면이면 주소의 `q` 를 보이고 다른 화면으로 옮기면 빈칸이 된다(주소가 바뀔 때만 맞추므로 입력 중인 글자는 건드리지 않는다). 화면이 다시 그리는 통합검색 화면 검색줄은 `value="{{query?.q}}"` 로 받는다. **목록 화면 검색칸** — 상품 목록(`partials/shop/list/_search_filter_bar`)·분류(`shop/category`) 검색줄은 상품 검색 범위 `sirsoft-ecommerce.products`(`name="keyword"`), 게시판 목록 세 유형(`partials/board/types/{basic,card,gallery}/index`) 검색칸은 게시글 검색 범위 `sirsoft-board.posts`(`name="search"`)를 쓴다. 주소의 검색어를 `value` 로 보이고, `onSearch` 는 `:mergeQuery` 이동으로 다른 조건(분류·정렬·삭제글 보기·찾을 곳)을 둔 채 검색어만 바꾸고 1쪽으로 간다. `submitEmpty` 를 켜 칸을 비우고 제출하면 검색어 조건이 풀린다. 게시판 목록 검색칸은 `showClear` 로 종전 검색 입력칸의 × 를 잇는다 — 글자가 있을 때만 보이는 「검색어 지우기」(`search.clear`) 단추와 Esc 가 칸만 비우고 초점을 남기며 검색·기록하지 않는다(회귀 테스트 `RecentSearchCombobox.clear.test.tsx`). 범위를 선언한 모듈이 꺼지면 셸의 범위 목록에서 빠져 평범한 검색칸이다. 회귀 테스트 `__tests__/layouts/list-search-recent-scope.test.tsx`.
+- **최근 검색어 검색창 `RecentSearchCombobox` (1.3.1)**: 빈 칸에 초점을 두면 같은 범위(`scope`)의 최근 검색어가 펼쳐진다 — 항목별 삭제(× 단추 `search.history.delete`)·전체 삭제·자동 저장 끄기/켜기, 끈 상태에서는 목록 대신 안내(`search.history.auto_save_off_notice`). 목록·기록은 코어 엔진 `G7Core.useSearchHistory(scope)`(engine-v1.87.0, 코어 7.1.5)가 맡아 같은 범위의 검색창끼리 목록을 공유하고, 회원은 서버·비회원은 브라우저에 둔다. **기록은 검색창이 맡는다** — 제출(Enter·검색 단추·항목 선택)할 때 기록을 기다리지 않고 바로 `onSearch` 를 부르므로(회원 기록은 서버 응답을 기다리기 때문) 레이아웃은 `<on event="onSearch">` 에서 이동만 적고 `<record-search-keyword>` 를 같이 두지 않는다(이중 기록). `value`(주소의 q 등)는 보이기만 하고 기록하지 않는다. 엔진이 범위를 쓸 수 없다고 답하면(기능 꺼짐·미선언 범위·옛 엔진), 레이아웃 편집 모드(`editorAttrs`)·편집기 미리보기 화면(`_global.__isPreview`)이면 펼치지 않고 기록하지 않는 평범한 검색창이다. 접근성: 입력칸 `role="combobox"`·`aria-expanded`·`aria-controls`(목록 `listbox` 가 보일 때만 — 최근 검색어 0건·자동 저장 꺼짐으로 안내 상자만 보일 때는 팝업이 없으므로 `aria-expanded=false` 이고 없는 id 를 가리키지 않는다, 안내는 `role="status"`)·`aria-activedescendant`, 목록 `listbox`/`option`(이름 = 검색어). 키보드 ↑/↓ 이동, Enter 고른 항목 또는 입력한 검색어, Esc 닫고 초점 유지, Delete 고른 항목 삭제. 항목·단추 누름 영역 44px. `Header` 는 데스크톱 검색칸을 이 컴포넌트로 그리고 범위는 `searchHistoryScope`(기본 `core.site`)로 받는다. 회귀 테스트: `src/components/composite/__tests__/RecentSearchCombobox.test.tsx`, `__tests__/components/HeaderRecentSearch.test.tsx`, `__tests__/layouts/user-base-mobile-search.test.tsx`, E2E `tests/Playwright/specs/recent-search-combobox.spec.ts`. **주소 따라가기** — 화면을 옮겨도 다시 마운트되지 않는 머리글·모바일 서랍 검색창은 `resultPath="/search"` 를 받아, 통합검색 화면이면 주소의 `q` 를 보이고 다른 화면으로 옮기면 빈칸이 된다(주소가 바뀔 때만 맞추므로 입력 중인 글자는 건드리지 않는다). 현재 경로는 `src/support/navigationLink.ts` 의 `useLocationPath` 로 구독하며, 이 값은 사이트 마운트 접두사를 벗긴 라우트 기준 경로다. 사이트를 하위 폴더(예: `/g7`)에 설치해도 `/g7/search` 가 `/search` 로 읽혀 `resultPath` 와 그대로 맞는다. 화면이 다시 그리는 통합검색 화면 검색줄은 `value="{{query?.q}}"` 로 받는다. **목록 화면 검색칸** — 상품 목록(`partials/shop/list/_search_filter_bar`)·분류(`shop/category`) 검색줄은 상품 검색 범위 `sirsoft-ecommerce.products`(`name="keyword"`), 게시판 목록 세 유형(`partials/board/types/{basic,card,gallery}/index`) 검색칸은 게시글 검색 범위 `sirsoft-board.posts`(`name="search"`)를 쓴다. 주소의 검색어를 `value` 로 보이고, `onSearch` 는 `:mergeQuery` 이동으로 다른 조건(분류·정렬·삭제글 보기·찾을 곳)을 둔 채 검색어만 바꾸고 1쪽으로 간다. `submitEmpty` 를 켜 칸을 비우고 제출하면 검색어 조건이 풀린다. 게시판 목록 검색칸은 `showClear` 로 종전 검색 입력칸의 × 를 잇는다 — 글자가 있을 때만 보이는 「검색어 지우기」(`search.clear`) 단추와 Esc 가 칸만 비우고 초점을 남기며 검색·기록하지 않는다(회귀 테스트 `RecentSearchCombobox.clear.test.tsx`). 범위를 선언한 모듈이 꺼지면 셸의 범위 목록에서 빠져 평범한 검색칸이다. 회귀 테스트 `__tests__/layouts/list-search-recent-scope.test.tsx`.
 - **화면 이동은 링크로 그린다**: 머리글 메뉴·로고·장바구니·회원 메뉴, 모바일 서랍, 꼬리말 링크, 프로필로 가는 회원 이름, 상품 카드, 페이지 번호(`pageHref`), 탭(`href`)은 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 된다. 보통 클릭(왼쪽 단추·수정키 없음)만 지금처럼 SPA 로 옮기고 나머지는 브라우저 기본 동작이다. 판정은 엔진 `G7Core.navigation.isPlainLeftClick`·`mergeQueryIntoHref` 에 맡긴다(`src/support/navigationLink.ts`). 레이아웃에서 직접 옮기는 자리는 `<a href="…">` + 경로 없는 `<navigate/>` 로 쓴다. 회귀 테스트: `src/components/composite/__tests__/NavigationLinks.test.tsx`.
 - **현재 쿼리를 합치는 링크는 주소를 구독한다 (1.2.2)**: 렌더할 때 `mergeQueryIntoHref` 로 href 를 만드는 링크(`A` 의 `mergeQuery`, `Pagination` 의 `pageHrefMergeQuery`, `ProductCard` 의 `preserveListQuery`, `TabNavigation` 의 `tabHrefMergeQuery`)는 `src/support/navigationLink.ts` 의 `useLocationSearch(enabled)` 를 부른다. 같은 화면에서 쿼리만 바꾸는 `navigate replace` 는 화면을 다시 마운트하지 않고 링크 props 도 그대로라 엔진이 그 링크를 다시 그리지 않는다 — 구독하지 않으면 가운데 클릭·새 탭·주소 복사가 바꾸기 전 쿼리로 간다. 훅은 엔진 `G7Core.navigation.subscribeLocationSearch` 를 구독하고(없는 옛 엔진은 뒤로/앞으로만), 쿼리를 합치지 않는 링크는 `enabled=false` 로 구독하지 않는다. 같은 방식의 새 링크 컴포넌트도 이 훅을 부른다. 회귀 테스트: `src/components/composite/__tests__/NavigationLinks.locationSync.test.tsx`.
-- **입력칸 이름은 레이아웃이 단다**: 이 템플릿에는 칸 옆 제목을 이름으로 잇는 자동 연결이 없다. 입력칸·선택칸·체크박스는 보이는 제목의 문구 키를 `aria-label` 로 직접 달고(예: `aria-label="$t:mypage.profile.country"`), 체크박스와 옆 글자는 `<label>` 하나로 감싼다(글자를 눌러도 체크). 목록 줄 체크박스는 `common.select_item`(`{{name}}`), 줄 안 칸은 `common.row_cell`(`{{row}}`·`{{column}}`), 제목 없는 정렬·검색 대상 선택칸은 `common.sort_order`·`common.search_field`. 회귀 테스트: `__tests__/layouts/control-accessible-names.test.ts`(레이아웃 전수 이름 없는 칸 0), `src/components/basic/__tests__/Select.accessibleName.test.tsx`.
+- **입력칸 이름은 레이아웃이 단다**: 이 템플릿에는 칸 옆 제목을 이름으로 잇는 자동 연결이 없다. 입력칸·선택칸·체크박스는 보이는 제목의 문구 키를 `aria-label` 로 직접 달고(예: `aria-label="$t:mypage.addresses.form.recipient"`), 체크박스와 옆 글자는 `<label>` 하나로 감싼다(글자를 눌러도 체크). 목록 줄 체크박스는 `common.select_item`(`{{name}}`), 줄 안 칸은 `common.row_cell`(`{{row}}`·`{{column}}`), 제목 없는 정렬·검색 대상 선택칸은 `common.sort_order`·`common.search_field`. 회귀 테스트: `__tests__/layouts/control-accessible-names.test.ts`(레이아웃 전수 이름 없는 칸 0), `src/components/basic/__tests__/Select.accessibleName.test.tsx`.
 - **꾸밈 아이콘과 아이콘만 있는 단추**: `Icon` 은 `ariaLabel` 을 받으면 `role="img"` 와 그 이름으로 읽히고, 받지 않으면 꾸밈이라 `aria-hidden="true"` 로 숨는다(글리프 이름을 이름으로 만들지 않는다). 아이콘만 담은 단추와 링크는 단추 자신에 이름(`aria-label`)을 문구 키로 단다. 레이아웃 예: 삭제 `common.delete`, 뒤로가기 `common.back`, 더보기 `common.more`, 이전과 다음 `common.prev`/`common.next`, 펼치기와 접기 `common.expand`/`common.collapse`(펼침 여부는 `aria-expanded`), 찜 `shop.product.add_to_wishlist`/`remove_from_wishlist`, 리뷰 별점 `mypage.order_detail.review_modal.rating_star`(`{{count}}`). 기본 문구도 키를 따른다: `FileInput`(`common.file_input.*`), `ThemeToggle` 메뉴(`common.theme.auto`/`light`/`dark`), `Select` 검색칸(`common.search_placeholder`, `common.search`, `common.no_results`), `AvatarUploader` 미리보기 대체 글 `mypage.profile.avatar_preview`. 번역이 없거나 엔진 밖이면 종전 영문을 쓴다. 회귀 테스트: `src/components/basic/__tests__/Icon.a11y.test.tsx`, `src/components/composite/__tests__/IconOnlyControlNames.test.tsx`(번들 레이아웃 정적 대조 포함).
 
 #### 페이지 전환
@@ -291,9 +300,39 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 |----------|------|-----------|
 | `Container` | 레이아웃 컨테이너 | maxWidth |
 | `Flex` | Flexbox 레이아웃 | direction, gap |
-| `Grid` | Grid 레이아웃 | cols, gap |
+| `Grid` | Grid 레이아웃 | cols, responsive, gap |
 | `SectionLayout` | 섹션 레이아웃 (제목, 부제목, 패딩) | title, subtitle, padding, background |
 | `ThreeColumnLayout` | 3단 레이아웃 (좌/중/우) | leftWidth, centerWidth, rightWidth, gap |
+
+**Grid 반응형 열 수**: `Grid` 의 `responsive`(`{ sm, md, lg, xl, 2xl }` 구간별 열 수)는 Tailwind 반응형 접두 클래스(`md:grid-cols-3`)를 내지 않습니다. 엔진 폭(`G7Core.useResponsive().width`, 레이아웃 편집기 미리보기에서는 기기 폭)으로 열 수를 골라 접두 없는 `grid-cols-N` 하나만 냅니다. 경계는 Tailwind 와 같고(sm 640px, md 768px, lg 1024px, xl 1280px, 2xl 1536px 이상), 폭 이상인 가장 넓은 구간 값을 씁니다. 값이 없는 구간은 아래 구간 값을 이어받고, 맞는 구간이 없으면 `cols` 를 씁니다. 예: `cols: 1, responsive: { md: 3 }` 은 767px 까지 1열, 768px 부터 3열입니다. 화면 뼈대(`PageSkeleton`)도 같은 판정으로 그립니다.
+
+**부품 안의 폭 분기**: 이 템플릿의 부품은 자기 클래스에도 Tailwind 반응형 접두를 쓰지 않고 엔진 폭으로 접두 없는 클래스를 고릅니다. 판정은 `src/components/layout/viewportWidth.ts` 하나에 모았습니다 — `useViewportWidth()`(엔진 훅 폭, 훅이 없으면 창 폭), `pickByWidth(폭, 기본값, { sm, md, lg, xl, 2xl })`(Tailwind 와 같은 cascade), `containerPaddingClass(폭)`(본문 좌우 여백). 열 수는 `gridColumns.ts` 의 `resolveGridCols`·`gridColsClass` 를 씁니다. 고르는 클래스는 전체 이름으로 적어 CSS 스캔에 잡히게 합니다. 폭을 전혀 모를 때(엔진 훅도 창도 없을 때)는 엔진 기본 폭이자 검색 봇 렌더 폭인 1024px 로 고릅니다(`UNKNOWN_VIEWPORT_WIDTH`, `Grid`·`PageSkeleton` 도 같은 값). 브라우저에서는 엔진이 첫 렌더부터 창 폭을 주므로 깜박임이 없습니다.
+
+| 부품 | 폭별 클래스 |
+| --- | --- |
+| `Header`·`Footer` 본문 칸, `PageSkeleton` 헤더·푸터 뼈대 | 640px 미만 `px-4`, 640px 이상 `px-6`, 1024px 이상 `px-8` |
+| `Header` 회원 이름 | 640px 미만 `hidden`, 이상 `line-clamp-1` |
+| `Pagination` 맨 앞·맨 끝 단추 | 640px 미만 `hidden`, 이상 `inline-block` |
+| `FileUploader` 썸네일 격자 | 2열, 640px 이상 3열, 768px 이상 4열, 1024px 이상 5열 |
+| `VisitorCounter` `row` 배치 | 768px 미만 2열, 이상 4열 |
+| `PageSkeleton` 헤더 뼈대의 메뉴 자리 | 1024px 미만 `hidden`, 이상 `flex` |
+
+회귀 테스트: `src/components/composite/__tests__/ResponsiveWidthClasses.test.tsx`(폭별 클래스, 접두 없음, 창 크기 변경, 편집기 미리보기 폭), `src/components/layout/__tests__/viewportWidth.test.ts`.
+
+---
+
+### 템플릿 설정 화면 부품
+
+관리자 화면의 이 템플릿 설정 화면은 `src/settings/` 부품이 그린다. 본 부품 묶음과 따로 `dist/settings/*` 로 빌드해 `sirsoft-basic.TemplateSettingsScreen` 으로 등록하고, 매니페스트는 `components.settings.json` 이다(어느 관리자 템플릿에서나 뜨게 — `docs/extension/template-settings.md` §5).
+
+| 부품 | 설명 |
+| --- | --- |
+| `TemplateSettingsScreen` | 머리·안내·섹션 탭·저장 결과·칸·저장 바·확인 창 |
+| `TemplateSettingsFields` | 칸 종류별 입력. 첨부 칸은 이 템플릿 업로더를 관리자 첨부 API 로 쓴다 |
+| `TemplateMenuField` | `menu` 칸 편집기 — 관리자 메뉴 관리와 같은 두 판: 끌어서 놓는 2단 트리(가로로 끌어 하위로·상위로) + 항목 편집 판(이름·주소·새 창·보이는 대상·사용). 트리 계산은 `templateMenuTree.ts` |
+| `parts/*` | 토글·라디오·여러 언어 입력 — 설정 화면 전용 |
+
+의미 클래스는 `templates/_bundled/sirsoft-basic/src/styles/settings-semantic.css` 에 있고 화면 뿌리 `.sirsoft-basic-settings` 안에서만 적용된다.
 
 ---
 
@@ -323,7 +362,6 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | Composite | `ChipRows` | 분류 칩 두 줄 |
 | Composite | `MobileBuyBar` | 좁은 화면 하단 구매바 |
 | Composite | `BottomSheet` | 좁은 화면 바텀시트 |
-| Composite | `SocialLoginButtons` | 소셜 로그인 |
 | Composite | `Avatar`, `AvatarUploader` | 아바타 관련 |
 | Composite | `VisitorCounter` | 방문자 카운터(홈 하단) |
 | Composite | `UserInfo` | 사용자 정보 드롭다운 |

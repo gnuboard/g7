@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
-// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링 (#571)
+// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 결제 행 직접 조회를 이커머스 공개 결제 계약으로 바꾼 내부 전환 (#916)
 
 use App\Helpers\ResponseHelper;
-use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Helpers\TimezoneHelper;
+use App\Http\Controllers\Api\Base\AdminBaseController;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentFilters;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Plugins\Sirsoft\PayKginicis\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\TransactionQueryRequest;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
@@ -27,18 +26,69 @@ class AdminTransactionController extends AdminBaseController
      * 의존성을 주입받습니다.
      *
      * @param  KgInicisApiService  $apiService  KG이니시스 API 서비스
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 공개 계약
      */
     public function __construct(
         private readonly KgInicisApiService $apiService,
+        private readonly PaymentGatewayBridge $bridge,
     ) {
         parent::__construct();
+    }
+
+    /**
+     * 거래번호의 이 결제사 결제 기록을 화면 보강용 행으로 읽습니다.
+     *
+     * 아래 보강 코드는 DB 행 모양(snake_case, 금액은 소수 2자리 문자열, 시각은 `Y-m-d H:i:s` 문자열)을 읽으므로
+     * 계약 DTO 를 같은 모양으로 옮긴다. 이 결제사 결제 행만 본다(#916 — 다른 결제사의 같은 거래번호는 보강에 쓰지 않는다).
+     *
+     * @param  string  $tid  거래번호
+     * @return object|null 로컬 결제 행 (없으면 null)
+     */
+    private function findLocalPayment(string $tid): ?object
+    {
+        $payment = $this->bridge->findPaymentByTransactionId('kginicis', $tid);
+        if ($payment === null) {
+            return null;
+        }
+
+        $order = $payment->orderNumber === null ? null : $this->bridge->findOrderByNumber($payment->orderNumber, 'kginicis');
+        // audit:allow datetime-display-user-timezone reason: DB 저장 원문(UTC)과 같은 기계값으로 옮긴다 — 화면 표시는 아래 보강 코드가 보는 사람 시간대로 바꾼다
+        $time = static fn (?\DateTimeInterface $value): ?string => $value?->format('Y-m-d H:i:s');
+
+        return (object) [
+            'transaction_id' => $payment->transactionId,
+            'payment_status' => $payment->paymentStatus->value,
+            'is_escrow' => $payment->isEscrow ? 1 : 0,
+            'payment_meta' => $payment->paymentMeta,
+            'embedded_pg_provider' => $payment->embeddedPgProvider,
+            'paid_amount_local' => number_format($payment->paidAmountLocal, 2, '.', ''),
+            'currency' => $payment->currency,
+            'card_name' => $payment->cardName,
+            'card_number_masked' => $payment->cardNumberMasked,
+            'card_approval_number' => $payment->cardApprovalNumber,
+            'card_installment_months' => $payment->cardInstallmentMonths,
+            'vbank_code' => $payment->vbankCode,
+            'vbank_name' => $payment->vbankName,
+            'vbank_number' => $payment->vbankNumber,
+            'vbank_holder' => $payment->vbankHolder,
+            'vbank_due_at' => $time($payment->vbankDueAt),
+            'buyer_name' => $payment->buyerName,
+            'buyer_email' => $payment->buyerEmail,
+            'buyer_phone' => $payment->buyerPhone,
+            'payment_name' => $payment->paymentName,
+            'paid_at' => $time($payment->paidAt),
+            'order_number' => $payment->orderNumber,
+            'order_status' => $order?->orderStatus->value,
+            'order_currency' => $order?->currency,
+            'total_due_amount' => $order === null ? null : number_format($order->totalDueAmount, 2, '.', ''),
+        ];
     }
 
     /**
      * TID 직접 조회
      *
      * @param  TransactionQueryRequest  $request  tid 입력 폼
-     * @return JsonResponse
+     * @return JsonResponse 거래 조회 결과 (범위 밖이면 403)
      */
     public function query(TransactionQueryRequest $request): JsonResponse
     {
@@ -52,8 +102,8 @@ class AdminTransactionController extends AdminBaseController
     /**
      * 주문번호로 거래 조회
      *
-     * @param  string  $orderNumber
-     * @return JsonResponse
+     * @param  string  $orderNumber  주문번호
+     * @return JsonResponse 거래 조회 결과 (이 결제사 거래가 없으면 data null)
      */
     public function queryByOrder(string $orderNumber): JsonResponse
     {
@@ -61,24 +111,17 @@ class AdminTransactionController extends AdminBaseController
             return $denied;
         }
 
-        $orders = (new Order)->getTable();
-        $payments = (new OrderPayment)->getTable();
+        $payment = $this->bridge->findPaymentByOrderNumber(
+            'kginicis',
+            $orderNumber,
+            new PaymentFilters(hasTransactionId: true, nonEmptyTransactionId: true),
+        );
 
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        $payment = DB::table($payments.' as p')
-            ->join($orders.' as o', 'o.id', '=', 'p.order_id')
-            ->where('o.order_number', $orderNumber)
-            ->whereNotNull('p.transaction_id')
-            ->where('p.transaction_id', '!=', '')
-            ->where('p.pg_provider', 'kginicis')
-            ->select(['p.transaction_id', 'p.payment_meta'])
-            ->first();
-
-        if (! $payment) {
+        if (! $payment || $payment->transactionId === null) {
             return ResponseHelper::success('common.success', null);
         }
 
-        return $this->queryByTid($payment->transaction_id);
+        return $this->queryByTid($payment->transactionId);
     }
 
     /**
@@ -90,46 +133,12 @@ class AdminTransactionController extends AdminBaseController
     private function queryByTid(string $tid): JsonResponse
     {
         try {
-            $orders = (new Order)->getTable();
-            $payments = (new OrderPayment)->getTable();
-
-            // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-            $localPayment = DB::table($payments.' as p')
-                ->leftJoin($orders.' as o', 'o.id', '=', 'p.order_id')
-                ->where('p.transaction_id', $tid)
-                ->select([
-                    'p.transaction_id',
-                    'p.payment_status',
-                    'p.is_escrow',
-                    'p.payment_meta',
-                    'p.embedded_pg_provider',
-                    'p.paid_amount_local',
-                    'p.currency',
-                    'p.card_name',
-                    'p.card_number_masked',
-                    'p.card_approval_number',
-                    'p.card_installment_months',
-                    'p.vbank_code',
-                    'p.vbank_name',
-                    'p.vbank_number',
-                    'p.vbank_holder',
-                    'p.vbank_due_at',
-                    'p.buyer_name',
-                    'p.buyer_email',
-                    'p.buyer_phone',
-                    'p.payment_name',
-                    'p.paid_at',
-                    'o.order_number',
-                    'o.order_status',
-                    'o.currency as order_currency',
-                    'o.total_due_amount',
-                ])
-                ->first();
+            $localPayment = $this->findLocalPayment($tid);
 
             $localMeta = [];
             $localRaw = [];
             if ($localPayment?->payment_meta) {
-                $localMeta = json_decode($localPayment->payment_meta, true) ?: [];
+                $localMeta = $localPayment->payment_meta;
                 $localRaw = $localMeta['pg_raw_response'] ?? [];
             }
             $localRaw = $this->mergeLocalPaymentFallback($localRaw, $localPayment);

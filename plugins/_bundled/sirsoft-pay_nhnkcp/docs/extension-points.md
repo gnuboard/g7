@@ -9,13 +9,13 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-pay_nhnkcp.escrow.delivery_started` | action | — | `src/Controllers/EscrowCommonNotifyController.php:101` |
-| `sirsoft-pay_nhnkcp.escrow.denial_confirmed` | action | — | `src/Controllers/EscrowCommonNotifyController.php:98` |
-| `sirsoft-pay_nhnkcp.escrow.purchase_cancelled` | action | — | `src/Controllers/EscrowCommonNotifyController.php:97` |
-| `sirsoft-pay_nhnkcp.escrow.purchase_confirmed` | action | — | `src/Controllers/EscrowCommonNotifyController.php:96` |
-| `sirsoft-pay_nhnkcp.payment.after_cancel` | action | KCP 결제 취소 완료 후 | `src/Services/NhnKcpApiService.php:290` |
+| `sirsoft-pay_nhnkcp.escrow.delivery_started` | action | — | `src/Controllers/EscrowCommonNotifyController.php:107` |
+| `sirsoft-pay_nhnkcp.escrow.denial_confirmed` | action | — | `src/Controllers/EscrowCommonNotifyController.php:104` |
+| `sirsoft-pay_nhnkcp.escrow.purchase_cancelled` | action | — | `src/Controllers/EscrowCommonNotifyController.php:103` |
+| `sirsoft-pay_nhnkcp.escrow.purchase_confirmed` | action | — | `src/Controllers/EscrowCommonNotifyController.php:102` |
+| `sirsoft-pay_nhnkcp.payment.after_cancel` | action | KCP 결제 취소 완료 후 | `src/Services/NhnKcpApiService.php:291` |
 | `sirsoft-pay_nhnkcp.payment.after_confirm` | action | KCP 결제 승인 확인 완료 후 | `src/Controllers/PaymentCallbackController.php:330` |
-| `sirsoft-pay_nhnkcp.payment.before_cancel` | action | KCP 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/NhnKcpApiService.php:269` |
+| `sirsoft-pay_nhnkcp.payment.before_cancel` | action | KCP 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/NhnKcpApiService.php:270` |
 | `sirsoft-pay_nhnkcp.payment.before_confirm` | action | KCP 결제 승인 확인 전 | `src/Controllers/PaymentCallbackController.php:324` |
 <!-- @generated:hooks-published END -->
 
@@ -37,6 +37,7 @@
 | `core.layout_extension.after_apply` | filter | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | `ensurePaymentQueryLayout` | 66 |
 | `core.permission.scope_enforcement_ledger` | filter | `OrderScopeLedgerListener` | `addLedgerEntries` | 20 |
 | `core.plugin_settings.update_validation_rules` | filter | `ValidateRedirectUrlSettingsListener` | `rules` | 10 |
+| `core.required_fields.filter_exempt_routes` | filter | `ExemptRequiredFieldsRoutesListener` | `exemptRoutes` | 10 |
 | `sirsoft-ecommerce.claim_payment.approve` | filter | `ClaimPaymentApproveListener` | `processApprove` | 10 |
 | `sirsoft-ecommerce.claim_payment.refund` | filter | `ClaimPaymentRefundListener` | `processRefund` | 10 |
 | `sirsoft-ecommerce.claim_payment.void_approval` | filter | `ClaimPaymentApproveListener` | `voidApproval` | 10 |
@@ -56,6 +57,14 @@
 `registered_pg_providers`)을 모두 구독하는 이유는 "이 PG 가 존재한다는 사실"과 "체크아웃
 화면이 필요로 하는 클라이언트 설정값"이 같은 리스너의 책임이기 때문입니다 — 등록과 설정
 노출이 다른 리스너로 갈라지면 한쪽만 갱신되는 사각이 생깁니다.
+
+`RegisterEasyPayMethodsListener` 가 싣는 간편결제 이름·설명은 `LocalizedValue::translateAll()` 로 지원
+언어(`app.supported_locales` = 활성 언어팩) 전부를 채웁니다. ko·en 만 실으면 일본어 언어팩을 켠 사이트의
+일본어 화면에 번역이 있는데도 한국어 이름이 보입니다. 이커머스는 설정을 읽을 때마다 이 정의로
+`_cached_name`·`_cached_description` 을 새로 채우므로, 저장된 설정을 다시 저장하지 않아도 반영됩니다.
+주문에 남는 간편결제 라벨(`ResolvesEasyPayDisplay`, 결제 meta `nhnkcp_easy_pay_label`)도 언어 키
+(`payment_methods.*.label`)를 `translateAll()` 로 풀어 지원 언어 전부로 저장합니다. 이미 저장된 결제 기록(ko·en)은 고치지
+않고 표시 때 현재 언어 → 사이트 기본 언어 → 영어 순으로 고릅니다(저장된 데이터는 바꾸지 않음).
 
 `ProvidePaymentMethodDisplayLabelListener` 는 관리자 주문 목록의 결제수단 이름을 채웁니다. 이커머스는
 PG 를 모르므로 간편결제(PAYCO·네이버페이 등)로 결제한 주문도 기본 결제수단 이름만 압니다. 이 리스너가
@@ -125,6 +134,7 @@ PG 를 모르므로 간편결제(PAYCO·네이버페이 등)로 결제한 주문
 | `ClaimPaymentApproveListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentApproveListener.php` |
 | `ClaimPaymentRefundListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentRefundListener.php` |
 | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderDetailPaymentQueryLayoutListener.php` |
+| `ExemptRequiredFieldsRoutesListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ExemptRequiredFieldsRoutesListener.php` |
 | `OrderScopeLedgerListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/OrderScopeLedgerListener.php` |
 | `PaymentRefundListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/PaymentRefundListener.php` |
 | `ProvideNecessaryStorageKeysListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ProvideNecessaryStorageKeysListener.php` |

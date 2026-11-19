@@ -23,6 +23,7 @@ return [
     'channel_skipped_no_template' => ':channel 채널에 :type 타입의 활성 템플릿이 없어 발송을 건너뛰었습니다.',
     'channel_disabled_by_extension' => '확장 환경설정에서 해당 채널이 비활성화되어 있어 발송을 건너뛰었습니다.',
     'channel_guest_not_allowed' => '해당 채널은 비회원 발송을 허용하지 않아 발송을 건너뛰었습니다.',
+    'recipient_email_undeliverable' => '메일을 보낼 수 없는 수신 주소(대체 이메일)라 메일 발송을 건너뛰었습니다.',
     'channel_unavailable' => '해당 채널을 제공하는 확장이 비활성 또는 삭제되어 발송을 건너뛰었습니다.',
 
     // 알림 템플릿
@@ -68,6 +69,7 @@ return [
         'related_user' => '관련 사용자(:relation)',
         'role' => '역할(:roles)',
         'specific_users' => '특정 사용자 :count명',
+        'site_admin_email' => '사이트 관리자 이메일',
         'exclude_trigger_user' => ':rule — 이벤트 유발자 제외',
         'legacy' => '정의의 기본 수신자',
     ],
@@ -102,6 +104,9 @@ return [
         // 역할 수신자는 다중 선택이 되면서 값이 배열일 수 있다. 객체·숫자가 섞이면
         // 저장은 되고 발송 시점에 수신자 0명으로만 드러나므로 여기서 세운다.
         'role_value_shape' => '역할 수신자 값은 식별자 문자열 또는 문자열 배열이어야 합니다.',
+        // 운영자가 발송 수단을 켜서 만든 빈 템플릿은 내용을 채우기 전에 켜지 못한다(빈 제목·본문, 받는 사람 0명 발송 방지).
+        'user_template_needs_recipients' => '받는 사람을 먼저 정해 저장한 뒤에 켤 수 있습니다. [템플릿 편집]에서 받는 사람 규칙을 추가하세요.',
+        'user_template_needs_body' => '본문을 먼저 써서 저장한 뒤에 켤 수 있습니다. [템플릿 편집]에서 내용을 채우세요.',
         'attributes' => [
             'recipients' => '수신자 규칙',
             'recipient_type' => '수신자 종류',
@@ -126,6 +131,15 @@ return [
         ],
     ],
     // 알림 템플릿 편집 창 「사용 가능한 변수」 설명 — common 은 변수 키별 기본, by_type 은 그 알림에서만 뜻이 다른 변수, identity 는 본인인증 알림 공통 변수. 없는 키는 선언 문자열을 그대로 쓴다.
+    // 템플릿 편집 창의 회원 공통 변수 설명 ({member.display_name}, {member.<키>}, {member.custom.<키>})
+    'member_variables' => [
+        'display_name' => '받는 회원에게 보이는 이름',
+        'field' => '회원 항목: :name',
+    ],
+    // 템플릿 저장 응답의 경고 (data.warnings)
+    'warnings' => [
+        'unknown_variable' => '지금 없는 변수입니다: :variable (회원 항목이 지워졌거나 꺼져 있으면 빈 글자로 발송됩니다)',
+    ],
     'variables' => [
         'common' => [
             'name' => '수신자 이름',
@@ -185,6 +199,13 @@ return [
             ],
             'password_expiry_notice' => [
                 'action_url' => '비밀번호 변경 화면 URL',
+            ],
+            'schedule_failed' => [
+                'schedule_label' => '작업 표시 명칭',
+                'schedule_name' => '작업 식별자(name)',
+                'owner' => '소유자(코어·확장 이름·직접 등록)',
+                'failed_at' => '실패 시각',
+                'schedule_url' => '스케줄 관리 화면 URL',
             ],
         ],
         'identity' => [

@@ -7,7 +7,6 @@
  *
  * @scenario-manifest templates/_bundled/sirsoft-admin_basic/tests/scenarios/content-inline-style-deferral.yaml
  */
-import React from 'react';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { render } from '@testing-library/react';

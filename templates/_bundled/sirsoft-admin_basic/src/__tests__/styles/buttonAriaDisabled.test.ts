@@ -14,7 +14,7 @@ import fs from 'fs';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
 
-const css = fs.readFileSync(path.resolve(__dirname, '../../styles/main.css'), 'utf8');
+const css = fs.readFileSync(path.resolve(__dirname, '../../styles/semantic.css'), 'utf8');
 
 /** 링크로 그려질 일이 없는 입력칸 클래스 — `:disabled` 가 실제로 걸리는 폼 요소 전용 */
 const FORM_FIELD_CLASSES = new Set([

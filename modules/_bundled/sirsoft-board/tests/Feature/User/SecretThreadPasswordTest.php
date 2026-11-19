@@ -17,7 +17,7 @@ use Modules\Sirsoft\Board\Tests\Concerns\BuildsSecretThread;
  * `verify-thread-password` 는 가까운 조상부터 비회원·비밀번호 있음·살아 있는 글을 후보로 비밀번호를
  * 맞추고, 맞은 조상에 grant 를 더해 경로 규칙으로 답변을 연다. 응답에는 어느 조상이 맞았는지 싣지 않는다.
  *
- * @scenario link=board-secret-thread-password
+ * 소속 시나리오(마커 아님 — 평문): board-secret-thread-password
  */
 class SecretThreadPasswordTest extends BoardTestCase
 {

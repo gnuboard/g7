@@ -493,35 +493,43 @@ export default {
 ```
 
 ```typescript
-// 실제 존재하는 컴포넌트만 import
-import * as basicComponents from './components/basic';
-import * as compositeComponents from './components/composite';
-import * as layoutComponents from './components/layout';
+// 실제 존재하는 컴포넌트만 export — 빌드(IIFE)의 전역 객체(vite `build.lib.name`)가 그대로 컴포넌트 목록이 된다.
+// 코어는 components.json 의 이름으로 이 전역 객체에서 컴포넌트를 찾는다(별도 등록 호출 없음).
+export * from './components/basic';
+export * from './components/composite';
+export * from './components/layout';
+
 import { handlerMap } from './handlers';
 
-// 전역 등록
-declare global {
-  interface Window {
-    G7Core: {
-      registerComponents: (components: Record<string, unknown>) => void;
-      registerHandlers: (handlers: Record<string, unknown>) => void;
-    };
-  }
+/** 템플릿 식별자 — 핸들러 등록자 표기(template.json 의 identifier 와 같다) */
+const TEMPLATE_IDENTIFIER = 'vendor-template';
+
+// 언어 전환 때 코어가 템플릿 핸들러를 다시 등록할 수 있게 전역으로 둔다
+(window as any).G7TemplateHandlers = handlerMap;
+
+/**
+ * 템플릿 핸들러를 엔진에 등록한다.
+ *
+ * 등록자(`source`)는 템플릿 식별자로 둔다. 다른 주인의 이름(엔진 이름·확장 이름)을 덮으면
+ * 엔진이 `[G7]` 경고로 알려 준다.
+ */
+export function initTemplate(): void {
+  const register = () => {
+    const dispatcher = (window as any).G7Core?.getActionDispatcher?.();
+    if (!dispatcher) {
+      setTimeout(register, 100);
+      return;
+    }
+    Object.entries(handlerMap).forEach(([name, handler]) => {
+      dispatcher.registerHandler(name, handler, { category: 'custom', source: TEMPLATE_IDENTIFIER });
+    });
+  };
+
+  if (document.readyState === 'complete') register();
+  else window.addEventListener('load', register);
 }
 
-// 컴포넌트 등록
-const allComponents = {
-  ...basicComponents,
-  ...compositeComponents,
-  ...layoutComponents,
-};
-
-if (window.G7Core) {
-  window.G7Core.registerComponents(allComponents);
-  window.G7Core.registerHandlers(handlerMap);
-}
-
-export { allComponents, handlerMap };
+initTemplate();
 ```
 
 ### 4.2 src/handlers/index.ts
@@ -795,7 +803,7 @@ import { H1, H2, H3, Div, Span } from './components/basic';  // 실제 존재하
 | `php artisan template:activate [id]` | 템플릿 활성화 |
 | `php artisan template:deactivate [id]` | 템플릿 비활성화 |
 | `php artisan template:uninstall [id]` | 템플릿 삭제 |
-| `php artisan template:refresh-layout [id]` | 레이아웃 갱신 (빌드 없이) |
+| `php artisan template:refresh-layout [id]` | 레이아웃 갱신 (빌드 없이). 기본은 운영자가 고친 화면 유지(`--layout-strategy=keep`, 7.2.0) — 파일 판으로 덮으려면 `--layout-strategy=overwrite`. `--dry-run`(식별자 필수, `--json`)으로 화면별 판정만 미리 보고, `--decisions=<파일>` 로 화면별 「새 판 적용(take-theirs)·내 수정 유지(keep-ours)」를 정해 실행한다 |
 | `php artisan template:cache-clear` | 템플릿 캐시 초기화 |
 
 ---

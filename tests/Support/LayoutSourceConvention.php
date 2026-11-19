@@ -12,7 +12,7 @@ use App\Extension\Traits\ValidatesLayoutFiles;
  *
  * ## 왜 한 곳인가
  *
- * 27차가 우선순위 규칙을 `ResolvesLayoutInstallSource` 한 곳에 모으면서 남긴 교훈이 "규약을
+ * 앞서 우선순위 규칙을 `ResolvesLayoutInstallSource` 한 곳에 모으면서 남긴 교훈이 "규약을
  * 복제해 배포하면 한쪽만 넓힐 때 나머지가 반쪽으로 남는다" 였다. 그런데 **그 규약의 표면을
  * 아는 목록**은 가드마다 따로 있었다 —
  *
@@ -22,7 +22,7 @@ use App\Extension\Traits\ValidatesLayoutFiles;
  * 두 목록은 같은 것을 가리키는데 값이 달랐다. 실측 — 후자에 규약의 **소유자**인
  * `layoutSourceCandidates()`·`mergeLayoutSourcesByPriority()` 와 조각 축의 `resolveAllPartials()`
  * 가 빠져 있었고, 그 진입점으로 만든 항진명제는 문지기에서 걸러져 검사에 들어오지도 않았다.
- * 31차가 `resolvePartialSource` 누락으로 고친 것과 **같은 여집합이 한 층 위에** 남아 있던 것이다.
+ * 앞서 `resolvePartialSource` 누락으로 고친 것과 **같은 여집합이 한 층 위에** 남아 있던 것이다.
  *
  * 목록이 둘이면 다음 진입점이 생길 때 한쪽만 갱신된다. 그래서 표기 목록 하나를 정본으로 두고,
  * 진입점 이름은 거기서 **도출**한다.
@@ -127,7 +127,7 @@ final class LayoutSourceConvention
      * 오라클 문지기가 알아야 하는 **선택 표면 전량** — 위임 표기 + 비위임 표면.
      *
      * 출력이 선택에서 나오는 자리는 전부 여기 있어야 한다. 좁으면 그 진입점으로 만든 항진명제가
-     * 문지기에서 걸러져 검사에 들어오지도 않는다(31·34차가 그 형태였다).
+     * 문지기에서 걸러져 검사에 들어오지도 않는다(앞서 두 번 그 형태였다).
      *
      * @return array<int, string> 메서드 이름
      */
@@ -179,7 +179,7 @@ final class LayoutSourceConvention
      *
      * ## 왜 이 도출이 필요한가
      *
-     * 34차는 목록 둘을 여기 하나로 **통합**했지만 폐쇄는 한 방향뿐이었다 — {@see ownerOf()} 가
+     * 앞서 목록 둘을 여기 하나로 **통합**했지만 폐쇄는 한 방향뿐이었다 — {@see ownerOf()} 가
      * "등재분이 코어에 실재하는가" 만 물었고, **코어에 있는데 목록에 없는** 진입점을 잡는 단언은
      * 없었다. 그래서 실측에서 여집합 3건(`resolveFragmentSource`·`resolvePartial`·
      * `resolvePartialPath`)이 그대로 살아 있었고, 그중 `resolveFragmentSource()` 는 공유 오라클
@@ -219,7 +219,7 @@ final class LayoutSourceConvention
         // 잡히지만 *그 함수를 부르는* 함수는 분류 강제 밖이었다 — 예컨대
         // `ValidatesLayoutFiles::resolvePartial()` 은 `resolvePartialSource()` 를 통해서만 규약에
         // 닿으므로 깊이 2 였고, 그 축으로 만든 항진명제는 오라클 가드의 문지기에 걸러져 검사에
-        // 들어오지도 않았다. 35차가 "여집합을 닫았다" 고 적은 것과 **같은 형태가 한 단 아래**에
+        // 들어오지도 않았다. 앞서 "여집합을 닫았다" 고 적은 것과 **같은 형태가 한 단 아래**에
         // 남아 있던 자리다. 더 늘지 않는 지점까지 돌리면 그 깊이 의존이 사라진다.
         $derived = $seeds;
         $frontier = $seeds;

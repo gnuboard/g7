@@ -2,6 +2,8 @@
 
 namespace App\Extension\Helpers;
 
+use App\Extension\ExtensionManager;
+use App\Extension\Support\CarriedClassFileLedger;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -12,6 +14,24 @@ use Illuminate\Support\Facades\Log;
  */
 class ExtensionPendingHelper
 {
+    /**
+     * 잠긴 파일을 옆으로 치울 때 붙이는 접미사 조각 (`<원본>.g7stale_<uniqid>`).
+     *
+     * 이 이름은 **활성 확장 디렉토리 안**에 생긴다 — 배포 레이아웃 ②(문서 루트 =
+     * 프로젝트 루트)에서는 그 자리가 문서 루트 안이다. 즉시 삭제를 시도하지만 실패하면
+     * 남고, 그 뒤로 걷는 주체가 없었다: 「다음 제자리 동기화가 다시 삭제한다」는 그
+     * 확장을 다시 업데이트할 때만 성립한다.
+     *
+     * 회수는 `StorageLeftoverPruneService` 의 `stale_swap_files` 대상군이 맡고, 두 곳이
+     * 같은 값을 보도록 여기를 SSoT 로 둔다.
+     */
+    public const STALE_ASIDE_INFIX = '.g7stale_';
+
+    /**
+     * 옆으로 치운 파일 이름을 판정하는 정규식 — `uniqid()` 는 16진 13자다.
+     */
+    public const STALE_ASIDE_NAME_PATTERN = '/\.g7stale_[0-9a-f]{13}$/';
+
     /**
      * 복사에서 제외할 디렉토리명 목록
      *
@@ -131,15 +151,18 @@ class ExtensionPendingHelper
      * @param  string  $sourcePath  소스 경로 (예: modules/_pending/sirsoft-board)
      * @param  string  $targetPath  대상 경로 (예: modules/sirsoft-board)
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
+     * @param  bool  $retainRemovedClassFiles  새 트리에 없는 옛 `src/**.php` 를 교체된 활성 폴더에 남길지 — 같은 판 강제 재적용처럼
+     *                                         스테이징 사본 없이 원본(`_bundled`)에서 바로 교체할 때 쓴다(원본은 건드리지 않고 임시 트리에
+     *                                         싣는다). 남긴 파일은 훅 캐시 재생성 뒤 `ExtensionManager::finishCarriedOverClassFiles()` 로 지운다
      *
      * @see ExtensionPendingHelperTest File Facade Spy 패턴으로 복사 실패 테스트
      * @see ProtectsExtensionDirectories 확장 활성 디렉토리 보호 trait
      *
-     * @return void 반환값 없음
+     * @return array<int, string> 남긴 옛 클래스 파일의 상대 경로 (남기지 않았으면 빈 배열)
      *
      * @throws \RuntimeException 소스가 존재하지 않을 때
      */
-    public static function copyToActive(string $sourcePath, string $targetPath, ?\Closure $onProgress = null): void
+    public static function copyToActive(string $sourcePath, string $targetPath, ?\Closure $onProgress = null, bool $retainRemovedClassFiles = false): array
     {
         if (! File::isDirectory($sourcePath)) {
             throw new \RuntimeException(
@@ -147,11 +170,19 @@ class ExtensionPendingHelper
             );
         }
 
+        // 새 트리가 다시 출하하는 경로는 정리 대기 목록에서 먼저 뺀다 — 업데이트·재설치·백업 복원 어느 교체든, 대기 목록에 오른 파일을
+        // 새 판이 다시 가져오면 이후 정리가 그 파일을 지우지 않게 한다. 목록 갱신 실패가 교체를 막지 않게 한다.
+        try {
+            app(CarriedClassFileLedger::class)->forgetShippedBy($targetPath, $sourcePath);
+        } catch (\Throwable $e) {
+            Log::warning('확장 교체: 정리 대기 목록 갱신 실패', ['target' => $targetPath, 'error' => $e->getMessage()]);
+        }
+
         // 기존 대상 디렉토리가 없으면 바로 복사
         if (! File::isDirectory($targetPath)) {
             self::copyDirectoryWithProgress($sourcePath, $targetPath, $sourcePath, $onProgress);
 
-            return;
+            return [];
         }
 
         // 원자적 교체: 임시 경로에 복사 → 기존을 rename → 임시를 rename → 기존 삭제
@@ -182,6 +213,9 @@ class ExtensionPendingHelper
 
             // 운영자 소유 디렉토리를 새 트리로 옮겨 심는다 (교체 전에 해 둬야 원본이 살아 있다)
             self::carryOverPreservedDirectories($targetPath, $tempPath, $onProgress);
+
+            // 새 트리에 없는 옛 클래스 파일을 교체 전에 임시 트리에 싣는다 — rename 이든 파일 단위 폴백이든 교체 순간부터 있다
+            $carried = $retainRemovedClassFiles ? self::carryOverRemovedClassFiles($targetPath, $tempPath) : [];
         } catch (\Exception $e) {
             // 복사 실패 시 임시 디렉토리 정리 후 예외 전파
             if (File::isDirectory($tempPath)) {
@@ -207,7 +241,7 @@ class ExtensionPendingHelper
 
             self::refreshRuntimeCaches();
 
-            return;
+            return $carried;
         }
 
         // 임시 → 활성 이동 (rename, Windows NTFS 타이밍 이슈 대응 재시도)
@@ -250,6 +284,8 @@ class ExtensionPendingHelper
         self::bestEffortDeleteDirectory($oldPath);
 
         self::refreshRuntimeCaches();
+
+        return $carried;
     }
 
     /**
@@ -272,6 +308,100 @@ class ExtensionPendingHelper
         if (function_exists('opcache_reset')) {
             @opcache_reset();
         }
+    }
+
+    /**
+     * 새 판에 없는 옛 판 `src/**.php` 클래스 파일을 스테이징(새 트리)에 실어 둡니다 — 교체~훅 캐시 재생성 창 보호.
+     *
+     * 새 판이 훅 리스너 클래스를 지운 판이면, 교체부터 훅 캐시 재생성까지 들어온 요청은 옛 훅 캐시로 옛 리스너를 등록하고
+     * 옛 소스 classmap(`autoload-extensions.php` 의 `src_classmap`)이 가리키는 파일을 include 한다. 교체가 그 파일을 지웠으면
+     * include 경고가 예외로 바뀌어 500 이 났다. 교체 전에 새 트리에 넣어 두면 원자적 rename 이든 파일 단위 폴백이든 교체된
+     * 순간부터 파일이 있다. 훅 캐시를 새 판 기준으로 다시 구운 뒤 {@see removeCarriedOverClassFiles()} 로 지운다.
+     * 실패해 백업으로 되돌리면 활성 폴더가 통째로 옛 판이 되므로 따로 할 일이 없다.
+     *
+     * @param  string  $activePath  옛 판 활성 디렉토리
+     * @param  string  $stagingPath  새 판 스테이징 디렉토리
+     * @return array<int, string> 실은 파일의 확장 루트 기준 상대 경로(`/` 구분)
+     */
+    public static function carryOverRemovedClassFiles(string $activePath, string $stagingPath): array
+    {
+        $activeSrc = $activePath.DIRECTORY_SEPARATOR.'src';
+        if (! File::isDirectory($activeSrc) || ! File::isDirectory($stagingPath)) {
+            return [];
+        }
+
+        // 새 트리의 `src/` 경로를 대소문자 무시로 모아 둔다 — 새 판이 이름의 대소문자만 바꾼 파일은 같은 클래스라(PHP 클래스 이름은
+        // 대소문자 무시) 옛 파일을 실으면 대소문자를 가리는 파일 시스템에서 같은 클래스가 두 파일에 있게 된다.
+        $incoming = [];
+        $stagingSrc = $stagingPath.DIRECTORY_SEPARATOR.'src';
+        if (File::isDirectory($stagingSrc)) {
+            foreach (File::allFiles($stagingSrc) as $file) {
+                $incoming[strtolower('src/'.str_replace('\\', '/', $file->getRelativePathname()))] = true;
+            }
+        }
+
+        $carried = [];
+        foreach (File::allFiles($activeSrc) as $file) {
+            if (strtolower($file->getExtension()) !== 'php') {
+                continue;
+            }
+
+            $relative = 'src/'.str_replace('\\', '/', $file->getRelativePathname());
+            $target = $stagingPath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relative);
+            if (File::exists($target) || isset($incoming[strtolower($relative)])) {
+                continue;
+            }
+
+            File::ensureDirectoryExists(dirname($target));
+            File::copy($file->getPathname(), $target);
+            $carried[] = $relative;
+        }
+
+        sort($carried);
+
+        if ($carried !== []) {
+            Log::info('확장 교체: 새 판에 없는 옛 클래스 파일을 훅 캐시 재생성 뒤까지 남김', [
+                'active' => $activePath,
+                'files' => $carried,
+            ]);
+        }
+
+        return $carried;
+    }
+
+    /**
+     * {@see carryOverRemovedClassFiles()} 로 실어 둔 옛 클래스 파일을 지웁니다 (훅 캐시 재생성 뒤).
+     *
+     * 지운 뒤 빈 디렉토리는 `src/` 아래까지 거슬러 정리한다.
+     *
+     * @param  string  $activePath  새 판 활성 디렉토리
+     * @param  array<int, string>  $relativePaths  실어 둔 파일의 상대 경로
+     * @return array<int, string> 지운 파일의 상대 경로
+     */
+    public static function removeCarriedOverClassFiles(string $activePath, array $relativePaths): array
+    {
+        $removed = [];
+        $srcRoot = rtrim($activePath, '/\\').DIRECTORY_SEPARATOR.'src';
+
+        foreach ($relativePaths as $relative) {
+            if (! str_starts_with($relative, 'src/') || str_contains($relative, '..')) {
+                continue;
+            }
+
+            $path = $activePath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relative);
+            if (! File::exists($path) || ! @unlink($path)) {
+                continue;
+            }
+            $removed[] = $relative;
+
+            $dir = dirname($path);
+            while (strlen($dir) > strlen($srcRoot) && File::isDirectory($dir) && (File::files($dir) === [] && File::directories($dir) === [])) {
+                @rmdir($dir);
+                $dir = dirname($dir);
+            }
+        }
+
+        return $removed;
     }
 
     /**
@@ -572,7 +702,7 @@ class ExtensionPendingHelper
         // 4차: 잠긴 파일을 옆으로 치우고(rename 은 덮어쓰기와 별개 권한) 새 파일 생성.
         // 옆으로 치운 파일은 즉시 삭제를 시도하고, 실패해도 새 버전에 없는 파일이므로
         // 다음 제자리 동기화의 잔존 파일 제거가 다시 삭제를 시도한다.
-        $aside = $destination.'.g7stale_'.uniqid();
+        $aside = $destination.self::STALE_ASIDE_INFIX.uniqid();
         if (@rename($destination, $aside)) {
             @unlink($aside);
             if (@copy($source, $destination)) {
@@ -603,7 +733,7 @@ class ExtensionPendingHelper
         }
 
         // 삭제가 막힌 경우 옆으로 치워 원래 이름을 비운다
-        $aside = $path.'.g7stale_'.uniqid();
+        $aside = $path.self::STALE_ASIDE_INFIX.uniqid();
         if (@rename($path, $aside)) {
             @unlink($aside);
 
@@ -669,11 +799,8 @@ class ExtensionPendingHelper
     private static function cleanupSwapLeftovers(string $pendingPath, string $identifier): void
     {
         foreach (['_updating_', '_old_'] as $marker) {
-            $pattern = $pendingPath.DIRECTORY_SEPARATOR.$identifier.$marker.'*';
-            foreach (glob($pattern) ?: [] as $leftover) {
-                if (is_dir($leftover)) {
-                    self::bestEffortDeleteDirectory($leftover);
-                }
+            foreach (ExtensionManager::listDirectories($pendingPath, $identifier.$marker) as $leftover) {
+                self::bestEffortDeleteDirectory($leftover);
             }
         }
     }

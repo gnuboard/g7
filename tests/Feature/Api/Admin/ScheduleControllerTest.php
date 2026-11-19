@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\Schedule;
 use App\Models\ScheduleHistory;
 use App\Models\User;
+use App\Services\Schedule\ScheduleExecutor;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Lock;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -447,7 +448,8 @@ class ScheduleControllerTest extends TestCase
         return $this->createSchedule([
             'type' => 'shell',
             'command' => 'i161-task',
-            'without_overlapping' => true,
+            // 7.2.0 등록부에서는 잠금 유지 시간(분)이다 — 0 보다 크면 중복 실행 방지가 켜진다
+            'without_overlapping' => 60,
             'timeout' => 60,
         ]);
     }
@@ -464,7 +466,7 @@ class ScheduleControllerTest extends TestCase
     public function test_run_returns_409_while_same_schedule_running(): void
     {
         $schedule = $this->createOverlapGuardedSchedule();
-        $this->assertTrue(Cache::lock('schedule-run:'.$schedule->id, 3600, 'other-runner')->get());
+        $this->assertTrue(Cache::lock(ScheduleExecutor::LOCK_PREFIX.$schedule->id, 3600, 'other-runner')->get());
 
         $this->runnerRequest()->postJson("/api/admin/schedules/{$schedule->id}/run")
             ->assertStatus(409)
@@ -476,7 +478,7 @@ class ScheduleControllerTest extends TestCase
         Process::assertNothingRan();
 
         // 잠금이 풀리면 다시 실행할 수 있다
-        Cache::restoreLock('schedule-run:'.$schedule->id, 'other-runner')->release();
+        Cache::restoreLock(ScheduleExecutor::LOCK_PREFIX.$schedule->id, 'other-runner')->release();
         $this->runnerRequest()->postJson("/api/admin/schedules/{$schedule->id}/run")
             ->assertStatus(200);
         $this->assertSame(1, ScheduleHistory::where('schedule_id', $schedule->id)->count());
@@ -510,7 +512,7 @@ class ScheduleControllerTest extends TestCase
              */
             public function lock($name, $seconds = 0, $owner = null)
             {
-                if (! str_starts_with($name, 'schedule-run:')) {
+                if (! str_starts_with($name, ScheduleExecutor::LOCK_PREFIX)) {
                     return parent::lock($name, $seconds, $owner);
                 }
 

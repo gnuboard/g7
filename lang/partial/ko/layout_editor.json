@@ -73,6 +73,13 @@
       },
       "empty": "표시할 라우트가 없습니다"
     },
+    "stage_banner": "검수용 저장 — 이 편집기에서 저장한 것은 검수 서버에만 남고 운영 사이트에는 반영되지 않으며 다음 배포 때 사라집니다.",
+    "spec_load_error": {
+      "title": "편집기 정보를 불러오지 못했습니다.",
+      "message": "컴포넌트 목록, 스타일 설정, 상태 전환을 쓸 수 없습니다. 다시 시도해 주세요.",
+      "retry": "다시 시도",
+      "retrying": "다시 불러오는 중…"
+    },
     "fab": {
       "label": "레이아웃 편집",
       "tooltip": "이 화면을 레이아웃 편집기로 열기"
@@ -159,6 +166,7 @@
     "chars": "({diff} 자)",
     "saved_by": "저장자: {name}",
     "unknown_author": "알 수 없음",
+    "system_author": "시스템",
     "compare": "비교",
     "comparing": "비교 중…",
     "diff_title": "v{old} → v{new} 변경 내용",
@@ -215,7 +223,9 @@
   },
   "zoom": {
     "label": "줌",
-    "aria_label": "캔버스 줌 슬라이더"
+    "aria_label": "캔버스 줌 슬라이더",
+    "actual_size": "실제 크기",
+    "actual_size_hint": "미리보기를 줄이지 않고 1:1 로 봅니다. 캔버스보다 넓으면 가로 스크롤이 생깁니다."
   },
   "palette": {
     "title": "요소 추가",
@@ -431,7 +441,17 @@
     "bound_value": {
       "notice": "데이터 연결 값입니다(자동으로 채워집니다)",
       "replace": "직접 지정으로 바꾸기",
-      "restore": "데이터 연결로 되돌리기"
+      "restore": "데이터 연결로 되돌리기",
+      "template_settings_notice": "템플릿 설정에 연결된 값입니다 — 관리자 > 템플릿 > 이 템플릿의 「설정」에서 바꿉니다.",
+      "open_template_settings": "설정 열기"
+    },
+    "thumbnail_preset": {
+      "original": "원본",
+      "fit_cover": "자르기",
+      "fit_contain": "맞추기",
+      "fit_width": "가로만",
+      "option_label": "{name} ({size} · {fit})",
+      "unknown": "{name} (현재 사용 안 함)"
     }
   },
   "recipe": {
@@ -1410,6 +1430,10 @@
     "login_password_change_postpone": {
       "label": "비밀번호 변경 미루기",
       "param_body": "변경 요청 정보"
+    },
+    "login_handoff": {
+      "label": "로그인 인계 코드로 로그인",
+      "param_body": "인계 요청 정보"
     },
     "logout": {
       "label": "로그아웃 처리",

@@ -205,16 +205,28 @@ interface IterationNodeShape {
  */
 export function collectIterationVars(
   root: IterationNodeShape,
-  path: number[],
+  path: ReadonlyArray<number | { responsive: string } | { propSlot: string }>,
   arrayItemFields?: Map<string, string[]>,
 ): BindingIterationVar[] {
   const out: BindingIterationVar[] = [];
   let node: IterationNodeShape | undefined = root;
-  for (const idx of path) {
+  // 다음 number 세그먼트가 인덱싱할 배열 — 디바이스 분기(`responsive.{키}.children`)·컴포넌트 배열 prop(`props.footer`)
+  // 세그먼트는 노드를 내리지 않고 이 배열만 바꾼다(layoutTreeUtils `findNodeByPath` 와 같은 규칙, #869).
+  // 종전에는 호출자가 숫자 세그먼트만 남겨 넘겨 분기·footer 안 노드에서 엉뚱한 노드의 반복 변수를 모았다.
+  let childArray: IterationNodeShape[] = Array.isArray(root.children) ? (root.children as IterationNodeShape[]) : [];
+  for (const seg of path) {
     if (!node) break;
-    const children = Array.isArray(node.children) ? (node.children as IterationNodeShape[]) : [];
-    node = children[idx];
+    if (typeof seg === 'object' && seg !== null) {
+      const owner = node as Record<string, any>;
+      const next = 'responsive' in seg
+        ? owner.responsive?.[seg.responsive]?.children
+        : owner.props?.[seg.propSlot];
+      childArray = Array.isArray(next) ? (next as IterationNodeShape[]) : [];
+      continue;
+    }
+    node = childArray[seg];
     if (!node) break;
+    childArray = Array.isArray(node.children) ? (node.children as IterationNodeShape[]) : [];
     const it = node.iteration;
     if (!it || it.source === undefined) continue;
     if (typeof it.index_var === 'string' && it.index_var.length > 0) {

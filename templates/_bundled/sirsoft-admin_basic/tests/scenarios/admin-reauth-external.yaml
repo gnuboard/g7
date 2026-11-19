@@ -1,0 +1,44 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축마다 붙는 화면이 다르다 — return(with_token·without_token)·mode 는 자기 정보 수정,
+# return(with_token_app_key·token_only·reauth_only)·token·close 는 설정 화면 init 과 앱 키 창, redirect_url 은 외부 수단 응답에만 있다.
+# 회귀 가드는 effects 이며 전부 test_files 에 @effects 로 귀속.
+
+feature: 관리자 재확인 관문 수단 선택 (sirsoft-admin_basic 1.2.0, 7.2.0 A7t, K17)
+
+description: |
+  앱 키 재생성 창(_modal_password_confirm)과 자기 정보 수정(admin_user_form, 비밀번호 첫 설정)의 challenge 요청 본문에
+  provider_id 가 없다(서버가 고른다). 응답 render_hint=external_redirect 면 redirect, 아니면 인증번호 흐름.
+  admin_user_form init 은 query.verification_token 을 form.verification_token 에 싣는다. 요청 본문의 return_path 가 외부 수단이 돌려보낼 화면이다.
+  external_redirect 인데 redirect_url 이 없으면 진행 표시를 풀고 오류 안내(버튼 고착 방지).
+  앱 키 창: 설정 화면 init 이 verification_token + reauth=app_key 면 토큰을 _global.appKeyReauthToken 에 담고 주소를
+  /admin/settings?tab=security 로 정리한 뒤 창을 다시 연다. 재생성은 관리자가 [키 재생성] 을 눌러야 verification_token 으로 나가고,
+  토큰은 성공·실패·창 닫기에서 비운다.
+  메일을 받을 수 없는 관리자(email_deliverable=false — 이메일을 주지 않는 회사 계정 등)에게는 두 화면의 「이메일로 받은 인증번호」 안내·
+  「인증번호 받기」·「이메일로 보냈습니다」 대신 일반 안내(reauth_notice_other)·「본인 확인 시작」(reauth_start)·「보냈습니다」(reauth_code_sent_generic).
+
+axes:
+  surface: [app_key_modal, admin_self_update, admin_settings]
+  render_hint: [external_redirect, code_input]
+  redirect_url: [present, missing]
+  return: [with_token, without_token, with_token_app_key, token_only, reauth_only]
+  mode: [edit, create]
+  token: [present, absent]
+  close: [cancel, unmount]
+  email_deliverable: [true, false]
+
+effects:
+  - challenge_request_lets_server_pick_provider
+  - external_redirect_hint_redirects
+  - code_hint_keeps_verification_code_flow
+  - returned_verification_token_loaded_into_form
+  - external_redirect_without_url_releases_button
+  - app_key_return_reopens_modal_with_token
+  - app_key_return_never_auto_regenerates
+  - app_key_token_enables_regenerate_without_code
+  - app_key_token_regenerates_with_verification_token
+  - app_key_token_cleared_on_close
+  - app_key_token_survives_remount_while_open
+  - returned_verification_token_removed_from_url
+  - mailless_admin_sees_generic_wording   # 메일 없는 관리자에게 메일 전제 안내·버튼·토스트 대신 일반 문구
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-reauth-external.test.ts

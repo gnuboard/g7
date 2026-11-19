@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는 신규 기능 시나리오 매트릭스 SSoT 로 기록. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+# audit:allow test-scenario-coverage reason: issue:#609 본 매니페스트는 신규 기능 시나리오 매트릭스 SSoT 로 기록. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 앞선 정리에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 
 feature: KG이니시스 본인인증 콜백 처리 / 비로그인 가입 PII 흡수
 
@@ -34,6 +35,9 @@ axes:
     - cache_pii_missing                    # log 매칭 OK 이지만 Cache TTL 만료 등으로 PII 부재
     - existing_user_id_on_log              # backfill 안전 가드 (이미 user_id 있는 log 미덮어씀)
     - happy_path                           # 정상 흐름
+    - token_consumed_by_core               # 코어 리스너(priority 10)가 consumed_at 을 찍은 뒤 이 리스너(priority 50)가 처리
+    - backfill_throws                      # 기록 저장 뒤 로그 user_id backfill 이 예외
+    - consumed_by_other_request            # 다른 요청이 이미 소비한(이 요청이 인정하지 않은) 결과 — 토큰이 맞아도 붙이지 않음 (1.1.4)
 
 exclusions:
   - { callback_outcome: success, registration_context: missing_token, reason: "callback resolve 성공 시점과 register 흐름은 독립" }
@@ -69,6 +73,10 @@ effects:
   - listener_does_not_clear_cache_for_other_provider_log
   - listener_skips_when_cache_pii_payload_missing_or_empty
   - listener_does_not_overwrite_existing_user_id_on_log_via_backfill_safe_guard
+  # 2026-11-13 CompleteInicisRecordAfterRegisterTest 메서드별 마킹 때 그 시험이 실제로 재는 효과를 선언으로 올림
+  - listener_processes_token_after_core_listener_marks_consumed
+  - verified_claims_null_when_listener_skipped_record_for_bound_log
+  - listener_keeps_record_and_clears_cache_when_backfill_throws
 
 test_files:
   - plugins/_bundled/sirsoft-verification_kginicis/tests/Unit/Services/InicisCallbackOutcomeTest.php

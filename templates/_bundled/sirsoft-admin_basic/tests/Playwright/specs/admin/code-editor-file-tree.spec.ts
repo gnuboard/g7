@@ -8,7 +8,7 @@
  * 여기서 잰다 — **폴더가 실제로 접히고 펼쳐지는가**, **키보드로 걸을 수 있는가**.
  * 검색은 같은 트리의 다른 약속이라 `code-editor-search.spec.ts` 가 따로 잰다.
  *
- * @scenario surface=code_editor,entry=direct
+ * 소속 시나리오(마커 아님 — 평문): code-editor-file-tree
  * @effects code_editor_file_tree_is_navigable
  *
  * 실행: `code-editor-*.spec.ts` 는 `--workers=1` 로 돌린다 — 사유는
@@ -29,7 +29,7 @@ test.describe.configure({ mode: 'serial' });
 
 test.describe('@sirsoft-admin_basic 코드 편집기 — 파일 트리', () => {
   /**
-   * @scenario promise=tree_structure, surface=browser
+   * @scenario input=mouse
    *
    * @effects code_editor_builds_folders_from_layout_names
    */
@@ -52,8 +52,6 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 파일 트리', () => {
 
   /**
    * 트리 규약이 없으면 스크린리더는 목록을 구조로 읽지 못한다.
-   *
-   * @scenario promise=tree_accessibility, surface=browser
    *
    * @effects code_editor_tree_follows_the_aria_tree_contract
    */
@@ -81,7 +79,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 파일 트리', () => {
   });
 
   /**
-   * @scenario promise=tree_keyboard, surface=browser
+   * @scenario input=keyboard
    *
    * @effects code_editor_tree_moves_with_arrow_keys
    */
@@ -105,7 +103,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 파일 트리', () => {
   /**
    * 파일 선택은 주소에 남는다 — 새로고침해도 같은 파일이 열려야 한다.
    *
-   * @scenario promise=selection_survives_reload, surface=browser
+   * @scenario input=mouse
    *
    * @effects code_editor_file_select_syncs_route_query
    */

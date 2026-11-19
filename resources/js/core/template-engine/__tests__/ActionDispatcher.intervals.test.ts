@@ -6,12 +6,12 @@
  * tick 에 사용하는 기반 API.
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { ActionDispatcher } from '../ActionDispatcher';
 
 describe('ActionDispatcher — startInterval / stopInterval', () => {
   let dispatcher: ActionDispatcher;
-  let mockNavigate: ReturnType<typeof vi.fn>;
+  let mockNavigate: Mock;
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -24,6 +24,11 @@ describe('ActionDispatcher — startInterval / stopInterval', () => {
     vi.useRealTimers();
   });
 
+  /**
+   * @scenario case=periodic_tick
+   *
+   * @effects interval_actions_run_periodically
+   */
   it('invokes actions periodically at the specified interval', async () => {
     const boundProps = dispatcher.bindActionsToProps({
       actions: [
@@ -51,6 +56,11 @@ describe('ActionDispatcher — startInterval / stopInterval', () => {
     expect(mockNavigate).toHaveBeenCalledTimes(3);
   });
 
+  /**
+   * @scenario case=stop_by_id
+   *
+   * @effects stop_interval_halts_timer_by_id
+   */
   it('stopInterval halts the timer by id', async () => {
     const start = dispatcher.bindActionsToProps({
       actions: [
@@ -85,6 +95,11 @@ describe('ActionDispatcher — startInterval / stopInterval', () => {
     expect(mockNavigate).toHaveBeenCalledTimes(3); // no further ticks after stop
   });
 
+  /**
+   * @scenario case=same_id_twice
+   *
+   * @effects same_id_interval_replaces_existing_timer
+   */
   it('replaces existing timer when same id is registered twice (idempotent)', async () => {
     const run = async (intervalMs: number) => {
       const props = dispatcher.bindActionsToProps({
@@ -116,6 +131,11 @@ describe('ActionDispatcher — startInterval / stopInterval', () => {
     expect(mockNavigate).toHaveBeenCalledTimes(3);
   });
 
+  /**
+   * @scenario case=stop_all
+   *
+   * @effects stop_all_intervals_clears_every_timer
+   */
   it('stopAllIntervals clears every registered timer', async () => {
     for (const id of ['a', 'b', 'c']) {
       const props = dispatcher.bindActionsToProps({
@@ -143,6 +163,11 @@ describe('ActionDispatcher — startInterval / stopInterval', () => {
     expect(mockNavigate).toHaveBeenCalledTimes(3); // no further ticks
   });
 
+  /**
+   * @scenario case=invalid_params
+   *
+   * @effects start_interval_rejects_invalid_params
+   */
   it('rejects startInterval with missing id or non-positive intervalMs', async () => {
     const cases = [
       { id: '', intervalMs: 1000 },

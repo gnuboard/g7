@@ -7,6 +7,7 @@ use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Repositories\JsonConfigRepository;
 use App\Services\PluginSettingsService;
+use App\Services\TemplateSettingsService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 
@@ -50,9 +51,13 @@ class ExtensionSettingsMirror
         // 커맨드는 영원히 기본값(false)을 읽어 "대상 0건" 이라는 정상 출력을 낸다 —
         // 실패가 아니라 정상처럼 보이므로 아무도 알아채지 못한다.
         'privacy',
+        'system',
         // 본문 콘텐츠(#883) — 봇 정화·쇼핑몰 저장 정화·본문 미디어 업로드 허용·재생 헤더·서명 주소 유효 시간이 읽는다.
         // 빠지면 저장·화면 규칙은 바뀌는데 서버만 기본값을 읽는다(위 privacy 와 같은 함정).
         'content',
+        // 회원(#490) — 닉네임 정책(중복 금지, 금지어, 변경 주기)과 표시 이름 설정을 요청 규칙과 서비스가 읽는다.
+        // 빠지면 관리자 화면 저장은 성공하는데 서버는 기본값만 읽어 정책이 조용히 꺼진다(위 privacy 와 같은 함정).
+        'member',
     ];
 
     /**
@@ -150,6 +155,55 @@ class ExtensionSettingsMirror
     public function refreshPlugin(string $identifier): void
     {
         Config::set('g7_settings.plugins.'.$identifier, $this->resolvePluginSettings($identifier));
+    }
+
+    /**
+     * 이미 채운 템플릿 설정 미러를 다시 채웁니다 (#434).
+     *
+     * 템플릿 미러는 부팅 때 채우지 않는다 — 템플릿 설정을 읽는 서버 코드는 드물어(파비콘 head) 요청마다 파일을
+     * 읽을 이유가 없다. `g7_template_settings()` 가 처음 읽을 때 채우고, 상주 프로세스 갱신은 채운 항목만 다시 읽는다.
+     *
+     * @return void
+     */
+    public function refreshAllTemplates(): void
+    {
+        foreach (array_keys((array) Config::get('g7_settings.templates', [])) as $identifier) {
+            $this->refreshTemplate((string) $identifier);
+        }
+    }
+
+    /**
+     * 템플릿 하나의 설정 미러를 다시 채웁니다.
+     *
+     * @param  string  $identifier  템플릿 식별자 (예: sirsoft-basic)
+     * @return void
+     */
+    public function refreshTemplate(string $identifier): void
+    {
+        Config::set('g7_settings.templates.'.$identifier, $this->resolveTemplateSettings($identifier));
+    }
+
+    /**
+     * 템플릿 설정 서비스에서 미러에 담을 값을 만듭니다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @return array<string, mixed> 미러 값 (비밀값 제외)
+     */
+    private function resolveTemplateSettings(string $identifier): array
+    {
+        try {
+            $service = app(TemplateSettingsService::class);
+            $service->clearCache($identifier);
+            $settings = $service->get($identifier);
+            $schema = $service->schema($identifier);
+
+            // 비밀값(sensitive) 칸은 미러에 싣지 않는다 — 모듈·플러그인 미러와 같다(필요한 코드는 서비스로 읽는다)
+            return is_array($settings) && $schema !== null ? $service->withoutSensitive($schema, $settings) : [];
+        } catch (\Throwable $e) {
+            Log::warning("템플릿 환경설정 로딩 실패: {$identifier}", ['error' => $e->getMessage()]);
+
+            return [];
+        }
     }
 
     /**

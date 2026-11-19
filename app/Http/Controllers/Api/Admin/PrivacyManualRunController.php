@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\PrivacyManualRunRequest;
 use App\Http\Requests\Admin\PrivacyManualRunStatusRequest;
 use App\Http\Resources\PrivacyManualRunResource;
+use App\Models\User;
 use App\Privacy\ManualRun\PrivacyManualRunRegistry;
 use App\Privacy\ManualRun\PrivacyManualRunService;
 use Illuminate\Http\JsonResponse;
@@ -136,7 +137,7 @@ class PrivacyManualRunController extends AdminBaseController
             $run = $this->service->queue($runner, $request->skipWaiting(), $request->user());
         } catch (PrivacyManualRunConflictException $e) {
             return $this->error(PrivacyManualRunConflictException::MESSAGE_KEY, 409, [
-                'run' => (new PrivacyManualRunResource($e->activeRun->loadMissing('requester:id,name')))->toArray($request),
+                'run' => (new PrivacyManualRunResource($e->activeRun->loadMissing('requester:'.User::displayColumns())))->toArray($request),
             ]);
         } catch (PrivacyManualRunDisabledException $e) {
             // 진행 중 충돌과 달리 `errors.run` 이 없다 — 화면은 이 차이로 「기능을 켜고 저장하라」 안내를 고른다.
@@ -152,7 +153,7 @@ class PrivacyManualRunController extends AdminBaseController
 
         return $this->success(
             'privacy.manual_run.queued',
-            (new PrivacyManualRunResource($run->loadMissing('requester:id,name')))->toArray($request),
+            (new PrivacyManualRunResource($run->loadMissing('requester:'.User::displayColumns())))->toArray($request),
             202,
         );
     }

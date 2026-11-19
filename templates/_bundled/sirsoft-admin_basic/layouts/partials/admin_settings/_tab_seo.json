@@ -1,5 +1,5 @@
 {
-    "comment": "SEO 탭 — 기본 메타 정보와 사이트맵 관련 값을 고친다.\n  저장은 화면 하단의 공용 버튼이 이 탭 몫만 잘라 보낸다(다른 탭 값은 건드리지 않는다).",
+    "comment": "SEO 탭 — 기본 메타 정보와 사이트맵 관련 값을 고친다. 사이트맵 생성 주기·시각은 스케줄 관리 화면에서 바꾼다(링크만 둔다).\n  저장은 화면 하단의 공용 버튼이 이 탭 몫만 잘라 보낸다(다른 탭 값은 건드리지 않는다).",
     "meta": {
         "is_partial": true,
         "description": "환경설정 SEO 탭 콘텐츠"
@@ -417,87 +417,195 @@
                                     "text": "$t:admin.settings.seo.og_image_default_desc"
                                 },
                                 {
-                                    "id": "og_image_default_uploader",
-                                    "type": "composite",
-                                    "name": "FileUploader",
-                                    "actions": [
+                                    "comment": "첨부 업로더 확장점(#916) — 업로더 플러그인이 mode=\"replace\" 로 바꿔 끼울 수 있다. 계약은 기존 값만으로 조립하고(새 API 없음),\n               콜백은 기본 업로더의 이벤트 처리와 같은 동작이다($args[0] → $event). 기본 업로더는 <default> 안에 그대로 둔다.",
+                                    "id": "og_image_default_uploader_slot",
+                                    "type": "extension_point",
+                                    "name": "attachment_uploader",
+                                    "props": {
+                                        "className": "contents",
+                                        "uploader": {
+                                            "version": 1,
+                                            "mode": "upload",
+                                            "endpoints": {
+                                                "upload": "/api/admin/attachments",
+                                                "delete": "/api/admin/attachments/:id",
+                                                "reorder": "/api/admin/attachments/reorder"
+                                            },
+                                            "fields": {},
+                                            "policy": {
+                                                "accept": "{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}",
+                                                "maxSize": "{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}",
+                                                "maxFiles": 1,
+                                                "maxConcurrentUploads": 1,
+                                                "imageCompression": {
+                                                    "maxSizeMB": 1,
+                                                    "maxWidthOrHeight": "{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 1200}}"
+                                                }
+                                            },
+                                            "collection": "og_image_default",
+                                            "attachmentable": {
+                                                "type": null,
+                                                "id": null
+                                            },
+                                            "triggerEvent": "upload:og_image_default",
+                                            "initialFiles": "{{settings?.data?.seo?.og_image_default ?? []}}",
+                                            "disabled": "{{!!_computed.isReadOnly}}",
+                                            "autoUpload": false,
+                                            "ui": {
+                                                "confirmBeforeRemove": true
+                                            },
+                                            "context": {
+                                                "owner": "core",
+                                                "purpose": "og_image_default"
+                                            }
+                                        }
+                                    },
+                                    "default": [
                                         {
-                                            "comment": "파일을 고르는 순간 변경됨으로 표시한다 — 업로드 완료만 기다리면 그 사이 저장 버튼이 잠겨 있어 방금 고른 이미지를 저장하지 못한다.",
-                                            "type": "change",
-                                            "event": "onFilesChange",
+                                            "id": "og_image_default_uploader",
+                                            "type": "composite",
+                                            "name": "FileUploader",
+                                            "actions": [
+                                                {
+                                                    "comment": "파일을 고르는 순간 변경됨으로 표시한다 — 업로드 완료만 기다리면 그 사이 저장 버튼이 잠겨 있어 방금 고른 이미지를 저장하지 못한다.",
+                                                    "type": "change",
+                                                    "event": "onFilesChange",
+                                                    "handler": "setState",
+                                                    "if": "{{$args[0] && $args[0].length > 0}}",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "업로드된 파일을 기본 OG 이미지 목록(form.seo.og_image_default)에 덧붙인다 — 저장은 설정 폼에 실려 나가므로 폼 상태에 넣어야 반영된다.",
+                                                    "type": "change",
+                                                    "event": "onUploadComplete",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true,
+                                                        "form.seo.og_image_default": "{{[...(_local.form?.seo?.og_image_default ?? []), ...$args[0]]}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "업로드 완료를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다.",
+                                                    "type": "custom",
+                                                    "event": "onUploadComplete",
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:attachment.upload_success"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "업로드 실패 사유는 첫 인자로 온다 — 서버가 준 문구를 그대로 보여 준다.",
+                                                    "type": "custom",
+                                                    "event": "onUploadError",
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{$args[0]}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "목록에서 그 파일을 빼고 변경됨으로 표시한다 — 식별자는 hash 가 있으면 hash, 없으면 id 다(저장 전 임시 파일과 저장된 파일이 한 목록에 섞인다).",
+                                                    "type": "change",
+                                                    "event": "onRemove",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true,
+                                                        "form.seo.og_image_default": "{{(_local.form?.seo?.og_image_default ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "제거를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다.",
+                                                    "type": "custom",
+                                                    "event": "onRemove",
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "info",
+                                                        "message": "$t:attachment.deleted"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "collection": "og_image_default",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "maxFiles": 1,
+                                                "maxSize": "{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}",
+                                                "accept": "{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}",
+                                                "initialFiles": "{{settings?.data?.seo?.og_image_default ?? []}}",
+                                                "autoUpload": false,
+                                                "uploadTriggerEvent": "upload:og_image_default",
+                                                "confirmBeforeRemove": true,
+                                                "imageCompression": {
+                                                    "maxSizeMB": 1,
+                                                    "maxWidthOrHeight": "{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 1200}}"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "callbacks": {
+                                        "onFilesChange": {
+                                            "comment": "고른 것만으로는 올라가지 않는다 — 저장 버튼을 풀어 주는 표시만 켠다(기본 업로더와 같다)",
                                             "handler": "setState",
-                                            "if": "{{$args[0] && $args[0].length > 0}}",
+                                            "if": "{{$event && $event.length > 0}}",
                                             "params": {
                                                 "target": "local",
                                                 "hasChanges": true
                                             }
                                         },
-                                        {
-                                            "comment": "업로드된 파일을 기본 OG 이미지 목록(form.seo.og_image_default)에 덧붙인다 — 저장은 설정 폼에 실려 나가므로 폼 상태에 넣어야 반영된다.",
-                                            "type": "change",
-                                            "event": "onUploadComplete",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "hasChanges": true,
-                                                "form.seo.og_image_default": "{{[...(_local.form?.seo?.og_image_default ?? []), ...$args[0]]}}"
-                                            }
+                                        "onUploadComplete": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "comment": "올라간 파일을 폼 값에 반영하고 성공을 알린다(기본 업로더와 같다)",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true,
+                                                        "form.seo.og_image_default": "{{[...(_local.form?.seo?.og_image_default ?? []), ...$event]}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:attachment.upload_success"
+                                                    }
+                                                }
+                                            ]
                                         },
-                                        {
-                                            "comment": "업로드 완료를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다.",
-                                            "type": "custom",
-                                            "event": "onUploadComplete",
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:attachment.upload_success"
-                                            }
-                                        },
-                                        {
-                                            "comment": "업로드 실패 사유는 첫 인자로 온다 — 서버가 준 문구를 그대로 보여 준다.",
-                                            "type": "custom",
-                                            "event": "onUploadError",
+                                        "onUploadError": {
+                                            "comment": "업로드 실패 사유를 그대로 띄운다",
                                             "handler": "toast",
                                             "params": {
                                                 "type": "error",
-                                                "message": "{{$args[0]}}"
+                                                "message": "{{$event}}"
                                             }
                                         },
-                                        {
-                                            "comment": "목록에서 그 파일을 빼고 변경됨으로 표시한다 — 식별자는 hash 가 있으면 hash, 없으면 id 다(저장 전 임시 파일과 저장된 파일이 한 목록에 섞인다).",
-                                            "type": "change",
-                                            "event": "onRemove",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "hasChanges": true,
-                                                "form.seo.og_image_default": "{{(_local.form?.seo?.og_image_default ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
-                                            }
-                                        },
-                                        {
-                                            "comment": "제거를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다.",
-                                            "type": "custom",
-                                            "event": "onRemove",
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "info",
-                                                "message": "$t:attachment.deleted"
-                                            }
-                                        }
-                                    ],
-                                    "props": {
-                                        "collection": "og_image_default",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "maxFiles": 1,
-                                        "maxSize": "{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}",
-                                        "accept": "{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}",
-                                        "initialFiles": "{{settings?.data?.seo?.og_image_default ?? []}}",
-                                        "autoUpload": false,
-                                        "uploadTriggerEvent": "upload:og_image_default",
-                                        "confirmBeforeRemove": true,
-                                        "imageCompression": {
-                                            "maxSizeMB": 1,
-                                            "maxWidthOrHeight": "{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 1200}}"
+                                        "onRemove": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "comment": "뺀 파일을 폼 값에서 걸러 내고 알린다 — 실제 삭제는 저장 때 정해진다",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true,
+                                                        "form.seo.og_image_default": "{{(_local.form?.seo?.og_image_default ?? []).filter(item => (item.hash || item.id) !== $event)}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "info",
+                                                        "message": "$t:attachment.deleted"
+                                                    }
+                                                }
+                                            ]
                                         }
                                     }
                                 }
@@ -969,75 +1077,101 @@
                             ]
                         },
                         {
-                            "id": "field_sitemap_schedule",
+                            "comment": "생성 주기·시각 — 코어 스케줄 행(core/sitemap-generate)이 원천이라 여기서는 입력받지 않는다. 스케줄 관리 화면의\n             그 행으로 가는 링크와 다음 실행 일시를 둔다(소유=코어 + 식별자 검색 쿼리를 스케줄 화면이 그대로 필터로 읽는다).\n             안내 상자 모양은 설정 화면의 「스케줄 관리에서 변경」 안내 전부가 같다(아이콘 + 문장 + 다음 실행 + 링크).",
+                            "id": "field_sitemap_schedule_link",
                             "type": "basic",
                             "name": "Div",
+                            "props": {
+                                "className": "alert-info"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Label",
+                                    "name": "Div",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "flex gap-3"
                                     },
-                                    "text": "$t:admin.settings.seo.sitemap_schedule"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Select",
-                                    "props": {
-                                        "name": "seo.sitemap_schedule",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "className": "w-full",
-                                        "options": [
-                                            {
-                                                "value": "hourly",
-                                                "label": "$t:admin.settings.seo.sitemap_schedule_hourly"
-                                            },
-                                            {
-                                                "value": "daily",
-                                                "label": "$t:admin.settings.seo.sitemap_schedule_daily"
-                                            },
-                                            {
-                                                "value": "weekly",
-                                                "label": "$t:admin.settings.seo.sitemap_schedule_weekly"
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-info",
+                                                "className": "text-xl flex-shrink-0 mt-0.5"
                                             }
-                                        ]
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "id": "field_sitemap_schedule_time",
-                            "type": "basic",
-                            "name": "Div",
-                            "if": "{{settings !== undefined && ((_local.form?.['seo.sitemap_schedule'] ?? _local.form?.seo?.sitemap_schedule ?? 'daily') !== 'hourly')}}",
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Label",
-                                    "props": {
-                                        "className": "form-label"
-                                    },
-                                    "text": "$t:admin.settings.seo.sitemap_schedule_time"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Input",
-                                    "props": {
-                                        "type": "text",
-                                        "name": "seo.sitemap_schedule_time",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "placeholder": "02:00",
-                                        "className": ""
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "P",
-                                    "props": {
-                                        "className": "form-hint"
-                                    },
-                                    "text": "$t:admin.settings.seo.sitemap_schedule_time_hint"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "min-w-0 space-y-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.settings.seo.sitemap_schedule_managed"
+                                                },
+                                                {
+                                                    "id": "field_sitemap_schedule_link_next_run",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'sitemap-generate')?.is_active !== false && !!(coreSchedules?.data?.data ?? []).find(r => r.name === 'sitemap-generate')?.next_run_at}}",
+                                                    "props": {
+                                                        "className": "text-label-subtle flex-center flex-wrap gap-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.schedule_link.next_run"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-medium"
+                                                            },
+                                                            "text": "{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'sitemap-generate')?.next_run_at | datetime}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "field_sitemap_schedule_link_inactive",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'sitemap-generate')?.is_active === false}}",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.settings.schedule_link.inactive"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center flex-wrap gap-3"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "id": "sitemap_schedule_link",
+                                                            "type": "basic",
+                                                            "name": "A",
+                                                            "if": "{{current_user !== undefined && (_computed.canReadSchedules !== false)}}",
+                                                            "props": {
+                                                                "href": "/admin/schedules?extension_type=core&search_field=identifier&search_keyword=sitemap-generate",
+                                                                "className": "text-link"
+                                                            },
+                                                            "text": "$t:admin.settings.schedule_link.change"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
                                 }
                             ]
                         },
@@ -1295,24 +1429,45 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "flex gap-2 flex-row items-center"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "flex flex-col gap-2 md:flex-row md:items-center md:"
+                                        "className": "flex flex-col gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Input",
+                                            "responsive": {
+                                                "768-": {
+                                                    "props": {
+                                                        "className": "flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"
+                                                    }
+                                                }
+                                            },
                                             "props": {
                                                 "type": "text",
                                                 "disabled": true,
                                                 "value": "{{(sitemap_status?.data?.last_updated_at ?? _local.form?.seo?.sitemap_last_updated_at) | datetime | default('-')}}",
-                                                "className": "md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"
+                                                "className": "dark:bg-gray-900 text-gray-700 dark:text-gray-300"
                                             }
                                         },
                                         {
                                             "comment": "사이트맵 생성 요청. 대기·진행·기록 중인 동안에는 잠겨 있어 같은 작업이 겹쳐 돌지 않는다.\n                 즉시 실행(sync) 큐는 요청 안에서 생성을 끝내므로 응답까지 몇 초~수십 초가 걸린다 — 요청 중에도 잠그고 스피너를 보인다",
                                             "type": "basic",
                                             "name": "Button",
+                                            "responsive": {
+                                                "768-": {
+                                                    "props": {
+                                                        "className": "w-auto px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex-center justify-center gap-2"
+                                                    }
+                                                }
+                                            },
                                             "actions": [
                                                 {
                                                     "type": "click",
@@ -1377,7 +1532,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "disabled": "{{_computed.isReadOnly || !!_local.isRegeneratingSitemap || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}",
-                                                "className": "w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex-center justify-center gap-2"
+                                                "className": "w-full px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex-center justify-center gap-2"
                                             },
                                             "children": [
                                                 {

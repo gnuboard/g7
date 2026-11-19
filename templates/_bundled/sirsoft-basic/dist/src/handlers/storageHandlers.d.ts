@@ -1,15 +1,3 @@
-/**
- * 로컬 스토리지 관련 핸들러
- *
- * 비로그인 사용자의 장바구니 키 등 클라이언트 스토리지 관리를 처리합니다.
- *
- * 핸들러 시그니처: ActionDispatcher의 ActionHandler 형식을 따름
- * (action: ActionDefinition, context: ActionContext) => void | Promise<void>
- *
- * G7Core API 사용:
- * - G7Core.state.set() - 전역 상태 설정
- * - G7Core.state.get()?.currentUser - 현재 사용자 확인 (반환값이 곧 `_global` 이라 `._global` 을 덧붙이지 않는다)
- */
 export declare const SECRET_VIEW_TOKEN_STORAGE_NAME = "g7_board_secret_view_token";
 export declare const SECRET_VIEW_EXPIRES_AT_STORAGE_NAME = "g7_board_secret_view_expires_at";
 /**
@@ -19,10 +7,21 @@ export declare const SECRET_VIEW_EXPIRES_AT_STORAGE_NAME = "g7_board_secret_view
  */
 export declare function issueCartKeyFromApi(): Promise<string | null>;
 /**
+ * 장바구니 키 발급을 미리 시작한다 — 템플릿 번들이 실릴 때 한 번 부른다 (#879).
+ *
+ * 종전에는 레이아웃을 받은 뒤 init_actions 의 `initCartKey` 에서야 발급 요청이 나가, 첫 화면 전 PHP 왕복이 레이아웃 → 키로
+ * 줄줄이 이어졌다. 저장된 키가 없고 쇼핑몰 모듈이 켜져 있으면 여기서 요청을 시작해 레이아웃 요청과 겹치게 한다. 렌더 전에
+ * 키 응답을 끝까지 기다리는 것은 그대로다 — `initCartKey` 가 이 결과를 기다린다(설계 확정 2026-11-10).
+ *
+ * @returns 진행 중인 발급(시작하지 않았으면 null)
+ */
+export declare function prefetchCartKey(): Promise<string | null> | null;
+/**
  * 장바구니 키 초기화
  *
  * 비로그인 사용자의 장바구니를 식별하기 위한 키를 생성/로드합니다.
  * 이미 저장된 키가 있으면 로드하고, 없으면 백엔드 API를 통해 새로 발급합니다.
+ * 번들이 실릴 때 시작한 발급({@link prefetchCartKey})이 있으면 새 요청 없이 그 결과를 끝까지 기다린다.
  *
  * ActionDispatcher 핸들러 형식: (action, context) => void | Promise<void>
  *
@@ -48,6 +47,17 @@ export declare function getCartKeyHandler(_action?: any, _context?: any): string
  * @param _context 액션 컨텍스트 (사용하지 않음)
  */
 export declare function clearCartKeyHandler(_action?: any, _context?: any): void;
+/**
+ * 장바구니 키가 필요한 동작 앞에서 키를 갖춘다 (#869 ρ J2).
+ *
+ * 저장된 키가 있으면 그것을 싣고, 없으면(init 의 발급이 실패한 경우) 새로 요청해 응답을 기다린다. 레이아웃은 담기, 바로 구매처럼 키가
+ * 필요한 동작의 sequence 맨 앞에 둔다. 받지 못하면 null 로 끝나고 동작은 종전처럼 서버 응답대로 처리된다.
+ *
+ * @param _action 액션 정의 (사용하지 않음)
+ * @param _context 액션 컨텍스트 (사용하지 않음)
+ * @returns 갖춘 키(받지 못하면 null)
+ */
+export declare function ensureCartKeyHandler(_action?: any, _context?: any): Promise<string | null>;
 /**
  * 장바구니 키 새로 생성
  *

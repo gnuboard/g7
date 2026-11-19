@@ -54,7 +54,7 @@ describe.each([
     });
     active.mockApi('claim', { response: { data: { abilities: { can_update_status: true, can_update_amounts: true } } } });
     const { container } = await active.render();
-    expect(container.querySelectorAll('.spinner-sm').length).toBe(busy ? buttons.length : 0);
+    expect(container.querySelectorAll('.ecommerce-spinner-sm').length).toBe(busy ? buttons.length : 0);
     for (const button of screen.getAllByRole('button')) expect((button as HTMLButtonElement).disabled).toBe(busy);
   });
 });

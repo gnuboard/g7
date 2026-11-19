@@ -36,6 +36,7 @@ return [
         'reorder_success' => '添付ファイルの順序が変更されました。',
         'reorder_failed' => '添付ファイルの順序の変更に失敗しました。',
         'settings_success' => '添付ファイル設定を閲覧しました。',
+        'thumbnail_source' => 'ページの添付画像と本文画像',
     ],
     'errors' => [
         'not_found' => 'ページが見つかりません。',

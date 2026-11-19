@@ -11,8 +11,7 @@
  * 스타일도 같다(#163). `style-src 'self'; style-src-attr 'none'` 에서는 `<style>` 요소·마크업의 style 속성·
  * `setAttribute('style', …)` 가 막혀 숨겨 둔 영역이 드러나고 배치가 무너진다.
  *
- * @scenario surface=installer, csp=webserver_strict, failure=none
- * @effects installer_has_no_inline_executable
+ * 마킹은 각 test 바로 앞에 있다(파일 머리말의 마킹은 어느 시험이 재는지 가리키지 않는다).
  */
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -50,6 +49,10 @@ test('모집단: 설치기 뷰·스크립트를 실제로 읽는다', () => {
     assert.ok(FILES.some(f => f.endsWith(path.join('assets', 'js', 'installer.js'))));
 });
 
+/**
+ * @scenario surface=installer, csp=webserver_strict, failure=none
+ * @effects installer_has_no_inline_executable
+ */
 test('실행형 인라인 <script> 본문이 없다 (JSON 데이터 블록·src 스크립트만)', () => {
     const offenders = [];
     for (const file of FILES) {
@@ -66,6 +69,10 @@ test('실행형 인라인 <script> 본문이 없다 (JSON 데이터 블록·src 
     assert.deepEqual(offenders, []);
 });
 
+/**
+ * @scenario surface=installer, csp=webserver_strict, failure=none
+ * @effects installer_has_no_inline_executable
+ */
 test('on* 인라인 핸들러·javascript: 링크가 없다 (서버 HTML·JS 문자열 템플릿 모두)', () => {
     const offenders = [];
     for (const file of FILES) {
@@ -240,7 +247,8 @@ test('상태 아이콘은 종전 style 속성과 같은 크기(20px·24px)를 �
     const body = fn.slice(0, fn.indexOf('return svgs[type]'));
     assert.match(body, /const sizeClass = px === 24 \? 'icon-px-24' : 'icon-px-20';/);
     const svgTags = body.match(/<svg [^>]*>/g) || [];
-    assert.equal(svgTags.length, 3);
+    // 아이콘 6종(성공·실패·진행 + 7.2.0 의 안내·건너뜀·대기) 모두 크기 클래스를 쓴다
+    assert.equal(svgTags.length, 6);
     for (const tag of svgTags) {
         assert.match(tag, /class="\$\{sizeClass\} /, tag);
     }

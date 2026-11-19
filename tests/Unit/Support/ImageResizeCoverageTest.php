@@ -23,7 +23,10 @@ class ImageResizeCoverageTest extends TestCase
     /**
      * 업로드 파일을 디스크에 저장하는 서비스 전수.
      *
+     * @effects every_upload_service_applies_the_configured_image_bounds, attachment_recorded_size_matches_stored_bytes_after_the_resize_path
+     *
      * @param  string  $relativePath  검사 대상 서비스 경로
+     * @return void 반환값 없음
      */
     #[Test]
     #[TestWith(['app/Services/AttachmentService.php'])]
@@ -46,6 +49,19 @@ class ImageResizeCoverageTest extends TestCase
             'resizeInPlace',
             $source,
             "{$relativePath}: 업로드 이미지 축소가 적용되지 않았습니다 — 이 경로로 올린 이미지는 환경설정 상한을 무시합니다."
+        );
+
+        // 축소는 **같은 경로를 제자리에서 갈아 끼운다.** 그 뒤 크기를 다시 재는 쪽이 PHP
+        // 공유 stat 캐시를 비우지 않으면 `getSize()` 가 **축소 전 크기**를 돌려주고, 그 값이
+        // 행의 크기로 기록되어 서빙의 `Content-Length` 로 **선언**된다 — 응답이 잘린다.
+        //
+        // 이 축이 없던 동안 8개 중 4개가 그 처리를 갖지 않은 채 이 검사를 통과했다.
+        // 열거만 전수이고 단언이 하나뿐이면, 「전수를 본다」는 외형만 남고 새 축은
+        // 아무것도 잡지 못한다.
+        $this->assertStringContainsString(
+            'clearstatcache',
+            $source,
+            "{$relativePath}: 축소 뒤 stat 캐시를 비우지 않습니다 — 행에 축소 전 크기가 기록되고, 그 값이 Content-Length 로 선언되어 응답이 잘립니다."
         );
     }
 

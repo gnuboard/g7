@@ -1,3 +1,4 @@
+import { apiUrl } from '../support/apiUrl';
 /**
  * detectAssetUrlMode 핸들러 (이슈 #486 §8)
  *
@@ -36,7 +37,7 @@ export type DetectResult = 'extension' | 'extensionless' | 'unavailable';
  */
 async function probe(path: string): Promise<boolean> {
     try {
-        const res = await fetch(path, { cache: 'no-store', credentials: 'omit' });
+        const res = await fetch(apiUrl(path), { cache: 'no-store', credentials: 'omit' });
         if (!res.ok) return false;
 
         // Content-Type 이 스크립트가 아니면 정적 블록이 아닌 다른 것이 응답한 것

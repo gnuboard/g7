@@ -78,7 +78,16 @@ public function cleanupStaleMenus(
 ): int;
 
 public function collectSlugsRecursive(array $menus): array;
+
+public function grantMenusToDeclaredRoles(
+    array $menuDataArray,
+    ExtensionOwnerType $extensionType,
+    string $extensionIdentifier,
+    array $roleIdentifiers,
+): int;
 ```
+
+`grantMenusToDeclaredRoles()` 는 확장이 선언한 역할에 그 역할 권한으로 열 수 있는 확장 메뉴(정의의 `permission` 키 기준)를 붙인다. `ModuleManager::createModuleMenus()`·`PluginManager::createPluginMenus()` 가 메뉴 동기화 뒤에 부른다. 규칙은 [menus.md](../extension/menus.md#확장이-선언한-역할의-메뉴).
 
 ### 사용 패턴 (코어 `CoreUpdateService::syncCoreMenus` 말미)
 
@@ -237,10 +246,16 @@ public function cleanupStale(
     array $scopeFilter,        // ['extension_identifier' => 'x', 'type' => 'refund']
     string $keyField,          // 'code', 'slug', 'name'
     array $currentKeys,
+    string|array|null $entityLabel = null,   // 활동 로그에 적을 엔티티 이름 — 비우면 모델 이름
+    ?string $ownerIdentifier = null,         // 활동 로그에 적을 소유 확장 식별자 (범위 조건에 없을 때)
 ): int;
 ```
 
+운영자가 고친 행(`user_overrides`)을 지우기 직전에는 활동 로그에 남긴다. `$entityLabel` 에 언어별 묶음(`LocalizedValue::translateAll()` 결과, 7.2.0)을 넘기면 로그를 볼 때의 언어로 항목 이름이 나온다.
+
 > **운영자가 직접 행을 만드는 표는 운영자 행을 가르는 범위 조건 없이 `cleanupStale` 을 부르지 않는다.** 시더는 언어팩을 켜고 끌 때마다 다시 돌기 때문에, 조건 없이 부르면 운영자가 만든 행(선언에 없는 행)이 흔적 없이 지워진다(#727 — 게시판 유형·클레임 사유·배송유형·택배사). 시더가 만든 행만 정리하려면 `['created_by' => null]` 을 범위에 넣고, 시더가 새로 만드는 행에는 `created_by => null` 을 명시해 로그인한 요청 안에서 시더가 돌아도 시드 행이 운영자 행으로 보이지 않게 한다. 가를 표식이 없는 표(게시판 유형)는 정리하지 않는다 — 선언을 없앨 일이 생기면 그 버전의 업그레이드 스텝이 명시적으로 처리한다.
+
+**시드 정리를 하는 시더는 확장의 `getSeeders()` 에 직접 올린다.** 검수 서버(`G7_RUNTIME_ROLE=stage`)에서는 모듈·플러그인 시더의 `cleanupStale` 이 행을 지우지 않고 「`cleanupStale` 을 부른 그 시더를 다시 돌려야 한다」만 남기며, 운영 서버가 `php artisan extension:apply-deferred-cleanup` 에서 그 시더를 다시 실행해 그 순간의 선언으로 정리한다. 운영 서버는 확장이 `getSeeders()` 로 선언한 시더만 다시 실행하므로, 다른 시더 안에서 `$this->call()` 로만 부르는 시더가 `cleanupStale` 을 부르면 그 정리는 실행되지 않고 실패로 남는다. 순서·범위: [runtime-role.md](runtime-role.md) 「검수 서버의 확장 업데이트」.
 
 ### 사용 예시 1 — 운영자 행을 만들지 않는 표 (스코프 없음)
 

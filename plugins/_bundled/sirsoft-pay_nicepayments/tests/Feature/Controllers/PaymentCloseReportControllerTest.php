@@ -183,7 +183,8 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
         $orderService = Mockery::mock(OrderProcessingService::class);
         $orderService->shouldReceive('findByOrderNumber')
-            ->once()
+            // 결제 계약이 주문 조회, 청구액 계산, 잠금 전 조회에서 같은 서비스를 호출 때마다 해석해 부른다
+            ->atLeast()->once()
             ->with('ORD-NICE-CLOSE-002')
             ->andReturn($order);
         $orderService->shouldNotReceive('failPayment');
@@ -199,7 +200,7 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('errors.message.0', 'Payment amount does not match the order amount.');
+            ->assertJsonPath('errors.message.0', __('sirsoft-pay_nicepayments::messages.responses.amount_mismatch'));
     }
 
     /**
@@ -217,7 +218,8 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
         $orderService = Mockery::mock(OrderProcessingService::class);
         $orderService->shouldReceive('findByOrderNumber')
-            ->once()
+            // 결제 계약이 주문 조회, 청구액 계산, 잠금 전 조회에서 같은 서비스를 호출 때마다 해석해 부른다
+            ->atLeast()->once()
             ->with('ORD-NICE-CLOSE-CURRENCY')
             ->andReturn($order);
         $orderService->shouldNotReceive('failPayment');
@@ -233,7 +235,7 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('errors.message.0', 'Payment currency is not chargeable.');
+            ->assertJsonPath('errors.message.0', __('sirsoft-pay_nicepayments::messages.responses.currency_not_chargeable'));
     }
 
     /**
@@ -272,7 +274,7 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(403)
-            ->assertJsonPath('errors.message.0', 'Order ownership verification failed.');
+            ->assertJsonPath('errors.message.0', __('sirsoft-pay_nicepayments::messages.responses.ownership_verification_failed'));
     }
 
     /**
@@ -289,7 +291,8 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
         $orderService = Mockery::mock(OrderProcessingService::class);
         $orderService->shouldReceive('findByOrderNumber')
-            ->once()
+            // 결제 계약이 주문 조회, 청구액 계산, 잠금 전 조회에서 같은 서비스를 호출 때마다 해석해 부른다
+            ->atLeast()->once()
             ->with('ORD-NICE-CLOSE-004')
             ->andReturn($order);
         $orderService->shouldNotReceive('failPayment');
@@ -352,7 +355,8 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
         $orderService = Mockery::mock(OrderProcessingService::class);
         $orderService->shouldReceive('findByOrderNumber')
-            ->once()
+            // 결제 계약이 주문 조회, 청구액 계산, 잠금 전 조회에서 같은 서비스를 호출 때마다 해석해 부른다
+            ->atLeast()->once()
             ->with('ORD-NICE-CLOSE-RACE')
             ->andReturn($staleOrder);
         $orderService->shouldNotReceive('failPayment');

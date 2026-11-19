@@ -11,22 +11,23 @@
   붙여 두면 값이 _local.form 으로 들어가 전역을 비워도 라디오가 옛 값으로 남고 설정 저장 본문에도 섞인다. -->
 <partial description="게시판 설정 > 관리자·스텝 일괄 지정 섹션">
   <div data-ref="bulk_members" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
-    <div data-ref="section_bulk_members" class="admin-card">
-      <h3 class="card-title">$t:sirsoft-board.admin.settings.bulk_members.title</h3>
-      <p class="card-description">$t:sirsoft-board.admin.settings.bulk_members.description</p>
+    <div data-ref="section_bulk_members" class="board-admin-card">
+      <h3 class="board-card-title">$t:sirsoft-board.admin.settings.bulk_members.title</h3>
+      <p class="board-card-description">$t:sirsoft-board.admin.settings.bulk_members.description</p>
       <!-- 게시판 수정 권한이 없다고 판정되면(게시판 목록 응답의 abilities) 잠근 이유를 보인다 -->
-      <div data-ref="bulk_members_no_permission" data-if="{{_computed.bulkMembersNoPermission}}" class="flex gap-2 text-tertiary mt-2">
-        <icon name="lock" size="sm" class="mt-0.5 flex-shrink-0"/>
+      <div data-ref="bulk_members_no_permission" data-if="{{_computed.bulkMembersNoPermission}}" class="board:flex board:gap-2 board-text-tertiary board:mt-2">
+        <icon name="lock" size="sm" class="board:mt-0.5 board:flex-shrink-0"/>
         <span>$t:sirsoft-board.admin.settings.bulk_members.no_permission</span>
       </div>
       <!-- 게시판 목록 조회가 권한 밖의 이유(서버 오류 등)로 실패하면 권한 문구 대신 불러오지 못했다고 알린다 -->
-      <div data-ref="bulk_members_load_failed" data-if="{{_computed.bulkMembersLoadFailed}}" class="flex gap-2 text-tertiary mt-2">
-        <icon name="triangle-exclamation" size="sm" class="mt-0.5 flex-shrink-0"/>
+      <div data-ref="bulk_members_load_failed" data-if="{{_computed.bulkMembersLoadFailed}}" class="board:flex board:gap-2 board-text-tertiary board:mt-2">
+        <icon name="triangle-exclamation" size="sm" class="board:mt-0.5 board:flex-shrink-0"/>
         <span>$t:sirsoft-board.admin.settings.bulk_members.load_failed</span>
       </div>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+      <div class="board:grid board:grid-cols-1 board:gap-6 board:mt-4">
+        <responsive on="desktop" class="board:grid board:grid-cols-2 board:gap-6 board:mt-4"/>
         <div data-ref="bulk_members_target">
-          <label class="form-label">$t:sirsoft-board.admin.settings.bulk_members.target_label</label>
+          <label class="board-form-label">$t:sirsoft-board.admin.settings.bulk_members.target_label</label>
           <radio-group data-type="composite" name="board_bulk_members_target" :autoBinding="false" value="{{_global.boardBulkMembers?.all === false ? 'selected' : 'all'}}" :inline="true" disabled="{{_computed.bulkMembersLocked}}">
             <prop name="options">
               <item label="$t:sirsoft-board.admin.settings.bulk_members.target_all" value="all"/>
@@ -37,7 +38,7 @@
               <set-state target="global" boardBulkMembers.all="{{$event.target.value !== 'selected'}}"/>
             </on>
           </radio-group>
-          <tag-input data-type="composite" data-ref="bulk_members_boards" data-if="{{_global.boardBulkMembers?.all === false}}" value="{{_global.boardBulkMembers?.boardIds ?? []}}" options="{{_computed.boardOptions ?? []}}" placeholder="$t:sirsoft-board.admin.settings.bulk_apply.select_boards_placeholder" class="w-full mt-2" defaultVariant="blue" disabled="{{_computed.bulkMembersLocked}}">
+          <tag-input data-type="composite" data-ref="bulk_members_boards" data-if="{{_global.boardBulkMembers?.all === false}}" value="{{_global.boardBulkMembers?.boardIds ?? []}}" options="{{_computed.boardOptions ?? []}}" placeholder="$t:sirsoft-board.admin.settings.bulk_apply.select_boards_placeholder" class="board:w-full board:mt-2" defaultVariant="blue" disabled="{{_computed.bulkMembersLocked}}">
             <on type="change">
               <!-- 고른 게시판 — 태그 입력이 준 배열을 통째로 담는다 -->
               <set-state target="global" boardBulkMembers.boardIds="{{$event.target.value ?? []}}"/>
@@ -45,7 +46,7 @@
           </tag-input>
         </div>
         <div data-ref="bulk_members_type">
-          <label class="form-label">$t:sirsoft-board.admin.settings.bulk_members.type_label</label>
+          <label class="board-form-label">$t:sirsoft-board.admin.settings.bulk_members.type_label</label>
           <radio-group data-type="composite" name="board_bulk_members_type" :autoBinding="false" value="{{_global.boardBulkMembers?.type ?? 'manager'}}" :inline="true" disabled="{{_computed.bulkMembersLocked}}">
             <prop name="options">
               <item label="$t:sirsoft-board.admin.settings.bulk_members.type_manager" value="manager"/>
@@ -58,8 +59,8 @@
           </radio-group>
         </div>
         <div data-ref="bulk_members_users">
-          <label class="form-label">$t:sirsoft-board.admin.settings.bulk_members.users_label</label>
-          <tag-input data-type="composite" data-ref="bulk_members_users_input" value="{{_global.boardBulkMembers?.userUuids ?? []}}" options="{{ [...(_global.boardBulkMembers?.users ?? []), ...(_global.boardBulkMembers?.searchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.search_placeholder" noOptionsMessage="$t:sirsoft-board.admin.form.permissions.no_search_results" class="w-full" defaultVariant="blue" :isSearchable="true" disabled="{{_computed.bulkMembersLocked}}">
+          <label class="board-form-label">$t:sirsoft-board.admin.settings.bulk_members.users_label</label>
+          <tag-input data-type="composite" data-ref="bulk_members_users_input" value="{{_global.boardBulkMembers?.userUuids ?? []}}" options="{{ [...(_global.boardBulkMembers?.users ?? []), ...(_global.boardBulkMembers?.searchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.search_placeholder" noOptionsMessage="$t:sirsoft-board.admin.form.permissions.no_search_results" class="board:w-full" defaultVariant="blue" :isSearchable="true" disabled="{{_computed.bulkMembersLocked}}">
             <on event="onInputChange">
               <!-- 회원 찾기 — 게시판 폼의 관리자 칸과 같이 300ms 쉬었다 보내고, 결과는 이미 고른 사람과 합쳐 선택지를 만든다.
                    검색칸을 지우거나 공백만 적으면 부르지 않는다 — 회원 목록 API 는 빈 필터 값을 지우고 전체 회원을 돌려주므로(게시판 폼 권한 칸·알림 템플릿 특정 회원 칸과 같은 기준) -->
@@ -80,7 +81,7 @@
           </tag-input>
         </div>
         <div data-ref="bulk_members_mode">
-          <label class="form-label">$t:sirsoft-board.admin.settings.bulk_members.mode_label</label>
+          <label class="board-form-label">$t:sirsoft-board.admin.settings.bulk_members.mode_label</label>
           <radio-group data-type="composite" name="board_bulk_members_mode" :autoBinding="false" value="{{_global.boardBulkMembers?.mode ?? 'add'}}" :inline="true" disabled="{{_computed.bulkMembersLocked}}">
             <prop name="options">
               <item label="$t:sirsoft-board.admin.settings.bulk_members.mode_add" value="add"/>
@@ -93,23 +94,23 @@
           </radio-group>
         </div>
       </div>
-      <div data-ref="bulk_members_hint" class="flex gap-2 text-tertiary mt-4">
-        <icon name="circle-info" size="sm" class="mt-0.5 flex-shrink-0"/>
+      <div data-ref="bulk_members_hint" class="board:flex board:gap-2 board-text-tertiary board:mt-4">
+        <icon name="circle-info" size="sm" class="board:mt-0.5 board:flex-shrink-0"/>
         <span>$t:sirsoft-board.admin.settings.bulk_members.hint</span>
       </div>
-      <div data-ref="bulk_members_result" data-if="{{!!_global.boardBulkMembers?.result}}" class="mt-4 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-        <p class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-board.admin.settings.bulk_members.result_summary|count={{_global.boardBulkMembers?.result?.updated_count ?? 0}}|updated={{_global.boardBulkMembers?.result?.updated_count ?? 0}}|skipped={{_global.boardBulkMembers?.result?.skipped_count ?? 0}}|unchanged={{_global.boardBulkMembers?.result?.unchanged_count ?? 0}}</p>
-        <ul class="mt-2 text-sm space-y-1">
+      <div data-ref="bulk_members_result" data-if="{{!!_global.boardBulkMembers?.result}}" class="board:mt-4 board:p-3 board:rounded-lg board:border board:border-gray-200 board:dark:border-gray-700 board:bg-gray-50 board:dark:bg-gray-800/50">
+        <p class="board:text-sm board:font-medium board:text-gray-900 board:dark:text-white">$t:sirsoft-board.admin.settings.bulk_members.result_summary|count={{_global.boardBulkMembers?.result?.updated_count ?? 0}}|updated={{_global.boardBulkMembers?.result?.updated_count ?? 0}}|skipped={{_global.boardBulkMembers?.result?.skipped_count ?? 0}}|unchanged={{_global.boardBulkMembers?.result?.unchanged_count ?? 0}}</p>
+        <ul class="board:mt-2 board:text-sm board:space-y-1">
           <!-- 다섯 줄만 보인다. 「모든 게시판」 이면 범위 밖(scope) 줄이 수십 개라 그 밖의 사유(역할을 줄 수 없음·관리자 0명·역할 행 없음)를 앞에 세운다 -->
-          <li data-each="skip in {{[...(_global.boardBulkMembers?.result?.skipped ?? [])].sort((a, b) => (a.reason === 'scope' ? 1 : 0) - (b.reason === 'scope' ? 1 : 0)).slice(0, 5)}}" class="flex justify-between gap-3 text-gray-600 dark:text-gray-400">
+          <li data-each="skip in {{[...(_global.boardBulkMembers?.result?.skipped ?? [])].sort((a, b) => (a.reason === 'scope' ? 1 : 0) - (b.reason === 'scope' ? 1 : 0)).slice(0, 5)}}" class="board:flex board:justify-between board:gap-3 board:text-gray-600 board:dark:text-gray-400">
             <!-- 이름은 서버가 함께 싣는 board_name 을 먼저 쓴다 — 관리 범위 밖 게시판은 이 화면 선택지(boardOptions)에 없어 번호만 보였다 -->
-            <span class="truncate">{{skip.board_name || (_computed.boardOptions ?? []).find(o => o.value == skip.board_id)?.label || skip.board_id}}</span>
-            <span class="flex-shrink-0">{{skip.reason === 'not_grantable' ? $t:sirsoft-board.admin.settings.bulk_members.reason_not_grantable : (skip.reason === 'last_manager' ? $t:sirsoft-board.admin.settings.bulk_members.reason_last_manager : (skip.reason === 'role_missing' ? $t:sirsoft-board.admin.settings.bulk_members.reason_role_missing : $t:sirsoft-board.admin.settings.bulk_members.reason_scope))}}</span>
+            <span class="board:truncate">{{skip.board_name || (_computed.boardOptions ?? []).find(o => o.value == skip.board_id)?.label || skip.board_id}}</span>
+            <span class="board:flex-shrink-0">{{skip.reason === 'not_grantable' ? $t:sirsoft-board.admin.settings.bulk_members.reason_not_grantable : (skip.reason === 'last_manager' ? $t:sirsoft-board.admin.settings.bulk_members.reason_last_manager : (skip.reason === 'role_missing' ? $t:sirsoft-board.admin.settings.bulk_members.reason_role_missing : $t:sirsoft-board.admin.settings.bulk_members.reason_scope))}}</span>
           </li>
         </ul>
       </div>
-      <div class="flex justify-end mt-4">
-        <button data-ref="bulk_members_apply_button" type="button" disabled="{{_computed.bulkMembersLocked || (_global.boardBulkMembers?.userUuids ?? []).length === 0 || (_global.boardBulkMembers?.all === false &amp;&amp; (_global.boardBulkMembers?.boardIds ?? []).length === 0)}}" class="flex-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+      <div class="board:flex board:justify-end board:mt-4">
+        <button data-ref="bulk_members_apply_button" type="button" disabled="{{_computed.bulkMembersLocked || (_global.boardBulkMembers?.userUuids ?? []).length === 0 || (_global.boardBulkMembers?.all === false &amp;&amp; (_global.boardBulkMembers?.boardIds ?? []).length === 0)}}" class="board-flex-center board:gap-1.5 board:px-4 board:py-2 board:bg-gray-900 board:dark:bg-white board:text-white board:dark:text-gray-900 board:rounded-lg board:hover:bg-gray-800 board:dark:hover:bg-gray-100 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed">
           <on type="click">
             <!-- 적용 — 확인 창을 연다. 지난 결과·실패 문구는 비운다 -->
             <sequence>

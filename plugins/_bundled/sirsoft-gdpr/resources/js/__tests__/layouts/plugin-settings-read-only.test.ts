@@ -76,4 +76,36 @@ describe('플러그인 설정 읽기 전용', () => {
   it('sirsoft-gdpr 설정 화면', () => {
     assertReadOnly(layout as Node, 'gdprSettings', null);
   });
+
+  /**
+   * 화면에 들어올 때 스스로 받는 보조 소스는 403(권한 없음)을 소스에서 받아 끊는다 — 오류 알림을 띄우지 않는다.
+   *
+   * 「플러그인 보기」만 있는 운영자는 설정(`privacy.view`)을 못 받아 본문이 권한 오류 화면으로 바뀌는데, 그 위에
+   * 연간 통지 건수·현재 방침 판(`privacy.view`)·알림 채널(`core.settings.read`) 조회가 저마다 「해당 권한이 없습니다」 알림을 띄웠다.
+   * 알림 채널은 같은 권한의 알림 정의가 그 칸에 「권한 없음」 안내를 이미 보이므로 채널 쪽은 조용히 끝내면 된다.
+   *
+   * @scenario case=aux_source_forbidden
+   *
+   * @effects aux_source_forbidden_handled_without_toast
+   */
+  it('sirsoft-gdpr 자동 받기 보조 소스의 403 은 알림 없이 끝난다', () => {
+    // 403 이 날 수 없는 소스 — 사유를 적는다
+    const CANNOT_403: Record<string, string> = {
+      // 코어 직권 실행 상태 조회는 관리자면 누구나 받는다(대상별 실행 가능 여부만 can_run 으로 내려 준다)
+      privacyManualRuns: 'PrivacyManualRunStatusRequest::authorize() === true',
+    };
+    const sources = ((layout as Node).data_sources ?? []) as Node[];
+    const autoFetched = sources.filter((s) => s.auto_fetch !== false && !(s.id in CANNOT_403));
+    expect(autoFetched.length).toBeGreaterThan(0);
+    for (const source of autoFetched) {
+      const handling = (source.errorHandling ?? {}) as Record<string, Node>;
+      expect(handling['403'], `data source ${source.id} 의 403 처리가 없습니다 — 기본 오류 알림이 뜬다`).toBeDefined();
+    }
+    const byId = Object.fromEntries(sources.map((s) => [s.id, s]));
+    for (const id of ['gdprAnnualNoticePreview', 'gdprPolicyVersionCurrent', 'gdprNotificationChannels']) {
+      expect(byId[id]?.errorHandling?.['403']?.handler, id).toBe('suppress');
+    }
+    // 채널 칸의 안내는 같은 권한(core.settings.read)의 알림 정의 소스가 남긴 상태로 그린다
+    expect(byId.gdprNotificationDefinitions?.errorHandling?.['403']?.params?.gdprNotificationDefinitionsError).toBe('forbidden');
+  });
 });

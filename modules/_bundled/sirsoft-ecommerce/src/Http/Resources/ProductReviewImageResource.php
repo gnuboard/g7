@@ -48,14 +48,17 @@ class ProductReviewImageResource extends BaseApiResource
      */
     public function toArray(Request $request): array
     {
+        // 숨김 리뷰(서명 모드)는 원본·썸네일 모두 게이트가 있는 API 서빙 경로에 서명한다 —
+        // 직접 URL 은 게이트가 없고, 서명 URL 에 붙는 `?size=` 는 서명 검증에서 제외된다.
+        $signedUrl = $this->signedDownload ? $this->resource->signedDownloadUrl() : null;
+
         return [
             'id' => $this->id,
             'review_id' => $this->review_id,
             'hash' => $this->hash,
             'original_filename' => $this->original_filename,
-            'download_url' => $this->signedDownload
-                ? $this->resource->signedDownloadUrl()
-                : $this->download_url,
+            'download_url' => $signedUrl ?? $this->download_url,
+            'preview_url' => $signedUrl ?? $this->preview_url,
             'mime_type' => $this->mime_type,
             'file_size' => $this->file_size,
             'width' => $this->width,

@@ -12,7 +12,6 @@
  * widgetRegistry 가 등록돼 있어야 ControlRenderer 가 위젯을 디스패치하므로 beforeAll 에서 등록.
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { PropertyEditorModal } from '../../components/PropertyEditorModal';
@@ -98,6 +97,8 @@ function renderModal(node: EditorNode, onPatchNode = vi.fn(), onDelete = vi.fn()
 }
 
 describe('PropertyEditorModal — 탭 가용성', () => {
+  // @scenario area=modal_tabs
+  // @effects property_modal_style_tab_renders_controls
   it('styleControls 보유 컴포넌트 → 스타일 탭 + 컨트롤 렌더', () => {
     renderModal({ name: 'H1' });
     expect(screen.getByTestId('g7le-property-tab-style')).toBeTruthy();
@@ -107,11 +108,15 @@ describe('PropertyEditorModal — 탭 가용성', () => {
     expect(screen.queryByTestId('g7le-property-tab-advanced')).toBeNull();
   });
 
+  // @scenario area=modal_tabs
+  // @effects property_modal_advanced_tab_only_when_declared
   it('advanced 선언 컴포넌트 → 고급 탭 존재', () => {
     renderModal({ name: 'Div' });
     expect(screen.getByTestId('g7le-property-tab-advanced')).toBeTruthy();
   });
 
+  // @scenario area=modal_tabs
+  // @effects property_modal_settings_tab_default_active
   it('집합 컴포넌트(settings) → 설정 탭 기본 활성', () => {
     renderModal({ name: 'RecentPosts' });
     const tab = screen.getByTestId('g7le-property-tab-settings');
@@ -119,6 +124,8 @@ describe('PropertyEditorModal — 탭 가용성', () => {
     expect(screen.getByTestId('g7le-composite-settings')).toBeTruthy();
   });
 
+  // @scenario area=modal_tabs
+  // @effects property_modal_empty_capability_keeps_core_props
   it('빈 capability 컴포넌트 → 코어 제공 속성(id)으로 속성 탭 노출 (no-editable 아님)', () => {
     renderModal({ name: 'Plain' });
     expect(screen.queryByTestId('g7le-property-modal-no-editable')).toBeNull();
@@ -126,12 +133,16 @@ describe('PropertyEditorModal — 탭 가용성', () => {
     expect(screen.getByTestId('g7le-control-core-id')).toBeTruthy();
   });
 
+  // @scenario area=modal_tabs
+  // @effects property_modal_core_props_opt_out_no_editable
   it('coreProps:false 로 opt-out 한 컴포넌트만 no-editable 안내', () => {
     renderModal({ name: 'PlainOptOut' });
     expect(screen.getByTestId('g7le-property-modal-no-editable')).toBeTruthy();
     expect(screen.queryByTestId('g7le-property-tab-props')).toBeNull();
   });
 
+  // @scenario area=modal_tabs
+  // @effects property_modal_initial_tab_applied_if_available
   it('initialTab="translation" → 진입 즉시 번역 탭 활성', () => {
     render(
       <PropertyEditorModal
@@ -153,6 +164,8 @@ describe('PropertyEditorModal — 탭 가용성', () => {
     if (style) expect(style.getAttribute('data-active')).toBe('false');
   });
 
+  // @scenario area=modal_tabs
+  // @effects property_modal_initial_tab_applied_if_available
   it('initialTab 이 가용 목록에 없으면 무시 → 기본 규칙(설정/스타일) 적용', () => {
     // settings 보유 컴포넌트인데 initialTab="advanced"(미선언) → settings 가 활성.
     render(
@@ -172,11 +185,15 @@ describe('PropertyEditorModal — 탭 가용성', () => {
 });
 
 describe('PropertyEditorModal — 고급 값 배지 / 무손실 보존', () => {
+  // @scenario area=modal_tabs
+  // @effects property_modal_advanced_badge_only_when_present
   it('복잡 표현식/개발자 속성 보유 → 상단 배지', () => {
     renderModal({ name: 'Div', props: { data_binding: { source: 'x' } } });
     expect(screen.getByTestId('g7le-property-modal-advanced-badge')).toBeTruthy();
   });
 
+  // @scenario area=modal_tabs
+  // @effects property_modal_advanced_badge_only_when_present
   it('고급 값 없으면 배지 미표시', () => {
     renderModal({ name: 'H1', text: '제목', props: { className: 'text-xl' } });
     expect(screen.queryByTestId('g7le-property-modal-advanced-badge')).toBeNull();
@@ -184,6 +201,8 @@ describe('PropertyEditorModal — 고급 값 배지 / 무손실 보존', () => {
 });
 
 describe('PropertyEditorModal — 컨트롤 조작 → 패치', () => {
+  // @scenario area=modal_patch
+  // @effects property_modal_style_control_patches_via_recipe
   it('스타일 탭 segmented 클릭 → onPatchNode(applyRecipe 결과)', () => {
     const { onPatchNode } = renderModal({ name: 'H1' });
     fireEvent.click(screen.getByTestId('g7le-segment-center'));
@@ -192,6 +211,8 @@ describe('PropertyEditorModal — 컨트롤 조작 → 패치', () => {
     expect(patched.props?.className).toBe('text-center');
   });
 
+  // @scenario area=modal_patch
+  // @effects property_modal_settings_field_patches_props
   it('설정 탭 number 필드 변경 → props 패치', () => {
     const { onPatchNode } = renderModal({ name: 'RecentPosts' });
     const input = screen.getByTestId('g7le-setting-input-count');
@@ -203,6 +224,8 @@ describe('PropertyEditorModal — 컨트롤 조작 → 패치', () => {
 });
 
 describe('PropertyEditorModal — 고급 탭', () => {
+  // @scenario area=modal_patch
+  // @effects property_modal_advanced_permissions_and_preserved
   it('permissions TagInput + 보존 목록 렌더', () => {
     renderModal({ name: 'Div', props: { data_binding: { source: 'x' } } });
     fireEvent.click(screen.getByTestId('g7le-property-tab-advanced'));
@@ -212,6 +235,8 @@ describe('PropertyEditorModal — 고급 탭', () => {
     expect(within(screen.getByTestId('g7le-advanced-preserved')).getByText(/data_binding/)).toBeTruthy();
   });
 
+  // @scenario area=modal_patch
+  // @effects property_modal_permission_chip_patches_node
   it('permissions 후보에서 칩 추가 → onPatchNode(permissions 배열)', () => {
     const { onPatchNode } = renderModal({ name: 'Div' });
     fireEvent.click(screen.getByTestId('g7le-property-tab-advanced'));
@@ -224,6 +249,8 @@ describe('PropertyEditorModal — 고급 탭', () => {
 });
 
 describe('PropertyEditorModal — 삭제 버튼', () => {
+  // @scenario area=modal_patch
+  // @effects property_modal_delete_calls_on_delete
   it('삭제 클릭 → onDelete', () => {
     const { onDelete } = renderModal({ name: 'H1' });
     fireEvent.click(screen.getByTestId('g7le-property-modal-delete'));
@@ -254,6 +281,8 @@ describe('PropertyEditorModal — scope 세부탭', () => {
     return { onScopeChange };
   }
 
+  // @scenario area=modal_scope
+  // @effects property_modal_style_tab_shows_scope_subtabs
   it('스타일 탭 상단에 색 모드 + 디바이스 세부탭 렌더', () => {
     renderWithScope({ name: 'H1' });
     expect(screen.getByTestId('g7le-style-scope-tabs')).toBeInTheDocument();
@@ -261,6 +290,8 @@ describe('PropertyEditorModal — scope 세부탭', () => {
     expect(screen.getByTestId('g7le-style-bp-tablet')).toBeInTheDocument();
   });
 
+  // @scenario area=modal_scope
+  // @effects property_modal_visibility_tab_device_row_only
   it('표시조건 탭 세부탭은 디바이스만(색 모드 줄 숨김, D9)', () => {
     renderWithScope({ name: 'Div' }); // Div 는 styleControls + advanced → visibility 가용
     fireEvent.click(screen.getByTestId('g7le-property-tab-visibility'));
@@ -268,18 +299,24 @@ describe('PropertyEditorModal — scope 세부탭', () => {
     expect(screen.queryByTestId('g7le-style-scope-scheme')).toBeNull();
   });
 
+  // @scenario area=modal_scope
+  // @effects modal_scope_snapshots_toolbar_on_open
   it('초기 scope prop = mobile 이면 모바일 세부탭 활성(스냅샷, D1/D2)', () => {
     renderWithScope({ name: 'H1' }, { colorScheme: 'base', breakpoint: 'mobile' });
     expect(screen.getByTestId('g7le-style-bp-mobile').getAttribute('data-active')).toBe('true');
     expect(screen.getByTestId('g7le-style-bp-base').getAttribute('data-active')).toBe('false');
   });
 
+  // @scenario area=modal_scope
+  // @effects property_modal_subtab_click_reports_scope
   it('세부탭 클릭 → onScopeChange 콜백(상위 스냅샷 갱신)', () => {
     const { onScopeChange } = renderWithScope({ name: 'H1' });
     fireEvent.click(screen.getByTestId('g7le-style-bp-tablet'));
     expect(onScopeChange).toHaveBeenCalledWith({ colorScheme: 'base', breakpoint: 'tablet' });
   });
 
+  // @scenario area=modal_scope
+  // @effects reset_to_base_clears_device_override_restoring_inheritance
   it('tablet override 노드 + tablet scope → "기본값으로 초기화" 클릭 시 onPatchNode(브랜치 제거)', () => {
     const onPatchNode = vi.fn();
     render(

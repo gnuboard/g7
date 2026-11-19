@@ -7,6 +7,7 @@ require_once __DIR__.'/../../FeatureTestCase.php';
 
 use App\Contracts\Extension\StorageInterface;
 use App\Models\User;
+use Illuminate\Testing\TestResponse;
 use Mockery;
 use Modules\Sirsoft\Page\Models\PageAttachment;
 use Modules\Sirsoft\Page\Tests\FeatureTestCase;
@@ -56,8 +57,11 @@ class TempAttachmentReorderTest extends FeatureTestCase
      */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**
@@ -91,7 +95,7 @@ class TempAttachmentReorderTest extends FeatureTestCase
      *
      * @param  User  $actor  요청 관리자
      * @param  array<int, int>  $orders  [첨부 ID => 순서]
-     * @return \Illuminate\Testing\TestResponse 응답
+     * @return TestResponse 응답
      */
     private function reorderAs(User $actor, array $orders)
     {

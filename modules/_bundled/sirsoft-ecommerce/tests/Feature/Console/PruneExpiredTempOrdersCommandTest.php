@@ -14,13 +14,17 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 만료 행을 실제로 지우는 주체가 없어 무한히 누적됩니다.
  *
  * @scenario target=ecommerce_temp_orders, row_age=beyond_retention
- *
- * @effects rows_beyond_retention_are_deleted, rows_within_retention_are_kept, all_gc_commands_are_registered_in_schedule
  */
 class PruneExpiredTempOrdersCommandTest extends ModuleTestCase
 {
     /**
      * 만료된 임시 주문만 삭제되고 유효한 임시 주문은 보존된다.
+     *
+     * @scenario target=ecommerce_temp_orders, row_age=beyond_retention
+     *
+     * @effects rows_beyond_retention_are_deleted, rows_within_retention_are_kept
+     *
+     * @return void 반환값 없음
      */
     public function test_prunes_only_expired_temp_orders(): void
     {
@@ -48,6 +52,12 @@ class PruneExpiredTempOrdersCommandTest extends ModuleTestCase
 
     /**
      * 모듈이 이 커맨드를 스케줄로 등록한다 (등록 누락 회귀 차단).
+     *
+     * @scenario target=ecommerce_temp_orders, row_age=beyond_retention
+     *
+     * @effects all_gc_commands_are_registered_in_schedule
+     *
+     * @return void 반환값 없음
      */
     public function test_command_is_registered_in_module_schedules(): void
     {
@@ -55,6 +65,7 @@ class PruneExpiredTempOrdersCommandTest extends ModuleTestCase
             ->firstWhere('command', 'sirsoft-ecommerce:prune-temp-orders');
 
         $this->assertNotNull($entry, '만료 임시 주문 정리 스케줄이 등록되어야 합니다.');
-        $this->assertSame('hourly', $entry['schedule']);
+        // 옛 등록(hourly)과 같은 시각 — 매시 정각
+        $this->assertSame(['hourly', '0 * * * *'], [$entry['frequency'], $entry['expression']]);
     }
 }

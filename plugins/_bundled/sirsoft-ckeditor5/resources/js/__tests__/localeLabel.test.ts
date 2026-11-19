@@ -52,9 +52,9 @@ describe('buildLocaleTabContent', () => {
 
     buildLocaleTabContent(tab, 'fil-PH', true);
 
-    expect(tab.querySelector('i.fas.fa-globe.ck5-lang-icon')).not.toBeNull();
+    expect(tab.querySelector('i.ckeditor-icon.ckeditor-icon--globe.ckeditor-lang-icon')).not.toBeNull();
     expect(tab.querySelector('span')?.textContent).toBe('Filipino (Pilipinas)');
-    expect(tab.querySelector('.ck5-required')?.textContent).toBe('*');
+    expect(tab.querySelector('.ckeditor-required')?.textContent).toBe('*');
   });
 
   /** @effects ckeditor_locale_tab_label_is_text_not_html */
@@ -63,7 +63,7 @@ describe('buildLocaleTabContent', () => {
 
     buildLocaleTabContent(tab, 'en', false);
 
-    expect(tab.querySelector('.ck5-required')).toBeNull();
+    expect(tab.querySelector('.ckeditor-required')).toBeNull();
     expect(tab.textContent).toBe('English');
   });
 });

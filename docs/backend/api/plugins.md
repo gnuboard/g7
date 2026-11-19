@@ -8,11 +8,17 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Plugins 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
+
+---
+
+## 검수 서버(실행 역할 stage)에서의 응답
+
+`.env` 의 `G7_RUNTIME_ROLE=stage` 로 띄운 검수 서버에서는 설치·켜기/끄기·업데이트(업데이트 미리보기 포함 — GitHub 새 판을 내려받는다)·호환성 복구·제거처럼 확장을 바꾸는 요청이 **409** `{"success": false, "message": "검수 서버(실행 역할 stage)에서는 이 작업을 할 수 없습니다 — …"}` 로 거절됩니다(언어팩·코어 업데이트도 같음). 목록·상세·업데이트 확인·레이아웃 갱신(미리보기 포함)은 그대로 동작합니다. 자세한 내용은 [실행 역할](../runtime-role.md)을 봅니다.
 
 ---
 
@@ -75,6 +81,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
 | stuck_update | boolean | `false` | 업데이트가 도중에 멈춘 상태인지 — `updating` 으로 10분이 지났고 진행 중인 업데이트 잠금이 없으면 `true`. 관리자 카드가 「업데이트 멈춤」 표시와 「정리 후 다시 업데이트」 단추를 보일 때 쓴다 |
 | update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | latest_version | string | `1.0.0` | 감지된 최신 배포 버전 |
 | file_version | string | `1.0.0` | 설치된 파일의 manifest 버전 |
 | github_url | string | `https://github.com/gnuboard/g7-plugin…` | GitHub 저장소 URL |
@@ -322,7 +330,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.activate`)이 없는 경우 |
 | 409 | Conflict | 필요한 의존 확장(모듈/플러그인)이 설치·활성화되지 않은 경우 (`force: true` 로 우회 가능) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 409 | Conflict | 같은 플러그인에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
@@ -365,6 +373,8 @@ _단건 응답: `data` 객체의 필드._
 | details[].current_version | string | `1.0.0` | 현재 설치된 버전 |
 | details[].latest_version | string | `1.1.0` | 감지된 최신 배포 버전 |
 | details[].update_source | string | `github` | 업데이트 감지 출처 (`github` \| `bundled`) |
+| checked_count | integer | `5` | 확인한 플러그인 수 |
+| failures | array | `[]` | GitHub 조회에 실패한 플러그인 — 각 원소 `identifier`·`reason`(실패 사유). 실패한 플러그인의 업데이트 정보는 「없음」으로 덮지 않고 그대로 둔다 |
 
 **응답 예시**
 
@@ -391,11 +401,13 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 업데이트 확인 중 예외 발생 (`plugins.check_updates_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 설치된 모든 플러그인에 대해 GitHub·번들 소스를 조회하여 새 버전 배포 여부를 일괄 확인합니다. `core.plugins.install` 권한이 필요합니다. 파라미터 없이 호출하며, 각 플러그인의 업데이트 가능 여부와 감지된 최신 버전 정보를 반환합니다. 플러그인 목록 화면 진입 시 업데이트 뱃지를 갱신하는 용도로 사용됩니다.
 
@@ -504,7 +516,7 @@ _단건 응답: `data` 객체의 필드 — 비활성화된 플러그인 리소�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.activate`)이 없는 경우 |
 | 409 | Conflict | 이 플러그인에 의존하는 활성 템플릿/모듈/플러그인이 있는 경우 (`force: true` 로 우회 가능) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 409 | Conflict | 같은 플러그인에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
@@ -631,7 +643,7 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패 또는 설치 실패 (`plugin_name` 에 번역된 설치 실패 사유 — 이미 설치됨/대기소 미존재/의존성 미충족 등) |
 | 409 | Conflict | 같은 플러그인에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
@@ -656,6 +668,9 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | file | body | file | 예 | max 51200 | 업로드 파일 |
+| signature | body | file | 아니오 | max 64 (KB) | 서명 파일 `{zip}.sig.json` (7.2.0). 업로드 ZIP 은 옆 파일을 자동으로 찾지 않으므로 서명을 확인하려면 이 칸으로 준다. 비우면 미서명 |
+| allow_unsigned | body | boolean | 아니오 | — | 미서명·검증 불가 패키지를 확인하고 계속 (7.2.0). 409 `package_unsigned` 경고 창의 「미서명으로 계속」이 같은 요청을 `1` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
+| integrity_aware | body | boolean | 아니오 | — | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `1` 을 보낸다. 이 칸이 없는 요청은 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 패키지를 확인 없이 진행한다(서버 경고 로그, 설치 행 `integrity_status=unsigned`). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.plugin.install_from_file_validation_rules`).
 
@@ -746,15 +761,21 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 파일 검증 실패(ZIP 아님/50MB 초과) 또는 ZIP 처리 실패 (plugin.json 미존재/형식 오류/식별자 누락/이미 설치됨) |
 | 409 | Conflict | 같은 플러그인에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 409 | Conflict | 미서명·검증 불가 패키지 (7.2.0) — `errors.package_unsigned: true` 와 `errors.integrity`. `errors.integrity.can_continue` 가 true 면 같은 요청을 `allow_unsigned=1` 로 다시 보내 계속하고, 「미서명 패키지 차단」이 켜져 있으면 false ([오류 응답](../../extension/package-signing.md#오류-응답)) |
+| 422 | Unprocessable Entity | 서명 불일치(`errors.package_signature_invalid: true`)·신뢰하지 않는 키(`errors.package_signer_untrusted: true`) — `errors.integrity.reason` 에 사유, 확인으로도 계속할 수 없다 (7.2.0) |
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 설치 처리 중 예외 발생 (`plugins.install_failed`) |
 
 <!-- @generated:end -->
 
+
+
 **설명** 업로드된 ZIP 파일에서 플러그인을 설치합니다. `core.plugins.install` 권한이 필요하며, 파일은 최대 50MB(51200KB)까지 허용됩니다. ZIP 압축 해제 후 plugin.json 검증을 거쳐 설치하며, 성공 시 201 상태로 설치된 플러그인 정보를 반환합니다. 설치 전 manifest 만 미리 확인하려면 `manifest-preview` 를 먼저 호출하는 것이 안전합니다.
+
+**패키지 서명(7.2.0)** `signature` 로 준 서명 파일로 ZIP 을 풀기 전에 검증하고, 푼 manifest 의 식별자·버전을 서명과 대조한다. 서명 파일을 주지 않으면 미서명이라 409 를 내고, 같은 요청을 `allow_unsigned=1` 로 다시 보내면 계속한다. 서명 불일치·신뢰하지 않는 키는 422 로 멈추고 설치 경로에 파일을 남기지 않는다. 검증 결과는 설치 행 `integrity_status`·`integrity_key_id` 에 남는다. 상세: [패키지 서명](../../extension/package-signing.md)
 
 
 ### POST /api/admin/plugins/install-from-github
@@ -768,6 +789,8 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | github_url | body | string | 예 | — | GitHub 저장소 URL |
+| allow_unsigned | body | boolean | 아니오 | — | 미서명·검증 불가 패키지를 확인하고 계속 (7.2.0). 409 `package_unsigned` 경고 창의 「미서명으로 계속」이 같은 요청을 `1` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
+| integrity_aware | body | boolean | 아니오 | — | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `1` 을 보낸다. 이 칸이 없는 요청은 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 패키지를 확인 없이 진행한다(서버 경고 로그, 설치 행 `integrity_status=unsigned`). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.plugin.install_from_github_validation_rules`).
 
@@ -856,15 +879,21 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | URL 형식 오류(GitHub 저장소 URL 아님) 또는 다운로드/압축 해제/검증 실패 (저장소 미존재·ZIP URL 미발견·plugin.json 오류·이미 설치됨) |
 | 409 | Conflict | 같은 플러그인에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 409 | Conflict | 미서명·검증 불가 패키지 (7.2.0) — `errors.package_unsigned: true` 와 `errors.integrity`. `errors.integrity.can_continue` 가 true 면 같은 요청을 `allow_unsigned=1` 로 다시 보내 계속하고, 「미서명 패키지 차단」이 켜져 있으면 false. 서명 자산이 없는 릴리스는 ZIP 을 받기 전에 이 응답을 낸다 ([오류 응답](../../extension/package-signing.md#오류-응답)) |
+| 422 | Unprocessable Entity | 서명 불일치(`errors.package_signature_invalid: true`)·신뢰하지 않는 키(`errors.package_signer_untrusted: true`) — `errors.integrity.reason` 에 사유, 확인으로도 계속할 수 없다 (7.2.0) |
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 설치 처리 중 예외 발생 (`plugins.install_failed`) |
 
 <!-- @generated:end -->
 
+
+
 **설명** GitHub 저장소 URL 에서 플러그인을 내려받아 설치합니다. `core.plugins.install` 권한이 필요합니다. `github_url` 로 지정한 공개 저장소의 릴리스/소스를 받아 압축 해제·검증 후 설치하며, 성공 시 201 상태로 설치된 플러그인 정보를 반환합니다.
+
+**패키지 서명(7.2.0)** 태그 릴리스만 받는다 — 최신 릴리스가 없으면 `main`·`master` 브랜치로 물러서지 않고 「릴리스를 찾을 수 없음」(`common.errors.github_release_not_found`)으로 실패한다. 릴리스에 `{identifier}-{version}.zip` 과 `.sig.json` 자산 짝이 있으면 그것을 받아 풀기 전에 검증하고, 짝이 없으면 미서명으로 다뤄 ZIP 을 받기 전에 409 를 낸다(같은 요청을 `allow_unsigned=1` 로 다시 보내면 계속). 검증 결과는 설치 행 `integrity_status`·`integrity_key_id` 에 남는다. 상세: [패키지 서명](../../extension/package-signing.md)
 
 
 ### GET /api/admin/plugins/installed
@@ -915,6 +944,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | icon_source | string | `convention` | 아이콘을 어디서 얻었는지 (`manifest` 선언 · `convention` 관례 파일 · `none` 없음) |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
 | update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | latest_version | string | `1.0.0` | 감지된 최신 배포 버전 |
 | file_version | string | `1.0.0` | 설치된 파일의 manifest 버전 |
 | github_url | string | `https://github.com/gnuboard/g7-plugin…` | GitHub 저장소 URL |
@@ -1037,6 +1068,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 현재 설치된 플러그인만 조회합니다(미설치 항목 제외). 이 엔드포인트는 세부 권한 미들웨어 없이 `auth:sanctum` 인증만 요구하므로, 다른 화면이 활성/설치된 플러그인 목록을 참조할 때 사용하는 경량 조회 API 입니다. 페이지네이션 없이 설치된 항목 배열을 반환합니다.
 
 
@@ -1111,10 +1144,12 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 파일 검증 실패(ZIP 아님/50MB 초과) 또는 미리보기 처리 실패 (`plugins.preview_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 업로드된 ZIP 파일의 plugin.json manifest 와 검증 결과만 추출합니다(실제 설치는 수행하지 않음). `core.plugins.install` 권한이 필요하며 파일은 최대 50MB 까지 허용됩니다. 설치 모달에서 사용자가 파일 선택 직후 manifest 유효성과 검증 실패 사유를 미리 확인하는 용도입니다. 검증 오류 시 422 로 사유를 반환합니다.
 
@@ -1131,6 +1166,8 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- | --- | --- | --- |
 | plugin_name | body | string | 예 | max 255 | plugin 이름 (식별자) |
 | layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
+| layout_strategy | body | string | 아니오 | `keep`, `overwrite` | 레이아웃 처리 방식 — 기본 `keep`(편집기로 고친 화면은 고친 부분을 지키고 손대지 않은 부분만 새 판으로). `overwrite` 는 파일 판으로 덮는다(덮기 전 운영자 판은 편집기 버전 이력에 남는다) |
+| decisions | body | object | 아니오 | 값 `take-theirs`·`keep-ours` | 화면별 결정 — 키는 미리보기 응답 `entries[].key`(레이아웃 `layout:{템플릿}:{이름}`, 조각 `extension:{템플릿}:{출처}:{조각 키}`). `take-theirs` 는 그 화면만 새 판으로 덮고, `keep-ours` 는 운영자 판을 통째로 둔다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.plugin.refresh_layouts_validation_rules`).
 
@@ -1160,6 +1197,8 @@ _단건 응답: `data` 객체의 필드._
 | deleted | integer | `0` | 파일에서 사라져 DB 에서도 삭제된 레이아웃 건수 |
 | unchanged | integer | `0` | 변경 없이 그대로 유지된 레이아웃 건수 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
+| layout_preview | object | — | 판정별 결과 (7.2.0) — `strategy`, `entries[]`(`key`·`kind`·`template`·`name`·`verdict`·`applied`·`conflicts`·`will_delete`), `summary`(판정 → 화면 수), `has_conflicts`, `conflict_screens`. 미리보기 응답과 같은 모양이다 |
+| layout_sync | object | — | 운영자가 고친 화면만 모은 보고 (확장 업데이트 응답과 같은 모양) |
 | warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
@@ -1183,13 +1222,85 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.activate`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패 또는 레이아웃 갱신 실패 (`plugin_name` 에 레이아웃 JSON 파싱/검증 오류 사유) |
 | 500 | Server Error | 갱신 처리 중 예외 발생 (`plugins.refresh_layouts_error`) |
 
 <!-- @generated:end -->
 
+
+
 **설명** 플러그인의 레이아웃 파일을 다시 읽어 DB 에 동기화합니다. `core.plugins.activate` 권한이 필요합니다. 파일에서 변경된 레이아웃은 갱신되고 삭제된 레이아웃은 DB 에서도 제거되며, 응답으로 created/updated/deleted/unchanged 건수를 반환합니다. 플러그인의 `_bundled` 레이아웃 JSON 을 수정한 뒤 재빌드 없이 반영할 때 사용합니다.
+
+
+**레이아웃 처리 방식(7.2.0)** 전략을 생략하면 keep 이다 — 편집기로 고친 화면은 고친 부분을 지키고, 새 판에서 빠진 화면이라도 운영자가 고쳤으면 남긴다. 파일 판으로 덮으려면 `layout_strategy=overwrite` 를 보낸다. 관리자 [레이아웃 갱신] 창은 먼저 아래 미리보기를 부르고, 운영자가 고른 처리 방식·화면별 결정을 이 요청에 싣는다.
+
+
+### POST /api/admin/plugins/refresh-layouts/preview
+<!-- @generated:start:api.admin.plugins.refresh-layouts.preview -->
+- **라우트명**: `api.admin.plugins.refresh-layouts.preview`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\PluginController@refreshLayoutsPreview`
+- **인증/권한**: `auth:sanctum` + `permission:core.plugins.activate`
+
+**요청 파라미터**
+
+`POST /api/admin/plugins/refresh-layouts` 와 같다 (`plugin_name`·`layout_source`·`layout_strategy`·`decisions`).
+
+**요청 예시**
+
+```http
+POST /api/admin/plugins/refresh-layouts/preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "plugin_name": "sirsoft-ckeditor5",
+    "layout_strategy": "keep"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| strategy | string | `keep` | 계산에 쓴 처리 방식 |
+| entries | array | — | 화면·조각마다 한 항목 — `key`(화면별 결정 키), `kind`(`layout`·`extension`), `template`, `name`, `verdict`, `applied`(새 판을 반영한 단위), `conflicts`(운영자 수정과 겹쳐 운영자 판을 남긴 단위), `will_delete` |
+| summary | object | `{"merged":1,"unchanged":12,...}` | 판정 → 화면 수 (`created`·`updated`·`unchanged`·`took_theirs`·`kept`·`merged`·`conflict`·`kept_no_base`·`kept_invalid`·`kept_removed`·`kept_deleted_by_operator`·`kept_name_collision`·`deleted`) |
+| has_conflicts | boolean | `false` | 운영자 수정과 겹친 화면이 있는지 |
+| conflict_screens | array | `[]` | 겹친 화면 이름 목록 (`템플릿 · 화면`) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "레이아웃 갱신 미리보기를 만들었습니다.",
+    "data": {
+        "strategy": "keep",
+        "entries": [
+            {"key": "layout:sirsoft-ckeditor5:home", "kind": "layout", "template": "sirsoft-ckeditor5", "name": "home", "verdict": "merged", "applied": [{"unit": "partials/home/_banner", "kind": "partial"}], "conflicts": [], "will_delete": false}
+        ],
+        "summary": {"merged": 1},
+        "has_conflicts": false,
+        "conflict_screens": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.activate`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 실패(알 수 없는 처리 방식·결정 값), 또는 플러그인를 찾을 수 없거나 비활성 |
+| 500 | Internal Server Error | 판정 계산 중 예외 |
+
+<!-- @generated:end -->
+
+**설명** 레이아웃 갱신을 실제로 하지 않고, 같은 코드로 화면마다 어떻게 바뀔지만 계산합니다. DB·캐시는 바뀌지 않습니다. 같은 입력이면 이 응답의 `entries` 와 실제 갱신 응답의 `layout_preview.entries` 가 같습니다.
 
 
 ### DELETE /api/admin/plugins/uninstall
@@ -1250,13 +1361,15 @@ Authorization: Bearer {YOUR_TOKEN}
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.uninstall`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패 또는 제거 실패 (`plugin_name` 에 번역된 제거 실패 사유 — 미설치/진행 중 상태 등) |
 | 409 | Conflict | 같은 플러그인에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 제거 처리 중 예외 발생 (`plugins.uninstall_error`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 플러그인을 시스템에서 제거합니다. `core.plugins.uninstall` 권한이 필요합니다. 활성 디렉토리만 삭제하고 `_bundled` 원본은 보존합니다. `delete_data: true` 인 경우 플러그인이 생성한 DB 데이터까지 함께 삭제하며, 기본값은 데이터 보존입니다. 삭제될 데이터 범위는 사전에 `uninstall-info` 로 확인할 수 있습니다.
 
@@ -1279,7 +1392,7 @@ Authorization: Bearer {YOUR_TOKEN}
 **요청 예시**
 
 ```http
-GET /api/admin/plugins/sirsoft-daum_postcode/changelog?source=active&from_version=%EC%98%88%EC%8B%9C%EA%B0%92&to_version=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
+GET /api/admin/plugins/{identifier}/changelog?source=active&from_version=%EC%98%88%EC%8B%9C%EA%B0%92&to_version=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1444,6 +1557,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 특정 플러그인의 변경 내역(CHANGELOG)을 조회합니다. `core.plugins.read` 권한이 필요합니다. `source` 로 조회 출처를(active: 활성 설치본, bundled: 번들 원본, github: 원격 저장소) 선택하고, `from_version`·`to_version` 으로 버전 구간을 좁힐 수 있습니다. 업데이트 전 사용자에게 변경 사항을 안내하는 데 사용됩니다.
 
 
@@ -1462,7 +1577,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/plugins/sirsoft-daum_postcode/dependent-templates HTTP/1.1
+GET /api/admin/plugins/{identifier}/dependent-templates HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1520,6 +1635,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 이 플러그인에 의존하는 템플릿 목록을 조회합니다. `core.plugins.read` 권한이 필요합니다. 응답으로 의존 템플릿 배열과 총 개수를 반환하며, 플러그인 비활성화·제거 전 영향을 받는 템플릿을 사용자에게 미리 알리는 데 사용됩니다.
 
 
@@ -1538,7 +1655,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/plugins/sirsoft-daum_postcode/license HTTP/1.1
+GET /api/admin/plugins/{identifier}/license HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1581,6 +1698,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 플러그인에 포함된 라이선스 파일의 원문 내용을 반환합니다. `core.plugins.read` 권한이 필요합니다. `identifier` 는 소문자·숫자·하이픈·언더스코어 형식만 허용되며 형식에 맞지 않거나 라이선스 파일이 없으면 404 를 반환합니다. 라이선스 고지 화면에 전문을 표시하는 용도입니다.
 
 
@@ -1599,7 +1718,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/plugins/sirsoft-daum_postcode/settings HTTP/1.1
+GET /api/admin/plugins/{identifier}/settings HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1648,6 +1767,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 플러그인의 현재 설정 값을 조회합니다. `core.plugins.read` 권한이 필요합니다. 저장된 설정이 없거나 플러그인을 찾을 수 없으면 404 를 반환합니다. 설정 페이지 진입 시 폼의 현재 값을 채우는 용도이며, 폼 스키마/UI 구성은 별도의 `settings/layout` 엔드포인트에서 조회합니다.
 
 설정 스키마(getSettingsSchema)에 `public_asset_disk` 키를 선언한 플러그인(예: `sirsoft-ckeditor5`)은 응답 `data` 에 공개 자산 디스크 카탈로그 `available_public_asset_disks` 가 함께 부착됩니다 — 각 항목은 `{id, label(로케일별 맵), provider?}` 구조입니다. 설정 화면이 코어 환경설정 API(`core.settings.read`)를 따로 조회하지 않고 이 응답 하나로 선택지를 구성하게 하기 위한 것으로, 이 키는 저장 대상이 아니며 PUT 시 검증 whitelist 에서 걸러집니다.
@@ -1669,7 +1790,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-PUT /api/admin/plugins/sirsoft-daum_postcode/settings HTTP/1.1
+PUT /api/admin/plugins/{identifier}/settings HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1713,6 +1834,8 @@ _단건 응답: `data` 는 저장 후 다시 조회한 설정 값 맵입니다. 
 
 <!-- @generated:end -->
 
+
+
 **설명** 플러그인의 설정 값을 저장합니다. `core.plugins.update` 권한이 필요합니다. 저장 대상은 검증을 통과한 값뿐이며, 검증 규칙은 해당 플러그인이 선언한 설정 스키마에서 생성됩니다. 스키마에 없는 필드를 요청에 포함해도 저장되지 않습니다. PluginManager 에 등록되지 않은 플러그인은 저장 자체가 수행되지 않아 500 을 반환합니다. 성공 시 갱신된 설정 값을 함께 반환합니다. 설정 스키마에 `public_asset_disk` 키를 선언한 플러그인은 저장 응답에도 `available_public_asset_disks` 카탈로그가 재부착됩니다 (GET 응답과 동형 — 저장 직후 화면 폼 상태 갱신용).
 
 **권한 값(7.1.0)** 요청 본문의 `abilities` 키는 저장하지 않고 버린다(화면이 조회 응답을 그대로 되돌려 보내므로 섞여 온다). 저장 응답에도 `abilities.can_update` 가 실린다.
@@ -1732,7 +1855,7 @@ _단건 응답: `data` 는 저장 후 다시 조회한 설정 값 맵입니다. 
 **요청 예시**
 
 ```http
-GET /api/admin/plugins/sirsoft-daum_postcode/settings/layout HTTP/1.1
+GET /api/admin/plugins/{identifier}/settings/layout HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1744,12 +1867,13 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
+| comment | string | `다음 우편번호 플러그인 환경설정 화면 — 코어 플러그인 설정 규약을…` | 레이아웃 작성자 주석 — 화면에 렌더되지 않는 설명 |
 | version | string | `1.0.0` | 플러그인 버전 |
 | layout_name | string | `plugin_settings` | 레이아웃 식별자 (파일 경로 기반 — 예: board/popular) |
-| permissions | array | `[]` | 연결된 권한 목록 (id/identifier/name — 역할 경유 권한 관계 파생) |
 | extends | string | `_admin_base` | 상속하는 베이스 레이아웃 이름 (미상속 시 null) |
 | meta | object | `{"title":"$t:sirsoft-daum_postcode.settings.title","descr…` | 메타 정보 객체 (title/description/seo 등) |
 | data_sources | array | `[{"id":"settings","label_key":"$t:sirsoft-daum_postcode.e…` | API 데이터 소스 정의 배열 (id/endpoint/method) |
+| permissions | array | `[]` | 연결된 권한 목록 (id/identifier/name — 역할 경유 권한 관계 파생) |
 | slots | object | `{"content":[{"id":"plugin_settings_content","type":"basic…` | 슬롯별 삽입 콘텐츠 맵 (베이스 레이아웃의 slot 위치에 주입) |
 | pageConfig | object | `{"notice":"$t:sirsoft-daum_postcode.settings.notice","gui…` | 페이지 단위 설정 객체 |
 | schema | object | `{"display_mode":{"type":"enum","options":["popup","layer"…` | 스키마 정의 객체 |
@@ -1767,17 +1891,15 @@ HTTP/1.1 200
     "success": true,
     "message": "성공적으로 처리되었습니다.",
     "data": {
+        "comment": "다음 우편번호 플러그인 환경설정 화면 — 코어 플러그인 설정 규약을 따른다",
         "version": "1.0.0",
         "layout_name": "plugin_settings",
-        "permissions": [
-            "core.plugins.update"
-        ],
         "extends": "_admin_base",
         "meta": {
             "title": "$t:sirsoft-daum_postcode.settings.title",
             "description": "$t:sirsoft-daum_postcode.settings.description"
         },
-        "...": "(4개 키 생략, 총 9개)"
+        "...": "(3개 키 생략, 총 8개)"
     }
 }
 ```
@@ -1792,6 +1914,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 플러그인 설정 페이지의 UI 구성과 설정 스키마(레이아웃)를 조회합니다. `core.plugins.read` 권한이 필요합니다. 레이아웃이 정의되지 않았거나 플러그인을 찾을 수 없으면 404 를 반환합니다. 설정 값 조회(`settings`)와 짝을 이루어 설정 화면을 렌더링하는 데 사용됩니다.
 
@@ -1847,6 +1971,8 @@ _단건 응답: `data` 객체의 필드 (PluginResource::toDetailArray + 언어�
 | metadata | array | `[]` | manifest 부가 메타데이터 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |
 | update_source | string\|null | `github` | 업데이트 감지 출처 (github \| bundled) |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | latest_version | string\|null | `1.0.0` | 감지된 최신 배포 버전 |
 | file_version | string\|null | `1.0.0` | 설치된 파일의 manifest 버전 |
 | github_changelog_url | string\|null | `https://github.com/gnuboard/g7-plugin-daum_postcode/releases` | GitHub 변경 내역 URL |
@@ -1913,6 +2039,8 @@ _단건 응답: `data` 객체의 필드 (PluginResource::toDetailArray + 언어�
 | 500 | Server Error | 조회 처리 중 예외 발생 (`plugins.fetch_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 특정 플러그인의 상세 정보를 조회합니다. `core.plugins.read` 권한이 필요합니다. 목록보다 자세한 `toDetailArray()` 형태를 반환하며, 이 플러그인이 지원하는 번들 언어팩 정보가 함께 주입됩니다. 플러그인을 찾을 수 없으면 404 를 반환합니다.
 
@@ -2093,12 +2221,14 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.install`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 대상 확장을 찾을 수 없거나 프리뷰 빌드 중 예외 발생 (`plugins.fetch_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 플러그인 설치 시 함께 처리될 cascade 후보(의존 확장 + 동반 가능한 번들 언어팩) 트리를 반환합니다. `core.plugins.install` 권한이 필요합니다. 설치 모달 오픈 시 호출되어 사용자가 함께 설치할 항목을 선택하도록 노출하며, ZIP 업로드 기반의 `manifest-preview` 와 달리 이미 알려진 식별자에 대한 GET 조회입니다.
 
@@ -2179,12 +2309,14 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.uninstall`)이 없는 경우 |
 | 404 | Not Found | 해당 식별자의 플러그인이 존재하지 않는 경우 (`plugins.not_found`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 삭제 정보 조회 중 예외 발생 (`plugins.uninstall_info_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 플러그인 제거 시 삭제될 데이터 정보를 조회합니다. `core.plugins.uninstall` 권한이 필요합니다. 제거 확인 모달에서 사용자에게 어떤 데이터가 사라지는지 미리 보여주는 용도이며, 플러그인을 찾을 수 없으면 404 를 반환합니다.
 
@@ -2205,6 +2337,10 @@ _단건 응답: `data` 객체의 필드._
 | force | body | boolean | 아니오 | — | 강제 실행 여부 (안전 확인/선행 검사 우회) |
 | rebuild_search_index | body | boolean | 아니오 | — | 업데이트 후 색인이 누락된 검색 인덱스를 재생성할지 여부 (기본 false). 재생성 중에는 대상 인덱스가 잠기거나 재색인되므로 운영 중인 사이트에서는 접속이 적은 시간에 별도로 수행하는 것을 권장 |
 | layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
+| allow_unsigned | body | boolean | 아니오 | — | 미서명·검증 불가 패키지를 확인하고 계속 (7.2.0). 409 `package_unsigned` 경고 창의 「미서명으로 계속」이 같은 요청을 `1` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
+| integrity_aware | body | boolean | 아니오 | — | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `1` 을 보낸다. 이 칸이 없는 요청은 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 패키지를 확인 없이 진행한다(서버 경고 로그, 설치 행 `integrity_status=unsigned`). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
+| pending_token | body | string | 아니오 | 영숫자 40자 | 업데이트 미리보기가 GitHub 에서 내려받은 새 판을 다시 쓰는 토큰 (`…/update/preview` 응답의 `pending_token`, 1시간 유효). 미리보기로 본 파일을 그대로 적용한다 |
+| decisions | body | object | 아니오 | 값 `take-theirs`·`keep-ours` | 화면별 결정 — 미리보기 응답 `layouts.entries[].key` 기준 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.plugin.perform_update_validation_rules`).
 
@@ -2296,10 +2432,12 @@ _단건 응답: `data` 는 업데이트된 플러그인 리소스(PluginResource
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.install`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 업데이트 실패 (`plugin_name` 에 번역된 사유 — 다운그레이드 차단, 강제 업데이트 소스 없음, 코어 버전 비호환, 진행 중 상태 등) |
 | 409 | Conflict | 같은 플러그인의 업데이트가 이미 진행 중인 경우 — 관리자 화면·Artisan 커맨드 공통 (`extensions.errors.update_already_running`) · 7.1.5 부터 `errors.operation_in_progress: true` 를 싣고, 같은 확장의 설치·활성화·비활성화·제거가 진행 중이어도 같은 응답이다 |
+| 409 | Conflict | 미서명·검증 불가 패키지 (7.2.0) — `errors.package_unsigned: true` 와 `errors.integrity`. `errors.integrity.can_continue` 가 true 면 같은 요청을 `allow_unsigned=1` 로 다시 보내 계속하고, 「미서명 패키지 차단」이 켜져 있으면 false. 서명 자산이 없는 릴리스는 ZIP 을 받기 전에 이 응답을 낸다 ([오류 응답](../../extension/package-signing.md#오류-응답)) |
+| 422 | Unprocessable Entity | 서명 불일치(`errors.package_signature_invalid: true`)·신뢰하지 않는 키(`errors.package_signer_untrusted: true`) — `errors.integrity.reason` 에 사유, 확인으로도 계속할 수 없다 (7.2.0) |
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 업데이트 처리 중 예외 발생 (`plugins.errors.update_failed`) |
 
@@ -2307,6 +2445,87 @@ _단건 응답: `data` 는 업데이트된 플러그인 리소스(PluginResource
 
 **설명** 특정 플러그인을 최신 버전으로 업데이트합니다. `core.plugins.install` 권한이 필요합니다. `layout_strategy` 로 레이아웃 처리 방식을(overwrite: 새 버전으로 교체, keep: 운영자 수정본에 새 버전 3자 병합) 지정하며, `vendor_mode` 로 Composer 의존성 처리 방식을 선택합니다. 버전 제약·호환성 문제로 막힐 경우 `force: true` 로 강제 진행할 수 있습니다. `keep` 을 지정하면 운영자가 수정한 레이아웃·확장 조각에 새 버전을 3자 병합합니다 — 고친 부분(조각·최상위 키·data_sources 항목 단위)은 운영자 것, 손대지 않은 부분은 새 버전이고, 같은 곳을 양쪽이 고쳤으면 운영자 것을 남깁니다. 운영자가 고치지 않은 레이아웃은 파일 기준으로 갱신됩니다. 보고할 행이 있으면 성공 메시지 뒤에 「레이아웃: 새 버전 변경 N곳 자동 반영, 운영자 수정과 겹친 M곳은 운영자 것 유지.」 요약이 붙고, 응답 `data.layout_sync` 에 `{strategy, applied_count, conflict_count, kept_no_base_count, kept_removed_count, kept_deleted_by_operator_count, kept_name_collision_count, kept_invalid_count, modified_count, entries[{kind, template, name, verdict, applied, conflicts}]}` 가 실립니다(규칙: docs/extension/extension-update-system.md §10). 성공 응답 메시지에는 대상 식별자와 적용된 버전이 채워집니다. `rebuild_search_index: true` 를 함께 보내면 업데이트 후 색인이 누락된 검색 인덱스를 재생성합니다 — 인덱스 잠금·재색인 비용이 있어 기본은 수행하지 않으며, 보내지 않아도 응답의 `search_index` 에 현재 누락 여부가 담깁니다. 업데이트할 것이 없으면(현재 버전이 최신) 200 으로 응답하되 메시지는 `plugins.no_update_available`(「업데이트할 내용이 없습니다」)입니다. 같은 플러그인의 업데이트는 한 번에 하나만 수행되며, 진행 중에 들어온 요청(버튼 연속 클릭 등)은 아무 단계도 거치지 않고 409 로 거절됩니다.
 
+**패키지 서명(7.2.0)** GitHub 출처는 그 판의 태그 릴리스 자산 짝으로 풀기 전에 검증하고, 짝이 없으면 ZIP 을 받기 전에 409 를 낸다(같은 요청을 `allow_unsigned=1` 로 다시 보내면 계속). 번들 출처(`_bundled`)는 코어 배포본 서명이 덮으므로 검증하지 않고 `bundled` 로 기록한다. 서명 불일치·신뢰하지 않는 키는 422 로 멈추며 백업 전에 끝나 설치본을 건드리지 않는다. 상세: [패키지 서명](../../extension/package-signing.md)
+
+
+### POST /api/admin/plugins/{pluginName}/update/preview
+<!-- @generated:start:api.admin.plugins.update.preview -->
+- **라우트명**: `api.admin.plugins.update.preview`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\PluginController@performUpdatePreview`
+- **인증/권한**: `auth:sanctum` + `permission:core.plugins.install`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| pluginName | path | string | 예 | — | 플러그인 식별자 |
+| layout_strategy | body | string | 아니오 | `keep`, `overwrite` | 판정에 쓸 처리 방식 (기본 `keep` — 창이 기본으로 보여 주는 값) |
+| decisions | body | object | 아니오 | 값 `take-theirs`·`keep-ours` | 화면별 결정 |
+| layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 |
+
+**요청 예시**
+
+```http
+POST /api/admin/plugins/sirsoft-ckeditor5/update/preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "layout_strategy": "keep"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| type | string | `plugin` | 확장 종류 |
+| identifier | string | `sirsoft-ckeditor5` | 식별자 |
+| update_available | boolean | `true` | 적용할 업데이트가 있는지 (없으면 나머지는 비어 있다) |
+| update_source | string\|null | `bundled` | 새 판 출처 (`bundled`·`github`) |
+| from_version | string\|null | `1.0.0` | 지금 판 |
+| to_version | string\|null | `1.1.0` | 새 판 |
+| pending_token | string\|null | `null` | GitHub 소스면 내려받은 새 판(`_pending`)의 토큰 — 이어지는 업데이트 요청의 `pending_token` 으로 넘기면 다시 내려받지 않는다 (1시간 유효, 한 번만 쓴다) |
+| layouts_skipped | string\|null | `null` | `inactive` — 꺼 둔 확장은 업데이트 때 레이아웃을 갱신하지 않으므로 판정 목록이 비어 있다 |
+| layouts | object | — | 레이아웃 판정 — `refresh-layouts/preview` 응답과 같은 모양(새 판 파일 기준, 지금 활성 디렉토리를 병합 기준으로 쓴다) |
+| declarative_deletions | array | `[]` | 이 업데이트로 지워질 선언 항목 — 각 원소 `type`(`notification_definition`·`notification_template`·`menu`·`permission`·`role`·`identity_policy`·`schedule`)·`key`·`has_operator_overrides`(운영자 수정본이면 지우기 직전 활동 로그에 기록된다). `notification_template` 의 key 는 `{알림 type}:{발송 수단}` 이다 |
+| check_error | string\|null | `null` | GitHub 조회 실패 사유 — 조회에 실패하면 `update_available=false` 와 함께 사유가 실린다(「업데이트 없음」과 구분) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "업데이트 미리보기를 만들었습니다.",
+    "data": {
+        "type": "plugin",
+        "identifier": "sirsoft-ckeditor5",
+        "update_available": true,
+        "update_source": "bundled",
+        "from_version": "1.0.0",
+        "to_version": "1.1.0",
+        "pending_token": null,
+        "layouts_skipped": null,
+        "layouts": {"strategy": "keep", "entries": [], "summary": {}, "has_conflicts": false, "conflict_screens": []},
+        "declarative_deletions": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.install`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 실패 |
+| 500 | Internal Server Error | 설치되지 않은 플러그인, 새 판을 내려받지 못함 등 (`extensions.update_preview.failed`) |
+
+<!-- @generated:end -->
+
+**설명** 업데이트를 하지 않고, 새 판으로 바꾸면 화면마다 어떻게 되는지와 지워질 선언 항목을 계산합니다. DB·활성 파일은 바뀌지 않습니다. CLI `plugin:update {id} --dry-run --json` 이 같은 서비스를 부르므로 결과가 같습니다.
 
 ### GET /api/plugins/assets/{identifier}
 <!-- @generated:start:api.public.plugins.assets.extensionless -->
@@ -2324,7 +2543,7 @@ _단건 응답: `data` 는 업데이트된 플러그인 리소스(PluginResource
 **요청 예시**
 
 ```http
-GET /api/plugins/assets/sirsoft-daum_postcode?identifier=example-key&path=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
+GET /api/plugins/assets/{identifier}?path=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -2360,10 +2579,12 @@ ETag: "a1b2c3d4e5f6"
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 플러그인 에셋 서빙(`GET /api/plugins/assets/{identifier}/{path}`)의 확장자 없는 이중 모드 변형입니다. 파일 경로를 경로 세그먼트 대신 `?file=` 쿼리로 받으며, 검증·에러·캐시 동작은 경로 세그먼트 형태와 동일합니다. `.js`·`.css` 주소를 가로채는 정적 파일 최적화 서버 설정에서 확장자 붙은 주소가 404 가 될 때 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
@@ -2384,7 +2605,7 @@ ETag: "a1b2c3d4e5f6"
 **요청 예시**
 
 ```http
-GET /api/plugins/assets/sirsoft-daum_postcode/{path}?identifier=example-key HTTP/1.1
+GET /api/plugins/assets/{identifier}/{path} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -2423,6 +2644,8 @@ ETag: "a1b2c3d4e5f6"
 
 <!-- @generated:end -->
 
+
+
 **설명** 플러그인의 개별 프론트엔드 에셋 파일(JS/CSS/이미지 등)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않으며, 경로·확장자 보안 검증은 FormRequest 에서 완료됩니다. 플러그인 미존재·파일 미존재·허용되지 않은 파일 유형은 각각 404/404/403 으로 응답하고, 정상 파일은 ETag 와 1년 캐시 헤더를 붙여 반환합니다. 소스맵 등 개별 에셋을 직접 참조할 때 사용되며, 통합 로딩은 `bundle.js`/`bundle.css` 를 사용합니다.
 
 
@@ -2447,6 +2670,8 @@ Accept: application/json
 **응답 필드** (`data` 내부)
 
 _이 엔드포인트는 JSON 봉투를 반환하지 않습니다 — 활성 플러그인 CSS 를 병합한 텍스트를 그대로 서빙합니다 (성공 시 200 또는 304)._
+
+> 병합 결과가 비었을 때의 판정은 **에셋을 읽을 수 있었는가**로 갈린다. 선언된 파일을 전부 읽었는데 그 내용이 비었으면 정상이므로 빈 200 이고, 선언된 파일을 하나라도 읽지 못했으면(부재·권한·손상) 503 이다. 「선언은 있는데 결과가 0」만으로 503 을 내면 0바이트 산출물 하나가 사이트 전 화면에 실패 알림을 띄운다. 세 갈래 모두 `X-Content-Type-Options: nosniff` 를 싣는다.
 
 | 응답 헤더 | 예시값 | 용도/설명 |
 | --- | --- | --- |
@@ -2475,6 +2700,8 @@ _선언한 산출물이 소실·판독 불가일 때 **503**(빈 본문, `Cache-
 
 <!-- @generated:end -->
 
+
+
 **설명** 활성 플러그인들의 프론트엔드 CSS 를 서버에서 하나로 병합한 번들을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 판정은 모듈 번들과 같은 단일 지점을 공유합니다 — 선언이 0 이거나 선언한 산출물이 전부 존재하되 비어 있으면 빈 200(text/css), 선언한 산출물이 소실·판독 불가면 503, 병합 결과가 있으면 ETag·환경별 Cache-Control 과 함께 서빙합니다. 페이지가 플러그인 스타일을 요청 1건으로 로드하도록 합니다.
 
 
@@ -2499,6 +2726,8 @@ Accept: application/json
 **응답 필드** (`data` 내부)
 
 _이 엔드포인트는 JSON 봉투를 반환하지 않습니다 — 활성 플러그인 IIFE JS 를 병합한 텍스트를 그대로 서빙합니다 (성공 시 200 또는 304)._
+
+> 병합 결과가 비었을 때의 판정은 **에셋을 읽을 수 있었는가**로 갈린다. 선언된 파일을 전부 읽었는데 그 내용이 비었으면 정상이므로 빈 200 이고, 선언된 파일을 하나라도 읽지 못했으면(부재·권한·손상) 503 이다. 「선언은 있는데 결과가 0」만으로 503 을 내면 0바이트 산출물 하나가 사이트 전 화면에 실패 알림을 띄운다. 세 갈래 모두 `X-Content-Type-Options: nosniff` 를 싣는다.
 
 | 응답 헤더 | 예시값 | 용도/설명 |
 | --- | --- | --- |
@@ -2525,6 +2754,8 @@ Cache-Control: public, max-age=31536000
 _선언한 산출물이 소실·판독 불가일 때 **503**(빈 본문, `Cache-Control: no-cache, private`) — 배포 중 `dist` 가 잠깐 비었거나 경로가 어긋난 상태입니다. 에셋을 선언한 활성 확장이 없거나, 선언한 산출물이 전부 존재하되 비어 있으면(스타일 규칙이 아직 없는 확장) 정상 빈 200 입니다._
 
 <!-- @generated:end -->
+
+
 
 **설명** 활성 플러그인들의 프론트엔드 IIFE JS 를 서버에서 하나로 병합한 번들을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 판정은 모듈 번들과 같은 단일 지점을 공유합니다 — 선언이 0 이거나 선언한 산출물이 전부 존재하되 비어 있으면 빈 200(text/javascript), 선언한 산출물이 소실·판독 불가면 503, 병합 결과가 있으면 ETag·환경별 Cache-Control 과 함께 서빙합니다. 프론트는 `G7Config.bundleUrls` 를 읽어 이 번들을 로드합니다.
 
@@ -2553,6 +2784,8 @@ _이 엔드포인트는 JSON 봉투를 반환하지 않습니다 — 활성 플�
 텍스트를 그대로 서빙합니다 (성공 시 200 또는 304). `GET /api/plugins/bundle.css`
 와 동일 응답입니다._
 
+> 병합 결과가 비었을 때의 판정은 **에셋을 읽을 수 있었는가**로 갈린다. 선언된 파일을 전부 읽었는데 그 내용이 비었으면 정상이므로 빈 200 이고, 선언된 파일을 하나라도 읽지 못했으면(부재·권한·손상) 503 이다. 「선언은 있는데 결과가 0」만으로 503 을 내면 0바이트 산출물 하나가 사이트 전 화면에 실패 알림을 띄운다. 세 갈래 모두 `X-Content-Type-Options: nosniff` 를 싣는다.
+
 | 응답 헤더 | 예시값 | 용도/설명 |
 | --- | --- | --- |
 | Content-Type | `text/css` | 항상 CSS |
@@ -2577,6 +2810,8 @@ Cache-Control: public, max-age=31536000
 _에러 응답 없음 — 공개 조회이며 요청 파라미터가 없고, 활성 에셋이 하나도 없는 경우에도 빈 200 을 반환합니다._
 
 <!-- @generated:end -->
+
+
 
 **설명** 플러그인 CSS 번들(`GET /api/plugins/bundle.css`)의 확장자 없는 이중 모드 변형입니다. 동작·응답이 확장자 형태와 동일하며, `.css` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
@@ -2605,6 +2840,8 @@ _이 엔드포인트는 JSON 봉투를 반환하지 않습니다 — 활성 플�
 텍스트를 그대로 서빙합니다 (성공 시 200 또는 304). `GET /api/plugins/bundle.js`
 와 동일 응답입니다._
 
+> 병합 결과가 비었을 때의 판정은 **에셋을 읽을 수 있었는가**로 갈린다. 선언된 파일을 전부 읽었는데 그 내용이 비었으면 정상이므로 빈 200 이고, 선언된 파일을 하나라도 읽지 못했으면(부재·권한·손상) 503 이다. 「선언은 있는데 결과가 0」만으로 503 을 내면 0바이트 산출물 하나가 사이트 전 화면에 실패 알림을 띄운다. 세 갈래 모두 `X-Content-Type-Options: nosniff` 를 싣는다.
+
 | 응답 헤더 | 예시값 | 용도/설명 |
 | --- | --- | --- |
 | Content-Type | `text/javascript` | 항상 JavaScript |
@@ -2631,6 +2868,8 @@ _에러 응답 없음 — 공개 조회이며 요청 파라미터가 없고, 활
 
 <!-- @generated:end -->
 
+
+
 **설명** 플러그인 JS 번들(`GET /api/plugins/bundle.js`)의 확장자 없는 이중 모드 변형입니다. 동작·응답이 확장자 형태와 동일하며, `.js` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
 
@@ -2649,12 +2888,14 @@ _에러 응답 없음 — 공개 조회이며 요청 파라미터가 없고, 활
 **요청 예시**
 
 ```http
-GET /api/plugins/sirsoft-daum_postcode/components HTTP/1.1
+GET /api/plugins/{identifier}/components HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
 
 **응답 필드** (`data` 내부)
+
+
 
 _이 엔드포인트는 `success/message/data` 봉투를 사용하지 않습니다 — 플러그인의
 `components.json` 원문을 그대로 JSON body 로 반환합니다 (`Cache-Control: public,
@@ -2698,6 +2939,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 플러그인 컴포넌트 매니페스트(`GET /api/plugins/{identifier}/components.json`)의 확장자 없는 이중 모드 변형입니다. 응답·캐시·폴백 동작이 확장자 형태와 동일하며, `.json` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
 
@@ -2716,12 +2959,14 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/plugins/sirsoft-daum_postcode/components.json HTTP/1.1
+GET /api/plugins/{identifier}/components.json HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
 
 **응답 필드** (`data` 내부)
+
+
 
 _이 엔드포인트는 `success/message/data` 봉투를 사용하지 않습니다 — 플러그인의 `components.json` 원문을 그대로 JSON body 로 반환합니다 (`Cache-Control: public, max-age=3600`). 파일이 없는 구버전 플러그인은 빈 객체(`{}`) 로 폴백합니다._
 
@@ -2783,7 +3028,7 @@ Cache-Control: public, max-age=3600
 **요청 예시**
 
 ```http
-GET /api/plugins/sirsoft-daum_postcode/editor-spec HTTP/1.1
+GET /api/plugins/{identifier}/editor-spec HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -2828,6 +3073,6 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 플러그인의 레이아웃 편집기 스펙(editor-spec.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 활성 플러그인만 대상으로 하며 설치본(`plugins/{identifier}`)만 읽어(배포 원본 폴백 없음) `data.spec` 형태로 반환합니다. 비활성·미존재 플러그인은 404 이고, 편집기 스펙 파일을 작성하지 않은 경우 spec=null 로 정상 응답합니다.
+**설명** 플러그인의 레이아웃 편집기 스펙(editor-spec.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 활성 플러그인만 대상으로 하며 설치본(`plugins/{identifier}`)만 읽어(배포 원본 폴백 없음) `data.spec` 형태로 반환합니다. 비활성·미존재 플러그인은 404 이고, 편집기 스펙 파일을 작성하지 않은 경우 spec=null 로 정상 응답합니다. 7.2.0 부터 코어 레이아웃 편집기는 이 엔드포인트를 확장마다 부르지 않고 묶음 엔드포인트 `GET /api/templates/{identifier}/editor-spec-bundle`([templates.md](templates.md#get-apitemplatesidentifiereditor-spec-bundle))로 한 번에 받습니다. 묶음의 플러그인 항목은 이 엔드포인트와 같은 판정(`getEditorSpec`)을 쓰고, 이 엔드포인트는 서드파티 호환을 위해 이름과 응답 모양 그대로 남아 있습니다.
 
 

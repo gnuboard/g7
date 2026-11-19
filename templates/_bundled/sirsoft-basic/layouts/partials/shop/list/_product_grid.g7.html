@@ -3,7 +3,9 @@
 <partial description="상품 그리드 + 페이지네이션 (products 데이터소스 사용, route.path 기반 navigate)">
   <div>
     <!-- 상품 그리드 -->
-    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 mb-8">
+    <div class="grid grid-cols-2 gap-4 mb-8">
+      <responsive on="640-1023" class="grid gap-4 grid-cols-3 mb-8"/>
+      <responsive on="desktop" class="grid gap-4 grid-cols-4 mb-8"/>
       <div data-each="product in {{products?.data?.data ?? []}}">
         <product-card data-type="composite" product="{{product}}" shopBase="{{_global.shopBase ?? '/shop'}}" :preserveListQuery="true"/>
       </div>

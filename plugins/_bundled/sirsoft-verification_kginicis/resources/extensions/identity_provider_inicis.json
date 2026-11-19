@@ -10,7 +10,7 @@
             "name": "Div",
             "if": "{{_global.identityChallenge?.provider_id === 'inicis' && !(_global.identityChallenge?.providerInProgress)}}",
             "props": {
-                "className": "space-y-4"
+                "className": "verificationkginicis:space-y-4"
             },
             "children": [
                 {
@@ -18,14 +18,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex items-center flex-col text-center space-y-2 pt-2"
+                        "className": "verificationkginicis:flex verificationkginicis:items-center verificationkginicis:flex-col verificationkginicis:text-center verificationkginicis:space-y-2 verificationkginicis:pt-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "inline-flex items-center justify-center w-14 h-14 bg-blue-100 dark:bg-blue-900/40 rounded-full"
+                                "className": "verificationkginicis:inline-flex verificationkginicis:items-center verificationkginicis:justify-center verificationkginicis:w-14 verificationkginicis:h-14 verificationkginicis:bg-blue-100 verificationkginicis:dark:bg-blue-900/40 verificationkginicis:rounded-full"
                             },
                             "children": [
                                 {
@@ -33,7 +33,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "fas fa-mobile-screen",
-                                        "className": "text-2xl text-blue-600 dark:text-blue-400"
+                                        "className": "verificationkginicis:text-2xl verificationkginicis:leading-none verificationkginicis:text-blue-600 verificationkginicis:dark:text-blue-400"
                                     }
                                 }
                             ]
@@ -44,7 +44,7 @@
                             "name": "H3",
                             "if": "{{_global.identityChallenge?.purpose === 'inicis.adult_verification'}}",
                             "props": {
-                                "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                "className": "verificationkginicis:text-base verificationkginicis:font-semibold verificationkginicis:text-gray-900 verificationkginicis:dark:text-white"
                             },
                             "text": "$t:sirsoft-verification_kginicis.modal.adult_title"
                         },
@@ -54,7 +54,7 @@
                             "name": "H3",
                             "if": "{{_global.identityChallenge?.purpose !== 'inicis.adult_verification'}}",
                             "props": {
-                                "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                "className": "verificationkginicis:text-base verificationkginicis:font-semibold verificationkginicis:text-gray-900 verificationkginicis:dark:text-white"
                             },
                             "text": "$t:sirsoft-verification_kginicis.modal.title"
                         },
@@ -64,7 +64,7 @@
                             "name": "P",
                             "if": "{{_global.identityChallenge?.purpose === 'inicis.adult_verification'}}",
                             "props": {
-                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                "className": "verificationkginicis:text-sm verificationkginicis:text-gray-600 verificationkginicis:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-verification_kginicis.modal.adult_description"
                         },
@@ -74,7 +74,7 @@
                             "name": "P",
                             "if": "{{_global.identityChallenge?.purpose !== 'inicis.adult_verification'}}",
                             "props": {
-                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                "className": "verificationkginicis:text-sm verificationkginicis:text-gray-600 verificationkginicis:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-verification_kginicis.modal.description"
                         }
@@ -92,7 +92,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-semibold transition-colors"
+                        "className": "verificationkginicis:w-full verificationkginicis:inline-flex verificationkginicis:items-center verificationkginicis:justify-center verificationkginicis:gap-2 verificationkginicis:px-4 verificationkginicis:py-3 verificationkginicis:bg-blue-600 verificationkginicis:dark:bg-blue-600 verificationkginicis:text-white verificationkginicis:rounded-lg verificationkginicis:hover:bg-blue-700 verificationkginicis:dark:hover:bg-blue-700 verificationkginicis:font-semibold verificationkginicis:transition-colors"
                     },
                     "children": [
                         {
@@ -105,7 +105,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "fas fa-arrow-right",
-                                "className": "text-sm"
+                                "className": "verificationkginicis:text-sm verificationkginicis:leading-none"
                             }
                         }
                     ]
@@ -118,7 +118,7 @@
             "name": "Div",
             "if": "{{_global.identityChallenge?.provider_id === 'inicis' && (_global.identityChallenge?.providerInProgress)}}",
             "props": {
-                "className": "flex items-center flex-col text-center space-y-4 py-6",
+                "className": "verificationkginicis:flex verificationkginicis:items-center verificationkginicis:flex-col verificationkginicis:text-center verificationkginicis:space-y-4 verificationkginicis:py-6",
                 "role": "status",
                 "aria-live": "polite"
             },
@@ -128,14 +128,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "fas fa-spinner fa-spin",
-                        "className": "text-3xl text-blue-600 dark:text-blue-400"
+                        "className": "verificationkginicis:text-3xl verificationkginicis:leading-none verificationkginicis:text-blue-600 verificationkginicis:dark:text-blue-400"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                        "className": "verificationkginicis:text-sm verificationkginicis:font-medium verificationkginicis:text-gray-900 verificationkginicis:dark:text-white"
                     },
                     "text": "$t:sirsoft-verification_kginicis.modal.in_progress.title"
                 },
@@ -143,14 +143,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-xs text-yellow-700 dark:text-yellow-300"
+                        "className": "verificationkginicis:p-3 verificationkginicis:bg-amber-50 verificationkginicis:dark:bg-amber-900/20 verificationkginicis:border verificationkginicis:border-amber-200 verificationkginicis:dark:border-amber-800 verificationkginicis:rounded verificationkginicis:text-xs verificationkginicis:text-yellow-700 verificationkginicis:dark:text-yellow-300"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "inline-flex items-start gap-1.5"
+                                "className": "verificationkginicis:inline-flex verificationkginicis:items-start verificationkginicis:gap-1.5"
                             },
                             "children": [
                                 {
@@ -158,7 +158,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "fas fa-circle-info",
-                                        "className": "mt-0.5"
+                                        "className": "verificationkginicis:mt-0.5"
                                     }
                                 },
                                 {

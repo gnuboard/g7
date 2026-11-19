@@ -8,7 +8,6 @@
  *
  * @scenario-manifest templates/_bundled/sirsoft-admin_basic/tests/scenarios/content-inline-style-deferral.yaml
  */
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { IconPickerWidget } from '../IconPickerWidget';

@@ -23,6 +23,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreBanksRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreEcommerceSettingsRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateSettingRequest;
 use Modules\Sirsoft\Ecommerce\Privacy\OrderRetentionHandler;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceDisplayNameSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsAdminService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 
@@ -40,21 +41,26 @@ class EcommerceSettingsController extends AdminBaseController
      *
      * @param  EcommerceSettingsService  $settingsService  환경설정 서비스
      * @param  EcommerceSettingsAdminService  $adminSettingsService  관리자 설정 저장·조회 조립 서비스
+     * @param  EcommerceDisplayNameSettingsService  $displayNames  기능별 작성자 표시 이름 설정 서비스
      */
     public function __construct(
         private EcommerceSettingsService $settingsService,
-        private EcommerceSettingsAdminService $adminSettingsService
+        private EcommerceSettingsAdminService $adminSettingsService,
+        private EcommerceDisplayNameSettingsService $displayNames,
     ) {}
 
     /**
      * 모든 이커머스 설정을 조회합니다.
+     *
+     * 기능별 작성자 표시 이름(`display_name`)과 그 읽기 전용 목록(`display_name_options`)을 함께 싣는다.
+     * 이 둘은 이커머스 설정 파일의 값이 아니라 코어의 표시 이름 영역 설정에서 읽은 값이다.
      *
      * @return JsonResponse 설정 목록을 포함한 JSON 응답
      */
     public function index(): JsonResponse
     {
         try {
-            $settings = $this->adminSettingsService->getSettingsWithProviders();
+            $settings = [...$this->adminSettingsService->getSettingsWithProviders(), ...$this->displayNames->forAdmin()];
             $settings['abilities'] = [
                 'can_update' => PermissionHelper::check('sirsoft-ecommerce.settings.update', request()->user()),
             ];
@@ -111,6 +117,9 @@ class EcommerceSettingsController extends AdminBaseController
     /**
      * 이커머스 설정을 저장합니다.
      *
+     * 요청에 기능별 작성자 표시 이름(`display_name`)이 실려 오면(리뷰 설정 탭, 기본 정보 탭) 코어의 표시 이름 영역 설정에 저장한다.
+     * 실려 오지 않은 저장은 영역 설정을 건드리지 않는다.
+     *
      * @param  StoreEcommerceSettingsRequest  $request  저장 요청 데이터
      * @return JsonResponse 저장 결과 JSON 응답
      */
@@ -127,13 +136,15 @@ class EcommerceSettingsController extends AdminBaseController
                 );
             }
 
+            $this->displayNames->save($request->validatedDisplayName());
+
             $this->fireAfterSaveHooks($outcome);
 
             // 저장 후 전체 설정 반환 (관리자 UI 상태 업데이트용)
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.settings.save_success',
-                $this->adminSettingsService->getSettingsWithProviders()
+                [...$this->adminSettingsService->getSettingsWithProviders(), ...$this->displayNames->forAdmin()]
             );
         } catch (ClaimReasonException|ShippingTypeOperationException|ShippingCarrierOperationException $e) {
             return $this->catalogDomainErrorResponse($e);

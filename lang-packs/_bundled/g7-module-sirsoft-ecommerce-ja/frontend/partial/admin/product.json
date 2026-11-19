@@ -1067,6 +1067,7 @@
     "keywords_hint": "カンマで区切って入力してください",
     "preview": "検索結果プレビュー",
     "untitled": "タイトルなし",
+    "preview_image_alt": "共有プレビュー画像",
     "no_description": "説明がありません",
     "sync_title": "商品名と同じに設定",
     "sync_description": "商品内容と同じに設定"

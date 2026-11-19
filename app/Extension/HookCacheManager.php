@@ -297,6 +297,22 @@ class HookCacheManager
 
         // 테스트 환경에서는 실 캐시 파일을 쓰지 않는다 — 시험 DB 의 활성 확장 구성으로 개발 사이트 훅 매핑이
         // 바뀐다(2026-11-03 실측: 업그레이드 단계를 태운 테스트가 확장 0건으로 덮음). 경로를 바꾼 인스턴스는 쓴다.
+        // 옛 진입 정의를 쥔 프로세스는 쓰지 않는다 — 확장 파일 교체 중에 부팅해 요청 끝 재생성을 예약한 요청이, 교체 쪽이 새 선언으로
+        // 이미 구운 캐시를 옛 선언(지운 리스너 포함)으로 덮었고 지문은 지금 디스크로 적혀 스스로 고쳐지지 않았다. 다음 요청이 새 정의로 굽는다.
+        $staleDeclarations = array_merge(
+            $this->staleDeclarationsOf($moduleManager),
+            $this->staleDeclarationsOf($pluginManager),
+        );
+        if ($staleDeclarations !== []) {
+            BootDeferredLog::warning('hooks.cache_write_skipped_stale_declaration', [], [
+                'path' => $this->cacheFilePath,
+                'extensions' => $staleDeclarations,
+            ]);
+            self::$memo = null;
+
+            return $counts;
+        }
+
         if (! $this->touchesRealCacheFileDuringTests()) {
             $content = $this->buildCacheFileContent($cache);
 
@@ -322,6 +338,23 @@ class HookCacheManager
         ExtensionFingerprint::forget();
 
         return $counts;
+    }
+
+    /**
+     * 매니저가 옛 진입 정의를 쓴 확장 목록을 돌려줍니다 — 판정할 수 없으면 빈 목록(종전처럼 쓴다).
+     *
+     * 쓰기 거절은 덮어쓰기 경합을 막는 보조 장치라, 판정이 실패해도(대역 매니저 등) 캐시 생성 자체를 막지 않는다.
+     *
+     * @param  ModuleManager|PluginManager  $manager  로드 완료된 매니저
+     * @return array<int, string> 옛 정의를 쓴 식별자
+     */
+    private function staleDeclarationsOf(ModuleManager|PluginManager $manager): array
+    {
+        try {
+            return $manager->staleDeclarationIdentifiers();
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     /**

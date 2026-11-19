@@ -1,0 +1,23 @@
+feature: sirsoft-cdn_cloudfront 제거 뒤 썸네일 연동 정리
+
+description: |
+  코어는 켜진 플러그인을 제거하기 전에 비활성화(core.plugins.after_deactivate 포함)를 거치고, 제거가 끝나면 큐 워커에
+  재시작 신호를 보낸다(설계 확정 2026-11-08). 그래서 이 플러그인은 제거 훅을 구독하지 않는다 — 디스크 정의 삭제와 재시작
+  신호는 비활성화 완료 훅에서 한 번만 일어나고, 제거 완료 훅(core.plugins.after_uninstall) 때는 플러그인 디렉터리가 이미
+  지워져 리스너 클래스를 다시 읽을 수 없다. 데이터 삭제 제거는 코어가 플러그인 캐시(마지막 무효화 성공 시각)를 비우고
+  getDynamicTables() 의 퍼지 대기열 테이블을 지운다.
+
+axes:
+  case:
+    - active_uninstall      # 켜진 채 제거 — 코어가 먼저 끄므로 비활성화 완료 훅에서 한 번 정리, 제거 훅에서는 아무것도 하지 않음
+    - listener_files_gone   # 제거 훅을 구독하는 리스너가 없어 제거 완료 훅 때 리스너 클래스를 다시 읽지 않음
+    - data_cleanup          # 플러그인 캐시 비우기로 성공 시각 삭제, 동적 테이블 목록이 마이그레이션 테이블을 모두 덮음
+
+effects:
+  - active_uninstall_cleaned_once_through_deactivation
+  - no_listener_subscribes_uninstall_hooks
+  - plugin_cache_flush_clears_last_purge_success
+  - dynamic_tables_cover_migration_tables
+
+test_files:
+  - plugins/_bundled/sirsoft-cdn_cloudfront/tests/Feature/UninstallCleanupTest.php

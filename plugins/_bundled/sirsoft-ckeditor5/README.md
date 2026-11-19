@@ -5,9 +5,9 @@ CKEditor 5를 이용한 WYSIWYG 에디터 플러그인입니다. 플러그인 �
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.4-0066FF?style=flat-square" alt="version 1.1.4">
+  <img src="https://img.shields.io/badge/version-1.2.0-0066FF?style=flat-square" alt="version 1.2.0">
   <img src="https://img.shields.io/badge/type-%ED%94%8C%EB%9F%AC%EA%B7%B8%EC%9D%B8-555555?style=flat-square" alt="type 플러그인">
-  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.6-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.6">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.2.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.2.0">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
 </p>
 <!-- @generated:badges END -->
@@ -43,6 +43,7 @@ CKEditor 5를 이용한 WYSIWYG 에디터 플러그인입니다. 플러그인 �
 | 위지윅 편집 | 서식·표·목록·링크 등 문서 편집 기능. 툴바 구성을 간단형·표준형·전체 중에서 선택 |
 | 이미지 업로드 | 편집기에서 바로 이미지 붙여넣기·끌어놓기, 용량 제한 설정 |
 | 업로드 이미지 관리 | 관리자 화면에서 올린 이미지 목록 확인과 개별·일괄 삭제 |
+| 본문 이미지 썸네일 | 본문 이미지를 화면 크기에 맞춘 썸네일로 내보냄 (환경설정 > 업로드 탭의 썸네일 규격·저장 위치를 따름) |
 | 미사용 이미지 정리 | 어느 글에서도 쓰이지 않는 이미지를 보존기간 경과 후 자동 정리 (기본 꺼짐) |
 | 다국어 본문 | 언어별로 본문을 따로 작성 |
 | 자동 폴백 | 편집기를 불러오지 못하면 일반 입력창으로 전환하고 알림, 재시도 시 내용 승계 |
@@ -84,7 +85,7 @@ flowchart LR
 <!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 항목 | 값 |
 |---|---|
-| 그누보드7 코어 | `>=7.1.6` |
+| 그누보드7 코어 | `>=7.2.0` |
 | PHP | `^8.2` |
 <!-- @generated:requirements END -->
 

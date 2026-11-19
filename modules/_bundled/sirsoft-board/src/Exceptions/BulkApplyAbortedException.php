@@ -46,6 +46,7 @@ class BulkApplyAbortedException extends Exception
      * @param  int  $index  실패 인덱스 (0-base)
      * @param  int  $total  일괄 적용 대상 게시판 총 수
      * @param  \Throwable|null  $previous  원인 예외
+     * @return self 실패 게시판과 1-base 순번을 담은 예외 인스턴스
      */
     public static function forBoard(Board $board, int $index, int $total, ?\Throwable $previous = null): self
     {
@@ -57,6 +58,7 @@ class BulkApplyAbortedException extends Exception
      *
      * @param  int  $total  일괄 적용 대상 게시판 총 수
      * @param  \Throwable|null  $previous  원인 예외
+     * @return self 게시판과 순번이 null 인 예외 인스턴스
      */
     public static function forColumns(int $total, ?\Throwable $previous = null): self
     {

@@ -50,7 +50,7 @@ class PaymentCloseReportOwnershipTest extends PluginTestCase
         ]);
 
         $response->assertStatus(403)
-            ->assertJsonPath('errors.message.0', 'Order ownership verification failed.');
+            ->assertJsonPath('errors.message.0', __('sirsoft-pay_nhnkcp::messages.responses.ownership_verification_failed'));
         $this->assertOrderUnchanged($order);
     }
 
@@ -208,6 +208,42 @@ class PaymentCloseReportOwnershipTest extends PluginTestCase
             ->assertStatus(403);
 
         $this->assertOrderUnchanged($order);
+    }
+
+    /**
+     * 다른 결제사가 이미 가상계좌를 발급한 주문은 주문 소유자가 보고해도 무시하고, 그 결제사의 결제 행을 바꾸지 않는다.
+     *
+     * 계약 조회는 다른 결제사의 발급 뒤 결제 행을 싣지 않아 입금 대기 가드를 지나고, 쓰기는 `ProviderMismatch` 로
+     * 거부된다. 보고는 오류(500)가 아니라 종전과 같은 「결제 대기 행이 아님」으로 끝나야 한다.
+     *
+     * @effects owner_report_on_order_issued_by_another_pg_is_ignored
+     *
+     * @return void 반환값 없음
+     */
+    public function test_owner_report_on_order_issued_by_another_pg_is_ignored(): void
+    {
+        $owner = User::factory()->create();
+        $order = $this->makePendingOrder('ORD-2434-FOREIGN', userId: $owner->id);
+        $order->update(['order_status' => OrderStatusEnum::PENDING_PAYMENT]);
+        $order->payment->update([
+            'pg_provider' => 'tosspayments',
+            'payment_method' => PaymentMethodEnum::VBANK,
+            'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
+            'transaction_id' => 'TOSS-VBANK-FOREIGN',
+            'vbank_issued_at' => now(),
+        ]);
+
+        Sanctum::actingAs($owner);
+
+        $this->postJson(self::ROUTE, $this->payload($order))
+            ->assertOk()
+            ->assertJsonPath('data.status', 'ignored')
+            ->assertJsonPath('data.reason', 'payment_not_ready');
+
+        $fresh = $order->fresh('payment');
+        $this->assertSame(OrderStatusEnum::PENDING_PAYMENT, $fresh->order_status);
+        $this->assertSame(PaymentStatusEnum::WAITING_DEPOSIT, $fresh->payment->payment_status);
+        $this->assertSame('tosspayments', $fresh->payment->pg_provider);
     }
 
     /**

@@ -10,10 +10,12 @@
 
 import React from 'react';
 import { useTranslation } from '../../TranslationContext';
-import type { OverlayBox } from '../utils/overlayGeometry';
+import type { OverlayBox, AffordanceBounds } from '../utils/overlayGeometry';
 import {
   resolveAffordancePlacement,
   resolveInsertionCrossOffsets,
+  foldIntoBounds,
+  INSERTION_AFFORDANCE_BUTTON,
 } from '../utils/overlayGeometry';
 import { OVERLAY_AFFORDANCE } from '../utils/overlayZIndex';
 import type { InsertionPoint, InsertionDirection } from '../hooks/useInsertionPoints';
@@ -25,6 +27,11 @@ export interface InsertionAffordancesProps {
   points: InsertionPoint[];
   /** + 버튼 클릭 시 호출 — 팔레트 오픈 콜백 */
   onAddRequest: (point: InsertionPoint) => void;
+  /**
+   * 버튼이 놓일 수 있는 경계(frame 좌표, `resolveAffordanceBounds`). 넘는 버튼만 안으로 접어 넣는다 — 캔버스
+   * 밖으로 나가 문서를 넓히지 않게(#869 8차). 생략하면 종전 배치.
+   */
+  bounds?: AffordanceBounds | null;
 }
 
 // 큰 박스(inside) 4방향 + 버튼 오프셋. 종전 -12 는 버튼(24px)이 박스 변에 절반
@@ -41,7 +48,7 @@ const DIRECTION_OFFSET: Record<InsertionDirection, React.CSSProperties> = {
 };
 
 export function InsertionAffordances(props: InsertionAffordancesProps): React.ReactElement | null {
-  const { selectedBox, points, onAddRequest } = props;
+  const { selectedBox, points, onAddRequest, bounds } = props;
   const { t } = useTranslation();
 
   if (!selectedBox || points.length === 0) {
@@ -54,6 +61,22 @@ export function InsertionAffordances(props: InsertionAffordancesProps): React.Re
   const placement = resolveAffordancePlacement(selectedBox);
   const isOutside = placement === 'outside';
   const crossOffsets = isOutside ? resolveInsertionCrossOffsets(selectedBox) : null;
+  // 종전 배치를 숫자 좌표로 옮긴 값(박스 좌상단 기준) — 경계 판정용.
+  const half = INSERTION_AFFORDANCE_BUTTON / 2;
+  const numericOffset = (direction: InsertionDirection): { left: number; top: number } => {
+    if (crossOffsets) return crossOffsets[direction];
+    const { width: w, height: h } = selectedBox;
+    switch (direction) {
+      case 'above':
+        return { left: w / 2 - half, top: -INSERTION_GAP };
+      case 'below':
+        return { left: w / 2 - half, top: h + INSERTION_GAP - INSERTION_AFFORDANCE_BUTTON };
+      case 'left':
+        return { left: -INSERTION_GAP, top: h / 2 - half };
+      default:
+        return { left: w + INSERTION_GAP - INSERTION_AFFORDANCE_BUTTON, top: h / 2 - half };
+    }
+  };
 
   return (
     <div
@@ -69,12 +92,17 @@ export function InsertionAffordances(props: InsertionAffordancesProps): React.Re
       }}
     >
       {points.map((point) => {
-        const baseStyle: React.CSSProperties = crossOffsets
-          ? {
-              left: crossOffsets[point.direction].left,
-              top: crossOffsets[point.direction].top,
-            }
-          : DIRECTION_OFFSET[point.direction];
+        const folded = bounds
+          ? foldIntoBounds(selectedBox, numericOffset(point.direction), INSERTION_AFFORDANCE_BUTTON, bounds)
+          : null;
+        const baseStyle: React.CSSProperties = folded
+          ? { left: folded.left, top: folded.top }
+          : crossOffsets
+            ? {
+                left: crossOffsets[point.direction].left,
+                top: crossOffsets[point.direction].top,
+              }
+            : DIRECTION_OFFSET[point.direction];
         const label = t(`layout_editor.insertion.${point.direction}`);
         return (
           <button
@@ -93,8 +121,8 @@ export function InsertionAffordances(props: InsertionAffordancesProps): React.Re
             style={{
               position: 'absolute',
               ...baseStyle,
-              width: 24,
-              height: 24,
+              width: INSERTION_AFFORDANCE_BUTTON,
+              height: INSERTION_AFFORDANCE_BUTTON,
               borderRadius: 12,
               border: '1px solid #2563eb',
               background: point.disabled ? '#cbd5e1' : '#fff',

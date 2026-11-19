@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use App\Helpers\PermissionHelper;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Fields\OrderContactFields;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\OrderCashReceipt;
 use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
@@ -144,6 +145,9 @@ class GuestOrderResource extends BaseApiResource
             'recipient_detail_address' => $this->shippingAddress?->address_detail,
             'delivery_memo' => $this->shippingAddress?->delivery_memo,
             'delivery_memo_label' => $this->shippingAddress?->delivery_memo_label,
+
+            // 주문서 추가 항목 값 (운영자가 추가한 항목, 다른 확장이 기여한 항목). 값이 있는 것만 `{key, label, section, display_value}`
+            'extra_fields' => app(OrderContactFields::class)->valuesFor($this->resource),
 
             // 주문 옵션 (품목) — 주문 시점 통화를 자식에 전파. 클레임 점유 수량은 옵션마다 구하면
             // 옵션 수 × 3 쿼리라 여기서 한 번에 구해 주입한다.

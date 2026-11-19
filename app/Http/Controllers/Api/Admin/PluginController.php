@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\LanguagePackScope;
+use App\Enums\LayoutSyncMode;
 use App\Exceptions\ExtensionOperationLockException;
+use App\Exceptions\PackageIntegrityException;
 use App\Exceptions\PluginOperationException;
 use App\Extension\Helpers\IntegrationNotices;
 use App\Extension\Layout\LayoutInstallSourceScope;
@@ -11,6 +13,7 @@ use App\Extension\Layout\LayoutSyncSummary;
 use App\Extension\Vendor\VendorMode;
 use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Controllers\Concerns\HandlesExtensionUpdatePreview;
 use App\Http\Controllers\Concerns\InjectsExtensionLanguagePacks;
 use App\Http\Controllers\Concerns\OrchestratesCascadeInstall;
 use App\Http\Controllers\Concerns\RebuildsSearchIndexOnDemand;
@@ -46,6 +49,7 @@ use Illuminate\Validation\ValidationException;
  */
 class PluginController extends AdminBaseController
 {
+    use HandlesExtensionUpdatePreview;
     use InjectsExtensionLanguagePacks;
     use OrchestratesCascadeInstall;
     use RebuildsSearchIndexOnDemand;
@@ -513,13 +517,16 @@ class PluginController extends AdminBaseController
     {
         try {
             $file = $request->file('file');
-            $plugin = $this->pluginService->installFromZipFile($file);
+            $plugin = $this->pluginService->installFromZipFile($file, $request->packageIntegrityOptions());
 
             // 파일·GitHub 설치도 일반 설치와 같이 연동 안내를 싣는다 (#822 §3.3)
             return $this->withIntegrationNotices(
                 $this->successWithResource('plugins.install_success', new PluginResource($plugin), 201),
                 $this->buildIntegrationNotices('plugin', (string) data_get($plugin, 'identifier', ''))
             );
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409, 「미서명으로 계속」 가능 여부 포함)·서명 불일치·미신뢰 키(422) — 7.2.0
+            return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);
@@ -542,13 +549,16 @@ class PluginController extends AdminBaseController
     {
         try {
             $githubUrl = $request->validated()['github_url'];
-            $plugin = $this->pluginService->installFromGithub($githubUrl);
+            $plugin = $this->pluginService->installFromGithub($githubUrl, $request->packageIntegrityOptions());
 
             // 파일·GitHub 설치도 일반 설치와 같이 연동 안내를 싣는다 (#822 §3.3)
             return $this->withIntegrationNotices(
                 $this->successWithResource('plugins.install_success', new PluginResource($plugin), 201),
                 $this->buildIntegrationNotices('plugin', (string) data_get($plugin, 'identifier', ''))
             );
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409, 「미서명으로 계속」 가능 여부 포함)·서명 불일치·미신뢰 키(422) — 7.2.0
+            return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);
@@ -613,6 +623,21 @@ class PluginController extends AdminBaseController
     }
 
     /**
+     * 업데이트를 미리 봅니다 — 업데이트하지 않고 화면별 레이아웃 판정과 지워질 선언 항목을 계산합니다.
+     *
+     * GitHub 소스면 새 판을 `_pending` 에 내려받고 `pending_token` 을 돌려준다 — 이어지는 업데이트 요청이 그 토큰을 넘기면
+     * 같은 파일을 다시 쓴다.
+     *
+     * @param  PerformPluginUpdateRequest  $request  업데이트 요청 (layout_strategy·decisions·layout_source)
+     * @param  string  $pluginName  식별자
+     * @return JsonResponse 미리보기 응답
+     */
+    public function performUpdatePreview(PerformPluginUpdateRequest $request, string $pluginName): JsonResponse
+    {
+        return $this->respondUpdatePreview($request, 'plugin', $pluginName);
+    }
+
+    /**
      * 특정 플러그인을 업데이트합니다.
      *
      * layout_strategy 파라미터로 레이아웃 처리 방식을 결정합니다:
@@ -635,7 +660,7 @@ class PluginController extends AdminBaseController
             // 관리자 창 '고급 설정'의 레이아웃 설치 소스 — 이 요청 동안만 설정을 덮고 끝나면 되돌린다(CLI --layout-source 와 같은 자리).
             $result = LayoutInstallSourceScope::run(
                 $validated['layout_source'] ?? null,
-                fn () => $this->pluginService->updatePlugin($pluginName, $vendorMode, $layoutStrategy, $force)
+                fn () => $this->withUpdatePreviewContext($validated, fn () => $this->pluginService->updatePlugin($pluginName, $vendorMode, $layoutStrategy, $force, $request->packageIntegrityOptions()))
             );
 
             // 검색 인덱스 재생성은 운영자가 체크했을 때만 수행한다 — 인덱스 잠금·재색인 비용이
@@ -682,6 +707,9 @@ class PluginController extends AdminBaseController
                 200,
                 $messageParams
             ), $result['integration_notices'] ?? []);
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409, 「미서명으로 계속」 가능 여부 포함)·서명 불일치·미신뢰 키(422) — 7.2.0
+            return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);
@@ -701,10 +729,34 @@ class PluginController extends AdminBaseController
     }
 
     /**
+     * 레이아웃 갱신을 미리 봅니다 — 화면별 판정만 계산하고 DB 는 그대로 둡니다.
+     *
+     * @param  RefreshPluginLayoutsRequest  $request  레이아웃 갱신 요청 (plugin_name·layout_strategy·decisions·layout_source)
+     * @return JsonResponse `{entries, summary, has_conflicts, conflict_screens, strategy}` 응답
+     */
+    public function refreshLayoutsPreview(RefreshPluginLayoutsRequest $request): JsonResponse
+    {
+        try {
+            $pluginName = $request->validated()['plugin_name'];
+            $mode = LayoutSyncMode::from($request->validated('layout_strategy') ?? LayoutSyncMode::Keep->value);
+            $preview = LayoutInstallSourceScope::run(
+                $request->validated('layout_source'),
+                fn () => $this->pluginService->previewPluginLayoutRefresh($pluginName, $mode, (array) ($request->validated('decisions') ?? []))
+            );
+
+            return $this->success('plugins.refresh_layouts_preview_success', $preview);
+        } catch (ValidationException $e) {
+            return $this->error('plugins.refresh_layouts_validation_failed', 422, $e->errors(), ['error' => SafeExceptionMessage::for($e)]);
+        } catch (\Exception $e) {
+            return $this->error('plugins.refresh_layouts_error', 500, config('app.debug') ? $e->getMessage() : null);
+        }
+    }
+
+    /**
      * 플러그인 레이아웃을 갱신합니다.
      *
-     * 플러그인의 레이아웃 파일을 다시 읽어 DB에 동기화합니다.
-     * 파일에서 변경된 레이아웃은 업데이트되고, 삭제된 레이아웃은 DB에서도 삭제됩니다.
+     * 플러그인의 레이아웃 파일을 다시 읽어 DB에 동기화합니다. 기본은 keep(운영자가 고친 화면은 고친 부분을 지킨다)이고,
+     * `layout_strategy=overwrite` 면 파일 판으로 덮는다. `decisions` 로 화면별로 고른다.
      *
      * @param  RefreshPluginLayoutsRequest  $request  레이아웃 갱신 요청 데이터
      * @return JsonResponse 갱신 결과 JSON 응답
@@ -713,10 +765,12 @@ class PluginController extends AdminBaseController
     {
         try {
             $pluginName = $request->validated()['plugin_name'];
+            $mode = LayoutSyncMode::from($request->validated('layout_strategy') ?? LayoutSyncMode::Keep->value);
+            $decisions = (array) ($request->validated('decisions') ?? []);
             // 관리자 창 '고급 설정'의 레이아웃 설치 소스 — 이 요청 동안만 설정을 덮고 끝나면 되돌린다(CLI --layout-source 와 같은 자리).
             $result = LayoutInstallSourceScope::run(
                 $request->validated('layout_source'),
-                fn () => $this->pluginService->refreshPluginLayouts($pluginName)
+                fn () => $this->pluginService->refreshPluginLayouts($pluginName, $mode, $decisions)
             );
 
             if ($result['success']) {
@@ -728,6 +782,9 @@ class PluginController extends AdminBaseController
                     'unchanged' => $result['unchanged'],
                     // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
                     'layout_warnings' => $result['layout_warnings'] ?? [],
+                    // 판정별 개수·충돌 화면과 운영자 관련 행 보고
+                    'layout_preview' => $result['layout_preview'] ?? null,
+                    'layout_sync' => $result['layout_sync'] ?? null,
                 ]);
             } else {
                 return $this->error('plugins.refresh_layouts_failed', 400, null, [

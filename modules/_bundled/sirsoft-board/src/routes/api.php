@@ -225,10 +225,12 @@ Route::prefix('admin/board-types')->middleware(['auth:sanctum', 'admin', 'thrott
         ->name('store');
 
     Route::put('/{id}', [BoardTypeController::class, 'update'])
+        ->whereNumber('id')
         ->middleware('permission:admin,sirsoft-board.boards.create')
         ->name('update');
 
     Route::delete('/{id}', [BoardTypeController::class, 'destroy'])
+        ->whereNumber('id')
         ->middleware('permission:admin,sirsoft-board.boards.create')
         ->name('destroy');
 });
@@ -317,21 +319,25 @@ Route::prefix('admin/reports')->middleware(['auth:sanctum', 'admin', 'throttle:6
 
     // 신고 상세 조회
     Route::get('/{report}', [AdminReportController::class, 'show'])
+        ->whereNumber('report')
         ->middleware('permission:admin,sirsoft-board.reports.view')
         ->name('show');
 
     // 신고자 목록 페이지네이션 조회
     Route::get('/{report}/reporters', [AdminReportController::class, 'reporters'])
+        ->whereNumber('report')
         ->middleware('permission:admin,sirsoft-board.reports.view')
         ->name('reporters');
 
     // 신고 상태 변경
     Route::patch('/{report}/status', [AdminReportController::class, 'updateStatus'])
+        ->whereNumber('report')
         ->middleware('permission:admin,sirsoft-board.reports.manage')
         ->name('update-status');
 
     // 신고 삭제
     Route::delete('/{report}', [AdminReportController::class, 'destroy'])
+        ->whereNumber('report')
         ->middleware('permission:admin,sirsoft-board.reports.manage')
         ->name('destroy');
 });
@@ -484,6 +490,7 @@ Route::prefix('admin/board/{slug}/attachments')->middleware(['auth:sanctum', 'ad
 
     // 첨부파일 삭제
     Route::delete('/{id}', [AdminAttachmentController::class, 'destroy'])
+        ->whereNumber('id')
         ->middleware('permission:admin,sirsoft-board.{slug}.admin.attachments.upload')
         ->name('destroy');
 
@@ -522,26 +529,31 @@ Route::prefix('admin/board/{slug}/content-media')->middleware(['auth:sanctum', '
 Route::prefix('admin/board/{slug}/posts/{postId}/comments')->middleware(['auth:sanctum', 'admin', 'throttle:600,1'])->name('admin.board.posts.comments.')->group(function () {
     // 댓글 생성
     Route::post('/', [AdminCommentController::class, 'store'])
+        ->whereNumber('postId')
         ->middleware('permission:admin,sirsoft-board.{slug}.admin.comments.write')
         ->name('store');
 
     // 댓글 수정
     Route::put('/{id}', [AdminCommentController::class, 'update'])
+        ->whereNumber(['postId', 'id'])
         ->middleware('permission:admin,sirsoft-board.{slug}.admin.comments.write')
         ->name('update');
 
     // 댓글 삭제
     Route::delete('/{id}', [AdminCommentController::class, 'destroy'])
+        ->whereNumber(['postId', 'id'])
         ->middleware('permission:admin,sirsoft-board.{slug}.admin.comments.write|sirsoft-board.{slug}.admin.manage,false')
         ->name('destroy');
 
     // 댓글 블라인드 처리
     Route::patch('/{id}/blind', [AdminCommentController::class, 'blind'])
+        ->whereNumber(['postId', 'id'])
         ->middleware('permission:admin,sirsoft-board.{slug}.admin.manage')
         ->name('blind');
 
     // 댓글 복원
     Route::patch('/{id}/restore', [AdminCommentController::class, 'restore'])
+        ->whereNumber(['postId', 'id'])
         ->middleware('permission:admin,sirsoft-board.{slug}.admin.manage')
         ->name('restore');
 });
@@ -635,28 +647,33 @@ Route::prefix('boards/{slug}/posts')->middleware(['optional.sanctum', 'throttle:
 Route::prefix('boards/{slug}/posts/{postId}/comments')->middleware(['optional.sanctum', 'throttle:600,1'])->name('boards.posts.comments.')->group(function () {
     // 댓글 목록 조회
     Route::get('/', [UserCommentController::class, 'index'])
+        ->whereNumber('postId')
         ->middleware('permission:user,sirsoft-board.{slug}.comments.read')
         ->name('index');
 
     // 댓글 생성
     Route::post('/', [UserCommentController::class, 'store'])
+        ->whereNumber('postId')
         ->middleware('permission:user,sirsoft-board.{slug}.comments.write')
         ->name('store');
 
     // 댓글 수정 (작성자 comments.write 또는 게시판 관리 manager)
     // 비밀번호를 실어 보낸 요청은 비밀번호 확인과 같은 제한기로 센다 (없는 요청은 세지 않는다).
     Route::put('/{commentId}', [UserCommentController::class, 'update'])
+        ->whereNumber(['postId', 'commentId'])
         ->middleware(['permission:user,sirsoft-board.{slug}.comments.write|sirsoft-board.{slug}.manager,false', 'throttle:sirsoft-board.secret-password-verify'])
         ->name('update');
 
     // 댓글 삭제 (비밀번호를 실어 보낸 요청은 비밀번호 확인과 같은 제한기)
     Route::delete('/{commentId}', [UserCommentController::class, 'destroy'])
+        ->whereNumber(['postId', 'commentId'])
         ->middleware(['permission:user,sirsoft-board.{slug}.comments.write|sirsoft-board.{slug}.manager,false', 'throttle:sirsoft-board.secret-password-verify'])
         ->name('destroy');
 });
 
 // 비회원 댓글 비밀번호 검증 (비밀번호 대입 제한 — 비밀글 확인과 같은 제한기)
 Route::post('boards/{slug}/comments/{commentId}/verify-password', [UserCommentController::class, 'verifyPassword'])
+    ->whereNumber('commentId')
     ->middleware(['optional.sanctum', 'permission:user,sirsoft-board.{slug}.comments.write', 'throttle:sirsoft-board.secret-password-verify'])
     ->name('boards.comments.verify-password');
 
@@ -744,20 +761,24 @@ Route::delete('/me/reports/{reportLogId}', [UserReportController::class, 'cancel
 Route::prefix('boards/{slug}')->middleware(['throttle:600,1', 'auth:sanctum'])->name('boards.')->group(function () {
     // 게시글 신고
     Route::post('/posts/{postId}/reports', [UserReportController::class, 'storePostReport'])
+        ->whereNumber('postId')
         ->middleware('permission:user,sirsoft-board.{slug}.posts.read')
         ->name('posts.reports.store');
 
     // 댓글 신고
     Route::post('/comments/{commentId}/reports', [UserReportController::class, 'storeCommentReport'])
+        ->whereNumber('commentId')
         ->middleware('permission:user,sirsoft-board.{slug}.posts.read|sirsoft-board.{slug}.comments.read')
         ->name('comments.reports.store');
 
     // 게시글 스크랩 토글 (상세 버튼 — 있으면 해제, 없으면 등록)
     Route::post('/posts/{postId}/scrap/toggle', [UserPostScrapController::class, 'toggle'])
+        ->whereNumber('postId')
         ->middleware('permission:user,sirsoft-board.{slug}.posts.read')
         ->name('posts.scrap.toggle');
     // 게시글 반응 (추천/비추천) — 등록/전환/해제 통합 (회원 전용, 확정 07)
     Route::post('/posts/{postId}/react', [UserReactionController::class, 'react'])
+        ->whereNumber('postId')
         ->middleware('permission:user,sirsoft-board.{slug}.posts.read')
         ->name('posts.react');
     // 댓글 반응 — 게시판이 use_reaction + use_comment_reaction 을 모두 켰을 때만 동작
@@ -794,6 +815,7 @@ Route::prefix('boards/{slug}/attachments')->middleware(['optional.sanctum', 'thr
 
     // 첨부파일 삭제
     Route::delete('/{id}', [UserAttachmentController::class, 'destroy'])
+        ->whereNumber('id')
         ->middleware('permission:user,sirsoft-board.{slug}.attachments.upload')
         ->name('destroy');
 });

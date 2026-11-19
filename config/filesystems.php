@@ -14,6 +14,14 @@
 |
 */
 $extensionStorageRoot = env('APP_ENV') === 'testing' ? 'framework/testing' : 'app';
+/**
+ * 공개 디스크의 루트.
+ *
+ * `disks.public.root` 와 `links` 가 **같은 값을 봐야 한다** — 하나는 파일이 쌓이는 곳이고
+ * 다른 하나는 웹에서 그 곳을 여는 링크의 대상이라, 갈리면 링크가 빈 트리를 가리킨다.
+ * 두 자리에 따로 적으면 운영자가 한쪽만 고치고 그 사실은 어디에도 드러나지 않는다.
+ */
+$publicDiskRoot = storage_path('app/public');
 
 return [
 
@@ -80,6 +88,17 @@ return [
             'report' => false,
         ],
 
+        // 템플릿 환경설정(`{id}/settings/setting.json`) — 템플릿은 PHP 인스턴스가 없어 코어가 이 디스크로 직접 읽고 쓴다(#434).
+        // 템플릿 디렉토리 밖에 두므로 템플릿 업데이트·삭제가 운영자 설정을 지우지 않는다.
+        'templates' => [
+            'driver' => 'local-safe',
+            'allow_relative_path_traversal' => false,
+            'root' => storage_path($extensionStorageRoot.'/templates'),
+            'serve' => false,
+            'throw' => true,
+            'report' => false,
+        ],
+
         'attachments' => [
             'driver' => 'local-safe',
             'allow_relative_path_traversal' => false,
@@ -87,6 +106,26 @@ return [
             'serve' => false,
             'throw' => true,
             'report' => false,
+        ],
+
+        // 이미지 썸네일(파생본) 비공개 기본 디스크. 루트를 `storage/app` 으로 두고 키는 항상 `thumbnails/…` 로
+        // 시작한다(ThumbnailStore::ROOT) — 공개·CDN 디스크를 썸네일 디스크로 골랐을 때와 같은 키 모양이라
+        // 「전체 비우기」가 `thumbnails/` 하나만 지운다. 권한이 걸린 이미지의 썸네일은 이 디스크에서 스트림으로만 낸다.
+        //
+        // `permissions` 를 명시하는 이유는 `ext-bundles` 와 같다 — 선언이 없으면 먼저 쓴 프로세스(SSH 의 root 로 돌린
+        // `thumbnails:pregenerate` 등)가 0700 디렉터리를 만들어, 이후 php-fpm 이 그 원본의 다른 규격을 쓰지도 원본 삭제 때
+        // 지우지도 못한다.
+        'thumbnails' => [
+            'driver' => 'local-safe',
+            'allow_relative_path_traversal' => false,
+            'root' => storage_path('app'),
+            'serve' => false,
+            'throw' => true,
+            'report' => false,
+            'permissions' => [
+                'file' => ['public' => 0664, 'private' => 0664],
+                'dir' => ['public' => 0775, 'private' => 0775],
+            ],
         ],
 
         'settings' => [
@@ -120,9 +159,16 @@ return [
         'public' => [
             'driver' => 'local-safe',
             'allow_relative_path_traversal' => false,
-            'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'root' => $publicDiskRoot,
+            // 기본값은 형제 설정(`config/app.php` 의 `url`)과 같아야 한다 — 여기만
+            // 기본값 없이 읽으면 `APP_URL` 미설정 사이트에서 이 값이 `/storage` 가 되어
+            // 오리진과 마운트 접두사를 함께 잃는다(메일 본문의 이미지·하위 폴더 배치).
+            'url' => env('APP_URL', 'http://localhost').'/storage',
             'visibility' => 'public',
+            // 형제 여섯 디스크와 같은 명시 선언 — 이 디스크만 프레임워크 기본값에 기대면
+            // 기본값이 바뀌는 순간 무인증 `PUT /storage/{path}` 입구가 여기서만 열린다.
+            // 링크 불가 호스팅의 읽기 전용 서빙은 별도 라우트(`/api/system/public-storage`)다.
+            'serve' => false,
             'throw' => true,
             'report' => false,
         ],
@@ -157,7 +203,14 @@ return [
     */
 
     'links' => [
-        public_path('storage') => storage_path('app/public'),
+        // 링크 대상은 공개 디스크의 **root 와 같은 출처**여야 한다.
+        //
+        // 종전에는 이 자리만 리터럴이라, 운영자가 위 `disks.public.root` 를 옮긴 사이트에서
+        // `storage:link` 가 **옛 위치**를 가리키는 링크를 만들었다. 그러면 파일을 쓰는 쪽과
+        // 서빙하는 쪽(`PublicStorageService::rootPath()`)은 새 루트를 보는데 링크만 옛 트리를
+        // 가리켜, 공개 자산이 오류도 로그도 없이 전부 404 가 된다 — 코어 복구기가 앞서
+        // 닫은 것과 **같은 결함의 세 번째 출처**였다.
+        public_path('storage') => $publicDiskRoot,
     ],
 
 ];

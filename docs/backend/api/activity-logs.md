@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Activity Logs 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -36,6 +36,7 @@
 | created_by | query | string | 아니오 | max 36 | 로그를 생성한 행위 주체 식별자 필터 (행위자 기준 조회) |
 | date_from | query | date | 아니오 | — | 조회 기간 시작일 |
 | date_to | query | date | 아니오 | — | 조회 기간 종료일 |
+| deletion_snapshot | query | boolean | 아니오 | — | 「삭제 직전 기록만 보기」 — 참이면 영구 삭제(`*.force_deleted`)·선언 정리(`*.sync_deleted`)·커스텀 번역 삭제(`template_custom_translation.deleted`) 직전 기록만 조회. 응답 행의 `snapshot` 요약과 같은 판정 |
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
 | sort_by | query | string | 아니오 | — | 정렬 기준 필드명 |
 | sort_order | query | string | 아니오 | — | 정렬 방향 (asc 오름차순 / desc 내림차순) |
@@ -46,7 +47,7 @@
 **요청 예시**
 
 ```http
-GET /api/admin/activity-logs?log_type=%EC%98%88%EC%8B%9C%EA%B0%92&action=%EC%98%88%EC%8B%9C%EA%B0%92&user_id=1&loggable_type=%EC%98%88%EC%8B%9C%EA%B0%92&search=%EC%98%88%EC%8B%9C%EA%B0%92&search_type=%EC%98%88%EC%8B%9C%EA%B0%92&created_by=%EC%98%88%EC%8B%9C%EA%B0%92&date_from=2026-01-01&date_to=2026-01-01&per_page=1&sort_by=%EC%98%88%EC%8B%9C%EA%B0%92&sort_order=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
+GET /api/admin/activity-logs?log_type=%EC%98%88%EC%8B%9C%EA%B0%92&action=%EC%98%88%EC%8B%9C%EA%B0%92&user_id=1&loggable_type=%EC%98%88%EC%8B%9C%EA%B0%92&search=%EC%98%88%EC%8B%9C%EA%B0%92&search_type=%EC%98%88%EC%8B%9C%EA%B0%92&created_by=%EC%98%88%EC%8B%9C%EA%B0%92&date_from=2026-01-01&date_to=2026-01-01&per_page=1&sort_by=%EC%98%88%EC%8B%9C%EA%B0%92&sort_order=%EC%98%88%EC%8B%9C%EA%B0%92&cursor=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -73,8 +74,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | changes | array | `[{"field":"stock_quantity","label_key":"sirsoft-ecommerce…` | 구조화된 변경 이력 (필드별 label_key, old, new, type) |
 | bulk_changes | null | `null` | 일괄 수정 로그의 모델별 변경 이력 배열 (원소: model_id + changes[]). 단일 수정 로그이면 null이고 대신 changes 필드가 채워짐 |
 | has_changes | boolean | `false` | changes 여부 |
-| actor_name | string | `최고관리자` | 행위를 수행한 주체의 이름. 회원이 없으면 "시스템", 그중 Artisan 커맨드·스케줄러(CLI)에서 남은 로그(`properties.via` = `cli`)는 "시스템(CLI)" |
-| user | object | `{"uuid":"a26219fc-94a0-4f63-9404-04c2a6ac99e4","name":"최고…` | 행위를 수행한 사용자 정보 (uuid/name/email). 회원이 없는 로그(시스템·CLI)는 `uuid` 가 `null` 이고 name 에 `actor_name` 과 같은 라벨("시스템" 또는 "시스템(CLI)")이 담긴다 — 화면은 `uuid` 유무로 회원 메뉴 노출을 가른다 |
+| actor_name | string | `최고관리자` | 행위를 수행한 주체의 이름(회원이면 관리자 화면 영역의 표시 이름). 회원이 없으면 "시스템", 그중 Artisan 커맨드·스케줄러(CLI)에서 남은 로그(`properties.via` = `cli`)는 "시스템(CLI)" |
+| user | object | `{"uuid":"a26219fc-94a0-4f63-9404-04c2a6ac99e4","name":"최고…` | 행위를 수행한 사용자 정보 (uuid/name/email, 조건부 real_name). `name` 은 관리자 화면 영역의 표시 이름이고, 회원 조회 권한이 있는 관리자에게만 실명이 표시 이름과 다를 때 `real_name` 이 더해진다. 회원이 없는 로그(시스템·CLI)는 `uuid` 가 `null` 이고 name 에 `actor_name` 과 같은 라벨("시스템" 또는 "시스템(CLI)")이 담긴다 — 화면은 `uuid` 유무로 회원 메뉴 노출을 가른다 |
 | ip_address | string | `127.0.0.1` | IP 주소 (IPv6 대응) |
 | created_at | string | `2026-08-04 19:00:10` | 생성 일시 |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
@@ -201,6 +202,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 시스템 활동 로그를 페이지네이션 목록으로 조회합니다. `log_type`(admin/user/system), `action`, `user_id`, `loggable_type`, 기간(`date_from`/`date_to`), 키워드(`search`) 등으로 필터링하고 `sort_by`/`sort_order`로 정렬합니다. null 값 필터는 자동으로 제외됩니다. `core.activities.read` 권한이 필요하며, 각 항목에는 현지화된 액션 라벨·변경 이력(changes)·소유자/권한 메타가 포함됩니다. 확장은 `core.activity_log.index_validation_rules` 훅으로 필터 파라미터를 추가할 수 있습니다.
 
 
@@ -266,6 +269,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 지정한 활동 로그들을 일괄 삭제합니다. `ids` 배열에 삭제할 로그 ID를 담아 요청하며, 서비스가 각 항목을 삭제하고 실제 삭제된 건수(`deleted_count`)를 반환합니다. `core.activities.delete` 권한이 필요합니다. 로그 목록에서 여러 항목을 선택해 한 번에 정리하는 시나리오에 사용합니다.
 
 
@@ -318,6 +323,7 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
 
 **설명** 단일 활동 로그를 삭제합니다. 경로의 `{activityLog}`는 라우트 모델 바인딩으로 로그 ID를 받아 해당 레코드를 삭제합니다. `core.activities.delete` 권한이 필요하며, 삭제 실패 시 오류가 로그로 기록되고 500이 반환됩니다.
 

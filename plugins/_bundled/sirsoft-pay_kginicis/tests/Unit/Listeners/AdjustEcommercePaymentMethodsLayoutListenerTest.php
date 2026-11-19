@@ -21,11 +21,11 @@ use Tests\PureTestCase;
 class AdjustEcommercePaymentMethodsLayoutListenerTest extends PureTestCase
 {
     /**
-     * 리스너가 core.layout_extension.after_apply 를 filter 훅으로 구독해 adjustPaymentMethodsLayout 을 호출한다.
+     * 레이아웃 확장 적용 뒤 필터 훅을 구독한다.
      *
-     * @scenario case=hook_subscription
+     * @scenario case=subscription
      *
-     * @effects subscribed_as_layout_after_apply_filter
+     * @effects subscribes_layout_after_apply_filter
      *
      * @return void 반환값 없음
      */
@@ -44,11 +44,11 @@ class AdjustEcommercePaymentMethodsLayoutListenerTest extends PureTestCase
     }
 
     /**
-     * 코어 레이아웃의 pg_locked·needs_pg 분기 표현식을 치환하지 않고 간편결제 ID 를 끼워 넣지 않는다.
+     * 코어 결제수단 분기 표현식을 문자열로 바꾸지 않는다.
      *
-     * @scenario case=settings_layout
+     * @scenario case=pg_branch
      *
-     * @effects pg_branch_expressions_preserved
+     * @effects core_pg_branch_expressions_preserved
      *
      * @return void 반환값 없음
      */
@@ -83,11 +83,11 @@ class AdjustEcommercePaymentMethodsLayoutListenerTest extends PureTestCase
     }
 
     /**
-     * 주문 설정 탭의 결제수단 카드 앞에 테스트모드 경고를 한 번만(두 번 적용해도 중복 없이) 주입한다.
+     * 주문 설정 탭의 결제수단 카드 앞에 테스트 모드 경고를 한 번만 넣는다(두 번 적용해도 중복 없음).
      *
-     * @scenario case=settings_layout
+     * @scenario case=test_mode_notice
      *
-     * @effects test_mode_warning_injected_once_before_payment_methods
+     * @effects test_mode_notice_injected_once
      *
      * @return void 반환값 없음
      */
@@ -152,5 +152,123 @@ class AdjustEcommercePaymentMethodsLayoutListenerTest extends PureTestCase
         ];
 
         $this->assertSame($layout, $listener->adjustPaymentMethodsLayout($layout, 1));
+    }
+
+    /**
+     * 주입한 테스트모드 경고는 폭 분기를 엔진 responsive 로 한다 — Tailwind 폭 접두(`paykginicis:sm:` 등) 금지(#869).
+     *
+     * 모집단은 주입된 경고 노드 아래 모든 className(responsive 구간 포함)이다.
+     *
+     * @scenario case=test_mode_notice_width
+     *
+     * @effects test_mode_notice_width_branch_uses_engine_responsive
+     *
+     * @return void 반환값 없음
+     */
+    public function test_injected_test_mode_notice_uses_engine_responsive_instead_of_tailwind_breakpoints(): void
+    {
+        $listener = new AdjustEcommercePaymentMethodsLayoutListener;
+
+        $layout = [
+            'layout_name' => 'admin_ecommerce_settings',
+            'children' => [
+                [
+                    'id' => 'tab_content_order_settings',
+                    'children' => [
+                        ['id' => 'default_pg_card'],
+                        ['id' => 'payment_methods_card'],
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $listener->adjustPaymentMethodsLayout($layout, 1);
+        $notice = $this->findNodeById($result, 'payment_test_mode_order_settings_notice');
+        $this->assertIsArray($notice);
+
+        $classNames = [];
+        $this->collectClassNames($notice, 'notice', $classNames);
+        $this->assertNotEmpty($classNames);
+        foreach ($classNames as $where => $className) {
+            $this->assertDoesNotMatchRegularExpression('/(^|\s)(?:[a-z0-9]+:)?(?:sm|md|lg|xl|2xl):/', $className, "Tailwind 폭 접두: {$where}");
+        }
+
+        $row = $this->findNodeById($notice, 'kginicis_test_mode_order_settings_notice');
+        $this->assertIsArray($row);
+        $this->assertStringContainsString('paykginicis:flex-col', $row['props']['className']);
+        $rowWide = $row['responsive']['640-']['props']['className'] ?? '';
+        $this->assertStringContainsString('paykginicis:flex-row', $rowWide);
+        $this->assertStringContainsString('paykginicis:items-center', $rowWide);
+        $this->assertStringContainsString('paykginicis:justify-between', $rowWide);
+        $this->assertStringNotContainsString('paykginicis:flex-col', $rowWide);
+
+        $button = $this->findNodeByName($row, 'Button');
+        $this->assertIsArray($button);
+        $this->assertStringContainsString('paykginicis:w-full', $button['props']['className']);
+        $buttonWide = $button['responsive']['640-']['props']['className'] ?? '';
+        $this->assertStringContainsString('paykginicis:w-auto', $buttonWide);
+        $this->assertStringNotContainsString('paykginicis:w-full', $buttonWide);
+        $this->assertStringContainsString('pay-kginicis-btn-sm', $buttonWide);
+    }
+
+    /**
+     * id 로 노드를 찾습니다.
+     *
+     * @param  array<mixed>  $node  탐색 시작 노드
+     * @param  string  $id  찾을 id
+     * @return array<string, mixed>|null 찾은 노드
+     */
+    private function findNodeById(array $node, string $id): ?array
+    {
+        if (($node['id'] ?? null) === $id) {
+            return $node;
+        }
+        foreach ($node as $value) {
+            if (is_array($value) && ($found = $this->findNodeById($value, $id)) !== null) {
+                return $found;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 컴포넌트 이름으로 첫 노드를 찾습니다.
+     *
+     * @param  array<mixed>  $node  탐색 시작 노드
+     * @param  string  $name  컴포넌트 이름
+     * @return array<string, mixed>|null 찾은 노드
+     */
+    private function findNodeByName(array $node, string $name): ?array
+    {
+        if (($node['name'] ?? null) === $name) {
+            return $node;
+        }
+        foreach ($node as $value) {
+            if (is_array($value) && ($found = $this->findNodeByName($value, $name)) !== null) {
+                return $found;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 노드 아래 모든 className 을 경로와 함께 모읍니다.
+     *
+     * @param  array<mixed>  $node  노드
+     * @param  string  $path  현재 경로
+     * @param  array<string, string>  $out  결과
+     * @return void 반환값 없음
+     */
+    private function collectClassNames(array $node, string $path, array &$out): void
+    {
+        foreach ($node as $key => $value) {
+            if ($key === 'className' && is_string($value)) {
+                $out[$path.'.className'] = $value;
+            } elseif (is_array($value)) {
+                $this->collectClassNames($value, $path.'.'.$key, $out);
+            }
+        }
     }
 }

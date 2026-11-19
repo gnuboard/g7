@@ -316,9 +316,9 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
         // @effects consent_log_snapshot_badges_have_dark_pair
         it('동의/거부 배지가 light/dark 색 쌍을 갖는다 (다크모드 회귀 가드)', () => {
             // 동의 = green 불투명 (plugin_settings.g7.html 활성 배지와 동일 패턴 — /40 alpha 는 너무 밝아 사용 금지)
-            // 동의 배지 클래스 자리는 "bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-300" 형태로 등장
+            // 동의 배지 클래스 자리는 "gdpr:bg-green-50 gdpr:text-green-700 gdpr:dark:bg-green-900 gdpr:dark:text-green-300" 형태로 등장(플러그인 접두 유틸리티)
             // (green-100 바탕 위 green-700 은 4.497:1 로 4.5 에 못 미쳐 바탕을 green-50(4.72:1)으로 낮췄다)
-            expect(layoutJson).toContain('bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-300');
+            expect(layoutJson).toContain('gdpr:bg-green-50 gdpr:text-green-700 gdpr:dark:bg-green-900 gdpr:dark:text-green-300');
             expect(layoutJson).not.toContain('dark:bg-green-900/40');
         });
     });

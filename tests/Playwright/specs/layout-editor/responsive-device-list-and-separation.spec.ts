@@ -15,6 +15,10 @@
 import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import { selectRouteTreeLayout } from '../../fixtures/route-tree';
+import { waitForEditorScrollSettled } from '../../fixtures/layout-editor';
+
+// 편집기 첫 적재(편집 대상 템플릿 자산 IIFE·CSS 로드)가 30초를 넘기는 일이 잦아(#869 λ 실측) 시험 제한을 늘린다.
+test.describe.configure({ timeout: 90_000 });
 
 /** 편집기 admin_user_list 진입 + 캔버스 핸들 렌더까지 대기. */
 async function openAdminUserList(page: Page): Promise<void> {
@@ -22,7 +26,8 @@ async function openAdminUserList(page: Page): Promise<void> {
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
   // 경로 줄 표기(소스 확장자)와 셀렉터는 fixtures/route-tree 가 단일 소유한다.
   await selectRouteTreeLayout(page, 'admin_user_list');
-  await page.waitForSelector('[data-dnd-handle-path]', { timeout: 30_000 });
+  await page.waitForSelector('[data-dnd-handle-path]', { timeout: 60_000 });
+  await waitForEditorScrollSettled(page);
 }
 
 /** 디바이스 토글 버튼을 testid 로 클릭. */
@@ -66,7 +71,10 @@ async function selectNodeById(page: Page, id: string): Promise<void> {
 }
 
 test.describe('@layout-editor responsive 디바이스 목록 + 분리 판정', () => {
-  /** @effects device_toggle_has_portable */
+  /**
+   * @scenario responsive_flow=device_list
+   * @effects device_toggle_has_portable
+   */
   test('디바이스 토글에 portable(모바일+태블릿) 버튼이 노출된다 ', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -79,7 +87,10 @@ test.describe('@layout-editor responsive 디바이스 목록 + 분리 판정', (
     }
   });
 
-  /** @effects style_tab_has_portable */
+  /**
+   * @scenario responsive_flow=device_list
+   * @effects style_tab_has_portable
+   */
   test('스타일 탭 디바이스 세부탭에 portable 세부탭이 노출된다 ', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -112,7 +123,10 @@ test.describe('@layout-editor responsive 디바이스 목록 + 분리 판정', (
     await expect(page.locator('[data-testid="g7le-style-bp-portable"]')).toBeAttached();
   });
 
-  /** @effects separation_mode_by_children */
+  /**
+   * @scenario responsive_flow=branch_separation
+   * @effects separation_mode_by_children
+   */
   test('분리 판정은 children 유무 기준 — props-only=생성 / children=해제 ', async ({
     page,
   }) => {
@@ -134,8 +148,11 @@ test.describe('@layout-editor responsive 디바이스 목록 + 분리 판정', (
       'props-only 노드에 분리 해제 버튼이 떠선 안 됨',
     ).toBe(0);
 
-    // ② children 교체 분기 노드(search_row) → '분리 해제' 노출, '생성' 미노출.
-    await selectNodeById(page, 'search_row');
+    // ② children 교체 분기 노드(bulk_actions_area — portable children 보유) → '분리 해제' 노출, '생성' 미노출.
+    // 종전 대상 search_row 는 회원 목록 필터 개편(293533e742, 2026-09-30)에서 레이아웃에서 빠졌다. 지금 portable
+    // children 분기를 가진 노드는 bulk_actions_area 하나다(base: selected_count·status_change_label·bulk_buttons,
+    // portable: mobile_selected_count·mobile_bulk_action_dropdown).
+    await selectNodeById(page, 'bulk_actions_area');
     await expect(
       page.locator('[data-testid="g7le-overlay-merge-branch"]'),
       'children 분기 노드는 분리 해제 버튼을 노출해야 함',
@@ -146,6 +163,10 @@ test.describe('@layout-editor responsive 디바이스 목록 + 분리 판정', (
     ).toBe(0);
   });
 
+  /**
+   * @scenario responsive_flow=branch_separation
+   * @effects device_jump_button_for_other_device_children
+   */
   test('정의된 디바이스 구성 점프 버튼 — 다른 디바이스 children 구성 노드 선택 시 노출 ', async ({
     page,
   }) => {
@@ -171,6 +192,10 @@ test.describe('@layout-editor responsive 디바이스 목록 + 분리 판정', (
     );
   });
 
+  /**
+   * @scenario responsive_flow=branch_separation
+   * @effects covering_branch_jump_and_separate_stacked
+   */
   test('포괄 분기(mobile 보기 + portable children) → 점프 + 분리 버튼 공존, 한 컨테이너에 세로 스택 (후속)', async ({
     page,
   }) => {
@@ -199,45 +224,62 @@ test.describe('@layout-editor responsive 디바이스 목록 + 분리 판정', (
     await expect(jump).toContainText('+');
   });
 
+  /**
+   * @scenario responsive_flow=branch_separation
+   * @effects user_screen_portable_override_and_children_swap
+   */
   test('유저 화면: portable 폭에서 props override + children 교체가 렌더된다 (T8/T9)', async ({
     page,
   }) => {
-    const token = issueToken('core.templates.layouts.edit');
+    // 대량 작업 영역(bulk_actions_area)은 `can_update`(core.users.update) 일 때만 그려진다 — 회원 목록 화면 권한도 준다.
+    const token = issueToken('core.templates.layouts.edit', 'core.users.read', 'core.users.update');
     await authenticatePage(page, token);
 
     // 데스크톱 폭 — base.
     await page.setViewportSize({ width: 1400, height: 900 });
     await page.goto('/admin/users');
     await page.waitForSelector('#user_list_content', { timeout: 30_000 });
+    // 대량 작업 영역은 회원 목록 응답의 abilities.can_update 가 온 뒤에 그려진다 — 응답을 기다린다.
+    await page.waitForSelector('.bulk-actions-bar', { timeout: 30_000 });
     const desktop = await page.evaluate(() => {
       const wrap = document.getElementById('user_list_content');
-      const sr = document.getElementById('search_row');
+      // 대량 작업 영역(노드 id bulk_actions_area)은 DOM id 가 없어 클래스로 찾는다.
+      const bar = document.querySelector('.bulk-actions-bar');
+      const kids = bar ? Array.from(bar.children) : [];
       return {
         pad: wrap ? getComputedStyle(wrap).paddingTop : null,
-        hasMobileRow: !!document.getElementById('mobile_search_row'),
-        searchRowChildIds: sr ? Array.from(sr.children).map((c) => c.id) : [],
+        hasBulkArea: !!bar,
+        childCount: kids.length,
+        hasBaseLabel: kids.some((c) => c.classList.contains('text-label-subtle')),
+        hasMobileDropdown: kids.some((c) => c.classList.contains('ml-auto')),
       };
     });
     expect(desktop.pad).toBe('24px'); // p-6
-    expect(desktop.hasMobileRow).toBe(false);
-    expect(desktop.searchRowChildIds).not.toContain('mobile_search_row');
+    // children 교체 대상은 bulk_actions_area(종전 search_row 는 293533e742 에서 빠짐).
+    // base: selected_count·status_change_label(text-label-subtle)·bulk_buttons = 3.
+    expect(desktop.hasBulkArea, '대량 작업 영역이 렌더돼야 비교가 성립한다(can_update 권한)').toBe(true);
+    expect(desktop.childCount).toBe(3);
+    expect(desktop.hasBaseLabel).toBe(true);
+    expect(desktop.hasMobileDropdown).toBe(false);
 
     // portable 폭 — props override(p-4) + children 교체(mobile_search_row).
     await page.setViewportSize({ width: 800, height: 900 });
     await page.waitForTimeout(300);
     const portable = await page.evaluate(() => {
       const wrap = document.getElementById('user_list_content');
-      const sr = document.getElementById('search_row');
+      const bar = document.querySelector('.bulk-actions-bar');
+      const kids = bar ? Array.from(bar.children) : [];
       return {
         pad: wrap ? getComputedStyle(wrap).paddingTop : null,
-        hasMobileRow: !!document.getElementById('mobile_search_row'),
-        searchRowChildIds: sr ? Array.from(sr.children).map((c) => c.id) : [],
-        baseSelectGone: !document.getElementById('search_field_select'),
+        childCount: kids.length,
+        hasBaseLabel: kids.some((c) => c.classList.contains('text-label-subtle')),
+        hasMobileDropdown: kids.some((c) => c.classList.contains('ml-auto')),
       };
     });
     expect(portable.pad).toBe('16px'); // p-4 override
-    expect(portable.hasMobileRow).toBe(true);
-    expect(portable.searchRowChildIds).toContain('mobile_search_row');
-    expect(portable.baseSelectGone).toBe(true); // base children 완전 교체
+    // portable: mobile_selected_count·mobile_bulk_action_dropdown(ml-auto) = 2, base 라벨 없음(완전 교체).
+    expect(portable.childCount).toBe(2);
+    expect(portable.hasMobileDropdown).toBe(true);
+    expect(portable.hasBaseLabel).toBe(false);
   });
 });

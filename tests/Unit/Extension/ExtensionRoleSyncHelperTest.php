@@ -10,7 +10,9 @@ use App\Models\Permission;
 use App\Models\Role;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Mockery;
+use Mockery\MockInterface;
 use Tests\TestCase;
 
 /**
@@ -18,6 +20,8 @@ use Tests\TestCase;
  *
  * 확장 역할/권한 동기화 헬퍼의 핵심 로직을 검증합니다.
  * user_overrides 기반 필드 보호 동작을 검증합니다.
+ *
+ * @scenario-manifest tests/scenarios/extension-role-sync-helper.yaml
  */
 class ExtensionRoleSyncHelperTest extends TestCase
 {
@@ -27,12 +31,20 @@ class ExtensionRoleSyncHelperTest extends TestCase
 
     private ExtensionRoleSyncHelper $helper;
 
+    /**
+     * 저장소 목과 헬퍼를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->roleRepository = Mockery::mock(RoleRepositoryInterface::class);
         $this->permissionRepository = Mockery::mock(PermissionRepositoryInterface::class);
+        // 정리 경로의 존재 확인·자식 조회는 저장소를 지난다 — 기본은 「아직 있음」·「자식 없음」, 시나리오별로 덮는다
+        $this->permissionRepository->shouldReceive('findById')->andReturnUsing(fn (int $id) => new Permission(['id' => $id]))->byDefault();
+        $this->permissionRepository->shouldReceive('getChildrenByParent')->andReturn(new Collection)->byDefault();
 
         $this->helper = new ExtensionRoleSyncHelper(
             $this->roleRepository,
@@ -45,9 +57,9 @@ class ExtensionRoleSyncHelperTest extends TestCase
      *
      * @param  string  $modelClass  모델 클래스명
      * @param  array  $attributes  설정할 속성
-     * @return \Mockery\MockInterface
+     * @return MockInterface 속성이 설정된 부분 목 모델
      */
-    private function createModelMock(string $modelClass, array $attributes = []): \Mockery\MockInterface
+    private function createModelMock(string $modelClass, array $attributes = []): MockInterface
     {
         $mock = Mockery::mock($modelClass)->makePartial();
 
@@ -64,6 +76,12 @@ class ExtensionRoleSyncHelperTest extends TestCase
 
     /**
      * 신규 역할 생성 시 user_overrides 없이 생성되는지 테스트
+     *
+     * @scenario case=sync_role
+     *
+     * @effects role_sync_keeps_operator_edited_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_role_creates_new_role_without_user_overrides(): void
     {
@@ -106,6 +124,12 @@ class ExtensionRoleSyncHelperTest extends TestCase
 
     /**
      * user_overrides에 "name"이 있으면 name 갱신을 건너뛰는지 테스트
+     *
+     * @scenario case=sync_role
+     *
+     * @effects role_sync_keeps_operator_edited_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_role_skips_user_modified_name(): void
     {
@@ -148,6 +172,12 @@ class ExtensionRoleSyncHelperTest extends TestCase
 
     /**
      * user_overrides에 "description"이 있으면 description 갱신을 건너뛰는지 테스트
+     *
+     * @scenario case=sync_role
+     *
+     * @effects role_sync_keeps_operator_edited_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_role_skips_user_modified_description(): void
     {
@@ -190,6 +220,12 @@ class ExtensionRoleSyncHelperTest extends TestCase
 
     /**
      * user_overrides에 없는 필드만 갱신되는지 테스트
+     *
+     * @scenario case=sync_role
+     *
+     * @effects role_sync_keeps_operator_edited_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_role_updates_unmodified_fields(): void
     {
@@ -237,6 +273,12 @@ class ExtensionRoleSyncHelperTest extends TestCase
      * Helper 가 update 호출을 seeding 컨텍스트로 wrap 하지 않으면 시스템 sync
      * 임에도 name/description 등 trackable 필드가 user_overrides 에 잘못
      * 마킹되어 이후 sync 가 영구히 차단된다 (Menu sync 와 동일 결함).
+     *
+     * @scenario case=sync_role
+     *
+     * @effects role_sync_keeps_operator_edited_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_role_disables_user_overrides_auto_marking_during_update(): void
     {
@@ -292,6 +334,12 @@ class ExtensionRoleSyncHelperTest extends TestCase
 
     /**
      * 권한은 항상 확장 정의값으로 덮어쓰는지 테스트
+     *
+     * @scenario case=sync_permission
+     *
+     * @effects permission_sync_overwrites_declaration
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_permission_always_overwrites(): void
     {
@@ -330,31 +378,53 @@ class ExtensionRoleSyncHelperTest extends TestCase
 
     /**
      * stale 권한이 삭제되는지 테스트 (자식 포함)
+     *
+     * @scenario case=cleanup_stale
+     *
+     * @effects stale_permission_subtree_deleted_explicitly
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_stale_permissions_removes_deleted_permissions(): void
     {
         $currentPerm = $this->createModelMock(Permission::class, [
+            'id' => 1,
             'identifier' => 'ecommerce.products.read',
         ]);
 
         $childPerm = $this->createModelMock(Permission::class, [
+            'id' => 21,
             'identifier' => 'child-perm',
+            'extension_type' => ExtensionOwnerType::Module,
+            'extension_identifier' => 'sirsoft-ecommerce',
         ]);
         $childPermRoles = Mockery::mock(BelongsToMany::class);
         $childPermRoles->shouldReceive('detach')->once();
-        $childPerm->shouldReceive('roles')->once()->andReturn($childPermRoles);
+        $childPermRoles->shouldReceive('pluck')->andReturn(collect());
+        $childPerm->shouldReceive('roles')->atLeast()->once()->andReturn($childPermRoles);
+        $childPermHooks = Mockery::mock(HasMany::class);
+        $childPermHooks->shouldReceive('delete')->once()->andReturn(0);
+        $childPerm->shouldReceive('hooks')->once()->andReturn($childPermHooks);
 
         $stalePerm = $this->createModelMock(Permission::class, [
+            'id' => 20,
             'identifier' => 'ecommerce.old-feature.read',
         ]);
         $stalePermRoles = Mockery::mock(BelongsToMany::class);
         $stalePermRoles->shouldReceive('detach')->once();
-        $stalePerm->shouldReceive('roles')->once()->andReturn($stalePermRoles);
+        $stalePermRoles->shouldReceive('pluck')->andReturn(collect());
+        $stalePerm->shouldReceive('roles')->atLeast()->once()->andReturn($stalePermRoles);
+        $stalePermHooks = Mockery::mock(HasMany::class);
+        $stalePermHooks->shouldReceive('delete')->once()->andReturn(0);
+        $stalePerm->shouldReceive('hooks')->once()->andReturn($stalePermHooks);
 
         $childrenCollection = new Collection([$childPerm]);
         $stalePerm->shouldReceive('getAttribute')
             ->with('children')
             ->andReturn($childrenCollection);
+
+        // 자식 권한은 저장소로 조회한다(소유 확장과 무관)
+        $this->permissionRepository->shouldReceive('getChildrenByParent')->with(20)->andReturn($childrenCollection);
 
         $this->permissionRepository->shouldReceive('getByExtension')
             ->once()
@@ -382,6 +452,12 @@ class ExtensionRoleSyncHelperTest extends TestCase
 
     /**
      * 유효한 권한은 보존되는지 테스트
+     *
+     * @scenario case=cleanup_stale
+     *
+     * @effects stale_permission_subtree_deleted_explicitly
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_stale_permissions_preserves_current_permissions(): void
     {
@@ -410,6 +486,12 @@ class ExtensionRoleSyncHelperTest extends TestCase
 
     /**
      * 신규 권한이 DB 기반 diff로 attach되는지 테스트
+     *
+     * @scenario case=role_assignments
+     *
+     * @effects role_assignments_follow_db_diff_except_overrides
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_all_role_assignments_attaches_new_permissions(): void
     {
@@ -468,6 +550,12 @@ class ExtensionRoleSyncHelperTest extends TestCase
 
     /**
      * 제거된 권한이 DB 기반 diff로 detach되는지 테스트
+     *
+     * @scenario case=role_assignments
+     *
+     * @effects role_assignments_follow_db_diff_except_overrides
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_all_role_assignments_detaches_removed_permissions(): void
     {
@@ -520,6 +608,12 @@ class ExtensionRoleSyncHelperTest extends TestCase
      * 시나리오: user_overrides에 "board.delete"가 있고, 확장이 board.delete를 정의에서 제거함
      * → board.delete는 보호되므로 detach하지 않음
      * → board.read, board.create는 보호되지 않으므로 정상 동기화
+     *
+     * @scenario case=role_assignments
+     *
+     * @effects role_assignments_follow_db_diff_except_overrides
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_all_role_assignments_skips_user_overridden_permissions(): void
     {
@@ -565,6 +659,12 @@ class ExtensionRoleSyncHelperTest extends TestCase
      * 시나리오: user_overrides에 "board.delete"만 있고, 확장 업데이트로 board.update 추가
      * → board.delete는 보호 (현재 상태 유지)
      * → board.update는 보호되지 않으므로 새로 attach
+     *
+     * @scenario case=role_assignments
+     *
+     * @effects role_assignments_follow_db_diff_except_overrides
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_all_role_assignments_syncs_non_overridden_permissions(): void
     {
@@ -620,6 +720,12 @@ class ExtensionRoleSyncHelperTest extends TestCase
      *
      * 시나리오: DB에 [board.read] 있음, 정의에 [board.read, board.create]
      * → board.create만 attach, detach 없음
+     *
+     * @scenario case=role_assignments
+     *
+     * @effects role_assignments_follow_db_diff_except_overrides
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_all_role_assignments_uses_db_based_diff(): void
     {

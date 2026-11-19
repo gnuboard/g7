@@ -10,7 +10,7 @@ initLocal 의 claimListPath / claimDetailPathBase 는 접수·저장 뒤에 갈 
   <!-- SPA 뒤로가기로 이 화면에 되돌아오면 캐시된 응답이 쓰여 onSuccess 가 발화하지 않는다 — 그러면 claimOrderId 를 세우고 claimable 을 부르는 체인이 통째로 건너뛰어져, 오류 없이 '신청할 수 있는 상품이 없습니다' 만 남는다(2026-08-31 실측). 클레임 가능 여부는 진입할 때마다 서버가 다시 판정해야 하는 값이기도 하다. -->
   <data-source id="order" label_key="$t:editor.data_source.order" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/orders/{{route.order_number ?? _local.claimEditOrderNumber ?? 0}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="blocking" :cache="false" :refetchOnMount="true">
     <init-local>
-      <field name="claimOrderId" value="data.id"/>
+      <field name="claimOrderId" value="id"/>
       <field name="claimApiBase" value="{{'/api/modules/sirsoft-ecommerce/user/orders/' + data.id}}"/>
     </init-local>
     <success>

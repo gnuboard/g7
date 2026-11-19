@@ -1227,19 +1227,6 @@
     "create_success": "タイプが作成されました",
     "usage_guide": "スラッグ(slug)は掲示板の表示タイプを区別する識別子です。テンプレートで該当スラッグに合わせた専用レイアウトを追加および設定する必要があります。"
   },
-  "users": {
-    "form": {
-      "sections": {
-        "notification_settings": "掲示板通知設定"
-      },
-      "notifications": {
-        "post_complete": "投稿完了通知",
-        "post_reply": "投稿回答通知",
-        "comment": "コメント通知",
-        "reply_comment": "回答通知"
-      }
-    }
-  },
   "ecommerce_settings": {
     "inquiry": {
       "description": "商品問い合わせ掲示板として使用する掲示板を指定できます。",

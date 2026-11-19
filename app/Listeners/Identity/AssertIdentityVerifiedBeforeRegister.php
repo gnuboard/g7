@@ -22,8 +22,10 @@ use Illuminate\Auth\Access\AuthorizationException;
 class AssertIdentityVerifiedBeforeRegister implements HookListenerInterface
 {
     /**
-     * @param  IdentityVerificationLogRepositoryInterface  $logRepository  본인인증 이력 Repository (하위 호환)
-     * @param  IdentityPolicyService  $policyService  정책 해석 Service
+     * 리스너를 생성합니다.
+     *
+     * @param  IdentityVerificationLogRepositoryInterface  $logRepository  본인인증 기록 저장소 (토큰 검증)
+     * @param  IdentityPolicyService  $policyService  본인인증 정책 서비스 (가입 전 정책 해석)
      * @param  IdentityTokenAcceptanceService  $tokenAcceptance  본인인증 결과 인정(결박·1회 소비) Service — 7.1.6
      */
     public function __construct(
@@ -60,6 +62,11 @@ class AssertIdentityVerifiedBeforeRegister implements HookListenerInterface
     {
         $data = $args[0] ?? [];
         $context = is_array($args[1] ?? null) ? $args[1] : [];
+
+        // 확장 내부 가입이 사유와 함께 정책 생략을 골랐다 (`AuthService::register()` 옵션 — 공개 가입 API 는 넘기지 않는다)
+        if (($context['identity_policy'] ?? null) === 'skip') {
+            return;
+        }
 
         $policy = $this->policyService->resolve(
             scope: 'route',

@@ -1,6 +1,9 @@
 import React from 'react';
 import { Div } from '../basic/Div';
 import type { EditorAttrs } from '../../types';
+import { useRenderWidth } from '../../hooks/useRenderWidth';
+import { gridColsClass, resolveGridCols, type GridResponsiveCols } from './gridColumns';
+import { keyboardActivationProps, FOCUS_VISIBLE_RING } from '../../support/keyboardActivation';
 
 export interface GridProps {
   /**
@@ -9,15 +12,13 @@ export interface GridProps {
   cols?: number;
 
   /**
-   * 반응형 열 개수 (브레이크포인트별)
+   * 반응형 열 개수 (구간별: sm 640px·md 768px·lg 1024px·xl 1280px·2xl 1536px 이상)
+   *
+   * 엔진 폭(`G7Core.useResponsive().width`, 편집기 미리보기에서는 기기 폭)으로 열 수를 골라
+   * 접두 없는 `grid-cols-N` 하나만 낸다. 폭 이상인 가장 넓은 구간 값을 쓰고, 값이 없는 구간은
+   * 아래 구간 값을 이어받으며, 맞는 구간이 없으면 `cols` 를 쓴다.
    */
-  responsive?: {
-    sm?: number;
-    md?: number;
-    lg?: number;
-    xl?: number;
-    '2xl'?: number;
-  };
+  responsive?: GridResponsiveCols;
 
   /**
    * Gap 크기 (Tailwind 스케일: 0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24)
@@ -83,6 +84,7 @@ export interface GridProps {
  * Grid 레이아웃 컴포넌트
  *
  * CSS Grid를 활용한 반응형 그리드 시스템을 제공합니다.
+ * 반응형 열 수는 Tailwind 접두가 아니라 엔진 폭으로 판정합니다(편집기 미리보기 폭을 따름).
  * gap, span, auto-flow 등의 그리드 속성을 제어할 수 있습니다.
  *
  * @example
@@ -94,7 +96,7 @@ export interface GridProps {
  * </Grid>
  *
  * @example
- * // 반응형 그리드
+ * // 반응형 그리드 — 폭 700px 은 grid-cols-2, 900px 은 grid-cols-3, 1100px 이상은 grid-cols-4
  * <Grid
  *   cols={1}
  *   responsive={{ sm: 2, md: 3, lg: 4 }}
@@ -120,21 +122,16 @@ export const Grid: React.FC<GridProps> = ({
   id,
   editorAttrs,
 }) => {
+  // 엔진 폭 구독 (편집기 미리보기 overrideWidth 반영, 훅이 없는 환경은 창 폭 + resize)
+  const width = useRenderWidth();
+
   // Tailwind CSS 클래스 생성
   const classes: string[] = ['grid'];
 
-  // Grid 열 개수
-  if (cols) {
-    classes.push(`grid-cols-${cols}`);
-  }
-
-  // 반응형 그리드
-  if (responsive) {
-    if (responsive.sm) classes.push(`sm:grid-cols-${responsive.sm}`);
-    if (responsive.md) classes.push(`md:grid-cols-${responsive.md}`);
-    if (responsive.lg) classes.push(`lg:grid-cols-${responsive.lg}`);
-    if (responsive.xl) classes.push(`xl:grid-cols-${responsive.xl}`);
-    if (responsive['2xl']) classes.push(`2xl:grid-cols-${responsive['2xl']}`);
+  // Grid 열 개수 — 반응형 구간은 엔진 폭으로 골라 접두 없는 클래스 하나만 낸다
+  const colsClass = gridColsClass(resolveGridCols(cols, responsive, width));
+  if (colsClass) {
+    classes.push(colsClass);
   }
 
   // Gap
@@ -184,13 +181,18 @@ export const Grid: React.FC<GridProps> = ({
   };
   classes.push(flowMap[flow]);
 
+  // 클릭을 받으면 손 모양 커서 — 눌러 쓰는 요소는 손 모양 커서를 준다(#869 κ). 레이아웃 className 이 뒤에 와서 다른 커서를 주면 그 값이 남는다
+  if (onClick) {
+    classes.push('cursor-pointer', FOCUS_VISIBLE_RING);
+  }
+
   // 사용자 정의 클래스 추가
   if (className) {
     classes.push(className);
   }
 
   return (
-    <Div className={classes.join(' ')} style={style} onClick={onClick} id={id} {...editorAttrs}>
+    <Div className={classes.join(' ')} style={style} onClick={onClick} {...keyboardActivationProps(onClick)} id={id} {...editorAttrs}>
       {children}
     </Div>
   );

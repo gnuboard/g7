@@ -27,14 +27,14 @@ const FORM_LAYOUT = {
   components: [
     {
       id: 'email-error',
-      type: 'basic',
+      type: 'basic' as const,
       name: 'Text',
       if: '{{_local.errors?.email}}',
       text: '{{_local.errors?.email?.[0] ?? ""}}',
     },
     {
       id: 'global-error',
-      type: 'basic',
+      type: 'basic' as const,
       name: 'Text',
       if: '{{_global.loginError}}',
       text: '{{_global.loginError ?? ""}}',
@@ -63,6 +63,10 @@ beforeEach(() => {
 });
 
 describe('페이지 상태 시뮬레이션 렌더 — formErrors 경로 주입 ', () => {
+  /**
+   * @scenario roundtrip=page_state
+   * @effects page_state_no_form_errors_shows_none
+   */
   it('formErrors 미주입(기본 상태) → 오류 미표시', async () => {
     const utils = createLayoutTest(FORM_LAYOUT, { componentRegistry: registry });
     await utils.render();
@@ -71,6 +75,10 @@ describe('페이지 상태 시뮬레이션 렌더 — formErrors 경로 주입 '
     utils.cleanup();
   });
 
+  /**
+   * @scenario roundtrip=page_state
+   * @effects page_state_local_form_error_rendered
+   */
   it('_local.errors.email 경로 주입(검증 실패 상태) → 시뮬레이터 합성 _local 이 표현식으로 오류 표시', async () => {
     const item: EditorStateItemSpec = {
       id: 'validation_failed',
@@ -89,6 +97,10 @@ describe('페이지 상태 시뮬레이션 렌더 — formErrors 경로 주입 '
     utils.cleanup();
   });
 
+  /**
+   * @scenario roundtrip=page_state
+   * @effects page_state_global_login_error_rendered
+   */
   it('_global.loginError 경로 주입(로그인 실패 상태) → 시뮬레이터 합성 _global 이 표현식으로 오류 표시', async () => {
     const item: EditorStateItemSpec = {
       id: 'login_failed',
@@ -116,12 +128,16 @@ const STEP_LAYOUT = {
   version: '1.0.0',
   layout_name: 'test/profile-edit',
   components: [
-    { id: 'verify', type: 'basic', name: 'Text', if: '{{!_local?.isPasswordVerified}}', text: 'VERIFY_SECTION' },
-    { id: 'edit', type: 'basic', name: 'Text', if: '{{_local?.isPasswordVerified}}', text: 'EDIT_FORM' },
+    { id: 'verify', type: 'basic' as const, name: 'Text', if: '{{!_local?.isPasswordVerified}}', text: 'VERIFY_SECTION' },
+    { id: 'edit', type: 'basic' as const, name: 'Text', if: '{{_local?.isPasswordVerified}}', text: 'EDIT_FORM' },
   ],
 };
 
 describe('페이지 상태 시뮬레이션 렌더 — initialState.local 분기 (profile-edit)', () => {
+  /**
+   * @scenario roundtrip=page_state
+   * @effects page_state_local_flag_branch_password_entry
+   */
   it('password_entry(isPasswordVerified=false) → 비밀번호 확인 섹션 표시', async () => {
     const { local } = applyInitialPatch({ patch: { local: { isPasswordVerified: false } } });
     const utils = createLayoutTest(STEP_LAYOUT, { componentRegistry: registry, initialState: { _local: local } });
@@ -131,6 +147,10 @@ describe('페이지 상태 시뮬레이션 렌더 — initialState.local 분기 
     utils.cleanup();
   });
 
+  /**
+   * @scenario roundtrip=page_state
+   * @effects page_state_local_flag_branch_actual_edit
+   */
   it('actual_edit(isPasswordVerified=true) → 정보 수정 폼 표시 (비밀번호 섹션 숨김)', async () => {
     const { local } = applyInitialPatch({ patch: { local: { isPasswordVerified: true } } });
     const utils = createLayoutTest(STEP_LAYOUT, { componentRegistry: registry, initialState: { _local: local } });
@@ -147,14 +167,18 @@ const CONTEXT_LAYOUT = {
   version: '1.0.0',
   layout_name: 'test/context',
   components: [
-    { id: 'edit', type: 'basic', name: 'Text', if: '{{!!route?.id}}', text: 'EDIT_MODE' },
-    { id: 'create', type: 'basic', name: 'Text', if: '{{!route?.id}}', text: 'CREATE_MODE' },
-    { id: 'seo', type: 'basic', name: 'Text', if: "{{query.tab === 'seo'}}", text: 'SEO_TAB' },
-    { id: 'general', type: 'basic', name: 'Text', if: "{{(query.tab ?? 'general') === 'general'}}", text: 'GENERAL_TAB' },
+    { id: 'edit', type: 'basic' as const, name: 'Text', if: '{{!!route?.id}}', text: 'EDIT_MODE' },
+    { id: 'create', type: 'basic' as const, name: 'Text', if: '{{!route?.id}}', text: 'CREATE_MODE' },
+    { id: 'seo', type: 'basic' as const, name: 'Text', if: "{{query.tab === 'seo'}}", text: 'SEO_TAB' },
+    { id: 'general', type: 'basic' as const, name: 'Text', if: "{{(query.tab ?? 'general') === 'general'}}", text: 'GENERAL_TAB' },
   ],
 };
 
 describe('페이지 상태 시뮬레이션 렌더 — query/route 분기 (미커버 발굴분)', () => {
+  /**
+   * @scenario roundtrip=page_state
+   * @effects page_state_route_id_edit_mode
+   */
   it('route.id 있음 → 수정 모드(EDIT_MODE) 표시', async () => {
     const { route } = applyInitialPatch({ routeBaseline: { id: '123' }, patch: null });
     const utils = createLayoutTest(CONTEXT_LAYOUT, { componentRegistry: registry, routeParams: route as Record<string, string> });
@@ -164,6 +188,10 @@ describe('페이지 상태 시뮬레이션 렌더 — query/route 분기 (미커
     utils.cleanup();
   });
 
+  /**
+   * @scenario roundtrip=page_state
+   * @effects page_state_route_id_null_create_mode
+   */
   it('route.id 패치 null → 신규 작성 모드(CREATE_MODE) 표시 (토큰 제거)', async () => {
     const { route } = applyInitialPatch({ routeBaseline: { id: '123' }, patch: { route: { id: null } } });
     expect(route).toEqual({}); // id 제거됨
@@ -174,6 +202,10 @@ describe('페이지 상태 시뮬레이션 렌더 — query/route 분기 (미커
     utils.cleanup();
   });
 
+  /**
+   * @scenario roundtrip=page_state
+   * @effects page_state_query_tab_patch_renders_tab
+   */
   it('query.tab=seo 패치 → SEO 탭(SEO_TAB) 표시', async () => {
     const { query } = applyInitialPatch({ queryBaseline: {}, patch: { query: { tab: 'seo' } } });
     expect(query).toEqual({ tab: 'seo' });

@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
+use App\Models\MenuPermission;
 use App\Models\Role;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -241,6 +242,37 @@ class RoleRepository implements RoleRepositoryInterface
     }
 
     /**
+     * 역할의 권한·메뉴·회원 연결을 모두 떼고 역할을 삭제합니다.
+     *
+     * 연결 해제와 삭제를 한 트랜잭션으로 묶는다 — 중간에 실패하면 회원이 권한만 잃고 역할이 남는다(CASCADE 에 기대지 않는다).
+     *
+     * @param  Role  $role  삭제할 역할 모델
+     * @return bool 삭제 성공 여부
+     */
+    public function deleteWithRelations(Role $role): bool
+    {
+        return DB::transaction(function () use ($role) {
+            $role->permissions()->detach();
+            $role->menus()->detach();
+            $role->users()->detach();
+            $this->deleteMenuPermissions($role);
+
+            return (bool) $role->delete();
+        });
+    }
+
+    /**
+     * 역할에 걸린 메뉴 권한(`menu_permissions.role_id`)을 지웁니다 — 역할을 지우기 직전에 부른다(DB CASCADE 비의존).
+     *
+     * @param  Role  $role  대상 역할
+     * @return int 지운 행 수
+     */
+    public function deleteMenuPermissions(Role $role): int
+    {
+        return MenuPermission::query()->where('role_id', $role->id)->delete();
+    }
+
+    /**
      * 확장이 소유한 역할을 식별자로 찾습니다.
      *
      * @param  string  $identifier  역할 식별자
@@ -380,5 +412,21 @@ class RoleRepository implements RoleRepositoryInterface
     public function getPermissionCount(Role $role): int
     {
         return $role->permissions()->count();
+    }
+
+    /**
+     * 사용 중인 역할이 권한을 가졌는지 반환합니다.
+     *
+     * @param  string  $roleIdentifier  역할 식별자 (예: user)
+     * @param  string  $permissionIdentifier  권한 식별자
+     * @return bool 역할이 사용 중이고 그 권한을 가졌으면 true
+     */
+    public function activeRoleHasPermission(string $roleIdentifier, string $permissionIdentifier): bool
+    {
+        return Role::query()
+            ->where('identifier', $roleIdentifier)
+            ->where('is_active', true)
+            ->whereHas('permissions', fn ($query) => $query->where('identifier', $permissionIdentifier))
+            ->exists();
     }
 }

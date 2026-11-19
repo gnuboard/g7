@@ -2,23 +2,26 @@
     "_meta": {
         "version": "1.0.0",
         "description": "그누보드7 환경설정 기본값 및 프론트엔드 스키마",
-        "categories": ["general", "security", "mail", "upload", "seo", "cache", "debug", "drivers", "core_update", "geoip", "notifications", "identity", "pagination", "analytics", "privacy", "content"]
+        "categories": ["general", "security", "mail", "upload", "seo", "cache", "debug", "drivers", "core_update", "geoip", "notifications", "identity", "pagination", "analytics", "privacy", "system", "content", "member"]
     },
     "defaults": {
         "general": {
             "site_name": "그누보드7",
             "site_url": "",
+            "user_screen_url": "",
             "site_description": "",
             "admin_email": "",
             "timezone": "Asia/Seoul",
             "language": "ko",
             "currency": "KRW",
-            "maintenance_mode": false,
             "site_logo": [],
-            "asset_url_mode": "extension"
+            "site_favicon": [],
+            "asset_url_mode": "extension",
+            "layout_edit_button_enabled": true
         },
         "security": {
             "force_https": false,
+            "registration_enabled": true,
             "login_attempt_enabled": true,
             "auth_token_lifetime": 30,
             "max_login_attempts": 5,
@@ -47,6 +50,7 @@
             "password_expiry_started_at": null,
             "activity_log_retention_days": 365,
             "allow_internal_outbound_urls": false,
+            "extension_block_unsigned": false,
             "ip_restriction_enabled": false,
             "admin_allowed_ips": [],
             "ip_restriction_rules": [],
@@ -80,7 +84,26 @@
             "image_max_height": 2000,
             "image_quality": 85,
             "orphan_cleanup_enabled": false,
-            "orphan_retention_days": 30
+            "orphan_retention_days": 30,
+            "thumbnail_enabled": true,
+            "thumbnail_presets": [
+                { "name": "xs", "width": 64, "height": 64, "fit": "cover", "anchor": "center", "quality": null, "format": "original", "upscale": false, "pregenerate": false, "numeric": false, "enabled": true },
+                { "name": "sm", "width": 160, "height": 160, "fit": "cover", "anchor": "center", "quality": null, "format": "original", "upscale": false, "pregenerate": false, "numeric": false, "enabled": true },
+                { "name": "md", "width": 640, "height": null, "fit": "width", "anchor": "center", "quality": null, "format": "original", "upscale": false, "pregenerate": false, "numeric": true, "enabled": true },
+                { "name": "lg", "width": 1280, "height": null, "fit": "width", "anchor": "center", "quality": null, "format": "original", "upscale": false, "pregenerate": false, "numeric": true, "enabled": true },
+                { "name": "xl", "width": 1920, "height": null, "fit": "width", "anchor": "center", "quality": null, "format": "original", "upscale": false, "pregenerate": false, "numeric": true, "enabled": true }
+            ],
+            "thumbnail_content_preset": "lg",
+            "thumbnail_disk_public": "thumbnails",
+            "thumbnail_disk_gated": "thumbnails",
+            "thumbnail_prune_enabled": true,
+            "thumbnail_animated_original": true,
+            "thumbnail_generate_per_minute": null,
+            "thumbnail_lock_wait_seconds": null,
+            "thumbnail_max_source_pixels": null,
+            "thumbnail_pregenerate_batch": null,
+            "thumbnail_pregenerate_time_budget": null,
+            "thumbnail_purge_time_budget": null
         },
         "seo": {
             "meta_title_suffix": "",
@@ -107,8 +130,6 @@
             "sitemap_serve_stale_on_miss": true,
             "sitemap_max_urls_per_contributor": 0,
             "sitemap_hreflang_enabled": true,
-            "sitemap_schedule": "daily",
-            "sitemap_schedule_time": "02:00",
             "sitemap_last_updated_at": "",
             "generator_enabled": true,
             "generator_content": ""
@@ -134,7 +155,8 @@
             "sql_query_log": false,
             "log_level": "error",
             "outbound_proxy": "",
-            "outbound_proxy_bypass": []
+            "outbound_proxy_bypass": [],
+            "trusted_proxies": null
         },
         "core_update": {
             "github_url": "",
@@ -153,6 +175,9 @@
         "drivers": {
             "storage_driver": "local",
             "public_asset_disk": "none",
+            "private_attachment_disk": "default",
+            "file_delegation": "none",
+            "file_delegation_accel_prefix": "/_g7_sendfile/",
             "public_asset_extensions": ["jpg", "jpeg", "png", "gif", "webp", "avif"],
             "s3_bucket": "",
             "s3_region": "ap-northeast-2",
@@ -173,6 +198,8 @@
             "queue_driver": "sync",
             "queue_connections": [],
             "queue_names": {},
+            "queue_job_log_enabled": true,
+            "queue_record_retention_days": 7,
             "log_driver": "daily",
             "log_level": "error",
             "log_days": 14,
@@ -187,7 +214,8 @@
             "websocket_server_host": "127.0.0.1",
             "websocket_server_port": 8080,
             "websocket_server_scheme": "http",
-            "search_engine_driver": "mysql-fulltext"
+            "search_engine_driver": "mysql-fulltext",
+            "image_driver": "gd"
         },
         "notifications": {
             "channels": [
@@ -265,6 +293,13 @@
             "search_history_enabled": true,
             "search_history_scopes": []
         },
+        "system": {
+            "execution_mode": "auto",
+            "cron_mode": "auto",
+            "cron_allowed_ips": "",
+            "cron_min_interval": 5,
+            "cron_visit_fallback": false
+        },
         "content": {
             "allow_figure_caption": true,
             "allow_uploaded_video": false,
@@ -278,23 +313,39 @@
             "embed_custom_providers": [],
             "custom_tags": [],
             "media_url_ttl_minutes": 240
+        },
+        "member": {
+            "nickname_unique": false,
+            "nickname_banned_words": [],
+            "nickname_change_interval_days": 0,
+            "display_name_selectable_kinds": ["name"],
+            "display_name_member_default_kind": "name",
+            "display_name_areas": {
+                "core:site": { "mode": "member" },
+                "core:admin": { "mode": "fixed", "kind": "name" },
+                "sirsoft-ecommerce:inquiry": { "mode": "fixed", "kind": "masked_name" }
+            }
         }
     },
     "frontend_schema": {
         "_description": "프론트엔드에 노출할 설정 필드 정의. 각 카테고리별로 노출할 필드와 타입 캐스팅, 민감 정보 여부를 정의합니다.",
         "general": {
             "expose": true,
-            "_comment": "site_url, admin_email, language는 프론트엔드에서 미참조하므로 expose: false. timezone 은 관리자 빠른 기간·통계 기간이 「오늘」을 계정·사이트 시간대로 정하는 데 쓰므로 노출(민감 정보 아님)",
+            "_comment": "site_url, user_screen_url, admin_email, language는 프론트엔드에서 미참조하므로 expose: false. timezone 은 관리자 빠른 기간·통계 기간이 「오늘」을 계정·사이트 시간대로 정하는 데 쓰므로 노출(민감 정보 아님)",
             "fields": {
                 "site_name": { "type": "string", "sensitive": false },
                 "site_url": { "type": "string", "sensitive": false, "expose": false },
+                "user_screen_url": { "type": "string", "sensitive": false, "expose": false },
                 "site_description": { "type": "string", "sensitive": false },
                 "admin_email": { "type": "string", "sensitive": false, "expose": false },
                 "language": { "type": "string", "sensitive": false, "expose": false },
                 "timezone": { "type": "string", "sensitive": false },
                 "site_logo": { "type": "array", "sensitive": false, "transform": "attachments" },
                 "site_logo_url": { "type": "string", "sensitive": false, "computed": true, "source": "site_logo", "transform": "first_image_url" },
-                "asset_url_mode": { "type": "string", "sensitive": false }
+                "site_favicon": { "type": "array", "sensitive": false, "transform": "attachments" },
+                "site_favicon_url": { "type": "string", "sensitive": false, "computed": true, "source": "site_favicon", "transform": "favicon_url" },
+                "asset_url_mode": { "type": "string", "sensitive": false },
+                "layout_edit_button_enabled": { "type": "boolean", "sensitive": false }
             }
         },
         "security": {
@@ -310,7 +361,8 @@
                 "password_block_sequential_chars": { "type": "boolean", "sensitive": false },
                 "password_sequential_chars_length": { "type": "integer", "sensitive": false },
                 "password_reuse_prevention_enabled": { "type": "boolean", "sensitive": false },
-                "password_reuse_count": { "type": "integer", "sensitive": false }
+                "password_reuse_count": { "type": "integer", "sensitive": false },
+                "registration_enabled": { "type": "boolean", "sensitive": false }
             }
         },
         "mail": {
@@ -328,7 +380,22 @@
                 "image_max_height": { "type": "integer", "sensitive": false },
                 "image_quality": { "type": "integer", "sensitive": false, "expose": false },
                 "orphan_cleanup_enabled": { "type": "boolean", "sensitive": false, "expose": false },
-                "orphan_retention_days": { "type": "integer", "sensitive": false, "expose": false }
+                "orphan_retention_days": { "type": "integer", "sensitive": false, "expose": false },
+                "thumbnail_enabled": { "type": "boolean", "sensitive": false },
+                "thumbnail_presets": { "type": "array", "sensitive": false, "expose": false },
+                "thumbnail_content_preset": { "type": "string", "sensitive": false },
+                "thumbnail_disk_public": { "type": "string", "sensitive": false, "expose": false },
+                "thumbnail_disk_gated": { "type": "string", "sensitive": false, "expose": false },
+                "thumbnail_prune_enabled": { "type": "boolean", "sensitive": false, "expose": false },
+                "thumbnail_animated_original": { "type": "boolean", "sensitive": false, "expose": false },
+                "thumbnail_generate_per_minute": { "type": "integer", "sensitive": false, "expose": false },
+                "thumbnail_lock_wait_seconds": { "type": "integer", "sensitive": false, "expose": false },
+                "thumbnail_max_source_pixels": { "type": "integer", "sensitive": false, "expose": false },
+                "thumbnail_pregenerate_batch": { "type": "integer", "sensitive": false, "expose": false },
+                "thumbnail_pregenerate_time_budget": { "type": "integer", "sensitive": false, "expose": false },
+                "thumbnail_purge_time_budget": { "type": "integer", "sensitive": false, "expose": false },
+                "thumbnail_presets_public": { "type": "array", "sensitive": false, "computed": true, "source": "thumbnail_presets", "transform": "thumbnail_presets" },
+                "thumbnail_url_patterns": { "type": "array", "sensitive": false, "computed": true, "source": "thumbnail_enabled", "transform": "thumbnail_url_patterns" }
             }
         },
         "seo": {
@@ -360,8 +427,6 @@
                 "sitemap_serve_stale_on_miss": { "type": "boolean", "sensitive": false },
                 "sitemap_max_urls_per_contributor": { "type": "integer", "sensitive": false },
                 "sitemap_hreflang_enabled": { "type": "boolean", "sensitive": false },
-                "sitemap_schedule": { "type": "string", "sensitive": false },
-                "sitemap_schedule_time": { "type": "string", "sensitive": false },
                 "sitemap_last_updated_at": { "type": "string", "sensitive": false },
                 "generator_enabled": { "type": "boolean", "sensitive": false },
                 "generator_content": { "type": "string", "sensitive": false }
@@ -396,7 +461,8 @@
                 "mode": { "type": "boolean", "sensitive": false, "frontend_key": "debug_mode" },
                 "sql_query_log": { "type": "boolean", "sensitive": false, "expose": false },
                 "outbound_proxy": { "type": "string", "sensitive": true },
-                "outbound_proxy_bypass": { "type": "array", "sensitive": false, "expose": false }
+                "outbound_proxy_bypass": { "type": "array", "sensitive": false, "expose": false },
+                "trusted_proxies": { "type": "array", "sensitive": false, "expose": false }
             }
         },
         "core_update": {
@@ -434,6 +500,9 @@
             "fields": {
                 "storage_driver": { "type": "string", "sensitive": false },
                 "public_asset_disk": { "type": "string", "sensitive": false },
+                "private_attachment_disk": { "type": "string", "sensitive": false },
+                "file_delegation": { "type": "string", "sensitive": false },
+                "file_delegation_accel_prefix": { "type": "string", "sensitive": false },
                 "public_asset_extensions": { "type": "string", "sensitive": false, "transform": "join_comma" },
                 "s3_bucket": { "type": "string", "sensitive": false },
                 "s3_region": { "type": "string", "sensitive": false },
@@ -454,6 +523,8 @@
                 "queue_driver": { "type": "string", "sensitive": false },
                 "queue_connections": { "type": "array", "sensitive": false },
                 "queue_names": { "type": "array", "sensitive": false },
+                "queue_job_log_enabled": { "type": "boolean", "sensitive": false },
+                "queue_record_retention_days": { "type": "integer", "sensitive": false },
                 "log_driver": { "type": "string", "sensitive": false },
                 "log_level": { "type": "string", "sensitive": false },
                 "log_days": { "type": "integer", "sensitive": false },
@@ -468,7 +539,8 @@
                 "websocket_server_host": { "type": "string", "sensitive": false },
                 "websocket_server_port": { "type": "integer", "sensitive": false },
                 "websocket_server_scheme": { "type": "string", "sensitive": false },
-                "search_engine_driver": { "type": "string", "sensitive": false }
+                "search_engine_driver": { "type": "string", "sensitive": false },
+                "image_driver": { "type": "string", "sensitive": false, "expose": false }
             }
         },
         "notifications": {
@@ -542,6 +614,17 @@
             "expose": false,
             "_comment": "보유기간·휴면 정책은 공개 화면이 참조하지 않는다 — 노출하면 어떤 회원이 언제 휴면·파기 대상이 되는지 밖에서 역산할 수 있다. 휴면 해제 안내는 로그인 응답이 직접 알려준다"
         },
+        "system": {
+            "expose": false,
+            "_comment": "실행 방식(웹 요청 안의 커맨드 실행) + 예약 작업(웹 크론) — 관리자 환경설정 '시스템' 탭이 관리자 설정 API 로 소비한다. 공개 설정(비로그인 방문자에게도 나가는 프론트엔드 설정)에는 싣지 않는다 — 크론 허용 IP·실행 방식은 공개 화면이 참조하지 않고, 밖에 알려지면 웹 크론 입구를 겨냥할 단서가 된다. 호출 번호(토큰)는 이 카탈로그에 두지 않는다 (D20) — 인증 없는 실행 자격증명이라 설정 조회 응답에 실리면 '읽기만' 가능한 계정이 실행 권한을 얻는다. 보관은 WebCronTokenStore, 조회는 권한을 확인하는 전용 API 한 곳뿐이다",
+            "fields": {
+                "execution_mode": { "type": "string", "sensitive": false },
+                "cron_mode": { "type": "string", "sensitive": false },
+                "cron_allowed_ips": { "type": "string", "sensitive": false },
+                "cron_min_interval": { "type": "integer", "sensitive": false },
+                "cron_visit_fallback": { "type": "boolean", "sensitive": false }
+            }
+        },
         "content": {
             "expose": true,
             "_comment": "원본 설정은 공개하지 않고, 표시기·편집기가 쓰는 계산 규칙(render_policy — 허용 태그·속성·미디어 출처·켜진 외부 영상 서비스의 컴파일 정규식)만 내린다 (#883)",
@@ -593,6 +676,15 @@
                     "source": "allow_external_embed",
                     "transform": "content_render_policy"
                 }
+            }
+        },
+        "member": {
+            "expose": true,
+            "_comment": "회원이 고를 수 있는 표시 이름 종류, 회원 기본 종류, 닉네임 변경 주기만 노출한다(가입·내 정보 화면 안내용). 금지어와 영역별 표시 이름 설정은 fields 에 선언하지 않아 내보내지 않는다 — 이 값은 비로그인 공개 API 로도 나간다",
+            "fields": {
+                "display_name_selectable_kinds": { "type": "array", "sensitive": false },
+                "display_name_member_default_kind": { "type": "string", "sensitive": false },
+                "nickname_change_interval_days": { "type": "integer", "sensitive": false }
             }
         }
     }

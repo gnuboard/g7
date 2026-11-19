@@ -67,3 +67,24 @@ php artisan db:seed --class="Database\Seeders\Sample\DummyUserSeeder"
 「이번 실행에서 만든 것」은 각 시더가 쓰기 전후의 id 범위로 판정합니다. 시드 도중 같은 게시판에 실제 사용자가 글·댓글·반응을 쓰면 그 행이 범위에 섞일 수 있으니, 운영 중인 사이트에서는 사용자가 적은 시간에 실행하세요.
 
 운영 중인 신고와 활동 로그는 지우지 않고, 운영 중인 글·회원 이름으로 하지 않은 행동의 활동 로그를 만들지 않습니다. 활동 로그의 행위자는 실재하는 회원만 기록합니다(탈퇴한 작성자는 비웁니다). 이전 버전의 샘플 데이터가 만든 신고·활동 로그는 표시가 없어 운영 데이터와 구분할 수 없으므로 그대로 남습니다 — 필요하면 관리자 화면에서 직접 정리하세요.
+
+## 이미지 썸네일 실측 시더 (개발 DB 전용)
+
+첨부 이미지 썸네일(`?size=`, `?w=`)을 브라우저에서 직접 확인할 때 쓰는 시더입니다. `--sample` 에는 들어 있지 않고, 명령줄에서 `G7_PLAYWRIGHT_BYPASS=1` 을 그 실행에만 주었을 때만 돕니다. 작성자 회원은 코어 실측 시더가 만들므로 코어 시더를 먼저 실행합니다.
+
+| 시더 | 만드는 것 / 지우는 것 |
+| --- | --- |
+| `Database\Seeders\Sample\ThumbnailMeasureSeeder` (코어) | 실측 회원 2명(작성자, 제3자)과 아바타, 실측 사이트 로고 (원래 로고 설정은 백업) |
+| `Sample\ThumbnailMeasureSeeder` | 카드형 `thumb-measure-card`, 갤러리형 `thumb-measure-gallery` 게시판과 여러 형식(JPEG, 투명 PNG, WebP, 움직이는 GIF, SVG, 작은 PNG)의 첨부가 달린 일반글, 비밀글, 블라인드 글, 답글 |
+| `Sample\ThumbnailMeasureCleanupSeeder` | 위 두 게시판(슬러그와 이름의 `[실측-썸네일]` 표지가 모두 맞는 것)과 그 글, 첨부, 썸네일, 활동 로그 |
+
+```powershell
+$env:G7_PLAYWRIGHT_BYPASS='1'
+php artisan db:seed --class="Database\Seeders\Sample\ThumbnailMeasureSeeder"
+php artisan module:seed sirsoft-board --class="Modules\Sirsoft\Board\Database\Seeders\Sample\ThumbnailMeasureSeeder"
+# 확인이 끝나면 확장 정리 시더를 먼저, 코어 정리 시더를 나중에 실행합니다
+php artisan module:seed sirsoft-board --class="Modules\Sirsoft\Board\Database\Seeders\Sample\ThumbnailMeasureCleanupSeeder"
+php artisan db:seed --class="Database\Seeders\Sample\ThumbnailMeasureCleanupSeeder"
+```
+
+생성 시더를 다시 실행하면 같은 표식의 이전 데이터를 먼저 지웁니다. 실측 로고를 쓰는 동안에는 원래 로고 첨부가 설정에서 빠져 있으므로 첨부 고아 정리를 돌리지 말고, 확인이 끝나면 바로 정리 시더로 되돌립니다.

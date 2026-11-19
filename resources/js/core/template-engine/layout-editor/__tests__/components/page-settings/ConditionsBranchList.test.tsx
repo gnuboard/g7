@@ -7,11 +7,11 @@
  * 결제 진입(requestPgPayment placeholder 핸들러) then 이 분기 안에서 보존되는지까지.
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { ActionListBuilder } from '../../../components/page-settings/ActionListBuilder';
 import { CORE_ACTION_RECIPES } from '../../../spec/coreActionRecipes';
+import type { ActionRecipeSpec } from '../../../spec/specTypes';
 
 const t = (k: string) => k;
 
@@ -28,7 +28,7 @@ const ECOMMERCE_REQUEST_PG_PAYMENT = {
   __source: { kind: 'module', id: 'sirsoft-ecommerce' },
 };
 // 코어 시드 + 모듈 병합본 — 실제 화면이 받는 recipes 와 동형.
-const RECIPES = { ...CORE_ACTION_RECIPES, requestPgPayment: ECOMMERCE_REQUEST_PG_PAYMENT } as Record<string, unknown>;
+const RECIPES: Record<string, ActionRecipeSpec> = { ...CORE_ACTION_RECIPES, requestPgPayment: ECOMMERCE_REQUEST_PG_PAYMENT };
 
 beforeEach(() => cleanup());
 
@@ -45,12 +45,20 @@ const conditionsAction = {
 };
 
 describe('conditions recipe + branch-list 위젯', () => {
+  /**
+   * @scenario subject=conditions_branch_list
+   * @effects cond_branch_conditions_action_matches_preset
+   */
   it('conditions 액션이 친화 카드(preset)로 매칭되어 [편집] 가능 — advanced 아님', () => {
     render(<ActionListBuilder actions={[conditionsAction]} onChange={vi.fn()} t={t} recipes={RECIPES} />);
     // advanced(고급)면 편집 버튼이 없다. preset 이면 편집 토글이 있다.
     expect(screen.getByTestId('g7le-action-list-edit-0')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=conditions_branch_list
+   * @effects cond_branch_edit_renders_if_then_and_add
+   */
   it('[편집] 시 분기별 실행조건(if)·동작(then) 입력칸 + 분기 추가 버튼이 렌더된다', () => {
     render(<ActionListBuilder actions={[conditionsAction]} onChange={vi.fn()} t={t} recipes={RECIPES} />);
     fireEvent.click(screen.getByTestId('g7le-action-list-edit-0'));
@@ -61,6 +69,10 @@ describe('conditions recipe + branch-list 위젯', () => {
     expect(screen.getByTestId('g7le-action-list-edit-branches-add-branch')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=conditions_branch_list
+   * @effects cond_branch_add_pushes_empty_branch
+   */
   it('분기 추가 → conditions 배열에 빈 분기 push', () => {
     const onChange = vi.fn();
     render(<ActionListBuilder actions={[conditionsAction]} onChange={onChange} t={t} recipes={RECIPES} />);
@@ -71,6 +83,10 @@ describe('conditions recipe + branch-list 위젯', () => {
     expect(last[0].conditions[2]).toEqual({ if: '', then: undefined });
   });
 
+  /**
+   * @scenario subject=conditions_branch_list
+   * @effects cond_branch_remove_drops_branch
+   */
   it('분기 삭제 → conditions 배열에서 제거', () => {
     const onChange = vi.fn();
     render(<ActionListBuilder actions={[conditionsAction]} onChange={onChange} t={t} recipes={RECIPES} />);
@@ -81,6 +97,10 @@ describe('conditions recipe + branch-list 위젯', () => {
     expect(last[0].conditions[0].if).toContain('requires_pg_payment');
   });
 
+  /**
+   * @scenario subject=conditions_branch_list
+   * @effects cond_branch_then_handler_shown_as_card
+   */
   it('PG 분기의 then(결제 진입, 동적 핸들러)이 분기 안 친화 카드로 노출된다', () => {
     render(<ActionListBuilder actions={[conditionsAction]} onChange={vi.fn()} t={t} recipes={RECIPES} />);
     fireEvent.click(screen.getByTestId('g7le-action-list-edit-0'));
@@ -119,11 +139,19 @@ describe('checkout 결제하기 버튼 전체 액션 트리 — 4단계 깊이 �
     },
   };
 
+  /**
+   * @scenario subject=conditions_branch_list
+   * @effects cond_branch_checkout_sequence_is_preset_card
+   */
   it('① sequence(onClick) 친화 카드 — [고급] 아님', () => {
     render(<ActionListBuilder actions={[checkoutOnClick]} onChange={vi.fn()} t={t} recipes={RECIPES} />);
     expect(screen.getByTestId('g7le-action-list-edit-0')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=conditions_branch_list
+   * @effects cond_branch_checkout_sequence_expands_api_call
+   */
   it('② sequence 펼침 → 안의 apiCall 카드가 친화 노출 (sequence.actions advanced 해제 확인)', () => {
     render(<ActionListBuilder actions={[checkoutOnClick]} onChange={vi.fn()} t={t} recipes={RECIPES} />);
     fireEvent.click(screen.getByTestId('g7le-action-list-edit-0'));
@@ -132,6 +160,10 @@ describe('checkout 결제하기 버튼 전체 액션 트리 — 4단계 깊이 �
     expect(screen.getByTestId('g7le-action-list-edit-actions-summary-1').textContent).toContain('api_call');
   });
 
+  /**
+   * @scenario subject=conditions_branch_list
+   * @effects cond_branch_checkout_reaches_pg_entry_card
+   */
   it('③④ apiCall 펼침 → onSuccess 친화 → conditions 친화 → 결제 진입 카드까지 도달', () => {
     render(<ActionListBuilder actions={[checkoutOnClick]} onChange={vi.fn()} t={t} recipes={RECIPES} />);
     // sequence 편집 (ParamFieldList prefix = g7le-action-list-edit, sequence.actions 빌더 = ...-edit-actions)

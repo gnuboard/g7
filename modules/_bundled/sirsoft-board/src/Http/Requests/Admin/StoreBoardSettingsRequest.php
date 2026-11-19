@@ -283,6 +283,17 @@ class StoreBoardSettingsRequest extends FormRequest
             // Laravel dot notation으로 하위 키를 개별 검증하면 flat key가 중첩 배열로 파싱되어 데이터 유실됨
             // → 배열 자체만 검증 (하위 키 개별 검증 금지)
             'basic_defaults.default_board_permissions' => ['nullable', 'array'],
+            // 비회원 작성자 항목 기본값 — 게시판별 설정과 같은 모양(`{항목 키: {post: {enabled, required}, comment: {...}}}`).
+            // 항목 키에 점이 없으므로 하위 키 검증이 모양을 바꾸지 않는다. 표의 행(`guest_author_field_rows`)은 저장하지 않는다
+            'basic_defaults.guest_author_fields' => ['nullable', 'array'],
+            'basic_defaults.guest_author_fields.*' => ['array'],
+            'basic_defaults.guest_author_fields.*.post' => ['nullable', 'array'],
+            'basic_defaults.guest_author_fields.*.post.enabled' => ['nullable', 'boolean'],
+            'basic_defaults.guest_author_fields.*.post.required' => ['nullable', 'boolean'],
+            'basic_defaults.guest_author_fields.*.comment' => ['nullable', 'array'],
+            'basic_defaults.guest_author_fields.*.comment.enabled' => ['nullable', 'boolean'],
+            'basic_defaults.guest_author_fields.*.comment.required' => ['nullable', 'boolean'],
+            'basic_defaults.guest_author_field_rows' => ['nullable', 'array'],
 
             // ========================================
             // report_policy (신고 정책) 카테고리
@@ -427,6 +438,16 @@ class StoreBoardSettingsRequest extends FormRequest
             'privacy_retention.ip_retention_days' => __('sirsoft-board::validation.privacy_retention_attributes.ip_retention_days'),
             'privacy_retention.guest_retention_days' => __('sirsoft-board::validation.privacy_retention_attributes.guest_retention_days'),
             'privacy_retention.guest_mode' => __('sirsoft-board::validation.privacy_retention_attributes.guest_mode'),
+            // 비회원 작성자 항목 기본값 (#490) — 게시판별 설정과 같은 라벨
+            'basic_defaults.guest_author_fields' => __('sirsoft-board::validation.attributes.board.guest_author_fields'),
+            'basic_defaults.guest_author_fields.*' => __('sirsoft-board::validation.attributes.board.guest_author_fields'),
+            'basic_defaults.guest_author_fields.*.post' => __('sirsoft-board::validation.attributes.board.guest_author_fields'),
+            'basic_defaults.guest_author_fields.*.post.enabled' => __('sirsoft-board::validation.attributes.board.guest_author_fields'),
+            'basic_defaults.guest_author_fields.*.post.required' => __('sirsoft-board::validation.attributes.board.guest_author_fields'),
+            'basic_defaults.guest_author_fields.*.comment' => __('sirsoft-board::validation.attributes.board.guest_author_fields'),
+            'basic_defaults.guest_author_fields.*.comment.enabled' => __('sirsoft-board::validation.attributes.board.guest_author_fields'),
+            'basic_defaults.guest_author_fields.*.comment.required' => __('sirsoft-board::validation.attributes.board.guest_author_fields'),
+            'basic_defaults.guest_author_field_rows' => __('sirsoft-board::validation.attributes.board.guest_author_fields'),
         ]);
     }
 

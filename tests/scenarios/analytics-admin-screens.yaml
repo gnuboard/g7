@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#682 |
 #   pairwise 전개(화면 17 × 상태 14 × 뷰포트 2 × 로케일 3 × E2E 5)는 audit 환경의 fallback YAML 파서로 전개하지 않는다.
 #   조합은 Vitest 레이아웃 계약 테스트·Playwright E2E 가 테스트별 @scenario 로 나눠 덮고, 상태 14종 × 뷰포트 × 로케일 실측은
 #   Chrome MCP 매트릭스(이력 문서)가 맡는다. effects·test_files 축은 면제하지 않는다.
@@ -78,6 +78,7 @@ effects:
   - overview_sources_follow_period_query
   - period_bar_rehydrates_from_query
   - realtime_interval_id_is_fixed_and_cleared_on_unmount
+  - overview_top_list_toggle_only_below_768          # 상위 목록 펼치기 단추는 768px 미만에서만 보인다
   - preset_uses_date_only_handler
   - period_bar_navigates_with_merge_query_and_page_reset
   - csv_button_downloads_with_token
@@ -265,6 +266,7 @@ test_files:
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsObservationFollowups.test.ts
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsFilterReset.test.ts
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsOverview.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsOverviewTopToggle.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsReports.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsRealtime.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsVisitors.test.tsx

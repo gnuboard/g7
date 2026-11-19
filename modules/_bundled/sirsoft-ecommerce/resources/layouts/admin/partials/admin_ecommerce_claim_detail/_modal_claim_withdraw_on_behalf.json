@@ -9,14 +9,58 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.title",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "id": "cwo_003_cancel",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "id": "cwo_004_confirm",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "고객 요청으로 신청서를 대리 철회한다 — 실패 안내는 핸들러가 띄우므로 기본 오류 정책은 막는다",
+                        "type": "click",
+                        "handler": "sirsoft-ecommerce.withdrawClaimOnBehalf",
+                        "params": {
+                            "pathSegment": "{{_global.claimWithdrawContext?.pathSegment ?? ''}}",
+                            "claimId": "{{_global.claimWithdrawContext?.claimId ?? null}}",
+                            "reason": "{{_global.claimWithdrawReason ?? ''}}"
+                        },
+                        "onError": {
+                            "handler": "suppress"
+                        }
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-red-600 ecommerce:dark:bg-red-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isWithdrawingClaim === true || (_global.claimWithdrawReason ?? '').trim() === ''}}"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.confirm"
+            }
+        ]
     },
     "children": [
         {
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "space-y-4"
+                "className": "ecommerce:space-y-4"
             },
             "children": [
                 {
@@ -24,7 +68,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-label"
+                        "className": "ecommerce-text-label"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.description"
                 },
@@ -47,61 +91,10 @@
                         "name": "withdrawReason",
                         "rows": 3,
                         "maxLength": 2000,
-                        "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                        "className": "ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg",
                         "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.reason_placeholder",
                         "value": "{{_global.claimWithdrawReason ?? ''}}"
                     }
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "flex justify-end gap-2 pt-2"
-                    },
-                    "children": [
-                        {
-                            "id": "cwo_003_cancel",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                            },
-                            "text": "$t:common.cancel"
-                        },
-                        {
-                            "id": "cwo_004_confirm",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "고객 요청으로 신청서를 대리 철회한다 — 실패 안내는 핸들러가 띄우므로 기본 오류 정책은 막는다",
-                                    "type": "click",
-                                    "handler": "sirsoft-ecommerce.withdrawClaimOnBehalf",
-                                    "params": {
-                                        "pathSegment": "{{_global.claimWithdrawContext?.pathSegment ?? ''}}",
-                                        "claimId": "{{_global.claimWithdrawContext?.claimId ?? null}}",
-                                        "reason": "{{_global.claimWithdrawReason ?? ''}}"
-                                    },
-                                    "onError": {
-                                        "handler": "suppress"
-                                    }
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isWithdrawingClaim === true || (_global.claimWithdrawReason ?? '').trim() === ''}}"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.confirm"
-                        }
-                    ]
                 }
             ]
         }

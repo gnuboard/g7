@@ -94,6 +94,18 @@ interface ReactionRepositoryInterface
     public function recalculateReactionCounts(string $targetType, int $targetId): array;
 
     /**
+     * 같은 종류의 여러 대상(게시글·댓글)의 반응 카운트(JSON)를 실제 행 기준으로 한꺼번에 재집계합니다 (#888).
+     *
+     * recalculateReactionCounts() 와 같은 잠금·집계 규약(이전에 등장한 유형 키는 0 으로 유지, 수정 시각 미갱신)을
+     * 따르되, 대상을 묶음으로 잠그고 묶음마다 GROUP BY 한 번으로 센다. 하드 삭제된 대상은 건너뛴다.
+     *
+     * @param  string  $targetType  대상 타입 (post|comment)
+     * @param  array<int, int>  $targetIds  대상 ID 목록
+     * @return int 재집계한 대상 수 (건너뛴 대상 제외)
+     */
+    public function recalculateReactionCountsForTargets(string $targetType, array $targetIds): int;
+
+    /**
      * 특정 반응 유형에 남아 있는 반응 건수를 셉니다.
      *
      * 유형 삭제 가능 여부(0건일 때만 삭제) 판정에 쓴다.
@@ -194,6 +206,16 @@ interface ReactionRepositoryInterface
      * @return EloquentCollection<int, Reaction> 실제로 삭제된 반응 목록
      */
     public function deleteManyByIdsAndUser(array $ids, int $userId): EloquentCollection;
+
+    /**
+     * 회원의 반응을 대상 종류와 무관하게 모두 삭제합니다 (회원 삭제 정리, #888).
+     *
+     * 반환 컬렉션은 reaction_counts 를 다시 집계할 대상(게시글·댓글)을 고르는 근거다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @return EloquentCollection<int, Reaction> 실제로 삭제된 반응 목록 (id·user_id·target_type·target_id·reaction_type_id·board_id)
+     */
+    public function deleteByUser(int $userId): EloquentCollection;
 
     /**
      * 회원의 반응 요약(총계·대상별·최근)을 반환합니다.

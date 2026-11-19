@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Schema;
 class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
 {
     /**
-     * 정책 파생 캐시(route scope 인덱스·hook target 목록)를 쓰는 저장소를 받습니다.
+     * 정책 파생 캐시(route scope 인덱스·hook scope 인덱스·hook target 목록)를 쓰는 저장소를 받습니다.
      *
      * @param  CacheInterface  $cache  코어 캐시 드라이버
      */
@@ -317,6 +317,45 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
                         $bucket->push($policy);
                         $index[$routeName] = $bucket;
                     }
+                }
+
+                return $index;
+            },
+            $ttl,
+            [IdentityPolicy::ROUTE_SCOPE_CACHE_TAG],
+        );
+    }
+
+    /**
+     * hook scope 정책의 훅 이름 인덱스를 캐시 기반으로 반환합니다.
+     *
+     * route 인덱스와 같은 태그로 캐시하므로 정책 저장·삭제와 확장 활성화·비활성화가 함께 비운다. 훅 이름은 정책 target 과
+     * 1:1 이다(brace expansion 없음 — 리스너가 target 을 그대로 비교한다).
+     *
+     * @return array<string, Collection> 훅 이름 => 정책 컬렉션 매핑
+     */
+    public function getHookScopeIndex(): array
+    {
+        $ttl = (int) g7_core_settings('cache.identity_policy_ttl', 3600);
+
+        return $this->cache->remember(
+            IdentityPolicy::HOOK_SCOPE_CACHE_KEY,
+            function (): array {
+                $query = IdentityPolicy::query()
+                    ->where('scope', 'hook')
+                    ->where('enabled', true);
+
+                $this->applyActiveExtensionScope($query);
+
+                $index = [];
+                foreach ($query->orderByDesc('priority')->orderBy('id')->get() as $policy) {
+                    $hookName = (string) $policy->target;
+                    if ($hookName === '') {
+                        continue;
+                    }
+                    $bucket = $index[$hookName] ?? new Collection;
+                    $bucket->push($policy);
+                    $index[$hookName] = $bucket;
                 }
 
                 return $index;

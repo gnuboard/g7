@@ -15,4 +15,5 @@ return [
     'cache_listener_hooks_failed' => '훅 캐시 생성: getSubscribedHooks() 오류 — 항목 제외',
     'cache_listener_interface_missing' => '훅 캐시 생성: 리스너가 HookListenerInterface 를 구현하지 않아 제외합니다',
     'cache_stale_extension_changed' => '활성 확장의 파일이 바뀌어 훅 캐시가 낡았습니다 — 스캔 폴백 후 이 요청 끝에 다시 만듭니다',
+    'cache_write_skipped_stale_declaration' => '이 프로세스가 쥔 확장 진입 정의가 지금 파일과 달라 훅 캐시를 쓰지 않았습니다 — 다음 요청이 새 정의로 만듭니다',
 ];

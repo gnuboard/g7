@@ -16,15 +16,22 @@
  * 신규 노드는 `__source` 미부여라 저장 마스킹(stripInheritedNodes)이 항상 route
  * 콘텐츠로 보존한다.
  *
- * 효과 요약(마커 아님 — 평문): locked_node_shows_insertion_plus_via_anchor, insertion_inserts_outside_locked_group_as_sibling.
+ * 효과 요약(마커 아님 — 평문): locked_node_shows_insertion_plus_via_anchor_box, insertion_inserts_outside_locked_group_as_sibling_of_anchor.
  */
 import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
-async function openRegisterEditor(page: Page): Promise<void> {
+/**
+ * 마이페이지 «내 정보» 편집기 진입 — 화면 소유 노드(`mypage_tab_content`)에 이커머스 「기본 배송지」 카드가 `target_layout`
+ * 주입(append_child)으로 붙는다. 잠긴 조각 박스가 화면 소유 부모 아래에 있어 「형제로 삽입」을 잴 수 있다.
+ *
+ * 종전에는 가입 화면에 마케팅 플러그인이 주입하던 동의 조각을 썼는데, 회원 항목 설정(#490)으로 마케팅 동의가 코어 회원 항목
+ * 조각이 그리는 칸이 되면서 그 주입 조각이 없어졌다.
+ */
+async function openProfileEditor(page: Page): Promise<void> {
   const token = issueToken('core.templates.layouts.edit');
   await authenticatePage(page, token);
-  await page.goto('/admin/layout-editor/sirsoft-basic?route=%2Fregister');
+  await page.goto('/admin/layout-editor/sirsoft-basic?route=%2Fmypage%2Fprofile');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
   // state 기본값은 'visible' 인데 프레임 하위 첫 노드는 빈 앵커(header_currency_inject_anchor)나
   // `hidden` 클래스 요소일 수 있어 끝내 visible 이 되지 않는다 — 렌더 완료 판정은 존재로 한다.
@@ -111,10 +118,10 @@ async function selectByPathAndLockKind(page: Page, path: string): Promise<string
 }
 
 test.describe('@layout-editor 잠긴 영역 요소 추가(+) 복원', () => {
-  /** @effects locked_node_shows_insertion_plus_via_anchor */
+  /** @effects locked_node_shows_insertion_plus_via_anchor_box */
   test('확장 주입 조각 선택 → 잠금이어도 + 버튼이 조각 박스 경계에 화면 내 노출', async ({ page }) => {
-    await openRegisterEditor(page);
-    const res = await selectByText(page, '마케팅 동의|광고성 이메일', 30);
+    await openProfileEditor(page);
+    const res = await selectByText(page, '기본 배송지|Default shipping address', 30);
 
     expect(res.found).toBe(true);
     expect(res.lockKind).toBe('extension');
@@ -123,7 +130,7 @@ test.describe('@layout-editor 잠긴 영역 요소 추가(+) 복원', () => {
     expect(res.enabledInViewCount as number).toBeGreaterThan(0);
   });
 
-  /** @effects locked_node_shows_insertion_plus_via_anchor */
+  /** @effects locked_node_shows_insertion_plus_via_anchor_box */
   test('데이터 반복(인기글/최근글) 영역 선택 → data_bound 여도 + 버튼이 화면 내 노출', async ({ page }) => {
     await openHomeEditor(page);
     const res = await selectByText(page, '최근 게시글|샘플 게시글|게시글', 30);
@@ -141,10 +148,10 @@ test.describe('@layout-editor 잠긴 영역 요소 추가(+) 복원', () => {
    *
    * 저장하지 않는다 — 편집기 문서에만 반영되므로 사이트 레이아웃은 그대로 남는다.
    */
-  /** @effects insertion_inserts_outside_locked_group_as_sibling */
+  /** @effects insertion_inserts_outside_locked_group_as_sibling_of_anchor */
   test('잠긴 조각의 + 로 요소를 추가하면 묶음 안이 아니라 형제로 들어간다', async ({ page }) => {
-    await openRegisterEditor(page);
-    const res = await selectByText(page, '마케팅 동의|광고성 이메일', 30);
+    await openProfileEditor(page);
+    const res = await selectByText(page, '기본 배송지|Default shipping address', 30);
 
     expect(res.found).toBe(true);
     expect(res.lockKind).toBe('extension');

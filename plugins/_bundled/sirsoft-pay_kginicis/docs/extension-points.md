@@ -10,11 +10,11 @@
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
 | `sirsoft-pay_kginicis.payment.after_authorize` | action | KG 이니시스 서버 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:296` |
-| `sirsoft-pay_kginicis.payment.after_cancel` | action | KG 이니시스 결제 취소 완료 후 | `src/Services/KgInicisApiService.php:874` |
-| `sirsoft-pay_kginicis.payment.after_cbt_refund` | action | KG 이니시스 일본 CBT 결제 취소 완료 후 | `src/Services/KgInicisApiService.php:629` |
+| `sirsoft-pay_kginicis.payment.after_cancel` | action | KG 이니시스 결제 취소 완료 후 | `src/Services/KgInicisApiService.php:875` |
+| `sirsoft-pay_kginicis.payment.after_cbt_refund` | action | KG 이니시스 일본 CBT 결제 취소 완료 후 | `src/Services/KgInicisApiService.php:630` |
 | `sirsoft-pay_kginicis.payment.before_authorize` | action | KG 이니시스 서버 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:292` |
-| `sirsoft-pay_kginicis.payment.before_cancel` | action | KG 이니시스 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/KgInicisApiService.php:852` |
-| `sirsoft-pay_kginicis.payment.before_cbt_refund` | action | KG 이니시스 일본 CBT 결제 취소 API 호출 전 | `src/Services/KgInicisApiService.php:601` |
+| `sirsoft-pay_kginicis.payment.before_cancel` | action | KG 이니시스 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/KgInicisApiService.php:853` |
+| `sirsoft-pay_kginicis.payment.before_cbt_refund` | action | KG 이니시스 일본 CBT 결제 취소 API 호출 전 | `src/Services/KgInicisApiService.php:602` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -36,6 +36,7 @@
 | `core.permission.scope_enforcement_ledger` | filter | `OrderScopeLedgerListener` | `addLedgerEntries` | 20 |
 | `core.plugin_settings.before_save` | action (미선언) | `ValidateCbtSettingsListener` | `validateBeforeSave` | 10 |
 | `core.plugin_settings.update_validation_rules` | filter | `ValidateRedirectUrlSettingsListener` | `rules` | 10 |
+| `core.required_fields.filter_exempt_routes` | filter | `ExemptRequiredFieldsRoutesListener` | `exemptRoutes` | 10 |
 | `sirsoft-ecommerce.cash_receipt.cancel` | filter | `RegisterCashReceiptProviderListener` | `cancel` | 10 |
 | `sirsoft-ecommerce.cash_receipt.issue` | filter | `RegisterCashReceiptProviderListener` | `issue` | 10 |
 | `sirsoft-ecommerce.cash_receipt.registered_providers` | filter | `RegisterCashReceiptProviderListener` | `registerProvider` | 10 |
@@ -134,6 +135,7 @@ API 가 그 자리에서 환불하므로 `true` 입니다. 예외는 `kginicis_j
 | `ClaimPaymentRefundListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentRefundListener.php` |
 | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderDetailPaymentQueryLayoutListener.php` |
 | `EnsureAdminOrderDetailTestModeLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderDetailTestModeLayoutListener.php` |
+| `ExemptRequiredFieldsRoutesListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ExemptRequiredFieldsRoutesListener.php` |
 | `OrderScopeLedgerListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/OrderScopeLedgerListener.php` |
 | `PaymentRefundListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/PaymentRefundListener.php` |
 | `ProvideNecessaryStorageKeysListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ProvideNecessaryStorageKeysListener.php` |
@@ -151,6 +153,11 @@ API 가 그 자리에서 환불하므로 `true` 입니다. 예외는 `kginicis_j
 가 이 플러그인의 "등록" 축입니다 — 이 셋이 없으면 플러그인을 활성화해도 이커머스 화면에서
 KG 이니시스가 보이지 않습니다. 나머지는 전부 부가 UI(`Ensure*LayoutListener`)나 정합성
 검증(`ValidateCbtSettingsListener`)입니다.
+
+`RegisterEasyPayMethodsListener` 가 싣는 결제수단 이름·설명은 `LocalizedValue::translateAll()` 로
+지원 언어(`app.supported_locales` = 활성 언어팩) 전부를 채웁니다. ko·en 만 실으면 일본어 언어팩을 켠
+사이트의 일본어 화면에 번역이 있는데도 한국어 이름이 보입니다. 이커머스는 설정을 읽을 때마다 이 정의로
+`_cached_name`·`_cached_description` 을 새로 채우므로, 저장된 설정을 다시 저장하지 않아도 반영됩니다.
 <!-- @intent END -->
 
 ## 레이아웃 확장

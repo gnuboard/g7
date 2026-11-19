@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#599 |
 #   축(정의 종류 × 채널)의 조합마다 테스트를 두지 않는다 — 커버리지 단위는 **선언 전수
 #   순회**이고 한 테스트가 그 전수를 한 번에 돈다. effects 축은 면제하지 않는다.
 feature: staff_notification_definitions

@@ -94,7 +94,7 @@ class ClaimApproveDepositMethodGuardTest extends PluginTestCase
      */
     private function approve(ClaimPayment $payment, array $callback): array
     {
-        return (new ClaimPaymentApproveListener)->processApprove(['handled' => false, 'success' => false], $payment, $callback);
+        return app(ClaimPaymentApproveListener::class)->processApprove(['handled' => false, 'success' => false], $payment, $callback);
     }
 
     /**

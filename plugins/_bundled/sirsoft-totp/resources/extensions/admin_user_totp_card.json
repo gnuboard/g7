@@ -30,7 +30,7 @@
                     "if": "{{!!route?.id}}",
                     "props": {
                         "id": "ext_totp_security",
-                        "className": "scroll-mt-32"
+                        "className": "totp:scroll-mt-32"
                     },
                     "children": [
                         {
@@ -38,21 +38,21 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "admin-card"
+                                "className": "totp-admin-card"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-center justify-between mb-4"
+                                        "className": "totp:flex totp:items-center totp:justify-between totp:mb-4"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-center gap-2"
+                                                "className": "totp:flex totp:items-center totp:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -60,7 +60,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "shield-halved",
-                                                        "className": "text-xl text-gray-600 dark:text-gray-400"
+                                                        "className": "totp:text-xl totp:leading-none totp:text-gray-600 totp:dark:text-gray-400"
                                                     }
                                                 },
                                                 {
@@ -68,7 +68,7 @@
                                                     "type": "basic",
                                                     "name": "H3",
                                                     "props": {
-                                                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                                        "className": "totp:text-lg totp:font-semibold totp:text-gray-900 totp:dark:text-white"
                                                     },
                                                     "text": "$t:sirsoft-totp.admin.user_card.title"
                                                 }
@@ -90,7 +90,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "card-description"
+                                        "className": "totp-card-description"
                                     },
                                     "text": "$t:sirsoft-totp.admin.user_card.description"
                                 },
@@ -101,14 +101,14 @@
                                     "name": "Div",
                                     "if": "{{!!user?.data?.totp_enrollment}}",
                                     "props": {
-                                        "className": "mt-3 flex items-center gap-2"
+                                        "className": "totp:mt-3 totp:flex totp:items-center totp:gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                                "className": "totp:text-sm totp:text-gray-600 totp:dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-totp.admin.user_card.status_label"
                                         },
@@ -118,7 +118,7 @@
                                             "name": "Span",
                                             "if": "{{user?.data?.totp_enrollment?.enrolled === true}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                                                "className": "totp:inline-flex totp:items-center totp:px-2 totp:py-0.5 totp:rounded-full totp:text-xs totp:font-medium totp:bg-green-100 totp:text-green-800 totp:dark:bg-green-900 totp:dark:text-green-300"
                                             },
                                             "text": "$t:sirsoft-totp.admin.user_card.enrolled"
                                         },
@@ -128,7 +128,7 @@
                                             "name": "Span",
                                             "if": "{{user?.data?.totp_enrollment?.enrolled === false}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                                                "className": "totp:inline-flex totp:items-center totp:px-2 totp:py-0.5 totp:rounded-full totp:text-xs totp:font-medium totp:bg-gray-100 totp:text-gray-700 totp:dark:bg-gray-700 totp:dark:text-gray-300"
                                             },
                                             "text": "$t:sirsoft-totp.admin.user_card.not_enrolled"
                                         }
@@ -140,7 +140,7 @@
                                     "name": "P",
                                     "if": "{{user?.data?.totp_enrollment?.enrolled === false}}",
                                     "props": {
-                                        "className": "text-hint mt-2"
+                                        "className": "totp-text-hint totp:mt-2"
                                     },
                                     "text": "$t:sirsoft-totp.admin.user_card.not_enrolled_notice"
                                 },
@@ -150,7 +150,7 @@
                                     "name": "P",
                                     "if": "{{user !== undefined && (!user?.data?.totp_enrollment)}}",
                                     "props": {
-                                        "className": "text-hint mt-3"
+                                        "className": "totp-text-hint totp:mt-3"
                                     },
                                     "text": "$t:sirsoft-totp.admin.user_card.status_unavailable"
                                 },
@@ -197,7 +197,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white rounded-lg font-medium transition-colors cursor-pointer"
+                                        "className": "totp:mt-3 totp:px-4 totp:py-2 totp:bg-red-600 totp:hover:bg-red-700 totp:dark:bg-red-600 totp:dark:hover:bg-red-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer"
                                     },
                                     "children": [
                                         {
@@ -214,7 +214,7 @@
                                     "name": "P",
                                     "if": "{{user?.data?.totp_enrollment?.enrolled === true}}",
                                     "props": {
-                                        "className": "text-hint mt-2"
+                                        "className": "totp-text-hint totp:mt-2"
                                     },
                                     "text": "$t:sirsoft-totp.admin.user_card.hint"
                                 }

@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 시각 회귀 없는 시맨틱 자산 치환 — 메타 설정 카드(card + card-header + card-accordion × N) → section-header + admin-card × N 으로 교체. 모든 form field name / 다국어 키 / actions / data_sources 동일 유지. Playwright cross-product 가드 불필요 — 자산 정의는 admin_basic main.css SSoT.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#609 시각 회귀 없는 시맨틱 자산 치환 — 메타 설정 카드(card + card-header + card-accordion × N) → section-header + admin-card × N 으로 교체. 모든 form field name / 다국어 키 / actions / data_sources 동일 유지. Playwright cross-product 가드 불필요 — 자산 정의는 admin_basic main.css SSoT.
 
 feature: 게시판/이커머스 어드민 설정 SEO 탭 메타 설정 영역 시맨틱 자산 매핑 (#408 보강)
 
@@ -56,19 +56,31 @@ exclusions:
 effects:
   - board_seo_tab_meta_settings_header_uses_section_header_asset
   - board_seo_tab_replaces_card_accordion_with_admin_card_for_three_page_types
-  - board_seo_tab_each_admin_card_uses_section_layout_with_h3_card_title
   - board_seo_tab_form_field_names_preserve_seo_meta_boards_board_post_title_description
   - ecommerce_seo_tab_meta_settings_header_uses_section_header_asset
   - ecommerce_seo_tab_replaces_card_accordion_with_admin_card_for_four_page_types
-  - ecommerce_seo_tab_each_admin_card_uses_section_layout_with_h3_card_title
   - ecommerce_seo_tab_form_field_names_preserve_seo_meta_category_search_product_shop_index
-  - dummy_accordion_toggle_chevron_removed_no_user_facing_behavior_change
+
+# 미작성 — 회차 16 W6 (G3): 아직 재는 테스트가 없는 효과의 원장. 재는 테스트가 생기면
+# effects 로 승격한다 (지우지 않는다 — 검사 도구가 개수를 노출한다). h3 카드 제목 축은 두
+# 렌더링 테스트가 SectionLayout 사용까지만 재고 제목 요소는 재지 않는다.
+pending_effects:
+  - board_seo_tab_each_admin_card_uses_section_layout_with_h3_card_title
+  - ecommerce_seo_tab_each_admin_card_uses_section_layout_with_h3_card_title
   - row_stack_asset_provides_vertical_spacing_between_form_group_pairs_inside_admin_card
+
+# 회고·범위 메모 — pending_effects 는 「아직 재지 못한 효과」의 원장이라 측정 가능한 긍정
+# 단언만 담는다. 「바뀌지 않았다·이미 있다·범위 밖이다」 같은 회고 문장은 효과가 아니므로
+# notes 로 옮긴다.
+notes:
+  - dummy_accordion_toggle_chevron_removed_no_user_facing_behavior_change
   - seo_friendly_card_remains_card_pattern_outside_seo_tab_meta_refactor_scope
   - i18n_keys_preserved_across_refactor_no_lang_pack_changes_required
   - admin_basic_main_css_section_header_admin_card_section_layout_already_define_target_assets
 
-test_files: []
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-settings.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/ecommerceSettingsSeoTab.test.tsx
 
 validation:
   audit_rule: frontend-change-requires-e2e

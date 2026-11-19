@@ -22,6 +22,11 @@ class ShippingPolicyActiveListTest extends ModuleTestCase
 
     protected string $apiBase = '/api/modules/sirsoft-ecommerce/admin/shipping-policies';
 
+    /**
+     * 배송유형 시드와 배송정책 조회·상품 조회/수정 권한을 가진 관리자를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -33,6 +38,13 @@ class ShippingPolicyActiveListTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 한국 택배 국가 설정 하나를 가진 배송정책을 만듭니다.
+     *
+     * @param  string  $name  정책 이름(ko·en 같은 값)
+     * @param  bool  $isActive  사용 여부
+     * @return ShippingPolicy 국가 설정을 실은 배송정책
+     */
     private function makePolicy(string $name, bool $isActive): ShippingPolicy
     {
         $policy = ShippingPolicy::create([
@@ -52,6 +64,15 @@ class ShippingPolicyActiveListTest extends ModuleTestCase
         return $policy->load('countrySettings');
     }
 
+    /**
+     * 상품 폼이 쓰는 `is_active=true` 필터가 비활성 정책을 빼는지 검증합니다(신규 상품에는 사용 중인 정책만).
+     *
+     * @scenario product_form=new, filter=applied
+     *
+     * @effects active_list_excludes_inactive_for_new
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_is_active_filter_excludes_inactive_policies(): void
     {
@@ -68,12 +89,16 @@ class ShippingPolicyActiveListTest extends ModuleTestCase
         $this->assertTrue($data[0]['is_active']);
     }
 
-    #[Test]
     /**
+     * 사용 중 필터를 건 응답이 상품 폼이 그리는 필드(국가 설정·배송비 요약·기본 여부)를 그대로 싣는지 검증합니다.
+     *
      * @scenario endpoint=active_list,opt_in=default
      *
      * @effects list_keeps_fields_the_screen_draws
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function test_active_filtered_response_includes_form_fields(): void
     {
         $this->makePolicy('활성정책', true);
@@ -101,6 +126,15 @@ class ShippingPolicyActiveListTest extends ModuleTestCase
             ]);
     }
 
+    /**
+     * 필터가 없으면 비활성 정책도 함께 오는지 검증합니다 — 배송정책 관리 목록 화면 동작을 깨지 않는다.
+     *
+     * @scenario policy_count=many, filter=none
+     *
+     * @effects admin_list_without_filter_keeps_inactive
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_without_filter_includes_inactive(): void
     {
@@ -114,6 +148,15 @@ class ShippingPolicyActiveListTest extends ModuleTestCase
         $this->assertCount(2, $response->json('data.data'));
     }
 
+    /**
+     * 비활성 정책이 붙은 상품의 수정 폼 응답에 그 정책 객체가 실려 선택지에 함께 그려지는지 검증합니다.
+     *
+     * @scenario product_form=edit_inactive
+     *
+     * @effects inactive_assigned_policy_union_shown
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_product_form_includes_assigned_inactive_policy_object(): void
     {
@@ -136,5 +179,35 @@ class ShippingPolicyActiveListTest extends ModuleTestCase
         $this->assertFalse($policy['is_active']);
         $this->assertArrayHasKey('country_settings', $policy);
         $this->assertArrayHasKey('fee_summary', $policy);
+    }
+
+    /**
+     * 상품 등록·수정 화면의 배송정책 선택지는 `per_page=all` 로 활성 정책 전부를 받는다 — 100건을 넘어도 잘리지 않는다.
+     *
+     * 종전에는 목록 API 가 쪽당 최대 100건만 받아 화면이 `per_page=100` 한 쪽만 그렸고, 101번째 이후 활성 정책을 고를 수 없었다.
+     *
+     * @scenario endpoint=admin_list,opt_in=default
+     *
+     * @effects admin_list_per_page_all_returns_every_row
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function test_per_page_all_returns_every_active_policy(): void
+    {
+        for ($i = 1; $i <= 101; $i++) {
+            $this->makePolicy('활성정책 '.$i, true);
+        }
+        $this->makePolicy('비활성정책', false);
+
+        $response = $this->actingAs($this->adminUser)
+            ->getJson($this->apiBase.'?is_active=true&per_page=all');
+
+        $response->assertOk();
+        $this->assertCount(101, $response->json('data.data'));
+        $this->assertArrayHasKey('fee_summary', $response->json('data.data.0'));
+
+        // 숫자 쪽당 상한은 그대로다
+        $this->actingAs($this->adminUser)->getJson($this->apiBase.'?per_page=101')->assertStatus(422);
     }
 }

@@ -8,6 +8,7 @@ use App\Benchmark\Axes\ListAxisRunner;
 use App\Benchmark\Axes\ScreenAxisRunner;
 use App\Benchmark\Axes\WriteAxisRunner;
 use App\Console\Commands\BenchCommand;
+use App\Console\RuntimeRoleCommandGuard;
 use App\Contracts\Analytics\ConversionRecorderInterface as AnalyticsConversionRecorderInterface;
 use App\Contracts\Analytics\DimensionRegistryInterface as AnalyticsDimensionRegistryInterface;
 use App\Contracts\Analytics\GoalRegistryInterface as AnalyticsGoalRegistryInterface;
@@ -30,9 +31,14 @@ use App\Contracts\Repositories\Analytics\TableStatsRepositoryInterface as Analyt
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface as AnalyticsVisitRepositoryInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Contracts\Repositories\ExtensionDeferredCleanupRepositoryInterface;
+use App\Contracts\Repositories\ExtensionTrustKeyRepositoryInterface;
 use App\Contracts\Repositories\ExtensionUpdateJournalRepositoryInterface;
+use App\Contracts\Repositories\FieldDefinitionRepositoryInterface;
+use App\Contracts\Repositories\FieldValueRepositoryInterface;
 use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
+use App\Contracts\Repositories\JobQueueRepositoryInterface;
 use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
 use App\Contracts\Repositories\LayoutExtensionVersionRepositoryInterface;
 use App\Contracts\Repositories\LayoutPreviewRepositoryInterface;
@@ -50,19 +56,31 @@ use App\Contracts\Repositories\PasswordResetTokenRepositoryInterface;
 use App\Contracts\Repositories\PermissionRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\PrivacyManualRunRepositoryInterface;
+use App\Contracts\Repositories\QueueJobLogRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Contracts\Repositories\SeoCacheStatRepositoryInterface;
+use App\Contracts\Repositories\StageLayoutTableRepositoryInterface;
 use App\Contracts\Repositories\SystemConfigRepositoryInterface;
 use App\Contracts\Repositories\TemplateCustomTranslationRepositoryInterface;
 use App\Contracts\Repositories\TemplateLayoutAttachmentRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
+use App\Contracts\Repositories\UpgradeStepRunRepositoryInterface;
 use App\Contracts\Repositories\UserConsentRepositoryInterface;
 use App\Contracts\Repositories\UserPasswordHistoryRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Contracts\Repositories\UserSearchHistoryRepositoryInterface;
 use App\Contracts\UniqueIdServiceInterface;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\DisplayNameFieldValues;
+use App\DisplayName\DisplayNameKindRegistry;
+use App\DisplayName\DisplayNameResolver;
+use App\DisplayName\DisplayNameSettings;
+use App\DisplayName\MemberNamePresenter;
+use App\DisplayName\NicknameRequirement;
+use App\Extension\Auth\CredentialVerifierManager;
+use App\Extension\Cache\CacheDriverFactory;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Consent\ConsentManager;
 use App\Extension\CoreVersionChecker;
@@ -74,17 +92,27 @@ use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Extension\IdentityVerification\Providers\MailIdentityProvider;
 use App\Extension\IncompatibleExtensionDeactivator;
+use App\Extension\Integrity\BuiltinTrustKeys;
+use App\Extension\Integrity\PackageSignatureVerifier;
+use App\Extension\Integrity\UnsignedPackagePolicy;
 use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use App\Extension\ScheduleCommandCacheManager;
 use App\Extension\Storage\CoreStorageDriver;
 use App\Extension\Storage\StorageTransactionJournal;
 use App\Extension\Support\ExtensionStatusMemo;
 use App\Extension\Support\IntegrationReverseIndex;
 use App\Extension\Support\LifecycleWarnings;
 use App\Extension\TemplateManager;
+use App\Fields\FieldRegistry;
+use App\Fields\FieldSetRegistry;
+use App\Fields\FieldTypeRegistry;
 use App\Listeners\ExtensionCompatibilityAlertListener;
 use App\Listeners\Identity\EnforceIdentityPolicyListener;
+use App\Models\User;
+use App\Notifications\MemberVariables;
+use App\Notifications\RecipientDisplayName;
 use App\Repositories\ActivityLogRepository;
 use App\Repositories\Analytics\ActionNameRepository as AnalyticsActionNameRepository;
 use App\Repositories\Analytics\ActionRepository as AnalyticsActionRepository;
@@ -98,9 +126,14 @@ use App\Repositories\Analytics\StatsRepository as AnalyticsStatsRepository;
 use App\Repositories\Analytics\TableStatsRepository as AnalyticsTableStatsRepository;
 use App\Repositories\Analytics\VisitRepository as AnalyticsVisitRepository;
 use App\Repositories\AttachmentRepository;
+use App\Repositories\ExtensionDeferredCleanupRepository;
+use App\Repositories\ExtensionTrustKeyRepository;
 use App\Repositories\ExtensionUpdateJournalRepository;
+use App\Repositories\FieldDefinitionRepository;
+use App\Repositories\FieldValueRepository;
 use App\Repositories\IdentityPolicyRepository;
 use App\Repositories\IdentityVerificationLogRepository;
+use App\Repositories\JobQueueRepository;
 use App\Repositories\JsonConfigRepository;
 use App\Repositories\LayoutExtensionRepository;
 use App\Repositories\LayoutExtensionVersionRepository;
@@ -119,14 +152,17 @@ use App\Repositories\PasswordResetTokenRepository;
 use App\Repositories\PermissionRepository;
 use App\Repositories\PluginRepository;
 use App\Repositories\PrivacyManualRunRepository;
+use App\Repositories\QueueJobLogRepository;
 use App\Repositories\RoleRepository;
 use App\Repositories\ScheduleHistoryRepository;
 use App\Repositories\ScheduleRepository;
 use App\Repositories\SeoCacheStatRepository;
+use App\Repositories\StageLayoutTableRepository;
 use App\Repositories\SystemConfigRepository;
 use App\Repositories\TemplateCustomTranslationRepository;
 use App\Repositories\TemplateLayoutAttachmentRepository;
 use App\Repositories\TemplateRepository;
+use App\Repositories\UpgradeStepRunRepository;
 use App\Repositories\UserConsentRepository;
 use App\Repositories\UserPasswordHistoryRepository;
 use App\Repositories\UserRepository;
@@ -139,6 +175,8 @@ use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
 use App\Services\NotificationRecipientCapability;
 use App\Services\PluginSettingsService;
+use App\Services\RequiredFieldsChecker;
+use App\Services\Schedule\ScheduleSecurityPolicy;
 use App\Services\TemplateLayoutAttachmentService;
 use App\Services\TemplateService;
 use App\Services\UniqueIdService;
@@ -147,16 +185,35 @@ use App\Support\Content\MediaSourceRoutes;
 use App\Support\CoreUpdateContext;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\InstallerResidual;
+use App\Support\PrivateAttachmentDisk;
 use App\Support\PrivilegedDatabaseAccounts;
+use App\Support\RootOwnedEntryReclaimer;
+use App\Support\RuntimeRole;
+use App\Thumbnails\ImageProcessorResolver;
+use App\Thumbnails\ThumbnailPresetRegistry;
+use App\Thumbnails\ThumbnailPurgeBuffer;
+use App\Thumbnails\ThumbnailResponder;
+use App\Thumbnails\ThumbnailSourceProviders;
+use App\Thumbnails\ThumbnailStore;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Console\Application as ArtisanApplication;
+use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Database\Events\TransactionRolledBack;
+use Illuminate\Foundation\Console\AboutCommand;
+use Illuminate\Http\Request;
+use Illuminate\Queue\Events\JobFailed;
+use Illuminate\Queue\Events\JobProcessed;
+use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Sanctum\Console\Commands\PruneExpired;
 
 class CoreServiceProvider extends ServiceProvider
 {
@@ -186,12 +243,92 @@ class CoreServiceProvider extends ServiceProvider
         $this->registerRepositoryBindings();
         $this->registerExtensionManagers();
         $this->registerBenchmarkAxes();
+        $this->registerThumbnailServices();
 
         // 확장 오토로드 캐시 파일이 아예 없으면 지금(등록 단계) 다시 만든다. 뒤따르는 ModuleServiceProvider ·
         // PluginServiceProvider 가 등록 단계에서 확장의 서비스 공급자를 올리는데, 그때 확장 클래스를 찾지 못하면
         // 바인딩이 빠진 채 부팅돼 그 요청이 500 이 된다 — 부팅 단계의 복구로는 늦다 (7.1.6).
         $this->healMissingExtensionAutoloadBeforeExtensionProviders();
         // ActivityLogManager 제거됨 — Monolog 채널(config/logging.php 'activity')로 대체
+    }
+
+    /**
+     * 썸네일 서비스(규격·저장소·퍼지 묶음·엔진 해석기)를 요청 단위 싱글턴으로 등록합니다.
+     *
+     * 퍼지 묶음은 요청 하나 동안 모은 접두를 끝에 한 번 발화해야 하므로 싱글턴이어야 한다.
+     *
+     * @return void 반환값 없음
+     */
+    private function registerThumbnailServices(): void
+    {
+        $this->app->singleton(ThumbnailPurgeBuffer::class);
+        $this->app->singleton(ThumbnailPresetRegistry::class);
+        $this->app->singleton(ThumbnailSourceProviders::class);
+        $this->app->singleton(ThumbnailStore::class);
+        $this->app->singleton(ImageProcessorResolver::class);
+    }
+
+    /**
+     * `php artisan about` 에 패키지 무결성 구획을 더합니다.
+     *
+     * 내장 신뢰 키 수·sodium 확장·미서명 차단 스위치를 보이고, 내장 키가 비어 있으면 그 줄에 경고를 붙인다(공식 서명
+     * 패키지도 「신뢰하지 않는 키」가 되는 상태). 값은 about 이 구획을 그릴 때만 계산하고, 설정을 읽지 못하면(설치 전)
+     * 그 줄만 「알 수 없음」으로 둔다.
+     *
+     * @return void 반환값 없음
+     */
+    private function registerPackageIntegrityAbout(): void
+    {
+        AboutCommand::add(__('extension_integrity.about.section'), function (): array {
+            // 쓸 수 있는(폐기 아닌) 내장 키 수 — core:check-updates·extension:trust-key list 와 같은 판정
+            $builtin = BuiltinTrustKeys::hasUsableKey()
+                ? (string) BuiltinTrustKeys::usableCount()
+                : '<fg=yellow;options=bold>0</> — '.__('extensions.commands.trust_key.builtin_empty');
+
+            try {
+                $blocks = $this->app->make(UnsignedPackagePolicy::class)->blocksUnsigned();
+                $block = $blocks ? __('extension_integrity.about.on') : __('extension_integrity.about.off');
+            } catch (\Throwable) {
+                $block = __('extension_integrity.about.unknown');
+            }
+
+            return [
+                __('extension_integrity.about.builtin_keys') => $builtin,
+                __('extension_integrity.about.sodium') => $this->app->make(PackageSignatureVerifier::class)->sodiumAvailable()
+                    ? __('extension_integrity.about.available')
+                    : '<fg=yellow;options=bold>'.__('extension_integrity.about.missing').'</>',
+                __('extension_integrity.about.block_unsigned') => $block,
+            ];
+        });
+    }
+
+    /**
+     * 썸네일 퍼지 묶음의 비우는 시점과 생성 제한을 겁니다.
+     *
+     * HTTP 는 응답 뒤(`terminating`), 큐는 작업 하나가 끝날 때마다 비운다. 콘솔·테스트는 묶음이 즉시 비운다.
+     *
+     * @return void 반환값 없음
+     */
+    private function bootThumbnailServices(): void
+    {
+        $this->app->terminating(function () {
+            $this->app->make(ThumbnailPurgeBuffer::class)->flush();
+        });
+
+        Event::listen(JobProcessing::class, fn () => $this->app->make(ThumbnailPurgeBuffer::class)->setProcessingJob(true));
+
+        foreach ([JobProcessed::class, JobFailed::class] as $event) {
+            Event::listen($event, function () {
+                $buffer = $this->app->make(ThumbnailPurgeBuffer::class);
+                $buffer->setProcessingJob(false);
+                $buffer->flush();
+            });
+        }
+
+        // 미생성 썸네일 주소를 대량으로 찍어 CPU 를 쓰게 하는 요청 제한 (IP 단위, 분당)
+        RateLimiter::for(ThumbnailResponder::RATE_LIMITER, fn (Request $request) => Limit::perMinute(
+            max(1, (int) config('core.thumbnail.generate_per_minute', 120))
+        )->by($request->ip() ?? 'unknown'));
     }
 
     /**
@@ -299,6 +436,11 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->singleton(ConfigRepositoryInterface::class, JsonConfigRepository::class);
         // 확장 업데이트 진행 기록 — 파일 기반, 끊긴 업데이트가 못 끝낸 업그레이드 스텝만 이어 돌게 한다
         $this->app->bind(ExtensionUpdateJournalRepositoryInterface::class, ExtensionUpdateJournalRepository::class);
+        // 확장 신뢰 키(제작자 공개키) — 패키지 서명 검증이 내장 키 다음으로 찾는다(7.2.0)
+        $this->app->bind(ExtensionTrustKeyRepositoryInterface::class, ExtensionTrustKeyRepository::class);
+        $this->app->bind(UpgradeStepRunRepositoryInterface::class, UpgradeStepRunRepository::class);
+        $this->app->bind(StageLayoutTableRepositoryInterface::class, StageLayoutTableRepository::class);
+        $this->app->bind(ExtensionDeferredCleanupRepositoryInterface::class, ExtensionDeferredCleanupRepository::class);
         $this->app->bind(LayoutPreviewRepositoryInterface::class, LayoutPreviewRepository::class);
         $this->app->bind(LayoutRepositoryInterface::class, LayoutRepository::class);
         $this->app->bind(LayoutVersionRepositoryInterface::class, LayoutVersionRepository::class);
@@ -310,6 +452,9 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(RoleRepositoryInterface::class, RoleRepository::class);
         $this->app->bind(ScheduleHistoryRepositoryInterface::class, ScheduleHistoryRepository::class);
         $this->app->bind(ScheduleRepositoryInterface::class, ScheduleRepository::class);
+        // 큐 운영(대기·실패·처리 기록) — #17
+        $this->app->bind(JobQueueRepositoryInterface::class, JobQueueRepository::class);
+        $this->app->bind(QueueJobLogRepositoryInterface::class, QueueJobLogRepository::class);
         $this->app->bind(SystemConfigRepositoryInterface::class, SystemConfigRepository::class);
         $this->app->bind(TemplateRepositoryInterface::class, TemplateRepository::class);
         $this->app->bind(TemplateCustomTranslationRepositoryInterface::class, TemplateCustomTranslationRepository::class);
@@ -355,6 +500,26 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(IdentityVerificationLogRepositoryInterface::class, IdentityVerificationLogRepository::class);
         $this->app->bind(IdentityPolicyRepositoryInterface::class, IdentityPolicyRepository::class);
 
+        // 항목 집합 엔진 — 정의 저장소는 요청 안에서 항목 목록을 메모하므로 요청 단위(scoped)로 둔다.
+        // 등록소도 확장 활성 상태를 반영해야 해서 요청 단위다.
+        $this->app->scoped(FieldDefinitionRepositoryInterface::class, FieldDefinitionRepository::class);
+        $this->app->bind(FieldValueRepositoryInterface::class, FieldValueRepository::class);
+        $this->app->scoped(FieldSetRegistry::class);
+        $this->app->scoped(FieldTypeRegistry::class);
+        $this->app->scoped(FieldRegistry::class);
+
+        // 표시 이름 — 종류와 영역 등록소는 확장 활성 상태를, 계산기와 값 메모는 요청 안에서 읽어 둔 값을 가지므로 요청 단위다.
+        $this->app->scoped(DisplayNameKindRegistry::class);
+        $this->app->scoped(DisplayNameAreaRegistry::class);
+        $this->app->scoped(DisplayNameSettings::class);
+        $this->app->scoped(DisplayNameFieldValues::class);
+        $this->app->scoped(DisplayNameResolver::class);
+        $this->app->scoped(MemberNamePresenter::class);
+        // 알림의 받는 사람 이름과 회원 항목 변수 — 읽어 둔 값을 가지므로 요청(큐 작업) 단위다.
+        $this->app->scoped(RecipientDisplayName::class);
+        $this->app->scoped(MemberVariables::class);
+        $this->app->scoped(NicknameRequirement::class);
+
         // IdentityVerification Manager + 기본 MailProvider 등록
         $this->app->singleton(IdentityVerificationManager::class, function ($app) {
             $manager = new IdentityVerificationManager;
@@ -366,17 +531,25 @@ class CoreServiceProvider extends ServiceProvider
         // 동의 제공자 매니저 — 확장은 `core.consent.registered_providers` 필터로 제공자를 등록한다 (#639)
         $this->app->scoped(ConsentManager::class);
 
+        // 외부 자격 증명 검증자 레지스트리 — 확장은 `core.auth.registered_credential_verifiers` 필터로 검증자를 등록한다 (7.2.0)
+        $this->app->singleton(CredentialVerifierManager::class);
+
+        // 스케줄 보안 유효 정책 해석기 — 저장 검증·실행기·조회 API 가 같은 인스턴스(파일 해석 메모)를 쓴다 (#17)
+        $this->app->singleton(ScheduleSecurityPolicy::class);
+
         // UniqueIdService 바인딩
         $this->app->singleton(UniqueIdServiceInterface::class, UniqueIdService::class);
 
-        // AttachmentService용 CoreStorageDriver 바인딩
+        // AttachmentService용 CoreStorageDriver 바인딩 — 코어 첨부는 비공개 원본이라 관리자가 고른
+        // 「비공개 첨부 저장소」를 따른다(#916). ATTACHMENT_DISK env 명시가 우선, 「기본」이면 종전 규칙.
         $this->app->when(AttachmentService::class)
             ->needs(StorageInterface::class)
             ->give(function () {
-                return new CoreStorageDriver(config('attachment.disk', 'attachments'));
+                return new CoreStorageDriver(PrivateAttachmentDisk::forCore());
             });
 
-        // TemplateLayoutAttachmentService용 CoreStorageDriver 바인딩
+        // TemplateLayoutAttachmentService용 CoreStorageDriver 바인딩 — 레이아웃 배경 이미지는 공개 화면 자산이라
+        // 비공개 첨부 저장소를 따르지 않는다(공개 자산 디스크 → 꺼져 있으면 종전 디스크, #916 D29)
         $this->app->when(TemplateLayoutAttachmentService::class)
             ->needs(StorageInterface::class)
             ->give(function () {
@@ -386,7 +559,7 @@ class CoreServiceProvider extends ServiceProvider
         // 코어 서비스용 CoreCacheDriver 바인딩
         // Phase 7(이관)에서 각 서비스에 CacheInterface DI 추가 시 when() 목록 확대 예정
         $this->app->bind(CacheInterface::class, function () {
-            return new CoreCacheDriver(config('cache.default'));
+            return CacheDriverFactory::core();
         });
 
         // 확장 선언 미들웨어 self-gate 인덱스 — 요청 내 인덱스 1회 빌드. scoped 라서 인덱스·해석 메모가
@@ -507,8 +680,45 @@ class CoreServiceProvider extends ServiceProvider
         // 코어 훅 리스너 자동 발견 및 등록 (환경 무관)
         $this->registerCoreHookListeners();
 
+        // 실행 역할 값은 부팅 때 검증한다(live|stage 외 값이면 예외) — 잘못 적은 값이 조용히 live 로 동작하지 않게
+        RuntimeRole::current();
+
+        // 운영 전용 명령(스케줄·큐 워커·재시작 신호·확장 수명주기)을 실행 역할·서버별 스케줄 스위치로 막는다
+        if ($this->app->runningInConsole()) {
+            Event::listen(CommandStarting::class, [RuntimeRoleCommandGuard::class, 'handle']);
+
+            // root 로 돈 업데이트·설치 계열 명령이 끝나면 설치 트리에 새로 생긴 root 소유 폴더·파일을 상위 폴더 소유·그룹
+            // 권한으로 되돌린다 — 업데이트 전 스냅샷에 없던 새 경로가 root 로 남아 웹서버가 못 쓰던 결함(7.2.0 검수)
+            Event::listen(CommandStarting::class, [RootOwnedEntryReclaimer::class, 'handleCommandStarting']);
+        }
+
+        // 회원 행이 바뀌면 비어 있는 필수 항목 판정 캐시를 버린다 — 회원 서비스를 거치지 않는 저장(외부 인증의 속성 동기화,
+        // 건너뛴 표시 변경)도 다음 요청에서 다시 판정되게 한다. 판정 캐시가 회원 저장을 막지 않도록 실패는 삼킨다.
+        User::saved(function (User $user): void {
+            if (! $user->wasChanged()) {
+                return;
+            }
+
+            try {
+                $this->app->make(RequiredFieldsChecker::class)->forget($user);
+            } catch (\Throwable) {
+                // 설치 전처럼 항목 정의를 읽을 수 없는 구간 — 캐시가 없으므로 지울 것도 없다
+            }
+        });
+
+        // 확장이 선언한 예약 커맨드를 실행 방식과 무관하게 등록 (D42)
+        $this->registerExtensionScheduleCommands();
+
         // 시스템 라우트 주입 (프리뷰 등 코어 전역 라우트)
         $this->registerSystemRouteFilters();
+
+        // 썸네일 퍼지 묶음 비우기 시점·생성 제한 (DB 무관)
+        $this->bootThumbnailServices();
+
+        // `php artisan about` 에 패키지 무결성 구획 (내장 신뢰 키가 비면 경고) — 값은 about 실행 때만 계산한다
+        if ($this->app->runningInConsole()) {
+            $this->registerPackageIntegrityAbout();
+        }
 
         // .env 파일이 없으면 스킵 (인스톨러 실행 전)
         if (! File::exists(base_path('.env'))) {
@@ -884,8 +1094,16 @@ class CoreServiceProvider extends ServiceProvider
                     continue;
                 }
 
+                $available = $driverRegistry->isDriverAvailable($category, $selectedDriver);
+
+                // 디스크 카테고리는 쓰는 시점에 해석한다 — 플러그인 디스크는 booted 에서 정의돼 지금은 카탈로그에 없을 수 있다.
+                // 여기서 기본값으로 덮으면 저장된 선택이 모든 요청에서 사라진다(#916 A7). 고아 디스크는 해석기가 거른다.
+                if (! $available && $driverRegistry->isRuntimeResolved($category)) {
+                    continue;
+                }
+
                 // 플러그인 드라이버: 사용 가능 여부 확인
-                if ($driverRegistry->isDriverAvailable($category, $selectedDriver)) {
+                if ($available) {
                     // 플러그인이 Config을 직접 적용하도록 액션 훅 발행
                     HookManager::doAction(
                         'core.settings.apply_driver_config',
@@ -914,6 +1132,81 @@ class CoreServiceProvider extends ServiceProvider
     }
 
     // registerActivityLogManager() 제거됨 — Monolog 채널(config/logging.php 'activity')로 대체
+
+    /**
+     * 확장이 선언한 예약 커맨드를 Artisan 부팅 시점에 등록합니다.
+     *
+     * 확장은 관례대로 `runningInConsole()` 안에서만 자기 커맨드를 등록하는데(Laravel 표준),
+     * 무CLI 호스팅의 웹 크론은 웹 요청 안에서 `Artisan::call()` 로 실행하므로 그 조건이 거짓이라
+     * 커맨드가 등록되지 않고 예약 작업이 매번 「그런 커맨드가 없다」로 실패한다
+     * (G8 실측 2026-09-02 · 계획서 §9.11.3 F4 · D42). 확장 소스는 고치지 않고 코어가 보장한다 —
+     * 그 게이트는 Laravel 관례라 제3자 확장은 관례대로 쓸 것이기 때문이다.
+     *
+     * 등록 범위는 확장이 `getSchedules()` 로 **선언한 것뿐**이다.
+     *
+     * 웹 요청 비용은 없다 — `Artisan::starting()` 은 콜백만 담아 두고, 그 콜백은 콘솔 커널이
+     * 실제로 뜰 때(= `Artisan::call` 또는 CLI)만 실행된다.
+     *
+     * @return void 반환값 없음
+     */
+    private function registerExtensionScheduleCommands(): void
+    {
+        ArtisanApplication::starting(function ($artisan): void {
+            foreach ($this->resolveExtensionScheduleCommandClasses() as $class) {
+                try {
+                    // 한 건씩 등록한다. `resolveCommands()` 로 묶어 넘기면 커맨드 하나가
+                    // 생성에 실패할 때 **Artisan 부팅 전체가 죽는다** — 확장의 바인딩이
+                    // 갖춰지지 않은 환경(부분 부팅·깨진 확장)에서 그 확장 하나 때문에
+                    // 모든 커맨드가 사라지는 것은 지금 고치는 결함보다 나쁘다.
+                    $artisan->resolve($class);
+                } catch (\Throwable $e) {
+                    Log::warning('확장 예약 커맨드를 등록하지 못했습니다 — 해당 커맨드만 제외', [
+                        'command_class' => $class,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        });
+    }
+
+    /**
+     * 등록할 예약 커맨드 클래스 목록을 해석합니다.
+     *
+     * 캐시(bootstrap/cache/extension-schedule-commands.php)가 있으면 그것을 쓰고, 없으면
+     * 활성 확장에서 라이브로 해석한다(훅 캐시와 같은 폴백 규약).
+     *
+     * @return array<int, class-string> 등록할 커맨드 클래스 목록
+     */
+    private function resolveExtensionScheduleCommandClasses(): array
+    {
+        $classes = [];
+
+        try {
+            $manager = $this->app->make(ScheduleCommandCacheManager::class);
+            $cache = $manager->read();
+
+            if ($cache === null && File::exists(base_path('.env'))) {
+                $cache = $manager->resolveLive(
+                    $this->app->make(ModuleManager::class),
+                    $this->app->make(PluginManager::class)
+                );
+            }
+
+            $classes = $cache === null ? [] : array_values($cache['commands']);
+        } catch (\Throwable $e) {
+            // 등록 실패가 요청을 죽이면 안 된다 — 예약 작업만 종전처럼 실패한다.
+            Log::warning('확장 예약 커맨드 등록 실패', ['error' => $e->getMessage()]);
+        }
+
+        // Sanctum 은 확장이 아니라 외부 라이브러리라 위 경로에 잡히지 않는다. 코어가
+        // `routes/console.php` 에서 `sanctum:prune-expired` 를 예약하므로 그 커맨드의
+        // 등록도 코어가 진다 — 벤더 소스는 고칠 수 없다.
+        if (class_exists(PruneExpired::class)) {
+            $classes[] = PruneExpired::class;
+        }
+
+        return $classes;
+    }
 
     /**
      * 코어 훅 리스너를 일괄 등록합니다.

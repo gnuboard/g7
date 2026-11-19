@@ -7,7 +7,12 @@ use Plugins\Sirsoft\Koreaexim\Enums\RunStatus;
 use Plugins\Sirsoft\Koreaexim\Services\ExchangeRateCalculator;
 use Tests\PureTestCase;
 
-/** @effects cross_rates, preserve_invalid_rates */
+/**
+ * 수출입은행 고시 환율의 교차 환산 계산기 검증
+ *
+ * 효과 요약(마커 아님 — 평문): 교차 환율 산출, 잘못된 고시 값의 기존 환율 보존.
+ *   각 효과는 그 효과를 재는 메서드 docblock 에 마킹한다.
+ */
 class ExchangeRateCalculatorTest extends PureTestCase
 {
     /**

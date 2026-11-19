@@ -16,14 +16,15 @@ import { forwardRef, useImperativeHandle, useMemo, useRef, useCallback } from 'r
 import { Div } from '../../basic/Div';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { ImageGallery, GalleryImage } from '../ImageGallery';
+import { attachmentThumbUrl } from '../../../support/thumbnail';
 
 import { FileUploaderProvider } from './FileUploaderContext';
-import { useFileUploader } from './useFileUploader';
+import { useFileUploader, directZoomSource } from './useFileUploader';
 import { FileDropZone } from './FileDropZone';
 import { FileList } from './FileList';
 import { useFocusRecovery } from './useFocusRecovery';
 import type { FileUploaderProps, FileUploaderRef, Attachment, PendingFile } from './types';
-import { t } from './utils';
+import { t, resolveApiEndpoints } from './utils';
 
 /** 안정적인 빈 배열 참조 — 매 렌더마다 새 [] 생성 방지 (useEffect 무한 루프 방지). 얼려 두어 공유 상수가 바뀌지 않게 한다(7.1.0) */
 const EMPTY_FILES = Object.freeze([]) as unknown as Attachment[];
@@ -72,12 +73,8 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
     },
     ref
   ) => {
-    // API 엔드포인트 기본값 설정 (User 템플릿용 기본 경로)
-    const endpoints = {
-      upload: apiEndpoints?.upload ?? '/api/attachments',
-      delete: apiEndpoints?.delete ?? '/api/attachments/:id',
-      reorder: apiEndpoints?.reorder ?? '/api/attachments/reorder',
-    };
+    // API 엔드포인트 — 사용자 템플릿에는 기본 주소가 없다(resolveApiEndpoints 참조)
+    const endpoints = resolveApiEndpoints(apiEndpoints);
 
     // onFilesChange 래퍼: ActionDispatcher 호환 형태로 변환
     // ActionDispatcher는 type: "change" → onChange prop으로 매핑하므로,
@@ -151,8 +148,15 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
         } else {
           // 기존 첨부파일은 인증된 URL 또는 다운로드 URL 사용
           const cachedUrl = uploader.authenticatedImageUrls.get(attachmentItem.id);
+          // 썸네일로 그리는 첨부는 업로더가 blob 을 받지 않을 수 있다. 확대 보기는 업로더가 받아 둔 blob → 미리보기 주소 순이고,
+          // 둘 다 없으면(다운로드 주소만 있는 권한 첨부) 확대 보기를 열 때 업로더가 받는 blob 을 기다린다 — 인증 없는
+          // 다운로드 주소를 열면 권한 첨부가 깨진다.
+          const thumbnailDrawn = Boolean(attachmentThumbUrl(attachmentItem, 'sm'));
+          const src = thumbnailDrawn
+            ? (cachedUrl || directZoomSource(attachmentItem) || '')
+            : (cachedUrl || attachmentItem.download_url);
           return {
-            src: cachedUrl || attachmentItem.download_url,
+            src,
             downloadUrl: attachmentItem.download_url,
             filename: attachmentItem.original_filename,
             title: attachmentItem.original_filename,
@@ -213,6 +217,7 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
 
       // 인증된 이미지 URL 캐시
       authenticatedImageUrls: uploader.authenticatedImageUrls,
+      requestAuthenticatedImage: uploader.requestAuthenticatedImage,
     }), [uploader, maxFiles, maxSize, accept, endpoints, confirmBeforeRemove]);
 
     // 항목을 지우거나 파일을 고른 뒤 초점을 쥔 요소가 사라지면 가까운 자리로 초점을 돌린다(7.1.0 P-6)

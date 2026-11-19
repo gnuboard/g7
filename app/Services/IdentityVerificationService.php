@@ -66,7 +66,8 @@ class IdentityVerificationService
         array $context = [],
         ?string $providerId = null,
     ): VerificationChallenge {
-        $provider = $this->manager->resolveForPurpose($purpose, $providerId);
+        // 대상 회원을 알면 그 회원에게 쓸 수 있는 수단으로 고른다(받을 메일이 없는 회원 → 다음 수단, 7.2.0)
+        $provider = $this->manager->resolveForPurpose($purpose, $providerId, $target instanceof User ? $target : null);
 
         $context['purpose'] = $purpose;
 

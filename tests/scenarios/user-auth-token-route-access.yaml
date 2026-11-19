@@ -1,0 +1,20 @@
+feature: 회원이 시드된 역할만으로 본인 토큰을 갱신·조회하고 로그아웃한다
+
+description: |
+  사용자 경로 `/api/user/auth/refresh`·`user`·`logout`·`logout-all-devices` 는 로그인한 본인의 토큰 행위라 로그인만 요구한다.
+  예전에는 코어가 선언한 적 없는 역할 권한(core.auth.refresh·user·logout)을 요구해 모든 회원이 403 이었다.
+  시험이 그 권한을 직접 만들어 부여해 통과하던 사각을 막으려고, 시드된 `user` 역할만으로 판정하고 라우트가 요구하는 코어 권한이
+  모두 선언돼 있는지 함께 본다.
+
+axes:
+  case: [route_contract, seeded_member, guest]
+
+effects:
+  - route_required_core_permissions_are_declared
+  - member_refreshes_token_with_seeded_role
+  - member_reads_self_with_seeded_role
+  - member_logs_out_with_seeded_role
+  - guest_gets_401_on_own_token_routes
+
+test_files:
+  - tests/Feature/Auth/UserAuthTokenRouteAccessTest.php

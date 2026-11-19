@@ -17,6 +17,11 @@ use Plugins\Sirsoft\Gdpr\Support\PrivacyPolicyUrl;
  *
  * 운영자가 설정 화면에서 정책 메타데이터·쿠키 배너·마이페이지 카드 토글을
  * 저장할 때 사용. plugin.php::getSettingsSchema() 와 키 일치를 보장합니다.
+ *
+ * audit:allow api-doc-coverage 차단 도메인 입력의 **줄 분리 방식만** 고쳤다 —
+ * 받는 파라미터도 응답 구조도 그대로이고, 문서가 서술하는 표면에 변경이 없다.
+ * (여러 줄 텍스트를 자를 때 PCRE `\R` 이 바이트 0x85 를 개행으로 읽어 「종류」 같은
+ *  한글이 글자 중간에서 쪼개지던 것을 실제 줄 종결자만 보도록 바꿨다.)
  */
 class UpdateAdminSettingsRequest extends FormRequest
 {
@@ -364,7 +369,10 @@ class UpdateAdminSettingsRequest extends FormRequest
         $normalized = [];
         foreach ($input as $scope => $value) {
             if (is_string($value)) {
-                $normalized[$scope] = collect(preg_split('/\R/', $value))
+                // blocked_domains 와 같은 명시 줄 종결자로 나눈다. `/\R/u` 는 잘못된 UTF-8 바이트가 하나라도
+                // 있으면 false 를 돌려주고, 그러면 이 스코프의 멀쩡한 줄까지 조용히 빈 목록이 된다.
+                // 남은 잘못된 줄은 아래 형식 검증이 그 인덱스로 거른다.
+                $normalized[$scope] = collect(preg_split('~\r\n|\r|\n~', $value))
                     ->map(fn ($line) => is_string($line) ? trim($line) : '')
                     ->filter(fn ($line) => $line !== '')
                     ->values()
@@ -412,7 +420,11 @@ class UpdateAdminSettingsRequest extends FormRequest
         $normalized = [];
         foreach ($input as $category => $value) {
             if (is_string($value)) {
-                $normalized[$category] = collect(preg_split('/\R/', $value))
+                // 줄 분리에 `\R` 을 쓰지 않는다 — UTF-8 모드가 아니면 그 이스케이프가
+                // **바이트 0x85**(NEL)도 개행으로 본다. 운영자가 적은 한국어 문구의 흔한
+                // 글자가 그 바이트로 끝나(`종` = EC A2 85), 「종류」 같은 낱말이 글자 중간에서
+                // 쪼개져 깨진 항목 두 개로 저장된다. 실제 줄 종결자만 본다.
+                $normalized[$category] = collect(preg_split('~\r\n|\r|\n~', $value))
                     ->map(fn ($line) => is_string($line) ? trim($line) : '')
                     ->filter(fn ($line) => $line !== '')
                     ->values()

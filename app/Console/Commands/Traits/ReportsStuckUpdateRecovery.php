@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands\Traits;
 
+use App\Extension\Helpers\ExtensionOperationLock;
+use App\Extension\Helpers\ExtensionUpdateJournal;
 use App\Extension\Helpers\StuckUpdateRecovery;
 
 /**
@@ -77,5 +79,43 @@ trait ReportsStuckUpdateRecovery
         }
 
         return false;
+    }
+
+    /**
+     * 「업데이트 없음」 판정인데 이 서버의 진행 기록이 남아 있으면 끝나지 않은 업데이트를 안내하고 멈춥니다 (#888).
+     *
+     * 업데이트는 DB 판을 새 판으로 적은 뒤 스텝·상태 복원·레이아웃 갱신을 한다. 그 사이에 프로세스가 죽으면 DB 판은 이미 새 판이라
+     * `--force` 없는 업데이트가 「업데이트 없음」으로 끝나 남은 스텝·레이아웃 갱신이 영영 건너뛰어졌다. 검수 서버는 공유 상태 칸에
+     * `updating` 을 쓰지 않아 멈춘 업데이트 판정({@see refuseInProgressUpdate()})이 잡지 못하고, 운영 서버도 상태를 되돌린 뒤 죽으면
+     * 같다 — 그래서 역할과 무관하게 서버 로컬 진행 기록({@see ExtensionUpdateJournal})으로 판정한다.
+     *
+     * 「업데이트 있음」 판정일 때는 부르지 않는다 — 그 업데이트가 진행 기록을 이어받아 못 끝낸 스텝을 마저 돈다(멈춘 업데이트 정리 뒤
+     * 안내하는 흐름). 이 서버에서 그 업데이트가 아직 돌고 있으면(작업 잠금) 진행 중이라고 알린다. 진행 기록·DB 판은 건드리지 않는다.
+     *
+     * @param  string  $type  확장 종류 (module|plugin|template)
+     * @param  string  $identifier  확장 식별자
+     * @return bool 막았으면 true (호출한 쪽은 실패로 끝낸다)
+     */
+    protected function refuseUnfinishedUpdate(string $type, string $identifier): bool
+    {
+        $journal = ExtensionUpdateJournal::find($type, $identifier);
+        if ($journal === null) {
+            return false;
+        }
+
+        if (ExtensionOperationLock::isFree($type, $identifier) === false) {
+            $this->error('❌ '.__('extensions.errors.update_already_running', ['name' => $identifier]));
+
+            return true;
+        }
+
+        $this->error('❌ '.__('extensions.commands.update.unfinished_update_needs_force', [
+            'name' => $identifier,
+            'from' => $journal->fromVersion(),
+            'to' => $journal->toVersion(),
+            'command' => "php artisan {$type}:update {$identifier} --force",
+        ]));
+
+        return true;
     }
 }

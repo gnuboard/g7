@@ -42,6 +42,9 @@ class ExtensionMenuSyncHelperTest extends TestCase
 
         $this->menuRepository = Mockery::mock(MenuRepositoryInterface::class);
         $this->roleRepository = Mockery::mock(RoleRepositoryInterface::class);
+        // 정리 경로의 존재 확인·자식 조회는 저장소를 지난다 — 기본은 「아직 있음」·「자식 없음」, 시나리오별로 덮는다
+        $this->menuRepository->shouldReceive('findById')->andReturnUsing(fn (int $id) => new Menu(['id' => $id]))->byDefault();
+        $this->menuRepository->shouldReceive('getChildrenByParent')->andReturn(new Collection)->byDefault();
         $this->helper = new ExtensionMenuSyncHelper($this->menuRepository, $this->roleRepository);
     }
 
@@ -856,6 +859,8 @@ class ExtensionMenuSyncHelperTest extends TestCase
         $staleChild = $this->createModelMock(Menu::class, [
             'id' => 11,
             'slug' => 'stale-child',
+            'extension_type' => ExtensionOwnerType::Module,
+            'extension_identifier' => 'sirsoft-board',
         ]);
         $staleChild->shouldReceive('roles')->once()->andReturn($staleChildRoles);
 
@@ -883,6 +888,28 @@ class ExtensionMenuSyncHelperTest extends TestCase
             ->with(ExtensionOwnerType::Module, 'sirsoft-board')
             ->once()
             ->andReturn(new Collection([$activeMenu, $staleMenu]));
+
+        // 앞선 하위 트리로 이미 지워졌는지·자식이 무엇인지 저장소로 확인한다
+        $this->menuRepository
+            ->shouldReceive('findById')
+            ->with(10)
+            ->once()
+            ->andReturn($staleMenu);
+        $this->menuRepository->shouldReceive('getChildrenByParent')->with(10)->andReturn($staleMenuChildren);
+        $this->menuRepository->shouldReceive('getChildrenByParent')->with(11)->andReturn(new Collection);
+
+        // 메뉴 권한은 저장소가 메뉴마다 명시적으로 지운다(DB CASCADE 비의존)
+        $this->menuRepository
+            ->shouldReceive('deleteMenuPermissions')
+            ->with($staleChild)
+            ->once()
+            ->andReturn(0);
+
+        $this->menuRepository
+            ->shouldReceive('deleteMenuPermissions')
+            ->with($staleMenu)
+            ->once()
+            ->andReturn(0);
 
         $this->menuRepository
             ->shouldReceive('delete')

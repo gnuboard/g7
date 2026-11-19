@@ -1,6 +1,7 @@
 import { AuthManager } from '../auth/AuthManager';
 import { createLogger } from '../utils/Logger';
-import { suffixed } from '../support/assetUrl';
+import { basePrefix, stripBasePrefix, suffixed, withBasePrefix } from '../support/assetUrl';
+import { isCustomRoutePath } from './CustomRouteMatcher';
 import { notifyLocationReplaced } from '../template-engine/navigationLinks';
 import { normalizePathname } from './normalizePathname';
 import {
@@ -43,8 +44,12 @@ function currentHistoryEntryIndex(): number | null {
 
 /**
  * 지금 주소(경로+쿼리+해시)
+ *
+ * 브라우저가 보는 주소 그대로다(하위 폴더 배치면 마운트 접두사 포함). 확정 주소 기록·popstate 복구(`pushState`)가
+ * 이 값을 다시 브라우저에 넘기고, 이탈 가드는 비교 전에 양쪽 접두사를 벗긴다.
  */
 function currentUrl(): string {
+  // base-path:allow 브라우저 주소를 기록·복구용으로 그대로 읽는다(라우트 대조가 아니다).
   return window.location.pathname + window.location.search + window.location.hash;
 }
 
@@ -134,6 +139,10 @@ export class Router {
    *
    * popstate 는 주소가 이미 바뀐 뒤에 온다. 레이아웃 이탈 가드가 참이고 사용자가 머무르기를 고르면
    * 확정 화면의 주소를 같은 자리에서 곧바로 다시 쌓는다(`pushState`). 화면은 다시 그리지 않는다 (engine-v1.82.0)
+   *
+   * 이탈을 허락한 뒤 그 주소가 서버의 개발자 화면(routes/custom.php) 주소면 엔진이 그리지 않고 페이지를 다시
+   * 적재해 서버가 그리게 한다 (#792 W6, engine-v1.92.0). `navigate` 와 같은 순서(이탈 가드 → custom 판정)다.
+   * 패턴이 없으면 종전과 같다.
    */
   private handlePopState = (): void => {
     const targetIndex = currentHistoryEntryIndex();
@@ -143,6 +152,14 @@ export class Router {
     if (!requestLeave(currentUrl(), { bypass, fromPath: this.getCommittedUrl() })) {
       this.restoreBlockedPopState(targetIndex);
 
+      return;
+    }
+
+    // 개발자 화면 패턴은 서버 라우트 URI 라 접두사가 없다 — 브라우저 주소의 접두사를 벗겨 대조한다.
+    const poppedPath = stripBasePrefix(window.location.pathname);
+    if (isCustomRoutePath(poppedPath)) {
+      logger.log(`popstate to custom route — reloading: ${poppedPath}`);
+      window.location.reload();
       return;
     }
 
@@ -164,6 +181,7 @@ export class Router {
    * @param _targetIndex popstate 가 내려앉은 항목 위치 (진단용)
    */
   private restoreBlockedPopState(_targetIndex: number | null): void {
+    // base-path:allow 확정 주소는 브라우저에서 읽은 값이라 접두사를 이미 품고 있다(currentUrl·Navigation API).
     window.history.pushState({}, '', this.getCommittedUrl());
     this.committedHistoryIndex = currentHistoryEntryIndex();
     // 다시 쌓은 항목이 지금 화면이다 — 스크롤 기억도 그 항목에 이어 쓴다 (engine-v1.85.0)
@@ -270,10 +288,25 @@ export class Router {
    * @returns 매칭된 라우트와 파라미터, 없으면 null
    */
   match(pathname: string): RouteMatch | null {
-    const normalizedPath = this.normalizePathname(pathname);
+    return Router.matchRoutes(this.routes, pathname);
+  }
 
-    for (const route of this.routes) {
-      const params = this.matchPattern(route.path, normalizedPath);
+  /**
+   * 라우트 목록에서 경로와 매칭되는 첫 라우트를 찾습니다 — 인스턴스(`match`)와 같은 규칙의 순수 함수.
+   *
+   * 라우터 인스턴스는 생성할 때 popstate 를 구독하므로, 라우터를 만들기 전(부팅 중 routes 를 받은 직후)에 현재 경로의
+   * 레이아웃을 미리 정할 때 쓴다(`TemplateApp` 첫 레이아웃 미리 요청).
+   *
+   * @param routes - 라우트 목록
+   * @param pathname - 매칭할 URL 경로 (사이트 마운트 접두사를 벗긴 값)
+   * @returns 매칭된 라우트와 파라미터, 없으면 null
+   * @since engine-v1.96.0
+   */
+  static matchRoutes(routes: Route[], pathname: string): RouteMatch | null {
+    const normalizedPath = normalizePathname(pathname);
+
+    for (const route of routes) {
+      const params = Router.matchPattern(route.path, normalizedPath);
 
       if (params !== null) {
         return {
@@ -318,7 +351,7 @@ export class Router {
    * @param pathname - 실제 URL 경로
    * @returns 추출된 파라미터 객체, 매칭 실패 시 null
    */
-  private matchPattern(pattern: string, pathname: string): Record<string, string> | null {
+  private static matchPattern(pattern: string, pathname: string): Record<string, string> | null {
     // 파라미터 이름 추출
     const paramNames: string[] = [];
 
@@ -392,14 +425,28 @@ export class Router {
    * `routeChange.path` 에 정규형만 쓴다. 원본(`/x/`)이 남으면 화면 동일성 판정이 `/x` 와 다른 화면으로 본다 (engine-v1.84.0, 공개#156)
    */
   async navigateToCurrentPath(): Promise<void> {
+    // 주소창 정규화는 접두사를 품은 전체 경로로 한다 — 주소창에 쓰는 값이므로 `/g7/x/` 는 `/g7/x` 가 된다.
+    // base-path:allow 주소창 정규화용 원본이다 — 라우트 대조용 접두사는 아래에서 정규형에 대해 벗긴다.
     const rawPathname = window.location.pathname;
-    const pathname = this.normalizePathname(rawPathname);
-    if (pathname !== rawPathname) {
+    let normalizedPathname = this.normalizePathname(rawPathname);
+    // 하위 폴더 마운트 루트는 끝 슬래시 형태(`/g7/`)가 서버 정본이다 — 웹서버가 폴더 주소를
+    // `/g7` → `/g7/` 로 돌려보낸다(Apache DirectorySlash). 여기서 `/g7` 로 접어 쓰면 새로고침·
+    // 북마크·공유 때마다 301 이 한 번 더 난다. 그 밖의 경로는 끝 슬래시 없는 형태가 정본이다.
+    const mountRoot = basePrefix();
+    if (mountRoot !== '' && normalizedPathname === mountRoot) {
+      normalizedPathname = mountRoot + '/';
+    }
+    if (normalizedPathname !== rawPathname) {
       // 정규형은 늘 `/` 하나로 시작하므로 교차 출처 주소(`//host`)가 될 수 없다
-      window.history.replaceState(window.history.state, '', pathname + window.location.search + window.location.hash);
+      // base-path:allow 브라우저에서 읽은 접두사 포함 주소를 슬래시만 정규화해 그대로 되쓴다(접두사를 다시 붙이면 이중이 된다).
+      window.history.replaceState(window.history.state, '', normalizedPathname + window.location.search + window.location.hash);
       notifyLocationReplaced();
       this.committedUrl = currentUrl();
     }
+    // 정규형에서 사이트 마운트 접두사를 벗긴다. 라우트 패턴은
+    // 언제나 접두사 없이 등록되므로, 하위 폴더 배치(`/g7/board/free`)에서 벗기지
+    // 않으면 어떤 패턴에도 맞지 않아 전 화면이 「없는 페이지」가 된다.
+    const pathname = stripBasePrefix(normalizedPathname);
     const search = window.location.search;
     const matchResult = this.match(pathname);
 
@@ -427,7 +474,9 @@ export class Router {
       let isAuthenticated = authManager.isAuthenticated() && authManager.getAuthType() === authType;
 
       // 인증 상태가 없거나 타입이 다른 경우에만 API 호출
-      if (!isAuthenticated) {
+      // 방금(부팅 preloadAuth 등) 재시도 끝에 「확인 불가」로 끝났으면 다시 묻지 않는다 — 같은 장애에 재시도를 한 번 더 하면
+      // 백지가 두 배로 길어진다. 유효 시간은 AuthManager.UNAVAILABLE_REUSE_MS (설계 확정 2026-11-08, engine-v1.95.0)
+      if (!isAuthenticated && !authManager.isRecentlyUnavailable(authType)) {
         isAuthenticated = await authManager.checkAuth(authType);
       }
 
@@ -437,9 +486,30 @@ export class Router {
         return;
       }
 
+      // 서버 일시 오류(5xx·네트워크)로 인증 여부를 알 수 없다 — 유효한 토큰을 가진 사람을 로그인 화면으로 보내지 않는다.
+      // 받는 쪽(TemplateApp 의 중립 오류 화면)이 없으면 종전처럼 로그인으로 보낸다(빈 화면으로 멈추지 않게) (engine-v1.95.0)
+      if (
+        !isAuthenticated
+        && authManager.getLastCheckStatus(authType) === 'unavailable'
+        && (this.eventHandlers.get('authUnavailable')?.length ?? 0) > 0
+      ) {
+        // 재시도하는 사이 뒤로 가기(popstate)로 다른 주소가 이미 그려졌으면 그 위를 덮지 않는다 — popstate 는 navigate 대기열을
+        // 거치지 않아 위의 대체 판정에 걸리지 않는다
+        // base-path:allow 접두사를 품은 원본 주소끼리 같은지만 본다(라우트 대조가 아니다)
+        if (window.location.pathname !== normalizedPathname) {
+          logger.log(`Route ${pathname} left while checking auth`);
+          return;
+        }
+        logger.warn(`Auth check unavailable for ${pathname} — not redirecting to login`);
+        endLeaveApproval();
+        await this.emit('authUnavailable', { path: pathname, authType });
+        return;
+      }
+
       if (!isAuthenticated) {
         const loginUrl = authManager.getLoginRedirectUrl(authType, pathname + search);
         logger.log(`Not authenticated, redirecting to: ${loginUrl}`);
+        // base-path:allow getLoginRedirectUrl() 가 접두사를 붙인 값이다.
         window.location.href = loginUrl;
         return;
       }
@@ -529,12 +599,24 @@ export class Router {
    * 실제 navigate 실행
    */
   private async executeNavigation(path: string): Promise<void> {
+    // 서버의 개발자 화면(routes/custom.php) 주소는 엔진이 그리지 않는다 — 전체 페이지 이동으로 서버에 넘긴다
+    // (#792 W6, engine-v1.92.0). `pushState` 하지 않으므로 히스토리·대기열·라우트 이벤트에 아무 흔적도 남기지 않는다.
+    if (isCustomRoutePath(path)) {
+      logger.log(`navigate to custom route — full page load: ${path}`);
+      this.pendingNavigation = null;
+      // 이동 경로는 앱 기준(접두사 없음)이다 — 브라우저가 그대로 여는 주소라 마운트 접두사를 붙인다.
+      window.location.assign(withBasePrefix(path));
+      return;
+    }
+
     this.isNavigating = true;
     this.pendingNavigation = null;
 
     try {
-      // URL 변경 (브라우저 히스토리에 추가)
-      window.history.pushState({}, '', path);
+      // URL 변경 (브라우저 히스토리에 추가). 히스토리에 실리는 값은 **브라우저가
+      // 보는 주소**이므로 접두사를 붙인다 — 붙이지 않으면 하위 폴더 배치에서 주소창이
+      // 사이트 밖을 가리키게 되고, 그 상태로 새로고침하면 설치 밖으로 나간다.
+      window.history.pushState({}, '', withBasePrefix(path));
       // 새 항목 — 복원하지 않는다(도착 위치는 navigate 액션의 `scroll` 이 정한다) (engine-v1.85.0)
       markScrollNavigation('push');
       // 같은 레이아웃으로 쿼리만 바뀌는 이동에서도 `:mergeQuery` 링크가 새 주소로 다시 그려지게 알린다 (engine-v1.82.1)

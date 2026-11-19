@@ -1,0 +1,44 @@
+feature: identity_verified_claims
+
+description: |
+  본인인증 값(이름, 휴대폰, 생년월일, 성별)을 회원 항목에 잇는 중립 계약.
+  인증 값을 주는 수단(선택 계약 구현)의 토큰이면 가입 화면 항목과 채움값 API 가 인증 값으로 채우고,
+  「인증 값으로 채우고 잠금」을 켠 항목은 가입 요청에서 서버가 덮어쓰며 내 정보 수정에서 잠긴다.
+  로그인 회원의 재인증은 잠금 항목을 새 인증 값으로 맞춘다.
+  계약을 구현하지 않은 수단, 만료된 토큰, 항목 유형에 맞지 않는 값에서는 채움도 잠금도 일어나지 않는다.
+  가입 인증 값은 가입 전 본인인증 정책이 켜진 사이트에서만 쓴다. 정책이 꺼진 사이트는 가입 요청의 본인인증 결과를 인정하지도
+  쓰지도 않는다 — 채움값 API 는 `disabled`, 가입 항목 API 는 채움 없음, 가입은 입력 그대로, 기록 없음, 토큰 미소비(2026-11-17 결정).
+
+coverage_strategy: full
+
+axes:
+  case: [fill, overwrite, lock, lock_value_mismatch, resync, provider_without_claims, token_expired, value_rejected_by_type, policy_off]
+
+effects:
+  - claims_api_returns_claims_and_field_values
+  - signup_fields_prefilled_from_claims
+  - signup_locked_fields_marked_readonly_identity
+  - signup_locked_input_overwritten_by_claims
+  - signup_unlocked_input_kept
+  - signup_verification_recorded_on_member
+  - profile_locks_identity_filled_fields
+  - profile_update_rejects_changed_locked_field
+  - admin_surface_not_locked_by_identity
+  - reverification_syncs_locked_fields_to_new_claims
+  - provider_without_contract_yields_no_claims
+  - signup_input_kept_without_claims
+  - no_lock_without_claims_provider
+  - expired_token_rejected_by_claims_api
+  - expired_token_leaves_signup_fields_unlocked
+  - expired_token_does_not_overwrite_signup_input
+  - member_bound_token_hidden_from_others
+  - claims_not_matching_field_type_are_skipped
+  - lock_applies_only_when_value_matches_latest_claims
+  - policy_off_claims_api_disabled
+  - policy_off_signup_fields_not_prefilled
+  - policy_off_signup_input_kept
+  - policy_off_nothing_recorded
+  - policy_off_token_not_consumed
+
+test_files:
+  - tests/Feature/Identity/VerifiedClaimsTest.php

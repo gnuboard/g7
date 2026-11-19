@@ -7,6 +7,7 @@ namespace Plugins\Sirsoft\MessageBizppurio\Services;
 use App\Models\User;
 use App\Notifications\BaseNotification;
 use App\Notifications\GenericNotification;
+use App\Notifications\RecipientDisplayName;
 use App\Services\NotificationDefinitionService;
 use App\Services\PluginSettingsService;
 use Illuminate\Notifications\Notification;
@@ -120,8 +121,12 @@ class SmsChannelDriver
             );
         }
 
+        // 알림 변수는 받는 사람 언어로 해석해 쓴다 — 언어별 값({ko: …, en: …})이 그대로 배열로 남으면 치환되지 않는다(#798).
+        //    전화번호 같은 문자열 변수는 그대로 남는다.
+        $data = $notification->getDataFor($notifiable);
+
         // 2. 전화번호 해석 (회원=mobile, 비회원=data 의 _recipient_phone)
-        $to = $this->resolvePhone($notifiable, $notification->getData());
+        $to = $this->resolvePhone($notifiable, $data);
         if ($to === null) {
             throw new NotificationSendSkippedException(
                 __('sirsoft-message_bizppurio::messages.send_skipped.recipient_phone_missing', ['type' => $this->resolveTypeLabel($type)])
@@ -133,7 +138,7 @@ class SmsChannelDriver
         $locale = BaseNotification::resolveNotifiableLocale($notifiable);
         $message = $this->payloadMapper->substituteText(
             trim($template->getLocalizedSmsBody($locale)),
-            $notification->getData()
+            $data
         );
         if (trim($message) === '') {
             throw new NotificationSendSkippedException(
@@ -156,7 +161,8 @@ class SmsChannelDriver
             'refkey' => $refkey,
             'channel' => $channel->value,
             'to_number' => $to,
-            'to_name' => $notifiable->name ?? null,
+            // 발송 이력은 관리자 화면의 기록물이다. 회원은 그 시점의 관리자 영역 표시 이름, 비회원은 받은 이름 그대로 남긴다.
+            'to_name' => app(RecipientDisplayName::class)->forLog($notifiable),
             'to_user_id' => $this->resolveUserId($notifiable),
             'content' => $message,
             'request_payload' => $this->payloadBuilder->forHistory($payload),

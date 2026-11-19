@@ -1,0 +1,45 @@
+feature: GDPR 관리자 환경설정 화면 구조 — 카드 배치, 운영 주체, 쿠키 배너, 자동 차단, 정책 버전, 걷어낸 화면 (plugin_settings.g7.html)
+
+description: |
+  관리자 환경설정 화면(admin/plugin_settings.g7.html)의 레이아웃 구조 회귀를 영역별로 잠근다. 필수 저장 항목 카드는
+  necessary-storage-allowlist.yaml, 처리방침 주소 칸과 정책 스냅숏 모달은 settings-api.yaml 이 따로 소유한다.
+
+  배경(#869 κ2): admin_plugin_settings.test.tsx 의 시험 71개가 무엇을 단언하든 necessary-storage-allowlist.yaml 의
+  조합 하나와 레이아웃 효과 8개를 일괄로 달고 있었다. 그 매니페스트는 cross product 와 effects 축을 면제받아 이 거짓
+  커버가 드러나지 않았다. 필수 저장 항목 카드 밖 시험 60여 개가 실제로 재는 명제를 이 매니페스트가 선언한다.
+
+axes:
+  area:
+    - shell                  # 화면 틀 — 메타, 데이터소스, 상단 탭 스크롤, 카드 6개 배치, 하단 저장 오류 토스트
+    - operator               # 운영 주체 카드 — 법인명, 저장 위치, 처리방침 주소 칸과 그 검증 오류
+    - cookie_banner          # 쿠키 배너 카드 — 단일 노출 토글, 위치, 카테고리 정보 카드, 섹션 순서, 카테고리 라벨 로케일
+    - auto_blocking_policy   # 자동 차단 정책 카드 — 배너 토글 게이트, 안내 박스, 카테고리별 차단 도메인 입력과 검증 오류
+    - policy_version         # 정책 버전 — 읽기 전용 카드, 접는 이력 표, 수동 발행 모달, 안내 문구, 스냅숏 보기 진입
+    - retired                # 걷어낸 카드와 필드(DPO, 제3자, 마이페이지 카드 등)가 다시 나타나지 않는다
+
+effects:
+  - settings_layout_meta_and_source_declared                  # layout_name, _admin_base 상속, gdprSettings 데이터소스 주소
+  - settings_tab_scroll_lists_six_cards_with_scroll_spy        # TabNavigationScroll 이 카드 6개를 순서대로 싣고 scroll spy 를 켠다
+  - settings_six_cards_direct_children_with_uniform_spacing    # 카드 6개가 본문 직계 자식이고 겉 패딩 없이 mt-4, 라이트/다크와 scroll-mt-32 를 갖는다
+  - settings_save_error_toast_shows_first_validation_message   # 하단 저장 실패 토스트가 422 첫 검증 메시지를 보이고 일반 문구로 되돌아간다
+  - operator_card_lists_entity_location_and_policy_url         # 운영 주체 카드에 세 칸이 있고 옛 슬러그 칸은 없다
+  - operator_fields_show_validation_error_under_field          # 운영 주체 단일 칸이 422 때 input-error 와 칸 아래 첫 메시지를 보인다
+  - field_rows_use_prefixed_grid_with_engine_responsive        # 라벨과 컨트롤 2단 칸이 gdpr: 접두 그리드 + 1024 이상 3열 엔진 responsive 를 쓴다
+  - card_titles_use_neutral_heading_color                      # 카드 제목과 안내 박스 소제목이 에러 색(text-error-strong)이 아니다
+  - banner_toggle_is_single_switch_with_accurate_hint          # 배너 노출이 단일 토글이고(자동 차단 토글 없음) 힌트가 마이페이지 카드와 무관함을 적는다
+  - category_cards_are_read_only_info_with_required_badge      # 카테고리 카드는 정보 패널이다 — 필수 토글 없이 필수/선택 배지, functional 분기, 법령 축 비노출
+  - banner_card_sections_follow_operator_flow                  # 배너 토글, 위치, 정책 버전, 카테고리 순서이고 정책 버전 소제목은 따로 없다
+  - category_labels_follow_current_locale                      # 카테고리 라벨과 설명이 $localized() 로 현재 로케일을 따르고 key 보조 라벨을 보인다
+  - blocked_domains_gated_by_banner_toggle_with_off_hint       # 차단 도메인 본문은 배너 ON 일 때만, OFF 면 안내 박스가 대신 서고 옛 카탈로그 토글은 없다
+  - blocked_domains_guidance_box_three_items_info_tone         # 안내 박스가 세 항목(FQDN 형식 흡수 포함)의 정보 톤이다
+  - blocked_domains_taginput_per_optional_category             # necessary 를 뺀 카테고리마다 creatable TagInput 이 정적 키와 $event.target.value 로 쓴다
+  - blocked_domain_validation_error_marks_category_card        # 도메인 422 오류가 그 카테고리 카드 테두리와 카드 안 첫 메시지로 드러난다
+  - policy_version_read_only_card_with_inline_history          # 정책 버전은 읽기 전용 카드이고 이력은 접는 표(refetch, top-level sequence, 표 id)로 보인다
+  - policy_version_manual_publish_modal_stays_open_until_success   # 수동 발행 모달이 등록돼 있고 발행 중 표시, 성공 때만 닫힌다
+  - policy_version_guide_is_inline_hint                        # 정책 버전 안내가 라벨 + 두 줄 P 이고 옛 접기 토글 상태가 없다
+  - settings_save_does_not_publish_policy_version              # 하단 저장은 정책 버전을 발행하지 않고 save_success 토스트만 낸다
+  - policy_version_snapshot_view_entry                         # 현재 버전 배지와 이력 행에서 스냅숏 모달을 연다(데이터소스, 모달 등록)
+  - retired_cards_and_fields_absent                            # 걷어낸 카드, 모달, 필드, 안내 키가 레이아웃에 없다
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/admin_plugin_settings.test.tsx

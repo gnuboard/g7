@@ -180,6 +180,18 @@
                 "id": "analytics_overview_content",
                 "type": "basic",
                 "name": "Div",
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "p-6 bg-gray-50 dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "p-8 bg-gray-50 dark:bg-gray-900"
+                        }
+                    }
+                },
                 "lifecycle": {
                     "onUnmount": [
                         {
@@ -192,7 +204,7 @@
                     ]
                 },
                 "props": {
-                    "className": "admin-page-content-responsive-fluid"
+                    "className": "p-4 bg-gray-50 dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -210,8 +222,15 @@
                                     {
                                         "type": "basic",
                                         "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "text-2xl font-semibold text-gray-900 dark:text-white"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "page-title"
+                                            "className": "text-xl font-semibold text-gray-900 dark:text-white"
                                         },
                                         "text": "$t:admin.analytics.overview.title"
                                     },
@@ -389,8 +408,15 @@
                                 "id": "trend_chart_frame",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "640-": {
+                                        "props": {
+                                            "className": "h-[260px]"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "h-[220px] sm:h-[260px]"
+                                    "className": "h-[220px]"
                                 },
                                 "children": [
                                     {
@@ -442,8 +468,15 @@
                             "enabled": true,
                             "data_sources": "analytics_overview"
                         },
+                        "responsive": {
+                            "desktop": {
+                                "props": {
+                                    "className": "grid grid-cols-4 auto-rows-fr gap-4 mb-4"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "grid grid-cols-2 lg:grid-cols-4 auto-rows-fr gap-4 mb-4"
+                            "className": "grid grid-cols-2 auto-rows-fr gap-4 mb-4"
                         },
                         "children": [
                             {
@@ -576,8 +609,15 @@
                             "enabled": true,
                             "data_sources": "analytics_overview"
                         },
+                        "responsive": {
+                            "desktop": {
+                                "props": {
+                                    "className": "grid grid-cols-3 gap-4 mb-4"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4"
+                            "className": "grid grid-cols-1 gap-4 mb-4"
                         },
                         "children": [
                             {
@@ -627,10 +667,17 @@
                                         ]
                                     },
                                     {
-                                        "comment": "390px 에서는 세 목록을 다 펼치면 15행이 쌓여 스크롤이 길어진다 — 모바일만 접고\n               md 이상에서는 `md:block` 이 그대로 3열을 펼친다(계획서 §4.11 개요 모바일).",
+                                        "comment": "390px 에서는 세 목록을 다 펼치면 15행이 쌓여 스크롤이 길어진다 — 모바일만 접고\n               768 이상에서는 responsive 가 block 으로 바꿔 3열을 그대로 펼친다. 그 폭에서는 단추도\n               숨긴다 — 구간 값에 flex-between 을 두지 않는다(층 없는 규칙이라 hidden 을 이긴다).",
                                         "id": "top_pages_card_toggle",
                                         "type": "basic",
                                         "name": "Button",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "hidden"
+                                                }
+                                            }
+                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -643,7 +690,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "md:hidden w-full flex-between gap-2 text-sm text-label-subtle pb-2",
+                                            "className": "w-full flex-between gap-2 text-sm text-label-subtle pb-2",
                                             "aria-expanded": "{{!!_local.openTop?.pages}}",
                                             "aria-controls": "top_pages_body"
                                         },
@@ -667,9 +714,16 @@
                                         "id": "top_pages_body",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "block"
+                                                }
+                                            }
+                                        },
                                         "props": {
                                             "id": "top_pages_body",
-                                            "className": "{{_local.openTop?.pages ? 'block' : 'hidden md:block'}}"
+                                            "className": "{{_local.openTop?.pages ? 'block' : 'hidden'}}"
                                         },
                                         "children": [
                                             {
@@ -763,10 +817,17 @@
                                         ]
                                     },
                                     {
-                                        "comment": "390px 에서는 세 목록을 다 펼치면 15행이 쌓여 스크롤이 길어진다 — 모바일만 접고\n               md 이상에서는 `md:block` 이 그대로 3열을 펼친다(계획서 §4.11 개요 모바일).",
+                                        "comment": "390px 에서는 세 목록을 다 펼치면 15행이 쌓여 스크롤이 길어진다 — 모바일만 접고\n               768 이상에서는 responsive 가 block 으로 바꿔 3열을 그대로 펼친다. 그 폭에서는 단추도\n               숨긴다 — 구간 값에 flex-between 을 두지 않는다(층 없는 규칙이라 hidden 을 이긴다).",
                                         "id": "top_referrers_card_toggle",
                                         "type": "basic",
                                         "name": "Button",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "hidden"
+                                                }
+                                            }
+                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -779,7 +840,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "md:hidden w-full flex-between gap-2 text-sm text-label-subtle pb-2",
+                                            "className": "w-full flex-between gap-2 text-sm text-label-subtle pb-2",
                                             "aria-expanded": "{{!!_local.openTop?.referrers}}",
                                             "aria-controls": "top_referrers_body"
                                         },
@@ -803,9 +864,16 @@
                                         "id": "top_referrers_body",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "block"
+                                                }
+                                            }
+                                        },
                                         "props": {
                                             "id": "top_referrers_body",
-                                            "className": "{{_local.openTop?.referrers ? 'block' : 'hidden md:block'}}"
+                                            "className": "{{_local.openTop?.referrers ? 'block' : 'hidden'}}"
                                         },
                                         "children": [
                                             {
@@ -899,10 +967,17 @@
                                         ]
                                     },
                                     {
-                                        "comment": "390px 에서는 세 목록을 다 펼치면 15행이 쌓여 스크롤이 길어진다 — 모바일만 접고\n               md 이상에서는 `md:block` 이 그대로 3열을 펼친다(계획서 §4.11 개요 모바일).",
+                                        "comment": "390px 에서는 세 목록을 다 펼치면 15행이 쌓여 스크롤이 길어진다 — 모바일만 접고\n               768 이상에서는 responsive 가 block 으로 바꿔 3열을 그대로 펼친다. 그 폭에서는 단추도\n               숨긴다 — 구간 값에 flex-between 을 두지 않는다(층 없는 규칙이라 hidden 을 이긴다).",
                                         "id": "top_countries_card_toggle",
                                         "type": "basic",
                                         "name": "Button",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "hidden"
+                                                }
+                                            }
+                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -915,7 +990,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "md:hidden w-full flex-between gap-2 text-sm text-label-subtle pb-2",
+                                            "className": "w-full flex-between gap-2 text-sm text-label-subtle pb-2",
                                             "aria-expanded": "{{!!_local.openTop?.countries}}",
                                             "aria-controls": "top_countries_body"
                                         },
@@ -939,9 +1014,16 @@
                                         "id": "top_countries_body",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "block"
+                                                }
+                                            }
+                                        },
                                         "props": {
                                             "id": "top_countries_body",
-                                            "className": "{{_local.openTop?.countries ? 'block' : 'hidden md:block'}}"
+                                            "className": "{{_local.openTop?.countries ? 'block' : 'hidden'}}"
                                         },
                                         "children": [
                                             {

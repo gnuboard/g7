@@ -46,9 +46,14 @@ class ActionNameRepository implements ActionNameRepositoryInterface
                 'created_at' => now(),
             ]);
         } catch (UniqueConstraintViolationException $e) {
+            // 다른 요청이 같은 이름을 먼저 넣고 확정했다. 적재 트랜잭션 안에서는 일반 조회가
+            // 트랜잭션 첫 조회 시점의 스냅샷을 읽어(REPEATABLE READ) 그 행을 보지 못하고, 그러면
+            // 비콘 하나가 통째로 버려진다 — 잠금 읽기로 최신 확정 값을 읽는다. 고유 색인 일치
+            // 조회라 그 행 하나만 잠근다.
             $raced = AnalyticsActionName::query()
                 ->where('type', $type)
                 ->where('name_hash', $hash)
+                ->sharedLock()
                 ->first();
 
             if ($raced) {

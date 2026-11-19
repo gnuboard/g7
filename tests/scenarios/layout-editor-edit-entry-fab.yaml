@@ -1,0 +1,102 @@
+feature: 레이아웃 편집기 — 운영 화면 편집 진입 단추와 편집기 주소 복원
+
+description: |
+  운영 화면 편집 진입 단추(EditEntryFab)는 #383(2026-05-25)에 만들어졌지만 어느 화면에도 붙지 않았다.
+  설계 확정(2026-11-09, #869)으로 관리자 화면과 사용자 사이트의 일반 렌더 트리에 붙인다. 로그인했고
+  레이아웃 편집 권한이 있는 사람(로그인 사용자 응답의 `can_edit_layouts`, 편집기 API 가드와 같은 판정)에게만
+  보이고, 누르면 같은 탭에서 `/admin/layout-editor/{템플릿}?route={매칭된 라우트 정의 path}` 로 간다.
+  편집기 쪽은 그 값으로 라우트를 선택해야 하고, 첫 복원이 주소와 기록을 건드리지 않아야 하며,
+  기반 레이아웃과 확장 편집 주소는 새로고침 뒤에도 복귀 라우트를 지켜야 하고, 사람이 붙여 넣은
+  사이트 주소도 정의 path 로 찾아야 한다.
+  7.2.0: 단추를 오른쪽 아래로 옮기고 글자 없는 아이콘 원형 단추로 바꿨다. 환경설정 > 일반 「레이아웃 편집 단추」
+  (`general.layout_edit_button_enabled`, 기본 켜짐)로 끌 수 있고, 저장하면 새로고침 없이 바로 따라간다.
+
+axes:
+  case:
+    - auth_user_ability_admin_and_user
+    - auth_user_inactive_role_permission
+    - ops_screen_floating_fab_authenticated_with_perm_normal_render_admin
+    - ops_screen_floating_fab_authenticated_with_perm_normal_render
+    - ops_screen_floating_fab_authenticated_no_perm_normal_render
+    - ops_screen_floating_fab_authenticated_with_perm_yes
+    - ops_screen_floating_fab_mobile
+    - ops_screen_floating_fab_normal_render_logout
+    - ops_screen_floating_fab_after_spa_login
+    - ops_screen_floating_fab_after_spa_login_no_perm
+    - ops_screen_floating_fab_relogin_role_changed
+    - ops_screen_floating_fab_logout_during_fetch
+    - url_restore_noop_then_edit_entry
+    - placement_desktop_none
+    - placement_desktop_admin_sidebar
+    - placement_desktop_right_panel
+    - placement_mobile_bottom_bar
+    - placement_mobile_toast
+    - placement_mobile_floating_banner
+    - placement_mobile_overlay
+    - placement_desktop_in_flow_footer
+    - placement_desktop_sidebar_and_bar
+    - visibility_top
+    - route_param_definition_path
+    - visibility_authenticated_no_perm
+    - url_restore_ops_screen_floating_fab_definition_path
+    - url_restore_reload_edit_mode
+    - url_restore_ops_screen_floating_fab_unknown
+    - url_restore_base_click
+    - url_restore_base_reload
+    - url_restore_extension_click
+    - url_build_base
+    - url_restore_browser_pathname
+    - url_restore_definition_path
+    - url_restore_unknown
+    - setting_toggle
+    - setting_toggle_shell_fallback
+    - setting_toggle_live
+    - setting_toggle_shell
+    - setting_default_and_exposed
+
+effects:
+  - auth_user_exposes_layout_edit_ability
+  - auth_user_layout_edit_ability_matches_editor_guard
+  - ops_screen_fab_mounts_for_layout_editor
+  - ops_screen_fab_passes_route_definition_path
+  - ops_screen_fab_survives_template_data_update
+  - ops_screen_fab_hidden_without_ability
+  - ops_screen_fab_supports_subfolder_install
+  - ops_screen_fab_compact_has_accessible_name
+  - ops_screen_fab_follows_auth_state_change
+  - ops_screen_fab_resolves_ability_after_spa_login
+  - ops_screen_fab_refetches_ability_after_relogin
+  - editor_noop_restore_does_not_swallow_next_history_entry
+  - ops_screen_fab_default_bottom_right
+  - ops_screen_fab_ignores_left_sidebar
+  - ops_screen_fab_avoids_side_panel
+  - ops_screen_fab_avoids_bottom_bar
+  - ops_screen_fab_avoids_bottom_toast
+  - ops_screen_fab_avoids_floating_bottom_panel
+  - ops_screen_fab_ignores_full_overlay
+  - ops_screen_fab_ignores_in_flow_footer
+  - ops_screen_fab_stays_inside_viewport
+  - ops_screen_fab_hidden_in_iframe
+  - editor_entry_route_param_selects_route_without_rewriting_url
+  - editor_edit_param_reload_does_not_add_history_entry
+  - editor_entry_unknown_route_param_leaves_tree_unselected
+  - base_edit_url_carries_return_route_host
+  - base_edit_reload_keeps_return_route
+  - extension_edit_url_carries_return_route_host
+  - pasted_site_path_selects_route_definition
+  - pasted_site_path_prefers_exact_route
+  - pasted_unknown_path_leaves_tree_unselected
+  - ops_screen_fab_hidden_when_setting_off
+  - ops_screen_fab_follows_setting_save
+  - layout_edit_button_setting_defaults_on_and_is_public
+
+test_files:
+  - tests/Feature/Api/Auth/AuthUserCanEditLayoutsTest.php
+  - tests/Feature/Settings/LayoutEditButtonSettingTest.php
+  - resources/js/core/template-engine/layout-editor/__tests__/components/EditEntryFab.test.tsx
+  - resources/js/core/__tests__/template-engine.editEntryFab.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useEditEntryFab.placement.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useEditorUrlSync.initialRestoreHistory.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useEditorUrlSync.restoreFidelity.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useEditorUrlSync.restoreNoop.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/EditEntryFabHost.relogin.test.tsx

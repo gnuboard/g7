@@ -11,6 +11,7 @@ description: |
    2. DonutChart.data — nodeEditor:array(data) name/value(number)/color(color), 정적 편집.
    3. DynamicFieldList.columns — nodeEditor:array(columns) key/type(select)/label/placeholder.
    4. SocialLoginButtons.providers — nodeEditor:array(providers) 원시 string[] enum select.
+      (sirsoft-basic 1.4.0 에서 컴포넌트 제거 — 소셜 버튼은 플러그인이 로그인·가입 확장점에 주입. 시험은 제거됨을 단언)
    5. BarChart.labels+datasets — nodeEditor:array-group(다중 배열). datasets[].data 는
       number-list 위젯(콤마 구분 number[]).
    6. CardGrid.cardColumns — nodeEditor:array-cell-tree(컬럼 층 추가/삭제/정렬+id +
@@ -42,6 +43,11 @@ exclusions:
   - { aspect: binding_guard, data_surface: multi_array, reason: "array-group 은 그룹별 ArrayItemsEditor 가드 동일 — 대표 single 로 커버" }
   - { aspect: binding_guard, data_surface: primitive_enum_array, reason: "ArrayItemsEditor 동일 가드 — 대표 single 로 커버" }
   - { aspect: binding_guard, data_surface: flat_typed_array, reason: "동일" }
+  # 원시 enum 배열 표면을 쓰던 유일한 컴포넌트(SocialLoginButtons.providers)가 sirsoft-basic 1.4.0 에서 제거됐다
+  # (소셜 버튼은 플러그인이 로그인·가입 확장점에 주입). 두 템플릿 스펙에 이 표면이 없으므로 잴 대상이 없다 —
+  # 제거 자체는 dataBuiltinCapabilityShape.test.ts 「SocialLoginButtons — basic capability 에서 제거됨」이 단언한다(#869).
+  - { aspect: capability_attach, data_surface: primitive_enum_array, reason: "SocialLoginButtons 제거(sirsoft-basic 1.4.0) — 두 템플릿에 이 표면 없음" }
+  - { aspect: structure_op, data_surface: primitive_enum_array, reason: "동일 — 원시 배열 추가 동작은 multi_array(BarChart labels)가 잰다" }
 
 effects:
   # capability/등록
@@ -50,6 +56,7 @@ effects:
   - array_cell_tree_editor_registered_via_registercoreeditors_kind_agnostic
   - property_modal_dispatches_data_builtin_node_editor_in_props_tab_by_kind
   # 신규 필드 위젯
+  - data_builtin_flat_typed_column_type_select_writes_value
   - array_editor_number_widget_writes_numeric_value
   - array_editor_color_widget_writes_hex_string
   - array_editor_number_list_widget_parses_comma_separated_into_number_array

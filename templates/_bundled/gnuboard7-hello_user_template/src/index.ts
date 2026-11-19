@@ -31,3 +31,7 @@ import { initTemplate } from './bootstrap';
 
 // 템플릿 초기화 자동 실행
 initTemplate();
+
+// 템플릿 스타일(순수 CSS) — 빌드가 dist/css/components.css 로 낸다(template.json `assets.css`).
+// 파일 머리 설명이 타입 선언(dist/index.d.ts)에 남도록 export 뒤에 둔다(import 는 위치와 무관하게 먼저 실행된다).
+import './styles/main.css';

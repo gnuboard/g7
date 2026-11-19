@@ -59,7 +59,7 @@ export function useEditorShortcuts(params: UseEditorShortcutsParams): void {
       if (spec.requiresSelection && !hasSelection) return;
 
       // Escape 우선순위 — deselect(선택 있음) vs exit(선택 없음).
-      if (spec.key === 'escape' || ev.key === 'escape') {
+      if (ev.key === 'escape') {
         if (hasSelection) {
           const h = handlers.deselect;
           if (h) { e.preventDefault(); h(); }

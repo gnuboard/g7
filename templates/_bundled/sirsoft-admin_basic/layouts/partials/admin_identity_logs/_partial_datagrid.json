@@ -29,7 +29,7 @@
         }
     ],
     "props": {
-        "data": "{{identityLogs?.data?.data}}",
+        "data": "{{raw:identityLogs?.data?.data}}",
         "pagination": true,
         "serverSidePagination": true,
         "pageHref": "/admin/identity/logs?page={page}",
@@ -54,8 +54,15 @@
                     {
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "768-": {
+                                "props": {
+                                    "className": "grid grid-cols-2 gap-4"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "grid-2col-responsive"
+                            "className": "grid grid-cols-1 gap-4"
                         },
                         "children": [
                             {
@@ -106,8 +113,12 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "if": "{{row.origin_policy_key}}",
-                                "props": {
-                                    "className": "md:col-span-2"
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "col-span-2"
+                                        }
+                                    }
                                 },
                                 "children": [
                                     {
@@ -149,7 +160,7 @@
                                 "props": {
                                     "className": "admin-card"
                                 },
-                                "text": "{{JSON.stringify(row.properties ?? {}, null, 2)}}"
+                                "text": "{{raw:JSON.stringify(row.properties ?? {}, null, 2)}}"
                             }
                         ]
                     },
@@ -172,7 +183,7 @@
                                 "props": {
                                     "className": "admin-card"
                                 },
-                                "text": "{{JSON.stringify(row.metadata ?? {}, null, 2)}}"
+                                "text": "{{raw:JSON.stringify(row.metadata ?? {}, null, 2)}}"
                             }
                         ]
                     },

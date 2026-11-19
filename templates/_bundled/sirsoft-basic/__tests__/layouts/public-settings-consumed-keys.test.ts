@@ -59,23 +59,31 @@ describe('공개 설정 API 소비 키', () => {
   });
 
   // @scenario case=c08
-  // @effects footer_business_info_bound_with_module_guard
-  it('푸터가 쇼핑몰이 켜져 있을 때만 쇼핑몰 공개 설정의 사업자 정보를 받는다', () => {
+  // @effects footer_leaves_business_info_to_ecommerce_fragment
+  it('푸터는 사업자 정보를 받지 않고, 쇼핑몰이 그 바로 아래 공용 자리(user_global_footer)에 그린다', () => {
     const base = fs.readFileSync(path.join(layoutsDir, '_user_base.json'), 'utf-8');
     const layout = JSON.parse(base);
     const footers: any[] = [];
+    const slots: any[] = [];
     const walk = (n: any): void => {
       if (!n || typeof n !== 'object') return;
-      if (Array.isArray(n)) return n.forEach(walk);
-      if (n.name === 'Footer' && n.type === 'composite') footers.push(n);
+      if (Array.isArray(n)) {
+        n.forEach((child, i) => {
+          if (child?.name === 'Footer' && child?.type === 'composite') footers.push({ node: child, siblings: n, index: i });
+          walk(child);
+        });
+        return;
+      }
+      if (n.type === 'extension_point' && n.name === 'user_global_footer') slots.push(n);
       Object.values(n).forEach(walk);
     };
     walk(layout);
     expect(footers).toHaveLength(1);
-    // 「사업자 정보 표시」를 끄면 null — 검색 엔진용 렌더는 공개용으로 거르기 전 설정으로 그리므로
-    // 서버가 칸을 지우는 것만으로는 봇 HTML 에 남는다. 식에서 표시 여부를 함께 본다.
-    expect(footers[0].props.businessInfo).toBe(
-      "{{(_global.activeModules?.includes('sirsoft-ecommerce') ?? true) && _global.modules?.['sirsoft-ecommerce']?.basic_info?.show_business_footer !== false ? (_global.modules?.['sirsoft-ecommerce']?.basic_info ?? null) : null}}",
-    );
+    // 쇼핑몰 사업자 정보는 쇼핑몰 모듈 조각 하나가 그린다 — 푸터에도 넘기면 같은 정보가 두 번 나온다
+    expect(footers[0].node.props ?? {}).not.toHaveProperty('businessInfo');
+    expect(base).not.toContain('show_business_footer');
+    // 그 조각이 붙는 자리는 푸터 바로 뒤에 있다
+    expect(slots).toHaveLength(1);
+    expect(footers[0].siblings[footers[0].index + 1]).toBe(slots[0]);
   });
 });

@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\PayNicepayments\Tests\Feature\Controllers;
 
+use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Models\User;
 use App\Services\PluginSettingsService;
@@ -23,6 +24,7 @@ use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Plugins\Sirsoft\PayNicepayments\Listeners\RegisterPgProviderListener;
 use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
 
 class PaymentCallbackControllerTest extends PluginTestCase
@@ -319,7 +321,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('error', __('sirsoft-pay_nicepayments::messages.errors.invalid_amount'));
+            ->assertJsonPath('message', __('sirsoft-pay_nicepayments::messages.errors.invalid_amount'));
     }
 
     /**
@@ -346,7 +348,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         ]);
 
         $response->assertForbidden()
-            ->assertJsonPath('error', __('sirsoft-pay_nicepayments::messages.errors.invalid_request'));
+            ->assertJsonPath('message', __('sirsoft-pay_nicepayments::messages.errors.invalid_request'));
     }
 
     /**
@@ -374,7 +376,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
             'amt' => 50000,
             'moid' => $order->order_number,
         ])->assertStatus(429)
-            ->assertJsonPath('error', __('sirsoft-pay_nicepayments::messages.errors.invalid_request'));
+            ->assertJsonPath('message', __('sirsoft-pay_nicepayments::messages.errors.invalid_request'));
     }
 
     /**
@@ -399,7 +401,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('error', __('sirsoft-pay_nicepayments::messages.errors.invalid_request'));
+            ->assertJsonPath('message', __('sirsoft-pay_nicepayments::messages.errors.invalid_request'));
 
         $order->refresh();
         $this->assertEquals(OrderStatusEnum::PENDING_ORDER, $order->order_status);
@@ -428,7 +430,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('error', __('sirsoft-pay_nicepayments::messages.errors.invalid_request'));
+            ->assertJsonPath('message', __('sirsoft-pay_nicepayments::messages.errors.invalid_request'));
     }
 
     /**
@@ -453,7 +455,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('error', __('sirsoft-pay_nicepayments::messages.errors.invalid_request'));
+            ->assertJsonPath('message', __('sirsoft-pay_nicepayments::messages.errors.invalid_request'));
     }
 
     /**
@@ -594,7 +596,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('error', __('sirsoft-pay_nicepayments::messages.errors.invalid_request'));
+            ->assertJsonPath('message', __('sirsoft-pay_nicepayments::messages.errors.invalid_request'));
 
         $order->refresh();
         $payment = $order->payment->fresh();
@@ -732,7 +734,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('error', __('sirsoft-pay_nicepayments::messages.errors.invalid_request'));
+            ->assertJsonPath('message', __('sirsoft-pay_nicepayments::messages.errors.invalid_request'));
     }
 
     /**
@@ -754,7 +756,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('error', __('sirsoft-pay_nicepayments::messages.errors.invalid_request'));
+            ->assertJsonPath('message', __('sirsoft-pay_nicepayments::messages.errors.invalid_request'));
     }
 
     /**
@@ -816,7 +818,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('error', __('sirsoft-pay_nicepayments::messages.errors.order_not_found'));
+            ->assertJsonPath('message', __('sirsoft-pay_nicepayments::messages.errors.order_not_found'));
     }
 
     // ===== 성공 콜백 테스트 =====
@@ -1343,7 +1345,10 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 이 콜백은 비인증 브라우저 POST 이고 서명이 주문번호를 묶지 않는다. 승인 실패를 근거로 실패 처리하면
      * 남의 주문번호를 붙인 요청 하나로 타인의 결제대기 주문이 취소된다.
      *
-     * @effects auth_callback_redirects_to_fail_and_sends_net_cancel_on_authorize_failure
+     * @scenario context=authorize_card, threat=post_approve_failure, callback_state=domain_fails
+     *
+     * @effects auth_callback_redirects_to_fail_and_sends_net_cancel_on_authorize_failure,
+     *   post_approve_failure_triggers_send_net_cancel, net_cancel_sends_pg_cancel_api_call
      *
      * @return void 반환값 없음
      */
@@ -1755,6 +1760,40 @@ class PaymentCallbackControllerTest extends PluginTestCase
     }
 
     /**
+     * 옛 결제사 식별자(`nicepay`)로 발급된 가상계좌의 입금통보도 주문을 결제완료로 만든다.
+     *
+     * 조회 계약은 호출자가 넘긴 결제사 id 목록(첫 값 자기 id, 나머지 옛 id)의 결제 행만 싣는다. 입금통보가
+     * 자기 id 하나만 넘기면 옛 식별자 행이 가려져 `payment_not_found` 로 FAIL 하고 고객 입금이 반영되지 않는다.
+     *
+     * @effects vbank_notify_completes_deposit_for_legacy_provider_id
+     *
+     * @return void 반환값 없음
+     */
+    public function test_vbank_notify_completes_deposit_for_legacy_provider_id(): void
+    {
+        // 옛 식별자를 쓰기 계약에 알리는 등록 항목(`legacy_ids`)은 이 플러그인의 결제사 등록 리스너가 낸다 — 실제 등록 경로로 태운다.
+        HookListenerRegistrar::register(RegisterPgProviderListener::class, 'sirsoft-pay_nicepayments');
+
+        $tid = 'VBANK_TID_LEGACY';
+        $order = $this->createTestOrder(30000, PaymentMethodEnum::VBANK);
+        $order->update(['order_status' => OrderStatusEnum::PENDING_PAYMENT]);
+        $this->markVbankIssued($order, $tid, 30000);
+        $order->payment()->update(['pg_provider' => 'nicepay', 'transaction_id' => $tid]);
+        $this->fakeTransactionQuery($tid);
+
+        $response = $this->post(
+            '/plugins/sirsoft-pay_nicepayments/payment/vbank-notify',
+            $this->makeVbankNotifyPayload($order->order_number, 30000, ['TID' => $tid])
+        );
+
+        $response->assertOk();
+        $this->assertEquals('OK', $response->getContent());
+
+        $order->refresh();
+        $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $order->order_status);
+    }
+
+    /**
      * 입금통보 응답은 허용 목록의 필드만 저장한다.
      *
      * @effects vbank_notify_stores_only_whitelisted_pg_response_fields
@@ -2152,5 +2191,156 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertEquals('TID_ALREADY_PAID', $order->payment->transaction_id);
 
         Http::assertSent(fn ($request) => str_contains($request->url(), 'netcancel'));
+    }
+
+    /**
+     * 같은 거래번호로 이미 결제완료된 주문에 승인 콜백이 다시 오면 완료 화면으로 멱등 응답하고, 결제완료를 다시 처리하지
+     * 않으며, 재생 감지를 거래번호·주문번호·콜백 종류와 함께 남긴다. 같은 승인이므로 망취소도 보내지 않는다.
+     *
+     * @scenario context=authorize_card, threat=replay_db_long, callback_state=second_arrival_outside_60s
+     *
+     * @effects replay_response_is_idempotent_ok, replay_no_double_completion, replay_logged_with_context
+     *
+     * @return void 반환값 없음
+     */
+    public function test_auth_callback_replay_of_same_tid_is_idempotent_and_logged(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+
+        $tid = 'TID_REPLAY_SAME';
+        $params = $this->makeCallbackParams($order->order_number, 50000);
+        $afterCompleteCalls = 0;
+
+        Http::fake([
+            'pay.nicepay.co.kr/v1/authorize' => Http::response(
+                $this->makeAuthorizeResponse($tid, $order->order_number, 50000),
+                200
+            ),
+            'pay.nicepay.co.kr/v1/netcancel' => Http::response('OK', 200),
+        ]);
+
+        // 먼저 도착한 같은 승인의 콜백이 결제완료를 끝낸 상태를 만든다(승인 응답 직후, 잠금 판정 직전).
+        HookManager::addAction('sirsoft-pay_nicepayments.payment.after_authorize', function () use ($order, $tid): void {
+            $order->update([
+                'order_status' => OrderStatusEnum::PAYMENT_COMPLETE,
+                'total_due_amount' => 0,
+                'total_paid_amount' => 50000,
+                'paid_at' => now(),
+            ]);
+            $order->payment()->update([
+                'payment_status' => PaymentStatusEnum::PAID,
+                'paid_amount_local' => 50000,
+                'paid_at' => now(),
+                'transaction_id' => $tid,
+            ]);
+        }, 999);
+        HookManager::addAction('sirsoft-ecommerce.order.after_payment_complete', function () use (&$afterCompleteCalls): void {
+            $afterCompleteCalls++;
+        }, 999);
+        $this->spyApplicationLogKeepingActivityChannel();
+
+        try {
+            $response = $this->post('/plugins/sirsoft-pay_nicepayments/payment/callback', $params);
+        } finally {
+            HookManager::clearAction('sirsoft-pay_nicepayments.payment.after_authorize');
+            HookManager::clearAction('sirsoft-ecommerce.order.after_payment_complete');
+        }
+
+        $response->assertRedirect("/shop/orders/{$order->order_number}/complete");
+        $this->assertSame(0, $afterCompleteCalls);
+        $this->assertEquals($tid, $order->fresh('payment')->payment->transaction_id);
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'netcancel'));
+
+        Log::shouldHaveReceived('info')->withArgs(
+            fn (string $message, array $context = []): bool => str_contains($message, 'replay detected')
+                && ($context['tid'] ?? null) === $tid
+                && ($context['moid'] ?? null) === $order->order_number
+                && ($context['context'] ?? null) === 'authCallback (card)'
+        )->once();
+    }
+
+    /**
+     * 같은 인증 토큰·거래번호의 승인 콜백이 60초 안에 다시 오면 승인 API 를 다시 부르지 않고 완료 화면으로 멱등 응답하며,
+     * 재전송 의심을 주문번호·거래번호와 함께 남긴다.
+     *
+     * @scenario context=authorize_card, threat=replay_token_short, callback_state=second_arrival_within_60s
+     *
+     * @effects auth_token_blocked_returns_4xx_or_idempotent, auth_token_logged_when_dedupe_hit
+     *
+     * @return void 반환값 없음
+     */
+    public function test_auth_callback_resent_within_60s_is_idempotent_and_logged(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+
+        $tid = 'TID_DEDUPE_'.uniqid();
+        $params = $this->makeCallbackParams($order->order_number, 50000);
+
+        Http::fake([
+            'pay.nicepay.co.kr/v1/authorize' => Http::response(
+                $this->makeAuthorizeResponse($tid, $order->order_number, 50000),
+                200
+            ),
+        ]);
+
+        $this->post('/plugins/sirsoft-pay_nicepayments/payment/callback', $params)
+            ->assertRedirect("/shop/orders/{$order->order_number}/complete");
+
+        $this->spyApplicationLogKeepingActivityChannel();
+
+        $second = $this->post('/plugins/sirsoft-pay_nicepayments/payment/callback', $params);
+
+        $second->assertRedirect("/shop/orders/{$order->order_number}/complete");
+        $this->assertCount(1, Http::recorded(fn ($request) => str_contains($request->url(), '/v1/authorize')));
+
+        Log::shouldHaveReceived('warning')->withArgs(
+            fn (string $message, array $context = []): bool => str_contains($message, 'duplicate authCallback within freshness window')
+                && ($context['moid'] ?? null) === $order->order_number
+                && ($context['txTid'] ?? null) === $params['TxTid']
+        )->once();
+    }
+
+    /**
+     * 승인 뒤 도메인 처리를 이어갈 수 없어 망취소할 때, 망취소 요청은 이번 인증의 거래번호(TxTid)와 인증 금액 전액을 싣는다.
+     *
+     * @scenario context=authorize_card, threat=post_approve_failure, callback_state=domain_fails
+     *
+     * @effects net_cancel_passes_approved_tid, net_cancel_passes_full_amount
+     *
+     * @return void 반환값 없음
+     */
+    public function test_post_approve_net_cancel_carries_this_authorization_tid_and_full_amount(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+
+        $params = $this->makeCallbackParams($order->order_number, 50000);
+
+        Http::fake([
+            'pay.nicepay.co.kr/v1/authorize' => Http::response(
+                $this->makeAuthorizeResponse('TID_NETCANCEL_SCOPE', $order->order_number, 50000),
+                200
+            ),
+            'pay.nicepay.co.kr/v1/netcancel' => Http::response('OK', 200),
+        ]);
+
+        // 승인 직후 다른 거래번호로 이미 결제된 주문 — 이번 승인은 망취소 대상이다.
+        HookManager::addAction('sirsoft-pay_nicepayments.payment.after_authorize', function () use ($order): void {
+            $order->update(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE, 'total_due_amount' => 0, 'total_paid_amount' => 50000, 'paid_at' => now()]);
+            $order->payment()->update(['payment_status' => PaymentStatusEnum::PAID, 'paid_amount_local' => 50000, 'paid_at' => now(), 'transaction_id' => 'TID_PAID_BEFORE']);
+        }, 999);
+
+        try {
+            $this->post('/plugins/sirsoft-pay_nicepayments/payment/callback', $params);
+        } finally {
+            HookManager::clearAction('sirsoft-pay_nicepayments.payment.after_authorize');
+        }
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/v1/netcancel')
+            && $request['TID'] === $params['TxTid']
+            && (int) $request['Amt'] === 50000
+            && $request['AuthToken'] === $params['AuthToken']);
     }
 }

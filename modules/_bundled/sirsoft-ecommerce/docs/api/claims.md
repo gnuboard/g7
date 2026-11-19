@@ -109,6 +109,8 @@
 
 ## 엔드포인트 목록
 
+관리자 클레임 경로(`api.modules.sirsoft-ecommerce.admin.claims.*`)도 이 문서에 생성 블록으로 함께 실립니다. 경로별 흐름과 상태 전이 설명은 [admin-claims.md](admin-claims.md) 에 있습니다. `{claimType}` 은 `exchanges` / `returns` / `refunds` 중 하나입니다.
+
 | 메서드 | URI | 라우트명 |
 | --- | --- | --- |
 | GET | /api/modules/sirsoft-ecommerce/user/claims | `api.modules.sirsoft-ecommerce.user.claims.index` |
@@ -116,6 +118,28 @@
 | PATCH | /api/modules/sirsoft-ecommerce/user/claims/{claimNumber} | `api.modules.sirsoft-ecommerce.user.claims.update` |
 | POST | /api/modules/sirsoft-ecommerce/user/claims/{claimNumber}/withdraw | `api.modules.sirsoft-ecommerce.user.claims.withdraw` |
 | DELETE | /api/modules/sirsoft-ecommerce/user/claims/images/{image} | `api.modules.sirsoft-ecommerce.user.claims.images.destroy` |
+| GET | /api/modules/sirsoft-ecommerce/admin/claims | `api.modules.sirsoft-ecommerce.admin.claims.index` |
+| POST | /api/modules/sirsoft-ecommerce/admin/claims/bulk-status | `api.modules.sirsoft-ecommerce.admin.claims.bulk-status` |
+| POST | /api/modules/sirsoft-ecommerce/admin/claims/completion-preview | `api.modules.sirsoft-ecommerce.admin.claims.completion-preview` |
+| GET | /api/modules/sirsoft-ecommerce/admin/claims/{claimNumber} | `api.modules.sirsoft-ecommerce.admin.claims.show-by-number` |
+| GET | /api/modules/sirsoft-ecommerce/admin/claims/{claimNumber}/logs | `api.modules.sirsoft-ecommerce.admin.claims.logs` |
+| PUT | /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/exchange-mode | `api.modules.sirsoft-ecommerce.admin.claims.exchange-mode` |
+| GET | /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancellable-amount | `api.modules.sirsoft-ecommerce.admin.claims.cancellable-amount` |
+| GET | /api/modules/sirsoft-ecommerce/admin/orders/{order}/claims | `api.modules.sirsoft-ecommerce.admin.claims.order-claims` |
+| POST | /api/modules/sirsoft-ecommerce/admin/refunds/{id}/execute | `api.modules.sirsoft-ecommerce.admin.claims.refunds.execute` |
+| GET | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id} | `api.modules.sirsoft-ecommerce.admin.claims.show` |
+| PATCH | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id} | `api.modules.sirsoft-ecommerce.admin.claims.update` |
+| PUT | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/amounts | `api.modules.sirsoft-ecommerce.admin.claims.amounts` |
+| DELETE | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images | `api.modules.sirsoft-ecommerce.admin.claims.images.clear` |
+| POST | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images | `api.modules.sirsoft-ecommerce.admin.claims.images.store` |
+| DELETE | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images/{image} | `api.modules.sirsoft-ecommerce.admin.claims.images.destroy` |
+| POST | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/items/restore-stock | `api.modules.sirsoft-ecommerce.admin.claims.items.restore-stock` |
+| PATCH | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/bulk-status | `api.modules.sirsoft-ecommerce.admin.claims.options.bulk-status` |
+| PATCH | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/tracking | `api.modules.sirsoft-ecommerce.admin.claims.options.tracking` |
+| POST | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/refund-request | `api.modules.sirsoft-ecommerce.admin.claims.refund-request` |
+| PATCH | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/status | `api.modules.sirsoft-ecommerce.admin.claims.status` |
+| POST | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/tracking/deliver | `api.modules.sirsoft-ecommerce.admin.claims.tracking.deliver` |
+| POST | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/withdraw | `api.modules.sirsoft-ecommerce.admin.claims.withdraw` |
 
 ---
 
@@ -138,7 +162,7 @@
 | status | string | `requested` | 유형별 상태 값 (교환 `ExchangeStatusEnum`, 반품 `ReturnStatusEnum`, 환불신청 `RefundStatusEnum`, 취소 `CancelStatusEnum`) |
 | status_label | string\|null | `반품신청` | 상태 라벨 (유형 접두가 붙는다 — 교환 `교환신청`, 반품 `반품신청`, 환불 `환불신청`) |
 | status_variant | string\|null | `info` | 상태 뱃지 variant |
-| status_icon | string\|null | `status-pickup` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립 — 어휘는 [admin-claims.md](admin-claims.md#progress_steps-항목) 참조). 상태 Enum 의 `icon()` 단일 출처이며, 토큰을 실제 글리프로 바꾸는 표는 템플릿의 Icon 컴포넌트가 가진다. 상태 뱃지와 진행단계 스텝퍼가 같은 그림을 그린다 |
+| status_icon | string\|null | `status-pickup` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립 — 어휘는 [admin-claims.md](admin-claims.md#get-apimodulessirsoft-ecommerceadminclaimsclaimnumber) "아이콘 의미 토큰 어휘" 참조). 상태 Enum 의 `icon()` 단일 출처이며, 토큰을 실제 글리프로 바꾸는 표는 템플릿의 Icon 컴포넌트가 가진다. 상태 뱃지와 진행단계 스텝퍼가 같은 그림을 그린다 |
 | is_final | boolean | `false` | 종결 상태인지 (철회·반려·완료) |
 | is_withdrawable | boolean | `true` | 구매자가 철회할 수 있는지 — 승인 전 **이고** 출처가 고객 신청(`refund_source_type=direct`)일 때만 `true`. 반품·교환에서 이어진 환불과 운영자가 대리 접수한 건(`admin`)은 `false` 다: 서버가 그 조작을 거절하므로 버튼만 서면 누를 때마다 422 가 된다 |
 | is_editable | boolean | `true` | 구매자가 수정할 수 있는지 — 철회 가능 경계와 같고(출처 축 포함), 취소(`cancel`)는 항상 `false` |
@@ -402,6 +426,2434 @@
 
 ---
 
+### GET /api/modules/sirsoft-ecommerce/admin/claims
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.index -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.index`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@index`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| type | query | string | 아니오 | — | 유형 필터 (해당 유형의 항목만 조회) |
+| statuses | query | array | 아니오 | — | 상태 다중 필터. 어휘는 조회 유형(`type`)의 상태 전체이며 다른 유형의 상태 값은 422 |
+| from | query | date | 아니오 | — | 조회 시작 값 (기간/범위 하한) |
+| to | query | date | 아니오 | — | 조회 종료 값 (기간/범위 상한) |
+| search_field | query | string | 아니오 | `claim_number`, `order_number`, `requester`, `product_name` | 검색 대상 필드명 (검색어를 적용할 컬럼) |
+| search_keyword | query | string | 아니오 | max 200 | 검색 키워드 (부분 일치) |
+| fault_types | query | array | 아니오 | — | 귀책 필터 (`customer`, `seller`, `carrier`). `type=cancel` 이면 보낼 수 없다(422) |
+| charge_methods | query | array | 아니오 | — | 청구 방식 필터 (`pay_on_request`, `pay_on_approval`, `deduct_from_refund`). `type` 이 `cancel`, `refund` 이면 보낼 수 없다(422) |
+| reason_code | query | string | 아니오 | max 50 | 사유 코드 (취소는 취소 사유 유형과 대조) |
+| requester_type | query | string | 아니오 | `member`, `guest` | 회원 구분 (`member` 회원 신청, `guest` 비회원 신청) |
+| request_source | query | string | 아니오 | `admin`, `customer` | 접수 출처 (`admin` 판매자 접수, `customer` 고객 신청). `type=cancel` 이면 보낼 수 없다(422) |
+| collection_overdue | query | boolean | 아니오 | — | 선교환 반송 기한 경과 건만. `type=exchange` 전용 (그 밖 422) |
+| pending_refund | query | boolean | 아니오 | — | 완료됐는데 환불신청서가 연결되지 않은 상품이 있는 신청서만. `type` 이 `exchange`, `return` 일 때만 (그 밖 422) |
+| min_amount | query | number | 아니오 | min 0 | 금액 하한. 목록 금액 칸과 같은 값으로 비교한다 (교환, 반품은 총 청구액, 환불은 환불액과 환불 마일리지 합) |
+| max_amount | query | number | 아니오 | min 0 | 금액 상한. `min_amount` 를 함께 보내면 그 값 이상이어야 한다(422) |
+| currency_code | query | string | 아니오 | max 10 | 통화 필터. 상점 등록 통화와 내린 기본 제공 통화, 그리고 그 유형의 신청서에 실제로 기록된 통화만 받는다 (그 밖 422) |
+| charge_payment_methods | query | array | 아니오 | — | 추가결제 결제수단 필터. `type` 이 `exchange`, `return` 일 때만. 클레임 설정의 결제수단이나 실제 추가결제 기록이 있는 값만 받는다 |
+| page | query | integer | 아니오 | min 1, max 1000 | 조회할 페이지 번호 (1부터 시작) |
+| per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/admin/claims?type=%EC%98%88%EC%8B%9C%EA%B0%92&statuses=%EC%98%88%EC%8B%9C%EA%B0%92&from=2026-01-01&to=2026-01-01&search_field=claim_number&search_keyword=%EC%98%88%EC%8B%9C%EA%B0%92&fault_types=%EC%98%88%EC%8B%9C%EA%B0%92&charge_methods=%EC%98%88%EC%8B%9C%EA%B0%92&reason_code=%EC%98%88%EC%8B%9C%EA%B0%92&requester_type=member&request_source=admin&collection_overdue=1&pending_refund=1&min_amount=1&max_amount=1&currency_code=%EC%98%88%EC%8B%9C%EA%B0%92&charge_payment_methods=%EC%98%88%EC%8B%9C%EA%B0%92&page=1&per_page=1 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | integer | `17` | 기본 키 (내부 식별자) |
+| claim_number | string | `EX20261010-0819150226` | 클레임 번호 (유형 접두 + 일자 + 일련번호) |
+| claim_type | string | `exchange` | 신청 유형 (`exchange`, `return`, `refund`, `cancel`) |
+| claim_type_label | string | `교환` | `claim_type` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
+| order_id | integer | `470` | order 식별자 (연관 리소스 참조) |
+| order_number | string | `20261010-0819090090` | 원 주문 번호 |
+| requester_name | string | `조은서` | 신청자 표기 (주문자명, 비회원 신청도 값이 있다) |
+| requested_by | integer | `3967` | 신청 회원 ID (비회원 신청과 판매자 접수는 `null`, 취소는 취소 처리자) |
+| is_guest_request | boolean | `false` | guest request 여부 |
+| status | string | `withdrawn` | 상태 값 (도메인별 상태 집합 — 사람이 읽는 라벨은 status_label, UI 변형은 status_variant 참조) |
+| status_label | string | `교환철회` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
+| status_variant | string | `secondary` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
+| is_final | boolean | `true` | final 여부 |
+| reason_code | string | `color_mismatch` | 신청 사유 코드 |
+| reason_label | string | `색상/디자인이 마음에 들지 않음` | `reason` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
+| fault_type | string | `customer` | 귀책 (`customer`, `seller`, `carrier`, 취소는 `null`) |
+| fault_type_label | string | `고객 귀책` | `fault_type` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
+| currency_code | string | `JPY` | 금액 통화 (신청 시점 주문 통화 스냅샷) |
+| item_summary | object | `{"product_name":"코튼 후드티 #12","item_count":1,"total_quanti…` | 상품 요약 `{product_name, item_count, total_quantity}` (첫 상품명, 상품 행 수, 수량 합계) |
+| requested_at | string | `2026-10-03T20:33:09+00:00` | requested 일시 |
+| requested_at_formatted | string | `2026-10-04 05:33:09` | `requested_at` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
+| completed_at_formatted | string | `2026-10-07 08:51:08` | `completed_at` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
+| charge_method | string | `pay_on_approval` | 청구 방식 (`pay_on_request` 신청 시 결제, `pay_on_approval` 승인 후 결제, `deduct_from_refund` 환불금 차감). 교환, 반품만 |
+| charge_method_label | string | `승인 후 결제` | `charge_method` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
+| total_charge_amount | integer | `6000` | 고객에게 청구하는 총액 (클레임 배송비와 교환 차액 합). 교환, 반품만 |
+| total_charge_amount_formatted | string | `¥6,000` | `total_charge_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
+| outstanding_amount | integer | `0` | 아직 수납하지 않은 청구액. 미수납 판정은 상태 라벨이 아니라 이 값으로 한다 (교환, 반품만) |
+| outstanding_amount_formatted | string | `¥0` | `outstanding_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
+| tracking_summary | object | `{"collection":{"first":null,"count":0},"redelivery":{"fir…` | 방향별(`collection` 회수, `redelivery` 재발송) 서로 다른 운송장 수와 첫 번호 `{first, count}` |
+| tracking_prefill | object | `{"collection":null,"redelivery":null}` | 회수중, 발송중 일괄 전이 창의 미리 채움 송장. 살아 있는 행이 모두 같은 송장일 때만 `{carrier_id, tracking_number}`, 아니면 `null` |
+| is_admin_requested | boolean | `false` | admin requested 여부 |
+| has_pending_refund | boolean | `false` | pending refund 여부 |
+| refund_progress | null | `null` | 이 신청서에서 생긴 최신 환불신청서의 진행 상태 `{claim_number, status, status_label, status_variant, status_icon, count}`. 환불이 없으면 `null` (교환, 반품만) |
+| exchange_mode | string | `standard` | 교환 진행 방식 (`standard` 일반 교환, `advance` 선교환). 교환만 |
+| exchange_mode_label | string | `일반 교환` | `exchange_mode` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
+| is_advance_exchange | boolean | `false` | advance exchange 여부 |
+| is_collection_overdue | boolean | `false` | collection overdue 여부 |
+| collection_overdue_days | integer | `0` | 선교환 반송 기한을 넘긴 일수 (기한 안이면 0). 교환만 |
+
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "신청 내역을 조회했습니다.",
+    "data": {
+        "data": [
+            {
+                "id": 17,
+                "claim_number": "EX20261010-0819150226",
+                "claim_type": "exchange",
+                "claim_type_label": "교환",
+                "order_id": 470,
+                "...": "(33개 키 생략, 총 38개)"
+            },
+            {
+                "id": 16,
+                "claim_number": "EX20261010-0819148305",
+                "claim_type": "exchange",
+                "claim_type_label": "교환",
+                "order_id": 473,
+                "...": "(33개 키 생략, 총 38개)"
+            },
+            "... (총 7건 중 2건 표시)"
+        ],
+        "counts": {
+            "exchange": 7,
+            "return": 6,
+            "refund": 11,
+            "cancel": 16
+        },
+        "complete_defaults": {
+            "create_refund_request": true,
+            "restore_stock": true
+        },
+        "carriers": [
+            {
+                "value": 1,
+                "label": "CJ대한통운",
+                "code": "cj",
+                "type": "domestic",
+                "tracking_url": "https://trace.cjlogistics.com/next/tracking.html?wblNo={tracking_number}"
+            },
+            {
+                "value": 2,
+                "label": "한진택배",
+                "code": "hanjin",
+                "type": "domestic",
+                "tracking_url": "https://www.hanjin.com/kor/CMS/DeliveryMgr/WaybillResult.do?wblnb={tracking_number}"
+            },
+            {
+                "value": 3,
+                "label": "롯데택배",
+                "code": "lotte",
+                "type": "domestic",
+                "tracking_url": "https://www.lotteglogis.com/home/reservation/tracking/link498?InvNo={tracking_number}"
+            },
+            {
+                "value": 4,
+                "label": "로젠택배",
+                "code": "logen",
+                "type": "domestic",
+                "tracking_url": "https://www.ilogen.com/web/personal/trace/{tracking_number}"
+            },
+            {
+                "value": 5,
+                "label": "UPS",
+                "code": "ups",
+                "type": "international",
+                "tracking_url": "https://www.ups.com/track?tracknum={tracking_number}"
+            },
+            "... (총 12건 중 5건 표시)"
+        ],
+        "abilities": {
+            "can_create": true,
+            "can_update_status": true,
+            "can_update_amounts": true,
+            "can_execute_refund": true
+        },
+        "...": "(1개 키 생략, 총 6개)"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.read`)이 없거나, 신청서가 속한 주문이 운영자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 422 | Unprocessable Entity | 유형에 맞지 않는 필터를 보낸 경우(예: `type=cancel` 에 `fault_types`), 다른 유형의 상태 값, 어휘 밖 통화 등 (`error.errors` 에 필드별 메시지) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+클레임 통합 목록을 유형 서브탭 단위로 조회합니다. `type`(기본 `exchange`)으로 한 유형만 받고, `data.counts` 로 네 유형의 건수 뱃지를 함께 받습니다. 목록 응답에는 완료 처리 창의 초기 선택값(`complete_defaults`)과 회수중, 발송중 일괄 창의 택배사 선택지(`carriers`, 교환과 반품 탭만)가 함께 실립니다.
+
+권한 범위(본인만, 소유 역할)는 신청서가 속한 주문 기준으로 쿼리에 걸려, 범위 밖 신청서는 행과 건수에서 빠집니다. 필드별 의미와 응답 예시는 [admin-claims.md](admin-claims.md#get-apimodulessirsoft-ecommerceadminclaims) 를 봅니다.
+
+
+
+### POST /api/modules/sirsoft-ecommerce/admin/claims/bulk-status
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.bulk-status -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.bulk-status`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@bulkStatus`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.update-status`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| type | body | string | 예 | — | 신청 유형 (`exchange`, `return`, `refund`). 취소는 전이 대상이 아니다 |
+| ids | body | array | 예 | min 1, max 100 | 대상 리소스 식별자 배열 (대량 작업 대상) |
+| status | body | string | 예 | — | 목표 상태. 단건 전이와 같은 유형별 관리자 어휘 |
+| reject_reason | body | string | 아니오 | max 2000 | `status=rejected` 일 때 필수. 반려 사유 (고른 신청서 전부에 같은 사유가 들어간다) |
+| admin_memo | body | string | 아니오 | max 2000 | 관리자 메모 (교환, 반품만 저장된다) |
+| trackings | body | array | 아니오 | max 100 | `status` 가 회수중, 발송중이면 필수. 신청서별 송장 `[{id, carrier_id, tracking_number}]` (`ids` 의 모든 신청서가 한 줄씩 있어야 한다) |
+| completion | body | array | 아니오 | — | `status=completed` 일 때 필수. 완료 처리 옵션 객체 |
+| completion.restore_stock_by_item | body | array | 아니오 | — | 신청 상품 행 ID 에서 재고 복구 여부로 가는 맵 (`{"55": true}`). 맵에 없는 행은 복구하지 않는다 |
+| completion.create_refund_request | body | boolean | 아니오 | — | `completion` 과 함께 필수. 환불신청서를 지금 접수할지 (`false` 면 만들지 않는다) |
+| completion.unreturned | body | array | 아니오 | — | 선교환 「미회수로 완료」. 행 ID 에서 사유(필수, 2000자 이하)로 가는 맵. 그 행은 재고를 복구하지 않는다 |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/admin/claims/bulk-status HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "type": "예시값",
+    "ids": [
+        "예시값"
+    ],
+    "status": "예시값",
+    "reject_reason": "예시값",
+    "admin_memo": "예시값",
+    "trackings": [
+        "예시값"
+    ],
+    "completion": [
+        "예시값"
+    ],
+    "completion.restore_stock_by_item": [
+        "예시값"
+    ],
+    "completion.create_refund_request": true,
+    "completion.unreturned": [
+        "예시값"
+    ]
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| succeeded | array | `[31]` | 전이에 성공한 신청서 ID |
+| payment_requested | array | `[34]` | 승인 지시가 추가결제 요청으로 우회된 신청서 ID (승인 후 결제 방식의 미수납 건) |
+| skipped | array | `[{"id":35,"claim_number":"RT20260825-0947115036","message":"…"}]` | 건너뛴 신청서 `{id, claim_number, message}`. 없는 ID 는 `claim_number` 가 `null` |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "일괄 상태 변경을 처리했습니다.",
+    "data": {
+        "succeeded": [
+            31
+        ],
+        "payment_requested": [
+            34
+        ],
+        "skipped": [
+            {
+                "id": 35,
+                "claim_number": "RT20260825-0947115036",
+                "message": "반품반려 에서 반품승인 로는 상태를 변경할 수 없습니다."
+            },
+            {
+                "id": 999999,
+                "claim_number": null,
+                "message": "해당 신청서를 찾을 수 없습니다."
+            }
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.update-status`)이 없거나, 대상 중 하나라도 권한 범위 밖인 경우 (`auth.scope_denied`, 전량 거부) |
+| 422 | Unprocessable Entity | 요청 검증 실패 (어휘 밖 상태, `ids` 1~100건 위반, 송장 누락이나 중복, 완료 옵션 누락 등 — `error.errors`), 완료 처리 중 쿠폰, 재고, 마일리지 복원 실패로 되돌린 경우 (`messages.claims.side_effect_failed`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+여러 신청서를 한 번에 전이합니다. 게이트에 막힌 건은 건너뛰고 `skipped` 에 사유와 함께 보고합니다 — 하나가 막혀도 나머지는 되돌리지 않는 부분 성공 계약입니다. 상세 계약은 [admin-claims.md](admin-claims.md#post-apimodulessirsoft-ecommerceadminclaimsbulk-status) 를 따릅니다.
+
+
+
+### POST /api/modules/sirsoft-ecommerce/admin/claims/completion-preview
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.completion-preview -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.completion-preview`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@completionPreview`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.update-status`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| claim_type | body | string | 예 | — | 신청 유형 (`exchange`, `return` — 완료 처리 창은 교환, 반품 전용) |
+| create_refund_request | body | boolean | 예 | — | 창의 환불신청서 선택 상태 (지금 접수 `true`, 접수하지 않음 `false`). 기본값 없음 |
+| claims | body | array | 예 | min 1, max 100 | 대상 신청서 `[{id, item_ids?, restore_stock_by_item?, unreturned_item_ids?}]` (1~100건) |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/admin/claims/completion-preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "claim_type": "예시값",
+    "create_refund_request": true,
+    "claims": [
+        "예시값"
+    ]
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| claims | array | `[{"id":26,"claim_number":"RT20261010-0819150734","completable_item_ids":[16],…}]` | 신청서별 요약 `{id, claim_number, currency_code, completable_item_ids, completable_item_count, has_stock_restore_target, stock_restore_count, stock_discard_count, earn_recovery, coupon_restore, refund, unreturned_eligible_items}` |
+| claims[].refund | object | `{"applicable":true,"already_filed":false,"blocked_reason":null,"refund_amount":7500,…}` | 환불 접수 예고. `applicable` 이 거짓이면 `blocked_reason`(`claim_refund_request_exists` 이미 접수됨, `claim_refund_not_applicable` 환불 대상 없음)으로 사유를 가른다 |
+| skipped | array | `[]` | 찾지 못한 신청서 `{id, message}` (오류가 아니라 보고) |
+| totals | object | `{"claim_count":1,"completable_item_count":1,"refund_amount_total":7500,…}` | 합계. 대상이 한 통화로 모일 때만 `currency_code` 와 표기 문자열이 서고, 섞이면 `null` |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "완료 처리 요약을 계산했습니다.",
+    "data": {
+        "claims": [
+            {
+                "id": 26,
+                "claim_number": "RT20261010-0819150734",
+                "currency_code": "JPY",
+                "completable_item_ids": [
+                    16
+                ],
+                "completable_item_count": 1,
+                "has_stock_restore_target": false,
+                "stock_restore_count": 0,
+                "stock_discard_count": 1,
+                "earn_recovery": false,
+                "coupon_restore": false,
+                "refund": {
+                    "applicable": true,
+                    "already_filed": false,
+                    "blocked_reason": null,
+                    "refund_amount": 7500,
+                    "refund_points_amount": 0,
+                    "deducted_shipping_fee": 3000,
+                    "refund_amount_formatted": "¥7,500",
+                    "refund_points_amount_formatted": "¥0",
+                    "deducted_shipping_fee_formatted": "¥3,000"
+                },
+                "unreturned_eligible_items": []
+            }
+        ],
+        "skipped": [],
+        "totals": {
+            "claim_count": 1,
+            "completable_item_count": 1,
+            "refund_amount_total": 7500,
+            "refund_points_amount_total": 0,
+            "currency_code": "JPY",
+            "refund_amount_total_formatted": "¥7,500",
+            "refund_points_amount_total_formatted": "¥0",
+            "deducted_shipping_fee_total": 3000,
+            "deducted_shipping_fee_total_formatted": "¥3,000"
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.update-status`)이 없거나, 대상 중 하나라도 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 422 | Unprocessable Entity | `claim_type` 이 교환, 반품이 아님, `claims` 누락이나 100건 초과, `item_ids` 200건 초과나 그 신청서 소속이 아닌 행, `create_refund_request` 누락 (`error.errors`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+완료 처리 창이 실행 전에 보여 줄 값(건별 환불 예정액, 재고 복구와 폐기 건수, 적립 회수, 쿠폰 복원 여부)을 계산합니다. DB 를 바꾸지 않습니다. 목록 일괄, 상품 단위, 상세 버튼 세 입구가 같은 창을 열고 이 응답을 씁니다. 상세 계약은 [admin-claims.md](admin-claims.md#post-apimodulessirsoft-ecommerceadminclaimscompletion-preview) 를 따릅니다.
+
+
+
+### GET /api/modules/sirsoft-ecommerce/admin/claims/{claimNumber}
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.show-by-number -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.show-by-number`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@showByNumber`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| claimNumber | path | string | 예 | — | 클레임 번호 (`EX…` 교환, `RT…` 반품, `RF…` 환불, `CN…` 취소. 접두는 운영자 설정을 따르며 유형 해석은 서버가 한다) |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/admin/claims/{claimNumber} HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: 상세 화면 봉투 (`data` 직속)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| claim | object | `{"id":26,"claim_number":"RT20261010-0819150734",…}` | 신청서 상세 ([ClaimResource](#claim-resource) 상세 표현에 관리자 확장 필드와 교환, 반품 결제 블록을 더한 것) |
+| claim_path_segment | string\|null | `returns` | 유형 스코프 API 경로 세그먼트 (`exchanges`, `returns`, `refunds`, 취소는 `null`) |
+| abilities | object | `{"can_create":true,"can_update_status":true,"can_update_amounts":true,"can_execute_refund":true}` | 화면 버튼 게이트 (목록 응답과 같은 매핑) |
+| complete_defaults | object | `{"create_refund_request":true,"restore_stock":true}` | 완료 처리 창의 초기 선택값 (설정 `claim.complete_defaults`) |
+| progress_steps | array | `[{"value":"requested","label":"반품신청","state":"done","icon":"status-request","variant":"secondary"}]` | 진행단계 칸 `{value, label, state, icon, variant}`. `state` 는 `done`, `current`, `upcoming`, `off_path` |
+| collection_lane | array\|null | `null` | 선교환의 「회수」 줄 (일반 교환, 반품은 `null`) |
+| redelivery_address_differs | boolean\|null | `null` | 최종 재발송지가 주문 배송지와 다른지. 재발송 축이 없는 유형은 `null` |
+| carriers | array | `[{"value":1,"label":"CJ대한통운","code":"cj","type":"domestic","tracking_url":"…"}]` | 회수, 재발송 송장의 택배사 선택지 (환불, 취소는 빈 배열) |
+| order | object\|null | `{"id":472,"order_number":"20261010-0819091587",…}` | 결제 정보 섹션이 그리는 원 주문의 결제 축 (결제수단 카드, 금액 행 세트) |
+| settlement | object\|null | `{"refund_amount":7500,"deducted_shipping_fee":3000,…}` | 지금 완료 처리하면 접수될 환불 예정 (교환, 반품만. 환불신청서는 `null`) |
+| pending_refund | object\|null | `null` | 완료됐는데 환불신청서가 없고 환불액이 0 보다 클 때만 `{amount, amount_formatted, item_count}` |
+| linked_claims | object | `{"source":null,"refunds":[],"latest_refund":null,"result_cancel":null}` | 연결 신청서 (원 신청서, 후속 환불신청서, 처리 결과 취소 내역) |
+| reason_options | array | `[{"value":"changed_mind","label":"단순 변심","fault_type":"customer"}]` | 신청 내용 수정의 사유 선택지 (그 유형의 활성 사유 전부, 판매자 귀책 포함) |
+| on_behalf | object | `{"can_withdraw":false,"can_edit":false}` | 고객 요청 대리 철회와 신청 내용 수정 버튼의 게이트 (취소는 둘 다 `false`) |
+| transition_options | array | `[]` | 「신청서 상태 변경」 칸의 선택지 `{value, label}` (지금 상태에서 갈 수 있고 거절되지 않을 심사 상태만) |
+| completable_item_count | integer | `1` | 지금 완료할 수 있는 신청 상품 수 (환불, 취소는 0) |
+| unreturned_eligible_count | integer | `0` | 선교환에서 「미회수로 완료」 할 수 있는 행 수 |
+| exchange_mode_abilities | object\|null | `null` | 진행 방식 전환 버튼 게이트 `{can_set_advance, can_set_standard, blocked_reason, advance_enabled, collection_due_days}` (교환이 아니면 `null`) |
+| charge_methods | array | `[{"value":"pay_on_request","label":"신청 시 결제"}]` | 청구 방식 선택지 (환불, 취소는 빈 배열) |
+| refund_methods | array | `[]` | 환불 수단 선택지 (환불신청서에만 있다) |
+| cancellable | object\|null | `null` | 취소 가능 금액 산정 결과 (환불신청서에만, `cancellable-amount` 응답의 `cancellable` 과 같은 형태) |
+| attachment_settings | object\|null | `{"max_images":5,"image_max_size_kb":2048,…}` | 첨부 상한과 허용 확장자 (취소는 `null`) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "신청서를 조회했습니다.",
+    "data": {
+        "claim": {
+            "id": 26,
+            "claim_number": "RT20261010-0819150734",
+            "claim_type": "return",
+            "claim_type_label": "반품",
+            "order_id": 472,
+            "order_number": "20261010-0819091587",
+            "status": "collecting",
+            "status_label": "반품회수중",
+            "status_variant": "primary",
+            "status_icon": "status-pickup",
+            "is_final": false,
+            "is_withdrawable": false,
+            "is_editable": false,
+            "can_pay": true,
+            "reason_code": "size_mismatch",
+            "reason_label": "사이즈가 맞지 않음",
+            "...": "(55개 키 생략, 총 71개)"
+        },
+        "claim_path_segment": "returns",
+        "abilities": {
+            "can_create": true,
+            "can_update_status": true,
+            "can_update_amounts": true,
+            "can_execute_refund": true
+        },
+        "complete_defaults": {
+            "create_refund_request": true,
+            "restore_stock": true
+        },
+        "progress_steps": [
+            {
+                "value": "requested",
+                "label": "반품신청",
+                "state": "done",
+                "icon": "status-request",
+                "variant": "secondary"
+            },
+            {
+                "value": "approved",
+                "label": "반품승인",
+                "state": "done",
+                "icon": "status-approved",
+                "variant": "info"
+            },
+            "... (총 6건 중 2건 표시)"
+        ],
+        "collection_lane": null,
+        "redelivery_address_differs": null,
+        "carriers": [
+            {
+                "value": 1,
+                "label": "CJ대한통운",
+                "code": "cj",
+                "type": "domestic",
+                "tracking_url": "https://trace.cjlogistics.com/next/tracking.html?wblNo={tracking_number}"
+            },
+            {
+                "value": 2,
+                "label": "한진택배",
+                "code": "hanjin",
+                "type": "domestic",
+                "tracking_url": "https://www.hanjin.com/kor/CMS/DeliveryMgr/WaybillResult.do?wblnb={tracking_number}"
+            },
+            "... (총 12건 중 2건 표시)"
+        ],
+        "order": {
+            "id": 472,
+            "order_number": "20261010-0819091587",
+            "base_currency": "JPY",
+            "payment_currency": "JPY",
+            "is_cross_currency": false,
+            "...": "(28개 키 생략, 총 33개)"
+        },
+        "settlement": {
+            "refund_amount": 7500,
+            "refund_amount_formatted": "¥7,500",
+            "refund_points_amount": 0,
+            "refund_points_amount_formatted": "¥0",
+            "deducted_shipping_fee": 3000,
+            "...": "(9개 키 생략, 총 14개)"
+        },
+        "pending_refund": null,
+        "linked_claims": {
+            "source": null,
+            "refunds": [],
+            "latest_refund": null,
+            "result_cancel": null
+        },
+        "reason_options": [
+            {
+                "value": "changed_mind",
+                "label": "단순 변심",
+                "fault_type": "customer"
+            },
+            {
+                "value": "size_mismatch",
+                "label": "사이즈가 맞지 않음",
+                "fault_type": "customer"
+            },
+            "... (총 9건 중 2건 표시)"
+        ],
+        "on_behalf": {
+            "can_withdraw": false,
+            "can_edit": false
+        },
+        "transition_options": [],
+        "completable_item_count": 1,
+        "unreturned_eligible_count": 0,
+        "exchange_mode_abilities": null,
+        "charge_methods": [
+            {
+                "value": "pay_on_request",
+                "label": "신청 시 결제"
+            },
+            {
+                "value": "pay_on_approval",
+                "label": "승인 후 결제"
+            },
+            "... (총 3건 중 2건 표시)"
+        ],
+        "refund_methods": [],
+        "cancellable": null,
+        "attachment_settings": {
+            "max_images": 5,
+            "image_max_size_kb": 2048,
+            "image_max_size_mb": 2,
+            "allowed_extensions": [
+                "jpeg",
+                "jpg",
+                "... (총 5건 중 2건 표시)"
+            ],
+            "accept": ".jpeg,.jpg,.png,.gif,.webp"
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.read`)이 없거나, 신청서가 속한 주문이 운영자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 404 | Not Found | 그 번호의 신청서가 없는 경우 (`exceptions.claim_not_found`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+클레임 번호로 신청서 상세를 조회합니다. 관리자 상세 화면의 진입 경로이며 번호에서 유형을 읽는 일은 서버가 합니다. 취소(`CN…`)도 같은 경로로 열리고, 이때는 전이, 송장, 청구, 환불 실행 축이 비어 조회 전용 봉투가 됩니다. 봉투의 각 축이 왜 이 응답에 실리는지는 [admin-claims.md](admin-claims.md#get-apimodulessirsoft-ecommerceadminclaimsclaimnumber) 를 봅니다.
+
+
+
+### GET /api/modules/sirsoft-ecommerce/admin/claims/{claimNumber}/logs
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.logs -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.logs`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@logs`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| claimNumber | path | string | 예 | — | 클레임 번호 |
+| per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
+| sort_order | query | string | 아니오 | — | 정렬 방향 (`asc`, `desc` — 기본 `desc`) |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/admin/claims/{claimNumber}/logs?per_page=1&sort_order=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_목록 응답: 코어 `ActivityLogResource` 컬렉션 (`data.data[]` + `data.links` + `data.meta`)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | integer | `207040` | 활동 로그 ID |
+| log_type | string | `admin` | 로그 분류 (`admin`, `user`, `system`) |
+| log_type_label | string | `관리자` | 로그 분류 라벨 |
+| loggable_type | string | `return` | 로그 대상 (신청서 유형, 추가결제, 첨부) |
+| loggable_type_display | string | `return` | 로그 대상 표시 이름 |
+| loggable_id | integer | `26` | 로그 대상 ID |
+| action | string | `claim_return.status_change` | 활동 키 (`{대상}.{행위}`) |
+| action_label | string | `상태 변경` | 활동 라벨 |
+| localized_description | string | `반품 신청서 상태 변경 (RT20261010-0819150734)` | 현재 로케일로 해석한 설명 |
+| description_key | string | `sirsoft-ecommerce::activity_log.description.claim_return_status_change` | 설명 문구의 다국어 키 |
+| properties | object | `{"claim_type":"return","previous_status":"requested","new_status":"collecting"}` | 활동 시점의 부가 정보 (활동마다 키가 다르다) |
+| changes | array\|null | `null` | 단건 수정의 변경 내역 `[{field, old, new}]` |
+| bulk_changes | array\|null | `null` | 일괄 수정의 변경 내역 |
+| has_changes | boolean | `false` | 변경 내역이 있는지 |
+| actor_name | string | `관리자` | 작업자 이름. 사람이 누르지 않은 자동 전이는 「시스템」 |
+| user | object | `{"uuid":null,"name":"시스템"}` | 작업자 `{uuid, name, email}` |
+| ip_address | string\|null | `10.10.10.1` | 요청 IP |
+| created_at | string | `2026-10-10 17:19:15` | 기록 일시 (보는 사람 시간대) |
+| is_owner | boolean | `false` | 보는 사람이 작업자 본인인지 |
+| abilities | object | `{"can_read":true,"can_delete":true}` | 로그 단위 동작 권한 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "활동 로그를 조회했습니다.",
+    "data": {
+        "data": [
+            {
+                "id": 207040,
+                "log_type": "admin",
+                "log_type_label": "관리자",
+                "loggable_type": "return",
+                "loggable_type_display": "return",
+                "loggable_id": 26,
+                "action": "claim_return.status_change",
+                "action_label": "상태 변경",
+                "localized_description": "반품 신청서 상태 변경 (RT20261010-0819150734)",
+                "description_key": "sirsoft-ecommerce::activity_log.description.claim_return_status_change",
+                "properties": {
+                    "claim_type": "return",
+                    "previous_status": "requested",
+                    "new_status": "collecting"
+                },
+                "changes": null,
+                "bulk_changes": null,
+                "has_changes": false,
+                "actor_name": "관리자",
+                "user": {
+                    "uuid": "a2ee133d-646e-471c-8d18-df6ceafa834a",
+                    "name": "관리자",
+                    "email": "admin@example.com"
+                },
+                "ip_address": "10.10.10.1",
+                "created_at": "2026-10-10 17:19:15",
+                "is_owner": false,
+                "abilities": {
+                    "can_read": true,
+                    "can_delete": true
+                }
+            },
+            {
+                "id": 207039,
+                "log_type": "user",
+                "log_type_label": "사용자",
+                "loggable_type": "return",
+                "loggable_type_display": "return",
+                "loggable_id": 26,
+                "action": "claim_return.request",
+                "action_label": "신청 접수",
+                "localized_description": "반품 신청 접수 (RT20261010-0819150734)",
+                "description_key": "sirsoft-ecommerce::activity_log.description.claim_return_request",
+                "properties": {
+                    "claim_type": "return",
+                    "status": "requested"
+                },
+                "changes": null,
+                "bulk_changes": null,
+                "has_changes": false,
+                "actor_name": "시스템",
+                "user": {
+                    "uuid": null,
+                    "name": "시스템"
+                },
+                "ip_address": "10.0.0.5",
+                "created_at": "2026-10-08 13:43:09",
+                "is_owner": false,
+                "abilities": {
+                    "can_read": true,
+                    "can_delete": true
+                }
+            }
+        ],
+        "links": {
+            "first": "https://api.example.com/api/modules/sirsoft-ecommerce/admin/claims/RT20261010-0819150734/logs?page=1",
+            "last": "https://api.example.com/api/modules/sirsoft-ecommerce/admin/claims/RT20261010-0819150734/logs?page=1",
+            "prev": null,
+            "next": null
+        },
+        "meta": {
+            "current_page": 1,
+            "from": 1,
+            "last_page": 1,
+            "links": [
+                {
+                    "url": null,
+                    "label": "pagination.previous",
+                    "page": null,
+                    "active": false
+                },
+                {
+                    "url": "https://api.example.com/api/modules/sirsoft-ecommerce/admin/claims/RT20261010-0819150734/logs?page=1",
+                    "label": "1",
+                    "page": 1,
+                    "active": true
+                },
+                "... (총 3건 중 2건 표시)"
+            ],
+            "path": "https://api.example.com/api/modules/sirsoft-ecommerce/admin/claims/RT20261010-0819150734/logs",
+            "per_page": 2,
+            "to": 2,
+            "total": 2
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.read`)이 없거나, 신청서가 속한 주문이 운영자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 422 | Unprocessable Entity | `per_page` 가 1~100 밖이거나 `sort_order` 가 `asc`, `desc` 가 아닌 경우 (`error.errors`) |
+| 404 | Not Found | 그 번호의 신청서가 없는 경우 (`exceptions.claim_not_found`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+신청서 한 건의 활동 로그를 조회합니다. 신청서 자신의 로그에 그 신청서의 추가결제와 첨부 로그를 합쳐 한 목록으로 돌려주고, 취소 번호면 취소 발 환불 행의 이력을 합칩니다. 상세와 같은 번호 축을 쓰므로 상세 응답을 기다리지 않고 함께 부를 수 있습니다. 자동 전이의 작업자 표기 규칙은 [admin-claims.md](admin-claims.md#get-apimodulessirsoft-ecommerceadminclaimsclaimnumberlogs) 를 봅니다.
+
+
+
+### PUT /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/exchange-mode
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.exchange-mode -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.exchange-mode`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@updateExchangeMode`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.update-status`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | integer | 예 | — | 교환 신청서 ID |
+| mode | body | string | 예 | — | 진행 방식 (`standard` 일반 교환, `advance` 선교환 — 헌 물건 회수 전에 새 물건을 먼저 보낸다) |
+
+**요청 예시**
+
+```http
+PUT /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/exchange-mode HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "mode": "예시값"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| claim | object | `{"id":17,"exchange_mode":"advance",…}` | 바뀐 교환 신청서 상세 ([ClaimResource](#claim-resource) 상세 표현과 관리자 확장 필드) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "진행 방식을 바꿨습니다.",
+    "data": {
+        "claim": {
+            "id": 17,
+            "claim_number": "EX20261010-0819150226",
+            "claim_type": "exchange",
+            "claim_type_label": "교환",
+            "status": "approved",
+            "status_label": "교환승인",
+            "exchange_mode": "advance",
+            "exchange_mode_label": "선교환",
+            "is_advance_exchange": true,
+            "...": "ClaimResource 상세 표현 (관리자 확장 필드 포함)"
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.update-status`)이 없거나, 신청서가 속한 주문이 운영자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 422 | Unprocessable Entity | `mode` 가 어휘 밖인 경우 (`error.errors`), 선교환 설정이 꺼진 경우 (`claim_advance_exchange_disabled`), 바꿀 수 없는 단계이거나 재발송 송장이 붙은 경우 (`claim_exchange_mode_not_changeable`), 회수 송장이 붙은 선교환을 일반으로 되돌리려는 경우 (`claim_exchange_mode_locked_by_collection`) |
+| 404 | Not Found | 그 ID 의 교환 신청서가 없는 경우 (`exceptions.claim_not_found`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+교환의 진행 방식을 일반 교환과 선교환 사이에서 바꿉니다. 바꿀 수 있는지는 상세 봉투의 `exchange_mode_abilities` 가 같은 판정으로 미리 알려 줍니다. 선교환의 전이표와 반송 기한 규칙은 [admin-claims.md](admin-claims.md#put-apimodulessirsoft-ecommerceadminexchangesidexchange-mode) 를 봅니다.
+
+
+
+### GET /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancellable-amount
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.cancellable-amount -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.cancellable-amount`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@cancellableAmount`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| order | path | string | 예 | — | 주문 ID |
+| refund_id | query | integer | 아니오 | — | 환불신청서 문맥. 그 신청서의 출처별 산식으로 계산하고 선점 집계에서 자기 자신을 뺀다. `items` 와 함께 보낼 수 없다 (다른 주문의 신청서면 404) |
+| items | query | array | 아니오 | max 200 | 대상 상품 `[{order_option_id, cancel_quantity}]` (최대 200). 주문 소속이 아닌 옵션은 422 |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancellable-amount?refund_id=1&items=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| cancellable | object | `{"amount":212000,"domain_refundable":212000,"payment_capa…` | 취소 가능 금액 산정 결과. `amount = max(0, min(domain_refundable, payment_capacity))` 이고 `reserved` 는 한도를 깎지 않는 참고 값. `binding` 은 한도를 정한 축, `methods` 는 수단별 잔여 한도, `reserved_claims` 는 진행 중인 다른 신청서 |
+
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "취소 가능 금액을 산정했습니다.",
+    "data": {
+        "cancellable": {
+            "amount": 212000,
+            "domain_refundable": 212000,
+            "payment_capacity": 212000,
+            "reserved": 0,
+            "binding": "domain_refundable",
+            "binding_label_key": "sirsoft-ecommerce::messages.claims.cancellable_binding.domain_refundable",
+            "methods": [
+                {
+                    "type": "payment",
+                    "payment_id": 358,
+                    "method": "card",
+                    "currency": "JPY",
+                    "remaining_local": 212000,
+                    "remaining_base": 212000,
+                    "method_label": "신용카드",
+                    "remaining_base_formatted": "¥212,000",
+                    "remaining_local_formatted": "¥212,000"
+                }
+            ],
+            "reserved_claims": [],
+            "currency": "JPY",
+            "mc_amount": {
+                "KRW": 201400,
+                "USD": 180.2,
+                "JPY": 212000,
+                "CNY": 1229.6,
+                "EUR": 165.36
+            },
+            "amount_formatted": "¥212,000",
+            "domain_refundable_formatted": "¥212,000",
+            "payment_capacity_formatted": "¥212,000",
+            "reserved_formatted": "¥0",
+            "binding_label": "환불 대상 금액이 한도입니다."
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.read`)이 없거나, 주문이 운영자의 주문 조회 범위 밖인 경우 (`auth.scope_denied`) |
+| 422 | Unprocessable Entity | `refund_id` 와 `items` 를 함께 보낸 경우, 주문 소속이 아닌 옵션이 섞인 경우 (`error.errors`) |
+| 404 | Not Found | 주문이 없거나, `refund_id` 가 그 주문의 환불신청서가 아닌 경우 (`exceptions.claim_not_found`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+주문의 취소 가능 금액을 산정합니다. 환불 상세 화면의 근거 표와 주문 상세 환불 창이 함께 쓰고, 서버는 환불 저장과 실행 직전에 같은 식으로 다시 계산하므로 이 응답의 한도와 실행 한도가 같습니다. 둘 다 보내지 않으면 미취소 옵션 전량 기준입니다. 산식과 각 키의 의미는 [admin-claims.md](admin-claims.md#get-apimodulessirsoft-ecommerceadminordersordercancellable-amount) 를 봅니다.
+
+
+
+### GET /api/modules/sirsoft-ecommerce/admin/orders/{order}/claims
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.order-claims -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.order-claims`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@orderClaims`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| order | path | string | 예 | — | 주문 ID |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/admin/orders/{order}/claims HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| counts | object | `{"exchange":0,"return":0,"refund":0,"cancel":0}` | 유형별 건수 `{exchange, return, refund, cancel}` (환불 축은 출처로 거르지 않는다) |
+| claims | array | `[]` | 그 주문의 전 유형 신청서 (신청 역순). 상세 표현에 관리자 확장 필드와 `detail_url`(취소는 `null`), 상품 행 금액 정규화 값(`items[].amount`, `amount_formatted`, `amount_type`), `source_claim_number` 를 더한 형태 |
+
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "신청 내역을 조회했습니다.",
+    "data": {
+        "counts": {
+            "exchange": 0,
+            "return": 0,
+            "refund": 0,
+            "cancel": 0
+        },
+        "claims": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.read`)이 없거나, 주문이 운영자의 주문 조회 범위 밖인 경우 (`auth.scope_denied`) |
+| 404 | Not Found | 주문이 없는 경우 (라우트 모델 바인딩) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+주문 상세의 「클레임 내역」 섹션이 쓰는 주문 단위 클레임 목록입니다. 신청서가 상품 배열을 품는 그룹 구조 하나로 PC 표와 모바일 카드를 함께 그립니다. `amount` 는 늘 0 이상이고 방향(`charge`, `refund`, `none`)은 `amount_type` 이 나릅니다. 상세 규칙은 [admin-claims.md](admin-claims.md#get-apimodulessirsoft-ecommerceadminordersorderclaims) 를 봅니다.
+
+
+
+### POST /api/modules/sirsoft-ecommerce/admin/refunds/{id}/execute
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.refunds.execute -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.refunds.execute`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@executeRefund`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.execute-refund`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | integer | 예 | — | 환불신청서 ID |
+| refund_amount | body | number | 아니오 | min 0 | 이번에 실행할 PG(현금) 환불액. 생략하면 저장된 값으로 실행 |
+| refund_points_amount | body | number | 아니오 | min 0 | 마일리지 환불액 (비회원 주문은 422) |
+| refund_method | body | string | 아니오 | — | 환불 수단 (`pg`, `bank`, `points`). 금액 수정과 같은 선택지 게이트를 거친다 |
+| refund_bank | body | array | 아니오 | — | 실행하며 적어 넣는 환불 계좌 `{bank_code, account_number, holder}`. 세 값이 함께 와야 한다 |
+| refund_bank.bank_code | body | string | 아니오 | max 10 | 은행 코드 |
+| refund_bank.account_number | body | string | 아니오 | max 50 | 계좌 번호 |
+| refund_bank.holder | body | string | 아니오 | max 50 | 예금주 |
+| force_without_refund_bank | body | boolean | 아니오 | — | 계좌 없이 완료로 기록하겠다는 명시 동의 (참이면 계좌 게이트를 통과하고 송금 없이 신청서만 닫힌다) |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/admin/refunds/{id}/execute HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "refund_amount": 1,
+    "refund_points_amount": 1,
+    "refund_method": "예시값",
+    "refund_bank": [
+        "예시값"
+    ],
+    "refund_bank.bank_code": "예시값",
+    "refund_bank.account_number": "예시값",
+    "refund_bank.holder": "예시값",
+    "force_without_refund_bank": true
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| claim | object | `{"id":41,"status":"completed",…}` | 실행 뒤 환불신청서 상세 ([ClaimResource](#claim-resource) 상세 표현과 관리자 확장 필드) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "환불을 실행했습니다.",
+    "data": {
+        "claim": {
+            "id": 41,
+            "claim_number": "RF20261029-0304368688",
+            "claim_type": "refund",
+            "claim_type_label": "환불",
+            "status": "completed",
+            "status_label": "환불완료",
+            "refund_method": "bank",
+            "refund_method_label": "계좌이체 환불",
+            "...": "ClaimResource 상세 표현 (관리자 확장 필드 포함)"
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.execute-refund`)이 없거나, 신청서가 속한 주문이 운영자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 422 | Unprocessable Entity | 계좌 환불인데 계좌도 동의도 없음 (`refund_bank`), 일부만 실린 계좌, 승인 전 상태, 취소 가능 금액 초과 (`claim_refund_exceeds_cancellable`), 그 주문에서 쓸 수 없는 환불 수단, 마일리지와 쿠폰과 재고 복원 실패나 PG 거절 (`messages.claims.refund_execute_failed`, 원인은 `errors.detail`) |
+| 404 | Not Found | 그 ID 의 환불신청서가 없는 경우 (`exceptions.claim_not_found`) |
+| 409 | Conflict | 이미 실행됐거나 실행 중인 경우 (`exceptions.claim_refund_already_executed`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+승인된 환불신청서의 환불을 실행합니다 (「환불하기」). 본문에 금액이 실려 있으면 금액 수정과 같은 검증을 거쳐 그 값으로 실행합니다. 되돌릴 수 있는 처리(마일리지 반환, 재고와 쿠폰 복원, 장부)를 먼저 하고 PG 를 맨 뒤에 부르며, 앞 단계가 실패하면 PG 를 부르지 않고 전체를 되돌립니다. 환불 수단 게이트와 계좌 게이트는 [admin-claims.md](admin-claims.md#post-apimodulessirsoft-ecommerceadminrefundsidexecute) 를 봅니다.
+
+
+
+### GET /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.show -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.show`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@show`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| claimType | path | string | 예 | — | 유형 경로 세그먼트 (`exchanges`, `returns`, `refunds`) |
+| id | path | integer | 예 | — | 신청서 ID |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/admin/{claimType}/{id} HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: 상세 화면 봉투 (`data` 직속)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| claim | object | `{"id":17,"claim_number":"EX20261010-0819150226",…}` | 신청서 상세 ([ClaimResource](#claim-resource) 상세 표현에 관리자 확장 필드와 교환, 반품 결제 블록을 더한 것) |
+| claim_path_segment | string\|null | `exchanges` | 유형 스코프 API 경로 세그먼트 (`exchanges`, `returns`, `refunds`, 취소는 `null`) |
+| abilities | object | `{"can_create":true,"can_update_status":true,"can_update_amounts":true,"can_execute_refund":true}` | 화면 버튼 게이트 (목록 응답과 같은 매핑) |
+| complete_defaults | object | `{"create_refund_request":true,"restore_stock":true}` | 완료 처리 창의 초기 선택값 (설정 `claim.complete_defaults`) |
+| progress_steps | array | `[{"value":"requested","label":"반품신청","state":"done","icon":"status-request","variant":"secondary"}]` | 진행단계 칸 `{value, label, state, icon, variant}`. `state` 는 `done`, `current`, `upcoming`, `off_path` |
+| collection_lane | array\|null | `null` | 선교환의 「회수」 줄 (일반 교환, 반품은 `null`) |
+| redelivery_address_differs | boolean\|null | `null` | 최종 재발송지가 주문 배송지와 다른지. 재발송 축이 없는 유형은 `null` |
+| carriers | array | `[{"value":1,"label":"CJ대한통운","code":"cj","type":"domestic","tracking_url":"…"}]` | 회수, 재발송 송장의 택배사 선택지 (환불, 취소는 빈 배열) |
+| order | object\|null | `{"id":472,"order_number":"20261010-0819091587",…}` | 결제 정보 섹션이 그리는 원 주문의 결제 축 (결제수단 카드, 금액 행 세트) |
+| settlement | object\|null | `{"refund_amount":7500,"deducted_shipping_fee":3000,…}` | 지금 완료 처리하면 접수될 환불 예정 (교환, 반품만. 환불신청서는 `null`) |
+| pending_refund | object\|null | `null` | 완료됐는데 환불신청서가 없고 환불액이 0 보다 클 때만 `{amount, amount_formatted, item_count}` |
+| linked_claims | object | `{"source":null,"refunds":[],"latest_refund":null,"result_cancel":null}` | 연결 신청서 (원 신청서, 후속 환불신청서, 처리 결과 취소 내역) |
+| reason_options | array | `[{"value":"changed_mind","label":"단순 변심","fault_type":"customer"}]` | 신청 내용 수정의 사유 선택지 (그 유형의 활성 사유 전부, 판매자 귀책 포함) |
+| on_behalf | object | `{"can_withdraw":false,"can_edit":false}` | 고객 요청 대리 철회와 신청 내용 수정 버튼의 게이트 (취소는 둘 다 `false`) |
+| transition_options | array | `[]` | 「신청서 상태 변경」 칸의 선택지 `{value, label}` (지금 상태에서 갈 수 있고 거절되지 않을 심사 상태만) |
+| completable_item_count | integer | `1` | 지금 완료할 수 있는 신청 상품 수 (환불, 취소는 0) |
+| unreturned_eligible_count | integer | `0` | 선교환에서 「미회수로 완료」 할 수 있는 행 수 |
+| exchange_mode_abilities | object\|null | `null` | 진행 방식 전환 버튼 게이트 `{can_set_advance, can_set_standard, blocked_reason, advance_enabled, collection_due_days}` (교환이 아니면 `null`) |
+| charge_methods | array | `[{"value":"pay_on_request","label":"신청 시 결제"}]` | 청구 방식 선택지 (환불, 취소는 빈 배열) |
+| refund_methods | array | `[]` | 환불 수단 선택지 (환불신청서에만 있다) |
+| cancellable | object\|null | `null` | 취소 가능 금액 산정 결과 (환불신청서에만, `cancellable-amount` 응답의 `cancellable` 과 같은 형태) |
+| attachment_settings | object\|null | `{"max_images":5,"image_max_size_kb":2048,…}` | 첨부 상한과 허용 확장자 (취소는 `null`) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "신청서를 조회했습니다.",
+    "data": {
+        "claim": {
+            "id": 17,
+            "claim_number": "EX20261010-0819150226",
+            "claim_type": "exchange",
+            "claim_type_label": "교환",
+            "order_id": 470,
+            "order_number": "20261010-0819090090",
+            "status": "withdrawn",
+            "status_label": "교환철회",
+            "status_variant": "secondary",
+            "status_icon": "status-withdrawn",
+            "is_final": true,
+            "is_withdrawable": false,
+            "is_editable": false,
+            "can_pay": true,
+            "reason_code": "color_mismatch",
+            "reason_label": "색상/디자인이 마음에 들지 않음",
+            "...": "(71개 키 생략, 총 87개)"
+        },
+        "claim_path_segment": "exchanges",
+        "abilities": {
+            "can_create": true,
+            "can_update_status": true,
+            "can_update_amounts": true,
+            "can_execute_refund": true
+        },
+        "complete_defaults": {
+            "create_refund_request": true,
+            "restore_stock": true
+        },
+        "progress_steps": [
+            {
+                "value": "requested",
+                "label": "교환신청",
+                "state": "done",
+                "icon": "status-request",
+                "variant": "secondary"
+            },
+            {
+                "value": "approved",
+                "label": "교환승인",
+                "state": "upcoming",
+                "icon": "status-approved",
+                "variant": "info"
+            },
+            "... (총 10건 중 2건 표시)"
+        ],
+        "collection_lane": null,
+        "redelivery_address_differs": false,
+        "carriers": [
+            {
+                "value": 1,
+                "label": "CJ대한통운",
+                "code": "cj",
+                "type": "domestic",
+                "tracking_url": "https://trace.cjlogistics.com/next/tracking.html?wblNo={tracking_number}"
+            },
+            {
+                "value": 2,
+                "label": "한진택배",
+                "code": "hanjin",
+                "type": "domestic",
+                "tracking_url": "https://www.hanjin.com/kor/CMS/DeliveryMgr/WaybillResult.do?wblnb={tracking_number}"
+            },
+            "... (총 12건 중 2건 표시)"
+        ],
+        "order": {
+            "id": 470,
+            "order_number": "20261010-0819090090",
+            "base_currency": "JPY",
+            "payment_currency": "JPY",
+            "is_cross_currency": false,
+            "...": "(28개 키 생략, 총 33개)"
+        },
+        "settlement": {
+            "refund_amount": 0,
+            "refund_amount_formatted": "¥0",
+            "refund_points_amount": 0,
+            "refund_points_amount_formatted": "¥0",
+            "deducted_shipping_fee": 0,
+            "...": "(9개 키 생략, 총 14개)"
+        },
+        "pending_refund": null,
+        "linked_claims": {
+            "source": null,
+            "refunds": [],
+            "latest_refund": null,
+            "result_cancel": null
+        },
+        "reason_options": [
+            {
+                "value": "size_mismatch",
+                "label": "사이즈가 맞지 않음",
+                "fault_type": "customer"
+            },
+            {
+                "value": "color_mismatch",
+                "label": "색상/디자인이 마음에 들지 않음",
+                "fault_type": "customer"
+            },
+            "... (총 8건 중 2건 표시)"
+        ],
+        "on_behalf": {
+            "can_withdraw": false,
+            "can_edit": false
+        },
+        "transition_options": [],
+        "completable_item_count": 0,
+        "unreturned_eligible_count": 0,
+        "exchange_mode_abilities": {
+            "can_set_advance": false,
+            "can_set_standard": false,
+            "blocked_reason": "쇼핑몰 설정에서 선교환이 꺼져 있습니다.",
+            "advance_enabled": false,
+            "collection_due_days": 14
+        },
+        "charge_methods": [
+            {
+                "value": "pay_on_request",
+                "label": "신청 시 결제"
+            },
+            {
+                "value": "pay_on_approval",
+                "label": "승인 후 결제"
+            },
+            "... (총 3건 중 2건 표시)"
+        ],
+        "refund_methods": [],
+        "cancellable": null,
+        "attachment_settings": {
+            "max_images": 5,
+            "image_max_size_kb": 2048,
+            "image_max_size_mb": 2,
+            "allowed_extensions": [
+                "jpeg",
+                "jpg",
+                "... (총 5건 중 2건 표시)"
+            ],
+            "accept": ".jpeg,.jpg,.png,.gif,.webp"
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.read`)이 없거나, 신청서가 속한 주문이 운영자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 404 | Not Found | 해당 유형에 그 ID 의 신청서가 없는 경우 (`exceptions.claim_not_found`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+유형과 ID 로 신청서 상세를 조회합니다. 응답은 번호 기반 상세(`GET /admin/claims/{claimNumber}`)와 같은 봉투입니다. 환불 계좌 원문은 `sirsoft-ecommerce.orders.read` 권한이 있을 때만 보이고, 없으면 마스킹됩니다. 관리자 확장 필드는 [admin-claims.md](admin-claims.md#get-apimodulessirsoft-ecommerceadminclaimtypeid) 를 봅니다.
+
+
+
+### PATCH /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.update -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.update`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@updateRequest`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.update-status`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| claimType | path | string | 예 | — | 유형 경로 세그먼트 (`exchanges`, `returns`, `refunds`) |
+| id | path | integer | 예 | — | 신청서 ID |
+| reason_code | body | string | 아니오 | max 50 | 사유 코드 (그 유형의 활성 사유, 판매자 귀책 사유 포함) |
+| reason_detail | body | string | 아니오 | max 1000 | 상세 사유 |
+| redelivery_address | body | array | 아니오 | — | 교환 재발송지 객체 (국가는 바꿀 수 없다) |
+| redelivery_address.recipient_name | body | string | 아니오 | max 50 | 수령인 이름 |
+| redelivery_address.phone | body | string | 아니오 | max 20 | 전화번호 |
+| redelivery_address.zipcode | body | string | 아니오 | max 20 | 우편번호 |
+| redelivery_address.address1 | body | string | 아니오 | max 255 | 기본 주소 |
+| redelivery_address.address2 | body | string | 아니오 | max 255 | 상세 주소 |
+| redelivery_address.city | body | string | 아니오 | max 100 | 도시 (해외 주문) |
+| redelivery_address.state | body | string | 아니오 | max 100 | 주, 도 (해외 주문) |
+| redelivery_address.country_code | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
+
+**요청 예시**
+
+```http
+PATCH /api/modules/sirsoft-ecommerce/admin/{claimType}/{id} HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "reason_code": "예시값",
+    "reason_detail": "예시값",
+    "redelivery_address": [
+        "서울특별시 강남구 테헤란로 1"
+    ],
+    "redelivery_address.recipient_name": "예시 이름",
+    "redelivery_address.phone": "010-1234-5678",
+    "redelivery_address.zipcode": "06234",
+    "redelivery_address.address1": "서울특별시 강남구 테헤란로 1",
+    "redelivery_address.address2": "서울특별시 강남구 테헤란로 1",
+    "redelivery_address.city": "서울특별시 강남구 테헤란로 1",
+    "redelivery_address.state": "서울특별시 강남구 테헤란로 1",
+    "redelivery_address.country_code": "KR"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| claim | object | `{"id":26,"reason_code":"defective_product",…}` | 고친 신청서 상세 ([ClaimResource](#claim-resource) 상세 표현과 관리자 확장 필드) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "신청 내용을 수정했습니다.",
+    "data": {
+        "claim": {
+            "id": 26,
+            "claim_number": "RT20261010-0819150734",
+            "claim_type": "return",
+            "claim_type_label": "반품",
+            "status": "requested",
+            "status_label": "반품신청",
+            "reason_code": "defective_product",
+            "reason_label": "상품 불량/파손",
+            "fault_type": "seller",
+            "...": "ClaimResource 상세 표현 (관리자 확장 필드 포함)"
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.update-status`)이 없거나, 신청서가 속한 주문이 운영자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 422 | Unprocessable Entity | 요청 검증 실패 (`error.errors`), 수정할 수 없는 단계 (`claim_not_editable`), 그 유형에 없는 사유 |
+| 404 | Not Found | 해당 유형에 그 ID 의 신청서가 없는 경우 (`exceptions.claim_not_found`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+신청 내용(사유, 상세 사유, 교환 재발송지)을 운영자가 고칩니다. 고객 수정과 같은 경로를 운영자 축으로 쓰므로 판매자 귀책 사유도 고를 수 있고 판매자가 접수한 건도 고칠 수 있습니다. 사유가 바뀌어 배송비가 다시 계산되면 결제 대기 건과 기수납액을 그 값에 맞춥니다. 자세한 계약은 [admin-claims.md](admin-claims.md#patch-apimodulessirsoft-ecommerceadminclaimtypeid) 를 봅니다.
+
+
+
+### PUT /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/amounts
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.amounts -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.amounts`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@updateAmounts`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.update-amounts`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| claimType | path | string | 예 | — | 유형 경로 세그먼트 (`exchanges`, `returns`, `refunds`) |
+| id | path | integer | 예 | — | 신청서 ID |
+| claim_shipping_fee | body | number | 아니오 | min 0 | 클레임 배송비 (교환, 반품 — 반품 편도, 교환 왕복). 총 청구액이 함께 다시 계산된다 |
+| charge_method | body | string | 아니오 | — | 청구 방식 (교환, 반품 — `pay_on_request`, `pay_on_approval`, `deduct_from_refund`). 청구 0원 신청서의 배송비를 올릴 때는 함께 보내야 한다 |
+| admin_memo | body | string | 아니오 | max 2000 | 관리자 메모 (교환, 반품 — 보낸 요청만 갱신) |
+| refund_amount | body | string | 아니오 | — | PG 환불액 (환불신청서만, 0 이상) |
+| refund_points_amount | body | string | 아니오 | — | 마일리지 환불액 (환불신청서만, 0 이상, 비회원 주문은 422) |
+| refund_method | body | string | 아니오 | — | 환불 수단 (환불신청서만 — `pg`, `bank`, `points`) |
+
+**요청 예시**
+
+```http
+PUT /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/amounts HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "claim_shipping_fee": 1,
+    "charge_method": "예시값",
+    "admin_memo": "예시값",
+    "refund_amount": "예시값",
+    "refund_points_amount": "예시값",
+    "refund_method": "예시값"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| claim | object | `{"id":41,"refund_amount":15000,…}` | 금액을 고친 신청서 상세 ([ClaimResource](#claim-resource) 상세 표현과 관리자 확장 필드) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "금액을 수정했습니다.",
+    "data": {
+        "claim": {
+            "id": 41,
+            "claim_number": "RF20261029-0304368688",
+            "claim_type": "refund",
+            "claim_type_label": "환불",
+            "status": "approved",
+            "status_label": "환불승인",
+            "refund_amount": 15000,
+            "refund_points_amount": 3000,
+            "refund_method": "pg",
+            "...": "ClaimResource 상세 표현 (관리자 확장 필드 포함)"
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.update-amounts`)이 없거나, 신청서가 속한 주문이 운영자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 422 | Unprocessable Entity | 다른 유형의 축을 보낸 경우 (`error.errors`), 종결이나 처리중 신청서 (`claim_amounts_not_editable`), 청구 방식 누락 (`claim_charge_method_required`), 취소 가능 금액 초과 (`claim_refund_exceeds_cancellable`), 비회원 주문의 마일리지 환불 (`claim_refund_points_requires_member`) |
+| 404 | Not Found | 해당 유형에 그 ID 의 신청서가 없는 경우 (`exceptions.claim_not_found`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+신청서 금액을 고칩니다. 교환, 반품은 배송비와 청구 방식과 메모를, 환불신청서는 환불액과 환불 수단을 받고, 다른 유형의 축을 보내면 조용히 버리지 않고 422 로 거절합니다. 교환, 반품의 청구액을 바꾸면 아직 내지 않은 결제 대기 건이 그 금액을 따라갑니다. 오류 키 전체는 [admin-claims.md](admin-claims.md#put-apimodulessirsoft-ecommerceadminclaimtypeidamounts) 를 봅니다.
+
+
+
+### DELETE /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.images.clear -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.images.clear`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@destroyImages`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.update-status`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| claimType | path | string | 예 | — | 유형 경로 세그먼트 (`exchanges`, `returns`, `refunds`) |
+| id | path | integer | 예 | — | 신청서 ID |
+
+**요청 예시**
+
+```http
+DELETE /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| deleted | integer | `2` | 지운 첨부 수 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "첨부 이미지를 모두 삭제했습니다.",
+    "data": {
+        "deleted": 2
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.update-status`)이 없거나, 신청서가 속한 주문이 운영자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 404 | Not Found | 해당 유형에 그 ID 의 신청서가 없는 경우 (`exceptions.claim_not_found`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+신청서의 첨부를 파일까지 모두 지웁니다 (반려, 종결 건 정리). 되돌릴 수 없습니다. 한 장만 지우려면 `DELETE …/images/{image}` 를 씁니다.
+
+
+
+### POST /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.images.store -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.images.store`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@storeImage`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.update-status`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| claimType | path | string | 예 | — | 유형 경로 세그먼트 (`exchanges`, `returns`, `refunds`) |
+| id | path | integer | 예 | — | 신청서 ID |
+| file | body | file | 예 | max 2048 | 이미지 파일 (multipart). `image` 이름으로 보내도 받는다. 허용 확장자와 최대 용량은 상세 봉투의 `attachment_settings` 를 따른다 |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: multipart/form-data; boundary=----G7ExampleBoundary
+
+------G7ExampleBoundary
+Content-Disposition: form-data; name="file"; filename="example.pdf"
+Content-Type: application/octet-stream
+
+(바이너리 파일 내용)
+------G7ExampleBoundary--
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: 올린 첨부 하나 ([ClaimImageResource](#claim-image-resource)) 와 같은 값을 담은 별칭 `image`._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | integer | `12` | 첨부 ID (한 장 삭제가 받는 값) |
+| hash | string | `a1b2c3d4e5f6` | 내려받기 경로 식별자 |
+| claimable_type | string | `return` | 귀속 신청서 유형 |
+| claimable_id | integer | `26` | 귀속 신청서 ID |
+| original_name | string | `evidence.jpg` | 올린 파일 이름 (`original_filename` 은 같은 값의 별칭) |
+| mime_type | string | `image/jpeg` | 파일 형식 |
+| size | integer | `184320` | 파일 크기 (바이트, 표기는 `size_formatted`) |
+| is_image | boolean | `true` | 이미지인지 |
+| width | integer\|null | `1200` | 가로 픽셀 |
+| height | integer\|null | `900` | 세로 픽셀 |
+| sort_order | integer | `1` | 정렬 순서 (`order` 는 같은 값의 별칭) |
+| uploader_type | string | `admin` | 올린 쪽. 이 경로는 늘 `admin`(운영자 업로드) |
+| uploader_type_label | string\|null | `운영자` | 올린 쪽 라벨 |
+| download_url | string | `/api/modules/sirsoft-ecommerce/claim-image/{hash}?expires=…&signature=…` | 서명된 임시 내려받기 주소 |
+| created_at | string | `2026-11-01 10:15:00` | 올린 일시 |
+| image | object | `{"id":12,"hash":"a1b2c3d4e5f6",…}` | 같은 첨부의 별칭 (종전 계약 호환) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 201
+```
+
+```json
+{
+    "success": true,
+    "message": "이미지를 첨부했습니다.",
+    "data": {
+        "id": 12,
+        "hash": "a1b2c3d4e5f6",
+        "claimable_type": "return",
+        "claimable_id": 26,
+        "original_name": "evidence.jpg",
+        "original_filename": "evidence.jpg",
+        "mime_type": "image/jpeg",
+        "size": 184320,
+        "size_formatted": "180 KB",
+        "is_image": true,
+        "width": 1200,
+        "height": 900,
+        "sort_order": 1,
+        "order": 1,
+        "uploader_type": "admin",
+        "uploader_type_label": "운영자",
+        "download_url": "/api/modules/sirsoft-ecommerce/claim-image/a1b2c3d4e5f6?expires=…&signature=…",
+        "created_at": "2026-11-01 10:15:00",
+        "image": {
+            "id": 12,
+            "hash": "a1b2c3d4e5f6",
+            "...": "(위와 같은 첨부 표현)"
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.update-status`)이 없거나, 신청서가 속한 주문이 운영자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 422 | Unprocessable Entity | 파일 형식, 용량 위반 (`error.errors`), 첨부 장수 상한(`claim.max_images`) 초과 |
+| 404 | Not Found | 해당 유형에 그 ID 의 신청서가 없는 경우 (`exceptions.claim_not_found`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+이미 귀속된 신청서에 운영자가 첨부를 더합니다 (예: 회수 상품 검수 사진). 운영자 업로드(`uploader_type = admin`)로 기록되어 분쟁 때 어느 쪽 증빙인지 가립니다. 응답 모양은 [admin-claims.md](admin-claims.md#post-apimodulessirsoft-ecommerceadminclaimtypeidimages) 와 같습니다.
+
+
+
+### DELETE /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images/{image}
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.images.destroy -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.images.destroy`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@destroyImage`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.update-status`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| claimType | path | string | 예 | — | 유형 경로 세그먼트 (`exchanges`, `returns`, `refunds`) |
+| id | path | integer | 예 | — | 신청서 ID |
+| image | path | integer | 예 | — | 첨부 ID (그 신청서에 귀속된 첨부여야 한다) |
+
+**요청 예시**
+
+```http
+DELETE /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images/{image} HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| deleted | integer | `1` | 지운 첨부 수 (늘 1) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "첨부 이미지를 삭제했습니다.",
+    "data": {
+        "deleted": 1
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.update-status`)이 없거나, 신청서가 속한 주문이 운영자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 404 | Not Found | 신청서가 없는 경우 (`exceptions.claim_not_found`), 그 신청서의 첨부가 아닌 경우 (`exceptions.claim_image_not_found`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+첨부 한 장을 파일까지 지웁니다. 개인정보가 찍힌 사진 한 장 때문에 정상 증빙까지 잃지 않게 하는 경로이며 되돌릴 수 없습니다. 권한만으로는 소유를 말하지 않으므로 첨부가 그 신청서 것인지 따로 확인합니다.
+
+
+
+### POST /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/items/restore-stock
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.items.restore-stock -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.items.restore-stock`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@restoreStock`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.update-status`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| claimType | path | string | 예 | — | 유형 경로 세그먼트 (`exchanges`, `returns` — 환불은 이 축이 없다) |
+| id | path | integer | 예 | — | 신청서 ID |
+| items | body | array | 아니오 | max 200 | 복구할 신청 상품 행 ID 목록 (비우면 복구 가능한 행 전부) |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/items/restore-stock HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "items": [
+        "예시값"
+    ]
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| claim | object | `{"id":26,"status":"completed",…}` | 복구 뒤 신청서 상세 ([ClaimResource](#claim-resource) 상세 표현과 관리자 확장 필드) |
+| restored | array | `[{"id":16,"quantity":1}]` | 이번에 재고를 복구한 행 `{id, quantity}` |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "재고를 복구했습니다.",
+    "data": {
+        "claim": {
+            "id": 26,
+            "claim_number": "RT20261010-0819150734",
+            "claim_type": "return",
+            "claim_type_label": "반품",
+            "status": "completed",
+            "status_label": "반품완료",
+            "...": "ClaimResource 상세 표현 (관리자 확장 필드 포함)"
+        },
+        "restored": [
+            {
+                "id": 16,
+                "quantity": 1
+            }
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.update-status`)이 없거나, 신청서가 속한 주문이 운영자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 422 | Unprocessable Entity | `items` 형식 위반 (`error.errors`), 복구할 행이 없는 경우 (`claim_stock_restore_not_eligible`) |
+| 404 | Not Found | 해당 유형에 그 ID 의 신청서가 없는 경우 (`exceptions.claim_not_found`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+완료됐지만 재고를 복구하지 않은 상품 행의 재고를 뒤늦게 복구합니다 (교환, 반품). 행을 잠근 뒤 복구 여부를 다시 읽어 이미 복구된 행은 건너뛰므로 여러 번 불러도 결과가 같습니다. 선교환에서 「미회수로 완료」 한 행은 대상이 아닙니다.
+
+
+
+### PATCH /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/bulk-status
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.options.bulk-status -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.options.bulk-status`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@bulkOptionStatus`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.update-status`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| claimType | path | string | 예 | — | 유형 경로 세그먼트 (`exchanges`, `returns`, `refunds`) |
+| id | path | integer | 예 | — | 신청서 ID |
+| items | body | array | 예 | min 1, max 200 | 전이 지시 `[{id, quantity?}]` (1~200건). `id` 는 이 신청서의 상품 행이어야 하고, `quantity` 를 행 수량보다 적게 주면 그 행이 갈라진다 |
+| status | body | string | 예 | — | 목표 상태. 유형별 관리자 어휘에서 `payment_pending` 을 뺀 값 (결제는 신청서 단위 축) |
+| reject_reason | body | string | 아니오 | max 2000 | `status=rejected` 일 때 필수. 반려 사유 (신청서의 `reject_reason` 칸에 남는다) |
+| carrier_id | body | integer | 아니오 | — | 택배사 ID (회수중, 발송중 전이에 필요) |
+| tracking_number | body | string | 아니오 | max 50 | 운송장 번호 (회수중, 발송중 전이에 필요) |
+| completion | body | array | 아니오 | — | `status=completed` 일 때 필수. 완료 처리 옵션 객체 |
+| completion.restore_stock_by_item | body | array | 아니오 | — | 신청 상품 행 ID 에서 재고 복구 여부로 가는 맵 (`{"55": true}`). 맵에 없는 행은 복구하지 않는다 |
+| completion.create_refund_request | body | boolean | 아니오 | — | `completion` 과 함께 필수. 환불신청서를 지금 접수할지 (`false` 면 만들지 않는다) |
+| completion.unreturned | body | array | 아니오 | — | 선교환 「미회수로 완료」. 행 ID 에서 사유(필수, 2000자 이하)로 가는 맵. 그 행은 재고를 복구하지 않는다 |
+
+**요청 예시**
+
+```http
+PATCH /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/bulk-status HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "items": [
+        "예시값"
+    ],
+    "status": "예시값",
+    "reject_reason": "예시값",
+    "carrier_id": 1,
+    "tracking_number": "예시값",
+    "completion": [
+        "예시값"
+    ],
+    "completion.restore_stock_by_item": [
+        "예시값"
+    ],
+    "completion.create_refund_request": true,
+    "completion.unreturned": [
+        "예시값"
+    ]
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| succeeded | array | `[55]` | 전이한 상품 행 ID |
+| skipped | array | `[{"id":56,"message":"…"}]` | 건너뛴 행 `{id, message}` |
+| split | array | `[{"id":55,"quantity":2,"remainder_id":91,"remainder_quantity":1}]` | 이번 지시로 갈라진 행 (`id` 는 전이된 쪽, `remainder_id` 는 신청 상태로 남은 새 행) |
+| payment_requested | boolean | `true` | 승인 지시가 추가결제 요청으로 우회된 경우에만 실린다 (그때 `succeeded` 는 빈 배열) |
+| claim | object | `{"id":26,"status":"collecting",…}` | 전이 뒤 신청서 상세. 헤더 상태는 살아 있는 상품이 모두 같은 상태에 도달했을 때 따라간다 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "신청 상품 상태 변경을 처리했습니다.",
+    "data": {
+        "succeeded": [
+            55
+        ],
+        "skipped": [
+            {
+                "id": 56,
+                "message": "반품반려 에서 반품회수중 로는 상태를 변경할 수 없습니다."
+            }
+        ],
+        "split": [
+            {
+                "id": 55,
+                "quantity": 2,
+                "remainder_id": 91,
+                "remainder_quantity": 1
+            }
+        ],
+        "claim": {
+            "id": 26,
+            "claim_number": "RT20261010-0819150734",
+            "claim_type": "return",
+            "claim_type_label": "반품",
+            "status": "collecting",
+            "status_label": "반품회수중",
+            "...": "ClaimResource 상세 표현 (관리자 확장 필드 포함)"
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.update-status`)이 없거나, 신청서가 속한 주문이 운영자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 422 | Unprocessable Entity | 요청 검증 실패 (스칼라 배열, 다른 신청서의 행, 중복 행, 어휘 밖 상태 — `error.errors`), 환불신청서의 완료 지시 (`claim_completion_flow_required`), 쿠폰, 재고, 마일리지 복원 실패 (`messages.claims.side_effect_failed`) |
+| 404 | Not Found | 신청서가 없거나 취소신청서인 경우 (`exceptions.claim_not_found`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+체크한 상품 행 단위로 상태를 옮깁니다 (교환, 반품, 환불). 행 수량보다 적은 수량을 주면 그 행이 갈라져 잔여가 새 행으로 남고 `split` 으로 알려 줍니다. 환불신청서에서 상품을 반려하면 신청서 환불액이 반려분만큼 다시 계산됩니다. 상세 계약은 [admin-claims.md](admin-claims.md#patch-apimodulessirsoft-ecommerceadminclaimtypeidoptionsbulk-status) 를 봅니다.
+
+
+
+### PATCH /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/tracking
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.options.tracking -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.options.tracking`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@updateItemTracking`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.update-status`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| claimType | path | string | 예 | — | 유형 경로 세그먼트 (`exchanges`, `returns` — 환불은 이 축이 없다) |
+| id | path | integer | 예 | — | 신청서 ID |
+| direction | body | string | 예 | — | 송장 방향 (`collection` 회수, `redelivery` 재발송 — 교환만) |
+| carrier_id | body | integer | 아니오 | — | 택배사 ID. `tracking_number` 와 둘 다 보내거나 둘 다 비운다 (둘 다 비우면 송장을 지운다) |
+| tracking_number | body | string | 아니오 | max 50 | 운송장 번호. `carrier_id` 와 짝으로만 받는다 (하나만 오면 422) |
+| items | body | array | 예 | min 1, max 200 | 대상 상품 행 `[{id, quantity?}]` (1~200건). 수량을 행보다 적게 주면 그 행을 쪼개 지정 수량 행에만 적는다 |
+
+**요청 예시**
+
+```http
+PATCH /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/tracking HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "direction": "예시값",
+    "carrier_id": 1,
+    "tracking_number": "예시값",
+    "items": [
+        "예시값"
+    ]
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| claim | object | `{"id":26,"items":[…],…}` | 송장을 적은 뒤 신청서 상세 (행마다 `collection_*`, `redelivery_*` 송장 필드 갱신) |
+| split | array | `[{"id":16,"quantity":1,"remainder_id":92,"remainder_quantity":2}]` | 쪼갠 행 `{id, quantity, remainder_id, remainder_quantity}` |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "운송장 정보를 저장했습니다.",
+    "data": {
+        "claim": {
+            "id": 26,
+            "claim_number": "RT20261010-0819150734",
+            "claim_type": "return",
+            "claim_type_label": "반품",
+            "status": "approved",
+            "status_label": "반품승인",
+            "...": "ClaimResource 상세 표현 (관리자 확장 필드 포함)"
+        },
+        "split": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.update-status`)이 없거나, 신청서가 속한 주문이 운영자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 422 | Unprocessable Entity | 택배사와 운송장 중 하나만 온 경우 (`claim_tracking_incomplete`), 반품에 재발송 방향 (`claim_tracking_direction_not_allowed`), 송장을 쓸 수 없는 행 상태 (`claim_tracking_item_not_eligible`), 회수지가 다른 상품을 한 운송장으로 묶은 경우 (`claim_tracking_mixed_return_address`) |
+| 404 | Not Found | 신청서가 없는 경우 (`exceptions.claim_not_found`), 이 신청서의 상품 행이 아닌 경우 (`exceptions.claim_item_not_found`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+「송장만 저장」 입니다. 고른 상품 행에 한 방향 송장을 적고 상태는 옮기지 않습니다 (교환, 반품). 송장은 상품 행마다 있어 한 신청서 안에서 상품마다 다른 택배로 오갈 수 있습니다. 회수중, 발송중 행의 송장은 지울 수 없습니다. 쓸 수 있는 행 상태는 [admin-claims.md](admin-claims.md#patch-apimodulessirsoft-ecommerceadminclaimtypeidoptionstracking) 를 봅니다.
+
+
+
+### POST /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/refund-request
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.refund-request -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.refund-request`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@storeRefundRequest`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.update-status`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| claimType | path | string | 예 | — | 유형 경로 세그먼트 (`exchanges`, `returns` — 환불은 이 축이 없다) |
+| id | path | integer | 예 | — | 신청서 ID |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/refund-request HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| refund | object | `{"id":42,"claim_number":"RF…","claim_type":"refund","status":"requested",…}` | 새로 접수한 환불신청서 ([ClaimResource](#claim-resource) 와 관리자 확장 필드) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 201
+```
+
+```json
+{
+    "success": true,
+    "message": "환불신청서를 접수했습니다.",
+    "data": {
+        "refund": {
+            "id": 42,
+            "claim_number": "RF20261101-1015001234",
+            "claim_type": "refund",
+            "claim_type_label": "환불",
+            "status": "requested",
+            "status_label": "환불신청",
+            "...": "ClaimResource 표현 (관리자 확장 필드 포함)"
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.update-status`)이 없거나, 신청서가 속한 주문이 운영자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 404 | Not Found | 해당 유형에 그 ID 의 신청서가 없는 경우 (`exceptions.claim_not_found`) |
+| 422 | Unprocessable Entity | 완료된 상품이 없는 경우 (`claim_completion_items_invalid`), 이미 모두 접수된 경우 (`claim_refund_request_exists`), 환불 대상이 없는 경우 (`claim_refund_not_applicable`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+완료 때 접수하지 않은 신청서의 환불신청서를 수동으로 접수합니다 (교환, 반품). 반품은 완료된 상품 전체로 한 건, 교환은 완료됐으나 아직 접수되지 않은 저가 상품을 모아 한 건을 만듭니다. 화면은 이미 접수됨과 환불 대상 없음을 구분해 안내합니다.
+
+
+
+### PATCH /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/status
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.status -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.status`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@updateStatus`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.update-status`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| claimType | path | string | 예 | — | 유형 경로 세그먼트 (`exchanges`, `returns`, `refunds`) |
+| id | path | integer | 예 | — | 신청서 ID |
+| status | body | string | 예 | — | 목표 상태. 유형별 관리자 어휘 (교환, 반품은 `requested`, `paid`, `withdrawn` 을 뺀 전체, 환불은 `approved`, `on_hold`, `rejected`) |
+| reject_reason | body | string | 아니오 | max 2000 | `status=rejected` 일 때 필수. 구매자 화면에 그대로 안내되는 반려 사유 |
+| admin_memo | body | string | 아니오 | max 2000 | 관리자 메모 (교환, 반품만 저장. 보낸 요청만 갱신) |
+| carrier_id | body | integer | 아니오 | — | 택배사 ID. 회수중, 발송중, 회수도착, 발송도착 전이가 싣는 송장은 옮겨지는 상품 행에 쓰인다 |
+| tracking_number | body | string | 아니오 | max 50 | 운송장 번호. 회수중, 발송중은 송장이 있어야 들어간다 (요청에 없으면 각 행이 이미 가진 송장) |
+| completion | body | array | 아니오 | — | `status=completed` 일 때 필수. 완료 처리 옵션 객체 |
+| completion.restore_stock_by_item | body | array | 아니오 | — | 신청 상품 행 ID 에서 재고 복구 여부로 가는 맵 (`{"55": true}`). 맵에 없는 행은 복구하지 않는다 |
+| completion.create_refund_request | body | boolean | 아니오 | — | `completion` 과 함께 필수. 환불신청서를 지금 접수할지 (`false` 면 만들지 않는다) |
+| completion.unreturned | body | array | 아니오 | — | 선교환 「미회수로 완료」. 행 ID 에서 사유(필수, 2000자 이하)로 가는 맵. 그 행은 재고를 복구하지 않는다 |
+
+**요청 예시**
+
+```http
+PATCH /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/status HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "status": "예시값",
+    "reject_reason": "예시값",
+    "admin_memo": "예시값",
+    "carrier_id": 1,
+    "tracking_number": "예시값",
+    "completion": [
+        "예시값"
+    ],
+    "completion.restore_stock_by_item": [
+        "예시값"
+    ],
+    "completion.create_refund_request": true,
+    "completion.unreturned": [
+        "예시값"
+    ]
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| claim | object | `{"id":26,"status":"approved",…}` | 전이 뒤 신청서 상세 ([ClaimResource](#claim-resource) 상세 표현과 관리자 확장 필드) |
+| payment_requested | boolean | `false` | 승인 지시가 추가결제 요청으로 우회됐는지 (참이면 메시지도 「추가결제를 요청했습니다」) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "신청 상태가 변경되었습니다.",
+    "data": {
+        "claim": {
+            "id": 26,
+            "claim_number": "RT20261010-0819150734",
+            "claim_type": "return",
+            "claim_type_label": "반품",
+            "status": "approved",
+            "status_label": "반품승인",
+            "...": "ClaimResource 상세 표현 (관리자 확장 필드 포함)"
+        },
+        "payment_requested": false
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.update-status`)이 없거나, 신청서가 속한 주문이 운영자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 422 | Unprocessable Entity | 요청 검증 실패 (어휘 밖 상태, 반려 사유나 완료 옵션 누락 — `error.errors`), 전이 게이트 위반 (`claim_transition_not_allowed`), 미수납 승인 (`claim_payment_outstanding`), 청구 없는 결제 요청 (`claim_payment_not_required`), 송장 없는 회수중, 발송중 (`claim_tracking_required`), 쿠폰, 재고, 마일리지 복원 실패 (`messages.claims.side_effect_failed`) |
+| 404 | Not Found | 해당 유형에 그 ID 의 신청서가 없는 경우 (`exceptions.claim_not_found`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+신청서 한 건의 상태를 옮깁니다. 완료(`status=completed`)는 `completion` 객체가 있어야 하고, 승인 후 결제 방식의 미수납 건을 승인하면 승인 대신 추가결제 요청으로 우회합니다. 회수와 재발송 단계는 앞으로 건너뛸 수 있지만 승인은 건너뛰지 않습니다. 승인과 추가결제의 상호작용 표는 [admin-claims.md](admin-claims.md#patch-apimodulessirsoft-ecommerceadminclaimtypeidstatus) 를 봅니다.
+
+
+
+### POST /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/tracking/deliver
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.tracking.deliver -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.tracking.deliver`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@deliverTracking`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.update-status`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| claimType | path | string | 예 | — | 유형 경로 세그먼트 (`exchanges`, `returns` — 환불은 이 축이 없다) |
+| id | path | integer | 예 | — | 신청서 ID |
+| direction | body | string | 예 | — | 송장 방향 (`collection` 회수, `redelivery` 재발송) |
+| carrier_id | body | integer | 예 | — | 택배사 ID |
+| tracking_number | body | string | 예 | max 50 | 도착 처리할 운송장 번호 (이 운송장에 묶인 상품 행 전부가 대상) |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/tracking/deliver HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "direction": "예시값",
+    "carrier_id": 1,
+    "tracking_number": "예시값"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| claim | object | `{"id":26,"status":"collected",…}` | 도착 처리 뒤 신청서 상세 |
+| succeeded | array | `[16]` | 도착 처리한 상품 행 ID |
+| skipped | array | `[{"id":17,"message":"…"}]` | 건너뛴 행 `{id, message}` (이미 도착, 전이 불가) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "운송장의 상품을 도착 처리했습니다.",
+    "data": {
+        "claim": {
+            "id": 26,
+            "claim_number": "RT20261010-0819150734",
+            "claim_type": "return",
+            "claim_type_label": "반품",
+            "status": "collected",
+            "status_label": "반품회수도착",
+            "...": "ClaimResource 상세 표현 (관리자 확장 필드 포함)"
+        },
+        "succeeded": [
+            16
+        ],
+        "skipped": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.update-status`)이 없거나, 신청서가 속한 주문이 운영자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 422 | Unprocessable Entity | 요청 검증 실패 (`error.errors`), 그 운송장을 가진 행이 없는 경우 (`claim_tracking_not_found`) |
+| 404 | Not Found | 해당 유형에 그 ID 의 신청서가 없는 경우 (`exceptions.claim_not_found`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+운송장 한 개에 묶인 상품 행을 한꺼번에 도착 처리합니다 (교환, 반품 — 배송 정보 탭의 [도착 처리]). 일반 흐름은 행을 회수도착이나 발송도착으로 옮기고, 선교환의 회수 방향은 상태를 옮기지 않고 행의 회수 시각만 찍습니다. 옮길 수 없는 행은 건너뛰고 사유와 함께 돌려줍니다.
+
+
+
+### POST /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/withdraw
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claims.withdraw -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.claims.withdraw`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController@withdrawOnBehalf`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.update-status`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| claimType | path | string | 예 | — | 유형 경로 세그먼트 (`exchanges`, `returns`, `refunds`) |
+| id | path | integer | 예 | — | 신청서 ID |
+| reason | body | string | 예 | max 2000 | 철회 사유 (신청서 `withdraw_reason` 에 남고 철회자는 운영자로 기록된다) |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/withdraw HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "reason": "예시값"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| claim | object | `{"id":26,"status":"withdrawn",…}` | 철회 뒤 신청서 상세 ([ClaimResource](#claim-resource) 상세 표현과 관리자 확장 필드) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "고객 요청으로 신청을 철회했습니다.",
+    "data": {
+        "claim": {
+            "id": 26,
+            "claim_number": "RT20261010-0819150734",
+            "claim_type": "return",
+            "claim_type_label": "반품",
+            "status": "withdrawn",
+            "status_label": "반품철회",
+            "withdrawn_by_admin_name": "관리자",
+            "...": "ClaimResource 상세 표현 (관리자 확장 필드 포함)"
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.update-status`)이 없거나, 신청서가 속한 주문이 운영자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 422 | Unprocessable Entity | `reason` 누락이나 2000자 초과 (`error.errors`), 철회할 수 없는 단계 (`claim_not_withdrawable`) |
+| 404 | Not Found | 해당 유형에 그 ID 의 신청서가 없는 경우 (`exceptions.claim_not_found`) |
+| 500 | Internal Server Error | 처리 중 예외 (`messages.claims.operation_failed`, 원인 요약은 `errors.detail`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+고객 요청으로 신청을 대신 철회합니다 (교환, 반품, 환불). 철회할 수 있는 단계는 고객 철회와 같고 판매자가 접수한 건도 거둘 수 있습니다. 결제 환급은 기존 철회 경로를 그대로 타고, 고객 알림에는 「고객님 요청으로 판매자가 철회했습니다」 가 붙습니다.
+
+
+
 ### GET /api/modules/sirsoft-ecommerce/user/claims
 <!-- @generated:start:api.modules.sirsoft-ecommerce.user.claims.index -->
 - **라우트명**: `api.modules.sirsoft-ecommerce.user.claims.index`
@@ -532,7 +2984,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | claim | object | — | 신청서 상세 ([ClaimResource](#claim-resource)) — 교환·반품은 결제 블록(`payments`, `outstanding_amount`, `pending_payment`, `payment_entry`, `available_payment_methods`, `available_payment_method_labels`) 포함 |
-| progress_steps | array | — | 진행단계 스텝퍼. 관리자 상세(`admin/claims/{claimNumber}`)와 **같은 배열**을 같은 규칙으로 만든다 — 항목 필드는 [admin-claims.md](admin-claims.md#progress_steps-항목) 참조 (`value` / `label` / `state` / `icon` / `variant`). 취소는 신청 → 완료 두 칸 |
+| progress_steps | array | — | 진행단계 스텝퍼. 관리자 상세(`admin/claims/{claimNumber}`)와 **같은 배열**을 같은 규칙으로 만든다 — 항목 필드는 [admin-claims.md](admin-claims.md#get-apimodulessirsoft-ecommerceadminclaimsclaimnumber) "progress_steps 항목" 참조 (`value` / `label` / `state` / `icon` / `variant`). 취소는 신청 → 완료 두 칸 |
 | linked_claims | object | — | 연결 신청서(보완 5 · Q8) — 관리자 상세와 같은 구조([admin-claims.md](admin-claims.md) 상세 봉투의 `linked_claims`). `detail_url` 은 회원이면 `/mypage/claims/…`, 비회원 조회면 `{shop}/guest/claims/…` 다. 비회원 조회(`guest/orders/{orderNumber}/claims/{claimNumber}`)도 같은 봉투다 |
 
 **응답 예시**

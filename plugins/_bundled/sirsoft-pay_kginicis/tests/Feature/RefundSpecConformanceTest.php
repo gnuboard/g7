@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\PayKginicis\Tests\Feature;
 use App\Models\User;
 use App\Services\PluginSettingsService;
 use Illuminate\Support\Facades\Http;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -216,9 +217,17 @@ class RefundSpecConformanceTest extends PluginTestCase
      */
     public function test_approval_records_tax_split_marker_only_with_tax_free(): void
     {
-        $splitter = new class
+        // 트레이트 호스트 요건(`$bridge`)대로 이커머스 결제 계약을 주입한다 — 면세·환산은 저장된 주문 컬럼으로 계약이 계산한다.
+        $splitter = new class(app(PaymentGatewayBridge::class))
         {
             use SplitsInicisTax;
+
+            /**
+             * 트레이트 호스트 요건대로 결제 계약을 받습니다.
+             *
+             * @param  PaymentGatewayBridge  $bridge  이커머스 결제 공개 계약
+             */
+            public function __construct(private readonly PaymentGatewayBridge $bridge) {}
 
             /**
              * 비공개 표식 생성기를 시험에서 부릅니다.
@@ -229,7 +238,7 @@ class RefundSpecConformanceTest extends PluginTestCase
              */
             public function approvalMeta(Order $order, int $amount): array
             {
-                return $this->buildTaxSplitApprovalMeta($order, $amount);
+                return $this->buildTaxSplitApprovalMeta($this->bridge->findOrderByNumber((string) $order->order_number, 'kginicis'), $amount);
             }
         };
 
@@ -280,9 +289,17 @@ class RefundSpecConformanceTest extends PluginTestCase
         $this->assertTrue($result['success']);
         $this->assertSame([['tax' => 579, 'taxFree' => 3636]], $captured);
 
-        $splitter = new class
+        // 트레이트 호스트 요건(`$bridge`)대로 이커머스 결제 계약을 주입한다 — 면세·환산은 저장된 주문 컬럼으로 계약이 계산한다.
+        $splitter = new class(app(PaymentGatewayBridge::class))
         {
             use SplitsInicisTax;
+
+            /**
+             * 트레이트 호스트 요건대로 결제 계약을 받습니다.
+             *
+             * @param  PaymentGatewayBridge  $bridge  이커머스 결제 공개 계약
+             */
+            public function __construct(private readonly PaymentGatewayBridge $bridge) {}
 
             /**
              * 비공개 표식 생성기를 시험에서 부릅니다.
@@ -293,7 +310,7 @@ class RefundSpecConformanceTest extends PluginTestCase
              */
             public function approvalMeta(Order $order, int $amount): array
             {
-                return $this->buildTaxSplitApprovalMeta($order, $amount);
+                return $this->buildTaxSplitApprovalMeta($this->bridge->findOrderByNumber((string) $order->order_number, 'kginicis'), $amount);
             }
         };
         $this->assertSame(

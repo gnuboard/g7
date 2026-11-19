@@ -3,7 +3,7 @@
 /**
  * 플러그인 설정 — 알림 템플릿 관리 탭(DB 목록) 구조 검증 (#597 §4.3)
  *
- * @effects manage_screen_lists_db_rows_with_merge_query_round_trip, inspection_request_carries_reviewer_comment
+ * 효과 요약(마커 아님, 평문): manage_screen_lists_db_rows_with_merge_query_round_trip, inspection_request_carries_reviewer_comment
  *
  * templates 탭은 DB 목록 관리 화면이다:
  * - 데이터소스 bizppurio_templates_list(GET /admin/templates) — 필터·검색·페이지는
@@ -169,7 +169,7 @@ describe('manage — 필터·검색·페이지 (mergeQuery 왕복 규약)', () =
 });
 
 /**
- * @effects manage_row_actions_match_row_footer_visibility
+ * 효과 요약(마커 아님, 평문): manage_row_actions_match_row_footer_visibility
  */
 describe('manage — 행 액션(알림 설정 탭 행 하단과 동일 엔드포인트)', () => {
     /** 노드 JSON 에서 템플릿 admin API 경로만 추출한다({{...}} 표현식 부분은 정규화). */
@@ -396,7 +396,7 @@ describe('manage — i18n 정합(manage.* 키 가족)', () => {
 });
 
 /**
- * @effects upload_in_progress_locks_save_buttons_not_cancel, sms_modal_edits_body_per_locale_tab
+ * 효과 요약(마커 아님, 평문): upload_in_progress_locks_save_buttons_not_cancel, sms_modal_edits_body_per_locale_tab
  */
 describe('manage 모달 — 이미지 업로드 배선·SMS 언어 탭 (#597 §15.2 U1 / §15.1)', () => {
     /**
@@ -578,7 +578,7 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
     const findIterationRow = (n: AnyNode | null): AnyNode | null => {
         if (!n) return null;
         if (n.iteration?.item_var === 'bzRow') return n;
-        for (const c of n.children ?? []) {
+        for (const c of [...(n.children ?? []), ...(n.props?.footer ?? [])]) {
             const found = findIterationRow(c);
             if (found) return found;
         }
@@ -595,7 +595,7 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
         expect(findAllByName(manageView, 'Table').length).toBe(0);
         expect(header).toBeTruthy();
         expect(String((header.props as { className?: string })?.className)).toContain('grid-cols-12');
-        expect(portableClass(header)).toBe('hidden');
+        expect(portableClass(header)).toBe('bizppurio:hidden bizppurio-hidden');
         const raw = JSON.stringify(header);
         for (const c of ['notification', 'owner', 'status', 'sms', 'requested_at', 'synced_at', 'actions']) {
             expect(raw, `columns.${c}`).toContain('manage.columns.' + c);
@@ -610,8 +610,8 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
         expect(row).toBeTruthy();
         expect(row!.responsive, '반복 노드 자체에 responsive 를 두지 않는다(내부 래퍼 담당)').toBeUndefined();
         const inner = (row!.children ?? [])[0] as AnyNode;
-        expect(String((inner.props as { className?: string })?.className)).toContain('grid grid-cols-12');
-        expect(portableClass(inner)).toContain('flex flex-wrap');
+        expect(String((inner.props as { className?: string })?.className)).toContain('bizppurio:grid bizppurio:grid-cols-12');
+        expect(portableClass(inner)).toContain('bizppurio:flex bizppurio:flex-wrap');
     });
 
     /**
@@ -620,7 +620,7 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
     it('소속·신청일·동기화일 셀은 portable 에서 숨고, 카드 메타 줄이 대신 노출된다', () => {
         const row = findIterationRow(rowsWrap) as AnyNode;
         const rowInner = (row.children ?? [])[0] as AnyNode;
-        const hiddenCells = (rowInner.children ?? []).filter((c) => portableClass(c) === 'hidden');
+        const hiddenCells = (rowInner.children ?? []).filter((c) => portableClass(c) === 'bizppurio:hidden bizppurio-hidden');
         expect(hiddenCells.length).toBeGreaterThanOrEqual(3);
         // 메타 줄: 신청일+동기화일을 한 텍스트에 담고, 데스크톱(hidden)→portable 에서만 보인다
         const all: AnyNode[] = [];
@@ -652,7 +652,7 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
             .find((b) => b.text === '$t:sirsoft-message_bizppurio.manage.btn_search') as AnyNode;
         expect(searchBtn).toBeTruthy();
         const cls = String((searchBtn.props as { className?: string })?.className);
-        expect(cls).toContain('btn btn-primary');
+        expect(cls).toContain('bizppurio-btn bizppurio-btn-primary');
         expect(cls).not.toContain('text-xs');
     });
 
@@ -665,7 +665,7 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
         expect(refreshBtn).toBeTruthy();
         expect(String((refreshBtn.props as { className?: string })?.className)).toContain('btn-icon');
         const raw = JSON.stringify(refreshBtn);
-        expect(raw).toContain('fa-arrows-rotate');
+        expect(raw).toContain('"name":"arrows-rotate"');
         expect(raw).toContain('bizppurio_templates_list');
         expect(raw).not.toContain('"handler":"navigate"');
     });

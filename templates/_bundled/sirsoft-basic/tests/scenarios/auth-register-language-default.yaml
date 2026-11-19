@@ -4,20 +4,23 @@ description: |
   회원가입 화면의 「언어」 선택칸이 비어 보이거나(폼 onMount 시드와 dataKey 자동바인딩 충돌) 영문 진입에서도 한국어가
   고정되던(init_actions 시드의 `$locale ?? 'ko'` — init 문맥에는 $locale 이 없어 늘 'ko') 회귀를 막는다.
   보호 장치는 셋이다 — ① register.g7.html init_actions 는 registerForm 을 language 없이 시드한다 ② _register_form 의 Form 루트에
-  lifecycle.onMount 가 없다 ③ 언어 Select 의 value 가 `_local.registerForm.language` 우선, 렌더 시점 `$locale` 대체다.
+  lifecycle.onMount 가 없다 ③ 언어 칸이 폼 값(`_local.registerForm.language`) 우선, 없으면 요청 로케일의 기본값을 골라 보인다.
+  7.2.0 에서 언어 칸은 운영자 설정을 따르는 공용 항목 조각이 그리게 됐다. ③ 은 「서버가 항목 계약의 기본값을 요청 로케일로 주고
+  입력 컴포넌트가 그 값을 골라 보이되 폼에 써넣지 않는다」로 지킨다.
   7.1.1 에서 init_actions 의 registerForm 시드 앞에 같은 키를 null 로 비우는 단계가 들어왔다(빈 객체 비우기는
   empty-object-state-reset.yaml 이 판정) — 시드 판정은 그 null 단계가 아니라 뒤의 객체 값을 본다.
 
 # axis 의미:
-#   layout_part — 보호 장치가 놓인 자리: 레이아웃 init_actions(register.g7.html) / 폼 partial(_register_form.g7.html)
+#   layout_part — 보호 장치가 놓인 자리: 레이아웃 init_actions(register.g7.html) / 폼 partial(_register_form.g7.html) / 공용 항목 조각(partials/member/_member_fields.g7.html, 7.2.0)
 axes:
-  layout_part: [register_init_actions, register_form_partial]
+  layout_part: [register_init_actions, register_form_partial, member_fields_partial]
 
 effects:
   - register_form_seed_without_language          # init 시드(null 비우기 단계 뒤 객체 값)에 language 가 없다
   - register_form_no_onmount_seed                # Form 루트에 lifecycle.onMount 가 없다(dataKey 자동바인딩 충돌 회피)
-  - language_select_value_prefers_local_then_locale  # Select value 가 _local.registerForm.language → $locale 순이다
-  - language_select_options_from_locales         # 선택지가 $locales 를 value·label 로 매핑한다
+  - language_select_not_hardcoded_in_form        # 폼 조각에 언어 Select 가 박혀 있지 않다(7.2.0 — 공용 항목 조각이 그린다)
+  - language_value_binds_to_form_without_explicit_value  # 공용 조각의 입력칸이 value 를 직접 주지 않아 폼 자동 바인딩이 값을 잇는다
+  - language_default_shown_from_contract_without_seeding # 값이 없으면 항목 계약의 기본값을 골라 보이고 폼에 써넣지 않는다
 
 test_files:
   - templates/_bundled/sirsoft-basic/__tests__/layouts/auth-register-language-default.test.tsx

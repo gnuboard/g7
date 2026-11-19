@@ -8,6 +8,7 @@
 3. 활성화 시 의존성 + 버전 호환성 자동 검사 (호스트 확장 active + requires.target_version 제약). 설치는 호스트가 설치돼 있으면 꺼져 있어도 허용(꺼진 채 설치)
 4. 호스트 확장 비활성화 시 종속 언어팩 자동 비활성화. 재활성화 시 모달로 "다음 언어팩도 활성화 하시겠습니까" 질의. 호스트가 꺼진 동안 켜 달라는 요청으로 설치된 팩은 호스트를 켤 때 함께 켜짐
 5. 업데이트 출처: GitHub 공개 최신과 bundled 판 중 높은 버전(같으면 GitHub), 실제 업데이트도 확인이 고른 출처에서 받음. --force·--source=bundled 는 bundled — 모듈·플러그인·템플릿과 같은 규칙
+6. 외부 언어팩(업로드·URL·GitHub)은 패키지 서명을 검증(7.2.0) — 제작자 키의 vendor 범위는 manifest vendor 칸으로 대조. 공식 언어팩(_bundled·확장 lang/)은 bundled (「패키지 서명」 절)
 ```
 
 ## 개요
@@ -212,8 +213,8 @@ UI 에서 라디오로 즉시 전환 가능. 활성 팩이 제거되면 slot 의
 
 ## 설치 흐름
 
-1. ZIP/GitHub/URL → `_pending/{tmp}/` 추출
-2. `LanguagePackManifestValidator` → manifest 구조 검증
+1. ZIP/GitHub/URL → 풀기 전 패키지 서명 검증(7.2.0, 아래 「패키지 서명」) → `_pending/{tmp}/` 추출
+2. `LanguagePackManifestValidator` → manifest 구조 검증, 서명된 패키지면 manifest 식별자·버전·`vendor` 를 서명·제작자 키 범위와 대조
 3. 보안 검사: `backend/` 외 PHP 파일 차단, `eval`/`include` 패턴 차단
 4. 의존성 검사: `depends_on_core_locale=true` 면 코어 언어팩 active 여부 확인
 5. 대상 확장 존재 확인 (modules/plugins/templates 테이블) — 미설치·버전 미달은 거부, 설치돼 있으나 꺼진 대상은 허용
@@ -273,9 +274,10 @@ foreach ($config['categories'] as $cat) { ... }
 
 | 필터명 | 적용 위치 |
 |---|---|
-| `core.permissions.config` | RolePermissionSeeder |
-| `core.roles.config` | RolePermissionSeeder |
-| `core.menus.config` | CoreAdminMenuSeeder |
+| `core.permissions.config` | RolePermissionSeeder · `CoreUpdateService::syncCoreRolesAndPermissions()`(코어 업데이트·`core:resync-declarations` 재동기화 — 7.2.0~) |
+| `core.roles.config` | RolePermissionSeeder · `CoreUpdateService::syncCoreRolesAndPermissions()` |
+| `core.menus.config` | CoreAdminMenuSeeder · `CoreUpdateService::syncCoreMenus()` — 하위 메뉴(`children`)까지 병합 |
+| `core.schedules.config` | CoreScheduleSeeder — 코어 스케줄 카탈로그(`config/core.php` `schedules`)의 `label`·`description` 에 로케일 키 병합 (7.2.0~) |
 | `seed.notifications.translations` | NotificationDefinitionSeeder (본인인증 알림 `identity.*` 정의 포함 — type 키) |
 | `seed.{vendor-module}.{entity}.translations` | 모듈 시더 (예: `seed.sirsoft-ecommerce.shipping_types.translations`, `seed.sirsoft-ecommerce.notifications.translations`, `seed.sirsoft-board.board_types.translations`) |
 | `module.{id}.admin_menus.translations` | ModuleManager::createModuleMenus() — 모듈 admin_menus 동기화 시 |
@@ -285,6 +287,8 @@ foreach ($config['categories'] as $cat) { ... }
 | `plugin.{id}.permissions.translations` | PluginManager::createPluginPermissions() — 플러그인 권한 트리 동기화 시 |
 | `template.language.merge` | TemplateService::getLanguageDataWithModules() |
 
+**언어팩을 켜고 끌 때의 재시딩**: 코어는 대상 확장의 시더를 다시 돌려(`module:seed` / `plugin:seed`) 위 필터가 새 언어를 기존 행에 채우게 합니다. 이 명령은 확장의 `Database\Seeders\DatabaseSeeder` 를 찾으므로, 다국어 행을 시딩하는 확장은 그 진입 시더가 설치 시더와 같은 시더를 돌려야 합니다. 시더가 기존 행을 「있으면 건너뜀」으로만 다루면 새 언어가 들어오지 않으니, 다국어 칸은 빠진 언어만 더하고 운영자가 바꾼 값은 그대로 두는 병합으로 씁니다. 대상 확장이 꺼져 있거나, DB 에는 켜진 채 남았지만 활성 디렉터리에 파일(`module.php`·`plugin.php`)이 없으면 그 확장의 시더는 건너뛰고 경고로 올리지 않습니다(7.2.0~, 종전에는 「모듈을 찾을 수 없습니다」로 언어팩 작업이 「일부 실패」·종료 코드 1 로 끝났습니다).
+
 **확장 시드 필터 자동 결선** (`LanguagePackServiceProvider::registerExtensionSeedFilters`): 활성 모듈/플러그인 언어팩의 `seed/*.json` 마다 위 패턴의 필터에 listener 가 자동 등록됩니다. 매칭 키는 entry 의 컬럼을 우선순위(`code` > `slug` > `key` > `identifier` > `id`) 로 자동 감지합니다.
 
 엔티티별 결선 정책:
@@ -292,7 +296,15 @@ foreach ($config['categories'] as $cat) { ... }
 - `menus.json` → `module.{target}.admin_menus.translations` 필터 (모듈 전용)
 - `roles.json` → `{scope}.{target}.roles.translations` 필터 (module/plugin)
 - `permissions.json` → `{scope}.{target}.permissions.translations` 필터 (3-레벨 트리: module/categories/permissions)
+- `schedules.json` → `seed.{target}.schedules.translations` 필터 (매칭 키 `name` — 확장 `getSchedules()` 선언을 정규화한 뒤 발화, 7.2.0~)
 - 기타 → `seed.{target}.{entity}.translations` 필터 (단순 entity 시드)
+
+**예약 작업(스케줄) 시드 (7.2.0~)** — `lang-packs/_bundled/g7-plugin-sirsoft-koreaexim-ja/seed/schedules.json` 형식은 `{ "<스케줄 name>": { "label": "…", "description": "…" } }` 입니다.
+
+- 코어 언어팩은 **코어 카탈로그 행만** 채웁니다. 운영자가 직접 등록한 스케줄(소유 없음)은 번역 대상이 아닙니다 — 다른 엔티티의 「코어 또는 소유 없음」 범위와 다릅니다.
+- 확장 언어팩은 그 확장이 선언한 행만 채웁니다.
+- 언어팩을 켜거나 끄면 코어 엔티티 시더 재실행 목록에 `CoreScheduleSeeder` 가 포함되어 코어 행의 명칭이 다시 동기화됩니다. 운영자가 화면에서 고친 로케일 값(`user_overrides`)은 보존됩니다.
+- 자세한 동작은 [예약 작업(스케줄) 시스템](../backend/scheduling.md)·[확장 스케줄 선언](module-schedules.md)을 봅니다.
 
 ### 복원 경로의 언어팩 병합
 
@@ -328,6 +340,13 @@ foreach ($config['categories'] as $cat) { ... }
 `language-pack:update` 가 설치 트랜잭션 이후(활성화 단계)에 실패하면 팩 상태를 이전 상태로
 복원한다. 복원하지 않으면 active 였던 팩이 installed 로 방치되어 해당 로케일의 백엔드 번역이
 안내 없이 기본 로케일로 폴백된다.
+
+### 검수 서버의 업데이트
+
+검수 서버(`G7_RUNTIME_ROLE=stage`)의 `language-pack:update` 는 공유 DB 의 팩 상태를 바꾸지 않는다 — `updating` 기록도,
+재설치의 `installed` 기록 → 다시 켜기도 거치지 않고 판·파일·매니페스트만 새로 한다(운영 서버에서 그 로케일이 빠지지 않게).
+켜기를 거치지 않으므로 활성화 훅의 엔티티 번역 재적용은 검수 서버에서 돌지 않고, 운영 서버의 업데이트가 한다.
+검수 서버에서 `language-pack:activate`·`deactivate`·`uninstall` 은 종료 1 이다 — [runtime-role.md](../backend/runtime-role.md).
 
 ### 같은 프로세스 활성화와 필터 인스턴스
 
@@ -420,6 +439,7 @@ wrap 이 필요한 이유: TemplateService 가 모듈/플러그인 자체 ko 데
 | `/api/admin/language-packs/install-from-file` | POST | `install` |
 | `/api/admin/language-packs/install-from-github` | POST | `install` |
 | `/api/admin/language-packs/install-from-url` | POST | `install` |
+| `/api/admin/language-packs/{id}/update` | POST | `update` |
 | `/api/admin/language-packs/{id}/activate` | POST | `manage` |
 | `/api/admin/language-packs/{id}/deactivate` | POST | `manage` |
 | `/api/admin/language-packs/{id}` | DELETE | `manage` |
@@ -430,7 +450,31 @@ wrap 이 필요한 이유: TemplateService 가 모듈/플러그인 자체 ko 데
 2. **PHP 격리** — `backend/` 디렉토리 외 PHP 파일 거부
 3. **위험 함수 차단** — `eval/include/require/exec/system/popen` 등 정적 분석으로 거부
 4. **파일 크기 제한** — 10MB
-5. **체크섬 검증** — URL 설치 시 SHA-256 옵션
+5. **체크섬 검증** — URL 설치 시 SHA-256 옵션 (전송이 온전한지만 확인한다)
+6. **패키지 서명** — 외부 언어팩은 제작자 서명을 검증한다 (7.2.0, 아래 절)
+
+## 패키지 서명
+
+외부 언어팩도 모듈·플러그인·템플릿과 같은 서명 파일(`{zip}.sig.json`, `package.type` 은 `language_pack`)과 같은 정책을 씁니다.
+서명 형식·제작자 서명 절차·신뢰 키 등록은 [패키지 서명](package-signing.md) 에 있고, 여기서는 언어팩에서 다른 점만 적습니다.
+
+| 설치 경로 | 서명 파일 |
+| --- | --- |
+| ZIP 업로드 (`install-from-file`) | 선택 칸 「서명 파일」(`signature`, 64KB 이하). 업로드 ZIP 은 옆 파일을 자동으로 찾지 않는다 |
+| URL (`install-from-url`, `language-pack:install {url} --source=url`) | 선택 칸 서명 파일 주소(`signature_url`, 명령은 `--signature={주소}`). 공개 http·https 주소만 받고, 주소를 주었는데 받지 못하면 설치하지 않는다. 주소를 추측해 따로 요청하지 않으므로 비우면 미서명 |
+| GitHub (`install-from-github`, `language-pack:install {GitHub 주소} --source=github`) | 최신 태그 릴리스의 ZIP·`.sig.json` 자산 짝. 릴리스가 없으면 브랜치를 받지 않고 실패 |
+| 업데이트 (`{id}/update`, `language-pack:update`) | GitHub 에서 받을 때 그 태그 릴리스의 자산 짝. bundled 출처는 검증하지 않음 |
+
+- URL 설치의 `checksum`(SHA-256)과 서명은 서로 다른 확인입니다. 체크섬은 받은 파일이 운영자가 기대한 그 파일인지(전송 확인),
+  서명은 그 파일을 누가 만들었는지(제작자 확인)를 봅니다. 둘 다 주면 체크섬을 먼저 보고 서명을 봅니다.
+- **vendor 범위는 manifest 의 `vendor` 칸으로 판정합니다.** 언어팩 식별자는 `{vendor}-...` 형식을 강제하지 않으므로, 제작자 키로
+  서명된 언어팩은 ZIP 을 푼 뒤 `language-pack.json` 의 `vendor` 가 그 키의 vendor 범위 안인지 대조합니다(밖이면 `untrusted`).
+  코어 내장 키는 vendor 와 관계없이 유효합니다.
+- 공식 언어팩 — 코어 `lang-packs/_bundled` 의 패키지와 확장이 자기 `lang/` 에 담아 배포하는 언어 — 은 부모 패키지(코어 배포본·
+  확장 패키지)의 서명이 덮으므로 따로 서명하지 않습니다. `_bundled` 소스 설치(`--source=bundled`)는 `integrity_status` 가 `bundled` 입니다.
+- 미서명·검증 불가는 409 경고 창의 「미서명으로 계속」(같은 요청을 `allow_unsigned=1` 로 다시 보냄), 명령은 `--allow-unsigned` 로 진행합니다.
+  답할 수 없는 실행은 `--allow-unsigned` 없이 실패(exit 1)합니다. 서명 불일치·신뢰하지 않는 키는 422 로 멈춥니다.
+- 결과는 `language_packs.integrity_status`·`integrity_key_id` 에 남고 언어팩 상세 창 「패키지 서명」 배지로 보입니다.
 
 ## 외부 패키지형 vs 메타데이터 전용 번들
 
@@ -586,12 +630,16 @@ my-lang-pack-zh/
 ### 설치
 
 ```bash
-# 로컬 디렉토리에서 설치
-php artisan language-pack:install /path/to/my-lang-pack-zh --source=local
+# zip 으로 배포 후 URL 에서 설치 (서명 파일 주소는 선택)
+php artisan language-pack:install https://example.com/my-lang-pack-zh.zip --source=url \
+  --signature=https://example.com/my-lang-pack-zh.zip.sig.json
 
-# 또는 zip 으로 배포 후 URL 에서 설치
-php artisan language-pack:install https://example.com/my-lang-pack-zh.zip --source=url
+# 또는 GitHub 태그 릴리스에서 설치
+php artisan language-pack:install https://github.com/acme/my-lang-pack-zh --source=github
 ```
+
+명령의 설치 소스는 `bundled`·`github`·`url` 셋입니다. 로컬 ZIP 은 관리자 화면의 업로드로 설치합니다. 배포할 때는
+`php artisan extension:sign ./my-lang-pack-zh --key=...` 로 ZIP 과 서명 파일을 함께 만들어 올립니다([패키지 서명 — 제작자 절차](package-signing.md#제작자-절차)).
 
 설치 후 `language-pack:list` 로 확인. 다른 로케일 패키지와 동일하게 활성/비활성/제거가 가능하며, 의존성 검증(`core_locale_missing` 등) 도 동일하게 적용된다.
 

@@ -68,6 +68,9 @@ final class EnvPriority
         // --- debug ---
         'debug.mode' => ['env' => ['APP_DEBUG'], 'config' => ['app.debug']],
         'debug.log_level' => ['env' => ['LOG_LEVEL'], 'config' => ['logging.channels.single.level', 'logging.channels.daily.level', 'logging.level']],
+        // 신뢰 프록시는 `debug` 카테고리에 산다 — 화면상 같은 카드에 놓이는 아웃바운드
+        // 프록시(`debug.outbound_proxy`)와 저장 위치를 맞춘 것이고, 디버그 모드와는 무관하다.
+        'debug.trusted_proxies' => ['env' => ['TRUSTED_PROXIES'], 'config' => ['trustedproxy.proxies'], 'display' => 'proxy_list_array'],
 
         // --- drivers ---
         'drivers.cache_driver' => ['env' => ['CACHE_STORE'], 'config' => ['cache.default']],
@@ -100,6 +103,9 @@ final class EnvPriority
         'drivers.websocket_server_port' => ['env' => ['REVERB_PORT'], 'config' => ['broadcasting.connections.reverb.options.port', 'reverb.apps.apps.0.options.port']],
         'drivers.websocket_server_scheme' => ['env' => ['REVERB_SCHEME'], 'config' => ['broadcasting.connections.reverb.options.scheme', 'reverb.apps.apps.0.options.scheme']],
         'drivers.websocket_verify_ssl' => ['env' => ['REVERB_VERIFY_SSL'], 'config' => ['broadcasting.connections.reverb.client_options.verify']],
+        // 웹서버 파일 위임(#878) — 배포 인프라(웹서버 모듈·nginx location)와 짝이라 `.env` 로도 정한다(신뢰 프록시와 같은 성격)
+        'drivers.file_delegation' => ['env' => ['G7_FILE_DELEGATION'], 'config' => ['core.file_serving.delegation']],
+        'drivers.file_delegation_accel_prefix' => ['env' => ['G7_FILE_DELEGATION_ACCEL_PREFIX'], 'config' => ['core.file_serving.accel_prefix']],
 
         // --- core_update ---
         'core_update.github_url' => ['env' => ['G7_UPDATE_GITHUB_URL'], 'config' => ['app.update.github_url']],
@@ -115,6 +121,13 @@ final class EnvPriority
         'upload.image_max_width' => ['env' => ['ATTACHMENT_IMAGE_MAX_WIDTH'], 'config' => ['attachment.image_max_width']],
         'upload.image_max_height' => ['env' => ['ATTACHMENT_IMAGE_MAX_HEIGHT'], 'config' => ['attachment.image_max_height']],
         'upload.image_quality' => ['env' => ['ATTACHMENT_IMAGE_QUALITY'], 'config' => ['attachment.image_quality']],
+        // 썸네일 서버 보호 값 (업로드 탭 「고급」) — 저장값이 비면 config/core.php 가 읽은 값(`.env` 또는 기본값)을 쓴다
+        'upload.thumbnail_generate_per_minute' => ['env' => ['G7_THUMBNAIL_GENERATE_PER_MINUTE'], 'config' => ['core.thumbnail.generate_per_minute']],
+        'upload.thumbnail_lock_wait_seconds' => ['env' => ['G7_THUMBNAIL_LOCK_WAIT_SECONDS'], 'config' => ['core.thumbnail.lock_wait_seconds']],
+        'upload.thumbnail_max_source_pixels' => ['env' => ['G7_THUMBNAIL_MAX_SOURCE_PIXELS'], 'config' => ['core.thumbnail.max_source_pixels']],
+        'upload.thumbnail_pregenerate_batch' => ['env' => ['G7_THUMBNAIL_PREGENERATE_BATCH'], 'config' => ['core.thumbnail.pregenerate_batch']],
+        'upload.thumbnail_pregenerate_time_budget' => ['env' => ['G7_THUMBNAIL_PREGENERATE_TIME_BUDGET'], 'config' => ['core.thumbnail.pregenerate_time_budget']],
+        'upload.thumbnail_purge_time_budget' => ['env' => ['G7_THUMBNAIL_PURGE_TIME_BUDGET'], 'config' => ['core.thumbnail.purge_time_budget']],
     ];
 
     /**
@@ -130,25 +143,39 @@ final class EnvPriority
         'general.site_description' => 'env 대응 없음 (설정 전용 값)',
         'general.admin_email' => 'env 대응 없음 (설정 전용 값)',
         'general.currency' => 'env 대응 없음 (설정 전용 값)',
-        'general.maintenance_mode' => 'env 대응 없음 — APP_MAINTENANCE_DRIVER 는 저장소 종류이고 점검 모드 on/off 가 아니다',
         'general.site_logo' => 'env 대응 없음 (첨부 id 배열)',
+        'general.site_favicon' => 'env 대응 없음 (첨부 id 배열)',
         'general.asset_url_mode' => 'env 대응 없음 (설정 전용 값)',
+        'general.user_screen_url' => 'env 대응 없음 — 사용자 화면을 다른 주소에서 띄울 때의 설정 전용 값(비우면 general.site_url)',
         'mail.encryption' => 'config/mail.php 에 대응 키 없음 — Provider 가 쓰는 mail.mailers.smtp.encryption 은 env 유래가 아니다 (Laravel 12 의 env 대응 키는 MAIL_SCHEME → smtp.scheme 로 별개 축)',
         'debug.sql_query_log' => 'env 대응 없음 (g7.sql_query_log 는 설정 전용)',
         'debug.outbound_proxy' => 'env 대응 없음 (g7.outbound_proxy 는 설정 전용)',
         'debug.outbound_proxy_bypass' => 'env 대응 없음 (g7.outbound_proxy 는 설정 전용)',
         'drivers.public_asset_disk' => 'env 대응 없음 (core.storage.public_asset_disk 는 설정 전용)',
+        'drivers.private_attachment_disk' => 'env 대응 없음 (core.storage.private_attachment_disk 는 설정 전용 — 코어 첨부 env 는 ATTACHMENT_DISK 가 별도 축으로 우선)',
+        'drivers.image_driver' => 'env 대응 없음 (core.image.driver 는 설정 전용 — 이미지 처리 엔진 선택)',
         'drivers.public_asset_extensions' => 'env 대응 없음 (core.storage.public_asset_extensions 는 설정 전용)',
         'drivers.queue_connections' => 'env 대응 없음 (QueueWorkerRegistry 가 읽는 큐 워커 등록 연결 목록 — 설정 전용 값)',
         'drivers.queue_names' => 'env 대응 없음 (QueueWorkerRegistry 가 읽는 연결별 큐 이름 목록 — 설정 전용 값)',
         'drivers.websocket_host' => '브라우저 클라이언트 endpoint (g7.websocket.client.host) — REVERB_HOST 는 서버 endpoint 축이라 대응이 아니다',
         'drivers.websocket_port' => '브라우저 클라이언트 endpoint (g7.websocket.client.port)',
         'drivers.websocket_scheme' => '브라우저 클라이언트 endpoint (g7.websocket.client.scheme)',
+        'drivers.queue_connections' => 'env 대응 없음 — 큐 워커 등록 목록, QueueWorkerRegistry 가 설정에서 직접 읽는다 (#139)',
+        'drivers.queue_names' => 'env 대응 없음 — 연결별 큐 등록 목록, QueueWorkerRegistry 가 설정에서 직접 읽는다 (#139)',
+        'drivers.queue_job_log_enabled' => 'env 대응 없음 — 큐 작업 처리 기록 켜기, 처리 기록 리스너가 설정에서 직접 읽는다 (#17)',
+        'drivers.queue_record_retention_days' => 'env 대응 없음 — 처리 기록·실패 작업 공통 보관 기간, queue:prune-records 가 설정에서 직접 읽는다 (#17)',
         'geoip.last_updated_at' => 'geoip:update 커맨드가 기록하는 런타임 상태값',
         'upload.allowed_extensions' => 'env 대응 없음 (AllowedExtensions 정규화를 거치는 설정 전용 값)',
         'upload.layout_attachment_extensions' => 'env 대응 없음 (AllowedExtensions 정규화를 거치는 설정 전용 값)',
         'upload.orphan_cleanup_enabled' => 'env 대응 없음 (설정 전용 값)',
         'upload.orphan_retention_days' => 'env 대응 없음 (설정 전용 값)',
+        'upload.thumbnail_enabled' => 'env 대응 없음 — 운영자 화면 전용',
+        'upload.thumbnail_presets' => 'env 대응 없음 — 운영자 화면 전용',
+        'upload.thumbnail_content_preset' => 'env 대응 없음 — 운영자 화면 전용',
+        'upload.thumbnail_disk_public' => 'env 대응 없음 — 운영자 화면 전용',
+        'upload.thumbnail_disk_gated' => 'env 대응 없음 — 운영자 화면 전용',
+        'upload.thumbnail_prune_enabled' => 'env 대응 없음 — 운영자 화면 전용',
+        'upload.thumbnail_animated_original' => 'env 대응 없음 — 운영자 화면 전용',
         'identity.default_provider' => 'config(\'settings.identity\') 로 카테고리를 통째 주입 — 개별 env 대응이 없다',
         'identity.purpose_providers' => 'config(\'settings.identity\') 로 카테고리를 통째 주입 — 개별 env 대응이 없다',
         'identity.challenge_ttl_minutes' => 'config(\'settings.identity\') 로 카테고리를 통째 주입 — 개별 env 대응이 없다',
@@ -357,6 +384,9 @@ final class EnvPriority
             'broadcast_is_reverb' => $value === 'reverb',
             // stack 채널 목록의 첫 항목이 화면의 단일 로그 드라이버 선택값이다.
             'log_stack_first' => is_array($value) ? ($value[0] ?? null) : $value,
+            // `.env` 의 신뢰 프록시는 콤마 문자열이지만 화면 계약은 태그 배열이다.
+            // 여기서 배열로 맞추지 않으면 잠긴 설치에서만 화면이 문자열을 받아 형태가 갈린다.
+            'proxy_list_array' => TrustedProxySetting::toList($value),
             default => $value,
         };
     }

@@ -84,7 +84,7 @@ const LAYOUTS: Record<string, Node> = {
         }],
     },
     e403: { layout_name: 'e403', components: [span('code', '{{errorCode}}'), span('epath', '{{route.path}}'), span('eflag', '{{_global.flag}}')] },
-    e500: { layout_name: 'e500', components: [span('code', '{{errorCode}}'), span('epath', '{{route.path}}'), span('eflag', '{{_global.flag}}')] },
+    e500: { layout_name: 'e500', components: [span('code', '{{errorCode}}'), span('epath', '{{route.path}}'), span('eflag', '{{_global.flag}}')] },    e404: { layout_name: 'e404', components: [span('code', '{{errorCode}}'), span('epath', '{{route.path}}')] },
 };
 
 function respond(url: string, _params: any): any {
@@ -265,5 +265,32 @@ describe('화면 전환 없는 데이터 갱신 뒤 단순 경로 바인딩은 �
 
         expect(await handler.renderError(500, 'app')).toBe(true);
         await waitLong(() => expect(text('code')).toBe('500')); // 결함: '403'
+    });
+
+    /**
+     * 경로 없음(404)은 TemplateApp 처리기(handleRouteNotFound)가 오류 화면 처리기를 거쳐 그린다 — 그 경로도 그리기 직전에
+     * 바인딩 값 캐시를 비워야 한다(cache 사례 24 규칙, #869 N4). 비우지 않으면 앞 오류 화면의 `{{errorCode}}` 가 남는다.
+     * 인증 확인 불가는 템플릿 레이아웃을 그리지 않고 코어 기본 오류 표시를 쓴다(바인딩 없음, TemplateApp.authUnavailable.test.ts).
+     *
+     * @scenario path=error_page
+     * @effects error_page_uses_latest_state_and_code
+     */
+    it('E8. 앞 오류 화면(403) 뒤 경로 없음 처리(handleRouteNotFound)를 거치면 404 가 그려진다', async () => {
+        const { app } = await mount();
+        (app as any).errorPageHandler = (app as any).createErrorPageHandler();
+        vi.spyOn(globalThis, 'fetch' as any).mockImplementation(async (input: any) => {
+            if (String(input).includes('/config')) {
+                return { ok: true, json: async () => ({ success: true, data: { error_config: { layouts: { 403: 'e403', 404: 'e404' } } } }) } as any;
+            }
+
+            return { ok: false, json: async () => ({}) } as any;
+        });
+
+        expect(await app.getErrorPageHandler().renderError(403, 'app')).toBe(true);
+        await waitLong(() => expect(text('code')).toBe('403'));
+
+        await (app as any).handleRouteNotFound('/admin/missing');
+        await waitLong(() => expect(text('code')).toBe('404')); // 캐시를 비우지 않으면 '403'
+        expect(text('epath')).toBe('/admin/probe');
     });
 });

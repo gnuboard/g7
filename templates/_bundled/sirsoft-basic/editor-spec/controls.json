@@ -10506,6 +10506,14 @@
       "propKey": "alt"
     }
   },
+  "imgThumbPreset": {
+    "label": "$t:editor.control.img_thumb_preset.label",
+    "widget": "thumbnail-preset",
+    "apply": {
+      "type": "propValue",
+      "propKey": "thumbPreset"
+    }
+  },
   "linkHref": {
     "label": "$t:editor.control.link_href.label",
     "widget": "text",
@@ -11193,42 +11201,6 @@
       "propKey": "showDeleteButton"
     },
     "label": "$t:editor.control.au_show_delete.label"
-  },
-  "slbMode": {
-    "widget": "select",
-    "apply": {
-      "type": "propValue",
-      "propKey": "mode"
-    },
-    "options": [
-      {
-        "value": "login",
-        "label": "$t:editor.control.slb_mode.login"
-      },
-      {
-        "value": "register",
-        "label": "$t:editor.control.slb_mode.register"
-      }
-    ],
-    "label": "$t:editor.control.slb_mode.label"
-  },
-  "slbVariant": {
-    "widget": "select",
-    "apply": {
-      "type": "propValue",
-      "propKey": "variant"
-    },
-    "options": [
-      {
-        "value": "full",
-        "label": "$t:editor.control.slb_variant.full"
-      },
-      {
-        "value": "icon",
-        "label": "$t:editor.control.slb_variant.icon"
-      }
-    ],
-    "label": "$t:editor.control.slb_variant.label"
   },
   "piLabel": {
     "widget": "i18n-text",

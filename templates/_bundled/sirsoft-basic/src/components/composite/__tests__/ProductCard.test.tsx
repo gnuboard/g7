@@ -51,7 +51,6 @@ const MockProductCard: React.FC<{
 }> = ({
   product,
   showWishlistButton = true,
-  showQuickView = true,
   onWishlistToggle,
 }) => {
   const t = (key: string) => mockG7Core.t(key);
@@ -123,21 +122,29 @@ describe('ProductCard 컴포넌트', () => {
   };
 
   describe('렌더링', () => {
+    // @scenario section=basic
+    // @effects product_card_renders_core_info
     it('기본 상품 카드가 렌더링되어야 함', () => {
       render(<MockProductCard product={mockProduct} />);
       expect(screen.getByTestId('product-card')).toBeInTheDocument();
     });
 
+    // @scenario section=basic
+    // @effects product_card_renders_core_info
     it('상품명이 표시되어야 함', () => {
       render(<MockProductCard product={mockProduct} />);
       expect(screen.getByTestId('product-name')).toHaveTextContent('테스트 상품');
     });
 
+    // @scenario section=basic
+    // @effects product_card_renders_core_info
     it('가격이 표시되어야 함', () => {
       render(<MockProductCard product={mockProduct} />);
       expect(screen.getByTestId('current-price')).toHaveTextContent('29,000원');
     });
 
+    // @scenario section=basic
+    // @effects product_card_renders_core_info
     it('상품 이미지가 표시되어야 함', () => {
       render(<MockProductCard product={mockProduct} />);
       const img = screen.getByTestId('product-image');
@@ -154,16 +161,22 @@ describe('ProductCard 컴포넌트', () => {
       discount_rate: 20,
     };
 
+    // @scenario section=discount
+    // @effects discount_badge_and_prices_shown
     it('할인율 뱃지가 표시되어야 함', () => {
       render(<MockProductCard product={discountProduct} />);
       expect(screen.getByTestId('discount-badge')).toHaveTextContent('20%');
     });
 
+    // @scenario section=discount
+    // @effects discount_badge_and_prices_shown
     it('원래 가격이 표시되어야 함', () => {
       render(<MockProductCard product={discountProduct} />);
       expect(screen.getByTestId('original-price')).toHaveTextContent('29,000원');
     });
 
+    // @scenario section=discount
+    // @effects discount_badge_and_prices_shown
     it('할인된 가격이 표시되어야 함', () => {
       render(<MockProductCard product={discountProduct} />);
       expect(screen.getByTestId('current-price')).toHaveTextContent('23,200원');
@@ -176,6 +189,8 @@ describe('ProductCard 컴포넌트', () => {
       is_sold_out: true,
     };
 
+    // @scenario section=sold_out
+    // @effects sold_out_badge_shown
     it('품절 뱃지가 표시되어야 함', () => {
       render(<MockProductCard product={soldOutProduct} />);
       expect(screen.getByTestId('sold-out-badge')).toHaveTextContent('품절');
@@ -188,6 +203,8 @@ describe('ProductCard 컴포넌트', () => {
       is_new: true,
     };
 
+    // @scenario section=new_badge
+    // @effects new_badge_shown
     it('NEW 뱃지가 표시되어야 함', () => {
       render(<MockProductCard product={newProduct} />);
       expect(screen.getByTestId('new-badge')).toHaveTextContent('NEW');
@@ -195,11 +212,15 @@ describe('ProductCard 컴포넌트', () => {
   });
 
   describe('찜하기 기능', () => {
+    // @scenario section=wishlist
+    // @effects wishlist_button_toggles_and_reflects_state
     it('찜하기 버튼이 표시되어야 함', () => {
       render(<MockProductCard product={mockProduct} showWishlistButton={true} />);
       expect(screen.getByTestId('wishlist-button')).toBeInTheDocument();
     });
 
+    // @scenario section=wishlist
+    // @effects wishlist_button_toggles_and_reflects_state
     it('찜하기 버튼 클릭 시 콜백이 호출되어야 함', () => {
       const onWishlistToggle = vi.fn();
       render(
@@ -214,12 +235,16 @@ describe('ProductCard 컴포넌트', () => {
       expect(onWishlistToggle).toHaveBeenCalledWith(1);
     });
 
+    // @scenario section=wishlist
+    // @effects wishlist_button_toggles_and_reflects_state
     it('찜한 상품은 채워진 하트가 표시되어야 함', () => {
       const wishlistedProduct = { ...mockProduct, is_wishlisted: true };
       render(<MockProductCard product={wishlistedProduct} />);
       expect(screen.getByTestId('wishlist-button')).toHaveTextContent('❤️');
     });
 
+    // @scenario section=wishlist
+    // @effects wishlist_button_toggles_and_reflects_state
     it('찜하지 않은 상품은 빈 하트가 표시되어야 함', () => {
       render(<MockProductCard product={mockProduct} />);
       expect(screen.getByTestId('wishlist-button')).toHaveTextContent('🤍');
@@ -227,6 +252,8 @@ describe('ProductCard 컴포넌트', () => {
   });
 
   describe('리뷰 정보', () => {
+    // @scenario section=review
+    // @effects review_info_shown_only_with_reviews
     it('리뷰 수와 평점이 표시되어야 함', () => {
       render(<MockProductCard product={mockProduct} />);
       const rating = screen.getByTestId('product-rating');
@@ -234,6 +261,8 @@ describe('ProductCard 컴포넌트', () => {
       expect(rating).toHaveTextContent('(10)');
     });
 
+    // @scenario section=review
+    // @effects review_info_shown_only_with_reviews
     it('리뷰가 없으면 리뷰 정보가 표시되지 않아야 함', () => {
       const noReviewProduct = { ...mockProduct, review_count: 0 };
       render(<MockProductCard product={noReviewProduct} />);
@@ -242,6 +271,8 @@ describe('ProductCard 컴포넌트', () => {
   });
 
   describe('링크', () => {
+    // @scenario section=link
+    // @effects card_links_to_product_detail
     it('상품 상세 페이지로 링크되어야 함', () => {
       render(<MockProductCard product={mockProduct} />);
       const link = screen.getByTestId('product-link');
@@ -262,6 +293,8 @@ describe('ProductCard 컴포넌트', () => {
       sales_status_label: '출시예정',
     } as any;
 
+    // @scenario section=sales_status
+    // @effects sales_status_overlay_follows_status
     it('품절 상태일 때 오버레이가 표시되어야 함', () => {
       const MockWithStatus: React.FC<{ product: any }> = ({ product }) => (
         <div data-testid="product-card">
@@ -287,6 +320,8 @@ describe('ProductCard 컴포넌트', () => {
       expect(screen.getByTestId('product-image')).toHaveClass('grayscale');
     });
 
+    // @scenario section=sales_status
+    // @effects sales_status_overlay_follows_status
     it('출시예정 상태일 때 오버레이가 표시되어야 함', () => {
       const MockWithStatus: React.FC<{ product: any }> = ({ product }) => (
         <div data-testid="product-card">
@@ -310,6 +345,8 @@ describe('ProductCard 컴포넌트', () => {
       expect(screen.getByTestId('sales-status-overlay')).toHaveTextContent('출시예정');
     });
 
+    // @scenario section=sales_status
+    // @effects sales_status_overlay_follows_status
     it('판매중 상태일 때 오버레이가 표시되지 않아야 함', () => {
       const onSaleProduct = { ...mockProduct, sales_status: 'on_sale' } as any;
       const MockWithStatus: React.FC<{ product: any }> = ({ product }) => (
@@ -330,6 +367,8 @@ describe('ProductCard 컴포넌트', () => {
   });
 
   describe('상품 라벨/뱃지', () => {
+    // @scenario section=labels
+    // @effects product_labels_shown_when_present
     it('라벨이 있으면 표시되어야 함', () => {
       const productWithLabels = {
         ...mockProduct,
@@ -363,6 +402,8 @@ describe('ProductCard 컴포넌트', () => {
       expect(screen.getByTestId('label-1')).toHaveTextContent('BEST');
     });
 
+    // @scenario section=labels
+    // @effects product_labels_shown_when_present
     it('라벨이 없으면 표시되지 않아야 함', () => {
       const productWithoutLabels = { ...mockProduct, labels: [] } as any;
 
@@ -380,6 +421,8 @@ describe('ProductCard 컴포넌트', () => {
   });
 
   describe('브랜드명', () => {
+    // @scenario section=brand
+    // @effects brand_name_shown_when_present
     it('브랜드명이 있으면 표시되어야 함', () => {
       const productWithBrand = { ...mockProduct, brand_name: '나이키' } as any;
 
@@ -395,6 +438,8 @@ describe('ProductCard 컴포넌트', () => {
       expect(screen.getByTestId('brand-name')).toHaveTextContent('나이키');
     });
 
+    // @scenario section=brand
+    // @effects brand_name_shown_when_present
     it('브랜드명이 없으면 표시되지 않아야 함', () => {
       const MockWithBrand: React.FC<{ product: any }> = ({ product }) => (
         <div data-testid="product-card">
@@ -418,6 +463,8 @@ describe('ProductCard 컴포넌트', () => {
       selling_price_formatted: '10,000원',
     };
 
+    // @scenario section=rating
+    // @effects rating_stars_follow_average
     it('rating_avg 4.5, review_count 10이면 별점과 개수가 표시되어야 함', () => {
       render(
         <ProductCard
@@ -428,6 +475,8 @@ describe('ProductCard 컴포넌트', () => {
       expect(screen.getByText('(10)')).toBeInTheDocument();
     });
 
+    // @scenario section=rating
+    // @effects rating_stars_follow_average
     it('rating_avg 0.0, review_count 0이면 0.0과 (0)이 표시되어야 함', () => {
       render(
         <ProductCard
@@ -438,12 +487,16 @@ describe('ProductCard 컴포넌트', () => {
       expect(screen.getByText('(0)')).toBeInTheDocument();
     });
 
+    // @scenario section=rating
+    // @effects rating_stars_follow_average
     it('rating_avg, review_count 미전달 시 0.0과 (0)이 표시되어야 함', () => {
       render(<ProductCard product={baseProduct} />);
       expect(screen.getByText('0.0')).toBeInTheDocument();
       expect(screen.getByText('(0)')).toBeInTheDocument();
     });
 
+    // @scenario section=rating
+    // @effects rating_stars_follow_average
     it('rating_avg 3.0이면 채워진 별 3개, 빈 별 2개가 렌더링되어야 함', () => {
       const { container } = render(
         <ProductCard
@@ -456,6 +509,8 @@ describe('ProductCard 컴포넌트', () => {
       expect(emptyStars.length).toBe(2);
     });
 
+    // @scenario section=rating
+    // @effects rating_stars_follow_average
     it('rating_avg 3.5이면 채워진 별 3개, 반별 1개, 빈 별 1개가 렌더링되어야 함', () => {
       const { container } = render(
         <ProductCard
@@ -530,6 +585,8 @@ describe('ProductCard 컴포넌트', () => {
       };
     };
 
+    // @scenario section=multi_currency
+    // @effects prices_follow_selected_currency
     it('USD 선택 시 판매가/정가가 USD 로 표시되어야 함 (KRW 고정 회귀 차단)', () => {
       installGlobalState('USD');
       render(<ProductCard product={multiCurrencyProduct} />);
@@ -539,6 +596,8 @@ describe('ProductCard 컴포넌트', () => {
       expect(screen.queryByText('5,000원')).not.toBeInTheDocument();
     });
 
+    // @scenario section=multi_currency
+    // @effects prices_follow_selected_currency
     it('JPY 선택 시 JPY 로 표시되어야 함', () => {
       installGlobalState('JPY');
       render(<ProductCard product={multiCurrencyProduct} />);
@@ -546,6 +605,8 @@ describe('ProductCard 컴포넌트', () => {
       expect(screen.getByText('¥575')).toBeInTheDocument();
     });
 
+    // @scenario section=multi_currency
+    // @effects prices_follow_selected_currency
     it('KRW(기본) 선택 시 KRW 로 표시되어야 함', () => {
       installGlobalState('KRW');
       render(<ProductCard product={multiCurrencyProduct} />);
@@ -553,6 +614,8 @@ describe('ProductCard 컴포넌트', () => {
       expect(screen.getByText('5,000원')).toBeInTheDocument();
     });
 
+    // @scenario section=multi_currency
+    // @effects prices_follow_selected_currency
     it('통화를 USD 로 변경하면 리렌더되어 USD 로 갱신되어야 함 (반응성 회귀 차단)', async () => {
       installGlobalState('KRW');
       render(<ProductCard product={multiCurrencyProduct} />);
@@ -567,6 +630,8 @@ describe('ProductCard 컴포넌트', () => {
       expect(screen.queryByText('3,000원')).not.toBeInTheDocument();
     });
 
+    // @scenario section=multi_currency
+    // @effects prices_follow_selected_currency
     it('multi_currency 데이터가 없으면 기본 포맷(_formatted)으로 폴백해야 함', () => {
       installGlobalState('USD');
       render(
@@ -591,6 +656,8 @@ describe('ProductCard 컴포넌트', () => {
       description_highlighted: '이것은 <mark>상품</mark> 설명입니다',
     } as any;
 
+    // @scenario section=search_highlight
+    // @effects search_highlight_rendered_as_html
     it('하이라이트된 상품명이 있으면 HTML로 렌더링되어야 함', () => {
       const MockWithHighlight: React.FC<{ product: any }> = ({ product }) => (
         <div data-testid="product-card">
@@ -616,6 +683,8 @@ describe('ProductCard 컴포넌트', () => {
       expect(screen.queryByTestId('product-name')).not.toBeInTheDocument();
     });
 
+    // @scenario section=search_highlight
+    // @effects search_highlight_rendered_as_html
     it('하이라이트된 설명이 있으면 표시되어야 함', () => {
       const MockWithHighlight: React.FC<{ product: any }> = ({ product }) => (
         <div data-testid="product-card">
@@ -632,6 +701,8 @@ describe('ProductCard 컴포넌트', () => {
       expect(screen.getByTestId('product-description-highlighted')).toBeInTheDocument();
     });
 
+    // @scenario section=search_highlight
+    // @effects search_highlight_rendered_as_html
     it('하이라이트가 없으면 일반 텍스트로 표시되어야 함', () => {
       const MockWithHighlight: React.FC<{ product: any }> = ({ product }) => (
         <div data-testid="product-card">

@@ -2,9 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\UsesRuntimeRoleLayoutTable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * 템플릿 레이아웃 버전 모델
@@ -15,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array $content
  * @property array|null $changes_summary
  * @property int|null $created_by
- * @property \Illuminate\Support\Carbon|null $created_at
+ * @property Carbon|null $created_at
  * @property-read TemplateLayout $layout
  * @property-read User|null $creator
  *
@@ -25,6 +28,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class TemplateLayoutVersion extends Model
 {
     use HasFactory;
+    use UsesRuntimeRoleLayoutTable;
+
     /**
      * 대량 할당 가능한 속성
      *
@@ -61,6 +66,8 @@ class TemplateLayoutVersion extends Model
 
     /**
      * 레이아웃과의 관계
+     *
+     * @return BelongsTo 레이아웃 관계
      */
     public function layout(): BelongsTo
     {
@@ -69,6 +76,8 @@ class TemplateLayoutVersion extends Model
 
     /**
      * 생성자와의 관계
+     *
+     * @return BelongsTo 생성자(회원) 관계
      */
     public function creator(): BelongsTo
     {
@@ -78,8 +87,8 @@ class TemplateLayoutVersion extends Model
     /**
      * 최신 버전순으로 정렬
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @return Builder
      */
     public function scopeLatest($query)
     {
@@ -89,8 +98,8 @@ class TemplateLayoutVersion extends Model
     /**
      * 오래된 버전순으로 정렬
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @return Builder
      */
     public function scopeOldest($query)
     {

@@ -3,6 +3,7 @@
 namespace App\Contracts\Extension;
 
 use App\Enums\DeactivationReason;
+use App\Enums\LayoutSyncMode;
 
 interface TemplateManagerInterface
 {
@@ -161,13 +162,13 @@ interface TemplateManagerInterface
      * 템플릿의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
      * @param  string  $identifier  템플릿 식별자
-     * @param  bool  $preserveModified  true(keep) 시 운영자가 고친 화면은 조각 단위로 병합(고친 부분 유지)
+     * @param  bool|LayoutSyncMode  $preserveModified  동기화 모드 — 기본 keep(운영자가 고친 화면은 조각 단위로 병합해 고친 부분 유지). bool 은 호환용(true = keep)
      * @param  string|null  $backupPath  업데이트 백업 디렉토리 — 원본 본문이 없는 행의 비교 기준
      * @return array{success: bool, layouts_refreshed: int, layout_sync?: array<string, mixed>} 갱신 결과 (layout_sync = 운영자 관련 행 보고)
      *
      * @throws \Exception 템플릿을 찾을 수 없거나 레이아웃 갱신 실패 시
      */
-    public function refreshTemplateLayouts(string $identifier, bool $preserveModified = false, ?string $backupPath = null): array;
+    public function refreshTemplateLayouts(string $identifier, bool|LayoutSyncMode $preserveModified = LayoutSyncMode::Keep, ?string $backupPath = null): array;
 
     /**
      * 마지막 설치·갱신이 빈 자리로 등록한 조각 참조 경고를 꺼내고 비웁니다.

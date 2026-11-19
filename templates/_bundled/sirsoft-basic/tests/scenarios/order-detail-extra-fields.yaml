@@ -1,0 +1,29 @@
+feature: 주문 상세는 주문서 추가 항목의 값을 주문자 카드와 배송지 카드에 보인다
+
+description: |
+  운영자가 주문서에 더한 항목과 다른 확장이 기여한 항목의 값은 주문 응답의 extra_fields
+  ([{ key, label, section, display_value }], 값이 있는 것만)로 온다. 회원 주문 상세와 비회원 주문 조회가 함께 쓰는
+  주문자 카드와 배송지 카드가 자기 구획의 값을 기존 줄과 같은 모양의 「라벨, 값」 줄로 그린다.
+
+  - 주문자 구획(section = orderer)의 값은 주문자 카드에, 그 밖의 값은 배송지 카드에 그린다.
+  - 값이 없으면(키가 없는 응답, 빈 목록, 다른 구획의 값만 있을 때) 묶음도 줄도 그리지 않는다.
+  - 묶음의 id 는 order_detail_extra_fields_orderer, order_detail_extra_fields_shipping 이고 줄의 id 는
+    order_detail_extra_field_{키} 다.
+
+# 축은 하나(case)로 편다 — 조각의 어느 성질을 재는지다.
+axes:
+  case: [section_lines, hidden_without_values, row_style, placement]
+
+effects:
+  - order_detail_lists_extra_fields_of_its_section
+  - order_detail_sections_do_not_share_ids
+  - order_detail_extra_block_hidden_without_values
+  - order_detail_extra_rows_match_card_rows_with_dark_pairs
+  - order_detail_extra_block_follows_builtin_rows
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/order-detail-extra-fields.test.ts
+
+notes: |
+  E2E: 주문 상세에 실제 값이 보이는지는 주문서에서 추가 항목을 입력한 주문으로 브라우저에서 확인한다
+  (주문서 입력과 주문 요청은 checkout-order-fields 가 잰다).

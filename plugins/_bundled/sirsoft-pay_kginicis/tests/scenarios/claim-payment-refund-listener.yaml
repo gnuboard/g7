@@ -1,0 +1,25 @@
+# 시나리오 매니페스트 — KG이니시스 클레임 추가결제 환급 리스너
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: kginicis_claim_payment_refund_listener
+
+description: |
+  클레임 추가결제 환급은 이커머스의 `claim_payment.refund` 필터를 이니시스 환급 리스너가 받아 처리한다.
+  리스너는 컨테이너에서 풀려 이커머스 공개 계약을 주입받는다(#916 ②, 훅 인자 Model 은 읽기만).
+
+  - 환급 훅을 필터로 구독하고, 다른 결제사의 결제 건은 처리하지 않는다. 거래번호가 없으면 거절한다.
+  - 전액 환급은 취소 API, 부분 환급은 남은 잔액과 함께 부분취소 API 를 부른다. 결제사 API 오류는 실패 결과다.
+
+axes:
+  case: [hook_subscription, other_provider, missing_transaction_id, full_refund, partial_refund, pg_api_error]
+
+effects:
+  - inicis_claim_refund_listener_subscribes_the_refund_filter              # 환급 훅을 필터로 구독
+  - inicis_claim_refund_listener_skips_other_providers                     # 다른 결제사 결제 건은 처리하지 않는다
+  - inicis_claim_refund_without_tid_is_rejected                            # 거래번호 없는 결제 건 환급은 거절
+  - inicis_claim_full_refund_calls_the_refund_endpoint                     # 전액 환급 → 취소 API 호출
+  - inicis_claim_partial_refund_calls_partial_endpoint_with_remaining_balance  # 부분 환급 → 남은 잔액과 함께 부분취소 API 호출
+  - inicis_claim_refund_pg_api_error_returns_failure                       # 결제사 API 오류 → 실패 결과
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/ClaimPaymentRefundListenerTest.php

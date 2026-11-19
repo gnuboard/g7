@@ -12,7 +12,6 @@
  *  ⑥ 값 변경 → buildAction 재생성(round-trip)
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ParamFieldList, ActionIfToggle } from '../../../components/page-settings/ActionParamFields';
@@ -34,6 +33,10 @@ function recipeOf(spec: Record<string, unknown>) {
 }
 
 describe('ActionParamFields — 자유값 칸 데이터칩 친화 디스패치', () => {
+  /**
+   * @scenario subject=action_param_fields
+   * @effects action_param_text_number_use_data_chip
+   */
   it('① text/number 위젯 → DataChipValueInput(평문 input 아님)', () => {
     const recipe = recipeOf({
       label: 'x',
@@ -53,6 +56,10 @@ describe('ActionParamFields — 자유값 칸 데이터칩 친화 디스패치',
     expect(screen.getByTestId('p-chip-key-input')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=action_param_fields
+   * @effects action_param_change_rebuilds_action
+   */
   it('① 값 변경 → buildAction 재생성(round-trip)', () => {
     const onChange = vi.fn();
     const recipe = recipeOf({ label: 'x', params: [{ key: 'k', widget: 'text' }], build: { handler: 'saveToLocalStorage', params: { key: '{{k}}' } } });
@@ -63,6 +70,10 @@ describe('ActionParamFields — 자유값 칸 데이터칩 친화 디스패치',
     expect(next).toEqual({ handler: 'saveToLocalStorage', params: { key: 'recentIds' } });
   });
 
+  /**
+   * @scenario subject=action_param_fields
+   * @effects action_param_key_value_chip_editor
+   */
   it('② key-value → 키 평문 + 값 데이터칩(KeyValueChipEditor)', () => {
     const recipe = recipeOf({ label: 'x', params: [{ key: 'query', widget: 'key-value' }], build: { handler: 'navigate', params: { query: '{{query}}' } } });
     render(
@@ -75,6 +86,10 @@ describe('ActionParamFields — 자유값 칸 데이터칩 친화 디스패치',
     expect(screen.getByTestId('p-kv-query-value-0')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=action_param_fields
+   * @effects action_param_state_key_value_picker_and_block
+   */
   it('③ state-key-value → 키 = 상태키 검색 위젯(state-key-picker) + 값 = 재귀 블럭 편집기', () => {
     const recipe = recipeOf({
       label: 'x',
@@ -101,6 +116,10 @@ describe('ActionParamFields — 자유값 칸 데이터칩 친화 디스패치',
   // path-style setState: target 이 경로(`_local.isSubmittingOrder`)이고 값이 `{value:V}` 면,
   // `value` 는 상태 키 이름이 아니라 "그 경로에 넣을 값"이다. 단일 값 입력칸으로 표시하고
   // `value` 를 상태 키로 오인 표시하지 않는다. 불리언 true 는 타입 보존(InitialStateValueEditor).
+  /**
+   * @scenario subject=action_param_fields
+   * @effects action_param_set_state_path_single_value
+   */
   it('③-path setState path-style({target:_local.X, value:V}) → 값을 상태키 아닌 단일 값으로 표시', () => {
     const recipe = recipeOf({
       label: 'x',
@@ -130,6 +149,10 @@ describe('ActionParamFields — 자유값 칸 데이터칩 친화 디스패치',
     expect(screen.getByTestId('g7le-initstate-type-value')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=action_param_fields
+   * @effects action_param_set_state_path_keeps_shape
+   */
   it('③-path setState 값 변경 시 {value:...} shape 보존 (target 은 유지)', () => {
     const onChange = vi.fn();
     const recipe = recipeOf({
@@ -152,6 +175,10 @@ describe('ActionParamFields — 자유값 칸 데이터칩 친화 디스패치',
     expect(next.params.value).toBe(true);
   });
 
+  /**
+   * @scenario subject=action_param_fields
+   * @effects action_param_api_body_key_value_no_object_leak
+   */
   it('④-body apiCall body 는 key-value 위젯 (객체 맵, [object Object]/JSON 분해 깨짐 회귀 차단)', () => {
     // apiCall body 는 항상 필드 맵이라 key-value 로 키별 데이터칩 편집(data-chip 단일 입력 금지).
     const recipe = normalizeActionRecipes({ r: CORE_ACTION_RECIPES.apiCall as unknown as Record<string, unknown> })[0];
@@ -180,6 +207,10 @@ describe('ActionParamFields — 자유값 칸 데이터칩 친화 디스패치',
   // (B)setState 상태 값이 깊은 중첩 객체(`_local: {filter:{...}}`)여도
   // 블럭으로 펼쳐 편집한다. 종전 평면 KeyValueMapField 는 객체 값을 `String(v)` → "[object Object]"
   // 로 깨뜨렸다. 회귀 잠금: ① [object Object] 평문 미노출 ② 중첩 키가 블럭으로 펼쳐짐.
+  /**
+   * @scenario subject=action_param_fields
+   * @effects action_param_state_object_value_nested_block
+   */
   it('(B) state-key-value 객체 값 → [object Object] 아닌 중첩 블럭 (회귀)', () => {
     const recipe = recipeOf({
       label: 'x',
@@ -211,6 +242,10 @@ describe('ActionParamFields — 자유값 칸 데이터칩 친화 디스패치',
     expect(screen.getByTestId('g7le-initstate-value-_local.filter.searchField')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=action_param_fields
+   * @effects action_param_select_toggle_not_chipped
+   */
   it('④ select/toggle 고정값 → 등록 위젯(칩화 제외)', () => {
     const recipe = recipeOf({
       label: 'x',
@@ -226,6 +261,10 @@ describe('ActionParamFields — 자유값 칸 데이터칩 친화 디스패치',
     expect(screen.queryByTestId('p-chip-merge')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=action_param_fields
+   * @effects action_param_depends_on_hides_param
+   */
   it('⑤ dependsOn 게이팅 — 조건 불충족 시 param 숨김', () => {
     const recipe = recipeOf({
       label: 'x',
@@ -248,6 +287,10 @@ describe('ActionParamFields — 자유값 칸 데이터칩 친화 디스패치',
     expect(screen.getByTestId('p-param-overlay')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=action_param_fields
+   * @effects action_param_unknown_widget_falls_to_data_chip
+   */
   it('미등록/미지정 위젯 → 평문 폴백 아닌 데이터칩(안전 디그레이드)', () => {
     const recipe = recipeOf({ label: 'x', params: [{ key: 'mystery', widget: 'no-such-widget' }], build: { handler: 'h', params: { mystery: '{{mystery}}' } } });
     render(<ParamFieldList raw={{ handler: 'h' }} recipe={recipe} values={{}} t={t} pools={{}} onChange={vi.fn()} testIdPrefix="p" />);
@@ -256,6 +299,10 @@ describe('ActionParamFields — 자유값 칸 데이터칩 친화 디스패치',
 
   // (A)저장할 값은 데이터 값(배열/식)이라 data-chip(DataChipValueInput).
   // i18n-text(prose, 복잡식 read-only 디그레이드) 아님. saveToLocalStorage 실 스펙으로 잠근다.
+  /**
+   * @scenario subject=action_param_fields
+   * @effects action_param_local_storage_value_data_chip
+   */
   it('(A) saveToLocalStorage value = data-chip → 복잡 표현식도 칩 입력기(read-only 디그레이드 아님)', () => {
     const recipe = normalizeActionRecipes(CORE_ACTION_RECIPES as never).find((r) => r.id === 'saveToLocalStorage')!;
     const expr = '{{[Number(route.id)].slice(0, 20)}}';
@@ -269,6 +316,10 @@ describe('ActionParamFields — 자유값 칸 데이터칩 친화 디스패치',
   });
 
   // 스펙 분류 잠금 — prose(message) 는 i18n-text 유지, 데이터 값은 data-chip/text.
+  /**
+   * @scenario subject=action_param_fields
+   * @effects action_param_prose_param_stays_i18n_text
+   */
   it('(A) prose param(message) 는 i18n-text 유지 — 분류 회귀 차단', () => {
     const recipes = normalizeActionRecipes(CORE_ACTION_RECIPES as never);
     const widgetOf = (id: string, key: string) => recipes.find((r) => r.id === id)!.params.find((p) => p.key === key)?.widget;
@@ -280,6 +331,10 @@ describe('ActionParamFields — 자유값 칸 데이터칩 친화 디스패치',
 
 // (C)실행 조건(if)은 식이라 bare input 아닌 데이터칩+표현식 입력기.
 describe('ActionIfToggle — 실행조건 친화 입력', () => {
+  /**
+   * @scenario subject=action_param_fields
+   * @effects action_if_toggle_uses_data_chip_input
+   */
   it('(C) 펼치면 bare input 이 아니라 DataChipValueInput(칩+표현식)으로 렌더 + 값 변경 반영', () => {
     const onChange = vi.fn();
     render(<ActionIfToggle raw={{ handler: 'toast' }} t={t} onChange={onChange} testIdPrefix="p" />);

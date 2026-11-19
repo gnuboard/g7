@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Language Packs 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -71,6 +71,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | status | string | `active` | 언어팩 상태 |
 | is_protected | boolean | `true` | protected 여부 |
 | source_type | string | `built_in` | 설치 소스 유형 (zip/github/url/bundled/bundled_with_extension) |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 공식 언어팩(번들·확장 내장)은 `bundled`, 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | origin | string | `built_in` | 출처 (설치/등록 원천 구분 값) |
 | source_url | string | `lang/en` | 설치 소스 URL 또는 경로 |
 | github_url | null | `null` | GitHub 저장소 URL (manifest 파생) |
@@ -226,6 +228,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 설치된 언어팩과 번들 소스로부터 노출되는 언어팩 목록을 페이지네이션으로 조회합니다. `core.language_packs.read` 권한이 필요합니다. `scope`/`locale`/`status`/`vendor`/`search` 등으로 필터링하고 `exclude_protected` 로 보호(protected) 팩을 제외할 수 있습니다. 관리자 언어팩 관리 화면의 목록/필터 표시에 사용합니다.
 
 
@@ -303,10 +307,12 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.language_packs.manage`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 전달된 `ids` 배열의 언어팩을 일괄 활성화합니다. `core.language_packs.manage` 권한이 필요합니다. 성공/실패를 분리한 결과를 반환하므로 일부만 실패해도 전체가 롤백되지 않습니다. 비활성 팩을 한 번에 재활성화하는 reactivate 모달의 "활성화" 동작에 사용합니다.
 
@@ -383,11 +389,13 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.language_packs.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 업데이트 확인 중 예외 발생 (`업데이트 확인에 실패했습니다.` — `language_packs.check_updates_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** GitHub 소스로 설치된 언어팩들의 원격 최신 버전을 조회해 업데이트 가능 여부를 확인합니다. `core.language_packs.update` 권한이 필요합니다. 실제 업데이트를 수행하지 않고 검사 결과(checked, updates, details)만 반환하며, 외부 GitHub 호출을 동반합니다. 언어팩 목록의 업데이트 배지 표시에 사용합니다.
 
@@ -404,6 +412,8 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | identifier | body | string | 예 | max 200 | 대상 확장/리소스의 식별자 |
 | auto_activate | body | boolean | 아니오 | — | 설치 후 자동 활성화 여부. 이 값을 참으로 보내려면 `core.language_packs.manage` 권한이 함께 필요하며, 없으면 이 항목만 422 로 거부됩니다 — 네 설치 경로(파일·URL·GitHub·번들) 모두 동일한 경계를 적용합니다. 관리자 화면의 번들 재설치는 활성화 권한이 없는 운영자에게 이 값을 보내지 않으므로 재설치 자체는 그대로 진행되며, 다만 대상 언어팩이 `installed` 로 내려가 다시 켜려면 관리 권한이 필요합니다 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.language_packs.install_from_bundled_validation_rules`).
 
 **요청 예시**
 
@@ -445,6 +455,8 @@ _단건 응답: `data` 객체의 필드 (설치된 언어팩 = `LanguagePackReso
 | status | string | `active` | 언어팩 상태 (auto_activate=true 면 active, 아니면 installed) |
 | is_protected | boolean | `false` | 보호(protected) 팩 여부 |
 | source_type | string | `bundled` | 설치 소스 유형 (zip/github/url/bundled/bundled_with_extension/built_in) |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 공식 언어팩(번들·확장 내장)은 `bundled`, 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | origin | string\|null | `bundled` | source_type 에서 파생된 출처 값 (`LanguagePackOrigin`) |
 | source_url | string\|null | `null` | 설치 소스 URL 또는 경로 |
 | github_url | string\|null | `null` | GitHub 저장소 URL (manifest 파생) |
@@ -518,13 +530,15 @@ HTTP/1.1 201
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.language_packs.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
 | 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
+
+
 
 **설명** `lang-packs/_bundled/{identifier}` 디렉토리의 번들 소스에서 언어팩을 설치(또는 재설치)합니다. `core.language_packs.install` 권한이 필요합니다. 파일 형식·PHP 내용 제약은 ZIP 업로드와 동일합니다. `auto_activate` 가 true면 설치 후 곧바로 활성화하며, 이때는 `core.language_packs.manage` 권한이 함께 필요합니다. 활성 언어팩을 재설치하면서 이 값을 보내지 않으면 대상이 `installed` 로 내려갑니다 — 설치 트랜잭션이 항상 `installed` 로만 기록하고 활성화는 별도 단계로 분리되어 있기 때문입니다. 코어/확장에 선탑재된 번들 언어팩을 DB에 등록할 때 사용합니다.
 
@@ -541,6 +555,11 @@ HTTP/1.1 201
 | --- | --- | --- | --- | --- | --- |
 | file | body | file | 예 | max 10240 | 업로드 파일 |
 | auto_activate | body | boolean | 아니오 | — | 설치 후 자동 활성화 여부. 외부 소스(파일·URL·GitHub)에서 설치할 때 이 값을 참으로 보내려면 `core.language_packs.manage` 권한이 함께 필요하며, 없으면 이 항목만 422 로 거부됩니다 — 항목을 빼면 설치는 그대로 진행되고 상태는 `installed` 로 남습니다. 설치(install)와 활성화(manage)를 별도 권한으로 두는 정책을 따르기 위함입니다 |
+| signature | body | file | 아니오 | max 64 (KB) | 서명 파일 `{zip}.sig.json` (7.2.0). 업로드 ZIP 은 옆 파일을 자동으로 찾지 않으므로 서명을 확인하려면 이 칸으로 준다. 비우면 미서명 |
+| allow_unsigned | body | boolean | 아니오 | — | 미서명·검증 불가 패키지를 확인하고 계속 (7.2.0). 409 `package_unsigned` 경고 창의 「미서명으로 계속」이 같은 요청을 `1` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
+| integrity_aware | body | boolean | 아니오 | — | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `1` 을 보낸다. 이 칸이 없는 요청은 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 패키지를 확인 없이 진행한다(서버 경고 로그, 설치 행 `integrity_status=unsigned`). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.language_packs.install_from_file_validation_rules`).
 
 **요청 예시**
 
@@ -588,6 +607,8 @@ _단건 응답: `data` 객체의 필드 (설치된 언어팩 = `LanguagePackReso
 | status | string | `installed` | 언어팩 상태 (auto_activate=true 면 active) |
 | is_protected | boolean | `false` | 보호(protected) 팩 여부 |
 | source_type | string | `zip` | 설치 소스 유형 (파일 업로드 설치이므로 zip) |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 공식 언어팩(번들·확장 내장)은 `bundled`, 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | origin | string\|null | `zip` | source_type 에서 파생된 출처 값 |
 | source_url | string\|null | `null` | 설치 소스 URL 또는 경로 |
 | github_url | string\|null | `null` | GitHub 저장소 URL (manifest 파생) |
@@ -663,15 +684,21 @@ HTTP/1.1 201
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.language_packs.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 409 | Conflict | 미서명·검증 불가 패키지 (7.2.0) — `errors.package_unsigned: true` 와 `errors.integrity`. `errors.integrity.can_continue` 가 true 면 같은 요청을 `allow_unsigned=1` 로 다시 보내 계속하고, 「미서명 패키지 차단」이 켜져 있으면 false ([오류 응답](../../extension/package-signing.md#오류-응답)) |
+| 422 | Unprocessable Entity | 서명 불일치(`errors.package_signature_invalid: true`)·신뢰하지 않는 키(`errors.package_signer_untrusted: true`) — `errors.integrity.reason` 에 사유, 확인으로도 계속할 수 없다 (7.2.0) |
 | 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 
+
+
 **설명** 업로드된 ZIP 파일에서 언어팩을 설치합니다. `core.language_packs.install` 권한이 필요합니다. manifest 검증에 실패하면 422로 응답합니다. 패키지에 담을 수 있는 파일은 `.json`/`.php`/`.md` 뿐이며, PHP 파일은 `backend/{언어코드}/{그룹}.php` 위치에 번역 배열만 담고 있어야 합니다 — 그 밖의 코드(함수 호출·변수·닫는 태그 뒤 코드 등)가 있으면 위반 줄 번호와 함께 거부됩니다. 심볼릭 링크도 거부됩니다. `auto_activate` 가 true면 설치 후 즉시 활성화하며, 이때는 `core.language_packs.manage` 권한이 함께 필요합니다. 관리자가 로컬 ZIP 파일을 직접 업로드해 언어팩을 추가하는 화면에 사용합니다.
+
+**패키지 서명(7.2.0)** `signature` 로 준 서명 파일로 ZIP 을 풀기 전에 검증하고, 푼 manifest 의 식별자·버전을 서명과 대조한다. 서명 파일을 주지 않으면 미서명이라 409 를 내고, 같은 요청을 `allow_unsigned=1` 로 다시 보내면 계속한다. 서명 불일치·신뢰하지 않는 키는 422 로 멈추고 설치 경로에 파일을 남기지 않는다. 검증 결과는 설치 행 `integrity_status`·`integrity_key_id` 에 남는다. 상세: [패키지 서명](../../extension/package-signing.md)
 
 
 ### POST /api/admin/language-packs/install-from-github
@@ -686,6 +713,10 @@ HTTP/1.1 201
 | --- | --- | --- | --- | --- | --- |
 | github_url | body | string | 예 | — | GitHub 저장소 URL |
 | auto_activate | body | boolean | 아니오 | — | 설치 후 자동 활성화 여부. 외부 소스(파일·URL·GitHub)에서 설치할 때 이 값을 참으로 보내려면 `core.language_packs.manage` 권한이 함께 필요하며, 없으면 이 항목만 422 로 거부됩니다 — 항목을 빼면 설치는 그대로 진행되고 상태는 `installed` 로 남습니다. 설치(install)와 활성화(manage)를 별도 권한으로 두는 정책을 따르기 위함입니다 |
+| allow_unsigned | body | boolean | 아니오 | — | 미서명·검증 불가 패키지를 확인하고 계속 (7.2.0). 409 `package_unsigned` 경고 창의 「미서명으로 계속」이 같은 요청을 `1` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
+| integrity_aware | body | boolean | 아니오 | — | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `1` 을 보낸다. 이 칸이 없는 요청은 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 패키지를 확인 없이 진행한다(서버 경고 로그, 설치 행 `integrity_status=unsigned`). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.language_packs.install_from_github_validation_rules`).
 
 **요청 예시**
 
@@ -727,6 +758,8 @@ _단건 응답: `data` 객체의 필드 (설치된 언어팩 = `LanguagePackReso
 | status | string | `active` | 언어팩 상태 (auto_activate=true 면 active, 아니면 installed) |
 | is_protected | boolean | `false` | 보호(protected) 팩 여부 |
 | source_type | string | `github` | 설치 소스 유형 |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 공식 언어팩(번들·확장 내장)은 `bundled`, 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | origin | string\|null | `github` | source_type 에서 파생된 출처 값 |
 | source_url | string\|null | `https://github.com/acme/g7-core-es` | 설치에 사용한 GitHub 저장소 URL |
 | github_url | string\|null | `https://github.com/acme/g7-core-es` | GitHub 저장소 URL (manifest 파생) |
@@ -800,15 +833,21 @@ HTTP/1.1 201
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.language_packs.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 409 | Conflict | 미서명·검증 불가 패키지 (7.2.0) — `errors.package_unsigned: true` 와 `errors.integrity`. `errors.integrity.can_continue` 가 true 면 같은 요청을 `allow_unsigned=1` 로 다시 보내 계속하고, 「미서명 패키지 차단」이 켜져 있으면 false. 서명 자산이 없는 릴리스는 ZIP 을 받기 전에 이 응답을 낸다 ([오류 응답](../../extension/package-signing.md#오류-응답)) |
+| 422 | Unprocessable Entity | 서명 불일치(`errors.package_signature_invalid: true`)·신뢰하지 않는 키(`errors.package_signer_untrusted: true`) — `errors.integrity.reason` 에 사유, 확인으로도 계속할 수 없다 (7.2.0) |
 | 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 
+
+
 **설명** GitHub 저장소 URL에서 언어팩을 다운로드해 설치합니다. `core.language_packs.install` 권한이 필요합니다. 외부 GitHub 호출을 동반하며 manifest 검증 실패 시 422로 응답합니다. 파일 형식·PHP 내용 제약은 ZIP 업로드와 동일합니다. `auto_activate` 가 true면 설치 후 즉시 활성화하며, 이때는 `core.language_packs.manage` 권한이 함께 필요합니다. GitHub로 배포되는 언어팩을 URL 만으로 설치할 때 사용하며, 이후 check-updates/update 로 갱신을 추적할 수 있습니다.
+
+**패키지 서명(7.2.0)** 태그 릴리스만 받는다 — 최신 릴리스가 없으면 `main`·`master` 브랜치로 물러서지 않고 「릴리스를 찾을 수 없음」(`common.errors.github_release_not_found`)으로 실패한다. 릴리스에 `{identifier}-{version}.zip` 과 `.sig.json` 자산 짝이 있으면 그것을 받아 풀기 전에 검증하고, 짝이 없으면 미서명으로 다뤄 ZIP 을 받기 전에 409 를 낸다(같은 요청을 `allow_unsigned=1` 로 다시 보내면 계속). 검증 결과는 설치 행 `integrity_status`·`integrity_key_id` 에 남는다. 상세: [패키지 서명](../../extension/package-signing.md)
 
 
 ### POST /api/admin/language-packs/install-from-url
@@ -824,6 +863,9 @@ HTTP/1.1 201
 | url | body | string | 예 | max 500 | 언어팩 ZIP 다운로드 URL. `https` 만 허용하며, 내부 네트워크 주소(사설 IP·루프백·`localhost`·`*.internal` 등)와 userinfo(`https://a@b/`) 위장 주소는 422 로 거부됩니다 — 서버가 대신 내려받는 요청이므로 내부망 접근을 막기 위함(SSRF). 원격 코드를 가져오는 경로라 `security.allow_internal_outbound_urls` 설정을 켜도 내부 주소는 계속 차단됩니다 |
 | checksum | body | string | 아니오 | — | 무결성 검증 체크섬 (SHA-256) |
 | auto_activate | body | boolean | 아니오 | — | 설치 후 자동 활성화 여부. 외부 소스(파일·URL·GitHub)에서 설치할 때 이 값을 참으로 보내려면 `core.language_packs.manage` 권한이 함께 필요하며, 없으면 이 항목만 422 로 거부됩니다 — 항목을 빼면 설치는 그대로 진행되고 상태는 `installed` 로 남습니다. 설치(install)와 활성화(manage)를 별도 권한으로 두는 정책을 따르기 위함입니다 |
+| signature_url | body | string | 아니오 | url, max 500 | 서명 파일(`.sig.json`) 주소 (7.2.0). 공개 http·https 주소만 받고, 주었는데 받지 못하면 설치하지 않는다. 주소를 추측해 따로 요청하지 않으므로 비우면 미서명. `checksum` 은 전송 확인, 서명은 제작자 확인이다 |
+| allow_unsigned | body | boolean | 아니오 | — | 미서명·검증 불가 패키지를 확인하고 계속 (7.2.0). 409 `package_unsigned` 경고 창의 「미서명으로 계속」이 같은 요청을 `1` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
+| integrity_aware | body | boolean | 아니오 | — | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `1` 을 보낸다. 이 칸이 없는 요청은 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 패키지를 확인 없이 진행한다(서버 경고 로그, 설치 행 `integrity_status=unsigned`). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.language_packs.install_from_url_validation_rules`).
 
@@ -868,6 +910,8 @@ _단건 응답: `data` 객체의 필드 (설치된 언어팩 = `LanguagePackReso
 | status | string | `active` | 언어팩 상태 (auto_activate=true 면 active, 아니면 installed) |
 | is_protected | boolean | `false` | 보호(protected) 팩 여부 |
 | source_type | string | `url` | 설치 소스 유형 |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 공식 언어팩(번들·확장 내장)은 `bundled`, 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | origin | string\|null | `url` | source_type 에서 파생된 출처 값 |
 | source_url | string\|null | `https://cdn.example.com/acme-core-it.zip` | 다운로드에 사용한 URL |
 | github_url | string\|null | `null` | GitHub 저장소 URL (manifest 파생) |
@@ -943,15 +987,21 @@ HTTP/1.1 201
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.language_packs.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 409 | Conflict | 미서명·검증 불가 패키지 (7.2.0) — `errors.package_unsigned: true` 와 `errors.integrity`. `errors.integrity.can_continue` 가 true 면 같은 요청을 `allow_unsigned=1` 로 다시 보내 계속하고, 「미서명 패키지 차단」이 켜져 있으면 false ([오류 응답](../../extension/package-signing.md#오류-응답)) |
+| 422 | Unprocessable Entity | 서명 불일치(`errors.package_signature_invalid: true`)·신뢰하지 않는 키(`errors.package_signer_untrusted: true`) — `errors.integrity.reason` 에 사유, 확인으로도 계속할 수 없다 (7.2.0) |
 | 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 
+
+
 **설명** 임의의 URL에서 언어팩 ZIP을 내려받아 설치합니다. `core.language_packs.install` 권한이 필요합니다. `checksum` 을 함께 전달하면 다운로드 무결성을 검증하며, manifest 검증 실패 시 422로 응답합니다. `auto_activate` 가 true면 설치 후 즉시 활성화합니다. GitHub 외 임의 호스팅에 배포된 언어팩을 설치할 때 사용합니다.
+
+**패키지 서명(7.2.0)** `signature_url` 로 준 서명 파일을 받아 ZIP 을 풀기 전에 검증하고, 푼 manifest 의 식별자·버전·`vendor`(제작자 키의 vendor 범위)를 대조한다. 주소를 주지 않으면 미서명이라 409 를 내고, 같은 요청을 `allow_unsigned=1` 로 다시 보내면 계속한다. `checksum` 은 전송이 온전한지만 보므로 제작자 확인을 대신하지 않는다. 상세: [패키지 서명](../../extension/package-signing.md)
 
 
 ### POST /api/admin/language-packs/manifest-preview
@@ -1036,10 +1086,12 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.language_packs.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 업로드된 ZIP을 실제로 설치하지 않고 manifest 와 검증 결과만 미리 조회합니다. `core.language_packs.install` 권한이 필요합니다. 부수 효과 없이 읽기만 수행하며 검증 실패 시 422로 응답합니다. 설치 확인 모달에서 대상 언어팩의 메타데이터와 유효성을 미리 보여줄 때 사용합니다.
 
@@ -1100,10 +1152,12 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.language_packs.manage`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 번역/레지스트리/템플릿 언어 캐시를 무효화합니다. `core.language_packs.manage` 권한이 필요합니다. 언어팩 파일을 직접 수정했거나 활성 상태가 프론트에 반영되지 않을 때 캐시를 강제로 갱신하는 용도로 사용합니다.
 
@@ -1155,7 +1209,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.language_packs.manage`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
@@ -1163,6 +1217,8 @@ HTTP/1.1 200
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 언어팩을 제거하고 설치된 파일을 삭제합니다. `core.language_packs.manage` 권한이 필요합니다. `cascade` 가 true면 연관 자원까지 함께 제거합니다. 대상이 존재하지 않으면 404로 응답합니다. 관리자 언어팩 관리 화면의 삭제(제거) 동작에 사용합니다.
 
@@ -1245,6 +1301,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 단일 언어팩의 상세 정보를 조회합니다. `core.language_packs.read` 권한이 필요합니다. `{id}` 가 정수면 DB 레코드를, 문자열(번들 식별자)이면 `lang-packs/_bundled/{id}` manifest 로 합성된 가상 행을 반환합니다. 미설치 번들 언어팩까지 상세 모달로 열람할 수 있도록 하며, 없으면 404로 응답합니다.
 
 
@@ -1294,6 +1352,8 @@ _단건 응답: `data` 객체의 필드 (활성화된 언어팩 = `LanguagePackR
 | status | string | `active` | 활성화 후 상태 (`active`) |
 | is_protected | boolean | `false` | 보호(protected) 팩 여부 |
 | source_type | string | `bundled` | 설치 소스 유형 |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 공식 언어팩(번들·확장 내장)은 `bundled`, 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | origin | string\|null | `bundled` | source_type 에서 파생된 출처 값 |
 | source_url | string\|null | `null` | 설치 소스 URL 또는 경로 |
 | github_url | string\|null | `null` | GitHub 저장소 URL (manifest 파생) |
@@ -1382,7 +1442,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.language_packs.manage`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
@@ -1390,6 +1450,8 @@ HTTP/1.1 200
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 언어팩을 활성화합니다(슬롯 스위칭). `core.language_packs.manage` 권한이 필요합니다. 동일 슬롯(scope·target·locale)에 이미 다른 활성 팩이 있으면 409(slot_conflict)로 현재/대상 팩을 함께 반환하며, 프론트는 확인 모달을 띄운 뒤 `force=true` 로 재호출해 교체합니다. 대상이 없으면 404로 응답합니다.
 
@@ -1461,6 +1523,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 언어팩의 CHANGELOG.md 내용을 반환합니다. `core.language_packs.read` 권한이 필요합니다. `{id}` 가 정수면 DB 레코드를, 문자열이면 번들 가상 행을 사용합니다. 파싱된 항목(entries), 원문(changelog), 존재 여부(has_changelog)를 함께 반환하며, CHANGELOG 파일이 없어도 빈 값으로 정상 응답합니다. 상세 모달의 변경 이력 탭에 사용합니다.
 
 
@@ -1510,6 +1574,8 @@ _단건 응답: `data` 객체의 필드 (비활성화된 언어팩 = `LanguagePa
 | status | string | `inactive` | 비활성화 후 상태 |
 | is_protected | boolean | `false` | 보호(protected) 팩 여부 (보호 팩은 비활성화 불가) |
 | source_type | string | `bundled` | 설치 소스 유형 |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 공식 언어팩(번들·확장 내장)은 `bundled`, 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | origin | string\|null | `bundled` | source_type 에서 파생된 출처 값 |
 | source_url | string\|null | `null` | 설치 소스 URL 또는 경로 |
 | github_url | string\|null | `null` | GitHub 저장소 URL (manifest 파생) |
@@ -1584,7 +1650,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.language_packs.manage`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
@@ -1592,6 +1658,8 @@ HTTP/1.1 200
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 활성 언어팩을 비활성화합니다. `core.language_packs.manage` 권한이 필요합니다. 해당 슬롯의 번역 적용이 해제되며, 대상이 없으면 404로 응답합니다. 관리자 언어팩 관리 화면에서 활성 팩을 끄는 동작에 사용합니다.
 
@@ -1607,6 +1675,8 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | id | path | string | 예 | — | 대상 리소스의 식별자 |
+| allow_unsigned | body | boolean | 아니오 | — | 미서명·검증 불가 패키지를 확인하고 계속 (7.2.0). 409 `package_unsigned` 경고 창의 「미서명으로 계속」이 같은 요청을 `1` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
+| integrity_aware | body | boolean | 아니오 | — | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `1` 을 보낸다. 이 칸이 없는 요청은 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 패키지를 확인 없이 진행한다(서버 경고 로그, 설치 행 `integrity_status=unsigned`). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
 
 **요청 예시**
 
@@ -1642,6 +1712,8 @@ _단건 응답: `data` 객체의 필드 (업데이트된 언어팩 = `LanguagePa
 | status | string | `active` | 언어팩 상태 (업데이트 전 상태 유지) |
 | is_protected | boolean | `false` | 보호(protected) 팩 여부 |
 | source_type | string | `github` | 설치 소스 유형 (업데이트는 GitHub/번들 소스만 가능) |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 공식 언어팩(번들·확장 내장)은 `bundled`, 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | origin | string\|null | `github` | source_type 에서 파생된 출처 값 |
 | source_url | string\|null | `https://github.com/acme/g7-core-es` | 설치 소스 URL 또는 경로 |
 | github_url | string\|null | `https://github.com/acme/g7-core-es` | GitHub 저장소 URL (manifest 파생) |
@@ -1717,15 +1789,21 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.language_packs.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 409 | Conflict | 미서명·검증 불가 패키지 (7.2.0) — `errors.package_unsigned: true` 와 `errors.integrity`. `errors.integrity.can_continue` 가 true 면 같은 요청을 `allow_unsigned=1` 로 다시 보내 계속하고, 「미서명 패키지 차단」이 켜져 있으면 false. 서명 자산이 없는 릴리스는 ZIP 을 받기 전에 이 응답을 낸다 ([오류 응답](../../extension/package-signing.md#오류-응답)) |
+| 422 | Unprocessable Entity | 서명 불일치(`errors.package_signature_invalid: true`)·신뢰하지 않는 키(`errors.package_signer_untrusted: true`) — `errors.integrity.reason` 에 사유, 확인으로도 계속할 수 없다 (7.2.0) |
 | 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 
+
+
 **설명** GitHub 소스 언어팩을 최신 버전으로 다시 내려받아 적용합니다. `core.language_packs.update` 권한이 필요합니다. 외부 GitHub 재다운로드와 파일 교체를 동반하며, 갱신된 언어팩 정보를 반환합니다. 대상이 없으면 404로 응답합니다. check-updates 로 업데이트가 감지된 팩을 실제로 갱신할 때 사용합니다.
+
+**패키지 서명(7.2.0)** GitHub 출처는 그 판의 태그 릴리스 자산 짝으로 풀기 전에 검증하고, 짝이 없으면 ZIP 을 받기 전에 409 를 낸다(같은 요청을 `allow_unsigned=1` 로 다시 보내면 계속). 번들 출처(`_bundled`)는 코어 배포본 서명이 덮으므로 검증하지 않고 `bundled` 로 기록한다. 서명 불일치·신뢰하지 않는 키는 422 로 멈추며 백업 전에 끝나 설치본을 건드리지 않는다. 상세: [패키지 서명](../../extension/package-signing.md)
 
 

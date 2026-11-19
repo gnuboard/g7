@@ -12,6 +12,8 @@ use App\Analytics\UrlNormalizer;
 use App\Contracts\Analytics\GoalRegistryInterface;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\MemberNamePresenter;
 use App\Enums\Analytics\PrivacyMode;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\Analytics\VisitorIndexRequest;
@@ -133,7 +135,12 @@ class VisitorController extends AdminBaseController
             return [];
         }
 
-        return $this->users->findManyByIdsKeyed($ids)->all();
+        $members = $this->users->findManyByIdsKeyed($ids)->all();
+
+        // 이름은 관리자 영역의 표시 이름으로 나간다. 추가 항목 값이 필요한 설정이면 여기서 한 번에 읽는다.
+        app(MemberNamePresenter::class)->preload($members, null, DisplayNameAreaRegistry::AREA_ADMIN);
+
+        return $members;
     }
 
     /**
@@ -142,8 +149,11 @@ class VisitorController extends AdminBaseController
      * 이메일은 공통 판정(`ExposesMemberContact`)을 따른다 — 활동 로그·알림 이력과 같은
      * 규칙을 써야 한 화면만 주소록 수집 경로가 되는 일이 없다.
      *
+     * 이름은 관리자 영역의 표시 이름이다. 실명은 회원 조회 권한이 있는 관리자에게만, 표시 이름과 다를 때만
+     * `real_name` 으로 더해진다.
+     *
      * @param  User|null  $user  회원 (비회원 방문이면 null)
-     * @return array{uuid: string, name: string, email: string|null}|null 화면용 회원 또는 null
+     * @return array<string, string|null>|null 화면용 회원(`uuid`, `name`, `email`, 조건부 `real_name`) 또는 null
      */
     private function memberSummary(?User $user): ?array
     {
@@ -151,9 +161,12 @@ class VisitorController extends AdminBaseController
             return null;
         }
 
+        $names = app(MemberNamePresenter::class)->fields($user, null, DisplayNameAreaRegistry::AREA_ADMIN);
+
         return [
             'uuid' => (string) $user->uuid,
-            'name' => (string) $user->name,
+            'name' => (string) ($names['name'] ?? ''),
+            ...(isset($names['real_name']) ? ['real_name' => $names['real_name']] : []),
             'email' => $this->canExposeMemberEmail(null, (int) $user->id) ? $user->email : null,
         ];
     }
@@ -222,6 +235,8 @@ class VisitorController extends AdminBaseController
      */
     private function exportProfileCsv(array $profile, string $visitorKey, string $from = '', string $to = ''): StreamedResponse
     {
+        // file-serving:allow 파일이 아니라 이 자리에서 집계해 만든 CSV 내보내기를 돌려준다 — 저장된 파일을
+        // 내주는 통로가 아니라 서빙 계약(nosniff·ETag·304)의 대상이 아니다(매 요청 새로 만들고 no-store).
         $rows = function () use ($profile): iterable {
             foreach ($profile['visits'] as $visit) {
                 // 시각 열은 화면·파일 이름과 같은 사이트 표준시로 싣는다. UTC 원값을 그대로 쓰면 파일 이름의

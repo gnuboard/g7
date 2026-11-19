@@ -69,10 +69,12 @@
     </action>
   </init>
   <slot name="content">
-    <div data-ref="analytics_patterns_content" class="admin-page-content-responsive-fluid">
+    <div data-ref="analytics_patterns_content" class="p-4 bg-gray-50 dark:bg-gray-900">
+      <responsive on="640-1023" class="p-6 bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="1024-" class="p-8 bg-gray-50 dark:bg-gray-900"/>
       <div data-ref="page_header" class="flex-between mb-4">
         <div>
-          <h1 class="page-title">$t:admin.analytics.patterns.title</h1>
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-white"><responsive on="640-" class="text-2xl font-semibold text-gray-900 dark:text-white"/>$t:admin.analytics.patterns.title</h1>
           <p class="text-label-subtle mt-1">$t:admin.analytics.patterns.description</p>
         </div>
       </div>
@@ -85,7 +87,7 @@
         </div>
       </div>
       <div data-ref="metric_row" class="flex-center gap-3 mb-4">
-        <span class="filter-label">$t:admin.analytics.patterns.metric_label</span>
+        <span class="filter-field-label"><responsive on="768-" class="filter-field-label mb-0 w-14 shrink-0 flex items-center"/>$t:admin.analytics.patterns.metric_label</span>
         <select data-ref="metric_select" name="analytics_pattern_metric" class="w-36" value="{{query.metric || 'visits'}}">
           <options>
             <option value="visits">$t:admin.analytics.common.visits</option>
@@ -101,7 +103,8 @@
           </on>
         </select>
       </div>
-      <div data-ref="pattern_charts" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div data-ref="pattern_charts" class="grid grid-cols-1 gap-4">
+        <responsive on="desktop" class="grid grid-cols-2 gap-4"/>
         <blur-until-loaded sources="analytics_patterns"/>
         <div data-ref="weekday_card" class="admin-card">
           <h2 class="section-heading mb-3">$t:admin.analytics.patterns.weekday_title</h2>

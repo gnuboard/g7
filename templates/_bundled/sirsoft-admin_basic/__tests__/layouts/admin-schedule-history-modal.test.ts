@@ -12,7 +12,8 @@
  * 테스트 대상:
  * - layouts/partials/admin_schedule_list/_modal_history.json — `initGlobal: scheduleHistory` 로 받아
  *   `_global.scheduleHistory.data`·`.pagination` 을 읽는다, 실행자는 `triggered_by?.name`.
- * - layouts/partials/admin_schedule_list/_tab_schedules.json — 「실행 이력」 을 열 때 앞 작업의 이력·쪽 번호를 비운다.
+ * - layouts/partials/admin_schedule_list/_partial_schedule_datagrid.json — 「실행 이력」 을 열 때 앞 작업의 이력·쪽 번호를 비운다
+ *   (7.2.0 에서 표·행 메뉴가 `_tab_schedules` 에서 이 조각으로 옮겨졌다).
  *   「즉시 실행」 을 열 때 지난 실행 결과를 비운다(Esc·X 로 닫아도 다시 실행할 수 있게).
  */
 
@@ -80,10 +81,37 @@ describe('실행 이력 창', () => {
     expect(raw).not.toContain('triggered_by_name');
     expect(raw).toContain('item.triggered_by?.name');
   });
+
+  /**
+   * 큐로 보낸 「즉시 실행」이 워커에서 거절되면 요청은 이미 접수로 끝나 있다 — 이력 창의 「거절됨」 표시와 사유 한 줄이
+   * 누른 사람이 거절을 아는 유일한 자리다. 문구는 서버가 보는 사람의 언어로 실어 준 값을 그대로 쓴다.
+   *
+   * @scenario surface=admin_schedule_history_modal
+   * @effects schedule_history_modal_shows_rejected_run_with_reason
+   */
+  it('거절된 회차는 거절됨 표시와 사유를 보인다', () => {
+    const badge = collect(modal, (n) => n.name === 'Badge' && n.if === "{{item.status === 'rejected'}}");
+    expect(badge.length).toBe(1);
+    expect(badge[0].props.text).toBe('{{item.status_label}}');
+
+    const reason = collect(modal, (n) => typeof n.if === 'string' && n.if.includes('item.reject_reason_label'));
+    expect(reason.length).toBe(1);
+    expect(reason[0].if).toContain("item.status === 'rejected'");
+    expect(JSON.stringify(reason[0])).toContain('{{item.reject_reason_label}}');
+
+    // 성공·실패·실행 중 표시는 거절 회차에 함께 뜨지 않는다(상태별로 하나씩만 맞는다)
+    const statusBadges = collect(modal, (n) => n.name === 'Badge' && /item\.status === '/.test(String(n.if ?? '')));
+    expect(statusBadges.map((n) => n.if).sort()).toEqual([
+      "{{item.status === 'failed'}}",
+      "{{item.status === 'rejected'}}",
+      "{{item.status === 'running'}}",
+      "{{item.status === 'success'}}",
+    ]);
+  });
 });
 
 describe('실행 이력 열기 동작', () => {
-  const tab = require('../../layouts/partials/admin_schedule_list/_tab_schedules.json');
+  const tab = require('../../layouts/partials/admin_schedule_list/_partial_schedule_datagrid.json');
 
   /**
    * @scenario surface=admin_schedule_history_modal
@@ -119,7 +147,7 @@ describe('실행 이력 열기 동작', () => {
 });
 
 describe('예약 작업 목록 — 실행 시각 칸', () => {
-  const tab = require('../../layouts/partials/admin_schedule_list/_tab_schedules.json');
+  const tab = require('../../layouts/partials/admin_schedule_list/_partial_schedule_datagrid.json');
   const raw = JSON.stringify(tab);
 
   /**

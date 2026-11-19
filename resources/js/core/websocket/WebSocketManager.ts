@@ -2,6 +2,7 @@
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import { createLogger } from '../utils/Logger';
+import { withBasePrefix } from '../support/assetUrl';
 
 // Pusher를 window 객체에 등록 (Laravel Echo 필수)
 declare global {
@@ -22,6 +23,20 @@ export type ChannelType = 'public' | 'private' | 'presence';
 export interface SubscriptionOptions {
   /** 채널 타입 (기본값: 'private') */
   channelType?: ChannelType;
+}
+
+/**
+ * 한 `channel:event` 의 구독 엔트리 (engine-v1.94.0)
+ */
+interface SubscriptionEntry {
+  /** Echo 채널 인스턴스 */
+  channelInstance: ReturnType<Echo<'reverb'>['channel']>;
+  /** 채널명 */
+  channel: string;
+  /** 이벤트명 (`.` 접두 없이) */
+  event: string;
+  /** 구독 키(`channel:event#n`) → 콜백 */
+  callbacks: Map<string, (data: unknown) => void>;
 }
 
 /**
@@ -50,7 +65,16 @@ const logger = createLogger('WebSocketManager');
 
 class WebSocketManager {
   private echo: Echo<'reverb'> | null = null;
-  private subscriptions: Map<string, ReturnType<Echo<'reverb'>['channel']>> = new Map();
+  /**
+   * `channel:event` → { Echo 채널, 구독 키별 콜백 } (engine-v1.94.0)
+   *
+   * 종전에는 `channel:event` → 채널 하나라 같은 키를 두 번째로 구독하면 콜백이 연결되지 않았고,
+   * 두 주인이 같은 키를 들고 있어 한쪽 해제가 다른 쪽까지 끊었다. 이제 Echo `listen` 은 키당 1회만 걸고
+   * 디스패처가 등록된 콜백을 모두 부른다.
+   */
+  private subscriptions: Map<string, SubscriptionEntry> = new Map();
+  /** 구독 키 일련번호 — `channel:event#n` 의 n */
+  private subscriptionSeq = 0;
   private initialized = false;
   private config: WebSocketConfig | null = null;
 
@@ -88,7 +112,11 @@ class WebSocketManager {
       return;
     }
 
-    const { appKey, host = 'localhost', port = 80, scheme = 'https', authEndpoint = '/api/broadcasting/auth' } = this.config;
+    const { appKey, host = 'localhost', port = 80, scheme = 'https', authEndpoint: configuredAuthEndpoint } = this.config;
+
+    // 하위 폴더 배치에서 사이트 밖을 가리키지 않도록 접두사를 거친다 (헬퍼는 멱등이고
+    // 절대 URL 은 그대로 둔다). 운영자가 지정한 값도 같은 규칙을 탄다.
+    const authEndpoint = withBasePrefix(configuredAuthEndpoint ?? '/api/broadcasting/auth');
     const numPort = Number(port) || 80;
     const useTLS = scheme === 'https';
 
@@ -173,11 +201,14 @@ class WebSocketManager {
   /**
    * 채널을 구독하고 이벤트를 리스닝합니다.
    *
+   * 같은 `channel:event` 를 여러 주인이 구독해도 각자 수신한다. Echo `listen` 은 그 키에 1회만 걸고,
+   * 이벤트가 오면 등록된 콜백을 모두 부른다 (engine-v1.94.0).
+   *
    * @param channel 채널명 (예: 'admin.dashboard')
    * @param event 이벤트명 (예: 'dashboard.stats.updated')
    * @param callback 이벤트 수신 시 호출될 콜백
    * @param options 구독 옵션
-   * @returns 구독 키
+   * @returns 이 구독의 고유 키 (`channel:event#n`, 해제 시 사용). Echo 가 없으면 빈 문자열
    */
   subscribe(
     channel: string,
@@ -193,10 +224,13 @@ class WebSocketManager {
     }
 
     const { channelType = 'private' } = options;
-    const subscriptionKey = `${channel}:${event}`;
+    const entryKey = `${channel}:${event}`;
+    const subscriptionKey = `${entryKey}#${++this.subscriptionSeq}`;
 
-    if (this.subscriptions.has(subscriptionKey)) {
-      logger.log(`[WebSocketManager] 이미 구독 중: ${subscriptionKey}`);
+    const existing = this.subscriptions.get(entryKey);
+    if (existing) {
+      existing.callbacks.set(subscriptionKey, callback);
+      logger.log(`[WebSocketManager] 같은 채널·이벤트에 구독 추가: ${subscriptionKey} (구독 ${existing.callbacks.size}개)`);
       return subscriptionKey;
     }
 
@@ -212,9 +246,25 @@ class WebSocketManager {
         channelInstance = this.echo.private(channel);
     }
 
+    const entry: SubscriptionEntry = {
+      channelInstance,
+      channel,
+      event,
+      callbacks: new Map([[subscriptionKey, callback]]),
+    };
+
     // Reverb 이벤트는 .으로 시작해야 함
-    channelInstance.listen(`.${event}`, callback);
-    this.subscriptions.set(subscriptionKey, channelInstance);
+    // 디스패처가 등록된 콜백을 모두 부른다 — 한 콜백의 예외가 다른 구독자 수신을 막지 않는다
+    channelInstance.listen(`.${event}`, (data: unknown) => {
+      Array.from(entry.callbacks.values()).forEach((cb) => {
+        try {
+          cb(data);
+        } catch (error) {
+          logger.error(`[WebSocketManager] 구독 콜백 오류: ${entryKey}`, error);
+        }
+      });
+    });
+    this.subscriptions.set(entryKey, entry);
 
     logger.log(`[WebSocketManager] 구독 완료: ${subscriptionKey} (${channelType})`);
 
@@ -224,33 +274,47 @@ class WebSocketManager {
   /**
    * 구독을 해제합니다.
    *
-   * Map 엔트리 제거 + Echo 채널의 listener 명시 해제.
-   * Echo는 동일 채널을 재사용하므로 stopListening() 누락 시
-   * 재subscribe 시 listener가 중복 누적되어 콜백이 여러 번 실행됩니다.
+   * 그 구독 키의 콜백만 지운다. 같은 `channel:event` 의 마지막 콜백이 빠질 때만 Echo 리스너를
+   * 명시 해제(`stopListening`)한다 — Echo 는 같은 채널을 재사용하므로 해제를 빠뜨리면 재구독 시 리스너가
+   * 중복 누적된다.
    *
-   * @param subscriptionKey 구독 키 (형식: "channel:event")
+   * 레거시 키(`channel:event`, `#` 없음)로 부르면 그 키의 콜백을 전부 지우고 `[G7]` 경고를 낸다
+   * (engine-v1.94.0 — 다른 주인의 구독까지 끊기 때문).
+   *
+   * @param subscriptionKey `subscribe` 가 돌려준 구독 키 (형식: "channel:event#n")
    */
   unsubscribe(subscriptionKey: string): void {
-    const channelInstance = this.subscriptions.get(subscriptionKey);
-    if (!channelInstance) {
+    const hash = subscriptionKey.lastIndexOf('#');
+    const isLegacyKey = hash < 0;
+    const entryKey = isLegacyKey ? subscriptionKey : subscriptionKey.substring(0, hash);
+    const entry = this.subscriptions.get(entryKey);
+    if (!entry) {
       return;
     }
 
-    // subscriptionKey 형식: "channelName:eventName"
-    // channelName이 ':'를 포함할 수 있으므로 마지막 ':' 기준 분리
-    const lastColon = subscriptionKey.lastIndexOf(':');
-    const eventName = lastColon >= 0 ? subscriptionKey.substring(lastColon + 1) : '';
-
-    if (eventName) {
-      try {
-        // Reverb 이벤트는 '.'으로 시작해야 함 (subscribe와 동일)
-        channelInstance.stopListening(`.${eventName}`);
-      } catch (e) {
-        logger.warn(`[WebSocketManager] stopListening 실패: ${subscriptionKey}`, e);
-      }
+    if (isLegacyKey) {
+      console.warn(
+        `[G7] WebSocket 구독 해제에 채널·이벤트 키("${subscriptionKey}")를 넘겨 그 키의 구독 ${entry.callbacks.size}개를 모두 지웠습니다. ` +
+          '다른 화면·확장의 구독도 함께 끊깁니다 — subscribe 가 돌려준 구독 키를 넘기세요.'
+      );
+      entry.callbacks.clear();
+    } else if (!entry.callbacks.delete(subscriptionKey)) {
+      return;
     }
 
-    this.subscriptions.delete(subscriptionKey);
+    if (entry.callbacks.size > 0) {
+      logger.log(`[WebSocketManager] 구독 해제: ${subscriptionKey} (남은 구독 ${entry.callbacks.size}개)`);
+      return;
+    }
+
+    try {
+      // Reverb 이벤트는 '.'으로 시작해야 함 (subscribe와 동일)
+      entry.channelInstance.stopListening(`.${entry.event}`);
+    } catch (e) {
+      logger.warn(`[WebSocketManager] stopListening 실패: ${subscriptionKey}`, e);
+    }
+
+    this.subscriptions.delete(entryKey);
     logger.log(`[WebSocketManager] 구독 해제: ${subscriptionKey}`);
   }
 
@@ -266,10 +330,10 @@ class WebSocketManager {
 
     this.echo.leave(channel);
 
-    // 해당 채널의 모든 구독 키 제거
+    // 해당 채널의 모든 구독 엔트리 제거
     const keysToDelete: string[] = [];
-    this.subscriptions.forEach((_, key) => {
-      if (key.startsWith(`${channel}:`)) {
+    this.subscriptions.forEach((entry, key) => {
+      if (entry.channel === channel) {
         keysToDelete.push(key);
       }
     });
@@ -320,10 +384,16 @@ class WebSocketManager {
   /**
    * 현재 활성 구독 수를 반환합니다.
    *
+   * 구독(콜백) 단위로 센다 — 같은 `channel:event` 를 둘이 구독하면 2다 (engine-v1.94.0).
+   *
    * @returns 구독 수
    */
   getSubscriptionCount(): number {
-    return this.subscriptions.size;
+    let count = 0;
+    this.subscriptions.forEach((entry) => {
+      count += entry.callbacks.size;
+    });
+    return count;
   }
 }
 

@@ -55,6 +55,13 @@
 (`PageContentMediaService::deleteContentMediaForPage()` → 골격 `purgeRows` — 파일은 커밋된 뒤, 행마다 `core.content_media.before_delete`).
 끝내 잇지 않은 임시 행은 `sirsoft-page:prune-temp-attachments` 가 지웁니다. 서빙·복제 원본 읽기·삭제·정리는 모두 행에 기록된 디스크(`disk`)에서
 하고, 새 파일(업로드·복제 사본)만 모듈 기본 디스크에 씁니다.
+
+본문 이미지의 서빙 주소(`pages/content-media/{hash}`)에 `?size={규격}`·`?w={숫자}` 가 붙으면 코어 골격이 게이트(발행 또는 열람권 또는 서명)를
+지난 뒤 썸네일로 냅니다(1.3.0). 서빙 컨트롤러는 서명을 `size`·`w` 를 빼고 검증하고, `ThumbnailServingListener` 가 이 주소를 썸네일 서빙 경로에
+올립니다. 본문 미디어 이미지는 첨부와 같은 표, 같은 저장 위치에 있어
+첨부 썸네일 원본 제공자(`Support\AttachmentThumbnailSourceProvider`)가 함께 맡습니다 — 썸네일 캐시 집계, 비우기, 「기존 이미지 썸네일 만들기」에
+한 번만 들어가고, 본문 미디어용 제공자를 따로 두지 않습니다. 발행된 페이지의 본문 이미지도 썸네일은 권한 원본으로 다뤄 비공개 저장 위치에 둡니다
+(발행을 취소할 수 있기 때문입니다).
 <!-- @intent END -->
 
 ## 소유 테이블

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\ScheduleRejectReason;
 use Illuminate\Http\Request;
 
 class ScheduleHistoryResource extends BaseApiResource
@@ -29,6 +30,9 @@ class ScheduleHistoryResource extends BaseApiResource
             'duration_formatted' => $this->resource->duration_formatted ?? null,
             'status' => $this->getValue('status')?->value ?? $this->getValue('status'),
             'status_label' => $this->getStatusLabel(),
+            // 거절 행(status=rejected)만 값이 있다 — 문구는 읽는 사람의 언어로 그때 푼다.
+            'reject_reason' => $this->getRejectReason()?->value,
+            'reject_reason_label' => $this->getRejectReason()?->label(),
             'exit_code' => $this->getValue('exit_code'),
             'memory_usage' => $this->getValue('memory_usage'),
             'memory_usage_formatted' => $this->resource->memory_usage_formatted ?? null,
@@ -38,12 +42,12 @@ class ScheduleHistoryResource extends BaseApiResource
             'trigger_type_label' => $this->getTriggerTypeLabel(),
 
             // 관계형 데이터
-            'triggered_by' => $this->whenLoaded('triggeredBy', function () {
+            'triggered_by' => $this->whenLoaded('triggeredBy', function () use ($request) {
                 $user = $this->getValue('triggeredBy');
 
                 return $user ? [
                     'uuid' => $user->uuid,
-                    'name' => $user->name,
+                    ...$this->memberNameFields($user, $request),
                 ] : null;
             }),
 
@@ -72,6 +76,9 @@ class ScheduleHistoryResource extends BaseApiResource
             'duration_formatted' => $this->resource->duration_formatted ?? null,
             'status' => $this->getValue('status')?->value ?? $this->getValue('status'),
             'status_label' => $this->getStatusLabel(),
+            // 거절 행(status=rejected)만 값이 있다 — 문구는 읽는 사람의 언어로 그때 푼다.
+            'reject_reason' => $this->getRejectReason()?->value,
+            'reject_reason_label' => $this->getRejectReason()?->label(),
             'exit_code' => $this->getValue('exit_code'),
             'memory_usage_formatted' => $this->resource->memory_usage_formatted ?? null,
             // 실행 이력 창이 회차마다 정상·오류 출력을 펼쳐 보인다 — 저장소가 이번 쪽 분량만 넓은 칸을 읽는다.
@@ -82,7 +89,7 @@ class ScheduleHistoryResource extends BaseApiResource
             'triggered_by' => $this->resource->relationLoaded('triggeredBy') && $this->resource->triggeredBy
                 ? [
                     'uuid' => $this->resource->triggeredBy->uuid,
-                    'name' => $this->resource->triggeredBy->name,
+                    ...$this->memberNameFields($this->resource->triggeredBy),
                 ]
                 : null,
         ];
@@ -106,6 +113,22 @@ class ScheduleHistoryResource extends BaseApiResource
         }
 
         return __('schedule.result.'.$status);
+    }
+
+    /**
+     * 거절 사유를 반환합니다.
+     *
+     * @return ScheduleRejectReason|null 거절 사유 (거절 행이 아니거나 알 수 없는 값이면 null)
+     */
+    protected function getRejectReason(): ?ScheduleRejectReason
+    {
+        $reason = $this->getValue('reject_reason');
+
+        if ($reason instanceof ScheduleRejectReason) {
+            return $reason;
+        }
+
+        return is_string($reason) ? ScheduleRejectReason::tryFrom($reason) : null;
     }
 
     /**

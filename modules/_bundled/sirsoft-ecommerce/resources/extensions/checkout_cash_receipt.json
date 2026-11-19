@@ -13,12 +13,12 @@
             "responsive": {
                 "portable": {
                     "props": {
-                        "className": "mt-3 pt-3 border-t border-gray-200 dark:border-gray-600"
+                        "className": "ecommerce:mt-3 ecommerce:pt-3 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-600"
                     }
                 }
             },
             "props": {
-                "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-600"
+                "className": "ecommerce:mt-4 ecommerce:pt-4 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-600"
             },
             "children": [
                 {
@@ -26,7 +26,7 @@
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "flex items-center gap-2 cursor-pointer"
+                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:cursor-pointer"
                     },
                     "children": [
                         {
@@ -53,14 +53,14 @@
                                 "type": "checkbox",
                                 "name": "cash_receipt_requested",
                                 "checked": "{{!!_local.cashReceiptRequested && !!_local.checkoutExtraPayload?.cash_receipt_requested}}",
-                                "className": "w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                                "className": "ecommerce:w-4 ecommerce:h-4 ecommerce:rounded ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-blue-600 ecommerce:focus:ring-blue-500"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                "className": "ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-ecommerce.checkout.cash_receipt.request"
                         }
@@ -73,7 +73,7 @@
                     "name": "Div",
                     "if": "{{!!_local.cashReceiptRequested && !!_local.checkoutExtraPayload?.cash_receipt_requested}}",
                     "props": {
-                        "className": "mt-3 space-y-3"
+                        "className": "ecommerce:mt-3 ecommerce:space-y-3"
                     },
                     "children": [
                         {
@@ -85,7 +85,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mb-1"
                                     },
                                     "text": "$t:sirsoft-ecommerce.checkout.cash_receipt.purpose"
                                 },
@@ -96,12 +96,12 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "flex flex-col gap-2"
+                                                "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                                             }
                                         }
                                     },
                                     "props": {
-                                        "className": "flex flex-row gap-4"
+                                        "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-4"
                                     },
                                     "children": [
                                         {
@@ -109,7 +109,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
+                                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                             },
                                             "children": [
                                                 {
@@ -134,7 +134,7 @@
                                                         "name": "cash_receipt_type",
                                                         "value": "income",
                                                         "checked": "{{(_local.cashReceiptType ?? 'income') === 'income'}}",
-                                                        "className": "w-4 h-4 border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                                                        "className": "ecommerce:w-4 ecommerce:h-4 ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-blue-600 ecommerce:focus:ring-blue-500"
                                                     }
                                                 },
                                                 {
@@ -149,7 +149,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
+                                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                             },
                                             "children": [
                                                 {
@@ -172,7 +172,7 @@
                                                         "name": "cash_receipt_type",
                                                         "value": "expense",
                                                         "checked": "{{_local.cashReceiptType === 'expense'}}",
-                                                        "className": "w-4 h-4 border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                                                        "className": "ecommerce:w-4 ecommerce:h-4 ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-blue-600 ecommerce:focus:ring-blue-500"
                                                     }
                                                 },
                                                 {
@@ -194,12 +194,12 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "grid grid-cols-1 gap-3"
+                                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-3"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "grid grid-cols-2 gap-3"
+                                "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-3"
                             },
                             "children": [
                                 {
@@ -210,7 +210,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
+                                                "className": "ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500 ecommerce:text-sm"
                                             }
                                         }
                                     },
@@ -232,7 +232,7 @@
                                         "name": "cash_receipt_identifier_type",
                                         "value": "{{_local.cashReceiptIdentifierType ?? 'phone'}}",
                                         "options": "{{(_local.cashReceiptType === 'expense' ? [{ value: 'business', label: $t('sirsoft-ecommerce.checkout.cash_receipt.identifier_business') }] : []).concat([{ value: 'phone', label: $t('sirsoft-ecommerce.checkout.cash_receipt.identifier_phone') }, { value: 'card', label: $t('sirsoft-ecommerce.checkout.cash_receipt.identifier_card') }])}}",
-                                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                        "className": "ecommerce:w-full ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500"
                                     }
                                 },
                                 {
@@ -242,7 +242,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "{{_local.errors?.cash_receipt_identifier ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"
+                                                "className": "{{_local.errors?.cash_receipt_identifier ? 'ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:border-2 ecommerce:border-red-500 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:focus:ring-2 ecommerce:focus:ring-red-500 ecommerce:text-sm' : 'ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500 ecommerce:text-sm'}}"
                                             }
                                         }
                                     },
@@ -264,7 +264,7 @@
                                         "aria-label": "$t:sirsoft-ecommerce.order.cash_receipt.identifier",
                                         "value": "{{_local.cashReceiptIdentifier ?? ''}}",
                                         "placeholder": "$t:sirsoft-ecommerce.checkout.cash_receipt.identifier_placeholder",
-                                        "className": "{{_local.errors?.cash_receipt_identifier ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}"
+                                        "className": "{{_local.errors?.cash_receipt_identifier ? 'ecommerce:w-full ecommerce:px-4 ecommerce:py-2 ecommerce:border-2 ecommerce:border-red-500 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:focus:ring-2 ecommerce:focus:ring-red-500' : 'ecommerce:w-full ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500'}}"
                                     }
                                 }
                             ]
@@ -275,7 +275,7 @@
                             "name": "Span",
                             "if": "{{!!_local.errors?.cash_receipt_identifier}}",
                             "props": {
-                                "className": "block text-red-600 dark:text-red-300 text-xs"
+                                "className": "ecommerce:block ecommerce:text-red-600 ecommerce:dark:text-red-300 ecommerce:text-xs"
                             },
                             "text": "{{_local.errors?.cash_receipt_identifier?.[0] ?? ''}}"
                         },
@@ -283,7 +283,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-ecommerce.checkout.cash_receipt.purpose_help"
                         },
@@ -291,7 +291,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-ecommerce.checkout.cash_receipt.immutable_help"
                         }

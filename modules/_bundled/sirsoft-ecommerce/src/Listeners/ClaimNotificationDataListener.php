@@ -7,6 +7,8 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Helpers\TimezoneHelper;
 use App\Services\NotificationRecipientCapability;
+use App\Support\ScreenUrl;
+use App\Support\SiteUrl;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Listeners\Concerns\ResolvesClaimIdentity;
@@ -18,6 +20,8 @@ use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimTrackingGroups;
 use Modules\Sirsoft\Ecommerce\Support\ClaimUrl;
+use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 use Modules\Sirsoft\Ecommerce\Support\RefundBreakdown;
 
 /**
@@ -125,7 +129,7 @@ class ClaimNotificationDataListener implements HookListenerInterface
      * 훅 이벤트를 처리합니다. (필터 매핑을 사용하므로 미사용)
      *
      * @param  mixed  ...$args  훅 인수
-     * @return void
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -208,7 +212,7 @@ class ClaimNotificationDataListener implements HookListenerInterface
     }
 
     /**
-     * 수신자가 운영자면 클레임 링크를 관리자 화면 주소로 올립니다.
+     * 수신자가 운영자면 클레임 링크를 관리자 화면 주소로, 사이트 링크를 사이트 주소로 올립니다.
      *
      * **유형 이름으로 관리자 여부를 판정하지 않습니다.** 운영자는 관리자 화면에서 어떤
      * 알림의 수신자든 바꿀 수 있어(`claim_withdrawn` 을 `trigger_user` 로 바꾸는 등),
@@ -240,9 +244,13 @@ class ClaimNotificationDataListener implements HookListenerInterface
             return $data;
         }
 
+        // 운영자에게 가는 알림의 사이트 주소는 관리자 화면 기준(사이트 주소)이다 — 회원 기본값은 사용자 화면 URL(주문 알림과 같다).
+        $data['site_url'] = SiteUrl::forOutboundLinks();
+
         $claimNumber = (string) ($context['claim_number'] ?? '');
-        $data['claim_url'] = (string) config('app.url')
-            .($claimNumber === '' ? ClaimUrl::ADMIN_LIST : ClaimUrl::adminDetail($claimNumber));
+        $data['claim_url'] = $claimNumber === ''
+            ? ScreenUrl::toAbsoluteForLinks(EcommerceScreenUrl::admin('ecommerce.admin.claims', ClaimUrl::ADMIN_LIST), ScreenUrl::SCOPE_ADMIN)
+            : ScreenUrl::toAbsoluteForLinks(ClaimUrl::adminDetail($claimNumber), ScreenUrl::SCOPE_ADMIN);
 
         return $data;
     }
@@ -293,7 +301,6 @@ class ClaimNotificationDataListener implements HookListenerInterface
         $claim->loadMissing(['order']);
 
         $order = $claim->order;
-        $baseUrl = (string) config('app.url');
         $type = $this->claimTypeOf($claim);
         $claimNumber = (string) ($this->claimNumberOf($claim) ?? '');
         $isGuest = $claim->isGuestRequest();
@@ -316,8 +323,8 @@ class ClaimNotificationDataListener implements HookListenerInterface
             'requester_name' => $this->resolveRequesterName($claim, $order),
             // 기본값은 **가장 안전한 쪽**(고객 링크)이다. 운영자에게 보낼 관리자 주소는
             // 수신자가 정해진 뒤 personalize 가 올린다.
-            'claim_url' => $baseUrl.$this->resolveClaimPath($claimNumber, $isGuest),
-            'site_url' => $baseUrl,
+            'claim_url' => ScreenUrl::toAbsoluteForLinks($this->resolveClaimPath($claimNumber, $isGuest)),
+            'site_url' => ScreenUrl::userLinkBase(),
         ], $this->buildAmountData($claim, $order, $snapshot), $this->buildShippingData($claim));
     }
 
@@ -331,7 +338,7 @@ class ClaimNotificationDataListener implements HookListenerInterface
     private function resolveClaimPath(string $claimNumber, bool $isGuest): string
     {
         if ($claimNumber === '') {
-            return $isGuest ? ClaimUrl::guestLookup() : ClaimUrl::MEMBER_LIST;
+            return $isGuest ? ClaimUrl::guestLookup() : ClaimUrl::memberList();
         }
 
         return $isGuest ? ClaimUrl::guestLookup() : ClaimUrl::memberDetail($claimNumber);
@@ -476,7 +483,7 @@ class ClaimNotificationDataListener implements HookListenerInterface
     /**
      * 신청자 표시 이름을 반환합니다.
      *
-     * 회원은 계정 이름, 비회원은 주문의 주문자명이다.
+     * 회원은 알림 영역의 표시 이름(회원 이름을 직접 읽지 않는다), 비회원은 주문서에 적힌 주문자 이름이다.
      *
      * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
      * @param  Order|null  $order  주문
@@ -487,7 +494,7 @@ class ClaimNotificationDataListener implements HookListenerInterface
         if (! $claim->isGuestRequest()) {
             $claim->loadMissing('requestedByUser');
 
-            $name = $claim->requestedByUser?->name;
+            $name = MemberDisplayName::name($claim->requestedByUser, MemberDisplayName::AREA_NOTIFICATION);
 
             if ($name !== null && $name !== '') {
                 return $name;

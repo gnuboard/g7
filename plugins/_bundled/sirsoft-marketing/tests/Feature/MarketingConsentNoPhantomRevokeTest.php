@@ -137,11 +137,12 @@ class MarketingConsentNoPhantomRevokeTest extends PluginTestCase
     /**
      * 마이페이지 정보 수정 권한을 가진 일반 회원을 만듭니다.
      *
+     * @param  User|null  $user  권한을 줄 회원 (없으면 새로 만든다)
      * @return User 회원
      */
-    private function makeMember(): User
+    private function makeMember(?User $user = null): User
     {
-        $user = User::factory()->create();
+        $user ??= User::factory()->create();
         $role = Role::firstOrCreate(['identifier' => 'user'], ['name' => ['ko' => '회원', 'en' => 'User']]);
         foreach (['core.profile.read', 'core.profile.update'] as $identifier) {
             $permission = Permission::firstOrCreate(
@@ -153,6 +154,29 @@ class MarketingConsentNoPhantomRevokeTest extends PluginTestCase
         $user->roles()->syncWithoutDetaching([$role->id]);
 
         return $user;
+    }
+
+    /**
+     * 가입 화면이 보내는 옛 키(agree_ 접두)로 가입 요청을 보내고 만들어진 회원을 반환합니다.
+     *
+     * @param  array<string, bool>  $consents  동의 칸 (agree_ 접두 키 => 값)
+     * @return User 가입한 회원
+     */
+    private function registerMember(array $consents): User
+    {
+        $email = 'phantom-revoke-'.uniqid().'@example.com';
+
+        $this->postJson('/api/auth/register', [
+            'name' => 'Phantom Revoke',
+            'email' => $email,
+            'password' => 'Gx7!quietRiver42',
+            'password_confirmation' => 'Gx7!quietRiver42',
+            'agree_terms' => true,
+            'agree_privacy' => true,
+            ...$consents,
+        ])->assertSuccessful();
+
+        return User::where('email', $email)->firstOrFail();
     }
 
     /**
@@ -264,7 +288,7 @@ class MarketingConsentNoPhantomRevokeTest extends PluginTestCase
     /**
      * 동의 칸을 끈 채 가입하면 동의 기록이 생기지 않는다. (실패-먼저)
      *
-     * 코어는 검증된 가입 데이터를 `core.auth.after_register` 의 `registration_data` 로 넘긴다 — 그 훅을 그대로 발화한다.
+     * 가입 화면이 보내던 옛 키(agree_ 접두)로 가입 요청을 보낸다 — 코어가 정식 키로 옮겨 회원 항목 저장소 어댑터로 넘긴다.
      *
      * @scenario case=register
      *
@@ -274,11 +298,7 @@ class MarketingConsentNoPhantomRevokeTest extends PluginTestCase
      */
     public function test_register_with_unchecked_boxes_records_nothing(): void
     {
-        $user = User::factory()->create();
-
-        HookManager::doAction('core.auth.after_register', $user, [
-            'registration_data' => ['email' => $user->email, ...$this->allConsents(false, 'agree_')],
-        ]);
+        $user = $this->registerMember($this->allConsents(false, 'agree_'));
 
         $this->assertNothingRecorded($user->id, '가입');
     }
@@ -297,16 +317,12 @@ class MarketingConsentNoPhantomRevokeTest extends PluginTestCase
      */
     public function test_untouched_profile_save_after_register_keeps_register_history_only(): void
     {
-        $member = $this->makeMember();
         $consents = [...$this->allConsents(false), 'third_party_consent' => true];
 
-        HookManager::doAction('core.auth.after_register', $member, [
-            'registration_data' => [
-                'email' => $member->email,
-                ...$this->allConsents(false, 'agree_'),
-                'agree_third_party_consent' => true,
-            ],
-        ]);
+        $member = $this->makeMember($this->registerMember([
+            ...$this->allConsents(false, 'agree_'),
+            'agree_third_party_consent' => true,
+        ]));
         $grantedAt = MarketingConsent::where('user_id', $member->id)->where('consent_key', 'third_party_consent')->value('consented_at');
 
         $this->travel(5)->minutes();

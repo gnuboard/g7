@@ -2,22 +2,26 @@
  * BottomSheet 컴포넌트 테스트
  *
  * @description 화면 아래에서 올라오는 시트가 닫혀 있을 때 DOM 에 없고, 열리면 대화 상자로 동작하는지
- *   (닫기 세 갈래·초점 이동·복귀·가둠·본문 스크롤 잠금) 잠근다.
+ *   (닫기 세 갈래·초점 이동·복귀·가둠·본문 스크롤 잠금) 잠근다. 좁은 화면 전용이며, 좁은지 넓은지는 창 폭(CSS 미디어)이
+ *   아니라 엔진 폭(`G7Core.useResponsive().width`, 편집기 미리보기에서는 기기 폭)으로 가른다 — 경계는 Tailwind md(768px)와 같다.
  *
  * @scenario-manifest tests/scenarios/shop-mobile-buy-bar.yaml
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { act, fireEvent, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BottomSheet } from '../BottomSheet';
 
 describe('BottomSheet', () => {
   let originalG7Core: any;
+  /** 엔진 폭(G7Core.useResponsive().width) — 기본은 좁은 화면, 넓은 화면 시험만 바꾼다 */
+  let viewportWidth = 375;
 
   beforeEach(() => {
     originalG7Core = (window as any).G7Core;
-    (window as any).G7Core = { ...originalG7Core, t: (k: string) => k };
+    viewportWidth = 375;
+    (window as any).G7Core = { ...originalG7Core, t: (k: string) => k, useResponsive: () => ({ width: viewportWidth }) };
   });
 
   afterEach(() => {
@@ -58,8 +62,8 @@ describe('BottomSheet', () => {
     expect(el.className).toContain('rounded-t-2xl');
     expect(el.className).toContain('max-h-[85vh]');
     const root = document.querySelector('[data-bottom-sheet]') as HTMLElement;
-    expect(root.className).toContain('md:hidden');
-    expect(root.className).toContain('z-40');
+    expect(root.className.split(/\s+/)).toEqual(expect.arrayContaining(['fixed', 'inset-0', 'z-40']));
+    expect(root.className.split(/\s+/)).not.toContain('hidden');
     // 움직임을 줄이라는 설정이면 미끄럼 없이
     expect(el.className).toContain('motion-reduce:animate-none');
   });
@@ -173,5 +177,33 @@ describe('BottomSheet', () => {
     );
     unmount();
     expect(document.body.classList.contains('g7-bottom-sheet-open')).toBe(false);
+  });
+
+  // @scenario case=c08
+  // @effects sheet_is_modal_dialog_on_narrow_screens
+  it('넓은 화면(768px 이상)에서는 열려 있어도 숨고 본문을 잠그지 않으며, 좁아지면 그때 보이고 잠근다', () => {
+    const sheet = (
+      <BottomSheet open title="옵션 선택">
+        <button type="button">안쪽</button>
+      </BottomSheet>
+    );
+    viewportWidth = 768;
+    const { rerender } = render(sheet);
+    const root = () => document.querySelector('[data-bottom-sheet]') as HTMLElement;
+
+    expect(root().className.split(/\s+/)).toContain('hidden');
+    expect(root().className).not.toMatch(/(^|\s)(sm|md|lg|xl|2xl):/);
+    expect(document.body.classList.contains('g7-bottom-sheet-open')).toBe(false);
+    expect(document.activeElement).toBe(document.body);
+
+    viewportWidth = 767;
+    rerender(
+      <BottomSheet open title="옵션 선택">
+        <button type="button">안쪽</button>
+      </BottomSheet>,
+    );
+    expect(root().className.split(/\s+/)).not.toContain('hidden');
+    expect(document.body.classList.contains('g7-bottom-sheet-open')).toBe(true);
+    expect(document.querySelector('[role="dialog"]')!.contains(document.activeElement)).toBe(true);
   });
 });

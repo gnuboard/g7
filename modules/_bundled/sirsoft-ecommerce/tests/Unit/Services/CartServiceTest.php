@@ -44,6 +44,13 @@ class CartServiceTest extends ModuleTestCase
 
     protected $mockProductRepository;
 
+    /**
+     * 큐를 가짜로 돌리고 리포지토리와 계산 서비스를 목으로 주입한 장바구니 서비스를 만듭니다.
+     *
+     * 판매상태와 구매수량 검증이 쓰는 조회는 DB 에 저장된 상품과 옵션을 그대로 읽는 기본 스텁으로 둡니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -102,10 +109,18 @@ class CartServiceTest extends ModuleTestCase
             ->byDefault();
     }
 
+    /**
+     * Mockery 기대치를 검증하고 닫은 뒤 부모 정리를 실행합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**
@@ -114,6 +129,7 @@ class CartServiceTest extends ModuleTestCase
      * @param  object  $object  대상 객체
      * @param  string  $methodName  메서드 이름
      * @param  array  $args  메서드 인자
+     * @return mixed 호출한 메서드의 반환값
      */
     protected function invokePrivateMethod(object $object, string $methodName, array $args = []): mixed
     {
@@ -127,6 +143,7 @@ class CartServiceTest extends ModuleTestCase
      * CartService의 addToCart private 메서드를 호출합니다.
      *
      * @param  array  $data  장바구니 데이터
+     * @return Cart 담긴 장바구니 항목
      */
     protected function callAddToCart(array $data): Cart
     {
@@ -137,6 +154,15 @@ class CartServiceTest extends ModuleTestCase
     // issueCartKey() 테스트
     // ========================================
 
+    /**
+     * 발급한 장바구니 키가 ck_ 로 시작하는 35자인지 확인
+     *
+     * @scenario area=cart_key
+     *
+     * @effects cart_key_has_prefix_and_fixed_length
+     *
+     * @return void 반환값 없음
+     */
     public function test_issue_cart_key_returns_valid_key(): void
     {
         // Given: 중복 키 없음
@@ -153,6 +179,15 @@ class CartServiceTest extends ModuleTestCase
         $this->assertEquals(35, strlen($cartKey)); // 'ck_' + 32자 = 35자
     }
 
+    /**
+     * 두 번 발급한 장바구니 키가 서로 다른지 확인
+     *
+     * @scenario area=cart_key
+     *
+     * @effects cart_key_differs_per_issue
+     *
+     * @return void 반환값 없음
+     */
     public function test_issue_cart_key_returns_unique_keys(): void
     {
         // Given: 중복 키 없음
@@ -169,6 +204,15 @@ class CartServiceTest extends ModuleTestCase
         $this->assertNotEquals($key1, $key2);
     }
 
+    /**
+     * 처음 만든 키가 이미 쓰이고 있으면 다시 만들어 유효한 키를 돌려주는지 확인
+     *
+     * @scenario area=cart_key
+     *
+     * @effects cart_key_reissued_on_duplicate
+     *
+     * @return void 반환값 없음
+     */
     public function test_issue_cart_key_regenerates_on_duplicate(): void
     {
         // Given: 첫 번째 키는 중복, 두 번째 키는 유일
@@ -188,6 +232,15 @@ class CartServiceTest extends ModuleTestCase
     // getCart() 테스트
     // ========================================
 
+    /**
+     * 회원 ID 로 조회하면 그 회원의 장바구니 항목을 돌려주는지 확인
+     *
+     * @scenario area=read
+     *
+     * @effects cart_read_by_member_id
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_cart_returns_items_for_user(): void
     {
         // Given
@@ -211,6 +264,15 @@ class CartServiceTest extends ModuleTestCase
         $this->assertEquals($cart->id, $result->first()->id);
     }
 
+    /**
+     * 장바구니 키로 조회하면 비회원 장바구니 항목을 돌려주는지 확인
+     *
+     * @scenario area=read
+     *
+     * @effects cart_read_by_guest_cart_key
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_cart_returns_items_for_guest(): void
     {
         // Given
@@ -234,6 +296,15 @@ class CartServiceTest extends ModuleTestCase
         $this->assertEquals($cartKey, $result->first()->cart_key);
     }
 
+    /**
+     * 회원 ID 와 장바구니 키가 모두 없으면 빈 컬렉션을 돌려주는지 확인
+     *
+     * @scenario area=read
+     *
+     * @effects cart_read_empty_without_identity
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_cart_returns_empty_collection_without_credentials(): void
     {
         // When
@@ -248,6 +319,15 @@ class CartServiceTest extends ModuleTestCase
     // getCartWithCalculation() 테스트
     // ========================================
 
+    /**
+     * 회원 장바구니 조회가 항목과 계산 결과(최종 금액)를 함께 돌려주는지 확인
+     *
+     * @scenario area=calculation
+     *
+     * @effects cart_calculation_returns_items_and_summary
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_cart_with_calculation_returns_items_and_calculation(): void
     {
         // Given
@@ -300,6 +380,15 @@ class CartServiceTest extends ModuleTestCase
         $this->assertEquals(33000, $result->calculation->summary->finalAmount);
     }
 
+    /**
+     * 장바구니 키로 조회한 비회원 장바구니도 계산 결과를 함께 돌려주는지 확인
+     *
+     * @scenario area=calculation
+     *
+     * @effects cart_calculation_for_guest_cart_key
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_cart_with_calculation_for_guest(): void
     {
         // Given
@@ -349,6 +438,15 @@ class CartServiceTest extends ModuleTestCase
         $this->assertEquals(18000, $result->calculation->summary->finalAmount);
     }
 
+    /**
+     * 빈 장바구니는 계산 서비스를 부르지 않고 금액 0 의 빈 결과를 돌려주는지 확인
+     *
+     * @scenario area=calculation
+     *
+     * @effects cart_calculation_skipped_for_empty_cart
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_cart_with_calculation_returns_empty_for_empty_cart(): void
     {
         // Given
@@ -376,6 +474,15 @@ class CartServiceTest extends ModuleTestCase
         $this->assertEquals(0, $result->calculation->summary->finalAmount);
     }
 
+    /**
+     * 넘겨받은 쿠폰 발급 ID 와 사용 마일리지가 계산 입력에 그대로 실리는지 확인
+     *
+     * @scenario area=calculation
+     *
+     * @effects cart_calculation_receives_coupons_and_points
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_cart_with_calculation_passes_coupons_and_points(): void
     {
         // Given
@@ -436,6 +543,15 @@ class CartServiceTest extends ModuleTestCase
     // addToCart() 테스트
     // ========================================
 
+    /**
+     * 같은 옵션이 없는 회원 장바구니에 담으면 새 항목이 만들어지는지 확인
+     *
+     * @scenario area=add
+     *
+     * @effects cart_add_creates_line_for_member
+     *
+     * @return void 반환값 없음
+     */
     public function test_add_to_cart_creates_new_item(): void
     {
         // Given
@@ -479,6 +595,15 @@ class CartServiceTest extends ModuleTestCase
         $this->assertEquals($option->id, $result->product_option_id);
     }
 
+    /**
+     * 이미 담긴 옵션을 다시 담으면 기존 항목 수량에 더해지는지 확인(2 + 3 = 5)
+     *
+     * @scenario area=add
+     *
+     * @effects cart_add_sums_quantity_on_same_option
+     *
+     * @return void 반환값 없음
+     */
     public function test_add_to_cart_increases_quantity_for_existing_item(): void
     {
         // Given
@@ -524,6 +649,15 @@ class CartServiceTest extends ModuleTestCase
         $this->assertEquals(5, $result->quantity);
     }
 
+    /**
+     * 장바구니 키만 있는 비회원이 담으면 그 키로 새 항목이 만들어지는지 확인
+     *
+     * @scenario area=add
+     *
+     * @effects cart_add_creates_line_for_guest
+     *
+     * @return void 반환값 없음
+     */
     public function test_add_to_cart_for_guest(): void
     {
         // Given
@@ -570,6 +704,15 @@ class CartServiceTest extends ModuleTestCase
     // updateQuantity() 테스트
     // ========================================
 
+    /**
+     * 본인 장바구니 항목의 수량을 바꾸면 바뀐 수량의 항목을 돌려주는지 확인
+     *
+     * @scenario area=update_quantity
+     *
+     * @effects cart_quantity_updated
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_quantity_updates_quantity(): void
     {
         // Given
@@ -608,6 +751,15 @@ class CartServiceTest extends ModuleTestCase
         $this->assertEquals(5, $result->quantity);
     }
 
+    /**
+     * 없는 장바구니 항목의 수량을 바꾸려 하면 예외가 나는지 확인
+     *
+     * @scenario area=update_quantity
+     *
+     * @effects cart_quantity_update_rejects_missing_line
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_quantity_throws_exception_for_not_found(): void
     {
         // Given
@@ -624,6 +776,15 @@ class CartServiceTest extends ModuleTestCase
         $this->service->updateQuantity(99999, 5, 1, null);
     }
 
+    /**
+     * 다른 회원의 장바구니 항목 수량을 바꾸려 하면 예외가 나는지 확인
+     *
+     * @scenario area=update_quantity
+     *
+     * @effects cart_quantity_update_rejects_other_owner
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_quantity_throws_exception_for_unauthorized(): void
     {
         // Given
@@ -650,6 +811,15 @@ class CartServiceTest extends ModuleTestCase
     // deleteItem() 테스트
     // ========================================
 
+    /**
+     * 본인 장바구니 항목 하나를 지우면 true 를 돌려주는지 확인
+     *
+     * @scenario area=delete
+     *
+     * @effects cart_line_deleted_by_owner
+     *
+     * @return void 반환값 없음
+     */
     public function test_delete_item_deletes_cart_item(): void
     {
         // Given
@@ -681,6 +851,15 @@ class CartServiceTest extends ModuleTestCase
     // deleteItems() 테스트
     // ========================================
 
+    /**
+     * 본인 장바구니 항목 여러 개를 한 번에 지우면 지운 개수를 돌려주는지 확인
+     *
+     * @scenario area=delete
+     *
+     * @effects cart_lines_bulk_deleted
+     *
+     * @return void 반환값 없음
+     */
     public function test_delete_items_deletes_multiple_items(): void
     {
         // Given
@@ -716,6 +895,15 @@ class CartServiceTest extends ModuleTestCase
     // mergeGuestCartToUser() 테스트
     // ========================================
 
+    /**
+     * 회원 장바구니에 없는 옵션의 비회원 항목은 회원에게 옮겨지고 처리 건수 1 을 돌려주는지 확인
+     *
+     * @scenario area=guest_merge
+     *
+     * @effects guest_merge_moves_line_to_member
+     *
+     * @return void 반환값 없음
+     */
     public function test_merge_guest_cart_to_user_merges_items(): void
     {
         // Given
@@ -760,6 +948,15 @@ class CartServiceTest extends ModuleTestCase
         $this->assertEquals(1, $result);
     }
 
+    /**
+     * 회원 장바구니에 같은 옵션이 있으면 수량을 합치고 비회원 항목을 지우는지 확인
+     *
+     * @scenario area=guest_merge
+     *
+     * @effects guest_merge_sums_same_option_and_removes_guest_line
+     *
+     * @return void 반환값 없음
+     */
     public function test_merge_guest_cart_combines_quantities_for_same_option(): void
     {
         // Given
@@ -822,6 +1019,15 @@ class CartServiceTest extends ModuleTestCase
     // getItemCount() 테스트
     // ========================================
 
+    /**
+     * 장바구니 항목 수 조회가 리포지토리가 센 값을 그대로 돌려주는지 확인
+     *
+     * @scenario area=read
+     *
+     * @effects cart_item_count_passthrough
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_item_count_returns_count(): void
     {
         // Given
@@ -849,6 +1055,12 @@ class CartServiceTest extends ModuleTestCase
      *
      * 입력: 상품A-옵션1 존재, 상품A-옵션2 담기
      * 기대: 별도 Cart 레코드 생성 (총 2개)
+     *
+     * @scenario area=add
+     *
+     * @effects cart_add_keeps_separate_line_per_option
+     *
+     * @return void 반환값 없음
      */
     public function test_add_to_cart_creates_separate_record_for_different_option(): void
     {
@@ -917,6 +1129,12 @@ class CartServiceTest extends ModuleTestCase
      *
      * 입력: PUT /cart/{id}, product_option_id: 새옵션, quantity: 기존
      * 기대: 옵션 ID 업데이트
+     *
+     * @scenario area=change_option
+     *
+     * @effects cart_option_changed_keeping_quantity
+     *
+     * @return void 반환값 없음
      */
     public function test_change_option_updates_option_only(): void
     {
@@ -976,6 +1194,12 @@ class CartServiceTest extends ModuleTestCase
      *
      * 입력: PUT /cart/{id}, product_option_id: 새옵션, quantity: 3
      * 기대: 옵션+수량 모두 업데이트
+     *
+     * @scenario area=change_option
+     *
+     * @effects cart_option_and_quantity_changed_together
+     *
+     * @return void 반환값 없음
      */
     public function test_change_option_updates_option_and_quantity(): void
     {
@@ -1039,6 +1263,12 @@ class CartServiceTest extends ModuleTestCase
      *
      * 참고: changeOption에서 existingItem->fresh()를 호출하여 최신 데이터를 반환하므로
      *       update 호출 시 반환되는 객체의 quantity가 5인지 확인합니다.
+     *
+     * @scenario area=change_option
+     *
+     * @effects cart_option_change_merges_into_existing_line
+     *
+     * @return void 반환값 없음
      */
     public function test_change_option_merges_when_target_option_exists(): void
     {
@@ -1124,6 +1354,12 @@ class CartServiceTest extends ModuleTestCase
      *
      * 입력: 비회원: 옵션A 2개, 옵션B 1개 / 회원: 옵션A 3개, 옵션C 2개
      * 기대: 옵션A 5개, 옵션B 1개, 옵션C 2개
+     *
+     * @scenario area=guest_merge
+     *
+     * @effects guest_merge_handles_mixed_lines
+     *
+     * @return void 반환값 없음
      */
     public function test_merge_guest_cart_to_user_with_mixed_items(): void
     {
@@ -1230,6 +1466,12 @@ class CartServiceTest extends ModuleTestCase
      *
      * 빈 cart_key (빈 문자열)로 mergeGuestCartToUser 호출 시
      * 비회원 장바구니가 없으므로 병합 없이 0을 반환해야 합니다.
+     *
+     * @scenario area=guest_merge
+     *
+     * @effects guest_merge_skipped_without_guest_lines
+     *
+     * @return void 반환값 없음
      */
     public function test_merge_guest_cart_skips_when_cart_key_is_empty(): void
     {
@@ -1255,6 +1497,12 @@ class CartServiceTest extends ModuleTestCase
      *
      * 존재하지 않는 cart_key로 mergeGuestCartToUser 호출 시
      * 비회원 장바구니가 없으므로 병합 없이 0을 반환해야 합니다.
+     *
+     * @scenario area=guest_merge
+     *
+     * @effects guest_merge_skipped_without_guest_lines
+     *
+     * @return void 반환값 없음
      */
     public function test_merge_guest_cart_skips_when_cart_key_has_no_items(): void
     {
@@ -1283,6 +1531,12 @@ class CartServiceTest extends ModuleTestCase
      * 테스트 #83: 재고 초과 수량 담기 시도 → 예외
      *
      * 재고가 5개인 옵션에 10개를 담으려 하면 stock_exceeded 예외 발생
+     *
+     * @scenario area=stock
+     *
+     * @effects cart_add_rejects_quantity_over_stock
+     *
+     * @return void 반환값 없음
      */
     public function test_add_to_cart_throws_exception_when_stock_exceeded(): void
     {
@@ -1330,6 +1584,12 @@ class CartServiceTest extends ModuleTestCase
      *
      * 이미 장바구니에 3개 있고, 재고가 5개인 상태에서 5개 추가 시도 → 예외
      * (3 + 5 = 8 > 5)
+     *
+     * @scenario area=stock
+     *
+     * @effects cart_add_rejects_combined_quantity_over_stock
+     *
+     * @return void 반환값 없음
      */
     public function test_add_to_cart_throws_exception_when_combined_quantity_exceeds_stock(): void
     {
@@ -1380,6 +1640,12 @@ class CartServiceTest extends ModuleTestCase
      * 테스트 #88: 품절 상품 담기 시도 → 예외
      *
      * 재고가 0인 옵션을 담으려 하면 out_of_stock 예외 발생
+     *
+     * @scenario area=stock
+     *
+     * @effects cart_add_rejects_out_of_stock_option
+     *
+     * @return void 반환값 없음
      */
     public function test_add_to_cart_throws_exception_when_out_of_stock(): void
     {
@@ -1425,6 +1691,12 @@ class CartServiceTest extends ModuleTestCase
      * 테스트 #91: 재고 초과 수량 변경 시도 → 예외
      *
      * 재고 5개인 옵션의 수량을 10개로 변경 시도 → 예외
+     *
+     * @scenario area=stock
+     *
+     * @effects cart_quantity_update_rejects_quantity_over_stock
+     *
+     * @return void 반환값 없음
      */
     public function test_update_quantity_throws_exception_when_stock_exceeded(): void
     {
@@ -1469,6 +1741,12 @@ class CartServiceTest extends ModuleTestCase
      * 테스트 #95: 옵션 변경 후 재고 초과 → 예외
      *
      * 새 옵션의 재고가 5개인데 기존 수량이 7개 → 예외
+     *
+     * @scenario area=stock
+     *
+     * @effects cart_option_change_rejects_quantity_over_stock
+     *
+     * @return void 반환값 없음
      */
     public function test_change_option_throws_exception_when_stock_exceeded(): void
     {
@@ -1522,6 +1800,12 @@ class CartServiceTest extends ModuleTestCase
      * 테스트 #96: 다른 상품 옵션으로 변경 시도 → 예외
      *
      * 상품A의 옵션을 상품B의 옵션으로 변경 시도 → 예외
+     *
+     * @scenario area=change_option
+     *
+     * @effects cart_option_change_rejects_other_product_option
+     *
+     * @return void 반환값 없음
      */
     public function test_change_option_throws_exception_for_different_product(): void
     {
@@ -1568,6 +1852,12 @@ class CartServiceTest extends ModuleTestCase
      *
      * 비회원 장바구니 3개 + 회원 장바구니 4개 = 7개
      * 재고가 5개면 회원 장바구니 수량을 5개로 제한
+     *
+     * @scenario area=guest_merge
+     *
+     * @effects guest_merge_clamps_quantity_to_stock
+     *
+     * @return void 반환값 없음
      */
     public function test_merge_guest_cart_adjusts_quantity_when_stock_exceeded(): void
     {
@@ -1645,6 +1935,12 @@ class CartServiceTest extends ModuleTestCase
      * 테스트 #99-1: 회원 장바구니 전체 삭제
      *
      * 회원의 장바구니를 전체 삭제하면 해당 회원의 모든 아이템이 삭제됩니다.
+     *
+     * @scenario area=delete
+     *
+     * @effects cart_cleared_for_member
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_all_deletes_all_items_for_user(): void
     {
@@ -1668,6 +1964,12 @@ class CartServiceTest extends ModuleTestCase
      * 테스트 #99-2: 비회원 장바구니 전체 삭제
      *
      * 비회원의 장바구니를 전체 삭제하면 해당 cart_key의 모든 아이템이 삭제됩니다.
+     *
+     * @scenario area=delete
+     *
+     * @effects cart_cleared_for_guest_cart_key
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_all_deletes_all_items_for_guest(): void
     {
@@ -1691,6 +1993,12 @@ class CartServiceTest extends ModuleTestCase
      * 테스트 #99-3: 인증정보 없이 전체 삭제
      *
      * userId와 cartKey 모두 없으면 0을 반환합니다.
+     *
+     * @scenario area=delete
+     *
+     * @effects cart_clear_returns_zero_without_identity
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_all_returns_zero_without_credentials(): void
     {
@@ -1705,6 +2013,12 @@ class CartServiceTest extends ModuleTestCase
      * 테스트 #99-4: 빈 장바구니 전체 삭제
      *
      * 장바구니가 비어있을 때 전체 삭제 호출 시 0을 반환합니다.
+     *
+     * @scenario area=delete
+     *
+     * @effects cart_clear_returns_zero_for_empty_cart
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_all_returns_zero_for_empty_cart(): void
     {
@@ -1728,8 +2042,17 @@ class CartServiceTest extends ModuleTestCase
     // U13②/U4: 판매상태 담기 차단 테스트
     // ========================================
 
+    // 이 DataProvider 의 hidden 행 (docblock 은 @scenario 를 1건만 인식하므로 라인 주석으로 병기).
+    // @scenario sales_status=on_sale, display_status=hidden, entry_stage=add, actor=member
     /**
      * 판매중지 상품을 담으려 하면 CartUnavailableException(status) 이 발생합니다.
+     *
+     * @scenario sales_status=suspended, sales_status=sold_out, sales_status=coming_soon, display_status=visible, entry_stage=add, actor=member
+     *
+     * @effects add_blocks_suspended_product, add_blocks_sold_out_product, add_blocks_coming_soon_product, add_blocks_hidden_product
+     *
+     * @param  string  $factoryState  상품 팩토리의 판매상태 메서드 이름
+     * @return void 반환값 없음
      */
     #[DataProvider('unavailableSalesStateProvider')]
     public function test_add_to_cart_blocks_unavailable_product(string $factoryState): void
@@ -1759,6 +2082,12 @@ class CartServiceTest extends ModuleTestCase
 
     /**
      * 판매중(on_sale)+전시중(visible) 상품은 정상적으로 담깁니다 (회귀 가드).
+     *
+     * @scenario sales_status=on_sale, display_status=visible, entry_stage=add, actor=member
+     *
+     * @effects add_allows_purchasable_product
+     *
+     * @return void 반환값 없음
      */
     public function test_add_to_cart_allows_purchasable_product(): void
     {
@@ -1799,7 +2128,7 @@ class CartServiceTest extends ModuleTestCase
     /**
      * 판매중지/품절/출시예정/전시중지 상태 데이터 제공자.
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 행 이름별 상품 팩토리 상태 메서드 이름
      */
     public static function unavailableSalesStateProvider(): array
     {
@@ -1817,6 +2146,12 @@ class CartServiceTest extends ModuleTestCase
 
     /**
      * 최소 구매수량 미만으로 담으면 CartUnavailableException(min_qty) 이 발생합니다.
+     *
+     * @scenario min_qty=multi, max_qty=zero, total_qty=below_min, entry=bulk_add, option_lines=single
+     *
+     * @effects bulk_add_blocks_below_min_qty
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_add_blocks_below_min_purchase_qty(): void
     {
@@ -1852,6 +2187,12 @@ class CartServiceTest extends ModuleTestCase
 
     /**
      * 최대 구매수량 초과(기존 장바구니 + 신규 합산)로 담으면 max_qty 차단됩니다.
+     *
+     * @scenario min_qty=one, max_qty=bounded, total_qty=above_max, entry=bulk_add, option_lines=single
+     *
+     * @effects bulk_add_blocks_above_max_with_existing
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_add_blocks_above_max_purchase_qty_with_existing_cart(): void
     {
@@ -1893,6 +2234,12 @@ class CartServiceTest extends ModuleTestCase
 
     /**
      * max_purchase_qty = 0 은 무제한 — 대량 담기도 통과합니다 (경계).
+     *
+     * @scenario min_qty=one, max_qty=zero, total_qty=mid, entry=bulk_add, option_lines=single
+     *
+     * @effects bulk_add_allows_unlimited_when_max_zero
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_add_allows_unlimited_when_max_qty_zero(): void
     {
@@ -1952,6 +2299,12 @@ class CartServiceTest extends ModuleTestCase
 
     /**
      * 재고 0 옵션 검증 → CartUnavailableException(reason stock) (수정 전엔 generic \Exception → 500).
+     *
+     * @scenario area=stock
+     *
+     * @effects stock_validation_out_of_stock_raises_stock_reason
+     *
+     * @return void 반환값 없음
      */
     public function test_validate_stock_out_of_stock_throws_cart_unavailable_stock(): void
     {
@@ -1971,6 +2324,12 @@ class CartServiceTest extends ModuleTestCase
 
     /**
      * 요청 수량 > 재고 → CartUnavailableException(reason stock) + 치환 메타(quantity/stock).
+     *
+     * @scenario area=stock
+     *
+     * @effects stock_validation_over_stock_carries_quantity_and_stock
+     *
+     * @return void 반환값 없음
      */
     public function test_validate_stock_exceeding_throws_cart_unavailable_with_meta(): void
     {
@@ -1992,6 +2351,12 @@ class CartServiceTest extends ModuleTestCase
 
     /**
      * 정상 재고 → 예외 없음 (회귀 보호).
+     *
+     * @scenario area=stock
+     *
+     * @effects stock_validation_passes_within_stock
+     *
+     * @return void 반환값 없음
      */
     public function test_validate_stock_within_stock_does_not_throw(): void
     {

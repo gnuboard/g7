@@ -7,6 +7,7 @@ use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 인스톨러 .env 값 직렬화 테스트 (KVE-2026-2042).
@@ -25,6 +26,8 @@ use PHPUnit\Framework\TestCase;
  */
 class EnvValueSerializationTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     /**
      * 정책 파일만 단독으로 로드한다.
      *
@@ -40,7 +43,7 @@ class EnvValueSerializationTest extends TestCase
      *
      * @scenario case=normal_value
      *
-     * @effects value_quoted
+     * @effects value_quoted, serializeEnvValue_wraps_normal_value_in_quotes
      *
      * @return void 반환값 없음
      */
@@ -56,7 +59,7 @@ class EnvValueSerializationTest extends TestCase
      *
      * @scenario case=empty_value
      *
-     * @effects value_quoted
+     * @effects value_quoted, serializeEnvValue_returns_empty_quotes_for_empty_value
      *
      * @return void 반환값 없음
      */
@@ -71,7 +74,7 @@ class EnvValueSerializationTest extends TestCase
      *
      * @scenario case=quote_backslash
      *
-     * @effects value_quoted
+     * @effects value_quoted, serializeEnvValue_escapes_quotes_and_backslashes
      *
      * @return void 반환값 없음
      */
@@ -90,7 +93,7 @@ class EnvValueSerializationTest extends TestCase
      *
      * @scenario case=line_break
      *
-     * @effects value_rejected
+     * @effects value_rejected, serializeEnvValue_rejects_line_breaks_and_nul
      *
      * @return void 반환값 없음
      */
@@ -105,6 +108,8 @@ class EnvValueSerializationTest extends TestCase
 
     /**
      * 개행 주입 벡터.
+     *
+     * LF, CR, CRLF, NUL 바이트, 선두 개행으로 새 환경변수 줄을 끼워 넣으려는 값을 모은다.
      *
      * @return array<string, array{0: string, 1: string}> 사례명 → [주입 시도 값, 거부 사유]
      */
@@ -124,7 +129,7 @@ class EnvValueSerializationTest extends TestCase
      *
      * @scenario case=line_break_in_quotes
      *
-     * @effects value_rejected
+     * @effects value_rejected, serializeEnvValue_rejects_line_break_hidden_inside_quotes
      *
      * @return void 반환값 없음
      */
@@ -149,7 +154,7 @@ class EnvValueSerializationTest extends TestCase
      *
      * @scenario case=legacy_alias
      *
-     * @effects alias_delegates_to_gate
+     * @effects alias_delegates_to_gate, escapeEnvValue_aliases_delegate_to_serializeEnvValue
      *
      * @return void 반환값 없음
      */
@@ -164,7 +169,7 @@ class EnvValueSerializationTest extends TestCase
         ];
 
         foreach ($definitions as $label => $path) {
-            $source = (string) file_get_contents($path);
+            $source = $this->sourceWithoutComments($path);
 
             $this->assertMatchesRegularExpression(
                 '/function escapeEnvValue\(string \$value\): string\s*\{[^}]*return serializeEnvValue\(\$value\);/s',
@@ -229,9 +234,11 @@ class EnvValueSerializationTest extends TestCase
     /**
      * 개행이 없는 값은 검사기가 통과시킨다.
      *
+     * URL 과 빈 값은 한 줄로 판정하고, LF, CR, NUL 이 섞인 값은 한 줄이 아니라고 판정하는지 함께 확인한다.
+     *
      * @scenario case=single_line_check
      *
-     * @effects value_rejected
+     * @effects value_rejected, env_value_single_line_checker_flags_line_breaks_and_nul
      *
      * @return void 반환값 없음
      */

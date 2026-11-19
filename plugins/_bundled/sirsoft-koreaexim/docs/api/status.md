@@ -44,7 +44,7 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- | --- |
 | managed_codes | array | `["USD","JPY","CNY","EUR"]` | 활성 제공자가 관리하는 통화 코드 목록 |
 | unsupported_codes | array | `[]` | 응답에 없거나 유효한 환율을 계산할 수 없는 통화 코드 목록 |
-| notice_key | null | `null` | 자동 관리 비활성 사유 번역 키; 정상 관리 시 null |
+| notice_key | string | `auth_key_required` | 자동 관리 비활성 사유 번역 키; 정상 관리 시 null |
 | last_updated_at | string | `2026-09-14T14:02:15+09:00` | last updated 일시 |
 | last_updated_at_formatted | string | `2026-09-14 14:02:15` | `last_updated_at` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | auto_manage | boolean | `true` | 자동 관리 설정 활성 여부 |
@@ -55,8 +55,9 @@ _단건 응답: `data` 객체의 필드._
 | today_request_count | integer | `4` | today request 개수 (집계) |
 | quota_limit | integer | `1000` | 한국시간 하루 외부 요청 예산(1000회) |
 | next_run_at_kst | string | `2026-09-15 11:30 KST` | 다음 정기 실행 예정 시각(한국시간, 없으면 null) |
-| next_run_at | string | `2026-09-15 11:30` | next run 일시 |
-| update_time_site | string | `11:30` | 오늘의 한국시간 갱신 시각을 사이트 시간대로 변환한 HH:mm 문자열 |
+| next_run_at | string | `2026-09-15 11:30` | 다음 정기 실행 예정 시각(사이트 시간대). 자동 관리 꺼짐·실행 요일 없음·스케줄 비활성이면 null |
+| update_time_site | string | `11:30` | 일정상 다음 정기 갱신(스케줄 관리의 정기 갱신 행)의 사이트 시간대 HH:mm 문자열 — 실행 요일·자동 관리와 무관 |
+| schedule | object | `{"id":42,"name":"update-rates","expression":"30 11 * * *","timezone":"Asia/Seoul","is_active":true}` | 정기 갱신 스케줄 행 요약(설정 화면의 「스케줄 관리에서 변경」 링크용). 행이 없으면 null |
 | scheduler_hint | string | `서버 스케줄러가 필요합니다. 미가동 환경에서는 지금 갱신을 사용하세요.` | 서버 스케줄러 가동이 필요함을 알리는 운영 안내 |
 | abilities | object | `{"can_manage":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -128,6 +129,14 @@ HTTP/1.1 200
         "quota_limit": 1000,
         "next_run_at_kst": "2026-09-15 11:30 KST",
         "next_run_at": "2026-09-15 11:30",
+        "update_time_site": "11:30",
+        "schedule": {
+            "id": 42,
+            "name": "update-rates",
+            "expression": "30 11 * * *",
+            "timezone": "Asia/Seoul",
+            "is_active": true
+        },
         "scheduler_hint": "서버 스케줄러가 필요합니다. 미가동 환경에서는 지금 갱신을 사용하세요.",
         "abilities": {
             "can_manage": true

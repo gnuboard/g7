@@ -8,7 +8,6 @@
         "data": {
           "auth_key": "••••••••",
           "auto_manage": false,
-          "update_time": "11:30",
           "run_days": [
             1,
             2,
@@ -59,6 +58,13 @@
           "next_run_at": "2026-09-22 02:30:00",
           "next_run_at_kst": "2026-09-22 11:30:00",
           "update_time_site": "11:30",
+          "schedule": {
+            "id": 12,
+            "name": "update-rates",
+            "expression": "30 11 * * *",
+            "timezone": "Asia/Seoul",
+            "is_active": true
+          },
           "scheduler_hint": "자동 실행에는 서버 스케줄러가 필요합니다.",
           "abilities": {
             "can_manage": true
@@ -356,7 +362,6 @@
                 "form": {
                   "auth_key": "",
                   "auto_manage": true,
-                  "update_time": "11:30",
                   "run_days": [
                     1,
                     2,
@@ -442,9 +447,6 @@
               "_local.errors.auth_key": [
                 "인증키를 입력해 주세요."
               ],
-              "_local.errors.update_time": [
-                "HH:MM 형식으로 입력해 주세요."
-              ],
               "_local.errors.retry_max": [
                 "0 이상 10 이하의 값을 입력해 주세요."
               ]
@@ -479,6 +481,13 @@
                     "next_run_at": null,
                     "next_run_at_kst": null,
                     "update_time_site": "11:30",
+                    "schedule": {
+                      "id": 12,
+                      "name": "update-rates",
+                      "expression": "30 11 * * *",
+                      "timezone": "Asia/Seoul",
+                      "is_active": true
+                    },
                     "scheduler_hint": "자동 실행에는 서버 스케줄러가 필요합니다.",
                     "abilities": {
                       "can_manage": false
@@ -593,7 +602,8 @@
                   "preview": {
                     "subject": "",
                     "body": ""
-                  }
+                  },
+                  "warnings": []
                 }
               }
             }
@@ -655,7 +665,8 @@
                   "preview": {
                     "subject": "",
                     "body": ""
-                  }
+                  },
+                  "warnings": []
                 }
               }
             }

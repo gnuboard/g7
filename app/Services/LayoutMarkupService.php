@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Http\Resources\LayoutResource;
 use App\Rules\LayoutContentGate;
 use App\Support\LayoutMarkup\CompileError;
@@ -66,6 +67,7 @@ class LayoutMarkupService
 
     /**
      * 설치된 모듈·플러그인 전부(활성 여부 무관)의 컴포넌트 매니페스트를 돌려줍니다 (요청 단위 캐시).
+     * 템플릿이 공급한 설정 화면 부품 매니페스트(`components.settings.json`, #434)도 확장 매니페스트로 함께 싣는다.
      *
      * 편집 대상 템플릿의 검사 목록에 확장 컴포넌트(`식별자.이름`)를 싣기 위한 것이다 — 활성 여부로 거르면
      * 편집 도중 확장을 끈 순간 그 레이아웃을 다시 저장할 수 없게 된다(2026-09-28 결정). 설치 목록은
@@ -83,6 +85,7 @@ class LayoutMarkupService
         try {
             $modules = ($this->modules ?? app(ModuleRepositoryInterface::class))->getInstalledIdentifiers();
             $plugins = ($this->plugins ?? app(PluginRepositoryInterface::class))->getInstalledIdentifiers();
+            $templates = app(TemplateRepositoryInterface::class)->getInstalledIdentifiers();
         } catch (\Throwable $e) {
             Log::warning('설치 확장 목록을 읽지 못해 확장 컴포넌트 없이 검사합니다', ['error' => $e->getMessage()]);
 
@@ -92,6 +95,7 @@ class LayoutMarkupService
         return $this->extensionManifests = $this->resolver->extensionManifests(
             array_values(array_filter($modules, 'is_string')),
             array_values(array_filter($plugins, 'is_string')),
+            array_values(array_filter($templates, 'is_string')),
         );
     }
 

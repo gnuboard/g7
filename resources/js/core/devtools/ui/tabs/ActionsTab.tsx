@@ -6,12 +6,31 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { G7DevToolsCore } from '../../G7DevToolsCore';
-import type { ActionLog, SequenceTrackingInfo } from '../../types';
+import type { ActionLog, SequenceActionInfo, SequenceTrackingInfo, StateDiff } from '../../types';
 
 export interface ActionsTabProps {
     actions: ActionLog[];
     devTools?: G7DevToolsCore;
 }
+
+/**
+ * 액션 하나가 바꾼 상태 경로를 모은다 — stateDiff 의 추가, 변경, 제거 키에 스코프 접두를 붙인다
+ *
+ * @param action Sequence 안 액션 정보
+ * @returns `_global.theme` 같은 경로 목록
+ */
+const changedStatePaths = (action: SequenceActionInfo): string[] => {
+    const scopes: Array<[string, StateDiff | undefined]> = [
+        ['_global', action.stateDiff?.global],
+        ['_local', action.stateDiff?.local],
+        ['_isolated', action.stateDiff?.isolated],
+    ];
+    return scopes.flatMap(([prefix, diff]) =>
+        diff
+            ? [...diff.added, ...diff.changed.map(change => change.path), ...diff.removed].map(path => `${prefix}.${path}`)
+            : []
+    );
+};
 
 /**
  * 액션 탭
@@ -38,7 +57,7 @@ export const ActionsTab: React.FC<ActionsTabProps> = ({ actions, devTools }) => 
     }, [viewMode, devTools, refreshSequenceData]);
 
     const filteredActions = filter
-        ? actions.filter(a => a.type.toLowerCase().includes(filter.toLowerCase()) || a.status === filter)
+        ? actions.filter(a => (a.type ?? '').toLowerCase().includes(filter.toLowerCase()) || a.status === filter)
         : actions;
 
     const getStatusColor = (status: string) => {
@@ -67,7 +86,7 @@ export const ActionsTab: React.FC<ActionsTabProps> = ({ actions, devTools }) => 
 
     // 선택된 Sequence
     const selectedSequenceData = selectedSequence && sequenceInfo
-        ? sequenceInfo.executions.find(s => s.id === selectedSequence)
+        ? sequenceInfo.executions.find(s => s.sequenceId === selectedSequence)
         : null;
 
     return (
@@ -117,7 +136,7 @@ export const ActionsTab: React.FC<ActionsTabProps> = ({ actions, devTools }) => 
                         <div className="g7dt-stats-grid-3">
                             <div className="g7dt-text-center">
                                 <div className="g7dt-text-2xl g7dt-font-bold g7dt-text-blue">
-                                    {sequenceInfo.stats.totalSequences}
+                                    {sequenceInfo.stats.totalExecutions}
                                 </div>
                                 <div className="g7dt-text-xs g7dt-text-muted">총 실행</div>
                             </div>
@@ -145,16 +164,16 @@ export const ActionsTab: React.FC<ActionsTabProps> = ({ actions, devTools }) => 
                             <div className="g7dt-space-y-2 g7dt-max-h-40 g7dt-overflow-y-auto">
                                 {sequenceInfo.executions.slice().reverse().map((seq) => (
                                     <div
-                                        key={seq.id}
+                                        key={seq.sequenceId}
                                         className={`g7dt-list-item g7dt-cursor-pointer ${
-                                            selectedSequence === seq.id ? 'g7dt-selected' : ''
+                                            selectedSequence === seq.sequenceId ? 'g7dt-selected' : ''
                                         } ${seq.status === 'error' ? 'g7dt-border-red' : ''}`}
                                         onClick={() => setSelectedSequence(
-                                            selectedSequence === seq.id ? null : seq.id
+                                            selectedSequence === seq.sequenceId ? null : seq.sequenceId
                                         )}
                                     >
                                         <div className="g7dt-flex g7dt-items-center g7dt-gap-2">
-                                            <span>{seq.status === 'completed' ? '✅' : seq.status === 'error' ? '❌' : '⏳'}</span>
+                                            <span>{seq.status === 'success' ? '✅' : seq.status === 'error' ? '❌' : '⏳'}</span>
                                             <span className="g7dt-text-xs g7dt-text-white">
                                                 {seq.actions.length}개 액션
                                             </span>
@@ -175,44 +194,47 @@ export const ActionsTab: React.FC<ActionsTabProps> = ({ actions, devTools }) => 
                                 🔗 Sequence 상세 ({selectedSequenceData.actions.length}개 액션)
                             </h3>
                             <div className="g7dt-space-y-2 g7dt-max-h-60 g7dt-overflow-y-auto">
-                                {selectedSequenceData.actions.map((action, idx) => (
-                                    <div
-                                        key={idx}
-                                        className={`g7dt-list-item ${
-                                            action.status === 'error' ? 'g7dt-border-red' : ''
-                                        }`}
-                                    >
-                                        <div className="g7dt-flex g7dt-items-center g7dt-gap-2">
-                                            <span className="g7dt-text-xs g7dt-text-muted">#{action.index + 1}</span>
-                                            <span className="g7dt-text-xs g7dt-text-white g7dt-font-mono">
-                                                {action.handler}
-                                            </span>
-                                            <span className={`g7dt-text-xs ${
-                                                action.status === 'success' ? 'g7dt-text-green' : 'g7dt-text-red'
-                                            }`}>
-                                                {action.status === 'success' ? '✓' : '✕'}
-                                            </span>
-                                            <span className="g7dt-text-xs g7dt-text-muted g7dt-ml-auto">
-                                                {action.duration.toFixed(0)}ms
-                                            </span>
-                                        </div>
-                                        {action.stateChanges && action.stateChanges.length > 0 && (
-                                            <div className="g7dt-mt-1">
-                                                <div className="g7dt-text-xs g7dt-text-muted">상태 변경:</div>
-                                                {action.stateChanges.slice(0, 3).map((change, cIdx) => (
-                                                    <div key={cIdx} className="g7dt-text-xs g7dt-text-yellow g7dt-ml-2">
-                                                        {change.path}
-                                                    </div>
-                                                ))}
-                                                {action.stateChanges.length > 3 && (
-                                                    <div className="g7dt-text-xs g7dt-text-muted g7dt-ml-2">
-                                                        ...외 {action.stateChanges.length - 3}개
-                                                    </div>
-                                                )}
+                                {selectedSequenceData.actions.map((action, idx) => {
+                                    const stateChanges = changedStatePaths(action);
+                                    return (
+                                        <div
+                                            key={idx}
+                                            className={`g7dt-list-item ${
+                                                action.status === 'error' ? 'g7dt-border-red' : ''
+                                            }`}
+                                        >
+                                            <div className="g7dt-flex g7dt-items-center g7dt-gap-2">
+                                                <span className="g7dt-text-xs g7dt-text-muted">#{action.index + 1}</span>
+                                                <span className="g7dt-text-xs g7dt-text-white g7dt-font-mono">
+                                                    {action.handler}
+                                                </span>
+                                                <span className={`g7dt-text-xs ${
+                                                    action.status === 'success' ? 'g7dt-text-green' : 'g7dt-text-red'
+                                                }`}>
+                                                    {action.status === 'success' ? '✓' : '✕'}
+                                                </span>
+                                                <span className="g7dt-text-xs g7dt-text-muted g7dt-ml-auto">
+                                                    {action.duration.toFixed(0)}ms
+                                                </span>
                                             </div>
-                                        )}
-                                    </div>
-                                ))}
+                                            {stateChanges.length > 0 && (
+                                                <div className="g7dt-mt-1">
+                                                    <div className="g7dt-text-xs g7dt-text-muted">상태 변경:</div>
+                                                    {stateChanges.slice(0, 3).map((path, cIdx) => (
+                                                        <div key={cIdx} className="g7dt-text-xs g7dt-text-yellow g7dt-ml-2">
+                                                            {path}
+                                                        </div>
+                                                    ))}
+                                                    {stateChanges.length > 3 && (
+                                                        <div className="g7dt-text-xs g7dt-text-muted g7dt-ml-2">
+                                                            ...외 {stateChanges.length - 3}개
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}

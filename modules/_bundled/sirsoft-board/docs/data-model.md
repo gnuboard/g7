@@ -8,7 +8,7 @@
 | 모델 | 테이블 | fillable | 관계 | 특성 |
 |---|---|---|---|---|
 | `Attachment` | `board_attachments` | 16 | board→Board, post→Post, creator→User | SoftDeletes |
-| `Board` | `boards` | 44 | creator→User, updater→User, posts→Post, comments→Comment, attachments→Attachment, reports→Report | - |
+| `Board` | `boards` | 46 | creator→User, updater→User, posts→Post, comments→Comment, attachments→Attachment, reports→Report | - |
 | `BoardStat` | `board_stats` | 3 | - | - |
 | `BoardType` | `board_types` | 3 | - | HasUserOverrides |
 | `Comment` | `board_comments` | 15 | board→Board, post→Post, user→User, parent→self, replies→self | SoftDeletes |
@@ -73,6 +73,11 @@
 흐름(업로드·연결 → 복제 → 제거·서명·서빙·정리)은 코어 골격 `AbstractContentMediaService` 가 돌리고, 게시판은 어댑터
 `Services\ContentMedia\BoardContentMediaStore`(이 표의 행 모양·저장 경로·권한)와 골격 상속 `Services\ContentMedia\BoardContentMediaService`
 를 둡니다. `PostContentMediaService` 는 게시판 호출자가 쓰던 시그니처를 지키는 위임 계층입니다(1.2.3, 코어 7.1.5 #887).
+본문 이미지의 서빙 주소(`boards/{slug}/content-media/{hash}`)에 `?size={규격}`·`?w={숫자}` 가 붙으면 코어 골격이 글 게이트(읽기 권한, 비밀글,
+삭제글, 블라인드 글, 서명)를 지난 뒤 썸네일로 냅니다(1.3.0). 서빙 컨트롤러는 서명을 `size`·`w` 를 빼고 검증하고, `ThumbnailServingListener` 가
+이 주소를 썸네일 서빙 경로에 올립니다. 본문 미디어 이미지는 첨부와
+같은 표, 같은 저장 위치에 있어 첨부 썸네일 원본 제공자(`Support\AttachmentThumbnailSourceProvider`)가 함께 맡습니다 — 썸네일 캐시 집계, 비우기,
+「기존 이미지 썸네일 만들기」에 한 번만 들어가고, 본문 미디어용 제공자를 따로 두지 않습니다.
 본문이 **다른 글**(다른 게시판 글 포함)의 본문 미디어 주소(답글 인용·복사·붙여넣기)나 요청자 본인이 다른 임시 키로 올린 임시 행(회원은 본인 업로드,
 비회원은 업로드 소유 쿠키 해시가 맞을 때)을 쓰면, 저장하는 사람이 원본을 서명 없이 받을 수 있을 때(원본 글이 속한 게시판의 글 읽기 권한 또는 게시판
 관리 + 삭제·비밀·블라인드 게이트)만 파일을 복사해 이 글 소유의 새 행·새 해시를 만들고 본문 주소를 이 게시판 주소로 바꿔 다시 저장합니다(#887).
@@ -86,7 +91,7 @@
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 48개.
+마이그레이션 49개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -138,6 +143,7 @@
 | `2026_10_19_000001_add_display_order_to_boards_table.php` | - | `boards` | ✅ |
 | `2026_11_09_000001_add_guest_owner_hash_to_board_attachments_table.php` | - | `board_attachments` | ✅ |
 | `2026_11_10_000001_add_content_media_policy_to_boards_table.php` | - | `boards` | ✅ |
+| `2026_11_12_000001_add_member_field_settings_to_boards_table.php` | - | `boards` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -202,6 +208,8 @@ MySQL 은 DDL 을 롤백하지 않으므로 한 파일이 컬럼 → 인덱스 �
 |---|---|---|
 | `AttachmentRepository` | 구현 | 게시판 첨부파일 Repository 구현체 |
 | `AttachmentRepositoryInterface` | 인터페이스 | 게시판 첨부파일 Repository 인터페이스 |
+| `BoardPermissionRepository` | 구현 | 게시판 동적 권한 Repository 구현체 |
+| `BoardPermissionRepositoryInterface` | 인터페이스 | 게시판 동적 권한 Repository 인터페이스 |
 | `BoardRepository` | 구현 | 게시판 Repository |
 | `BoardRepositoryInterface` | 인터페이스 | 게시판 Repository 인터페이스 |
 | `BoardStatRepository` | 구현 | 게시판 일별 집계 Repository |

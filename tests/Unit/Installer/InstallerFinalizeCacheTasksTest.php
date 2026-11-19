@@ -4,6 +4,7 @@ namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 설치 마무리 단계의 캐시 굽기 태스크 회귀 가드 (이슈 #599 후속).
@@ -47,20 +48,27 @@ use PHPUnit\Framework\TestCase;
  */
 class InstallerFinalizeCacheTasksTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     private string $taskRunnerSource = '';
 
     private string $installerStateSource = '';
 
+    /**
+     * 설치기 태스크 실행 코어와 상태 파일 소스를 읽어 둡니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
         $root = dirname(__DIR__, 3);
 
-        $this->taskRunnerSource = (string) file_get_contents(
+        $this->taskRunnerSource = $this->sourceWithoutComments(
             $root.'/public/install/includes/task-runner.php'
         );
-        $this->installerStateSource = (string) file_get_contents(
+        $this->installerStateSource = $this->sourceWithoutComments(
             $root.'/public/install/includes/installer-state.php'
         );
     }
@@ -68,7 +76,7 @@ class InstallerFinalizeCacheTasksTest extends TestCase
     /**
      * 마무리 태스크 등록 줄에서 태스크 id 를 등장 순서대로 뽑는다.
      *
-     * @return array<int, string>
+     * @return array<int, string> 등록 순서대로 늘어선 태스크 id 목록
      */
     private function registeredFinalizeTaskIds(): array
     {
@@ -83,9 +91,13 @@ class InstallerFinalizeCacheTasksTest extends TestCase
     }
 
     /**
+     * 설치 마무리 태스크 목록에 라우트 캐시 굽기가 등록돼 있는지 확인합니다.
+     *
      * @scenario cache_lifecycle_point=install_finalize, task_ordering=after_complete_flag, failure_tolerance=best_effort
      *
      * @effects route_cache_task_is_registered_in_finalize, installer_never_finishes_with_an_empty_route_cache
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 설치_마무리에_라우트_캐시_굽기_태스크가_있다(): void
@@ -99,9 +111,13 @@ class InstallerFinalizeCacheTasksTest extends TestCase
     }
 
     /**
+     * 라우트 캐시 굽기가 설치 완료 표시 뒤에 도는지 확인합니다.
+     *
      * @scenario cache_lifecycle_point=install_finalize, task_ordering=after_complete_flag, failure_tolerance=best_effort
      *
      * @effects route_cache_task_runs_after_complete_flag, installer_never_finishes_with_an_empty_route_cache
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 라우트_캐시_태스크는_완료_플래그_뒤에_있다(): void
@@ -123,9 +139,13 @@ class InstallerFinalizeCacheTasksTest extends TestCase
     }
 
     /**
+     * 라우트 캐시 굽기가 실패해도 설치를 실패로 돌리지 않는지 확인합니다.
+     *
      * @scenario cache_lifecycle_point=install_finalize, task_ordering=after_complete_flag, failure_tolerance=best_effort
      *
      * @effects route_cache_task_is_best_effort
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 라우트_캐시_태스크는_best_effort_다(): void
@@ -139,9 +159,13 @@ class InstallerFinalizeCacheTasksTest extends TestCase
     }
 
     /**
+     * 라우트 캐시 실행 함수가 실제로 route:cache 를 부르는지 확인합니다.
+     *
      * @scenario cache_lifecycle_point=install_finalize, task_ordering=after_complete_flag, failure_tolerance=best_effort
      *
      * @effects route_cache_task_invokes_route_cache_command
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 라우트_캐시_실행_함수가_route_cache_를_호출한다(): void
@@ -153,16 +177,21 @@ class InstallerFinalizeCacheTasksTest extends TestCase
         );
 
         $this->assertMatchesRegularExpression(
-            "/function optimizeRouteCacheSSE.*artisanCommand:\s*'route:cache'/s",
+            // 7.2.0 이 실행기 인자 이름을 `artisanCommand:` 에서 `command:` 로 바꿨다 — 호출 대상만 본다.
+            "/function optimizeRouteCacheSSE.*command:\s*'route:cache'/s",
             $this->taskRunnerSource,
             'optimizeRouteCacheSSE() 가 route:cache 를 호출하지 않는다.'
         );
     }
 
     /**
+     * DB 정리 재시도가 앞서 구운 라우트 캐시 태스크를 무효로 돌리는지 확인합니다.
+     *
      * @scenario cache_lifecycle_point=install_finalize, task_ordering=before_complete_flag, failure_tolerance=best_effort
      *
      * @effects route_cache_marker_is_invalidated_by_db_cleanup, installer_never_finishes_with_an_empty_route_cache
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function db_정리_재시도는_라우트_캐시_태스크를_무효화한다(): void

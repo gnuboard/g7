@@ -1000,7 +1000,8 @@ describe('GDPR — 받는 중 노출 전수', () => {
         if (!offenders.some((o) => o.startsWith(`[노출] ${label} `) && o.endsWith(node.if))) offenders.push(`[회원분기] ${label} ${node.if}`);
       }
       const chain = node.blur_until_loaded ? [...blurChain, node] : blurChain;
-      if (typeof node.text === 'string' && /\?\?\s*0\b/.test(expandComputed(node.text, scope))) {
+      // `?? 0` 뿐 아니라 받는 데이터를 `?? []` 로 메운 목록의 개수(`(… ?? []).length`)도 받기 전 「0건」 을 그린다
+      if (typeof node.text === 'string' && /\?\?\s*0\b|\?\?\s*\[\]\s*\)\s*\.length\b/.test(expandComputed(node.text, scope))) {
         const refs = loadingRefs(expandComputed(node.text, scope), scope);
         if (refs.length) {
           checked += 1;

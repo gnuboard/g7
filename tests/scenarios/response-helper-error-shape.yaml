@@ -46,6 +46,24 @@ effects:
   - trans_respects_non_builtin_locale_when_app_locale_set
   - default_success_message_key_is_translated
   - no_caller_passes_unresolvable_messages_success_key
+  # 같은 시험의 효과 이름(7.2.0 쪽 response-helper-error-exposure.yaml 에서 옮김) — 각 시험 메서드가 위 이름과 함께 마킹한다.
+  - throwable_debug_info_exposed_in_debug
+  - throwable_detail_hidden_in_production
+  - server_error_string_hidden_in_production
+  - server_error_string_shown_in_debug
+  - validation_errors_always_shown
+  - client_error_string_shown_in_production
+  - server_error_throwable_debug_exposed
+  - server_error_throwable_hidden_in_production
+  - module_error_delegates_to_error
+  - server_error_string_kept_in_error_key
+  - exception_message_not_duplicated
+  - null_errors_adds_no_extra_keys
+  - debug_trace_limited_to_10_frames
+  - message_uses_current_app_locale
+  - non_builtin_locale_respected
+  - default_success_message_translated
+  - no_caller_passes_unresolvable_success_key
 
 test_files:
   - tests/Unit/Helpers/ResponseHelperTest.php

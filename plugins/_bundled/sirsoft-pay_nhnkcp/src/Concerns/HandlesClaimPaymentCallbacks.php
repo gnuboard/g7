@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Concerns;
 
-use App\Support\SiteUrl;
+use App\Helpers\ResponseHelper;
+use App\Support\ScreenUrl;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentCallback;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
 
@@ -24,21 +23,29 @@ use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
  * 전 검증, 콜백 락 안의 승인 위임)만 둔다. 승인 확정 뒤 거절의 보상은 승인 리스너의
  * `voidApproval()` 이 맡는다.
  *
- * 호스트 요건: 생성자에서 `ClaimPaymentRepositoryInterface` 를 `$claimPaymentRepository` 로 주입받는다
- * (서비스 로케이터 `app()` 로 Repository 를 꺼내지 않는다). 승인 직렬화 헬퍼
+ * 호스트 요건: 생성자에서 이커머스 결제 계약 `PaymentGatewayBridge` 를 `$bridge` 로 주입받는다
+ * (서비스 로케이터 `app()` 로 꺼내지 않는다). 결제 건 조회·청구액·주문 조회는 모두 그 계약으로 한다.
+ * 공개 Support(`ClaimPaymentCallback`·`ClaimPaymentRedirect`)가 결제 건 Model 을 받으므로 조회는 계약의
+ * 읽기 전용 Model 조회(`findClaimPaymentModel`)를 쓰고, 그 Model 은 속성 읽기만 한다. 승인 직렬화 헬퍼
  * `approveClaimPaymentSerialized()` 를 부르는 호스트는 `SerializesPaymentCallbacks` 도 함께 쓴다.
+ * 승인키 검증의 소유자 판정은 `VerifiesOrderOwnership` 을 이 트레이트가 함께 들여 쓴다(주문 경로와 한 판정).
  */
 trait HandlesClaimPaymentCallbacks
 {
+    use VerifiesOrderOwnership;
+
     /**
      * 클레임 결제 건을 결제번호로 되찾습니다.
+     *
+     * 이 PG(`nhnkcp`) 결제 건이거나 결제수단을 고르기 전(PG 미지정) 건만 보인다(계약의 조회 범위).
+     * 반환 Model 은 공개 Support 인자 호환용 읽기 전용이다 — 속성 읽기만 한다.
      *
      * @param  string  $paymentNumber  클레임 결제번호 (CP 채번)
      * @return ClaimPayment|null 결제 건
      */
     protected function findClaimPayment(string $paymentNumber): ?ClaimPayment
     {
-        return $this->claimPaymentRepository->findByPaymentNumber($paymentNumber);
+        return $this->bridge->findClaimPaymentModel($paymentNumber, 'nhnkcp');
     }
 
     /**
@@ -67,7 +74,7 @@ trait HandlesClaimPaymentCallbacks
             // 필터(이 플러그인 승인 리스너의 `voidApproval()`)가 맡아, API 승인 경로와 같은 한 구현이 된다.
             return ClaimPaymentCallback::approveAndRedirect($payment, $callback);
         } catch (LockTimeoutException) {
-            return redirect(SiteUrl::absolute($this->busyClaimCallbackRedirectUrl($payment)));
+            return redirect(ScreenUrl::toAbsolute($this->busyClaimCallbackRedirectUrl($payment)));
         } finally {
             $this->releaseOrderCallbackLock($lock);
         }
@@ -85,13 +92,14 @@ trait HandlesClaimPaymentCallbacks
     protected function busyClaimCallbackRedirectUrl(ClaimPayment $payment): string
     {
         $latest = $this->findClaimPayment((string) $payment->payment_number) ?? $payment;
+        $latestRecord = $this->bridge->describeClaimPayment($latest);
 
         Log::warning('KCP: claim payment callback skipped because the callback lock is busy', [
             'payment_number' => $payment->payment_number,
-            'payment_status' => $latest->payment_status?->value,
+            'payment_status' => $latestRecord->paymentStatus?->value,
         ]);
 
-        return $latest->isPaid()
+        return $latestRecord->isPaid
             ? ClaimPaymentRedirect::success($latest)
             : ClaimPaymentRedirect::fail($latest, 'callback_locked');
     }
@@ -117,16 +125,18 @@ trait HandlesClaimPaymentCallbacks
         }
 
         return $errorCode === null
-            ? redirect(SiteUrl::absolute(ClaimPaymentRedirect::cancelled($payment)))
-            : redirect(SiteUrl::absolute(ClaimPaymentRedirect::fail($payment, $errorCode)));
+            ? redirect(ScreenUrl::toAbsolute(ClaimPaymentRedirect::cancelled($payment)))
+            : redirect(ScreenUrl::toAbsolute(ClaimPaymentRedirect::fail($payment, $errorCode)));
     }
 
     /**
      * 모바일 승인키 발급 요청의 클레임 결제 맥락을 검증합니다. (주문 검증 경로의 CP 대응)
      *
      * 주문 경로와 같은 강도 — 대상 존재 / 결제 가능 상태 / 소유자 대조 / KRW / 금액 일치 —
-     * 를 클레임 결제 건에 적용한다. 소유자 대조는 주문 경로처럼 회원 주문만 잠근다
-     * (비회원 주문은 user_id 가 없어 통과하고, 콜백 승인 단계의 결제 건 잠금이 방어한다).
+     * 를 클레임 결제 건에 적용한다. 소유자 대조는 결제 건이 딸린 주문을 기준으로 주문 경로와 같은 판정
+     * ({@see VerifiesOrderOwnership::orderOwnershipRejection()})을 쓴다 — 회원 주문은 로그인한 본인,
+     * 비회원 주문은 그 주문의 조회 토큰(`X-Guest-Order-Token`)이어야 통과한다(#855). 주문이 사라졌으면
+     * 열람자와 무관하게 차단한다(아래 본문 주석).
      *
      * @param  Request  $request  승인키 요청
      * @param  string  $paymentNumber  클레임 결제번호 (CP 채번)
@@ -134,62 +144,55 @@ trait HandlesClaimPaymentCallbacks
      * @param  string|null  $currency  클라이언트가 보낸 통화 (nullable)
      * @return JsonResponse|null 거절 응답 (통과 시 null)
      */
-    protected function validateClaimApprovalKeyContext(Request $request, string $paymentNumber, int $amount, ?string $currency): ?JsonResponse
-    {
-        $payment = $this->findClaimPayment($paymentNumber);
+    protected function validateClaimApprovalKeyContext(
+        Request $request,
+        string $paymentNumber,
+        int $amount,
+        ?string $currency,
+    ): ?JsonResponse {
+        $payment = $this->bridge->findClaimPayment($paymentNumber, 'nhnkcp');
 
         if (! $payment) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Claim payment not found.',
-            ], 404);
+            return ResponseHelper::pluginError('sirsoft-pay_nhnkcp', 'messages.responses.claim_payment_not_found', 404);
         }
 
-        if (! $payment->isPending()) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Claim payment is not payable.',
-            ], 422);
+        if (! $payment->isPending) {
+            return ResponseHelper::pluginError('sirsoft-pay_nhnkcp', 'messages.responses.claim_payment_not_payable', 422);
         }
 
-        $payment->loadMissing('order');
+        $order = $payment->orderNumber === null ? null : $this->bridge->findOrderByNumber($payment->orderNumber, 'nhnkcp');
 
-        // 부모를 못 읽으면(soft-delete 등) 통과가 아니라 차단이다 — `?->user_id ?? 0` 은
-        // 주문이 사라진 결제 건에서 열람자 판정을 0 == 0 으로 접어 통과시킨다. 지금은 라우트가
-        // `auth:sanctum` 이라 오른쪽이 0 이 될 수 없어 실질은 닫혀 있지만, 그 방어가 이 함수
-        // 밖의 조건에 얹혀 있는 형태다. 형제 플러그인(kginicis·nicepayments)과 같은 형태로
-        // 이 자리에서 닫는다. 모바일 승인키 라우트가 optional.sanctum 으로 바뀐 뒤(#883 — 비회원 주문 결제)
-        // 비로그인 요청은 여기의 `$viewerId === 0` 이 막는다.
-        $viewerId = (int) ($request->user()?->id ?? 0);
-
-        if (! $payment->order || $viewerId === 0 || (int) $payment->order->user_id !== $viewerId) {
-            return response()->json([
-                'success' => false,
-                'error' => 'You cannot request a NHN KCP approval key for this claim payment.',
-            ], 403);
+        // 부모를 못 읽으면(soft-delete 등) 통과가 아니라 차단이다 — `?->user_id ?? 0` 처럼 접으면
+        // 주문이 사라진 결제 건에서 열람자 판정이 0 == 0 으로 통과한다. 라우트가 optional.sanctum 이라
+        // (#883) 비로그인 요청도 여기까지 오므로, 그 방어를 이 함수 밖의 조건에 기대지 않고 이 자리에서 닫는다.
+        if ($order === null) {
+            return ResponseHelper::pluginError('sirsoft-pay_nhnkcp', 'messages.responses.claim_approval_forbidden', 403);
         }
 
-        $charge = app(ClaimPaymentService::class)->resolvePaymentCharge($payment);
+        // 소유자 판정은 주문 경로와 한 규칙이다(#855) — 회원 주문은 로그인 본인만(아니면 403), 비회원 주문은
+        // 그 주문의 조회 토큰만(없거나 다른 주문 것이면 401). 결제번호만 아는 제3자는 어느 쪽으로도 통과하지 못한다.
+        $ownershipError = $this->orderOwnershipRejection(
+            $request,
+            $order,
+            'messages.responses.claim_approval_forbidden',
+        );
+
+        if ($ownershipError !== null) {
+            return $ownershipError;
+        }
+
+        $charge = $this->bridge->resolveClaimCharge($paymentNumber);
 
         if ($charge === null) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Payment currency is not chargeable.',
-            ], 422);
+            return ResponseHelper::pluginError('sirsoft-pay_nhnkcp', 'messages.responses.currency_not_chargeable', 422);
         }
 
-        if (strtoupper($charge['currency']) !== 'KRW' || ($currency !== null && strtoupper($currency) !== 'KRW')) {
-            return response()->json([
-                'success' => false,
-                'error' => 'NHN KCP supports KRW payments only.',
-            ], 422);
+        if (strtoupper($charge->currency) !== 'KRW' || ($currency !== null && strtoupper($currency) !== 'KRW')) {
+            return ResponseHelper::pluginError('sirsoft-pay_nhnkcp', 'messages.responses.krw_only', 422);
         }
 
-        if ($amount !== $charge['minor_unit_amount']) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Payment amount does not match the claim payment amount.',
-            ], 422);
+        if ($amount !== $charge->minorUnitAmount) {
+            return ResponseHelper::pluginError('sirsoft-pay_nhnkcp', 'messages.responses.claim_amount_mismatch', 422);
         }
 
         return null;

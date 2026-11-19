@@ -33,6 +33,11 @@ class CbtClaimPaymentTest extends PluginTestCase
 {
     private static int $sequence = 0;
 
+    /**
+     * 클레임 결제 승인 리스너를 실제 등록 경로로 등록합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -44,8 +49,8 @@ class CbtClaimPaymentTest extends PluginTestCase
     /**
      * 엔화 결제 대기 클레임 결제 건을 만듭니다.
      *
-     * @param  string  $currency  주문 통화 (JPY / KRW)
-     * @return array{order: Order, return: OrderReturn, payment: ClaimPayment, user: User}
+     * @param  string  $currency  주문 통화 코드 (JPY 또는 KRW)
+     * @return array{order: Order, return: OrderReturn, payment: ClaimPayment, user: User} 주문, 반품, 클레임 결제 건, 주문 회원
      */
     private function makePendingClaimPayment(string $currency = 'JPY'): array
     {
@@ -108,6 +113,12 @@ class CbtClaimPaymentTest extends PluginTestCase
 
     /**
      * 엔화 클레임 결제는 CBT 체크아웃 토큰을 발급받는다.
+     *
+     * @scenario case=checkout_token_issued
+     *
+     * @effects cbt_claim_checkout_token_is_issued_for_jpy
+     *
+     * @return void 반환값 없음
      */
     public function test_checkout_token_is_issued_for_a_jpy_claim_payment(): void
     {
@@ -125,6 +136,12 @@ class CbtClaimPaymentTest extends PluginTestCase
 
     /**
      * 금액이 어긋나면 토큰을 발급하지 않는다.
+     *
+     * @scenario case=checkout_token_amount_mismatch
+     *
+     * @effects cbt_claim_checkout_token_rejects_amount_mismatch
+     *
+     * @return void 반환값 없음
      */
     public function test_checkout_token_rejects_an_amount_mismatch(): void
     {
@@ -141,6 +158,12 @@ class CbtClaimPaymentTest extends PluginTestCase
 
     /**
      * 원화 클레임 결제가 CBT 경로로 오면 거절한다 — 그 건은 국내 표준결제로 가야 한다.
+     *
+     * @scenario case=checkout_token_krw
+     *
+     * @effects cbt_claim_checkout_token_rejects_krw
+     *
+     * @return void 반환값 없음
      */
     public function test_checkout_token_rejects_a_krw_claim_payment(): void
     {
@@ -153,11 +176,17 @@ class CbtClaimPaymentTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('message', 'CBT payment is only available for JPY claim payments.');
+            ->assertJsonPath('message', __('sirsoft-pay_kginicis::messages.responses.cbt_jpy_only'));
     }
 
     /**
      * 토큰을 받은 뒤 해시까지 발급된다 (결제창을 여는 마지막 재료).
+     *
+     * @scenario case=hash_data_issued
+     *
+     * @effects cbt_claim_hash_data_is_issued
+     *
+     * @return void 반환값 없음
      */
     public function test_hash_data_is_issued_for_a_jpy_claim_payment(): void
     {
@@ -181,6 +210,12 @@ class CbtClaimPaymentTest extends PluginTestCase
 
     /**
      * 승인 콜백이 주문을 전제하지 않고 클레임 결제 건을 확정한다.
+     *
+     * @scenario case=callback_confirms
+     *
+     * @effects cbt_claim_callback_confirms_without_order
+     *
+     * @return void 반환값 없음
      */
     public function test_cbt_callback_confirms_the_claim_payment_without_an_order(): void
     {
@@ -215,6 +250,12 @@ class CbtClaimPaymentTest extends PluginTestCase
 
     /**
      * 사용자가 결제창을 닫으면 체크아웃이 아니라 신청서 상세로 돌아간다.
+     *
+     * @scenario case=user_cancel
+     *
+     * @effects cbt_claim_user_cancel_returns_to_claim_detail
+     *
+     * @return void 반환값 없음
      */
     public function test_user_cancel_returns_to_the_claim_detail(): void
     {
@@ -236,6 +277,12 @@ class CbtClaimPaymentTest extends PluginTestCase
 
     /**
      * 편의점(CVS)은 입금 대기 수단이라 클레임 결제로 받을 수 없다 — 발급분은 환불로 되돌린다.
+     *
+     * @scenario case=cvs_rejected
+     *
+     * @effects cbt_claim_cvs_is_refunded
+     *
+     * @return void 반환값 없음
      */
     public function test_cvs_is_rejected_and_the_issued_payment_is_refunded(): void
     {

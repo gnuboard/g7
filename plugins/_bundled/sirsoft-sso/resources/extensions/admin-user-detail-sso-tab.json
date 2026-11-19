@@ -1,0 +1,490 @@
+{
+    "comment": "e2e:allow Playwright 스펙 없음(이 플러그인 tests/Playwright/specs/sso-*.spec.ts 는 로그인 흐름만 덮는다) — 브라우저 실측은 F1 Chrome MCP 계획서 §10 M11·M14(W40) — P4 는 Vitest 로 덮음\n     관리자 회원 «상세» 화면에 「SSO」 탭을 얹는다. 탭 버튼은 `inject_props` 로 탭 목록 끝에 덧붙이고, 본문은 `extension_tab_content` 에 붙인다(형제 확장과 같은 짜임).\n     데이터는 화면의 회원 응답(`user.data.sso`)이다 — 코어 회원 응답 필터에서 플러그인이 더한 값이고, 회원 연결 열람 권한(accounts.view)이 없으면 키가 없어\n     탭 본문은 권한 안내만 보인다. 연결된 IdP 카드(방식, 상태, 퇴사 표시, 마지막 로그인, IdP 이메일과 다름), 추가 속성 표, 역할 출처(매핑/수동 배지),\n     작업(연결 해제 — 회원 연결 화면으로 이동)을 보인다. IdP 고유 식별자는 싣지 않는다.",
+    "target_layout": "admin_user_detail",
+    "priority": 350,
+    "injections": [
+        {
+            "target_id": "user_detail_tabs",
+            "position": "inject_props",
+            "props": {
+                "tabs": {
+                    "_append": [
+                        {
+                            "id": "ext_sso",
+                            "label": "$t:sirsoft-sso.admin.user_tab.tab_label",
+                            "iconName": "building-shield",
+                            "if": "{{!!route?.id}}"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "target_id": "extension_tab_content",
+            "position": "append_child",
+            "components": [
+                {
+                    "id": "ext_sso_content",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!route?.id}}",
+                    "props": {
+                        "id": "ext_sso",
+                        "className": "sso:scroll-mt-32"
+                    },
+                    "children": [
+                        {
+                            "id": "admin_user_sso_card",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "sso-admin-card"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "sso:flex sso:items-center sso:justify-between sso:mb-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "sso:flex sso:items-center sso:gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "building-shield",
+                                                        "className": "sso:text-xl sso:text-gray-600 sso:dark:text-gray-400"
+                                                    }
+                                                },
+                                                {
+                                                    "id": "admin_user_sso_title",
+                                                    "type": "basic",
+                                                    "name": "H3",
+                                                    "props": {
+                                                        "className": "sso:text-lg sso:font-semibold sso:text-gray-900 sso:dark:text-white"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.user_tab.title"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "ExtensionBadge",
+                                            "props": {
+                                                "type": "plugin",
+                                                "identifier": "sirsoft-sso",
+                                                "installedPlugins": "{{_global.installedPlugins}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "admin_user_sso_forbidden",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!!user?.data && !user?.data?.sso}}",
+                                    "props": {
+                                        "className": "sso-text-hint"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.user_tab.forbidden"
+                                },
+                                {
+                                    "id": "admin_user_sso_empty",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!!user?.data?.sso && (user?.data?.sso?.accounts ?? []).length === 0}}",
+                                    "props": {
+                                        "className": "sso-text-hint"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.user_tab.empty"
+                                },
+                                {
+                                    "comment": "연결된 IdP 카드",
+                                    "id": "admin_user_sso_accounts",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(user?.data?.sso?.accounts ?? []).length > 0}}",
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sso:grid sso:grid-cols-2 sso:gap-3"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "sso:grid sso:grid-cols-1 sso:gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "admin_user_sso_account_{{account.id}}",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "user?.data?.sso?.accounts ?? []",
+                                                "item_var": "account"
+                                            },
+                                            "dataKey": "{{account.id}}",
+                                            "props": {
+                                                "className": "sso:rounded-lg sso:border sso:border-gray-200 sso:dark:border-gray-700 sso:p-4 sso:space-y-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "sso:flex sso:flex-wrap sso:items-center sso:gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "sso:text-sm sso:font-semibold sso:text-gray-900 sso:dark:text-white"
+                                                            },
+                                                            "text": "{{account.idp?.label ?? '-'}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
+                                                            },
+                                                            "text": "{{account.idp?.protocol ? $t('sirsoft-sso.admin.protocols.' + account.idp.protocol) : ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{account.active}}",
+                                                            "props": {
+                                                                "className": "sso:inline-flex sso:items-center sso:px-2 sso:py-0.5 sso:rounded-full sso:text-xs sso:font-medium sso:bg-green-100 sso:text-green-800 sso:dark:bg-green-900/30 sso:dark:text-green-300"
+                                                            },
+                                                            "text": "$t:sirsoft-sso.admin.accounts.status.active"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!account.active}}",
+                                                            "props": {
+                                                                "className": "sso:inline-flex sso:items-center sso:px-2 sso:py-0.5 sso:rounded-full sso:text-xs sso:font-medium sso:bg-red-100 sso:text-red-800 sso:dark:bg-red-900/30 sso:dark:text-red-300"
+                                                            },
+                                                            "text": "$t:sirsoft-sso.admin.accounts.status.deprovisioned"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "sso:grid sso:grid-cols-3 sso:gap-x-3 sso:gap-y-1 sso:text-xs"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "sso:text-gray-500 sso:dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:sirsoft-sso.admin.accounts.col.via"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "sso:col-span-2 sso:text-gray-800 sso:dark:text-gray-200"
+                                                            },
+                                                            "text": "{{$t('sirsoft-sso.admin.accounts.via.' + account.linked_via)}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "sso:text-gray-500 sso:dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:sirsoft-sso.admin.accounts.col.linked_at"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "sso:col-span-2 sso:text-gray-800 sso:dark:text-gray-200"
+                                                            },
+                                                            "text": "{{account.linked_at | datetime | default('-')}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "sso:text-gray-500 sso:dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:sirsoft-sso.admin.accounts.col.last_login_at"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "sso:col-span-2 sso:text-gray-800 sso:dark:text-gray-200"
+                                                            },
+                                                            "text": "{{account.last_login_at | datetime | default('-')}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!account.active}}",
+                                                            "props": {
+                                                                "className": "sso:text-gray-500 sso:dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:sirsoft-sso.admin.accounts.col.deprovisioned_at"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!account.active}}",
+                                                            "props": {
+                                                                "className": "sso:col-span-2 sso:text-red-700 sso:dark:text-red-300"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "{{account.deprovisioned_at | datetime | default('-')}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{!!account.deprovision_reason}}",
+                                                                    "text": " ({{$t('sirsoft-sso.admin.accounts.deprovision_reason.' + account.deprovision_reason)}})"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "admin_user_sso_email_differs_{{account.id}}",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{account.email_differs}}",
+                                                    "props": {
+                                                        "role": "status",
+                                                        "className": "sso:text-xs sso:text-amber-700 sso:dark:text-amber-300"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.user_tab.email_differs|email={{account.idp_email ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "추가 속성",
+                                    "id": "admin_user_sso_attributes",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(user?.data?.sso?.attributes ?? []).length > 0}}",
+                                    "props": {
+                                        "className": "sso:mt-5"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "H4",
+                                            "props": {
+                                                "className": "sso:text-sm sso:font-semibold sso:text-gray-900 sso:dark:text-white sso:mb-2"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.user_tab.attributes"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "sso:overflow-x-auto"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "admin_user_sso_attributes_table",
+                                                    "type": "basic",
+                                                    "name": "Table",
+                                                    "props": {
+                                                        "className": "sso:w-full sso:text-sm"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Thead",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Tr",
+                                                                    "props": {
+                                                                        "className": "sso:text-left sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:border-b sso:border-gray-200 sso:dark:border-gray-700"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Th",
+                                                                            "props": {
+                                                                                "className": "sso:py-2 sso:pr-3"
+                                                                            },
+                                                                            "text": "$t:sirsoft-sso.admin.user_tab.attribute_key"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Th",
+                                                                            "props": {
+                                                                                "className": "sso:py-2 sso:pr-3"
+                                                                            },
+                                                                            "text": "$t:sirsoft-sso.admin.user_tab.attribute_value"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Th",
+                                                                            "props": {
+                                                                                "className": "sso:py-2 sso:pr-3"
+                                                                            },
+                                                                            "text": "$t:sirsoft-sso.admin.user_tab.attribute_idp"
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Tbody",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Tr",
+                                                                    "iteration": {
+                                                                        "source": "user?.data?.sso?.attributes ?? []",
+                                                                        "item_var": "attribute"
+                                                                    },
+                                                                    "dataKey": "{{attribute.idp_id + ':' + attribute.key}}",
+                                                                    "props": {
+                                                                        "className": "sso:border-b sso:border-gray-100 sso:dark:border-gray-700"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Td",
+                                                                            "props": {
+                                                                                "className": "sso:py-2 sso:pr-3 sso:whitespace-nowrap sso:text-gray-700 sso:dark:text-gray-300"
+                                                                            },
+                                                                            "text": "{{$t('sirsoft-sso.admin.attribute_keys.' + attribute.key) === 'sirsoft-sso.admin.attribute_keys.' + attribute.key ? attribute.key : $t('sirsoft-sso.admin.attribute_keys.' + attribute.key)}}"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Td",
+                                                                            "props": {
+                                                                                "className": "sso:py-2 sso:pr-3 sso:text-gray-900 sso:dark:text-white sso:break-all sso-break-all"
+                                                                            },
+                                                                            "text": "{{attribute.value ?? '-'}}"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Td",
+                                                                            "props": {
+                                                                                "className": "sso:py-2 sso:pr-3 sso:whitespace-nowrap sso:text-gray-500 sso:dark:text-gray-400"
+                                                                            },
+                                                                            "text": "{{attribute.idp_label}}"
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "역할 출처 — 매핑이 붙인 역할만 「매핑」, 나머지 역할은 「수동」",
+                                    "id": "admin_user_sso_roles",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!user?.data?.sso && (user?.data?.roles ?? []).length > 0}}",
+                                    "props": {
+                                        "className": "sso:mt-5"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "H4",
+                                            "props": {
+                                                "className": "sso:text-sm sso:font-semibold sso:text-gray-900 sso:dark:text-white sso:mb-2"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.user_tab.role_sources"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "sso:flex sso:flex-wrap sso:gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "iteration": {
+                                                        "source": "user?.data?.roles ?? []",
+                                                        "item_var": "role"
+                                                    },
+                                                    "dataKey": "{{role.identifier ?? role.id}}",
+                                                    "props": {
+                                                        "className": "sso:inline-flex sso:items-center sso:gap-1 sso:px-2 sso:py-0.5 sso:rounded sso:text-xs sso:border sso:border-gray-200 sso:dark:border-gray-700 sso:text-gray-800 sso:dark:text-gray-200"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{$localized(role.name) || role.identifier}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "{{(user?.data?.sso?.mapped_roles ?? []).includes(role.identifier) ? 'sso:px-1 sso:rounded sso:bg-indigo-100 sso:text-indigo-800 sso:dark:bg-indigo-900/30 sso:dark:text-indigo-300' : 'sso:px-1 sso:rounded sso:bg-gray-100 sso:text-gray-700 sso:dark:bg-gray-700 sso:dark:text-gray-300'}}"
+                                                            },
+                                                            "text": "{{(user?.data?.sso?.mapped_roles ?? []).includes(role.identifier) ? $t('sirsoft-sso.admin.user_tab.role_mapped') : $t('sirsoft-sso.admin.user_tab.role_manual')}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "작업 — 연결 추가와 해제는 「회원 연결」 화면에서 한다(그 화면의 권한과 관리자 대상 제한을 그대로 탄다)",
+                                    "id": "admin_user_sso_actions",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!user?.data?.sso}}",
+                                    "props": {
+                                        "className": "sso:mt-5 sso:flex sso:flex-wrap sso:gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "admin_user_sso_manage_link",
+                                            "type": "basic",
+                                            "name": "A",
+                                            "props": {
+                                                "href": "/admin/plugins/sirsoft-sso/accounts?q={{encodeURIComponent(user?.data?.email ?? '')}}",
+                                                "className": "sso-btn sso-btn-secondary sso:text-sm"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.user_tab.manage_links"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

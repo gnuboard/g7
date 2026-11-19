@@ -33,7 +33,7 @@ class TemplateResourceAbilityTest extends PureTestCase
     }
 
     /**
-     * abilityMap 이 설치·활성화·삭제 권한을 유지한 채 정확히 4개 항목만 갖는다.
+     * abilityMap 이 설치·활성화·삭제 권한을 유지한 채 정확히 5개 항목만 갖는다(레이아웃 편집, 템플릿 설정 저장 포함).
      *
      * @scenario case=existing_abilities
      *
@@ -52,6 +52,7 @@ class TemplateResourceAbilityTest extends PureTestCase
         $this->assertArrayHasKey('can_activate', $abilityMap);
         $this->assertArrayHasKey('can_uninstall', $abilityMap);
         $this->assertArrayHasKey('can_edit_layouts', $abilityMap);
-        $this->assertCount(4, $abilityMap);
+        $this->assertSame('core.templates.settings', $abilityMap['can_update_settings'] ?? null);
+        $this->assertCount(5, $abilityMap);
     }
 }

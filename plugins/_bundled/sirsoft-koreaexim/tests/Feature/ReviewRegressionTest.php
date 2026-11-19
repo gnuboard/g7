@@ -26,7 +26,7 @@ class ReviewRegressionTest extends PluginTestCase
      */
     public function test_retry_status_allowlist(): void
     {
-        $this->configure(['auth_key' => 'test-key', 'auto_manage' => true, 'lookback_days' => 0, 'run_days' => [1, 2, 3, 4, 5, 6, 7], 'update_time' => '10:00']);
+        $this->configure(['auth_key' => 'test-key', 'auto_manage' => true, 'lookback_days' => 0, 'run_days' => [1, 2, 3, 4, 5, 6, 7]]);
         $settings = app(EcommerceSettingsService::class);
         $currency = $settings->getSettings('language_currency');
         $currency['rate_provider'] = 'koreaexim';

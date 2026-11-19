@@ -7,8 +7,15 @@
     "id": "analytics_kpi_row",
     "type": "basic",
     "name": "Div",
+    "responsive": {
+        "desktop": {
+            "props": {
+                "className": "grid grid-cols-4 gap-4 mb-4"
+            }
+        }
+    },
     "props": {
-        "className": "grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4"
+        "className": "grid grid-cols-2 gap-4 mb-4"
     },
     "children": [
         {

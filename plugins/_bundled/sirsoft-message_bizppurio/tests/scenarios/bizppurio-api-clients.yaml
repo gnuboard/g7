@@ -1,0 +1,74 @@
+feature: 비즈뿌리오 API 클라이언트(메시지 발송 API, 카카오 관리 API)와 참조 조회 서비스의 요청과 응답 계약
+
+description: |
+  비즈뿌리오와 직접 통신하는 세 클래스의 계약을 Http::fake 로 지킨다.
+
+  메시지 발송 클라이언트(BizppurioApiClient): /v3/message 로 Bearer 토큰을 실어 보낸다. 토큰 무효(3002) 응답이면
+  토큰을 다시 발급받아 한 번만 재시도하고, 그 밖의 실패 코드는 응답을 그대로 돌려준다. 테스트 모드가 꺼져 있으면
+  운영 도메인을 부른다. HTTP 오류는 BizppurioApiException 이며 응답 body 에 사유와 코드가 있으면 예외에 싣는다.
+
+  카카오 관리 클라이언트(BizppurioKakaoApiClient): kapi 단일 도메인에 bizId 와 apiKey 를 body 로 실어 인증한다.
+  발신프로필, 템플릿 목록과 상세, 등록, 수정, 삭제, 코드 중복 검증, 검수 요청과 취소, 승인 취소, 휴면 해제가
+  각자의 경로로 가고, 이미지 업로드만 multipart 다. 자격증명이 비어 있으면 호출하지 않고 예외를 던진다.
+
+  참조 조회 서비스(AlimtalkTemplateService): 편집 창이 쓰는 분류와 발신 프로필 조회를 카카오 관리 클라이언트에
+  맡기고, 응답 봉투에서 목록만 꺼내 돌려준다. 실패 코드는 카카오 문구와 결과코드를 담은 예외로 올린다.
+
+  참조 조회의 HTTP 응답(권한, 422 전파, 연결 실패)은 bizppurio-kakao-connection-failure.yaml 이,
+  템플릿 라이프사이클 전이는 bizppurio-template-lifecycle.yaml 이 맡는다.
+
+axis_notes:
+  case: |
+    message_* 는 메시지 발송 클라이언트, kakao_* 는 카카오 관리 클라이언트, reference_* 는 참조 조회 서비스다.
+
+axes:
+  case: [message_send_success, message_token_invalid, message_live_mode, message_http_failure,
+         message_http_failure_with_body, message_http_failure_without_body, message_permanent_failure_code,
+         kakao_sender_profiles, kakao_template_list, kakao_template_detail, kakao_arbitrary_request,
+         kakao_credentials_missing, kakao_http_failure, kakao_http_failure_with_message, kakao_http_failure_without_message,
+         kakao_template_add, kakao_template_update, kakao_template_delete, kakao_template_code_check,
+         kakao_inspection_request_with_comment, kakao_inspection_request_without_comment, kakao_inspection_cancel,
+         kakao_approval_cancel, kakao_dormant_release, kakao_template_image_upload,
+         reference_categories_success, reference_categories_failure_code,
+         reference_profiles_success, reference_profiles_failure_code]
+
+effects:
+  # 메시지 발송 클라이언트
+  - message_send_success_with_bearer_token                           # 성공 코드 판정, 메시지 키 반환, Bearer 토큰 헤더
+  - message_send_retries_once_after_token_refresh                    # 3002 면 토큰 재발급 후 한 번 재시도
+  - message_send_uses_live_host_when_test_mode_off                   # 테스트 모드가 꺼지면 운영 도메인
+  - message_http_failure_throws_api_exception
+  - message_http_failure_carries_reason_and_result_code              # 실패 body 의 사유와 코드를 예외에 싣는다
+  - message_http_failure_falls_back_to_default_reason                # body 가 없으면 기본 사유, 결과코드 null
+  - message_permanent_failure_returned_without_retry                 # 재시도 대상이 아닌 코드는 그대로 반환, 호출 1회
+  # 카카오 관리 클라이언트
+  - kakao_request_carries_biz_id_and_api_key_in_body
+  - kakao_template_list_carries_sender_key_and_options
+  - kakao_template_detail_returns_response_data
+  - kakao_arbitrary_endpoint_request_forwards_body
+  - kakao_missing_credentials_throws_api_exception
+  - kakao_http_failure_throws_api_exception
+  - kakao_http_failure_carries_message_code_and_status               # 카카오 문구, 결과코드, HTTP 상태
+  - kakao_http_failure_falls_back_to_generic_message                 # 문구가 없으면 번역된 일반 문구
+  - kakao_template_add_posts_to_add_path
+  - kakao_template_update_posts_to_update_path
+  - kakao_template_delete_posts_to_delete_path
+  - kakao_template_code_check_posts_to_code_check_path
+  - kakao_inspection_request_carries_comment
+  - kakao_inspection_request_omits_comment_key_when_absent
+  - kakao_inspection_cancel_posts_to_cancel_request_path
+  - kakao_approval_cancel_posts_to_cancel_approval_path
+  - kakao_dormant_release_posts_to_release_path
+  - kakao_image_upload_sent_as_multipart_and_returns_top_level_image # 유일한 multipart 경로, 응답 최상위 image
+  # 참조 조회 서비스
+  - reference_categories_return_data_array
+  - reference_categories_failure_keeps_message_and_result_code
+  - reference_profiles_return_success_array_only                     # success/fail 껍데기를 벗긴 목록
+  - reference_profiles_failure_keeps_message_and_result_code
+
+# E2E axis 없음: 외부 API 요청과 응답 해석만 다루고 레이아웃 JSON 과 컴포넌트 변경이 없다.
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/BizppurioApiClientTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/BizppurioKakaoApiClientTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/AlimtalkTemplateServiceTest.php

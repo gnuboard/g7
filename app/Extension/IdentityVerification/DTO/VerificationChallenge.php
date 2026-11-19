@@ -20,7 +20,9 @@ final class VerificationChallenge
      * @param  string  $targetHash  SHA256(email|phone) — PII 원본 저장 회피
      * @param  CarbonInterface  $expiresAt  만료 시각
      * @param  string  $renderHint  text_code|link|external_redirect
-     * @param  string|null  $redirectUrl  external_redirect 일 때 이동할 외부 URL
+     * @param  string|null  $redirectUrl  external_redirect 일 때 이동할 주소 — 같은 출처 경로(`/` 로 시작)만 쓴다(7.2.0). 외부 공급자로
+     *                                     나가는 이동은 수단의 같은 출처 시작 라우트가 302 한다. 레이아웃의 `redirect` 동작은 다른 출처
+     *                                     주소를 따르지 않으므로 절대 외부 주소를 주면 화면이 진행 중에 멈춘다
      * @param  array  $publicPayload  프론트에 내려줄 공개 페이로드 (민감정보 제외)
      * @param  array  $metadata  서버 내부 참조용 데이터
      * @param  int  $maxAttempts  허용 최대 시도 횟수 (0 = 무제한, popup/SDK 형 provider 가 사용)

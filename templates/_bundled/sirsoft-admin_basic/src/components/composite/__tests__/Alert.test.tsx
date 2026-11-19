@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { Alert } from '../Alert';
+import { Alert, type AlertProps } from '../Alert';
 
 describe('Alert 컴포넌트', () => {
   describe('기본 렌더링', () => {
@@ -112,6 +112,8 @@ describe('Alert 컴포넌트', () => {
   describe('type별 렌더링 - error', () => {
     // @scenario component=alert
     // @effects alert_contract_with_decorative_icon
+    // @scenario asset_class=alert-error
+    // @effects test_admin_basic_alert_composite_passes_with_unified_alert_error_style
     it('error 타입은 빨간색 스타일이 적용된다', () => {
       const { container } = render(<Alert type="error" message="에러 메시지" />);
       const alertElement = container.querySelector('[role="alert"]');
@@ -314,7 +316,9 @@ describe('Alert 컴포넌트', () => {
     // @scenario component=alert
     // @effects alert_contract_with_decorative_icon
     it('type 미지정 시 크래시 없이 info 스타일로 렌더된다', () => {
-      const { container } = render(<Alert message="타입 없는 메시지" />);
+      // 편집기가 type 없이 넘기는 잘못된 props 를 그대로 흉내 낸다(계약상 type 은 필수)
+      const propsWithoutType = { message: '타입 없는 메시지' } as AlertProps;
+      const { container } = render(<Alert {...propsWithoutType} />);
       const alertElement = container.querySelector('[role="alert"]');
       expect(alertElement).toBeTruthy();
       expect(alertElement?.className).toContain('alert-info');

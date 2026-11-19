@@ -12,8 +12,9 @@
 3. 입력 규칙: empty=default, yes/y=true, no/n=false, 그 외=재질문 루프
 4. --no-interaction 또는 콘솔 없는 STDIN: default 즉시 반환 (파괴적 확인의 default 는 false 여야 한다)
 5. upgrade step / Symfony 외부 환경: \App\Console\Helpers\ConsoleConfirm::ask() FQN 직접 호출
-6. 트레이트를 쓰는 명령은 --yes(-y) 를 자동으로 받는다 — 묻지 않고 진행. 시그니처에 --yes 를 따로 두지 않는다
-7. 확인을 거절해 끝낼 때는 return $this->confirmAbortExitCode() — 묻지 못해 거절된 실행은 경고 + 종료코드 1
+6. 기본값 「아니오」가 곧 작업 취소인 확인은 canAnswerConfirmation() 으로 먼저 가르고, 답할 수 없으면 refuseUnanswerableConfirmation() 으로 사유 출력 + 종료 코드 1 (취소를 0 으로 끝내지 않는다)
+7. 트레이트를 쓰는 명령은 --yes(-y) 를 자동으로 받는다 — 묻지 않고 진행. 명령별 설명이 필요하면 시그니처에 {--y|yes : 설명} 으로 선언한다(트레이트는 그때 붙이지 않는다)
+8. 확인을 거절해 끝낼 때는 return $this->confirmAbortExitCode() — 묻지 못해 거절된 실행은 경고 + 종료코드 1
 ```
 
 ---
@@ -100,7 +101,8 @@ protected function unifiedConfirm(string $question, bool $default = false, bool 
 ### `--yes` 옵션과 거절 종료코드 (7.1.6+)
 
 트레이트가 Symfony `configure()` 로 `--yes`(`-y`) 옵션을 더하므로, 트레이트를 쓰는 명령은 시그니처에 적지 않아도
-이 옵션을 받는다. **시그니처에 `{--yes}` 를 따로 두면 생성 시 「이미 있는 옵션」 오류가 난다.**
+이 옵션을 받는다. 명령마다 도움말 설명을 달고 싶으면 시그니처에 `{--y|yes : 설명}` 으로 선언한다 — 트레이트는 시그니처에
+`--yes` 선언이 있으면 옵션을 더하지 않으므로 「이미 있는 옵션」 오류가 나지 않는다(7.2.0. 7.1.6 은 선언하면 이 오류가 났다).
 명령이 `configure()` 를 직접 재정의해야 하면 `parent::configure()` 가 아니라 트레이트 메서드를 별칭으로 불러야 한다.
 
 터미널 없는 실행(스케줄러·배포 스크립트·`-n`)에서 확인 질문은 기본값 「아니오」로 떨어진다. 종전에는 이때 명령이
@@ -146,6 +148,60 @@ posix 확장 없이 Windows 를 포함해 동작하므로 이 판정의 근거�
 
 이 가드가 의미를 가지려면 **파괴적 확인의 `$default` 는 반드시 `false`(중단)** 여야 한다.
 콘솔이 없으면 그 기본값이 곧 결정이 되기 때문이다.
+
+### 답할 수 없는 실행의 작업 취소는 실패로 끝낸다
+
+기본값 「아니오」가 곧 작업 취소인 확인(업데이트, 제거, 삭제, 덮어쓰기)을 `unifiedConfirm()` 하나로만 받으면,
+cron, CI, 원격 명령, `--no-interaction` 실행은 묻지 않고 취소되어 「취소되었습니다」와 종료 코드 0 으로 끝난다.
+자동화는 그 0 을 작업이 끝났다는 뜻으로 읽는다. 그래서 확인 앞에서 먼저 가른다.
+
+```php
+if (! $this->option('force')) {
+    if (! $this->canAnswerConfirmation()) {
+        return $this->refuseUnanswerableConfirmation(
+            __('foo.commands.delete.confirm_unavailable'),       // 작업하지 않은 사유
+            __('foo.commands.delete.confirm_unavailable_hint'),  // 확인 생략 옵션, 없으면 터미널에서 실행하라는 안내
+        );
+    }
+
+    if (! $this->unifiedConfirm(__('foo.commands.delete.confirm_question'), false)) {
+        $this->info(__('foo.commands.delete.aborted'));
+
+        return self::SUCCESS; // 대화형에서 운영자가 직접 답한 「아니오」는 의도한 취소라 0
+    }
+}
+```
+
+| 메서드 | 동작 |
+|--------|------|
+| `canAnswerConfirmation(): bool` | `--yes` 로 미리 답했거나, `isInteractive()` 이고 `canPromptForAnswer()` 이면 true. 답할 수 없는 실행 판정의 단일 지점이며 `unifiedConfirm()` 도 이 판정을 쓴다 |
+| `confirmationPreApproved(): bool` | `--yes` 가 주어졌으면 true(트레이트가 붙인 옵션이든 시그니처 선언이든) — `unifiedConfirm()` 은 묻지 않고 true(7.2.0) |
+| `canShowPrompt(): bool` | `isInteractive()` 이고 `canPromptForAnswer()` 이면 true — `--yes` 는 보지 않는다. 확인 외의 질문과 선택 질문은 이 판정으로 가른다(7.2.0) |
+| `optionalConfirm(string $question, bool $default = false): bool` | 선택 질문용 yes/no — `--yes` 가 「예」로 답하지 않고, 질문을 띄울 수 없으면 `$default`(7.2.0) |
+| `refuseUnanswerableConfirmation(string $reason, string $hint): int` | 사유를 오류로, 안내를 한 줄로 출력하고 `Command::FAILURE` 를 돌려준다 |
+
+확인 외의 질문(`choice()`·`ask()`·`secret()`)은 `canShowPrompt()` 로 먼저 가른다 — 콘솔 없는 실행에서 그 질문을 띄우면 위와 같은 이유로 영영 끝나지 않는다.
+`canAnswerConfirmation()` 은 `--yes` 를 준 실행도 「답할 수 있음」으로 보므로 이 갈래에 쓰지 않는다. 미서명 패키지 확인(`HandlesPackageIntegrity::runWithIntegrityConsent()`)도 `--yes` 가 답하지 않는 질문이라 `canShowPrompt()`·`optionalConfirm()` 으로 묻는다 — 동의는 `--allow-unsigned` 하나로만 한다.
+답할 수 없으면 기본값을 쓰거나(일괄 업데이트의 레이아웃 전략은 overwrite, 확장별 덮어쓰기·검색 인덱스 재생성은 묻지 않음) 거절한다
+(`user:reset-password`·`settings:set` 의 비밀값 입력은 출처 옵션 안내와 함께 실패).
+
+`--yes`(`-y`) 는 **확인 질문에만** 「예」로 답한다(`module|plugin|template:update`·`:uninstall`·`language-pack:update`·`language-pack:uninstall`·`core:update`·`core:execute-upgrade-steps`·`stage:apply-to-live`·`stage-layouts:reset-from-live`·`settings:migrate-to-json`·`search:index`·`analytics:anonymize`·`analytics:purge`·`analytics:purge-extension`·`hotfix:rollback-stale-files`). 7.1.6 에서 `--yes` 를 받던 명령은 7.2.0 에서도 모두 받는다 — 확장 명령을 포함해 7.1.6 스크립트가 「옵션 없음」으로 실패하지 않게 한다. 시그니처에 선언할 때는 `{--y|yes : …}` 로 `-y` 축약을 함께 둔다 — `{--yes}` 만 두면 `-y` 가 「옵션 없음」으로 실패한다. 확인 질문이 없는 `language-pack:update` 도 다른 `{type}:update` 와 같은 형태로 부를 수 있게 받는다(효과 없음). 업데이트의 `--force` 는
+확인 생략에 더해 ① 같은 판 재적용 ② 다운그레이드 허용 ③ 코어 호환 검사 생략 ④ 같은 판 업그레이드 스텝 재실행 ⑤ 멈춘 업데이트 정리를 함께 켜므로,
+비대화형 자동화가 확인만 건너뛰려면 `--yes` 를 쓴다.
+
+단위 테스트에서 `canPromptForAnswer()` 는 늘 true 다(입력을 주입하므로). 「콘솔 없는 실행」 갈래는 `App\Console\Helpers\PromptCapability::fake(false)` 로
+고정해 재고, `tearDown()` 에서 `PromptCapability::reset()` 으로 되돌린다.
+
+안내 문구는 사실대로 쓴다. 확인 생략 옵션이 있는 명령은 그 옵션(`--yes`, 같은 판 재적용이 필요할 때만 `--force`)을 안내하고,
+없는 명령은 터미널에서 실행해 질문에 답하라고 안내한다. 되돌릴 수 없는 삭제(`analytics:purge` 등)의 필수 동의
+표식(`--confirm`)은 비대화형 동의가 아니다 — 비대화형 동의는 `--yes` 하나다. 이 규칙을 따르는 명령: `core:update`, `module:update`, `plugin:update`,
+`template:update`, `module:uninstall`, `plugin:uninstall`, `template:uninstall`, `language-pack:uninstall`,
+`user:reset-password`(이메일을 생략해 최고관리자를 대상으로 할 때 — 확인 생략 옵션 대신 이메일 지정을 안내),
+`analytics:anonymize`, `analytics:purge`, `analytics:purge-extension`, `hotfix:rollback-stale-files --prune`,
+`settings:migrate-to-json`.
+
+선택 질문(기본값이 문서화된 진행 방식이고 거절이 작업 취소가 아닌 것, 예: 확장별 덮어쓰기 변경 여부, 검색 인덱스 재생성 여부)은
+`optionalConfirm()` 으로 묻는다 — `--yes` 가 「예」로 답하지 않고, 질문을 띄울 수 없으면 기본값을 그대로 쓴다.
 
 ---
 
@@ -256,10 +312,20 @@ $this->artisan('foo:bar')
     ->assertExitCode(0);
 ```
 
-`--no-interaction` 또는 `--force` 시 default 동작 회귀:
+`--no-interaction` 시 default 동작 회귀(선택 질문):
 
 ```php
 $this->artisan('foo:bar --no-interaction')->assertExitCode(0);
+```
+
+작업 취소 확인은 비대화형이 실패(1)로 끝나는지 본다. 테스트 실행에서는 `canPromptForAnswer()` 가 늘 true 이므로
+「터미널 없음」은 그 메서드만 false 로 바꾼 익명 하위 클래스를 `Kernel::registerCommand()` 로 등록해 흉내 낸다
+(`tests/Feature/Console/ExtensionLifecycleNonInteractiveConfirmTest.php` 참조).
+
+```php
+$this->artisan('foo:delete --no-interaction')
+    ->expectsOutputToContain(__('foo.commands.delete.confirm_unavailable'))
+    ->assertExitCode(1);
 ```
 
 ### 주의
@@ -312,6 +378,9 @@ $confirmed = \App\Console\Helpers\ConsoleConfirm::ask('진행할까요?', true);
 ```text
 □ Laravel Command 에서 yes/no 입력이 필요한가?
    → use HasUnifiedConfirm + $this->unifiedConfirm($question, $default)
+
+□ 「아니오」가 곧 작업 취소인 확인인가?
+   → 확인 앞에서 canAnswerConfirmation() 으로 가르고, 답할 수 없으면 refuseUnanswerableConfirmation() 으로 종료 코드 1
 
 □ upgrade step 또는 단순 PHP CLI 에서 yes/no 입력이 필요한가?
    → \App\Console\Helpers\ConsoleConfirm::ask($question, $default) FQN 호출

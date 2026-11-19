@@ -5,7 +5,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 코어 74훅 + 확장 167훅 = 총 241훅 (확장별 목록은 그 확장이 소유)
+1. 코어 76훅 + 확장 167훅 = 총 243훅 (확장별 목록은 그 확장이 소유)
 2. Listener에서 Log::channel('activity')->info() 직접 호출 (Monolog → ActivityLogHandler → DB)
 3. 스냅샷 패턴: before_update(priority 5) → 캡처, after_update → ChangeDetector로 비교
 4. 사용자 행위: ActivityLogType::User (장바구니/위시리스트/쿠폰 다운로드/주문/결제)
@@ -41,7 +41,7 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 ## 2. 코어 훅 (CoreActivityLogListener)
 
 **파일**: `app/Listeners/CoreActivityLogListener.php`
-**총 74훅**
+**총 76훅**
 
 ### User (10훅)
 
@@ -141,6 +141,15 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `core.attachment.after_delete` | `handleAttachmentAfterDelete` | `attachment.delete` | Admin | Attachment |
 | `core.attachment.after_bulk_delete` | `handleAttachmentAfterBulkDelete` | `attachment.bulk_delete` | Admin | - |
 
+### Extension Trust Key (2훅)
+
+확장·언어팩 서명을 믿는 제작자 공개키를 등록하거나 지운 보안 설정 변경이다. 관리자 API 와 `extension:trust-key add|remove` 가 같은 서비스를 거치므로 양쪽에서 기록된다(CLI 는 요청 경로가 없어 `System`). 삭제는 행이 사라지므로 대상 없이 `properties`(id, key_id, label, vendor_scope)로 남긴다.
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `core.extension_trust_keys.after_create` | `handleExtensionTrustKeyAfterCreate` | `extension_trust_key.create` | Admin | ExtensionTrustKey |
+| `core.extension_trust_keys.after_delete` | `handleExtensionTrustKeyAfterDelete` | `extension_trust_key.delete` | Admin | - |
+
 > **확장 생명주기 훅의 LogType**: 설치·활성화·비활성화·업데이트·제거 훅은 Manager 가 발화하므로 어드민 UI 와
 > Artisan 커맨드(`module:install` 등) 양쪽에서 기록된다. 어드민 UI 는 `Admin`, CLI 는 요청 경로가 없어 `System` 으로
 > 기록되고 `properties.via = 'cli'` 가 붙어 관리자 화면 행위자 칸에 "시스템(CLI)" 로 보인다.
@@ -220,15 +229,15 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 
 | 확장 | 훅 수 | 문서 |
 |------|------|------|
-| `sirsoft-ecommerce` | 138 | [docs/extension-points.md](../../modules/_bundled/sirsoft-ecommerce/docs/extension-points.md) |
+| `sirsoft-ecommerce` | 150 | [docs/extension-points.md](../../modules/_bundled/sirsoft-ecommerce/docs/extension-points.md) |
 | `sirsoft-board` | 30 | [docs/extension-points.md](../../modules/_bundled/sirsoft-board/docs/extension-points.md) |
 | `sirsoft-page` | 7 | [docs/extension-points.md](../../modules/_bundled/sirsoft-page/docs/extension-points.md) |
 | `sirsoft-pay_kginicis` | 1 | [docs/extension-points.md](../../plugins/_bundled/sirsoft-pay_kginicis/docs/extension-points.md) |
 | `sirsoft-pay_nhnkcp` | 1 | [docs/extension-points.md](../../plugins/_bundled/sirsoft-pay_nhnkcp/docs/extension-points.md) |
 | `sirsoft-pay_nicepayments` | 1 | [docs/extension-points.md](../../plugins/_bundled/sirsoft-pay_nicepayments/docs/extension-points.md) |
-| **합계** | **178** | |
+| **합계** | **190** | |
 
-코어 71훅 + 확장 167훅 = **총 238훅**입니다.
+코어 71훅 + 확장 190훅 = **총 261훅**입니다.
 
 확장에 새 활동 로그 항목을 추가할 때는 **그 확장의 lang 파일**(`src/lang/{ko,en}/activity_log.php`)에
 action 라벨과 description 본문을 정의합니다. description 은 리스너가 `{확장}::activity_log.description.*`

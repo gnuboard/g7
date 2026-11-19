@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\File;
 use Mockery;
 use Mockery\MockInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Support\Console\NoSpawnExecuteBundledUpdatesCommand;
 use Tests\TestCase;
 
 /**
@@ -231,6 +232,8 @@ class ExtensionUpdateLayoutSyncOutputTest extends TestCase
      */
     public function test_bundled_update_child_prints_one_summary_line_per_extension(): void
     {
+        // 항목마다 새 프로세스를 띄우면 아래 페이크가 보이지 않는다 — 같은 프로세스 처리로 확장마다의 출력을 본다
+        $this->app[Kernel::class]->registerCommand($this->app->make(NoSpawnExecuteBundledUpdatesCommand::class));
         $this->app->instance(ExtensionManager::class, Mockery::mock(ExtensionManager::class, fn (MockInterface $m) => $m->shouldReceive('updateComposerAutoload')->once()));
         $this->app->instance(CoreUpdateService::class, Mockery::mock(CoreUpdateService::class, fn (MockInterface $m) => $m->shouldReceive('sweepEmptyStagingDirectories')->once()));
         $this->app->instance(ModuleManager::class, Mockery::mock(ModuleManager::class, fn (MockInterface $m) => $m->shouldIgnoreMissing()->shouldReceive('updateModule')->once()
@@ -259,6 +262,7 @@ class ExtensionUpdateLayoutSyncOutputTest extends TestCase
         $this->assertStringContainsString(PHP_EOL.'  '.__('extensions.layout_sync.summary', ['applied' => 0, 'conflicts' => 0]).' '.__('extensions.layout_sync.no_base', ['count' => 2]), $output, '템플릿 요약 한 줄(기준 없음 포함)');
         $this->assertSame(2, substr_count($output, __('extensions.layout_sync.summary', ['applied' => 0, 'conflicts' => 0])) + substr_count($output, __('extensions.layout_sync.summary', ['applied' => 1, 'conflicts' => 1])), 'overwrite 플러그인은 요약 줄이 없어야 한다');
         $this->assertStringNotContainsString(__('extensions.layout_sync.cli.header'), $output, 'core:update 는 표를 내지 않는다');
-        $this->assertStringContainsString(ExecuteBundledUpdatesCommand::RESULT_PREFIX.'{"success":3,"failed":0,"skipped":0,"aborted":false}', $output);
+        // skipped·aborted 는 실패·중단이 있을 때만 싣는다(병합 계약 — 부모는 모르는 키를 무시한다)
+        $this->assertStringContainsString(ExecuteBundledUpdatesCommand::RESULT_PREFIX.'{"success":3,"failed":0}', $output);
     }
 }

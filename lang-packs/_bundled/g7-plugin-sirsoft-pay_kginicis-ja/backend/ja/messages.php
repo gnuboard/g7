@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'vbank_close_reason' => '入金前の注文キャンセル',
     'errors' => [
         'cash_receipt_issue_failed' => '現金領収書の発行に失敗しました。',
         'order_not_found' => '注文が見つかりません。',
@@ -13,7 +14,12 @@ return [
     'refund' => [
         'missing_tid' => 'トランザクション ID（TID）がないため、返金を進めることができません。',
         'default_reason' => '購入者返金要求',
+        'pg_rejected' => 'KGイニシスが決済キャンセルを拒否しました。',
+        'pg_failed' => '決済代行会社との通信中にエラーが発生しました。しばらくしてからもう一度お試しください。',
         'admin_cancel_reason' => '管理者による取消',
+    ],
+    'cbt_test_product' => [
+        'jpy_required' => 'テスト商品を100円で作成するには、ショップの通貨設定に日本円(JPY)と為替レートが必要です。Eコマース設定 > 言語・通貨で日本円を追加してから、もう一度お試しください。',
     ],
     'cbt_connectivity' => [
         'checked' => '接続診断が完了しました。',
@@ -44,6 +50,8 @@ return [
     'cash_receipt' => [
         'provider_name' => 'KGイニシス',
         'cancel_reason' => '現金領収証の発行取消',
+        'cancel_rejected' => 'KGイニシスが現金領収証の取消を拒否しました。',
+        'pg_failed' => '決済代行会社との通信中にエラーが発生したため、現金領収証を処理できませんでした。しばらくしてからもう一度お試しください。',
     ],
     'escrow' => [
         'invoice_required' => '送り状番号を入力してください。',
@@ -53,6 +61,10 @@ return [
         'confirm_page_title' => 'エスクロー購入確定',
         'confirm_preparing' => 'エスクロー購入確定画面を準備しています...',
         'confirm_redirecting' => 'エスクロー購入確定ページへ移動しています...',
+        'delivery_rejected' => '配送登録に失敗しました。',
+        'delivery_failed' => 'エラーが発生したため、エスクロー配送登録を完了できませんでした。しばらくしてからもう一度お試しください。失敗が続く場合はサーバーログを確認してください。',
+        'deny_confirm_rejected' => '購入拒否の確認に失敗しました。',
+        'deny_confirm_failed' => 'エラーが発生したため、購入拒否の確認を完了できませんでした。しばらくしてからもう一度お試しください。失敗が続く場合はサーバーログを確認してください。',
     ],
     'cbt_cvs' => [
         'simulate_success' => '入金シミュレーションが完了しました。',
@@ -141,5 +153,25 @@ return [
     ],
     'settings' => [
         'redirect_url_format' => '決済後の移動先アドレスは {shopBase}、/ または http(s):// で始まり、空白を含めることはできません。他サイトへ送る //アドレス と javascript: は使用できません。',
+    ],
+    // 決済画面・決済代行会社連携 API のエラー応答メッセージ
+    'responses' => [
+        'amount_mismatch' => '決済金額が注文金額と一致しません。',
+        'buyer_verification_failed' => '注文者の確認に失敗しました。',
+        'cbt_disabled' => '日本向け海外決済(CBT)が無効になっています。',
+        'cbt_jpy_only' => '海外決済(CBT)は円建ての決済のみ対応しています。',
+        'cbt_not_configured' => '日本向け海外決済(CBT)の設定が完了していません。',
+        'cbt_token_invalid' => '海外決済リクエストを確認できませんでした。決済をやり直してください。',
+        'claim_amount_mismatch' => '決済金額が請求決済の金額と一致しません。',
+        'claim_payment_not_found' => '請求決済が見つかりません。',
+        'claim_payment_not_payable' => 'この請求決済は決済できません。',
+        'credentials_not_configured' => 'KGイニシスの決済設定が完了していません。',
+        'currency_not_chargeable' => '決済通貨で請求額を計算できません。',
+        'krw_only' => 'KGイニシスの標準決済はウォン建ての決済のみ対応しています。',
+        'order_not_found' => '注文が見つかりません。',
+        'order_not_payable' => 'この注文は決済できません。',
+        'ownership_verification_failed' => '注文の所有者確認に失敗しました。',
+        'timestamp_stale' => 'リクエスト時刻が期限切れか正しくありません。決済をやり直してください。',
+        'too_many_requests' => 'リクエストが多すぎます。しばらくしてから再度お試しください。',
     ],
 ];

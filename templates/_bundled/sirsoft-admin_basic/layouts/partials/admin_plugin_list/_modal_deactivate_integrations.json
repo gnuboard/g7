@@ -10,7 +10,215 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.extension_integrations.deactivate_notice_title",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "취소 — 스위치는 여는 쪽이 이미 서버 값으로 되돌려 두었으므로 창만 닫는다.",
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary",
+                    "disabled": "{{_global.isPluginIntegrationDeactivating}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "비활성 실행 — 목록 스위치의 비활성 갈래와 같은 호출이다. 성공하면 목록·사이드바 메뉴·확장 번들을 갱신하고,\n               의존하는 쪽이 있어 409 로 거절되면 이 창을 닫고 강제 비활성 창을 연다(그 창이 의존 목록을 보이고 강제 여부를 묻는다).",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isPluginIntegrationDeactivating": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/plugins/deactivate",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "POST",
+                                    "body": {
+                                        "plugin_name": "{{_global.selectedPlugin.identifier}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isPluginIntegrationDeactivating": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "parallel",
+                                        "actions": [
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "$t:admin.plugins.deactivate_success"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "plugins"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "admin_menu"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "auto_deactivated_banner"
+                                                }
+                                            },
+                                            {
+                                                "handler": "reloadExtensions",
+                                                "params": {
+                                                    "pluginInfo": "{{result.data?.plugin ?? result}}",
+                                                    "action": "remove"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    },
+                                    {
+                                        "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
+                                            "lifecycleWarningsOpen": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "openModal",
+                                        "target": "lifecycle_warnings_modal",
+                                        "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isPluginIntegrationDeactivating": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "plugins"
+                                        }
+                                    }
+                                ],
+                                "errorHandling": {
+                                    "409": {
+                                        "comment": "409(이 플러그인에 의존하는 쪽이 있음)는 fail 을 거치지 않는다 — 이 창을 닫고 의존 목록을 담아 강제 비활성 창으로 넘긴다.",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isPluginIntegrationDeactivating": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "plugins"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            },
+                                            {
+                                                "comment": "같은 확장에 다른 작업(설치·업데이트·활성화 등)이 진행 중이라 거절된 409(errors.operation_in_progress, 코어 7.1.5)는\n                         의존 경고·강제 비활성 창 응답과 다르다 — 창을 열지 않고 서버 문구를 안내 토스트로 보인다(#161).",
+                                                "handler": "toast",
+                                                "if": "{{error.errors?.operation_in_progress}}",
+                                                "params": {
+                                                    "type": "info",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "if": "{{!error.errors?.operation_in_progress}}",
+                                                "params": {
+                                                    "target": "global",
+                                                    "deactivateWarningData": "{{error.errors ?? null}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "plugin_force_deactivate_modal",
+                                                "if": "{{!error.errors?.operation_in_progress}}"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isPluginIntegrationDeactivating}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isPluginIntegrationDeactivating}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isPluginIntegrationDeactivating ? '$t:admin.plugins.deactivating' : '$t:admin.extension_integrations.deactivate_confirm'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -111,221 +319,6 @@
                                     "text": "{{item.name || item.identifier}} ({{item.identifier}})"
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "취소 — 스위치는 여는 쪽이 이미 서버 값으로 되돌려 두었으므로 창만 닫는다.",
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary",
-                        "disabled": "{{_global.isPluginIntegrationDeactivating}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.cancel"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "비활성 실행 — 목록 스위치의 비활성 갈래와 같은 호출이다. 성공하면 목록·사이드바 메뉴·확장 번들을 갱신하고,\n               의존하는 쪽이 있어 409 로 거절되면 이 창을 닫고 강제 비활성 창을 연다(그 창이 의존 목록을 보이고 강제 여부를 묻는다).",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "isPluginIntegrationDeactivating": true
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/admin/plugins/deactivate",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "POST",
-                                        "body": {
-                                            "plugin_name": "{{_global.selectedPlugin.identifier}}"
-                                        }
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isPluginIntegrationDeactivating": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "parallel",
-                                            "actions": [
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:admin.plugins.deactivate_success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "plugins"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "admin_menu"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "auto_deactivated_banner"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "reloadExtensions",
-                                                    "params": {
-                                                        "pluginInfo": "{{result.data?.plugin ?? result}}",
-                                                        "action": "remove"
-                                                    }
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        },
-                                        {
-                                            "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
-                                                "lifecycleWarningsOpen": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "openModal",
-                                            "target": "lifecycle_warnings_modal",
-                                            "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isPluginIntegrationDeactivating": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "plugins"
-                                            }
-                                        }
-                                    ],
-                                    "errorHandling": {
-                                        "409": {
-                                            "comment": "409(이 플러그인에 의존하는 쪽이 있음)는 fail 을 거치지 않는다 — 이 창을 닫고 의존 목록을 담아 강제 비활성 창으로 넘긴다.",
-                                            "handler": "sequence",
-                                            "actions": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isPluginIntegrationDeactivating": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "plugins"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "comment": "같은 확장에 다른 작업(설치·업데이트·활성화 등)이 진행 중이라 거절된 409(errors.operation_in_progress, 코어 7.1.5)는\n                         의존 경고·강제 비활성 창 응답과 다르다 — 창을 열지 않고 서버 문구를 안내 토스트로 보인다(#161).",
-                                                    "handler": "toast",
-                                                    "if": "{{error.errors?.operation_in_progress}}",
-                                                    "params": {
-                                                        "type": "info",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "if": "{{!error.errors?.operation_in_progress}}",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "deactivateWarningData": "{{error.errors ?? null}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "plugin_force_deactivate_modal",
-                                                    "if": "{{!error.errors?.operation_in_progress}}"
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{_global.isPluginIntegrationDeactivating}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.isPluginIntegrationDeactivating}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.isPluginIntegrationDeactivating ? '$t:admin.plugins.deactivating' : '$t:admin.extension_integrations.deactivate_confirm'}}"
                         }
                     ]
                 }

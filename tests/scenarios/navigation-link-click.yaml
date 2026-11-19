@@ -38,6 +38,7 @@ effects:
   - external_href_not_followed
   - explicit_path_wins
   - no_engine_listener_on_aux_or_context
+  - subpath_link_href_strips_mount_prefix   # 하위 폴더 배치에서 마운트 접두사를 품은 링크 href(`/g7/board/free/2849`)를 벗겨 라우트에 대조하고 SPA 이동한다(실제 Router, 이중 접두 없음, 루트 설치 무변화)
 
 test_files:
   - resources/js/core/template-engine/__tests__/ActionDispatcher.linkClick.test.tsx

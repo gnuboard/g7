@@ -230,8 +230,15 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "if": "{{userPosts.data?.data?.length > 0}}",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-12 gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "hidden md:grid grid-cols-12 gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                    "className": "hidden grid-cols-12 gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                                                 },
                                                 "children": [
                                                     {
@@ -284,6 +291,13 @@
                                                             "source": "{{userPosts.data?.data ?? []}}",
                                                             "item_var": "post"
                                                         },
+                                                        "responsive": {
+                                                            "768-": {
+                                                                "props": {
+                                                                    "className": "w-full text-left grid grid-cols-12 gap-2 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer items-center"
+                                                                }
+                                                            }
+                                                        },
                                                         "actions": [
                                                             {
                                                                 "type": "click",
@@ -292,15 +306,22 @@
                                                         ],
                                                         "props": {
                                                             "href": "/board/{{post.board_slug}}/{{post.id}}",
-                                                            "className": "w-full text-left grid grid-cols-1 md:grid-cols-12 gap-2 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer items-center"
+                                                            "className": "w-full text-left grid grid-cols-1 gap-2 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer items-center"
                                                         },
                                                         "children": [
                                                             {
                                                                 "comment": "게시판명 컬럼",
                                                                 "type": "basic",
                                                                 "name": "Div",
+                                                                "responsive": {
+                                                                    "768-": {
+                                                                        "props": {
+                                                                            "className": "block col-span-2 text-sm text-gray-600 dark:text-gray-400 truncate"
+                                                                        }
+                                                                    }
+                                                                },
                                                                 "props": {
-                                                                    "className": "hidden md:block col-span-2 text-sm text-gray-600 dark:text-gray-400 truncate"
+                                                                    "className": "hidden col-span-2 text-sm text-gray-600 dark:text-gray-400 truncate"
                                                                 },
                                                                 "text": "{{post.board_name}}"
                                                             },
@@ -308,16 +329,30 @@
                                                                 "comment": "제목 영역 (배지 + 제목 + 댓글수)",
                                                                 "type": "basic",
                                                                 "name": "Div",
+                                                                "responsive": {
+                                                                    "768-": {
+                                                                        "props": {
+                                                                            "className": "col-span-6 flex items-center gap-2 min-w-0 overflow-hidden"
+                                                                        }
+                                                                    }
+                                                                },
                                                                 "props": {
-                                                                    "className": "col-span-1 md:col-span-6 flex items-center gap-2 min-w-0 overflow-hidden"
+                                                                    "className": "col-span-1 flex items-center gap-2 min-w-0 overflow-hidden"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "comment": "게시판명 배지 (모바일용)",
                                                                         "type": "basic",
                                                                         "name": "Span",
+                                                                        "responsive": {
+                                                                            "768-": {
+                                                                                "props": {
+                                                                                    "className": "hidden flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap truncate max-w-32"
+                                                                                }
+                                                                            }
+                                                                        },
                                                                         "props": {
-                                                                            "className": "md:hidden flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap truncate max-w-32"
+                                                                            "className": "flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap truncate max-w-32"
                                                                         },
                                                                         "text": "{{post.board_name}}"
                                                                     },
@@ -401,8 +436,15 @@
                                                                 "comment": "조회수",
                                                                 "type": "basic",
                                                                 "name": "Div",
+                                                                "responsive": {
+                                                                    "768-": {
+                                                                        "props": {
+                                                                            "className": "flex col-span-1 justify-center items-center gap-1 text-sm text-gray-500 dark:text-gray-400"
+                                                                        }
+                                                                    }
+                                                                },
                                                                 "props": {
-                                                                    "className": "hidden md:flex col-span-1 justify-center items-center gap-1 text-sm text-gray-500 dark:text-gray-400"
+                                                                    "className": "hidden col-span-1 justify-center items-center gap-1 text-sm text-gray-500 dark:text-gray-400"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -424,8 +466,15 @@
                                                                 "comment": "작성일",
                                                                 "type": "basic",
                                                                 "name": "Span",
+                                                                "responsive": {
+                                                                    "768-": {
+                                                                        "props": {
+                                                                            "className": "block col-span-3 text-right text-sm text-gray-500 dark:text-gray-400"
+                                                                        }
+                                                                    }
+                                                                },
                                                                 "props": {
-                                                                    "className": "hidden md:block col-span-3 text-right text-sm text-gray-500 dark:text-gray-400",
+                                                                    "className": "hidden col-span-3 text-right text-sm text-gray-500 dark:text-gray-400",
                                                                     "title": "{{post.created_at ?? ''}}"
                                                                 },
                                                                 "text": "{{post.created_at_formatted ?? ''}}"
@@ -434,8 +483,15 @@
                                                                 "comment": "모바일용 하단 정보",
                                                                 "type": "basic",
                                                                 "name": "Div",
+                                                                "responsive": {
+                                                                    "768-": {
+                                                                        "props": {
+                                                                            "className": "hidden items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                                        }
+                                                                    }
+                                                                },
                                                                 "props": {
-                                                                    "className": "md:hidden flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                                    "className": "flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1"
                                                                 },
                                                                 "children": [
                                                                     {

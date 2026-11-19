@@ -6,8 +6,8 @@ namespace Plugins\Sirsoft\PayNicepayments\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\ClaimPaymentLookup;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Plugins\Sirsoft\PayNicepayments\Concerns\SanitizesPgResponse;
 use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 
@@ -142,13 +142,14 @@ class ClaimPaymentApproveListener implements HookListenerInterface
         // 바뀌면(신청서 수정·관리자 재산정) 낡은 창의 금액이 들어온다 — 그대로 승인하면 모듈이 승인
         // **뒤**에 금액 불일치로 거절하고, 그 거절의 보상(망취소)은 서버 콜백 경로에만 있어 클라이언트
         // 승인 API 경로에서는 청구된 채 남는다. 기준을 세울 수 없으면(통화 스냅샷 부재) 통과시키지 않는다.
-        $charge = app(ClaimPaymentService::class)->resolvePaymentCharge($payment);
+        // 훅으로 받은 잠긴 결제 건을 그대로 넘긴다 — 계약이 이 결제 건으로 청구액을 계산한다(재조회 없음).
+        $charge = app(ClaimPaymentLookup::class)->resolveClaimCharge($payment);
 
-        if ($charge === null || $amt !== (int) $charge['minor_unit_amount']) {
+        if ($charge === null || $amt !== $charge->minorUnitAmount) {
             Log::warning('NicePayments: claim approve amount mismatch before authorization', [
                 'payment_number' => $payment->payment_number,
                 'callback_amt' => $amt,
-                'expected' => $charge['minor_unit_amount'] ?? null,
+                'expected' => $charge?->minorUnitAmount,
             ]);
 
             return $this->failure('AMOUNT_MISMATCH', __('sirsoft-pay_nicepayments::messages.claim.amount_mismatch'));

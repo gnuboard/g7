@@ -21,12 +21,13 @@ interface LayoutVersionRepositoryInterface
     public function saveVersion(int $layoutId, array $oldContent, ?array $newContent = null, ?int $createdBy = null, array $summaryExtra = []): TemplateLayoutVersion;
 
     /**
-     * 특정 레이아웃의 모든 버전 조회 (최신순)
+     * 특정 레이아웃의 버전 조회 (최신순, 본문 포함)
      *
      * @param  int  $layoutId  레이아웃 ID
+     * @param  int|null  $limit  조회할 최대 버전 수 (null 이면 전부)
      * @return Collection 버전 컬렉션
      */
-    public function getVersions(int $layoutId): Collection;
+    public function getVersions(int $layoutId, ?int $limit = null): Collection;
 
     /**
      * 특정 버전 조회

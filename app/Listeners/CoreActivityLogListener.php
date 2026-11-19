@@ -9,12 +9,20 @@ use App\Contracts\Repositories\ActivityLogRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\DisplayNameResolver;
 use App\Enums\ActivityLogType;
 use App\Enums\PrivacyManualRunStatus;
+use App\Enums\ScheduleTriggerType;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
+use App\Fields\FieldRegistry;
+use App\Fields\FieldSet;
+use App\Fields\FieldValueService;
 use App\Models\Attachment;
+use App\Models\ExtensionTrustKey;
+use App\Models\FieldDefinition;
 use App\Models\IdentityVerificationLog;
 use App\Models\PrivacyManualRun;
 use App\Models\Schedule;
@@ -60,6 +68,7 @@ class CoreActivityLogListener implements HookListenerInterface
             // ─── User ───
             'core.user.after_create' => ['method' => 'handleUserAfterCreate', 'priority' => 20],
             'core.user.after_update' => ['method' => 'handleUserAfterUpdate', 'priority' => 20],
+            'core.user.fields.after_update' => ['method' => 'handleUserFieldsAfterUpdate', 'priority' => 20],
             'core.user.after_delete' => ['method' => 'handleUserAfterDelete', 'priority' => 20],
             'core.user.after_withdraw' => ['method' => 'handleUserAfterWithdraw', 'priority' => 20],
             'core.user.after_show' => ['method' => 'handleUserAfterShow', 'priority' => 20],
@@ -69,6 +78,10 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.user.after_bulk_update_roles' => ['method' => 'handleUserAfterBulkUpdateRoles', 'priority' => 20],
             // 회원 등록·수정 화면에서 역할·최고관리자 지정이 바뀐 경우(#736 D23) — 권한 부여·변경 기록이라 3년 보관 대상
             'core.user.after_update_roles' => ['method' => 'handleUserAfterUpdateRoles', 'priority' => 20],
+            // 회원 차단·해제·강제 로그아웃 공개 진입점(7.2.0) — 행위자 없는 시스템 경로(프로비저닝 등)도 남긴다
+            'core.user.after_block' => ['method' => 'handleUserAfterBlock', 'priority' => 20, 'sync' => true],
+            'core.user.after_unblock' => ['method' => 'handleUserAfterUnblock', 'priority' => 20, 'sync' => true],
+            'core.user.after_sessions_revoked' => ['method' => 'handleUserAfterSessionsRevoked', 'priority' => 20, 'sync' => true],
 
             // ─── Auth ───
             'core.auth.after_login' => ['method' => 'handleAuthAfterLogin', 'priority' => 20],
@@ -119,9 +132,18 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.settings.after_save' => ['method' => 'handleSettingsAfterSave', 'priority' => 20],
             'core.settings.after_set' => ['method' => 'handleSettingsAfterSet', 'priority' => 20],
 
+            // Extension Trust Key 훅 (환경설정 > 보안 「확장 신뢰 키」·extension:trust-key, #916)
+            'core.extension_trust_keys.after_create' => ['method' => 'handleExtensionTrustKeyAfterCreate', 'priority' => 20],
+            'core.extension_trust_keys.after_delete' => ['method' => 'handleExtensionTrustKeyAfterDelete', 'priority' => 20],
+
             // ─── Privacy (관리자 직권 실행) ───
             'core.privacy.manual_run_queued' => ['method' => 'handlePrivacyManualRunQueued', 'priority' => 20],
             'core.privacy.manual_run_finished' => ['method' => 'handlePrivacyManualRunFinished', 'priority' => 20],
+
+            // ─── Core update (#609 D23 — 실행·성공·실패) ───
+            'core.core_update.started' => ['method' => 'handleCoreUpdateStarted', 'priority' => 20],
+            'core.core_update.completed' => ['method' => 'handleCoreUpdateCompleted', 'priority' => 20],
+            'core.core_update.failed' => ['method' => 'handleCoreUpdateFailed', 'priority' => 20],
 
             // ─── Schedule ───
             'core.schedule.after_create' => ['method' => 'handleScheduleAfterCreate', 'priority' => 20],
@@ -175,6 +197,10 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.plugin_settings.after_save' => ['method' => 'handlePluginSettingsAfterSave', 'priority' => 20],
             'core.plugin_settings.after_reset' => ['method' => 'handlePluginSettingsAfterReset', 'priority' => 20],
 
+            // ─── Template Settings (#434) ───
+            'core.template_settings.after_save' => ['method' => 'handleTemplateSettingsAfterSave', 'priority' => 20],
+            'core.template_settings.after_reset' => ['method' => 'handleTemplateSettingsAfterReset', 'priority' => 20],
+
             // ─── Analytics ───
             // 운영자가 방문 데이터에 손대는 행위만 남긴다. 수집 자체(초당 여러 건)는
             // 활동 로그에 넣지 않는다 — 감사 기록이 통계 트래픽에 묻힌다.
@@ -221,7 +247,11 @@ class CoreActivityLogListener implements HookListenerInterface
             'loggable' => $user,
             'description_key' => 'activity_log.description.user_create',
             'description_params' => ['user_id' => $user->uuid],
-            'properties' => ['email' => $user->email, 'name' => $user->name],
+            // 기록에 남기는 이름은 그 시점의 관리자 영역 표시 이름이다(이름을 받지 않는 사이트에서도 비지 않는다).
+            'properties' => [
+                'email' => $user->email,
+                'name' => app(DisplayNameResolver::class)->resolve($user, DisplayNameAreaRegistry::AREA_ADMIN),
+            ],
         ]);
     }
 
@@ -242,6 +272,52 @@ class CoreActivityLogListener implements HookListenerInterface
             'description_key' => 'activity_log.description.user_update',
             'description_params' => ['user_id' => $user->uuid],
             'changes' => $changes,
+        ]);
+    }
+
+    /**
+     * 회원의 추가 항목 값 변경 후 로그 기록 (7.2.0)
+     *
+     * users 컬럼이 아닌 회원 항목(운영자 추가 항목, 확장 핸들러 항목)의 값이 바뀌면 따로 남긴다 — 회원 행 스냅샷에는 그 값이 없다.
+     * 관리자만 열람 항목의 값은 가린다(활동 로그를 볼 수 있는 운영자가 그 항목까지 볼 수 있다고 보지 않는다).
+     *
+     * @param  User  $user  수정된 회원
+     * @param  array<string, array{old: mixed, new: mixed}>  $changes  항목 키 => 이전·새 값
+     * @param  string  $surface  저장한 표면 (self_update|admin_update 등)
+     * @return void 반환값 없음
+     */
+    public function handleUserFieldsAfterUpdate(User $user, array $changes, string $surface = 'admin_update'): void
+    {
+        $registry = app(FieldRegistry::class);
+        $values = app(FieldValueService::class);
+        $rows = [];
+
+        foreach ($changes as $key => $change) {
+            $definition = $registry->find(FieldSet::CORE_USER, (string) $key);
+            if ($definition === null) {
+                continue;
+            }
+
+            $hidden = $definition->edit_scope === FieldDefinition::SCOPE_ADMIN_ONLY;
+            $rows[] = [
+                'field' => 'fields.'.$key,
+                'label' => $definition->localized('name') ?? (string) $key,
+                'old' => $hidden ? '***' : $values->display($definition, $change['old'] ?? null),
+                'new' => $hidden ? '***' : $values->display($definition, $change['new'] ?? null),
+                'type' => 'text',
+            ];
+        }
+
+        if ($rows === []) {
+            return;
+        }
+
+        $this->logActivity('user.fields_update', [
+            'loggable' => $user,
+            'description_key' => 'activity_log.description.user_fields_update',
+            'description_params' => ['user_id' => $user->uuid],
+            'changes' => $rows,
+            'properties' => ['surface' => $surface],
         ]);
     }
 
@@ -731,6 +807,70 @@ class CoreActivityLogListener implements HookListenerInterface
     }
 
     /**
+     * 회원 차단 후 로그 기록 (7.2.0 — `UserService::blockUser()`)
+     *
+     * @param  User  $user  차단된 회원
+     * @param  array{reason_key?: string|null, source?: string|null}  $context  사유와 출처
+     * @return void 반환값 없음
+     */
+    public function handleUserAfterBlock(User $user, array $context = []): void
+    {
+        $this->logActivity('user.block', [
+            'loggable' => $user,
+            'description_key' => 'activity_log.description.user_block',
+            'description_params' => ['user_id' => (string) $user->uuid, 'reason' => (string) ($context['reason_key'] ?? '')],
+            'properties' => [
+                'user_uuid' => (string) $user->uuid,
+                'reason_key' => $context['reason_key'] ?? null,
+                'source' => $context['source'] ?? null,
+            ],
+        ]);
+    }
+
+    /**
+     * 회원 차단 해제 후 로그 기록 (7.2.0 — `UserService::unblockUser()`)
+     *
+     * @param  User  $user  차단이 풀린 회원
+     * @param  array{reason_key?: string|null, source?: string|null}  $context  사유와 출처
+     * @return void 반환값 없음
+     */
+    public function handleUserAfterUnblock(User $user, array $context = []): void
+    {
+        $this->logActivity('user.unblock', [
+            'loggable' => $user,
+            'description_key' => 'activity_log.description.user_unblock',
+            'description_params' => ['user_id' => (string) $user->uuid, 'reason' => (string) ($context['reason_key'] ?? '')],
+            'properties' => [
+                'user_uuid' => (string) $user->uuid,
+                'reason_key' => $context['reason_key'] ?? null,
+                'source' => $context['source'] ?? null,
+            ],
+        ]);
+    }
+
+    /**
+     * 회원 강제 로그아웃 후 로그 기록 (7.2.0 — `UserService::revokeAllSessions()`)
+     *
+     * @param  User  $user  대상 회원
+     * @param  User|null  $actor  행위자 (시스템이면 null)
+     * @param  array{count?: int}  $context  지운 토큰 수
+     * @return void 반환값 없음
+     */
+    public function handleUserAfterSessionsRevoked(User $user, ?User $actor = null, array $context = []): void
+    {
+        $this->logActivity('user.sessions_revoked', [
+            'loggable' => $user,
+            'description_key' => 'activity_log.description.user_sessions_revoked',
+            'description_params' => ['user_id' => (string) $user->uuid, 'count' => (int) ($context['count'] ?? 0)],
+            'properties' => [
+                'user_uuid' => (string) $user->uuid,
+                'revoked_count' => (int) ($context['count'] ?? 0),
+                'actor_uuid' => $actor?->uuid,
+            ],
+        ]);
+    }
+
+    /**
      * 계정 잠금 해제 로그 기록 (관리자 수동 해제 / 비밀번호 재설정)
      *
      * @param  User  $user  잠금이 해제된 사용자
@@ -965,6 +1105,45 @@ class CoreActivityLogListener implements HookListenerInterface
     }
 
     /**
+     * 확장 신뢰 키(제작자 공개키) 등록 후 로그 기록 (#916)
+     *
+     * 이 키로 서명한 확장·언어팩이 「서명 확인됨」이 되는 보안 설정 변경이다. 누가 어떤 vendor 범위로 믿기 시작했는지 남긴다.
+     *
+     * @param  ExtensionTrustKey  $key  등록한 키
+     * @return void 반환값 없음
+     */
+    public function handleExtensionTrustKeyAfterCreate(ExtensionTrustKey $key): void
+    {
+        $vendors = array_values((array) $key->vendor_scope);
+
+        $this->logActivity('extension_trust_key.create', [
+            'loggable' => $key,
+            'description_key' => 'activity_log.description.extension_trust_key_create',
+            'description_params' => ['key_id' => (string) $key->key_id, 'vendors' => implode(', ', $vendors)],
+            'properties' => ['key_id' => (string) $key->key_id, 'label' => (string) $key->label, 'vendor_scope' => $vendors],
+        ]);
+    }
+
+    /**
+     * 확장 신뢰 키(제작자 공개키) 삭제 후 로그 기록 (#916)
+     *
+     * 지운 행이라 모델 참조는 싣지 않고 식별 값만 남긴다(역할·스케줄 삭제와 같다).
+     *
+     * @param  ExtensionTrustKey  $key  지운 키 (훅 인자 스냅샷)
+     * @return void 반환값 없음
+     */
+    public function handleExtensionTrustKeyAfterDelete(ExtensionTrustKey $key): void
+    {
+        $vendors = array_values((array) $key->vendor_scope);
+
+        $this->logActivity('extension_trust_key.delete', [
+            'description_key' => 'activity_log.description.extension_trust_key_delete',
+            'description_params' => ['key_id' => (string) $key->key_id, 'vendors' => implode(', ', $vendors)],
+            'properties' => ['id' => $key->id, 'key_id' => (string) $key->key_id, 'label' => (string) $key->label, 'vendor_scope' => $vendors],
+        ]);
+    }
+
+    /**
      * 개인정보 조치 직권 실행 접수 로그 기록
      *
      * 접수한 관리자의 요청 안에서 발행되므로 로그 유형은 요청자 기준(관리자)으로 정해진다.
@@ -1041,6 +1220,73 @@ class CoreActivityLogListener implements HookListenerInterface
     }
 
     // ═══════════════════════════════════════════
+    // 코어 업데이트 핸들러 (#609 D23)
+    // ═══════════════════════════════════════════
+
+    /**
+     * 코어 업데이트 착수 로그 기록
+     *
+     * @param  string  $runId  실행 식별자
+     * @param  string  $fromVersion  현재 버전
+     * @param  string|null  $toVersion  대상 버전 (수동 ZIP 은 추출 후 판별되므로 null 가능)
+     * @param  array  $options  착수 선택 (번들 확장 · 검색 인덱스 · 레이아웃 전략 · 수동 ZIP)
+     * @return void 반환값 없음
+     */
+    public function handleCoreUpdateStarted(string $runId, string $fromVersion, ?string $toVersion, array $options = []): void
+    {
+        $this->logActivity('core_update.started', [
+            'description_key' => 'activity_log.description.core_update_started',
+            'description_params' => ['from' => $fromVersion, 'to' => $toVersion ?? '-'],
+            'properties' => ['run_id' => $runId, 'options' => $options],
+        ]);
+    }
+
+    /**
+     * 코어 업데이트 성공 로그 기록
+     *
+     * @param  string  $runId  실행 식별자
+     * @param  string  $fromVersion  이전 버전
+     * @param  string|null  $toVersion  적용된 버전
+     * @param  array  $bundledResult  번들 확장 일괄 업데이트 결과 (수행하지 않았으면 빈 배열)
+     * @return void 반환값 없음
+     */
+    public function handleCoreUpdateCompleted(string $runId, string $fromVersion, ?string $toVersion, array $bundledResult = []): void
+    {
+        $this->logActivity('core_update.completed', [
+            'description_key' => 'activity_log.description.core_update_completed',
+            'description_params' => ['from' => $fromVersion, 'to' => $toVersion ?? '-'],
+            'properties' => ['run_id' => $runId, 'bundled' => $bundledResult],
+        ]);
+    }
+
+    /**
+     * 코어 업데이트 실패 로그 기록
+     *
+     * 되돌리기 결과를 함께 남긴다 — 「실패했다」와 「사이트가 지금 어떤 상태인가」는
+     * 다른 사실이고, 운영자가 먼저 알아야 하는 것은 후자다 (D10).
+     *
+     * @param  string  $runId  실행 식별자
+     * @param  string  $fromVersion  이전 버전
+     * @param  string|null  $toVersion  적용하려던 버전
+     * @param  array  $error  실패 단계·사유·리포트 경로
+     * @param  array  $rollback  되돌리기 결과
+     * @return void 반환값 없음
+     */
+    public function handleCoreUpdateFailed(string $runId, string $fromVersion, ?string $toVersion, array $error = [], array $rollback = []): void
+    {
+        $this->logActivity('core_update.failed', [
+            'description_key' => 'activity_log.description.core_update_failed',
+            'description_params' => [
+                'from' => $fromVersion,
+                'to' => $toVersion ?? '-',
+                'step' => (string) ($error['step_label'] ?? $error['step'] ?? '-'),
+                'rollback' => ($rollback['restored'] ?? false) ? 'ok' : 'failed',
+            ],
+            'properties' => ['run_id' => $runId, 'error' => $error, 'rollback' => $rollback],
+        ]);
+    }
+
+    // ═══════════════════════════════════════════
     // Schedule 핸들러
     // ═══════════════════════════════════════════
 
@@ -1096,13 +1342,22 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 스케줄 수동 실행 후 로그 기록
      *
+     * 운영자가 「즉시 실행」한 것만 남긴다 — 예약 실행까지 남기면 30초 주기 작업만으로
+     * 하루 수천 건이 쌓여 활동 로그가 운영자 행위 기록으로서 쓸모를 잃는다(실행 결과는 실행 이력에 있다).
+     *
      * @param  Model  $schedule  실행된 스케줄
-     * @param  Model  $history  실행 이력
+     * @param  Model  $history  실행 이력 (「실패만 기록」 성공이면 저장되지 않은 인스턴스)
      * @return void 반환값 없음
      */
     public function handleScheduleAfterRun(Model $schedule, Model $history): void
     {
+        if ($history->getAttribute('trigger_type') !== ScheduleTriggerType::Manual) {
+            return;
+        }
+
+        // 행위자는 실행 이력의 실행자다 — 큐로 보낸 실행은 워커에서 기록되므로 그 시점의 인증 사용자에 기대지 않는다
         $this->logActivity('schedule.run', [
+            'user_id' => $history->getAttribute('triggered_by'),
             'loggable' => $schedule,
             'description_key' => 'activity_log.description.schedule_run',
             'description_params' => ['schedule_id' => $schedule->id],
@@ -1715,6 +1970,50 @@ class CoreActivityLogListener implements HookListenerInterface
         $this->logActivity('plugin_settings.reset', [
             'description_key' => 'activity_log.description.plugin_settings_reset',
             'description_params' => ['plugin_name' => $identifier],
+        ]);
+    }
+
+    /**
+     * 템플릿 설정 저장 후 로그 기록 (#434)
+     *
+     * 저장이 실패한 경우는 남기지 않는다 — 설정이 바뀌지 않았다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @param  array  $settings  저장된 설정 (병합 결과)
+     * @param  bool  $result  저장 성공 여부
+     * @return void 반환값 없음
+     */
+    public function handleTemplateSettingsAfterSave(string $identifier, array $settings, bool $result): void
+    {
+        if (! $result) {
+            return;
+        }
+
+        $this->logActivity('template_settings.save', [
+            'description_key' => 'activity_log.description.template_settings_save',
+            'description_params' => ['template_name' => $identifier],
+            'properties' => ['identifier' => $identifier, 'keys' => array_keys($settings)],
+        ]);
+    }
+
+    /**
+     * 템플릿 설정 기본값 되돌리기 후 로그 기록 (#434)
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @param  string|null  $section  되돌린 섹션 (null 이면 전체)
+     * @param  bool  $result  성공 여부
+     * @return void 반환값 없음
+     */
+    public function handleTemplateSettingsAfterReset(string $identifier, ?string $section, bool $result): void
+    {
+        if (! $result) {
+            return;
+        }
+
+        $this->logActivity('template_settings.reset', [
+            'description_key' => 'activity_log.description.template_settings_reset',
+            'description_params' => ['template_name' => $identifier],
+            'properties' => ['identifier' => $identifier, 'section' => $section],
         ]);
     }
 

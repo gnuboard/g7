@@ -5,11 +5,11 @@
 ## 레이아웃
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 59개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 61개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 59개 |
+| `admin` | 61개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -25,6 +25,7 @@
 | `admin_board_settings` | `admin` | 화면 | `_admin_base` |
 | `_board_type_manage_modal` | `admin` | partial | - |
 | `_content_media_policy` | `admin` | partial | - |
+| `_guest_author_field_add_modal` | `admin` | partial | - |
 | `_tab_basic` | `admin` | partial | - |
 | `_tab_list` | `admin` | partial | - |
 | `_tab_notification` | `admin` | partial | - |
@@ -70,6 +71,7 @@
 | `_tab_notification_definitions` | `admin` | partial | - |
 | `_tab_privacy_retention` | `admin` | partial | - |
 | `_tab_report_policy` | `admin` | partial | - |
+| `_tab_schedules` | `admin` | partial | - |
 | `_tab_seo` | `admin` | partial | - |
 | `_tab_spam_security` | `admin` | partial | - |
 <!-- @generated:layouts END -->
@@ -132,6 +134,10 @@ partial 파일이므로 한쪽만 고치면 다른 화면은 그대로입니다 
 무관). 단추 잠금과 추가 확인은 `_global.appConfig?.siteLocale ?? $locale ?? 'ko'` 칸으로 판단합니다. 서버는 이름 오류를
 필드 전체 키 `name` 이나 언어 키 `name.{언어}` 로 돌려주므로 칸의 `error` 는 `name.{사이트 기본 언어}` 를 먼저, `name` 을 다음으로
 읽습니다. 문구는 MultilingualInput 이 칸 아래에 직접 그리므로 같은 문구를 담는 별도 문단을 두지 않습니다.
+
+화면 폭에 따라 배치가 바뀌는 곳은 Tailwind 반응형 접두(`board:md:…` 등) 대신 엔진 `<responsive on="…">` 덮어쓰기로 씁니다. 덮어쓰기는 className 을 통째로 바꾸므로 그 구간에서 살아 있는 클래스를 모두 적습니다.
+
+폭 미디어를 품은 의미 클래스 사본(`board-grid-3col-responsive`·`board-grid-2col-responsive`·`board-page-title`·`board-admin-page-content-responsive`·`board-filter-label`·`board-page-header-fullbleed` 등)과 모듈 CSS 의 폭 규칙 클래스(`board-category-select`)도 쓰지 않습니다. 이 사본들의 정의는 사이트에서 직접 고친 레이아웃의 호환을 위해 폭 부분까지 폐지 예정으로 남아 있고 다음 출시 이후 제거됩니다 — 새 레이아웃은 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="board:grid board:grid-cols-1 board:gap-4 board:items-start"` 에 `<responsive on="1024-" class="board:grid board:grid-cols-3 board:gap-4 board:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`board:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->
 
 ## 액션 핸들러
@@ -197,12 +203,14 @@ partial 파일이므로 한쪽만 고치면 다른 화면은 그대로입니다 
 
 <!-- @intent START -->
 JS 번들 `dist/js/module.iife.js` 는 액션 핸들러만 담은 경량 IIFE 입니다(컴포넌트 없음).
-관리자 화면에만 있는 호버·다크 짝·반투명 배경은 `resources/css/main.css` 에 ``board-`` 접두 클래스로 두고,
-JS 엔트리가 불러와 빌드가 `dist/css/module.css` 로 냅니다(module.json `assets.css`). 관리자 템플릿은 자기
-레이아웃만 훑어 Tailwind 규칙을 만들므로, 이 모듈 레이아웃에만 있는 유틸리티(`dark:bg-gray-700/30` 같은 것)는
-규칙이 생성되지 않아 조용히 빠집니다. 새 레이아웃에 템플릿 CSS 에 없는 유틸리티가 필요하면 여기에 접두 클래스로
-정의합니다 — 이 파일은 템플릿의 `@layer utilities` 밖에 실려 같은 속성의 유틸리티보다 앞서므로 다크·호버 짝을
-함께 둡니다(규약: 코어 문서 `docs/extension/module-assets.md` 「확장 화면의 의미 색은 확장 CSS 가 싣는다」).
+화면 스타일은 이 모듈 자기 CSS 입니다 — `resources/css/main.css` 를 JS 엔트리가 불러와 빌드가 `dist/css/module.css` 로
+냅니다(module.json `assets.css`, 앞글자 `namespace: board`). 템플릿 CSS 라이브러리에 기대지 않습니다.
+배치·색 유틸리티는 `board:` 접두 Tailwind(이 모듈의 작성 도구, preflight 없음)가 레이아웃에 쓰인 것만 만들고,
+템플릿 의미 클래스는 `board-*` 사본(`resources/css/g7-extension.generated.css`, 가장 낮은 칸 `@layer g7-extension`)을
+씁니다. 이 모듈 고유의 호버·다크 짝과 의미 색(`board-tone-*`)은 생성 블록 아래 손 CSS 이고, 다크 모드는 템플릿의
+`.dark` 가 아니라 코어 중립 표식(`data-g7-color-scheme`)을 봅니다. 레이아웃에 새 클래스를 쓰면
+`php artisan module:build sirsoft-board --production` 으로 CSS 를 다시 만듭니다(규약: 코어 문서
+`docs/extension/module-assets.md` 「확장 CSS 자기 공급 규약」).
 
 소스는 `resources/js/` 이고 `--production` 빌드(소스맵을 남기지 않는 배포용)로 굽습니다 — 이 모듈
 디렉토리에서 `npm run build` 를 `G7_BUILD_SOURCEMAP=0` 으로 실행하거나, 설치본 manifest 에 에셋이

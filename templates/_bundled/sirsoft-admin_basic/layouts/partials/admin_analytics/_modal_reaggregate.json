@@ -10,7 +10,142 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.analytics.modals.reaggregate.title",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary",
+                    "disabled": "{{_global.analyticsReaggRunning}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "id": "reaggregate_run_button",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "큐에 넘긴 뒤 이력 표를 다시 받는다 — 새 running 행이 보여야 진행률 폴링이 붙는다.\n               재집계는 늘 워커가 맡으므로(`ArchiveRunController::store`) 응답이 돌아온 순간엔 아직 행이\n               없을 수 있다. 그 공백 동안 진행률이 영영 안 붙는 것을 막으려고 유예 횟수를 세워 둔다 —\n               진단 화면이 이 값이 남아 있는 동안은 행이 없어도 2초 폴링을 건다(#682 S3 라운드 6).",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "analyticsReaggRunning": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/analytics/archive-runs",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "POST",
+                                    "body": {
+                                        "run_type": "reaggregate",
+                                        "from": "{{_global.analyticsReagg?.from}}",
+                                        "to": "{{_global.analyticsReagg?.to}}",
+                                        "force": "{{_global.analyticsReagg?.force === true}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "analyticsReaggRunning": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:admin.analytics.diagnostics.queued_toast"
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "analyticsReaggWait": 15
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "analytics_archive_runs"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "analytics_diagnostics"
+                                        }
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "analyticsReaggRunning": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-primary flex-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{!_global.analyticsReagg?.from || !_global.analyticsReagg?.to || _global.analyticsReaggRunning}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.analyticsReaggRunning}}",
+                        "props": {
+                            "name": "spinner",
+                            "spin": true,
+                            "className": "text-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:admin.analytics.modals.reaggregate.button"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -141,148 +276,6 @@
                                 "className": "text-label"
                             },
                             "text": "$t:admin.analytics.modals.reaggregate.force"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary",
-                        "disabled": "{{_global.analyticsReaggRunning}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.cancel"
-                        }
-                    ]
-                },
-                {
-                    "id": "reaggregate_run_button",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "큐에 넘긴 뒤 이력 표를 다시 받는다 — 새 running 행이 보여야 진행률 폴링이 붙는다.\n               재집계는 늘 워커가 맡으므로(`ArchiveRunController::store`) 응답이 돌아온 순간엔 아직 행이\n               없을 수 있다. 그 공백 동안 진행률이 영영 안 붙는 것을 막으려고 유예 횟수를 세워 둔다 —\n               진단 화면이 이 값이 남아 있는 동안은 행이 없어도 2초 폴링을 건다(#682 S3 라운드 6).",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "analyticsReaggRunning": true
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/admin/analytics/archive-runs",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "POST",
-                                        "body": {
-                                            "run_type": "reaggregate",
-                                            "from": "{{_global.analyticsReagg?.from}}",
-                                            "to": "{{_global.analyticsReagg?.to}}",
-                                            "force": "{{_global.analyticsReagg?.force === true}}"
-                                        }
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "analyticsReaggRunning": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:admin.analytics.diagnostics.queued_toast"
-                                            }
-                                        },
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "analyticsReaggWait": 15
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "analytics_archive_runs"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "analytics_diagnostics"
-                                            }
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "analyticsReaggRunning": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message}}"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-primary flex-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{!_global.analyticsReagg?.from || !_global.analyticsReagg?.to || _global.analyticsReaggRunning}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.analyticsReaggRunning}}",
-                            "props": {
-                                "name": "spinner",
-                                "spin": true,
-                                "className": "text-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:admin.analytics.modals.reaggregate.button"
                         }
                     ]
                 }

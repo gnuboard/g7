@@ -20,6 +20,7 @@
 import { buildAuthHeaders } from '../utils/authToken';
 import { TranslationEngine } from '../../TranslationEngine';
 import { findCustomKeyRow, bustTranslationCache, EDITOR_TRANSLATIONS_REFRESHED_EVENT } from './useInlineEdit';
+import { withBasePrefix } from '../../../support/assetUrl';
 
 /** 키별 로케일 값 버퍼 — `key → { locale → value }`. 편집한 로케일만 보유(부분). */
 const buffer = new Map<string, Record<string, string>>();
@@ -155,7 +156,7 @@ export async function flushPending(
       // 서버 값 위에 보류 로케일만 덮어쓴다(편집 안 한 로케일 보존).
       const nextValues = { ...(row.values ?? {}), ...pendingValues };
       const url = `/api/admin/templates/${encodeURIComponent(templateIdentifier)}/custom-translations/${row.id}`;
-      const res = await fetch(url, {
+      const res = await fetch(withBasePrefix(url), {
         method: 'PUT',
         credentials: 'same-origin',
         headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),

@@ -12,7 +12,7 @@
                     "name": "Div",
                     "if": "{{(order.data?.payments?.filter(p => p.pg_provider === 'tosspayments' && p.transaction_id) ?? []).length > 0}}",
                     "props": {
-                        "className": "admin-card"
+                        "className": "pay-tosspayments-admin-card"
                     },
                     "children": [
                         {
@@ -20,21 +20,21 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-center gap-2 mb-4"
+                                "className": "paytosspayments:flex paytosspayments:items-center paytosspayments:gap-2 paytosspayments:mb-4"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "w-1.5 h-4 bg-blue-500 rounded-full flex-shrink-0"
+                                        "className": "paytosspayments:w-1.5 paytosspayments:h-4 paytosspayments:bg-blue-500 paytosspayments:rounded-full paytosspayments:flex-shrink-0"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "H3",
                                     "props": {
-                                        "className": "text-sm font-semibold text-gray-800 dark:text-gray-200"
+                                        "className": "paytosspayments:text-sm paytosspayments:font-semibold paytosspayments:text-gray-800 paytosspayments:dark:text-gray-200"
                                     },
                                     "text": "$t:sirsoft-tosspayments.admin.payment_panel_title"
                                 }
@@ -45,7 +45,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "space-y-2"
+                                "className": "paytosspayments:space-y-2"
                             },
                             "children": [
                                 {
@@ -54,14 +54,14 @@
                                     "name": "Div",
                                     "if": "{{!!order.data?.payment?.is_escrow}}",
                                     "props": {
-                                        "className": "flex-between text-sm"
+                                        "className": "pay-tosspayments-flex-between paytosspayments:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                "className": "paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-tosspayments.admin.escrow_label"
                                         },
@@ -69,7 +69,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                                                "className": "paytosspayments:inline-flex paytosspayments:items-center paytosspayments:gap-1 paytosspayments:px-2 paytosspayments:py-0.5 paytosspayments:rounded-full paytosspayments:text-xs paytosspayments:font-semibold paytosspayments:bg-blue-100 paytosspayments:text-blue-800 paytosspayments:dark:bg-blue-900/30 paytosspayments:dark:text-blue-300"
                                             },
                                             "text": "$t:sirsoft-tosspayments.admin.escrow_yes"
                                         }
@@ -81,14 +81,14 @@
                                     "name": "Div",
                                     "if": "{{!!order.data?.payment?.vbank_number}}",
                                     "props": {
-                                        "className": "flex-between text-sm"
+                                        "className": "pay-tosspayments-flex-between paytosspayments:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                "className": "paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-tosspayments.admin.vbank_label"
                                         },
@@ -96,7 +96,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-white font-medium"
+                                                "className": "paytosspayments:text-gray-900 paytosspayments:dark:text-white paytosspayments:font-medium"
                                             },
                                             "text": "{{(order.data?.payment?.vbank_name ?? '') + ' ' + (order.data?.payment?.vbank_number ?? '') + ' (' + (order.data?.payment?.vbank_holder ?? '') + ')'}}"
                                         }
@@ -108,14 +108,14 @@
                                     "name": "Div",
                                     "if": "{{!!order.data?.payment?.vbank_due_at_formatted}}",
                                     "props": {
-                                        "className": "flex-between text-sm"
+                                        "className": "pay-tosspayments-flex-between paytosspayments:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                "className": "paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-tosspayments.admin.vbank_due_label"
                                         },
@@ -123,7 +123,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-white font-medium"
+                                                "className": "paytosspayments:text-gray-900 paytosspayments:dark:text-white paytosspayments:font-medium"
                                             },
                                             "text": "{{order.data?.payment?.vbank_due_at_formatted ?? ''}}"
                                         }
@@ -135,14 +135,14 @@
                                     "name": "Div",
                                     "if": "{{!!order.data?.payment?.pg_receipt_url}}",
                                     "props": {
-                                        "className": "flex-between text-sm"
+                                        "className": "pay-tosspayments-flex-between paytosspayments:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                "className": "paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-tosspayments.admin.receipt_label"
                                         },
@@ -154,7 +154,7 @@
                                                 "href": "{{order.data.payment.pg_receipt_url}}",
                                                 "target": "_blank",
                                                 "rel": "noopener noreferrer",
-                                                "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                                "className": "paytosspayments:text-sm paytosspayments:text-blue-600 paytosspayments:dark:text-blue-400 paytosspayments:hover:underline"
                                             },
                                             "text": "$t:sirsoft-tosspayments.admin.receipt_view"
                                         }

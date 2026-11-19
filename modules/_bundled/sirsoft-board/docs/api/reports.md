@@ -34,14 +34,13 @@
 | board_id | query | integer | 아니오 | — | board 식별자 |
 | reported_at_from | query | string | 아니오 | — | 신고 접수 기간 시작일 (`YYYY-MM-DD`). 마지막 신고일시(`last_reported_at`) 기준으로 이 날짜 00:00:00 이후 건만 조회합니다. 날짜는 보는 사람의 시간대 하루로 해석합니다. |
 | reported_at_to | query | string | 아니오 | — | 신고 접수 기간 종료일 (`YYYY-MM-DD`). 마지막 신고일시(`last_reported_at`) 기준으로 이 날짜 23:59:59 이전 건만 조회합니다. 날짜는 보는 사람의 시간대 하루로 해석합니다. |
-| sort_by | query | string | 아니오 | — | 정렬 기준 필드명 |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (asc 오름차순 / desc 내림차순) |
 | per_page | query | integer | 아니오 | — | 페이지당 항목 수 |
 
 **요청 예시**
 
 ```http
-GET /api/modules/sirsoft-board/admin/reports?filters=%EC%98%88%EC%8B%9C%EA%B0%92&status=%EC%98%88%EC%8B%9C%EA%B0%92&target_type=%EC%98%88%EC%8B%9C%EA%B0%92&target_status=%EC%98%88%EC%8B%9C%EA%B0%92&board_id=1&reported_at_from=%EC%98%88%EC%8B%9C%EA%B0%92&reported_at_to=%EC%98%88%EC%8B%9C%EA%B0%92&sort_by=%EC%98%88%EC%8B%9C%EA%B0%92&sort_order=asc&per_page=1 HTTP/1.1
+GET /api/modules/sirsoft-board/admin/reports?filters=%EC%98%88%EC%8B%9C%EA%B0%92&status=%EC%98%88%EC%8B%9C%EA%B0%92&target_type=%EC%98%88%EC%8B%9C%EA%B0%92&target_status=%EC%98%88%EC%8B%9C%EA%B0%92&board_id=1&reported_at_from=%EC%98%88%EC%8B%9C%EA%B0%92&reported_at_to=%EC%98%88%EC%8B%9C%EA%B0%92&sort_order=asc&per_page=1 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -176,7 +175,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.reports.view`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -249,7 +248,7 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.reports.manage`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 일괄 상태 변경 처리 중 오류가 발생한 경우 (`sirsoft-board::messages.reports.bulk_status_update_failed`) |
 
 <!-- @generated:end -->
@@ -347,7 +346,7 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.reports.view`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 상태별 건수 집계 중 오류가 발생한 경우 (`sirsoft-board::messages.reports.status_counts_failed`) |
 
 <!-- @generated:end -->
@@ -546,7 +545,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | report | path | string | 예 | — | 대상 report의 식별자 |
-| per_page | query | integer | 아니오 | min 1 | 페이지당 항목 수 |
+| per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
 | page | query | integer | 아니오 | min 1 | 조회할 페이지 번호 (1부터 시작) |
 
 **요청 예시**
@@ -603,7 +602,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.reports.view`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -755,14 +754,163 @@ _단건 응답: `data` 객체의 필드 (`ReportResource` — 상태 변경 후 
 
 ## 회원용 (마이페이지 「내 신고」)
 
-아래 두 엔드포인트는 본인이 남긴 신고만 다룹니다. `api:docgen` 의 실측 대상이 아니므로
-(회원 인증 + 본인 소유 데이터가 필요) 사람이 작성해 유지합니다.
+아래 두 엔드포인트는 본인이 남긴 신고만 다룹니다.
 
 관리자 신고 목록과 모집단이 다릅니다 — 관리자는 **신고 케이스**(`reports`, 같은 대상에 대한
 신고를 하나로 묶은 것)를 보고, 회원은 **자기 신고 로그**(`report_logs`, 내가 남긴 한 건)를
 봅니다. 그래서 식별자도 `report` 가 아니라 `reportLogId` 입니다.
 
 ### GET /api/modules/sirsoft-board/me/reports
+<!-- @generated:start:api.modules.sirsoft-board.me.reports.index -->
+- **라우트명**: `api.modules.sirsoft-board.me.reports.index`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\ReportController@index`
+- **인증/권한**: `auth:sanctum`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| page | query | integer | 아니오 | min 1 | 페이지 번호 |
+| per_page | query | integer | 아니오 | 1~100 (기본 10) | 페이지당 건수 |
+| search | query | string | 아니오 | max 255 | 검색어 |
+| search_field | query | string | 아니오 | `title_content`(기본), `title`, `content`, `reason` | 검색 대상. 규칙 밖의 값은 기본값 `title_content` 로 처리 |
+| target_type | query | string | 아니오 | `post`, `comment` | 대상 구분 필터 |
+| status | query | string | 아니오 | `pending`, `review`, `rejected`, `suspended`, `deleted` | 처리 상태 필터 |
+| board_slug | query | string | 아니오 | max 50 | 게시판 필터 |
+| sort | query | string | 아니오 | `latest`(기본), `oldest` | 정렬 |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-board/me/reports?page=1&per_page=1&search=%EC%98%88%EC%8B%9C%EA%B0%92&search_field=title_content&target_type=%EC%98%88%EC%8B%9C%EA%B0%92&status=%EC%98%88%EC%8B%9C%EA%B0%92&board_slug=example-key&sort=latest HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | integer | `28` | 신고 **로그** 식별자 (취소가 받는 값) |
+| report_id | integer | `28` | 묶인 신고 케이스 ID. 케이스가 사라졌으면 null |
+| board | object | `{"slug":"gallery","name":"갤러리"}` | `{slug,name}`. 게시판 삭제 시 null |
+| board_slug | string | `gallery` | 게시판 슬러그 (`board.slug` 와 같은 값). 게시판이 삭제됐으면 null |
+| board_name | string | `갤러리` | 게시판 이름의 현재 로케일 문자열 (`board.name` 과 같은 값). 게시판이 삭제됐으면 null |
+| target_type | string | `post` | `post` \| `comment` |
+| target_type_label | string | `게시글` | 표시용 라벨 (번역 적용) |
+| target_id | integer | `99999` | 대상 식별자 |
+| post_id | integer | `99999` | 이동 대상 글 ID (댓글 신고도 부모 글로 갑니다) |
+| comment_id | integer | `306` | 댓글 신고일 때의 댓글 ID |
+| title | string | `삭제된 게시판의 게시글` | 신고 시점 스냅샷 제목 |
+| excerpt | string | `게시판이 삭제되어 원본을 확인할 수 없는 신고 케이스입니다.` | 신고 시점 스냅샷 본문 발췌 |
+| reason_type | string | `spam` | 신고 사유 구분 (`abuse`, `hate_speech`, `spam`, `copyright`, `privacy`, `misinformation`, `sexual`, `violence`, `other`) |
+| reason_type_label | string | `스팸/광고` | `reason_type` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
+| reason_detail | string | `광고성 스팸 게시글입니다. 동일한 내용이 반복적으로 게시되고 있습니다.` | 신고자가 적은 사유 설명 |
+| status | string | `pending` | 상태 값 (도메인별 상태 집합 — 사람이 읽는 라벨은 status_label, UI 변형은 status_variant 참조) |
+| status_label | string | `접수` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
+| reported_at | string | `2026-08-06 16:18:29` | 신고 시각 (모듈 표시 설정을 따릅니다) |
+| can_cancel | boolean | `true` | 취소 버튼 노출 판정 — **접수(`pending`) 상태만 true** |
+| target_deleted | boolean | `false` | 대상 소실 여부 |
+
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "신고 내역을 조회했습니다.",
+    "data": {
+        "data": [
+            {
+                "id": 28,
+                "report_id": 28,
+                "board": null,
+                "board_slug": null,
+                "board_name": null,
+                "target_type": "post",
+                "target_type_label": "게시글",
+                "target_id": 99999,
+                "post_id": 99999,
+                "comment_id": null,
+                "title": "삭제된 게시판의 게시글",
+                "excerpt": "게시판이 삭제되어 원본을 확인할 수 없는 신고 케이스입니다.",
+                "reason_type": "spam",
+                "reason_type_label": "스팸/광고",
+                "reason_detail": "광고성 스팸 게시글입니다. 동일한 내용이 반복적으로 게시되고 있습니다.",
+                "status": "pending",
+                "status_label": "접수",
+                "reported_at": "2026-08-06 16:18:29",
+                "can_cancel": true,
+                "target_deleted": false
+            },
+            {
+                "id": 27,
+                "report_id": 27,
+                "board": {
+                    "slug": "gallery",
+                    "name": "갤러리"
+                },
+                "board_slug": "gallery",
+                "board_name": "갤러리",
+                "target_type": "comment",
+                "target_type_label": "댓글",
+                "target_id": 306,
+                "post_id": 72,
+                "comment_id": 306,
+                "title": "카페 인테리어",
+                "excerpt": "아, 그렇군요! 이해했습니다.",
+                "reason_type": "abuse",
+                "reason_type_label": "욕설/비방",
+                "reason_detail": "욕설과 비방이 포함된 게시글입니다. 다른 사용자를 모욕하는 내용이 있습니다.",
+                "status": "suspended",
+                "status_label": "게시중단",
+                "reported_at": "2026-08-06 16:18:29",
+                "can_cancel": false,
+                "target_deleted": false
+            },
+            "... (총 25건 중 2건 표시)"
+        ],
+        "query": {
+            "search": null,
+            "search_field": "title_content",
+            "target_type": null,
+            "status": null,
+            "board_slug": null,
+            "sort": "latest"
+        },
+        "pagination": {
+            "total": 28,
+            "count": 25,
+            "per_page": 25,
+            "current_page": 1,
+            "last_page": 2,
+            "from": 1,
+            "to": 25,
+            "has_more_pages": true
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
+| 500 | Internal Server Error | 조회 실패 (`신고 내역 조회에 실패했습니다.`) |
+
+<!-- @generated:end -->
+
+**설명**
 
 - **인증**: `auth:sanctum` (본인 것만) · **권한 불요** — 개인 화면이라 게시판 abilities 를 싣지 않습니다
 
@@ -811,6 +959,64 @@ _단건 응답: `data` 객체의 필드 (`ReportResource` — 상태 변경 후 
 안 됩니다.
 
 ### DELETE /api/modules/sirsoft-board/me/reports/{reportLogId}
+<!-- @generated:start:api.modules.sirsoft-board.me.reports.cancel -->
+- **라우트명**: `api.modules.sirsoft-board.me.reports.cancel`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\ReportController@cancel`
+- **인증/권한**: `auth:sanctum`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| reportLogId | path | integer | 예 | 숫자 | 취소할 신고 로그 ID (목록 응답의 `id`) |
+
+**요청 예시**
+
+```http
+DELETE /api/modules/sirsoft-board/me/reports/{reportLogId} HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| case_deleted | boolean | `false` | 이 취소로 신고 케이스가 사라졌는지. 남은 신고가 0건이면 케이스를 영구 삭제하고 `true` |
+| remaining | integer | `2` | 그 케이스에 남은 다른 신고 건수 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "신고를 취소했습니다.",
+    "data": {
+        "case_deleted": false,
+        "remaining": 2
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 케이스가 접수(`pending`) 상태가 아니거나 이미 삭제된 경우 (`접수 상태에서만 취소할 수 있습니다 (현재: :status).`, `errors.code` 는 `report_cancel_not_allowed`) |
+| 404 | Not Found | 본인이 남긴 신고 로그가 아니거나 없는 경우 (`신고 내역을 찾을 수 없습니다.`) |
+| 500 | Internal Server Error | 취소 실패 (`신고 취소에 실패했습니다.`) |
+
+<!-- @generated:end -->
+
+**설명**
 
 신고를 취소합니다.
 

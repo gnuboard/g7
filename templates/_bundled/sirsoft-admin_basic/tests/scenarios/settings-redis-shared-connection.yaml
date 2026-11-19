@@ -1,0 +1,22 @@
+feature: 드라이버 탭 — 캐시·세션·큐가 함께 쓰는 Redis 접속 칸과 연결 시험
+
+description: |
+  Redis 접속 정보(drivers.redis_host·port·password·database)는 한 벌이고 캐시·세션·큐가 함께 쓴다(서버
+  SettingsServiceProvider 가 database.redis.default·cache 연결에 같은 값을 주입, DriverConnectionTester::testAll 은
+  세 자리 중 하나만 redis 여도 Redis 를 시험). 화면의 칸과 연결 시험 단추는 캐시 카드 안 한 곳에 두되, 세 자리 중
+  하나라도 redis 면 보인다. 캐시가 redis 가 아닌데 보일 때는 「세션·큐가 쓰는 접속 정보」라는 안내를 칸 위에 단다.
+
+  같은 결함군 대조: S3 칸(s3_settings)은 이미 저장소·공개 자산·비공개 첨부 셋 중 하나만 s3 여도 보인다. Memcached 는
+  캐시만 고를 수 있고(세션 카탈로그에 없음) 데이터베이스 세션·큐는 사이트 DB 연결을 써 따로 칸이 없다 — 공유 조합은
+  Redis 하나다. 저장 검증은 세 자리 구분 없이 같은 nullable 규칙(빈 값 = 기본 127.0.0.1:6379/0)이라 비대칭이 없다.
+
+axes:
+  redis_user: [cache, session, queue, none]
+
+effects:
+  - redis_fields_and_test_shown_when_any_driver_uses_redis      # 캐시·세션·큐 중 하나라도 redis 면 접속 칸·연결 시험이 보인다
+  - shared_hint_explains_why_fields_are_in_cache_card           # 캐시가 redis 가 아닐 때 칸 위 공용 안내
+  - redis_fields_hidden_when_no_driver_uses_redis               # 셋 다 redis 가 아니면 칸·단추가 없다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-drivers-redis-shared.test.tsx

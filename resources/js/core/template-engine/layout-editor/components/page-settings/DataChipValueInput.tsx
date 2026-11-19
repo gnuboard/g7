@@ -28,7 +28,7 @@ import { BindingChipTextInput } from './BindingChipTextInput';
 import { SegmentedValueEditor } from './SegmentedValueEditor';
 import { ConditionalValueEditor } from './ConditionalValueEditor';
 import { bindingChipLabel, toValueChipTokens, hasValueChipContent } from '../../spec/inlineBindingUtils';
-import { parseBindingExpression, buildBindingExpression } from '../../spec/bindingCandidates';
+import { parseBindingExpression } from '../../spec/bindingCandidates';
 import {
   classifyValueShape,
   hasDecomposableExpressionSegment,

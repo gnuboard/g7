@@ -14,7 +14,7 @@
  * 전체에서 그런 칸이 칸마다 이름(aria-label·aria-labelledby·placeholder·label[for])을 갖는지 본다.
  *
  * 시나리오 매니페스트: `tests/scenarios/range-date-input-names.yaml`
- * @effects range_date_inputs_named, label_group_controls_named
+ * 조합과 효과 표식은 그것을 재는 시험마다 단다.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -144,7 +144,7 @@ const childrenOf = (n: LayoutNode | undefined): LayoutNode[] => (Array.isArray(n
 const isControl = (n: LayoutNode | undefined) =>
   !!n && CONTROL_NAMES.has(n.name ?? '') && n.props?.type !== 'hidden' && !/\bsr-only\b/.test(classOf(n));
 const isLabelEl = (n: LayoutNode | undefined) =>
-  !!n && (n.name === 'Label' || /\b(form-label|filter-label|text-heading)\b/.test(classOf(n)));
+  !!n && (n.name === 'Label' || /\b(form-label|filter-field-label|filter-label|text-heading)\b/.test(classOf(n)));
 
 /** props 를 뺀 하위 트리에서 조건에 맞는 노드가 있는지. */
 function hasDeep(n: unknown, pred: (x: LayoutNode) => boolean): boolean {

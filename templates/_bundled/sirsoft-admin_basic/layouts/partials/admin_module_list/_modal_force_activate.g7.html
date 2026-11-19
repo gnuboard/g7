@@ -37,7 +37,7 @@
       </div>
       <p class="mt-4 text-label">$t:admin.modules.modals.force_activate_description</p>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary" disabled="{{_global.isForceActivating}}">
         <on type="click">
           <!-- 취소 — 목록을 다시 받는 것이 요점이다. 토글은 이미 눌린 모양이라 그냥 닫으면
@@ -92,6 +92,6 @@
         <icon data-if="{{_global.isForceActivating}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isForceActivating ? '$t:admin.modules.activating' : '$t:admin.modules.modals.confirm_activate'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

@@ -56,6 +56,11 @@ function flatten(node: unknown): LayoutNode[] {
 const nodes = flatten(pluginSettingsLayout);
 const cls = (n: LayoutNode | undefined) => (typeof n?.props?.className === 'string' ? n.props.className : '');
 const tokens = (n: LayoutNode | undefined) => cls(n).replace(/[{}'?:]/g, ' ').split(/\s+/).filter(Boolean);
+/** 기본 className 과 엔진 responsive 구간 값 className 의 토큰 전부 — 폭에 따라 붙는 클래스는 구간 값에만 있다 */
+const tokensAtAnyWidth = (n: LayoutNode | undefined) => [
+    ...tokens(n),
+    ...Object.values(((n as { responsive?: Record<string, LayoutNode> } | undefined)?.responsive) ?? {}).flatMap((r) => tokens(r)),
+];
 
 /**
  * 글자가 주어진 조건을 만족하는 노드 전부.
@@ -77,11 +82,24 @@ function parentOf(child: LayoutNode): LayoutNode | undefined {
     return nodes.find((n) => Array.isArray(n.children) && n.children.includes(child));
 }
 
-/** 플러그인 CSS 원본 */
-const cssSource = (() => {
-    const file = path.join(EXT_ROOT, 'resources/css/main.css');
+/**
+ * 플러그인 CSS 원본 — 손으로 쓴 `main.css`(진입 블록 아래)와 변환 도구가 템플릿 의미 클래스를 복사해 만든
+ * `g7-extension.generated.css` 를 합친 것. 레이아웃이 쓰는 접두 클래스는 둘 중 한 곳에 정의된다.
+ */
+const readCss = (rel: string) => {
+    const file = path.join(EXT_ROOT, rel);
     return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
-})();
+};
+const handCss = readCss('resources/css/main.css');
+const cssSource = `${handCss}\n${readCss('resources/css/g7-extension.generated.css')}`;
+
+/** 손 CSS 중 진입 블록(변환 도구가 관리하는 Tailwind 접두 빌드 설정) 아래 부분 */
+const handRules = handCss.slice(Math.max(0, handCss.indexOf('*/', handCss.indexOf('g7-extension-css:end')) + 2));
+
+/** 확장 CSS 다크 규격 — 템플릿의 `.dark` 대신 중립 표식(`data-g7-color-scheme`)을 쓰고 「다크 안의 라이트」는 제외한다 */
+const DARK_SUFFIX =
+    ':is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"]))';
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** 레이아웃이 쓰는 플러그인 접두 클래스 전부 */
 const usedPrefixed = [
@@ -180,17 +198,19 @@ describe('KG이니시스 결제 환경설정 — 플러그인 자체 글자색 �
         expect(arbitrary).toEqual([]);
 
         const callbackLabel = byText((t) => t.endsWith('.settings.cbt_callback_app_url_label'))[0];
-        expect(tokens(parentOf(callbackLabel!))).toContain(`${PREFIX}callback-grid`);
+        expect(tokens(parentOf(callbackLabel!))).toContain(`${PREFIX}callback-table`);
 
         const egressLabel = byText((t) => t.endsWith('.settings.cbt_connectivity_egress_ip_label'))[0];
-        expect(tokens(egressLabel)).toContain(`${PREFIX}label-wide`);
+        expect(tokensAtAnyWidth(egressLabel)).toContain(`${PREFIX}label-col`);
         const egressHint = byText((t) => t.endsWith('.settings.cbt_connectivity_hint_egress'))[0];
-        expect(tokens(egressHint)).toContain(`${PREFIX}indent-wide`);
+        expect(tokensAtAnyWidth(egressHint)).toContain(`${PREFIX}label-indent`);
         const dnsLabel = byText((t) => t.endsWith('.settings.cbt_connectivity_dns_label'))[0];
         expect(tokens(dnsLabel)).toContain(`${PREFIX}label-narrow`);
 
         for (const name of usedPrefixed.filter((c) => !c.startsWith(`${PREFIX}tone-`))) {
-            expect({ name, defined: new RegExp(`\\.${name}(:[a-z-]+)?\\s*\\{`).test(cssSource) }).toEqual({ name, defined: true });
+            // 선택자 목록(쉼표)의 앞 항목·다크 짝(중립 표식 규격)만 있는 규칙도 정의로 본다
+            const defined = new RegExp(`\\.${name}(:[a-z-]+)?(${escapeRe(DARK_SUFFIX)})?\\s*[{,]`).test(cssSource);
+            expect({ name, defined }).toEqual({ name, defined: true });
         }
     });
 
@@ -204,7 +224,7 @@ describe('KG이니시스 결제 환경설정 — 플러그인 자체 글자색 �
         expect(tones.length).toBeGreaterThanOrEqual(6);
         for (const name of tones) {
             const light = new RegExp(`(^|[\\s,}])\\.${name}\\s*\\{[^}]*color\\s*:`, 'm');
-            const dark = new RegExp(`\\.dark\\s+\\.${name}\\s*\\{[^}]*color\\s*:`, 'm');
+            const dark = new RegExp(`\\.${name}${escapeRe(DARK_SUFFIX)}\\s*\\{[^}]*color\\s*:`, 'm');
             expect({ name, light: light.test(cssSource), dark: dark.test(cssSource) }).toEqual({ name, light: true, dark: true });
         }
     });
@@ -215,12 +235,14 @@ describe('KG이니시스 결제 환경설정 — 플러그인 자체 글자색 �
      * @effects css_is_self_contained
      */
     it('플러그인 CSS 의 선택자는 모두 자기 접두 클래스다(다른 확장·템플릿 클래스를 정의하거나 덮지 않는다)', () => {
-        const body = cssSource.replace(/\/\*[\s\S]*?\*\//g, '');
+        // 손으로 쓴 규칙만 본다 — 진입 블록의 접두 Tailwind 빌드와 생성 파일은 정적 검사(extension-css-namespace)가 산출물째 본다
+        const body = handRules.replace(/\/\*[\s\S]*?\*\//g, '').split(DARK_SUFFIX).join('');
         const selectors = [...body.matchAll(/([^{}]+)\{/g)].map((m) => m[1].trim()).filter((s) => !s.startsWith('@'));
         expect(selectors.length).toBeGreaterThan(0);
+        expect(body).not.toMatch(/\.dark\b/);
         for (const group of selectors) {
             for (const sel of group.split(',').map((s) => s.trim())) {
-                expect(sel).toMatch(new RegExp(`^(\\.dark\\s+)?\\.${PREFIX}[a-z-]+(:(hover|focus|focus-within))?$`));
+                expect(sel).toMatch(new RegExp(`^\\.${PREFIX}[a-z-]+(:(hover|focus|focus-within))?$`));
             }
         }
     });
@@ -232,7 +254,7 @@ describe('KG이니시스 결제 환경설정 — 플러그인 자체 글자색 �
      */
     it('plugin.json 이 CSS 자산을 선언하고, 엔트리가 CSS 를 불러오며, 빌드 산출물에 클래스가 실려 있다', () => {
         const manifest = JSON.parse(fs.readFileSync(path.join(EXT_ROOT, 'plugin.json'), 'utf8'));
-        expect(manifest.assets?.css).toEqual({ entry: 'resources/css/main.css', output: 'dist/css/plugin.css' });
+        expect(manifest.assets?.css).toEqual({ entry: 'resources/css/main.css', output: 'dist/css/plugin.css', namespace: 'pay-kginicis' });
 
         const entry = fs.readFileSync(path.join(EXT_ROOT, 'resources/js/index.ts'), 'utf8');
         expect(entry).toMatch(/import\s+['"]\.\.\/css\/main\.css['"]/);

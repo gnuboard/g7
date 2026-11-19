@@ -91,6 +91,15 @@
       }
     },
     {
+      "path": "*/admin/ecommerce/exports",
+      "layout": "admin_ecommerce_export_index",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.exports.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.export.title"
+      }
+    },
+    {
       "path": "*/admin/ecommerce/manage-excel-download",
       "layout": "admin_ecommerce_excel_download_index",
       "auth_required": true,

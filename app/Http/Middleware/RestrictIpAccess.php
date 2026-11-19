@@ -4,7 +4,7 @@ namespace App\Http\Middleware;
 
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Enums\ActivityLogType;
-use App\Extension\Cache\CoreCacheDriver;
+use App\Extension\Cache\CacheDriverFactory;
 use App\Extension\HookManager;
 use App\Helpers\ResponseHelper;
 use App\Http\Middleware\Concerns\DetectsRequestLocale;
@@ -123,7 +123,7 @@ class RestrictIpAccess
         $throttleKey = 'ip_restriction.blocked_log.'.sha1($ip);
 
         try {
-            $cache = new CoreCacheDriver(config('cache.default', 'array'));
+            $cache = CacheDriverFactory::core();
 
             if ($cache->has($throttleKey)) {
                 return;

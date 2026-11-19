@@ -7,7 +7,8 @@
     <div class="section-header">
       <h3>$t:admin.settings.identity.messages.title</h3>
     </div>
-    <div data-ref="identity_messages_moved_notice" class="admin-card flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div data-ref="identity_messages_moved_notice" class="admin-card flex flex-col gap-3">
+      <responsive on="640-" class="admin-card flex gap-3 flex-row items-center justify-between"/>
       <p class="text-body">$t:admin.settings.identity.messages.moved_notice.body</p>
       <a data-ref="identity_messages_moved_link" href="/admin/settings?tab=notification_definitions&amp;category=identity" class="flex-shrink-0 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300">
         <on type="click">

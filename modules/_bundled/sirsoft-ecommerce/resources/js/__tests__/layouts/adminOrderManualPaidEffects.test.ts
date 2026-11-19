@@ -29,6 +29,7 @@ function flatten(node: any, acc: Node[] = []): Node[] {
   if (!node || typeof node !== 'object') return acc;
   acc.push(node);
   if (Array.isArray(node.children)) for (const c of node.children) flatten(c, acc);
+  if (Array.isArray(node.props?.footer)) for (const c of node.props.footer) flatten(c, acc); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
   return acc;
 }
 

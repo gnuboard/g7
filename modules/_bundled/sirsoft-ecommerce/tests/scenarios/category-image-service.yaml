@@ -1,0 +1,36 @@
+feature: 카테고리 이미지 서비스 (업로드, 삭제, 정렬, 수정, 임시 연결, 다운로드 서빙)
+
+description: |
+  카테고리 이미지는 StorageInterface 로 저장하고 저장소 행으로 메타를 남긴다. 업로드, 삭제, 정렬, 수정은
+  각각 before/after 훅(업로드와 수정은 filter 훅 포함)을 발행한다. 다운로드는 전체 적재가 아니라
+  StorageInterface::response() 스트리밍으로 서빙하고, 캐시 헤더(Cache-Control, ETag, 304)는 코어 단일 지점
+  streamedFileResponse() 가 입힌다. 서비스는 스트림과 검증자 메타(getFileInfo())만 돌려준다.
+
+  관리자 카테고리 컨트롤러의 이미지 다운로드는 서비스의 getFileInfo() 스트리밍 경로로 위임해야 한다.
+  getByHash 조회 후 직접 Storage 를 읽는 전체 적재 경로로 회귀하면 메모리에 파일 전체가 올라간다.
+
+axes:
+  # 서비스 작업 종류. admin_download 는 관리자 카테고리 컨트롤러가 서비스 서빙 경로로 위임하는 표면이다.
+  operation: [upload, delete, reorder, update, link_temp, download, admin_download]
+
+effects:
+  - admin_download_delegates_to_streaming_file_info   # 관리자 다운로드가 getFileInfo 스트리밍 응답을 그대로 반환하고 getByHash 를 쓰지 않음
+  - admin_download_missing_image_returns_404          # 서빙 정보가 없으면 404 JSON 응답
+  - upload_stores_file_and_creates_record             # images 카테고리에 저장하고 정렬 순서 다음 값으로 행 생성
+  - upload_with_temp_key_creates_unlinked_image       # 임시 키 업로드는 category_id 없이 temp_key 행 생성
+  - upload_persists_alt_text                          # 다국어 대체 텍스트가 행에 실림
+  - upload_fires_before_filter_after_hooks            # before_upload, filter_upload_file, after_upload 발행
+  - delete_removes_storage_file_and_record            # 저장 파일과 행을 함께 지움
+  - delete_fires_before_after_hooks                   # before_delete, after_delete 발행
+  - link_temp_images_links_to_category                # 임시 키 이미지를 카테고리에 연결하고 연결 수 반환
+  - reorder_delegates_order_map_to_repository         # 이미지 ID 와 순서 맵을 저장소에 그대로 전달
+  - reorder_fires_before_after_hooks                  # before_reorder, after_reorder 발행
+  - download_streams_without_cache_policy_headers     # 스트리밍 응답 + 결정적 Last-Modified, Cache-Control/ETag 는 넘기지 않음
+  - download_returns_null_for_unknown_hash            # 모르는 해시는 null
+  - download_returns_null_when_file_missing           # 저장소에 파일이 없으면 null
+  - update_modifies_alt_text                          # 대체 텍스트 수정이 저장소 update 로 전달
+  - update_fires_before_filter_after_hooks            # before_update, filter_update_data, after_update 발행
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/CategoryImageDownloadTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CategoryImageServiceTest.php

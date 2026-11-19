@@ -34,15 +34,20 @@ function collectSetStateParams(node: unknown, out: Json[] = []): Json[] {
 
 describe('확장 업데이트 모달 — 검색 인덱스 재생성 옵트인', () => {
   const cases = [
-    { name: '모듈', layout: moduleList, modal: moduleUpdateModal, strategyKey: 'moduleLayoutStrategy', rebuildKey: 'moduleRebuildSearchIndex' },
-    { name: '플러그인', layout: pluginList, modal: pluginUpdateModal, strategyKey: 'pluginLayoutStrategy', rebuildKey: 'pluginRebuildSearchIndex' },
+    { name: '모듈', layout: moduleList, modal: moduleUpdateModal, selectedKey: 'selectedModule', rebuildKey: 'moduleRebuildSearchIndex' },
+    { name: '플러그인', layout: pluginList, modal: pluginUpdateModal, selectedKey: 'selectedPlugin', rebuildKey: 'pluginRebuildSearchIndex' },
   ];
 
-  it.each(cases)('$name 목록: 업데이트 모달을 여는 시드가 체크를 해제한다', ({ layout, strategyKey, rebuildKey }) => {
-    const seeds = collectSetStateParams(layout).filter(
-      (params) => params[strategyKey] === 'overwrite' && 'selectedModule' in params === ('selectedModule' in params),
-    );
-    const modalSeeds = seeds.filter((params) => params[strategyKey] === 'overwrite');
+  /** 업데이트 창을 여는 시드 — 업데이트 미리보기 요청(…/update/preview)을 함께 정한다(#888). */
+  const isUpdateOpenerSeed = (params: Json): boolean =>
+    typeof params.layoutPreviewRequest === 'string' && params.layoutPreviewRequest.includes('/update/preview');
+
+  /**
+   * @scenario case=rebuild_optin
+   * @effects rebuild_search_index_is_opt_in
+   */
+  it.each(cases)('$name 목록: 업데이트 모달을 여는 시드가 체크를 해제한다', ({ layout, rebuildKey }) => {
+    const modalSeeds = collectSetStateParams(layout).filter(isUpdateOpenerSeed);
 
     expect(modalSeeds.length).toBeGreaterThan(0);
     modalSeeds.forEach((params) => {
@@ -50,17 +55,15 @@ describe('확장 업데이트 모달 — 검색 인덱스 재생성 옵트인', 
     });
   });
 
-  it.each(cases)('$name 모달: 업데이트 성공 후 상태를 되돌릴 때도 체크를 해제한다', ({ modal, strategyKey, rebuildKey }) => {
-    const resets = collectSetStateParams(modal).filter(
-      (params) => params[strategyKey] === 'overwrite' && params.selectedModule === null,
+  /**
+   * @scenario case=rebuild_optin
+   * @effects rebuild_search_index_is_opt_in
+   */
+  it.each(cases)('$name 모달: 업데이트 성공 후 상태를 되돌릴 때도 체크를 해제한다', ({ modal, selectedKey, rebuildKey }) => {
+    // 성공 갈래의 되돌림 — 대상(모듈은 selectedModule, 플러그인은 selectedPlugin)을 비우고 미리보기를 쉬게(idle) 한다
+    const resetParams = collectSetStateParams(modal).filter(
+      (params) => params[selectedKey] === null && params.layoutPreviewState === 'idle',
     );
-
-    // 모듈 모달은 selectedModule, 플러그인 모달은 selectedPlugin 을 비운다
-    const resetParams = resets.length
-      ? resets
-      : collectSetStateParams(modal).filter(
-          (params) => params[strategyKey] === 'overwrite' && params.selectedPlugin === null,
-        );
 
     expect(resetParams.length).toBeGreaterThan(0);
     resetParams.forEach((params) => {
@@ -68,6 +71,10 @@ describe('확장 업데이트 모달 — 검색 인덱스 재생성 옵트인', 
     });
   });
 
+  /**
+   * @scenario case=rebuild_optin
+   * @effects rebuild_search_index_is_opt_in
+   */
   it.each(cases)('$name 모달: 체크박스는 전역 상태 true 일 때만 체크된다', ({ modal, rebuildKey }) => {
     const json = JSON.stringify(modal);
     expect(json).toContain(`{{_global.${rebuildKey} === true}}`);

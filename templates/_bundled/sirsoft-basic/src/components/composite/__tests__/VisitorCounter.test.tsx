@@ -4,10 +4,9 @@
  * @description 홈 방문자 카운터가 네 숫자를 천 단위로 그리고, 라벨을 레이아웃에서 받아 쓰며,
  *   숫자가 아닌 값에 NaN 을 띄우지 않는지 잠근다. 데이터를 스스로 받지 않는 순수 표시 컴포넌트다.
  *
- * @effects counter_renders_four_numbers, counter_uses_layout_labels, counter_never_shows_nan
+ * 효과 요약(마커 아님, 평문): counter_renders_four_numbers, counter_uses_layout_labels, counter_never_shows_nan
  */
 
-import React from 'react';
 import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { VisitorCounter } from '../VisitorCounter';
@@ -50,12 +49,24 @@ describe('VisitorCounter', () => {
   // @scenario screen=component, state=normal, viewport=390, locale=ko
   // @effects counter_layout_switches_grid
   it('column 배치는 한 열, row 배치는 모바일 2열·데스크톱 4열 그리드다', () => {
-    const { container, rerender } = render(<VisitorCounter layout="column" />);
-    expect(container.querySelector('.grid')?.className).toContain('grid-cols-1');
+    const saved = (window as any).G7Core;
+    try {
+      (window as any).G7Core = { ...(saved ?? {}), useResponsive: () => ({ width: 390 }) };
+      const { container, rerender } = render(<VisitorCounter layout="column" />);
+      expect(container.querySelector('.grid')?.className).toContain('grid-cols-1');
 
-    rerender(<VisitorCounter layout="row" />);
-    expect(container.querySelector('.grid')?.className).toContain('grid-cols-2');
-    expect(container.querySelector('.grid')?.className).toContain('md:grid-cols-4');
+      // 폭은 엔진 폭(편집기 미리보기에서는 기기 폭)으로 고른다 — 768px 미만 2열, 이상 4열
+      rerender(<VisitorCounter layout="row" />);
+      expect(container.querySelector('.grid')?.className).toContain('grid-cols-2');
+      expect(container.querySelector('.grid')?.className).not.toContain('grid-cols-4');
+
+      (window as any).G7Core = { ...(saved ?? {}), useResponsive: () => ({ width: 1440 }) };
+      rerender(<VisitorCounter layout="row" today={1} />);
+      expect(container.querySelector('.grid')?.className).toContain('grid-cols-4');
+      expect(container.querySelector('.grid')?.className).not.toContain('grid-cols-2');
+    } finally {
+      (window as any).G7Core = saved;
+    }
   });
 
   // @scenario screen=component, state=normal, viewport=1440, locale=ko

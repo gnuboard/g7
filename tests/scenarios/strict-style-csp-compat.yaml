@@ -13,6 +13,8 @@ description: |
 
   핵심 동작:
     - 정적 규칙은 코어 CSS 파일 두 개로만 싣는다 — `g7-core.css`(셸, 전역 선택자·@layer 없음) · `g7-standalone.css`(오류·점검·DB 오류 화면)
+    - 셸의 확장 CSS 층 순서 선언(#816)은 순서 선언 한 줄만 담은 `g7-layers.css`(사용자)·`g7-layers-admin.css`(관리자)를
+      템플릿 CSS 링크 뒤에 싣는다(층 순서는 층 이름이 처음 나온 자리로 정해진다)
     - 런타임에 만드는 규칙은 `RuntimeStyleSheet`(생성형 시트 + `<head>` 표식 `<meta id=key>`)로 붙인다.
       생성형 시트가 없는 환경(구형 브라우저·jsdom)에서만 `<style id=key>` 로 내려간다
     - 전환 덮개(opaque·blur·fade·skeleton·spinner)·레이아웃 편집기·DevTools 가 이 헬퍼를 쓴다
@@ -39,6 +41,7 @@ axes:
     - core_views_no_inline_style         # resources/views 원본 전수
     - admin_shell_no_inline_style        # 관리자 셸 HTML
     - user_shell_no_inline_style         # 사용자 셸 HTML
+    - shell_layer_order_static_file      # 확장 CSS 층 순서 선언(#816)이 템플릿 CSS 뒤의 정적 파일 링크(g7-layers*.css)
     - standalone_pages_no_inline_style   # 오류 5종·묶음(4xx·5xx)과 402·419·429·IP 제한 403·점검·DB 계정 오류
     # 엔진 런타임 UI
     - error_screen_no_inline_style       # 오류 화면·레이아웃 오류 UI·시스템 배너
@@ -107,6 +110,7 @@ effects:
   - editor_toolbar_rules_removed_on_unmount
   - editor_slot_label_via_css_variable
   - editor_empty_cell_rules_attached_once
+  - editor_entry_fab_rules_via_runtime_sheet           # 운영 화면 편집 진입 단추 규칙은 보이는 동안만 런타임 시트로 붙고 숨으면 떨어진다(7.2.0 #869 × #163)
   - editor_media_isolation_excludes_own_sheet
   - editor_guarded_css_via_runtime_sheet
   - editor_public_css_stays_link                       # 공개·외부 CSS 는 종전대로 <link>
@@ -121,6 +125,7 @@ effects:
   - style_csp_spa_navigation_without_violation         # 링크 클릭 화면 이동 뒤에도 위반 0
   - error_screen_styled_under_style_csp                # 레이아웃 API 500 오류 화면 제목 24px
   - editor_formatting_visible_under_style_csp          # 글쓰기 편집기의 가운데 정렬이 편집 화면에 보이고 저장 형식은 그대로다
+  - tag_input_layout_under_style_csp                   # 태그 입력(react-select) 칸 flex·목록 absolute·안내 문구 1px 클립, <style data-emotion> 0
 
 test_files:
   - resources/js/core/style/__tests__/RuntimeStyleSheet.test.ts
@@ -150,7 +155,9 @@ notes: |
 
   브라우저 실측(style_csp_*)은 Chromium 만 돈다(Firefox·Safari 미측정). 문서 응답에 정책 헤더를 덧붙여 재현하므로
   활성 템플릿·플러그인 사본이 수정된 번들이어야 통과한다. 스스로 스타일을 넣는 외부 라이브러리 화면(CKEditor 5 색상 선택기·Monaco 코드 편집기·
-  react-select 태그 입력·다음 우편번호)은 고칠 수 없어 spec 의 상수 목록에 사유와 함께 두고 fixme 로 건다. CKEditor 5 편집 화면의
+  다음 우편번호)은 고칠 수 없어 spec 의 상수 목록에 사유와 함께 두고 fixme 로 건다. react-select 태그 입력은
+  관리자 템플릿이 emotion 규칙을 생성형 시트로 실어 고쳤고 tag_input_layout_under_style_csp 가 잠근다
+  (템플릿 쪽 단위 계약: sirsoft-admin_basic tag-input-component-baseline.yaml 의 style_csp). CKEditor 5 편집 화면의
   서식(정렬·색·표·이미지 크기)은 편집기 플러그인이 CSSOM 으로 입혀 고쳤고 editor_formatting_visible_under_style_csp 가 잠근다
   (플러그인 쪽 단위 계약: sirsoft-ckeditor5 editor-editing-view-style.yaml).
 

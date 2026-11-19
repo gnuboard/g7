@@ -17,11 +17,7 @@ use Tests\Concerns\CountsQueries;
  * 특정 시점의 쿼리 수를 숫자로 박아 두면 관계 하나만 추가해도 깨져 유지되지 않는다.
  * 대신 **행 수를 늘려도 쿼리 수가 늘지 않는다** 를 단언한다 — 그것이 N+1 의 정의다.
  *
- * @scenario case=list_query_count
- *
- * @effects product_list_query_count_stable,
- *          public_list_query_count_stable,
- *          category_tree_query_count_stable
+ * @scenario measure=query_count
  */
 class ListQueryCountRegressionTest extends ModuleTestCase
 {
@@ -32,6 +28,7 @@ class ListQueryCountRegressionTest extends ModuleTestCase
      *
      * @param  int  $count  생성할 수
      * @param  string  $prefix  상품 코드 접두
+     * @return void 반환값 없음
      */
     private function seedProducts(int $count, string $prefix): void
     {
@@ -50,7 +47,11 @@ class ListQueryCountRegressionTest extends ModuleTestCase
     /**
      * 관리자 상품 목록: 상품 수가 늘어도 쿼리 수가 늘지 않는지 확인
      *
+     * @scenario measure=query_count
+     *
      * @effects product_list_query_count_stable
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_product_list_query_count_is_stable(): void
     {
@@ -67,7 +68,11 @@ class ListQueryCountRegressionTest extends ModuleTestCase
     /**
      * 공개 상품 목록: 상품 수가 늘어도 쿼리 수가 늘지 않는지 확인
      *
+     * @scenario measure=query_count
+     *
      * @effects public_list_query_count_stable
+     *
+     * @return void 반환값 없음
      */
     public function test_public_product_list_query_count_is_stable(): void
     {
@@ -86,7 +91,11 @@ class ListQueryCountRegressionTest extends ModuleTestCase
      *
      * 종전에는 노드마다 자식을 다시 조회해 카테고리 수만큼 쿼리가 나갔다.
      *
+     * @scenario measure=query_count
+     *
      * @effects category_tree_query_count_stable
+     *
+     * @return void 반환값 없음
      */
     public function test_category_tree_query_count_is_stable(): void
     {
@@ -110,6 +119,7 @@ class ListQueryCountRegressionTest extends ModuleTestCase
      *
      * @param  int  $count  생성할 수
      * @param  string  $prefix  슬러그 접두
+     * @return void 반환값 없음
      */
     private function seedCategories(int $count, string $prefix): void
     {

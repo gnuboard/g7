@@ -13,7 +13,7 @@ description: |
   basename≠artisan. 완전 거부형(env/awk/make/xargs/sudo/busybox 등)은 등재돼 있어도 거부한다.
   인터프리터가 아닌 일반 스크립트(backup.sh 등)는 기존 계약대로 통과한다.
 
-  저장 시점(store/update Rule)과 실행 시점(runSchedule 마지막 방어선)이 같은 판정 함수
+  저장 시점(store/update Rule)과 실행 시점(ScheduleExecutor 실행 직전 방어선)이 같은 판정 함수
   `inspectShellCommand()` 를 공유한다 — 한쪽만 고치면 DB 직접 수정이 우회로가 된다.
 
 axes:
@@ -62,6 +62,9 @@ effects:
   - interpreter_without_script_rejected
   - plain_scripts_still_run_without_path_restrictions
   - rejection_reason_is_reported_per_category
+  - shell_gate_blocks_all_when_disabled
+  - shell_allowlist_bounds_binaries
+  - shell_tokenizer_contract
   # 엔드투엔드 — 저장·실행 두 지점
   - update_falls_back_to_the_stored_type_when_the_request_omits_it
   - run_time_last_line_of_defense_blocks_inline_code

@@ -9,7 +9,6 @@
 
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import React from 'react';
 import { Select } from '../Select';
 
 const DICT: Record<string, string> = {

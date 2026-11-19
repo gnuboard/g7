@@ -12,7 +12,6 @@
  * @since engine-v1.50.0
  */
 
-import React from 'react';
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 
@@ -71,6 +70,10 @@ function labelPreview(idx: number): HTMLInputElement {
 }
 
 describe('OptionsListControl — 정적 옵션 편집', () => {
+  /**
+   * @scenario subject=options_list_control
+   * @effects options_list_renders_rows_with_value_and_label
+   */
   it('옵션 배열을 행으로 렌더한다 (value 입력 + label 다국어 위젯)', () => {
     render(<OptionsListControl control={ctrl} value={seed} onChange={vi.fn()} t={t} />);
     expect(screen.getByTestId('g7le-options-row-0')).toBeInTheDocument();
@@ -80,6 +83,10 @@ describe('OptionsListControl — 정적 옵션 편집', () => {
     expect(labelPreview(1).value).toBe('B');
   });
 
+  /**
+   * @scenario subject=options_list_control
+   * @effects options_list_row_is_three_line_layout
+   */
   it('행은 3줄 구조다 (value 줄 / label 줄 / 액션 버튼 줄) — 겹침·가로 스크롤·라벨칸 협소 해소', () => {
     render(<OptionsListControl control={ctrl} value={seed} onChange={vi.fn()} t={t} />);
     const row = screen.getByTestId('g7le-options-row-0');
@@ -98,11 +105,19 @@ describe('OptionsListControl — 정적 옵션 편집', () => {
     expect(actionLine).toContainElement(screen.getByTestId('g7le-options-remove-0'));
   });
 
+  /**
+   * @scenario subject=options_list_control
+   * @effects options_list_empty_shows_notice
+   */
   it('빈 값이면 안내를 표시한다', () => {
     render(<OptionsListControl control={ctrl} value={undefined} onChange={vi.fn()} t={t} />);
     expect(screen.getByTestId('g7le-options-empty')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=options_list_control
+   * @effects options_list_add_appends_empty_option
+   */
   it('"항목 추가" → 빈 옵션이 추가된 배열로 onChange', () => {
     const onChange = vi.fn();
     render(<OptionsListControl control={ctrl} value={seed} onChange={onChange} t={t} />);
@@ -110,6 +125,10 @@ describe('OptionsListControl — 정적 옵션 편집', () => {
     expect(onChange).toHaveBeenCalledWith([...seed, { value: '', label: '' }]);
   });
 
+  /**
+   * @scenario subject=options_list_control
+   * @effects options_list_value_edit_updates_that_row
+   */
   it('value 입력 변경 → 해당 행만 갱신된 배열로 onChange', () => {
     const onChange = vi.fn();
     render(<OptionsListControl control={ctrl} value={seed} onChange={onChange} t={t} />);
@@ -117,6 +136,10 @@ describe('OptionsListControl — 정적 옵션 편집', () => {
     expect(onChange).toHaveBeenCalledWith([{ value: 'x', label: 'A' }, { value: 'b', label: 'B' }]);
   });
 
+  /**
+   * @scenario subject=options_list_control
+   * @effects options_list_remove_drops_item
+   */
   it('삭제 → 해당 항목 제거된 배열로 onChange', () => {
     const onChange = vi.fn();
     render(<OptionsListControl control={ctrl} value={seed} onChange={onChange} t={t} />);
@@ -124,6 +147,10 @@ describe('OptionsListControl — 정적 옵션 편집', () => {
     expect(onChange).toHaveBeenCalledWith([{ value: 'b', label: 'B' }]);
   });
 
+  /**
+   * @scenario subject=options_list_control
+   * @effects options_list_remove_last_emits_undefined
+   */
   it('마지막 항목 삭제 → onChange(undefined) (prop 삭제)', () => {
     const onChange = vi.fn();
     render(<OptionsListControl control={ctrl} value={[{ value: 'a', label: 'A' }]} onChange={onChange} t={t} />);
@@ -131,6 +158,10 @@ describe('OptionsListControl — 정적 옵션 편집', () => {
     expect(onChange).toHaveBeenCalledWith(undefined);
   });
 
+  /**
+   * @scenario subject=options_list_control
+   * @effects options_list_move_down_swaps_order
+   */
   it('아래로 이동 → 항목 순서 교환된 배열로 onChange', () => {
     const onChange = vi.fn();
     render(<OptionsListControl control={ctrl} value={seed} onChange={onChange} t={t} />);
@@ -138,6 +169,10 @@ describe('OptionsListControl — 정적 옵션 편집', () => {
     expect(onChange).toHaveBeenCalledWith([{ value: 'b', label: 'B' }, { value: 'a', label: 'A' }]);
   });
 
+  /**
+   * @scenario subject=options_list_control
+   * @effects options_list_first_row_move_up_disabled
+   */
   it('첫 행 위로 이동은 비활성 (경계 가드)', () => {
     render(<OptionsListControl control={ctrl} value={seed} onChange={vi.fn()} t={t} />);
     expect(screen.getByTestId('g7le-options-up-0')).toBeDisabled();
@@ -146,6 +181,10 @@ describe('OptionsListControl — 정적 옵션 편집', () => {
 });
 
 describe('OptionsListControl — 라벨 동적 다국어 (7-b)', () => {
+  /**
+   * @scenario subject=options_list_control
+   * @effects options_list_t_key_label_shows_resolved_preview
+   */
   it('label 이 `$t:` 키면 raw 노출 없이 해석값 미리보기', () => {
     render(
       <OptionsListControl control={ctrl} value={[{ value: 'latest', label: '$t:shop.sort.latest' }]} onChange={vi.fn()} t={t} />,
@@ -156,6 +195,10 @@ describe('OptionsListControl — 라벨 동적 다국어 (7-b)', () => {
     expect(preview.value).not.toMatch(/^\$t:/);
   });
 
+  /**
+   * @scenario subject=options_list_control
+   * @effects options_list_plain_label_blur_creates_custom_key
+   */
   it('평문 라벨 입력 blur → createCustomKey 후 `$t:custom.*` 토큰을 label 에 기록', async () => {
     createCustomKey.mockResolvedValue({
       kind: 'ok',
@@ -176,6 +219,10 @@ describe('OptionsListControl — 라벨 동적 다국어 (7-b)', () => {
 });
 
 describe('OptionsListControl — 정적-바인딩 가드', () => {
+  /**
+   * @scenario subject=options_list_control
+   * @effects options_list_binding_value_degrades
+   */
   it('데이터바인딩 값(`{{...}}`)이면 디그레이드 표시 (편집 비대상)', () => {
     render(<OptionsListControl control={ctrl} value="{{categories.data}}" onChange={vi.fn()} t={t} />);
     expect(screen.getByTestId('g7le-widget-options-list-bound')).toBeInTheDocument();
@@ -192,6 +239,10 @@ describe('OptionsListControl — 라벨 후보 풀 전달', () => {
     path: 'name', shape: 'scalar' as const, preview: '홍길동',
   };
 
+  /**
+   * @scenario subject=options_list_control
+   * @effects options_list_candidates_show_data_button
+   */
   it('bindingCandidates 전달 시 평문 라벨 칸에 +데이터 버튼 노출', () => {
     render(
       <OptionsListControl control={ctrl} value={seed} onChange={vi.fn()} t={t} bindingCandidates={[scalarCandidate]} />,
@@ -199,6 +250,10 @@ describe('OptionsListControl — 라벨 후보 풀 전달', () => {
     expect(screen.getByTestId('g7le-options-label-i18n-0-plus-data-btn')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=options_list_control
+   * @effects options_list_no_candidates_hides_data_button
+   */
   it('bindingCandidates 미전달 시 +데이터 버튼 미노출 (디그레이드)', () => {
     render(<OptionsListControl control={ctrl} value={seed} onChange={vi.fn()} t={t} />);
     expect(screen.queryByTestId('g7le-options-label-i18n-0-plus-data-btn')).not.toBeInTheDocument();

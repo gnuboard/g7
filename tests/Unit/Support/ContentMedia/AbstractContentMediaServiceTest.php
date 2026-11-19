@@ -14,14 +14,21 @@ use App\Support\ContentMedia\AbstractContentMediaService;
 use App\Support\ContentMedia\ContentMediaContext;
 use App\Support\ContentMedia\ContentMediaHooks;
 use App\Support\ContentMedia\ContentMediaRegistrar;
+use App\Thumbnails\ThumbnailPresetRegistry;
+use App\Thumbnails\ThumbnailQuery;
+use App\Thumbnails\ThumbnailResponder;
+use App\Thumbnails\ThumbnailUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Tests\TestCase;
@@ -35,6 +42,7 @@ use Tests\Unit\Support\ContentMedia\Fixtures\FakeContentMediaStore;
  * - 저장 동기화 순서는 연결 → 복제 → 제거, 복제분도 문서당 개수에 든다.
  * - before_delete 는 영구 삭제 직전에만, 파일은 행 디스크에서 커밋 뒤 지운다.
  * - 응답 서명은 이 문서 소유 해시만(관리자 증거 열람만 signAll), 캐시는 아무나 볼 수 있을 때만 public.
+ * - 이미지에 `?size=`·`?w=` 가 붙으면 게이트를 지난 뒤 썸네일로 낸다. 동영상·오디오·Range 요청은 원본 통로 그대로다.
  *
  * @scenario-manifest tests/scenarios/content-media-core-skeleton.yaml
  */
@@ -85,6 +93,7 @@ class AbstractContentMediaServiceTest extends TestCase
             HookManager::clearAction($hook);
         }
         HookManager::clearFilter(ContentMediaHooks::FILTER_UPLOAD_FILE);
+        app(ThumbnailPresetRegistry::class)->flush();
 
         parent::tearDown();
     }
@@ -229,6 +238,24 @@ class AbstractContentMediaServiceTest extends TestCase
         HookManager::addFilter(ContentMediaHooks::FILTER_UPLOAD_FILE, fn () => 'not-a-file');
         $kept = $service->upload($store->context(null, 'tk-r'), UploadedFile::fake()->image('origin.png', 5, 5));
         $this->assertSame('origin.png', $kept->getAttribute('original_filename'));
+    }
+
+    /**
+     * 브라우저가 파일 이름 속 큰따옴표를 `%22` 로 바꿔 보내도 본문 미디어 행에는 사용자가 고른 원래 이름이 남는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=quoted_filename, extension=plugin
+     *
+     * @effects content_media_original_filename_restored
+     */
+    public function test_upload_stores_the_original_name_not_the_browser_encoded_one(): void
+    {
+        [$service, $store] = $this->plugin();
+
+        $row = $service->upload($store->context(null, 'tk-q'), UploadedFile::fake()->image('견적 %22최종%22.png', 5, 5));
+
+        $this->assertSame('견적 "최종".png', $row->getAttribute('original_filename'));
     }
 
     /**
@@ -624,6 +651,215 @@ class AbstractContentMediaServiceTest extends TestCase
             'api.plugins.test-notes-plugin.notes.content-media.show',
             'api.modules.other.content-media.show',
         ], $recorder->names);
+    }
+
+    /**
+     * 이미지 행에 `?size=` 가 붙으면 다른 업로드 이미지 서빙 지점과 같은 썸네일 응답을 낸다 — 규격 크기, `X-G7-Thumbnail`,
+     * 권한 원본이라 `private` 캐시와 nosniff, 파생본은 원본 경로 아래. 파라미터가 없으면 종전 원본 그대로이고, 낼 수 없는 규격은
+     * 원본에 사유를 붙인다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=thumbnail, extension=module
+     *
+     * @effects image_size_serves_thumbnail, thumbnail_is_gated_private, thumbnail_bypass_marks_original, no_thumbnail_param_unchanged
+     */
+    public function test_respond_serves_thumbnail_for_image_with_size(): void
+    {
+        $this->prepareThumbnails();
+        [$service, $store, $storage] = $this->module();
+        $storage->put('attachments', 'content-media/2026/11/09/big.jpg', $this->jpegBytes(400, 300));
+        $row = $store->seed([
+            'hash' => 'THUMBFFFFFFF', 'document_id' => 70, 'path' => 'content-media/2026/11/09/big.jpg',
+            'mime_type' => 'image/jpeg', 'meta' => ['kind' => 'image', 'width' => 400, 'height' => 300],
+        ]);
+        // 아무나 볼 수 있는 문서여도 본문 미디어 썸네일은 권한 원본으로 다룬다(문서가 나중에 비공개가 될 수 있다)
+        $store->publicDocuments = [70];
+        $context = $store->context();
+
+        $plain = $service->respond($context, $row, Request::create('/x'));
+        $this->assertInstanceOf(BinaryFileResponse::class, $plain);
+        $this->assertFalse($plain->headers->has(ThumbnailResponder::HEADER), '파라미터가 없으면 썸네일 헤더가 없다');
+        $this->assertStringContainsString('public', (string) $plain->headers->get('Cache-Control'));
+        $this->assertSame([], Storage::disk('thumbnails')->allFiles());
+
+        $first = $service->respond($context, $row, Request::create('/x?size=xs'));
+        $this->assertNotNull($first);
+        $this->assertSame('miss', $first->headers->get(ThumbnailResponder::HEADER));
+        $this->assertSame([64, 64], $this->dimensionsOf($first));
+        $this->assertSame('nosniff', $first->headers->get('X-Content-Type-Options'));
+        $this->assertStringContainsString('private', (string) $first->headers->get('Cache-Control'));
+        $this->assertStringNotContainsString('public', (string) $first->headers->get('Cache-Control'));
+
+        $derived = Storage::disk('thumbnails')->allFiles();
+        $this->assertNotSame([], $derived);
+        $this->assertStringContainsString('test-notes/attachments/content-media/2026/11/09/big.jpg', str_replace('\\', '/', $derived[0]));
+
+        $this->assertSame('hit', $service->respond($context, $row, Request::create('/x?size=xs'))->headers->get(ThumbnailResponder::HEADER));
+        $this->assertSame([200, 150], $this->dimensionsOf($service->respond($context, $row, Request::create('/x?w=150'))), '숫자 요청은 숫자 요청 대상 규격으로 올려 맞춘다');
+
+        $bypass = $service->respond($context, $row, Request::create('/x?size=nope'));
+        $this->assertInstanceOf(BinaryFileResponse::class, $bypass);
+        $this->assertSame('bypass:unknown-preset', $bypass->headers->get(ThumbnailResponder::HEADER));
+    }
+
+    /**
+     * 동영상·오디오 행과 Range 요청은 `?size=` 가 붙어도 썸네일 분기를 지나지 않는다 — 응답과 헤더가 종전 그대로다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=thumbnail, extension=module
+     *
+     * @effects non_image_ignores_thumbnail_param, range_request_keeps_original
+     */
+    public function test_respond_keeps_non_image_and_range_requests_unchanged(): void
+    {
+        $this->prepareThumbnails();
+        [$service, $store, $storage] = $this->module();
+        $storage->put('attachments', 'content-media/2026/11/09/clip.mp4', str_repeat('v', 500));
+        $storage->put('attachments', 'content-media/2026/11/09/big.jpg', $this->jpegBytes(400, 300));
+        $video = $store->seed(['hash' => 'VIDEOGGGGGGG', 'document_id' => 71, 'path' => 'content-media/2026/11/09/clip.mp4', 'mime_type' => 'video/mp4']);
+        $image = $store->seed(['hash' => 'RANGEGGGGGGG', 'document_id' => 71, 'path' => 'content-media/2026/11/09/big.jpg', 'mime_type' => 'image/jpeg']);
+        $context = $store->context();
+
+        $plainVideo = $service->respond($context, $video, Request::create('/x'));
+        $sizedVideo = $service->respond($context, $video, Request::create('/x?size=xs'));
+        $this->assertInstanceOf(BinaryFileResponse::class, $sizedVideo);
+        $this->assertSame(200, $sizedVideo->getStatusCode());
+        $this->assertFalse($sizedVideo->headers->has(ThumbnailResponder::HEADER));
+        $this->assertSame($plainVideo->headers->get('Cache-Control'), $sizedVideo->headers->get('Cache-Control'));
+        $this->assertSame($plainVideo->headers->get('Content-Disposition'), $sizedVideo->headers->get('Content-Disposition'));
+
+        $ranged = Request::create('/x?size=xs');
+        $ranged->headers->set('Range', 'bytes=0-9');
+        $partial = $service->respond($context, $image, $ranged);
+        $this->assertSame(206, $partial->getStatusCode());
+        $this->assertMatchesRegularExpression('#^bytes 0-9/\d+$#', (string) $partial->headers->get('Content-Range'));
+        $this->assertFalse($partial->headers->has(ThumbnailResponder::HEADER));
+
+        $this->assertSame([], Storage::disk('thumbnails')->allFiles(), '동영상과 Range 요청이 파생본을 만들었다');
+    }
+
+    /**
+     * 썸네일은 원본과 같은 게이트 뒤에 있다 — 원본을 못 보는 요청(볼 수 없는 문서, 서명 없는 임시 행)은 `?size=` 를 붙여도 403 이고
+     * 파생본이 생기지 않는다. 서명 주소에 `size`·`w` 를 덧붙여도 서명이 유효하고, 그 밖의 파라미터를 붙이면 깨진다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=thumbnail, extension=module
+     *
+     * @effects thumbnail_denied_without_view_access, signed_url_accepts_thumbnail_param, signed_url_rejects_other_param
+     */
+    public function test_thumbnail_stays_behind_the_serve_gate_and_signature(): void
+    {
+        $this->prepareThumbnails();
+        [$service, $store, $storage] = $this->module();
+        $storage->put('attachments', 'content-media/2026/11/09/big.jpg', $this->jpegBytes(400, 300));
+        $store->seed(['hash' => 'LOCKEDHHHHHH', 'document_id' => 80, 'path' => 'content-media/2026/11/09/big.jpg', 'mime_type' => 'image/jpeg']);
+        $store->seed(['hash' => 'TEMPHHHHHHHH', 'temp_key' => 'tk', 'path' => 'content-media/2026/11/09/big.jpg', 'mime_type' => 'image/jpeg']);
+        $context = $store->context();
+
+        foreach (['LOCKEDHHHHHH', 'TEMPHHHHHHHH'] as $hash) {
+            try {
+                $this->serve($service, $context, $hash, Request::create(self::MODULE_PREFIX.$hash.'?size=xs'));
+                $this->fail("{$hash} 의 썸네일이 게이트 없이 나갔다");
+            } catch (AccessDeniedHttpException) {
+            }
+        }
+        $this->assertSame([], Storage::disk('thumbnails')->allFiles(), '게이트에 막힌 요청이 파생본을 만들었다');
+
+        foreach (['LOCKEDHHHHHH', 'TEMPHHHHHHHH'] as $hash) {
+            $signed = $service->signedUrl($context, $hash);
+
+            $sized = Request::create(ThumbnailUrl::withSize($signed, 'xs'));
+            $this->assertFalse($sized->hasValidSignature(absolute: false), '쿼리 전체 서명 검증은 size 가 붙으면 깨진다');
+            $response = $this->serve($service, $context, $hash, $sized);
+            $this->assertSame([64, 64], $this->dimensionsOf($response));
+            $this->assertStringContainsString('private', (string) $response->headers->get('Cache-Control'));
+
+            $this->assertSame([200, 150], $this->dimensionsOf($this->serve($service, $context, $hash, Request::create($signed.'&w=150'))));
+
+            try {
+                $this->serve($service, $context, $hash, Request::create($signed.'&size=xs&foo=1'));
+                $this->fail('썸네일 파라미터가 아닌 것을 붙인 서명 주소가 통과했다');
+            } catch (AccessDeniedHttpException) {
+            }
+        }
+    }
+
+    /**
+     * 컨트롤러가 하는 서빙 순서 — 서명 검증(썸네일 파라미터 제외) → 게이트 → 응답.
+     *
+     * @param  AbstractContentMediaService  $service  서비스
+     * @param  ContentMediaContext  $context  문맥
+     * @param  string  $hash  해시
+     * @param  Request  $request  요청
+     * @return Response 응답
+     */
+    private function serve(AbstractContentMediaService $service, ContentMediaContext $context, string $hash, Request $request): Response
+    {
+        $row = $service->findServable($context, $hash, $request->hasValidRelativeSignatureWhileIgnoring(ThumbnailQuery::ignoreClosure()));
+        $response = $service->respond($context, $row, $request);
+        $this->assertNotNull($response);
+
+        return $response;
+    }
+
+    /**
+     * 파생본 디스크를 가짜로 바꾸고 규격을 고정합니다 — 개발 PC 설정이 시험으로 새지 않게.
+     *
+     * @return void 반환값 없음
+     */
+    private function prepareThumbnails(): void
+    {
+        Storage::fake('thumbnails');
+        config([
+            'core.thumbnail.enabled' => true,
+            'core.thumbnail.disk_gated' => 'thumbnails',
+            'core.thumbnail.disk_public' => 'thumbnails',
+            'core.image.driver' => 'gd',
+            'core.thumbnail.presets' => [
+                ['name' => 'xs', 'width' => 64, 'height' => 64, 'fit' => 'cover', 'anchor' => 'center', 'quality' => null, 'format' => 'original', 'upscale' => false, 'pregenerate' => false, 'numeric' => false, 'enabled' => true],
+                ['name' => 'md', 'width' => 200, 'height' => null, 'fit' => 'width', 'anchor' => 'center', 'quality' => null, 'format' => 'original', 'upscale' => false, 'pregenerate' => false, 'numeric' => true, 'enabled' => true],
+            ],
+        ]);
+        app(ThumbnailPresetRegistry::class)->flush();
+        RateLimiter::clear(ThumbnailResponder::RATE_LIMITER.':127.0.0.1');
+    }
+
+    /**
+     * 응답 본문 이미지의 가로·세로.
+     *
+     * @param  Response  $response  응답
+     * @return array{0: int, 1: int} 가로·세로
+     */
+    private function dimensionsOf(Response $response): array
+    {
+        ob_start();
+        $response->sendContent();
+        $info = getimagesizefromstring((string) ob_get_clean());
+        $this->assertIsArray($info, '응답 본문이 이미지가 아니다');
+
+        return [$info[0], $info[1]];
+    }
+
+    /**
+     * 단색 JPEG 바이트.
+     *
+     * @param  int  $width  가로
+     * @param  int  $height  세로
+     * @return string 바이트
+     */
+    private function jpegBytes(int $width, int $height): string
+    {
+        $image = imagecreatetruecolor($width, $height);
+        imagefill($image, 0, 0, imagecolorallocate($image, 200, 40, 40));
+        ob_start();
+        imagejpeg($image, null, 90);
+        $bytes = (string) ob_get_clean();
+        imagedestroy($image);
+
+        return $bytes;
     }
 
     /**

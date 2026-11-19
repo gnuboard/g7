@@ -12,7 +12,7 @@
  * 회귀 배경: 브라우저 실측(2026-10-02)에서 비회원 작성자가 비밀번호를 맞히자 첨부는 보였지만
  *   본문 칸이 비어 있었고, 한 글자 입력하자 폼 본문이 그 글자로 바뀌었다.
  *
- * @effects guest_secret_post_editor_waits_for_body
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): guest_secret_post_editor_waits_for_body
  */
 
 import { describe, it, expect } from 'vitest';

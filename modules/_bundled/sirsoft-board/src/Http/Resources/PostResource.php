@@ -10,9 +10,11 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Auth;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReportReasonType;
 use Modules\Sirsoft\Board\Enums\TriggerType;
+use Modules\Sirsoft\Board\Fields\GuestAuthorFields;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostScrapRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
@@ -64,6 +66,9 @@ class PostResource extends BaseApiResource
 
             // 상세 전용: IP 주소 (admin.manage 권한 보유자만)
             'ip_address' => $this->getIpAddressForResponse($slug),
+
+            // 상세 전용: 비회원 작성자가 낸 항목 값(이메일 등) — 관리자 상세가 미리 읽어 둔 경우에만, admin.manage 권한 보유자만
+            'guest_field_values' => $this->getGuestFieldValuesForResponse($slug),
 
             // 상세 전용: 블라인드/복원 등 처리 이력 (admin.manage 권한 보유자만, 민감 필드 제외)
             'action_logs' => $this->getActionLogsForResponse($slug),
@@ -322,14 +327,19 @@ class PostResource extends BaseApiResource
             $isWithdrawn = $userStatus === UserStatus::Withdrawn;
             $canExposeEmail = $this->canExposeMemberEmail($request, $this->user_id);
 
-            $author = [
+            // 이름 키에는 이 화면(사용자 화면은 게시판별 설정, 관리자 화면은 관리자 영역)의 표시 이름만 싣는다.
+            // 실명은 관리자 화면 요청이고 회원 조회 권한이 있을 때만 `real_name` 으로 더한다(표시 이름과 같으면 싣지 않는다).
+            $displayNames = app(BoardDisplayNames::class);
+            $displayName = $displayNames->authorOf($this->resource, $displayNames->areaFor($request));
+
+            $author = $displayNames->withRealName([
                 'uuid' => $this->user->uuid,
-                'name' => $isWithdrawn ? __('user.withdrawn_user') : $this->user->name,
+                'name' => $displayName,
                 'email' => ($isWithdrawn || ! $canExposeEmail) ? null : $this->user->email,
                 'avatar' => $isWithdrawn ? null : $this->user->getAvatarUrl(),
                 'status' => $this->user->status,
                 'status_label' => $userStatus?->label() ?? $this->user->status,
-            ];
+            ], $this->user, $displayName, $request);
         } else {
             $author = [
                 'uuid' => null,
@@ -466,6 +476,8 @@ class PostResource extends BaseApiResource
             'max_reply_depth' => $this->board->max_reply_depth ?? g7_module_settings('sirsoft-board', 'basic_defaults.max_reply_depth', 5),
             'max_comment_depth' => $this->board->max_comment_depth ?? g7_module_settings('sirsoft-board', 'basic_defaults.max_comment_depth', 10),
             'report_types' => ReportReasonType::toArray(),
+            // 비회원 댓글 입력칸이 그릴 항목(이름, 비밀번호의 필수 여부와 게시판이 켠 항목). 로그인한 회원에게는 쓰이지 않아 싣지 않는다.
+            'guest_fields' => Auth::check() ? null : app(GuestAuthorFields::class)->formPayload($this->board),
         ];
     }
 
@@ -745,6 +757,29 @@ class PostResource extends BaseApiResource
         }
 
         return $this->ip_address;
+    }
+
+    /**
+     * 비회원 작성자가 낸 항목 값을 권한에 따라 반환합니다. (admin.manage 권한 보유자만)
+     *
+     * 관리자 글 상세 컨트롤러가 `guest_field_values_preloaded` 로 미리 읽어 둔 경우에만 싣는다(사용자 화면 응답에는 없다).
+     * 개인정보(이메일 등)라 IP 주소와 같은 권한 기준을 쓴다.
+     *
+     * @param  string|null  $slug  게시판 슬러그
+     * @return array<int, array{key: string, label: string, value: mixed, display_value: string|null}>|null 항목 값 목록 (권한이 없거나 읽지 않았으면 null)
+     */
+    private function getGuestFieldValuesForResponse(?string $slug): ?array
+    {
+        if (! array_key_exists('guest_field_values_preloaded', $this->resource->getAttributes())) {
+            return null;
+        }
+        if (! $slug || ! $this->checkBoardPermission($slug, 'admin.manage')) {
+            return null;
+        }
+
+        $values = $this->resource->getAttributes()['guest_field_values_preloaded'];
+
+        return is_array($values) ? $values : [];
     }
 
     /**

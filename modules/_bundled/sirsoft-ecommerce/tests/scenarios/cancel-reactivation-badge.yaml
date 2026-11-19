@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#747 |
 #   재활성 범위 × 취소 출처 × 취소 모양의 전 조합(60) 중 귀속은 한 메서드(CancelReactivationRecorder::record)가
 #   후보 조회 한 번으로 정한다. 출처는 「반품·교환 발이냐 아니냐」 두 갈래로만 갈리고, 모양은 행 자신·부모 두
 #   후보로만 갈린다 — 갈래마다 대표 조합을 못박는다. effects 축은 면제하지 않는다.

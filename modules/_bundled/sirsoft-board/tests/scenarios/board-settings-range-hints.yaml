@@ -1,0 +1,43 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#857 이 매니페스트의 조합을 재는 시험은 test_files 의 spec 뿐인데, 그 spec 은 test.describe.skip 상태라(활성화 조건은 spec 머리말) 실행되지 않는다. 건너뛴 시험의 마킹은 커버로 세지 않으므로(docs/testing-guide.md 「describe.skip 인 spec 의 그 축 커버리지는 0」) 조합이 미커버로 남는다. 같은 조합을 재는 다른 실행 시험은 없다(#857 후속 대조). spec 의 skip 을 풀면 이 표식을 걷고 pending_effects 를 effects 로 되돌린다.
+
+feature: 게시판 환경설정 숫자 필드 범위 힌트 — config 범위로 치환 렌더 (브라우저)
+
+description: |
+  이슈 #413 — 게시판 환경설정 「게시판 설정」 탭 숫자 필드 description 의 `({{min}}~{{max}})` 파라미터는
+  `_local.form._meta.limits`(config('sirsoft-board.limits') SSoT)에서 실제 숫자로 치환돼야 한다.
+  데이터소스 ID `settings` 가 코어 전역 `_global.settings` 와 충돌해 파라미터가 치환되지 않고 raw 로
+  보이던 회귀, 답변 깊이 상한이 5 로 하드코딩되던 결함, 파일 크기 max 가 빠져 있던 결함을 브라우저에서 막는다.
+
+  Vitest board-settings-range-hints 는 레이아웃 JSON 의 표현식 존재만 본다. 실제 데이터 바인딩과 치환
+  결과는 여기서 잰다(위지윅 발행 회귀 #238 교훈). 개별 게시판 수정 화면의 경계값은 board-form-range-parity 가 잰다.
+
+  spec 은 PlaywrightIssueToken 발급이 가능한 환경에서 test.describe.skip 을 풀어 실행한다.
+
+# axis 의미:
+#   case — 같은 화면(게시판 환경설정 basic_defaults 탭)에서 시험마다 재는 관점.
+#     hint_text_ranges          숫자 필드 description 의 범위 치환 문구
+#     no_raw_placeholders       치환 전 플레이스홀더 부재
+#     input_min_max_attributes  숫자 입력의 min/max 속성
+axes:
+  case: [hint_text_ranges, no_raw_placeholders, input_min_max_attributes]
+
+effects: []
+
+# 아래 효과는 아직 실행되는 시험이 재지 않는다 — test_files 의 spec 이 test.describe.skip 상태라 건너뛴 시험의 @effects 는
+# 커버가 아니다(#857 후속). spec 의 skip 을 풀면 effects 로 되돌린다.
+pending_effects:
+  # PC·모바일 페이지당 게시글 수 힌트가 (5~100) 으로 보인다
+  - per_page_hint_renders_config_range
+  # 제목 최소·최대 글자 수 힌트가 (0~200), (1~1000) 으로 보인다
+  - title_length_hints_render_config_range
+  # 답변 최대 깊이 힌트가 (1~10) 으로 보인다 (하드코딩 5 회귀 방지)
+  - reply_depth_hint_renders_config_max_10
+  # 최대 파일 크기 힌트가 (MB 단위, 1~200) 으로 보인다 (max 누락 회귀 방지)
+  - file_size_hint_renders_config_max_200
+  # raw 플레이스홀더({{min}}, {{max}})가 화면에 남지 않는다
+  - range_placeholders_not_raw
+  # 숫자 입력의 min/max 속성이 config 범위와 같다 (per_page 5~100, max_reply_depth max 10, max_file_size max 200)
+  - number_input_min_max_match_config_range
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-settings-range-hints.spec.ts

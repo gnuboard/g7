@@ -17,14 +17,14 @@
             "if": "{{koreaeximRuns === undefined && !(query.date_from && query.date_to && query.date_to < query.date_from)}}",
             "props": {
                 "role": "status",
-                "className": "admin-card mb-4 flex items-center gap-2"
+                "className": "koreaexim-admin-card koreaexim:mb-4 koreaexim:flex koreaexim:items-center koreaexim:gap-2"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "spinner-sm"
+                        "className": "koreaexim-spinner-sm"
                     },
                     "text": ""
                 },

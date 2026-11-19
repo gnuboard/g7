@@ -6,17 +6,19 @@ description: |
   시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
 
 axes:
-  case: [c01, c02, c03, c04]
+  case: [c01, c02, c03, c04, c05]
   # c01: 어디서도 포함하지 않는 상점 조각 세 개가 남아 있지 않다
   # c02: 검색 엔진용 상품 카드 링크가 상품 코드를 쓰고, 코드가 없는 응답만 번호로 대신한다
   # c03: 팔레트의 상품 카드 기본 노드가 상품 목록 응답 모양이다
   # c04: 컴포넌트 등록부의 상품 카드 인자가 실제 컴포넌트의 인자와 같다
+  # c05: 상품 카드를 쓰는 모든 레이아웃이 shopBase 를 넘기고, 검색 엔진용 카드 이미지가 화면 카드와 같은 썸네일 규격이다
 
 effects:
   - unused_partials_removed
   - seo_product_card_links_by_product_code
   - palette_product_card_matches_list_response
   - product_card_manifest_matches_component
+  - seo_product_card_matches_screen_card
 
 test_files:
   - templates/_bundled/sirsoft-basic/__tests__/layouts/template-cleanup.test.ts

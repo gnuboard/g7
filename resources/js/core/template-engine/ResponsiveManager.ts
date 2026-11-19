@@ -62,7 +62,6 @@ class ResponsiveManager {
   private subscribers: Set<(width: number) => void> = new Set();
   private currentWidth: number = 1024; // 데스크톱 기본값
   private debouncedHandler: (() => void) | null = null;
-  private isInitialized: boolean = false;
 
   constructor() {
     this.initialize();
@@ -78,7 +77,6 @@ class ResponsiveManager {
     }
 
     this.currentWidth = window.innerWidth;
-    this.isInitialized = true;
 
     this.debouncedHandler = debounce(() => {
       this.currentWidth = window.innerWidth;

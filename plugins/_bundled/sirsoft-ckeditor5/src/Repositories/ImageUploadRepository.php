@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\Ckeditor5\Repositories;
 
+use App\Models\User;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\ResolvesSortSpec;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -111,8 +112,9 @@ class ImageUploadRepository implements ImageUploadRepositoryInterface
             defaultDirection: 'desc',
         )[0];
 
+        // 올린 사람 이름은 관리자 영역 표시 이름으로 계산한다 — 닉네임, 상태, 회원이 고른 종류까지 읽는다.
         $query = $this->applyFilters($this->model->newQuery(), $filters)
-            ->with('uploader:id,name')
+            ->with('uploader:'.User::displayColumns())
             ->orderBy($sort['column'], $sort['direction']);
 
         // 정렬 마지막에 기본키를 덧붙여 전순서를 보장한다 — 동률 구간에서 인접 페이지가
@@ -130,7 +132,7 @@ class ImageUploadRepository implements ImageUploadRepositoryInterface
     public function findScanWindow(array $filters, int $limit): Collection
     {
         return $this->applyFilters($this->model->newQuery(), $filters)
-            ->with('uploader:id,name')
+            ->with('uploader:'.User::displayColumns())
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->limit($limit)
@@ -165,6 +167,27 @@ class ImageUploadRepository implements ImageUploadRepositoryInterface
     public function delete(Ckeditor5ImageUpload $upload): bool
     {
         return (bool) $upload->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countByMimeTypes(array $mimeTypes): int
+    {
+        return $this->model->newQuery()->whereIn('mime_type', $mimeTypes)->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection
+    {
+        return $this->model->newQuery()
+            ->whereIn('mime_type', $mimeTypes)
+            ->where('id', '>', $afterId)
+            ->orderBy('id')
+            ->limit(max(1, $limit))
+            ->get(['id', 'file_path', 'storage_disk', 'mime_type']);
     }
 
     /**

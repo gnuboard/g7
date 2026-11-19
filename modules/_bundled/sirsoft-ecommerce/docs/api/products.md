@@ -123,7 +123,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | name_localized | string | `겨울 패딩 점퍼 #100` | `name` 의 현재 로케일 해석 값 (다국어 필드를 표시용 문자열로 해석) |
 | product_code | string | `GGK6A9N8PXNR35OQ` | 상품코드 (상품 고유 관리 식별자) |
 | sku | string | `JK-0100` | 재고관리코드(SKU) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 썸네일 기준 주소 — 항상 API 서빙 경로(공개 자산 디스크여도 직접 주소가 아니다, 화면이 `?size=` 를 붙인다). 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | list_price | integer | `200000` | 정가 (기본통화 자릿수로 정규화된 값) |
 | list_price_formatted | string | `200,000원` | `list_price` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | selling_price | integer | `169000` | 판매가 (기본통화 자릿수로 정규화된 값) |
@@ -232,9 +232,11 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+- **권한 메모(1.4.0)**: 목록 응답 `abilities.can_export`(= `sirsoft-ecommerce.exports.create`) — 목록 머리 줄 [내보내기] 버튼을 보일지 정하는 키. 실제 요청은 [exports.md](exports.md) 가 받는다.
 
 **설명** 관리자 상품 목록을 페이지네이션으로 조회합니다. `auth:sanctum` + `sirsoft-ecommerce.products.read` 권한이 필요하며, `ProductService::getList()`가 검색어/카테고리/판매·전시상태/가격·재고 범위 등 다양한 필터를 적용해 목록을 반환하고 `getStatistics()`로 집계 통계를 함께 제공합니다. 응답은 `ProductCollection`으로 감싸져 `withStatistics()`로 통계가 병합됩니다. 확장은 `sirsoft-ecommerce.product.list_validation_rules` 훅으로 추가 필터 파라미터를 주입할 수 있습니다.
 
@@ -256,8 +258,8 @@ HTTP/1.1 200
 | category_ids | body | array | 예 | min 1, max 5 | category 식별자 배열 |
 | primary_category_id | body | integer | 아니오 | — | primary category 식별자 |
 | brand_id | body | integer | 아니오 | — | brand 식별자 |
-| list_price | body | integer | 예 | min 0.01 | 정가 (기본통화 기준, 소수 통화는 소수 입력 허용) |
-| selling_price | body | integer | 예 | min 0.01 | 판매가 (기본통화 기준, 정가 이하여야 함) |
+| list_price | body | integer | 예 | min 0 | 정가 (기본통화 기준, 소수 통화는 소수 입력 허용) |
+| selling_price | body | integer | 예 | min 0 | 판매가 (기본통화 기준, 정가 이하여야 함) |
 | stock_quantity | body | integer | 예 | min 0 | 재고 수량 (옵션 사용 시 옵션 재고 합계로 관리) |
 | safe_stock_quantity | body | integer | 아니오 | min 0 | 안전재고 수량 (이 값 미만이면 재고 부족 표시) |
 | sales_status | body | string | 예 | — | 판매상태 (on_sale 판매중 / suspended 판매중지 / sold_out 품절 / coming_soon 출시예정) |
@@ -413,7 +415,7 @@ _단건 응답: `data` 객체의 필드 (`ProductResource`). 성공 시 HTTP 201
 | hs_code | string | `null` | HS 코드 (수출입 관세 분류 코드) |
 | images | array | `[]` | 상품 이미지 목록 (images 관계 로드 시) |
 | thumbnail_hash | string | `null` | 대표 이미지 해시 |
-| thumbnail_url | string | `null` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
+| thumbnail_url | string | `null` | 대표 이미지 썸네일 기준 주소 — 항상 API 서빙 경로(공개 자산 디스크여도 직접 주소가 아니다, 화면이 `?size=` 를 붙인다). 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | meta_title | object | `null` | SEO 메타 제목 (다국어 JSON) |
 | meta_description | object | `null` | SEO 메타 설명 (다국어 JSON) |
 | meta_keywords | array | `null` | SEO 메타 키워드 배열 |
@@ -503,7 +505,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.create`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -580,7 +582,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -655,7 +657,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -730,7 +732,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -754,7 +756,7 @@ HTTP/1.1 200
 | items | body | array | 아니오 | — | 처리 대상 항목 배열 (각 항목: id + 개별 수정할 상품 필드 — name/list_price/selling_price/sales_status/display_status. bulk_changes 로 지정된 필드는 제외됨) |
 | option_bulk_changes | body | array | 아니오 | — | 옵션 조건 기반 일괄 변경값 (price_adjustment/stock_quantity 를 method+value 로 일괄 조정) |
 | option_bulk_changes.price_adjustment | body | array | 아니오 | — | 대상 상품들의 모든 옵션에 적용할 옵션 추가금 일괄 변경 블록 (method + value 쌍) |
-| option_bulk_changes.price_adjustment.method | body | string | 아니오 | `set`, `add`, `percent` | 옵션 추가금 변경 방식 (set 지정값으로 설정 / add 기존값에 가산 / percent 옵션 판매가(상품 판매가 + 추가금)에 비율을 적용한 뒤 추가금으로 저장 — 판매가 하한 0) |
+| option_bulk_changes.price_adjustment.method | body | string | 아니오 | `set`, `add`, `subtract`, `percent` | 옵션 추가금 변경 방식 (set 지정값으로 설정 / add 기존값에 가산 / percent 옵션 판매가(상품 판매가 + 추가금)에 비율을 적용한 뒤 추가금으로 저장 — 판매가 하한 0) |
 | option_bulk_changes.price_adjustment.value | body | number | 아니오 | — | 옵션 추가금 변경 값 (method 에 따라 설정값·가산값·비율로 해석) |
 | option_bulk_changes.stock_quantity | body | array | 아니오 | — | 대상 상품들의 모든 옵션에 적용할 옵션 재고 일괄 변경 블록 (method + value 쌍) |
 | option_bulk_changes.stock_quantity.method | body | string | 아니오 | `set`, `add`, `subtract` | 옵션 재고 변경 방식 (set 지정값으로 설정 / add 증가 / subtract 감소) |
@@ -837,7 +839,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -921,14 +923,14 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | code | path | string | 예 | — | 대상 리소스의 코드 |
 | name | body | array | 아니오 | — | 대상의 이름/명칭 |
-| product_code | body | string | 예 | max 50, 코드를 바꿀 때 영문·숫자·`-`·`_` 만 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가). 이미지 저장 폴더 이름에 쓰이므로 다른 값으로 바꿀 때 그 밖의 문자(`/`·`\`·`.`·`%`·공백 등)는 422 — 현재 코드를 그대로 보내면 이 규칙을 적용하지 않음(규칙 이전 코드의 상품도 수정 가능) |
+| product_code | body | string | 예 | max 50, 코드를 바꿀 때 영문·숫자·`-`·`_` 만 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가). 이미지 저장 폴더 이름에 쓰이므로 다른 값으로 바꿀 때 그 밖의 문자(`/`·`\`·`.`·`%`·공백 등)는 422 — 현재 코드를 그대로 보내면 이 규칙을 적용하지 않음(규칙 이전 코드의 상품도 수정 가능). 중복 검사는 `{product}`·by-code 경로 모두 그 상품 자신을 뺀다 |
 | sales_product_code | body | string | 아니오 | max 50 | 판매자 상품코드 (판매자가 직접 입력하는 관리용 코드) |
 | sku | body | string | 아니오 | max 100 | 재고관리코드(SKU) |
 | category_ids | body | array | 아니오 | min 1, max 5 | category 식별자 배열 |
 | primary_category_id | body | integer | 아니오 | — | primary category 식별자 |
 | brand_id | body | integer | 아니오 | — | brand 식별자 |
-| list_price | body | integer | 아니오 | min 0.01 | 정가 (기본통화 기준, 소수 통화는 소수 입력 허용) |
-| selling_price | body | integer | 아니오 | min 0.01 | 판매가 (기본통화 기준, 정가 이하여야 함) |
+| list_price | body | integer | 아니오 | min 0 | 정가 (기본통화 기준, 소수 통화는 소수 입력 허용) |
+| selling_price | body | integer | 아니오 | min 0 | 판매가 (기본통화 기준, 정가 이하여야 함) |
 | stock_quantity | body | integer | 아니오 | min 0 | 재고 수량 (옵션 사용 시 옵션 재고 합계로 관리) |
 | safe_stock_quantity | body | integer | 아니오 | min 0 | 안전재고 수량 (이 값 미만이면 재고 부족 표시) |
 | sales_status | body | string | 아니오 | — | 판매상태 (on_sale 판매중 / suspended 판매중지 / sold_out 품절 / coming_soon 출시예정) |
@@ -1084,7 +1086,7 @@ _단건 응답: `data` 객체의 필드 (`ProductResource` — 수정 후 상품
 | hs_code | string | `null` | HS 코드 |
 | images | array | `[]` | 상품 이미지 목록 (images 관계 로드 시) |
 | thumbnail_hash | string | `null` | 대표 이미지 해시 |
-| thumbnail_url | string | `null` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
+| thumbnail_url | string | `null` | 대표 이미지 썸네일 기준 주소 — 항상 API 서빙 경로(공개 자산 디스크여도 직접 주소가 아니다, 화면이 `?size=` 를 붙인다). 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | meta_title | object | `null` | SEO 메타 제목 (다국어 JSON) |
 | meta_description | object | `null` | SEO 메타 설명 (다국어 JSON) |
 | meta_keywords | array | `null` | SEO 메타 키워드 배열 |
@@ -1171,7 +1173,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -1306,7 +1308,8 @@ _단건 응답: `data` 객체의 필드. FileUploader 컴포넌트 규약에 맞
 | data.mime_type | string | `image/jpeg` | 파일 MIME 타입 |
 | data.size | integer | `204800` | 파일 크기 (바이트) |
 | data.size_formatted | string | `200 KB` | 사람이 읽는 파일 크기 문자열 (B/KB/MB/GB) |
-| data.download_url | string | `/api/modules/sirsoft-ecommerce/products/images/3f7a1c9e/download` | 이미지 다운로드/표시 URL |
+| data.download_url | string | `/api/modules/sirsoft-ecommerce/products/images/3f7a1c9e/download` | 원본 URL — 공개 자산 디스크면 직접 주소(CDN), 아니면 API 서빙 경로 |
+| data.preview_url | string | `/api/modules/sirsoft-ecommerce/product-image/3f7a1c9e0b2d` | 썸네일 기준 URL — 항상 API 서빙 경로. 업로더 미리보기가 이 주소에 규격을 붙인다 |
 | data.order | integer | `1` | 이미지 노출 순서 (`sort_order`, 미지정 시 1) |
 | data.is_image | boolean | `true` | MIME 타입이 `image/` 로 시작하는지 여부 |
 | data.is_thumbnail | boolean | `true` | 대표 이미지 여부 (컬렉션의 첫 이미지는 자동 지정) |
@@ -1330,6 +1333,7 @@ HTTP/1.1 201
             "size": 204800,
             "size_formatted": "200 KB",
             "download_url": "/api/modules/sirsoft-ecommerce/products/images/3f7a1c9e/download",
+            "preview_url": "/api/modules/sirsoft-ecommerce/product-image/3f7a1c9e0b2d",
             "order": 1,
             "is_image": true,
             "is_thumbnail": true
@@ -1344,7 +1348,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 400 | Bad Request | 파일 저장 등 업로드 처리 중 오류가 발생한 경우 (`exceptions.operation_failed`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.create\|sirsoft-ecommerce.products.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) 또는 상품 이미지 개수 상한 초과 (`ProductImageUploadLimitException`) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
@@ -1408,7 +1412,7 @@ HTTP/1.1 200
 | 400 | Bad Request | 순서 갱신 처리 중 오류가 발생한 경우 (`exceptions.operation_failed`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없거나, 대상 이미지가 속한 상품(하나라도)이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
@@ -1426,7 +1430,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 
@@ -1535,7 +1539,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -1623,7 +1627,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| productId | path | string | 예 | — | 대상 product의 식별자 |
+| productId | path | integer | 예 | — | 대상 product의 식별자 |
 | file | body | file | 예 | max 10240 | 업로드 파일 |
 | temp_key | body | string | 아니오 | UUID | 임시 업로드 세션 키 (같은 상품의 여러 이미지를 한 세션으로 묶음, 생략 시 서버가 UUID 자동 발급) |
 | collection | body | string | 아니오 | — | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
@@ -1683,7 +1687,8 @@ _단건 응답: `data` 객체의 필드. FileUploader 컴포넌트 규약에 맞
 | data.mime_type | string | `image/jpeg` | 파일 MIME 타입 |
 | data.size | integer | `204800` | 파일 크기 (바이트) |
 | data.size_formatted | string | `200 KB` | 사람이 읽는 파일 크기 문자열 (B/KB/MB/GB) |
-| data.download_url | string | `/api/modules/sirsoft-ecommerce/products/images/3f7a1c9e/download` | 이미지 다운로드/표시 URL |
+| data.download_url | string | `/api/modules/sirsoft-ecommerce/products/images/3f7a1c9e/download` | 원본 URL — 공개 자산 디스크면 직접 주소(CDN), 아니면 API 서빙 경로 |
+| data.preview_url | string | `/api/modules/sirsoft-ecommerce/product-image/3f7a1c9e0b2d` | 썸네일 기준 URL — 항상 API 서빙 경로. 업로더 미리보기가 이 주소에 규격을 붙인다 |
 | data.order | integer | `1` | 이미지 노출 순서 (`sort_order`) |
 | data.is_image | boolean | `true` | MIME 타입이 `image/` 로 시작하는지 여부 |
 | data.is_thumbnail | boolean | `true` | 대표 이미지 여부 (컬렉션의 첫 이미지는 자동 지정) |
@@ -1707,6 +1712,7 @@ HTTP/1.1 201
             "size": 204800,
             "size_formatted": "200 KB",
             "download_url": "/api/modules/sirsoft-ecommerce/products/images/3f7a1c9e/download",
+            "preview_url": "/api/modules/sirsoft-ecommerce/product-image/3f7a1c9e0b2d",
             "order": 1,
             "is_image": true,
             "is_thumbnail": true
@@ -1741,8 +1747,8 @@ HTTP/1.1 201
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| productId | path | string | 예 | — | 대상 product의 식별자 |
-| imageId | path | string | 예 | — | 대상 image의 식별자 |
+| productId | path | integer | 예 | — | 대상 product의 식별자 |
+| imageId | path | integer | 예 | — | 대상 image의 식별자 |
 
 **요청 예시**
 
@@ -1854,14 +1860,14 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | product | path | string | 예 | — | 대상 product의 식별자 |
 | name | body | array | 아니오 | — | 대상의 이름/명칭 |
-| product_code | body | string | 예 | max 50, 코드를 바꿀 때 영문·숫자·`-`·`_` 만 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가). 이미지 저장 폴더 이름에 쓰이므로 다른 값으로 바꿀 때 그 밖의 문자(`/`·`\`·`.`·`%`·공백 등)는 422 — 현재 코드를 그대로 보내면 이 규칙을 적용하지 않음(규칙 이전 코드의 상품도 수정 가능) |
+| product_code | body | string | 예 | max 50, 코드를 바꿀 때 영문·숫자·`-`·`_` 만 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가). 이미지 저장 폴더 이름에 쓰이므로 다른 값으로 바꿀 때 그 밖의 문자(`/`·`\`·`.`·`%`·공백 등)는 422 — 현재 코드를 그대로 보내면 이 규칙을 적용하지 않음(규칙 이전 코드의 상품도 수정 가능). 중복 검사는 `{product}`·by-code 경로 모두 그 상품 자신을 뺀다 |
 | sales_product_code | body | string | 아니오 | max 50 | 판매자 상품코드 (판매자가 직접 입력하는 관리용 코드) |
 | sku | body | string | 아니오 | max 100 | 재고관리코드(SKU) |
 | category_ids | body | array | 아니오 | min 1, max 5 | category 식별자 배열 |
 | primary_category_id | body | integer | 아니오 | — | primary category 식별자 |
 | brand_id | body | integer | 아니오 | — | brand 식별자 |
-| list_price | body | integer | 아니오 | min 0.01 | 정가 (기본통화 기준, 소수 통화는 소수 입력 허용) |
-| selling_price | body | integer | 아니오 | min 0.01 | 판매가 (기본통화 기준, 정가 이하여야 함) |
+| list_price | body | integer | 아니오 | min 0 | 정가 (기본통화 기준, 소수 통화는 소수 입력 허용) |
+| selling_price | body | integer | 아니오 | min 0 | 판매가 (기본통화 기준, 정가 이하여야 함) |
 | stock_quantity | body | integer | 아니오 | min 0 | 재고 수량 (옵션 사용 시 옵션 재고 합계로 관리) |
 | safe_stock_quantity | body | integer | 아니오 | min 0 | 안전재고 수량 (이 값 미만이면 재고 부족 표시) |
 | sales_status | body | string | 아니오 | — | 판매상태 (on_sale 판매중 / suspended 판매중지 / sold_out 품절 / coming_soon 출시예정) |
@@ -2017,7 +2023,7 @@ _단건 응답: `data` 객체의 필드 (`ProductResource` — 수정 후 상품
 | hs_code | string | `null` | HS 코드 |
 | images | array | `[]` | 상품 이미지 목록 (images 관계 로드 시) |
 | thumbnail_hash | string | `null` | 대표 이미지 해시 |
-| thumbnail_url | string | `null` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
+| thumbnail_url | string | `null` | 대표 이미지 썸네일 기준 주소 — 항상 API 서빙 경로(공개 자산 디스크여도 직접 주소가 아니다, 화면이 `?size=` 를 붙인다). 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | meta_title | object | `null` | SEO 메타 제목 (다국어 JSON) |
 | meta_description | object | `null` | SEO 메타 설명 (다국어 JSON) |
 | meta_keywords | array | `null` | SEO 메타 키워드 배열 |
@@ -2104,7 +2110,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -2229,8 +2235,8 @@ _단건 응답: `data` 객체의 필드._
 | brand_id | integer | `7` | 브랜드 ID |
 | category_ids | array | `[29,30,32]` | category 식별자 배열 (연관 리소스 참조) |
 | primary_category_id | integer | `32` | primary category 식별자 (연관 리소스 참조) |
-| list_price | string | `5000.00` | 정가 (기본통화 기준) |
-| selling_price | string | `3000.00` | 판매가 (기본통화 기준) |
+| list_price | integer | `4000` | 정가 (기본통화 기준) |
+| selling_price | integer | `2000` | 판매가 (기본통화 기준) |
 | stock_quantity | integer | `26` | 재고 수량 (옵션 있으면 옵션 합계) |
 | safe_stock_quantity | integer | `5` | 안전재고 수량 |
 | tax_status | string | `taxable` | 과세여부: taxable(과세), tax_free(면세) |
@@ -2258,7 +2264,7 @@ _단건 응답: `data` 객체의 필드._
 | seo_sync_description | boolean | `true` | SEO 설명 동기화 여부 (1: 상품 설명으로 자동 채움, 0: 직접 입력 보존) |
 | barcode | null | `null` | 바코드 |
 | hs_code | null | `null` | HS 코드 (관세 분류) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 썸네일 기준 주소 — 항상 API 서빙 경로(공개 자산 디스크여도 직접 주소가 아니다, 화면이 `?size=` 를 붙인다). 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | categories | array | `[{"id":29,"name":{"ko":"의류","en":"Clothing"},"name_locali…` | 소속 카테고리 목록 (breadcrumb 포함 — 복사 폼의 카테고리 표시용) |
 
 **응답 예시**
@@ -2291,7 +2297,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
@@ -2444,7 +2450,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | action_label | string | `추가` | `action` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | localized_description | string | `위시리스트 추가 (면 손수건 3매입 #1)` | `description` 의 현재 로케일 해석 값 (다국어 필드를 표시용 문자열로 해석) |
 | description_key | string | `sirsoft-ecommerce::activity_log.descr…` | 설명 번역 키 (localized_description 을 생성하는 다국어 키) |
-| properties | null | `null` | 로그 부가 속성 (액션에 첨부된 임의 메타데이터, 없으면 null) |
+| properties | object | `{"option_id":1158,"product_id":415,"extension_origin":"si…` | 로그 부가 속성 (액션에 첨부된 임의 메타데이터, 없으면 null) |
 | changes | array | `[{"field":"selling_price","label_key":"sirsoft-ecommerce:…` | 단일 수정 변경 내역 (각 항목: field·label·old·new, 일괄 수정 로그면 null) |
 | bulk_changes | null | `null` | 일괄 수정 변경 내역 (각 항목: model_id·changes 배열, 단일 수정 로그면 null) |
 | has_changes | boolean | `false` | changes 여부 |
@@ -2595,7 +2601,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
@@ -2646,7 +2652,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | name_localized | string | `겨울 패딩 점퍼 #100` | `name` 의 현재 로케일 해석 값 (다국어 필드를 표시용 문자열로 해석) |
 | product_code | string | `GGK6A9N8PXNR35OQ` | 상품코드 (상품 고유 관리 식별자) |
 | sku | string | `JK-0100` | 재고관리코드(SKU) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 썸네일 기준 주소 — 항상 API 서빙 경로(공개 자산 디스크여도 직접 주소가 아니다, 화면이 `?size=` 를 붙인다). 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | list_price | integer | `200000` | 정가 (기본통화 자릿수로 정규화된 값) |
 | list_price_formatted | string | `200,000원` | `list_price` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | selling_price | integer | `169000` | 판매가 (기본통화 자릿수로 정규화된 값) |
@@ -2737,7 +2743,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-products.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -2776,7 +2782,7 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 | name_localized | string | `겨울 패딩 점퍼 #100` | `name` 의 현재 로케일 해석 값 (다국어 필드를 표시용 문자열로 해석) |
 | product_code | string | `GGK6A9N8PXNR35OQ` | 상품코드 (상품 고유 관리 식별자) |
 | sku | string | `JK-0100` | 재고관리코드(SKU) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 썸네일 기준 주소 — 항상 API 서빙 경로(공개 자산 디스크여도 직접 주소가 아니다, 화면이 `?size=` 를 붙인다). 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | list_price | integer | `200000` | 정가 (기본통화 자릿수로 정규화된 값) |
 | list_price_formatted | string | `200,000원` | `list_price` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | selling_price | integer | `169000` | 판매가 (기본통화 자릿수로 정규화된 값) |
@@ -2884,7 +2890,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-products.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -2923,7 +2929,7 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 | name_localized | string | `프리미엄 브이넥 티셔츠 #5` | `name` 의 현재 로케일 해석 값 (다국어 필드를 표시용 문자열로 해석) |
 | product_code | string | `4R5OG8VYO0JKG1WQ` | 상품코드 (상품 고유 관리 식별자) |
 | sku | string | `TS-0005` | 재고관리코드(SKU) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 썸네일 기준 주소 — 항상 API 서빙 경로(공개 자산 디스크여도 직접 주소가 아니다, 화면이 `?size=` 를 붙인다). 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | list_price | integer | `34000` | 정가 (기본통화 자릿수로 정규화된 값) |
 | list_price_formatted | string | `34,000원` | `list_price` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | selling_price | integer | `27000` | 판매가 (기본통화 자릿수로 정규화된 값) |
@@ -3031,7 +3037,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-products.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -3118,7 +3124,7 @@ _목록 응답: `data[]` 배열 항목의 필드 (`ProductListResource` — `GET
 | name_localized | string | `eum et quia` | `name` 의 현재 로케일 해석 값 |
 | product_code | string | `PROD-GJUX-1484` | 상품코드 (상품 고유 관리 식별자) |
 | sku | string | `SKU-MRAD-9306` | 재고관리코드(SKU) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/products/images/3f7a1c9e/download` | 대표 이미지 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/products/images/3f7a1c9e/download` | 대표 이미지 썸네일 기준 주소 — 항상 API 서빙 경로(공개 자산 디스크여도 직접 주소가 아니다, 화면이 `?size=` 를 붙인다). 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | list_price | integer | `112594` | 정가 (기본통화 자릿수로 정규화) |
 | list_price_formatted | string | `112,594원` | `list_price` 의 표시용 통화 포맷 문자열 |
 | selling_price | integer | `88949` | 판매가 (기본통화 자릿수로 정규화) |
@@ -3174,7 +3180,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-products.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -3245,7 +3251,7 @@ _단건 응답: `data` 객체의 필드._
 | description_localized | string | `<p>부드러운 면 100% 손수건 3매 세트입니다.</p>` | `description` 의 현재 로케일 해석 값 (다국어 필드를 표시용 문자열로 해석) |
 | description_mode | string | `text` | 설명 모드: text(텍스트), html(HTML) |
 | images | array | `[{"id":7,"hash":"7df7761cdf16","original_filename":"produ…` | 상품 이미지 목록 (각 항목: hash·url·alt_text·is_thumbnail·sort_order 등, images 관계 로드 시) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 썸네일 기준 주소 — 항상 API 서빙 경로(공개 자산 디스크여도 직접 주소가 아니다, 화면이 `?size=` 를 붙인다). 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | meta_title | null | `null` | SEO 제목 (다국어 JSON) |
 | meta_description | object | `{"ko":"면 손수건 3매입 #1 의 직접 입력 SEO 설명입니다.","en":"Custom SEO …` | SEO 설명 (다국어 JSON) |
 | meta_keywords | null | `null` | SEO 키워드 (배열) |
@@ -3494,7 +3500,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| items | array | `[{"id":60,"post_id":284,"user_id":1116,"author_name":null…` | 상품문의 항목 배열 (각 항목: id·작성자·작성일·답변 여부·게시판 연동 시 제목/내용/비밀글 여부/답변/첨부) |
+| items | array | `[{"id":60,"post_id":284,"user_id":1116,"author_name":null…` | 상품문의 항목 배열 (각 항목: id·작성자·작성일·답변 여부·게시판 연동 시 제목/내용/비밀글 여부/답변/첨부). 작성자 이름 `author_name` 은 상품 문의 영역의 표시 이름이다(기본은 가린 이름. 홍길동 → 홍*동). 이 응답에는 실명 키가 없다([회원 이름과 표시 이름](README.md#회원-이름과-표시-이름)) |
 | meta | object | `{"board_settings":{"secret_mode":"always","categories":[]…` | 문의 목록 메타 (board_settings 게시판 설정, inquiry_available 문의 게시판 연동 여부, current_page/per_page/total/last_page 페이지네이션, abilities 답변·삭제 권한) |
 
 **응답 예시**
@@ -3575,7 +3581,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-products.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
@@ -3799,7 +3805,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-products.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 

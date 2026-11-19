@@ -42,6 +42,7 @@ import reactionsIndex from '../../../layouts/admin/admin_board_reactions_index.j
 import reportsIndex from '../../../layouts/admin/admin_board_reports_index.json';
 import scrapsIndex from '../../../layouts/admin/admin_board_scraps_index.json';
 import boardIndex from '../../../layouts/admin/admin_board_index.json';
+import settingsSchedulesTab from '../../../layouts/admin/partials/admin_board_settings/_tab_schedules.json';
 
 type Node = Record<string, any>;
 
@@ -61,6 +62,8 @@ const CASES: GridCase[] = [
   { screen: '반응 목록', layout: reactionsIndex, source: 'reactions', emptyKey: 'sirsoft-board.admin.reactions.table_empty' },
   { screen: '신고 목록', layout: reportsIndex, source: 'reports', emptyKey: 'common.no_data' },
   { screen: '스크랩 목록', layout: scrapsIndex, source: 'scraps', emptyKey: 'sirsoft-board.admin.scraps.table_empty' },
+  // 환경설정 「스케줄」 탭(7.2.0) — develop-7.2.0 병합(2026-10-21)에서 전수 시험이 처음 만난 표
+  { screen: '환경설정 스케줄 탭', layout: settingsSchedulesTab, source: 'boardSchedules', emptyKey: 'sirsoft-board.admin.settings.schedules.empty' },
 ];
 
 /** 처음 받기에 실패했을 때 빈 문구 자리에 보일 문구 */

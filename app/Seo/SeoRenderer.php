@@ -15,6 +15,7 @@ use App\Services\TemplateService;
 use App\Support\AssetUrl;
 use App\Support\LayoutEmptyObjects;
 use App\Support\RequestPath;
+use App\Support\Template\ExtensionCssOverrideResolver;
 use App\Support\Utf8;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -367,16 +368,17 @@ class SeoRenderer implements SeoRendererInterface
 
         // 5.95. meta.seo.vars를 해석하여 ComponentHtmlMapper에 전달 (format 모드용)
         $seoVarsDecl = $seoConfig['vars'] ?? [];
-        if (! empty($seoVarsDecl)) {
-            $resolvedVars = $this->resolveSeoVars($seoVarsDecl, $context, $moduleIdentifier, $pluginIdentifier);
-            $this->htmlMapper->setSeoVars($resolvedVars);
-        }
+        $resolvedVars = ! empty($seoVarsDecl)
+            ? $this->resolveSeoVars($seoVarsDecl, $context, $moduleIdentifier, $pluginIdentifier)
+            : [];
+        // vars 가 없는 화면도 비운다 — 매퍼는 렌더러와 함께 재사용되므로(캐시 재굽기 순회) 앞 화면의 vars 가 남으면 안 된다
+        $this->htmlMapper->setSeoVars($resolvedVars);
 
         // 5.96. meta.seo.extensions 기반 _seo context 주입
         // extensions 배열에 선언된 확장의 seoVariables()를 수집하고
         // 자동 해석 변수(setting/core_setting/query/route) + data 변수(vars 매핑)를 처리하여
         // 설정 템플릿(meta_{page_type}_title/description)에 적용한 결과를 _seo.{page_type}에 주입
-        $this->resolveSeoContext($seoConfig, $context, $routeParams, $resolvedVars ?? []);
+        $this->resolveSeoContext($seoConfig, $context, $routeParams, $resolvedVars);
 
         // 6. SeoMetaResolver로 3계층 캐스케이드 메타 해석 (배열 형태)
         $meta = $this->metaResolver->resolve($seoConfig, $context, $moduleIdentifier, $pluginIdentifier, $routeParams, $routeTitle);
@@ -526,9 +528,10 @@ class SeoRenderer implements SeoRendererInterface
         $defaultLocale = $defaultLocale ?? config('app.locale');
         // 요청 Host 가 아니라 사이트 주소 기준 — 위조 Host 로 그린 canonical 이 캐시에 남아
         // 정상 방문자에게 나가던 경로를 막는다(SeoUrl 참고).
+        // 하위 폴더 마운트 루트는 끝 슬래시 형태가 정본이다(SeoUrl::canonical) — 접힌 주소는 웹서버가 301 로 돌려보낸다.
         $canonicalUrl = $locale === $defaultLocale
-            ? SeoUrl::absolute($url)
-            : SeoUrl::absolute($url).'?locale='.$locale;
+            ? SeoUrl::canonical($url)
+            : SeoUrl::canonical($url).'?locale='.$locale;
         $ogUrl = '<meta property="og:url" content="'.e($canonicalUrl).'">'."\n";
 
         // hreflang 태그 생성 (다국어 SEO)
@@ -541,6 +544,9 @@ class SeoRenderer implements SeoRendererInterface
             $templateIdentifier
         );
         $allStylesheets = array_merge($templateCssUrls, $configStylesheets);
+        // 확장 CSS — 확장 화면 스타일은 확장이 자기 CSS 로 공급한다. 템플릿 CSS 뒤(의미 클래스 층 선언 뒤)에
+        // 모듈 번들 → 플러그인 번들 → 템플릿의 확장 CSS 덮기 파일 순서로 싣는다(사용자 화면과 같은 순서).
+        $extensionStylesheets = $this->getExtensionCssUrls($templateIdentifier);
 
         $viewData = [
             'locale' => $locale,
@@ -561,9 +567,14 @@ class SeoRenderer implements SeoRendererInterface
             'googleVerification' => $meta['googleVerification'],
             'naverVerification' => $meta['naverVerification'],
             'stylesheets' => $allStylesheets,
+            'extensionStylesheets' => $extensionStylesheets,
+            // 봇 화면은 라이트로 그린다 — 확장 CSS 는 이 중립 표식만 본다
+            'colorScheme' => 'light',
             'extraHeadTags' => '',
             'extraBodyEnd' => '',
             'generatorTag' => g7_meta_generator_tag(),
+            // 파비콘 (#434) — 렌더 중인 사용자 템플릿의 설정 기준(SPA 셸과 같은 우선순위). 필터 훅 앞에 두어 확장이 바꿀 수 있다.
+            'faviconTags' => g7_favicon_tags('user', $templateIdentifier),
         ];
 
         // 8.1. 훅: 확장이 View 변수를 추가/수정할 수 있는 필터
@@ -743,6 +754,46 @@ class SeoRenderer implements SeoRendererInterface
     }
 
     /**
+     * 확장 CSS URL 목록을 반환합니다 — 모듈 번들 → 플러그인 번들 → 템플릿 확장 CSS 덮기 파일.
+     *
+     * 정적 게시본 경로는 쓰지 않는다 — 이 URL 은 캐시 버전이 키에 없는 SEO 캐시 HTML 에 박제되고,
+     * 정적 디렉토리는 GC 로 사라질 수 있다(`getTemplateCssUrls` 와 같은 이유). 버전 쿼리도 붙이지 않는다.
+     *
+     * @param  string  $templateIdentifier  템플릿 식별자
+     * @return array<int, string> URL 목록
+     */
+    private function getExtensionCssUrls(string $templateIdentifier): array
+    {
+        $urls = [];
+        $versions = [];
+
+        try {
+            foreach ([['modules', $this->moduleManager->getActiveModules()], ['plugins', $this->pluginManager->getActivePlugins()]] as [$type, $extensions]) {
+                $hasCss = false;
+                foreach ($extensions as $extension) {
+                    $versions[$extension->getIdentifier()] = (string) $extension->getVersion();
+                    $hasCss = $hasCss || ! empty($extension->getAssets()['css'] ?? null);
+                }
+                if ($hasCss) {
+                    $urls[] = AssetUrl::extensionBundle($type, 'css', allowStatic: false);
+                }
+            }
+
+            $root = $this->templateRootPath($templateIdentifier);
+            $manifest = is_file($root.'/template.json') ? json_decode((string) file_get_contents($root.'/template.json'), true) : null;
+            if (is_array($manifest)) {
+                foreach ((new ExtensionCssOverrideResolver)->resolve($templateIdentifier, $manifest, $root, $versions) as $override) {
+                    $urls[] = AssetUrl::templateAsset($templateIdentifier, $override['path'], allowStatic: false);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('SEO extension CSS collection failed: '.$e->getMessage());
+        }
+
+        return $urls;
+    }
+
+    /**
      * 템플릿의 CSS 에셋 URL 목록을 반환합니다.
      *
      * template.json의 assets.css 경로를 서빙 URL로 변환합니다.
@@ -814,7 +865,7 @@ class SeoRenderer implements SeoRendererInterface
             return '';
         }
 
-        $baseUrl = SeoUrl::absolute($url);
+        $baseUrl = SeoUrl::canonical($url);
         $tags = '';
 
         foreach ($supportedLocales as $loc) {
@@ -866,6 +917,14 @@ class SeoRenderer implements SeoRendererInterface
         } catch (\Throwable $e) {
             Log::warning('[SEO] Failed to load plugin settings', ['error' => $e->getMessage()]);
             $global['plugins'] = [];
+        }
+
+        // templateSettings: 활성 사용자 템플릿 공개 설정 (#434) — SPA 셸의 `_global.templateSettings` 와 같은 값
+        try {
+            $global['templateSettings'] = app(\App\Services\TemplateSettingsService::class)->getActiveFrontendSettings('user');
+        } catch (\Throwable $e) {
+            Log::warning('[SEO] Failed to load template settings', ['error' => $e->getMessage()]);
+            $global['templateSettings'] = [];
         }
 
         // activeModules / activePlugins: 활성 확장 식별자 목록 — 사용자 화면의 G7Config.activeModules·activePlugins

@@ -21,13 +21,13 @@
         "classMap": {
             "key": "{{$method._orphaned ? 'orphaned' : 'normal'}}",
             "variants": {
-                "normal": "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700",
-                "orphaned": "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700"
+                "normal": "ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border-gray-200 ecommerce:dark:border-gray-700",
+                "orphaned": "ecommerce:bg-red-50 ecommerce:dark:bg-red-900/20 ecommerce:border-red-300 ecommerce:dark:border-red-700"
             }
         },
         "props": {
             "data-payment-method": "{{$method.id}}",
-            "className": "flex-center border rounded-lg p-3 gap-4"
+            "className": "ecommerce-flex-center ecommerce:border ecommerce:rounded-lg ecommerce:p-3 ecommerce:gap-4"
         },
         "children": [
             {
@@ -38,7 +38,7 @@
                 "if": "{{!$method._orphaned && !_computed.isReadOnly}}",
                 "props": {
                     "data-drag-handle": true,
-                    "className": "cursor-grab text-gray-500 dark:text-gray-400"
+                    "className": "ecommerce:cursor-grab ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                 },
                 "children": [
                     {
@@ -46,7 +46,7 @@
                         "name": "Icon",
                         "props": {
                             "name": "grip-vertical",
-                            "className": "text-lg"
+                            "className": "ecommerce:text-lg"
                         }
                     }
                 ]
@@ -67,14 +67,14 @@
                 "if": "{{!$method._cached_brand_mark}}",
                 "props": {
                     "name": "{{$method._cached_icon ?? 'circle-question'}}",
-                    "className": "text-secondary text-2xl"
+                    "className": "ecommerce-text-secondary ecommerce:text-2xl"
                 }
             },
             {
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "flex-1 min-w-0"
+                    "className": "ecommerce:flex-1 ecommerce:min-w-0"
                 },
                 "children": [
                     {
@@ -82,14 +82,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-center gap-2 min-w-0"
+                            "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:min-w-0"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "font-medium text-gray-900 dark:text-gray-100 truncate"
+                                    "className": "ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:truncate"
                                 },
                                 "text": "{{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}"
                             },
@@ -98,7 +98,7 @@
                                 "name": "Span",
                                 "if": "{{$method._orphaned}}",
                                 "props": {
-                                    "className": "inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                                    "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:whitespace-nowrap ecommerce:shrink-0 ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded ecommerce:text-xs ecommerce:font-medium ecommerce:bg-red-100 ecommerce:text-red-800 ecommerce:dark:bg-red-900/30 ecommerce:dark:text-red-400"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_badge"
                             },
@@ -109,7 +109,7 @@
                                 "if": "{{$method._orphaned_pg}}",
                                 "props": {
                                     "data-testid": "orphaned-pg-badge-{{$method.id}}",
-                                    "className": "inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                                    "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:whitespace-nowrap ecommerce:shrink-0 ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded ecommerce:text-xs ecommerce:font-medium ecommerce:bg-amber-100 ecommerce:text-amber-800 ecommerce:dark:bg-amber-900/30 ecommerce:dark:text-amber-400"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_pg_badge"
                             },
@@ -120,7 +120,7 @@
                                 "if": "{{$method.customer_selectable === false}}",
                                 "props": {
                                     "data-testid": "internal-only-badge-{{$method.id}}",
-                                    "className": "inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                                    "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:whitespace-nowrap ecommerce:shrink-0 ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded ecommerce:text-xs ecommerce:font-medium ecommerce:bg-gray-100 ecommerce:text-gray-700 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.internal_only_badge"
                             }
@@ -131,7 +131,7 @@
                         "name": "Span",
                         "if": "{{$localized($method._cached_description)}}",
                         "props": {
-                            "className": "text-label-subtle"
+                            "className": "ecommerce-text-label-subtle"
                         },
                         "text": "{{$localized($method._cached_description)}}"
                     }
@@ -143,14 +143,14 @@
                 "name": "Div",
                 "if": "{{!$method._orphaned}}",
                 "props": {
-                    "className": "row-stack w-36"
+                    "className": "ecommerce-row-stack ecommerce:w-36"
                 },
                 "children": [
                     {
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "text-tertiary"
+                            "className": "ecommerce-text-tertiary"
                         },
                         "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_provider"
                     },
@@ -161,7 +161,7 @@
                         "if": "{{$method.pg_locked}}",
                         "props": {
                             "data-testid": "{{'pg-locked-badge-' + $method.id}}",
-                            "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 truncate"
+                            "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:px-2.5 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-300 ecommerce:truncate"
                         },
                         "text": "{{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_fixed') + ' · ' + (((_local.form?.available_pg_providers ?? []).find(p => p.id === $method.pg_provider))?.name ? $localized(((_local.form?.available_pg_providers ?? []).find(p => p.id === $method.pg_provider)).name) : ($method.pg_provider ?? ''))}}"
                     },
@@ -195,7 +195,7 @@
                         "if": "{{!$method.pg_locked && $method.needs_pg && (_local.form?.available_pg_providers ?? []).length === 0}}",
                         "props": {
                             "data-testid": "{{'pg-not-installed-' + $method.id}}",
-                            "className": "text-hint italic"
+                            "className": "ecommerce-text-hint ecommerce:italic"
                         },
                         "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_installed"
                     },
@@ -205,7 +205,7 @@
                         "if": "{{!$method.pg_locked && !$method.needs_pg}}",
                         "props": {
                             "data-testid": "{{'pg-not-required-' + $method.id}}",
-                            "className": "text-hint"
+                            "className": "ecommerce-text-hint"
                         },
                         "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_required"
                     }
@@ -216,14 +216,14 @@
                 "name": "Div",
                 "if": "{{!$method._orphaned}}",
                 "props": {
-                    "className": "row-stack w-36"
+                    "className": "ecommerce-row-stack ecommerce:w-36"
                 },
                 "children": [
                     {
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "text-tertiary"
+                            "className": "ecommerce-text-tertiary"
                         },
                         "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.stock_deduction_timing"
                     },
@@ -269,14 +269,14 @@
                 "name": "Div",
                 "if": "{{!$method._orphaned}}",
                 "props": {
-                    "className": "row-stack w-36"
+                    "className": "ecommerce-row-stack ecommerce:w-36"
                 },
                 "children": [
                     {
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "text-tertiary"
+                            "className": "ecommerce-text-tertiary"
                         },
                         "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.mileage_deduction_timing"
                     },
@@ -318,14 +318,14 @@
                 "name": "Div",
                 "if": "{{!$method._orphaned}}",
                 "props": {
-                    "className": "row-stack"
+                    "className": "ecommerce-row-stack"
                 },
                 "children": [
                     {
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "text-tertiary"
+                            "className": "ecommerce-text-tertiary"
                         },
                         "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.min_order_amount"
                     },
@@ -349,7 +349,7 @@
                             "value": "{{$method.min_order_amount ?? 0}}",
                             "aria-label": "$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.min_order_amount')}}",
                             "min": 0,
-                            "className": "input w-28",
+                            "className": "ecommerce-input ecommerce:w-28",
                             "disabled": "{{_computed.isReadOnly}}"
                         }
                     }
@@ -402,7 +402,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed",
+                    "className": "ecommerce-btn-icon ecommerce:text-red-500 ecommerce:hover:text-red-700 ecommerce:dark:text-red-400 ecommerce:dark:hover:text-red-300 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                     "disabled": "{{_computed.isReadOnly}}",
                     "aria-label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.remove_orphaned"
                 },
@@ -412,7 +412,7 @@
                         "name": "Icon",
                         "props": {
                             "name": "trash",
-                            "className": "text-sm"
+                            "className": "ecommerce:text-sm"
                         }
                     }
                 ]

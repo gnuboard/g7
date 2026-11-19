@@ -283,7 +283,7 @@ class LayoutExtensionVersionRepositoryTest extends TestCase
     /**
      * restoreVersion 은 확장 lock_version 을 올린다(레이아웃 본체와 동형).
      *
-     * @effects restore_extension_version_restores_content_and_creates_new_version
+     * @effects restore_version_increments_lock_version_for_layout_and_extension, restore_extension_version_restores_content_and_creates_new_version
      *
      * @return void 반환값 없음
      */

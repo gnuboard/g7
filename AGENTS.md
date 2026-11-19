@@ -1,6 +1,6 @@
 # 그누보드7 Development Guide
 
-> 그누보드7 오픈소스 CMS 의 개발 가이드다. AI 에이전트와 외부 기여자를 위한 진입점이며, 상세 규칙은 링크된 문서에서 필요할 때 읽는다(점진적 공개).
+> 그누보드7 오픈소스 CMS 의 개발 가이드다. AI 에이전트와 외부 기여자를 위한 진입점이며, 상세 규칙은 링크된 문서에서 필요할 때 읽는다.
 
 ## 문서 지도
 
@@ -8,10 +8,10 @@
 
 | 카테고리 | 문서 수 | 진입점 |
 |---|---:|---|
-| 백엔드 | 42 | [docs/backend/](docs/backend/) |
+| 백엔드 | 49 | [docs/backend/](docs/backend/) |
 | 프론트엔드 | 48 | [docs/frontend/](docs/frontend/) |
-| 확장 시스템 | 38 | [docs/extension/](docs/extension/) |
-| 공통 | 12 | [docs/](docs/) |
+| 확장 시스템 | 45 | [docs/extension/](docs/extension/) |
+| 공통 | 13 | [docs/](docs/) |
 
 전체 목록·작업 유형별 필수 문서·API 레퍼런스·확장 개발자 문서: [docs/README.md](docs/README.md)
 
@@ -23,7 +23,7 @@
 
 ## 버전 동기화 의무
 
-코어 공개 확장 표면(`app/Extension/Abstract*`·`HookManager`·`app/Contracts/Extension/**`·`app/Extension/Helpers/**`·`app/Repositories/Concerns/**`·`app/Seo/Contracts/**`·`app/ActivityLog/**` 공개 API·[확장이 쓰는 코어 지원 클래스](docs/rules/extension-assets.md#확장이-쓰는-코어-지원-클래스)·루트 `CHANGELOG.md` Added/Changed/Removed)을 바꾸면 영향 번들 확장의 `g7_version` 을, 번들 확장의 공개 Service/Contract/Repository/Model/Route·훅·CHANGELOG 를 바꾸면 의존 확장의 `dependencies.{modules|plugins}` 를 함께 갱신하고, manifest 버전을 바꾸면 `package.json`·`composer.json` 도 같은 버전으로 맞춘다. 판정 순서·조치: [extension-assets.md](docs/rules/extension-assets.md#버전-동기화-의무).
+코어 공개 확장 표면(`app/Extension/Abstract*`·`HookManager`·`app/Contracts/Extension/**` 등과 [확장이 쓰는 코어 지원 클래스](docs/rules/extension-assets.md#확장이-쓰는-코어-지원-클래스)·루트 `CHANGELOG.md` Added/Changed/Removed)을 바꾸면 영향 번들 확장의 `g7_version` 을, 번들 확장의 공개 Service/Contract/Repository/Model/Route·훅·CHANGELOG 를 바꾸면 의존 확장의 `dependencies.{modules|plugins}` 를 함께 갱신하고, manifest 버전을 바꾸면 `package.json`·`composer.json` 도 맞춘다. 대상 전체·판정 순서: [extension-assets.md](docs/rules/extension-assets.md#버전-동기화-의무).
 
 ## 핵심 원칙
 
@@ -34,7 +34,7 @@
 
 ## 기술 스택·구조
 
-PHP 8.2+ · Laravel 12.x · MySQL 8.0 · Sanctum 4.x · PHPUnit 11.x · Pint(PSR-12). `/app` 코어, `/modules`·`/plugins`·`/templates` 는 `_bundled/`(선탑재 소스, Git 추적) · `_pending/`(다운로드 대기, 제외) · `vendor-name/`(활성 설치본, 제외), `/resources/js/core/` 렌더링 엔진, `/public/build/` Vite 산출물.
+PHP 8.2+ · Laravel 12.x · MySQL 8.0 · Sanctum 4.x · PHPUnit 11.x · Pint(PSR-12). `/app` 코어, `/modules`·`/plugins`·`/templates` 는 `_bundled/`(원본, Git 추적) · `_pending/`(다운로드 대기, 제외) · `vendor-name/`(활성 설치본, 제외), `/resources/js/core/` 렌더링 엔진, `/public/build/` Vite 산출물.
 
 | 항목 | 디렉토리명 | 네임스페이스 |
 |------|-----------|-------------|
@@ -66,7 +66,8 @@ PHP 8.2+ · Laravel 12.x · MySQL 8.0 · Sanctum 4.x · PHPUnit 11.x · Pint(PSR
 ```text
 필수: 기본 컴포넌트만 사용 (Div, Button, H2 등 — HTML 태그 직접 사용 금지)
 필수: 집합 컴포넌트 재사용 우선
-필수: 다크 모드 light/dark variant 함께 지정
+필수: 다크 모드 light/dark variant 함께 지정 (확장 CSS 는 data-g7-color-scheme 표식만, 접두 빌드 {letters}:dark:)
+필수: 화면 폭 분기는 엔진 responsive — Tailwind 폭 접두(sm:·md:…)·폭 미디어 의미 클래스 금지 (docs/frontend/responsive-layout.md)
 필수: HtmlEditor 사용 (RichTextEditor 미구현)
 ```
 
@@ -80,10 +81,12 @@ PHP 8.2+ · Laravel 12.x · MySQL 8.0 · Sanctum 4.x · PHPUnit 11.x · Pint(PSR
 필수: 확장 코드 변경 시 manifest 버전 업 (미변경 시 업데이트 감지 불가)
 필수: 버전 업 시 CHANGELOG.md 기록 — Keep a Changelog 표준 (미기록 시 버전 업 불가)
 필수: StorageInterface 사용 (Storage::disk() 직접 호출 금지)
-필수: ActionDispatcher 에 핸들러를 등록하는 확장은 재등록 진입점(모듈 window.__[Name].initModule, 플러그인 window.__[Name].initPlugin)을 window 전역에 노출 (미노출 시 로케일 전환 후 액션 무반응)
-필수: 확장 미들웨어는 getMiddleware() 로 부착 대상(targets) 명시 선언 (self-gate) — SP Kernel 미들웨어 그룹 직접 조작·라우트 파일 자기 미들웨어 FQCN 부착 금지, 무규율 전역 개입 금지
-필수: 라우트 정의를 바꾸는 지점은 App\Support\RouteCacheHelper::rebuild() 로 라우트 캐시 갱신 (route:clear/route:cache 를 각 지점에 흩어 놓지 않는다)
-필수: 확장 컴포넌트는 `{확장식별자}.{이름}` 등록 (접두어 없는 이름은 거부), 대체 권한은 템플릿 전용 — 상세: docs/extension/extension-components.md
+필수: 핸들러는 `{식별자}.` 접두 + registerHandler `source` 로 등록하고, 재등록 진입점(window.__[Name].initModule·initPlugin)을 노출
+필수: 확장 미들웨어는 getMiddleware() 로 부착 대상 선언 — Kernel 그룹 조작·라우트 파일 FQCN 부착 금지
+필수: 라우트 정의를 바꾸는 지점은 RouteCacheHelper::rebuild() 로 라우트 캐시 갱신
+필수: 확장 컴포넌트는 `{확장식별자}.{이름}` 등록, 대체 권한은 템플릿 전용 (docs/extension/extension-components.md)
+필수: 확장 화면은 자기 CSS 로 — assets.css.namespace 선언, 클래스는 {namespace}-…·{letters}:… 만
+필수: 다른 확장은 public_api 계약과 공개 훅만 사용 (내부 클래스·테이블 금지)
 필수: 플러그인 설정 UI 는 `resources/layouts/admin/plugin_settings.g7.html`, 짝 `.json` 디스크 상주 필수. 라우트는 `plugins/{identifier}/` 안에 선언
 ```
 

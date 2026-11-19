@@ -245,6 +245,11 @@ class CoreUpdatePostCommitFailureTest extends TestCase
     {
         $service = Mockery::mock(CoreUpdateService::class);
         $service->shouldReceive('normalizeRuntimeOwnershipAfterRootRun')->byDefault();
+        // 7.2.0 의 동시 실행 잠금 — 이 시험은 잠금을 잡은 단독 실행을 전제로 한다
+        $service->shouldReceive('acquireRunLock')->andReturn(true)->byDefault();
+        $service->shouldReceive('releaseRunLock')->byDefault();
+        // 7.2.0 예외 경로의 루트 파일 경고 회수 — 이 시험의 실패는 루트 파일 판정 전에 난다
+        $service->shouldReceive('getLastRootFileWarnings')->andReturn([])->byDefault();
         $service->shouldReceive('generateFailureReport')->andReturn('report.log')->byDefault();
         $this->app->instance(CoreUpdateService::class, $service);
 

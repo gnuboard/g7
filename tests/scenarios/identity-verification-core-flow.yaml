@@ -25,8 +25,15 @@ axes:
     - mail_provider
     - forgot_password
     - domain_catalog
+    - service_lifecycle_hooks   # 서비스의 cancel()/consumeToken() 이 내는 before/after 훅 짝
 
 effects:
+  # 서비스 생명주기 훅 짝 — 취소와 토큰 소비도 성공, 기록 없음 양쪽에서 before/after 를 낸다
+  - cancel_fires_before_and_after_hooks_on_success
+  - cancel_fires_hook_pair_with_false_when_log_missing
+  - consume_token_fires_before_and_after_hooks_on_success
+  - consume_token_fires_hook_pair_with_false_when_log_missing
+
   # 공개 challenge API
   - request_without_target_rejected_422
   - verify_correct_code_marks_verified_and_issues_token
@@ -72,3 +79,4 @@ test_files:
   - tests/Feature/Identity/IdentityPolicyMailFakeSmokeTest.php
   - tests/Feature/Api/Auth/ForgotPasswordViaIdentityTest.php
   - tests/Unit/Enums/IdentityDomainEnumsTest.php
+  - tests/Unit/Services/IdentityVerificationServiceHookPairsTest.php

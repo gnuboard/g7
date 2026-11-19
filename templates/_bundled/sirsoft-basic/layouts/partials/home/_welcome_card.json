@@ -63,7 +63,7 @@
                     "id": "register_button",
                     "type": "basic",
                     "name": "A",
-                    "if": "{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}",
+                    "if": "{{_global.currentUser !== undefined && !_global.currentUser?.uuid && (_global.appConfig?.auth?.registration_open ?? _global.settings?.security?.registration_enabled) !== false}}",
                     "actions": [
                         {
                             "type": "click",

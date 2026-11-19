@@ -25,8 +25,6 @@ import {
   // 키 값 위치 SSoT (순수)
   buildParamizedKeyText,
   buildParamizedKeyValue,
-  insertPlaceholderAt,
-  appendPlaceholder,
   movePlaceholder,
   extractParamBindings,
   paramPlaceholderTokens,
@@ -39,7 +37,6 @@ import {
 } from '../../components/property-controls/inlineBindingApi';
 import {
   getPendingValue,
-  getPendingValues,
   clearPending,
 } from '../../hooks/pendingCustomTranslations';
 
@@ -87,6 +84,10 @@ afterEach(() => {
 });
 
 describe('시나리오 ① — 데이터 칩 없는 기성 키 단순 수정 (param 0, 회귀 가드)', () => {
+  /**
+   * @scenario surface=inline_binding_matrix
+   * @effects inline_matrix_plain_keyify_single_param
+   */
   it('순수 평문 키화 → node.text=param 0 단일 키, 키 값=입력 평문(자리표시 0)', () => {
     // commit() 의 isMixed=false 경로 SSoT: buildParamizedKeyText/Value 가 보간 0 이면 키 토큰 단독.
     const original = '취소'; // 데이터 칩(보간) 없는 평문.
@@ -100,20 +101,30 @@ describe('시나리오 ① — 데이터 칩 없는 기성 키 단순 수정 (pa
     expect(paramPlaceholderTokens(keyValue)).toEqual([]); // {pN} 0
   });
 
-  it('단순 수정은 편집 로케일 키 값만 바뀌고 타 로케일 불변 (per-locale 독립)', () => {
-    // 기성 키 값(전 로케일) — 단순 수정 = 편집 로케일만 PUT(updateCustomKeyValue 가 nextValues 에서
-    // 그 로케일만 덮음). 본 단언은 그 머지 규칙을 직접 잠근다.
-    const existing = { ko: '취소', en: 'Cancel', ja: 'キャンセル' };
-    const editLocale = 'ko';
-    const edited = '닫기';
-    const next = { ...existing, [editLocale]: edited };
-    expect(next).toEqual({ ko: '닫기', en: 'Cancel', ja: 'キャンセル' }); // ko 만 변경
-    // 데이터 칩 0 → 어느 로케일도 {pN} 자리표시 없음.
-    for (const l of LOCALES) expect(paramPlaceholderTokens(next[l as keyof typeof next])).toEqual([]);
+  /**
+   * @scenario surface=inline_binding_matrix
+   * @effects inline_matrix_edit_writes_only_edit_locale
+   */
+  it('단순 수정은 편집 로케일 키 값만 바뀌고 타 로케일 불변 (per-locale 독립)', async () => {
+    // 기성 키(전 로케일 값 보유) 단순 수정 = 편집 로케일 한 값만 저장-지연 버퍼에 기록한다
+    // (putSingleLocaleKeyValue). 제품 경로를 실제로 구동해 타 로케일이 버퍼에 쓰이지 않음을 잰다.
+    stubKeyStore();
+    const key = 'custom.5';
+    const res = await putSingleLocaleKeyValue(TPL, key, 'ko', '닫기');
+    expect(res.kind).toBe('ok');
+    expect(getPendingValue(key, 'ko')).toBe('닫기'); // 편집 로케일만 변경
+    expect(getPendingValue(key, 'en')).toBeUndefined(); // 타 로케일 불변(버퍼 미기록)
+    expect(getPendingValue(key, 'ja')).toBeUndefined();
+    // 데이터 칩 0 → 편집 값에 {pN} 자리표시 없음.
+    expect(paramPlaceholderTokens(getPendingValue(key, 'ko')!)).toEqual([]);
   });
 });
 
 describe('시나리오 ② — 기성 키 + 데이터 칩 추가 + 여러 위치 끼워넣기', () => {
+  /**
+   * @scenario surface=inline_binding_matrix
+   * @effects inline_matrix_first_chip_seeds_all_locales
+   */
   it('미키화 평문에 첫 칩 추가(중간 위치) → 전 로케일 {p0} seed + node.text param', async () => {
     stubKeyStore();
     // "발행일:" 평문 노드(ko 편집). 커서를 "발행" 과 "일:" 사이(charIndex 2)에 두고 데이터 칩 추가.
@@ -141,6 +152,10 @@ describe('시나리오 ② — 기성 키 + 데이터 칩 추가 + 여러 위치
     for (const l of LOCALES) expect(paramPlaceholderTokens(getPendingValue(key, l)!)).toEqual(['p0']);
   });
 
+  /**
+   * @scenario surface=inline_binding_matrix
+   * @effects inline_matrix_more_chips_seed_all_locales_positioned
+   */
   it('둘째·셋째 칩을 서로 다른 위치(앞/끝)에 추가 → 전 로케일 {p0}{p1}{p2}, 편집 로케일만 위치 정밀', async () => {
     stubKeyStore();
     // 1차 키화(끝 위치).
@@ -194,7 +209,11 @@ describe('시나리오 ② — 기성 키 + 데이터 칩 추가 + 여러 위치
 });
 
 describe('시나리오 ③ — 데이터 칩 있는 기성 키, 기성 칩 위치만 변경', () => {
-  it('편집 로케일 키 값의 {pN} 만 이동, 타 로케일 + node.text 불변', async () => {
+  /**
+   * @scenario surface=inline_binding_matrix
+   * @effects inline_matrix_chip_move_only_edit_locale
+   */
+  it('편집 로케일 키 값의 {pN} 만 이동, 타 로케일 버퍼 불변', async () => {
     stubKeyStore();
     // 기성 param 키(3칩). node.text 는 소스 정의(이동과 무관).
     const nodeText =
@@ -214,13 +233,15 @@ describe('시나리오 ③ — 데이터 칩 있는 기성 키, 기성 칩 위�
     // 타 로케일(en/ja)은 PUT 안 했으므로 버퍼에 없음(불변 — 어순 로케일 독립).
     expect(getPendingValue(key, 'en')).toBeUndefined();
     expect(getPendingValue(key, 'ja')).toBeUndefined();
-
-    // node.text(소스 정의)는 이동과 무관하게 불변(이름 기반 치환).
-    expect(extractParamBindings(nodeText)!.params.map((p) => p.name)).toEqual(['p0', 'p1', 'p2']);
+    // node.text 는 이 경로가 받지도 돌려주지도 않는다 — 불변을 잴 대상이 없어 단언하지 않는다.
   });
 });
 
 describe('시나리오 ④ — 복합 (기성 칩 이동 + 칩 추가 + 위치 변경)', () => {
+  /**
+   * @scenario surface=inline_binding_matrix
+   * @effects inline_matrix_move_add_move_stays_consistent
+   */
   it('칩 이동 → 새 칩 추가(중간) → 또 이동: 전 로케일 정합 + node.text 신규 param', async () => {
     stubKeyStore();
     // 기성 2칩 키. 먼저 서버 행을 만들어 findCustomKeyRow 가 전 로케일을 보게 한다.
@@ -273,6 +294,10 @@ describe('시나리오 ④ — 복합 (기성 칩 이동 + 칩 추가 + 위치 �
 });
 
 describe('4시나리오 공통 — 전 로케일 자리표시 멀티셋 정합 (위치 무관 데이터 무손실)', () => {
+  /**
+   * @scenario surface=inline_binding_matrix
+   * @effects inline_matrix_param_set_matches_locale_placeholders
+   */
   it('node.text param 집합과 각 로케일 키 값 {pN} 집합이 항상 일치', async () => {
     stubKeyStore();
     const res = await keyifyWithNewBinding(

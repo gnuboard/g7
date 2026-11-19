@@ -441,7 +441,7 @@ class MemberEmailExposureTest extends BoardTestCase
             ->getJson('/api/modules/sirsoft-board/boards/popular')
             ->assertStatus(200);
 
-        $cached = Cache::get('g7:module.sirsoft-board:popular_posts_v2_week_20_'.app()->getLocale());
+        $cached = Cache::get('g7:module.sirsoft-board:popular_posts_v3_week_20_'.app()->getLocale());
         $this->assertIsArray($cached, '인기글 캐시가 예상 키에 채워지지 않았다');
         $this->assertStringNotContainsString(
             $this->author->email,

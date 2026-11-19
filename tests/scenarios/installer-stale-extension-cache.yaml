@@ -1,0 +1,16 @@
+feature: 웹 마법사 [강제 진행] 재설치의 앞 설치 확장 캐시 정리
+
+description: |
+  기존 설치 DB 의 테이블을 지우고 다시 설치할 때(db_cleanup drop_tables) 앞 설치가 남긴 확장 캐시 — 훅·오토로드·예약 명령·
+  라우트 매핑(bootstrap/cache)과 활성 확장 목록을 담은 애플리케이션 파일 캐시(storage/framework/cache/data) — 를 비운다.
+  남기면 빈 DB 위에서도 앞 설치의 플러그인이 켜진 것으로 보여, 아직 설치 전인 플러그인 리스너가 등록되고 모듈 활성화가
+  「… is not instantiable」 로 실패했다. CLI 재설치와 같은 대상이다.
+
+axes:
+  case: [stale_caches_present, fresh_install, fresh_db_leftover_folders]
+
+effects:
+  - reinstall_clears_stale_extension_caches
+
+test_files:
+  - tests/Feature/Installer/StaleExtensionCacheCleanupTest.php

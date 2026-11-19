@@ -72,7 +72,7 @@ export interface UseCanvasDndParams {
    * 변경 가능). 인스턴스 path 는 parseEditorPath 로 `.iteration.N` 제거 후 원본 itemTemplate
    * 좌표로 매핑되므로 이동 commit 이 정확히 항목 템플릿에 반영된다.
    */
-  editableRootPath?: number[] | null;
+  editableRootPath?: ComponentPath | null;
   /** 현재 components 트리 (루트 children) */
   components: EditorNode[];
   /** 트리 변형 적용 — useLayoutDocument.patchLayout */
@@ -723,7 +723,9 @@ export function useCanvasDnd(params: UseCanvasDndParams): UseCanvasDndReturn {
       // (a) fromIndex 앞 = index fromIndex, (b) fromIndex 바로 뒤 = index fromIndex+1.
       // (제거 후 재삽입 시 둘 다 원래 자리로 환원되므로 no-op.)
       const fromParentPath = fromPath.slice(0, -1);
-      const fromIndex = fromPath[fromPath.length - 1] ?? -1;
+      // 노드 path 는 number 로 끝난다. 배열 전환 세그먼트(분기·prop 슬롯)로 끝나거나 비면 종전처럼 -1.
+      const fromLast = fromPath[fromPath.length - 1];
+      const fromIndex = typeof fromLast === 'number' ? fromLast : -1;
       const sameParentGuard = pathsEqual(fromParentPath, toParentPath);
       const samePosition =
         sameParentGuard && (zone.index === fromIndex || zone.index === fromIndex + 1);

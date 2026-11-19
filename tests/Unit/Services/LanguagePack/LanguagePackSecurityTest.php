@@ -132,7 +132,7 @@ class LanguagePackSecurityTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessageMatches('/backend/i');
 
-        $this->service->installFromFile($file, false, null);
+        $this->service->installFromFile($file, false, null, new \App\Extension\Integrity\PackageIntegrityOptions(true));
     }
 
     /**
@@ -158,7 +158,7 @@ class LanguagePackSecurityTest extends TestCase
         // 이 테스트의 의도(backend 안의 eval 이 차단된다)는 그대로 유지한다.
         $this->expectExceptionMessageMatches('/번역 배열만/u');
 
-        $this->service->installFromFile($file, false, null);
+        $this->service->installFromFile($file, false, null, new \App\Extension\Integrity\PackageIntegrityOptions(true));
     }
 
     /**
@@ -179,7 +179,7 @@ class LanguagePackSecurityTest extends TestCase
 
         $file = new UploadedFile($zip, 'pack.zip', 'application/zip', null, true);
 
-        $pack = $this->service->installFromFile($file, false, null);
+        $pack = $this->service->installFromFile($file, false, null, new \App\Extension\Integrity\PackageIntegrityOptions(true));
 
         $this->assertSame('test-core-ja', $pack->identifier);
 
@@ -215,7 +215,7 @@ class LanguagePackSecurityTest extends TestCase
         $this->expectException(\RuntimeException::class);
 
         try {
-            $this->service->installFromFile($file, false, null);
+            $this->service->installFromFile($file, false, null, new \App\Extension\Integrity\PackageIntegrityOptions(true));
         } finally {
             // 거부되지 않고 설치되었다면 잔여물을 남기지 않는다.
             File::deleteDirectory(base_path('lang-packs/test-core-ja'));
@@ -253,7 +253,7 @@ class LanguagePackSecurityTest extends TestCase
         $this->expectException(\RuntimeException::class);
 
         try {
-            $this->service->installFromFile($file, false, null);
+            $this->service->installFromFile($file, false, null, new \App\Extension\Integrity\PackageIntegrityOptions(true));
         } finally {
             File::deleteDirectory(base_path('lang-packs/test-core-ja'));
         }
@@ -283,7 +283,7 @@ class LanguagePackSecurityTest extends TestCase
         $this->expectExceptionMessageMatches('/backend/i');
 
         try {
-            $this->service->installFromFile($file, false, null);
+            $this->service->installFromFile($file, false, null, new \App\Extension\Integrity\PackageIntegrityOptions(true));
         } finally {
             File::deleteDirectory(base_path('lang-packs/test-core-ja'));
         }
@@ -312,7 +312,7 @@ class LanguagePackSecurityTest extends TestCase
 
         $file = new UploadedFile($zip, 'pack.zip', 'application/zip', null, true);
 
-        $pack = $this->service->installFromFile($file, false, null);
+        $pack = $this->service->installFromFile($file, false, null, new \App\Extension\Integrity\PackageIntegrityOptions(true));
 
         $this->assertSame('test-core-ja', $pack->identifier);
 

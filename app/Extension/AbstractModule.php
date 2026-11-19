@@ -7,14 +7,20 @@ use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\ModuleInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
-use App\Extension\Cache\ModuleCacheDriver;
+use App\DisplayName\Contracts\DisplayNameKindInterface;
+use App\Extension\Cache\CacheDriverFactory;
 use App\Extension\Exceptions\UpgradeStepClassMissingException;
+use App\Extension\Helpers\ExtensionScheduleSyncHelper;
+use App\Extension\Helpers\FieldDefinitionSyncHelper;
 use App\Extension\Storage\ModuleStorageDriver;
 use App\Extension\Support\UnusableUpgradeStep;
 use App\Extension\Support\UpgradeStepFileLoader;
 use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ReportsLifecycleFailure;
+use App\Fields\Contracts\FieldTypeInterface;
 use App\Support\ExtensionIntegrations;
+use App\Support\PrivateAttachmentDisk;
+use App\Support\PublicApiManifest;
 use App\Support\PublicAssetDisk;
 use App\Support\SearchScopes;
 use App\Support\StateContracts;
@@ -259,9 +265,11 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
         }
 
         $steps = [];
-        $files = glob($upgradesPath.'/Upgrade_*.php');
 
-        if (! $files) {
+        // 나열은 `glob` 을 쓰지 않는다 — 근거는 `ExtensionManager::listDirectoryFiles()`.
+        $files = ExtensionManager::listDirectoryFiles($upgradesPath, '.php', 'Upgrade_');
+
+        if ($files === []) {
             return [];
         }
 
@@ -549,34 +557,170 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
-     * 스케줄 작업 목록 반환
+     * 스케줄 작업 선언 목록을 반환합니다.
      *
-     * 모듈에서 등록하는 스케줄 작업 목록입니다.
-     * 코어에서 이 메서드를 호출하여 모듈 스케줄러를 등록합니다.
+     * 7.2.0 부터 코어는 이 선언을 설치·업데이트·활성화 때 schedules 테이블로 동기화하고
+     * (`ModuleManager::syncDeclarativeArtifacts()` → `ExtensionScheduleSyncHelper`), 스케줄러는 DB 행을 읽어 실행한다.
+     * 운영자가 관리 화면(스케줄 관리)에서 바꾼 주기·활성 여부 등은 업데이트 때 보존된다(user_overrides).
+     * 선언에서 뺀 항목의 행은 다음 동기화 때 지워지고(선언이 0건이면 실수로 비운 것일 수 있어 정리를 건너뛴다),
+     * "데이터도 함께 삭제" 로 제거하면 모든 행이 지워진다.
+     * 비활성 모듈의 행은 남지만 실행되지 않는다.
      *
-     * 기본적으로 빈 배열 반환
-     * 모듈 개발자가 스케줄 작업이 필요한 경우 오버라이드
+     * 기본적으로 빈 배열을 반환한다. 스케줄이 필요한 모듈만 오버라이드한다.
      *
-     * @return array 스케줄 작업 배열
-     *               [
-     *               [
-     *               'command' => 'artisan:command',
-     *               'schedule' => 'daily' | 'hourly' | 'everyMinute' | 'weekly' | cron expression,
-     *               'description' => '작업 설명 (선택)',
-     *               'enabled_config' => 'setting.key' (선택, module_setting()으로 조회하여 활성화 여부 결정),
-     *               'without_overlapping' => false | int (선택, 기본 true = 중복 실행 방지·1440분 뒤 잠금 만료, 정수면 그 분 뒤 만료),
-     *               'on_one_server' => false (선택, 기본 true = 다중 서버에서 한 서버만 실행 — 공유 캐시 스토어 필요),
-     *               ],
-     *               ]
+     * @return array<int, array<string, mixed>> 스케줄 선언 목록. 항목 형식(코어 `config/core.php` 의 `schedules` 카탈로그와 같은 키):
+     *                                          [
+     *                                          'name' => 'prune-temp-files',              // 필수 권장 — 모듈 안에서 고유한 기계 식별자(소문자·숫자·-_.)
+     *                                          'type' => 'artisan',                        // artisan(기본) | job (shell·url 은 선언 불가)
+     *                                          'label' => ['ko' => '…', 'en' => '…'],     // 표시 명칭 (ja 는 언어팩 seed/schedules.json)
+     *                                          'description' => ['ko' => '…', 'en' => '…'],
+     *                                          'command' => 'vendor-module:prune-temp-files',                   // artisan 명령(옵션 포함) 또는 job 클래스 FQCN
+     *                                          'expression' => '0 4 * * *',                // cron 식 (사이트 시간대 기준)
+     *                                          'frequency' => 'custom',                    // custom(기본) | everyThirtySeconds
+     *                                          'timezone' => null,                         // 시간대 고정이 필요할 때만 (예: Asia/Seoul)
+     *                                          'without_overlapping' => 0,                 // 중복 실행 방지 잠금 분 (0=끔, 최대 10080)
+     *                                          'on_one_server' => true,                    // 다중 서버에서 한 서버만
+     *                                          'dispatch_mode' => 'sync',                  // sync(스케줄러에서 바로) | queue(큐 Job)
+     *                                          'history_mode' => 'all',                    // all | failures_only (잦은 작업용)
+     *                                          'notify_on_failure' => true,                // 실패 시 관리자 알림 (하루 1회)
+     *                                          'timeout' => null,                          // 초
+     *                                          'enabled_condition' => [                    // 실행 조건 (AND) — 미충족이면 그 틱에 실행하지 않음
+     *                                          ['source' => 'module_setting', 'key' => 'cleanup.enabled', 'operator' => 'truthy', 'default' => true],
+     *                                          ],
+     *                                          ]
      *
-     * 중복 실행 방지(7.1.5): 이전 회차가 끝나지 않았으면 다음 회차를 건너뛴다. 비정상 종료로 남은 잠금은 만료 시간이 지나거나
-     * `php artisan schedule:clear-cache` 로 풀린다. 같은 작업을 겹쳐 돌려도 되면 `without_overlapping => false` 로 끈다.
+     * 옛 형식(`command`·`schedule`(메서드명|cron)·`description` 문자열·`enabled_config`)도 계속 받는다 —
+     * 동기화 때 name 을 명령에서 만들고 `enabled_config` 를 `module_setting` 조건으로 바꾼다(identifier 접두사 자동 제거).
+     * 옛 형식은 `without_overlapping` 을 적지 않으면 중복 실행 방지가 켜진다(1440분 뒤 잠금 만료, 7.1.5) — 이전 회차가 끝나지
+     * 않았으면 다음 회차를 건너뛴다. 같은 작업을 겹쳐 돌려도 되면 `without_overlapping => false` 로 끄고, 분 단위 정수면 그
+     * 시간 뒤 잠금이 만료된다. `on_one_server => false` 는 다중 서버에서 서버마다 실행하게 한다(기본 true — 공유 캐시 스토어 필요).
      *
-     * enabled_config 형식:
-     *   - 'order_settings.auto_cancel_expired' → module_setting($identifier, 'order_settings.auto_cancel_expired')
-     *   - 'sirsoft-ecommerce.order_settings.auto_cancel_expired' → identifier 접두사 자동 제거 후 동일하게 조회
+     * @see ExtensionScheduleSyncHelper
      */
     public function getSchedules(): array
+    {
+        return [];
+    }
+
+    /**
+     * 이 모듈이 가진 항목 집합 선언을 반환합니다.
+     *
+     * 항목 집합은 입력 항목들이 모이는 자리다(예: 게시판 비회원 작성자, 주문서). 집합을 선언하면 코어의
+     * 항목 엔진(`App\Fields`)이 그 자리의 검증 규칙·저장·운영자 표를 맡고, 다른 확장도 그 집합에 항목을
+     * 기여할 수 있다. 메모리 등록소에만 올라가며 DB 에 저장되지 않는다.
+     *
+     * 각 선언의 키:
+     * - `key` (필수) — 집합 식별자. `{확장 식별자}.{이름}` 형식 (예: `sirsoft-board.guest_author`)
+     * - `label` — 운영자 화면에 보일 이름 (번역 키)
+     * - `owner_types` — 값 소유자 종류 목록 (`field_values.owner_type` 값. 예: `['board_post', 'board_comment']`)
+     * - `surfaces` — 이 집합이 쓰는 표면 이름 목록
+     * - `allowed_types` — 허용 유형 키 목록 (생략하면 전부)
+     * - `accepts_contributions` — 다른 확장의 항목 기여를 받는지 (기본 true)
+     * - `allows_custom` — 운영자가 항목을 추가할 수 있는지 (기본 true)
+     * - `read_permission` / `manage_permission` — 항목 표 조회·수정 권한
+     * - `bundle_key` — 컬럼이 아닌 항목이 들어가는 요청 묶음 키 (예: `guest_fields`)
+     *
+     * @return array<int, array<string, mixed>> 집합 선언 목록
+     *
+     * @since 7.2.0
+     */
+    public function getFieldSets(): array
+    {
+        return [];
+    }
+
+    /**
+     * 이 모듈이 선언하는 항목 목록을 반환합니다.
+     *
+     * 코어는 이 선언을 설치·업데이트·활성화 때 `field_definitions` 테이블로 동기화한다
+     * (`ModuleManager::syncDeclarativeArtifacts()` → `FieldDefinitionSyncHelper`). 운영자가 관리 화면에서 바꾼
+     * 사용·필수·순서 등은 업데이트 때 보존된다(user_overrides). 선언에서 뺀 항목의 행과 값은 다음 동기화 때
+     * 지워지고(선언이 0건이면 실수로 비운 것일 수 있어 정리를 건너뛴다), 운영자가 만든 항목은 건드리지 않는다.
+     *
+     * 자기 집합뿐 아니라 코어 회원 집합(`core.user`)이나 다른 확장의 집합에도 선언할 수 있다. 다른 확장의
+     * 집합에 선언하려면 manifest `dependencies` 에 그 확장을 적는다 — 집합이 없거나 꺼져 있으면 건너뛴다.
+     *
+     * 각 선언의 키:
+     * - `field_set`, `key`, `type`, `name`(다국어 배열) — 필수. `key` 는 영문 소문자로 시작하는 2~50자
+     * - `storage` — `value`(기본, 공용 값 테이블) | `handler`(자기 테이블) | `column`(집합을 가진 쪽만)
+     * - `storage_target` — handler 면 `App\Fields\Contracts\FieldValueHandlerInterface` 구현 클래스명
+     * - `description`, `placeholder`(다국어), `options`(`[{value, label}]`), `constraints`
+     * - `enabled`, `required`, `show_on_signup`, `edit_scope`(self|admin_edit|admin_only), `require_existing_members`
+     * - `public_profile`, `admin_list_column`, `admin_searchable`, `display_name_usable`
+     * - `locks` — 운영자 변경을 막을 속성과 사유 (`['required' => '사유 번역 키']`)
+     * - `legacy_keys` — 수용할 옛 요청 키 목록
+     * - `ui` — `group`, `width`, `surfaces`(받을 표면을 한정)
+     * - `sort_order`
+     *
+     * @return array<int, array<string, mixed>> 항목 선언 목록
+     *
+     * @see FieldDefinitionSyncHelper
+     * @since 7.2.0
+     */
+    public function getFields(): array
+    {
+        return [];
+    }
+
+    /**
+     * 이 모듈이 제공하는 항목 입력 유형을 반환합니다.
+     *
+     * `App\Fields\Contracts\FieldTypeInterface` 구현 클래스명(또는 인스턴스) 목록이다. 메모리 등록소에만 올라가며,
+     * 이 모듈이 꺼지면 유형도 빠진다 — 그 유형으로 만든 항목은 사용자 화면에서 숨겨지고 운영자 표에 「사용 불가」로 남는다.
+     *
+     * @return array<int, class-string<FieldTypeInterface>|FieldTypeInterface> 유형 목록
+     *
+     * @since 7.2.0
+     */
+    public function getFieldTypes(): array
+    {
+        return [];
+    }
+
+    /**
+     * 이 모듈이 제공하는 표시 이름 종류를 반환합니다.
+     *
+     * 표시 이름 종류는 「회원의 어떤 값을 어떤 모양으로 보일지」다(이름, 닉네임, 가린 이름 등).
+     * `App\DisplayName\Contracts\DisplayNameKindInterface` 구현 클래스명(또는 인스턴스) 목록을 돌려준다.
+     * `App\DisplayName\Kinds\AbstractDisplayNameKind` 를 이어받으면 `key()` 와 `compute()` 만 채우면 된다.
+     * 메모리 등록소에만 올라가며, 이 모듈이 꺼지면 종류도 빠진다. 그 종류를 가리키던 설정은 상위 영역 설정이나 「이름」으로 계산된다.
+     *
+     * 종류 키는 `{확장 식별자}:{이름}` 형식을 권한다. `field:` 로 시작하는 키는 코어가 추가 항목 종류에 쓴다.
+     *
+     * @return array<int, class-string<DisplayNameKindInterface>|DisplayNameKindInterface> 종류 목록
+     *
+     * @since 7.2.0
+     */
+    public function getDisplayNameKinds(): array
+    {
+        return [];
+    }
+
+    /**
+     * 이 모듈이 등록하는 표시 이름 영역을 반환합니다.
+     *
+     * 영역은 회원 이름이 보이는 자리 한 곳이다(게시판 글, 상품 후기, 확장의 관리자 화면 등). 영역을 등록하면 운영자가
+     * 환경설정의 회원 탭에서 그 자리의 방식(상위 영역 따름, 종류 고정, 회원이 고른 값)을 정할 수 있고,
+     * 확장은 `App\DisplayName\DisplayNameResolver::resolve($user, '{영역 키}')` 로 그 자리의 이름을 얻는다.
+     * 메모리 등록소에만 올라가며 DB 에 저장되지 않는다.
+     *
+     * 각 선언의 키:
+     * - `key` (필수) — 영역 키. `{확장 식별자}:{이름}` 형식. 구분자는 `:` 이고 점은 쓰지 못한다 (예: `sirsoft-board:posts`)
+     * - `label` — 운영자 화면에 보일 이름 (번역 키 또는 다국어 배열)
+     * - `audience` — 보는 사람 `user`(기본) | `admin` | `notification`
+     * - `parent` — 상위 영역 키. 생략하면 `audience` 가 admin 일 때 `core:admin`, 그 밖에는 `core:site`
+     * - `default` — 설정에 없을 때의 값 `['mode' => 'inherit'|'fixed'|'member', 'kind' => '종류 키']` (생략하면 상위 영역 따름)
+     * - `instance_resolver` — 영역 안에서 인스턴스마다 설정이 다를 때(게시판마다 등) 호출 문맥을 받아
+     *   `['mode' => ..., 'kind' => ...]` 또는 null(따름)을 돌려주는 호출체. 클로저, `[클래스, 메서드]`, `__invoke` 클래스명
+     * - `used_kinds_provider` — 인스턴스들이 쓰고 있는 설정 목록 `[['mode' => ..., 'kind' => ..., 'label' => '인스턴스 이름']]` 을
+     *   돌려주는 호출체. 닉네임 항목 잠금 판정과 추가 항목 삭제 차단의 사용처 안내에 쓰인다
+     * - `sort_order` — 운영자 화면의 표시 순서
+     *
+     * @return array<int, array<string, mixed>> 영역 선언 목록
+     *
+     * @since 7.2.0
+     */
+    public function getDisplayNameAreas(): array
     {
         return [];
     }
@@ -613,7 +757,7 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
-     * Declarative i18n getter family — 모듈이 선언하는 다국어/SSoT 데이터 4종.
+     * Declarative i18n getter family — 모듈이 선언하는 다국어/SSoT 데이터 5종.
      *
      * 모두 default `[]` 반환 (override 미선택 시 무영향). 각 메서드 결과는 `ModuleManager` 가
      * activate/update 시 자동 동기화하며, lang pack 활성 시 다국어 키 보강 필터를 통해 ja/en 등 추가
@@ -625,6 +769,7 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      * | `getIdentityMessages()`        | (deprecated) | 위 알림 정의로 변환·합류 (7.1.0) | `seed.{id}.notifications.translations` (type 키)  |
      * | `getIdentityPolicies()`        | IDV 정책       | `identity_policies`            | (lang pack seed 대상 외 — 다국어 필드 부재)        |
      * | `getIdentityPurposes()`        | IDV 목적       | 메모리 레지스트리 (DB 없음)      | (lang pack seed 대상 외 — `label_key` 참조)        |
+     * | `getSchedules()`               | 예약 작업      | `schedules` (7.2.0)            | `seed.{id}.schedules.translations` (name 키)      |
      *
      * 신규 i18n SSoT 도메인 추가 시 동일 패턴(meta 4-요소: declarative getter + Manager sync +
      * applyFilters + Injector 메서드) 을 따라야 하며, audit 룰 `core-config-lang-pack-seed-coverage`
@@ -634,6 +779,7 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      * @see getIdentityPurposes()
      * @see getIdentityMessages()
      * @see getNotificationDefinitions()
+     * @see getSchedules()
      */
 
     /**
@@ -1087,6 +1233,24 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
+     * 다른 확장에 공개하는 PHP 표면을 반환합니다.
+     *
+     * module.json 의 `public_api` 에서 읽습니다. 선언한 네임스페이스·클래스만 다른 확장이 import 할 수 있고, `readonly_models` 는
+     * 타입힌트·속성 읽기만 허용됩니다. 자기 네임스페이스 밖 항목은 버립니다({@see PublicApiManifest}).
+     *
+     * @return array{version: int, namespaces: array<int, string>, classes: array<int, string>, readonly_models: array<int, string>}|null 선언이 없으면 null
+     *
+     * @since 7.2.0
+     */
+    public function getPublicApi(): ?array
+    {
+        return PublicApiManifest::normalize(
+            $this->loadManifest()['public_api'] ?? null,
+            'Modules\\'.ExtensionManager::directoryToNamespace($this->getIdentifier())
+        );
+    }
+
+    /**
      * 신뢰하는 외부 스크립트 호스트 목록을 반환합니다.
      *
      * module.json 의 `trusted_script_hosts` 배열에서 읽습니다. 이 모듈이 레이아웃
@@ -1164,7 +1328,7 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
             return [];
         }
 
-        return glob($path.'/*.json') ?: [];
+        return ExtensionManager::listDirectoryFiles($path, '.json');
     }
 
     /**
@@ -1547,6 +1711,15 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
+     * 비공개 원본 디스크 선택 전용 바인딩 키 (#916)
+     *
+     * 서비스 프로바이더 `$storageCategoryServices` 에 `서비스 => self::PRIVATE_ATTACHMENT_BINDING` 으로 등록하면 그 서비스에
+     * 관리자가 고른 비공개 첨부 저장소 디스크의 스토리지가 주입된다(「기본」이면 모듈 기본 디스크 `modules`). 저장 경로
+     * 카테고리(`attachments` 등)는 서비스 안에서 그대로 쓴다. 기존 `attachments` 키로 묶은 서비스는 동작이 바뀌지 않는다.
+     */
+    public const PRIVATE_ATTACHMENT_BINDING = 'private_attachments';
+
+    /**
      * 카테고리별 스토리지 인스턴스 캐시 (디스크명 키 memoize)
      *
      * @var array<string, StorageInterface>
@@ -1568,7 +1741,30 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      */
     public function getStorageDiskFor(string $category): string
     {
+        // 비공개 원본 디스크 선택 전용 키(#916) — 저장 경로 카테고리가 아니다. 서비스 프로바이더의
+        // $storageCategoryServices 에 이 키로 등록한 서비스만 관리자가 고른 비공개 첨부 저장소를 따른다.
+        if ($category === self::PRIVATE_ATTACHMENT_BINDING) {
+            $pin = $this->getPrivateAttachmentDiskPin();
+
+            return $pin['disk'] ?? PrivateAttachmentDisk::forExtension($this->getStorageDisk());
+        }
+
         return $this->getStorageDisk();
+    }
+
+    /**
+     * `.env` 로 비공개 원본 디스크를 고정했는지 반환합니다.
+     *
+     * 고정돼 있으면 관리자의 「비공개 첨부 저장소」 선택보다 이 디스크가 우선하고, 환경설정 > 드라이버 화면이
+     * 「.env 로 고정된 확장」으로 안내합니다. 기본은 고정 없음(null). env 로 디스크를 바꿀 수 있는 모듈이 재정의합니다.
+     *
+     * @return array{env: string, disk: string}|null 고정한 env 이름과 디스크
+     *
+     * @since 7.2.0
+     */
+    public function getPrivateAttachmentDiskPin(): ?array
+    {
+        return null;
     }
 
     /**
@@ -1626,10 +1822,7 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     public function getCache(): CacheInterface
     {
         if ($this->cache === null) {
-            $this->cache = new ModuleCacheDriver(
-                $this->getIdentifier(),
-                $this->getCacheStore()
-            );
+            $this->cache = CacheDriverFactory::extension('module', $this->getIdentifier(), null, $this->getCacheStore());
         }
 
         return $this->cache;

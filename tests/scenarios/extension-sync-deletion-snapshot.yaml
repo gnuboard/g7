@@ -1,0 +1,27 @@
+feature: 선언형 동기화 정리 — 선언에서 빠진 항목 삭제 직전 기록·자식 명시 삭제·플러그인 제거의 데이터 보존
+
+description: |
+  확장 업데이트·제거가 새 판 선언에서 빠진 알림 정의·알림 템플릿·관리자 메뉴·권한·역할·본인확인 정책·시드 엔티티·스케줄을
+  지울 때, 운영자 데이터(고친 필드 `user_overrides`·운영자가 만든 자식·역할 부여)가 있으면 지우기 직전 활동 로그
+  `{종류}.sync_deleted` 에 스냅샷을 남긴다. 자식(알림 템플릿·메뉴 하위 트리·역할 배정·메뉴 권한·권한 훅·역할 부여)은
+  DB CASCADE 가 아니라 정리 코드가 명시적으로 지운다. 운영자가 만든 자식 메뉴는 지우지 않고 최상위로 올린다.
+  각 헬퍼의 `planCleanup()` 은 같은 판정식으로 쓰기 없이 삭제 예정을 낸다(업데이트 미리보기).
+  플러그인 제거는 「데이터도 함께 삭제」를 고를 때만 메뉴·플러그인 데이터(`uninstallData()`)를 지운다.
+
+# 축 의미:
+#   case — {헬퍼 또는 경로}__{운영자 데이터 상태}.
+axes:
+  case: [notification__definition, notification__template, menu__operator_child, menu__none, permission__role_grant, role__overrides, entity__overrides, bundled_plugin_uninstall__keep_data, core_uninstall__delete_data]
+
+effects:
+  - declarative_children_deleted_explicitly
+  - operator_child_menu_lifted
+  - sync_deletion_logged_for_operator_data
+  - plan_cleanup_matches_cleanup
+  - plugin_uninstall_keeps_menus_without_delete_data
+  - plugin_uninstall_deletes_menus_only_with_delete_data
+
+test_files:
+  - tests/Feature/Extension/DeclarativeCleanupSnapshotTest.php
+  - tests/Feature/Extension/PluginUninstallKeepsMenusTest.php
+  - tests/Unit/Extension/NotificationSyncHelperTest.php

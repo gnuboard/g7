@@ -25,7 +25,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-table-header"
+                                "className": "board-text-table-header"
                             },
                             "text": "$t:sirsoft-board.admin.settings.notification_definitions.preview_modal.subject_label"
                         },
@@ -33,7 +33,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-primary text-base font-medium bg-gray-50 dark:bg-gray-900 rounded-md px-3"
+                                "className": "board-text-primary board:text-base board:font-medium board:bg-gray-50 board:dark:bg-gray-900 board:rounded-md board:px-3"
                             },
                             "text": "{{_global.board_notification_template_form_modal?.preview?.subject ?? ''}}"
                         }
@@ -47,7 +47,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-table-header"
+                                "className": "board-text-table-header"
                             },
                             "text": "$t:sirsoft-board.admin.settings.notification_definitions.preview_modal.body_label"
                         },
@@ -58,7 +58,7 @@
                             "props": {
                                 "content": "{{_global.board_notification_template_form_modal?.preview?.body ?? ''}}",
                                 "isHtml": "{{((availableChannels?.data?.channels ?? []).find(c => c.id === (_global.board_notification_template_form_modal?.template?.channel ?? query.channel ?? 'mail'))?.template_editor ?? 'plain') === 'rich'}}",
-                                "className": "prose dark:prose-invert prose-sm max-w-none border border-gray-200 dark:border-gray-700 rounded-md p-4 max-h-[400px] overflow-y-auto bg-white dark:bg-gray-900"
+                                "className": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === (_global.board_notification_template_form_modal?.template?.channel ?? query.channel ?? 'mail'))?.template_editor === 'rich' ? 'board:prose-p:my-2 board:prose-headings:font-bold board:prose-headings:mt-6 board:prose-headings:mb-4 board:prose-h1:text-2xl board:prose-h2:text-xl board:prose-h3:text-lg board:prose-a:text-blue-600 board:dark:prose-a:text-blue-400 board:prose-a:no-underline board:hover:prose-a:underline board:prose-blockquote:border-l-4 board:prose-blockquote:border-gray-300 board:dark:prose-blockquote:border-gray-600 board:prose-blockquote:pl-4 board:prose-blockquote:italic board:prose-code:bg-gray-100 board:dark:prose-code:bg-gray-800 board:prose-code:px-1 board:prose-code:py-0.5 board:prose-code:rounded board:prose-pre:bg-gray-100 board:dark:prose-pre:bg-gray-800 board:prose-pre:p-4 board:prose-pre:rounded-lg board:prose-pre:overflow-x-auto' : 'board:prose board:dark:prose-invert'}} board:prose-sm board:max-w-none board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-md board:p-4 board:max-h-[400px] board:overflow-y-auto board:bg-white board:dark:bg-gray-900"
                             }
                         }
                     ]
@@ -67,7 +67,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end border-t border-gray-200 dark:border-gray-700"
+                        "className": "board:flex board:justify-end board:border-t board:border-gray-200 board:dark:border-gray-700"
                     },
                     "children": [
                         {
@@ -83,7 +83,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                "className": "board-text-body board:px-4 board:py-2 board:rounded-md board:border board:border-gray-300 board:dark:border-gray-600 board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors"
                             },
                             "text": "$t:common.close"
                         }

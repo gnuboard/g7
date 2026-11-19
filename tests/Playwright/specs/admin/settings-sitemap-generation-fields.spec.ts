@@ -1,8 +1,9 @@
 /**
  * E2E: 환경설정 > SEO/고급 — Sitemap 생성 설정 칸 (#481)
  *
- * @scenario admin_settings_sitemap_generation_fields
- * @effects fields_mounted, fields_persisted, regenerate_is_async, regenerate_button_shows_spinner_while_requesting
+ * @scenario sitemap-generation
+ * 케이스(마커 아님 — 평문): admin_settings_sitemap_generation_fields
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): fields_mounted, fields_persisted, regenerate_is_async, regenerate_button_shows_spinner_while_requesting
  *
  * 배경: 대용량 사이트에서 sitemap 을 여러 파일로 나눠 생성하도록 분할 기준/압축 설정을
  * 추가하고, 관리자 "지금 생성" 버튼을 즉시 실행에서 큐 예약으로 바꿨다. 설정 칸이 실제로
@@ -60,6 +61,38 @@ async function gotoAdvancedTab(page: import('@playwright/test').Page): Promise<v
   await expect(page.locator(ADVANCED_SITEMAP_CACHE)).toBeAttached({ timeout: 20_000 });
 }
 
+/**
+ * 저장·재진입·복구를 한 시험에서 하는 경우의 시험 상한(ms).
+ *
+ * 환경설정 화면 진입 1회가 이동 2.5~3.4초 + 칸 마운트 6.6~9.1초, 저장 응답이 약 4초다(트레이스 실측).
+ * 진입 2회 + 저장 2회는 기본 상한 30초를 넘겨 복구 저장 전에 끊겼다.
+ */
+const SAVE_ROUNDTRIP_TIMEOUT = 90_000;
+
+/**
+ * 화면 복구가 끝나지 않은 채 시험이 끝나면 단건 저장 API 로 원래 값을 되돌린다.
+ *
+ * E2E 는 공유 개발 서버의 실제 설정을 바꾼다. 화면 복구 단계 전에 시험이 끊기면 바뀐 값이 남아
+ * 다음 실행의 "원래 값" 이 달라진다(실측: 캐시 기준값 86400 → 43200 이 남은 채 다음 실행이 시작).
+ *
+ * @param page Playwright 페이지
+ * @param token 설정 수정 권한 토큰
+ * @param key 설정 키 (`카테고리.키`)
+ * @param value 되돌릴 값
+ */
+async function restoreSettingViaApi(
+  page: import('@playwright/test').Page,
+  token: string,
+  key: string,
+  value: unknown
+): Promise<void> {
+  const res = await page.request.put(`/api/admin/settings/${key}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    data: { value },
+  });
+  expect(res.status(), `${key} 복구 저장`).toBe(200);
+}
+
 // @scenario tab=seo, permitted=yes
 // @effects fields_mounted
 test('@smoke #481 - SEO 탭에 Sitemap 분할 기준/압축 칸이 번역문과 함께 마운트된다', async ({ page }) => {
@@ -96,6 +129,7 @@ test('@smoke #481 - SEO 탭에 Sitemap 분할 기준/압축 칸이 번역문과 
 // @scenario tab=seo, permitted=yes
 // @effects fields_persisted
 test('#481 - hreflang 토글을 바꿔 저장하면 성공하고 재진입 시 유지된다', async ({ page }) => {
+  test.setTimeout(SAVE_ROUNDTRIP_TIMEOUT);
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 
@@ -107,38 +141,55 @@ test('#481 - hreflang 토글을 바꿔 저장하면 성공하고 재진입 시 �
   // input 을 직접 클릭하면 toggle-switch-track 오버레이가 포인터 이벤트를 가로챈다.
   const toggleSwitch = page.locator(`${HREFLANG_ROW} .toggle-switch-wrapper`).first();
 
+  // 폼이 저장된 설정으로 채워진 뒤에 원래 값을 읽는다 (분할 기준 칸이 채워지면 같은 탭 폼이 로드된 것)
+  await expect
+    .poll(() => page.locator(`${URLS_PER_FILE} input[type="number"]`).first().inputValue(), { timeout: 15_000 })
+    .not.toBe('');
   const wasChecked = await toggle.isChecked();
+  let changed = false;
+  let restored = false;
 
-  // 토글을 반대 상태로 바꾼다
-  await toggleSwitch.click();
-  await expect(page.locator('#save_button')).toBeEnabled({ timeout: 10_000 });
+  try {
+    // 토글을 반대 상태로 바꾼다
+    await toggleSwitch.click();
+    await expect(page.locator('#save_button')).toBeEnabled({ timeout: 10_000 });
 
-  const save = page.waitForResponse(
-    (r) => r.url().includes('/api/admin/settings') && r.request().method() === 'POST',
-    { timeout: 20_000 }
-  );
-  await page.locator('#save_button').click();
+    const save = page.waitForResponse(
+      (r) => r.url().includes('/api/admin/settings') && r.request().method() === 'POST',
+      { timeout: 20_000 }
+    );
+    await page.locator('#save_button').click();
 
-  // 신규 boolean 키가 검증 규칙에 없으면 422 로 떨어진다 (배관 누락 회귀 가드)
-  expect((await save).status()).toBe(200);
+    // 신규 boolean 키가 검증 규칙에 없으면 422 로 떨어진다 (배관 누락 회귀 가드)
+    const saved = await save;
+    changed = saved.status() === 200;
+    expect(saved.status()).toBe(200);
 
-  await gotoSeoTab(page);
-  const reloaded = page.locator(`${HREFLANG_ROW} input[type="checkbox"]`).first();
-  await expect.poll(() => reloaded.isChecked(), { timeout: 15_000 }).toBe(!wasChecked);
+    await gotoSeoTab(page);
+    const reloaded = page.locator(`${HREFLANG_ROW} input[type="checkbox"]`).first();
+    await expect.poll(() => reloaded.isChecked(), { timeout: 15_000 }).toBe(!wasChecked);
 
-  // 원상 복구 (E2E 는 실제 환경 설정을 건드린다)
-  await page.locator(`${HREFLANG_ROW} .toggle-switch-wrapper`).first().click();
-  const restore = page.waitForResponse(
-    (r) => r.url().includes('/api/admin/settings') && r.request().method() === 'POST',
-    { timeout: 20_000 }
-  );
-  await page.locator('#save_button').click();
-  expect((await restore).status()).toBe(200);
+    // 원상 복구 (E2E 는 실제 환경 설정을 건드린다)
+    await page.locator(`${HREFLANG_ROW} .toggle-switch-wrapper`).first().click();
+    const restore = page.waitForResponse(
+      (r) => r.url().includes('/api/admin/settings') && r.request().method() === 'POST',
+      { timeout: 20_000 }
+    );
+    await page.locator('#save_button').click();
+    const restoredRes = await restore;
+    restored = restoredRes.status() === 200;
+    expect(restoredRes.status()).toBe(200);
+  } finally {
+    if (changed && !restored) {
+      await restoreSettingViaApi(page, token, 'seo.sitemap_hreflang_enabled', wasChecked);
+    }
+  }
 });
 
 // @scenario tab=seo, permitted=yes
 // @effects fields_persisted
 test('#481 - 분할 기준을 바꿔 저장하면 성공하고 재진입 시 유지된다', async ({ page }) => {
+  test.setTimeout(SAVE_ROUNDTRIP_TIMEOUT);
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 
@@ -151,36 +202,49 @@ test('#481 - 분할 기준을 바꿔 저장하면 성공하고 재진입 시 유
 
   const original = await input.inputValue();
   const next = original === '30000' ? '40000' : '30000';
+  let changed = false;
+  let restored = false;
 
-  await input.fill(next);
-  await expect(page.locator('#save_button')).toBeEnabled({ timeout: 10_000 });
+  try {
+    await input.fill(next);
+    await expect(page.locator('#save_button')).toBeEnabled({ timeout: 10_000 });
 
-  const save = page.waitForResponse(
-    (r) => r.url().includes('/api/admin/settings') && r.request().method() === 'POST',
-    { timeout: 20_000 }
-  );
-  await page.locator('#save_button').click();
+    const save = page.waitForResponse(
+      (r) => r.url().includes('/api/admin/settings') && r.request().method() === 'POST',
+      { timeout: 20_000 }
+    );
+    await page.locator('#save_button').click();
 
-  // 신규 키가 검증 규칙에 없으면 422 로 떨어진다 (배관 누락 회귀 가드)
-  expect((await save).status()).toBe(200);
+    // 신규 키가 검증 규칙에 없으면 422 로 떨어진다 (배관 누락 회귀 가드)
+    const saved = await save;
+    changed = saved.status() === 200;
+    expect(saved.status()).toBe(200);
 
-  await gotoSeoTab(page);
-  const reloaded = page.locator(`${URLS_PER_FILE} input[type="number"]`).first();
-  await expect.poll(() => reloaded.inputValue(), { timeout: 15_000 }).toBe(next);
+    await gotoSeoTab(page);
+    const reloaded = page.locator(`${URLS_PER_FILE} input[type="number"]`).first();
+    await expect.poll(() => reloaded.inputValue(), { timeout: 15_000 }).toBe(next);
 
-  // 원상 복구 (E2E 는 실제 환경 설정을 건드린다)
-  await reloaded.fill(original);
-  const restore = page.waitForResponse(
-    (r) => r.url().includes('/api/admin/settings') && r.request().method() === 'POST',
-    { timeout: 20_000 }
-  );
-  await page.locator('#save_button').click();
-  expect((await restore).status()).toBe(200);
+    // 원상 복구 (E2E 는 실제 환경 설정을 건드린다)
+    await reloaded.fill(original);
+    const restore = page.waitForResponse(
+      (r) => r.url().includes('/api/admin/settings') && r.request().method() === 'POST',
+      { timeout: 20_000 }
+    );
+    await page.locator('#save_button').click();
+    const restoredRes = await restore;
+    restored = restoredRes.status() === 200;
+    expect(restoredRes.status()).toBe(200);
+  } finally {
+    if (changed && !restored) {
+      await restoreSettingViaApi(page, token, 'seo.sitemap_urls_per_file', original);
+    }
+  }
 });
 
 // @scenario tab=advanced, permitted=yes
 // @effects fields_mounted, fields_persisted
 test('#481 - 고급 탭 Sitemap 캐시 기준값 칸이 마운트되고 기본값이 저장된다', async ({ page }) => {
+  test.setTimeout(SAVE_ROUNDTRIP_TIMEOUT);
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 
@@ -199,29 +263,41 @@ test('#481 - 고급 탭 Sitemap 캐시 기준값 칸이 마운트되고 기본�
   const original = await input.inputValue();
   // 기본값 86400 은 형제 칸 규칙(최대 14400)을 재사용하면 저장 자체가 막힌다
   const next = original === '86400' ? '43200' : '86400';
+  let changed = false;
+  let restored = false;
 
-  await input.fill(next);
-  await expect(page.locator('#save_button')).toBeEnabled({ timeout: 10_000 });
+  try {
+    await input.fill(next);
+    await expect(page.locator('#save_button')).toBeEnabled({ timeout: 10_000 });
 
-  const save = page.waitForResponse(
-    (r) => r.url().includes('/api/admin/settings') && r.request().method() === 'POST',
-    { timeout: 20_000 }
-  );
-  await page.locator('#save_button').click();
+    const save = page.waitForResponse(
+      (r) => r.url().includes('/api/admin/settings') && r.request().method() === 'POST',
+      { timeout: 20_000 }
+    );
+    await page.locator('#save_button').click();
 
-  expect((await save).status()).toBe(200);
+    const saved = await save;
+    changed = saved.status() === 200;
+    expect(saved.status()).toBe(200);
 
-  // 원상 복구 (E2E 는 실제 환경 설정을 건드린다)
-  await gotoAdvancedTab(page);
-  const restored = page.locator(`${ADVANCED_SITEMAP_CACHE} input[type="number"]`).first();
-  await expect.poll(() => restored.inputValue(), { timeout: 15_000 }).toBe(next);
-  await restored.fill(original);
-  const restore = page.waitForResponse(
-    (r) => r.url().includes('/api/admin/settings') && r.request().method() === 'POST',
-    { timeout: 20_000 }
-  );
-  await page.locator('#save_button').click();
-  expect((await restore).status()).toBe(200);
+    // 원상 복구 (E2E 는 실제 환경 설정을 건드린다)
+    await gotoAdvancedTab(page);
+    const reloaded = page.locator(`${ADVANCED_SITEMAP_CACHE} input[type="number"]`).first();
+    await expect.poll(() => reloaded.inputValue(), { timeout: 15_000 }).toBe(next);
+    await reloaded.fill(original);
+    const restore = page.waitForResponse(
+      (r) => r.url().includes('/api/admin/settings') && r.request().method() === 'POST',
+      { timeout: 20_000 }
+    );
+    await page.locator('#save_button').click();
+    const restoredRes = await restore;
+    restored = restoredRes.status() === 200;
+    expect(restoredRes.status()).toBe(200);
+  } finally {
+    if (changed && !restored) {
+      await restoreSettingViaApi(page, token, 'cache.seo_sitemap_ttl', original);
+    }
+  }
 });
 
 // @scenario tab=seo, permitted=yes

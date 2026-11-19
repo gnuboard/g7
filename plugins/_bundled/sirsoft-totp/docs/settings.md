@@ -149,15 +149,18 @@ CSRF 면제가 필요한 외부 진입점 자체가 없습니다.
 
 본인 경로에는 **사용자 식별자를 두지 않았습니다.** 대상은 항상 호출자 본인이므로, 남의
 자격증명을 가리킬 수 있는 표면 자체를 만들지 않습니다. 반대로 관리자 경로는 대상이 남이라
-`{user}` 를 받고 `->where('user', '[0-9]+')` 로 숫자만 통과시킵니다.
+`{user}` 를 받는데, 이 값은 회원의 **uuid** 이고 숫자 제약 없이 라우트-모델 바인딩
+(`User::getRouteKeyName()` 이 `uuid`)으로 해석합니다. 없는 회원이면 프레임워크가 404 를 냅니다.
 
 `/enrollment` 하나에 GET·POST·DELETE 를 겹쳐 둔 것은 셋이 같은 자원(본인의 자격증명)을
 조회·생성·삭제하기 때문입니다. 반면 확정과 백업 코드 재발급은 자원 생성이 아니라 상태
 전이라 별도 POST 경로를 씁니다.
 
 라우트 이름은 코어가 `api.plugins.sirsoft-totp.` 접두사를 자동으로 붙이므로 파일에는
-`enrollment.show` 처럼 꼬리만 적습니다. 엔드포인트별 파라미터·응답 상세는
-[api/totp.md](api/totp.md) 를 보세요.
+`enrollment.show` 처럼 꼬리만 적습니다. 엔드포인트별 파라미터와 응답 상세는 본인 등록
+관리가 [api/enrollment.md](api/enrollment.md) 와 [api/backup-codes.md](api/backup-codes.md),
+관리자 강제 해제가 [api/credentials.md](api/credentials.md) 에 있고, 묶음 전체의 개요는
+[api/totp.md](api/totp.md) 에 있습니다.
 <!-- @intent END -->
 
 ## 의존 관계

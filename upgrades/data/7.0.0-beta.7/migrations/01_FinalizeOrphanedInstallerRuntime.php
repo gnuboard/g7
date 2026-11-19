@@ -119,7 +119,11 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
 
         $merged = $this->mergeRuntimeIntoEnv($envBase, $runtime);
 
-        if (@file_put_contents($envPath, $merged, LOCK_EX) === false) {
+        // 부분 쓰기는 `false` 가 아니라 쓴 바이트 수다 — 그것을 성공으로 읽으면 잘린 `.env` 를
+        // 남기고 바로 아래에서 유일한 복구 근거인 `runtime.php` 를 지운다.
+        $written = @file_put_contents($envPath, $merged, LOCK_EX);
+
+        if ($written === false || $written !== strlen($merged)) {
             $context->logger->error('[7.0.0-beta.7] .env 쓰기 실패 — runtime.php 보존');
 
             return;
@@ -426,7 +430,12 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
                 continue;
             }
 
-            putenv($key.'='.$stringValue);
+            // putenv 는 공유 호스팅 disable_functions 에 자주 오른다 — 막혔으면 건너뛰고 $_ENV·$_SERVER
+            // 만 채운다(Laravel env() 는 그 둘도 읽는다). 이 스텝은 7.0.0-beta.6 부모 프로세스에서도
+            // 돌 수 있어 그 판에 없는 ExecutionEnvironment 를 쓰지 않고 function_exists 로 판정한다.
+            if (function_exists('putenv')) {
+                putenv($key.'='.$stringValue);
+            }
             $_ENV[$key] = $stringValue;
             $_SERVER[$key] = $stringValue;
         }
@@ -501,7 +510,7 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
      * 모든 chown/chgrp/chmod 호출은 실패해도 진행 (운영자가 수동 보정 가능하도록 로그 안내).
      *
      * @param  array{mode:int|null, uid:int|null, gid:int|null}|null  $preservedStat
-     *         머지 직전 .env 가 존재했다면 그 stat. 부재였으면 null.
+     *                                                                                머지 직전 .env 가 존재했다면 그 stat. 부재였으면 null.
      */
     private function applyEnvPermissions(
         string $envPath,
@@ -624,7 +633,7 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
         $euid = posix_geteuid();
         $name = function_exists('posix_getpwuid') ? (posix_getpwuid($euid)['name'] ?? null) : null;
 
-        return ($name ?? 'uid') . '(' . $euid . ')';
+        return ($name ?? 'uid').'('.$euid.')';
     }
 
     /**

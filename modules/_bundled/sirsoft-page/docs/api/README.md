@@ -4,14 +4,18 @@
 > 아래 표는 자동 생성됩니다. 각 문서를 열면 엔드포인트별 파라미터·응답·예시를 볼 수 있습니다.
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 2 · **엔드포인트 수**: 17
+- **문서 수**: 2 · **엔드포인트 수**: 18
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
-| [attachments.md](attachments.md) | `attachments` | 3 |
+| [attachments.md](attachments.md) | `attachments` | 4 |
 | [pages.md](pages.md) | `pages` | 14 |
 
 <!-- @generated:end -->
+
+## 숫자 번호 자리
+
+경로의 번호 자리(`{page}`·`{versionId}`·`{id}`)는 숫자만 받습니다. 숫자가 아닌 값은 라우트가 없는 것과 같아 **404** 입니다(7.1.6 까지는 500 서버 오류였습니다).
 
 ## 다국어 값 필드
 

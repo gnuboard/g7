@@ -38,6 +38,7 @@ class InstallerReinstallTest extends TestCase
             'vendor/.gitkeep', 'vendor/acme/pkg/src/A.php',
             'storage/app/settings/general.json', 'storage/app/modules/sirsoft-board/settings/basic_defaults.json',
             'storage/app/modules/sirsoft-board/attachments/a.png', 'storage/app/attachments/2026/f.png', 'storage/app/public/p.png',
+            'storage/app/thumbnails/attachments/2026/f.png/sm_0123abcd.png',
             'bootstrap/cache/config.php', 'bootstrap/cache/packages.php', 'public/build/ext/x.js',
             'storage/installer/runtime.php',
             'storage/framework/cache/data/.gitignore', 'storage/framework/cache/data/5a/48/5a488cb6262b9f75e4a52f1b00ec6c00e04d5d9f',
@@ -76,6 +77,7 @@ class InstallerReinstallTest extends TestCase
         foreach (['modules/sirsoft-board', 'plugins/sirsoft-totp', 'templates/sirsoft-basic', 'lang-packs/g7-core-ja', 'vendor/acme',
             'storage/app/settings/general.json', 'storage/app/modules/sirsoft-board/settings/basic_defaults.json',
             'storage/app/modules/sirsoft-board/attachments/a.png', 'storage/app/attachments/2026', 'storage/app/public/p.png',
+            'storage/app/thumbnails/attachments',
             'bootstrap/cache/config.php', 'bootstrap/cache/packages.php', 'public/build/ext', 'storage/app/g7_installed',
             'storage/installer-state.json', 'storage/installer/runtime.php'] as $gone) {
             $this->assertFileDoesNotExist($b.'/'.$gone, $gone.' 가 남았다');
@@ -145,6 +147,9 @@ class InstallerReinstallTest extends TestCase
         $this->assertTrue($run['result']['ok']);
         $this->assertFileExists($this->installerTempBase.'/storage/app/modules/sirsoft-board/settings/basic_defaults.json');
         $this->assertFileDoesNotExist($this->installerTempBase.'/storage/app/modules/sirsoft-board/attachments/a.png');
+        // 원본에서 만든 썸네일 파생본도 함께 지운다 (#869)
+        $this->assertFileDoesNotExist($this->installerTempBase.'/storage/app/thumbnails/attachments/2026/f.png/sm_0123abcd.png');
+        $this->assertDirectoryExists($this->installerTempBase.'/storage/app/thumbnails', '디렉터리 자체는 남긴다');
     }
 
     /**

@@ -897,6 +897,8 @@ class BoardRequestTest extends ModuleTestCase
     // StoreBoardSettingsRequest - report_permissions 검증 (회귀: issue#413)
     // ==========================================
 
+    // (board-settings-report-permissions 매니페스트의 field 축 — docblock 은 @scenario 를 1건만 읽으므로 라인 주석으로 병기)
+    // @scenario field=view_roles
     /**
      * report_permissions.view_roles 빈 배열은 검증 실패해야 함 (회귀: issue#413)
      *
@@ -923,6 +925,8 @@ class BoardRequestTest extends ModuleTestCase
         $this->assertTrue($validator->errors()->has('report_permissions.view_roles'));
     }
 
+    // (board-settings-report-permissions 매니페스트의 field 축 — docblock 은 @scenario 를 1건만 읽으므로 라인 주석으로 병기)
+    // @scenario field=manage_roles
     /**
      * report_permissions.manage_roles 빈 배열은 검증 실패해야 함 (회귀: issue#413)
      *
@@ -992,6 +996,8 @@ class BoardRequestTest extends ModuleTestCase
         $this->assertArrayNotHasKey('attachments', $perms);
     }
 
+    // (board-settings-report-permissions 매니페스트의 field 축 — docblock 은 @scenario 를 1건만 읽으므로 라인 주석으로 병기)
+    // @scenario field=both_valid
     /**
      * 유효한 역할 식별자가 포함된 report_permissions는 통과해야 함 (회귀: issue#413)
      *
@@ -1941,7 +1947,10 @@ class BoardRequestTest extends ModuleTestCase
      */
     protected function tearDown(): void
     {
-        \Mockery::close();
-        parent::tearDown();
+        try {
+            \Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 }

@@ -1,0 +1,42 @@
+feature: 상품 라벨 서비스 (목록, 단건, 활성 목록, 생성, 수정, 상태 전환, 삭제)
+
+description: |
+  ProductLabelService 는 저장소에 조회와 쓰기를 위임한다. 목록은 필터를 그대로 넘기고, 단건 조회는
+  assignments 관계를 함께 읽는다. 수정, 상태 전환, 삭제는 대상 라벨이 없으면 예외를 던지고,
+  삭제는 연결된 상품이 있으면 막는다. 상태 전환은 현재 is_active 를 뒤집어 저장한다.
+
+axes:
+  case:
+    - list_with_filters            # 필터를 준 목록 조회
+    - list_without_filters         # 필터 없는 목록 조회
+    - get_existing                 # 있는 라벨 단건 조회
+    - get_missing                  # 없는 라벨 단건 조회
+    - list_active                  # 활성 라벨 목록
+    - create
+    - update
+    - update_missing               # 없는 라벨 수정
+    - toggle_status
+    - toggle_missing               # 없는 라벨 상태 전환
+    - delete
+    - delete_blocked_by_products   # 연결된 상품이 있는 라벨 삭제
+    - delete_missing               # 없는 라벨 삭제
+
+effects:
+  - product_label_list_passes_filters_to_repository       # 필터가 저장소 getAll 에 그대로 전달
+  - product_label_list_defaults_to_empty_filters          # 필터를 안 주면 빈 배열로 조회
+  - product_label_get_loads_assignments_relation          # 단건 조회가 assignments 관계를 함께 읽음
+  - product_label_get_returns_null_when_missing           # 없는 라벨은 null
+  - product_label_active_list_returned_from_repository    # 활성 라벨 컬렉션 반환
+  - product_label_create_returns_created_model            # 생성 데이터 전달과 생성된 모델 반환
+  - product_label_update_returns_updated_model            # 기존 라벨 확인 뒤 update 결과 반환
+  - product_label_update_throws_when_missing              # 없는 라벨 수정은 예외
+  - product_label_toggle_inverts_is_active                # is_active 를 뒤집어 저장
+  - product_label_toggle_throws_when_missing              # 없는 라벨 상태 전환은 예외
+  - product_label_delete_returns_label_id                 # 삭제 결과에 label_id 가 실림
+  - product_label_delete_blocked_when_products_assigned   # 연결 상품이 있으면 예외
+  - product_label_delete_throws_when_missing              # 없는 라벨 삭제는 예외
+
+# E2E axis 없음: 저장소를 모의한 서비스 단위 판정이고 레이아웃 JSON, 컴포넌트 변경이 없다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductLabelServiceTest.php

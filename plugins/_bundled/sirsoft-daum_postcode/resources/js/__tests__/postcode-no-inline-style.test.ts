@@ -28,6 +28,13 @@ const ENTRY_SOURCE = readFileSync(resolve(PLUGIN_ROOT, 'resources/js/index.ts'),
 const MANIFEST = JSON.parse(readFileSync(resolve(PLUGIN_ROOT, 'plugin.json'), 'utf8'));
 
 /**
+ * 다크 모드 짝 접미 — 템플릿 다크 클래스(`.dark`)가 아니라 중립 표식(`<html data-g7-color-scheme="dark">`) 규격.
+ * 「다크 안의 라이트」(관리자 다크 화면 속 라이트 미리보기)는 제외한다.
+ */
+const DARK_SUFFIX = ':is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"])'
+    + ':not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"]))';
+
+/**
  * 가짜 우편번호 생성자 — embed·open 호출만 받는다.
  *
  * @return 생성자
@@ -122,7 +129,7 @@ describe('우편번호 검색 창 — 인라인 스타일 없음', () => {
             { event: { type: 'click', currentTarget: null, target: button } } as any
         );
 
-        expect(document.querySelector('.g7-postcode-inline')).not.toBeNull();
+        expect(document.querySelector('.daumpostcode-inline')).not.toBeNull();
         expect(document.querySelectorAll('style')).toHaveLength(0);
         expect(styleWrites()).toEqual([]);
     });
@@ -140,19 +147,19 @@ describe('우편번호 검색 창 — 인라인 스타일 없음', () => {
         );
 
         const dialog = document.getElementById('daum-postcode-fullscreen')!;
-        expect(dialog.classList.contains('g7-postcode-inline-fullscreen')).toBe(true);
+        expect(dialog.classList.contains('daumpostcode-inline-fullscreen')).toBe(true);
         expect(dialog.hasAttribute('style')).toBe(false);
 
-        const frame = dialog.querySelector('.g7-postcode-inline__frame')!;
-        expect(frame.classList.contains('g7-postcode-inline__frame--fill')).toBe(true);
+        const frame = dialog.querySelector('.daumpostcode-inline__frame')!;
+        expect(frame.classList.contains('daumpostcode-inline__frame--fill')).toBe(true);
         expect(frame.hasAttribute('style')).toBe(false);
 
         expect(document.querySelectorAll('style')).toHaveLength(0);
         expect(styleWrites()).toEqual([]);
 
         // 종전 style 속성이 하던 일을 CSS 파일의 클래스 규칙이 맡는다
-        expect(MAIN_CSS).toMatch(/^\.g7-postcode-inline-fullscreen\s*\{[^}]*position: fixed[^}]*inset: 0[^}]*z-index: 9999[^}]*display: flex[^}]*flex-direction: column/m);
-        expect(MAIN_CSS).toMatch(/^\.g7-postcode-inline__frame--fill\s*\{[^}]*flex: 1 1 auto[^}]*min-height: 0[^}]*height: 100%/m);
+        expect(MAIN_CSS).toMatch(/^\.daumpostcode-inline-fullscreen\s*\{[^}]*position: fixed[^}]*inset: 0[^}]*z-index: 9999[^}]*display: flex[^}]*flex-direction: column/m);
+        expect(MAIN_CSS).toMatch(/^\.daumpostcode-inline__frame--fill\s*\{[^}]*flex: 1 1 auto[^}]*min-height: 0[^}]*height: 100%/m);
     });
 
     /**
@@ -168,6 +175,8 @@ describe('우편번호 검색 창 — 인라인 스타일 없음', () => {
         );
 
         const layer = document.getElementById('daum-postcode-layer')!;
+        // 모양·크기 규칙은 CSS 파일의 클래스(`.daumpostcode-layer`)가 맡는다 — 요소에 그 클래스가 달려야 규칙이 걸린다
+        expect(layer.classList.contains('daumpostcode-layer')).toBe(true);
         expect(layer.style.getPropertyValue('--dp-width')).toBe('640px');
         expect(layer.style.getPropertyValue('--dp-height')).toBe('720px');
 
@@ -180,7 +189,7 @@ describe('우편번호 검색 창 — 인라인 스타일 없음', () => {
      * @effects layer_gutter_constants_match_css
      */
     it('레이어 여백 상수와 CSS 파일의 값이 같다', () => {
-        const rule = MAIN_CSS.match(/#daum-postcode-layer\s*\{([^}]*)\}/)?.[1] ?? '';
+        const rule = MAIN_CSS.match(/^\.daumpostcode-layer\s*\{([^}]*)\}/m)?.[1] ?? '';
 
         expect(rule).toContain(`width: min(var(--dp-width, 500px), calc(100vw - ${LAYER_VIEWPORT_GUTTER_X}px));`);
         expect(rule).toContain(`height: min(var(--dp-height, 600px), calc(100vh - ${LAYER_VIEWPORT_GUTTER_Y}px));`);
@@ -198,7 +207,7 @@ describe('우편번호 검색 창 — 인라인 스타일 없음', () => {
         expect(HANDLER_SOURCE).not.toMatch(/setAttribute\(\s*['"]style['"]/);
 
         expect(ENTRY_SOURCE).toContain("import '../css/main.css';");
-        expect(MANIFEST.assets.css).toEqual({ entry: 'resources/css/main.css', output: 'dist/css/plugin.css' });
+        expect(MANIFEST.assets.css).toEqual({ entry: 'resources/css/main.css', output: 'dist/css/plugin.css', namespace: 'daumpostcode' });
     });
 
     /**
@@ -207,16 +216,19 @@ describe('우편번호 검색 창 — 인라인 스타일 없음', () => {
      */
     it('펼치기 영역·다크 모드 규칙이 CSS 파일에 있다', () => {
         for (const selector of [
-            '.g7-postcode-inline',
-            '.g7-postcode-inline__bar',
-            '.g7-postcode-inline__close',
-            '.g7-postcode-inline__frame',
-            '.dark .g7-postcode-inline',
-            '.dark .g7-postcode-inline-fullscreen',
-            '.dark .g7-postcode-inline__bar',
-            '.dark .g7-postcode-inline__close',
+            '.daumpostcode-inline',
+            '.daumpostcode-inline__bar',
+            '.daumpostcode-inline__close',
+            '.daumpostcode-inline__frame',
+            `.daumpostcode-inline${DARK_SUFFIX}`,
+            `.daumpostcode-inline-fullscreen${DARK_SUFFIX}`,
+            `.daumpostcode-inline__bar${DARK_SUFFIX}`,
+            `.daumpostcode-inline__close${DARK_SUFFIX}`,
         ]) {
             expect(MAIN_CSS, selector).toContain(`\n${selector} {`);
         }
+
+        // 템플릿 다크 클래스(.dark)를 전제하지 않는다 — 다크 짝은 위 중립 표식 규격으로만 둔다
+        expect(MAIN_CSS).not.toMatch(/\.dark[\s.:{]/);
     });
 });

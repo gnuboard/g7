@@ -8,10 +8,9 @@ use App\Helpers\ResponseHelper;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\RateLimiter;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Exceptions\ProviderMismatch;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
-use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\RecordsPaymentWindowClosure;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\SerializesPaymentCallbacks;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\VerifiesOrderOwnership;
@@ -28,12 +27,12 @@ class PaymentCloseReportController
     private const FAILURE_MESSAGE = '사용자가 NHN KCP 결제창을 닫았습니다.';
 
     /**
-     * @param  OrderProcessingService  $orderService  주문 처리 서비스
-     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스 (주문 소유자 확인)
+     * 이커머스 결제 계약을 주입받습니다.
+     *
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 계약 (주문 조회, 소유자 확인, 결제창 닫힘 기록)
      */
     public function __construct(
-        private readonly OrderProcessingService $orderService,
-        private readonly GuestOrderAuthService $guestOrderAuthService,
+        private readonly PaymentGatewayBridge $bridge,
     ) {}
 
     /**
@@ -51,7 +50,7 @@ class PaymentCloseReportController
         $rateLimitKey = $this->rateLimitKey($request, $oid);
         if (RateLimiter::tooManyAttempts($rateLimitKey, 20)) {
             return ResponseHelper::error('common.failed', 429, [
-                'message' => ['Too many NHN KCP payment close reports. Please try again later.'],
+                'message' => [__('sirsoft-pay_nhnkcp::messages.responses.too_many_requests')],
             ]);
         }
         RateLimiter::hit($rateLimitKey, 60);
@@ -59,7 +58,7 @@ class PaymentCloseReportController
         // 클레임 추가결제(CP 채번)는 기록할 주문 결제 이력이 없다 — 결제 건은 결제 대기로 남아
         // 신청서 상세에서 재시도하므로 보고만 받고 무시한다 (주문 조회로 흘리면 404 가 프론트
         // 흐름을 끊고 error 로그만 쌓인다).
-        if (ClaimPayment::isClaimPaymentNumber($oid)) {
+        if ($this->bridge->isClaimPaymentNumber($oid)) {
             return ResponseHelper::success('common.success', [
                 'recorded' => false,
                 'reason' => 'claim_payment',
@@ -73,14 +72,14 @@ class PaymentCloseReportController
             // authCallback 이 먼저 결제완료를 확정했다면 아래 최신 주문 조회에서 close-report 를 무시한다.
             $callbackLock = $this->acquireOrderCallbackLock('authCallback', $oid);
 
-            $order = $this->orderService->findByOrderNumber($oid);
+            $order = $this->bridge->findOrderByNumber($oid, 'nhnkcp');
             if (! $order) {
                 return ResponseHelper::error('common.failed', 404, [
-                    'message' => ['Order not found.'],
+                    'message' => [__('sirsoft-pay_nhnkcp::messages.responses.order_not_found')],
                 ]);
             }
 
-            if (! $order->order_status->isBeforePayment()) {
+            if (! $order->orderStatus->isBeforePayment()) {
                 return ResponseHelper::success('common.success', [
                     'status' => 'ignored',
                     'reason' => 'order_not_payable',
@@ -92,7 +91,7 @@ class PaymentCloseReportController
             // 성공한 것이므로 실패 처리하지 않는다(failPayment 가 옵션을 취소로 덮어 주문/옵션 상태가
             // 어긋나는 race 차단). failPayment 자체에도 동일 가드가 있으나 여기서 차단해 불필요한
             // 결제취소 이력 기록까지 미연에 방지한다.
-            if ($order->payment?->isPaid()) {
+            if ($order->payment?->isPaid) {
                 return ResponseHelper::success('common.success', [
                     'status' => 'ignored',
                     'reason' => 'payment_already_paid',
@@ -102,16 +101,16 @@ class PaymentCloseReportController
             // 가상계좌가 이미 발급된(입금대기) 주문은 주문 상태가 아직 결제 전이라 위 가드를 통과한다.
             // 발급 콜백과 경쟁해 늦게 온 닫힘 보고가 그 주문을 실패·취소로 덮으면 고객은 받은 계좌로
             // 입금할 수 없다 — 결제창이 승인·발급 단계로 넘어가기 전(READY)만 실패로 기록한다.
-            if ($order->payment && $order->payment->payment_status !== PaymentStatusEnum::READY) {
+            if ($order->payment && $order->payment->paymentStatus !== PaymentStatusEnum::READY) {
                 return ResponseHelper::success('common.success', [
                     'status' => 'ignored',
                     'reason' => 'payment_not_ready',
                 ]);
             }
 
-            if (! $this->requestOwnsOrder($request, $order, $this->guestOrderAuthService)) {
+            if (! $this->requestOwnsOrder($request, $order)) {
                 return ResponseHelper::error('common.failed', 403, [
-                    'message' => ['Order ownership verification failed.'],
+                    'message' => [__('sirsoft-pay_nhnkcp::messages.responses.ownership_verification_failed')],
                 ]);
             }
 
@@ -122,19 +121,18 @@ class PaymentCloseReportController
             ]);
             if ($expectedPrice === null) {
                 return ResponseHelper::error('common.failed', 422, [
-                    'message' => ['Payment currency is not chargeable.'],
+                    'message' => [__('sirsoft-pay_nhnkcp::messages.responses.currency_not_chargeable')],
                 ]);
             }
 
             if ($price !== $expectedPrice) {
                 return ResponseHelper::error('common.failed', 422, [
-                    'message' => ['Payment amount does not match the order amount.'],
+                    'message' => [__('sirsoft-pay_nhnkcp::messages.responses.amount_mismatch')],
                 ]);
             }
 
             $closeReason = trim((string) ($validated['reason'] ?? ''));
             $this->markPaymentWindowClosed(
-                $this->orderService,
                 $order,
                 self::FAILURE_CODE,
                 self::FAILURE_MESSAGE,
@@ -143,6 +141,13 @@ class PaymentCloseReportController
 
             return ResponseHelper::success('common.success', [
                 'status' => 'recorded',
+            ]);
+        } catch (ProviderMismatch) {
+            // 다른 결제사가 이미 결제(발급)한 행 — 결제 대기 행이 아니다. 계약 조회가 그 행을 싣지 않아 위 입금 대기
+            // 가드를 지나왔고, 쓰기는 첫 단계에서 거부됐으므로 아무것도 바뀌지 않았다.
+            return ResponseHelper::success('common.success', [
+                'status' => 'ignored',
+                'reason' => 'payment_not_ready',
             ]);
         } catch (LockTimeoutException) {
             return ResponseHelper::success('common.success', [

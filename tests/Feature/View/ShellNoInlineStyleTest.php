@@ -18,9 +18,7 @@ use Tests\TestCase;
  *
  * 스타일은 코어 정적 파일 두 개(`g7-core.css` — 셸, `g7-standalone.css` — 독립 화면)로만 싣는다.
  *
- * @scenario case=admin_shell_no_inline_style
- *
- * @effects shell_html_has_no_inline_style, core_css_files_served
+ * 효과 요약(마커 아님 — 평문): shell_html_has_no_inline_style, core_css_files_served — 각 시험 메서드 docblock 에 마킹한다.
  */
 class ShellNoInlineStyleTest extends TestCase
 {
@@ -164,6 +162,44 @@ class ShellNoInlineStyleTest extends TestCase
         $this->assertNoInlineStyle($html, 'user');
         $this->assertStringContainsString('data-g7-core-css="core"', $html);
         $this->assertStringContainsString('id="g7-shell-stall"', $html);
+    }
+
+    /**
+     * 확장 CSS 의미 칸 층 순서 선언(#816)은 인라인 `<style>` 이 아니라 코어 정적 파일 링크로 템플릿 CSS 링크 **뒤**에
+     * 실린다. 층 순서는 층 이름이 처음 나온 자리로 정해지므로, 앞에 실리면 템플릿 초기화가 확장 의미 클래스를 이긴다.
+     * 종전 `<style>@layer …;</style>` 은 엄격한 스타일 정책(`style-src 'self'`)에서 막혀 순서 선언 자체가 사라졌다.
+     *
+     * @scenario case=shell_layer_order_static_file
+     *
+     * @effects shell_html_has_no_inline_style, core_css_files_served
+     *
+     * @return void 반환값 없음
+     */
+    public function test_층_순서_선언은_템플릿_css_뒤의_정적_파일_링크다(): void
+    {
+        $this->assertSame(
+            '@layer g7-extension;',
+            trim(preg_replace('#/\*.*?\*/#s', '', (string) file_get_contents(public_path('assets/core/css/g7-layers.css')))),
+            'g7-layers.css 는 순서 선언 한 줄만 담는다',
+        );
+        $this->assertSame(
+            '@layer g7-preview, g7-extension;',
+            trim(preg_replace('#/\*.*?\*/#s', '', (string) file_get_contents(public_path('assets/core/css/g7-layers-admin.css')))),
+            'g7-layers-admin.css 는 순서 선언 한 줄만 담는다',
+        );
+
+        foreach ([['sirsoft-admin_basic', '/admin/login', 'layers-admin', 'g7-layers-admin'], ['sirsoft-basic', '/', 'layers', 'g7-layers']] as [$template, $url, $sheet, $file]) {
+            $this->activate($template);
+            $html = $this->get($url)->assertStatus(200)->getContent();
+
+            $this->assertNoInlineStyle($html, $sheet);
+            $this->assertSame(1, substr_count($html, 'data-g7-core-css="'.$sheet.'"'), "[{$sheet}] 층 순서 링크가 정확히 1개여야 한다");
+            $this->assertMatchesRegularExpression('#assets/core/css/'.$file.'\.css\?v=\d+" data-g7-core-css="'.$sheet.'"#', $html);
+            $templateCss = strrpos($html, 'data-g7-template-css');
+            $layers = strpos($html, 'data-g7-core-css="'.$sheet.'"');
+            $this->assertNotFalse($templateCss, "[{$sheet}] 템플릿 CSS 링크가 없다");
+            $this->assertGreaterThan($templateCss, $layers, "[{$sheet}] 층 순서 선언은 마지막 템플릿 CSS 링크 뒤에 와야 한다");
+        }
     }
 
     /**

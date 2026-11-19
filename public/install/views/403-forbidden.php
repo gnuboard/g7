@@ -13,6 +13,7 @@ require_once __DIR__.'/../includes/functions.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>403 Forbidden</title>
+    <?= function_exists('installer_favicon_tags') ? installer_favicon_tags() : '' ?>
     <link rel="stylesheet" href="<?= htmlspecialchars(installerStandaloneCssUrl()) ?>">
 </head>
 <body class="standalone-forbidden">

@@ -100,4 +100,7 @@ layouts/errors/404.g7.html
 layouts/errors/500.g7.html
 layouts/errors/503.g7.html
 layouts/errors/maintenance.g7.html
+settings/template_settings.g7.html
 ```
+
+`settings/template_settings.g7.html` 은 `layouts/` 밖의 이 템플릿 설정 화면이다 — 코어가 켜진 관리자 템플릿마다 `gnuboard7-hello_admin_template.template_settings` 로 교차 등록하고, 화면은 설정 묶음(`dist/settings/*`) 부품 `gnuboard7-hello_admin_template.TemplateSettingsScreen` 이 그린다([architecture.md](architecture.md)). 저장은 고른 파일을 올리라는 신호(`upload:template_settings`)를 먼저 보내고, 업로더가 돌려준 실패 수(`{ failedCount, message? }`)가 하나라도 있으면 PUT 을 보내지 않고 실패 문구를 상태 상자에 남긴다 — 제3자 템플릿이 이 화면을 본뜰 때도 업로드 결과를 확인한 뒤 저장한다.

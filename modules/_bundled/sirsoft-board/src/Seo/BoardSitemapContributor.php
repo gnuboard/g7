@@ -7,6 +7,7 @@ use App\Seo\AbstractSitemapContributor;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Support\BoardScreenUrl;
 use Modules\Sirsoft\Board\Support\PostQueryExtensions;
 
 /**
@@ -83,7 +84,7 @@ class BoardSitemapContributor extends AbstractSitemapContributor
         // 게시판 목록 페이지
         if ($seoBoards) {
             yield [
-                'url' => '/boards',
+                'url' => BoardScreenUrl::index(),
                 'changefreq' => SitemapChangeFreq::Weekly->value,
                 'priority' => 0.5,
                 'resource_type' => 'board_index',
@@ -100,7 +101,7 @@ class BoardSitemapContributor extends AbstractSitemapContributor
         foreach ($this->boardRepository->streamActiveForSitemap() as $board) {
             if ($seoBoard) {
                 yield [
-                    'url' => "/board/{$board->slug}",
+                    'url' => BoardScreenUrl::list($board->slug),
                     'lastmod' => $board->updated_at?->toW3cString(),
                     'changefreq' => SitemapChangeFreq::Daily->value,
                     'priority' => 0.6,
@@ -118,7 +119,7 @@ class BoardSitemapContributor extends AbstractSitemapContributor
             $extensions = PostQueryExtensions::collect(['sitemap'], ['audience' => 'user', 'board' => $board]);
             foreach ($this->postRepository->streamPublishedForSitemap($board->id, 500, $extensions) as $post) {
                 yield [
-                    'url' => "/board/{$board->slug}/{$post->id}",
+                    'url' => BoardScreenUrl::post($board->slug, $post->id),
                     'lastmod' => $post->updated_at?->toW3cString(),
                     'changefreq' => SitemapChangeFreq::Monthly->value,
                     'priority' => 0.5,

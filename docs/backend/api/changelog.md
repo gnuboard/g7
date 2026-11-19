@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Changelog 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -67,6 +67,8 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명** 코어의 `CHANGELOG.md` 파일 원문 텍스트를 `content`로 반환합니다. `auth:sanctum` 인증이 필요하며, 파일이 없으면 404(`common.not_found`)를 반환합니다. 관리자 화면에서 코어의 전체 변경 이력을 마크다운 원문 그대로 표시하는 용도로 사용합니다.
 

@@ -13,7 +13,6 @@
  * @since engine-v1.50.0 · 공통화 engine-v1.50.0
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { InitActionsForm } from '../../../components/page-settings/InitActionsForm';
@@ -57,6 +56,10 @@ beforeEach(() => {
 });
 
 describe('init-actions-inheritance — 부모/자식 상속 매트릭스 (I1~I15)', () => {
+  /**
+   * @scenario subject=init_actions_inheritance
+   * @effects init_inherit_parent_only_locked_group
+   */
   it('I1: 부모만 init_actions(자식 0) → 부모 그룹만(전부 🔒), 자식 그룹 비어 추가 picker 만', () => {
     const actions = [baseAction({ handler: 'setState' }), baseAction({ handler: 'toast', params: { message: 'hi' } })];
     render(<InitActionsForm actions={actions} onChange={vi.fn()} recipes={RECIPES} t={t} />);
@@ -71,6 +74,10 @@ describe('init-actions-inheritance — 부모/자식 상속 매트릭스 (I1~I15
     expect(screen.getByTestId('g7le-init-action-self-add-picker-toggle')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=init_actions_inheritance
+   * @effects init_inherit_child_only_flat_mode
+   */
   it('I2: 자식만 init_actions(부모 0) → 비상속 모드(그룹 박스 없음, 전부 편집)', () => {
     const actions = [routeAction({ handler: 'setState' }), routeAction({ handler: 'toast', params: { message: 'hi' } })];
     render(<InitActionsForm actions={actions} onChange={vi.fn()} recipes={RECIPES} t={t} />);
@@ -80,6 +87,10 @@ describe('init-actions-inheritance — 부모/자식 상속 매트릭스 (I1~I15
     expect(screen.getByTestId('g7le-init-action-remove-0')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=init_actions_inheritance
+   * @effects init_inherit_both_split_groups_with_order
+   */
   it('I3: 부모+자식 둘 다 → 두 그룹 분리, 부모=🔒/자식=편집, 실행순서 안내', () => {
     const actions = [baseAction({ handler: 'setState' }), routeAction({ handler: 'toast', params: { message: 'hi' } })];
     render(<InitActionsForm actions={actions} onChange={vi.fn()} recipes={RECIPES} t={t} />);
@@ -91,6 +102,10 @@ describe('init-actions-inheritance — 부모/자식 상속 매트릭스 (I1~I15
     expect(screen.getByTestId('g7le-init-action-merge-order')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=init_actions_inheritance
+   * @effects init_inherit_parent_item_controls_absent
+   */
   it('I4: 부모 항목 [편집]/[✕]/드래그 핸들 DOM 부재', () => {
     const actions = [baseAction({ handler: 'toast', params: { message: 'hi' } }), routeAction({ handler: 'setState' })];
     render(<InitActionsForm actions={actions} onChange={vi.fn()} recipes={RECIPES} t={t} />);
@@ -99,6 +114,10 @@ describe('init-actions-inheritance — 부모/자식 상속 매트릭스 (I1~I15
     expect(screen.queryByTestId('g7le-init-action-base-drag-0')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=init_actions_inheritance
+   * @effects init_inherit_parent_item_controls_absent
+   */
   it('I5: 부모 항목 드래그 핸들 부재(이동 불가)', () => {
     const actions = [baseAction({ handler: 'setState' }), routeAction({ handler: 'toast', params: { message: 'hi' } })];
     render(<InitActionsForm actions={actions} onChange={vi.fn()} recipes={RECIPES} t={t} />);
@@ -106,6 +125,10 @@ describe('init-actions-inheritance — 부모/자식 상속 매트릭스 (I1~I15
     expect(screen.queryByTestId('g7le-init-action-base-drag-0')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=init_actions_inheritance
+   * @effects init_inherit_child_remove_keeps_parent
+   */
   it('I6: 자식 항목 삭제 → 자식 구간만 patch(부모 보존, 병합 배열)', () => {
     const onChange = vi.fn();
     const base0 = baseAction({ handler: 'setState' });
@@ -117,6 +140,10 @@ describe('init-actions-inheritance — 부모/자식 상속 매트릭스 (I1~I15
     expect(onChange).toHaveBeenLastCalledWith([base0, route2]);
   });
 
+  /**
+   * @scenario subject=init_actions_inheritance
+   * @effects init_inherit_child_reorder_within_child
+   */
   it('I7: 자식 항목 드래그 순서이동 → 자식 구간 내 재배치(부모 뒤 고정)', () => {
     const onChange = vi.fn();
     const base0 = baseAction({ handler: 'setState' });
@@ -130,6 +157,10 @@ describe('init-actions-inheritance — 부모/자식 상속 매트릭스 (I1~I15
     expect(onChange).toHaveBeenLastCalledWith([base0, route2, route1]);
   });
 
+  /**
+   * @scenario subject=init_actions_inheritance
+   * @effects init_inherit_base_group_read_only
+   */
   it('I8: base 그룹 읽기전용 — "[공통 레이아웃에서 수정]" 버튼·동작 추가 picker 부재 + 안내문', () => {
     const actions = [baseAction({ handler: 'setState' }), routeAction({ handler: 'toast', params: { message: 'hi' } })];
     render(<InitActionsForm actions={actions} onChange={vi.fn()} recipes={RECIPES} t={t} />);
@@ -140,6 +171,10 @@ describe('init-actions-inheritance — 부모/자식 상속 매트릭스 (I1~I15
     expect(screen.getByTestId('g7le-init-action-base-hint')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=init_actions_inheritance
+   * @effects init_inherit_child_add_keeps_parent_source
+   */
   it('I9: 자식 추가 → 부모·__source 보존(복제 0), 새 자식은 __source 부재', () => {
     const onChange = vi.fn();
     const base0 = baseAction({ handler: 'setState' });
@@ -154,6 +189,10 @@ describe('init-actions-inheritance — 부모/자식 상속 매트릭스 (I1~I15
     expect(next.at(-1)).toEqual({ handler: 'setState' });
   });
 
+  /**
+   * @scenario subject=init_actions_inheritance
+   * @effects init_inherit_own_layer_only_flat_mode
+   */
   it('I10: 자기 레이어(route)로만 주입 → 상속모드 아님(전부 편집)', () => {
     const asSelfLayer = [routeAction({ handler: 'setState' }, '_user_base'), routeAction({ handler: 'toast', params: { message: 'hi' } }, '_user_base')];
     render(<InitActionsForm actions={asSelfLayer} onChange={vi.fn()} recipes={RECIPES} t={t} />);
@@ -162,6 +201,10 @@ describe('init-actions-inheritance — 부모/자식 상속 매트릭스 (I1~I15
     expect(screen.getByTestId('g7le-init-action-remove-1')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=init_actions_inheritance
+   * @effects init_inherit_parent_advanced_locked_code_only
+   */
   it('I11: 부모(고급 보존)+자식 → 부모 고급 항목도 🔒 + 코드 보기만(자식 편집 불가)', () => {
     const actions = [baseAction({ handler: 'apiCall', onSuccess: [{ handler: 'toast' }] }), routeAction({ handler: 'setState' })];
     render(<InitActionsForm actions={actions} onChange={vi.fn()} recipes={RECIPES} t={t} />);
@@ -171,6 +214,10 @@ describe('init-actions-inheritance — 부모/자식 상속 매트릭스 (I1~I15
     expect(screen.getByTestId('g7le-init-action-base-code-0')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=init_actions_inheritance
+   * @effects init_inherit_extension_parent_still_locked
+   */
   it('I12: 부모(확장 제공)+자식 → base 우선 잠금(확장 제공이어도)', () => {
     const actions = [baseAction({ handler: 'filterLoad' }), routeAction({ handler: 'setState' })];
     render(<InitActionsForm actions={actions} onChange={vi.fn()} recipes={RECIPES} t={t} />);
@@ -180,6 +227,10 @@ describe('init-actions-inheritance — 부모/자식 상속 매트릭스 (I1~I15
     expect(screen.getByTestId('g7le-init-action-base-source-0')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=init_actions_inheritance
+   * @effects init_inherit_three_levels_all_ancestors_locked
+   */
   it('I13: 3단 상속(조부모→부모→자식) → 상위 전부 🔒(base), 자식만 편집', () => {
     const actions = [
       baseAction({ handler: 'setState' }, '_root_base'),
@@ -193,6 +244,10 @@ describe('init-actions-inheritance — 부모/자식 상속 매트릭스 (I1~I15
     expect(screen.getByTestId('g7le-init-action-self-remove-0')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=init_actions_inheritance
+   * @effects init_inherit_if_badges_parent_locked_child_edit
+   */
   it('I14: 조건(if) 동반 부모/자식 → 부모 if 〔조건〕 배지(잠금), 자식 if 편집 가능', () => {
     const actions = [
       baseAction({ handler: 'toast', params: { message: 'a' }, if: '{{query.error}}' }),
@@ -207,6 +262,10 @@ describe('init-actions-inheritance — 부모/자식 상속 매트릭스 (I1~I15
     expect(screen.getByTestId('g7le-init-action-self-edit-0')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=init_actions_inheritance
+   * @effects init_inherit_modal_host_patches_host_array
+   */
   it('I15: 모달 호스트 + 부모 → 호스트 자체 init_actions 편집(상속 그룹 정상), 자식 삭제 시 호스트 배열만 patch', () => {
     const hostActions = [baseAction({ handler: 'setState' }), routeAction({ handler: 'toast', params: { message: 'host' } })];
     const onChange = vi.fn();

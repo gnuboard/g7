@@ -77,7 +77,7 @@ file_put_contents($backupPath, Crypt::encryptString(json_encode([
     'currency' => is_file($currencyPath) ? file_get_contents($currencyPath) : null,
     'plugin' => $storage->get('settings', 'setting.json'),
 ], JSON_THROW_ON_ERROR)));
-$pluginSettings->save('sirsoft-koreaexim', ['auth_key' => 'browser-fixture-key', 'auto_manage' => true, 'update_time' => '11:30', 'run_days' => [1, 2, 3, 4, 5]]);
+$pluginSettings->save('sirsoft-koreaexim', ['auth_key' => 'browser-fixture-key', 'auto_manage' => true, 'run_days' => [1, 2, 3, 4, 5]]);
 $currency = $settings->getSettings('language_currency');
 $currency['default_currency'] = 'KRW';
 $currency['rate_provider'] = 'koreaexim';

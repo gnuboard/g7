@@ -11,7 +11,6 @@
  *  ⑥ 외부 value 재시드(편집 중이 아닐 때)
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { JsonBlockField } from '../../components/JsonBlockField';
@@ -21,12 +20,20 @@ const t = (k: string) => k;
 beforeEach(() => cleanup());
 
 describe('JsonBlockField', () => {
+  /**
+   * @scenario subject=json_block_field
+   * @effects json_block_seeds_pretty_json
+   */
   it('value 를 pretty JSON 으로 시드한다', () => {
     render(<JsonBlockField value={{ a: 1 }} onChange={vi.fn()} t={t} />);
     const ta = screen.getByTestId('g7le-json-block') as HTMLTextAreaElement;
     expect(ta.value).toBe('{\n  "a": 1\n}');
   });
 
+  /**
+   * @scenario subject=json_block_field
+   * @effects json_block_valid_input_emits_parsed_value
+   */
   it('유효 JSON 입력 → onChange(파싱값) + validity true', () => {
     const onChange = vi.fn();
     const onValid = vi.fn();
@@ -37,6 +44,10 @@ describe('JsonBlockField', () => {
     expect(screen.queryByTestId('g7le-json-block-error')).toBeNull();
   });
 
+  /**
+   * @scenario subject=json_block_field
+   * @effects json_block_broken_json_shows_error_no_emit
+   */
   it('깨진 JSON → 오류 표시 + onChange 미호출 + validity false', () => {
     const onChange = vi.fn();
     const onValid = vi.fn();
@@ -48,6 +59,10 @@ describe('JsonBlockField', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  /**
+   * @scenario subject=json_block_field
+   * @effects json_block_object_shape_rejects_array_scalar
+   */
   it("shape='object' — 배열/스칼라 입력 거부(validity false)", () => {
     const onChange = vi.fn();
     const onValid = vi.fn();
@@ -62,6 +77,10 @@ describe('JsonBlockField', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  /**
+   * @scenario subject=json_block_field
+   * @effects json_block_empty_string_emits_empty_value
+   */
   it('빈 문자열 → emptyValue', () => {
     const onChange = vi.fn();
     render(<JsonBlockField value={{ a: 1 }} emptyValue={{}} onChange={onChange} t={t} />);
@@ -69,6 +88,10 @@ describe('JsonBlockField', () => {
     expect(onChange).toHaveBeenLastCalledWith({});
   });
 
+  /**
+   * @scenario subject=json_block_field
+   * @effects json_block_reseeds_external_value_when_idle
+   */
   it('외부 value 재시드(편집 중이 아닐 때)', () => {
     const { rerender } = render(<JsonBlockField value={{ a: 1 }} onChange={vi.fn()} t={t} />);
     rerender(<JsonBlockField value={{ b: 2 }} onChange={vi.fn()} t={t} />);

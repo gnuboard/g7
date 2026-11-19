@@ -33,6 +33,19 @@ use ReflectionClass;
 abstract class AbstractUpgradeStep implements UpgradeStepInterface
 {
     /**
+     * 이 스텝이 하는 일을 사람이 읽을 한 줄로 설명합니다 — `g7:migrate-plan` 이 실행 전에 보여 준다 (7.2.0, 선택 구현).
+     *
+     * 구현하지 않으면 null 이고 계획에는 「설명 없음」으로 나온다. `destructive` 는 데이터를 지우거나 되돌릴 수 없게 바꾸면 true.
+     * 실행 없이 불리므로 DB·파일을 읽거나 바꾸지 않는다.
+     *
+     * @return array{summary: string, destructive: bool}|null 설명 (없으면 null)
+     */
+    public function describe(): ?array
+    {
+        return null;
+    }
+
+    /**
      * data/{currentStep}/manifest.json 을 로드 + Applier 동적 로드.
      *
      * 카탈로그 변동이 없는 스텝은 manifest 파일 없이 자동 빈 스냅샷 반환.
@@ -63,8 +76,13 @@ abstract class AbstractUpgradeStep implements UpgradeStepInterface
             return [];
         }
 
-        $files = glob($dir.'/*.php') ?: [];
-        sort($files);
+        // `glob` 은 하드닝 프로필의 표준 차단 대상이다. 막힌 호스팅에서 PHP 8 은 그 함수를
+        // 함수 테이블에서 제거하므로 이 호출은 `Error`(치명)이고, **업그레이드 스텝 전체가
+        // 그 자리에서 죽는다** — 이 안이 대상으로 삼은 제약 호스팅에서 정리가 한 번도
+        // 실행되지 않는다는 뜻이다. 로더가 사각이면 개별 마이그레이션이 `scandir` 로
+        // 회피한 것도 무의미하므로(`01_MovePublicStorage…` 가 정확히 그 근거를 적고 있다)
+        // 같은 규율로 정렬한다.
+        $files = ExtensionManager::listDirectoryFiles($dir, '.php');
 
         $migrations = [];
         $namespace = DataSnapshot::versionedNamespace($context, $dir).'\\Migrations';

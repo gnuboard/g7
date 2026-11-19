@@ -276,6 +276,18 @@ class Order extends Model
     }
 
     /**
+     * 항목 값의 소유자 종류를 반환합니다 (공용 값 테이블 `field_values.owner_type`).
+     *
+     * 주문서 항목 집합(`sirsoft-ecommerce.order_contact`)의 추가 항목 값이 이 종류로 저장된다.
+     *
+     * @return string 소유자 종류 (`ecommerce_order`)
+     */
+    public function fieldOwnerType(): string
+    {
+        return 'ecommerce_order';
+    }
+
+    /**
      * 배송지 관계 (모든 주소 유형)
      *
      * @return HasMany 배송지 모델과의 관계

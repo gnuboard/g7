@@ -35,7 +35,7 @@ import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layo
 const findNodeById = (node: any, id: string): any => {
     if (!node) return null;
     if (node.id === id) return node;
-    for (const child of node.children ?? []) {
+    for (const child of [...(node.children ?? []), ...(node.props?.footer ?? [])]) {
         const found = findNodeById(child, id);
         if (found) return found;
     }
@@ -55,6 +55,7 @@ const findRestrictionRadioParams = (root: any, value: string): any => {
             return changeAction?.params ?? null;
         }
         if (node?.children) stack.push(...node.children);
+        if (Array.isArray(node?.props?.footer)) stack.push(...node.props.footer); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
     }
     return null;
 };
@@ -213,7 +214,8 @@ describe('productFormLayouts', () => {
             // @effects notice_template_confirm_applies_template
             it('취소 버튼이 sequence(setState pending=null + closeModal) 패턴이다', () => {
                 const content = noticeTemplateConfirmModal.children[0];
-                const buttonContainer = content.children[1];
+                // 취소·확인 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+                const buttonContainer = { children: noticeTemplateConfirmModal.props.footer };
                 const cancelButton = buttonContainer.children[0];
 
                 expect(cancelButton.text).toBe('$t:sirsoft-ecommerce.common.cancel');
@@ -229,7 +231,8 @@ describe('productFormLayouts', () => {
             // @effects notice_template_confirm_applies_template
             it('확인 버튼 sequence 가 closeModal → 템플릿 적용 → pending 초기화 순으로 실행된다', () => {
                 const content = noticeTemplateConfirmModal.children[0];
-                const buttonContainer = content.children[1];
+                // 취소·확인 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+                const buttonContainer = { children: noticeTemplateConfirmModal.props.footer };
                 const confirmButton = buttonContainer.children[1];
 
                 expect(confirmButton.text).toBe('$t:sirsoft-ecommerce.admin.product.notice.confirm_change_button');
@@ -318,7 +321,8 @@ describe('productFormLayouts', () => {
         // @effects notice_template_confirm_applies_template
         it('확인 모달의 취소 버튼이 sequence 로 pending 만 초기화한다', () => {
             const content = noticeTemplateConfirmModal.children[0];
-            const buttonContainer = content.children[1];
+            // 취소·확인 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+            const buttonContainer = { children: noticeTemplateConfirmModal.props.footer };
             const cancelButton = buttonContainer.children[0];
 
             const cancelAction = asArray(cancelButton?.actions)[0];
@@ -568,6 +572,7 @@ describe('productFormLayouts', () => {
                 const node = stack.shift();
                 if (node?.name === 'Input' && node?.props?.type === 'number') return node;
                 if (node?.children) stack.push(...node.children);
+                if (Array.isArray(node?.props?.footer)) stack.push(...node.props.footer); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
             }
             return null;
         };
@@ -744,7 +749,7 @@ describe('productFormLayouts', () => {
             // 판매가 셀 하단 미리보기 블록: currencyCol 을 반복하는 Span 의 수직 래퍼
             const preview = findNodeById(productOptionsPartial, 'option_currency_preview_{{optIdx}}');
             expect(preview).not.toBeNull();
-            expect(preview.props.className).toContain('flex flex-col');
+            expect(preview.props.className).toContain('ecommerce:flex ecommerce:flex-col');
             const previewSpan = asArray(preview?.children)[0];
             expect(previewSpan?.iteration?.source).toContain('currencyColumns');
             // 환산값은 formatted(읽기전용 표기)를 그대로 출력한다 (입력 Input 아님)
@@ -764,7 +769,7 @@ describe('productFormLayouts', () => {
                 if (!node || typeof node !== 'object') return null;
                 if (node.name === 'Tr' && typeof node.iteration?.source === 'string'
                     && node.iteration.source.includes('form.options')) return node;
-                for (const child of node.children ?? []) {
+                for (const child of [...(node.children ?? []), ...(node.props?.footer ?? [])]) {
                     const found = findTr(child);
                     if (found) return found;
                 }
@@ -779,13 +784,16 @@ describe('productFormLayouts', () => {
         // @effects product_form_layout_semantics_intact
         it('추가옵션 헤더 래퍼가 base flex/gap 을 가져 좁은 폭에서도 제목과 토글 사이 간격이 유지된다', () => {
             const addSection = findNodeById(productOptionsPartial, 'additional_options_section');
+            // 640px 이상 가로 배치는 엔진 responsive 의 `640-` 구간 className 이 맡는다.
             const headerRow = asArray(addSection?.children).find(
-                (c: any) => typeof c?.props?.className === 'string'
-                    && c.props.className.includes('sm:justify-between'),
+                (c: any) => typeof c?.responsive?.['640-']?.props?.className === 'string'
+                    && c.responsive['640-'].props.className.includes('ecommerce:justify-between'),
             );
             expect(headerRow).toBeDefined();
-            // 회귀 가드: base flex/gap 없이 sm: 프리픽스만 있으면 좁은 폭에서 0 간격
-            expect(headerRow.props.className).toContain('flex flex-col gap-4');
+            // 회귀 가드: 기본 className 에 flex/gap 이 없으면 좁은 폭에서 0 간격
+            expect(headerRow.props.className).toContain('ecommerce:flex ecommerce:flex-col ecommerce:gap-4');
+            // 엔진은 구간 className 으로 통째로 바꾸므로 넓은 구간에도 flex/gap 이 있어야 한다
+            expect(headerRow.responsive['640-'].props.className).toContain('ecommerce:flex ecommerce:gap-4');
         });
     });
 
@@ -811,6 +819,18 @@ describe('productFormLayouts', () => {
             const noticeDs = findDataSource(productFormLayout, 'notice_templates');
             expect(commonDs.params.active_only).toBe(noticeDs.params.active_only);
         });
+
+        // @scenario section=common_info
+        // @effects product_form_selectors_fetch_every_row
+        // 선택지 소스가 쪽 하나(per_page=100)만 받으면 101번째 이후 공통정보·배송정책을 고를 수 없다.
+        // 같은 화면의 상품정보고시 템플릿처럼 전체 조회(per_page=all)로 받는다. 브랜드·라벨·카테고리 API 는 쪽 나눔이 없다.
+        it('공통정보·배송정책·상품정보고시 선택지는 쪽 하나가 아니라 전부(per_page=all)를 받는다', () => {
+            for (const id of ['common_infos', 'shipping_policies', 'notice_templates']) {
+                const ds = findDataSource(productFormLayout, id);
+                expect(ds, id).not.toBeNull();
+                expect(ds.params.per_page, id).toBe('all');
+            }
+        });
     });
 
     describe('마스터-디테일 그리드 비율', () => {
@@ -822,6 +842,7 @@ describe('productFormLayouts', () => {
                 if (node.id === id) return node;
                 if (Array.isArray(node)) { stack.push(...node); continue; }
                 if (node.children) stack.push(...node.children);
+                if (Array.isArray(node?.props?.footer)) stack.push(...node.props.footer); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
                 if (node.slots) {
                     for (const slotChildren of Object.values(node.slots)) {
                         stack.push(...(slotChildren as any[]));
@@ -845,8 +866,11 @@ describe('productFormLayouts', () => {
             (_name, layout) => {
                 const panel = findNodeByIdDeep(layout, 'panel_layout');
                 expect(panel).not.toBeNull();
-                // 좌측 목록 1/3 + 우측 상세 2/3 마스터-디테일 그리드 자산
-                expect(panel.props.className).toContain('grid-cols-1-lg-3');
+                // 좌측 목록 1/3 + 우측 상세 2/3 마스터-디테일 그리드 — 폭 조건을 품은 의미 클래스(grid-cols-1-lg-3) 대신
+                // 기본 1열 + 1024px 이상 3열을 엔진 responsive 구간 값으로 펼쳤다
+                expect(panel.props.className).not.toContain('grid-cols-1-lg-3');
+                expect(panel.props.className.split(/\s+/)).toEqual(expect.arrayContaining(['ecommerce:grid', 'ecommerce:grid-cols-1', 'ecommerce:gap-6']));
+                expect(String(panel.responsive?.['1024-']?.props?.className).split(/\s+/)).toEqual(expect.arrayContaining(['ecommerce:grid', 'ecommerce:grid-cols-3', 'ecommerce:gap-6']));
                 // 회귀 가드: items-start 는 양쪽 셀 stretch 정렬을 깨 좌측 리스트 컨테이너 잘림 유발
                 expect(panel.props.className).not.toContain('items-start');
 

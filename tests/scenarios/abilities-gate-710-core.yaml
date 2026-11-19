@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 7.1.0 abilities 게이트 최종 점검 결함(코어·관리자 화면) 수정의 회귀 묶음. 축은 결함마다 독립(화면·권한 보유 여부)이라 전수 곱이 아니라 결함별 고침/거부 경로를 잠근다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#609 7.1.0 abilities 게이트 최종 점검 결함(코어·관리자 화면) 수정의 회귀 묶음. 축은 결함마다 독립(화면·권한 보유 여부)이라 전수 곱이 아니라 결함별 고침/거부 경로를 잠근다.
 
 feature: 7.1.0 abilities 게이트 수정 — 코어 서버 권한 · 관리자 화면 게이트
 
@@ -17,6 +17,26 @@ description: |
 axes:
   area: [cascade_install, role_state, self_delete, schedule_list, dashboard_alert, extension_list, layout_gate, stats, resources, activities, alerts, core_update.check, core_update.changelog, compatibility_listener, compatibility_dismiss, dashboard]
   permission: [granted, missing]
+  # 테스트 마킹에 이미 쓰이고 있었으나 어느 매니페스트에도 없던 축 (#609 부채 정리 — 값은 기존 마킹에서 옮김, cross_product 면제)
+  endpoint: [modules.install, plugins.install|templates.install, admin.users.index, admin.users.destroy, admin.users.index|admin.users.show, admin.schedules.index, admin.dashboard.alerts, admin.modules.index, admin.plugins.index|admin.templates.index, admin.plugins.index, admin.extensions.dismiss, admin.modules.show|admin.plugins.show, admin.notifications.index, admin.identity.providers.index, layouts.preview.serve]
+  selection: [dependency_plugin, dependency_plugin_installed_inactive, language_pack, all_kinds]
+  unit: [CascadeInstallAuthorizer]
+  subject: [member, guest, super_admin]
+  role_state: [inactive|active, inactive]
+  loading: [eager]
+  target_role: [admin]
+  action: [toggle|update_is_active]
+  target: [self|other]
+  actor: [non_super_operator]
+  result: [empty]
+  type: [module|plugin]
+  screen: [extension_install_modal, schedule_list, admin_header_notification_center, dashboard_alerts, settings_seo_tab, settings, settings_privacy_tab, extension_lists|layout_editor, user_form|activity_log_list, role_form]
+  state: [before_response]
+  role: [admin]
+  permissions: [multiple]
+  require_all: [default|false]
+  viewer: [guest]
+  component_permission: [present]
 
 effects:
   # 동반 설치
@@ -95,6 +115,7 @@ effects:
   - dismiss_alert_persists_for_user
   - check_for_updates_returns_version_info
   - check_for_updates_returns_error_when_github_check_fails
+  - check_for_updates_includes_custom_preflight
   - check_for_updates_requires_authentication
   - check_for_updates_allows_settings_read_only
   - check_for_updates_requires_permission

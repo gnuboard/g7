@@ -20,6 +20,10 @@
 `sirsoft-pay_kginicis`와 마찬가지로 이 플러그인이 소유한 화면 레이아웃은 관리자 설정 화면
 하나뿐입니다 — 체크아웃·주문상세·마이페이지의 결제 UI는 이 플러그인 소유가 아니라
 §레이아웃 확장(다른 확장/템플릿 레이아웃에 주입되는 조각)으로 존재합니다.
+
+화면 폭에 따라 달라지는 배치는 Tailwind 반응형 접두(`sm:`·`md:`·`lg:`)를 쓰지 않고 엔진 `responsive` 로 씁니다(예: `<responsive on="desktop" class="…"/>`, `on="640-"`). 갈래의 `class` 는 기본 `class` 를 통째로 바꾸므로 그 폭에서 필요한 토큰을 모두 적습니다. 한 노드에 커스텀 구간(예 설정 화면 바깥 여백의 `640-1023`)을 두면 나머지 구간도 커스텀(`1024-`)으로 적고 프리셋(`desktop`)과 섞지 않습니다. 확장 유틸리티는 화면에 층 없이 실려 의미 클래스 칸(`@layer g7-extension`)을 이깁니다 — 관리자 결제 조회 조각의 카드 머리 설명처럼 의미 클래스 `pay-nhnkcp-hidden` 를 단 노드를 넓은 화면에서 보이려면 그 갈래에 `paynhnkcp:block`·`paynhnkcp:inline` 같은 표시 유틸리티를 함께 적어야 하고, 이것을 빼면 넓은 화면에서도 숨습니다.
+
+폭 미디어를 품은 의미 클래스 사본(`pay-nhnkcp-grid-3col-responsive`·`pay-nhnkcp-grid-2col-responsive`·`pay-nhnkcp-page-title`·`pay-nhnkcp-admin-page-content-responsive` 등)도 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:gap-4 paynhnkcp:items-start"` 에 `<responsive on="1024-" class="paynhnkcp:grid paynhnkcp:grid-cols-3 paynhnkcp:gap-4 paynhnkcp:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`paynhnkcp:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->
 
 ### 매출전표 보기 요청의 주문번호와 자격 증명
@@ -88,11 +92,14 @@
 KCP 가 제공하는 `payplus_web.jsp` SDK 는 이 목록에 없습니다 — `requestPayment` 핸들러가
 결제 시도 시점에 iframe 안으로 동기 로드하는 제3자 자산이라, 이 플러그인이 빌드 시
 번들링하는 `dist/` 산출물과는 다른 층입니다. 결제창 자체는 KCP가 그리므로
-이 플러그인의 CSS 산출물(`dist/css/plugin.css`, 원본 `resources/css/main.css`)은 작습니다 — 환경설정 화면의
-안내 글자색(경고·성공·위험·안내, 다크 모드 짝 포함)을 접두 `pay-nhnkcp-tone-*` 클래스로 직접 제공하는 것이
-전부입니다. 관리자 템플릿의 의미 글자색 클래스(`text-warning-soft` 등)에 기대면 템플릿이 그 클래스를 바꿀 때
-이 화면의 색이 함께 바뀌기 때문입니다(7.1.0 때 경고 본문이 초록으로 바뀐 사례). 다른 결제 플러그인도 같은
-이름 체계를 쓰지만 접두가 달라 서로를 참조하지 않습니다.
+이 플러그인의 CSS 산출물(`dist/css/plugin.css`, 원본 `resources/css/main.css`)은 이 플러그인 화면(환경설정 화면과
+다른 화면에 붙는 조각)의 스타일 전부를 싣습니다 — 템플릿 CSS 에 기대지 않습니다. 배치·색 유틸리티는 `paynhnkcp:` 접두
+Tailwind 빌드로, 템플릿에서 가져온 의미 클래스는 `pay-nhnkcp-*` 사본(가장 낮은 칸 `@layer g7-extension`, 생성 파일
+`resources/css/g7-extension.generated.css`)으로, 안내 글자색(경고·성공·위험·안내, 다크 모드 짝 포함)은 접두
+`pay-nhnkcp-tone-*` 손 CSS 로 둡니다. 다크 모드는 템플릿의 `.dark` 대신 코어의 중립 표식(`data-g7-color-scheme`)을 따릅니다.
+템플릿이 의미 클래스의 이름·색을 바꾸거나 다른 CSS 라이브러리를 써도 이 화면은 따라 바뀌지 않습니다(7.1.0 때 템플릿
+의미 클래스에 기댄 경고 본문이 초록으로 바뀐 사례). 다른 결제 플러그인도 같은 이름 체계를 쓰지만 앞글자가 달라
+서로를 참조하지 않습니다.
 <!-- @intent END -->
 
 ## 화면 표시는 레이아웃 조각, 상태는 공개 API
@@ -115,7 +122,7 @@ KCP 가 제공하는 `payplus_web.jsp` SDK 는 이 목록에 없습니다 — `r
 
 **깨뜨리면 안 되는 것**: `window.fetch`·`history.pushState`·`history.replaceState` 를 덮어쓰지 않는다 · 로그인 토큰을
 저장소에서 읽어 Bearer 를 붙이지 않는다(`G7Core.api` 가 싣고 401 도 처리한다) · 화면을 주소 정규식이나 제목 글자,
-클래스 모양으로 찾지 않는다. 정적 검사 `extension-private-core-internals` 가 앞의 둘을 막는다.
+클래스 모양으로 찾지 않는다. 정적 검사가 앞의 둘을 막는다.
 <!-- @intent END -->
 
 가상계좌 입금 안내의 **입금 금액**은 레이아웃 확장(`user_order_show`)이 결제예정금액(`total_due_amount_formatted`, 마일리지 차감 뒤)을 먼저 읽고, 그 값이 없는 비회원 응답에서는 주문금액(`total_amount_formatted`)으로 대신한다. 입금 대기 중에는 주문금액과 결제예정금액이 같은 값(둘 다 마일리지 차감 뒤)이고, 입금이 들어오면 결제예정금액이 줄어든다 — 입금할 금액의 기준 필드는 결제예정금액이다.
@@ -184,4 +191,11 @@ URL(`https://사이트/plugins/…/payment/close-report`, `/api` 없음)이므�
 
 처리 위치: `resources/js/handlers/requestPayment.ts` 의 `finishCancelledPayment()`. 클레임 결제면 재결제 준비(`/payment/retry`)와
 닫힘 기억(`rememberPendingClose`)도 건너뛴다 — 클레임 결제 번호(`CP…`)는 주문번호가 아니어서 `retry` 가 404 를 내고 결제창이 열리지 않았다.
+
+모바일에서 추가결제 창을 열 때도 주문 결제와 같이 승인키 요청(`/mobile/approval-key`)에 비회원 조회 토큰(`X-Guest-Order-Token`)을
+싣는다. 서버는 결제 건이 딸린 주문으로 주인을 판정하므로, 비회원 주문의 추가결제는 그 주문의 토큰이면 열리고 토큰이 없거나 만료되면
+401 이다. 신청서 화면에는 주문서 전용 결제 오류 모달이 없으므로, 클레임 결제의 결제창 열기 전 실패는 모두 `reportPaymentError()` 가
+문구를 담아 던지고 쇼핑몰 신청서 핸들러가 버튼 아래에 「주문 확인 정보가 만료되었습니다. 주문 조회에서 다시 결제해 주세요.」 같은 문구를
+보여 준다(계약: 쇼핑몰 `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` 「결제 플러그인 연동 계약」). 결제 설정 조회가 빈 응답이면
+빈 문구로 던져 신청서가 「결제를 시작하지 못했습니다.」로 대신한다. 주문 결제는 종전대로 결제 오류 모달이다(설정 조회 빈 응답은 종전대로 콘솔에만 남긴다, #855).
 <!-- @intent END -->

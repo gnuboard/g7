@@ -17,8 +17,8 @@
  * 그래서 이 파일은 **화면이 무엇을 그리는가** 를 고정한다. 여기서 참조가 발견되는 한, 그
  * 엔드포인트의 목록 응답은 첨부 이미지를 실어야 한다.
  *
- * 마킹은 아래 describe 블록마다 따로 붙인다 — 한 docblock 에서는 @scenario 가 첫 줄만 읽혀,
- * 여기에 두 화면을 나열하면 뒤엣것이 조용히 누락된다.
+ * 마킹은 각 it 바로 앞에 붙인다 — 파일·describe docblock 의 마킹은 어느 시험이 재는지 가리키지 않아
+ * 커버로 세지 않는다.
  */
 
 import fs from 'fs';
@@ -69,8 +69,7 @@ function readReviewCardRawViaTab(): string {
 }
 
 /**
- * @scenario surface=public_product_review_list,observation=consumer_screen
- * @effects review_list_images_are_consumed_by_screen
+ * 축 요약(마커 아님 — 평문): surface public_product_review_list, observation consumer_screen. 마킹은 각 it 앞에 있다.
  */
 describe('공개 상품상세 리뷰 탭 — 첨부 이미지 소비 (#518 / 공개 #76)', () => {
     // @scenario surface=public_product_review_list,observation=consumer_screen
@@ -122,8 +121,7 @@ describe('공개 상품상세 리뷰 탭 — 첨부 이미지 소비 (#518 / 공
 });
 
 /**
- * @scenario surface=admin_product_review_list,observation=consumer_screen
- * @effects review_list_images_are_consumed_by_screen
+ * 축 요약(마커 아님 — 평문): surface admin_product_review_list, observation consumer_screen. 마킹은 각 it 앞에 있다.
  */
 describe('관리자 리뷰 목록 — 첨부 이미지 소비 (#518 / 공개 #76)', () => {
     // @scenario surface=admin_product_review_list,observation=consumer_screen

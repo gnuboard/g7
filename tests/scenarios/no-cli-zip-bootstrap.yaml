@@ -1,0 +1,103 @@
+feature: 압축 풀기 부트스트랩 (FTP 전용 계정 — 무CLI 환경 지원 축 B / P4·G4)
+
+description: |
+  쉘도 PHP CLI 도 없고 FTP 만 주어지는 호스팅에서 배포 ZIP 을 서버에서 푸는 단일 진입
+  파일(`g7-setup.php`). 이 파일이 도는 시점에는 아직 아무것도 풀리지 않았으므로 코어·
+  인스톨러의 어떤 코드도 require 할 수 없고, 필요한 판정을 자기 안에 갖는다.
+
+  이 경로는 **인증되지 않은 파일 쓰기 표면**이다. 그래서 성립 조건이 넷이다:
+    1. 설치가 끝난 사이트에서는 동작하지 않는다 (판정은 인스톨러 진입 가드와 같은 규칙).
+    2. 최초 실행 시 만들어지는 1회용 확인 번호를 요구한다 — 그 번호는 서버 파일에 적히므로
+       **파일 접근 권한이 곧 인증**이다. 6자리는 원격 대입 표면이라 지수 지연 + 잠금 +
+       번호 재발급을 함께 건다. 잠금은 **번호 추측에만** 걸린다 (이미 인증된 브라우저의
+       해제를 멈추면 원격에서 성립하는 서비스 거부가 된다).
+    3. 압축 안의 경로 순회를 거부한다 — 안전한 엔트리 한 개도 쓰지 않고 계획 단계에서 멈춘다.
+    4. 완료 후 진입 파일·ZIP·상태·번호 파일을 스스로 지운다. 지우지 못하면 화면에 알린다.
+
+  해제 전략은 `ZipArchive` 단독이다. `PharData` 는 경로 100바이트 제한으로 파일을 조용히
+  누락시킨 선례가 있어 쓰지 않고, 외부 명령은 이 파일의 존재 이유와 정면으로 어긋난다.
+
+  재개 규약: 처리한 엔트리 개수를 상태 파일에 남기고 브라우저가 이어서 호출한다. 라우팅을
+  가로채는 루트 파일(`.htaccess`·`index.php`·`web.config`)은 **맨 마지막에** 쓴다 — 그 둘이
+  먼저 놓이면 모든 요청이 `public/` 으로 위임되어 이 파일 자신이 브라우저에서 사라지고,
+  그 순간 재개가 불가능해진다.
+
+axes:
+  archive: [g7_payload, traversal, foreign, absent]   # 대상 압축 파일의 성격
+  token: [valid, invalid, exhausted, session]         # 인증 수단과 그 상태
+  entry: [fresh, resume, completed_site]              # 진입 상황
+
+exclusions:
+  # 완료된 사이트는 인증 **이전에** 차단된다 — 토큰·압축 축이 성립하지 않는다.
+  - { entry: completed_site, token: invalid, reason: "완료 판정이 인증보다 앞서 차단한다" }
+  - { entry: completed_site, token: exhausted, reason: "동일 — 시도 제한에 도달할 기회가 없다" }
+  - { entry: completed_site, token: session, reason: "동일 — 세션 발급 경로가 열리지 않는다" }
+  - { entry: completed_site, archive: traversal, reason: "압축을 열지 않고 차단하므로 내용 축이 무의미" }
+  - { entry: completed_site, archive: foreign, reason: "동일" }
+  - { entry: completed_site, archive: absent, reason: "동일" }
+  # 압축 파일이 없으면 번호도 발급하지 않는다 — 인증·재개 축이 성립하지 않는다.
+  - { archive: absent, token: invalid, reason: "번호를 발급하지 않으므로 오입력이 성립하지 않는다" }
+  - { archive: absent, token: exhausted, reason: "동일" }
+  - { archive: absent, token: session, reason: "동일 — 세션은 해제 성공에서만 발급된다" }
+  - { archive: absent, entry: resume, reason: "해제가 시작된 적이 없어 재개 상태가 없다" }
+  # 거부되는 압축은 계획 단계에서 멈춘다 — 진행 인덱스가 생기지 않아 재개·시도 제한 축 밖이다.
+  - { archive: traversal, token: invalid, reason: "인증 실패는 압축을 열기 전이라 내용 축과 무관" }
+  - { archive: traversal, token: exhausted, reason: "동일" }
+  - { archive: traversal, token: session, reason: "세션은 해제 성공에서만 발급된다" }
+  - { archive: traversal, entry: resume, reason: "계획 단계에서 멈춰 진행 인덱스가 생기지 않는다" }
+  - { archive: foreign, token: invalid, reason: "인증 실패는 압축을 열기 전이라 내용 축과 무관" }
+  - { archive: foreign, token: exhausted, reason: "동일" }
+  - { archive: foreign, token: session, reason: "세션은 해제 성공에서만 발급된다" }
+  - { archive: foreign, entry: resume, reason: "계획 단계에서 멈춰 진행 인덱스가 생기지 않는다" }
+  # 인증 실패 축은 최초 진입에서 판정된다 — 재개는 이미 인증을 통과한 상태다.
+  - { archive: g7_payload, token: invalid, entry: resume, reason: "재개는 인증을 통과한 뒤의 상태" }
+  - { archive: g7_payload, token: exhausted, entry: resume, reason: "동일" }
+  - { archive: g7_payload, token: session, entry: fresh, reason: "세션 키는 최초 인증 성공에서만 생긴다" }
+
+effects:
+  # 해제 본체
+  - zip_bootstrap_strips_wrapper_directory
+  - zip_bootstrap_resumes_from_recorded_entry_index
+  - zip_bootstrap_defers_routing_root_files_to_final_request
+  - zip_bootstrap_refresh_preserves_progress_and_session
+  - zip_bootstrap_self_deletes_entry_archive_and_state
+  # 확인 번호 (원격 대입 표면)
+  - zip_bootstrap_rejects_wrong_confirmation_number_without_writing
+  - zip_bootstrap_empty_number_is_not_counted_as_attempt
+  - zip_bootstrap_guard_blocks_number_file_without_access_compat
+  - zip_bootstrap_locks_and_reissues_after_attempt_limit
+  - zip_bootstrap_lock_does_not_stall_authenticated_session
+  - zip_bootstrap_reissues_number_after_browser_session_loss
+  - zip_bootstrap_forgets_number_hash_after_first_auth
+  - zip_bootstrap_serializes_attempt_judgment_under_state_lock
+  # 압축 내용 판정
+  - zip_bootstrap_rejects_path_traversal_entries
+  - zip_bootstrap_rejects_non_g7_archive
+  - zip_bootstrap_issues_no_number_without_archive
+  # 운영자 루트 파일 (.htaccess · web.config)
+  - zip_bootstrap_preserves_operator_root_file_outside_g7_block
+  - zip_bootstrap_refuses_unmergeable_operator_root_file
+  # 진입 가드
+  - zip_bootstrap_refuses_on_completed_site
+  - zip_bootstrap_refuses_when_env_completion_flag_set
+  - zip_bootstrap_completion_predicate_matches_installer_guard
+  # 소스 계약 (다른 파일과의 관계 — 흐름 테스트가 재지 못하는 축)
+  - zip_bootstrap_deferred_root_files_match_core_protection_list
+  - zip_bootstrap_uses_ziparchive_only
+  - zip_bootstrap_confirmation_number_length_is_approved
+  - zip_bootstrap_self_name_constant_matches_file
+  - zip_bootstrap_ships_in_release_payload
+  - zip_bootstrap_screen_tokenizes_colors_for_dark_mode
+  - zip_bootstrap_screen_inherits_installer_color_tokens
+  - zip_bootstrap_dictionary_locales_are_symmetric
+
+test_files:
+  - tests/Unit/Installer/ZipBootstrapFlowTest.php
+  - tests/Unit/Installer/ZipBootstrapContractTest.php
+
+# 브라우저 실측(§9 S3)이 담당하는 축 — 여기서 선언하지 않는 이유
+#
+# 라이트/다크 × 3디바이스 렌더링, FTP 클라이언트로 번호 파일을 여는 실제 동선, 84MB 급
+# 배포 ZIP 의 분할 해제 소요는 하네스가 만들 수 없다. 그 축은 격리된 검증 환경에서 사람이
+# 직접 수행하고 결과를 별도 보고서에 기록한다. 이 매니페스트가 잠그는 것은 그 실측이 시작되기
+# 전에 성립해야 하는 판정·계약이다.

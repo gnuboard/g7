@@ -98,6 +98,16 @@ interface CategoryRepositoryInterface
     public function findBySlug(string $slug, array $with = [], bool $withCounts = false): ?Category;
 
     /**
+     * slug 목록으로 카테고리를 한 번에 조회하고 slug 키 맵으로 반환합니다(관계와 집계 없음).
+     *
+     * slug 는 유일 제약이 없다 — 같은 slug 가 여럿이면 id 가 가장 작은 행을 쓴다.
+     *
+     * @param  array<int, string>  $slugs  카테고리 slug 목록
+     * @return Collection<string, Category> slug => 카테고리
+     */
+    public function findBySlugsKeyed(array $slugs): Collection;
+
+    /**
      * 공개 화면용으로 slug 카테고리를 조회합니다 (활성 여부는 호출자가 판정).
      *
      * 활성 자식(정렬순)과 이미지를 함께 싣는다. 상품 수는 공개 상품 목록과 같은 기준(전시 상품)으로 자신·활성 자식 모두

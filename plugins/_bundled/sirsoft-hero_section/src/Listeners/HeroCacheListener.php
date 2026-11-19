@@ -1,0 +1,211 @@
+<?php
+
+namespace Plugins\Sirsoft\HeroSection\Listeners;
+
+use App\Contracts\Extension\HookListenerInterface;
+use Plugins\Sirsoft\HeroSection\Models\Banner;
+use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
+use Plugins\Sirsoft\HeroSection\Services\PublicHeroService;
+
+/**
+ * 사용자 화면 공개 캐시 비우기 — 배너가 바뀌면 그 자리(위치 + 대상), 위치 설정이 바뀌면 그 위치의 모든 대상의 모든 언어 캐시를 무효로 한다.
+ *
+ * 저장 직후 사용자 화면에 바로 반영돼야 하므로 모두 `sync` 로 돈다(큐로 미루면 그사이 옛 배너가 보인다).
+ * 플러그인 설정(캐시 시간·공개 자산 디스크) 변경·비활성화 때는 전체를 비운다. 코어 환경설정의 드라이버 탭(공개 자산
+ * 디스크)을 저장해도 비운다 — 캐시에 담긴 배너의 `direct_url` 이 옛 디스크 기준으로 묵지 않게(#878).
+ */
+class HeroCacheListener implements HookListenerInterface
+{
+    /**
+     * 구독할 훅과 메서드 매핑 반환
+     *
+     * @return array<string, array<string, mixed>> 훅 이름 => 옵션
+     */
+    public static function getSubscribedHooks(): array
+    {
+        $sync = ['priority' => 5, 'sync' => true];
+
+        return [
+            'sirsoft-hero_section.banner.after_create' => ['method' => 'onBannerSaved'] + $sync,
+            'sirsoft-hero_section.banner.after_update' => ['method' => 'onBannerUpdated'] + $sync,
+            'sirsoft-hero_section.banner.after_delete' => ['method' => 'onBannerDeleted'] + $sync,
+            'sirsoft-hero_section.banner.after_bulk_status' => ['method' => 'onBulkStatus'] + $sync,
+            'sirsoft-hero_section.banner.after_bulk_delete' => ['method' => 'onBulkDelete'] + $sync,
+            'sirsoft-hero_section.banner.after_reorder' => ['method' => 'onReorder'] + $sync,
+            'sirsoft-hero_section.position_setting.after_update' => ['method' => 'onPositionSetting'] + $sync,
+            'sirsoft-hero_section.target_setting.after_update' => ['method' => 'onTargetSetting'] + $sync,
+            'sirsoft-hero_section.target_setting.after_reset' => ['method' => 'onTargetSetting'] + $sync,
+            'core.plugin_settings.after_save' => ['method' => 'onPluginSettingsSaved'] + $sync,
+            'core.plugin_settings.after_reset' => ['method' => 'onPluginSettingsSaved'] + $sync,
+            'core.settings.after_save' => ['method' => 'onCoreSettingsSaved'] + $sync,
+        ];
+    }
+
+    /**
+     * HeroCacheListener 생성자
+     *
+     * @param  PublicHeroService  $hero  공개 노출 서비스
+     */
+    public function __construct(private PublicHeroService $hero) {}
+
+    /**
+     * 인터페이스 기본 핸들러 (개별 메서드에서 처리)
+     *
+     * @param  mixed  ...$args  훅 인자
+     * @return void 반환값 없음
+     */
+    public function handle(...$args): void {}
+
+    /**
+     * 배너 등록 뒤 그 자리 캐시를 비웁니다.
+     *
+     * @param  Banner  $banner  등록한 배너
+     * @return void 반환값 없음
+     */
+    public function onBannerSaved(Banner $banner): void
+    {
+        $this->hero->invalidate($banner->position, $banner->target_key);
+    }
+
+    /**
+     * 배너 수정 뒤 옛·새 자리 캐시를 비웁니다 — 옛 대상은 수정 전 값(`target_key`)에서 읽는다.
+     *
+     * @param  Banner  $banner  수정한 배너
+     * @param  array<string, mixed>|null  $snapshot  수정 전 값
+     * @param  string|null  $previousPosition  수정 전 위치
+     * @return void 반환값 없음
+     */
+    public function onBannerUpdated(Banner $banner, ?array $snapshot = null, ?string $previousPosition = null): void
+    {
+        $this->hero->invalidate($banner->position, $banner->target_key);
+        $previousPosition ??= $snapshot['position'] ?? null;
+        $previousTarget = $snapshot['target_key'] ?? null;
+        if ($previousPosition !== null && ($previousPosition !== $banner->position || $previousTarget !== $banner->target_key)) {
+            $this->hero->invalidate($previousPosition, $previousTarget);
+        }
+    }
+
+    /**
+     * 배너 삭제 뒤 그 자리 캐시를 비웁니다.
+     *
+     * @param  int  $bannerId  삭제한 배너 ID
+     * @param  array<string, mixed>  $snapshot  삭제 전 값
+     * @return void 반환값 없음
+     */
+    public function onBannerDeleted(int $bannerId, array $snapshot = []): void
+    {
+        // 위치를 모르면(스냅샷 없음) 전체를 비운다
+        $this->hero->invalidate($snapshot['position'] ?? null, $snapshot['target_key'] ?? null);
+    }
+
+    /**
+     * 일괄 노출·비노출 뒤 관련 위치 캐시를 비웁니다.
+     *
+     * @param  array<int, int>  $ids  배너 ID 목록
+     * @param  bool  $isActive  바꾼 사용 여부
+     * @param  array<int, array<string, mixed>>  $snapshots  바꾸기 전 값
+     * @return void 반환값 없음
+     */
+    public function onBulkStatus(array $ids, bool $isActive, array $snapshots = []): void
+    {
+        $this->invalidatePositions($snapshots);
+    }
+
+    /**
+     * 일괄 삭제 뒤 관련 위치 캐시를 비웁니다.
+     *
+     * @param  array<int, int>  $ids  배너 ID 목록
+     * @param  array<int, array<string, mixed>>  $snapshots  삭제 전 값
+     * @return void 반환값 없음
+     */
+    public function onBulkDelete(array $ids, array $snapshots = []): void
+    {
+        $this->invalidatePositions($snapshots);
+    }
+
+    /**
+     * 순서 변경 뒤 그 자리 캐시를 비웁니다.
+     *
+     * @param  string  $position  위치 키
+     * @param  array<int, int>  $ids  새 순서
+     * @param  string|null  $targetKey  대상 키 (정적 위치는 null)
+     * @return void 반환값 없음
+     */
+    public function onReorder(string $position, array $ids = [], ?string $targetKey = null): void
+    {
+        $this->hero->invalidate($position, $targetKey);
+    }
+
+    /**
+     * 위치 슬라이더 설정 변경 뒤 그 위치 캐시를 비웁니다.
+     *
+     * @param  PositionSetting  $setting  저장한 설정
+     * @param  array<string, mixed>  $snapshot  바꾸기 전 값
+     * @return void 반환값 없음
+     */
+    public function onPositionSetting(PositionSetting $setting, array $snapshot = []): void
+    {
+        $this->hero->invalidate($setting->position);
+    }
+
+    /**
+     * 대상 재정의 저장·초기화 뒤 그 대상의 공개 캐시만 비웁니다(같은 위치의 다른 대상·다른 위치는 그대로).
+     *
+     * @param  string  $position  위치 키
+     * @param  string  $targetKey  대상 키
+     * @param  mixed  ...$rest  재정의 값·바꾸기 전 값(쓰지 않는다)
+     * @return void 반환값 없음
+     */
+    public function onTargetSetting(string $position, string $targetKey, ...$rest): void
+    {
+        $this->hero->invalidate($position, $targetKey);
+    }
+
+    /**
+     * 이 플러그인의 설정(캐시 시간)이 바뀌면 전체 캐시를 비웁니다. 힌트만 다시 맞추는 저장은 건너뛴다 — 공개 응답과 무관하고,
+     * 한 위치의 첫 배너를 등록했다고 다른 위치 캐시까지 비우면 안 된다(그 위치 캐시는 배너·위치 설정 훅이 이미 비운다).
+     *
+     * @param  mixed  ...$args  코어 훅 인자 (첫 인자: 플러그인 식별자)
+     * @return void 반환값 없음
+     */
+    public function onPluginSettingsSaved(...$args): void
+    {
+        if (($args[0] ?? null) === 'sirsoft-hero_section' && ! SlotWidthHintListener::syncing()) {
+            $this->hero->invalidate();
+        }
+    }
+
+    /**
+     * 코어 환경설정의 드라이버 탭이 저장되면 전체 캐시를 비웁니다 — 공개 자산 디스크가 바뀌면 새 업로드의 주소 모양이
+     * 달라진다. 탭 이름을 알 수 없는 호출(인자 모양 변경)도 비운다(비우는 쪽이 안전).
+     *
+     * @param  mixed  ...$args  코어 훅 인자 (string $tab, array $settings, mixed $result)
+     * @return void 반환값 없음
+     */
+    public function onCoreSettingsSaved(...$args): void
+    {
+        $tab = $args[0] ?? null;
+        if (! is_string($tab) || $tab === 'drivers') {
+            $this->hero->invalidate();
+        }
+    }
+
+    /**
+     * 스냅샷들의 자리 캐시를 비웁니다(같은 자리는 한 번).
+     *
+     * @param  array<int, array<string, mixed>>  $snapshots  배너 스냅샷
+     * @return void 반환값 없음
+     */
+    private function invalidatePositions(array $snapshots): void
+    {
+        $placements = [];
+        foreach ($snapshots as $snapshot) {
+            if (isset($snapshot['position'])) {
+                $placements[$snapshot['position']."\0".($snapshot['target_key'] ?? '')] = [$snapshot['position'], $snapshot['target_key'] ?? null];
+            }
+        }
+        foreach ($placements as [$position, $targetKey]) {
+            $this->hero->invalidate($position, $targetKey);
+        }
+    }
+}

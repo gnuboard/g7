@@ -4,8 +4,7 @@
  * `html-editor.json` 이 `mode: "replace"` 라 코어 HtmlEditor 가 렌더되지 않는다.
  * 편집기를 못 세우면 사용자에게는 빈 div 만 남아 글을 쓸 방법이 없었다.
  *
- * @scenario custom_source=none
- * @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
+ * 시나리오 조합(자체 호스팅 자산 실패 → 평문 입력 폴백·재시도 안내·편집기 복구)은 각 시험 앞 주석에 단다.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -36,24 +35,48 @@ describe('CKEditor5 textarea 폴백', () => {
     });
 
     describe('단일 모드', () => {
+        // @scenario asset_class=vendored, outcome=failed
+        // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('textarea 를 세우고 초기 내용을 채운다', () => {
-            renderTextareaFallback({
+            // jsdom 27(cssstyle 5)은 `border` 단축 속성이 섞인 cssText 를 통째로 버린다(브라우저는 정상).
+            // 그래서 읽힌 style 이 아니라 폴백이 써 넣은 cssText 를 쓰는 순간에 기록해 단언한다.
+            const proto = window.CSSStyleDeclaration.prototype;
+            const original = Object.getOwnPropertyDescriptor(proto, 'cssText')!;
+            const written: string[] = [];
+            Object.defineProperty(proto, 'cssText', {
+                configurable: true,
+                get() {
+                    return original.get!.call(this);
+                },
+                set(value: string) {
+                    written.push(value);
+                    original.set!.call(this, value);
+                },
+            });
+
+            try {
+                renderTextareaFallback({
                 container,
                 name: 'content',
                 height: 400,
                 readOnly: false,
                 multilingual: false,
                 initialContent: '기존 본문',
-            });
+                });
+            } finally {
+                Object.defineProperty(proto, 'cssText', original);
+            }
 
             const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
 
             expect(textarea).not.toBeNull();
             expect(textarea.name).toBe('content');
             expect(textarea.value).toBe('기존 본문');
-            expect(textarea.style.height).toBe('400px');
+            expect(written.some((css) => css.split(';').includes('height:400px'))).toBe(true);
         });
 
+        // @scenario asset_class=vendored, outcome=failed
+        // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('폴백 렌더 즉시 _mode 를 text 로 못 박는다 (아무것도 입력하지 않고 저장해도 평문 처리)', () => {
             renderTextareaFallback({
                 container,
@@ -70,6 +93,8 @@ describe('CKEditor5 textarea 폴백', () => {
             );
         });
 
+        // @scenario asset_class=vendored, outcome=failed
+        // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('입력이 form.content 로 동기화된다', () => {
             renderTextareaFallback({
                 container,
@@ -118,6 +143,8 @@ describe('CKEditor5 textarea 폴백', () => {
             expect((container.querySelector('textarea') as HTMLTextAreaElement).readOnly).toBe(true);
         });
 
+        // @scenario asset_class=vendored, outcome=failed
+        // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('이미 폴백이 서 있으면 다시 만들지 않는다 (입력 중이던 내용 보존)', () => {
             renderTextareaFallback({
                 container, name: 'content', height: 400, readOnly: false,
@@ -147,6 +174,8 @@ describe('CKEditor5 textarea 폴백', () => {
             activeLocale: 'ko',
         };
 
+        // @scenario asset_class=vendored, outcome=failed
+        // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('탭을 세우고 활성 로케일 값을 보여준다', () => {
             renderTextareaFallback({
                 ...base,
@@ -154,13 +183,15 @@ describe('CKEditor5 textarea 폴백', () => {
                 contentMap: { ko: '한국어 본문', en: 'English body' },
             });
 
-            const tabs = container.querySelectorAll('.ckeditor5-locale-tabs button');
+            const tabs = container.querySelectorAll('.ckeditor-locale-tabs button');
             const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
 
             expect(tabs).toHaveLength(3);
             expect(textarea.value).toBe('한국어 본문');
         });
 
+        // @scenario asset_class=vendored, outcome=failed
+        // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('탭 전환 시 현재 입력을 커밋하고 다음 로케일 값을 채운다', () => {
             renderTextareaFallback({
                 ...base,
@@ -184,6 +215,8 @@ describe('CKEditor5 textarea 폴백', () => {
             expect(updates['form.content_mode']).toBe('text');
         });
 
+        // @scenario asset_class=vendored, outcome=failed
+        // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('입력이 있는 로케일 탭에만 체크 표시가 뜬다', () => {
             renderTextareaFallback({
                 ...base,
@@ -200,6 +233,8 @@ describe('CKEditor5 textarea 폴백', () => {
     });
 
     describe('재시도 승계', () => {
+        // @scenario asset_class=vendored, outcome=failed
+        // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('폴백에 입력한 내용을 편집기로 넘길 수 있다 (단일)', () => {
             renderTextareaFallback({
                 container, name: 'content', height: 400, readOnly: false,
@@ -212,6 +247,8 @@ describe('CKEditor5 textarea 폴백', () => {
             expect(getTextareaFallbackValues(container)).toBe('폴백에서 쓴 글');
         });
 
+        // @scenario asset_class=vendored, outcome=failed
+        // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('폴백에 입력한 내용을 편집기로 넘길 수 있다 (다국어 — 커밋 전 현재 탭 포함)', () => {
             renderTextareaFallback({
                 container, name: 'content', height: 400, readOnly: false,
@@ -228,6 +265,8 @@ describe('CKEditor5 textarea 폴백', () => {
             });
         });
 
+        // @scenario asset_class=vendored, outcome=failed
+        // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('제거하면 컨테이너가 비고 폴백 판정이 false 가 된다', () => {
             renderTextareaFallback({
                 container, name: 'content', height: 400, readOnly: false,
@@ -240,6 +279,8 @@ describe('CKEditor5 textarea 폴백', () => {
             expect(container.innerHTML).toBe('');
         });
 
+        // @scenario asset_class=vendored, outcome=failed
+        // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('폴백이 없는 컨테이너에서는 승계할 값이 없다', () => {
             expect(getTextareaFallbackValues(container)).toBeNull();
             expect(removeTextareaFallback(container)).toBe(false);

@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 이슈 #139 리스너 큐 옵션. 선언 형태 × 배치 × timeout × 드라이버 × payload 의 곱 중 판정 지점이 독립인 대표값만 테스트별 @scenario 로 매핑한다 — 정규화(ListenerQueueOptions::normalize)·배치(QueueWorkerRegistry::resolve)·클램프·이벤트 ID 바인딩이 서로 다른 함수라 조합이 새 분기를 만들지 않는다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#139 리스너 큐 옵션. 선언 형태 × 배치 × timeout × 드라이버 × payload 의 곱 중 판정 지점이 독립인 대표값만 테스트별 @scenario 로 매핑한다 — 정규화(ListenerQueueOptions::normalize)·배치(QueueWorkerRegistry::resolve)·클램프·이벤트 ID 바인딩이 서로 다른 함수라 조합이 새 분기를 만들지 않는다.
 # audit:allow scenario-scale-axis-required reason: 리스너 1개의 잡 옵션 적용 — 처리 규모 경로 무변경
 
 feature: hook_listener_queue_options

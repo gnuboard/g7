@@ -163,6 +163,8 @@
       <else>
         <sequence>
           <set-state target="local" :isAddingToCart="true"/>
+          <!-- 장바구니 키를 갖춘다 — 첫 방문 비회원의 키 발급이 init 상한(3초)을 넘겨 아직 없으면 그 발급을 기다리거나 다시 요청한다 -->
+          <action handler="ensureCartKey"/>
           <api-call auth_mode="optional" target="/api/modules/sirsoft-ecommerce/cart" method="POST" body="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 ? { product_id: product.data?.id, items: (_local.selectedOptionItems ?? []).map(item => ({ product_option_id: item.optionId, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { product_id: product.data?.id, items: [{ quantity: _local.noOptionQuantity ?? 1, additional_option_selections: Object.entries(_local.noOptionAdditionalSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: _local.noOptionAdditionalCustomTexts?.[Number(gid)] })) }] }}}">
             <success>
               <!-- 깊은 병합(기본)은 빈 객체 {} 로 이전 값을 지우지 못한다 — null 로 먼저 지우고 {} 로 다시 쓴다(7.1.1) -->
@@ -173,12 +175,11 @@
               <open-modal target="cart_added_modal"/>
             </success>
             <fail>
+              <!-- 추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다 -->
+              <open-modal if="{{error.error_code === 'required_fields_pending'}}" target="required_info_pending_modal"/>
               <set-state target="local" :isAddingToCart="false"/>
-              <toast type="error" message="{{error.errors?.message ?? error.message}}"/>
+              <toast if="{{error.error_code !== 'required_fields_pending'}}" type="error" message="{{error.errors?.message ?? error.message}}"/>
             </fail>
-            <field name="headers">
-              <field name="X-Cart-Key" value="{{_global.cartKey}}"/>
-            </field>
           </api-call>
         </sequence>
       </else>
@@ -213,6 +214,8 @@
       <else>
         <sequence>
           <set-state target="local" :isOrdering="true"/>
+          <!-- 장바구니 키를 갖춘다 — 첫 방문 비회원의 키 발급이 init 상한(3초)을 넘겨 아직 없으면 그 발급을 기다리거나 다시 요청한다 -->
+          <action handler="ensureCartKey"/>
           <!-- 바로 구매: 장바구니 미경유 — direct_items 로 바로 체크아웃(장바구니 오염 없음) -->
           <api-call auth_mode="optional" target="/api/modules/sirsoft-ecommerce/checkout" method="POST" body="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 ? { direct_items: (_local.selectedOptionItems ?? []).map(item => ({ product_id: product.data?.id, product_option_id: item.optionId, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { direct_items: [{ product_id: product.data?.id, quantity: _local.noOptionQuantity ?? 1, additional_option_selections: Object.entries(_local.noOptionAdditionalSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: _local.noOptionAdditionalCustomTexts?.[Number(gid)] })) }] }}}">
             <success>
@@ -230,12 +233,11 @@
               </conditions>
             </success>
             <fail>
+              <!-- 추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다 -->
+              <open-modal if="{{error.error_code === 'required_fields_pending'}}" target="required_info_pending_modal"/>
               <set-state target="local" :isOrdering="false"/>
-              <toast type="error" message="{{error.errors?.message ?? error.message}}"/>
+              <toast if="{{error.error_code !== 'required_fields_pending'}}" type="error" message="{{error.errors?.message ?? error.message}}"/>
             </fail>
-            <field name="headers">
-              <field name="X-Cart-Key" value="{{_global.cartKey}}"/>
-            </field>
           </api-call>
         </sequence>
       </else>
@@ -260,6 +262,8 @@
               <toast type="success" message="{{response.data.added ? '$t:shop.wishlist_added' : '$t:shop.wishlist_removed'}}"/>
             </success>
             <fail>
+              <!-- 추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다 -->
+              <open-modal if="{{error.error_code === 'required_fields_pending'}}" target="required_info_pending_modal"/>
               <!-- 실패 시 원래 상태로 복원 -->
               <set-state target="local" :wishlistLoading="false" isWishlisted="{{product.data?.is_wishlisted}}"/>
             </fail>
@@ -284,6 +288,13 @@
     <set-state target="local" :currentSelection="null" :additionalOptions="null" :reviewOptionFilters="null" :noOptionAdditionalSelections="null" :noOptionAdditionalCustomTexts="null" :noOptionAdditionalMultiCurrencyTotal="null" :noOptionTotalMultiCurrency="null" :purchaseAttempted="null"/>
     <set-state target="local" :selectedOptionItems="[]" :currentSelection="{}" :noOptionQuantity="1" :additionalOptions="{}" :noOptionAdditionalSelections="{}" :noOptionAdditionalCustomTexts="{}" :noOptionAdditionalTotal="0" :wishlistLoading="false" :isOrdering="false" :selectedCouponForDownload="null" :reviewsPage="1" :reviewsLoading="false" reviewSortBy="created_at_desc" :reviewPhotoOnly="false" reviewRating="" :reviewOptionFilters="{}" activeTab="{{query.tab ?? 'info'}}" :starNums="[5,4,3,2,1]" :starList="[1,2,3,4,5]"/>
   </init>
+  <slot name="page_top">
+    <!-- 상품 상세 상단 히어로 자리 — 상품마다 다른 배너를 붙일 수 있다. 히어로섹션 플러그인이 화면 주소의 상품 코드(route.product_code)를 대상으로 그 상품 배너 슬라이더를 붙인다. 붙인 플러그인이 없거나 그 대상에 배너가 없으면 아무것도 그리지 않는다.
+      본문 폭·화면 전체 중 어느 폭으로 그릴지는 붙는 확장이 정한다 — 그 기준이 되도록 본문 상자 클래스를 넘긴다(contentClass 기본·contentClassDesktop 데스크톱, _user_base main_content 와 같은 값) -->
+    <extension-point name="product_hero" data-ref="product_hero_slot" contentClass="px-4" contentClassDesktop="max-w-7xl mx-auto px-8">
+      <default/>
+    </extension-point>
+  </slot>
   <slot name="content">
     <container data-type="layout" class="py-4">
       <responsive on="desktop" class="py-8"/>

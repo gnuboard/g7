@@ -1,0 +1,134 @@
+{
+    "comment": "E2E: tests/Playwright/specs/sso-enforcement.spec.ts 가 이 버튼(`sso_admin_login_button_{키}`)으로 관리자 회사 계정 로그인을 시작한다. 화면 폭·다크(§10 M14)는 F1 Chrome MCP 실측, 구운 JSON 계약은 Vitest\n     관리자 로그인 화면(admin_login_extensions)에 「회사 계정으로 로그인」 버튼 — 사용자 화면과 같은 버튼을 관리자 경로(guard=admin)로 연다.\n     돌아오면 코어가 인계 코드를 관리자 로그인 응답 분기(applyAdminLoginResult)로 넘긴다. 켜진 IdP 가 없으면 그리지 않는다.",
+    "extension_point": "admin_login_extensions",
+    "mode": "prepend",
+    "priority": 10,
+    "data_sources": [
+        {
+            "id": "ssoAdminPublicIdps",
+            "label_key": "$t:sirsoft-sso.editor.data_source.public_idps",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-sso/idps",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "params": {
+                "guard": "admin",
+                "redirect": "{{typeof query.redirect === 'string' ? query.redirect : ''}}"
+            },
+            "fallback": {
+                "data": []
+            },
+            "errorHandling": {
+                "default": {
+                    "comment": "관리자 로그인 화면 덧붙임 — 목록을 못 받으면 버튼만 그리지 않는다",
+                    "handler": "suppress"
+                }
+            },
+            "comment": "관리자 경로(guard=admin)로 켜진 IdP 목록 — 비로그인으로 읽는다. 빈 배열이면 회사 계정 줄 전체를 숨긴다"
+        }
+    ],
+    "components": [
+        {
+            "id": "sso_admin_login_buttons_section",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(ssoAdminPublicIdps?.data ?? []).length > 0}}",
+            "props": {
+                "className": "sso:mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "sso:flex sso:items-center sso:gap-3 sso:mb-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "sso:flex-1 sso:h-px sso:bg-gray-200 sso:dark:bg-gray-700"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-sso.buttons.company_account"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "sso:flex-1 sso:h-px sso:bg-gray-200 sso:dark:bg-gray-700"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "sso_admin_login_buttons",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "sso:flex sso:flex-col sso:gap-2"
+                    },
+                    "children": [
+                        {
+                            "id": "sso_admin_login_button_{{idp.key}}",
+                            "type": "basic",
+                            "name": "Button",
+                            "iteration": {
+                                "source": "ssoAdminPublicIdps?.data ?? []",
+                                "item_var": "idp"
+                            },
+                            "dataKey": "{{idp.key}}",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "sso:w-full sso:inline-flex sso:items-center sso:justify-center sso:gap-3 sso:px-4 sso:py-2 sso:text-sm sso:font-medium sso:rounded-lg sso:border sso:cursor-pointer {{idp.button_style?.bg ? '' : 'sso:bg-white sso:dark:bg-gray-800 sso:text-gray-900 sso:dark:text-white sso:border-gray-300 sso:dark:border-gray-600 sso:hover:bg-gray-50 sso:dark:hover:bg-gray-700'}}"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "comment": "관리자 경로 왕복 시작 — 시작 주소에 guard=admin 이 실려 있다",
+                                    "type": "click",
+                                    "handler": "sirsoft-sso.startLogin",
+                                    "params": {
+                                        "url": "{{idp.start_url}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "sso:w-full sso:inline-flex sso:items-center sso:justify-center sso:gap-3 sso:px-4 sso:py-3 sso:text-sm sso:font-medium sso:rounded-lg sso:border sso:cursor-pointer {{idp.button_style?.bg ? '' : 'sso:bg-white sso:dark:bg-gray-800 sso:text-gray-900 sso:dark:text-white sso:border-gray-300 sso:dark:border-gray-600 sso:hover:bg-gray-50 sso:dark:hover:bg-gray-700'}}",
+                                "style": "{{idp.button_style?.bg ? 'background-color:' + idp.button_style.bg + ';color:' + (idp.button_style.fg ?? '#ffffff') + ';border-color:' + (idp.button_style.border ?? idp.button_style.bg) : ''}}",
+                                "aria-label": "$t:sirsoft-sso.buttons.login_with|idp={{idp.label}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "aria-hidden": "true",
+                                        "className": "sso:inline-flex sso:items-center sso:justify-center sso:w-6 sso:h-6 sso:rounded-full sso:ring-1 sso:ring-current sso:text-xs sso:font-semibold"
+                                    },
+                                    "text": "{{idp.initial}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-sso.buttons.login_with|idp={{idp.label}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services;
 
 use App\Services\DriverRegistryService;
+use App\Support\PhpExtensionProbe;
 use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
 use Predis\Client;
 use Tests\TestCase;
@@ -17,6 +18,11 @@ class DriverRegistryServiceUsabilityTest extends TestCase
 {
     private DriverRegistryService $service;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -32,6 +38,8 @@ class DriverRegistryServiceUsabilityTest extends TestCase
      * @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_present,attachment_disk=local_default
      *
      * @effects s3_disk_resolves
+     *
+     * @return void 반환값 없음
      */
     public function test_s3_usability_matches_adapter_presence(): void
     {
@@ -49,6 +57,12 @@ class DriverRegistryServiceUsabilityTest extends TestCase
      * redis 드라이버 가용성이 phpredis 확장 또는 predis 존재와 일치하는지 테스트합니다.
      *
      * predis 는 composer require 로 코어에 포함되므로(#99 A2) 항상 true 여야 합니다.
+     *
+     * @scenario surface=driver_catalog
+     *
+     * @effects redis_usable_through_bundled_predis
+     *
+     * @return void 반환값 없음
      */
     public function test_redis_usability_matches_client_presence(): void
     {
@@ -71,6 +85,8 @@ class DriverRegistryServiceUsabilityTest extends TestCase
      * @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_absent,attachment_disk=local_default
      *
      * @effects unusable_driver_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_memcached_usability_matches_extension(): void
     {
@@ -87,7 +103,40 @@ class DriverRegistryServiceUsabilityTest extends TestCase
     }
 
     /**
+     * 이미지 엔진(gd·imagick)의 가용성이 PHP 확장 유무를 따르고, 없으면 사유를 냅니다 (#869).
+     *
+     * 사유는 저장 422 문구(`validation.settings.driver_unusable` 의 :reason)로 나간다.
+     *
+     * @scenario surface=driver_catalog
+     *
+     * @effects image_engine_usability_follows_php_extension
+     *
+     * @return void 반환값 없음
+     */
+    public function test_image_engine_usability_follows_php_extension(): void
+    {
+        $this->fakeExtensions(['gd' => true, 'imagick' => false]);
+
+        $this->assertTrue($this->service->isDriverUsable('image', 'gd'));
+        $this->assertNull($this->service->usabilityFailureReason('image', 'gd'));
+        $this->assertFalse($this->service->isDriverUsable('image', 'imagick'));
+        $this->assertSame(__('settings.driver_unusable_imagick_extension'), $this->service->usabilityFailureReason('image', 'imagick'));
+        $this->assertStringNotContainsString('settings.', $this->service->usabilityFailureReason('image', 'imagick'));
+
+        $this->fakeExtensions(['gd' => false, 'imagick' => true]);
+
+        $this->assertTrue($this->service->isDriverUsable('image', 'imagick'));
+        $this->assertSame(__('settings.driver_unusable_gd_extension'), $this->service->usabilityFailureReason('image', 'gd'));
+    }
+
+    /**
      * 능력 요구가 없는 드라이버(local/file 등)와 미지정 드라이버는 항상 사용 가능해야 합니다.
+     *
+     * @scenario surface=driver_catalog
+     *
+     * @effects capability_free_and_plugin_drivers_always_usable
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_and_capability_free_drivers_are_usable(): void
     {
@@ -100,6 +149,12 @@ class DriverRegistryServiceUsabilityTest extends TestCase
 
     /**
      * a5 회귀 — log 카테고리 Config 키가 실제 적용 키(stack.channels)와 일치해야 합니다.
+     *
+     * @scenario surface=driver_catalog
+     *
+     * @effects log_driver_written_to_stack_channels_as_array
+     *
+     * @return void 반환값 없음
      */
     public function test_log_config_key_matches_actual_applied_key(): void
     {
@@ -112,6 +167,12 @@ class DriverRegistryServiceUsabilityTest extends TestCase
 
     /**
      * log 카테고리의 Config 기록 값은 채널 배열 형태여야 합니다.
+     *
+     * @scenario surface=driver_catalog
+     *
+     * @effects log_driver_written_to_stack_channels_as_array
+     *
+     * @return void 반환값 없음
      */
     public function test_log_config_value_is_channel_array(): void
     {
@@ -121,6 +182,12 @@ class DriverRegistryServiceUsabilityTest extends TestCase
 
     /**
      * a6 회귀 — websocket 은 드라이버 ID 선택 설정이 없으므로 설정 키 매핑에서 제외되어야 합니다.
+     *
+     * @scenario surface=driver_catalog
+     *
+     * @effects settings_and_config_keys_resolved_per_category
+     *
+     * @return void 반환값 없음
      */
     public function test_websocket_settings_key_excluded(): void
     {
@@ -128,5 +195,35 @@ class DriverRegistryServiceUsabilityTest extends TestCase
             $this->service->getSettingsKey('websocket'),
             "websocket 은 불리언 websocket_enabled 뿐 — 종전 'websocket_driver' 는 어떤 저장 경로에도 없는 유령 키였다 (a6)"
         );
+    }
+
+    /**
+     * PHP 확장 조회기를 바꿔 이미지 엔진 확장의 유무를 흉내 냅니다.
+     *
+     * @param  array<string, bool>  $loaded  확장 이름 → 로드 여부 (없는 이름은 실제 값)
+     * @return void 반환값 없음
+     */
+    private function fakeExtensions(array $loaded): void
+    {
+        $this->app->instance(PhpExtensionProbe::class, new class($loaded) extends PhpExtensionProbe
+        {
+            /**
+             * 확장 로드 여부 표를 받습니다.
+             *
+             * @param  array<string, bool>  $loaded  확장 이름 → 로드 여부
+             */
+            public function __construct(private array $loaded) {}
+
+            /**
+             * 주입한 표로 확장 로드 여부를 답합니다.
+             *
+             * @param  string  $extension  확장 이름
+             * @return bool 로드돼 있으면 true
+             */
+            public function loaded(string $extension): bool
+            {
+                return $this->loaded[$extension] ?? parent::loaded($extension);
+            }
+        });
     }
 }

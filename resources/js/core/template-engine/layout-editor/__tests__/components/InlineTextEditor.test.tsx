@@ -7,7 +7,6 @@
  *  - 빈값 경고 표시.
  */
 
-import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { InlineTextEditor } from '../../components/InlineTextEditor';
@@ -19,6 +18,10 @@ const box: OverlayBox = { left: 10, top: 20, width: 100, height: 24, scale: 1 };
 afterEach(() => cleanup());
 
 describe('InlineTextEditor', () => {
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_initial_value_injected
+   */
   it('초기값을 contentEditable 에 주입한다', () => {
     render(
       <InlineTextEditor box={box} initialValue="환영합니다" isCustomKey={false} t={t} onCommit={vi.fn()} onCancel={vi.fn()} />,
@@ -26,6 +29,10 @@ describe('InlineTextEditor', () => {
     expect(screen.getByTestId('g7le-inline-text-editable').textContent).toBe('환영합니다');
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_enter_commits
+   */
   it('Enter → onCommit(현재값)', () => {
     const onCommit = vi.fn();
     render(
@@ -37,6 +44,10 @@ describe('InlineTextEditor', () => {
     expect(onCommit).toHaveBeenCalledWith('new value');
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_escape_cancels_without_commit
+   */
   it('Escape → onCancel (onCommit 미발화)', () => {
     const onCommit = vi.fn();
     const onCancel = vi.fn();
@@ -49,6 +60,10 @@ describe('InlineTextEditor', () => {
     expect(onCommit).not.toHaveBeenCalled();
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_blur_commits
+   */
   it('blur → onCommit', () => {
     const onCommit = vi.fn();
     render(
@@ -59,6 +74,10 @@ describe('InlineTextEditor', () => {
     expect(onCommit).toHaveBeenCalledWith('hello');
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_enter_then_blur_commits_once
+   */
   it('Enter 후 blur 가 와도 onCommit 은 1회만 (중복 가드)', () => {
     const onCommit = vi.fn();
     render(
@@ -70,6 +89,10 @@ describe('InlineTextEditor', () => {
     expect(onCommit).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_key_hint_existing_or_new
+   */
   it('커스텀 키 노드 → "기존 키" 힌트, 평문 → "신규 키" 힌트', () => {
     const { rerender } = render(
       <InlineTextEditor box={box} initialValue="x" isCustomKey t={t} onCommit={vi.fn()} onCancel={vi.fn()} />,
@@ -83,6 +106,10 @@ describe('InlineTextEditor', () => {
     expect(screen.getByText(/new_key_hint/)).toBeTruthy();
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_hint_badge_opens_translations
+   */
   it('onOpenTranslations 제공 시 힌트 배지가 클릭형 버튼 → 클릭 시 콜백', () => {
     const onOpenTranslations = vi.fn();
     render(
@@ -104,6 +131,10 @@ describe('InlineTextEditor', () => {
     expect(onOpenTranslations).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_hint_badge_static_without_handler
+   */
   it('onOpenTranslations 미제공 시 배지는 정적 안내(버튼 아님)', () => {
     render(
       <InlineTextEditor box={box} initialValue="x" isCustomKey={false} t={t} onCommit={vi.fn()} onCancel={vi.fn()} />,
@@ -113,6 +144,10 @@ describe('InlineTextEditor', () => {
     expect(screen.getByText(/new_key_hint/)).toBeTruthy();
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_empty_value_warns
+   */
   it('빈값일 때 경고 표시', () => {
     render(
       <InlineTextEditor box={box} initialValue="" isCustomKey={false} t={t} onCommit={vi.fn()} onCancel={vi.fn()} />,
@@ -120,6 +155,10 @@ describe('InlineTextEditor', () => {
     expect(screen.getByTestId('g7le-inline-text-editor-empty-warn')).toBeTruthy();
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_mirrors_class_and_style
+   */
   it('mirrorClassName/Style 을 contentEditable 에 명령형 반영', () => {
     const { rerender } = render(
       <InlineTextEditor box={box} initialValue="x" isCustomKey={false} t={t} onCommit={vi.fn()} onCancel={vi.fn()}
@@ -136,6 +175,10 @@ describe('InlineTextEditor', () => {
     expect(el.className).toBe('text-lg font-bold');
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_class_color_not_overridden_inline
+   */
   it('classToken 색(text-blue-600)이 인라인 폴백색에 가려지지 않는다 — 인라인 color 미설정', () => {
     // mirrorClassName 에 색 토큰이 있고 mirrorStyle.color 가 없으면, 편집 오버레이는 인라인 color 를
     // 깔지 않아야 한다(template CSS 의 색 토큰이 적용되도록). 종전엔 항상 '#0f172a' 폴백을 깔아
@@ -157,6 +200,10 @@ describe('InlineTextEditor', () => {
     expect(el.style.color).toBe('');
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_style_color_applied
+   */
   it('styleProp 색(mirrorStyle.color)은 그대로 적용 (className 무관)', () => {
     render(
       <InlineTextEditor box={box} initialValue="x" isCustomKey={false} t={t} onCommit={vi.fn()} onCancel={vi.fn()}
@@ -166,6 +213,10 @@ describe('InlineTextEditor', () => {
     expect(el.style.color).toBe('rgb(220, 38, 38)');
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_fallback_color_without_source
+   */
   it('색 출처가 전혀 없으면 가독성 폴백색(#0f172a) 적용', () => {
     render(
       <InlineTextEditor box={box} initialValue="x" isCustomKey={false} t={t} onCommit={vi.fn()} onCancel={vi.fn()} />,
@@ -174,6 +225,10 @@ describe('InlineTextEditor', () => {
     expect(el.style.color).toBe('rgb(15, 23, 42)');
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_light_color_darkens_background
+   */
   it('흰 글자색(mirrorStyle.color) → 오버레이 배경을 어둡게 전환 (흰 배경 위 흰 글자 묻힘 회귀)', () => {
     // 글자색이 흰색인 노드(원래 어두운 배경 위라 캔버스에선 보임)를 인라인 편집할 때,
     // 오버레이가 흰 배경을 깔면 흰 글자 + 흰 배경으로 타이핑 텍스트가 안 보인다.
@@ -191,6 +246,10 @@ describe('InlineTextEditor', () => {
     expect(el.style.background).toBe('rgb(15, 23, 42)');
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_dark_color_keeps_white_background
+   */
   it('어두운 글자색(mirrorStyle.color) → 오버레이 배경은 흰색 유지', () => {
     render(
       <InlineTextEditor box={box} initialValue="x" isCustomKey={false} t={t} onCommit={vi.fn()} onCancel={vi.fn()}
@@ -200,6 +259,10 @@ describe('InlineTextEditor', () => {
     expect(el.style.background).toBe('rgb(255, 255, 255)');
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_no_color_keeps_white_background
+   */
   it('색 출처가 없으면 오버레이 배경은 흰색 유지(폴백 글자색이 어두우므로)', () => {
     render(
       <InlineTextEditor box={box} initialValue="x" isCustomKey={false} t={t} onCommit={vi.fn()} onCancel={vi.fn()} />,
@@ -208,6 +271,10 @@ describe('InlineTextEditor', () => {
     expect(el.style.background).toBe('rgb(255, 255, 255)');
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_light_color_darkens_background
+   */
   it('#rrggbb 흰색 글자색도 어두운 배경으로 전환 (hex 색 파싱)', () => {
     render(
       <InlineTextEditor box={box} initialValue="x" isCustomKey={false} t={t} onCommit={vi.fn()} onCancel={vi.fn()}
@@ -217,6 +284,10 @@ describe('InlineTextEditor', () => {
     expect(el.style.background).toBe('rgb(15, 23, 42)');
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_light_color_darkens_background
+   */
   it('밝은 회색(#e5e7eb) 글자색도 어두운 배경으로 전환 (밝기 임계값)', () => {
     render(
       <InlineTextEditor box={box} initialValue="x" isCustomKey={false} t={t} onCommit={vi.fn()} onCancel={vi.fn()}
@@ -226,6 +297,10 @@ describe('InlineTextEditor', () => {
     expect(el.style.background).toBe('rgb(15, 23, 42)');
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_dark_color_keeps_white_background
+   */
   it('중간 명도 회색(#6b7280) 글자색은 흰 배경 유지 (대비 확보)', () => {
     // 다크 모드에서 흔한 중간 회색. 임계값(180) 미만이라 어둡다고 판정 → 흰 배경(대비 OK).
     render(
@@ -236,6 +311,10 @@ describe('InlineTextEditor', () => {
     expect(el.style.background).toBe('rgb(255, 255, 255)');
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_node_effective_color_drives_contrast
+   */
   it('nodeEffectiveColor(흰색) → 어두운 배경 + 그 색을 명시 글자색으로 적용 (다크 컨텍스트 패리티)', () => {
     // 다크 모드에서 dark:text-white 노드는 캔버스에선 흰 글자지만, 오버레이는 다크 컨텍스트 밖이라
     // 자체 computed 로는 색이 어긋난다. EditorCanvasOverlay 가 측정한 nodeEffectiveColor 를 받아
@@ -250,6 +329,10 @@ describe('InlineTextEditor', () => {
     expect(el.style.color).toBe('rgb(255, 255, 255)');
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_node_effective_color_drives_contrast
+   */
   it('nodeEffectiveColor(oklch 밝은 L) → 어두운 배경 (Tailwind v4 oklch 파싱)', () => {
     // 이 템플릿(Tailwind v4)은 oklch 색을 쓴다. rgb 파싱이 안 되던 결함 — oklch L 값으로 판정.
     render(
@@ -261,6 +344,10 @@ describe('InlineTextEditor', () => {
     expect(el.style.color).toBe('oklch(0.985 0.002 247.839)');
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_node_effective_color_drives_contrast
+   */
   it('nodeEffectiveColor(oklch 어두운 L) → 흰 배경 유지', () => {
     render(
       <InlineTextEditor box={box} initialValue="x" isCustomKey={false} t={t} onCommit={vi.fn()} onCancel={vi.fn()}
@@ -270,6 +357,10 @@ describe('InlineTextEditor', () => {
     expect(el.style.background).toBe('rgb(255, 255, 255)');
   });
 
+  /**
+   * @scenario subject=inline_text_editor
+   * @effects inline_text_node_effective_color_beats_mirror_style
+   */
   it('nodeEffectiveColor 가 mirrorStyle.color 보다 우선 (대상 노드 측정값 신뢰)', () => {
     // mirror 는 어두운 인라인색이라도, 대상 노드의 캔버스 측정색(흰색)이 우선 → 어두운 배경.
     render(

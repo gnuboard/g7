@@ -16,9 +16,7 @@ use Tests\TestCase;
  * `style-src 'self'` 를 걸면 요청 한도 초과·세션 만료 같은 화면이 무스타일로 나왔다. 코어가 402·419·429 와
  * 묶음 뷰(4xx·5xx)를 직접 두어 다른 오류 화면과 같은 정적 CSS(`g7-standalone.css`)로 그린다.
  *
- * @scenario case=standalone_pages_no_inline_style
- *
- * @effects fallback_error_pages_use_core_views
+ * 효과 요약(마커 아님 — 평문): fallback_error_pages_use_core_views — 각 시험 메서드 docblock 에 마킹한다.
  */
 class ErrorPagesNoInlineStyleTest extends TestCase
 {

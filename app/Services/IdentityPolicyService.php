@@ -33,6 +33,12 @@ use Illuminate\Http\Request;
 class IdentityPolicyService
 {
     /**
+     * 입력 검증 뒤로 미룬 라우트 정책 목록을 요청에 두는 속성 키 — `EnforceIdentityPolicy` 미들웨어가 넣고
+     * `enforceDeferredRoutePolicies()` 가 꺼내 강제한다(7.2.0).
+     */
+    public const DEFERRED_ROUTE_POLICIES_ATTRIBUTE = 'identity_policy.deferred_route_policies';
+
+    /**
      * 본인인증 정책 서비스 생성자.
      *
      * @param  IdentityPolicyRepositoryInterface  $policyRepository  본인인증 정책 리포지토리
@@ -70,6 +76,25 @@ class IdentityPolicyService
         $providerId = trim((string) ($policy->provider_id ?? ''));
 
         return $providerId === '' ? null : $providerId;
+    }
+
+    /**
+     * 가입 전 본인인증 정책(`core.auth.signup_before_submit` 등 가입 라우트의 before_submit 정책)이 켜져 있는지 반환합니다.
+     *
+     * 가입 전 확인(`AssertIdentityVerifiedBeforeRegister`)·가입 검증 규칙과 같은 해석이다. 꺼져 있으면 가입 요청의 본인인증
+     * 결과를 인정하지도 쓰지도 않는다 — 인증 값 채우기·잠금 항목 덮어쓰기·가입 뒤 기록 모두 없다(7.1.6 계약, 2026-11-17 결정).
+     *
+     * @return bool 켜져 있으면 true
+     */
+    public function isSignupVerificationEnabled(): bool
+    {
+        $policy = $this->resolve(
+            scope: 'route',
+            target: 'api.auth.register',
+            context: ['signup_stage' => 'before_submit', 'http_method' => 'POST'],
+        );
+
+        return $policy !== null && (bool) $policy->enabled;
     }
 
     /**
@@ -304,6 +329,37 @@ class IdentityPolicyService
         $user = $request->user();
 
         $this->enforce($policy, $user instanceof User ? $user : null, $context);
+    }
+
+    /**
+     * 라우트 미들웨어가 입력 검증 뒤로 미뤄 둔 정책을 지금 강제합니다.
+     *
+     * `DefersIdentityPolicyUntilValidated` 표식을 단 폼 요청이 검증을 통과한 뒤(`passedValidation()`) 부른다. 판정은 미들웨어와 같은
+     * `enforcePolicyForRequest()` 한 곳이고, 인정 기록이 미들웨어의 소비 되돌림과 맞물리도록 원래 요청(폼 요청의 사본이 아니라
+     * 미들웨어가 받은 요청)으로 판정한다. 미룬 정책이 없으면 아무 일도 하지 않으며, 한 번 강제한 목록은 비운다.
+     *
+     * @param  Request  $request  미들웨어가 받은 원래 HTTP 요청
+     * @return void 반환값 없음
+     *
+     * @throws IdentityVerificationRequiredException 정책 위반 시
+     * @throws IdentityPolicyProviderUnavailableException 정책이 지정한 수단을 지금 쓸 수 없을 때
+     *
+     * @since 7.2.0
+     */
+    public function enforceDeferredRoutePolicies(Request $request): void
+    {
+        $policies = $request->attributes->get(self::DEFERRED_ROUTE_POLICIES_ATTRIBUTE);
+        if (! is_array($policies) || $policies === []) {
+            return;
+        }
+
+        $request->attributes->remove(self::DEFERRED_ROUTE_POLICIES_ATTRIBUTE);
+
+        foreach ($policies as $policy) {
+            if ($policy instanceof IdentityPolicy) {
+                $this->enforcePolicyForRequest($policy, $request);
+            }
+        }
     }
 
     /**

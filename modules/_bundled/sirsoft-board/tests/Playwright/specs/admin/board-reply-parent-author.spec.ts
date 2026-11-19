@@ -11,8 +11,9 @@
  * Feature 테스트가 검증하므로, 브라우저 수준(실제 작성자명 DOM 렌더)은 이 spec 이 담당한다.
  *
  * @scenario board-reply-parent-author
- * @axes viewer=manager parent_state=published render=author_name
- * @effects reply_form_renders_parent_post_author_name
+ * 커버 축(마커 아님 — 평문): viewer manager / parent_state published / render author_name (단일 조합이라
+ *   매니페스트에서는 case manager_reply_to_published_parent 하나로 둔다)
+ * 효과 요약(마커 아님 — 평문): reply_form_renders_parent_post_author_name (시험 주석에 마킹)
  *
  * 활성화 절차: PlaywrightIssueToken 발급이 가능하고, 작성자가 있는 부모글이
  * 시드된 환경에서 test.describe.skip → test.describe 로 전환.
@@ -25,7 +26,7 @@ const PARENT_ID = 100;
 const PARENT_AUTHOR_NAME = '홍길동';
 
 test.describe.skip('관리자 답변 폼 — 부모글 작성자명 노출 (#413)', () => {
-  // @scenario viewer=manager, parent_state=published, render=author_name
+  // @scenario case=manager_reply_to_published_parent
   // @effects reply_form_renders_parent_post_author_name
   test('답변 작성 폼의 원본 게시글 카드에 부모글 작성자명이 노출된다', async ({
     page,

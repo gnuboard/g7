@@ -215,11 +215,13 @@ export function templateAssetDir(identifier: string, path: string): string {
     }
 
     // @since engine-v1.75.1 확장자 없는 모드의 file 쿼리 디렉토리
+    // 형제 생성기(`extensionAsset()`)와 같이 마운트 접두사를 붙인다 — 하위 폴더 배치에서
+    // 이 주소만 사이트 밖(`/api/…`)을 가리켜 편집기 로더가 404 를 받았다.
     if (isExtensionless()) {
-        return `/api/templates/assets/${id}?${FILE_QUERY_PARAM}=${normalizedPath}`;
+        return withBasePrefix(`/api/templates/assets/${id}?${FILE_QUERY_PARAM}=${normalizedPath}`);
     }
 
-    return `/api/templates/assets/${id}/${normalizedPath}`;
+    return withBasePrefix(`/api/templates/assets/${id}/${normalizedPath}`);
 }
 
 /**
@@ -268,19 +270,28 @@ export function extensionAsset(
     version?: number | string | null,
 ): string {
     const normalizedPath = path.replace(/^\/+/, '');
-    const id = encodeURIComponent(identifier);
+    // 식별자도 서버(`AssetUrl::asset()` 의 `rawurlencode`)와 같은 인코더를 지난다.
+    // 종전에는 `encodeURIComponent` 였다 — 경로(`?file=`)는 아래에서 `rawEncode` 로
+    // 맞춰 두고 식별자만 옛 인코더가 남아, 한 함수 안에서 두 규칙이 공존했다. 식별자는
+    // 슬러그라 발현은 없지만 사본이 갈리면 「어느 쪽이 맞는가」가 다음 회차로 되돌아온다.
+    const id = rawEncode(identifier);
 
     if (!isExtensionless()) {
-        return `/api/${type}/assets/${id}/${normalizedPath}${versionQuery(version)}`;
+        return withBasePrefix(`/api/${type}/assets/${id}/${normalizedPath}${versionQuery(version)}`);
     }
 
-    let query = `${FILE_QUERY_PARAM}=${encodeURIComponent(normalizedPath)}`;
+    // 서버(`AssetUrl::asset()`)는 `rawurlencode()` 로 값을 만든다. `encodeURIComponent` 는
+    // `! ' ( ) *` 를 인코딩하지 않아, 같은 파일의 URL 문자열이 서버와 클라이언트에서 갈렸다 —
+    // 디코딩하면 같은 경로라 404 도 오류도 없고, HTTP 캐시 키가 둘로 나뉘어 같은 자산을 두 번
+    // 받는 것이 유일한 증상이다. 형제 경로(`convertToCurrentMode`)는 이미 이 교정을 갖고 있어
+    // 한 파일 안에서 두 규칙이 공존했다.
+    let query = `${FILE_QUERY_PARAM}=${rawEncode(normalizedPath)}`;
 
     if (version !== undefined && version !== null && version !== '') {
         query += `&v=${version}`;
     }
 
-    return `/api/${type}/assets/${id}?${query}`;
+    return withBasePrefix(`/api/${type}/assets/${id}?${query}`);
 }
 
 /**
@@ -297,7 +308,7 @@ export function extensionAsset(
 export function extensionBundle(type: string, kind: string, version?: number | string | null): string {
     const base = isExtensionless() ? `/api/${type}/bundle/${kind}` : `/api/${type}/bundle.${kind}`;
 
-    return `${base}${versionQuery(version)}`;
+    return withBasePrefix(`${base}${versionQuery(version)}`);
 }
 
 /**
@@ -334,7 +345,7 @@ export function suffixed(
         parts.push(`v=${version}`);
     }
 
-    return parts.length > 0 ? `${url}?${parts.join('&')}` : url;
+    return withBasePrefix(parts.length > 0 ? `${url}?${parts.join('&')}` : url);
 }
 
 /**
@@ -406,6 +417,11 @@ export function extStaticVersion(): number | null {
  * 서버측 `App\Support\AssetUrl`(정적 게시 트리 규약)과 경로 규칙 1:1 —
  * 실파일 확장자를 그대로 쓰므로 dualSuffix 접미사 규칙은 적용하지 않는다.
  *
+ * 결과에는 사이트 마운트 접두사를 붙인다. `staticBase` 는 서버 게이트 값(`/build/ext/{v}`)을
+ * 그대로 실은 것이라 접두사가 없고, 게시 트리는 사이트의 `public/` 아래에 있다 — 붙이지
+ * 않으면 하위 폴더 배치에서 정적 조회가 전부 문서 루트(사이트 밖)로 나간다. 이미 접두사를
+ * 가진 값에는 다시 붙이지 않는다(`withBasePrefix()`).
+ *
  * @param path 게시 트리 상대 경로 (예: `templates/{id}/routes.json`)
  * @param forVersion 명시 버전 (생략 시 페이지 렌더 버전)
  * @returns 정적 URL 또는 null (staticBase 미주입)
@@ -418,19 +434,23 @@ export function extStaticUrl(path: string, forVersion?: number): string | null {
     const normalizedPath = path.replace(/^\/+/, '');
 
     if (forVersion !== undefined && forVersion > 0 && forVersion !== extStaticVersion()) {
-        return `${base.replace(/\/\d+$/, '')}/${forVersion}/${normalizedPath}`;
+        return withBasePrefix(`${base.replace(/\/\d+$/, '')}/${forVersion}/${normalizedPath}`);
     }
 
-    return `${base}/${normalizedPath}`;
+    return withBasePrefix(`${base}/${normalizedPath}`);
 }
 
 /**
  * 실패한 정적 게시 URL 을 종전 API URL 로 역변환합니다 (#122 F15).
  *
- * blade 인라인 복구기(`partials/asset-url-recovery.blade.php` 의 `staticToLegacy`)와
+ * 셸 head 복구기(`public/assets/core/js/g7-shell-head.js` 의 `staticToLegacy`)와
  * **동일 규칙**이어야 한다 — 드리프트는 `assetUrlRecovery.test.ts` 의 대조 케이스가 잡는다.
  * 변환 대상이 아니면(정적 게시 경로가 아니면) null. `/build/core/**` 등 다른 정적
  * 파일은 대상이 아니다.
+ *
+ * 하위 폴더 배치에서 서버는 `/g7/build/ext/{v}/…` 를 렌더한다. 접두사를 벗겨 판정하고
+ * 결과에는 다시 붙인다(`convertToCurrentMode()` 와 같은 규칙). 벗기지 않으면 그 실패를
+ * 몰라보고, 붙이지 않으면 복구 주소가 사이트 밖을 가리켜 또 404 가 된다.
  *
  * @param url 실패한 URL
  * @returns 종전 API URL 또는 null
@@ -440,7 +460,13 @@ export function staticToLegacy(url: string): string | null {
     if (!url) return null;
 
     const origin = (globalThis as any)?.location?.origin;
-    const relative = origin && url.startsWith(origin) ? url.slice(origin.length) : url;
+    let relative = origin && url.startsWith(origin) ? url.slice(origin.length) : url;
+
+    const basePath = basePrefix();
+
+    if (basePath && (relative === basePath || relative.startsWith(basePath + '/'))) {
+        relative = relative.slice(basePath.length);
+    }
 
     const match = relative.match(/^\/build\/ext\/(\d+)\/(.+)$/);
     if (!match) return null;
@@ -456,12 +482,12 @@ export function staticToLegacy(url: string): string | null {
     if (extensionAssetMatch) {
         const [, type, identifier, assetPath] = extensionAssetMatch;
 
-        return `/api/${type}/assets/${identifier}/${assetPath}?v=${version}`;
+        return `${basePath}/api/${type}/assets/${identifier}/${assetPath}?v=${version}`;
     }
 
     const bundleMatch = rest.match(/^bundles\/(modules|plugins)\.(js|css)$/);
     if (bundleMatch) {
-        return `/api/${bundleMatch[1]}/bundle.${bundleMatch[2]}?v=${version}`;
+        return `${basePath}/api/${bundleMatch[1]}/bundle.${bundleMatch[2]}?v=${version}`;
     }
 
     const templateFetchMatch = rest.match(/^templates\/([^/]+)\/(routes\.json|components\.json|lang\/([A-Za-z0-9-]+)\.json)$/);
@@ -469,10 +495,57 @@ export function staticToLegacy(url: string): string | null {
         const [, identifier, kind] = templateFetchMatch;
         const suffixless = kind.replace(/\.json$/, '');
 
-        return `/api/templates/${identifier}/${suffixless}.json?v=${version}`;
+        return `${basePath}/api/templates/${identifier}/${suffixless}.json?v=${version}`;
     }
 
     return null;
+}
+
+/**
+ * 경로 조각을 `?file=` 값으로 다시 인코딩합니다.
+ *
+ * 서버의 확장자 모드는 경로를 **인코딩하지 않으므로**(형제 `AssetUrl::asset()` 과 동형이고
+ * 정적 `/storage/…` 도 그렇다), 여기 오는 값은 인코딩된 것일 수도 원문일 수도 있다.
+ * `decodeURIComponent` 를 무조건 부르면 리터럴 `%` 가 든 파일명(`50%off.png`)에서
+ * `URIError` 를 던지고, 그 지점은 모듈 자산 로딩 전체와 CSS 자가 복구 핸들러다 —
+ * 그 페이지의 확장 자산이 통째로 멈추거나 스타일이 조용히 사라진다.
+ *
+ * 그래서 디코딩을 **시도**하고, 실패하면 원문 그대로 인코딩한다. 정상 입력의 결과는
+ * 종전과 같다(이중 인코딩 방지 성질 유지).
+ *
+ * `resources/views/partials/asset-url-recovery.blade.php` 의 인라인 판본과 같은 규칙이어야
+ * 한다 — 드리프트는 `assetUrlRecovery.test.ts` 가 잡는다.
+ *
+ * @param filePath 경로 조각
+ * @returns `?file=` 에 실을 인코딩된 값
+ */
+function encodeFileQueryValue(filePath: string): string {
+    let decoded = filePath;
+
+    try {
+        decoded = decodeURIComponent(filePath);
+    } catch {
+        decoded = filePath;
+    }
+
+    return rawEncode(decoded);
+}
+
+/**
+ * 서버의 `rawurlencode()` 와 **같은 결과**를 내는 인코더 (RFC 3986).
+ *
+ * `encodeURIComponent` 는 `! * ' ( )` 를 인코딩하지 않는다. 서버는 인코딩하므로, 같은 파일에
+ * 대해 서버가 만든 URL 과 클라이언트가 만든 URL 의 **문자열이 갈린다** — 디코딩하면 같은
+ * 파일이라 404 가 되지는 않지만 HTTP 캐시 키가 둘로 나뉘어 같은 자산을 두 번 받는다.
+ *
+ * @param value 인코딩할 값
+ * @returns RFC 3986 기준 인코딩 결과
+ */
+function rawEncode(value: string): string {
+    return encodeURIComponent(value).replace(
+        /[!'()*]/g,
+        (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase(),
+    );
 }
 
 /**
@@ -488,6 +561,152 @@ export function staticToLegacy(url: string): string | null {
  * @param url 서버가 생성한 URL
  * @returns 현재 모드에 맞는 URL
  */
+
+/**
+ * `G7Config.basePath` 를 비교 가능한 형태로 다듬는다.
+ *
+ * 루트 설치는 빈 문자열이고, 하위 폴더는 `/` 로 시작하고 `/` 로 끝나지 않는다.
+ */
+export function basePrefix(): string {
+    return normalizeBasePath((globalThis as any)?.G7Config?.basePath);
+}
+
+/**
+ * 루트 상대 경로에 사이트 마운트 접두사를 붙인다.
+ *
+ * 이 파일의 생성기들은 `/api/…` 로 시작하는 **루트 상대** 경로를 만든다. 사이트가
+ * 문서 루트 하위 폴더(`https://host/g7/`)에 설치된 배치에서 그 주소는 사이트 밖을
+ * 가리키고, 문서 루트에 다른 사이트가 있으면 그쪽 응답을 받는다. 서버가 렌더한
+ * 자산 URL 은 `AssetUrl::basePrefix()` 로 이미 접두사를 갖고 있어, 접두사를 붙이지
+ * 않으면 **같은 화면 안에서 서버가 만든 주소와 브라우저가 만든 주소가 서로 다른
+ * 규칙**을 따르게 된다.
+ *
+ * 이미 접두사를 갖고 있으면 다시 붙이지 않는다 — 호출부가 서버에서 받은 경로를
+ * 그대로 넘기는 경우가 있고, 이중 접두(`/g7/g7/api/…`)는 조용한 404 다.
+ *
+ * @param path `/` 로 시작하는 경로
+ * @returns 접두사가 붙은 경로
+ */
+export function withBasePrefix(path: string): string {
+    const prefix = basePrefix();
+
+    // 앞뒤 공백은 판정 전에 걷어낸다 (서버 `AssetUrl::sitePath()` 와 동형) —
+    // `' /images/a.png'` 는 `/` 로 시작하지 않아 사이트 경로가 아닌 값으로 읽히고,
+    // 접두사 없이 그대로 나갔다.
+    path = typeof path === 'string' ? path.trim() : path;
+
+    // `//host/…` 는 프로토콜 상대 **절대** URL 이다 — `/` 로 시작하지만 사이트 경로가
+    // 아니므로 접두사를 붙이면 외부 주소가 `/g7//host/…` 라는 깨진 경로가 된다.
+    if (!prefix || !path.startsWith('/') || path.startsWith('//')) {
+        return path;
+    }
+
+    if (hasBasePrefix(path, prefix)) {
+        return path;
+    }
+
+    return prefix + path;
+}
+
+/**
+ * 루트 상대 경로가 마운트 접두사를 **이미** 갖고 있는지 판정한다.
+ *
+ * 접두사 뒤가 끝·`/`·`?`·`#` 이면 접두사 보유다. 종전 판정은 끝과 `/` 두 형태만
+ * 알아서, 하위 폴더 홈에 쿼리가 붙은 복귀 주소(`/g7?ref=x`)가 로그인 직후
+ * `/g7/g7?ref=x` 로 이중 접두가 됐다 — 사이트 밖으로 나가는 조용한 404 다.
+ * 반대로 `/g7x/foo` 는 접두사가 경계 없이 이어진 **다른 경로**라 보유가 아니다.
+ * 붙이는 쪽(`withBasePrefix`)과 벗기는 쪽(`stripBasePrefix`)이 이 한 판정을 공유한다 —
+ * 서버 `AssetUrl::hasBasePrefix()` 와 같은 규칙이다.
+ *
+ * @param path `/` 로 시작하는 경로
+ * @param prefix `/` 로 시작하고 `/` 로 끝나지 않는 접두사
+ * @returns 접두사를 이미 갖고 있으면 true
+ */
+function hasBasePrefix(path: string, prefix: string): boolean {
+    if (!path.startsWith(prefix)) {
+        return false;
+    }
+
+    const next = path.charAt(prefix.length);
+
+    return next === '' || next === '/' || next === '?' || next === '#';
+}
+
+/**
+ * origin 판정 전에 주소를 브라우저 URL 파서와 동일하게 정규화한다.
+ *
+ * 문자열 접두 검사만으로는 authority 우회를 막지 못한다. 브라우저(WHATWG URL)는
+ * 파싱 전에 ASCII tab·개행을 제거하고, special scheme(http/https)에서 백슬래시를
+ * 슬래시와 등가로 처리하기 때문이다. 그래서 `/\evil.com/x` · `/{tab}/evil.com/x` 는
+ * `//` 로 시작하지 않고 scheme 도 없는데 실제로는 `https://evil.com/x` 로 해석된다.
+ *
+ * 정규화 후 판정하면 경로 **중간**의 백슬래시·연속 슬래시(`/js/a\b.js` · `/f/a//b.png`)는
+ * authority 를 만들지 않으므로 그대로 same-origin 으로 통과한다(과차단 없음).
+ *
+ * 저장측 `SafeLayoutExpressions::normalizeForOriginCheck` · 정적 검사
+ * `layout-scripts-src-same-origin` 과 **3층 동형**이어야 한다. 런타임 소비처가
+ * 둘(스크립트 src 판정 · 브라우저 이동 판정)이므로 이 파일이 그 SSoT 다 — 사본을
+ * 만들면 한쪽만 강화됐을 때 다른 쪽이 조용한 우회로가 된다.
+ *
+ * @since engine-v1.93.0
+ * @param value 원본 주소 문자열
+ * @returns 정규화된 주소
+ */
+export function normalizeForOriginCheck(value: string): string {
+    // ASCII tab / LF / CR 제거 (브라우저 파서가 파싱 전에 제거하는 문자)
+    // → 백슬래시를 슬래시로 (special scheme 에서 등가)
+    const slashed = value.replace(/[\t\n\r]/g, '').replace(/\\/g, '/');
+
+    // 선행 슬래시가 3개 이상이어도 브라우저는 authority 시작으로 접는다
+    // (`///host/x` ≡ `//host/x`, `https:///host/x` ≡ `https://host/x`).
+    // 경로 중간의 연속 슬래시(`/js//a.js`)는 브라우저도 경로로 두므로 건드리지 않는다.
+    return slashed.replace(/^([a-z][a-z0-9+.\-]*:)?\/{2,}/i, '$1//');
+}
+
+/**
+ * 사이트 마운트 접두사를 벗겨 **라우트 기준 경로**로 되돌린다.
+ *
+ * `withBasePrefix()` 의 역함수다. 브라우저가 알려 주는 주소(`location.pathname`)는
+ * 하위 폴더 배치에서 `/g7/board/free` 인데, 라우트 패턴은 언제나 접두사가 없는
+ * `/board/:slug` 로 등록된다. 벗기지 않고 그대로 대조하면 **어떤 패턴에도 맞지 않아**
+ * 모든 화면이 「없는 페이지」가 된다 — 오류도 콘솔 메시지도 없이 라우팅만 통째로
+ * 죽는 형태라, 데이터 축(`withBasePrefix`)만 갖춘 상태에서는 드러나지 않았다.
+ *
+ * 접두사와 무관한 경로(이미 벗겨졌거나 다른 사이트를 가리키는 값)는 그대로 돌려준다.
+ *
+ * @param path `/` 로 시작하는 경로
+ * @returns 접두사를 벗긴 경로 (접두사만 남으면 `/`)
+ */
+export function stripBasePrefix(path: string): string {
+    const prefix = basePrefix();
+
+    // 앞뒤 공백은 판정 전에 걷어낸다 — 붙이는 쪽(`withBasePrefix`)과 확장 사본
+    // (`routePath`)이 같은 전처리를 갖지 않으면 같은 입력이 한쪽에서만 벗겨진다.
+    path = typeof path === 'string' ? path.trim() : path;
+
+    // `/g7abc` 처럼 접두사가 **경계 없이** 이어지는 값은 다른 경로다. 벗기면
+    // `abc` 라는 루트 상대가 아닌 문자열이 되어 이후 판정이 전부 어긋난다.
+    if (!prefix || typeof path !== 'string' || !hasBasePrefix(path, prefix)) {
+        return path;
+    }
+
+    const rest = path.slice(prefix.length);
+
+    // 접두사만 남거나 바로 뒤가 `?`·`#` 이면 루트 경로다 — `/g7?tab=1` 은 `/?tab=1`.
+    // `/` 로 이어지는 값은 그대로 벗긴다.
+    return rest.startsWith('/') ? rest : '/' + rest;
+}
+
+function normalizeBasePath(value: unknown): string {
+    if (typeof value !== 'string' || value === '' || value === '/') {
+        return '';
+    }
+
+    const withLeading = value.startsWith('/') ? value : '/' + value;
+
+    return withLeading.replace(/\/+$/, '');
+}
+
 export function convertToCurrentMode(url: string): string {
     if (!url || !isExtensionless()) {
         return url;
@@ -496,33 +715,58 @@ export function convertToCurrentMode(url: string): string {
     // DOM 프로퍼티(`script.src` / `link.href`)는 절대 URL 을 돌려주므로
     // same-origin 접두사를 먼저 벗긴다. 외부 origin 은 대상이 아니다.
     const origin = (globalThis as any)?.location?.origin;
-    const relative = origin && url.startsWith(origin) ? url.slice(origin.length) : url;
+    let relative = origin && url.startsWith(origin) ? url.slice(origin.length) : url;
+
+    // 사이트가 하위 폴더에 마운트된 배치에서는 서버가 만든 URL 이 `/g7/api/…` 이다.
+    // 접두사를 벗기지 않고 `/api/` 로 시작하는지만 보면 그 배치에서는 어느 규칙도
+    // 매치되지 않아 자가 복구가 통째로 무력해진다. 값은 서버가 준다(SSoT 동일).
+    const basePath = normalizeBasePath((globalThis as any)?.G7Config?.basePath);
+
+    if (basePath && (relative === basePath || relative.startsWith(basePath + '/'))) {
+        relative = relative.slice(basePath.length);
+    }
 
     if (!relative.startsWith('/api/')) {
         return url;
     }
 
-    const [path, query] = splitQuery(relative);
+    const [rawPath, query] = splitQuery(relative);
+    const path = rawPath;
+
+    // 변환 결과에는 벗겨 둔 접두사를 다시 붙인다.
+    const withBase = (converted: string): string => (basePath ? basePath + converted : converted);
 
     // 1) 병합 번들: /api/{type}/bundle.{js|css} → /api/{type}/bundle/{js|css}
     const bundleMatch = path.match(/^\/api\/(modules|plugins)\/bundle\.(js|css)$/);
     if (bundleMatch) {
-        return joinQuery(`/api/${bundleMatch[1]}/bundle/${bundleMatch[2]}`, query);
+        return withBase(joinQuery(`/api/${bundleMatch[1]}/bundle/${bundleMatch[2]}`, query));
     }
 
     // 2) 자산: /api/{type}/assets/{id}/{path} → /api/{type}/assets/{id}?file={path}
     const assetMatch = path.match(/^\/api\/(templates|modules|plugins)\/assets\/([^/]+)\/(.+)$/);
     if (assetMatch) {
         const [, type, identifier, filePath] = assetMatch;
-        const fileQuery = `${FILE_QUERY_PARAM}=${encodeURIComponent(decodeURIComponent(filePath))}`;
+        const fileQuery = `${FILE_QUERY_PARAM}=${encodeFileQueryValue(filePath)}`;
 
-        return `/api/${type}/assets/${identifier}?${fileQuery}${query ? `&${query}` : ''}`;
+        return withBase(`/api/${type}/assets/${identifier}?${fileQuery}${query ? `&${query}` : ''}`);
     }
 
-    // 3) 고정 접미사: /api/.../x.json → /api/.../x
+    // 3) 공개 스토리지: /api/system/public-storage/{path} → /api/system/public-storage?file={path}
+    //
+    // 규칙 4(접미사 제거)보다 **먼저** 와야 한다. 이 라우트의 무확장자 형태는 접미사를 떼는
+    // 형태가 아니라 `?file=` 이므로, 순서가 뒤바뀌면 `/api/system/public-storage/theme.css` 가
+    // `/api/system/public-storage/theme` 으로 변환되어 그 파일을 찾다 404 가 된다.
+    const publicStorageMatch = path.match(/^\/api\/system\/public-storage\/(.+)$/);
+    if (publicStorageMatch) {
+        const fileQuery = `${FILE_QUERY_PARAM}=${encodeFileQueryValue(publicStorageMatch[1])}`;
+
+        return withBase(`/api/system/public-storage?${fileQuery}${query ? `&${query}` : ''}`);
+    }
+
+    // 4) 고정 접미사: /api/.../x.json → /api/.../x
     const suffixMatch = path.match(/^(\/api\/.+)\.(json|js|css)$/);
     if (suffixMatch) {
-        return joinQuery(suffixMatch[1], query);
+        return withBase(joinQuery(suffixMatch[1], query));
     }
 
     return url;

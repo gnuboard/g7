@@ -162,13 +162,15 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
   // ==============================
   // 3. 메타 설정 섹션 헤더 + 페이지별 admin-card 구조
   // ==============================
+  // 시맨틱 자산 치환(#408) 조합 요약(마커 아님, 평문): layout_file 은 이 탭의 _tab_seo.g7.html 이고, 효과는 그것을 재는 시험의 표식에 있다
   describe('메타 설정 섹션 (section-header + admin-card × 4)', () => {
     // @scenario case=seo_tab_09
-    // @effects seo_tab_layout_contract_holds
+    // @scenario layout_file=modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_seo.g7.html
+    // @effects seo_tab_layout_contract_holds, ecommerce_seo_tab_meta_settings_header_uses_section_header_asset
     it('meta_settings_header가 section-header 자산을 사용한다', () => {
       const header = findById(tabSeo, 'meta_settings_header');
       expect(header).not.toBeNull();
-      expect(header.props.className).toBe('section-header');
+      expect(header.props.className).toBe('ecommerce-section-header');
     });
 
     // @scenario case=seo_tab_10
@@ -190,7 +192,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
     });
 
     // @scenario case=seo_tab_12
-    // @effects seo_tab_layout_contract_holds
+    // @scenario layout_file=modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_seo.g7.html
+    // @effects seo_tab_layout_contract_holds, ecommerce_seo_tab_replaces_card_accordion_with_admin_card_for_four_page_types
     it('페이지별 admin-card 4개가 존재한다 (category/search/product/shop_index)', () => {
       const cardIds = [
         'category_page_card',
@@ -201,7 +204,7 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       for (const id of cardIds) {
         const card = findById(tabSeo, id);
         expect(card, `${id} 카드가 없다`).not.toBeNull();
-        expect(card.props.className).toBe('admin-card');
+        expect(card.props.className).toBe('ecommerce-admin-card');
         expect(card.name).toBe('SectionLayout');
       }
     });
@@ -327,7 +330,7 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
         const checkbox = findByPropName(tabSeo, 'seo.seo_category');
         expect(checkbox).not.toBeNull();
         expect(checkbox.props.type).toBe('checkbox');
-        expect(checkbox.props.className).toBe('checkbox');
+        expect(checkbox.props.className).toBe('ecommerce-checkbox');
       });
 
       // @scenario case=seo_tab_26
@@ -419,7 +422,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
     });
 
     // @scenario case=seo_tab_34
-    // @effects seo_tab_layout_contract_holds
+    // @scenario layout_file=modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_seo.g7.html
+    // @effects seo_tab_layout_contract_holds, ecommerce_seo_tab_form_field_names_preserve_seo_meta_category_search_product_shop_index
     it('모든 Input/Textarea의 name이 seo. 접두사를 사용한다', () => {
       const inputs = findAllByComponentName(tabSeo, 'Input')
         .filter((i: any) => i.props?.name && i.props.type !== 'checkbox');
@@ -545,7 +549,7 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       const hints = pageCardIds.flatMap((id) => {
         const card = findById(tabSeo, id);
         return findAllByComponentName(card, 'P')
-          .filter((p: any) => p.props?.className === 'form-hint');
+          .filter((p: any) => p.props?.className === 'ecommerce-form-hint');
       });
 
       expect(hints.length).toBeGreaterThanOrEqual(4);

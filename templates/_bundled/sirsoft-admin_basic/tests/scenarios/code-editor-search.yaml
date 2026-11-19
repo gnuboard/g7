@@ -40,6 +40,8 @@ effects:
   - custom_asset_editor_searches_open_buffers_locally       # 열린 파일의 미저장 본문은 클라이언트가 찾는다 (§4.7)
   - layout_search_name_scope_includes_extension_fragments   # scope=name 에서도 확장 조각이 라벨로 잡힌다 (§5.2 «같은 방식으로 포함»)
   - code_editor_content_search_is_debounced                 # 내용 검색 재조회는 이벤트 최상위 액션에 디바운스 — 글자마다 서버를 부르지 않는다
+  - file_tree_filters_by_name_and_keeps_parents             # 이름으로 거르되 걸린 파일의 부모 폴더는 남긴다 (FileTree.test.tsx)
+  - code_editor_searches_names_and_contents                 # 브라우저에서 파일명 검색과 내용 검색이 함께 돈다 (code-editor-search.spec.ts)
 
 test_files:
   - tests/Feature/Api/Admin/LayoutSearchTest.php

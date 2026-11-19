@@ -215,8 +215,20 @@
                 "id": "dashboard_content",
                 "type": "basic",
                 "name": "Div",
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "p-6 bg-gray-50 dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "p-8 bg-gray-50 dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "admin-page-content-responsive-fluid"
+                    "className": "p-4 bg-gray-50 dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -231,8 +243,15 @@
                                 "id": "page_title",
                                 "type": "basic",
                                 "name": "H1",
+                                "responsive": {
+                                    "640-": {
+                                        "props": {
+                                            "className": "text-primary text-2xl font-semibold"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "text-primary text-xl sm:text-2xl font-semibold"
+                                    "className": "text-primary text-xl font-semibold"
                                 },
                                 "text": "$t:admin.dashboard.title"
                             },
@@ -469,13 +488,25 @@
                                                 },
                                                 "children": [
                                                     {
+                                                        "comment": "조치 화면으로 가는 링크. 리스너가 action_path 를 실어 보내는데 이것을 읽는 노드가 없으면 경고 문구만 뜨고 운영자가 갈 곳을 스스로 찾아야 한다. 경고(warning) 알림은 이 상단 구역에 그려지므로(예약 작업 정지 알림이 그렇다) 아래 목록과 같은 링크를 여기에도 둔다.",
+                                                        "id": "top_alert_action_link_{{$idx}}",
+                                                        "type": "basic",
+                                                        "name": "A",
+                                                        "if": "{{alert.action_path && alert.action_label}}",
+                                                        "props": {
+                                                            "href": "{{alert.action_path ?? '#'}}",
+                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-amber-600 dark:bg-amber-500 hover:bg-amber-700 dark:hover:bg-amber-600 text-white rounded hover:no-underline"
+                                                        },
+                                                        "text": "{{alert.action_label}}"
+                                                    },
+                                                    {
                                                         "id": "top_alert_recover_button_{{$idx}}",
                                                         "type": "basic",
                                                         "name": "Button",
                                                         "if": "{{!!alert.recover_endpoint}}",
                                                         "actions": [
                                                             {
-                                                                "comment": "복구 주소는 알림 자체가 싣고 온다(alert.recover_endpoint) — 확장 종류마다 복구 경로가 달라 화면이 주소를 조립하지 않는다. 끝나면 알림 목록을 다시 받아 처리된 알림이 사라지게 한다.\n                       버튼이 뜨는 조건도 알림 종류(subtype)가 아니라 **복구 주소를 실어 왔는가**다 — 종류를 열거하면 새 알림이 복구를 붙일 때마다 이 화면을 고쳐야 한다.\n                       버튼 글자와 성공 안내도 알림이 실어 오면 그것을 쓰고, 없으면 공통 문구로 떨어진다.",
+                                                                "comment": "복구 주소는 알림 자체가 싣고 온다(alert.recover_endpoint) — 확장 종류마다 복구 경로가 달라 화면이 주소를 조립하지 않는다. 끝나면 알림 목록을 다시 받아 처리된 알림이 사라지게 한다.\n                       버튼이 뜨는 조건도 알림 종류(subtype)가 아니라 **복구 주소를 실어 왔는가**다 — 종류를 열거하면 새 알림이 복구를 붙일 때마다 이 화면을 고쳐야 한다.\n                       버튼 글자와 성공 안내도 알림이 실어 오면 그것을 쓰고, 없으면 공통 문구로 떨어진다.\n                       복구는 확장을 다시 켜는 수명주기 동작이라 검수 서버(runtime_role stage)에서는 서버가 409 로 막는다 — 단추도 미리 잠그고 안내를 단다.",
                                                                 "type": "click",
                                                                 "handler": "apiCall",
                                                                 "target": "{{alert.recover_endpoint}}",
@@ -524,7 +555,8 @@
                                                         "props": {
                                                             "type": "button",
                                                             "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed",
-                                                            "disabled": "{{alert.abilities?.can_recover !== true}}"
+                                                            "disabled": "{{alert.abilities?.can_recover !== true || _global.appConfig?.runtime_role === 'stage'}}",
+                                                            "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}"
                                                         },
                                                         "children": [
                                                             {
@@ -655,25 +687,51 @@
                         "id": "quick_menu",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "tablet": {
+                                "props": {
+                                    "className": "flex flex-wrap gap-3 mb-6"
+                                }
+                            },
+                            "desktop": {
+                                "props": {
+                                    "className": "flex flex-wrap gap-3 mb-8"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "flex flex-wrap gap-2 md:gap-3 mb-4 md:mb-6 lg:mb-8"
+                            "className": "flex flex-wrap gap-2 mb-4"
                         },
                         "children": [
                             {
                                 "id": "qm_users",
                                 "type": "basic",
                                 "name": "A",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "flex-center flex-col justify-center gap-1 w-20 h-20 text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+                                        }
+                                    }
+                                },
                                 "props": {
                                     "href": "/admin/users",
-                                    "className": "flex-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+                                    "className": "flex-center flex-col justify-center gap-1 w-16 h-16 text-[10px] font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Icon",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "text-xl"
+                                                }
+                                            }
+                                        },
                                         "props": {
                                             "name": "users",
-                                            "className": "text-lg md:text-xl"
+                                            "className": "text-lg"
                                         }
                                     },
                                     {
@@ -690,17 +748,31 @@
                                 "id": "qm_settings",
                                 "type": "basic",
                                 "name": "A",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "flex-center flex-col justify-center gap-1 w-20 h-20 text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+                                        }
+                                    }
+                                },
                                 "props": {
                                     "href": "/admin/settings",
-                                    "className": "flex-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+                                    "className": "flex-center flex-col justify-center gap-1 w-16 h-16 text-[10px] font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Icon",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "text-xl"
+                                                }
+                                            }
+                                        },
                                         "props": {
                                             "name": "cog",
-                                            "className": "text-lg md:text-xl"
+                                            "className": "text-lg"
                                         }
                                     },
                                     {
@@ -717,17 +789,31 @@
                                 "id": "qm_modules",
                                 "type": "basic",
                                 "name": "A",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "flex-center flex-col justify-center gap-1 w-20 h-20 text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+                                        }
+                                    }
+                                },
                                 "props": {
                                     "href": "/admin/modules",
-                                    "className": "flex-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+                                    "className": "flex-center flex-col justify-center gap-1 w-16 h-16 text-[10px] font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Icon",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "text-xl"
+                                                }
+                                            }
+                                        },
                                         "props": {
                                             "name": "puzzle-piece",
-                                            "className": "text-lg md:text-xl"
+                                            "className": "text-lg"
                                         }
                                     },
                                     {
@@ -777,8 +863,20 @@
                         "id": "middle_section_grid",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "640-1023": {
+                                "props": {
+                                    "className": "grid grid-cols-1 gap-6 mb-6"
+                                }
+                            },
+                            "desktop": {
+                                "props": {
+                                    "className": "grid grid-cols-2 gap-6 mb-6"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6"
+                            "className": "grid grid-cols-1 gap-4 mb-6"
                         },
                         "children": [
                             {
@@ -789,8 +887,15 @@
                                     "enabled": true,
                                     "data_sources": "dashboard_recent_notifications"
                                 },
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "bg-slate-100 dark:bg-slate-800 rounded-2xl p-6"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6"
+                                    "className": "bg-slate-100 dark:bg-slate-800 rounded-xl p-4"
                                 },
                                 "children": [
                                     {
@@ -937,8 +1042,15 @@
                                     "enabled": true,
                                     "data_sources": "dashboard_activities"
                                 },
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "bg-slate-100 dark:bg-slate-800 rounded-2xl p-6"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6"
+                                    "className": "bg-slate-100 dark:bg-slate-800 rounded-xl p-4"
                                 },
                                 "children": [
                                     {
@@ -1074,8 +1186,15 @@
                             "enabled": true,
                             "data_sources": "dashboard_stats"
                         },
+                        "responsive": {
+                            "768-": {
+                                "props": {
+                                    "className": "flex-center flex-wrap gap-3 mb-4"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "flex-center flex-wrap gap-2 md:gap-3 mb-4"
+                            "className": "flex-center flex-wrap gap-2 mb-4"
                         },
                         "children": [
                             {
@@ -1260,8 +1379,25 @@
                         "id": "extension_status_grid",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "640-767": {
+                                "props": {
+                                    "className": "grid grid-cols-1 gap-6"
+                                }
+                            },
+                            "tablet": {
+                                "props": {
+                                    "className": "grid grid-cols-2 gap-6"
+                                }
+                            },
+                            "desktop": {
+                                "props": {
+                                    "className": "grid grid-cols-3 gap-6"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+                            "className": "grid grid-cols-1 gap-4"
                         },
                         "children": [
                             {
@@ -1272,8 +1408,15 @@
                                     "enabled": true,
                                     "data_sources": "dashboard_modules"
                                 },
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "@container bg-slate-100 dark:bg-slate-800 rounded-2xl p-6"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "@container bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6"
+                                    "className": "@container bg-slate-100 dark:bg-slate-800 rounded-xl p-4"
                                 },
                                 "children": [
                                     {
@@ -1377,7 +1520,7 @@
                                                                 }
                                                             },
                                                             {
-                                                                "comment": "모듈 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다",
+                                                                "comment": "thumb-exempt: 확장 아이콘은 업로드 이미지가 아니다(확장 패키지에 든 파일이고 SVG 도 받는다). 모듈 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다",
                                                                 "id": "module_icon_img_{{$idx}}",
                                                                 "type": "basic",
                                                                 "name": "Img",
@@ -1477,8 +1620,15 @@
                                     "enabled": true,
                                     "data_sources": "dashboard_plugins"
                                 },
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "@container bg-slate-100 dark:bg-slate-800 rounded-2xl p-6"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "@container bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6"
+                                    "className": "@container bg-slate-100 dark:bg-slate-800 rounded-xl p-4"
                                 },
                                 "children": [
                                     {
@@ -1582,7 +1732,7 @@
                                                                 }
                                                             },
                                                             {
-                                                                "comment": "플러그인 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다",
+                                                                "comment": "thumb-exempt: 확장 아이콘은 업로드 이미지가 아니다(확장 패키지에 든 파일이고 SVG 도 받는다). 플러그인 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다",
                                                                 "id": "plugin_icon_img_{{$idx}}",
                                                                 "type": "basic",
                                                                 "name": "Img",
@@ -1682,8 +1832,15 @@
                                     "enabled": true,
                                     "data_sources": "dashboard_templates"
                                 },
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "@container bg-slate-100 dark:bg-slate-800 rounded-2xl p-6"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "@container bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6"
+                                    "className": "@container bg-slate-100 dark:bg-slate-800 rounded-xl p-4"
                                 },
                                 "children": [
                                     {
@@ -1787,7 +1944,7 @@
                                                                 }
                                                             },
                                                             {
-                                                                "comment": "템플릿 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다",
+                                                                "comment": "thumb-exempt: 확장 아이콘은 업로드 이미지가 아니다(확장 패키지에 든 파일이고 SVG 도 받는다). 템플릿 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다",
                                                                 "id": "template_icon_img_{{$idx}}",
                                                                 "type": "basic",
                                                                 "name": "Img",
@@ -1885,8 +2042,15 @@
                         "id": "bottom_section_grid",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "640-": {
+                                "props": {
+                                    "className": "mt-6"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "mt-4 sm:mt-6"
+                            "className": "mt-4"
                         },
                         "children": [
                             {
@@ -1898,8 +2062,15 @@
                                     "enabled": true,
                                     "data_sources": "dashboard_alerts"
                                 },
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "bg-slate-100 dark:bg-slate-800 rounded-2xl p-6"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6"
+                                    "className": "bg-slate-100 dark:bg-slate-800 rounded-xl p-4"
                                 },
                                 "children": [
                                     {
@@ -2016,6 +2187,18 @@
                                                                 },
                                                                 "children": [
                                                                     {
+                                                                        "comment": "조치 화면으로 가는 링크. 리스너가 action_path 를 실어 보내는데 이것을 읽는 노드가 없으면 경고 문구만 뜨고 운영자가 갈 곳을 스스로 찾아야 한다.",
+                                                                        "id": "alert_action_link_{{$idx}}",
+                                                                        "type": "basic",
+                                                                        "name": "A",
+                                                                        "if": "{{alert.action_path && alert.action_label}}",
+                                                                        "props": {
+                                                                            "href": "{{alert.action_path ?? '#'}}",
+                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-amber-600 dark:bg-amber-500 hover:bg-amber-700 dark:hover:bg-amber-600 text-white rounded hover:no-underline"
+                                                                        },
+                                                                        "text": "{{alert.action_label}}"
+                                                                    },
+                                                                    {
                                                                         "id": "alert_recover_button_{{$idx}}",
                                                                         "type": "basic",
                                                                         "name": "Button",
@@ -2071,7 +2254,8 @@
                                                                         "props": {
                                                                             "type": "button",
                                                                             "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed",
-                                                                            "disabled": "{{alert.abilities?.can_recover !== true}}"
+                                                                            "disabled": "{{alert.abilities?.can_recover !== true || _global.appConfig?.runtime_role === 'stage'}}",
+                                                                            "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}"
                                                                         },
                                                                         "children": [
                                                                             {

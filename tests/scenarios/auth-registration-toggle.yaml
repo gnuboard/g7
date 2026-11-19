@@ -1,0 +1,26 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험 주석(@scenario)에서 모은 입력 변종이고, 회귀 가드는 effects 다 — 모든 effect 가 test_files 의 @effects 로 귀속된다(#798 A1).
+
+feature: "「일반 회원가입 받지 않음」 `security.registration_enabled` (#798 K9 · D17 · W18 · W37)"
+
+description: |
+  「일반 회원가입 받지 않음」 `security.registration_enabled` (#798 K9 · D17 · W18 · W37)
+  꺼지면 공개 가입 API 가 403 이다. 확장 내부 가입(서비스 직접 호출 — SSO 자동 생성·관리자 추가)은 계속된다. 확장 필터
+  `core.auth.self_registration_open` 이 닫을 수도 있다. 설정 일부 저장이 이 값을 바꾸지 않고, 프론트 설정에 노출된다.
+
+axes:
+  setting: [default, false]
+  surface: [public_api, service, frontend_config]
+  filter: [closes]
+  save: [partial]
+
+effects:
+  - registration_open_by_default
+  - registration_closed_403
+  - service_register_still_works
+  - filter_closes_registration
+  - partial_save_keeps_registration_flag
+  - registration_flag_exposed
+  - effective_registration_flag_exposed
+
+test_files:
+  - tests/Feature/Auth/RegistrationToggleTest.php

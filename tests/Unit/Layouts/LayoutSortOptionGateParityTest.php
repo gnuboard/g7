@@ -28,13 +28,24 @@ class LayoutSortOptionGateParityTest extends TestCase
 
     /**
      * 코어·템플릿·플러그인 레이아웃의 정렬 옵션은 게이트 허용 집합의 부분집합이어야 한다.
+     *
+     * @scenario case=screen_sort_options_within_gate
+     *
+     * @effects screen_sort_options_within_server_gate
+     *
+     * @return void 반환값 없음
      */
     public function test_화면_정렬옵션은_게이트_허용집합의_부분집합이다(): void
     {
         $this->assertLayoutSortOptionsWithinGate([
             base_path('resources/layouts'),
             base_path('templates/_bundled'),
-            base_path('plugins/_bundled'),
+            // 자기 스위트에 같은 검사를 둔 플러그인은 뺀다 — 그 플러그인의 라우트는 자기 시험 기반이 등록하므로
+            // 이 스위트에서는 엔드포인트가 라우트에 닿지 않는다(모듈과 같은 사정).
+            ...array_values(array_filter(
+                glob(base_path('plugins/_bundled/*'), GLOB_ONLYDIR) ?: [],
+                fn (string $dir) => ! is_file($dir.'/tests/Unit/Layouts/LayoutSortOptionGateParityTest.php'),
+            )),
         ]);
     }
 }

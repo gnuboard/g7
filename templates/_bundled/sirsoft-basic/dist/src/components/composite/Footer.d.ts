@@ -1,10 +1,14 @@
 import { default as React } from 'react';
 interface SocialLinks {
-    github?: string;
-    twitter?: string;
-    discord?: string;
-    facebook?: string;
+    youtube?: string;
     instagram?: string;
+    facebook?: string;
+    x?: string;
+    github?: string;
+    discord?: string;
+    blog?: string;
+    /** 옛 이름 — `x` 와 같은 아이콘 */
+    twitter?: string;
 }
 interface FooterLink {
     label: string;
@@ -19,10 +23,14 @@ interface FooterProps {
     siteName?: string;
     /** 사이트 설명 */
     siteDescription?: string;
-    /** 저작권 텍스트 */
+    /** 저작권 텍스트 — 운영자가 템플릿 설정(`footer.copyright`, 언어별)에 넣은 문구. 비면 기본 문구 */
     copyrightText?: string;
-    /** 소셜 미디어 링크 */
+    /** 기본 저작권 문구 — 번역 문구(`footer.copyright`). 운영자 문구가 없을 때 쓴다 */
+    defaultCopyrightText?: string;
+    /** 소셜 미디어 링크 — 템플릿 설정 `footer.social_*` (빈 값은 그리지 않는다) */
     socialLinks?: SocialLinks;
+    /** 「Powered by 그누보드7」 을 보일지 — 기본 true (템플릿 설정 `footer.show_powered_by`, #434) */
+    showPoweredBy?: boolean;
     /** 링크 그룹 (미지정 시 기본값 사용 — 직접 넘기면 아래 모듈 플래그와 무관하게 그대로 그린다) */
     linkGroups?: FooterLinkGroup[];
     /**
@@ -35,8 +43,10 @@ interface FooterProps {
     pageEnabled?: boolean;
     /**
      * 쇼핑몰 사업자 정보(법정 표시 항목) — 값이 있는 항목만 「라벨: 값」 줄로 그린다. 모두 비었거나 값이 오지 않으면
-     * 블록을 그리지 않는다. 레이아웃이 쇼핑몰 공개 설정(`basic_info`)을 그대로 넘긴다 — 운영자가 표시를 끄면
-     * 서버가 사업자 칸을 지워 보내므로 여기서는 값 유무만 본다.
+     * 블록을 그리지 않는다. 여기서는 값 유무만 본다.
+     * 기본 레이아웃(`_user_base`)은 이 값을 넘기지 않는다 — 쇼핑몰 모듈이 `user_global_footer` 자리에 사업자 정보를 직접 그리므로
+     * 여기서도 그리면 두 번 나온다. 속성은 7.1.6 에서 공개한 계약이라 남겨 둔다 — 이 값을 바인딩한 레이아웃은 쇼핑몰 조각과
+     * 함께 두 번 그리게 되므로 바인딩을 걷는다.
      */
     businessInfo?: FooterBusinessInfo | null;
     /** 추가 CSS 클래스 */

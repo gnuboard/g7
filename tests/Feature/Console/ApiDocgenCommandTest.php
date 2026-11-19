@@ -7,6 +7,7 @@ use App\Support\ApiDoc\ApiDocScaffolder;
 use App\Support\ApiDoc\ApiRouteInventory;
 use App\Support\ApiDoc\FormRequestIntrospector;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Route;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -17,14 +18,20 @@ use Tests\TestCase;
  * (a) 라우트 전수 수집, (b) 확장별 파일 라우팅, (c) FormRequest rules 추출,
  * (d) idempotent 재생성(사람 서술 보존), (e) --check drift 검출.
  *
- * 라이브 실측(HTTP 프로브)에 의존하지 않는 결정론적 경로(--dry-run·정적 추출·
- * 스캐폴더 병합)로 커맨드 표면을 검증한다. 실측 자체는 ApiDocPipelineTest·
+ * 라이브 실측(HTTP 프로브)에 의존하지 않는 결정론적 경로(--dry-run, 정적 추출,
+ * 스캐폴더 병합)로 커맨드 표면을 검증한다. 실측 자체는 ApiDocPipelineTest 와
  * ApiDocSampleServiceTest 가 별도 커버한다.
  */
 class ApiDocgenCommandTest extends TestCase
 {
     /**
      * (a) 코어 스코프 실행 시 라우트를 전수 수집해 개수를 보고합니다.
+     *
+     * @scenario stage=route_inventory
+     *
+     * @effects routes_collected_and_routed_by_owner
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 코어_스코프는_라우트를_전수_수집한다(): void
@@ -45,6 +52,12 @@ class ApiDocgenCommandTest extends TestCase
 
     /**
      * (b) 확장 소유 라우트는 확장 디렉토리 파일로 라우팅됩니다.
+     *
+     * @scenario stage=route_inventory
+     *
+     * @effects routes_collected_and_routed_by_owner
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 확장_라우트는_확장_디렉토리_파일로_라우팅된다(): void
@@ -75,6 +88,12 @@ class ApiDocgenCommandTest extends TestCase
 
     /**
      * (c) 컨트롤러 메서드의 FormRequest rules() 를 정적 리플렉션으로 추출합니다.
+     *
+     * @scenario stage=request_params_extraction
+     *
+     * @effects form_request_params_extracted
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function form_request_rules를_정적_추출한다(): void
@@ -97,9 +116,15 @@ class ApiDocgenCommandTest extends TestCase
      *
      * 회귀: 배열 요소 규칙(`items.*.id`)을 상위 필드로 대표시키려는 스킵 조건이
      * 점(`.`) 포함 여부만 봐서, 와일드카드가 없는 중첩 **객체** 필드까지 함께 버렸다.
-     * 그 결과 코어 환경설정(`general.*`·`mail.*`), 이커머스 주문(`orderer.*`·`refund_bank.*`) 등
+     * 그 결과 코어 환경설정(`general.*`, `mail.*`), 이커머스 주문(`orderer.*`, `refund_bank.*`) 등
      * 17개 엔드포인트의 파라미터 수백 개가 문서에서 통째로 빠졌고, 사람이 수기로 채워 넣은
      * 행은 재생성 때마다 다시 삭제됐다.
+     *
+     * @scenario stage=request_params_extraction
+     *
+     * @effects form_request_params_extracted
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 중첩_객체_파라미터를_추출하고_배열_요소는_상위로_대표시킨다(): void
@@ -135,6 +160,87 @@ class ApiDocgenCommandTest extends TestCase
     }
 
     /**
+     * (c-3) `accepted` 규칙은 필수 boolean 파라미터로 추출합니다.
+     *
+     * 회귀: `accepted` 는 값이 `yes`, `on`, `1`, `true` 로 실려 와야만 통과하는 규칙이라 사실상 필수인데,
+     * `required` 토큰이 없다는 이유로 선택 항목, 타입은 기본값인 `string` 으로 문서에 실렸다(SSO 가입 동의).
+     *
+     * @scenario stage=request_params_extraction
+     *
+     * @effects form_request_params_extracted
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function accepted_규칙은_필수_boolean_으로_추출한다(): void
+    {
+        $introspector = app(FormRequestIntrospector::class);
+
+        $params = $this->invokeRulesToParams($introspector, [
+            'agree_terms' => ['accepted'],
+            'agree_marketing' => ['nullable', 'accepted_if:channel,email'],
+        ]);
+
+        $terms = collect($params)->firstWhere('name', 'agree_terms');
+        $this->assertTrue($terms['required'], '`accepted` 는 필수로 추출되어야 한다.');
+        $this->assertSame('boolean', $terms['type']);
+
+        // 조건부 동의(`accepted_if`)는 필수가 아니다.
+        $marketing = collect($params)->firstWhere('name', 'agree_marketing');
+        $this->assertFalse($marketing['required']);
+        $this->assertSame('boolean', $marketing['type']);
+    }
+
+    /**
+     * (a-2) 라우트 등록기(`Route::middleware(...)->get(...)`)로 등록한 라우트의 컨트롤러도 선행 역슬래시 없이 기록합니다.
+     *
+     * 회귀: 라우트 등록기는 배열 액션의 클래스명 앞에 `\` 를 붙여, 그 라우트만 문서의 컨트롤러 줄이
+     * `\Plugins\...` 로 적혔다(본인확인 플러그인). 같은 컨트롤러가 등록 방식에 따라 다르게 적혔다.
+     *
+     * @scenario stage=route_inventory
+     *
+     * @effects route_controller_and_path_types_normalized
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function 라우트_등록기로_등록한_컨트롤러도_선행_역슬래시_없이_기록한다(): void
+    {
+        $route = Route::middleware('api')->get('/__apidoc-inventory-probe', [AuthController::class, 'login']);
+        $this->assertStringStartsWith('\\', $route->getActionName(), '사전 조건: 등록기가 선행 역슬래시를 붙인다');
+
+        $inventory = app(ApiRouteInventory::class);
+        $method = new \ReflectionMethod($inventory, 'controllerClass');
+
+        $this->assertSame(AuthController::class, $method->invoke($inventory, $route));
+    }
+
+    /**
+     * (a-3) 경로 파라미터의 타입을 라우트 제약(`whereNumber`)과 컨트롤러 서명(`int $id`)에서 읽습니다.
+     *
+     * 회귀: 경로 파라미터는 언제나 `string` 으로 적혀, 숫자 제약이 걸리고 컨트롤러가 `int` 로 받는 `id` 도
+     * 문자열로 안내됐다(게시판 본인확인 정책).
+     *
+     * @scenario stage=route_inventory
+     *
+     * @effects route_controller_and_path_types_normalized
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function 경로_파라미터_타입을_라우트_제약과_컨트롤러_서명에서_읽는다(): void
+    {
+        $byWhere = Route::middleware('api')->get('/__apidoc-path-probe/{id}', [AuthController::class, 'login'])->whereNumber('id');
+        $plain = Route::middleware('api')->get('/__apidoc-path-probe-plain/{slug}', [AuthController::class, 'login']);
+
+        $inventory = app(ApiRouteInventory::class);
+        $method = new \ReflectionMethod($inventory, 'pathTypes');
+
+        $this->assertSame(['id' => 'integer'], $method->invoke($inventory, $byWhere));
+        $this->assertSame(['slug' => 'string'], $method->invoke($inventory, $plain));
+    }
+
+    /**
      * private rulesToParams 를 호출합니다 (규칙 배열 → 파라미터 메타 변환만 검증).
      *
      * @param  FormRequestIntrospector  $introspector  대상 인스턴스
@@ -151,6 +257,12 @@ class ApiDocgenCommandTest extends TestCase
 
     /**
      * (d) 재생성해도 사람이 채운 서술은 보존되고 추출 블록만 갱신됩니다(멱등).
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 재생성은_사람_서술을_보존하는_멱등_동작이다(): void
@@ -194,6 +306,12 @@ class ApiDocgenCommandTest extends TestCase
 
     /**
      * (e) --check 는 대응 문서가 없으면 drift 로 실패 코드를 반환합니다.
+     *
+     * @scenario stage=drift_check
+     *
+     * @effects check_reports_missing_doc_and_unfilled_marker
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function check는_문서_누락을_drift로_검출한다(): void
@@ -222,12 +340,18 @@ class ApiDocgenCommandTest extends TestCase
     /**
      * (e-2) --check 는 실측 제외를 drift 로 보지 않습니다.
      *
-     * 회귀: `--check` 가 `skipped_reason` 이 있는 엔드포인트(쓰기 메서드·부수효과·미치환 path)를
+     * 회귀: `--check` 가 `skipped_reason` 이 있는 엔드포인트(쓰기 메서드, 부수효과, 미치환 path)를
      * 전부 drift 로 집계해 **항상 FAILURE** 를 반환했다. 실측 제외는 설계상 정상 동작이며
      * (부수효과 쓰기는 의도적으로 호출하지 않는다), 그 자리는 사람이 코드 근거로 채운다.
      * 실측 제외를 결함으로 세면 문서가 완전해도 통과할 수 없어 기준이 무의미해진다.
      *
      * drift 판정 대상은 (1) 문서 파일 부재 (2) 미채움 마커 잔존 두 가지다.
+     *
+     * @scenario stage=drift_check
+     *
+     * @effects check_ignores_probe_exclusions
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function check는_실측제외를_drift로_보지_않는다(): void
@@ -241,6 +365,12 @@ class ApiDocgenCommandTest extends TestCase
 
     /**
      * (e-3) --check 는 미채움 마커가 남아 있으면 drift 로 검출합니다.
+     *
+     * @scenario stage=drift_check
+     *
+     * @effects check_reports_missing_doc_and_unfilled_marker
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function check는_미채움_마커_잔존을_drift로_검출한다(): void
@@ -270,7 +400,7 @@ class ApiDocgenCommandTest extends TestCase
     /**
      * README 목차 항목/확장 목록 샘플을 반환합니다.
      *
-     * @return array{0: array<int, array{domain: string, file: string, count: int}>, 1: array<int, array{id: string, type: string, path: string, docs: int, endpoints: int}>}
+     * @return array{0: array<int, array{domain: string, file: string, count: int}>, 1: array<int, array{id: string, type: string, path: string, docs: int, endpoints: int}>} 도메인 목차 항목 목록과 확장 목록의 쌍
      */
     private function readmeFixtures(): array
     {
@@ -292,6 +422,12 @@ class ApiDocgenCommandTest extends TestCase
      *
      * 최상위 README 의 "API 레퍼런스" 진입점이 이 문서이므로, 확장 API 문서의 발견 경로가
      * 여기 없으면 개발자/AI 가 확장 엔드포인트에 도달하지 못한다.
+     *
+     * @scenario stage=readme_index
+     *
+     * @effects readme_index_regenerated_preserving_prose
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 코어_readme는_확장_목차를_함께_싣고_멱등하게_재생성된다(): void
@@ -315,7 +451,13 @@ class ApiDocgenCommandTest extends TestCase
      * 코어 README 상단의 사람 개요(공통 규약)는 재생성해도 보존됩니다.
      *
      * 개요는 목차 표보다 먼저 읽혀야 하므로 @generated 블록 앞에 둔다. 생성기가 이 구간을
-     * 덮어쓰면 인증·응답 봉투·에러 규약 서술이 매 재생성마다 소실된다.
+     * 덮어쓰면 인증, 응답 봉투, 에러 규약 서술이 매 재생성마다 소실된다.
+     *
+     * @scenario stage=readme_index
+     *
+     * @effects readme_index_regenerated_preserving_prose
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 코어_readme의_사람_개요는_생성_블록_앞에서_보존된다(): void
@@ -349,6 +491,12 @@ class ApiDocgenCommandTest extends TestCase
      *
      * `--scope=core` 축소 실행이 코어 README 의 확장 표를 지워버리면, 매 실행마다 진입점이
      * 사라졌다 살아나는 drift 가 생긴다.
+     *
+     * @scenario stage=readme_index
+     *
+     * @effects readme_index_regenerated_preserving_prose
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 확장_목록_미전달_시_기존_확장_목차를_보존한다(): void
@@ -365,10 +513,16 @@ class ApiDocgenCommandTest extends TestCase
     }
 
     /**
-     * refreshExtensionIndex 는 코어 목차·개요를 건드리지 않고 확장 표만 갱신합니다.
+     * refreshExtensionIndex 는 코어 목차와 개요를 건드리지 않고 확장 표만 갱신합니다.
      *
      * 확장 스코프 실행(`--scope=module:...`) 시 그 확장의 엔드포인트 수 변동을 코어 진입점에
      * 반영하는 경로다. 변경이 없으면 null 을 반환해 불필요한 파일 쓰기를 피한다.
+     *
+     * @scenario stage=readme_index
+     *
+     * @effects readme_index_regenerated_preserving_prose
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 확장_목차만_in_place_갱신하고_변경_없으면_null을_반환한다(): void

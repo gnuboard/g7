@@ -33,6 +33,10 @@ export type { MobileBuyBarProps } from './MobileBuyBar';
 export { BottomSheet } from './BottomSheet';
 export type { BottomSheetProps } from './BottomSheet';
 
+// 회원 항목 입력칸 (가입, 내 정보, 추가 정보 입력 공용)
+export { default as MemberFieldInput } from './MemberFieldInput';
+export type { MemberFieldInputProps, MemberFieldContract } from './MemberFieldInput';
+
 // 게시판 관련 컴포넌트
 export { default as RichTextEditor } from './RichTextEditor';
 export { HtmlContent } from './HtmlContent';
@@ -44,7 +48,6 @@ export { ExpandableContent } from './ExpandableContent';
 // 공통 컴포넌트
 export { default as FileUploader } from './FileUploader';
 export { ConfirmDialog } from './ConfirmDialog';
-export { default as SocialLoginButtons } from './SocialLoginButtons';
 export { default as Toast } from './Toast';
 export { default as PageTransitionIndicator } from './PageTransitionIndicator';
 export { default as PageTransitionBlur } from './PageTransitionBlur';
@@ -104,6 +107,9 @@ export const compositeComponents = {
   MobileBuyBar: () => import('./MobileBuyBar'),
   BottomSheet: () => import('./BottomSheet'),
 
+  // 회원 항목
+  MemberFieldInput: () => import('./MemberFieldInput'),
+
   // 게시판
   RichTextEditor: () => import('./RichTextEditor'),
   HtmlContent: () => import('./HtmlContent'),
@@ -115,7 +121,6 @@ export const compositeComponents = {
   // 공통
   FileUploader: () => import('./FileUploader'),
   ConfirmDialog: () => import('./ConfirmDialog'),
-  SocialLoginButtons: () => import('./SocialLoginButtons'),
   Toast: () => import('./Toast'),
   PageTransitionIndicator: () => import('./PageTransitionIndicator'),
   PageTransitionBlur: () => import('./PageTransitionBlur'),

@@ -28,7 +28,8 @@ export function initTemplate(): void {
     const actionDispatcher = (window as any).G7Core?.getActionDispatcher?.();
     if (actionDispatcher) {
       Object.entries(handlerMap).forEach(([name, handler]) => {
-        actionDispatcher.registerHandler(name, handler);
+        // 등록자를 템플릿 식별자로 밝힌다 (engine-v1.94.0 소유권 경고)
+        actionDispatcher.registerHandler(name, handler, { category: 'custom', source: 'my-template' });
       });
 
       // IDV launcher 는 핸들러 등록 직후 호출 — G7Core.identity 가 준비된 시점
@@ -231,6 +232,24 @@ KCP / PortOne / 토스인증 / Stripe Identity 등 외부 SDK 를 추가할 때 
   ]
 }
 ```
+
+## 외부 수단의 이동 주소 규칙 (7.2.0)
+
+`render_hint=external_redirect` 인 challenge 의 `redirect_url` 은 **같은 출처 경로**(`/` 로 시작, 예 `/plugins/{식별자}/reauth/start?...`)만 준다.
+외부 공급자(회사 계정 로그인 화면 등)로 나가는 이동은 수단(확장)의 같은 출처 시작 라우트가 서버에서 302 한다. 레이아웃의 `redirect`
+동작은 다른 출처 주소를 따르지 않으므로(열린 이동 차단), 절대 외부 주소를 주면 화면이 진행 표시를 켠 채 멈춘다. 확인을 마친 뒤
+돌아올 화면은 challenge 요청 본문 `return_path`(같은 출처 경로)로 넘기고, 수단은 그 경로에 `verification_token` 을 붙여 돌려보낸다.
+
+## 정책 표에 없는 재확인 요구 (7.2.0)
+
+정책 표의 정책만 428 을 내는 것은 아니다. 비밀번호 확인 관문(`POST /api/me/verify-password` · `POST /api/admin/settings/regenerate-app-key` ·
+관리자 본인 비밀번호 첫 설정 `PUT /api/admin/users/{본인}`)은 비밀번호 없는 회원이 비밀번호 칸으로 오면(그 회원을 모르는 옛 화면) 같은 형식의
+428 을 낸다 — `policy_key` 는 `core.reauthentication`(정책 표의 행이 아니다), `purpose` 는 `sensitive_action`, `provider_id`·`render_hint` 는 `null`,
+`return_request` 는 원 요청이다. launcher 는 정책 428 과 똑같이 처리하면 된다.
+
+- `provider_id` 가 `null` 이면 challenge 요청에 싣지 않는다 — 서버가 그 회원에게 쓸 수 있는 수단을 고른다(받을 메일이 없는 회원 → 다음 수단).
+- `render_hint` 가 `null` 이면 challenge 응답의 `render_hint` 를 쓴다. 응답에 `redirect_url` 이 있으면 `redirectExternally` 로 넘긴다.
+- `policy_key` 는 그대로 challenge 요청에 실어도 된다(서버가 정책 표에 없는 키는 무시한다).
 
 ## launcher 미등록 시 코어 폴백 동작
 

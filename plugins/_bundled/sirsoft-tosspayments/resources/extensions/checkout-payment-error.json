@@ -17,7 +17,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "text-center py-4"
+                        "className": "paytosspayments:text-center paytosspayments:py-4"
                     },
                     "children": [
                         {
@@ -25,14 +25,14 @@
                             "name": "Icon",
                             "props": {
                                 "name": "exclamation-circle",
-                                "className": "text-red-500 text-4xl mb-4"
+                                "className": "paytosspayments:text-red-500 paytosspayments:text-4xl paytosspayments:leading-none paytosspayments:mb-4"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-gray-700 dark:text-gray-300"
+                                "className": "paytosspayments:text-gray-700 paytosspayments:dark:text-gray-300"
                             },
                             "text": "{{_local.paymentErrorMessage ?? ''}}"
                         }
@@ -42,7 +42,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-center mt-6"
+                        "className": "paytosspayments:flex paytosspayments:justify-center paytosspayments:mt-6"
                     },
                     "children": [
                         {
@@ -68,7 +68,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                                "className": "paytosspayments:px-6 paytosspayments:py-2 paytosspayments:bg-blue-600 paytosspayments:text-white paytosspayments:rounded-lg paytosspayments:font-medium paytosspayments:hover:bg-blue-700 paytosspayments:transition-colors"
                             },
                             "text": "$t:common.confirm"
                         }
@@ -90,7 +90,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "text-center py-4"
+                        "className": "paytosspayments:text-center paytosspayments:py-4"
                     },
                     "children": [
                         {
@@ -98,14 +98,14 @@
                             "name": "Icon",
                             "props": {
                                 "name": "info-circle",
-                                "className": "text-yellow-700 dark:text-yellow-600 text-4xl mb-4"
+                                "className": "paytosspayments:text-yellow-700 paytosspayments:dark:text-yellow-600 paytosspayments:text-4xl paytosspayments:leading-none paytosspayments:mb-4"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-gray-700 dark:text-gray-300"
+                                "className": "paytosspayments:text-gray-700 paytosspayments:dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-tosspayments.payment_cancelled_message"
                         }
@@ -115,7 +115,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-center mt-6"
+                        "className": "paytosspayments:flex paytosspayments:justify-center paytosspayments:mt-6"
                     },
                     "children": [
                         {
@@ -132,7 +132,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                                "className": "paytosspayments:px-6 paytosspayments:py-2 paytosspayments:bg-blue-600 paytosspayments:text-white paytosspayments:rounded-lg paytosspayments:font-medium paytosspayments:hover:bg-blue-700 paytosspayments:transition-colors"
                             },
                             "text": "$t:common.confirm"
                         }

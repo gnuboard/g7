@@ -1047,7 +1047,7 @@ describe('SafeExpressionEvaluator', () => {
         afterEach(() => {
             // 오염이 실제로 일어났다면 다른 테스트로 번지지 않게 정리한다.
             delete (Object.prototype as Record<string, unknown>).pwned;
-            delete (Array.prototype as Record<string, unknown>).pwned;
+            Reflect.deleteProperty(Array.prototype, 'pwned');
         });
 
         // @scenario case=constructor_escape
@@ -1090,7 +1090,7 @@ describe('SafeExpressionEvaluator', () => {
         // @effects sandbox_escape_blocked
         it('배열 프로토타입도 동일하게 보호된다', () => {
             expect(() => evalx("[].__lookupGetter__('__pro' + 'to__').call([])")).toThrow();
-            expect((Array.prototype as Record<string, unknown>).pwned).toBeUndefined();
+            expect(Reflect.get(Array.prototype, 'pwned')).toBeUndefined();
             expect([].map).toBeTypeOf('function');
         });
 

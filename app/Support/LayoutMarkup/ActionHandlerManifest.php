@@ -3,13 +3,13 @@
 namespace App\Support\LayoutMarkup;
 
 /**
- * 액션 컴파일(S3)의 SSoT — 내장 핸들러 49종과 키 배치 규칙.
+ * 액션 컴파일(S3)의 SSoT — 내장 핸들러 51종과 키 배치 규칙.
  *
  * 액션 마크업의 두 가지 사실을 이 한 곳에 모은다.
  *
  * **① 핸들러 태그명 ↔ 핸들러명.** 마크업 태그는 소문자·kebab 이고 엔진 핸들러명은 camelCase 다
  * (`<set-state>` ↔ `setState`). 이 변환은 규칙적(대문자 앞 하이픈)이라 자동 도출할 수 있으나,
- * 49종을 명시 목록으로 못박아 "레지스트리에 없는 kebab 은 핸들러가 아니다" 를 결정적으로 판정한다.
+ * 51종을 명시 목록으로 못박아 "레지스트리에 없는 kebab 은 핸들러가 아니다" 를 결정적으로 판정한다.
  * 확장·템플릿 핸들러(`sirsoft-ecommerce.toggleArrayValue`)는 점을 품어 태그명이 될 수 없으므로
  * 범용 `<action handler="...">` 로 작성하고 이름을 원문 그대로 싣는다.
  *
@@ -25,7 +25,7 @@ namespace App\Support\LayoutMarkup;
 final class ActionHandlerManifest
 {
     /**
-     * 엔진 내장 핸들러 49종 (camelCase) — ActionDispatcher switch 32 + registerDefaultHandlers 17.
+     * 엔진 내장 핸들러 51종 (camelCase) — ActionDispatcher switch 33 + registerDefaultHandlers 18.
      *
      * 제어 핸들러(switch·conditions·sequence·parallel)는 전용 태그·자식 문법을 가지므로 단순
      * 핸들러 태그 목록에서 제외된다(아래 CONTROL_HANDLERS).
@@ -44,7 +44,7 @@ final class ActionHandlerManifest
         // nav
         'navigate', 'navigateBack', 'navigateForward', 'openWindow', 'replaceUrl', 'redirect',
         // api / auth / data source
-        'apiCall', 'login', 'loginTwoFactor', 'loginTwoFactorResend', 'loginPasswordChange', 'loginPasswordChangePostpone', 'logout', 'refetchDataSource', 'appendDataSource', 'updateDataSource',
+        'apiCall', 'login', 'loginTwoFactor', 'loginTwoFactorResend', 'loginPasswordChange', 'loginPasswordChangePostpone', 'loginHandoff', 'logout', 'refetchDataSource', 'appendDataSource', 'updateDataSource',
         'ensureIdentityVerified', 'resolveIdentityChallenge',
         // state
         'setState', 'setError', 'updateProductField', 'updateOptionField',
@@ -78,7 +78,7 @@ final class ActionHandlerManifest
      */
     private const TARGET_TOP_LEVEL_HANDLERS = [
         'apiCall', 'openModal', 'closeModal', 'setLocale', 'login', 'loginTwoFactor', 'loginTwoFactorResend',
-        'loginPasswordChange', 'loginPasswordChangePostpone', 'logout',
+        'loginPasswordChange', 'loginPasswordChangePostpone', 'loginHandoff', 'logout',
         // 엔진이 최상위 action.target 만 읽는다 — params 로 구우면 setError 는 대상을 잃고 showAlert 는
         // `target.startsWith` TypeError 가 난다(7.1.3, 번들 사용 0 의 잠재 결함)
         'setError', 'showAlert',
@@ -210,7 +210,7 @@ final class ActionHandlerManifest
     }
 
     /**
-     * 이름이 내장 49종 핸들러인지 판정합니다 (범용 `<action handler>` 검증용).
+     * 이름이 내장 51종 핸들러인지 판정합니다 (범용 `<action handler>` 검증용).
      *
      * @param  string  $handler  camel 핸들러명
      * @return bool 내장 핸들러이면 true

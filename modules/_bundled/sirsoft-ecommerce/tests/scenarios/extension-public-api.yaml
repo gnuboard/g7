@@ -1,0 +1,40 @@
+# 시나리오 매니페스트 — 이커머스 공개 계약(카탈로그·통화·가격·시험 상품) (#916 ②, 공개 #83 후속)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: ecommerce_extension_public_api
+
+description: |
+  다른 확장이 이커머스 내부 Model·Service 대신 쓰는 공개 계약 중 결제 외 계약을 다룬다
+  (결제 계약 PaymentGatewayBridge 는 `payment-gateway-contract.yaml` 이 소유한다).
+
+  - 카탈로그(히어로섹션용): `ProductDirectory`(코드·id·id 묶음 조회, 전시 상품 키워드 검색 위임)와
+    `CategoryDirectory`(slug·id·id 묶음 조회에 경로 이름·사이트 경로, 이름·slug 부분 일치 검색).
+  - 통화(수출입은행용): `ExchangeRateGateway` 의 통화 설정은 설정 서비스 값과 같고, 환율 반영은 선택된 제공자만
+    저장한 뒤 액션 훅을 발화한다.
+  - 가격 표시: `PriceFormatter` 출력은 전역 헬퍼 ecommerce_format_price 와 같다.
+  - 시험 상품(kginicis CBT): `ProductProvisioner::createSimpleProduct` 는 지정 통화 가격을 지금 환율로 기본 통화 가격으로
+    역산해 저장하므로 결제 때 그 통화로 정확히 같은 금액이 된다. 기본 통화면 그대로, 통화 설정에 없는 통화는 거부한다.
+
+axes:
+  case: [category_directory_find, category_directory_search, product_directory_find, product_directory_search, exchange_rate_currency_settings, exchange_rate_apply, price_formatter_mirrors_helper, jpy_priced_test_product_in_krw_shop, default_currency_product, unknown_currency_rejected, product_directory_labels_batch, category_directory_path_labels_batch]
+
+effects:
+  - category_directory_finds_with_path_label_and_url                     # slug·id·id 묶음 조회 요약에 경로 이름과 사이트 경로가 담긴다
+  - category_directory_search_matches_name_or_slug_within_limit          # 현재 언어 이름·slug 부분 일치(대소문자 무시) 검색이 건수를 지킨다
+  - product_directory_finds_by_code_id_and_ids                           # 코드·id·id 묶음 조회 요약에 현재 언어 이름과 사이트 경로가 담긴다
+  - product_directory_search_delegates_to_repository_within_limit        # 검색은 상품 저장소 키워드 검색(전시 상품)에 위임하고 0 건 요청은 묻지 않는다
+  - exchange_rate_gateway_currency_settings_mirror_settings_service      # 통화 설정은 설정 서비스 language_currency 와 같고 제공자 미선택은 null
+  - exchange_rate_gateway_applies_only_selected_provider_and_fires_hook  # 선택된 제공자 환율만 반영해 DTO 로 돌려주고 반영 뒤 액션 훅이 발화한다
+  - price_formatter_output_equals_helper                                 # 통화 지정 여부와 무관하게 전역 헬퍼와 같은 문자열
+  - provisioned_product_charges_exactly_the_spec_currency_amount         # JPY 100 상품을 KRW 상점에 만들면 기본 통화로 저장되고 JPY 로 되돌리면 정확히 100
+  - provisioned_product_keeps_default_currency_amount                    # 통화를 안 주거나 기본 통화면 금액을 바꾸지 않는다
+  - provisioned_product_rejects_unconfigured_currency                    # 통화 설정에 없는 통화는 거부하고 상품을 만들지 않는다
+  - product_directory_labels_read_in_one_query                              # 상품 이름 일괄 조회는 코드 수와 무관하게 한 번에 읽고 결과는 단건 조회와 같다
+  - category_directory_path_labels_read_in_fixed_queries                    # 카테고리 경로 이름 일괄 조회는 slug 수와 무관하게 두 번만 읽고 결과는 단건 조회와 같다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Contracts/CategoryDirectoryTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Contracts/ProductDirectoryTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Contracts/ExchangeRateGatewayTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Contracts/PriceFormatterTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Contracts/ProductProvisionerTest.php

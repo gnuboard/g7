@@ -673,8 +673,10 @@ export function RouteTreePanel(): React.ReactElement {
     if (typeof window !== 'undefined' && window.history?.pushState) {
       const nextUrl = buildEditorUrl(state.templateIdentifier, node.path);
       // 같은 URL 이면 history 항목 중복 방지 (반복 클릭 시)
+      // base-path:allow 현재 주소 문자열 비교용 — 접두사를 품은 원본끼리 견준다
       const current = `${window.location.pathname}${window.location.search}`;
       if (current !== nextUrl) {
+        // base-path:allow `buildEditorUrl()` 이 이미 withBasePrefix 를 적용해 돌려준 값이다
         window.history.pushState({ source: EDITOR_HISTORY_STATE_MARKER, routePath: node.path }, '', nextUrl);
       }
     }

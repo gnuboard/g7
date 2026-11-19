@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"{!! g7_template_html_attributes('user') !!}>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,6 +7,8 @@
         {!! g7_meta_generator_tag() !!}
 
         <title>{{ config('app.name', '그누보드7') }}</title>
+        {{-- 파비콘 — 활성 사용자 템플릿 설정 > 일반 탭 파비콘 > 번들 기본 (#434). 템플릿 없음 화면에서도 낸다 --}}
+        {!! g7_favicon_tags('user') !!}
 
         <!-- 템플릿 외부 리소스 (template.json의 externals) -->
         @include('partials.template-externals-head')
@@ -35,6 +37,12 @@
               data-g7-template-css>
         @endforeach
         @endif
+
+        {{-- 확장 CSS 의미 클래스 칸 — 템플릿 CSS 링크 **뒤**에 선언한다. 템플릿의 층 규칙(예: Tailwind 초기화)보다
+             위, 층 없는 규칙(확장 유틸리티·템플릿 층 없는 CSS·템플릿 확장 CSS 덮기 파일)보다 아래에 놓인다.
+             앞에 두면 템플릿 초기화(`*{margin:0}` 등)가 확장 의미 클래스를 이긴다.
+             순서 선언은 코어 정적 파일(g7-layers.css)로 싣는다 — 인라인 `<style>` 은 엄격한 스타일 정책에서 막힌다(#163). --}}
+        @include('partials.core-styles', ['sheet' => 'layers'])
     </head>
     <body>
         <!-- React 렌더링 루트 -->
@@ -53,13 +61,27 @@
             $g7EditorBundle = public_path('build/core/layout-editor.min.js');
             $g7DevToolsBundle = public_path('build/core/devtools.min.js');
             $g7Config = [
+                // 사이트가 마운트되는 경로 접두사 (루트 설치면 빈 문자열, 하위 폴더면 `/g7`).
+                // 서버의 `AssetUrl::basePrefix()` 를 **그대로 부른다** — 자산 URL 을 만드는
+                // 쪽과 모드를 변환하는 쪽이 규칙을 공유하지 않으면, 하위 폴더 배치에서
+                // R33 자가 복구가 그 URL 을 몰라보고 통째로 무력해진다. 종전에는 같은 식을
+                // 여기 손으로 한 벌 더 적어 두고 주석으로만 「같은 값이어야 한다」고 선언했다.
+                'basePath' => \App\Support\AssetUrl::basePrefix(),
                 'settings' => (object) ($frontendSettings ?? []),
                 'plugins' => (object) ($pluginSettings ?? []),
+                // 활성 템플릿 공개 설정 (#434) — 엔진이 `_global.templateSettings` 로 싣는다
+                'templateSettings' => (object) ($templateSettings ?? []),
                 'modules' => (object) ($moduleSettings ?? []),
                 'moduleAssets' => $moduleAssets ?? [],
                 'pluginAssets' => $pluginAssets ?? [],
                 'bundleUrls' => $bundleUrls ?? null,
                 'customAssets' => $customAssets ?? [],
+                // 템플릿 다크 방식 선언 — 엔진이 `<html data-g7-color-scheme>` 중립 표식으로 옮긴다(확장 CSS 는 표식만 본다)
+                'colorScheme' => $colorScheme ?? ['strategy' => 'none'],
+                // 템플릿이 선언한 확장 CSS 덮기 파일 중 대상이 활성이고 버전이 맞는 것 — 확장 번들 CSS 뒤에 붙는다
+                'extensionCssOverrides' => $extensionCssOverrides ?? [],
+                // 활성 확장의 CSS 접두 빌드 앞글자 — className 을 해석하는 코드가 앞글자와 변형(md: 등)을 가른다
+                'extensionClassPrefixes' => $extensionClassPrefixes ?? [],
                 // 이번 렌더가 `?custom=off` 로 자산을 껐는지. URL 은 SPA 부팅이 다시 쓰면서
                 // 쿼리를 잃을 수 있으므로, 화면은 URL 이 아니라 **서버가 실제로 한 일**을 본다.
                 'customAssetsDisabled' => $customAssetsDisabled ?? false,
@@ -71,6 +93,8 @@
                 'appConfig' => (object) ($appConfig ?? []),
                 // 코어 동의 런타임 첫 값 (제공자 없음 none / 있음 unknown — 회원 판별 전이라 ready 를 싣지 않는다)
                 'consentInitial' => $consentInitial ?? null,
+                // routes/custom.php 로 등록된 개발자 화면 GET 주소(#792) — 엔진 라우터가 이 주소로는 전체 페이지 이동한다
+                'customRoutes' => $customRoutes ?? ['user' => [], 'admin' => []],
                 // 최근 검색어 범위(범위 id → {max_count}) — G7Core.searchHistory 가 선언 여부·비회원 보관 개수를 판정한다(기능을 끄면 빈 객체)
                 'searchScopes' => (object) ($searchScopes ?? []),
                 // 브라우저 탭 제목 규칙 계산 값 — 엔진 DocumentTitle 이 검색엔진 제목과 같은 규칙으로 document.title 을 정한다
@@ -89,6 +113,11 @@
             // 주입된다. 프론트 로더가 routes/lang/components 를 이 경로에서 우선 수신 (#122).
             if (($staticExtBase = \App\Support\AssetUrl::staticExtBase()) !== null) {
                 $g7Config['staticBase'] = $staticExtBase;
+            }
+            // 템플릿 설정 중 template.json `expose` 에 제작자가 선언한 키만 — 엔진이 첫 화면 전 config API 를 부르지 않는다.
+            // 선언이 없는 템플릿은 싣지 않고 엔진이 종전처럼 API 를 부른다 (#879)
+            if (($exposedTemplateConfig ?? null) !== null) {
+                $g7Config['templateConfig'] = (object) $exposedTemplateConfig;
             }
             // 자산 URL 모드 — 'extension'(기본) | 'extensionless'. 서버 기본값만 싣는다.
             // <head> 의 자가 복구가 이미 전환을 확정했다면(window.__g7AssetUrlMode)
@@ -117,14 +146,10 @@
             'initConfig' => array_filter([
                 'templateId' => $activeUserTemplate,
                 'templateType' => 'user',
-                'locale' => app()->getLocale(),
+                'locale' => $frontendLocale ?? app()->getLocale(),
                 'debug' => (bool) config('app.debug'),
-                'websocket' => config('broadcasting.connections.reverb.key') ? [
-                    'appKey' => config('broadcasting.connections.reverb.key'),
-                    'host' => config('g7.websocket.client.host', config('broadcasting.connections.reverb.options.host', 'localhost')),
-                    'port' => (int) config('g7.websocket.client.port', config('broadcasting.connections.reverb.options.port', 80)),
-                    'scheme' => config('g7.websocket.client.scheme', config('broadcasting.connections.reverb.options.scheme', 'https')),
-                ] : null,
+                {{-- 공개 설정 API 와 같은 함수(FrontendConfigService::websocket)로 만든다 --}}
+                'websocket' => $websocketConfig ?? null,
             ], fn ($value) => $value !== null),
         ])
 

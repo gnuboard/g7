@@ -47,6 +47,15 @@ function flatten(node: unknown): LayoutNode[] {
 
 const nodes = flatten(pluginSettingsLayout);
 const cls = (n: LayoutNode) => (typeof n.props?.className === 'string' ? n.props.className : '');
+
+/**
+ * 3열 그리드 입력 줄인지 — 좁은 폭 1열, 1024px 이상 3열을 접두 유틸과 엔진 responsive(`1024-` 구간)로 쓴다.
+ * 폭 미디어를 품은 옛 의미 클래스(`grid-3col-responsive`)는 쓰지 않는다.
+ */
+const GRID3_BASE = 'bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4 bizppurio:items-start';
+const isGrid3col = (n: { props?: { className?: string }; responsive?: Record<string, { props?: { className?: string } }> }) =>
+    (typeof n.props?.className === 'string' ? n.props.className : '').startsWith(GRID3_BASE) &&
+    String(n.responsive?.['1024-']?.props?.className ?? '').split(/\s+/).includes('bizppurio:grid-cols-3');
 const HEADINGS = ['H2', 'H3', 'H4'];
 
 describe('비즈뿌리오 환경설정 — 의미 클래스 위치', () => {
@@ -61,7 +70,7 @@ describe('비즈뿌리오 환경설정 — 의미 클래스 위치', () => {
         );
         expect(headings.length).toBeGreaterThanOrEqual(2);
         for (const heading of headings) {
-            expect({ text: heading.text, className: cls(heading) }).toEqual({ text: heading.text, className: 'section-heading-md' });
+            expect({ text: heading.text, className: cls(heading) }).toEqual({ text: heading.text, className: 'bizppurio-section-heading-md' });
         }
     });
 
@@ -72,10 +81,10 @@ describe('비즈뿌리오 환경설정 — 의미 클래스 위치', () => {
      */
     it('저장 오류 상자는 제목에 강한 오류색, 목록 줄에 옅은 오류색을 쓴다', () => {
         const title = nodes.find((n) => typeof n.text === 'string' && n.text.endsWith('.validation_error'));
-        expect(cls(title ?? {})).toBe('text-error-strong');
+        expect(cls(title ?? {})).toBe('bizppurio-text-error-strong');
 
         const item = nodes.find((n) => n.name === 'Li' && n.text === '{{message}}');
-        expect(cls(item ?? {})).toBe('text-error-soft');
+        expect(cls(item ?? {})).toBe('bizppurio-text-error-soft');
     });
 
     /**
@@ -84,10 +93,10 @@ describe('비즈뿌리오 환경설정 — 의미 클래스 위치', () => {
      * @effects semantic_classes_not_misplaced
      */
     it('섹션 제목 클래스는 제목에만, 3열 그리드 클래스는 목록 줄이 아닌 곳에만 쓴다', () => {
-        const headingMisuse = nodes.filter((n) => cls(n) === 'section-heading-md' && !HEADINGS.includes(n.name ?? ''));
+        const headingMisuse = nodes.filter((n) => cls(n) === 'bizppurio-section-heading-md' && !HEADINGS.includes(n.name ?? ''));
         expect(headingMisuse.map((n) => n.id ?? n.name)).toEqual([]);
 
-        const gridOnLi = nodes.filter((n) => n.name === 'Li' && cls(n).startsWith('grid-3col-responsive'));
+        const gridOnLi = nodes.filter((n) => n.name === 'Li' && isGrid3col(n));
         expect(gridOnLi.map((n) => n.text)).toEqual([]);
     });
 });

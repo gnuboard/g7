@@ -33,9 +33,10 @@
    콘텐츠가 판정에서 빠져 실제로 쓰이는 이미지를 미참조로 오판하므로, 그 상태를 감지해
    정리를 멈춥니다.
 
-**의도적으로 하지 않는 것**: 훅 구독 0 · 리스너 0 · 미들웨어 0 · 브로드캐스트 0 · 알림 0.
-이 플러그인은 다른 확장의 흐름에 개입하지 않고, 자기 확장점 안에서만 삽니다. 본문 정화
-(sanitize)도 이 플러그인의 일이 아닙니다 — 저장측 검증과 봇 화면 정화는 코어가 담당합니다.
+**의도적으로 하지 않는 것**: 미들웨어 0 · 브로드캐스트 0 · 알림 0. 훅 구독은 코어 이미지 썸네일에
+본문 이미지를 등록하는 필터 2개(`ThumbnailRegistrationListener`)뿐입니다 — 그 밖에는 다른 확장의
+흐름에 개입하지 않고, 자기 확장점 안에서만 삽니다. 본문 정화(sanitize)도 이 플러그인의 일이
+아닙니다 — 저장측 검증과 봇 화면 정화는 코어가 담당합니다.
 <!-- @intent END -->
 
 ## 2. 디렉토리 지도
@@ -51,6 +52,7 @@
 | `src/Services/` | 비즈니스 로직 | Repository 인터페이스 주입 (구체 클래스 금지) |
 | `src/Repositories/` | 데이터 접근 | 목록 쿼리는 컬럼 프루닝·정렬 화이트리스트 확인 |
 | `src/Models/` | Eloquent 모델 | 스키마 변경 시 마이그레이션 + 업그레이드 스텝 동반 |
+| `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
@@ -80,13 +82,19 @@
 해제합니다. 자산 로드가 실패하면 `renderTextareaFallback` 이 평문 입력창을 그리고 사용자에게
 사실을 알린 뒤 재시도 통로를 남깁니다. 조각의 스크립트 선언에는 `label="$t:sirsoft-ckeditor5.editor.asset.label"` 이 있어
 코어의 스크립트 실패 안내도 「편집기」라는 이름으로 나옵니다(스크립트 id 를 보이지 않음). 편집기 안내가 뜨면
-같은 본체에 대한 코어 안내(`layout-script:ckeditor5_script`)는 `editorFailureNotice.ts` 가 걷어 배너에 한 건만 남깁니다.
+같은 본체에 대한 코어 안내(`layout-script:ckeditor5_script`)는 `editorFailureNotice.ts` 가 걷어 배너에 한 건만 남깁니다. 코어 로더가 실패한 뒤
+플러그인이 본체를 직접 실어(`ckeditorGlobal.ts` `loadVendorScript`) 편집기를 세우면, 그 코어 안내도 `editorFailureNotice.ts`
+`withdrawCoreScriptFailureAfterRecovery()` 가 걷습니다 — 편집기가 멀쩡한 화면에 실패 띠를 남기지 않습니다.
 
 **이미지 업로드 → 서빙**: 편집기가 `POST /api/plugins/sirsoft-ckeditor5/upload` 호출 →
 `ImageUploadService`(`before_upload` → `filter_upload_file` → 저장 → `after_upload`) →
 `ckeditor5_image_uploads` 에 기록. 서빙은 **해시 경로**(`GET images/{hash}`)이며, 설정
 디스크가 공개 URL 을 주는 환경에서는 본문에 디스크 직접 URL 이 박힙니다 — 그래서 본문에
-남는 URL 형태가 두 가지입니다.
+남는 URL 형태가 두 가지입니다. 해시 경로에 `?size={규격}`·`?w={숫자}` 가 붙으면
+`ImageServeController::serve` 가 원본 응답 바로 앞에서 코어 `ThumbnailResponder` 로 썸네일을 냅니다
+(공개 원본 — 공개 썸네일 디스크, 그 디스크가 공개 자산 디스크면 302). 디스크 직접 URL 로 박히는
+이미지는 이 경로를 지나지 않으므로, 업로드 응답이 반응형 후보 `urls`(숫자 키 = API 주소 + `?size=`)를 함께
+내리고 편집기가 본문 `srcset` 으로 저장합니다 — 그 전에 저장된 본문은 원본 그대로입니다.
 
 **미참조 이미지 정리**: `sirsoft-ckeditor5:prune-unused-images --scheduled`(일 1회, 설정
 `unusedImageCleanup` 이 켜져 있을 때만) → `ImageReferenceScanService` 가 코어 소스 4개(알림 템플릿·레이아웃 3종)
@@ -94,6 +102,8 @@
 파일명 두 토큰을 OR 로** 검사합니다(한쪽만 보면 다른 형태로 저장된 이미지를 미참조로
 오판합니다). 보존기간(`unusedImageRetentionDays`, 기본 30일)이 지난 것만 대상이며,
 비활성 설치 모듈이 있으면 판정 자체를 중단합니다.
+**제거와 데이터(코어 7.2.0)**: `uninstall()` 은 데이터 보존 제거에서도 불린다 — 메뉴는 지우지 않는다. 메뉴·권한·역할·알림 정의·본인확인 정책·스케줄은 「데이터도 함께 삭제」를 고른 제거에서 코어가 지운다(운영자가 만든 자식 메뉴는 최상위로 올리고, 운영자가 고친 항목은 지우기 직전 활동 로그에 남긴다). 플러그인이 코어 행에 더한 데이터는 `uninstallData()` 에서 지운다.
+
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -102,8 +112,8 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 4개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 0개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 0개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 2개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 1개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 2개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -133,7 +143,13 @@
 차지합니다. 다른 편집기 플러그인이 같은 확장점을 노리면 어느 쪽이 이기는지가 설치 순서에
 좌우되므로, 편집기 플러그인은 하나만 활성화하는 것이 전제입니다.
 
-구독 훅·리스너·미들웨어·브로드캐스트 채널·알림은 전부 0개입니다.
+구독 훅은 코어 이미지 썸네일 필터 2개입니다. `core.thumbnail.filter_url_patterns` 에 본문 이미지
+서빙 경로(`/api/plugins/sirsoft-ckeditor5/images/*`)를 더해 화면·SEO 가 이 주소에 규격을 붙이게 하고,
+`core.thumbnail.filter_source_providers` 에 `ImageThumbnailSourceProvider` 를 더해 썸네일 캐시 관리와
+「기존 이미지 썸네일 만들기」가 본문 이미지를 알게 합니다. 서빙 경로를 바꾸면 이 패턴도 같이 바꿔야
+합니다 — 어긋나면 오류 없이 본문 이미지가 원본으로만 나갑니다.
+
+미들웨어·브로드캐스트 채널·알림은 전부 0개입니다.
 <!-- @intent END -->
 
 ## 5. 수정 시 동반 의무
@@ -143,7 +159,7 @@
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-ckeditor5` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스는 자기 앞글자(`ckeditor:` 접두 유틸리티 · `ckeditor-*`)로만 쓰고, 새 클래스를 쓰면 `php artisan plugin:build sirsoft-ckeditor5 --production` 으로 `dist/css/plugin.css` 를 다시 만든다(템플릿 CSS 에 기대지 않는다)
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
@@ -168,7 +184,7 @@
 | 로그 사본 테이블(알림 로그·메일 로그·신고 스냅샷·레이아웃 미리보기)을 참조 소스로 등록 | 원본 콘텐츠 테이블만 등록 | 사본은 자체 보존기간으로 지워진다 — 로그가 지워지는 순간 이미지가 고아가 되는 역전이 생긴다 |
 | 참조 판정을 해시 토큰 하나로만 수행 | 해시와 저장 파일명 두 토큰을 OR 로 검사 | 본문에 박히는 URL 형태가 둘(API 폴백형·디스크 직접형)이라, 한쪽만 보면 다른 형태를 미참조로 오판한다 |
 | 비활성 설치 모듈이 있는 상태에서 정리를 강행 | `hasPotentiallyMissingSources()` 로 감지해 중단 | 비활성 모듈의 콘텐츠는 훅을 등록하지 않으므로 판정에서 빠진다 (fail-open 방지) |
-| 핸들러에서 `<style>` 요소·HTML 문자열의 `style="…"`·`setAttribute('style', …)` 로 스타일 싣기 | 고정 규칙은 `resources/css/main.css`(→ `dist/css/plugin.css`), 실행 중 값은 `el.style.x = …`·`el.style.setProperty()` | 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'`)에서 앞의 셋이 막혀 편집기가 다크 모드·높이·탭 모양을 잃는다. 뒤의 둘은 막히지 않는다 |
+| 핸들러에서 `<style>` 요소·HTML 문자열의 `style="…"`·`setAttribute('style', …)` 로 스타일 싣기 | 자기 클래스(`ckeditor-*`) 규칙은 `resources/css/main.css`(→ `dist/css/plugin.css`), 라이브러리 DOM(`.ck-*`) 규칙은 `initEditor.ts` `LIBRARY_CSS` 를 `G7Core.style.setRules`(생성형 스타일시트)로, 실행 중 값은 `el.style.x = …`·`el.style.setProperty()` | 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'`)에서 앞의 셋이 막혀 편집기가 다크 모드·높이·탭 모양을 잃는다. 뒤의 셋은 막히지 않는다. 확장 CSS 파일은 자기 이름공간 선택자만 싣는다(`extension-css-namespace`) |
 | 동봉 자산 버전을 올리면서 일부 기재만 갱신 | 디렉토리명·레이아웃 조각의 `scripts.src`·의존성 핀·소스 상수·테스트 단언을 한 버전으로 | 하나만 어긋나도 그 자산이 404 가 되는데 빌드와 테스트는 통과한다 |
 | 편집 화면 서식 플러그인(`resources/js/handlers/editingViewStyle.ts`)을 조건부로 싣거나, 같은 효과를 내려고 저장용 변환기·프로토타입·동봉 라이브러리 파일을 고치기 | 편집기를 만들 때 항상 `extraPlugins` 로 싣고, 편집 화면 변환기(`editor.editing.view.domConverter`) 인스턴스의 `setDomElementAttribute` 만 덮어써 `style` 을 `el.style.cssText` 로 입힌다. 동봉 판을 올릴 때 그 메서드의 이름·인자·안전 판정(`shouldRenderAttribute`)이 그대로인지 확인한다 | 엄격한 스타일 정책(`style-src-attr 'none'`)에서는 `setAttribute('style')` 가 막혀 편집 화면에 정렬·색·표·이미지 크기가 보이지 않는다. 저장용 경로를 건드리면 저장되는 HTML 이 달라진다. 색상 선택기(shadow DOM `<style>`)·끌어 놓기 미리보기는 고치지 않는 범위다 |
 <!-- @intent END -->
@@ -178,10 +194,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 21개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
-| Vitest | 38개 | `vitest.config.ts` |
+| PHPUnit | 27개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
+| Vitest | 42개 | `vitest.config.ts` |
 | Playwright | 4개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 26개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 30개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

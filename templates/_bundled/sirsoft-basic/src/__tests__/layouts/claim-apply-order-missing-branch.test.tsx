@@ -17,9 +17,9 @@
  * @vitest-environment jsdom
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { DataSourceManager } from '@core/template-engine/DataSourceManager';
-import { ActionDispatcher } from '@core/template-engine/ActionDispatcher';
+import { ActionDispatcher, type ActionHandler } from '@core/template-engine/ActionDispatcher';
 import { ErrorHandlingResolver } from '@core/error/ErrorHandlingResolver';
 import { Logger } from '@core/utils/Logger';
 
@@ -42,8 +42,8 @@ type Node = Record<string, any>;
 /** 이 셸의 실제 order 데이터소스 정의 */
 const orderSource = ((layout as Node).data_sources as Node[]).find((s) => s.id === 'order') as Node;
 
-let showErrorPage: ReturnType<typeof vi.fn>;
-let suppress: ReturnType<typeof vi.fn>;
+let showErrorPage: Mock<ActionHandler>;
+let suppress: Mock<ActionHandler>;
 
 beforeEach(() => {
   ErrorHandlingResolver.resetInstance();
@@ -55,8 +55,8 @@ beforeEach(() => {
 
   // 실제 디스패처 — 생성자가 ErrorHandlingResolver 의 실행기를 이 디스패처로 연결한다
   const dispatcher = new ActionDispatcher({ navigate: vi.fn() });
-  showErrorPage = vi.fn();
-  suppress = vi.fn();
+  showErrorPage = vi.fn<ActionHandler>();
+  suppress = vi.fn<ActionHandler>();
   dispatcher.registerHandler('showErrorPage', showErrorPage);
   dispatcher.registerHandler('suppress', suppress);
 });

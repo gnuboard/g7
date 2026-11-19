@@ -60,3 +60,43 @@ describe('components.json — Badge·SearchableDropdown props 동기', () => {
     expect(missing).toEqual([]);
   });
 });
+
+/** 매니페스트 묶음(composite·layout …)에서 이름으로 항목의 prop 이름을 찾는다. */
+function manifestPropsAnyGroup(name: string): string[] {
+  for (const group of Object.values(manifest.components) as any[]) {
+    const entry = Array.isArray(group) ? group.find((c: any) => c.name === name) : undefined;
+    if (entry) return Object.keys(entry.props ?? {});
+  }
+
+  return [];
+}
+
+describe('components.json — 매니페스트에만 있고 소스가 받지 않는 prop 이 없다', () => {
+  /**
+   * CardGrid 열 수는 소스가 `gridColumns` 로 받는다. 매니페스트가 `columns` 로 적으면 편집기 속성 칸에서
+   * 열 수를 바꿔도 카드 수가 바뀌지 않는다.
+   *
+   * @scenario case=CardGrid
+   * @effects component_manifest_has_no_phantom_props
+   */
+  it('CardGrid 매니페스트 prop 이 모두 소스 props 에 있다', () => {
+    const source = sourceProps('src/components/composite/CardGrid.tsx', 'CardGridProps');
+    const phantom = manifestPropsAnyGroup('CardGrid').filter((p) => !source.includes(p) && !INFRA.has(p));
+
+    expect(phantom).toEqual([]);
+  });
+
+  /**
+   * Container 는 id·className·style·children 만 받는 래퍼다. 매니페스트의 flex·grid 배치 prop 과
+   * 「sm·md·lg 구간별 열 수」 responsive 는 어디서도 해석되지 않아 편집기에 동작하지 않는 칸을 세운다.
+   *
+   * @scenario case=Container
+   * @effects component_manifest_has_no_phantom_props
+   */
+  it('Container 매니페스트 prop 이 모두 소스 props 에 있다', () => {
+    const source = sourceProps('src/components/layout/Container.tsx', 'ContainerProps');
+    const phantom = manifestPropsAnyGroup('Container').filter((p) => !source.includes(p) && !INFRA.has(p));
+
+    expect(phantom).toEqual([]);
+  });
+});

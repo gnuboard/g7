@@ -1,0 +1,128 @@
+<!-- 레이아웃 갱신·업데이트 창이 함께 쓰는 「화면별 처리 미리보기」.
+  여는 쪽이 _global.layoutPreviewRequest({url, body})를 정하고 페이지의 fetchLayoutPreview 액션을 부른다. 이 조각은
+  미리보기 결과(_global.layoutPreview — entries·summary·has_conflicts)를 그리고, 처리 방식(_global.layoutSyncStrategy)과
+  화면별 결정(_global.layoutDecisions — 키 => take-theirs|keep-ours, 키가 없으면 서버 기본 병합)을 고르게 한다. 적용 버튼은 여는 창이 갖고 이 두 값을
+  요청 본문에 싣는다. 판정식은 서버 한 곳(미리보기 API)에만 있다 — 여기서 다시 계산하지 않는다. -->
+<partial description="레이아웃 동기화 미리보기 (갱신·업데이트 창 공용)" editor_label="$t:admin.layout_sync_preview.title">
+  <div data-ref="layout_sync_preview" class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+    <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:admin.layout_sync_preview.strategy_title</div>
+    <div data-ref="layout_sync_preview_strategy" class="row-stack">
+      <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+        <input type="radio" name="layout_sync_strategy" value="keep" checked="{{(_global.layoutSyncStrategy ?? 'keep') === 'keep'}}" disabled="{{_global.layoutPreviewState === 'loading'}}" class="radio mt-0.5">
+          <on type="change">
+            <!-- 수정 유지(기본) — 운영자가 고친 부분은 두고 손대지 않은 부분만 새 판으로. 판정이 달라지므로 다시 미리 본다. -->
+            <sequence>
+              <set-state target="global" layoutSyncStrategy="keep"/>
+              <action-ref name="fetchLayoutPreview"/>
+            </sequence>
+          </on>
+        </input>
+        <div>
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.layout_sync_preview.strategy_keep</span>
+          <p class="text-tertiary">$t:admin.layout_sync_preview.strategy_keep_desc</p>
+        </div>
+      </label>
+      <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+        <input type="radio" name="layout_sync_strategy" value="overwrite" checked="{{_global.layoutSyncStrategy === 'overwrite'}}" disabled="{{_global.layoutPreviewState === 'loading'}}" class="radio mt-0.5">
+          <on type="change">
+            <!-- 모두 교체 — 모든 화면을 새 판으로 덮는다. 화면별 결정은 의미가 없어지므로 비운다. -->
+            <sequence>
+              <set-state target="global" layoutSyncStrategy="overwrite" :layoutDecisions="{}"/>
+              <action-ref name="fetchLayoutPreview"/>
+            </sequence>
+          </on>
+        </input>
+        <div>
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.layout_sync_preview.strategy_overwrite</span>
+          <p class="text-tertiary">$t:admin.layout_sync_preview.strategy_overwrite_desc</p>
+        </div>
+      </label>
+    </div>
+    <div data-ref="layout_sync_preview_overwrite_warning" data-if="{{_global.layoutSyncStrategy === 'overwrite'}}" class="alert-warning mt-2" role="alert">
+      <icon name="exclamation-triangle" class="text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+      <p class="text-warning-soft">$t:admin.layout_sync_preview.overwrite_warning</p>
+    </div>
+    <div data-ref="layout_sync_preview_loading" data-if="{{_global.layoutPreviewState === 'loading'}}" class="flex-center gap-2 mt-3 text-label-subtle" role="status">
+      <icon name="spinner" class="spinner-sm"/>
+      <span>$t:admin.layout_sync_preview.loading</span>
+    </div>
+    <div data-ref="layout_sync_preview_error" data-if="{{_global.layoutPreviewState === 'error'}}" class="alert-danger mt-3" role="alert">
+      <icon name="exclamation-circle" class="text-red-600 dark:text-red-400 flex-shrink-0"/>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm text-red-700 dark:text-red-300">$t:admin.layout_sync_preview.error</p>
+        <p data-if="{{!!_global.layoutPreviewError}}" class="text-xs text-red-600 dark:text-red-400 mt-1 break-words">{{_global.layoutPreviewError}}</p>
+      </div>
+      <button data-ref="layout_sync_preview_retry" type="button" class="btn btn-secondary btn-sm shrink-0">
+        <on type="click">
+          <!-- 같은 요청으로 다시 미리 본다. -->
+          <action-ref name="fetchLayoutPreview"/>
+        </on>
+        <span>$t:admin.layout_sync_preview.retry</span>
+      </button>
+    </div>
+    <div data-ref="layout_sync_preview_result" data-if="{{_global.layoutPreviewState === 'ready'}}" class="mt-3">
+      <!-- 업데이트 미리보기가 화면 판정을 건너뛴 까닭(layouts_skipped) — 꺼 둔 확장(inactive)·활성 디렉토리에 파일이 없는 설치본(files_missing).
+        이때 판정 목록이 비어 오므로 0개 요약·「바뀌는 화면이 없습니다」 대신 이 안내를 보인다. 지워질 선언 항목은 그대로 그린다. -->
+      <div data-ref="layout_sync_preview_skipped" data-if="{{!!_global.layoutUpdatePreview?.layouts_skipped}}" class="alert-info mb-2" role="status">
+        <icon name="info-circle" class="text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+        <p data-if="{{_global.layoutUpdatePreview?.layouts_skipped === 'inactive'}}" class="text-sm text-blue-700 dark:text-blue-300">$t:admin.layout_sync_preview.skipped_inactive</p>
+        <p data-if="{{_global.layoutUpdatePreview?.layouts_skipped === 'files_missing'}}" class="text-sm text-blue-700 dark:text-blue-300">$t:admin.layout_sync_preview.skipped_files_missing</p>
+      </div>
+      <!-- 요약 세 수는 따로 번역한다 — 수마다 단수·복수가 갈리는 언어(en)가 있다. -->
+      <p data-ref="layout_sync_preview_summary" data-if="{{!_global.layoutUpdatePreview?.layouts_skipped}}" class="flex flex-wrap items-center gap-x-1.5 text-xs text-gray-600 dark:text-gray-400 mb-2">
+        <span>$t:admin.layout_sync_preview.summary_changed|count={{(_global.layoutPreview?.entries ?? []).filter(e => e.verdict !== 'unchanged').length}}</span>
+        <span aria-hidden="true">·</span>
+        <span>$t:admin.layout_sync_preview.summary_conflicts|count={{(_global.layoutPreview?.conflict_screens ?? []).length}}</span>
+        <span aria-hidden="true">·</span>
+        <span>$t:admin.layout_sync_preview.summary_deleted|count={{(_global.layoutPreview?.entries ?? []).filter(e => e.will_delete).length}}</span>
+      </p>
+      <p data-ref="layout_sync_preview_empty" data-if="{{!_global.layoutUpdatePreview?.layouts_skipped &amp;&amp; (_global.layoutPreview?.entries ?? []).filter(e => e.verdict !== 'unchanged').length === 0}}" class="text-xs text-green-700 dark:text-green-400">$t:admin.layout_sync_preview.empty</p>
+      <div data-ref="layout_sync_preview_rows" class="space-y-1 max-h-64 overflow-y-auto">
+        <div data-each="previewEntry in {{(_global.layoutPreview?.entries ?? []).filter(e => e.verdict !== 'unchanged')}}" class="flex flex-wrap items-center gap-2 text-xs px-2 py-1.5 bg-white dark:bg-gray-900 rounded border border-gray-100 dark:border-gray-700">
+          <span class="font-mono flex-1 min-w-0 break-all text-gray-700 dark:text-gray-300">{{previewEntry.name}}</span>
+          <span data-if="{{previewEntry.kind === 'extension'}}" class="badge badge-gray">$t:admin.layout_sync_preview.kind_extension</span>
+          <span class="badge {{previewEntry.verdict === 'deleted' ? 'badge-red' : (['conflict', 'kept_no_base', 'kept_invalid', 'updated'].includes(previewEntry.verdict) ? 'badge-yellow' : (['created', 'took_theirs', 'merged'].includes(previewEntry.verdict) ? 'badge-blue' : 'badge-gray'))}}">{{$t('admin.layout_sync_preview.verdict.' + previewEntry.verdict)}}</span>
+          <span data-if="{{(previewEntry.conflicts ?? []).length &gt; 0}}" class="text-amber-700 dark:text-amber-400">$t:admin.layout_sync_preview.conflict_units|count={{(previewEntry.conflicts ?? []).length}}</span>
+          <div data-if="{{(_global.layoutSyncStrategy ?? 'keep') === 'keep' &amp;&amp; (['merged', 'conflict', 'kept', 'kept_no_base', 'kept_invalid'].includes(previewEntry.verdict) || !!(_global.layoutDecisions ?? {})[previewEntry.key])}}" class="flex flex-wrap items-center gap-3">
+            <!-- 결정이 없는 화면은 서버 기본(겹치지 않는 곳만 새 판, 겹친 곳은 운영자 판)으로 처리된다 — 화면도 그 선택지를 골라 둔다. -->
+            <label class="flex items-center gap-1 cursor-pointer" title="$t:admin.layout_sync_preview.decision_merge_hint">
+              <input type="radio" name="{{'layout_decision_' + previewEntry.key}}" value="merge" aria-label="$t:common.row_cell|row={{previewEntry.name}}|column=$t:admin.layout_sync_preview.decision_merge" checked="{{!(_global.layoutDecisions ?? {})[previewEntry.key]}}" class="radio">
+                <on type="change">
+                  <!-- 겹치지 않는 곳만 반영 — 이 화면의 결정을 지워 서버 기본 병합에 맡긴다. 깊은 병합은 키를 지우지 못하므로 최상위 키를 통째로 바꾼다. -->
+                  <set-state target="global" merge="shallow" layoutDecisions="{{Object.fromEntries(Object.entries(_global.layoutDecisions ?? {}).filter(e => e[0] !== previewEntry.key))}}"/>
+                </on>
+              </input>
+              <span>$t:admin.layout_sync_preview.decision_merge</span>
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer" title="$t:admin.layout_sync_preview.decision_keep_ours_hint">
+              <input type="radio" name="{{'layout_decision_' + previewEntry.key}}" value="keep-ours" aria-label="$t:common.row_cell|row={{previewEntry.name}}|column=$t:admin.layout_sync_preview.decision_keep_ours" checked="{{(_global.layoutDecisions ?? {})[previewEntry.key] === 'keep-ours'}}" class="radio">
+                <on type="change">
+                  <!-- 운영자 판 유지 — 이 화면은 새 판 변경을 하나도 받지 않고 운영자 판을 통째로 둔다. -->
+                  <set-state target="global" layoutDecisions="{{Object.assign({}, _global.layoutDecisions ?? {}, {[previewEntry.key]: 'keep-ours'})}}"/>
+                </on>
+              </input>
+              <span>$t:admin.layout_sync_preview.decision_keep_ours</span>
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer" title="$t:admin.layout_sync_preview.decision_take_theirs_hint">
+              <input type="radio" name="{{'layout_decision_' + previewEntry.key}}" value="take-theirs" aria-label="$t:common.row_cell|row={{previewEntry.name}}|column=$t:admin.layout_sync_preview.decision_take_theirs" checked="{{(_global.layoutDecisions ?? {})[previewEntry.key] === 'take-theirs'}}" class="radio">
+                <on type="change">
+                  <!-- 새 판 적용 — 이 화면만 새 판으로 덮는다. 덮기 전 운영자 판은 편집기 [버전 기록]에 남는다. -->
+                  <set-state target="global" layoutDecisions="{{Object.assign({}, _global.layoutDecisions ?? {}, {[previewEntry.key]: 'take-theirs'})}}"/>
+                </on>
+              </input>
+              <span>$t:admin.layout_sync_preview.decision_take_theirs</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div data-ref="layout_sync_preview_deletions" data-if="{{(_global.layoutUpdatePreview?.declarative_deletions ?? []).length &gt; 0}}" class="mt-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded">
+        <div class="text-xs font-medium text-red-700 dark:text-red-300 mb-1">$t:admin.layout_sync_preview.deletions_title|count={{(_global.layoutUpdatePreview?.declarative_deletions ?? []).length}}</div>
+        <div data-each="deletion in {{_global.layoutUpdatePreview?.declarative_deletions ?? []}}" class="flex flex-wrap items-center gap-2 text-xs py-0.5">
+          <span class="badge badge-gray">{{$t('admin.layout_sync_preview.deletion_type.' + deletion.type)}}</span>
+          <span class="font-mono break-all text-gray-700 dark:text-gray-300">{{deletion.key}}</span>
+          <span data-if="{{deletion.has_operator_overrides === true}}" class="badge badge-red">$t:admin.layout_sync_preview.deletion_operator</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

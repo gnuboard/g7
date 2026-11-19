@@ -17,10 +17,7 @@ use Tests\Support\UpgradeFiles;
  * 판단 규칙만 순수 함수로 검증한다 — 실제 설정 파일(storage/app/plugins/...)은 개발
  * 환경의 실데이터이므로 테스트가 건드리지 않는다.
  *
- * @scenario case=payment_redirect_follows_shop_route_path
- *
- * @effects legacy_default_redirect_is_backfilled, operator_custom_redirect_survives_backfill,
- *          redirect_backfill_is_idempotent
+ * @scenario stored_value=legacy_default
  */
 #[Group('payment')]
 #[Group('upgrade')]

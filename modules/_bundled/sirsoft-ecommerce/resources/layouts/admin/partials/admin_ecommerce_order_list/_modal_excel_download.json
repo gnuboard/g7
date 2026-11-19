@@ -9,7 +9,125 @@
     "name": "Modal",
     "props": {
         "size": "sm",
-        "title": "$t:sirsoft-ecommerce.admin.order.excel.title"
+        "title": "$t:sirsoft-ecommerce.admin.order.excel.title",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isDownloading}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "내려받기. 응답이 JSON 이 아니라 파일(blob)이라 코어 apiCall 로는 받지 못한다(apiCall 은 응답을\n            JSON 으로만 읽는다) — 요청과 저장을 이 모듈의 `sirsoft-ecommerce.downloadFile` 이 한 번에 한다. 서버는\n            파일 바이트만 주고 파일명은 이쪽이 붙인다(시각도 서버가 아닌 브라우저 시각이다). 토스트·창 닫기는\n            저장이 시작된 뒤이고, 실패하면 진행 표시를 풀고 실패 안내를 띄운다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isDownloading": true
+                                }
+                            },
+                            {
+                                "handler": "sirsoft-ecommerce.downloadFile",
+                                "params": {
+                                    "url": "/api/modules/sirsoft-ecommerce/admin/orders/export-excel",
+                                    "method": "POST",
+                                    "filename": "orders_{{$date.format('YYYYMMDD_HHmmss')}}.xlsx",
+                                    "body": "{{ { type: _global.excelDownloadContext?.type, order_ids: _global.excelDownloadContext?.type === 'selected' ? (_global.excelDownloadContext?.selectedItems ?? []) : [], filters: _global.excelDownloadContext?.type === 'search' ? { search_field: _global.excelDownloadContext?.filter?.searchField, search_keyword: _global.excelDownloadContext?.filter?.searchKeyword, date_type: _global.excelDownloadContext?.filter?.dateType, start_date: _global.excelDownloadContext?.filter?.startDate, end_date: _global.excelDownloadContext?.filter?.endDate, order_status: _global.excelDownloadContext?.filter?.orderStatus, claim_presence: _global.excelDownloadContext?.filter?.claimPresence, claim_exchange_statuses: _global.excelDownloadContext?.filter?.claimExchangeStatuses, claim_return_statuses: _global.excelDownloadContext?.filter?.claimReturnStatuses, claim_refund_statuses: _global.excelDownloadContext?.filter?.claimRefundStatuses, claim_cancel_types: _global.excelDownloadContext?.filter?.claimCancelTypes, claim_fault_types: _global.excelDownloadContext?.filter?.claimFaultTypes, claim_requested_from: _global.excelDownloadContext?.filter?.claimRequestedFrom, claim_requested_to: _global.excelDownloadContext?.filter?.claimRequestedTo, delivery_method: _global.excelDownloadContext?.filter?.deliveryMethods, payment_method: _global.excelDownloadContext?.filter?.paymentMethods, category_id: _global.excelDownloadContext?.filter?.category4 || _global.excelDownloadContext?.filter?.category3 || _global.excelDownloadContext?.filter?.category2 || _global.excelDownloadContext?.filter?.category1, min_price: _global.excelDownloadContext?.filter?.minPrice, max_price: _global.excelDownloadContext?.filter?.maxPrice, country: _global.excelDownloadContext?.filter?.countries, device: _global.excelDownloadContext?.filter?.devices } : {} } }}"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isDownloading": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:sirsoft-ecommerce.admin.order.excel.download_success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isDownloading": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "$t:sirsoft-ecommerce.admin.order.excel.download_failed"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isDownloading}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isDownloading}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "ecommerce-spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{!_global.isDownloading}}",
+                        "props": {
+                            "name": "download",
+                            "className": "ecommerce:text-base"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isDownloading ? '$t:common.downloading' : '$t:sirsoft-ecommerce.admin.order.excel.download'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -24,7 +142,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-label"
+                                "className": "ecommerce-text-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.excel.description"
                         },
@@ -36,7 +154,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_global.excelDownloadContext?.type === 'search' ? 'bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-500' : ''}}"
+                                        "className": "ecommerce:flex ecommerce:items-start ecommerce:gap-3 ecommerce:p-3 ecommerce:rounded-lg ecommerce:cursor-pointer ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-800 ecommerce:transition-colors {{_global.excelDownloadContext?.type === 'search' ? 'ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/20 ecommerce:ring-2 ecommerce:ring-blue-500' : ''}}"
                                     },
                                     "children": [
                                         {
@@ -58,21 +176,21 @@
                                                 "name": "excelDownloadType",
                                                 "value": "search",
                                                 "checked": "{{_global.excelDownloadContext?.type === 'search'}}",
-                                                "className": "radio mt-1"
+                                                "className": "ecommerce-radio ecommerce:mt-1"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-1"
+                                                "className": "ecommerce:flex-1"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "block text-heading"
+                                                        "className": "ecommerce:block ecommerce-text-heading"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.excel.option_search"
                                                 },
@@ -80,7 +198,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "block text-tertiary mt-0.5"
+                                                        "className": "ecommerce:block ecommerce-text-tertiary ecommerce:mt-0.5"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.excel.option_search_desc|count={{_global.excelDownloadContext?.total ?? 0}}"
                                                 }
@@ -92,7 +210,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_global.excelDownloadContext?.type === 'selected' ? 'bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-500' : ''}} {{(_global.excelDownloadContext?.selectedItems ?? []).length === 0 ? 'opacity-50 cursor-not-allowed' : ''}}"
+                                        "className": "ecommerce:flex ecommerce:items-start ecommerce:gap-3 ecommerce:p-3 ecommerce:rounded-lg ecommerce:cursor-pointer ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-800 ecommerce:transition-colors {{_global.excelDownloadContext?.type === 'selected' ? 'ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/20 ecommerce:ring-2 ecommerce:ring-blue-500' : ''}} {{(_global.excelDownloadContext?.selectedItems ?? []).length === 0 ? 'ecommerce:opacity-50 ecommerce:cursor-not-allowed' : ''}}"
                                     },
                                     "children": [
                                         {
@@ -115,21 +233,21 @@
                                                 "value": "selected",
                                                 "checked": "{{_global.excelDownloadContext?.type === 'selected'}}",
                                                 "disabled": "{{(_global.excelDownloadContext?.selectedItems ?? []).length === 0}}",
-                                                "className": "radio mt-1"
+                                                "className": "ecommerce-radio ecommerce:mt-1"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-1"
+                                                "className": "ecommerce:flex-1"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "block text-heading"
+                                                        "className": "ecommerce:block ecommerce-text-heading"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.excel.option_selected"
                                                 },
@@ -137,7 +255,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "block text-tertiary mt-0.5"
+                                                        "className": "ecommerce:block ecommerce-text-tertiary ecommerce:mt-0.5"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.excel.option_selected_desc|count={{(_global.excelDownloadContext?.selectedItems ?? []).length}}"
                                                 }
@@ -146,131 +264,6 @@
                                     ]
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{_global.isDownloading}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.cancel"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "내려받기. 응답이 JSON 이 아니라 파일(blob)이라 코어 apiCall 로는 받지 못한다(apiCall 은 응답을\n            JSON 으로만 읽는다) — 요청과 저장을 이 모듈의 `sirsoft-ecommerce.downloadFile` 이 한 번에 한다. 서버는\n            파일 바이트만 주고 파일명은 이쪽이 붙인다(시각도 서버가 아닌 브라우저 시각이다). 토스트·창 닫기는\n            저장이 시작된 뒤이고, 실패하면 진행 표시를 풀고 실패 안내를 띄운다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "isDownloading": true
-                                    }
-                                },
-                                {
-                                    "handler": "sirsoft-ecommerce.downloadFile",
-                                    "params": {
-                                        "url": "/api/modules/sirsoft-ecommerce/admin/orders/export-excel",
-                                        "method": "POST",
-                                        "filename": "orders_{{$date.format('YYYYMMDD_HHmmss')}}.xlsx",
-                                        "body": "{{ { type: _global.excelDownloadContext?.type, order_ids: _global.excelDownloadContext?.type === 'selected' ? (_global.excelDownloadContext?.selectedItems ?? []) : [], filters: _global.excelDownloadContext?.type === 'search' ? { search_field: _global.excelDownloadContext?.filter?.searchField, search_keyword: _global.excelDownloadContext?.filter?.searchKeyword, date_type: _global.excelDownloadContext?.filter?.dateType, start_date: _global.excelDownloadContext?.filter?.startDate, end_date: _global.excelDownloadContext?.filter?.endDate, order_status: _global.excelDownloadContext?.filter?.orderStatus, claim_presence: _global.excelDownloadContext?.filter?.claimPresence, claim_exchange_statuses: _global.excelDownloadContext?.filter?.claimExchangeStatuses, claim_return_statuses: _global.excelDownloadContext?.filter?.claimReturnStatuses, claim_refund_statuses: _global.excelDownloadContext?.filter?.claimRefundStatuses, claim_cancel_types: _global.excelDownloadContext?.filter?.claimCancelTypes, claim_fault_types: _global.excelDownloadContext?.filter?.claimFaultTypes, claim_requested_from: _global.excelDownloadContext?.filter?.claimRequestedFrom, claim_requested_to: _global.excelDownloadContext?.filter?.claimRequestedTo, delivery_method: _global.excelDownloadContext?.filter?.deliveryMethods, payment_method: _global.excelDownloadContext?.filter?.paymentMethods, category_id: _global.excelDownloadContext?.filter?.category4 || _global.excelDownloadContext?.filter?.category3 || _global.excelDownloadContext?.filter?.category2 || _global.excelDownloadContext?.filter?.category1, min_price: _global.excelDownloadContext?.filter?.minPrice, max_price: _global.excelDownloadContext?.filter?.maxPrice, country: _global.excelDownloadContext?.filter?.countries, device: _global.excelDownloadContext?.filter?.devices } : {} } }}"
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isDownloading": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:sirsoft-ecommerce.admin.order.excel.download_success"
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isDownloading": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "$t:sirsoft-ecommerce.admin.order.excel.download_failed"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{_global.isDownloading}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.isDownloading}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{!_global.isDownloading}}",
-                            "props": {
-                                "name": "download",
-                                "className": "text-base"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.isDownloading ? '$t:common.downloading' : '$t:sirsoft-ecommerce.admin.order.excel.download'}}"
                         }
                     ]
                 }

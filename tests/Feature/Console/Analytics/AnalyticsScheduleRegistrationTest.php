@@ -2,24 +2,31 @@
 
 namespace Tests\Feature\Console\Analytics;
 
+use App\Models\Schedule as ScheduleModel;
+use App\Services\Schedule\ScheduleRegistrar;
+use Database\Seeders\CoreScheduleSeeder;
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Schedule as ScheduleFacade;
 use Tests\TestCase;
 
 /**
- * 방문자 통계 예약 등록 — 무엇이 언제, 어느 구간에 걸렸는가.
+ * 방문자 통계 예약 등록 — 무엇이 언제, 어느 묶음에 걸렸는가.
  *
  * 집계가 안 돌면 화면 숫자가 그 시점에 멈춘 채 그럴듯하게 남고, 정리가 안 돌면 원장이
  * 조용히 자란다. 둘 다 증상이 없으므로 「등록됐는가」를 테스트가 지켜야 한다.
  *
- * 정리(prune)만 gc 구간 **안**에 있어야 한다 — 그 구간을 읽어 정리 배치 목록을 도출하는
- * 회귀 테스트가 있어서, 집계를 그 안에 두면 정리 목록이 오염된다.
+ * 7.2.0 부터 예약은 DB 행을 거친다 — 코어 카탈로그(`config/core.php` schedules) → CoreScheduleSeeder →
+ * ScheduleRegistrar → `schedule:{id}` 이벤트. 정리(prune)만 카탈로그 `group: gc` 여야 한다 — 그 묶음을
+ * 읽어 정리 배치 목록을 도출하는 회귀 테스트가 있어서, 집계를 gc 로 두면 정리 목록이 오염된다.
+ * 조건부 예약(클라우드 대역·실시간 브로드캐스트)은 늘 등록되고 조건은 실행 시점에 평가된다.
  */
 class AnalyticsScheduleRegistrationTest extends TestCase
 {
     use RefreshDatabase;
+
+    /** @var bool 이 테스트에서 코어 카탈로그를 시딩했는지 */
+    private bool $seeded = false;
 
     /**
      * 방문자 통계 예약의 기대 주기입니다.
@@ -60,7 +67,7 @@ class AnalyticsScheduleRegistrationTest extends TestCase
     }
 
     /**
-     * 정리만 gc 구간 안에 있고 집계·점검·리포트는 밖에 있는지 확인합니다.
+     * 정리만 카탈로그 gc 묶음이고 집계·점검·리포트는 gc 밖에 있는지 확인합니다.
      *
      * @return void 없음
      *
@@ -70,30 +77,34 @@ class AnalyticsScheduleRegistrationTest extends TestCase
      */
     public function test_only_prune_lives_inside_the_gc_block(): void
     {
-        $source = (string) file_get_contents(base_path('routes/console.php'));
+        $gc = [];
+        $others = [];
 
-        $begin = strpos($source, '// gc-schedules:begin');
-        $end = strpos($source, '// gc-schedules:end');
+        foreach ((array) config('core.schedules') as $entry) {
+            $command = (string) ($entry['command'] ?? '');
 
-        $this->assertNotFalse($begin);
-        $this->assertNotFalse($end);
+            if (($entry['group'] ?? null) === 'gc') {
+                $gc[] = $command;
+            } else {
+                $others[] = $command;
+            }
+        }
 
-        $inside = substr($source, $begin, $end - $begin);
-        $outside = substr($source, 0, $begin).substr($source, $end);
+        $this->assertNotEmpty($gc);
+        $this->assertNotEmpty($others);
 
-        $this->assertStringContainsString(
-            "Schedule::command('analytics:prune')",
-            $inside,
-            '정리는 gc 구간 안에 있어야 정리 배치 목록에 잡힌다',
+        $this->assertContains(
+            'analytics:prune',
+            $gc,
+            '정리는 gc 묶음이어야 정리 배치 목록에 잡힌다',
         );
 
         foreach (['analytics:archive', 'analytics:check-volume', 'analytics:report', 'analytics:broadcast-realtime'] as $command) {
-            $this->assertStringNotContainsString(
-                "Schedule::command('".$command,
-                $inside,
-                "{$command} 는 정리가 아니다 — gc 구간에 두면 정리 배치 목록이 오염된다",
+            $this->assertEmpty(
+                array_filter($gc, static fn (string $c): bool => str_starts_with($c, $command)),
+                "{$command} 는 정리가 아니다 — gc 묶음에 두면 정리 배치 목록이 오염된다",
             );
-            $this->assertStringContainsString("Schedule::command('".$command, $outside);
+            $this->assertNotEmpty(array_filter($others, static fn (string $c): bool => str_starts_with($c, $command)));
         }
     }
 
@@ -181,7 +192,10 @@ class AnalyticsScheduleRegistrationTest extends TestCase
     }
 
     /**
-     * 조건부 예약이 그 조건이 꺼져 있을 때 등록되지 않는지 확인합니다.
+     * 조건부 예약이 그 조건이 꺼져 있을 때 실행되지 않는지 확인합니다.
+     *
+     * DB 스케줄은 조건과 무관하게 등록되고(관리 화면에 보여야 한다), 조건은 실행 시점에 평가된다 —
+     * 「꺼져 있으면 돌지 않는다」를 이벤트의 실행 조건(filtersPass)으로 잰다.
      *
      * @return void 없음
      *
@@ -189,18 +203,26 @@ class AnalyticsScheduleRegistrationTest extends TestCase
      *
      * @effects conditional_schedules_stay_out_when_their_feature_is_off
      */
-    public function test_conditional_schedules_are_absent_when_their_feature_is_off(): void
+    public function test_conditional_schedules_do_not_run_when_their_feature_is_off(): void
     {
         // 조건을 **이 테스트가 만든다**. 개발자 `.env` 의 `REVERB_APP_KEY` 를 그대로 읽으면,
         // 웹소켓을 켜 둔 사람의 컴퓨터에서만 빨개져 정작 재려던 것을 못 잰다(#682 S3 라운드 9).
-        $this->rebuildScheduleWith(['broadcasting.connections.reverb.key' => '']);
+        config([
+            'broadcasting.connections.reverb.key' => '',
+            'g7_settings.core.analytics.block_cloud_ip_ranges' => false,
+        ]);
 
-        $this->assertNull($this->findEvent('analytics:update-cloud-ranges'));
-        $this->assertNull($this->findEvent('analytics:broadcast-realtime'));
+        $cloud = $this->findEvent('analytics:update-cloud-ranges');
+        $realtime = $this->findEvent('analytics:broadcast-realtime');
+
+        $this->assertNotNull($cloud, '조건부 예약도 행으로 등록되어 관리 화면에 보여야 한다');
+        $this->assertNotNull($realtime);
+        $this->assertFalse($cloud->filtersPass($this->app), '클라우드 대역 차단이 꺼져 있으면 갱신하지 않는다');
+        $this->assertFalse($realtime->filtersPass($this->app), '브로드캐스트 미설정이면 실시간 방송을 돌리지 않는다');
     }
 
     /**
-     * 브로드캐스트가 설정된 사이트에서는 실시간 예약이 등록되는지 확인합니다.
+     * 기능을 켠 사이트에서는 조건부 예약이 실행되는지 확인합니다.
      *
      * @return void 없음
      *
@@ -210,49 +232,52 @@ class AnalyticsScheduleRegistrationTest extends TestCase
      */
     public function test_the_realtime_schedule_appears_when_broadcasting_is_configured(): void
     {
-        // 꺼진 쪽만 재면 「어느 조건에서도 등록되지 않는다」와 구분이 안 된다 — 켠 쪽도 잰다.
-        $this->rebuildScheduleWith(['broadcasting.connections.reverb.key' => 'test-key']);
+        // 꺼진 쪽만 재면 「어느 조건에서도 실행되지 않는다」와 구분이 안 된다 — 켠 쪽도 잰다.
+        config([
+            'broadcasting.connections.reverb.key' => 'test-key',
+            'g7_settings.core.analytics.block_cloud_ip_ranges' => true,
+        ]);
 
-        $this->assertNotNull($this->findEvent('analytics:broadcast-realtime'));
+        $realtime = $this->findEvent('analytics:broadcast-realtime');
+        $cloud = $this->findEvent('analytics:update-cloud-ranges');
+
+        $this->assertNotNull($realtime);
+        $this->assertTrue($realtime->filtersPass($this->app));
+        $this->assertTrue($cloud?->filtersPass($this->app) ?? false);
     }
 
     /**
-     * 주어진 config 로 예약을 처음부터 다시 등록합니다.
+     * 코어 카탈로그를 시딩하고 새 스케줄러에 등록한 뒤, 명령으로 그 행의 이벤트를 찾습니다.
      *
-     * 예약은 부팅 때 `routes/console.php` 가 그 시점의 config 를 읽어 걸므로, 뒤늦게 config 만
-     * 바꿔서는 등록 결과가 달라지지 않는다. 빈 `Schedule` 을 새로 꽂고 콘솔 라우트를 다시 읽어
-     * 그 config 에서의 등록 결과를 만든다.
+     * 이벤트는 `schedule:{id}` 이름의 콜백 이벤트라 명령 문자열을 들고 있지 않다 — 시딩된 코어 행의
+     * 명령으로 행을 찾고 그 id 의 이벤트를 고른다.
      *
-     * @param  array<string, mixed>  $config  적용할 config 키-값
-     * @return void 없음
-     */
-    private function rebuildScheduleWith(array $config): void
-    {
-        config($config);
-
-        $this->app->forgetInstance(Schedule::class);
-        $this->app->instance(Schedule::class, new Schedule);
-        ScheduleFacade::clearResolvedInstance(Schedule::class);
-
-        require base_path('routes/console.php');
-    }
-
-    /**
-     * 등록된 예약에서 커맨드 하나를 찾습니다.
-     *
-     * @param  string  $signature  커맨드 시그니처 (옵션 포함 가능)
+     * @param  string  $signature  카탈로그 명령 (옵션 포함 그대로)
      * @return Event|null 예약 이벤트 (없으면 null)
      */
     private function findEvent(string $signature): ?Event
     {
-        foreach (app(Schedule::class)->events() as $event) {
-            $command = (string) $event->command;
+        if (! $this->seeded) {
+            (new CoreScheduleSeeder)->run();
+            $this->seeded = true;
+        }
 
-            if (! str_contains($command, "'".$signature."'") && ! str_contains($command, $signature)) {
-                continue;
+        $row = ScheduleModel::query()
+            ->where('extension_type', 'core')
+            ->where('command', $signature)
+            ->first();
+
+        if ($row === null) {
+            return null;
+        }
+
+        $schedule = new Schedule;
+        app(ScheduleRegistrar::class)->register($schedule);
+
+        foreach ($schedule->events() as $event) {
+            if ($event->description === ScheduleRegistrar::EVENT_PREFIX.$row->id) {
+                return $event;
             }
-
-            return $event;
         }
 
         return null;

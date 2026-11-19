@@ -1,0 +1,32 @@
+<!-- 공통 오류 화면 — 코드별 오류 레이아웃이 없는 코드(400·422·429·502·504 등)를 그린다.
+  엔진은 `error_config.layouts` 에 그 코드가 없으면 `default` 로 이 화면을 그리고, 받은 코드를 데이터 문맥 `errorCode` 로 넘긴다.
+  코드와 문구를 박지 않는다 — 코드는 받은 값만 보이고 문구는 어느 코드에도 맞는 일반 안내다(박으면 다른 코드를 잘못 알린다).
+  일시적인 실패(429·502·504)가 많아 새로고침을 먼저 두고, 홈으로 가는 길을 함께 둔다. -->
+<layout name="errors/default" version="1.0.0" extends="_user_base">
+  <meta title="$t:error.default.title" description="$t:error.default.description" :is_error_layout="true"/>
+  <slot name="content">
+    <div class="min-h-[60vh] flex items-center justify-center">
+      <div class="text-center px-4">
+        <div data-ref="error_code" data-if="{{errorCode}}" class="text-8xl font-bold text-gray-500 dark:text-gray-500 mb-4">{{errorCode}}</div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">$t:error.default.title</h1>
+        <p class="text-gray-600 dark:text-gray-400 mb-8">$t:error.default.description</p>
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          <button data-ref="refresh_button" type="button" class="inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+            <on type="click">
+              <refresh/>
+            </on>
+            <icon name="rotate" class="text-xl"/>
+            <span>$t:error.default.refresh</span>
+          </button>
+          <a href="/" class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors cursor-pointer">
+            <on type="click">
+              <navigate/>
+            </on>
+            <icon name="home" class="text-xl"/>
+            <span>$t:error.default.back_to_home</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </slot>
+</layout>

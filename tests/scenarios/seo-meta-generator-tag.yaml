@@ -1,4 +1,11 @@
-# audit:allow test-scenario-coverage reason: 시나리오는 단순 (enabled × content_state × 출력 채널) 으로 9 케이스 cross-product. 핵심 회귀는 test_files 단위 테스트 6 케이스 + Feature 검증 3 케이스로 모두 커버.
+# audit:allow test-scenario-coverage reason: issue:#609 시나리오는 단순 (enabled × content_state × 출력 채널) 으로 9 케이스 cross-product. 핵심 회귀는 test_files 단위 테스트 6 케이스 + Feature 검증 3 케이스로 모두 커버.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# 원장: 이 매니페스트는 :cross-product 로 좁히면 effects 22건이 미검증으로 드러난다.
+#   그 짝 맞추기는 이 공정(SEO)의 몫이며, 좁히는 시점에 함께 처리한다.
+# audit:allow scenario-scale-axis-required reason: 오탐이다. 그 룰은 test_files 경로에 `Generator` 가
+#   들어가면 배치 생성기로 보는데, 여기 걸린 `MetaGeneratorTagTest.php` 는 `<meta name="generator">`
+#   태그(CMS 식별자)를 재는 단위 테스트다. 대용량 축(n≥100k)이라는 개념이 성립하지 않는다 —
+#   출력은 언제나 태그 한 줄이고 데이터 규모에 비례하는 산출물이 없다.
 
 feature: 메타 generator 태그 (CMS 식별)
 

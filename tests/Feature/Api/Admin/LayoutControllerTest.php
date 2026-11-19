@@ -948,6 +948,65 @@ class LayoutControllerTest extends TestCase
     }
 
     /**
+     * 버전 목록이 그 판이 어디서 왔는지(동기화 출처)를 함께 싣는다.
+     *
+     * 확장 업데이트·레이아웃 갱신이 덮기 직전에 남긴 운영자 판, 병합 결과 판을 [버전 기록] 창이 가려 보여 주려면
+     * `changes_summary` 의 출처·덮기 전 여부·충돌 수가 응답에 남아야 한다. 출처가 없던 옛 행은 null/false/0 이다.
+     *
+     * @scenario endpoint=layout_versions
+     *
+     * @effects layout_versions_listed_and_shown
+     *
+     * @return void 반환값 없음
+     */
+    public function test_layout_versions_expose_sync_source(): void
+    {
+        $layout = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'synced-layout',
+        ]);
+        TemplateLayoutVersion::factory()->create([
+            'layout_id' => $layout->id,
+            'version' => 1,
+            'changes_summary' => ['added' => 0, 'removed' => 0, 'char_diff' => 0],
+        ]);
+        TemplateLayoutVersion::factory()->create([
+            'layout_id' => $layout->id,
+            'version' => 2,
+            'changes_summary' => ['added' => 3, 'removed' => 1, 'char_diff' => 12, 'source' => 'refresh', 'before_overwrite' => true],
+        ]);
+        TemplateLayoutVersion::factory()->create([
+            'layout_id' => $layout->id,
+            'version' => 3,
+            'changes_summary' => [
+                'added' => 2, 'removed' => 0, 'char_diff' => 5, 'source' => 'extension_update',
+                'applied' => [['path' => 'components.0']],
+                'conflicts' => [['path' => 'components.1'], ['path' => 'data_sources.0']],
+            ],
+        ]);
+
+        $response = $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts/{$layout->name}/versions");
+
+        $response->assertStatus(200);
+        $byVersion = collect($response->json('data'))->keyBy('version');
+
+        $this->assertSame(
+            ['added_count' => 2, 'removed_count' => 0, 'char_diff' => 5, 'source' => 'extension_update', 'before_overwrite' => false, 'conflict_count' => 2],
+            $byVersion[3]['changes_summary'],
+        );
+        $this->assertSame(
+            ['added_count' => 3, 'removed_count' => 1, 'char_diff' => 12, 'source' => 'refresh', 'before_overwrite' => true, 'conflict_count' => 0],
+            $byVersion[2]['changes_summary'],
+        );
+        // 출처를 적지 않던 옛 행 — 출처 없음·덮기 전 아님·충돌 0
+        $this->assertSame(
+            ['added_count' => 0, 'removed_count' => 0, 'char_diff' => 0, 'source' => null, 'before_overwrite' => false, 'conflict_count' => 0],
+            $byVersion[1]['changes_summary'],
+        );
+    }
+
+    /**
      * 존재하지 않는 레이아웃의 버전 조회 시 404 응답
      *
      * @scenario endpoint=layout_versions
@@ -1966,7 +2025,7 @@ class LayoutControllerTest extends TestCase
                             'revalidate' => 'no',
                             'item_key' => str_repeat('k', 101),
                             // 상태 경로는 _global./_local. 로 시작해야 한다
-                            'state' => ['_global.infiniteScroll', 'window.location', '_local.' . str_repeat('a', 200)],
+                            'state' => ['_global.infiniteScroll', 'window.location', '_local.'.str_repeat('a', 200)],
                         ],
                     ],
                 ],

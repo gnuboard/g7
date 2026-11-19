@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 본 매니페스트는 관리자 목록의 쪽 정보 봉투 위치 계약 SSoT. axes cross product 는 화면·엔드포인트 전수에 걸쳐 있어 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(응답 계약 단위 + 레이아웃 전수 스캔 + Playwright E2E)로 커버한다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#677 본 매니페스트는 관리자 목록의 쪽 정보 봉투 위치 계약 SSoT. axes cross product 는 화면·엔드포인트 전수에 걸쳐 있어 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(응답 계약 단위 + 레이아웃 전수 스캔 + Playwright E2E)로 커버한다.
 
 feature: admin_list_pagination_envelope
 

@@ -1,4 +1,17 @@
 {
+  "common": {
+    "real_name": {
+      "label": "実名",
+      "with_label": "実名: {{name}}"
+    }
+  },
+  "extension_public_api": {
+    "title": "公開API (他の拡張が使えるPHPの表面)",
+    "hint": "他の拡張は、以下で公開されている名前空間・クラスと公開フックのみを使ってください。それ以外のクラスは内部実装のため、予告なく変更される場合があります。",
+    "namespaces": "名前空間",
+    "classes": "クラス",
+    "readonly_models": "読み取り専用Model (型ヒント・プロパティの読み取りのみ)"
+  },
   "extension_integrations": {
     "title": "一緒に使うと連携する拡張機能",
     "hint": "以下の拡張機能がインストールされていると、機能が相互に連携します。なくてもこの拡張機能はそのまま動作します。",
@@ -21,6 +34,35 @@
     "deactivate_confirm": "無効化",
     "uninstall_notice": "以下の拡張機能がこの拡張機能と連携しています — 削除するとこの拡張機能を使っていたメニュー・画面が消えます。",
     "notice_toast": "一緒に使うと連携する拡張機能のお知らせ: {{items}}"
+  },
+  "package_integrity": {
+    "signature_label": "パッケージ署名",
+    "status_verified": "署名確認済み: {{signer}}",
+    "status_unsigned": "署名なし",
+    "status_unverifiable": "署名確認不可 (サーバーに sodium なし)",
+    "status_bundled": "バンドル原本",
+    "status_none": "記録なし",
+    "unsigned_title": "署名のないパッケージです",
+    "unverifiable_title": "このサーバーでは署名を確認できません",
+    "invalid_title": "署名が一致しないため処理を中止しました",
+    "untrusted_title": "信頼していない鍵で署名されたパッケージです",
+    "package": "パッケージ: {{identifier}} {{version}}",
+    "signer_key": "署名鍵: {{key}}",
+    "continue_hint": "制作者を信頼できる場合にのみ、下の「未署名で続行」を押してください。同じリクエストを署名確認なしで再送信します。",
+    "blocked_hint": "環境設定 > セキュリティの「未署名パッケージのブロック」がオンになっているため続行できません。署名されたパッケージを使うか、ブロックをオフにしてください。",
+    "invalid_hint": "パッケージの内容が変更されたか、署名ファイルが別のパッケージのものです。配布元から ZIP と署名ファイルを再度ダウンロードしてください。",
+    "untrusted_hint": "環境設定 > セキュリティの「拡張信頼鍵」に制作者の鍵が登録されているか、その鍵の vendor 範囲がこの識別子と合っているかを確認してください。",
+    "continue_unsigned": "未署名で続行",
+    "result_verified": "パッケージ署名を確認しました (署名者: {{signer}})。",
+    "result_unsigned": "署名を確認していないパッケージで続行しました。",
+    "signature_file_label": "署名ファイル (.sig.json、任意)",
+    "no_signature_selected": "選択された署名ファイルがありません。",
+    "signature_file_hint": "リリースに ZIP と一緒に公開された署名ファイル(ZIP 名の後ろに .sig.json)を選ぶと、インストール前に署名を確認します。選ばない場合は署名のないパッケージとして扱います。",
+    "signature_url_label": "署名ファイルの URL (任意)",
+    "signature_url_hint": "ZIP と一緒に配布された .sig.json ファイルの https URL です。空欄にすると署名のないパッケージとして扱います(URL を推測して別途リクエストすることはありません)。",
+    "core_signature_label": "リリース署名",
+    "core_signature_available": "署名あり",
+    "core_signature_missing": "署名なし"
   },
   "sidebar": {
     "no_accessible_menus": "アクセス可能なメニューがありません",
@@ -171,6 +213,40 @@
     "alert_action_no_permission": "この警告を処理する権限がありません。権限のある管理者に依頼してください。"
   },
   "users": {
+    "member_fields": {
+      "select_placeholder": "選択してください",
+      "other": "その他(直接入力)",
+      "other_input": "{{label}} 直接入力",
+      "other_placeholder": "直接入力してください",
+      "range_start": "{{label}} 開始日",
+      "range_end": "{{label}} 終了日",
+      "zipcode_label": "{{label}} 郵便番号",
+      "address_label": "{{label}} 基本住所",
+      "address_detail_label": "{{label}} 詳細住所",
+      "upload_after_save": "会員を保存した後、編集画面でアップロードできます。",
+      "file_add": "ファイルを追加",
+      "file_add_label": "{{label}} ファイルを追加",
+      "file_remove": "{{name}} を削除",
+      "file_rules": "許可される拡張子: {{extensions}} / 1ファイルあたり最大 {{size}}MB / 最大 {{count}}個",
+      "locked_identity": "本人認証で確認された項目のため、変更できません。",
+      "locked_generic": "変更できない項目です。",
+      "extra_title": "追加項目",
+      "extension_title": "拡張項目",
+      "tab_has_error": "エラーのある入力欄があります",
+      "status": {
+        "nickname_changed_at": "ニックネームの最終変更",
+        "nickname_next_changeable_at": "ニックネームの次回変更可能日時",
+        "nickname_next_changeable_hint": "会員本人がニックネームを再び変更できる時期です。管理者はいつでも変更できます。",
+        "pending_required": "未入力の必須項目",
+        "display_name_kind": "会員が選んだ表示名の種類",
+        "display_name_kind_none": "未選択 (会員の既定の種類: {{kind}})",
+        "display_name_kind_unavailable": "現在は選択できない種類です。会員の既定の種類({{kind}})で表示されます。",
+        "display_name_kind_hint": "会員本人のみ変更できます。",
+        "display_name_current": "現在表示される名前",
+        "display_name_site": "サイト既定",
+        "display_name_admin": "管理者画面"
+      }
+    },
     "page_title": "ユーザー管理",
     "page_description": "システムユーザーを管理します。",
     "title": "ユーザー管理",
@@ -178,6 +254,15 @@
     "add_user": "ユーザーの追加",
     "search": "検索",
     "search_placeholder": "検索キーワードを入力してください...",
+    "list_member_fields": {
+      "pending_column": "未入力",
+      "pending_count": "{{count}}件",
+      "filter_required_missing": "必須項目の未入力",
+      "filter_required_missing_only": "未入力の会員のみ",
+      "filter_nickname_duplicate": "ニックネームの重複",
+      "filter_nickname_duplicate_only": "重複している会員のみ",
+      "display_name_column": "表示される名前"
+    },
     "search_fields": {
       "all": "すべて",
       "name": "名前",
@@ -286,8 +371,6 @@
       },
       "fields": {
         "id": "ID",
-        "name": "名前",
-        "nickname": "ニックネーム",
         "role": "ロール",
         "role_placeholder": "ロールを選択してください",
         "role_no_options": "選択可能なロールがありません",
@@ -296,20 +379,12 @@
         "email": "メール",
         "email_verified": "認証済み",
         "email_verify_btn": "認証",
-        "mobile": "携帯電話番号",
-        "phone": "電話番号",
-        "homepage": "ホームページ",
         "address": "住所",
         "zipcode": "郵便番号",
         "address_detail": "詳細住所",
-        "country": "国",
-        "language": "言語",
-        "timezone": "タイムゾーン",
         "password": "パスワード",
         "password_confirmation": "パスワード確認",
         "password_hint": "編集時に空白の場合、既存のパスワードを保持します",
-        "signature": "署名",
-        "bio": "自己紹介",
         "admin_memo": "管理者メモ",
         "created_at": "登録日",
         "last_login_at": "最後のログイン",
@@ -317,7 +392,10 @@
         "country_select": "国を選択",
         "country_search": "国を検索...",
         "lock_status": "アカウントロック状態",
-        "role_default_hint": "役割を選択しない場合、基本の役割(一般ユーザー)で登録されます。"
+        "role_default_hint": "役割を選択しない場合、基本の役割(一般ユーザー)で登録されます。",
+        "create_without_password": "パスワードなしで作成(外部ログイン専用)",
+        "create_without_password_hint": "パスワードを設定せずに会員を作成します。この会員は外部認証でログインし、必要であればパスワード再設定から自分でパスワードを設定できます。",
+        "locked_by_company": "会社アカウントで管理している項目です"
       },
       "verification": {
         "method": "本人確認方法",
@@ -371,6 +449,17 @@
         "create_notice": "登録した会員は初回ログイン時にパスワードを変更する必要があります。",
         "current_password": "現在のパスワード",
         "current_password_hint": "自分のアカウントのパスワードを変更するには現在のパスワードを入力する必要があります。",
+        "reauth_notice": "パスワードのないアカウントです。初めてパスワードを設定するには、メールに届く認証番号で本人確認をしてください。",
+        "reauth_request_code": "認証番号を受け取る",
+        "reauth_resend_code": "認証番号を再送する",
+        "reauth_code_placeholder": "6桁の認証番号",
+        "reauth_confirm": "確認",
+        "reauth_verified": "本人確認が完了しました。保存するとパスワードが設定されます。",
+        "reauth_code_sent": "認証番号をメールで送信しました。",
+        "reauth_code_sent_generic": "認証番号を送信しました。",
+        "reauth_notice_other": "パスワードのないアカウントです。初めてパスワードを設定するには、「本人確認を開始」を押して、このアカウントで使える方法（会社アカウントでの再ログインなど）で本人確認をしてください。",
+        "reauth_start": "本人確認を開始",
+        "reauth_external_failed": "本人確認画面に移動できません。しばらくしてから再度お試しください。",
         "expiry": "パスワードの有効期限",
         "expiry_inherit": "ロール・サイト設定に従う",
         "expiry_apply": "適用",
@@ -400,8 +489,6 @@
       "info_public": "公開",
       "info_private": "非公開",
       "consent_history": "規約同意履歴",
-      "enabled": "有効",
-      "disabled": "無効",
       "withdrawn_at": "退会日",
       "blocked_at": "ブロック日",
       "consent_type": {
@@ -441,6 +528,10 @@
         "yes": "はい",
         "no": "いいえ",
         "postponed_until": "延期終了",
+        "state": "パスワード",
+        "set": "設定済み",
+        "not_set": "未設定",
+        "not_set_hint": "外部認証(ソーシャルログインなど)のみで登録したため、パスワードがありません。有効期限ポリシーの対象外です。",
         "policy": "有効期限の個別設定"
       },
       "search_history": {
@@ -451,6 +542,13 @@
         "keywords": "検索語",
         "count": "{{count}}件",
         "empty": "保存された検索語はありません。"
+      },
+      "revoke_sessions": {
+        "button": "すべてのデバイスからログアウト",
+        "confirm_title": "すべてのデバイスからログアウト",
+        "confirm_message": "この会員がログインしているすべてのデバイスからログアウトさせます。会員は再度ログインする必要があります。続行しますか?",
+        "confirm": "ログアウト",
+        "success": "すべてのデバイスからログアウトさせました"
       }
     },
     "bulk_status_change": "ステータス変更",
@@ -676,16 +774,22 @@
     },
     "install_modal": {
       "title": "言語パックインストール",
-      "description": "ZIP ファイルまたは GitHub URL で言語パックをインストールします。",
+      "description": "ZIP ファイル、GitHub URL または ZIP の URL で言語パックをインストールします。",
       "tabs": {
         "zip": "ZIP ファイル",
-        "github": "GitHub"
+        "github": "GitHub",
+        "url": "URL"
       },
       "file_label": "ZIP ファイル",
       "no_file_selected": "選択されたファイルがありません。",
       "file_requirements": "以下の manifest ファイルが ZIP ルートに含まれている必要があります。",
       "github_url_label": "GitHub URL",
-      "github_requirements": "Public リポジトリのみサポートしています。以下の manifest ファイルがリポジトリルートにある必要があります。"
+      "github_requirements": "Public リポジトリのみサポートしています。以下の manifest ファイルがリポジトリルートにある必要があります。",
+      "url_label": "パッケージ URL (https)",
+      "url_hint": "言語パックの ZIP を直接ダウンロードできる https URL です。",
+      "checksum_label": "SHA-256 チェックサム (任意)",
+      "checksum_hint": "配布元が案内した ZIP の SHA-256 値(16進数64文字)を入力すると、ダウンロードしたファイルと照合します。",
+      "url_requirements": "ダウンロードした ZIP のルートに以下の manifest ファイルが含まれている必要があります。"
     },
     "installing": "インストール中...",
     "messages": {
@@ -698,6 +802,7 @@
       "protected_badge": "🔒 保護されている",
       "check_updates_done": "アップデート確認が完了しました ({{count}}件利用可能)。",
       "check_updates_none": "すべての言語パックが最新状態です。",
+      "check_updates_github_failed": "GitHub で最新バージョンを確認できなかった言語パック {{count}} 件（{{names}}）— 最新とは判定せず、最新バージョン情報もそのままにしました。理由：{{reason}}",
       "check_updates_failed": "アップデート確認に失敗しました。",
       "activate_success": "言語パックを有効化しました。",
       "deactivate_success": "言語パックを無効化しました。",
@@ -869,7 +974,8 @@
         "permissions": "権限",
         "menus": "管理者メニュー",
         "notification_definitions": "通知定義",
-        "identity_policies": "本人認証ポリシー"
+        "identity_policies": "本人認証ポリシー",
+        "schedules": "スケジュール"
       },
       "no_tables": "削除するテーブルがありません。",
       "no_storage": "削除するストレージがありません。",
@@ -882,7 +988,6 @@
       "refresh_layouts_description": "モジュールファイルに含まれるレイアウトでデータベースのレイアウトが置き換えられます。既存で編集したレイアウトの内容はすべて削除されます。",
       "deactivate_warning_title": "モジュール無効化警告",
       "deactivate_warning_message": "このモジュールに依存する有効な拡張（テンプレート、モジュール、プラグイン）があります。",
-      "affected_templates": "以下のテンプレートが影響を受けます:",
       "dependent_templates": "依存するテンプレート",
       "dependent_modules": "依存するモジュール",
       "dependent_plugins": "依存するプラグイン",
@@ -940,7 +1045,7 @@
       "file_requirements": "モジュール パッケージは必ず",
       "file_structure_hint": "ファイルを含む必要があり、グヌボード7 モジュール標準構造に従う必要があります。",
       "github_url_label": "GitHub リポジトリ URL",
-      "github_url_hint": "GitHub リポジトリのデフォルト ブランチからモジュールをダウンロードします。",
+      "github_url_hint": "GitHub リポジトリの最新タグ付きリリースからモジュールを取得します。リリースのないリポジトリはインストールしません。",
       "github_requirements": "ルート ディレクトリに",
       "github_public_only": "ファイルが存在する必要があります。"
     },
@@ -1101,7 +1206,8 @@
         "permissions": "権限",
         "menus": "管理者メニュー",
         "notification_definitions": "通知定義",
-        "identity_policies": "本人認証ポリシー"
+        "identity_policies": "本人認証ポリシー",
+        "schedules": "スケジュール"
       },
       "no_tables": "削除するテーブルがありません。",
       "no_storage": "削除するストレージがありません。",
@@ -1171,7 +1277,7 @@
       "file_requirements": "プラグインパッケージは必ず",
       "file_structure_hint": "ファイルを含む必要があり、Gnutboard7プラグイン標準構造に従う必要があります。",
       "github_url_label": "GitHubリポジトリURL",
-      "github_url_hint": "GitHubリポジトリのデフォルトブランチからプラグインをダウンロードします。",
+      "github_url_hint": "GitHub リポジトリの最新タグ付きリリースからプラグインを取得します。リリースのないリポジトリはインストールしません。",
       "github_requirements": "ルートディレクトリに",
       "github_public_only": "ファイルが必要です。"
     },
@@ -1386,105 +1492,107 @@
   },
   "schedules": {
     "page_title": "スケジュール管理",
-    "page_description": "システム予約タスクを管理します。",
+    "page_description": "システムの予約タスクを管理します。",
     "title": "スケジュール管理",
-    "description": "システムに登録されたスケジュール（crontab、Job）を管理します。",
-    "add_schedule": "スケジュール追加",
-    "register_schedule": "スケジュール登録",
-    "search_placeholder": "スケジュール名で検索...",
+    "description": "システムに登録されたスケジュール(crontab、Job)を管理します。",
     "search_input_placeholder": "検索語を入力してください...",
-    "pagination_info": "全{{total}}個中{{from}}-{{to}}個を表示",
-    "advanced_search": "詳細検索",
-    "apply_filters": "フィルター適用",
-    "reset_filters": "初期化",
-    "column_select": "カラム選択（{{count}}）",
-    "total_count": "全{{count}}個",
-    "selected_count": "{{count}}個選択されました",
-    "duration_display": "{{duration}}掛かります",
+    "total_count": "合計 {{count}}件",
+    "total_at_least": "合計 {{count}}件以上",
+    "selected_count": "{{count}}件選択",
+    "per_page": "{{count}}件",
+    "per_page_label": "1ページの件数",
+    "duration_display": "所要 {{duration}}",
+    "empty": "登録されたスケジュールがありません。",
     "tabs": {
       "schedules": "スケジュールタスク",
       "queue": "キューモニタリング"
     },
-    "stats": {
-      "total": "すべて",
-      "active": "有効化",
-      "success": "成功",
-      "failed": "失敗"
+    "action": {
+      "register": "スケジュール登録",
+      "security_policy": "セキュリティポリシー",
+      "edit": "編集",
+      "run": "今すぐ実行",
+      "history": "実行履歴",
+      "duplicate": "コピー",
+      "delete": "削除",
+      "delete_disabled_reason": "直接登録したタスクのみ削除できます。",
+      "bulk_apply": "一括適用",
+      "bulk_delete": "選択削除",
+      "advanced_search": "詳細検索",
+      "edit_search": "検索編集",
+      "reset": "リセット"
     },
     "search_fields": {
       "all": "すべて",
       "name": "タスク名",
-      "command": "コマンド",
-      "description": "説明"
+      "identifier": "識別子",
+      "command": "コマンド"
     },
-    "filters": {
+    "filter": {
+      "detail_title": "詳細検索",
+      "owner": "所有",
+      "owner_schedule_count": "スケジュール",
+      "owner_search": "拡張名・識別子で検索",
+      "owner_select": "拡張を選択",
+      "show_in_basic": "{{label}} フィルターを基本検索に表示",
       "type": "タスクタイプ",
-      "status": "ステータス",
-      "result": "実行結果",
-      "last_result": "最後の実行結果",
-      "all_types": "すべてのタイプ",
-      "all_status": "すべてのステータス",
-      "all_results": "すべての結果",
-      "all": "すべて",
+      "status": "状態",
+      "last_result": "最近の実行結果",
       "frequency": "実行周期",
       "created_at": "登録日",
-      "start_date": "開始日",
-      "end_date": "終了日",
       "without_overlapping": "重複実行防止",
-      "run_in_maintenance": "点検モード実行",
-      "module": "所属モジュール",
-      "yes": "はい",
-      "no": "いいえ",
-      "use": "使用",
-      "not_use": "未使用",
-      "allow": "許可",
-      "disallow": "非許可",
+      "overlap_on": "オン",
+      "overlap_off": "オフ",
+      "dispatch_mode": "実行方式",
+      "history_mode": "実行履歴",
       "preset": {
         "today": "今日",
         "week": "1週間",
-        "month": "1ヶ月",
-        "3months": "3ヶ月",
-        "6months": "6ヶ月",
-        "year": "1年"
+        "month": "1か月",
+        "3months": "3か月",
+        "6months": "6か月",
+        "1year": "1年"
       }
     },
     "bulk": {
-      "status_change": "ステータス変更",
-      "action_run": "タスク実行",
-      "apply": "一括変更"
+      "select_status": "変更する状態を選択",
+      "action_select": "一括操作を選択",
+      "to_active": "有効に変更",
+      "to_inactive": "無効に変更",
+      "delete_owned_blocked": "コア・拡張が登録したタスクが含まれているため削除できません。直接登録したタスクのみ選択してください。"
     },
     "sort": {
-      "created_at_desc": "登録日時最新順",
-      "created_at_asc": "登録日時古い順",
-      "name_asc": "タスク名昇順",
-      "name_desc": "タスク名降順",
-      "next_run_at_asc": "次回実行速い順",
-      "next_run_at_desc": "次回実行遅い順"
-    },
-    "per_page": {
-      "10": "10個",
-      "20": "20個",
-      "50": "50個",
-      "100": "100個"
+      "label": "並べ替え",
+      "created_at_desc": "登録日の新しい順",
+      "created_at_asc": "登録日の古い順",
+      "name_asc": "タスク名 昇順",
+      "name_desc": "タスク名 降順",
+      "next_run_at_asc": "次回実行の早い順",
+      "next_run_at_desc": "次回実行の遅い順",
+      "last_run_at_desc": "最近の実行の新しい順",
+      "last_run_at_asc": "最近の実行の古い順"
     },
     "columns": {
       "name": "タスク名",
+      "owner": "所有",
       "type": "タスクタイプ",
-      "command": "コマンド",
       "frequency": "実行周期",
-      "last_result": "最後の実行結果",
-      "last_run": "最後の実行",
-      "next_run": "次の実行予定",
-      "status": "ステータス"
+      "without_overlapping": "重複防止",
+      "next_run": "次回実行",
+      "last_run": "最近の実行",
+      "last_result": "最近の実行結果",
+      "status": "状態"
     },
     "type": {
       "artisan": "Artisan",
       "shell": "Shell",
-      "url": "URL"
+      "url": "URL",
+      "job": "Job"
     },
     "frequency": {
+      "everyThirtySeconds": "30秒ごと",
       "everyMinute": "毎分",
-      "hourly": "毎時間",
+      "hourly": "毎時",
       "daily": "毎日",
       "weekly": "毎週",
       "monthly": "毎月",
@@ -1497,76 +1605,324 @@
       "never": "未実行"
     },
     "status": {
-      "active": "有効化",
-      "inactive": "無効化"
+      "active": "有効",
+      "inactive": "無効"
     },
     "trigger_type": {
-      "scheduled": "スケジュール実行",
+      "scheduled": "予約実行",
       "manual": "手動実行"
     },
-    "actions": {
-      "run": "今すぐ実行",
-      "history": "実行履歴",
-      "duplicate": "複製"
+    "dispatch_mode": {
+      "sync": "即時実行",
+      "queue": "キューに送る"
     },
+    "history_mode": {
+      "all": "すべての実行を記録",
+      "failures_only": "失敗のみ記録"
+    },
+    "owner": {
+      "core": "コア",
+      "module": "モジュール",
+      "plugin": "プラグイン",
+      "custom": "直接登録"
+    },
+    "condition_unmet": "設定でオフ",
+    "overlap_minutes": "{{minutes}}分",
+    "overlap_off": "オフ",
     "form": {
-      "name": "名前",
-      "name_placeholder": "スケジュール名を入力してください",
+      "label": "タスク名",
+      "label_placeholder": "タスク名を入力してください",
       "description": "説明",
-      "description_placeholder": "スケジュールの説明を入力してください",
+      "description_placeholder": "タスクの説明を入力してください",
       "type": "タスクタイプ",
+      "name": "識別子",
+      "name_placeholder": "例: cleanup_temp_files",
+      "name_help": "機械識別子です。空欄の場合はタスク名から生成します。",
       "command": "コマンド",
-      "command_placeholder": "実行するコマンドを入力してください",
-      "command_help": "Artisanコマンド、シェルコマンド、またはURLを入力してください",
+      "command_placeholder": {
+        "artisan": "例: cache:prune-stale-tags",
+        "shell": "例: /usr/bin/php -v",
+        "url": "例: https://example.com/ping",
+        "job": "例: App\\Jobs\\GenerateSitemapJob"
+      },
+      "command_help": {
+        "artisan": "php artisan に続くコマンドとオプションを入力してください。セキュリティ許可リストにあるコマンドのみ実行されます。",
+        "shell": "サーバー設定で許可された実行ファイルで始まるコマンドを入力してください。",
+        "url": "呼び出すURLを入力してください。内部ネットワークのアドレスはセキュリティ設定によりブロックされる場合があります。",
+        "job": "セキュリティ許可リストに登録された Job クラス名(完全修飾名)を入力してください。"
+      },
+      "command_multiline_hint": "複数行で入力しても保存時に1行にまとめられます。",
+      "shell_disabled": "サーバー設定でShell実行がオフになっています。サーバーの .env に SCHEDULE_SHELL_ENABLED=true と許可する実行ファイル(SCHEDULE_SHELL_ALLOWED_BINARIES、例: php,python3)を設定するとオンになります。",
+      "locked_hint": "コア・拡張が登録したタスクのため変更できません。",
       "frequency": "実行周期",
-      "expression": "Cron表現式",
+      "expression": "Cron式",
       "expression_help": "例: * * * * * (毎分)、0 0 * * * (毎日午前0時)",
-      "timeout": "タイムアウト (秒)",
-      "timeout_help": "最大実行時間 (1-86400秒)",
+      "timeout": "制限時間",
+      "timeout_help": "この時間を超えると実行を停止します。(1 ~ 86400秒)",
+      "timeout_placeholder": "デフォルト",
+      "timeout_default": {
+        "artisan_sync": "空欄の場合は制限時間なしで実行します。",
+        "artisan_queue": "空欄の場合は600秒です。キュー接続の再試行待ち時間より長い場合は、それより短く調整します。",
+        "shell": "空欄の場合は60秒です。",
+        "url": "空欄の場合は30秒です。",
+        "job": "Job タイプはこの値を使わず、Job クラスに定められた制限時間に従います。"
+      },
+      "seconds_suffix": "秒",
+      "minutes_suffix": "分",
       "without_overlapping": "重複実行防止",
-      "without_overlapping_help": "前のタスクが実行中の場合、新しいタスクをスキップします",
+      "without_overlapping_help": "前回の実行が終わっていない場合、新しい実行をスキップします。",
+      "overlap_minutes": "ロック保持時間",
+      "overlap_minutes_help": "前回の実行がこの時間内に終わらない場合、ロックが解除されます。(1 ~ 10080分)",
+      "on_one_server": "1台のサーバーでのみ実行",
+      "on_one_server_help": "複数のサーバーでスケジューラーを動かす場合、1台だけが実行します(共有キャッシュが必要)。",
+      "notify_on_failure": "失敗通知",
+      "notify_on_failure_help": "予約実行が失敗すると管理者に通知します(同じタスクは1日1回)。",
       "run_in_maintenance": "メンテナンスモードで実行",
-      "run_in_maintenance_help": "システムメンテナンスモード中もタスクを実行します",
-      "is_active": "有効化",
-      "is_active_help": "無効化するとスケジュール実行されません"
+      "run_in_maintenance_help": "サイトのメンテナンスモード中もタスクを実行します。",
+      "is_active": "有効",
+      "is_active_help": "オフにすると予約実行されません。",
+      "conditions": "実行条件",
+      "conditions_help": "以下の設定がすべてオンのときだけ予約実行されます(黄色 = 現在オフ)。条件はコア・拡張が定めるもので、ここでは変更できません。",
+      "dispatch_mode": "実行方式",
+      "dispatch_mode_help": "即時実行はワーカーがなくても動作します。時間のかかるタスクはキューに送り、ワーカーに処理させてください。",
+      "history_mode": "実行履歴",
+      "history_mode_help": "「失敗のみ記録」にすると、頻繁に実行されるタスクの履歴が溜まりません。",
+      "queue_connection": "キュー接続",
+      "queue_name": "キュー",
+      "queue_default": "既定値",
+      "overridden_badge": "運営者が変更",
+      "owned_badge": "{{owner}} 登録タスク — 名前・タイプ・コマンドはロック",
+      "timezone_badge": "タイムゾーン: {{timezone}}",
+      "allow_unsigned_hint": "インストール・アップデートのコマンド(module:update など)を登録するときは、--allow-unsigned を一緒に指定しないと署名のないパッケージで停止します。"
     },
     "modals": {
-      "create_title": "スケジュール追加",
+      "create_title": "スケジュール登録",
       "edit_title": "スケジュール編集",
+      "bulk_status_title": "状態の一括変更",
+      "bulk_status_confirm_active": "選択した{{count}}件のスケジュールを有効に変更しますか?",
+      "bulk_status_confirm_inactive": "選択した{{count}}件のスケジュールを無効に変更しますか?",
       "delete_title": "スケジュール削除",
-      "delete_confirm": "このスケジュールを削除してもよろしいですか？関連する実行履歴も削除されます。",
-      "run_title": "スケジュール今すぐ実行",
-      "run_confirm": "このスケジュールを今すぐ実行してもよろしいですか？",
-      "run_duration": "実行時間: {{duration}}",
+      "delete_confirm": "このスケジュールを削除しますか?",
+      "delete_confirm_bulk": "選択した{{count}}件のスケジュールを削除しますか?",
+      "delete_warning": "削除したスケジュールと実行履歴は元に戻せません。",
+      "run_title": "スケジュールの即時実行",
+      "run_confirm": "このスケジュールを今すぐ実行しますか?",
+      "duration": "所要時間",
       "output": "出力",
+      "error_output": "エラー出力",
       "running": "実行中...",
+      "run_not_recorded": "「失敗のみ記録」タスクのため、成功した実行の履歴は残していません。",
+      "run_queue_hint": "このタスクはキューに送られます。ワーカーが処理すると実行履歴に記録されます。",
+      "run_queued": "キューに追加しました。ワーカーが処理すると実行履歴に記録されます。",
+      "run_unmet_warning": "実行条件がオフのため予約実行はスキップされるタスクです。即時実行はそのまま実行されます。",
       "history_title": "実行履歴",
       "no_history": "実行履歴がありません。",
-      "duplicate_title": "スケジュール複製",
-      "duplicate_confirm": "このスケジュールを複製してもよろしいですか？",
-      "duplicate_note": "複製されたスケジュールは無効化状態で作成されます。",
-      "duplicating": "複製中..."
+      "duplicate_title": "スケジュールのコピー",
+      "duplicate_confirm": "このスケジュールをコピーしますか?",
+      "duplicate_note": "コピーしたスケジュールは無効の状態で作成されます。",
+      "duplicate_owned_note": "コア・拡張が登録したタスクをコピーすると、直接登録タスクとして作成されます。",
+      "duplicating": "コピー中..."
     },
     "history": {
-      "duration": "所要時間: {{duration}}",
-      "memory": "メモリ: {{memory}}",
-      "triggered_by": "実行者: {{user}}"
+      "duration": "所要時間 {{duration}}",
+      "memory": "メモリ {{memory}}",
+      "triggered_by": "実行者 {{user}}"
     },
     "messages": {
-      "create_success": "スケジュールが作成されました。",
-      "update_success": "スケジュールが編集されました。",
+      "create_success": "スケジュールが登録されました。",
+      "update_success": "スケジュールが更新されました。",
       "delete_success": "スケジュールが削除されました。",
-      "duplicate_success": "スケジュールが複製されました。",
-      "status_updated": "スケジュールのステータスが変更されました。",
-      "bulk_status_updated": "選択したスケジュールのステータスが一括変更されました。"
+      "bulk_delete_success": "選択したスケジュールが削除されました。",
+      "duplicate_success": "スケジュールがコピーされました。",
+      "status_updated": "スケジュールの状態が変更されました。",
+      "bulk_status_updated": "選択したスケジュールの状態が変更されました。"
     },
     "errors": {
       "save_failed": "スケジュールの保存に失敗しました。",
       "delete_failed": "スケジュールの削除に失敗しました。",
       "run_failed": "スケジュールの実行に失敗しました。",
-      "duplicate_failed": "スケジュールの複製に失敗しました。",
-      "status_update_failed": "ステータスの変更に失敗しました。",
-      "bulk_status_failed": "一括ステータス変更に失敗しました。"
+      "duplicate_failed": "スケジュールのコピーに失敗しました。",
+      "status_update_failed": "状態の変更に失敗しました。",
+      "bulk_status_failed": "状態の一括変更に失敗しました。"
+    },
+    "security": {
+      "title": "スケジュールのセキュリティポリシー",
+      "description": "予約タスクで実行できるコマンドの範囲です。この画面では閲覧のみできます。",
+      "guide": "サーバー管理者は storage/app/schedule_security.json で項目を追加できます(コアの拒否リストは解除できません)。Shell 実行の可否と許可する実行ファイルは .env の SCHEDULE_SHELL_ENABLED・SCHEDULE_SHELL_ALLOWED_BINARIES で設定します。",
+      "load_failed": "セキュリティポリシーを読み込めませんでした。",
+      "none": "なし",
+      "count": "{{count}}件",
+      "allowed": "許可",
+      "not_allowed": "許可しない",
+      "source": {
+        "core": "コア",
+        "override": "追加",
+        "extension": "拡張"
+      },
+      "denied": "拒否",
+      "override": {
+        "title": "上書きファイル",
+        "path": "パス",
+        "status": "状態",
+        "applied": "適用中",
+        "missing": "なし — コアの既定値のみ使用",
+        "invalid": "形式エラー — ファイル全体を無視しています"
+      },
+      "shell": {
+        "title": "Shell 実行",
+        "enabled": "オン",
+        "disabled": "オフ",
+        "allowed_binaries": "許可する実行ファイル",
+        "no_binaries": "SCHEDULE_SHELL_ENABLED はオンですが、許可された実行ファイルがないため Shell タスクは使用できません。"
+      },
+      "artisan": {
+        "allowlist": "許可する Artisan コマンド",
+        "allow_extension_commands": "拡張コマンドを自動で許可",
+        "denylist": "拒否するコマンド",
+        "denylist_prefixes": "拒否する接頭辞",
+        "denylist_hint": "許可項目が拒否リストと重なる場合は拒否が優先されます。"
+      },
+      "job": {
+        "allowed_classes": "許可する Job クラス"
+      },
+      "url": {
+        "block_private_hosts": "内部ネットワークのアドレスをブロック"
+      }
+    },
+    "status_card": {
+      "scheduler": "スケジューラー",
+      "healthy": "正常稼働",
+      "stopped": "停止",
+      "last_tick": "最終実行 {{minutes}}分前",
+      "never_ticked": "実行記録がありません",
+      "cron_hint": "サーバーの cron に以下の1行を登録してください。",
+      "schedules": "登録済みタスク",
+      "active_inactive": "有効 {{active}} · 無効 {{inactive}}",
+      "results": "最近の実行結果",
+      "failed_count": "失敗 {{count}}",
+      "success_never": "成功 {{success}} · 未実行 {{never}}",
+      "queue": "キュー ({{driver}})",
+      "pending_count": "待機 {{count}}",
+      "pending_unmeasurable": "待機件数は測定不可",
+      "queue_detail": "失敗 {{failed}} · ワーカー {{alive}}/{{registered}}",
+      "mobile_summary": "{{minutes}}分前 · ワーカー {{alive}}/{{registered}} · 失敗 {{failed}}件",
+      "mobile_summary_never": "実行記録なし · ワーカー {{alive}}/{{registered}} · 失敗 {{failed}}件",
+      "detail_open": "詳細",
+      "detail_close": "閉じる"
+    },
+    "queue": {
+      "views": {
+        "pending": "待機",
+        "failed": "失敗",
+        "logs": "処理記録"
+      },
+      "status": {
+        "driver": "ドライバー",
+        "connection": "接続 {{connection}}",
+        "pending": "待機",
+        "failed": "失敗",
+        "count": "{{count}}件",
+        "unmeasurable": "測定不可",
+        "workers": "ワーカー",
+        "workers_hint": "稼働中 / 登録",
+        "worker_warnings": "ワーカー警告 {{count}}件"
+      },
+      "notice": {
+        "unmeasurable": "現在のキュードライバー({{driver}})は待機一覧を数えられません。待機一覧は database ドライバーでのみ表示されます。",
+        "no_worker": "既定のキュードライバーが {{driver}} のため、失敗したジョブを再投入しても処理するワーカーがありません。再試行は拒否されます。",
+        "no_permission": "キューモニタリングを表示する権限がありません。「キュータスク閲覧」権限が必要です。"
+      },
+      "filter": {
+        "queue": "キュー",
+        "connection": "接続",
+        "connection_all": "すべての接続",
+        "result": "処理結果",
+        "failed_at": "失敗日時",
+        "processed_at": "処理日時"
+      },
+      "search_fields": {
+        "label": "検索対象",
+        "all": "すべて",
+        "job": "キュージョブ",
+        "error": "エラー内容",
+        "uuid": "UUID"
+      },
+      "search_placeholder": "検索語を入力してください",
+      "sort": {
+        "created_at_desc": "登録日時の新しい順",
+        "created_at_asc": "登録日時の古い順",
+        "available_at_asc": "実行可能日時の早い順",
+        "available_at_desc": "実行可能日時の遅い順",
+        "attempts_desc": "試行の多い順",
+        "attempts_asc": "試行の少ない順",
+        "failed_at_desc": "失敗日時の新しい順",
+        "failed_at_asc": "失敗日時の古い順",
+        "finished_at_desc": "処理日時の新しい順",
+        "finished_at_asc": "処理日時の古い順",
+        "duration_ms_desc": "所要時間の長い順",
+        "duration_ms_asc": "所要時間の短い順"
+      },
+      "columns": {
+        "job": "キュージョブ",
+        "queue": "キュー",
+        "state": "状態",
+        "attempts": "試行",
+        "queued_at": "登録日時",
+        "available_at": "実行可能日時",
+        "error": "エラー",
+        "failed_at": "失敗日時",
+        "result": "結果",
+        "duration": "所要時間",
+        "processed_at": "処理日時"
+      },
+      "state": {
+        "waiting": "待機",
+        "delayed": "遅延",
+        "running": "実行中"
+      },
+      "log_status": {
+        "processed": "処理完了",
+        "failed": "失敗"
+      },
+      "schedule_ref": "スケジュール #{{id}}",
+      "duration_ms": "{{ms}}ms",
+      "empty": {
+        "pending": "待機中のジョブはありません。",
+        "failed": "失敗したジョブはありません。",
+        "logs": "処理記録がありません。"
+      },
+      "action": {
+        "detail": "詳細を見る",
+        "retry": "再試行",
+        "retry_selected": "選択を再試行",
+        "delete_selected": "選択削除"
+      },
+      "confirm": {
+        "retry_title": "失敗ジョブの再試行",
+        "retry_message": "以下のジョブを元のキューに再投入します。",
+        "delete_title": "失敗ジョブの削除",
+        "delete_message": "以下のジョブを失敗一覧から削除します。削除したジョブは復元できません。",
+        "bulk_target": "選択したジョブ {{count}}件"
+      },
+      "detail": {
+        "title": "キュージョブの詳細",
+        "uuid": "UUID",
+        "period": "処理日時",
+        "schedule": "スケジュール",
+        "exception": "エラー内容",
+        "payload": "ジョブ情報"
+      },
+      "messages": {
+        "retry_done": "再試行を要求しました。",
+        "delete_done": "削除しました。"
+      },
+      "errors": {
+        "retry_failed": "再試行できませんでした。",
+        "delete_failed": "削除できませんでした。",
+        "detail_failed": "ジョブの詳細を読み込めませんでした。",
+        "list_load_failed": "一覧を読み込めませんでした。しばらくしてから再読み込みしてください。",
+        "status_load_failed": "キューの状況を読み込めませんでした。しばらくしてから再読み込みしてください。"
+      }
     }
   },
   "settings": {
@@ -1582,12 +1938,15 @@
       "content": "本文コンテンツ",
       "seo": "SEO",
       "security": "セキュリティ",
+      "member": "会員",
       "drivers": "ドライバー",
       "advanced": "詳細",
       "notification_definitions": "通知設定",
       "language_packs": "言語パック",
       "identity": "本人認証",
       "info": "情報",
+      "system": "システム",
+      "update": "アップデート",
       "privacy": "個人情報"
     },
     "general": {
@@ -1595,11 +1954,17 @@
       "site_info_desc": "基本的なサイト情報を設定します。",
       "site_name": "サイト名",
       "site_url": "サイト URL",
+      "site_url_help": "このアドレスは通知・パスワード再設定メールのリンクと決済の復帰先アドレスの基準になります。プロキシやサブフォルダ配置の場合は実際のアクセスアドレスと一致させてください。",
       "site_description": "サイト説明",
       "site_description_placeholder": "サイトに関する簡単な説明を入力してください。",
       "admin_email": "管理者メール",
       "site_logo": "サイトタイトル画像",
       "site_logo_desc": "ヘッダーに表示されるロゴ画像です。",
+      "site_favicon": "ファビコン",
+      "site_favicon_desc": "ブラウザタブに表示されるアイコンです。32px 以上の正方形の PNG・SVG または ICO ファイル 1 つ(最大 1MB)を推奨します。",
+      "favicon_override_user": "現在、ユーザー画面には「{{name}}」テンプレート設定のファビコンが優先して適用されています。",
+      "favicon_override_admin": "現在、管理画面には「{{name}}」テンプレート設定のファビコンが優先して適用されています。",
+      "favicon_go_template_settings": "テンプレート設定へ",
       "upload_drag_drop": "クリックするか、ファイルをドラッグしてアップロード",
       "max_size": "最大",
       "localization": "ローカライゼーション",
@@ -1617,6 +1982,10 @@
       "asset_url_mode_detect_extension": "拡張子を使用できる環境です。",
       "asset_url_mode_detect_extensionless": "静的ファイル最適化ルール(nginx の location ~* \\.(js|css|json|png|jpg|jpeg|gif|ico|svg|woff2?)$ ブロックなど)が拡張子アドレスをインターセプトしています。「拡張子を使用しない」に変更してから保存してください。",
       "asset_url_mode_detect_unavailable": "検出に失敗しました。サーバーが応答しないため、方式を判定できません。",
+      "layout_edit_button": "レイアウト編集ボタン",
+      "layout_edit_button_description": "レイアウト編集権限のある管理者がログインすると、管理画面とサイト画面の右下にレイアウト編集ボタンが表示されます。押すと表示中の画面をレイアウトエディタで開きます。",
+      "layout_edit_button_enabled": "レイアウト編集ボタンを表示",
+      "layout_edit_button_enabled_desc": "オフにすると、権限があってもボタンは表示されません。レイアウトエディタはテンプレート管理画面から引き続き開けます。",
       "static_cache_title": "初期画面静的ファイル",
       "static_cache_description": "最初の画面を素早く表示するために、多言語·ルート·コンポーネント·拡張バンドルを静的ファイルとして事前に作成します。拡張機能のインストール·アップデートや設定変更の後、自動的に再作成され、画面が古い内容を表示する場合はここから即座に再作成できます。",
       "static_cache_status": "ステータス",
@@ -1643,7 +2012,10 @@
       "static_cache_republish_confirm_warning": "完了まで少しお時間がかかる場合があります。その間、サイトは正常に動作します。",
       "static_cache_republished": "初期画面静的ファイルを再作成しました。",
       "static_cache_republish_not_publishable": "現在の環境では静的ファイルを作成しません(運用モードではないか、オフになっています)。",
-      "static_cache_republish_failed": "初期画面静的ファイルを再作成できませんでした。下記の失敗理由を確認してください。サイトは正常に動作しています。"
+      "static_cache_republish_failed": "初期画面静的ファイルを再作成できませんでした。下記の失敗理由を確認してください。サイトは正常に動作しています。",
+      "user_screen_url": "ユーザー画面 URL",
+      "user_screen_url_help": "空欄の場合はサイト URL と同じです。別のアドレスで運用する外部画面(例: Next.js)を使う場合のみ入力してください。パスワード再設定・通知メールのリンクと決済後に戻るアドレスに使われ、管理者画面のアドレスは変わりません。",
+      "admin_email_desc": "通知テンプレートの受信者を「サイト管理者メールアドレス」に設定すると、このアドレスにメールを送信します。空欄にすると、そのルールでは誰にも送信しません。"
     },
     "mail": {
       "smtp_settings": "SMTP設定",
@@ -1694,12 +2066,149 @@
       "image_max_height": "最大高さ",
       "image_quality": "画像品質",
       "image_quality_hint": "1〜100の値を入力してください。値が大きいほど品質が良くなります。",
+      "thumbnail": {
+        "title": "サムネイル",
+        "desc": "画像のアドレスに規格（?size=sm など）を付けると、下の「サムネイル規格」どおりに縮小したファイルを作成・保存して配信します。",
+        "engine_missing": "このサーバーには画像処理エンジン（GD または Imagick）がないため、サムネイルを作成できません。画像は元のまま送信されます。",
+        "enabled": "サムネイルを使用",
+        "enabled_hint": "オフにすると、規格を付けたアドレスでも元の画像を送ります。作成済みのサムネイルファイルは削除しません。",
+        "content_preset": "本文画像の規格",
+        "content_preset_hint": "投稿やページ本文の画像を表示するときに使う規格です。保存された本文 HTML は変わりません。",
+        "prune_enabled": "サムネイルの自動整理",
+        "prune_enabled_hint": "規格が変わって使われなくなったサムネイルや、元画像がなくなったサムネイルを整理スケジュールが削除します。",
+        "animated_original": "アニメーション画像は元画像を使用",
+        "animated_original_hint": "アニメーションする GIF・WebP・PNG はサムネイルに変換せず、元画像をそのまま送ります。オフにすると最初のフレームから静止したサムネイルを作ります。GD エンジンはアニメーション WebP を読めないため、オフでも元画像を送ります。",
+        "prune_schedule_notice": "サムネイルの整理はサムネイル整理スケジュールが実行します。",
+        "server_limits": {
+          "title": "詳細 — サーバー保護値",
+          "desc": "サムネイル作成でサーバーが占有されないようにする値です。空欄にするとサーバーの既定値（.env の G7_THUMBNAIL_* があればその値）を使い、欄に薄く表示される数値が現在のその値です。.env 優先モードで .env に値を書いた欄は「.env 固定」でロックされます。",
+          "generate_per_minute": "1分あたりに新しく作成するサムネイル数（IP ごと）",
+          "generate_per_minute_hint": "まだないサムネイルを1つの IP が1分間にこの数まで作成できます。超えると元画像を送ります。1〜10000",
+          "lock_wait_seconds": "作成の待ち時間",
+          "lock_wait_seconds_hint": "同じサムネイルを別のリクエストが作成中のときに待つ時間です。超えると元画像を送り、キャッシュしません。1〜30秒",
+          "max_source_pixels": "元画像の最大ピクセル数",
+          "max_source_pixels_hint": "これより大きい元画像は縮小せず元画像を送ります（メモリ保護）。サーバーのメモリ上限が小さい場合はさらに低い値を使います。1000000〜100000000",
+          "pregenerate_batch": "1回に処理する元画像の数",
+          "pregenerate_batch_hint": "「既存画像のサムネイル作成」とコマンド thumbnails:pregenerate が1回に処理する元画像の数です。1〜500",
+          "pregenerate_time_budget": "1回の呼び出しの時間予算",
+          "pregenerate_time_budget_hint": "「既存画像のサムネイル作成」1回の呼び出しで使う最大時間です。超えるとその位置から続けて呼び出します。サーバーの実行時間上限のほうが短い場合はその半分を使います。1〜60秒",
+          "purge_time_budget": "削除1回の呼び出しの時間予算",
+          "purge_time_budget_hint": "サムネイル「削除」1回の呼び出しで使う最大時間です。2つの保存場所が同じストレージを使う場合、規格を1つだけ削除する場合、リモートストレージを削除する場合に超えると、その位置から続けて呼び出します。サーバーの実行時間上限のほうが短い場合はその半分を使います。1〜60秒",
+          "unit_count": "件",
+          "unit_seconds": "秒",
+          "unit_pixels": "ピクセル"
+        },
+        "storage": {
+          "title": "保存先とキャッシュ",
+          "desc": "サムネイルファイルは、元画像が公開かどうかによって 2 か所に分けて保存します。保存先は「保存」を押すと変わり、削除は押した時点ですぐに実行されます。",
+          "kinds": {
+            "public": "公開画像のサムネイル",
+            "gated": "権限が必要な画像のサムネイル"
+          },
+          "kind_hints": {
+            "public": "レイアウト添付、商品、カテゴリのように誰でも見られる画像です。公開ストレージ（CDN）を選択できます。",
+            "gated": "添付ファイル、秘密投稿、レビューのように権限を確認してから送る画像です。非公開ストレージのみ選択できます。"
+          },
+          "disk": "保存ディスク",
+          "private_disk": "非公開サムネイルストレージ",
+          "usage": "ファイル {{count}} 件、{{size}}",
+          "not_counted": "集計しない（リモートストレージ）",
+          "after_save": "保存後に集計",
+          "load_failed": "サムネイルの使用量を読み込めませんでした。しばらくしてからもう一度お試しください。",
+          "locked_hint": "保存先を変更した行は「保存」するまで削除できません。保存すると新しい保存先で集計し直します。",
+          "purge_preset": "削除する規格",
+          "all_presets": "すべての規格",
+          "purge": "削除",
+          "purge_success": "サムネイルを {{count}} 件削除しました。",
+          "purge_failed": "サムネイルを削除できませんでした。",
+          "purge_all": "両方とも削除",
+          "pregenerate": "既存画像のサムネイルを作成",
+          "cdn_purge_notice": "公開サムネイルを公開ストレージ（CDN）に置く場合、削除や元画像の削除時の CDN キャッシュ無効化は CDN プラグインが処理します。プラグインがない場合、CDN に残ったコピーが期限切れになるまで表示されることがあります。",
+          "same_bucket_warning": "ドライバータブの公開アセットディスクも Amazon S3 のため、権限が必要な画像のサムネイルと同じバケットを使います。バケットに公開読み取りポリシーがあると、これらのサムネイルもバケットの URL から直接読み取られる可能性があります。サムネイルのパス（thumbnails/）に公開ポリシーが適用されていないか確認してください。"
+        },
+        "purge_all_modal": {
+          "title": "サムネイルをすべて削除",
+          "body": "下の 2 つの保存先にあるサムネイルファイルをすべて削除します。",
+          "disk": "ディスク: {{disk}}",
+          "warning": "元画像はそのまま残ります。削除したサムネイルは次のリクエスト時に再作成されます。",
+          "confirm": "すべて削除",
+          "success": "サムネイルを削除しました。公開 {{public}} 件、権限 {{gated}} 件"
+        },
+        "pregenerate_modal": {
+          "title": "既存画像のサムネイルを作成",
+          "body": "すでにアップロードされている画像のサムネイルを事前に作成します。作成済みのサムネイルはスキップします。",
+          "sources": "対象の画像",
+          "no_sources": "サムネイルを作成できる画像ソースがありません。",
+          "presets": "作成する規格",
+          "counts": "処理 {{processed}} / {{total}}、作成 {{generated}}",
+          "running": "作成中…",
+          "paused": "一時停止",
+          "done": "完了",
+          "done_toast": "サムネイルの作成が終わりました。新しく作成したファイル {{generated}} 件",
+          "failed": "サムネイルを作成できませんでした。",
+          "start": "開始",
+          "restart": "もう一度開始",
+          "pause": "一時停止"
+        },
+        "presets": {
+          "title": "サムネイル規格",
+          "desc": "規格ごとにサイズ、合わせ方、形式を設定します。コアと拡張機能の規格は名前を変更できず、値のみ変更できます。",
+          "col": {
+            "name": "名前",
+            "source": "提供元",
+            "width": "幅",
+            "height": "高さ",
+            "fit": "合わせ方",
+            "anchor": "基準点",
+            "format": "形式",
+            "quality": "品質",
+            "upscale": "拡大",
+            "pregenerate": "登録時に作成",
+            "numeric": "数値リクエスト",
+            "enabled": "使用",
+            "actions": "管理"
+          },
+          "kinds": {
+            "fixed": "コア",
+            "og": "コア（SEO）",
+            "extension": "拡張機能",
+            "custom": "運営者"
+          },
+          "fit": {
+            "cover": "切り抜き",
+            "contain": "全体を収める",
+            "width": "幅のみ"
+          },
+          "anchor": {
+            "center": "中央",
+            "top": "上",
+            "bottom": "下",
+            "left": "左",
+            "right": "右"
+          },
+          "format": {
+            "original": "元の形式",
+            "webp": "WebP",
+            "avif": "AVIF"
+          },
+          "og_size_notice": "SEO タブで設定",
+          "reset": "既定値に戻す",
+          "remove": "削除",
+          "add": "規格を追加",
+          "name_rule": "規格名は英小文字で始まり、英小文字、数字、アンダースコアで 2〜32 文字です（^[a-z][a-z0-9_]{1,31}$）。xs、sm、md、lg、xl、og は使えません。高さを空にすると幅のみ合わせ、品質を空にすると画像品質の設定に従います。",
+          "placeholder": {
+            "name": "例: banner_wide",
+            "height": "自動"
+          }
+        }
+      },
       "orphan_cleanup": "孤立した添付ファイルのクリーンアップ",
       "orphan_cleanup_desc": "フォームを保存せずに離脱して、所有者がいなくなった添付ファイルをクリーンアップします。",
       "orphan_cleanup_enabled": "孤立した添付ファイルの自動クリーンアップ",
-      "orphan_cleanup_enabled_hint": "デフォルトはオフです — 管理者が直接有効化する必要があります。有効化すると、保持期間を過ぎた孤立した添付ファイルのファイルと記録を毎日削除します。サイトロゴなど現在使用中の添付ファイルは削除しません。",
+      "orphan_cleanup_enabled_hint": "既定はオフ — 運営者が自分でオンにする必要があります。オンにすると、保存期間を過ぎた孤立した添付のファイルと記録を整理スケジュールが削除します。サイトロゴのように現在使用中の添付は削除しません。",
       "orphan_retention_days": "孤立した添付ファイルの保持期間（日数）",
-      "orphan_retention_days_hint": "アップロード後この期間が経過した孤立した添付ファイルのみがクリーンアップの対象になります。フォーム作成中の中断を考慮して、余裕を持って設定してください。（1～3650日）"
+      "orphan_retention_days_hint": "アップロード後この期間が経過した孤立した添付ファイルのみがクリーンアップの対象になります。フォーム作成中の中断を考慮して、余裕を持って設定してください。（1～3650日）",
+      "orphan_cleanup_schedule_notice": "孤立した添付の整理は添付整理スケジュールが実行します。"
     },
     "seo": {
       "meta_settings": "メタタグ設定",
@@ -1759,12 +2268,7 @@
       "sitemap_settings_desc": "sitemap.xml 自動生成関連の設定です。",
       "sitemap_enabled": "Sitemap 生成 有効化",
       "sitemap_enabled_desc": "sitemap.xml を自動生成し、検索エンジンに提供します。",
-      "sitemap_schedule": "生成 周期",
-      "sitemap_schedule_hourly": "毎時間",
-      "sitemap_schedule_daily": "毎日",
-      "sitemap_schedule_weekly": "毎週",
-      "sitemap_schedule_time": "生成 時刻",
-      "sitemap_schedule_time_hint": "HH:mm 形式で入力してください。(例: 02:00)",
+      "sitemap_schedule_managed": "サイトマップの生成周期と時刻はスケジュール管理で変更します。",
       "sitemap_cache_ttl": "Sitemap キャッシュ 保持時間 (秒)",
       "sitemap_cache_ttl_hint": "空欄にすると詳細設定の Sitemap キャッシュ時間に従います。値を入力するとこの画面の値が優先されます — 最小 3600 秒 (1 時間)、最大 604800 秒 (7 日)",
       "sitemap_last_updated_at": "最後の生成",
@@ -1913,7 +2417,7 @@
         "remind_days_hint": "1〜90日。「後で変更」を選んだ会員に、この期間後に再び変更を求めます。",
         "batch_size": "1回の実行あたりの処理上限 (人)",
         "batch_size_hint": "事前案内・期限切れ処理にそれぞれ適用されます。期限が近い会員から処理し、残りは次回の実行で処理します。0を入力すると制限なく処理します。",
-        "schedule_notice": "毎日 05:15 にスケジューラーが案内メールとサイト通知を送ります。メール設定と通知設定の「パスワード有効期限の事前案内」・「パスワードの有効期限切れ」がオンになっている必要があります。個人情報処理方針でパスワードの変更周期を事前にお知らせください。",
+        "schedule_notice": "スケジューラーが案内メールとサイト通知を送ります。メール設定と通知設定の「パスワード有効期限の事前案内」・「パスワード有効期限切れ」がオンのときのみ送信されます。個人情報処理方針でパスワード変更周期を事前に告知してください。",
         "rows": {
           "notice": "有効期限の事前案内",
           "expire": "期限切れ処理"
@@ -1949,11 +2453,17 @@
       },
       "activity_log_retention": {
         "title": "アクティビティログ(アクセス記録)の保管",
-        "desc": "管理者・会員のアクセスと操作の記録(アクティビティログ)を保管する期間です。期間を過ぎた記録は毎日 04:45 に自動で削除されます。",
+        "desc": "管理者・会員のアクセスと操作の記録(アクティビティログ)を保管する期間です。期間を過ぎた記録は整理スケジュールが自動で削除します。",
         "days": "保管期間",
         "days_suffix": "日",
         "days_hint": "{{min}}〜{{max}}日。法定の最低期間より短くはできません。",
-        "legal_notice": "法定最低: アクセス記録は1年(会員5万人以上、または固有識別情報・センシティブ情報を扱う場合は2年) · 権限・ロールの変更記録はこの値に関係なく最低3年保管します。"
+        "legal_notice": "法定最低: アクセス記録は1年(会員5万人以上、または固有識別情報・センシティブ情報を扱う場合は2年) · 権限・ロールの変更記録はこの値に関係なく最低3年保管します。",
+        "schedule_notice": "期間を過ぎたアクティビティログは整理スケジュールが削除します。"
+      },
+      "registration": {
+        "title": "会員登録",
+        "enabled": "一般会員登録を受け付ける",
+        "enabled_desc": "オフにすると、会員登録画面、公開登録、ソーシャルの新規登録が閉じられます。登録済み会員のログインとソーシャル連携、管理者が追加したり外部認証拡張が作成するアカウントはそのままです。"
       },
       "csp": {
         "title": "コンテンツセキュリティポリシー (CSP)",
@@ -1982,8 +2492,8 @@
           "level_strict": "厳格 — 基本 + タグの style 属性もブロック",
           "level_desc": "基本ではほとんどの画面がそのまま動作します。厳格では外部ライブラリが直接付ける style 属性までブロックするため、崩れる画面が増えます。",
           "enforce_warning": "まず「検査のみ」で storage/logs/csp-*.log に違反がないことを確認してから強制に切り替えてください。",
-          "known_issues_basic": "強制すると次の画面が崩れます: タグ入力・複数選択欄 (このカードの許可ホスト入力を含む) — 欄内の配置が乱れ、スクリーンリーダー用の案内文がそのまま表示される; レイアウトコードエディター — 構文の色と背景テーマが失われる; 投稿エディター (CKEditor) のカラーピッカー — 任意の色をドラッグして選ぶパネルが折りたたまれる (色見本と16進数の入力では選べる)。これらの画面を使うサイトは「検査のみ」のままにしてください。",
-          "known_issues_strict": "強制すると次の画面が崩れます: タグ入力・複数選択欄 (このカードの許可ホスト入力を含む) — 欄内の配置が乱れ、スクリーンリーダー用の案内文がそのまま表示される; レイアウトコードエディター — 構文の色・背景テーマ・行の強調表示が失われる; 投稿エディター (CKEditor) のカラーピッカー — 任意の色をドラッグして選ぶパネルが折りたたまれる (色見本と16進数の入力では選べる)。これらの画面を使うサイトは「検査のみ」のままにしてください。",
+          "known_issues_basic": "強制すると次の画面が崩れます: レイアウトコードエディター — 構文の色と背景テーマが失われる; 投稿エディター (CKEditor) のカラーピッカー — 任意の色をドラッグして選ぶパネルが折りたたまれる (色見本と16進数の入力では選べる)。これらの画面を使うサイトは「検査のみ」のままにしてください。",
+          "known_issues_strict": "強制すると次の画面が崩れます: レイアウトコードエディター — 構文の色・背景テーマ・行の強調表示が失われる; 投稿エディター (CKEditor) のカラーピッカー — 任意の色をドラッグして選ぶパネルが折りたたまれる (色見本と16進数の入力では選べる)。これらの画面を使うサイトは「検査のみ」のままにしてください。",
           "override_notice": ".env の G7_CSP_STYLE_MODE={{mode}} がこの設定より優先されます。変更するには .env を修正してから php artisan config:clear を実行してください。",
           "extra_hosts": "追加スタイル許可ホスト (入力後 Enter)",
           "extra_hosts_placeholder": "fonts.example.com",
@@ -1992,6 +2502,305 @@
           "auto_hosts_empty": "有効なテンプレート・拡張機能が宣言した外部スタイルシートホストはありません。",
           "preview": "適用されるスタイルポリシーのプレビュー"
         }
+      },
+      "force_https_notice": "HTTPS 証明書の準備ができてからオンにしてください。ロックされた場合: php artisan settings:set security.force_https false",
+      "extension_trust": {
+        "title": "拡張信頼鍵",
+        "desc": "拡張・言語パック・コアのパッケージ署名を確認するときに信頼する公開鍵です。コア内蔵鍵はコアと一緒に配布され、制作者の鍵はここで追加します。鍵の追加と削除は保存ボタンとは別にすぐ反映されます。",
+        "block_unsigned": "未署名パッケージのブロック",
+        "block_unsigned_desc": "オンにすると、署名がない、またはこのサーバーで署名を確認できないパッケージのインストール・アップデートをブロックします(「未署名で続行」も表示されません)。保存ボタンを押すと反映されます。",
+        "sodium_missing": "このサーバーに PHP sodium 拡張がないため署名を確認できません。署名されたパッケージも「署名確認不可」として扱い、未署名と同じポリシーに従います。",
+        "builtin_title": "コア内蔵鍵",
+        "builtin_hint": "コアと一緒に配布される鍵のため、ここでは変更できません。",
+        "builtin_empty": "コア内蔵鍵はまだありません。コアのアップデートで一緒に配布されます。",
+        "vendor_title": "制作者の鍵",
+        "vendor_empty": "登録された制作者の鍵はありません。",
+        "add_key": "鍵を追加",
+        "delete_key": "削除",
+        "field_key_id": "鍵 ID",
+        "field_signer": "署名者",
+        "field_vendor_scope": "vendor 範囲",
+        "field_created_at": "登録日",
+        "status_active": "使用中",
+        "status_retired": "新規署名停止",
+        "status_revoked": "失効",
+        "load_failed": "信頼鍵の一覧を読み込めませんでした。"
+      }
+    },
+    "member": {
+      "sub_tabs": {
+        "fields": "会員登録項目",
+        "nickname": "ニックネームポリシー"
+      },
+      "display_name": {
+        "sub_tab": "表示名",
+        "title": "表示名",
+        "description": "会員を画面にどの名前で表示するかを設定します。下の「保存」を押すと適用されます。",
+        "selectable_kinds": "会員が選択できる種類",
+        "selectable_kinds_hint": "2つ以上オンにすると、会員が会員登録画面と my情報編集で1つを選べます。選んだ種類は、方式が「会員が選んだ値」の領域で使われます。",
+        "selectable_default_locked": "会員の既定の種類は外せません。先に会員の既定の種類を変更してください。",
+        "requires_nickname_badge": "ニックネームが必要",
+        "sample": "プレビューの基準会員: 名前 {{name}}、ニックネーム {{nickname}}、ID {{id}}",
+        "member_default_kind": "会員の既定の種類",
+        "member_default_kind_hint": "会員が種類を選んでいないときに使う種類です。会員が選択できる種類のいずれかである必要があります。",
+        "member_default_kind_usage": "現在この値を使う領域: {{areas}}",
+        "member_default_kind_usage_more": "現在この値を使う領域: {{areas}} ほか{{count}}か所",
+        "member_default_kind_unused": "現在この値を使う領域はありません。この値は方式が「会員が選んだ値」の領域でのみ使われます。",
+        "areas_title": "領域別の方式",
+        "areas_hint": "名前が表示される領域ごとに方式を設定します。字下げされた領域は、すぐ上の領域に従うことができます。",
+        "col": {
+          "area": "領域",
+          "mode": "方式",
+          "kind": "種類"
+        },
+        "mode": {
+          "inherit": "上位領域に従う",
+          "fixed": "種類を固定",
+          "member": "会員が選んだ値"
+        },
+        "area_mode_label": "{{area}}の方式",
+        "area_kind_label": "{{area}}の種類",
+        "effective_member": "選んでいない会員は{{kind}}",
+        "effective_inherit": "現在の適用: {{kind}}",
+        "effective_inherit_member": "現在の適用: 会員が選んだ値",
+        "effective_inherit_pending": "保存すると上位領域の設定に従います",
+        "extension_note": "掲示板のように1つの領域の中でさらに分かれる場所は、その拡張の設定画面で個別に設定します。",
+        "nickname_notice": {
+          "all": "保存すると、ニックネーム項目が使用、必須に固定されます。",
+          "chosen": "保存すると、ニックネーム項目が使用に固定され、ニックネームが必要な種類で表示される会員はニックネームが必須になります。",
+          "empty_count": "現在ニックネームが空の会員は{{count}}人です。",
+          "require_existing": "ログイン時のニックネーム入力要求",
+          "require_existing_hint": "オンにすると、ニックネームが空の既存会員がログインしたときに、まずニックネームを入力してもらいます。",
+          "already_required": "既存会員にもニックネームの入力をすでに求めています。"
+        },
+        "lock_link": "表示名の設定を見る",
+        "usage": {
+          "title": "表示名に使われているため、削除できません。",
+          "hint": "下の設定からこの項目を外してから、もう一度削除してください。",
+          "link": "表示名の設定へ移動"
+        },
+        "data_source": {
+          "options": "表示名の種類と領域",
+          "nickname_empty_count": "ニックネームが空の会員数"
+        }
+      },
+      "fields": {
+        "title": "会員登録項目",
+        "description": "会員登録画面、my情報編集、管理者の会員フォームで入力を受け付ける項目を設定します。",
+        "add_button": "項目を追加",
+        "instant_save_notice": "この表の変更(使用、必須、登録時表示、順序)はすぐに保存されます。",
+        "fixed_notice": "固定: メール、パスワード、規約への同意 (常に使用)",
+        "layout_modified_notice": "会員登録画面のレイアウトが編集版のまま維持されているため、新しい項目が表示されない場合があります。",
+        "layout_modified_hint": "レイアウトエディターで会員登録画面を元の状態に復元すると、ここで設定した項目がそのまま表示されます。",
+        "empty_custom": "追加した項目がありません。「項目を追加」で会員登録項目を作成してください。",
+        "unavailable": "使用不可",
+        "unavailable_desc": "タイプを提供した拡張がオフになっています。拡張を再びオンにすると復旧します。",
+        "signup_unsupported": "このタイプは会員登録画面では受け付けません。",
+        "signup_unsupported_short": "会員登録画面は非対応",
+        "drag_handle": "{{name}} の順序を変更",
+        "drag_hint": "ドラッグして順序を変更します",
+        "move_up": "{{name}} を上へ",
+        "move_down": "{{name}} を下へ",
+        "move_up_short": "上へ",
+        "move_down_short": "下へ",
+        "saved": "保存しました。",
+        "order_saved": "順序を保存しました。",
+        "save_failed": "保存できませんでした。表を読み込み直しました。",
+        "load_failed": "項目情報を読み込めませんでした。",
+        "changed_by_other": "他の管理者が項目を変更しました。読み込み直しました。",
+        "col": {
+          "order": "順序",
+          "name": "項目",
+          "type": "タイプ",
+          "source": "提供元",
+          "enabled": "使用",
+          "required": "必須",
+          "show_on_signup": "登録時表示",
+          "edit_scope": "範囲"
+        },
+        "source": {
+          "core": "基本",
+          "custom": "追加",
+          "extension": "拡張"
+        },
+        "scope": {
+          "self": "本人が編集",
+          "admin_edit": "管理者のみ編集",
+          "admin_only": "管理者のみ閲覧"
+        },
+        "btn": {
+          "settings": "設定",
+          "edit": "編集",
+          "view": "表示"
+        },
+        "delete": {
+          "title": "項目の削除",
+          "message": "「{{name}}」項目を削除します。",
+          "values_warning": "会員 {{count}} 人が入力した値も一緒に削除され、元に戻すことはできません。",
+          "no_values_warning": "まだ入力された値はありません。削除した項目は元に戻すことはできません。",
+          "confirm_check": "上記の内容を確認しました",
+          "success": "項目を削除しました。",
+          "failed": "項目を削除できませんでした。"
+        },
+        "required_confirm": {
+          "title": "必須に変更",
+          "message": "「{{name}}」項目が空の既存会員が {{count}} 人います。",
+          "mode_label": "これらの会員にいつ入力を求めますか?",
+          "on_edit": "my情報編集のときのみ",
+          "on_login": "ログイン後すぐ",
+          "submit": "必須に変更",
+          "hint": {
+            "on_edit": "会員が my情報を編集して保存するときにのみ入力を求めます。それまではこれまでどおり利用できます。",
+            "on_login": "ログインした会員を追加情報の入力画面へ移動させ、入力するまで投稿などのリクエストを受け付けません。"
+          }
+        },
+        "form": {
+          "title": {
+            "create": "項目を追加",
+            "edit": "項目を編集",
+            "settings": "項目の設定",
+            "view": "項目の表示"
+          },
+          "readonly_notice": "閲覧権限のみのため、内容を変更できません。",
+          "declared_notice": "基本項目と拡張が提供した項目は、名前、案内文と共通オプションのみ変更できます。",
+          "type": "タイプ",
+          "type_locked": "タイプは作成後に変更できません。",
+          "change_type": "変更",
+          "type_step": {
+            "description": "受け付ける値のタイプを選んで「次へ」を押してください。保存する前であれば選び直せます。",
+            "unavailable": "拡張オフ"
+          },
+          "key": "キー",
+          "key_hint": "英小文字で始まり、英小文字、数字、アンダースコアのみ使用できます(2〜50文字)。作成後は変更できません。",
+          "name": "名前",
+          "description": "案内文",
+          "description_hint": "入力欄の下に表示される説明です。",
+          "placeholder": "プレースホルダー",
+          "placeholder_hint": "空の入力欄に薄く表示される文字です。",
+          "save_success": "項目を保存しました。",
+          "section": {
+            "type_options": "タイプ別オプション",
+            "common": "共通オプション"
+          },
+          "c": {
+            "min_length": "最小文字数",
+            "max_length": "最大文字数",
+            "regex": "形式(正規表現)",
+            "regex_hint": "/^[a-z]+$/ のように区切り文字を含めて入力します。空にすると形式を検査しません。",
+            "regex_message": "形式エラーの文言",
+            "regex_message_hint": "形式に合わないときに会員に表示する文言です。空にすると既定の文言が表示されます。",
+            "rows": "行数",
+            "rows_hint": "入力欄の高さです(2〜20行)。",
+            "min": "最小値",
+            "max": "最大値",
+            "decimals": "小数桁数",
+            "decimals_hint": "0 の場合は整数のみ受け付けます(0〜6)。",
+            "unit": "単位",
+            "unit_hint": "入力欄の横に付く文字です(例: 歳、個)。",
+            "widget": "入力の形",
+            "widget_toggle": "スイッチ",
+            "widget_checkbox": "チェックボックス",
+            "inline_label": "横の文言",
+            "inline_label_hint": "スイッチやチェックボックスの横に表示される文字です。",
+            "default_on": "最初からオンの状態で表示",
+            "date_min": "最も早い日",
+            "date_max": "最も遅い日",
+            "date_hint": "「今日」はサイトのタイムゾーン基準です。",
+            "display": "表示方式",
+            "display_select": "リストから選択",
+            "display_radio": "ラジオボタン",
+            "display_checkbox": "チェックボックス",
+            "display_multi_select": "複数選択リスト",
+            "allow_other": "「その他(直接入力)」を許可",
+            "allow_other_hint": "会員が「その他」を選ぶと、すぐ下の欄に直接入力できます。",
+            "min_select": "最小選択数",
+            "max_select": "最大選択数",
+            "address_note": "郵便番号、基本住所、詳細住所を受け付けます。郵便番号検索プラグインがオンの場合は検索ボタンも表示されます。",
+            "extensions": "許可する拡張子",
+            "extensions_placeholder": "jpg のように入力して Enter",
+            "extensions_hint": "空にするとタイプの既定の拡張子に従います。",
+            "max_count": "最大個数",
+            "max_size_mb": "最大サイズ(MB)",
+            "file_signup_note": "ファイルと画像は会員登録画面では受け付けません。登録後に my情報編集からアップロードできます。"
+          },
+          "date_bound": {
+            "none": "制限なし",
+            "today": "今日",
+            "after_today": "今日以降",
+            "date": "日付を指定"
+          },
+          "options": {
+            "title": "選択肢",
+            "add_button": "選択肢を追加",
+            "paste_button": "複数行を貼り付け",
+            "paste_label": "1行につき選択肢1個",
+            "paste_placeholder": "学生\n会社員\n自営業",
+            "paste_hint": "値(英字)は自動で作成され、既存の値と重なる場合は番号が付きます。選択肢は50個まで追加できます。",
+            "paste_apply": "選択肢として追加",
+            "empty": "選択肢がありません。",
+            "value": "値",
+            "value_placeholder": "値(英字)",
+            "label": "名前",
+            "label_placeholder": "会員に表示する名前",
+            "usage": "使用 {{count}} 人",
+            "remove_warning": "この値を選んだ会員 {{count}} 人の値が空になります。保存すると適用されます。",
+            "remove_pending": "保存するとこの選択肢が削除されます。",
+            "restore": "元に戻す"
+          },
+          "opt": {
+            "enabled": "使用",
+            "required": "必須",
+            "show_on_signup": "会員登録画面に表示",
+            "edit_scope": "範囲",
+            "edit_scope_hint": {
+              "self": "会員本人と管理者が編集できます。",
+              "admin_edit": "会員は閲覧のみで、管理者だけが編集できます。",
+              "admin_only": "管理者画面にのみ表示され、会員には表示されません。"
+            },
+            "require_existing_members": "既存会員にも入力を求める",
+            "require_existing_locked": "「管理者のみ編集」「管理者のみ閲覧」の範囲では、既存会員に入力を求めることはできません。",
+            "public_profile": "公開プロフィールに表示",
+            "admin_list_column": "会員一覧の列",
+            "admin_searchable": "会員検索",
+            "unique": "重複禁止",
+            "display_name_usable": "表示名として使用可能",
+            "display_name_usable_hint": "1行テキストのタイプのみオンにできます。",
+            "idv_claim": "本人認証との連携",
+            "idv_claim_none": "なし",
+            "idv_claim_name": "名前",
+            "idv_claim_mobile": "携帯電話",
+            "idv_claim_birth_date": "生年月日",
+            "idv_claim_gender": "性別",
+            "idv_lock": "認証値で入力してロック"
+          },
+          "close_confirm": {
+            "message": "入力中の内容があります。閉じると失われます。",
+            "keep": "入力を続ける",
+            "discard": "保存せずに閉じる"
+          }
+        }
+      },
+      "nickname": {
+        "title": "ニックネームポリシー",
+        "description": "ニックネームに適用するルールを設定します。下の「保存」を押すと適用されます。",
+        "unique": "重複禁止",
+        "unique_desc": "同じニックネームを2人の会員が使えないようにします。大文字と小文字、全角文字、空白の違いは同じニックネームとみなします。",
+        "duplicates_message": "現在、同じニックネームを使っている会員がいます。重複しているニックネーム {{nicknames}} 種類、会員 {{members}} 人。",
+        "duplicates_hint": "オンにしても、これらの会員のニックネームはそのままです。ニックネームの変更時や新規登録時から重複を防ぎます。",
+        "duplicates_view": "重複している会員を表示",
+        "duplicates_confirm": "それでもオンにする",
+        "duplicates_failed": "重複しているニックネームを確認できなかったため、オンにしませんでした。",
+        "recompute_running": "重複チェックを準備しています",
+        "recompute_count": "{{processed}} / {{total}} 人",
+        "recompute_running_hint": "既存会員のニックネームを比較できるように整理しています。画面を離れても続行されます。",
+        "recompute_done": "重複チェックの準備が完了しました。会員 {{total}} 人を確認しました。",
+        "banned_words": "禁止語",
+        "banned_words_placeholder": "禁止語を入力して Enter",
+        "banned_words_hint": "ニックネームにこの語句が含まれていると使用できません。500個まで追加できます。",
+        "change_interval": "変更間隔",
+        "change_interval_unit": "日",
+        "change_interval_hint": "ニックネームを変更してから再び変更できるようになるまでの日数です。0 の場合は制限がありません。",
+        "display_note": "表示名がニックネームを使用している間、ニックネームは必須です。"
       }
     },
     "identity": {
@@ -2078,6 +2887,35 @@
         "hardening_warning": "Webサーバーの保護ルールが適用されていません。/storage の直接URLの応答に保護ヘッダーがありません — インストールガイドのnginx/Apache設定を確認してください。",
         "hardening_rules_write_failed": "Webサーバーの保護ルールファイルを現在の設定に更新できませんでした。公開ディスクのフォルダー(storage/app/public)とその中の.htaccessファイルにWebサーバーのアカウントが書き込めるか確認してから、もう一度保存してください。"
       },
+      "private_attachment": {
+        "title": "非公開添付ストレージ",
+        "desc": "権限を確認したうえでサーバーが配信するファイル(掲示板・ページ・コアの添付、クレーム画像、本文メディア、エクスポートファイル)を保存するディスクです。「既定」の場合はこれまでどおりサイトのストレージドライバーに従います。変更後にアップロードしたファイルのみ新しいディスクに保存され、既にアップロードしたファイルは元のディスクからそのまま配信されます。",
+        "disk": "ディスク",
+        "same_disk_warning": "公開アセットストレージと同じディスクです。バケットに公開読み取りポリシーがあると、非公開ファイルもバケットのアドレスから直接読まれる可能性があります。公開ポリシーのないバケットまたはパスを使用してください。",
+        "s3_help": "S3を選ぶと、上のファイルストレージカードのS3接続情報を使います。バケットの公開読み取りは無効にしてください。",
+        "pins_title": ".envで固定された拡張",
+        "pin_core": "コアの添付",
+        "pins_hint": "これらの項目は.envに記載したディスクを使うため、上の選択に従いません。選択に従わせるには.envから該当する値を削除してください。"
+      },
+      "file_delegation": {
+        "title": "Webサーバーファイル委任",
+        "desc": "テンプレート・モジュール・プラグインのアセット、公開ストレージのファイル、拡張アイコン、ヒーローセクションのバナー動画、本文のローカルメディアなどサーバー上のファイルを、PHP が読み込んで送る代わりに Webサーバーが直接送信します。動画のシーク・ダウンロード再開（範囲リクエスト）も Webサーバーが処理します。Webサーバーの設定が必要です。リモートディスク（S3）のファイルと添付ファイルのダウンロードは対象外です。",
+        "mode": "委任方式",
+        "accel_prefix": "内部ロケーションの接頭辞",
+        "accel_prefix_desc": "nginx の internal location のパスです。/ で始まり / で終わる必要があり、外部から推測しにくい名前を使ってください。アプリがこの接頭辞とインストール場所からマッピング（X-Accel-Mapping）を作成します。",
+        "apache_guide": "Apache に mod_xsendfile をインストール・有効化し（例: a2enmod xsendfile）、サイト設定に下の 2 行を追加してから Apache の設定を再読み込みしてください。",
+        "nginx_guide": "nginx サイト設定の server ブロックに下の location を追加し、設定を再読み込みしてください。internal がないとインストールフォルダ全体が外部に公開されます。",
+        "saved_differs": "画面の値はまだ適用されていません。「実際の送信を確認」は適用中の設定で検査するため、先に保存してください。",
+        "test_hint": "「設定チェック」はこのサーバーの Webサーバーの種類とモジュールだけを見て判断し、保存は妨げません。保存後に「実際の送信を確認」で Webサーバーがファイルを送信するか確認してください。",
+        "test_button": "設定チェック",
+        "test_mapping": "アプリが送るマッピング（X-Accel-Mapping）: {{mapping}}",
+        "probe_button": "実際の送信を確認",
+        "probe_ok": "Webサーバーがファイルを送信しました。委任は動作しています。",
+        "probe_failed": "ファイル本文を受信できませんでした。Webサーバーの設定を確認するか、委任方式を「使用しない」に戻してください。",
+        "probe_inactive": "適用中の方式が「使用しない」のため、WebサーバーではなくPHPがファイルを送信します。委任方式を保存してから再度確認してください。",
+        "probe_skipped": "委任は有効ですが、このファイルは委任パスの外にあるためPHPが送信しました。インストール場所（シンボリックリンクを含む）が委任マッピングと一致しているか確認してください。",
+        "recover_hint": "有効化後に画面のアセットや画像が開かなくなった場合は、委任方式を「使用しない」で保存してください。管理画面に入れない場合は、サーバーの storage/app/settings/drivers.json で file_delegation の値を none に修正してください。"
+      },
       "cache": {
         "title": "キャッシュ",
         "desc": "アプリケーションキャッシュドライバーを設定します。",
@@ -2091,6 +2929,7 @@
         "redis_port": "Redisポート",
         "redis_password": "Redisパスワード",
         "redis_database": "Redisデータベース",
+        "redis_shared_hint": "セッション・キューがRedisを使用するため表示される接続情報です。キャッシュ・セッション・キューがこの設定を共有します。",
         "memcached_host": "Memcachedホスト",
         "memcached_port": "Memcachedポート"
       },
@@ -2105,7 +2944,7 @@
         },
         "lifetime": "セッション有効時間",
         "minutes": "分",
-        "redis_shared_notice": "Redis選択時、キャッシュのRedis設定を共有します。"
+        "redis_shared_notice": "Redisを選択すると、キャッシュカードのRedis接続情報を共有します。接続情報と接続テストはキャッシュカードにあります。"
       },
       "queue": {
         "title": "キュー",
@@ -2117,7 +2956,7 @@
           "redis": "Redis"
         },
         "worker_notice": "databaseまたはredis使用時、キューワーカーを実行する必要があります。",
-        "redis_shared_notice": "Redis選択時、キャッシュのRedis設定を共有します。",
+        "redis_shared_notice": "Redisを選択すると、キャッシュカードのRedis接続情報を共有します。接続情報と接続テストはキャッシュカードにあります。",
         "worker": {
           "title": "キューワーカー",
           "not_required": "同期(sync)ドライバーはリクエスト内ですぐに処理するため、キューワーカーは不要です。",
@@ -2175,6 +3014,16 @@
             "title": "Supervisor実行コマンド",
             "desc": "登録した接続ごとに以下のコマンドでワーカーを起動してください。長時間ジョブ接続は必ずその接続名で起動する必要があります。"
           }
+        },
+        "records": {
+          "title": "処理記録",
+          "job_log_enabled": "タスク処理記録",
+          "job_log_enabled_desc": "キュージョブが終了または失敗するたびに記録を残します。",
+          "retention_days": "保管期間",
+          "retention_days_hint": "処理記録と失敗したジョブをこの期間保管します。({{min}} ~ {{max}}日)",
+          "view_link": "処理記録を見る",
+          "days_suffix": "日",
+          "schedule_managed": "古い処理記録と失敗したジョブは整理スケジュールが削除します。"
         }
       },
       "log": {
@@ -2229,6 +3078,13 @@
         "driver_desc": "デフォルト提供のMySQL FULLTEXT（ngram）エンジンは、追加設定なしで日本語検索をサポートしています。",
         "plugin_notice": "検索エンジンプラグイン（Meilisearch、Elasticsearchなど）をインストールすると、追加ドライバーが表示されます。"
       },
+      "image": {
+        "title": "画像処理",
+        "desc": "アップロード画像の縮小とサムネイル生成に使う画像処理エンジンを設定します。",
+        "driver": "画像処理エンジン",
+        "driver_desc": "GD はほとんどのサーバーに標準で入っています。Imagick は PHP imagick 拡張がインストールされたサーバーでのみ表示されます。",
+        "plugin_notice": "画像処理プラグインをインストールすると、追加のエンジンが表示されます。選択したエンジンが使えなくなった場合は GD で処理します。"
+      },
       "test_connection": "接続テスト",
       "testing": "テスト中...",
       "test_success": "接続成功",
@@ -2278,7 +3134,7 @@
       "geoip_license_key": "MaxMindライセンスキー",
       "geoip_license_key_desc": "MaxMind無料アカウントから発行されたライセンスキーを入力してください。https://www.maxmind.com/en/geolite2/signup から無料で発行可能です。",
       "geoip_auto_update_enabled": "GeoIP DB自動更新",
-      "geoip_auto_update_enabled_desc": "週1回（水曜日03:00）MaxMind GeoLite2-City DBを自動的に再ダウンロードします。",
+      "geoip_auto_update_enabled_desc": "MaxMind GeoLite2-City DB をスケジュールに従って自動で再ダウンロードします。",
       "geoip_last_updated_at": "最後の更新",
       "geoip_manual_update": "今すぐ更新",
       "geoip_updating": "更新中...",
@@ -2293,7 +3149,26 @@
       "pagination_max_page": "ページ番号の上限",
       "pagination_max_page_desc": "アドレスから直接リクエスト可能な最大ページ番号です。0の場合は制限しません。通常の次ページへの移動はこの値に関わらず引き続き可能です。",
       "trusted_proxy": "リバースプロキシ (信頼するプロキシ)",
-      "trusted_proxy_desc": "HTTPS を前段で処理する構成 (AWS ALB, CloudFront, Cloudflare, nginx) で、接続アドレスと訪問者 IP を正しく認識するための設定です。値は .env の TRUSTED_PROXIES でのみ変更できます。",
+      "trusted_proxy_desc": "HTTPS をフロントエンドで処理する構成(AWS ALB、CloudFront、Cloudflare、nginx)で、接続アドレスと訪問者 IP を正しく認識するための設定です。",
+      "trusted_proxy_scope": "信頼範囲",
+      "trusted_proxy_scope_desc": "フロントエンドが送信する X-Forwarded-* ヘッダーをどこまで信頼するかを選択します。保存すると即座に適用されます。",
+      "trusted_proxy_mode_none": "信頼しない",
+      "trusted_proxy_mode_none_desc": "フロントエンドなしで直接公開された構成です。プロキシを使用しない場合、これが正常です。",
+      "trusted_proxy_mode_nearest": "直前のプロキシのみ信頼 (*)",
+      "trusted_proxy_mode_nearest_desc": "同じホストのウェブサーバー・ロードバランサーがフロントエンドである一般的な共有ホスティング構成です。",
+      "trusted_proxy_mode_list": "指定したアドレスのみ信頼",
+      "trusted_proxy_mode_list_desc": "プロキシが複数段(CDN → ロードバランサー)の場合です。チェーンのすべての IP・CIDR を記入します。",
+      "trusted_proxy_list_label": "信頼するアドレス",
+      "trusted_proxy_list_placeholder": "10.0.0.1 または 10.0.0.0/24 を入力後 Enter",
+      "trusted_proxy_list_hint": "IP または CIDR で記入します。カンマで区切られたリストを貼り付けると自動的に分割されます。チェーンで 1 つでも欠けると、そのプロキシが訪問者として記録されます。",
+      "trusted_proxy_spoof_warning": "フロントエンドを迂回してアプリに直接到達できる構成の場合、訪問者が X-Forwarded-For を偽造して IP 記録とログイン制限を操作できます。",
+      "trusted_proxy_env_locked_notice": "このインストールは .env の TRUSTED_PROXIES を基準値として使用します。画面では変更できず、保存時にこの項目はサーバーから除外されます。",
+      "trusted_proxy_probe_button": "この値で今検査",
+      "trusted_proxy_probe_hint": "保存しません。今このリクエストに適用した場合、どのように解釈されるかのみを確認します。",
+      "trusted_proxy_probe_title": "この値で今検査した結果",
+      "trusted_proxy_probe_client_ip": "訪問者 IP",
+      "trusted_proxy_probe_is_secure": "HTTPS 認識",
+      "trusted_proxy_probe_trusted": "信頼されるフロントエンド",
       "trusted_proxy_status": "診断結果",
       "trusted_proxy_status_ok": "正常",
       "trusted_proxy_status_warning": "対応が必要",
@@ -2308,7 +3183,8 @@
       "trusted_proxy_client_ip": "訪問者 IP として認識された値",
       "trusted_proxy_remote_addr": "直前の呼び出し元 IP (REMOTE_ADDR)",
       "trusted_proxy_same_ip_hint": "2 つの値が同じでプロキシヘッダーを受信しています — すべての訪問者が同一人物として記録されている状態です。",
-      "trusted_proxy_doc_hint": "設定方法と導入時の後続対応:"
+      "trusted_proxy_doc_hint": "設定方法と導入時の後続対応:",
+      "geoip_schedule_notice": "自動更新は GeoIP 更新スケジュールが実行します。"
     },
     "notification_definitions": {
       "title": "通知設定",
@@ -2343,6 +3219,8 @@
         "btn_confirming": "復元中..."
       },
       "no_template_for_channel": "このチャネルのテンプレートはありません。",
+      "user_template_inactive": "空のテンプレートが作成されました。内容と受信者を入力してから有効にすると、この手段で配信されます。",
+      "user_template_created": "空のテンプレートを作成しました。[編集] で内容と受信者を入力してから有効にしてください。",
       "body_preview": "本文プレビュー",
       "save_success": "通知設定が保存されました。",
       "save_error": "通知設定の保存に失敗しました。",
@@ -2353,6 +3231,7 @@
         "sitemap_regenerated": "サイトマップ再生成完了",
         "sitemap_regenerate_failed": "サイトマップ再生成失敗",
         "analytics_archive_failed": "訪問者統計集計失敗",
+        "schedule_failed": "予約タスク失敗",
         "analytics_ledger_limit_exceeded": "訪問者統計台帳閾値超過",
         "analytics_visit_limit_exceeded": "訪問あたりアクション上限超過",
         "analytics_weekly_report": "訪問者統計週間レポート",
@@ -2375,7 +3254,12 @@
         "variables_title": "使用可能な変数",
         "btn_preview": "プレビュー",
         "validation_error": "入力情報を確認してください。",
-        "is_active_label": "有効化"
+        "is_active_label": "有効化",
+        "warnings_title": "保存しました。ただし、確認が必要な点があります。",
+        "warnings_description": "下の変数は現在存在しない会員項目のため、その位置は空文字で送信されます。修正して保存し直すか、そのまま閉じることができます。",
+        "warnings_toast": "保存しましたが、現在存在しない変数があります ({{count}}件)。ウィンドウの警告を確認してください。",
+        "member_variables_title": "会員項目 ({{count}})",
+        "member_variables_hint": "受信する会員の値に置き換わります。値が空の場合は空文字で送信されます。"
       },
       "recipients_label": "受信者:",
       "category": {
@@ -2437,7 +3321,8 @@
           "trigger_user": "イベント発生者",
           "related_user": "関連ユーザー",
           "role": "ロールベース",
-          "specific_users": "特定ユーザー"
+          "specific_users": "特定ユーザー",
+          "site_admin_email": "サイト管理者メールアドレス"
         },
         "badge": {
           "trigger_user": "イベント発生者",
@@ -2456,7 +3341,8 @@
         "roles_selected_count": "{count}件のロールを選択",
         "users_selected_count": "{count}名選択",
         "remove_selected": "選択解除: {{name}}",
-        "remove_rule": "受信者ルール{{index}}を削除"
+        "remove_rule": "受信者ルール{{index}}を削除",
+        "site_admin_email_hint": "環境設定 > 一般の管理者メールアドレスにメールのみ送信します(サイト通知など他の手段では受け取りません)。空欄にすると送信しません。"
       },
       "preview_modal": {
         "title": "通知プレビュー",
@@ -2519,8 +3405,8 @@
       "changelog_title": "変更内容",
       "no_changelog": "変更内容の情報がありません。",
       "changelog_load_failed": "変更内容の読み込みに失敗しました。",
-      "update_guide_title": "ターミナルからアップデート",
-      "update_guide_warning": "コアアップデートはターミナルからのみ実行できます。アップデート前に必ずデータベースをバックアップしてください。",
+      "update_guide_title": "コマンドでアップデート (SSH がある場合)",
+      "update_guide_warning": "この方法はサーバーに SSH で接続できる場合に利用できます。SSH を使えない場合は、このウィンドウを閉じて画面の案内に従いウェブから進めてください。アップデート前に必ずデータベースをバックアップしてください。",
       "update_guide_desc": "サーバーターミナルに接続して、グヌボード7インストールディレクトリで以下のコマンドを実行してください。",
       "update_guide_note": "アップデート中は自動的にメンテナンスモードが有効化されます。アップデート完了後は自動的に解除されます。",
       "manual_update_title": "手動アップデート (GitHub から取得できない環境)",
@@ -2536,7 +3422,21 @@
       "opcache_enabled": "有効化",
       "opcache_unknown": "確認不可",
       "opcache_disabled": "無効化 — ページが数倍遅くなります",
-      "opcache_disabled_warning": "OPcacheが無効化されています。この状態では、訪問者がページを開くたびに、サイトのすべてのPHPコードを最初から再度解釈します。同じサーバー、同じ仕様でも応答速度が数倍遅くなり、訪問者が多いほどその差は大きくなります。php.iniでopcache.enable=1を有効にした後、ウェブサーバーを再起動することを強くお勧めします。設定を変更した後でもこの画面に反映されるまで最大1時間かかる場合があります。キャッシュをクリアするを実行すると、即座に反映されます。"
+      "opcache_disabled_warning": "OPcacheが無効化されています。この状態では、訪問者がページを開くたびに、サイトのすべてのPHPコードを最初から再度解釈します。同じサーバー、同じ仕様でも応答速度が数倍遅くなり、訪問者が多いほどその差は大きくなります。php.iniでopcache.enable=1を有効にした後、ウェブサーバーを再起動することを強くお勧めします。設定を変更した後でもこの画面に反映されるまで最大1時間かかる場合があります。キャッシュをクリアするを実行すると、即座に反映されます。",
+      "not_measurable": "測定不可",
+      "custom_preflight_title": "アップデートを開始しませんでした",
+      "custom_preflight_desc": "開発者がインストールしたパッケージ(custom/composer.json) {count}件が新しいコア {version} と合いません。ファイルは何も変更されておらず、サイトはそのまま動作します。",
+      "custom_conflict_package": "開発者パッケージ",
+      "custom_conflict_reason": "合わない内容",
+      "custom_conflict_core": "新しいコア",
+      "custom_conflict_installed": "インストール済み {version}",
+      "custom_conflict_constraint": "このパッケージが要求する {requires} のバージョン条件({constraint})を新しいコアが満たしていません",
+      "custom_conflict_duplicate": "コアも同じパッケージを別のバージョンで持っています — 実行時にはコアのバージョンが使われます",
+      "custom_reserved_files": "配布物が開発者専用の custom の場所にファイルを含んでいます:",
+      "custom_fix_title": "解決方法",
+      "custom_fix_step1": "開発者パッケージを新しいコアに合うバージョンに上げます: composer update [パッケージ] -d custom",
+      "custom_fix_step2": "php artisan custom:check で競合がないことを確認してから、再度アップデートします。",
+      "custom_fix_step3": "composer を使えないサーバーの場合は、別の PC で修正してから php artisan custom:vendor-bundle でバンドルを作り直してアップロードします。"
     },
     "modals": {
       "password_confirm_title": "パスワード確認",
@@ -2545,11 +3445,22 @@
       "password_placeholder": "パスワードを入力してください",
       "regenerate": "キー再生成",
       "regenerating": "再生成中...",
+      "reauth_notice": "パスワードのないアカウントです。メールに届く認証番号で本人確認をしてから再生成できます。パスワードを設定すると、パスワードで確認できます。",
+      "reauth_request_code": "認証番号を受け取る",
+      "reauth_resend_code": "認証番号を再送する",
+      "reauth_code_sent": "認証番号をメールで送信しました。",
+      "reauth_code_sent_generic": "認証番号を送信しました。",
+      "reauth_notice_other": "パスワードのないアカウントです。「本人確認を開始」を押して、このアカウントで使える方法（会社アカウントでの再ログインなど）で本人確認をしてから再生成できます。",
+      "reauth_start": "本人確認を開始",
+      "reauth_external_failed": "本人確認画面に移動できません。しばらくしてから再度お試しください。",
+      "reauth_verified": "本人確認が完了しました。[キー再生成]を押すとアプリキーを作り直します。",
+      "reauth_code_placeholder": "6桁の認証番号",
       "cache_delete_title": "キャッシュ削除確認",
       "cache_delete_confirm": "すべてのキャッシュを削除しますか?",
       "cache_delete_warning": "キャッシュ削除後、一時的にサイトの応答速度が遅くなる可能性があります。",
       "delete_cache": "キャッシュ削除",
-      "deleting": "削除中..."
+      "deleting": "削除中...",
+      "identity_confirm_title": "本人確認"
     },
     "save_success": "設定が保存されました。",
     "save_error": "設定の保存に失敗しました。",
@@ -2563,6 +3474,111 @@
     "validation_error": "入力情報を確認してください",
     "app_key_regenerated": "アプリケーションキーが再生成されました。",
     "cache_cleared": "すべてのキャッシュが削除されました。",
+    "system": {
+      "execution_title": "実行方式",
+      "execution_desc": "管理画面から始めるインストール・アップデートなどの作業でサーバーコマンドを使うかどうかです。",
+      "current": "現在",
+      "reason": "根拠",
+      "running_with_cli": "サーバーコマンドを使用して動作中",
+      "running_without_cli": "サーバーコマンドなしで動作中",
+      "blocked_functions": "ブロックされた関数:",
+      "execution_mode": "実行方式の選択",
+      "execution_mode_auto": "自動判断",
+      "execution_mode_subprocess": "常にサーバーコマンドを使用",
+      "execution_mode_inprocess": "常にサーバーコマンドなし",
+      "execution_mode_hint": "自動のままにしておくと、サーバー環境が変わっても自動的に追従します。特定の方式に固定したい場合のみ変更してください。",
+      "detect_again": "再検出",
+      "detect_done": "実行環境を再検出しました。",
+      "detect_failed": "実行環境の検出に失敗しました。",
+      "cron_title": "スケジュール",
+      "cron_desc": "古いデータの整理やサイトマップ生成のように、決まった時刻に動く作業です。サーバーにスケジュール実行を登録できないホスティングでは、以下のアドレスを呼び出して代わりに実行できます。",
+      "cron_mode": "実行方式",
+      "cron_mode_auto": "自動判断",
+      "cron_mode_web": "アドレス呼び出し",
+      "cron_mode_cron": "サーバースケジュール実行",
+      "cron_mode_both": "両方",
+      "cron_url": "呼び出しアドレス",
+      "cron_url_masked": "••••••••  [表示] を押すとアドレスが表示されます",
+      "cron_url_reveal": "表示",
+      "cron_url_copied": "呼び出しアドレスをコピーしました。",
+      "cron_url_failed": "呼び出しアドレスを取得できませんでした。",
+      "cron_url_hint": "ホスティング管理画面のスケジュール実行にこのアドレスを登録してください。アドレスには秘密の番号が含まれるため、外部に公開しないでください。",
+      "cron_token_rotate": "番号を再発行",
+      "cron_token_rotate_title": "呼び出し番号を再発行しますか？",
+      "cron_token_rotate_confirm": "新しい番号を発行すると、現在使用中の呼び出しアドレスは直ちに無効になります。",
+      "cron_token_rotate_warning": "ホスティング管理画面や外部スケジュールサービスに登録したアドレスを新しいものに変更してください。変更しないとスケジュールが実行されなくなります。",
+      "cron_token_rotated": "呼び出し番号を再発行しました。",
+      "cron_token_rotate_failed": "呼び出し番号の再発行に失敗しました。",
+      "cron_allowed_ips": "許可アドレス",
+      "cron_allowed_ips_hint": "空にすると制限はありません。1 行に 1 件ずつ、またはカンマで区切って入力します。",
+      "cron_min_interval": "最小間隔 (分)",
+      "cron_min_interval_hint": "この間隔より頻繁に呼び出された場合、その呼び出しは実行せずに終了します。未処理の作業は次回の呼び出しでまとめて処理されるため、抜け落ちることはありません。",
+      "cron_visit_fallback": "訪問者のアクセス時に実行",
+      "cron_visit_fallback_desc": "アドレス呼び出しを登録できない場合の最終手段です。訪問者がいなければ実行されません。",
+      "cron_last_run": "最終実行",
+      "cron_last_run_none": "まだ実行されたことがありません。",
+      "cron_last_run_legend": "時刻 · 所要時間 · 処理件数 / 失敗件数",
+      "cron_history": "実行履歴",
+      "cron_history_none": "まだ実行記録がありません。",
+      "cron_history_success": "成功",
+      "cron_history_failed": "失敗",
+      "cron_history_duration": "{{seconds}}秒",
+      "cron_state_persist_failed": "実行記録を保存できませんでした。保存フォルダの書き込み権限を確認してください — 記録が残らないと、すでに処理した作業を呼び出しのたびに再実行します。",
+      "cron_run_now": "今すぐ実行",
+      "cron_run_done": "スケジュールを実行しました。",
+      "cron_run_failed": "スケジュールの実行に失敗しました。",
+      "scheduler_off_on_this_server": "この画面を処理したサーバーはスケジュール実行がオフになっています(G7_SCHEDULER=off)。複数のサーバーがある場合は、スケジュールを実行するサーバーを確認してください。"
+    },
+    "core_update": {
+      "title": "コアアップデート",
+      "desc": "グヌボード7 のコアを新しいバージョンに更新します。実行中はサイトがメンテナンスモードに切り替わり、途中で失敗した場合はバックアップから自動的に巻き戻します。",
+      "current_version": "現在のバージョン",
+      "latest_version": "新しいバージョン",
+      "up_to_date": "最新バージョンです。",
+      "check_update": "アップデート確認",
+      "view_changelog": "変更内容を見る",
+      "together_title": "同時に処理",
+      "together_bundled": "バンドル拡張・言語パックも更新",
+      "together_bundled_hint": "コアに含まれるモジュール・プラグイン・テンプレートと言語パックのうち、新しいバージョンがあるものを続けて更新します。",
+      "together_rebuild_index": "検索インデックスを作り直す",
+      "together_rebuild_index_hint": "インデックスがロックされ、全体の再インデックスが発生します。アクセスの少ない時間帯に実行してください。この選択は今回の実行にのみ適用されます。",
+      "layout_strategy": "レイアウト",
+      "layout_overwrite": "新しいバージョンで上書き",
+      "layout_keep": "編集したレイアウトは保持",
+      "modified_layouts_hint": "編集済みレイアウト {{count}} 件 — 保持を推奨します。",
+      "layout_per_extension_hint": "拡張ごとに異なる扱いにする場合は、その拡張をここから外し、拡張管理画面で個別に更新してください。",
+      "maintenance_warning": "実行中はサイトがメンテナンスモードに切り替わります。",
+      "start": "アップデート開始",
+      "starting": "実行中…",
+      "advanced_title": "詳細",
+      "manual_zip_label": "アップロードした ZIP でアップデート",
+      "manual_zip_hint": "新しいバージョンを自動でダウンロードできないサーバー向けです。リリース ZIP を FTP で storage/app/core_pending にアップロードしてから、下で選択してください。",
+      "manual_zip_none": "アップロードされた ZIP ファイルがありません。",
+      "manual_zip_auto": "自動でダウンロード",
+      "cli_guide_title": "コマンドでアップデート（SSH がある場合）",
+      "progress_title": "アップデート進行中",
+      "progress_count": "{{done}} / {{total}} ステップ",
+      "view_log": "記録を見る",
+      "hide_log": "記録を閉じる",
+      "resume": "続けて実行",
+      "completed_desc": "{{version}} へのアップデートが完了しました。",
+      "failed_title": "{{step}} ステップで失敗しました。 {{detail}}",
+      "rolled_back": "バックアップから巻き戻しました。サイトは正常に動作しています。",
+      "rolled_back_not_applied": "ファイルを変更する前に停止しました。サイトはそのままです。",
+      "rollback_failed": "巻き戻しにも失敗しました。",
+      "rollback_manual": "手動での復旧が必要です。下のレポートを確認し、FTP でバックアップ（`storage/app/core_backups` の最新フォルダ）を元に戻してから、`storage/framework/down` を削除してメンテナンスモードを解除してください。SSH が使える場合は `php artisan up` で解除しても構いません。",
+      "rollback_failed_targets": "巻き戻せなかった項目: {{targets}}",
+      "report_path": "失敗レポート",
+      "backup_path": "バックアップの場所",
+      "dismiss": "確認",
+      "warnings_title": "確認が必要な事項",
+      "notices_title": "お知らせ",
+      "advance_limit": "処理が想定より長引いています。［続けて実行］を押して続行してください。",
+      "check_failed_hint": "新しいバージョンを確認できませんでした。",
+      "preflight_blocked_title": "現在アップデートを開始できません",
+      "preflight_blocked_hint": "上記の項目を解消してから再試行するか、SSH が使える場合は下の詳細設定にあるコマンド手順をご利用ください。",
+      "view_guide": "対処方法を見る"
+    },
     "privacy": {
       "consent_provider": {
         "title": "同意管理プロバイダー",
@@ -2582,10 +3598,11 @@
         "title": "退会会員の残存情報削除",
         "desc": "退会時には紛争対応のため、名前·メールアドレスの原値がサフィックス形式で残ります。保有期間が経過したら、その残存情報まで実際に削除します。",
         "enabled": "保有期間経過時の自動削除",
-        "enabled_desc": "デフォルトで無効。有効にすると毎日未明にバッチが対象を処理します。",
+        "enabled_desc": "既定はオフ。オンにすると個人情報破棄スケジュールが対象を処理します。",
         "days": "退会後の保有期間（日）",
         "days_hint": "退会日からこの期間が経過した会員が対象です。デフォルトは365日です。",
-        "irreversible_warning": "連絡先·住所·自己紹介と本人認証識別子まで削除され、取り戻せません。名前は「退会会員」に、メールアドレスは識別不可形式に変わります。"
+        "irreversible_warning": "連絡先·住所·自己紹介と本人認証識別子まで削除され、取り戻せません。名前は「退会会員」に、メールアドレスは識別不可形式に変わります。",
+        "schedule_notice": "退会会員の破棄は個人情報破棄スケジュールが実行します。"
       },
       "dormant": {
         "title": "休眠アカウント",
@@ -2747,6 +3764,39 @@
         "description": "秘密投稿・公開前のページなど閲覧できる人が限られる本文メディアは、短時間だけ有効な URL で配信します。画面を長く開いたままにすると、この時間を過ぎた後は再読み込みが必要です。",
         "unit": "分 (5〜1440)"
       }
+    },
+    "schedule_link": {
+      "next_run": "次回実行",
+      "inactive": "このスケジュールは無効のため、現在は実行されません。",
+      "change": "スケジュール管理で変更"
+    },
+    "permission_required": {
+      "language_packs": "言語パックを表示する権限がありません。「言語パック閲覧」権限が必要です。",
+      "identity_providers": "本人認証プロバイダを表示する権限がありません。「プロバイダ設定閲覧」権限が必要です。",
+      "identity_policies": "本人認証ポリシーを表示する権限がありません。「ポリシー閲覧」権限が必要です。"
+    },
+    "extension_trust_key_modal": {
+      "add_title": "制作者の信頼鍵を追加",
+      "add_desc": "拡張の制作者から提供された公開鍵を登録します。この鍵で署名されたパッケージのうち、vendor 範囲に含まれる識別子のみを信頼します。",
+      "public_key": "公開鍵",
+      "public_key_placeholder": "base64 でエンコードした 32 バイトの Ed25519 公開鍵",
+      "public_key_hint": "制作者が extension:keygen コマンドで作成した1行の公開鍵をそのまま貼り付けます。鍵 ID はサーバーが計算します。",
+      "label": "署名者名",
+      "label_placeholder": "例: glitter",
+      "label_hint": "英数字・アンダースコア・ハイフンで32文字以内とし、sirsoft で始めることはできません。鍵 ID の先頭部分になります。",
+      "vendor_scope": "vendor 範囲",
+      "vendor_scope_placeholder": "例: glitter, glitter-labs",
+      "vendor_scope_hint": "この鍵の署名を信頼する拡張識別子の vendor(ハイフンの前の部分)を、カンマ区切りで1つ以上入力します。sirsoft は指定できません。",
+      "password_notice": "信頼鍵を変更すると、どのパッケージを信頼するかが変わるため、ご本人のパスワードを再確認します。",
+      "submit": "鍵を追加",
+      "submitting": "追加中...",
+      "add_success": "信頼鍵を追加しました。",
+      "delete_title": "制作者の信頼鍵を削除",
+      "delete_confirm": "鍵 {{key_id}} を削除します。",
+      "delete_warning": "この鍵で署名された拡張は、次回のインストール・アップデートから「信頼していない鍵」としてブロックされます。",
+      "delete_submit": "削除",
+      "deleting": "削除中...",
+      "delete_success": "信頼鍵を削除しました。"
     }
   },
   "templates": {
@@ -2802,7 +3852,7 @@
       "file_requirements": "テンプレートパッケージは必ず",
       "file_structure_hint": "ファイルを含む必要があり、グヌボード7テンプレート標準構造に従う必要があります。",
       "github_url_label": "GitHub リポジトリURL",
-      "github_url_hint": "GitHub リポジトリのデフォルトブランチからテンプレートをダウンロードします。",
+      "github_url_hint": "GitHub リポジトリの最新タグ付きリリースからテンプレートを取得します。リリースのないリポジトリはインストールしません。",
       "github_requirements": "ルートディレクトリに",
       "github_public_only": "ファイルが必要です。"
     },
@@ -2834,6 +3884,9 @@
       "recover_update": "整理して再更新",
       "check_updates": "アップデート確認",
       "view_detail": "詳細情報",
+      "settings": "設定",
+      "settings_read_only": "設定(読み取り専用)",
+      "settings_unavailable": "設定項目がないか、このテンプレートが設定画面を提供していません",
       "refresh_layouts": "レイアウト更新",
       "edit_layouts": "レイアウト編集",
       "preview_manifest": "マニフェストプレビュー",
@@ -2952,11 +4005,22 @@
         "restore_success": "バージョンが正常に復元されました。",
         "restore_note": "復元後は、必ず保存ボタンをクリックして変更を適用してください。",
         "saved_by": "保存者：{{name}}",
+        "saved_by_system": "保存者：システム",
         "lines": "行",
         "modified": "編集",
         "chars": "個",
         "load_more": "以前のバージョンをもっと見る",
-        "limit_reached": "表示できる最大件数に達しました。"
+        "limit_reached": "表示できる最大件数に達しました。",
+        "source_labels": {
+          "before_extension_update": "拡張機能の更新で上書きされる前の運営者のバージョン",
+          "before_refresh": "レイアウト更新で上書きされる前の運営者のバージョン",
+          "before_decision_take_theirs": "「新バージョンを適用」で上書きされる前の運営者のバージョン",
+          "before_upgrade_step": "アップグレードで変更される前の運営者のバージョン",
+          "before_other": "上書きされる前の運営者のバージョン",
+          "merge_refresh": "レイアウト更新によるマージ結果",
+          "merge_extension_update": "拡張機能の更新によるマージ結果",
+          "merge_other": "マージ結果"
+        }
       },
       "wysiwyg_select_layout_title": "ウィジウィグ編集 - レイアウト選択",
       "wysiwyg_select_layout_description": "編集するレイアウトを選択してください。選択したレイアウトが新しいタブでウィジウィグ編集モードで開きます。",
@@ -2993,7 +4057,7 @@
       "file_requirements": "テンプレートパッケージは必ず",
       "file_structure_hint": "ファイルを含む必要があり、Gnuboard7テンプレート標準構造に従う必要があります。",
       "github_url_label": "GitHub リポジトリURL",
-      "github_url_hint": "GitHub リポジトリのデフォルトブランチからテンプレートをダウンロードします。",
+      "github_url_hint": "GitHub リポジトリの最新タグ付きリリースからテンプレートを取得します。リリースのないリポジトリはインストールしません。",
       "github_requirements": "ルートディレクトリに",
       "github_public_only": "ファイルが必要です。"
     },
@@ -3187,6 +4251,9 @@
       "actor_select": "実行者を選択",
       "actor_search_placeholder": "名前またはメールアドレスで検索",
       "actor_search_initial": "実行者を検索してください",
+      "deletion_snapshot_label": "削除記録",
+      "deletion_snapshot_only": "削除直前の記録のみ表示",
+      "deletion_snapshot_hint": "完全削除・宣言整理・カスタム翻訳削除の直前に残した記録のみを表示します。展開すると削除した本文とバージョンを確認できます。",
       "date_range_label": "期間",
       "date_from_label": "開始日",
       "date_to_label": "終了日",
@@ -3223,7 +4290,15 @@
       "column_field": "項目名",
       "column_old": "変更前",
       "column_new": "変更後",
-      "no_value": "-"
+      "no_value": "-",
+      "snapshot_title": "削除直前の記録",
+      "snapshot_target": "対象: {{target}}",
+      "snapshot_reason": "理由: {{reason}}",
+      "snapshot_versions": "残したバージョン {{count}}個",
+      "snapshot_versions_truncated": "最新50個のみ保持",
+      "snapshot_show": "削除前の本文を見る",
+      "snapshot_hide": "本文を折りたたむ",
+      "snapshot_content_truncated": "本文が長いため、先頭部分のみ表示しています。"
     },
     "pagination": {
       "total": "合計{{count}}件",
@@ -3618,7 +4693,6 @@
       "module_refresh_layouts_modal": "モジュールレイアウト更新",
       "module_uninstall_modal": "モジュール削除",
       "module_update_modal": "モジュールアップデート",
-      "module_deactivate_warning_modal": "モジュール無効化警告",
       "module_detail_modal": "モジュール詳細",
       "module_manifest_preview_drawer": "モジュール マニフェスト プレビュー"
     },
@@ -3652,7 +4726,15 @@
       "core_update_guide_modal": "コアアップデートお知らせ",
       "core_update_result_modal": "コアアップデート確認結果",
       "settings_static_cache_republish_modal": "初期画面静的ファイルの再作成確認",
-      "ip_restriction_rule_form_modal": "IP アクセス制限ルール編集"
+      "cron_token_rotate_modal": "ウェブ cron 呼び出し番号の再発行モーダル",
+      "ip_restriction_rule_form_modal": "IP アクセス制限ルール編集",
+      "settings_thumbnail_purge_all_modal": "サムネイルをすべて削除の確認",
+      "settings_thumbnail_pregenerate_modal": "既存画像のサムネイルを作成",
+      "member_field_form_modal": "会員項目の追加と編集",
+      "member_field_delete_modal": "会員項目の削除確認",
+      "member_field_required_modal": "会員項目の必須切り替え確認",
+      "extension_trust_key_add_modal": "拡張信頼鍵の追加",
+      "extension_trust_key_delete_modal": "拡張信頼鍵の削除"
     },
     "admin_template_list": {
       "template_activate_modal": "テンプレート有効化確認",
@@ -3700,10 +4782,14 @@
     },
     "admin_schedule_list": {
       "schedule_delete_modal": "スケジュール削除",
-      "schedule_duplicate_modal": "スケジュール複製",
+      "schedule_duplicate_modal": "スケジュールのコピー",
       "schedule_form_modal": "スケジュール登録/編集",
       "schedule_history_modal": "スケジュール実行履歴",
-      "schedule_run_modal": "スケジュール即座実行"
+      "schedule_run_modal": "スケジュール即座実行",
+      "queue_job_detail_modal": "キュータスク詳細",
+      "queue_confirm_modal": "キュー失敗タスクの再試行・削除",
+      "schedule_bulk_status_modal": "スケジュール状態の一括変更",
+      "schedule_security_modal": "スケジュールのセキュリティポリシー"
     },
     "admin_notification_log_list": {
       "modal_notification_log_detail": "通知発送履歴詳細"
@@ -4429,9 +5515,9 @@
       },
       "reports": {
         "weekly": "週間レポートメール",
-        "weekly_hint": "毎週月曜日 08:00 に管理者ロールに送信します。",
+        "weekly_hint": "admin ロールに週次レポートを送ります。",
         "monthly": "月間レポートメール",
-        "monthly_hint": "毎月1日08:00に管理者ロールに送信されます。",
+        "monthly_hint": "admin ロールに月次レポートを送ります。",
         "definitions_title": "通知定義ステータス",
         "definitions_description": "レポート·警告通知の有効化と無効化およびチャネル。文案の編集は環境設定の通知定義タブで行います。",
         "definition_inactive_alert": "レポートメールは有効ですが、通知定義が無効になっているためメールが送信されません — 下で定義を有効にしてください。",
@@ -4570,5 +5656,64 @@
         "seeder": "初期データ作成"
       }
     }
+  },
+  "stage_role": {
+    "banner": "検証サーバー — 本番データを共有しています。拡張・コアの変更はデプロイ手順でのみ行います。",
+    "locked_hint": "検証サーバーでは変更できません。デプロイ手順で反映してください。",
+    "editor_banner": "検証用の保存 — 本番サイトには反映されず、次回のデプロイ時に消えます。"
+  },
+  "layout_sync_preview": {
+    "title": "画面ごとの処理プレビュー",
+    "refresh_description": "ファイルのレイアウトを再読み込みします。下で画面ごとの変化を確認してから適用してください。プレビューでは何も変更しません。",
+    "strategy_title": "レイアウト処理方式",
+    "strategy_keep": "修正を維持 (推奨)",
+    "strategy_keep_desc": "エディターで修正した部分はそのまま残し、手を加えていない部分だけを新バージョンに置き換えます。",
+    "strategy_overwrite": "すべて置換",
+    "strategy_overwrite_desc": "すべての画面を新バージョンで上書きします。上書き前の運営者のバージョンはエディターの[バージョン履歴]に残ります。",
+    "overwrite_warning": "エディターで修正した画面もすべて新バージョンに置き換わります。元に戻すにはエディターの[バージョン履歴]から復元してください。",
+    "loading": "新バージョンと比較しています…",
+    "error": "プレビューを読み込めませんでした。プレビューを確認しないと適用できません。",
+    "retry": "再試行",
+    "empty": "変更される画面はありません。",
+    "kind_extension": "拡張フラグメント",
+    "conflict_units": "重なり {{count}}箇所",
+    "decision_merge": "重ならない部分のみ反映 (推奨)",
+    "decision_merge_hint": "運営者が修正した箇所と重なる部分は運営者のバージョンを残し、それ以外は新バージョンに置き換えます。",
+    "decision_keep_ours": "運営者のバージョンを維持",
+    "decision_take_theirs": "新バージョンを適用",
+    "decision_keep_ours_hint": "この画面は新バージョンを一切受け取らず、運営者のバージョンをそのまま残します。",
+    "decision_take_theirs_hint": "この画面だけを新バージョンで上書きします。上書き前の運営者のバージョンはエディターの[バージョン履歴]に残ります。",
+    "deletions_title": "この更新で削除される項目 {{count}}個",
+    "deletion_operator": "運営者の修正版 — 削除直前にアクティビティログへ記録",
+    "verdict": {
+      "created": "新規追加",
+      "updated": "新バージョンに置換",
+      "unchanged": "変更なし",
+      "took_theirs": "新バージョンを反映",
+      "merged": "新バージョンを一部反映",
+      "conflict": "重なったため運営者のバージョンを維持",
+      "kept": "運営者のバージョンを維持",
+      "kept_no_base": "比較基準なし — 運営者のバージョンを維持",
+      "kept_invalid": "マージ検証失敗 — 運営者のバージョンを維持",
+      "kept_removed": "新バージョンから外れたが修正版のため残す",
+      "kept_deleted_by_operator": "運営者が削除した画面 — スキップ",
+      "kept_name_collision": "運営者が作成した同名の画面 — スキップ",
+      "deleted": "削除予定"
+    },
+    "deletion_type": {
+      "notification_definition": "通知定義",
+      "notification_template": "通知テンプレート",
+      "menu": "管理者メニュー",
+      "permission": "権限",
+      "role": "ロール",
+      "identity_policy": "本人確認ポリシー",
+      "schedule": "スケジュール",
+      "entity": "基本データ"
+    },
+    "summary_changed": "変更される画面 {{count}}個",
+    "summary_conflicts": "運営者の修正と重なった画面 {{count}}個",
+    "summary_deleted": "削除予定 {{count}}個",
+    "skipped_inactive": "無効にした拡張はアップデート時にレイアウトを更新しません — 有効化するときに修正を維持してマージします。",
+    "skipped_files_missing": "有効ディレクトリにこの拡張のファイルがないため、画面判定をスキップします — アップデートすると新バージョンのファイルをコピーしてから画面を合わせます。"
   }
 }

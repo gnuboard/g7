@@ -307,7 +307,8 @@ class ResponseMessagePlaceholderTest extends PureTestCase
                             continue;
                         }
 
-                        if (! preg_match("/\[\s*'{$param}'\s*=>/", $args[3])) {
+                        // 한 문구에 플레이스홀더가 둘 이상이면 그 키는 배열의 첫 항목이 아닐 수 있다
+                        if (! preg_match("/[\[,]\s*'{$param}'\s*=>/", $args[3])) {
                             $violations[] = "{$relative} 의 '{$key}' 호출에서 다섯 번째 인자가 "
                                 ."['{$param}' => …] 가 아닙니다. 실제: {$args[3]}";
                         }

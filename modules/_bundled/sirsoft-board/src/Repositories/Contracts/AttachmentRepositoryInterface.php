@@ -43,17 +43,6 @@ interface AttachmentRepositoryInterface
     public function findByHash(string $slug, string $hash): ?Attachment;
 
     /**
-     * 첨부파일이 속한 게시글이 삭제(soft delete) 상태인지 확인합니다.
-     *
-     * 게시글이 없거나(임시 업로드 등) 게시판을 찾을 수 없으면 false 를 반환합니다.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @param  int  $postId  게시글 ID
-     * @return bool 소속 게시글이 삭제 상태인지 여부
-     */
-    public function isPostDeleted(string $slug, int $postId): bool;
-
-    /**
      * 첨부파일이 속한 게시글을 게시판 스코프로 조회합니다(비밀 게이팅용).
      *
      * 비밀글 첨부 서빙 시 부모 게시글의 소유자/비밀 여부를 판정하기 위해 사용합니다.
@@ -272,6 +261,36 @@ interface AttachmentRepositoryInterface
      * @return int 삭제된 첨부파일 수
      */
     public function forceDeleteByBoardId(int $boardId): int;
+
+    /**
+     * 게시판 첨부 파일이 놓인 디스크 목록을 조회합니다 (게시판 영구 삭제의 물리 파일 정리용).
+     *
+     * 디스크를 전환한 사이트에서는 한 게시판의 첨부가 여러 디스크에 흩어져 있다. 소프트 삭제 행과
+     * 아직 글에 이어지지 않은 그 게시판의 임시 첨부(`{slug}/temp/…`)도 포함한다.
+     *
+     * @param  int  $boardId  게시판 ID
+     * @param  string  $slug  게시판 슬러그 (임시 첨부 경로 접두)
+     * @return list<string> 디스크 이름 (빈 값 제외, 중복 없음)
+     */
+    public function getDistinctDisksByBoard(int $boardId, string $slug): array;
+
+    /**
+     * 래스터 이미지 첨부 수를 셉니다 (썸네일 원본 제공자용 — 글에 이어진 첨부만).
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @return int 개수
+     */
+    public function countByMimeTypes(array $mimeTypes): int;
+
+    /**
+     * 래스터 이미지 첨부를 ID 순으로 나눠 조회합니다 (썸네일 원본 제공자용 — 글에 이어진 첨부만).
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @param  int  $afterId  이 ID 다음부터 (처음이면 0)
+     * @param  int  $limit  최대 개수
+     * @return Collection<int, Attachment> 첨부 목록
+     */
+    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection;
 
     /**
      * 게시글에 연결되지 않은 채 방치된 임시 첨부를 오래된 순으로 조회합니다.

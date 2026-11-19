@@ -9,8 +9,8 @@
  *
  * 검증 방식: 레이아웃 JSON 의 데이터소스 선언과 편집기 노드의 표시 조건·props 식을 화면 상태 표본으로 평가(DOM 비의존).
  *
- * @scenario surface=admin
- * @effects editor_waits_for_target_source, media_upload_from_target_with_temp_key
+ * 조합 요약(마커 아님 — 평문): surface=admin
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): editor_waits_for_target_source, media_upload_from_target_with_temp_key
  */
 
 import { describe, it, expect } from 'vitest';

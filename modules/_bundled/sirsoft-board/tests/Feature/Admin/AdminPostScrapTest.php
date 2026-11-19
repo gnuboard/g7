@@ -32,7 +32,7 @@ use PHPUnit\Framework\Attributes\Group;
  * - DELETE /api/modules/sirsoft-board/admin/scraps/{id}
  * - DELETE /api/modules/sirsoft-board/admin/scraps/bulk
  *
- * @scenario endpoint=admin_scrap_index,actor=admin
+ * @scenario surface=admin_list, permission=view
  *
  * @effects admin_scrap_index_requires_view_permission, admin_scrap_index_lists_all_members
  */

@@ -1,0 +1,39 @@
+feature: KG이니시스 본인확인 인증 값을 회원 항목에 내주기
+
+description: |
+  코어는 본인인증 수단이 선택 계약(ProvidesVerifiedClaimsInterface)을 구현하면 확인을 마친 요청 행의
+  이름, 휴대폰, 생년월일, 성별을 받아 운영자가 「본인인증 연결」을 건 회원 항목을 채우고 잠근다.
+  이 플러그인의 Provider 가 그 계약을 구현한다.
+
+  가입 전에는 회원이 없어 인증 직후 넣어 둔 임시 저장 값에서, 회원이 있으면 그 회원의 기록에서 값을 꺼낸다.
+  회원 기록은 회원당 한 줄이고 다시 인증하면 덮어쓰므로, 기록이 그 요청 행의 것일 때만 값을 준다.
+  값은 코어의 모양으로 바꾼다(휴대폰은 숫자만, 생년월일은 YYYY-MM-DD, 성별은 male, female).
+
+coverage_strategy: full
+
+axes:
+  case: [pending_cache, record_after_signup, record_logged_in, conversion, gender_unknown, other_challenge, core_signup_fields]
+
+effects:
+  - provider_implements_verified_claims_contract
+  - guest_log_claims_come_from_pending_cache
+  - signed_up_member_claims_come_from_record
+  - pending_cache_cleared_after_signup
+  - logged_in_member_claims_come_from_record
+  - superseded_log_returns_null
+  - other_member_log_returns_null
+  - mobile_normalized_to_digits
+  - birthday_converted_to_iso_date
+  - gender_converted_to_core_values
+  - invalid_birthday_dropped
+  - unknown_gender_value_returns_null_gender
+  - other_challenge_cache_not_used
+  - unverified_or_foreign_provider_log_returns_null
+  - core_claims_service_reads_provider_claims_by_token
+  - signup_fields_api_prefills_and_locks_from_inicis_claims
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Identity/InicisVerifiedClaimsTest.php
+
+limitations:
+  - "이니시스 응답의 성별 값과 휴대폰 형식은 실제 응답으로 재지 않았다. 성별은 M, F 만 받아들이고 그 밖의 값은 주지 않으며, 휴대폰은 숫자만 남긴다."

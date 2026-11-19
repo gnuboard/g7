@@ -9,11 +9,11 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `core.privacy.notice_sections` | filter | — | `src/Services/GdprAnnualNoticeService.php:168` |
+| `core.privacy.notice_sections` | filter | — | `src/Services/GdprAnnualNoticeService.php:174` |
 | `sirsoft-gdpr.consent.granted` | action | 동의 부여 시 발화 | 선언 (호출 위치 미확인) |
 | `sirsoft-gdpr.consent.revoked` | action | 동의 철회 시 발화 | 선언 (호출 위치 미확인) |
 | `sirsoft-gdpr.necessary_storage.filter_provided_keys` | filter | 확장이 쿠키 미동의 방문자에게도 필요한 자기 저장 키를 제공 (strictly necessary 허용목록에 합쳐진다) | 선언 (호출 위치 미확인) |
-| `sirsoft-gdpr.privacy.annual_notice_due` | action | 개인정보 연간 통지 접수 후 발화 | `src/Services/GdprAnnualNoticeService.php:189` |
+| `sirsoft-gdpr.privacy.annual_notice_due` | action | 개인정보 연간 통지 접수 후 발화 | `src/Services/GdprAnnualNoticeService.php:195` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -115,6 +115,7 @@ PHP 리스너가 없는 템플릿은 위 필터를 구독할 수 없으므로, `
 | `core.notification.channel_send_failed` | action (미선언) | `GdprAnnualNoticeListener` | `failed` | - |
 | `core.notification.filter_default_definitions` | filter | `GdprAnnualNoticeListener` | `defaults` | 20 |
 | `core.privacy.manual_run_targets` | filter | `GdprAnnualNoticeListener` | `addManualRunTarget` | 20 |
+| `core.required_fields.filter_exempt_routes` | filter | `ExemptRequiredFieldsRoutesListener` | `exemptRoutes` | 10 |
 | `core.user.after_withdraw` | action (미선언) | `GdprUserWithdrawListener` | `handleWithdraw` | 10 |
 | `core.user.before_delete` | action (미선언) | `GdprUserDeleteListener` | `cascadePluginData` | 10 |
 | `sirsoft-gdpr.consent.granted` | action (미선언) | `GdprConsentChangeRelayListener` | `onGranted` | 20 |
@@ -135,6 +136,7 @@ PHP 리스너가 없는 템플릿은 위 필터를 구독할 수 없으므로, `
 <!-- @generated:listeners START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
 |---|---|---|---|---|
+| `ExemptRequiredFieldsRoutesListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ExemptRequiredFieldsRoutesListener.php` |
 | `GdprAnnualNoticeListener` | 5개 | 명시 등록 | ✅ | `src/Listeners/GdprAnnualNoticeListener.php` |
 | `GdprAuthConsentListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GdprAuthConsentListener.php` |
 | `GdprAuthLogoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GdprAuthLogoutListener.php` |
@@ -213,7 +215,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 <!-- @generated:schedules START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 스케줄 | 주기 | 설명 |
 |---|---|---|
-| `sirsoft-gdpr:send-annual-notices --scheduled` | `daily` | 개인정보 연간 통지 |
+| `send-annual-notices` | `0 0 * * *` | 개인정보 연간 통지 |
 <!-- @generated:schedules END -->
 
 <!-- @intent START -->
@@ -228,6 +230,8 @@ _등록하는 브로드캐스트 채널이 없습니다._
 |---|---|
 | `annual_privacy_notice` | `mail`, `database` |
 <!-- @generated:notifications END -->
+
+**템플릿이 없는 수단(7.2.0)** 설정 화면 알림 카드에서 template 이 없는 발송 수단을 켜고 [발송 수단 저장]하면 코어가 빈 template(꺼짐)을 만든다(코어 `docs/backend/notification-system.md` 「운영자가 켠 발송 수단의 빈 템플릿」). 그 수단 줄에는 「빈 템플릿이 만들어졌습니다…」 안내가 서고, template 켜기가 422 로 거절되면 `card_gdpr_notifications_fields` 를 remount 해 스위치를 되돌린다.
 
 <!-- @intent START -->
 동의 부여/철회는 방문자 본인의 조작 결과이므로 본인에게 알림을 보낼 이유가 없고, 정책 버전

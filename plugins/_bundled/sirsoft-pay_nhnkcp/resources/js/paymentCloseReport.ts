@@ -1,3 +1,4 @@
+import { routePath } from './apiUrl';
 import { guestOwnershipHeaders, waitForGuestOrderToken } from './guestOrderToken';
 
 export interface PaymentCloseReportContext {
@@ -27,7 +28,9 @@ function coreApi(): G7CoreApi | null {
  *
  * 서버는 사이트 주소로 만든 절대 URL(`https://사이트/plugins/…/payment/close-report`)을 준다. 이 주소를 그대로
  * 부르면 `/api` 접두사가 빠져 API 라우트에 닿지 못한다. 경로만 꺼내 같은 사이트의 API 로 보낸다 — 출처(host)는
- * 버리므로 조회 토큰이 다른 사이트로 새지 않는다.
+ * 버리므로 조회 토큰이 다른 사이트로 새지 않는다. 하위 폴더 설치(`https://host/g7/`)면 경로가 사이트 마운트 접두사를
+ * 달고 오므로 `routePath()` 로 벗긴 뒤 넘긴다 — `G7Core.api` 가 접두사를 다시 붙인다. 벗기지 않으면 `/g7/api/g7/plugins/…`
+ * 로 나가 보고가 사이트 밖으로 새고, 실패해도 화면에 흔적이 남지 않는다.
  *
  * @param url 서버가 내려준 주소 (절대·상대 모두)
  * @return `G7Core.api` 에 넘길 경로, 해석할 수 없으면 null
@@ -40,7 +43,7 @@ export function toApiPath(url: string): string | null {
         return null;
     }
 
-    const path = `${parsed.pathname}${parsed.search}`;
+    const path = `${routePath(parsed.pathname)}${parsed.search}`;
 
     return path.startsWith('/api/') ? path.slice(4) : path;
 }
@@ -208,7 +211,7 @@ export async function reportPaymentFailureOnReturn(): Promise<void> {
     }
 
     // 결제 완료 화면으로 돌아왔으면 보고 대상이 아니다 — 성공 확정은 서버가 이미 했다.
-    if (/\/(complete|success)(\/|$|\?)/.test(window.location.pathname)) {
+    if (/\/(complete|success)(\/|$|\?)/.test(routePath(window.location.pathname))) {
         forgetPendingClose();
 
         return;

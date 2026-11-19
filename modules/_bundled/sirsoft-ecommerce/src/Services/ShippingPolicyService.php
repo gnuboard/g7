@@ -50,6 +50,22 @@ class ShippingPolicyService
     }
 
     /**
+     * 배송정책 목록 전체 조회 (`per_page=all` — 쪽 나눔 없음)
+     *
+     * 상품 등록·수정 화면의 배송정책 선택지가 쓴다 — 쪽 하나(최대 100건)만 받으면 101번째 이후 정책을 고를 수 없다.
+     * 필터 가공 훅은 쪽 나눔 조회와 같다.
+     *
+     * @param  array  $filters  필터 조건
+     * @return Collection 배송정책 목록
+     */
+    public function getAllList(array $filters): Collection
+    {
+        $filters = HookManager::applyFilters('sirsoft-ecommerce.shipping_policy.filter_list_params', $filters);
+
+        return $this->repository->getAllWithFilters($filters);
+    }
+
+    /**
      * 배송정책 통계 조회
      *
      * @return array 배송정책 통계 데이터

@@ -9,7 +9,10 @@
  * 🖼이미지·🌐다국어·⚙데이터 관리 모달과 동형 진입(상단 🕘 툴바 버튼)이며, 편집기
  * 코어 위젯이므로 `g7le-*` + 인라인 스타일만(CSS 라이브러리 비종속).
  *
- * extension 편집 모드는 layoutName 이 없어 버전 대상이 없다 → 툴바 버튼이 비활성된다.
+ * 대상은 레이아웃(`kind: 'layout'`) 또는 확장 조각(`kind: 'extension'`)이며, 조각은 layout-extensions 버전 API 를 쓴다.
+ *
+ * 맨 위(최신) 판은 지금 본문과 같아 복원 버튼을 숨긴다. 단 동기화가 덮기 직전에 남긴 운영자 판(`before_overwrite`)이
+ * 맨 위면 지금 본문은 새 판이라 복원할 수 있다(engine-v1.96.3).
  *
  * 각 행에서 "비교" 를 누르면 직전(이전 번호) 버전과의 Unified diff 를 GitHub 스타일로
  * 보여 준다(VersionDiffView). 저장자 이름도 함께 표시한다(백엔드 created_by_name).
@@ -402,10 +405,15 @@ export function VersionHistoryModal({
                         })}
                       </span>
                     </span>
-                    {/* 저장자 — 백엔드 created_by_name(이름만). 탈퇴/미상 시 폴백 라벨. */}
+                    {/* 저장자 — 백엔드 created_by_name(이름만). 저장한 사람 없이 동기화(명령줄·업데이트)가 남긴 판은
+                        출처가 있으므로 「시스템」, 출처도 없는 옛 판·탈퇴 회원은 「알 수 없음」. */}
                     <span style={{ fontSize: 11, color: '#94a3b8' }} data-testid={`g7le-version-author-${it.id}`}>
                       {t('layout_editor.version_history.saved_by', {
-                        name: it.created_by_name ?? t('layout_editor.version_history.unknown_author'),
+                        name:
+                          it.created_by_name ??
+                          (cs?.source
+                            ? t('layout_editor.version_history.system_author')
+                            : t('layout_editor.version_history.unknown_author')),
                       })}
                     </span>
                   </div>
@@ -426,8 +434,9 @@ export function VersionHistoryModal({
                         ? t('layout_editor.version_history.comparing')
                         : t('layout_editor.version_history.compare')}
                     </button>
-                    {/* 최신 버전은 이미 적용 상태 → 복원 버튼 숨김(코드 편집기 패리티). */}
-                    {!isLatest && (
+                    {/* 최신 버전은 이미 적용 상태 → 복원 버튼 숨김(코드 편집기 패리티). 단 맨 위 판이 동기화가 덮기 직전에
+                        남긴 운영자 판이면 지금 본문은 새 판이라 그 판으로 되돌릴 수 있다 — 코드 편집기 버전 창과 같은 조건. */}
+                    {(!isLatest || cs?.before_overwrite === true) && (
                       <button
                         type="button"
                         onClick={() => void handleRestore(it.id)}

@@ -1227,19 +1227,6 @@
     "create_success": "유형이 생성되었습니다",
     "usage_guide": "슬러그(slug)는 게시판의 표시 유형을 구분하는 식별자입니다. 템플릿에서 해당 슬러그에 맞는 전용 레이아웃을 추가 및 설정해야 적용됩니다."
   },
-  "users": {
-    "form": {
-      "sections": {
-        "notification_settings": "게시판 알림 설정"
-      },
-      "notifications": {
-        "post_complete": "게시글 완료 알림",
-        "post_reply": "게시글 답변 알림",
-        "comment": "댓글 알림",
-        "reply_comment": "답변 알림"
-      }
-    }
-  },
   "ecommerce_settings": {
     "inquiry": {
       "description": "상품 문의게시판으로 사용할 게시판을 지정할 수 있습니다.",

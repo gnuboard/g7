@@ -10,7 +10,140 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.analytics.modals.purge.title",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "취소 — 체크를 걷고 닫는다. 다시 열었을 때 체크가 켜진 채면 클릭 한 번으로 전부 지워진다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "analyticsPurgeConfirm": false
+                                }
+                            },
+                            {
+                                "handler": "closeModal"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary",
+                    "disabled": "{{_global.analyticsPurging}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "id": "purge_execute_button",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "삭제 실행. 끝나면 저장소 현황을 다시 받아 표가 0 행으로 되맞춰진다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "analyticsPurging": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/analytics/data",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "DELETE",
+                                    "body": {
+                                        "confirm": true
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "analyticsPurging": false,
+                                            "analyticsPurgeConfirm": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "analytics_storage"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:admin.analytics.modals.purge.success"
+                                        }
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "analyticsPurging": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_global.analyticsPurgeConfirm !== true || _global.analyticsPurging}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.analyticsPurging}}",
+                        "props": {
+                            "name": "spinner",
+                            "spin": true,
+                            "className": "text-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:admin.analytics.modals.purge.button"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -108,146 +241,6 @@
                                 "className": "text-label"
                             },
                             "text": "$t:admin.analytics.modals.purge.confirm_label"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "취소 — 체크를 걷고 닫는다. 다시 열었을 때 체크가 켜진 채면 클릭 한 번으로 전부 지워진다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "analyticsPurgeConfirm": false
-                                    }
-                                },
-                                {
-                                    "handler": "closeModal"
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary",
-                        "disabled": "{{_global.analyticsPurging}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.cancel"
-                        }
-                    ]
-                },
-                {
-                    "id": "purge_execute_button",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "삭제 실행. 끝나면 저장소 현황을 다시 받아 표가 0 행으로 되맞춰진다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "analyticsPurging": true
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/admin/analytics/data",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "DELETE",
-                                        "body": {
-                                            "confirm": true
-                                        }
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "analyticsPurging": false,
-                                                "analyticsPurgeConfirm": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "analytics_storage"
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:admin.analytics.modals.purge.success"
-                                            }
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "analyticsPurging": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message}}"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{_global.analyticsPurgeConfirm !== true || _global.analyticsPurging}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.analyticsPurging}}",
-                            "props": {
-                                "name": "spinner",
-                                "spin": true,
-                                "className": "text-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:admin.analytics.modals.purge.button"
                         }
                     ]
                 }

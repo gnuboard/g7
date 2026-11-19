@@ -94,6 +94,17 @@ const TestFragment: React.FC<{ children?: React.ReactNode }> =
 
 // ========== 테스트용 레이아웃 Fixture ==========
 
+/**
+ * 고정물 노드의 공통 모양. 리터럴 고정물은 갈래마다 속성이 달라 인덱스로 파고들 때 이 모양으로 받는다.
+ */
+interface FixtureNode {
+  type: string;
+  name: string;
+  if?: string;
+  actions?: Array<{ confirm?: string; handler?: string; params?: Record<string, unknown> }>;
+  children?: FixtureNode[];
+}
+
 const addressListFixture = {
   version: '1.0.0',
   layout_name: 'mypage/addresses',
@@ -104,6 +115,7 @@ const addressListFixture = {
   data_sources: [
     {
       id: 'userAddresses',
+      type: 'api',
       endpoint: '/api/modules/sirsoft-ecommerce/user/addresses',
       method: 'GET',
     },
@@ -266,6 +278,8 @@ describe('마이페이지 배송지 관리 레이아웃', () => {
     vi.restoreAllMocks();
   });
 
+  // @scenario list=with_addresses
+  // @effects address_list_renders
   it('배송지 목록을 렌더링한다', async () => {
     testUtils = createLayoutTest(addressListFixture, {
       componentRegistry: registry,
@@ -310,6 +324,8 @@ describe('마이페이지 배송지 관리 레이아웃', () => {
     expect(lists.length).toBeGreaterThan(0);
   });
 
+  // @scenario list=empty
+  // @effects address_empty_state_shown
   it('배송지가 없을 때 빈 상태를 표시한다', async () => {
     testUtils = createLayoutTest(addressListFixture, {
       componentRegistry: registry,
@@ -326,6 +342,8 @@ describe('마이페이지 배송지 관리 레이아웃', () => {
     expect(screen.getByTestId('empty-message')).toBeInTheDocument();
   });
 
+  // @scenario list=with_addresses
+  // @effects default_address_badge_only_on_default
   it('기본 배송지에 뱃지를 표시한다', async () => {
     testUtils = createLayoutTest(addressListFixture, {
       componentRegistry: registry,
@@ -356,6 +374,8 @@ describe('마이페이지 배송지 관리 레이아웃', () => {
     expect(screen.getByTestId('default-badge')).toBeInTheDocument();
   });
 
+  // @scenario list=with_addresses
+  // @effects address_add_button_renders
   it('새 주소 추가 버튼이 렌더링된다', async () => {
     testUtils = createLayoutTest(addressListFixture, {
       componentRegistry: registry,
@@ -371,6 +391,8 @@ describe('마이페이지 배송지 관리 레이아웃', () => {
     expect(screen.getByTestId('add-address-btn')).toBeInTheDocument();
   });
 
+  // @scenario list=with_addresses
+  // @effects address_edit_delete_buttons_render
   it('배송지 수정/삭제 버튼이 렌더링된다', async () => {
     testUtils = createLayoutTest(addressListFixture, {
       componentRegistry: registry,
@@ -402,6 +424,8 @@ describe('마이페이지 배송지 관리 레이아웃', () => {
     expect(screen.getByTestId('delete-address-btn')).toBeInTheDocument();
   });
 
+  // @scenario list=with_addresses
+  // @effects address_recipient_info_renders
   it('수령인 정보가 렌더링된다', async () => {
     testUtils = createLayoutTest(addressListFixture, {
       componentRegistry: registry,
@@ -435,15 +459,19 @@ describe('마이페이지 배송지 관리 레이아웃', () => {
     expect(detail.textContent).toContain('010-9999-8888');
   });
 
+  // @scenario list=with_addresses
+  // @effects address_delete_requires_confirm
   it('삭제 버튼에 confirm 속성이 설정되어 있다', () => {
-    const deleteAction = addressListFixture.components[0].children[1]
-      .children[0].children[4].children[1].actions[0];
+    const list: FixtureNode = addressListFixture.components[0];
+    const deleteAction = list.children![1].children![0].children![4].children![1].actions![0];
 
     expect(deleteAction.confirm).toBe('이 배송지를 삭제하시겠습니까?');
     expect(deleteAction.handler).toBe('apiCall');
-    expect(deleteAction.params.method).toBe('DELETE');
+    expect(deleteAction.params!.method).toBe('DELETE');
   });
 
+  // @scenario list=with_addresses
+  // @effects default_address_badge_only_on_default
   it('기본 배송지가 아닌 항목에는 뱃지가 표시되지 않는다', async () => {
     testUtils = createLayoutTest(addressListFixture, {
       componentRegistry: registry,

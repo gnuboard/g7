@@ -65,6 +65,7 @@ describe('AuthManager', () => {
     it('유효한 토큰이면 true를 반환하고 사용자 정보를 저장해야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
+        uuid: 'test-user-uuid',
         name: 'Test User',
         email: 'test@example.com',
       };
@@ -81,6 +82,39 @@ describe('AuthManager', () => {
       expect(authManager.isAuthenticated()).toBe(true);
       expect(authManager.getUser()).toEqual(mockUser);
       expect(authManager.getAuthType()).toBe('admin');
+    });
+
+    /**
+     * @scenario surface=check_auth
+     * @effects auth_manager_session_lifecycle, check_auth_reflects_server_session
+     */
+    it('표시 이름과 닉네임을 그대로 보관하고, 이름이 null 인 사용자도 인증 상태로 둔다', async () => {
+      // 이름 항목을 쓰지 않는 사이트의 응답 — 실명은 null 이고 화면은 display_name 을 쓴다
+      const mockUser: AuthUser = {
+        id: 2,
+        uuid: 'nameless-user-uuid',
+        name: null,
+        nickname: '길동이',
+        display_name: '길동이',
+        email: 'nick@example.com',
+      };
+
+      mockApiClient.getToken.mockReturnValue('valid-token');
+      mockApiClient.get.mockResolvedValue({ success: true, data: mockUser });
+
+      await expect(authManager.checkAuth('user')).resolves.toBe(true);
+
+      const user = authManager.getUser();
+      expect(user?.name).toBeNull();
+      expect(user?.nickname).toBe('길동이');
+      expect(user?.display_name).toBe('길동이');
+      // 화면이 쓰는 식(표시 이름 → 실명 → 빈 글자)이 타입과 값 모두에서 성립한다
+      const shown: string = user?.display_name ?? user?.name ?? '';
+      expect(shown).toBe('길동이');
+
+      // 옛 응답(display_name 없음)은 실명으로 넘어간다
+      const legacy: AuthUser = { uuid: 'legacy-uuid', name: '홍길동', email: 'old@example.com' };
+      expect(legacy.display_name ?? legacy.name ?? '').toBe('홍길동');
     });
 
     /**
@@ -425,6 +459,7 @@ describe('AuthManager', () => {
     it('로그인 성공 시 토큰을 저장하고 사용자 정보를 반환해야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
+        uuid: 'test-user-uuid',
         name: 'Test User',
         email: 'test@example.com',
       };
@@ -472,6 +507,7 @@ describe('AuthManager', () => {
     it('options.headers가 있으면 ApiClient.post에 전달해야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
+        uuid: 'test-user-uuid',
         name: 'Test User',
         email: 'test@example.com',
       };
@@ -504,6 +540,7 @@ describe('AuthManager', () => {
     it('options가 없으면 ApiClient.post에 config를 전달하지 않아야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
+        uuid: 'test-user-uuid',
         name: 'Test User',
         email: 'test@example.com',
       };
@@ -606,6 +643,7 @@ describe('AuthManager', () => {
     it('코드 확인에 성공하면 토큰을 저장하고 로그인 상태가 되어야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
+        uuid: 'test-user-uuid',
         name: 'Test User',
         email: 'test@example.com',
       };

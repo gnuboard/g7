@@ -15,32 +15,9 @@
  * @since engine-v1.50.0
  */
 
-// 시나리오 매니페스트(tests/scenarios/layout-editor-array-editor.yaml) cross product 18 케이스
-// 전수 마킹(test-scenario-coverage 룰). 구조 연산(add/remove/move)은 field_widget 무관 → text 대표,
-// 필드 편집(edit_*)은 위젯별 분기. 바인딩/비-배열/빈 배열의 CRUD 는 manifest exclusions 로 제외.
-// @scenario array_value=static_array, field_widget=text, operation=add, template=sirsoft-basic
-// @scenario array_value=static_array, field_widget=text, operation=add, template=sirsoft-admin_basic
-// @scenario array_value=empty, field_widget=text, operation=add, template=sirsoft-basic
-// @scenario array_value=empty, field_widget=text, operation=add, template=sirsoft-admin_basic
-// @scenario array_value=static_array, field_widget=text, operation=remove, template=sirsoft-basic
-// @scenario array_value=static_array, field_widget=text, operation=remove, template=sirsoft-admin_basic
-// @scenario array_value=static_array, field_widget=text, operation=move, template=sirsoft-basic
-// @scenario array_value=static_array, field_widget=text, operation=move, template=sirsoft-admin_basic
-// @scenario array_value=static_array, field_widget=text, operation=edit_text_field, template=sirsoft-basic
-// @scenario array_value=static_array, field_widget=text, operation=edit_text_field, template=sirsoft-admin_basic
-// @scenario array_value=static_array, field_widget=i18n_text, operation=edit_i18n_field, template=sirsoft-basic
-// @scenario array_value=static_array, field_widget=i18n_text, operation=edit_i18n_field, template=sirsoft-admin_basic
-// @scenario array_value=static_array, field_widget=select, operation=edit_select, template=sirsoft-basic
-// @scenario array_value=static_array, field_widget=select, operation=edit_select, template=sirsoft-admin_basic
-// @scenario array_value=static_array, field_widget=boolean, operation=edit_boolean, template=sirsoft-basic
-// @scenario array_value=static_array, field_widget=boolean, operation=edit_boolean, template=sirsoft-admin_basic
-// @scenario array_value=static_array, field_widget=icon, operation=edit_icon, template=sirsoft-basic
-// @scenario array_value=static_array, field_widget=icon, operation=edit_icon, template=sirsoft-admin_basic
-//
-// effects 검증 마킹은 아래 jsdoc 블록의 연속 라인 — 매니페스트 effects 전수 커버.
 /**
- * @scenario array_value=static_array, field_widget=text, operation=add, template=sirsoft-basic
- * @effects array_capability_declared_on_p1_components_both_templates,
+ * 대표 조합(마커 아님 — 평문): array_value=static_array, field_widget=text, operation=add, template=sirsoft-basic
+ * 효과 요약(마커 아님 — 평문, 시험별 표식으로 옮김): array_capability_declared_on_p1_components_both_templates,
  *   array_editor_registered_via_registercoreeditors_kind_agnostic,
  *   property_modal_dispatches_array_node_editor_in_props_tab_by_kind,
  *   binding_expression_array_prop_degrades_to_bound_notice,
@@ -60,8 +37,9 @@
  *   node_prop_change_clears_draft_buffer_no_stale
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 
 vi.mock('../../LayoutEditorContext', () => ({
@@ -144,6 +122,10 @@ function i18nPreview(idx: number, key: string): HTMLInputElement {
 }
 
 describe('ArrayItemsEditor — props 배열 항목 편집', () => {
+  /**
+   * @scenario subject=array_items_editor
+   * @effects array_editor_renders_static_items_as_rows
+   */
   it('정적 배열 항목을 행으로 렌더한다(필드 스키마)', () => {
     const node = tabNode([
       { id: 'a', label: '첫째' },
@@ -156,6 +138,10 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
     expect((screen.getByTestId('g7le-array-field-0-id') as HTMLInputElement).value).toBe('a');
   });
 
+  /**
+   * @scenario subject=array_items_editor
+   * @effects array_editor_field_row_wraps_not_scrolls
+   */
   it('필드 행은 가로 스크롤 대신 자연 wrap 한다 (fieldRow flexWrap) —', () => {
     const node = tabNode([{ id: 'a', label: '첫째' }]);
     render(<ArrayItemsEditor {...baseProps} node={node} params={tabsParams} onPatchNode={vi.fn()} />);
@@ -164,11 +150,22 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
     expect(fieldRow.style.flexWrap).toBe('wrap');
   });
 
+  /**
+   * @scenario subject=array_items_editor
+   * @effects array_editor_empty_array_shows_notice
+   */
   it('빈 배열 → 안내 표시', () => {
     render(<ArrayItemsEditor {...baseProps} node={tabNode([])} params={tabsParams} onPatchNode={vi.fn()} />);
     expect(screen.getByTestId('g7le-array-empty')).toBeInTheDocument();
   });
 
+  // 템플릿 축: 이 위젯은 템플릿 무관 코어 컴포넌트라 두 템플릿 조합을 같은 시험에 병기한다.
+  // @scenario array_value=static_array, field_widget=text, operation=add, template=sirsoft-basic
+  // @scenario array_value=static_array, field_widget=text, operation=add, template=sirsoft-admin_basic
+  /**
+   * @scenario subject=array_items_editor
+   * @effects array_editor_add_appends_new_item_skeleton, add_item_appends_newitem_skeleton_patches_whole_node
+   */
   it('"추가" → newItem 골격을 끝에 append (노드 전체 교체)', () => {
     const onPatchNode = vi.fn();
     render(<ArrayItemsEditor {...baseProps} node={tabNode([{ id: 'a', label: '첫째' }])} params={tabsParams} onPatchNode={onPatchNode} />);
@@ -195,6 +192,10 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
     const iconNode = (props: Record<string, unknown>): EditorNode =>
       ({ type: 'composite', name: 'IconSelect', props } as EditorNode);
 
+    /**
+     * @scenario subject=array_items_editor
+     * @effects array_editor_undefined_prop_seeds_default_items
+     */
     it('prop 미정의(undefined) → defaultItems 가 시작 목록으로 렌더', () => {
       render(
         <ArrayItemsEditor {...baseProps} node={iconNode({})} params={seededParams} onPatchNode={vi.fn()} />,
@@ -203,6 +204,10 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
       expect((screen.getByTestId('g7le-array-field-0-label') as HTMLInputElement).value).toBe('Home');
     });
 
+    /**
+     * @scenario subject=array_items_editor
+     * @effects array_editor_seeded_add_commits_defaults_plus_new
+     */
     it('시드 상태에서 "추가" → 기본 목록 전체 + 새 항목이 함께 커밋(내장 목록 교체 함정 차단)', () => {
       const onPatchNode = vi.fn();
       render(
@@ -217,6 +222,10 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
       expect(options[2]).toEqual({ value: '', label: '', faIcon: '' });
     });
 
+    /**
+     * @scenario subject=array_items_editor
+     * @effects array_editor_explicit_empty_array_not_seeded
+     */
     it('명시적 빈 배열([]) → 시드하지 않음(작성자 의도 존중)', () => {
       render(
         <ArrayItemsEditor {...baseProps} node={iconNode({ options: [] })} params={seededParams} onPatchNode={vi.fn()} />,
@@ -224,6 +233,10 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
       expect(screen.getByTestId('g7le-array-empty')).toBeInTheDocument();
     });
 
+    /**
+     * @scenario subject=array_items_editor
+     * @effects array_editor_static_prop_wins_over_seed
+     */
     it('prop 이 정적 배열이면 그 값이 우선(시드 미적용)', () => {
       render(
         <ArrayItemsEditor
@@ -237,6 +250,10 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
       expect((screen.getByTestId('g7le-array-field-0-label') as HTMLInputElement).value).toBe('커스텀');
     });
 
+    /**
+     * @scenario subject=array_items_editor
+     * @effects array_editor_binding_prop_degrades_despite_seed
+     */
     it('바인딩({{...}}) prop 은 종전대로 디그레이드(시드 무관)', () => {
       render(
         <ArrayItemsEditor
@@ -249,6 +266,10 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
       expect(screen.getByTestId('g7le-array-editor-bound')).toBeInTheDocument();
     });
 
+    /**
+     * @scenario subject=array_items_editor
+     * @effects array_editor_no_default_items_keeps_empty_notice
+     */
     it('defaultItems 미선언 capability 는 종전 동작 그대로(빈 목록 안내)', () => {
       render(
         <ArrayItemsEditor
@@ -262,6 +283,12 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
     });
   });
 
+  // @scenario array_value=static_array, field_widget=text, operation=remove, template=sirsoft-basic
+  // @scenario array_value=static_array, field_widget=text, operation=remove, template=sirsoft-admin_basic
+  /**
+   * @scenario subject=array_items_editor
+   * @effects array_editor_remove_drops_only_that_index, remove_item_drops_only_that_index
+   */
   it('삭제 → 해당 인덱스만 제거', () => {
     const onPatchNode = vi.fn();
     render(<ArrayItemsEditor {...baseProps} node={tabNode([{ id: 'a' }, { id: 'b' }])} params={tabsParams} onPatchNode={onPatchNode} />);
@@ -270,6 +297,12 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
     expect(patched.props!.tabs).toEqual([{ id: 'b' }]);
   });
 
+  // @scenario array_value=static_array, field_widget=text, operation=move, template=sirsoft-basic
+  // @scenario array_value=static_array, field_widget=text, operation=move, template=sirsoft-admin_basic
+  /**
+   * @scenario subject=array_items_editor
+   * @effects array_editor_move_swaps_adjacent_with_guard, move_up_down_swaps_adjacent_with_boundary_guard
+   */
   it('위/아래 이동 → 인접 항목 스왑(경계 가드)', () => {
     const onPatchNode = vi.fn();
     render(<ArrayItemsEditor {...baseProps} node={tabNode([{ id: 'a' }, { id: 'b' }])} params={tabsParams} onPatchNode={onPatchNode} />);
@@ -280,6 +313,12 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
     expect(patched.props!.tabs).toEqual([{ id: 'b' }, { id: 'a' }]);
   });
 
+  // @scenario array_value=static_array, field_widget=text, operation=edit_text_field, template=sirsoft-basic
+  // @scenario array_value=static_array, field_widget=text, operation=edit_text_field, template=sirsoft-admin_basic
+  /**
+   * @scenario subject=array_items_editor
+   * @effects array_editor_text_field_applies_immediately, text_field_updates_item_immediately
+   */
   it('text 필드 즉시 반영', () => {
     const onPatchNode = vi.fn();
     render(<ArrayItemsEditor {...baseProps} node={tabNode([{ id: 'a', label: 'x' }])} params={tabsParams} onPatchNode={onPatchNode} />);
@@ -288,6 +327,12 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
     expect((patched.props!.tabs as Array<Record<string, unknown>>)[0].id).toBe('home');
   });
 
+  // @scenario array_value=static_array, field_widget=boolean, operation=edit_boolean, template=sirsoft-basic
+  // @scenario array_value=static_array, field_widget=boolean, operation=edit_boolean, template=sirsoft-admin_basic
+  /**
+   * @scenario subject=array_items_editor
+   * @effects array_editor_boolean_field_applies_immediately, boolean_field_toggles_item_flag
+   */
   it('boolean 필드 토글 즉시 반영', () => {
     const onPatchNode = vi.fn();
     render(<ArrayItemsEditor {...baseProps} node={tabNode([{ id: 'a' }])} params={tabsParams} onPatchNode={onPatchNode} />);
@@ -296,6 +341,12 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
     expect((patched.props!.tabs as Array<Record<string, unknown>>)[0].disabled).toBe(true);
   });
 
+  // @scenario array_value=static_array, field_widget=select, operation=edit_select, template=sirsoft-basic
+  // @scenario array_value=static_array, field_widget=select, operation=edit_select, template=sirsoft-admin_basic
+  /**
+   * @scenario subject=array_items_editor
+   * @effects array_editor_select_field_applies_immediately, select_field_updates_item_with_chosen_value
+   */
   it('select 필드 선택 즉시 반영', () => {
     const onPatchNode = vi.fn();
     const params = {
@@ -312,6 +363,12 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
     expect((patched.props!.items as Array<Record<string, unknown>>)[0].variant).toBe('danger');
   });
 
+  // @scenario array_value=static_array, field_widget=i18n_text, operation=edit_i18n_field, template=sirsoft-basic
+  // @scenario array_value=static_array, field_widget=i18n_text, operation=edit_i18n_field, template=sirsoft-admin_basic
+  /**
+   * @scenario subject=array_items_editor
+   * @effects array_editor_i18n_plain_blur_creates_custom_key, i18n_text_plain_blur_creates_custom_key_and_writes_dollar_t_custom
+   */
   it('i18n-text 평문 blur → createCustomKey 후 필드가 $t:custom.* 로 치환(공통 위젯)', async () => {
     createCustomKey.mockResolvedValue({ kind: 'ok', resource: { translation_key: 'custom.login.7' } });
     const onPatchNode = vi.fn();
@@ -325,6 +382,10 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
     expect((last.props!.tabs as Array<Record<string, unknown>>)[0].label).toBe('$t:custom.login.7');
   });
 
+  /**
+   * @scenario subject=array_items_editor
+   * @effects array_editor_i18n_existing_key_updates_locale, existing_custom_key_blur_updates_current_locale_value_keeps_key
+   */
   it('기존 커스텀 키 blur → updateCustomKeyValue(현재 로케일만, 키 유지)', async () => {
     updateCustomKeyValue.mockResolvedValue({ kind: 'ok' });
     const onPatchNode = vi.fn();
@@ -344,17 +405,119 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
     expect(createCustomKey).not.toHaveBeenCalled();
   });
 
+  /**
+   * @scenario subject=array_items_editor
+   * @effects array_editor_binding_array_prop_degrades, binding_expression_array_prop_degrades_to_bound_notice
+   */
   it('정적-바인딩 가드: props[arrayProp] 가 {{...}} → 디그레이드', () => {
     render(<ArrayItemsEditor {...baseProps} node={tabNode('{{(roles?.data ?? []).map(r => r)}}')} params={tabsParams} onPatchNode={vi.fn()} />);
     expect(screen.getByTestId('g7le-array-editor-bound')).toBeInTheDocument();
     expect(screen.queryByTestId('g7le-array-add')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=array_items_editor
+   * @effects array_editor_missing_array_prop_misconfigured, missing_array_prop_capability_shows_misconfigured_notice
+   */
   it('arrayProp 미선언 → misconfigured 안내', () => {
     render(<ArrayItemsEditor {...baseProps} node={tabNode([])} params={{}} onPatchNode={vi.fn()} />);
     expect(screen.getByTestId('g7le-array-editor-misconfigured')).toBeInTheDocument();
   });
 
+  // @scenario array_value=empty, field_widget=text, operation=add, template=sirsoft-basic
+  // @scenario array_value=empty, field_widget=text, operation=add, template=sirsoft-admin_basic
+  /**
+   * @scenario subject=array_items_editor
+   * @effects array_editor_add_from_empty_array_appends_first_item
+   */
+  it('빈 배열에서 "추가" → newItem 골격 하나로 된 배열을 커밋', () => {
+    const onPatchNode = vi.fn();
+    render(<ArrayItemsEditor {...baseProps} node={tabNode([])} params={tabsParams} onPatchNode={onPatchNode} />);
+    fireEvent.click(screen.getByTestId('g7le-array-add'));
+    const tabs = (onPatchNode.mock.calls[0][0] as EditorNode).props!.tabs as Array<Record<string, unknown>>;
+    expect(tabs).toEqual([{ id: '', label: '' }]);
+  });
+
+  // @scenario array_value=static_array, field_widget=icon, operation=edit_icon, template=sirsoft-basic
+  // @scenario array_value=static_array, field_widget=icon, operation=edit_icon, template=sirsoft-admin_basic
+  /**
+   * @scenario subject=array_items_editor
+   * @effects icon_field_updates_item_with_icon_name_string
+   */
+  it('icon 필드 → 아이콘명 문자열을 그 항목에 즉시 기록(다른 필드 보존)', () => {
+    const onPatchNode = vi.fn();
+    render(<ArrayItemsEditor {...baseProps} node={tabNode([{ id: 'a', label: 'x' }])} params={tabsParams} onPatchNode={onPatchNode} />);
+    fireEvent.change(screen.getByTestId('g7le-array-field-0-iconName'), { target: { value: 'fa-house' } });
+    const tabs = (onPatchNode.mock.calls[0][0] as EditorNode).props!.tabs as Array<Record<string, unknown>>;
+    expect(tabs[0]).toEqual({ id: 'a', label: 'x', iconName: 'fa-house' });
+  });
+
+  /**
+   * @scenario subject=array_items_editor
+   * @effects non_array_prop_value_degrades_to_bound_notice
+   */
+  it('비-배열 정적 값(객체, 문자열) → 바인딩과 같은 디그레이드(추가 버튼 없음)', () => {
+    render(<ArrayItemsEditor {...baseProps} node={tabNode({ home: 1 })} params={tabsParams} onPatchNode={vi.fn()} />);
+    expect(screen.getByTestId('g7le-array-editor-bound')).toBeInTheDocument();
+    expect(screen.queryByTestId('g7le-array-add')).not.toBeInTheDocument();
+    cleanup();
+    render(<ArrayItemsEditor {...baseProps} node={tabNode('홈')} params={tabsParams} onPatchNode={vi.fn()} />);
+    expect(screen.getByTestId('g7le-array-editor-bound')).toBeInTheDocument();
+  });
+
+  /**
+   * @scenario subject=array_items_editor
+   * @effects add_item_synthesizes_empty_item_from_fields_when_no_newitem
+   */
+  it('newItem 미지정 → "추가" 가 fields 로 빈 항목을 합성(boolean=false, 그 외 빈 문자열)', () => {
+    const onPatchNode = vi.fn();
+    const { newItem: _omitted, ...noNewItem } = tabsParams;
+    render(<ArrayItemsEditor {...baseProps} node={tabNode([{ id: 'a', label: 'x' }])} params={noNewItem} onPatchNode={onPatchNode} />);
+    fireEvent.click(screen.getByTestId('g7le-array-add'));
+    const tabs = (onPatchNode.mock.calls[0][0] as EditorNode).props!.tabs as Array<Record<string, unknown>>;
+    expect(tabs).toHaveLength(2);
+    expect(tabs[1]).toEqual({ label: '', id: '', iconName: '', disabled: false });
+  });
+
+  /**
+   * @scenario subject=array_items_editor
+   * @effects node_prop_change_clears_draft_buffer_no_stale
+   */
+  it('선택 노드의 배열 prop 이 바뀌면 입력칸이 새 값을 보인다(이전 입력이 남지 않음)', () => {
+    const { rerender } = render(
+      <ArrayItemsEditor {...baseProps} node={tabNode([{ id: 'a', label: 'x' }])} params={tabsParams} onPatchNode={vi.fn()} />,
+    );
+    fireEvent.change(screen.getByTestId('g7le-array-field-0-id'), { target: { value: 'typed' } });
+    rerender(<ArrayItemsEditor {...baseProps} node={tabNode([{ id: 'b', label: 'y' }])} params={tabsParams} onPatchNode={vi.fn()} />);
+    expect((screen.getByTestId('g7le-array-field-0-id') as HTMLInputElement).value).toBe('b');
+  });
+
+  /**
+   * @scenario subject=array_items_editor
+   * @effects array_capability_declared_on_p1_components_both_templates
+   */
+  it('두 템플릿의 배열 prop 컴포넌트가 nodeEditor kind=array 와 arrayProp 을 선언한다', () => {
+    const caps = (tpl: string) =>
+      JSON.parse(readFileSync(resolve(process.cwd(), `templates/_bundled/${tpl}/editor-spec/componentCapabilities.json`), 'utf8'));
+    const basic = caps('sirsoft-basic');
+    const admin = caps('sirsoft-admin_basic');
+    expect(basic.TabNavigation?.nodeEditor).toMatchObject({ kind: 'array', params: { arrayProp: 'tabs' } });
+    const adminExpected: Array<[string, string]> = [
+      ['TabNavigation', 'tabs'],
+      ['Breadcrumb', 'items'],
+      ['Dropdown', 'items'],
+      ['ActionMenu', 'items'],
+      ['DataGrid', 'columns'],
+    ];
+    for (const [comp, arrayProp] of adminExpected) {
+      expect(admin[comp]?.nodeEditor, comp).toMatchObject({ kind: 'array', params: { arrayProp } });
+    }
+  });
+
+  /**
+   * @scenario subject=array_items_editor
+   * @effects array_editor_primitive_item_edits_value_itself, primitive_string_item_edits_value_via_primary_field
+   */
   it('원시 string[] 항목 — primary 필드로 값 자체 편집', () => {
     const onPatchNode = vi.fn();
     const params = { arrayProp: 'options', fields: [{ key: 'value', widget: 'text', label: '값', primary: true }] };
@@ -387,6 +550,10 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
     expect(patched.props!.labels).toEqual(['Jan', 'Feb', '']);
   });
 
+  /**
+   * @scenario subject=array_items_editor
+   * @effects array_editor_primitive_add_then_edit_keeps_shape
+   */
   it('원시 string[] — 추가 후 primary 편집으로 값 채움 (원시 형태 유지)', () => {
     const onPatchNode = vi.fn();
     const params = {
@@ -512,6 +679,10 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
       path: 'name', shape: 'scalar' as const, preview: '홍길동',
     };
 
+    /**
+     * @scenario subject=array_items_editor
+     * @effects array_editor_candidates_show_data_button
+     */
     it('candidates 전달 시 평문 라벨 항목에 +데이터 버튼 노출', () => {
       render(
         <ArrayItemsEditor
@@ -527,6 +698,10 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
       ).toBeInTheDocument();
     });
 
+    /**
+     * @scenario subject=array_items_editor
+     * @effects array_editor_no_candidates_hides_data_button
+     */
     it('candidates 미전달 시 +데이터 버튼 미노출(디그레이드)', () => {
       render(
         <ArrayItemsEditor

@@ -1,0 +1,44 @@
+feature: 게시판 글쓰기 폼은 게시판이 정한 비회원 항목대로 칸을 그리고 그 값을 저장 요청에 싣는다
+
+description: |
+  글쓰기 폼의 비회원 칸은 이름과 비밀번호 둘뿐이었고 필수 별표가 레이아웃에 박혀 있었다. 운영자가 게시판 설정에서
+  비회원 작성자 항목(이메일, 추가 항목)을 켜고 필수 여부를 정할 수 있게 되면서, 화면이 글쓰기 메타(form_meta)의
+  board.guest_fields 를 따라 그린다.
+
+  - fixed 가 이름과 비밀번호의 필수 여부를 준다. 그 값이 없는 응답(옛 서버)에서는 종전처럼 필수로 그린다.
+  - post 의 항목은 이름과 비밀번호 아래에 회원 항목과 같은 입력 컴포넌트로 그린다(공용 조각 partials/board/_guest_fields).
+    값은 폼 자동 바인딩으로 글쓰기 폼 상태 _local.form.guest_fields.{키} 에 담긴다.
+  - 저장 요청 본문에는 그려진 항목만 guest_fields 에 키별로 싣는다(입력하지 않은 칸은 항목의 기본값, 빈 값은 뺀다).
+    항목이 없는 게시판, 로그인한 회원, 수정 요청의 본문은 종전과 같다.
+  - 검증 오류(422)의 키 guest_fields.{키}(묶음 유형은 하위 경로)는 그 칸 아래에 그린다.
+  - 로그인한 회원과 수정 화면에는 비회원 칸을 그리지 않는다.
+
+# 축은 하나(case)로 편다 — 화면의 어느 부분을 재는지다. 부분끼리 교차하지 않는다.
+axes:
+  case: [no_fields, fixed_required, fields_drawn, request_body, validation_errors, member]
+
+effects:
+  - no_fields_draws_only_name_and_password
+  - fixed_fields_default_to_required_without_setting
+  - fixed_fields_required_mark_follows_setting
+  - post_fields_passed_as_one_group_under_fixed_fields
+  - field_values_bind_under_form_guest_fields
+  - field_label_star_and_help_follow_contract
+  - field_renderer_branches_match_member_fields
+  - guest_fields_have_dark_pairs
+  - body_unchanged_without_fields
+  - body_carries_guest_fields_by_key
+  - body_omits_guest_fields_for_member_and_edit
+  - save_failure_errors_reach_the_group
+  - field_error_drawn_under_its_field
+  - field_error_collects_sub_paths
+  - member_and_edit_have_no_guest_fields
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-guest-fields-post-form.test.ts
+
+validation:
+  note: |
+    레이아웃의 식을 실제 식 엔진으로 계산해 잰다. 입력 컴포넌트(MemberFieldInput)의 유형별 입력칸과 값 방출은
+    컴포넌트 테스트가 맡는다. 브라우저 확인(비회원 글쓰기에서 항목 입력, 필수 누락 시 칸 아래 오류, 저장 본문)은
+    통합 실측에서 한다.

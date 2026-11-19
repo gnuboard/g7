@@ -2134,6 +2134,51 @@
             "total": 2
           }
         }
+      },
+      "boardSchedules": {
+        "data": {
+          "data": [
+            {
+              "id": 201,
+              "name": "board-cleanup",
+              "label_localized": "게시판 정리",
+              "description_localized": null,
+              "type": "artisan",
+              "frequency": "daily",
+              "frequency_label": "매일",
+              "expression": "0 4 * * *",
+              "is_active": true,
+              "next_run_at": "2026-10-17T03:00:00+09:00",
+              "last_result": "success",
+              "unmet_conditions": [],
+              "owner": {
+                "type": "module",
+                "identifier": "sirsoft-board",
+                "name": "게시판"
+              },
+              "is_owned": true,
+              "abilities": {
+                "can_create": true,
+                "can_update": true,
+                "can_delete": false,
+                "can_run": true
+              }
+            }
+          ],
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true,
+            "can_run": true
+          },
+          "pagination": {
+            "total": 1,
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 100,
+            "has_more_pages": false
+          }
+        }
       }
     },
     "byEndpointPattern": {
@@ -2787,6 +2832,18 @@
                 "activeBoardSettingsTab": "privacy_retention"
               }
             }
+          },
+          {
+            "id": "tab_schedules",
+            "label": "$t:editor.state.tab.schedules",
+            "initialState": {
+              "query": {
+                "tab": "schedules"
+              },
+              "global": {
+                "activeBoardSettingsTab": "schedules"
+              }
+            }
           }
         ]
       },
@@ -3407,7 +3464,8 @@
                   "preview": {
                     "subject": "[샘플 사이트] 새 소식 알림",
                     "body": "<p>홍길동님, 새 소식을 알려 드립니다.</p>"
-                  }
+                  },
+                  "warnings": []
                 }
               }
             }

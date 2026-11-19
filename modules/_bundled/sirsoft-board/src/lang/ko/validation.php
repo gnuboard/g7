@@ -188,6 +188,9 @@ return [
     // 게시판 검증 (하위 호환성 유지)
     'board' => [
         'not_found' => '게시판을 찾을 수 없습니다.',
+        'display_name_setting' => [
+            'kind_unavailable' => '지금 쓸 수 없는 표시 이름 종류입니다. 다시 골라 주세요.',
+        ],
         'name' => [
             'required' => '게시판명은 필수입니다.',
             'string' => '게시판명은 문자열이어야 합니다.',
@@ -488,6 +491,17 @@ return [
         ],
         'board' => [
             'name' => '게시판 이름',
+            'display_name_setting' => '작성자 표시 이름',
+            'display_name_mode' => '작성자 표시 이름 방식',
+            'display_name_kind' => '작성자 표시 이름 종류',
+            'guest_author_fields' => '비회원 작성자 항목',
+            'guest_author_field' => '비회원 작성자 항목 설정',
+            'guest_author_field_post' => '비회원 작성자 항목의 게시글 설정',
+            'guest_author_field_post_enabled' => '비회원 작성자 항목의 게시글 사용 여부',
+            'guest_author_field_post_required' => '비회원 작성자 항목의 게시글 필수 여부',
+            'guest_author_field_comment' => '비회원 작성자 항목의 댓글 설정',
+            'guest_author_field_comment_enabled' => '비회원 작성자 항목의 댓글 사용 여부',
+            'guest_author_field_comment_required' => '비회원 작성자 항목의 댓글 필수 여부',
             'description' => '게시판 설명',
             'add_to_menu' => '관리자 메뉴에 표시',
             'blocked_keywords' => '금지어',

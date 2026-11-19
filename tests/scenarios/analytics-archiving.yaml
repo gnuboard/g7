@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#682 |
 #   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지
 #   못한다(저장소 기존 시나리오와 같은 한계). 축 조합은 PHPUnit Feature 테스트가 커버하고
 #   green 이다.
@@ -33,6 +33,14 @@ axes:
   data: [empty, single_type, all_types, bot_only, extension_rows, conversions]
   timezone: [Asia/Seoul, America/New_York, UTC]
   final: [true, false]
+  # 아래 축은 시험별 입력 변종이다 — test_files 의 @scenario 가 쓰는 축이며 조합 곱 대상이 아니다
+  on_view: [disabled, ran, fresh, too_many_visits, locked, failed]
+  repeat: [within_minute, within_gate]
+  catch_up: [missed_days, budget]
+  stale_run: [present]
+  scheduler: [alive_boundary, manual_only, unknown]
+  freshness: [describe, midnight]
+  bucket: [duration, pages, parse, config]
 
 exclusions:
   - { period: hour, final: true, reason: "오늘 숫자는 계속 변하므로 매시 집계는 확정하지 않는다 — 계약이다" }

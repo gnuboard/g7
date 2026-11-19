@@ -259,5 +259,17 @@
   "claim_shipping_fee_mode": {
     "fixed": "固定金額",
     "original_policy": "元の配送ポリシー再計算"
+  },
+  "export_status": {
+    "pending": "待機中",
+    "processing": "進行中",
+    "completed": "完了",
+    "failed": "失敗",
+    "expired": "期限切れ"
+  },
+  "export_type": {
+    "orders": "注文履歴",
+    "products": "商品履歴",
+    "mileage": "マイレージ履歴"
   }
 }

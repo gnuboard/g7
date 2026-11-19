@@ -11,9 +11,9 @@
  * 실행하지 않으므로 어떤 주문도 처리되지 않는다. 이미 보유기간 기능을 켜 둔 사이트는 건드리지 않고
  * 건너뛴다. 설정을 바꾸는 spec 이라 직렬로 돈다(#42 — 확장 config 는 로컬 병렬).
  *
- * @scenario order_state=confirmed, toggle=on, mode=delete
+ * 조합 요약(마커 아님, 평문): order_state=confirmed, toggle=on, mode=delete
  *
- * @effects order_retention_settings_tab_binds_saved_keys, order_retention_settings_warn_per_mode, order_retention_preview_api_counts_while_off
+ * 효과 요약(마커 아님, 평문): order_retention_settings_tab_binds_saved_keys, order_retention_settings_warn_per_mode, order_retention_preview_api_counts_while_off
  */
 import { execSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
@@ -169,7 +169,7 @@ test('저장하면 본문에 privacy_retention 이 실리고 뱃지가 미리보
 
   await page.reload();
   await page.waitForLoadState('networkidle', { timeout: 30_000 });
-  const badge = page.locator('#privacy_retention_target_row .badge');
+  const badge = page.locator('#privacy_retention_target_row .ecommerce-badge');
   await expect(badge).toBeVisible({ timeout: 20_000 });
   await expect(badge).toContainText(String(preview.body.data.orders));
   await expect(page.locator(YEARS)).toHaveValue('6');
@@ -190,7 +190,7 @@ test('기능이 꺼져 있어도 대상 주문 건수가 보이고 「대상 주
 
     await page.reload();
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
-    await expect(page.locator('#privacy_retention_target_row .badge')).toContainText(String(preview.body.data.orders), { timeout: 20_000 });
+    await expect(page.locator('#privacy_retention_target_row .ecommerce-badge')).toContainText(String(preview.body.data.orders), { timeout: 20_000 });
 
     await page.locator('#view_privacy_retention_targets').click();
     const rows = page.locator('#privacy_targets_list tbody tr');
@@ -200,7 +200,8 @@ test('기능이 꺼져 있어도 대상 주문 건수가 보이고 「대상 주
     await expect(firstLink).toHaveAttribute('target', '_blank');
     await expect(firstLink).toHaveAttribute('href', /^\/admin\/ecommerce\/orders\//);
 
-    await page.locator('#privacy_targets_footer button').click();
+    // 닫기 단추는 Modal 고정 하단(.modal-footer-bar)에 있다(#869 P1)
+    await page.getByRole('dialog').locator('.modal-footer-bar button').click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
   } finally {
     artisanSeed('playwright:seed-order-retention --teardown');

@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\Gdpr\Http\Resources;
 
+use App\DisplayName\DisplayNameAreaRegistry;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 
@@ -17,7 +18,7 @@ class GdprConsentLogResource extends BaseApiResource
     /**
      * 리소스를 배열로 변환합니다.
      *
-     * @param Request $request HTTP 요청
+     * @param  Request  $request  HTTP 요청
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -35,10 +36,12 @@ class GdprConsentLogResource extends BaseApiResource
             'ip_address' => $this->ip_address,
             'user_agent' => $this->user_agent,
             'created_at' => $this->formatDateTimeStringForUser($this->created_at),
+            // 회원 이름은 관리자 영역(`core:admin`) 표시 이름이다. 실명은 회원 조회 권한이 있는 관리자에게,
+            // 표시 이름과 다를 때만 `real_name` 으로 더해진다.
             'user' => $this->whenLoaded('user', fn () => $this->user !== null ? [
                 'id' => $this->user->id,
                 'uuid' => $this->user->uuid,
-                'name' => $this->user->name,
+                ...$this->memberNameFields($this->user, $request, DisplayNameAreaRegistry::AREA_ADMIN),
                 'email' => $this->canExposeMemberEmail($request, $this->user->id) ? $this->user->email : null,
             ] : null),
         ];

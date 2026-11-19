@@ -12,14 +12,19 @@ return [
         'vbank_refund_invalid_payment' => '返金可能なNICEペイメンツ仮想口座入金完了決済ではありません。',
         'vbank_refund_amount_mismatch' => '要求された返金金額がDBのキャンセル可能金額と一致していません。',
         'vbank_refund_already_processing' => '既に仮想口座返金処理が進行中です。',
+        'escrow_delivery_rejected' => 'NICEペイメンツがエスクロー配送登録を拒否しました。',
+        'cancel_rejected' => 'NICEペイメンツが決済キャンセルを拒否しました。',
+        'escrow_delivery_failed' => 'エラーが発生したため、エスクロー配送登録を完了できませんでした。しばらくしてからもう一度お試しください。失敗が続く場合はサーバーログを確認してください。',
     ],
     'refund' => [
         'missing_tid' => '取引ID(TID)がないため返金を進めることができません。',
         'default_reason' => '購入者返金リクエスト',
+        'pg_failed' => '決済代行会社との通信中にエラーが発生しました。しばらくしてからもう一度お試しください。',
     ],
     'defaults' => [
         'vbank_refund_msg' => '仮想口座返金',
     ],
+    'vbank_close_reason' => '入金前の注文キャンセル',
     'fields' => [
         'tid' => '取引ID(TID)',
         'moid' => '注文番号',
@@ -42,5 +47,14 @@ return [
     ],
     'settings' => [
         'redirect_url_format' => '決済後の移動先アドレスは {shopBase}、/ または http(s):// で始まり、空白を含めることはできません。他サイトへ送る //アドレス と javascript: は使用できません。',
+    ],
+    // 決済画面・決済代行会社連携 API のエラー応答メッセージ
+    'responses' => [
+        'amount_mismatch' => '決済金額が注文金額と一致しません。',
+        'currency_not_chargeable' => '決済通貨で請求額を計算できません。',
+        'escrow_payment_not_found' => '指定した取引番号のエスクロー決済が見つかりません。',
+        'order_not_found' => '注文が見つかりません。',
+        'ownership_verification_failed' => '注文の所有者確認に失敗しました。',
+        'too_many_requests' => 'リクエストが多すぎます。しばらくしてから再度お試しください。',
     ],
 ];

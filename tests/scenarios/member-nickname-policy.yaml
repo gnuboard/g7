@@ -1,0 +1,47 @@
+feature: member_nickname_policy
+
+description: |
+  닉네임 정책(환경설정 > 회원). 정규화 값 저장, 중복 금지, 금지어, 변경 주기, 탈퇴 뒤 재사용,
+  요청을 거치지 않는 서비스 호출의 판정, 중복 키 재계산 작업과 그 접수 조건.
+
+coverage_strategy: full
+
+axes:
+  check: [normalize, duplicate, forbidden_word, display_name_field_forbidden_word, change_interval, withdraw, service_layer, recompute, settings_toggle, recompute_scale, settings_mirror]
+
+effects:
+  # 표시 이름 종류로 쓸 수 있게 켠 추가 항목은 닉네임과 같은 금지어를 따른다
+  - display_name_field_forbidden_word_blocked
+  - display_name_field_forbidden_word_normalized
+  - plain_field_ignores_forbidden_words
+  - display_name_field_forbidden_word_admin_exempt
+  - display_name_field_existing_value_kept
+  - nickname_normalized_stored_on_save
+  - nickname_policy_off_allows_duplicates
+  - duplicate_nickname_blocked_on_change
+  - existing_duplicate_nickname_kept
+  - forbidden_word_blocked
+  - forbidden_word_admin_exempt
+  - forbidden_word_existing_nickname_kept
+  - nickname_change_interval_blocks_self_change
+  - nickname_change_interval_admin_exempt
+  - nickname_changed_at_set_on_self_change
+  - withdrawn_nickname_suffix_has_user_id
+  - withdrawn_nickname_reusable
+  - service_nickname_violation_throws
+  - service_skip_field_drops_nickname_and_fires_action
+  - recompute_fills_normalized
+  - recompute_sets_unique_key_only_for_unique_nicknames
+  - recompute_clears_keys_when_policy_off
+  - recompute_reports_progress
+  - recompute_dispatched_only_when_unique_setting_changes
+  - recompute_reads_in_bounded_chunks
+  - saved_member_settings_reach_runtime_config
+
+# RecomputeNicknameUniqueKeysJob 은 닉네임이 있는 회원 전부를 훑는다 — 묶음 읽기와 바뀐 행만 쓰기를 규모 축으로 고정한다.
+scale:
+  - { n: 100000, dataset: members_with_nickname, assert: [chunked_reads_bounded, writes_only_changed_rows, progress_reaches_total] }
+
+test_files:
+  - tests/Feature/User/NicknamePolicyTest.php
+  - tests/Unit/Jobs/RecomputeNicknameUniqueKeysJobScaleTest.php

@@ -1,30 +1,36 @@
-feature: 마케팅 동의 리스너 — 코어 회원·가입 훅 배선
+feature: 마케팅 동의 리스너 — 회원 항목 목록, 응답, 삭제 훅 배선
 
 description: |
-  마케팅 플러그인은 코어 회원 생성·수정·삭제와 가입 흐름의 훅을 구독해 동의 항목을 검증 규칙에 더하고,
-  동의 값을 저장하고, 회원 API 응답에 병합한다.
+  동의 값의 검증과 저장은 회원 항목 선언(Plugin::getFields)과 저장소 어댑터(MarketingConsentFieldHandler)가 맡는다(#490).
+  리스너는 그 주변만 잇는다.
 
   핵심 동작:
-    - 가입 완료는 코어가 발화하는 core.auth.after_register 로 받는다. 옛 이름 core.auth.register 를
-      구독해 가입 시 동의가 한 번도 저장되지 않던 결함을 고쳤다(#138 후속 전수 점검 1번).
-    - 가입 동의 값은 요청이 아니라 훅 인자 registration_data(검증된 가입 데이터)에서 읽는다 — 이 액션은
-      큐 워커에서 돌 수 있고 워커의 request() 는 비어 있다.
+    - core.field.filter_definitions 로 회원 항목 목록을 지금의 플러그인 설정에 맞춘다. 설정에서 끈 동의와 채널은 빼고,
+      지금 받는 항목인데 행이 없는 것은 요청 시점에 더하고, 약관 페이지를 정한 항목에 약관 「보기」 링크(ui.link)를 붙인다.
+    - 회원 생성과 수정의 검증 규칙 필터, 수정 데이터 필터, 생성, 수정, 가입 뒤 저장 액션은 구독하지 않는다.
+      구독이 남으면 같은 값이 두 번 검증되고 두 번 저장된다.
+    - 가입 경로의 옛 요청 키(agree_ 접두)는 정식 키의 규칙이 있을 때만 규칙을 받아 가입 데이터에 함께 실린다.
+    - 회원 응답에는 지금 받는 동의 항목의 값과 동의 시각, 채널 목록, 동의 이력을 싣는다. 화면이 항목을 그릴지와
+      약관 링크는 항목 계약이 정하므로 사용 여부와 약관 slug 는 응답에 싣지 않는다.
     - 필터 훅 구독에는 type=filter, 액션 훅 구독에는 type 키가 없다.
 
 axes:
-  case: [subscription_contract, validation_rules, update_filter, after_create, after_update, after_register, before_delete, resource_filter]
+  case: [subscription_contract, field_definitions, legacy_register_keys, before_delete, resource_filter]
 
 effects:
   - subscribes_published_hook_names
+  - value_hooks_not_subscribed                 # 값의 검증, 저장 훅을 구독하지 않는다(이중 처리 없음)
   - filter_hooks_declare_filter_type
   - action_hooks_have_no_filter_type
-  - agree_fields_added_to_rules
-  - marketing_fields_stripped_from_update_data
-  - consent_saved_from_hook_args
-  - register_consent_saved_without_request
+  - missing_consent_fields_added_per_request   # 행이 없는 지금 받는 항목을 요청 시점에 더한다
+  - consent_field_contract_shape               # 예/아니오, 저장소 어댑터, 약관 묶음, 옛 키, 역할과 상위 항목
+  - terms_link_only_when_page_set              # 약관 페이지를 정한 항목에만 ui.link
+  - disabled_consent_fields_dropped            # 설정에서 끈 동의와 채널이 빠진다
+  - foreign_fields_untouched                   # 다른 집합과 다른 출처의 같은 키는 건드리지 않는다
+  - legacy_agree_rules_follow_declared_fields  # 옛 키 규칙은 정식 키의 규칙이 있을 때만
   - consent_deleted_before_user_delete
   - consent_merged_into_user_resource
-  - consent_history_time_uses_viewer_timezone   # 동의 이력 시각은 보는 사람 시간대(#160)
+  - consent_history_time_uses_viewer_timezone  # 동의 이력 시각은 보는 사람 시간대(#160)
 
 test_files:
   - plugins/_bundled/sirsoft-marketing/tests/Unit/Listeners/MarketingConsentListenerTest.php

@@ -21,7 +21,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\TempOrder;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
-use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
+use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
 
 /**
  * 주문 생성 공통 흐름 Trait
@@ -95,12 +95,13 @@ trait HandlesOrderCreation
                 shippingInfo: $request->getShippingInfo(),
                 paymentMethod: $request->input('payment_method'),
                 expectedTotalAmount: (float) $request->input('expected_total_amount'),
-                shippingMemo: $request->input('shipping_memo'),
+                shippingMemo: $request->getShippingMemo(),
                 depositorName: $request->input('depositor_name'),
                 dbankInfo: $request->getDbankInfo(),
                 guestLookupPassword: $request->getGuestLookupPassword(),
                 cashReceiptInfo: $request->getCashReceiptInfo(),
-                refundBankInfo: $request->getRefundBankInfo()
+                refundBankInfo: $request->getRefundBankInfo(),
+                extraFields: $request->getExtraFields()
             );
 
             $order->load(['options', 'payment', 'shippingAddress']);
@@ -252,7 +253,7 @@ trait HandlesOrderCreation
             'order' => $orderResource,
             // 상점 주소는 운영자 설정이다 — 기본값 리터럴을 내려보내면 주소를 바꾼 상점에서
             // 결제를 마친 손님이 존재하지 않는 화면으로 이동한다 (공개 #85).
-            'redirect_url' => ShopPathResolver::path("orders/{$order->order_number}/complete"),
+            'redirect_url' => EcommerceScreenUrl::orderComplete((string) $order->order_number),
             'requires_pg_payment' => $requiresPg,
         ];
 

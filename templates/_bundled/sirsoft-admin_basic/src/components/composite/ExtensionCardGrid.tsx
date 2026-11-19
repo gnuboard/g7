@@ -48,7 +48,8 @@ export interface ExtensionCardItem {
   description?: string;
   vendor?: string;
   iconUrl?: string;
-  fallbackIcon?: IconName;
+  /** 그림이 없을 때 보일 아이콘 — Icon 의 name 과 같이 별칭 문자열('cube', 'puzzle-piece')이나 IconName 을 받는다 */
+  fallbackIcon?: string | IconName;
   /**
    * 아이콘 오른쪽 아래에 얹는 짧은 표식(언어팩의 로케일). 언어팩은 대개 자기 그림이 없어
    * 대상 확장·코어의 아이콘을 빌려 쓰므로, 무엇의 어떤 언어인지 이 표식으로 구분한다.
@@ -60,6 +61,8 @@ export interface ExtensionCardItem {
     checked: boolean;
     disabled?: boolean;
     label?: string;
+    /** 마우스를 올렸을 때 보일 안내 — 잠긴 이유(검수 서버 등)를 설치·업데이트·제거 단추와 같은 문구로 알린다 */
+    title?: string;
   };
   primaryAction?: {
     label: string;
@@ -489,6 +492,7 @@ const ControlRow: React.FC<{
           name={item.toggle.label ?? item.name}
           // 이름을 명시한다 — 비워 두면 곁 글자를 찾아 바로 앞 「업데이트」·「레이아웃 편집」 단추 글자를 집었다.
           ariaLabel={item.toggle.label ?? item.name}
+          title={item.toggle.title}
           onChange={(next: any) => {
             const value = typeof next === 'boolean' ? next : Boolean(next?.target?.checked);
             setPending(true);

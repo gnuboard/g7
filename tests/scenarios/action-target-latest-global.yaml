@@ -1,0 +1,28 @@
+feature: 액션 target 의 `{{_global.*}}` 를 params 와 같이 지금의 전역 상태로 푼다 (engine-v1.96.2)
+
+description: |
+  컴포넌트 이벤트 핸들러의 `context.data._global` 은 렌더 때 잡은 사본이다. params 는 evaluateExpression 이 저장소 값으로 바꿔
+  끼워 읽었지만 target 만 사본을 읽어, sequence 의 `setState target="global"` 다음 apiCall target 이 빈 값(현재 페이지 주소)이
+  됐다(관리자 템플릿 목록 「레이아웃 갱신」 첫 열기 405). 단계 `if`·conditions 판정은 이벤트 때 값을 유지한다 — 로그인 폼 상호배타,
+  게시판 삭제 onSuccess 분기가 그 동작에 기댄다. 축 source 는 target 이 읽는 전역 값을 쓴 경로, reader 는 그 값을 읽는 자리다.
+
+axes:
+  source: [step_set_state_global, nested_named_sequence, prior_on_success, none]
+  reader: [action_target, composite_target, step_if, conditions_branch]
+
+exclusions:
+  - { source: nested_named_sequence, reader: [composite_target, step_if, conditions_branch], reason: "중첩 sequence 는 바깥 단계 문맥을 그대로 받으므로 target 갈래 하나로 잠근다 — if·conditions 는 갈래와 무관하게 이벤트 때 값" }
+  - { source: prior_on_success, reader: [composite_target, conditions_branch], reason: "onSuccess 쓰기는 저장소를 같은 경로로 갱신 — target 과 if(로그인 폼 모양) 두 자리로 잠근다" }
+  - { source: none, reader: [step_if, conditions_branch], reason: "전역 쓰기가 없으면 판정 자리는 종전 코드와 같은 경로라 target 무변화 시험으로 충분하다" }
+
+effects:
+  - target_reads_latest_global
+  - step_condition_keeps_event_snapshot
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.sequenceGlobalFreshness.test.tsx
+
+validation:
+  note: |
+    2026-11-16 HEAD 엔진 사본에서 6건 중 3건 red(target `/`, 복합 `/api/items//touch`, onSuccess 값 `/`) · 보존 잠금 3건 green.
+    수정 후 6 passed. sequence 단계 문맥 전체(또는 쓴 키)를 새 값으로 바꾸는 기각안에서는 보존 잠금(삭제 분기·로그인 폼)이 깨진다.

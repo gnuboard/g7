@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Contracts\Repositories\LayoutExtensionVersionRepositoryInterface;
 use App\Models\LayoutExtension;
 use App\Models\TemplateLayoutExtensionVersion;
+use App\Models\User;
 use App\Repositories\Concerns\CalculatesJsonContentDiff;
 use App\Support\LayoutEmptyObjects;
 use Illuminate\Database\Eloquent\Collection;
@@ -75,11 +76,30 @@ class LayoutExtensionVersionRepository implements LayoutExtensionVersionReposito
         // 않는 `content`(버전마다 확장 본문 사본)도 조회하지 않는다 — 본문은 버전 비교 diff
         // 전용이며 단건 조회가 공급한다. (레이아웃 본체와 동일 정책)
         return $this->model
-            ->with('creator:id,name')
+            ->with('creator:'.User::displayColumns())
             ->where('extension_id', $extensionId)
             ->orderBy('version', 'desc')
             ->limit($limit)
             ->get(['id', 'extension_id', 'version', 'changes_summary', 'created_by', 'created_at']);
+    }
+
+    /**
+     * 특정 확장의 최근 버전을 본문까지 조회 (최신순) — 영구 삭제 직전 스냅샷용.
+     *
+     * 목록(getVersions)은 경량 조회라 `content` 를 담지 않는다. 스냅샷은 버전 본문을 남겨야 하므로 이 전용 조회를 쓴다.
+     *
+     * @param  int  $extensionId  레이아웃 확장 ID
+     * @param  int  $limit  조회할 최대 버전 수
+     * @return Collection 버전 컬렉션 (본문 포함)
+     */
+    public function getRecentVersionsWithContent(int $extensionId, int $limit): Collection
+    {
+        return $this->model
+            ->newQuery()
+            ->where('extension_id', $extensionId)
+            ->orderBy('version', 'desc')
+            ->limit($limit)
+            ->get();
     }
 
     /**
@@ -99,7 +119,7 @@ class LayoutExtensionVersionRepository implements LayoutExtensionVersionReposito
         // creator eager load — 단건 버전 조회도 저장자 이름을 목록과 일관 노출.
         return $this->model
             ->newQuery()
-            ->with('creator:id,name')
+            ->with('creator:'.User::displayColumns())
             ->where('extension_id', $extensionId)
             ->where('version', $version)
             ->first();

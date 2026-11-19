@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Extension\Auth\CredentialVerifierManager;
 use App\Extension\HookManager;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -25,8 +26,13 @@ class LoginRequest extends FormRequest
      */
     public function rules(): array
     {
+        // 사내 아이디를 받는 외부 자격 증명 검증자가 있으면 그 경로의 로그인 칸은 이메일 형식을 강제하지 않는다(7.2.0).
+        // 칸 이름은 `email` 그대로다 — 화면·엔진 계약을 바꾸지 않는다.
+        $guard = $this->route()?->getName() === 'api.auth.admin.login' ? 'admin' : 'user';
+        $acceptsUsernames = app(CredentialVerifierManager::class)->acceptsUsernames($guard);
+
         $rules = [
-            'email' => 'required|email',
+            'email' => $acceptsUsernames ? 'required|string|max:255' : 'required|email',
             // 로그인은 기존 비밀번호를 대조하는 행위이지 새 정책을 강제하는 지점이 아니다.
             // 길이 규칙을 두면 정책 미달 비밀번호에 422 를 주어 미인증 공격자에게 그 사실을 누설한다.
             'password' => 'required|string',

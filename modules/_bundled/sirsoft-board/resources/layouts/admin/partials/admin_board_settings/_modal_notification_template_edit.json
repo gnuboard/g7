@@ -10,7 +10,240 @@
     "props": {
         "title": "$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.title",
         "size": "xl",
-        "closeOnOverlayClick": false
+        "closeOnOverlayClick": false,
+        "footer": [
+            {
+                "comment": "미리보기 — 편집 중인 제목·본문을 서버에 보내 변수를 채운 모습을 받아 미리보기 창에 띄운다. 저장 중에는 잠긴다 — 요청이 도는 도중 창이 바뀌면 성공·실패 안내가 갈 곳을 잃는다",
+                "type": "basic",
+                "name": "Button",
+                "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
+                "responsive": {
+                    "-640": {
+                        "comment": "왼쪽 단추는 오른쪽 묶음과 떨어뜨린다. 640px 이하에서는 Modal 이 세로로 쌓으므로 여백을 빼고 폭을 채운다(#869)",
+                        "props": {
+                            "className": "board-text-body board:px-4 board:py-2 board:rounded-md board:border board:border-gray-300 board:dark:border-gray-600 board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors"
+                        }
+                    }
+                },
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "apiCall",
+                        "target": "/api/admin/notification-templates/preview",
+                        "auth_required": true,
+                        "params": {
+                            "method": "POST",
+                            "body": {
+                                "definition_id": "{{_global.board_notification_template_form_modal?.definition?.id}}",
+                                "subject": "{{_global.board_notification_template_form_modal?.template?.subject}}",
+                                "body": "{{_global.board_notification_template_form_modal?.template?.body}}",
+                                "locale": "{{_global.board_notification_template_form_modal?.editLang ?? $locale}}"
+                            }
+                        },
+                        "onSuccess": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "board_notification_template_form_modal.preview": "{{response.data}}"
+                                }
+                            },
+                            {
+                                "handler": "openModal",
+                                "target": "modal_board_notification_template_preview"
+                            }
+                        ],
+                        "onError": {
+                            "handler": "toast",
+                            "params": {
+                                "type": "error",
+                                "message": "{{error.message}}"
+                            }
+                        }
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "board-text-body board:px-4 board:py-2 board:rounded-md board:border board:border-gray-300 board:dark:border-gray-600 board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors board:mr-auto",
+                    "disabled": "{{_global.board_notification_template_form_modal?.isSaving ?? false}}"
+                },
+                "text": "$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.btn_preview"
+            },
+            {
+                "comment": "취소 — 편집 창을 닫고 창 이름 공간의 폼 상태를 비운다",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "closeModal",
+                                "target": "modal_board_notification_template_edit"
+                            },
+                            {
+                                "comment": "취소로 닫으면 창 이름 공간을 바로 비운다(7.1.1)",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "board_notification_template_form_modal": null
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "board-text-body board:px-4 board:py-2 board:rounded-md board:border board:border-gray-300 board:dark:border-gray-600 board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.board_notification_template_form_modal?.isSaving ?? false}}"
+                },
+                "children": [
+                    {
+                        "comment": "저장이 끝나 경고만 보이는 상태에서는 되돌릴 것이 없으므로 「닫기」로 읽힌다.",
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{(_global.board_notification_template_form_modal?.warnings ?? []).length > 0 ? '$t:common.close' : '$t:common.cancel'}}"
+                    }
+                ]
+            },
+            {
+                "comment": "편집 모달 푸터 확장 슬롯(범용). template_editor='none' 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다.",
+                "id": "board_template_form_footer_ext",
+                "type": "extension_point",
+                "name": "notification_template_form_footer_actions",
+                "props": {
+                    "definition": "{{_global.board_notification_template_form_modal?.definition}}",
+                    "template": "{{_global.board_notification_template_form_modal?.template}}",
+                    "channel": "{{_global.board_notification_template_form_modal?.template?.channel ?? ''}}",
+                    "modalId": "modal_board_notification_template_edit",
+                    "stateKey": "board_notification_template_form_modal",
+                    "saveEndpoint": "{{'/api/admin/notification-templates/' + _global.board_notification_template_form_modal?.template?.id}}",
+                    "refetchDataSourceId": "boardNotificationDefinitions"
+                }
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
+                "actions": [
+                    {
+                        "comment": "저장 — 문안과 수신 규칙을 함께 보낸다. 성공하면 목록을 다시 읽어 고친 제목이 목록 요약에도 반영되게 하고, 폼 객체를 통째로 비운다.\n               서버가 경고(지금 없는 회원 항목 변수)를 함께 주면 저장은 된 것이므로 목록 재조회와 성공 안내는 그대로 하고,\n               창은 닫지 않은 채 경고를 창 안 상자와 경고 토스트로 알린다. 다시 저장하기 전에 지난 경고를 비운다.\n               갈래는 응답 값으로만 가른다(성공 처리 안에서 방금 쓴 전역 상태를 형제 액션의 조건으로 다시 읽으면 갱신 전 값이다).",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "board_notification_template_form_modal.isSaving": true,
+                                    "board_notification_template_form_modal.errors": null,
+                                    "board_notification_template_form_modal.warnings": null
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "{{'/api/admin/notification-templates/' + _global.board_notification_template_form_modal?.template?.id}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "PUT",
+                                    "body": {
+                                        "subject": "{{_global.board_notification_template_form_modal?.template?.subject}}",
+                                        "body": "{{_global.board_notification_template_form_modal?.template?.body}}",
+                                        "click_url": "{{_global.board_notification_template_form_modal?.template?.click_url ?? null}}",
+                                        "recipients": "{{_global.board_notification_template_form_modal?.recipients ?? []}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "boardNotificationDefinitions"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "message": "$t:sirsoft-board.admin.settings.notification_definitions.save_success",
+                                            "type": "success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "modal_board_notification_template_edit",
+                                        "if": "{{(response?.data?.warnings ?? []).length === 0}}"
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "if": "{{(response?.data?.warnings ?? []).length === 0}}",
+                                        "params": {
+                                            "target": "global",
+                                            "board_notification_template_form_modal": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "if": "{{(response?.data?.warnings ?? []).length > 0}}",
+                                        "params": {
+                                            "target": "global",
+                                            "board_notification_template_form_modal.isSaving": false,
+                                            "board_notification_template_form_modal.warnings": "{{response?.data?.warnings ?? []}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "if": "{{(response?.data?.warnings ?? []).length > 0}}",
+                                        "params": {
+                                            "type": "warning",
+                                            "message": "$t:admin.settings.notification_definitions.edit_modal.warnings_toast|count={{(response?.data?.warnings ?? []).length}}"
+                                        }
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "board_notification_template_form_modal.isSaving": false,
+                                            "board_notification_template_form_modal.errors": "{{error.errors}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.notification_definitions.save_error'}}",
+                                            "type": "error"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "board-flex-center board:gap-2 board:text-sm board:px-4 board:py-2 board:rounded-md board:bg-indigo-600 board:text-white board:hover:bg-indigo-700 board:dark:bg-indigo-500 board:dark:hover:bg-indigo-600 board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.board_notification_template_form_modal?.isSaving ?? false}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.board_notification_template_form_modal?.isSaving}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "board:animate-spin",
+                            "size": "sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.board_notification_template_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -31,14 +264,93 @@
                 ]
             },
             "props": {
-                "className": "flex flex-col max-h-[calc(90vh-140px)] -my-4"
+                "className": "board:flex board:flex-col board:max-h-[calc(90vh-140px)] board:-my-4"
             },
             "children": [
+                {
+                    "comment": "저장은 됐지만 알릴 것이 있을 때의 경고 상자. 지금 없는 회원 항목 변수(지워졌거나 꺼진 항목, 잘못 적은 이름)를\n           제목, 본문, 이동 주소에 썼으면 서버가 저장 응답의 warnings 에 실어 준다. 그 자리는 빈 글자로 발송되므로\n           운영자가 창을 닫기 전에 고칠 수 있게 창을 닫지 않고 여기에 보인다. 스크롤 영역 밖(위)에 두어 본문을 아래까지\n           내린 채 저장해도 보인다. 문구는 코어 알림 템플릿 창과 같은 키를 쓴다.",
+                    "id": "board_template_save_warnings",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_global.board_notification_template_form_modal?.warnings ?? []).length > 0}}",
+                    "props": {
+                        "role": "alert",
+                        "className": "board:flex-shrink-0 board:mb-3 board:p-3 board:rounded-lg board:border board:border-amber-300 board:dark:border-amber-700 board:bg-amber-50 board:dark:bg-amber-900/30 board:text-amber-800 board:dark:text-amber-300 board:text-sm"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "board:flex board:gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "triangle-exclamation",
+                                        "size": "sm",
+                                        "className": "board:flex-shrink-0 board:mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "board:min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "H3",
+                                            "props": {
+                                                "className": "board:font-medium"
+                                            },
+                                            "text": "$t:admin.settings.notification_definitions.edit_modal.warnings_title"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "board:mt-1"
+                                            },
+                                            "text": "$t:admin.settings.notification_definitions.edit_modal.warnings_description"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Ul",
+                                            "props": {
+                                                "className": "board:mt-2 board:list-disc board:list-inside board:space-y-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "board_template_save_warning_{{warnIdx}}",
+                                                    "type": "basic",
+                                                    "name": "Li",
+                                                    "iteration": {
+                                                        "source": "{{_global.board_notification_template_form_modal?.warnings ?? []}}",
+                                                        "item_var": "warn",
+                                                        "index_var": "warnIdx"
+                                                    },
+                                                    "props": {
+                                                        "className": "board:break-words"
+                                                    },
+                                                    "text": "{{warn.message ?? warn.target ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-1 overflow-y-auto space-y-5 pr-1"
+                        "className": "board:flex-1 board:overflow-y-auto board:space-y-5 board:pr-1"
                     },
                     "children": [
                         {
@@ -47,14 +359,14 @@
                             "name": "Div",
                             "if": "{{_global.board_notification_template_form_modal?.errors}}",
                             "props": {
-                                "className": "alert-danger items-start"
+                                "className": "board-alert-danger board:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-start gap-3"
+                                        "className": "board:flex board:items-start board:gap-3"
                                     },
                                     "children": [
                                         {
@@ -62,7 +374,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "triangle-exclamation",
-                                                "className": "text-sm leading-5 text-red-600 dark:text-red-400 flex-shrink-0"
+                                                "className": "board:text-sm board:leading-5 board:text-red-600 board:dark:text-red-400 board:flex-shrink-0"
                                             }
                                         },
                                         {
@@ -73,7 +385,7 @@
                                                     "type": "basic",
                                                     "name": "H3",
                                                     "props": {
-                                                        "className": "text-error-strong"
+                                                        "className": "board-text-error-strong"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.validation_error"
                                                 },
@@ -86,14 +398,14 @@
                                                         "item_var": "errMsg"
                                                     },
                                                     "props": {
-                                                        "className": "mt-2 list-disc list-inside space-y-1"
+                                                        "className": "board:mt-2 board:list-disc board:list-inside board:space-y-1"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Li",
                                                             "props": {
-                                                                "className": "text-error-soft"
+                                                                "className": "board-text-error-soft"
                                                             },
                                                             "text": "{{errMsg}}"
                                                         }
@@ -110,14 +422,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center flex-wrap gap-2"
+                                "className": "board-flex-center board:flex-wrap board:gap-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-label-subtle font-medium"
+                                        "className": "board-text-label-subtle board:font-medium"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.type_label"
                                 },
@@ -125,7 +437,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-primary text-sm font-semibold"
+                                        "className": "board-text-primary board:text-sm board:font-semibold"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.notification_definitions.types.{{_global.board_notification_template_form_modal?.definition?.type ?? ''}}"
                                 },
@@ -133,7 +445,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-body font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
+                                        "className": "board-text-body board:font-mono board:px-1.5 board:py-0.5 board:bg-gray-100 board:dark:bg-gray-700 board:rounded"
                                     },
                                     "text": "{{_global.board_notification_template_form_modal?.definition?.type ?? ''}}"
                                 },
@@ -141,7 +453,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                        "className": "board:text-sm board:text-gray-500 board:dark:text-gray-400"
                                     },
                                     "text": "·"
                                 },
@@ -149,7 +461,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-label-subtle"
+                                        "className": "board-text-label-subtle"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.channel_label"
                                 },
@@ -157,7 +469,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm font-medium text-indigo-600 dark:text-indigo-400"
+                                        "className": "board:text-sm board:font-medium board:text-indigo-600 board:dark:text-indigo-400"
                                     },
                                     "text": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.name ?? _global.board_notification_template_form_modal?.template?.channel ?? ''}}"
                                 }
@@ -168,14 +480,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4 space-y-3"
+                                "className": "board:bg-purple-50 board:dark:bg-purple-900/20 board:border board:border-purple-200 board:dark:border-purple-700 board:rounded-lg board:p-4 board:space-y-3"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "H4",
                                     "props": {
-                                        "className": "text-sm font-medium text-purple-800 dark:text-purple-200"
+                                        "className": "board:text-sm board:font-medium board:text-purple-800 board:dark:text-purple-200"
                                     },
                                     "text": "$t:admin.settings.notification_definitions.recipients.title"
                                 },
@@ -183,7 +495,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "stack-tight"
+                                        "className": "board-stack-tight"
                                     },
                                     "children": [
                                         {
@@ -195,21 +507,21 @@
                                                 "index_var": "rcptIdx"
                                             },
                                             "props": {
-                                                "className": "bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-600 rounded-lg p-3 space-y-2"
+                                                "className": "board:bg-white board:dark:bg-gray-800 board:border board:border-purple-200 board:dark:border-purple-600 board:rounded-lg board:p-3 board:space-y-2"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-between"
+                                                        "className": "board-flex-between"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs font-medium text-purple-700 dark:text-purple-300"
+                                                                "className": "board:text-xs board:font-medium board:text-purple-700 board:dark:text-purple-300"
                                                             },
                                                             "text": "$t:admin.settings.notification_definitions.recipients.rule_label|index={{rcptIdx + 1}}"
                                                         },
@@ -230,7 +542,7 @@
                                                             "props": {
                                                                 "aria-label": "$t:admin.settings.notification_definitions.recipients.remove_rule|index={{rcptIdx + 1}}",
                                                                 "type": "button",
-                                                                "className": "p-1 text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                                                "className": "board:p-1 board:text-gray-500 board:hover:text-red-500 board:dark:hover:text-red-400 board:transition-colors"
                                                             },
                                                             "children": [
                                                                 {
@@ -257,7 +569,7 @@
                                                                     "type": "basic",
                                                                     "name": "Label",
                                                                     "props": {
-                                                                        "className": "text-secondary block text-xs font-medium"
+                                                                        "className": "board-text-secondary board:block board:text-xs board:font-medium"
                                                                     },
                                                                     "text": "$t:admin.settings.notification_definitions.recipients.type_label"
                                                                 },
@@ -279,8 +591,8 @@
                                                                     "props": {
                                                                         "aria-label": "$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.type_label')}}",
                                                                         "value": "{{rcpt.type ?? ''}}",
-                                                                        "className": "w-full text-sm",
-                                                                        "options": "{{[{ value: 'trigger_user', label: '$t:admin.settings.notification_definitions.recipients.types.trigger_user' }, ...(((_global.board_notification_template_form_modal?.definition?.relations ?? []).length > 0) ? [{ value: 'related_user', label: '$t:admin.settings.notification_definitions.recipients.types.related_user' }] : []), { value: 'role', label: '$t:admin.settings.notification_definitions.recipients.types.role' }, { value: 'specific_users', label: '$t:admin.settings.notification_definitions.recipients.types.specific_users' }]}}"
+                                                                        "className": "board:w-full board:text-sm",
+                                                                        "options": "{{[{ value: 'trigger_user', label: '$t:admin.settings.notification_definitions.recipients.types.trigger_user' }, ...(((_global.board_notification_template_form_modal?.definition?.relations ?? []).length > 0) ? [{ value: 'related_user', label: '$t:admin.settings.notification_definitions.recipients.types.related_user' }] : []), { value: 'role', label: '$t:admin.settings.notification_definitions.recipients.types.role' }, { value: 'specific_users', label: '$t:admin.settings.notification_definitions.recipients.types.specific_users' }, { value: 'site_admin_email', label: '$t:admin.settings.notification_definitions.recipients.types.site_admin_email' }]}}"
                                                                     }
                                                                 }
                                                             ]
@@ -298,7 +610,7 @@
                                                                             "type": "basic",
                                                                             "name": "Label",
                                                                             "props": {
-                                                                                "className": "text-secondary block text-xs font-medium"
+                                                                                "className": "board-text-secondary board:block board:text-xs board:font-medium"
                                                                             },
                                                                             "text": "$t:admin.settings.notification_definitions.recipients.relation_label"
                                                                         },
@@ -319,7 +631,7 @@
                                                                             "props": {
                                                                                 "aria-label": "$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.relation_label')}}",
                                                                                 "value": "{{rcpt.relation ?? ''}}",
-                                                                                "className": "w-full text-sm",
+                                                                                "className": "board:w-full board:text-sm",
                                                                                 "options": "{{[{ value: '', label: '$t:admin.settings.notification_definitions.recipients.relation_placeholder', disabled: true }, ...(_global.board_notification_template_form_modal?.definition?.relations ?? []).map(r => ({ value: r, label: _global.board_notification_template_form_modal?.definition?.relation_labels?.[r] ?? r }))]}}"
                                                                             }
                                                                         },
@@ -329,7 +641,7 @@
                                                                             "name": "P",
                                                                             "if": "{{((rcpt.relation ?? '') !== '') && !(_global.board_notification_template_form_modal?.definition?.relations ?? []).includes(rcpt.relation)}}",
                                                                             "props": {
-                                                                                "className": "text-xs board-tone-warning mt-1"
+                                                                                "className": "board:text-xs board-tone-warning board:mt-1"
                                                                             },
                                                                             "text": "$t:admin.settings.notification_definitions.recipients.relation_undeclared|relation={{rcpt.relation}}"
                                                                         }
@@ -350,7 +662,7 @@
                                                                             "type": "basic",
                                                                             "name": "Label",
                                                                             "props": {
-                                                                                "className": "text-secondary block text-xs font-medium"
+                                                                                "className": "board-text-secondary board:block board:text-xs board:font-medium"
                                                                             },
                                                                             "text": "$t:admin.settings.notification_definitions.recipients.role_label"
                                                                         },
@@ -361,7 +673,7 @@
                                                                             "name": "Div",
                                                                             "if": "{{(rcpt.value ?? []).length > 0}}",
                                                                             "props": {
-                                                                                "className": "flex flex-wrap gap-1.5 mb-2"
+                                                                                "className": "board:flex board:flex-wrap board:gap-1.5 board:mb-2"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -373,7 +685,7 @@
                                                                                         "index_var": "ridIdx"
                                                                                     },
                                                                                     "props": {
-                                                                                        "className": "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300"
+                                                                                        "className": "board:inline-flex board:items-center board:gap-1 board:text-xs board:font-medium board:px-2 board:py-0.5 board:rounded-full board:bg-purple-100 board:text-purple-800 board:dark:bg-purple-900/40 board:dark:text-purple-300"
                                                                                     },
                                                                                     "children": [
                                                                                         {
@@ -397,7 +709,7 @@
                                                                                             ],
                                                                                             "props": {
                                                                                                 "type": "button",
-                                                                                                "className": "inline-flex items-center hover:text-purple-900 dark:hover:text-purple-200",
+                                                                                                "className": "board:inline-flex board:items-center board:hover:text-purple-900 board:dark:hover:text-purple-200",
                                                                                                 "aria-label": "$t:admin.settings.notification_definitions.recipients.remove_selected|name={{String((rcpt.display_names ?? [])[ridIdx] ?? rid)}}"
                                                                                             },
                                                                                             "children": [
@@ -406,7 +718,7 @@
                                                                                                     "name": "Icon",
                                                                                                     "props": {
                                                                                                         "name": "xmark",
-                                                                                                        "className": "text-xs"
+                                                                                                        "className": "board:text-xs"
                                                                                                     }
                                                                                                 }
                                                                                             ]
@@ -470,7 +782,7 @@
                                                                                 "initialText": "$t:admin.settings.notification_definitions.recipients.role_search_placeholder",
                                                                                 "triggerLabel": "$t:admin.settings.notification_definitions.recipients.role_label",
                                                                                 "selectedCountLabel": "$t:admin.settings.notification_definitions.recipients.roles_selected_count|count={{(rcpt.value ?? []).length}}",
-                                                                                "className": "w-full"
+                                                                                "className": "board:w-full"
                                                                             }
                                                                         }
                                                                     ]
@@ -490,7 +802,7 @@
                                                                             "type": "basic",
                                                                             "name": "Label",
                                                                             "props": {
-                                                                                "className": "text-secondary block text-xs font-medium"
+                                                                                "className": "board-text-secondary board:block board:text-xs board:font-medium"
                                                                             },
                                                                             "text": "$t:admin.settings.notification_definitions.recipients.users_label"
                                                                         },
@@ -501,7 +813,7 @@
                                                                             "name": "Div",
                                                                             "if": "{{(rcpt.value ?? []).length > 0}}",
                                                                             "props": {
-                                                                                "className": "flex flex-wrap gap-1.5 mb-2"
+                                                                                "className": "board:flex board:flex-wrap board:gap-1.5 board:mb-2"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -513,7 +825,7 @@
                                                                                         "index_var": "uidIdx"
                                                                                     },
                                                                                     "props": {
-                                                                                        "className": "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300"
+                                                                                        "className": "board:inline-flex board:items-center board:gap-1 board:text-xs board:font-medium board:px-2 board:py-0.5 board:rounded-full board:bg-purple-100 board:text-purple-800 board:dark:bg-purple-900/40 board:dark:text-purple-300"
                                                                                     },
                                                                                     "children": [
                                                                                         {
@@ -537,7 +849,7 @@
                                                                                             ],
                                                                                             "props": {
                                                                                                 "type": "button",
-                                                                                                "className": "inline-flex items-center hover:text-purple-900 dark:hover:text-purple-200",
+                                                                                                "className": "board:inline-flex board:items-center board:hover:text-purple-900 board:dark:hover:text-purple-200",
                                                                                                 "aria-label": "$t:admin.settings.notification_definitions.recipients.remove_selected|name={{String((rcpt.display_names ?? [])[uidIdx] ?? uid)}}"
                                                                                             },
                                                                                             "children": [
@@ -546,7 +858,7 @@
                                                                                                     "name": "Icon",
                                                                                                     "props": {
                                                                                                         "name": "xmark",
-                                                                                                        "className": "text-xs"
+                                                                                                        "className": "board:text-xs"
                                                                                                     }
                                                                                                 }
                                                                                             ]
@@ -611,7 +923,7 @@
                                                                                 "initialText": "$t:admin.settings.notification_definitions.recipients.users_placeholder",
                                                                                 "triggerLabel": "$t:admin.settings.notification_definitions.recipients.users_label",
                                                                                 "selectedCountLabel": "$t:admin.settings.notification_definitions.recipients.users_selected_count|count={{(rcpt.value ?? []).length}}",
-                                                                                "className": "w-full"
+                                                                                "className": "board:w-full"
                                                                             }
                                                                         }
                                                                     ]
@@ -619,11 +931,22 @@
                                                             ]
                                                         },
                                                         {
+                                                            "comment": "사이트 관리자 이메일(#888) — 값 칸이 없다. 환경설정 > 일반의 관리자 이메일 한 곳으로 메일만 가므로 그 사실과 빈 값의 결과를 밝힌다(코어 편집 창과 같은 규칙).",
+                                                            "id": "rcpt_site_admin_email_hint_{{rcptIdx}}",
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "if": "{{rcpt.type === 'site_admin_email'}}",
+                                                            "props": {
+                                                                "className": "board:text-xs board:text-gray-500 board:dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:admin.settings.notification_definitions.recipients.site_admin_email_hint"
+                                                        },
+                                                        {
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "if": "{{rcpt.type === 'role' || rcpt.type === 'specific_users'}}",
                                                             "props": {
-                                                                "className": "flex-center gap-2"
+                                                                "className": "board-flex-center board:gap-2"
                                                             },
                                                             "children": [
                                                                 {
@@ -671,7 +994,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium"
+                                        "className": "board:text-sm board:text-purple-600 board:dark:text-purple-400 board:hover:text-purple-800 board:dark:hover:text-purple-200 board:font-medium"
                                     },
                                     "text": "$t:admin.settings.notification_definitions.recipients.add_rule"
                                 }
@@ -698,7 +1021,7 @@
                             "name": "Div",
                             "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
                             "props": {
-                                "className": "flex border-b border-gray-200 dark:border-gray-700"
+                                "className": "board:flex board:border-b board:border-gray-200 board:dark:border-gray-700"
                             },
                             "children": [
                                 {
@@ -721,7 +1044,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{(_global.board_notification_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"
+                                        "className": "{{(_global.board_notification_template_form_modal?.editLang ?? $locale) === loc ? 'board:border-b-2 board:border-indigo-500 board:dark:border-indigo-400 board:text-indigo-600 board:dark:text-indigo-400' : 'board:text-gray-500 board:dark:text-gray-400 board:hover:text-gray-700 board:dark:hover:text-gray-300'}} board:px-4 board:py-2 board:text-sm board:font-medium board:focus:outline-none"
                                     },
                                     "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
                                 }
@@ -741,7 +1064,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "children": [
                                                 {
@@ -753,7 +1076,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-required"
+                                                        "className": "board-text-required"
                                                     },
                                                     "text": "*"
                                                 }
@@ -797,7 +1120,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "children": [
                                                 {
@@ -809,7 +1132,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-required"
+                                                        "className": "board-text-required"
                                                     },
                                                     "text": "*"
                                                 }
@@ -861,7 +1184,7 @@
                                                                         "content": "{{_global.board_notification_template_form_modal?.template?.body?.[bodyLoc] ?? ''}}",
                                                                         "isHtml": true,
                                                                         "showHtmlModeToggle": false,
-                                                                        "className": "min-h-[200px]"
+                                                                        "className": "board:min-h-[200px]"
                                                                     }
                                                                 }
                                                             ]
@@ -888,7 +1211,7 @@
                                                         "content": "{{_global.board_notification_template_form_modal?.template?.body?.[_global.board_notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
                                                         "isHtml": false,
                                                         "showHtmlModeToggle": false,
-                                                        "className": "min-h-[200px]"
+                                                        "className": "board:min-h-[200px]"
                                                     }
                                                 }
                                             ]
@@ -911,7 +1234,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "text": "$t:admin.settings.notification_definitions.edit_modal.click_url"
                                         },
@@ -933,14 +1256,14 @@
                                                 "type": "text",
                                                 "value": "{{_global.board_notification_template_form_modal?.template?.click_url ?? ''}}",
                                                 "placeholder": "/mypage/orders/{order_number}",
-                                                "className": "font-mono"
+                                                "className": "board:font-mono"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "form-hint"
+                                                "className": "board-form-hint"
                                             },
                                             "text": "$t:admin.settings.notification_definitions.edit_modal.click_url_hint"
                                         }
@@ -954,40 +1277,43 @@
                             "name": "Div",
                             "if": "{{((_global.board_notification_template_form_modal?.definition?.variables ?? []).length > 0) && !((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
                             "props": {
-                                "className": "bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4"
+                                "className": "board:bg-gray-50 board:dark:bg-gray-900 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-md board:p-4"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "H4",
                                     "props": {
-                                        "className": "text-body font-medium mb-2"
+                                        "className": "board-text-body board:font-medium board:mb-2"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.variables_title"
                                 },
                                 {
+                                    "comment": "이 알림이 선언한 변수. 회원 공통 변수(group 이 member)는 아래 「회원 항목」 묶음으로 가른다.",
+                                    "id": "board_template_variables_own",
                                     "type": "basic",
                                     "name": "Div",
+                                    "if": "{{(_global.board_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group !== 'member').length > 0}}",
                                     "props": {
-                                        "className": "flex flex-wrap gap-2"
+                                        "className": "board:flex board:flex-wrap board:gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "iteration": {
-                                                "source": "{{_global.board_notification_template_form_modal?.definition?.variables ?? []}}",
+                                                "source": "{{(_global.board_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group !== 'member')}}",
                                                 "item_var": "v"
                                             },
                                             "props": {
-                                                "className": "inline-flex items-center gap-1 text-xs px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300"
+                                                "className": "board:inline-flex board:items-center board:gap-1 board:text-xs board:px-2 board:py-1 board:bg-white board:dark:bg-gray-800 board:border board:border-gray-200 board:dark:border-gray-600 board:rounded board:text-gray-700 board:dark:text-gray-300"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "font-mono"
+                                                        "className": "board:font-mono"
                                                     },
                                                     "text": "{"
                                                 },
@@ -995,7 +1321,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "font-mono"
+                                                        "className": "board:font-mono"
                                                     },
                                                     "text": "{{v.key}}"
                                                 },
@@ -1003,7 +1329,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "font-mono"
+                                                        "className": "board:font-mono"
                                                     },
                                                     "text": "}"
                                                 },
@@ -1015,225 +1341,115 @@
                                             ]
                                         }
                                     ]
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "id": "board_template_modal_footer",
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "flex-between pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
+                                },
                                 {
-                                    "comment": "미리보기 — 편집 중인 제목·본문을 서버에 보내 변수를 채운 모습을 받아 미리보기 창에 띄운다. 저장 중에는 잠긴다 — 요청이 도는 도중 창이 바뀌면 성공·실패 안내가 갈 곳을 잃는다",
+                                    "comment": "회원 항목 묶음. 서버가 알림 정의의 변수 뒤에 회원 공통 변수(표시 이름, 코어와 확장 항목, 운영자 추가 항목)를\n               group: member 로 덧붙인다. 운영자가 항목을 더할수록 길어지므로 접어 두고, 제목 단추로 펼친다. 문구는 코어 창과 같은 키다.",
+                                    "id": "board_template_variables_member",
                                     "type": "basic",
-                                    "name": "Button",
-                                    "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
-                                    "actions": [
+                                    "name": "Div",
+                                    "if": "{{(_global.board_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group === 'member').length > 0}}",
+                                    "props": {
+                                        "className": "board:mt-3 board:pt-3 board:border-t board:border-gray-200 board:dark:border-gray-700"
+                                    },
+                                    "children": [
                                         {
-                                            "type": "click",
-                                            "handler": "apiCall",
-                                            "target": "/api/admin/notification-templates/preview",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "POST",
-                                                "body": {
-                                                    "definition_id": "{{_global.board_notification_template_form_modal?.definition?.id}}",
-                                                    "subject": "{{_global.board_notification_template_form_modal?.template?.subject}}",
-                                                    "body": "{{_global.board_notification_template_form_modal?.template?.body}}",
-                                                    "locale": "{{_global.board_notification_template_form_modal?.editLang ?? $locale}}"
-                                                }
-                                            },
-                                            "onSuccess": [
+                                            "id": "board_template_variables_member_toggle",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
                                                 {
+                                                    "comment": "펼침 상태는 창 이름 공간에 둔다. 창을 열 때마다 이름 공간을 새로 채우므로 다시 열면 접힌 채로 시작한다.",
+                                                    "type": "click",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "global",
-                                                        "board_notification_template_form_modal.preview": "{{response.data}}"
+                                                        "board_notification_template_form_modal.memberVariablesOpen": "{{!(_global.board_notification_template_form_modal?.memberVariablesOpen === true)}}"
                                                     }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "modal_board_notification_template_preview"
                                                 }
                                             ],
-                                            "onError": {
-                                                "handler": "toast",
-                                                "params": {
-                                                    "type": "error",
-                                                    "message": "{{error.message}}"
-                                                }
-                                            }
-                                        }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
-                                        "disabled": "{{_global.board_notification_template_form_modal?.isSaving ?? false}}"
-                                    },
-                                    "text": "$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.btn_preview"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "flex gap-2"
-                            },
-                            "children": [
-                                {
-                                    "comment": "취소 — 편집 창을 닫고 창 이름 공간의 폼 상태를 비운다",
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "actions": [
-                                        {
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
+                                            "props": {
+                                                "type": "button",
+                                                "aria-expanded": "{{_global.board_notification_template_form_modal?.memberVariablesOpen === true}}",
+                                                "aria-controls": "board_template_variables_member_list",
+                                                "className": "board:flex board:items-center board:gap-2 board:min-h-[44px] board:text-sm board:font-medium board:text-gray-700 board:dark:text-gray-300 board:hover:text-gray-900 board:dark:hover:text-gray-100"
+                                            },
+                                            "children": [
                                                 {
-                                                    "handler": "closeModal",
-                                                    "target": "modal_board_notification_template_edit"
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "{{_global.board_notification_template_form_modal?.memberVariablesOpen === true ? 'chevron-down' : 'chevron-right'}}",
+                                                        "className": "board:text-xs"
+                                                    }
                                                 },
                                                 {
-                                                    "comment": "취소로 닫으면 창 이름 공간을 바로 비운다(7.1.1)",
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "board_notification_template_form_modal": null
-                                                    }
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{$t('admin.settings.notification_definitions.edit_modal.member_variables_title', { count: (_global.board_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group === 'member').length })}}"
                                                 }
                                             ]
-                                        }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{_global.board_notification_template_form_modal?.isSaving ?? false}}"
-                                    },
-                                    "text": "$t:common.cancel"
-                                },
-                                {
-                                    "comment": "편집 모달 푸터 확장 슬롯(범용). template_editor='none' 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다.",
-                                    "id": "board_template_form_footer_ext",
-                                    "type": "extension_point",
-                                    "name": "notification_template_form_footer_actions",
-                                    "props": {
-                                        "definition": "{{_global.board_notification_template_form_modal?.definition}}",
-                                        "template": "{{_global.board_notification_template_form_modal?.template}}",
-                                        "channel": "{{_global.board_notification_template_form_modal?.template?.channel ?? ''}}",
-                                        "modalId": "modal_board_notification_template_edit",
-                                        "stateKey": "board_notification_template_form_modal",
-                                        "saveEndpoint": "{{'/api/admin/notification-templates/' + _global.board_notification_template_form_modal?.template?.id}}",
-                                        "refetchDataSourceId": "boardNotificationDefinitions"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
-                                    "actions": [
+                                        },
                                         {
-                                            "comment": "저장 — 문안과 수신 규칙을 함께 보낸다. 성공하면 폼 객체를 통째로 비우고 목록을 다시 읽어, 고친 제목이 목록 요약에도 반영되게 한다",
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{_global.board_notification_template_form_modal?.memberVariablesOpen === true}}",
+                                            "props": {
+                                                "className": "board-form-hint board:mb-2"
+                                            },
+                                            "text": "$t:admin.settings.notification_definitions.edit_modal.member_variables_hint"
+                                        },
+                                        {
+                                            "id": "board_template_variables_member_list",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{_global.board_notification_template_form_modal?.memberVariablesOpen === true}}",
+                                            "props": {
+                                                "className": "board:flex board:flex-wrap board:gap-2"
+                                            },
+                                            "children": [
                                                 {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "board_notification_template_form_modal.isSaving": true,
-                                                        "board_notification_template_form_modal.errors": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "apiCall",
-                                                    "target": "{{'/api/admin/notification-templates/' + _global.board_notification_template_form_modal?.template?.id}}",
-                                                    "auth_required": true,
-                                                    "params": {
-                                                        "method": "PUT",
-                                                        "body": {
-                                                            "subject": "{{_global.board_notification_template_form_modal?.template?.subject}}",
-                                                            "body": "{{_global.board_notification_template_form_modal?.template?.body}}",
-                                                            "click_url": "{{_global.board_notification_template_form_modal?.template?.click_url ?? null}}",
-                                                            "recipients": "{{_global.board_notification_template_form_modal?.recipients ?? []}}"
-                                                        }
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "iteration": {
+                                                        "source": "{{(_global.board_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group === 'member')}}",
+                                                        "item_var": "mv"
                                                     },
-                                                    "onSuccess": [
+                                                    "props": {
+                                                        "className": "board:inline-flex board:items-center board:gap-1 board:text-xs board:px-2 board:py-1 board:bg-white board:dark:bg-gray-800 board:border board:border-gray-200 board:dark:border-gray-600 board:rounded board:text-gray-700 board:dark:text-gray-300"
+                                                    },
+                                                    "children": [
                                                         {
-                                                            "handler": "refetchDataSource",
-                                                            "params": {
-                                                                "dataSourceId": "boardNotificationDefinitions"
-                                                            }
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "board:font-mono"
+                                                            },
+                                                            "text": "{"
                                                         },
                                                         {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "message": "$t:sirsoft-board.admin.settings.notification_definitions.save_success",
-                                                                "type": "success"
-                                                            }
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "board:font-mono"
+                                                            },
+                                                            "text": "{{mv.key}}"
                                                         },
                                                         {
-                                                            "handler": "closeModal",
-                                                            "target": "modal_board_notification_template_edit"
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "board:font-mono"
+                                                            },
+                                                            "text": "}"
                                                         },
                                                         {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "board_notification_template_form_modal": null
-                                                            }
-                                                        }
-                                                    ],
-                                                    "onError": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "board_notification_template_form_modal.isSaving": false,
-                                                                "board_notification_template_form_modal.errors": "{{error.errors}}"
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.notification_definitions.save_error'}}",
-                                                                "type": "error"
-                                                            }
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": " — {{mv.description ?? ''}}"
                                                         }
                                                     ]
                                                 }
                                             ]
-                                        }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{_global.board_notification_template_form_modal?.isSaving ?? false}}"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "if": "{{_global.board_notification_template_form_modal?.isSaving}}",
-                                            "props": {
-                                                "name": "spinner",
-                                                "className": "animate-spin",
-                                                "size": "sm"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "{{_global.board_notification_template_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
                                         }
                                     ]
                                 }

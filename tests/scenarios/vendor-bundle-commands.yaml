@@ -5,6 +5,7 @@ description: |
   plugin:vendor-verify(무결성 검증), vendor-bundle:build-all · verify-all(일괄 별칭)을 잠근다.
   소스는 활성 디렉토리, 출력은 _bundled 디렉토리로 나뉘며 빌드 결과는 _bundled 에만 남아야 한다.
   미설치 확장의 --check 는 _bundled 의 composer.json 으로 판정하고, 외부 의존성이 없으면 스킵한다.
+  머리말·결과 줄·요약은 사이트 언어를 따르고, 크기는 B·KB·MB 자동 단위로 표기한다.
 
 axes:
   command: [module_bundle, module_verify, plugin_bundle, plugin_verify, bulk_alias]   # 실행한 커맨드
@@ -21,6 +22,8 @@ effects:
   - vendor_verify_skips_when_bundle_missing                         # 번들 파일이 없으면 스킵
   - vendor_verify_fails_on_tampered_zip                             # zip 변조 시 실패
   - vendor_bulk_alias_builds_and_verifies_all_extensions            # build-all 이 모듈·플러그인 모두 빌드, verify-all 이 끝까지 실행
+  - vendor_command_output_follows_site_locale                       # 머리말·결과 줄·요약이 사이트 언어로, 작은 묶음 크기는 KB·B 단위
 
 test_files:
   - tests/Feature/Console/Vendor/BuildVendorBundleCommandTest.php
+  - tests/Feature/Console/Vendor/VendorBundleCommandOutputLocaleTest.php

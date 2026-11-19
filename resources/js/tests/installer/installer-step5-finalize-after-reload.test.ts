@@ -68,7 +68,7 @@ function bootReloadedStep5(stateRef: { current: Record<string, unknown> }) {
     return { calls };
 }
 
-const finalizeCalls = (calls: Array<{ url: string }>) => calls.filter((c) => c.url.includes('/api/finalize-env.php'));
+const finalizeCalls = <T extends { url: string }>(calls: T[]) => calls.filter((c) => c.url.includes('/api/finalize-env.php'));
 const completionVisible = () => !document.getElementById('completion-section')!.classList.contains('hidden');
 
 describe('설치 마무리 구간 새로고침 — 완료 화면과 .env 확정', () => {

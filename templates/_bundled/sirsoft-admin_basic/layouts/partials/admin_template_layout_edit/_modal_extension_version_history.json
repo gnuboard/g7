@@ -119,7 +119,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "if": "{{idx !== 0}}",
+                                    "if": "{{idx !== 0 || version.changes_summary?.before_overwrite === true}}",
                                     "actions": [
                                         {
                                             "comment": "되돌리는 동안 판본 카드들을 흐리게 덮어 두 번 누르는 것을 막는다(버튼 잠금과 같은 값을 본다).",
@@ -272,6 +272,50 @@
                                     "text": "({{version.changes_summary?.char_diff >= 0 ? '+' : ''}}{{version.changes_summary?.char_diff ?? 0}} $t:admin.templates.modals.extension_version_history.chars)"
                                 }
                             ]
+                        },
+                        {
+                            "comment": "동기화가 남긴 판이면 어디서 왔는지 한 줄 — 확장 업데이트·레이아웃 갱신 등이 덮기 직전에 남긴 운영자 판인지, 병합 결과인지.\n             운영자가 저장한 판·옛 판은 출처가 없어 줄을 그리지 않는다. 모르는 출처는 「덮기 전 운영자 판」·「병합 결과」로 뭉뚱그린다.",
+                            "id": "extension_version_sync_source_{{idx}}",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!version.changes_summary?.source}}",
+                            "props": {
+                                "data-testid": "extension-version-source-{{idx}}",
+                                "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "{{version.changes_summary?.before_overwrite ? (version.changes_summary?.source === 'extension_update' ? '$t:admin.templates.modals.version_history.source_labels.before_extension_update' : version.changes_summary?.source === 'refresh' ? '$t:admin.templates.modals.version_history.source_labels.before_refresh' : version.changes_summary?.source === 'decision_take_theirs' ? '$t:admin.templates.modals.version_history.source_labels.before_decision_take_theirs' : version.changes_summary?.source === 'upgrade_step' ? '$t:admin.templates.modals.version_history.source_labels.before_upgrade_step' : '$t:admin.templates.modals.version_history.source_labels.before_other') : (version.changes_summary?.source === 'refresh' ? '$t:admin.templates.modals.version_history.source_labels.merge_refresh' : version.changes_summary?.source === 'extension_update' ? '$t:admin.templates.modals.version_history.source_labels.merge_extension_update' : '$t:admin.templates.modals.version_history.source_labels.merge_other')}}"
+                        },
+                        {
+                            "comment": "저장한 사람. 화면 판본 이력 창과 같은 줄이다. 사람 없이 동기화가 남긴 판(출처 있음)은 「시스템」, 출처도 없는 판은 줄을 그리지 않는다.\n             실명 보조 줄은 서버가 created_by_real_name 을 실어 줄 때만(회원 조회 권한이 있고 실명이 표시 이름과 다를 때) 보인다.",
+                            "id": "extension_version_saved_by_{{idx}}",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!version.created_by_name}}",
+                            "props": {
+                                "className": "mt-2 text-label-subtle"
+                            },
+                            "text": "$t:admin.templates.modals.version_history.saved_by|name={{version.created_by_name}}"
+                        },
+                        {
+                            "id": "extension_version_saved_by_system_{{idx}}",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!version.created_by_name && !!version.changes_summary?.source}}",
+                            "props": {
+                                "data-testid": "extension-version-saved-by-system-{{idx}}",
+                                "className": "mt-2 text-label-subtle"
+                            },
+                            "text": "$t:admin.templates.modals.version_history.saved_by_system"
+                        },
+                        {
+                            "id": "extension_version_saved_by_real_name_{{idx}}",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!version.created_by_real_name}}",
+                            "props": {
+                                "className": "text-tertiary"
+                            },
+                            "text": "$t:admin.common.real_name.with_label|name={{version.created_by_real_name}}"
                         }
                     ]
                 }

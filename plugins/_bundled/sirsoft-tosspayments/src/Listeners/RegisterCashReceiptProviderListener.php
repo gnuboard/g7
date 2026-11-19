@@ -6,6 +6,7 @@ use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\CashReceiptType;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Plugins\Sirsoft\Tosspayments\Exceptions\TossPaymentsApiException;
 use Plugins\Sirsoft\Tosspayments\Services\TossPaymentsApiService;
 
 /**
@@ -57,6 +58,7 @@ class RegisterCashReceiptProviderListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — 개별 메서드에서 처리)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -170,7 +172,9 @@ class RegisterCashReceiptProviderListener implements HookListenerInterface
             return [
                 'success' => false,
                 'error_code' => 'PG_API_ERROR',
-                'error_message' => $e->getMessage(),
+                // 이 사유는 현금영수증 이력에 남아 관리자 주문 상세 결제 정보·구매자 응답에 그대로 보인다 —
+                // 결제대행사 거절 사유만 그대로 싣고 통신·내부 오류 원문은 위 로그에만 남긴다(#858).
+                'error_message' => $this->cashReceiptFailureReason($e),
                 'receipt_key' => null,
                 'receipt_url' => null,
                 'issue_number' => null,
@@ -230,7 +234,9 @@ class RegisterCashReceiptProviderListener implements HookListenerInterface
             return [
                 'success' => false,
                 'error_code' => 'PG_API_ERROR',
-                'error_message' => $e->getMessage(),
+                // 이 사유는 현금영수증 이력에 남아 관리자 주문 상세 결제 정보·구매자 응답에 그대로 보인다 —
+                // 결제대행사 거절 사유만 그대로 싣고 통신·내부 오류 원문은 위 로그에만 남긴다(#858).
+                'error_message' => $this->cashReceiptFailureReason($e),
                 'receipt_key' => $receiptKey,
                 'raw_response' => null,
             ];
@@ -272,9 +278,30 @@ class RegisterCashReceiptProviderListener implements HookListenerInterface
 
     /**
      * API 서비스 인스턴스를 가져옵니다.
+     *
+     * @return TossPaymentsApiService 토스페이먼츠 API 서비스
      */
     protected function getApiService(): TossPaymentsApiService
     {
         return app(TossPaymentsApiService::class);
+    }
+
+    /**
+     * 현금영수증 실패 결과에 실을 사유를 고릅니다.
+     *
+     * 토스페이먼츠가 오류 코드와 함께 돌려준 거절 사유는 운영자·구매자가 조치에 쓰는 정보라 그대로 싣는다. 통신 예외
+     * (연결·시간 초과) 원문에는 결제대행사 API 주소와 cURL 오류 문구가 담기므로 운영 모드에서는 일반 문구로 바꾼다
+     * (원문은 호출 측이 서버 로그에 남긴다). 디버그 모드는 코어 관례(SafeExceptionMessage)대로 원문을 둔다.
+     *
+     * @param  \Throwable  $e  처리 중 잡은 예외
+     * @return string 결과에 실을 사유
+     */
+    private function cashReceiptFailureReason(\Throwable $e): string
+    {
+        if (($e instanceof TossPaymentsApiException && $e->getPgCode() !== null) || config('app.debug')) {
+            return $e->getMessage();
+        }
+
+        return __('sirsoft-tosspayments::messages.cash_receipt.pg_failed');
     }
 }

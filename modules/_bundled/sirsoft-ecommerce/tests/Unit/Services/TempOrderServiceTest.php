@@ -46,6 +46,11 @@ class TempOrderServiceTest extends ModuleTestCase
 
     protected $mockPurchaseEligibilityService;
 
+    /**
+     * 임시 주문 서비스가 기대는 저장소, 계산, 구매 자격, 마일리지 의존을 모의 객체로 바꿔 서비스를 조립한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -83,16 +88,33 @@ class TempOrderServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 모의 객체 기대를 검증하고 닫는다. 검증이 실패해도 부모 정리는 반드시 실행한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     // ========================================
     // createTempOrder() 테스트
     // ========================================
 
+    /**
+     * 회원 장바구니로 임시 주문을 만들면 계산 결과를 저장하고 그 회원의 임시 주문을 돌려준다.
+     *
+     * @scenario case=create_member
+     *
+     * @effects temp_order_created_for_member
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_temp_order_creates_order_for_user(): void
     {
         // Given
@@ -158,6 +180,15 @@ class TempOrderServiceTest extends ModuleTestCase
         $this->assertEquals($user->id, $result->user_id);
     }
 
+    /**
+     * 장바구니가 비어 있으면 임시 주문을 만들지 않고 예외를 던진다.
+     *
+     * @scenario case=create_empty_cart
+     *
+     * @effects temp_order_create_rejects_empty_cart
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_temp_order_throws_exception_for_empty_cart(): void
     {
         // Given
@@ -170,6 +201,15 @@ class TempOrderServiceTest extends ModuleTestCase
         $this->service->createTempOrder($cartItems, 1, null);
     }
 
+    /**
+     * 비회원 장바구니 키로 임시 주문을 만들면 회원 없이 그 키에 묶인 임시 주문을 돌려준다.
+     *
+     * @scenario case=create_guest
+     *
+     * @effects temp_order_created_for_guest_cart_key
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_temp_order_creates_order_for_guest(): void
     {
         // Given
@@ -241,6 +281,15 @@ class TempOrderServiceTest extends ModuleTestCase
     // getTempOrder() 테스트
     // ========================================
 
+    /**
+     * 유효한 임시 주문이 있으면 조회가 그 주문을 돌려준다.
+     *
+     * @scenario case=get_found
+     *
+     * @effects temp_order_lookup_returns_valid_order
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_temp_order_returns_valid_order(): void
     {
         // Given
@@ -261,6 +310,15 @@ class TempOrderServiceTest extends ModuleTestCase
         $this->assertEquals($tempOrder->id, $result->id);
     }
 
+    /**
+     * 유효한 임시 주문이 없으면 조회가 null 을 돌려준다.
+     *
+     * @scenario case=get_missing
+     *
+     * @effects temp_order_lookup_returns_null_when_missing
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_temp_order_returns_null_for_non_existent(): void
     {
         // Given
@@ -281,6 +339,15 @@ class TempOrderServiceTest extends ModuleTestCase
     // updateTempOrder() 테스트
     // ========================================
 
+    /**
+     * 프로모션과 마일리지를 보내 갱신하면 한 번 다시 계산해 저장한 임시 주문을 돌려준다.
+     *
+     * @scenario case=update_recalculate
+     *
+     * @effects temp_order_update_recalculates_and_saves
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_temp_order_recalculates_with_new_promotions(): void
     {
         // Given
@@ -367,6 +434,15 @@ class TempOrderServiceTest extends ModuleTestCase
         $this->assertEquals(0, $result->getUsedPoints());
     }
 
+    /**
+     * 갱신할 임시 주문이 없으면 예외를 던진다.
+     *
+     * @scenario case=update_missing
+     *
+     * @effects temp_order_update_throws_when_missing
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_temp_order_throws_exception_when_not_found(): void
     {
         // Given
@@ -388,6 +464,15 @@ class TempOrderServiceTest extends ModuleTestCase
         $this->service->updateTempOrder(99999, null, $promotions, 0);
     }
 
+    /**
+     * 프로모션과 마일리지를 보내지 않고 배송지만 바꾸면 기존 쿠폰과 사용 마일리지가 재계산 입력과 저장 값에 그대로 남는다.
+     *
+     * @scenario case=update_promotions_omitted
+     *
+     * @effects temp_order_update_keeps_promotions_and_points_when_omitted
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_temp_order_preserves_existing_promotions_when_not_sent(): void
     {
         // Given: 기존 temp_order에 쿠폰이 적용된 상태
@@ -485,6 +570,15 @@ class TempOrderServiceTest extends ModuleTestCase
         $this->assertNotNull($result);
     }
 
+    /**
+     * 빈 쿠폰과 마일리지 0 을 명시해 보내면 기존 쿠폰과 마일리지를 비운 값으로 재계산하고 저장한다.
+     *
+     * @scenario case=update_promotions_explicit
+     *
+     * @effects temp_order_update_replaces_promotions_when_sent
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_temp_order_overrides_promotions_when_explicitly_sent(): void
     {
         // Given: 기존 temp_order에 쿠폰이 적용된 상태
@@ -578,6 +672,15 @@ class TempOrderServiceTest extends ModuleTestCase
         $this->assertNotNull($result);
     }
 
+    /**
+     * 상품 쿠폰만 보내면 그 값만 바뀌고 주문 쿠폰, 배송 쿠폰, 사용 마일리지는 기존 값을 유지한다.
+     *
+     * @scenario case=update_promotions_partial
+     *
+     * @effects temp_order_update_merges_partial_promotions
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_temp_order_preserves_partial_promotions(): void
     {
         // Given: 기존 temp_order에 상품 쿠폰 + 주문 쿠폰 적용 상태
@@ -676,6 +779,15 @@ class TempOrderServiceTest extends ModuleTestCase
     // deleteTempOrder() 테스트
     // ========================================
 
+    /**
+     * 회원 ID 또는 장바구니 키로 찾은 임시 주문을 삭제하고 true 를 돌려준다.
+     *
+     * @scenario case=delete_found
+     *
+     * @effects temp_order_deleted_by_owner_key
+     *
+     * @return void 반환값 없음
+     */
     public function test_delete_temp_order_deletes_existing_order(): void
     {
         // Given
@@ -701,6 +813,15 @@ class TempOrderServiceTest extends ModuleTestCase
         $this->assertTrue($result);
     }
 
+    /**
+     * 삭제할 임시 주문이 없으면 false 를 돌려준다.
+     *
+     * @scenario case=delete_missing
+     *
+     * @effects temp_order_delete_returns_false_when_missing
+     *
+     * @return void 반환값 없음
+     */
     public function test_delete_temp_order_returns_false_when_not_found(): void
     {
         // Given
@@ -717,6 +838,15 @@ class TempOrderServiceTest extends ModuleTestCase
         $this->assertFalse($result);
     }
 
+    /**
+     * 회원 ID 와 장바구니 키 없이 임시 주문 ID 만으로 삭제하고 true 를 돌려준다(비회원 결제 완료 시점).
+     *
+     * @scenario case=delete_by_id_found
+     *
+     * @effects temp_order_deleted_by_id
+     *
+     * @return void 반환값 없음
+     */
     public function test_delete_temp_order_by_id_deletes_existing_order(): void
     {
         // 비회원 PG 결제 완료 시점: user_id/cart_key 없이 temp_order_id 로 삭제
@@ -742,6 +872,15 @@ class TempOrderServiceTest extends ModuleTestCase
         $this->assertTrue($result);
     }
 
+    /**
+     * 그 ID 의 임시 주문이 없으면 ID 삭제가 false 를 돌려준다.
+     *
+     * @scenario case=delete_by_id_missing
+     *
+     * @effects temp_order_delete_by_id_returns_false_when_missing
+     *
+     * @return void 반환값 없음
+     */
     public function test_delete_temp_order_by_id_returns_false_when_not_found(): void
     {
         // Given
@@ -762,6 +901,15 @@ class TempOrderServiceTest extends ModuleTestCase
     // cleanupExpiredTempOrders() 테스트
     // ========================================
 
+    /**
+     * 만료된 임시 주문 정리는 저장소가 지운 건수를 그대로 돌려준다.
+     *
+     * @scenario case=cleanup_expired
+     *
+     * @effects temp_order_cleanup_returns_deleted_count
+     *
+     * @return void 반환값 없음
+     */
     public function test_cleanup_expired_temp_orders_deletes_expired(): void
     {
         // Given
@@ -781,6 +929,15 @@ class TempOrderServiceTest extends ModuleTestCase
     // hasTempOrder() 테스트
     // ========================================
 
+    /**
+     * 유효한 임시 주문이 있으면 존재 확인이 true 다.
+     *
+     * @scenario case=has_found
+     *
+     * @effects temp_order_existence_true_when_valid_order_exists
+     *
+     * @return void 반환값 없음
+     */
     public function test_has_temp_order_returns_true_when_exists(): void
     {
         // Given
@@ -800,6 +957,15 @@ class TempOrderServiceTest extends ModuleTestCase
         $this->assertTrue($result);
     }
 
+    /**
+     * 유효한 임시 주문이 없으면 존재 확인이 false 다.
+     *
+     * @scenario case=has_missing
+     *
+     * @effects temp_order_existence_false_when_missing
+     *
+     * @return void 반환값 없음
+     */
     public function test_has_temp_order_returns_false_when_not_exists(): void
     {
         // Given
@@ -820,6 +986,15 @@ class TempOrderServiceTest extends ModuleTestCase
     // extendExpiration() 테스트
     // ========================================
 
+    /**
+     * 유효한 임시 주문의 만료 시각을 연장하면 만료 시각이 지금보다 뒤인 주문을 돌려준다.
+     *
+     * @scenario case=extend_found
+     *
+     * @effects temp_order_expiration_extended
+     *
+     * @return void 반환값 없음
+     */
     public function test_extend_expiration_extends_valid_order(): void
     {
         // Given
@@ -848,6 +1023,15 @@ class TempOrderServiceTest extends ModuleTestCase
         $this->assertTrue($result->expires_at->greaterThan(Carbon::now()));
     }
 
+    /**
+     * 연장할 임시 주문이 없으면 null 을 돌려준다.
+     *
+     * @scenario case=extend_missing
+     *
+     * @effects temp_order_extend_returns_null_when_missing
+     *
+     * @return void 반환값 없음
+     */
     public function test_extend_expiration_returns_null_when_not_exists(): void
     {
         // Given
@@ -872,6 +1056,7 @@ class TempOrderServiceTest extends ModuleTestCase
      * protected validateCartItemsAvailability 를 호출합니다.
      *
      * @param  Collection  $cartItems  장바구니 아이템
+     * @return void 반환값 없음
      */
     private function invokeValidateAvailability(Collection $cartItems): void
     {
@@ -881,7 +1066,11 @@ class TempOrderServiceTest extends ModuleTestCase
     }
 
     /**
-     * 판매중지/품절/출시예정/전시중지 상품은 체크아웃 검증에서 차단됩니다 (status).
+     * 판매중이지만 전시중지(hidden)인 상품은 체크아웃 검증에서 판매상태 사유로 차단됩니다 (status).
+     *
+     * @effects checkout_validation_blocks_hidden_product
+     *
+     * @return void 반환값 없음
      */
     public function test_checkout_validation_blocks_hidden_product(): void
     {
@@ -903,6 +1092,10 @@ class TempOrderServiceTest extends ModuleTestCase
 
     /**
      * 상품당 총수량이 최소 구매수량 미만이면 체크아웃 검증에서 차단됩니다 (min_qty, 옵션 합산).
+     *
+     * @effects checkout_blocks_below_min_qty_aggregated
+     *
+     * @return void 반환값 없음
      */
     public function test_checkout_validation_blocks_below_min_qty_aggregated(): void
     {
@@ -930,6 +1123,10 @@ class TempOrderServiceTest extends ModuleTestCase
 
     /**
      * 상품당 총수량이 최대 구매수량을 초과하면 체크아웃 검증에서 차단됩니다 (max_qty, 옵션 합산).
+     *
+     * @effects checkout_blocks_above_max_qty_aggregated
+     *
+     * @return void 반환값 없음
      */
     public function test_checkout_validation_blocks_above_max_qty_aggregated(): void
     {
@@ -956,7 +1153,11 @@ class TempOrderServiceTest extends ModuleTestCase
     }
 
     /**
-     * 경계: 합계가 min/max 범위 내(==min, ==max)면 통과합니다.
+     * 합계가 최소와 최대 구매수량 범위 안이면 예외 없이 통과합니다.
+     *
+     * @effects checkout_passes_within_qty_bounds
+     *
+     * @return void 반환값 없음
      */
     public function test_checkout_validation_passes_within_qty_bounds(): void
     {

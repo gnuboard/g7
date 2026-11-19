@@ -1,0 +1,42 @@
+feature: 첫 렌더 전에 다시 받은 소스의 initLocal·initGlobal 이 SPA 진입에서도 첫 렌더 상태에 실린다 (engine-v1.95.0)
+
+description: |
+  첫 렌더 전 다시 받기(레이아웃 init_actions 안의 refetchDataSource, 다른 화면 전환에서 미룬 blocking onSuccess 안의 다시 받기)는
+  그 소스의 initLocal 을 `_localInit` 으로 updateTemplateData 에 넘긴다. 첫 진입은 React 루트가 없어 그 갱신이 대기열을 거쳐 첫 렌더
+  뒤 적용되지만, 그린 화면이 있는 SPA 진입은 떠나는 화면 문맥에 적용됐다가 새 화면 렌더가 문맥을 새로 세우며 버려졌다.
+  첫 진입도 대기열 적용이 init_actions 가 그 사이 같은 키에 쓴 값을 통째로 덮었다. 렌더 전 다시 받기의 initLocal 을 받는 즉시 정본
+  `_local` 에 쓰고(뒤이은 setState 가 그 위에 쌓임) 키를 화면 처리 전용 상자에 적어 두며, 렌더 직전 그 키의 지금 값을 문맥 `_local`
+  과 `_localInit` 에 싣는다. initGlobal 은 다시 받기가 정본 `_global` 에 바로 쓰고 렌더 전 스냅샷이 싣는다. 렌더 뒤 다시 받기는 종전 경로다.
+
+# axis 의미:
+#   case — 다시 받는 자리(init_actions / 미룬 onSuccess)와 진입 방식(바로 열기 / SPA), 렌더 뒤 다시 받기
+axes:
+  case:
+    - init_refetch_direct_entry
+    - init_refetch_spa_entry
+    - onsuccess_refetch_direct_entry
+    - onsuccess_refetch_spa_entry
+    - post_render_refetch
+    - init_refetch_then_setstate_parity
+    - blocking_and_refetch_same_key
+    - retired_slot_with_deferred_onsuccess_refetch
+    - snapshot_state_same_key_as_pre_render_initlocal
+
+effects:
+  - pre_render_refetch_direct_entry_unchanged            # 바로 열기는 종전처럼 initLocal·initGlobal 이 선다
+  - init_actions_refetch_initlocal_on_first_render       # SPA 진입에서 init_actions 안 다시 받기의 initLocal 이 첫 렌더와 정본 B 에 있다
+  - init_actions_refetch_initglobal_on_first_render      # 같은 다시 받기의 initGlobal 이 첫 렌더에 있다
+  - deferred_onsuccess_refetch_initlocal_on_first_render # SPA 진입에서 미룬 onSuccess 안 다시 받기의 initLocal·initGlobal 이 첫 렌더와 정본 B 에 있다
+  - pre_render_refetch_previous_local_not_carried        # 앞 화면 `_local` 은 넘어오지 않는다
+  - post_render_refetch_unchanged                        # 렌더 뒤 다시 받기는 수집하지 않고 종전처럼 반영된다(수집 상자 닫힘)
+  - pre_render_refetch_matches_direct_entry_order        # 다시 받은 뒤 같은 키를 setState 한 결과가 바로 열기와 SPA 에서 같다
+  - pre_render_refetch_then_setstate_accumulates         # 다시 받은 form 위에 init 의 setState 하위 값이 쌓인다(어느 쪽도 사라지지 않음)
+  - pre_render_refetch_and_blocking_initlocal_both_kept  # blocking initLocal 과 다시 받기 initLocal 이 같은 키를 채워도 두 하위 키가 남는다
+  - deferred_onsuccess_refetch_does_not_revive_retired_form  # 폼 화면을 떠나 미룬 onSuccess 가 다시 받는 동안 앞 화면이 다시 그려져도 은퇴한 슬롯의 form, hasChanges 가 새 화면 `_local` 에 되살아나지 않는다
+  - snapshot_state_survives_pre_render_initlocal         # 스냅샷과 함께 되돌린 `_local` 진행 상태를 같은 키의 렌더 전 다시 받기 initLocal 이 초기값으로 되돌리지 않는다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/TemplateApp.preRenderRefetchInitLocal.test.tsx
+
+validation:
+  browser_check: 총괄 번들 재빌드 뒤 — init_actions 에서 initLocal 소스를 다시 받는 화면에 SPA 로 들어가 폼이 채워지는지

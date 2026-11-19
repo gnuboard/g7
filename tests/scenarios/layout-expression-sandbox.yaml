@@ -22,6 +22,10 @@ effects:
   - sandbox_escape_blocked
   - dangerous_payload_does_not_set_global
   - whitelisted_globals_stay_callable
+  # #869: 레이아웃 scripts[] 의 if·conditions 가 실제 로드 경로에서 평가되어 참일 때만 로드된다.
+  # 종전에는 평가기에 바인딩 엔진 대신 undefined 가 넘어가 `{{...}}` 조건이 늘 거짓이었다.
+  # 번들 화면에는 조건 단 스크립트가 없어 브라우저 재현 화면이 없으므로 TemplateApp 실경로 단위 시험이 맡는다.
+  - conditional_layout_script_loads_only_when_true
 
 # 저장측 외부 URL 차단은 표현식 실행 축(case)과 곱해지지 않는 별개 관심사다 — case 는 "그 식이
 # 실행되는가" 를, URL 축은 "그 값이 외부 origin 을 가리키는가" 를 본다. 축으로 올리면 조합을

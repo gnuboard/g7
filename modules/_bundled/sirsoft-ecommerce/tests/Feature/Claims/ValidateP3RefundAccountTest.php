@@ -66,8 +66,11 @@ class ValidateP3RefundAccountTest extends ModuleTestCase
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

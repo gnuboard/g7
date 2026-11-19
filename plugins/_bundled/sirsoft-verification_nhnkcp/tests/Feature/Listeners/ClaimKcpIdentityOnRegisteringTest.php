@@ -47,7 +47,7 @@ class ClaimKcpIdentityOnRegisteringTest extends PluginTestCase
     /**
      * 첫 가입의 records 가 없는 창에서도 같은 명의의 두 번째 가입이 거부되고 흔적 없이 롤백되는지 확인합니다.
      *
-     * @scenario stage=registering, race=records_missing
+     * 케이스(마커 아님 — 평문): stage registering · race records_missing — 이 파일 안의 구분자라 매니페스트 축이 아니다. 매핑은 아래 @effects.
      *
      * @effects same_identity_second_signup_rejected, rejected_signup_rolls_back_user_and_consents
      *
@@ -83,7 +83,7 @@ class ClaimKcpIdentityOnRegisteringTest extends PluginTestCase
      * 사전 검사(가입 트랜잭션 밖)를 통과한 뒤 경쟁 가입이 먼저 선점한 경합 창을 흉내 낸다 — 선점 리스너보다 먼저
      * 도는 구독자가 다른 회원 이름으로 선점한다.
      *
-     * @scenario stage=registering, race=records_missing
+     * 케이스(마커 아님 — 평문): stage registering · race records_missing — 이 파일 안의 구분자라 매니페스트 축이 아니다. 매핑은 아래 @effects.
      *
      * @effects rejected_signup_keeps_matched_field_audit
      *
@@ -125,7 +125,7 @@ class ClaimKcpIdentityOnRegisteringTest extends PluginTestCase
     /**
      * 판정 키가 아닌 식별값도 비어 있으면 함께 선점하는지 확인합니다.
      *
-     * @scenario stage=registering, field=soft
+     * 케이스(마커 아님 — 평문): stage registering · field soft — 이 파일 안의 구분자라 매니페스트 축이 아니다. 매핑은 아래 @effects.
      *
      * @effects other_identity_hash_soft_claimed
      *
@@ -142,7 +142,7 @@ class ClaimKcpIdentityOnRegisteringTest extends PluginTestCase
     /**
      * 같은 회원이 다시 선점하면 성공(멱등)하고, 다른 회원은 실패하는지 확인합니다.
      *
-     * @scenario repository=claim
+     * 케이스(마커 아님 — 평문): repository claim — 이 파일 안의 구분자라 매니페스트 축이 아니다. 매핑은 아래 @effects.
      *
      * @effects claim_is_idempotent_for_same_user
      *
@@ -163,7 +163,7 @@ class ClaimKcpIdentityOnRegisteringTest extends PluginTestCase
     /**
      * 운영자가 중복 차단을 끄면 선점하지 않는지 확인합니다.
      *
-     * @scenario stage=registering, setting=disabled
+     * 케이스(마커 아님 — 평문): stage registering · setting disabled — 이 파일 안의 구분자라 매니페스트 축이 아니다. 매핑은 아래 @effects.
      *
      * @effects claim_skipped_when_duplicate_block_disabled
      *
@@ -184,7 +184,7 @@ class ClaimKcpIdentityOnRegisteringTest extends PluginTestCase
     /**
      * 탈퇴하면 선점이 풀려 같은 명의로 다시 가입할 수 있는지 확인합니다 (현행 허용 유지).
      *
-     * @scenario stage=withdraw, claim=release
+     * 케이스(마커 아님 — 평문): stage withdraw · claim release — 이 파일 안의 구분자라 매니페스트 축이 아니다. 매핑은 아래 @effects.
      *
      * @effects withdraw_releases_claim_for_reregistration
      *

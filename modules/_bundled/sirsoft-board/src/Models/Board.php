@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Board\Models;
 
 use App\Casts\AsUnicodeJson;
+use App\DisplayName\NicknameRequirement;
 use App\Models\Permission;
 use App\Models\User;
 use App\Support\LocalizedValue;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Sirsoft\Board\Casts\AsAllowedExtensions;
 use Modules\Sirsoft\Board\Database\Factories\BoardFactory;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Enums\BoardOrderBy;
 use Modules\Sirsoft\Board\Enums\OrderDirection;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
@@ -109,6 +111,19 @@ class Board extends Model
                 $board->slug = $board->getOriginal('slug');
             }
         });
+
+        // 게시판의 표시 이름 설정이 바뀌면 요청 안에서 읽어 둔 게시판별 설정과 닉네임 항목 잠금 판정을 버린다.
+        // (어떤 게시판이 닉네임 종류로 고정되면 회원 항목의 닉네임이 사용, 필수로 잠긴다.)
+        // 아직 만들어지지 않은 메모는 버릴 것이 없다 — 만들지 않는다(모듈 공급자가 부팅되지 않은 자리에서는 저장소 바인딩이 없어 만들 수도 없다).
+        $forgetDisplayNameMemo = function (): void {
+            foreach ([BoardDisplayNames::class, NicknameRequirement::class] as $memo) {
+                if (app()->resolved($memo)) {
+                    app($memo)->flush();
+                }
+            }
+        };
+        static::saved($forgetDisplayNameMemo);
+        static::deleted($forgetDisplayNameMemo);
     }
 
     /**
@@ -164,6 +179,12 @@ class Board extends Model
         // 본문 미디어 정책 (null: 첨부 정책을 따름, #883)
         'content_media_policy',
 
+        // 작성자 표시 이름 설정 (null: 회원 설정의 게시판 영역을 따름)
+        'display_name_setting',
+
+        // 비회원 작성자 항목의 사용, 필수 설정 (null: 게시판 환경설정 기본값을 따름)
+        'guest_author_fields',
+
         // 댓글 설정
         'comment_order',
         'max_comment_depth',
@@ -198,6 +219,8 @@ class Board extends Model
             // 빈 배열을 NULL 로 정규화해 "확장자 미지정" 표현을 하나로 유지합니다.
             'allowed_extensions' => AsAllowedExtensions::class,
             'content_media_policy' => 'array',
+            'display_name_setting' => 'array',
+            'guest_author_fields' => 'array',
             'blocked_keywords' => 'array',
             'is_active' => 'boolean',
             'display_order' => 'integer',

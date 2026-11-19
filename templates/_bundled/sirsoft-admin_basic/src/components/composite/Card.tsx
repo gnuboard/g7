@@ -4,6 +4,7 @@ import { H2 } from '../basic/H2';
 import { P } from '../basic/P';
 import { Img } from '../basic/Img';
 import type { EditorAttrs } from '../../types';
+import { keyboardActivationProps, FOCUS_VISIBLE_RING } from '../../support/keyboardActivation';
 
 export interface CardProps {
   title?: string;
@@ -52,8 +53,9 @@ export const Card: React.FC<CardProps> = ({
 }) => {
   return (
     <Div
-      className={`card-clickable ${className}`}
+      className={`card-clickable${onClick ? ` ${FOCUS_VISIBLE_RING}` : ''} ${className}`}
       onClick={onClick}
+      {...keyboardActivationProps(onClick)}
       style={style}
       id={id} {...editorAttrs}
     >

@@ -33,8 +33,9 @@
       </div>
     </div>
     <div data-ref="filter_grid" class="filter-grid">
-      <div data-ref="log_type_filter" class="filter-row">
-        <span class="filter-label w-32">$t:admin.activity_log.filter.log_type_label</span>
+      <div data-ref="log_type_filter" class="flex flex-col gap-2">
+        <responsive on="768-" class="flex flex-row gap-2 items-center"/>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.activity_log.filter.log_type_label</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="inline-clickable">
             <input type="checkbox" class="checkbox" checked="{{!_local.filter.logTypes || _local.filter.logTypes.length === 0}}">
@@ -76,8 +77,9 @@
           </label>
         </div>
       </div>
-      <div data-ref="actor_filter" class="filter-row">
-        <span class="filter-label w-32">$t:admin.activity_log.filter.actor_label</span>
+      <div data-ref="actor_filter" class="flex flex-col gap-2">
+        <responsive on="768-" class="flex flex-row gap-2 items-center"/>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.activity_log.filter.actor_label</span>
         <div class="flex-center gap-2">
           <searchable-dropdown data-type="composite" aria-label="$t:admin.activity_log.filter.actor_label" options="{{_local.actorSearchResults ?? []}}" value="{{_local.filter.createdBy || ''}}" triggerLabel="$t:admin.activity_log.filter.actor_select" searchPlaceholder="$t:admin.activity_log.filter.actor_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:admin.activity_log.filter.actor_search_initial" class="w-64">
             <on event="onSearch">
@@ -86,7 +88,7 @@
                 바꿔 담는다. 실패하면 결과를 비워 「없음」 문구가 뜨게 둔다. -->
               <api-call :debounce="300" :auth_required="true" if="{{String($args[0] ?? '').trim() !== ''}}" target="/api/admin/users/search" method="GET">
                 <success>
-                  <set-state target="local" actorSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
+                  <set-state target="local" actorSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.display_name ?? u.name, description: u.email }))}}"/>
                 </success>
                 <fail>
                   <set-state target="local" :actorSearchResults="[]"/>
@@ -108,8 +110,9 @@
           </button>
         </div>
       </div>
-      <div data-ref="date_range_filter" class="filter-row">
-        <span class="filter-label w-32">$t:admin.activity_log.filter.date_range_label</span>
+      <div data-ref="date_range_filter" class="flex flex-col gap-2">
+        <responsive on="768-" class="flex flex-row gap-2 items-center"/>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.activity_log.filter.date_range_label</span>
         <div class="flex-center gap-2 flex-wrap">
           <input name="dateFrom" type="datetime-local" aria-label="$t:common.range_start|label={{$t('admin.activity_log.filter.date_range_label')}}" step="1" class="input w-56" value="{{_local.filter.dateFrom || ''}}">
             <on type="change">
@@ -188,6 +191,23 @@
           </div>
         </div>
       </div>
+      <div data-ref="deletion_snapshot_filter" class="flex flex-col gap-2">
+        <responsive on="768-" class="flex flex-row gap-2 items-center"/>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.activity_log.filter.deletion_snapshot_label</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable" title="$t:admin.activity_log.filter.deletion_snapshot_hint">
+            <input type="checkbox" class="checkbox" checked="{{_local.filter.deletionSnapshot === true}}">
+              <on type="change">
+                <!-- 영구 삭제·선언 정리·커스텀 번역 삭제 직전에 남긴 기록(펼치면 본문·버전이 보이는 행)만 고른다. 판정은 서버 한 곳
+                  (ActivityLog::isDeletionSnapshotAction)이라 화면은 켜고 끄기만 담아 두고, 검색 버튼이 deletion_snapshot=1 로 주소에 옮긴다. -->
+                <set-state target="local" filter.deletionSnapshot="{{$event.target.checked}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:admin.activity_log.filter.deletion_snapshot_only</span>
+          </label>
+          <span class="form-hint">$t:admin.activity_log.filter.deletion_snapshot_hint</span>
+        </div>
+      </div>
     </div>
     <div data-ref="filter_actions" class="flex justify-center gap-3 mt-6">
       <responsive on="portable" class="flex gap-3 mt-6"/>
@@ -199,7 +219,7 @@
         $t:admin.activity_log.filter.search_button
       </button>
       <!-- 검색 조건 초기화. 폼 상태와 주소를 함께 비운다 — 초기화는 걸린 조건을 없애는 것이라 지금 조건과 병합하지 않는다 -->
-      <button type="button" class="btn btn-secondary px-6">
+      <button data-ref="filter_reset_button" type="button" class="btn btn-secondary px-6">
         <responsive on="portable" class="btn btn-secondary flex-1"/>
         <on type="click">
           <set-state target="local" :actorSearchResults="[]">
@@ -211,6 +231,7 @@
               <field name="dateQuick" value=""/>
               <field name="dateFrom" value=""/>
               <field name="dateTo" value=""/>
+              <field name="deletionSnapshot" :value="false"/>
             </field>
           </set-state>
           <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->

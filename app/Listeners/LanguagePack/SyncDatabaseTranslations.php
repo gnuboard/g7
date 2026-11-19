@@ -47,6 +47,7 @@ class SyncDatabaseTranslations
             'menus',
             'notifications',
             'manifest',
+            'schedules',
         ]);
 
         $audit = DB::transaction(fn () => $this->translationRepository->applySeedFromPack($pack, $seedBundle));
@@ -91,7 +92,7 @@ class SyncDatabaseTranslations
      * 단일 seed 파일을 로드합니다.
      *
      * @param  LanguagePack  $pack  seed 를 읽을 언어팩
-     * @param  string  $entity  엔티티 이름 (permissions/roles/menus/notifications/manifest)
+     * @param  string  $entity  엔티티 이름 (permissions/roles/menus/notifications/manifest/schedules)
      * @return array<string, mixed>|null seed 데이터 또는 null
      */
     private function loadSeed(LanguagePack $pack, string $entity): ?array

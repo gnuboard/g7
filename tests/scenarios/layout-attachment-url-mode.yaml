@@ -41,6 +41,19 @@ effects:
   - editor_thumbnail_renders_cross_origin
   # 저장까지 왕복해 방문자 화면이 실제로 요청하는 주소를 본다 (E2E 시드 화면 대상)
   - saved_layout_url_is_what_visitor_requests
+  # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
+  - editor_attachment_client_preserves_server_issued_url_verbatim
+  - editor_attachment_client_reports_missing_url_and_network_failure_as_errors
+  - editor_attachment_client_encodes_layout_name_and_deletes_by_attachment_id
+  - public_asset_disk_override_outranks_global_setting_and_none_forces_streaming
+  - public_asset_disk_is_current_rejects_blank_none_and_orphan
+  - public_asset_disk_resolution_is_not_memoized
+  - layout_attachment_cross_template_access_returns_null
+  - layout_attachment_missing_file_returns_null
+  # #869 편집기 표시만 썸네일 주소로 받고 저장값은 서버가 준 주소 원문이다
+  - editor_attachment_preview_uses_thumbnail_address
+  - editor_attachment_saved_value_stays_original_url
+  - editor_tile_preview_keeps_original
 
 test_files:
   - tests/Unit/Support/PublicAssetDiskTest.php
@@ -52,6 +65,7 @@ test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/utils/layoutAttachments.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/components/dimension-and-attachments.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/components/property-controls.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/attachment-preview-thumbnail.test.tsx
   - tests/Playwright/specs/layout-editor/layout-attachment-url-mode.spec.ts
 
 rules_layer_coverage:

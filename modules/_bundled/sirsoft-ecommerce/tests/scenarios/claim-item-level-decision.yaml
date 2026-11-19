@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#599 |
 #   축(유형 × 판단 조합)의 조합마다 테스트를 두지 않는다 — 이 기능의 커버리지 단위는
 #   "돈·수량·잠금 세 집계가 같은 술어를 읽는가" 이고, 각 집계마다 한 테스트가 그것을 본다.
 #   effects 축은 면제하지 않는다.
@@ -40,6 +40,32 @@ effects:
   - rejected_refund_item_releases_its_quantity_lock
   - approved_refund_item_keeps_only_its_own_quantity_locked
   - cancellable_amount_excludes_rejected_items
+  # 수량 잠금 산정 계약 — 진행 중인 반품, 교환, 직접 환불 신청이 잠그는 수량과, 그 잠금이 취소와 상태 변경을 막는 지점
+  - locked_quantity_counts_an_active_return
+  - locked_quantity_ignores_a_finished_return
+  - locked_quantity_counts_an_active_exchange
+  - locked_quantity_sums_both_claim_axes
+  - locked_quantity_excludes_the_claim_being_edited
+  - available_quantity_never_goes_negative
+  - resolve_rejects_a_locked_quantity
+  - resolve_accepts_the_remaining_quantity
+  - cancellation_is_blocked_for_an_option_in_a_claim_course
+  - cancellation_is_blocked_when_quantity_is_locked_by_a_claim
+  - cancellation_service_reports_the_claim_lock_as_a_cancel_failure
+  - cancellation_without_any_claim_still_succeeds
+  - claim_course_status_is_resolved_from_both_enum_and_raw_value
+  - admin_status_change_is_blocked_for_claim_course_items
+  - admin_status_change_passes_for_non_claim_items
+  - course_status_cannot_be_assigned_as_a_target
+  - admin_bulk_status_change_cannot_assign_a_course_status
+  - admin_bulk_status_change_cannot_pull_an_item_out_of_a_return_course
+  - admin_bulk_status_change_still_works_for_items_without_a_claim
+  - locked_quantity_counts_a_live_direct_refund_request
+  - locked_quantity_ignores_a_finished_direct_refund_request
+  - locked_quantity_ignores_refund_requests_from_other_sources
+  - locked_quantity_sums_all_three_claim_axes
+  - locked_quantity_excludes_the_direct_refund_being_edited
+  - resolve_rejects_a_quantity_locked_by_a_direct_refund_request
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimQuantityGuardTest.php

@@ -1,0 +1,29 @@
+feature: 끝나지 않은 확장 업데이트 — --force 없는 업데이트가 「업데이트 없음」으로 끝내지 않는다
+
+description: |
+  확장 업데이트는 DB 판을 새 판으로 적은 뒤 업그레이드 스텝·상태 복원·레이아웃 갱신을 한다. 검수 서버(stage)는 공유 상태 칸에
+  `updating` 을 쓰지 않아 그 사이에 프로세스가 죽으면 멈춘 업데이트 판정이 잡지 못하고, 운영 서버도 상태를 되돌린 뒤 죽으면 같다.
+  다음 `*:update`(--force 없이)는 DB 판이 이미 새 판이라 「업데이트 없음」으로 끝나 남은 스텝·레이아웃 갱신이 영영 건너뛰어졌다.
+  고침: 이 서버의 진행 기록(`ExtensionUpdateJournal`, 서버 로컬)이 남아 있으면 끝나지 않은 업데이트를 알리고 `--force` 이어받기를
+  안내하며 종료 1 — 기록과 DB 판은 그대로 둔다. 그 업데이트가 이 서버에서 아직 돌고 있으면(작업 잠금) 진행 중이라고 알린다.
+  `--force` 이어받기 자체(시작 판부터 못 끝낸 스텝만)는 tests/scenarios/extension-update-journal-resume.yaml 이 잰다.
+
+test_files:
+  - tests/Feature/Extension/UnfinishedUpdateWithoutForceTest.php
+
+axes:
+  source: [module, plugin, template]
+  role: [stage, live]
+  path:
+    - unfinished_journal               # 진행 기록이 남았고 그 업데이트는 돌고 있지 않다
+    - update_running_on_this_server    # 진행 기록이 남았고 이 서버에서 그 업데이트가 아직 돈다(작업 잠금)
+
+exclusions:
+  - { role: live, path: update_running_on_this_server,
+      reason: "작업 잠금 판정은 역할과 무관한 같은 코드 — 운영 서버는 updating 상태 가드가 먼저 막으므로 검수 서버로 잰다" }
+
+effects:
+  - unfinished_update_is_reported_instead_of_no_update   # 「업데이트 없음」 대신 끝나지 않은 업데이트를 알리고 종료 1
+  - unfinished_update_points_to_force_resume             # 안내에 시작 판·목표 판과 --force 이어받기 명령을 싣는다
+  - unfinished_update_guard_changes_nothing              # 진행 기록·DB 판을 건드리지 않는다
+  - running_update_is_reported_as_in_progress            # 이 서버에서 돌고 있는 업데이트는 진행 중으로 알린다

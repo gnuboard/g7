@@ -52,6 +52,26 @@ effects:
   - code_editor_tree_hides_actions_without_permission # 편집 권한이 없으면 트리의 파일 조작 버튼을 감춘다
   - extension_select_sets_selected_node_kind # 확장 조각을 고르면 선택 노드 종류가 extension 이 된다
   - code_editor_new_folder_is_client_side_only # 새 폴더는 서버 호출 없이 트리에만 생긴다
+  # --- 트리 단위 동작 (FileTree.test.tsx)
+  - file_tree_right_arrow_expands_collapsed_folder   # 접힌 폴더에서 오른쪽 방향키는 펼친다
+  - file_tree_enter_opens_a_file                     # Enter 로 파일을 연다
+  - file_tree_hides_file_actions_without_permission  # 권한이 없으면 이름변경과 삭제 버튼을 내보내지 않는다
+  - file_tree_shows_skeleton_while_loading           # 목록을 불러오는 동안 스켈레톤을 세운다
+  # --- 열린 파일 탭 (FileTabs.test.tsx)
+  - file_tabs_render_open_files                      # 열린 파일을 탭으로 세운다
+  - file_tabs_render_nothing_when_empty              # 열린 파일이 없으면 빈 줄을 남기지 않는다
+  - file_tabs_mark_active_tab                        # 활성 탭 하나만 aria-selected
+  - file_tabs_mark_dirty_with_dot_and_label          # 미저장 탭에 점과 접근성 라벨
+  - file_tabs_select_on_click                        # 탭을 누르면 그 파일을 고른다
+  - file_tabs_close_does_not_also_select             # 닫기 버튼은 탭 선택을 함께 일으키지 않는다
+  - file_tabs_keyboard_activates_tab                 # Enter 로도 탭을 고른다
+  - file_tabs_show_full_path_in_title                # 전체 경로는 툴팁으로 남긴다
+  - file_tabs_use_touch_height_on_touch_size         # 터치 크기에서는 탭이 더 높다
+  # --- 브라우저 실측 (code-editor-file-tree.spec.ts)
+  - code_editor_file_tree_is_navigable               # 폴더 접기와 키보드 이동이 실제 화면에서 돈다
+  - code_editor_builds_folders_from_layout_names     # 레이아웃 이름의 슬래시로 폴더가 서고 접히고 펼쳐진다
+  - code_editor_tree_follows_the_aria_tree_contract  # role=tree 규약과 roving tabindex
+  - code_editor_tree_moves_with_arrow_keys           # 방향키로 보이는 행 사이를 걷는다
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/FileTree.test.tsx

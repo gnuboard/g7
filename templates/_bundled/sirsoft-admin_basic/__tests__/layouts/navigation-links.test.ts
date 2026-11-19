@@ -277,11 +277,6 @@ const EXCLUDE: { file: string; reason: string; match: (n: any, a: any) => boolea
         match: (n) => ['report_filter_reset'].includes(n.id),
     },
     {
-        file: 'partials/admin_schedule_list/_tab_schedules.json',
-        reason: 'W6 — 등록일 빠른 필터(오늘·7일 등)와 필터 초기화',
-        match: (n, a) => n.id === 'reset_button' || /"created_from"/.test(JSON.stringify(a)),
-    },
-    {
         file: 'partials/admin_settings/_tab_identity_policies.json',
         reason: 'W6 — 정책 검색 실행·필터 초기화',
         match: (_n, a) => /"(search|sub_tab)"/.test(JSON.stringify(a)),

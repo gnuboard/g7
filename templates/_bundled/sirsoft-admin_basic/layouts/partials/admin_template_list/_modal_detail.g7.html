@@ -25,6 +25,7 @@
                    아이콘을 잃는다(전례) — 그래서 식별자 목록으로 든다. -->
               <div class="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden">
                 <icon name="{{_global.selectedTemplate?.type === 'admin' ? 'cog' : 'palette'}}" class="text-xl text-gray-600 dark:text-gray-400" aria-hidden="true"/>
+                <!-- thumb-exempt: 확장 아이콘은 업로드 이미지가 아니다(확장 패키지에 든 파일이고 SVG 도 받는다) -->
                 <img data-if="{{_global.selectedTemplate?.icon_url && !(_local.selectedTemplateIconBroken ?? []).includes(_global.selectedTemplate?.identifier)}}" src="{{_global.selectedTemplate.icon_url}}" alt="$t:extensions.icon.alt|name={{_global.selectedTemplate?.name ?? ''}}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-gray-100 dark:bg-gray-700">
                   <on event="onError">
                     <!-- 이미지 404·손상 — 이 확장의 식별자만 깨진 목록에 더해 이미지를 감추고, 아래 깔린 글리프가
@@ -58,6 +59,18 @@
                 <span class="text-label-subtle">$t:admin.templates.modals.field_status</span>
                 <div>
                   <span class="{{_global.selectedTemplate.status === 'active' ? 'badge badge-green' : (_global.selectedTemplate.status === 'uninstalled' ? 'badge badge-blue' : 'badge badge-gray')}}">{{_global.selectedTemplate.status === 'active' ? '$t:admin.templates.status.active' : (_global.selectedTemplate.status === 'uninstalled' ? '$t:admin.templates.status.not_installed' : '$t:admin.templates.status.inactive')}}</span>
+                </div>
+              </div>
+              <!-- 패키지 서명(#916) — 설치·업데이트 때 남긴 검증 기록(integrity_status). verified 면 키 ID 콜론 앞(서명자)을 보인다.
+                   기록이 없으면(이 기능 전에 설치했거나 옛 코어) 「기록 없음」이다. -->
+              <div data-ref="package_signature_field">
+                <span class="text-label-subtle">$t:admin.package_integrity.signature_label</span>
+                <div>
+                  <span data-if="{{_global.selectedTemplate?.integrity_status === 'verified'}}" class="badge badge-green">$t:admin.package_integrity.status_verified|signer={{(_global.selectedTemplate?.integrity_key_id ?? '').split(':')[0]}}</span>
+                  <span data-if="{{_global.selectedTemplate?.integrity_status === 'unsigned'}}" class="badge badge-yellow">$t:admin.package_integrity.status_unsigned</span>
+                  <span data-if="{{_global.selectedTemplate?.integrity_status === 'unverifiable'}}" class="badge badge-yellow">$t:admin.package_integrity.status_unverifiable</span>
+                  <span data-if="{{_global.selectedTemplate?.integrity_status === 'bundled'}}" class="badge badge-blue">$t:admin.package_integrity.status_bundled</span>
+                  <span data-if="{{!['verified', 'unsigned', 'unverifiable', 'bundled'].includes(_global.selectedTemplate?.integrity_status)}}" class="badge badge-gray">$t:admin.package_integrity.status_none</span>
                 </div>
               </div>
               <div>

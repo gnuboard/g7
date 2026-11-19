@@ -76,6 +76,40 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 버전 제약이 있는 조각 JSON 은 `<override>` 가 아니라 `<extension version-constraint>` 로 되돌아가고 왕복한다.
+     *
+     * 루트 종류는 `target_layout`/`extension_point` 가 먼저 정한다 — 템플릿 오버라이드 조각이 `version_constraint` 를
+     * 가졌다는 이유로 레이아웃 대체 봉투(`<override>`)로 찍히면 조각 내용(모달, 초기 액션)이 사라진다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects fragment_envelope_accepts_version_constraint
+     *
+     * @return void 반환값 없음
+     */
+    public function test_fragment_with_version_constraint_round_trips_as_extension(): void
+    {
+        $overlay = [
+            'target_layout' => 'auth/register',
+            'priority' => 100,
+            'init_actions' => [['handler' => 'toast', 'params' => ['message' => 'x']]],
+            'version_constraint' => '^1.0.0',
+        ];
+        $markup = $this->decompiler->decompile($overlay);
+        $this->assertStringContainsString('<extension target-layout="auth/register" priority="100" version-constraint="^1.0.0">', $markup);
+        $this->assertStringNotContainsString('<override', $markup);
+        $this->assertRoundTrips($overlay);
+
+        $point = [
+            'extension_point' => 'address_search_slot',
+            'components' => [['type' => 'basic', 'name' => 'Div', 'props' => ['className' => 'x']]],
+            'version_constraint' => '>=1.2.0 <2.0.0',
+        ];
+        $this->assertStringContainsString('<extension extension-point="address_search_slot" version-constraint=">=1.2.0 <2.0.0">', $this->decompiler->decompile($point));
+        $this->assertRoundTrips($point);
+    }
+
+    /**
      * 상태 초기화 트리 왕복 — 키 순서·`_merge` 루트 위치·`:value` 리프 타입 보존 (계획서 최대 리스크 지점).
      *
      * @scenario compile_unit=decompile,source_health=valid

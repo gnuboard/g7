@@ -16,6 +16,7 @@ interface VisitRepositoryInterface
      *
      * 같은 방문자의 요청이 동시에 들어오면 둘 다 「방문 없음」으로 읽어 방문을 두 개
      * 만들 수 있습니다. 구현은 트랜잭션 안에서 행을 잠근 채로 돌려줘야 합니다.
+     * 방문자 키 잠금을 쓸 수 없을 때(파일 캐시·잠금 대기 초과 등)의 경로입니다.
      *
      * @param  string  $visitorKey  방문자 키
      * @param  Carbon  $since  이 시각 이후에 활동이 있어야 같은 방문으로 본다
@@ -35,6 +36,31 @@ interface VisitRepositoryInterface
      * @return AnalyticsVisit|null 이어받은 방문 (없으면 null)
      */
     public function adoptServerVisit(string $provisionalKey, string $newKey, Carbon $since): ?AnalyticsVisit;
+
+    /**
+     * 아직 이어지는 방문을 잠금 없이 찾고, 찾은 행만 기본키로 잠급니다.
+     *
+     * 호출자가 방문자 키 잠금으로 같은 방문자의 적재를 이미 한 줄로 세웠을 때만 씁니다.
+     * 범위 조건 잠금(간격 잠금)을 걸지 않으므로 동시 요청끼리의 교착이 생기지 않습니다.
+     * 구현은 쓰기 연결로 찾고, 잠근 뒤 조건을 최신 값으로 다시 확인해야 합니다.
+     *
+     * @param  string  $visitorKey  방문자 키
+     * @param  Carbon  $since  이 시각 이후에 활동이 있어야 같은 방문으로 본다
+     * @return AnalyticsVisit|null 이어지는 방문 (없으면 null)
+     */
+    public function findOpenVisitWithRowLock(string $visitorKey, Carbon $since): ?AnalyticsVisit;
+
+    /**
+     * 서버 폴백이 임시 키로 만든 방문을 잠금 없이 찾고, 찾은 행만 기본키로 잠가 이어받습니다.
+     *
+     * 호출자가 임시 키와 새 쿠키 키를 모두 방문자 키 잠금으로 쥐었을 때만 씁니다.
+     *
+     * @param  string  $provisionalKey  서버 폴백이 쓴 임시 키
+     * @param  string  $newKey  응답에 심은 쿠키 값
+     * @param  Carbon  $since  이 시각 이후에 활동이 있어야 이어받는다
+     * @return AnalyticsVisit|null 이어받은 방문 (없으면 null)
+     */
+    public function adoptServerVisitWithRowLock(string $provisionalKey, string $newKey, Carbon $since): ?AnalyticsVisit;
 
     /**
      * 방문을 새로 만듭니다.

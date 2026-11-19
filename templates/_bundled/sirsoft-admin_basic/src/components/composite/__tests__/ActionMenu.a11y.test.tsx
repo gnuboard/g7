@@ -9,7 +9,6 @@
  * - 트리거 기본 글자가 언어와 무관하게 「작업」 이었다.
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ActionMenu, ActionMenuItem } from '../ActionMenu';

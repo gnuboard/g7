@@ -77,7 +77,7 @@
             "auto_fetch": true,
             "auth_mode": "optional",
             "loading_strategy": "progressive",
-            "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
+            "if": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.templateSettings?.home?.show_feature_row ?? true)}}",
             "fallback": {
                 "data": []
             },
@@ -97,7 +97,7 @@
             "auto_fetch": true,
             "auth_mode": "optional",
             "loading_strategy": "progressive",
-            "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
+            "if": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.templateSettings?.home?.show_feature_row ?? true)}}",
             "fallback": {
                 "data": []
             },
@@ -117,7 +117,7 @@
             "auto_fetch": true,
             "auth_mode": "optional",
             "loading_strategy": "progressive",
-            "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
+            "if": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.templateSettings?.home?.show_board_summaries ?? true)}}",
             "fallback": {
                 "data": []
             },
@@ -132,12 +132,12 @@
             "id": "popularProducts",
             "label_key": "$t:editor.data_source.popularProducts",
             "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/products/popular?limit=8",
+            "endpoint": "/api/modules/sirsoft-ecommerce/products/popular?limit={{_global.templateSettings?.home?.product_count ?? 8}}",
             "method": "GET",
             "auth_mode": "optional",
             "auto_fetch": true,
             "loading_strategy": "progressive",
-            "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
+            "if": "{{(_global.activeModules?.includes('sirsoft-ecommerce') ?? true) && (_global.templateSettings?.home?.show_shop_sections ?? true)}}",
             "fallback": {
                 "data": []
             },
@@ -158,12 +158,12 @@
             "id": "newProducts",
             "label_key": "$t:editor.data_source.newProducts",
             "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/products/new?limit=8",
+            "endpoint": "/api/modules/sirsoft-ecommerce/products/new?limit={{_global.templateSettings?.home?.product_count ?? 8}}",
             "method": "GET",
             "auth_mode": "optional",
             "auto_fetch": true,
             "loading_strategy": "progressive",
-            "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
+            "if": "{{(_global.activeModules?.includes('sirsoft-ecommerce') ?? true) && (_global.templateSettings?.home?.show_shop_sections ?? true)}}",
             "fallback": {
                 "data": []
             },
@@ -183,6 +183,20 @@
     ],
     "permissions": [],
     "slots": {
+        "page_top": [
+            {
+                "comment": "사이트 홈 상단 히어로 자리 — 본문 상자 밖 전폭 자리(_user_base page_top)에 히어로섹션 플러그인이 배너 슬라이더를 붙인다. 붙인 플러그인이 없거나 노출 중인 배너가 없으면 아무것도 그리지 않는다.\n      본문 폭·화면 전체 중 어느 폭으로 그릴지는 붙는 확장이 정한다 — 그 기준이 되도록 본문 상자 클래스를 넘긴다(contentClass 기본·contentClassDesktop 데스크톱).\n      홈 본문은 _user_base main_content 여백(px-4, 데스크톱 px-8) 안에 아래 컨테이너 여백(px-4, 태블릿 px-6, 데스크톱 px-8)을 한 번 더 두므로,\n      히어로가 카드 영역과 같은 폭이 되게 두 여백을 더한 값을 넘긴다(휴대폰 32px · 태블릿 40px · 데스크톱 64px). 폭마다 바뀌는 값은 Tailwind 폭 접두가 아니라\n      기기별 속성(contentClass 기본 · contentClassTablet 태블릿 · contentClassDesktop 데스크톱)으로 넘기고, 조각이 엔진 responsive 로 고른다",
+                "id": "home_hero_slot",
+                "type": "extension_point",
+                "name": "home_hero",
+                "props": {
+                    "contentClass": "px-8",
+                    "contentClassTablet": "px-10",
+                    "contentClassDesktop": "max-w-7xl mx-auto px-16"
+                },
+                "default": []
+            }
+        ],
         "content": [
             {
                 "type": "layout",
@@ -221,8 +235,10 @@
                         "children": [
                             {
                                 "comment": "=== 좌측: 웰컴 카드 (통계 카드 옆에서는 row-span-2, 쇼핑 홍보 카드 옆에서는 col-span-2) ===",
+                                "id": "home_welcome_slot",
                                 "type": "basic",
                                 "name": "Div",
+                                "if": "{{_global.templateSettings?.home?.show_welcome ?? true}}",
                                 "responsive": {
                                     "portable": {
                                         "props": {
@@ -259,7 +275,7 @@
                                 "id": "home_stat_cards",
                                 "type": "basic",
                                 "name": "Div",
-                                "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
+                                "if": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.templateSettings?.home?.show_stats ?? true)}}",
                                 "responsive": {
                                     "portable": {
                                         "props": {
@@ -296,7 +312,7 @@
                         "id": "home_feature_row",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
+                        "if": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.templateSettings?.home?.show_feature_row ?? true)}}",
                         "responsive": {
                             "portable": {
                                 "props": {
@@ -339,7 +355,7 @@
                         "id": "home_board_summaries",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
+                        "if": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.templateSettings?.home?.show_board_summaries ?? true)}}",
                         "responsive": {
                             "portable": {
                                 "props": {
@@ -371,7 +387,7 @@
                         "id": "home_shop_sections",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
+                        "if": "{{(_global.activeModules?.includes('sirsoft-ecommerce') ?? true) && (_global.templateSettings?.home?.show_shop_sections ?? true)}}",
                         "props": {
                             "className": "mt-8"
                         },

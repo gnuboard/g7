@@ -1,0 +1,40 @@
+feature: cache_driver_common_operations
+
+description: |
+  확장 캐시 드라이버(AbstractCacheDriver 를 상속한 코어, 모듈, 플러그인 드라이버)의 공통 연산을 고정한다.
+  드라이버마다 키 앞에 소속 접두사(`g7:core:`, `g7:module.{식별자}:`, `g7:plugin.{식별자}:`)를 붙이고,
+  put/get/has/forget, remember 와 rememberQuery, putMany/many, refresh 가 같은 키 공간에서 왕복한다.
+  withStore() 는 원본을 바꾸지 않는 새 인스턴스를 만든다. 태그 미지원 저장소(array)에서는 flush() 와
+  flushTags() 가 키 색인으로 지우며, 다른 태그와 다른 드라이버의 키는 남는다.
+
+axes:
+  case:
+    - key_prefix   # 코어, 모듈, 플러그인 드라이버의 키 접두사
+    - crud         # put/get/has/forget 기본 왕복
+    - remember     # remember 콜백 1회 실행, rememberQuery 접두사
+    - bulk         # putMany/many 다건 왕복
+    - refresh      # refresh 로 기존 값 교체
+    - with_store   # withStore 불변 복제
+    - flush        # 색인 기반 flush, 태그 단위 flushTags
+    - isolation    # 드라이버 사이 키 격리
+    - meta         # getStore, supportsTags 메타 정보
+
+exclusions:
+  - { case: key_prefix, reason: "제외 없음 — 사례 단일 축" }
+
+effects:
+  - key_prefixed_by_scope        # 드라이버 종류에 맞는 접두사가 붙은 키를 만든다
+  - value_round_trips            # put 값이 get 으로 그대로 나오고, 없는 키는 null 이나 지정한 기본값이 나온다
+  - presence_tracked             # has 는 둔 키에만 true 이고 forget 뒤에는 false 다
+  - callback_runs_once           # remember 두 번째 호출은 콜백을 다시 실행하지 않고 저장된 값을 돌려준다
+  - query_prefix_applied         # rememberQuery 결과가 query:{해시} 키로 저장된다
+  - bulk_round_trips             # putMany 로 둔 값을 many 가 모두 돌려준다
+  - refresh_overwrites           # refresh 가 기존 값을 콜백 결과로 바꾸고 그 값을 돌려준다
+  - with_store_immutable_clone   # withStore 는 원본 저장소를 그대로 두고 새 인스턴스를 돌려준다
+  - flush_removes_indexed_keys   # flush 가 remember 로 색인된 드라이버 키를 모두 지운다
+  - flush_tags_scoped            # flushTags 는 지정 태그 키만 지우고 다른 태그 키는 남긴다
+  - drivers_isolated             # 같은 이름 키가 드라이버별로 분리되고 모듈 flush 가 코어 키를 지우지 않는다
+  - store_meta_exposed           # getStore 는 저장소 이름을, supportsTags 는 bool 을 돌려준다
+
+test_files:
+  - tests/Unit/Cache/AbstractCacheDriverTest.php

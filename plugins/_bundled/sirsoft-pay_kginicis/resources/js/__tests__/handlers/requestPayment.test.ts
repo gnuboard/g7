@@ -1,3 +1,4 @@
+// e2e:allow #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다. / #855 후속: 결제창 열기 전 오류의 화면 문구를 번역된 일반 문구로(내부 영어 문구는 콘솔) — Chrome MCP 실측(신청서 ko/ja, 주문서 오류 창)과 Vitest 로 고정한다.
 /**
  * requestPayment 핸들러 테스트
  *
@@ -8,7 +9,7 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { assertTrustedSdkUrl, buildInicisTaxAmounts, KNOWN_SDK_HOSTS, requestPaymentHandler } from '../../handlers/requestPayment';
+import { assertTrustedSdkUrl, buildInicisTaxAmounts, InicisUserFacingError, KNOWN_SDK_HOSTS, requestPaymentHandler, resolvePaymentErrorMessage } from '../../handlers/requestPayment';
 import {
     clearMobilePaymentReturnPending,
     consumeMobilePaymentReturnPending,
@@ -62,13 +63,15 @@ describe('requestPaymentHandler', () => {
             modal: { open: vi.fn() },
         };
 
+        vi.spyOn(console, 'error').mockImplementation(() => {});
         await requestPaymentHandler({ params: { pgPaymentData: withoutMethod } });
 
         expect(apiGet).not.toHaveBeenCalled();
+        // 내부 영어 문구(KG Inicis payment method is missing …)는 콘솔에만 남고 화면에는 번역된 일반 문구가 간다(#855).
         expect(setLocalSpy).toHaveBeenCalledWith(
             expect.objectContaining({
                 isSubmittingOrder: false,
-                paymentErrorMessage: 'KG Inicis payment method is missing from pg_payment_data.',
+                paymentErrorMessage: '결제를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.',
             }),
         );
     });
@@ -76,6 +79,7 @@ describe('requestPaymentHandler', () => {
     // @scenario flow=entry_guard
     // @effects payment_entry_fails_closed
     it('client config 응답에 data 가 없으면 catch 블록에서 setLocal 복구', async () => {
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         apiGet.mockResolvedValue({}); // data 누락
 
         await requestPaymentHandler({ params: { pgPaymentData: PG_PAYMENT } });
@@ -83,8 +87,13 @@ describe('requestPaymentHandler', () => {
         expect(setLocalSpy).toHaveBeenCalledWith(
             expect.objectContaining({
                 isSubmittingOrder: false,
-                paymentErrorMessage: 'Failed to fetch KG Inicis client config',
+                paymentErrorMessage: '결제를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.',
             }),
+        );
+        // 진단용 내부 문구는 콘솔에 남는다.
+        expect(consoleSpy).toHaveBeenCalledWith(
+            expect.stringContaining('requestPayment error'),
+            expect.objectContaining({ message: 'Failed to fetch KG Inicis client config' }),
         );
     });
 
@@ -100,6 +109,36 @@ describe('requestPaymentHandler', () => {
         expect(setLocalSpy).toHaveBeenCalledWith(
             expect.objectContaining({ isSubmittingOrder: false })
         );
+    });
+
+    /**
+     * 클레임 추가결제는 신청서 화면에서 열린다 — 그 화면에는 주문서 전용 오류 모달이 없어, 모달을 열면 안내 없이
+     * 「결제 진행 중…」에 멈췄다. 문구를 담아 던져 이커머스 신청서 핸들러가 dispatch 결과로 받게 한다 (#855).
+     */
+    // @scenario flow=entry_guard
+    // @effects claim_payment_entry_failure_is_handed_to_the_claim_screen
+    it('클레임 추가결제의 결제창 열기 전 실패는 주문서 모달을 열지 않고 문구를 담아 던진다', async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        const modalOpen = vi.fn();
+        (window as Record<string, unknown>).G7Core = {
+            api: { get: apiGet },
+            state: { setLocal: setLocalSpy },
+            modal: { open: modalOpen },
+        };
+        apiGet.mockResolvedValue({}); // data 누락 → 설정 조회 실패
+
+        await expect(requestPaymentHandler({
+            params: {
+                pgPaymentData: {
+                    ...PG_PAYMENT,
+                    order_number: 'CP20260915-0001',
+                    claim_cancel_return_url: '/mypage/claims/EX-1?claim_payment=cancelled&claim_number=EX-1',
+                },
+            },
+        })).rejects.toThrow('결제를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+
+        expect(modalOpen).not.toHaveBeenCalled();
+        expect(setLocalSpy).not.toHaveBeenCalledWith(expect.objectContaining({ paymentErrorMessage: expect.anything() }));
     });
 });
 
@@ -126,6 +165,8 @@ describe('requestPaymentHandler — PC closeUrl', () => {
     let originalUserAgent: PropertyDescriptor | undefined;
 
     beforeEach(() => {
+        // 결제 진입 실패의 사유는 콘솔에 남는다 — 화면 문구와 나눠 단언한다(#855).
+        vi.spyOn(console, 'error').mockImplementation(() => {});
         apiGet = vi.fn().mockResolvedValue(CLIENT_CONFIG);
         apiPost = vi.fn().mockResolvedValue({
             data: {
@@ -220,8 +261,13 @@ describe('requestPaymentHandler — PC closeUrl', () => {
         expect((window as any).G7Core.state.setLocal).toHaveBeenCalledWith(
             expect.objectContaining({
                 isSubmittingOrder: false,
-                paymentErrorMessage: 'KG Inicis supports only KRW standard payments or JPY Japan CBT payments.',
+                paymentErrorMessage: '결제를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.',
             }),
+        );
+        // 사유(내부 영어 문구)는 화면이 아니라 콘솔에 남는다(#855).
+        expect(console.error).toHaveBeenCalledWith(
+            expect.stringContaining('requestPayment error'),
+            expect.objectContaining({ message: 'KG Inicis supports only KRW standard payments or JPY Japan CBT payments.' }),
         );
     });
 
@@ -247,8 +293,13 @@ describe('requestPaymentHandler — PC closeUrl', () => {
         expect((window as any).G7Core.state.setLocal).toHaveBeenCalledWith(
             expect.objectContaining({
                 isSubmittingOrder: false,
-                paymentErrorMessage: 'KG Inicis live standard payment is not configured.',
+                paymentErrorMessage: '결제를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.',
             }),
+        );
+        // 사유(내부 영어 문구)는 화면이 아니라 콘솔에 남는다(#855).
+        expect(console.error).toHaveBeenCalledWith(
+            expect.stringContaining('requestPayment error'),
+            expect.objectContaining({ message: 'KG Inicis live standard payment is not configured.' }),
         );
     });
 
@@ -273,8 +324,13 @@ describe('requestPaymentHandler — PC closeUrl', () => {
         expect((window as any).G7Core.state.setLocal).toHaveBeenCalledWith(
             expect.objectContaining({
                 isSubmittingOrder: false,
-                paymentErrorMessage: 'Selected KG Inicis easy pay method is disabled.',
+                paymentErrorMessage: '결제를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.',
             }),
+        );
+        // 사유(내부 영어 문구)는 화면이 아니라 콘솔에 남는다(#855).
+        expect(console.error).toHaveBeenCalledWith(
+            expect.stringContaining('requestPayment error'),
+            expect.objectContaining({ message: 'Selected KG Inicis easy pay method is disabled.' }),
         );
     });
 
@@ -437,6 +493,8 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
     let submitSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
+        // 결제 진입 실패의 사유는 콘솔에 남는다 — 화면 문구와 나눠 단언한다(#855).
+        vi.spyOn(console, 'error').mockImplementation(() => {});
         apiGet = vi.fn().mockResolvedValue(CLIENT_CONFIG);
         apiPost = vi.fn().mockImplementation((url: string) => {
             if (url === CLIENT_CONFIG.data.callback_urls.cbt_checkout_token) {
@@ -580,8 +638,13 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
         expect((window as any).G7Core.state.setLocal).toHaveBeenCalledWith(
             expect.objectContaining({
                 isSubmittingOrder: false,
-                paymentErrorMessage: 'KG Inicis Japan payment methods require a JPY order.',
+                paymentErrorMessage: '결제를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.',
             }),
+        );
+        // 사유(내부 영어 문구)는 화면이 아니라 콘솔에 남는다(#855).
+        expect(console.error).toHaveBeenCalledWith(
+            expect.stringContaining('requestPayment error'),
+            expect.objectContaining({ message: 'KG Inicis Japan payment methods require a JPY order.' }),
         );
     });
 
@@ -622,8 +685,13 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
         expect((window as any).G7Core.state.setLocal).toHaveBeenCalledWith(
             expect.objectContaining({
                 isSubmittingOrder: false,
-                paymentErrorMessage: 'JPY orders can only use KG Inicis Japan CBT payment methods.',
+                paymentErrorMessage: '결제를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.',
             }),
+        );
+        // 사유(내부 영어 문구)는 화면이 아니라 콘솔에 남는다(#855).
+        expect(console.error).toHaveBeenCalledWith(
+            expect.stringContaining('requestPayment error'),
+            expect.objectContaining({ message: 'JPY orders can only use KG Inicis Japan CBT payment methods.' }),
         );
     });
 
@@ -695,8 +763,13 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
         expect((window as any).G7Core.state.setLocal).toHaveBeenCalledWith(
             expect.objectContaining({
                 isSubmittingOrder: false,
-                paymentErrorMessage: 'KG Inicis Japan CBT payment is not configured.',
+                paymentErrorMessage: '결제를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.',
             }),
+        );
+        // 사유(내부 영어 문구)는 화면이 아니라 콘솔에 남는다(#855).
+        expect(console.error).toHaveBeenCalledWith(
+            expect.stringContaining('requestPayment error'),
+            expect.objectContaining({ message: 'KG Inicis Japan CBT payment is not configured.' }),
         );
     });
 });
@@ -1079,5 +1152,34 @@ describe('SDK URL 신뢰 호스트 게이트', () => {
             expect(typeof manifest.trusted_script_hosts_reason?.[host]).toBe('string');
             expect(manifest.trusted_script_hosts_reason[host].length).toBeGreaterThan(0);
         }
+    });
+});
+
+describe('resolvePaymentErrorMessage — 화면에 보일 결제 오류 문구 (#855)', () => {
+    afterEach(() => {
+        delete (window as Record<string, unknown>).G7Core;
+    });
+
+    // @scenario flow=entry_guard
+    // @effects payment_error_message_is_translated_for_screens
+    it('이미 번역된 오류는 그 문구를 쓴다', () => {
+        expect(resolvePaymentErrorMessage(new InicisUserFacingError('결제 모듈 주소가 올바르지 않습니다.'))).toBe('결제 모듈 주소가 올바르지 않습니다.');
+    });
+
+    // @scenario flow=entry_guard
+    // @effects payment_error_message_is_translated_for_screens
+    it('서버가 준 응답 문구가 있으면 그 문구를 쓴다', () => {
+        const error = Object.assign(new Error('Request failed with status code 422'), { response: { data: { message: '주문 금액이 바뀌었습니다.' } } });
+        expect(resolvePaymentErrorMessage(error)).toBe('주문 금액이 바뀌었습니다.');
+    });
+
+    // @scenario flow=entry_guard
+    // @effects payment_error_message_is_translated_for_screens
+    it('내부 영어 오류와 네트워크 오류는 번역된 일반 문구로 바꾼다', () => {
+        (window as Record<string, unknown>).G7Core = {
+            t: (key: string) => (key === 'sirsoft-pay_kginicis.payment.error.request_failed' ? 'Could not start the payment. Please try again in a moment.' : key),
+        };
+        expect(resolvePaymentErrorMessage(new Error('KG Inicis live standard payment is not configured.'))).toBe('Could not start the payment. Please try again in a moment.');
+        expect(resolvePaymentErrorMessage(new Error('Network Error'))).toBe('Could not start the payment. Please try again in a moment.');
     });
 });

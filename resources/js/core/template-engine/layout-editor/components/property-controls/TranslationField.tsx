@@ -36,6 +36,7 @@ import { PlaceholderChipInput } from './PlaceholderChipInput';
 import { useLayoutDocumentContext } from '../../LayoutDocumentContext';
 import { setPendingValues, setPendingValue, getPendingValue } from '../../hooks/pendingCustomTranslations';
 import { fireTranslationsRefreshed } from './inlineBindingApi';
+import { withBasePrefix } from '../../../../support/assetUrl';
 
 /** 단일 `$t:custom.*` 키 텍스트 판정 정규식(param 미부착). */
 const CUSTOM_KEY_RE = /^\s*\$t:(custom\.[a-zA-Z0-9._-]+)\s*$/;
@@ -340,7 +341,7 @@ export function TranslationField({
       templateIdentifier,
     )}/custom-translations/${load.id}`;
     try {
-      const response = await fetch(url, {
+      const response = await fetch(withBasePrefix(url), {
         method: 'PUT',
         credentials: 'same-origin',
         headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),

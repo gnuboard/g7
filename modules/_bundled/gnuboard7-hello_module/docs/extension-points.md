@@ -30,6 +30,7 @@ Service 인 것이 규약입니다 — 컨트롤러에서 발행하면 같은 �
 <!-- @generated:hooks-subscribed START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 훅 이름 | 유형 | 리스너 | 메서드 | 우선순위 |
 |---|---|---|---|---|
+| `core.thumbnail.filter_presets` | filter | `ThumbnailPresetListener` | `addPreset` | 10 |
 | `gnuboard7-hello_module.memo.created` | action (미선언) | `LogMemoCreatedListener` | `onMemoCreated` | 10 |
 <!-- @generated:hooks-subscribed END -->
 
@@ -39,6 +40,48 @@ Service 인 것이 규약입니다 — 컨트롤러에서 발행하면 같은 �
 
 `gnuboard7-hello_plugin` 을 함께 설치하면 같은 훅을 **바깥에서 구독하는** 모습을 볼 수
 있습니다 — 그쪽이 확장 시스템의 실제 사용 형태입니다.
+
+코어 필터도 하나 구독합니다 — 아래 「확장 썸네일 규격 등록」 예시입니다.
+
+### 확장 썸네일 규격 등록
+
+이미지 썸네일 규격은 코어 고정 슬롯(`xs`·`sm`·`md`·`lg`·`xl`) 말고도 확장이 자기 규격을 더할 수
+있습니다. 필터 `core.thumbnail.filter_presets` 에 행을 하나 덧붙이면 됩니다.
+
+```php
+public function addPreset(mixed $presets): mixed
+{
+    // 앞선 필터가 배열이 아닌 값을 넘기면 그대로 돌려준다 — 빈 배열로 바꾸면 그 값을 이 리스너가 지운다
+    if (! is_array($presets)) {
+        return $presets;
+    }
+
+    $presets[] = [
+        'name' => 'gnuboard7-hello_module.sample', // {확장 식별자}.{키}
+        'label' => 'gnuboard7-hello_module::messages.thumbnail.sample_preset_label', // 표에 보일 이름(다국어 키)
+        'width' => 480,
+        'height' => 270,
+        'fit' => 'cover',     // cover(자르기) · contain(맞추기) · width(가로만)
+        'anchor' => 'center', // 자르기 기준점
+    ];
+
+    return $presets;
+}
+```
+
+- **이름**은 `{확장 식별자}.{키}` 형식만 받습니다. 키는 영문 소문자·숫자·밑줄 32자 이내입니다. 형식이
+  어긋난 행은 오류 없이 버려집니다.
+- 생략한 값은 코어 기본값(원본 형식·작은 원본 확대 안 함·등록 시 미리 만들기 안 함·숫자 요청 대상 아님·사용)을
+  씁니다. 쓸 수 있는 키는 `width`·`height`·`fit`·`anchor`·`quality`·`format`(`original`·`webp`·`avif`)·
+  `upscale`·`pregenerate`·`numeric`·`enabled` 입니다.
+- 등록한 규격은 환경설정 > 업로드 탭 「썸네일 규격」 표에 이름이 잠긴 행으로 나타납니다. 운영자는 값만
+  고칠 수 있고, 「기본값으로」를 누르면 확장이 등록한 값으로 돌아갑니다.
+- **`label`** 은 그 표에 식별자 대신 보일 사람이 읽는 이름입니다(「Hello 모듈 샘플」). 백엔드 다국어 키를 주면 코어가
+  언어마다 풀어 싣습니다. ko·en 은 이 모듈의 `src/lang/{ko,en}/messages.php` 에, 일본어는 언어팩의 같은 키에 둡니다.
+  생략하거나 번역이 없으면 식별자를 보입니다. 식별자는 이름 아래에 작게 남고, 이름은 썸네일 파일(지문)에 영향이 없습니다.
+- 확장을 끄면 표에서 빠집니다. 운영자가 고친 값은 설정에 남아 있다가 다시 켜면 되살아납니다.
+- 이미지 주소에 `?size=gnuboard7-hello_module.sample` 을 붙이면 이 규격의 썸네일이 나갑니다
+  (코어 첨부 `/api/attachment/{hash}` 등 썸네일을 지원하는 서빙 주소).
 <!-- @intent END -->
 
 ## 훅 리스너
@@ -47,11 +90,13 @@ Service 인 것이 규약입니다 — 컨트롤러에서 발행하면 같은 �
 | 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
 |---|---|---|---|---|
 | `LogMemoCreatedListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/LogMemoCreatedListener.php` |
+| `ThumbnailPresetListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ThumbnailPresetListener.php` |
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->
-`LogMemoCreatedListener` 하나이며 `HookListenerInterface` 를 구현하고
-`getSubscribedHooks()` 로 자기 구독을 선언합니다(명시 등록).
+`LogMemoCreatedListener`(액션)와 `ThumbnailPresetListener`(필터) 둘이며, 둘 다 `HookListenerInterface` 를
+구현하고 `getSubscribedHooks()` 로 자기 구독을 선언합니다(명시 등록). 필터 리스너는 `'type' => 'filter'` 를
+적고 받은 값을 가공해 돌려줍니다.
 
 하는 일은 로그 한 줄이지만, 그 자리가 중요합니다 — **부가 작업은 Service 안이 아니라 리스너로
 뺀다**는 규약의 본보기입니다. Service 에 로그·알림을 쌓으면 그 Service 를 다른 맥락에서
@@ -108,8 +153,8 @@ _등록하는 스케줄이 없습니다._
 <!-- @intent START -->
 없습니다. 샘플에는 시간 축 동작이 없습니다.
 
-스케줄 선언 형태(`command` · `schedule` · `description` · `enabled_config`)는 실제로 스케줄을
-쓰는 확장의 문서를 참고합니다.
+스케줄 선언 형태(7.2.0 — `name` · `label` · `description` · `type` · `expression` · `enabled_condition` 등)는 [모듈 스케줄 문서](../../../../docs/extension/module-schedules.md)와 실제로 스케줄을
+쓰는 확장의 문서를 참고합니다. 옛 형식(`command` · `schedule` · `enabled_config`)도 받아 새 형식으로 바꿔 등록하지만 새 확장은 새 형식으로 씁니다. 필수 키(`name` 과 `expression`/`schedule` 중 하나)가 빠진 항목은 검증에서 건너뛰고 로그에 경고를 남깁니다.
 <!-- @intent END -->
 
 ## 알림 정의

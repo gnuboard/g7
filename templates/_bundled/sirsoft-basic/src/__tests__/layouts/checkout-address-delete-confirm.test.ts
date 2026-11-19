@@ -90,6 +90,23 @@ describe('주문서 배송지 관리 창 — 배송지 삭제', () => {
     expect(onSuccess.map((action) => action.handler)).toEqual(['refetchDataSource', 'toast']);
     expect((onSuccess[0].params as Record<string, unknown>).dataSourceId).toBe('userAddresses');
     expect((onSuccess[1].params as Record<string, unknown>).message).toBe('$t:shop.checkout.address_deleted');
-    expect((deleteAction?.onError as Record<string, unknown>).handler).toBe('toast');
+
+    // 7.2.0: 실패 갈래는 둘이다. 추가 정보가 비어 거부된 요청(error_code 가 required_fields_pending)은 안내 창을 열고,
+    // 그 밖의 실패만 오류 안내를 띄운다. 두 조건은 서로 배타라 한 번에 하나만 실행된다.
+    const onError = deleteAction?.onError as Array<Record<string, unknown>>;
+    const evaluate = (text: unknown, error: Record<string, unknown>): unknown =>
+      // eslint-disable-next-line no-new-func
+      new Function('error', `return (${String(text).replace(/^\{\{([\s\S]+)\}\}$/, '$1')});`)(error);
+
+    expect(onError.map((action) => action.handler)).toEqual(['openModal', 'toast']);
+    expect(onError[0].target).toBe('required_info_pending_modal');
+    expect((onError[1].params as Record<string, unknown>).type).toBe('error');
+    expect((onError[1].params as Record<string, unknown>).message).toBe('{{error.message}}');
+
+    for (const error of [{ error_code: 'required_fields_pending' }, { error_code: 'forbidden' }, {}]) {
+      const pending = error.error_code === 'required_fields_pending';
+      expect(evaluate(onError[0].if, error)).toBe(pending);
+      expect(evaluate(onError[1].if, error)).toBe(!pending);
+    }
   });
 });

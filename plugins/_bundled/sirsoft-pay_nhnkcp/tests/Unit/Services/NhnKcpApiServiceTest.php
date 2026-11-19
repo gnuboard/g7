@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\PayNhnkcp\Tests\Unit\Services;
 use App\Services\PluginSettingsService;
 use Illuminate\Support\Facades\Http;
 use Plugins\Sirsoft\PayNhnkcp\Exceptions\NhnKcpApiException;
+use Plugins\Sirsoft\PayNhnkcp\Exceptions\NhnKcpRejectedException;
 use Plugins\Sirsoft\PayNhnkcp\Services\KcpSoapService;
 use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
@@ -338,7 +339,10 @@ class NhnKcpApiServiceTest extends PluginTestCase
      *
      * @scenario call=cancel
      *
-     * @effects cancel_payment_calls_cli_with_full_cancel_params
+     * @effects cancel_payment_calls_cli_with_full_cancel_params,
+     *   net_cancel_sends_pg_cancel_api_call,
+     *   net_cancel_passes_approved_tno,
+     *   net_cancel_full_omits_amount_fields
      *
      * @return void 반환값 없음
      */
@@ -514,6 +518,32 @@ class NhnKcpApiServiceTest extends PluginTestCase
 
             $args = $this->capturedCliArgs($stub['log']);
             $this->assertStringContainsString('site_cd='.self::TEST_SITE_CD, $args);
+        } finally {
+            $this->removeStubbedCliDirectory($stub['dir']);
+        }
+    }
+
+    /**
+     * 에스크로 배송등록 응답 코드가 0000 이 아니면 KCP 거절 예외(NhnKcpRejectedException)에 res_msg 를 담아 던진다 —
+     * 관리자 응답은 이 예외의 사유만 그대로 싣고, CLI 실행 실패 같은 다른 예외는 일반 문구로 바꾼다(#858).
+     *
+     * @scenario call=escrow
+     *
+     * @effects register_escrow_delivery_throws_rejected_exception_on_non_0000_res_cd
+     *
+     * @return void 반환값 없음
+     */
+    public function test_register_escrow_delivery_throws_rejected_exception_on_non_0000_res_cd(): void
+    {
+        $stub = $this->makeServiceWithStubbedCli('res_cd=8128'.chr(31).'res_msg=이미 배송등록된 거래입니다.');
+        /** @var NhnKcpApiService $service */
+        $service = $stub['service'];
+
+        try {
+            $this->expectException(NhnKcpRejectedException::class);
+            $this->expectExceptionMessage('이미 배송등록된 거래입니다.');
+
+            $service->registerEscrowDelivery('TNO_ESCROW', 'ORD-ESCROW', '1234567890', '04');
         } finally {
             $this->removeStubbedCliDirectory($stub['dir']);
         }

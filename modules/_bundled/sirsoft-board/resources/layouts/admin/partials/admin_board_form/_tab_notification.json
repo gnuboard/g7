@@ -8,7 +8,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card"
+        "className": "board-admin-card"
     },
     "children": [
         {
@@ -16,7 +16,7 @@
             "type": "basic",
             "name": "H3",
             "props": {
-                "className": "card-title"
+                "className": "board-card-title"
             },
             "text": "$t:sirsoft-board.admin.form.tabs.notification"
         },
@@ -25,7 +25,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "row-stack"
+                "className": "board-row-stack"
             },
             "children": [
                 {
@@ -33,21 +33,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-start justify-between"
+                        "className": "board-flex-start board:justify-between"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-1"
+                                "className": "board:flex-1"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "text-heading"
+                                        "className": "board-text-heading"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.fields.notify_author.label"
                                 },
@@ -55,7 +55,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "board-form-hint"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.fields.notify_author.description"
                                 }
@@ -67,7 +67,7 @@
                             "props": {
                                 "name": "notify_author",
                                 "disabled": "{{_computed.isReadOnly}}",
-                                "className": "flex-shrink-0 ml-4"
+                                "className": "board:flex-shrink-0 board:ml-4"
                             }
                         }
                     ]
@@ -77,21 +77,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-start justify-between"
+                        "className": "board-flex-start board:justify-between"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-1"
+                                "className": "board:flex-1"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "text-heading"
+                                        "className": "board-text-heading"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.fields.notify_admin_on_post.label"
                                 },
@@ -99,7 +99,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "board-form-hint"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.fields.notify_admin_on_post.description"
                                 }
@@ -111,7 +111,7 @@
                             "props": {
                                 "name": "notify_admin_on_post",
                                 "disabled": "{{_computed.isReadOnly}}",
-                                "className": "flex-shrink-0 ml-4"
+                                "className": "board:flex-shrink-0 board:ml-4"
                             }
                         }
                     ]

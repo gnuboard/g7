@@ -23,7 +23,7 @@ class CalculatesJsonContentDiffTest extends TestCase
     /**
      * 트레이트를 조합한 익명 객체 (private 메서드를 공개 래퍼로 노출)
      *
-     * @return object
+     * @return object 트레이트의 diffLineCounts·contentToLines 를 공개 래퍼로 노출한 익명 객체
      */
     private function subject(): object
     {
@@ -31,13 +31,24 @@ class CalculatesJsonContentDiffTest extends TestCase
         {
             use CalculatesJsonContentDiff;
 
-            /** @param array<string> $a @param array<string> $b @return array{0: int, 1: int} */
+            /**
+             * 트레이트의 라인 LCS 카운트 계산을 그대로 호출합니다.
+             *
+             * @param  array<string>  $a  이전 라인
+             * @param  array<string>  $b  새 라인
+             * @return array{0: int, 1: int} [추가, 삭제] 라인 수
+             */
             public function counts(array $a, array $b): array
             {
                 return $this->diffLineCounts($a, $b);
             }
 
-            /** @param array<string, mixed> $content @return array<string> */
+            /**
+             * 트레이트의 content 직렬화(정렬된 pretty JSON 라인 분해)를 그대로 호출합니다.
+             *
+             * @param  array<string, mixed>  $content  레이아웃 content
+             * @return array<string> 직렬화된 라인 목록
+             */
             public function lines(array $content): array
             {
                 return $this->contentToLines($content);
@@ -87,7 +98,7 @@ class CalculatesJsonContentDiffTest extends TestCase
     /**
      * 직렬화하면 2,300줄을 넘는 레이아웃 형태의 content 를 만듭니다.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> 노드 260개를 가진 레이아웃 content
      */
     private function largeLayout(): array
     {
@@ -117,6 +128,8 @@ class CalculatesJsonContentDiffTest extends TestCase
      * 146MB 를 더 썼다.
      *
      * @effects changes_summary_memory_bounded_for_full_span_change
+     *
+     * @return void 반환값 없음
      */
     public function test_full_span_change_of_large_layout_stays_within_memory_budget(): void
     {
@@ -147,6 +160,8 @@ class CalculatesJsonContentDiffTest extends TestCase
      * 목록의 +N/-N 이 diff 뷰(프론트 lineDiff.ts)와 일치한다는 S11 계약의 근거다.
      *
      * @effects changes_summary_uses_line_lcs_unit_matching_diff_view
+     *
+     * @return void 반환값 없음
      */
     public function test_counts_equal_full_table_reference_on_random_inputs(): void
     {
@@ -176,6 +191,8 @@ class CalculatesJsonContentDiffTest extends TestCase
      * 레이아웃 형태의 변형(노드 추가·삭제·prop 변경·순서 변경)에서도 참조 구현과 같아야 합니다.
      *
      * @effects changes_summary_uses_line_lcs_unit_matching_diff_view
+     *
+     * @return void 반환값 없음
      */
     public function test_counts_equal_reference_on_layout_shaped_mutations(): void
     {

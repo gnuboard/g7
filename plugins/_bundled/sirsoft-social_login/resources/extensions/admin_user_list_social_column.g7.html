@@ -1,0 +1,71 @@
+<!-- 관리자 회원 목록에 「소셜 연결」 열을 얹는다 — 표(users_data_grid) 열 끝과 툴바 열 선택기(column_selector) 선택지 끝에 한 개씩 덧붙이고, 열 선택기의
+  기본 열에는 넣지 않아 처음에는 숨어 있다. 셀 값 `row.social_providers` 는 코어 목록 일괄 필터에서 `UserListSocialProvidersColumn` 이 페이지당 한 번의
+  조회로 채운다(회원 연결 열람 권한이 없으면 키가 없고 셀은 `-`). 관리자 템플릿을 고치지 않으므로 플러그인을 끄면 열도 사라진다.
+  주입 props 의 `<append>` 안은 항목 리스트라 열 정의를 `<item>`·`<field>` 트리로 적는다(열 태그 `<column>` 은 쓸 수 없다).
+  제공자 표시(ProviderMark)는 장식이라 숨겨지므로 셀에 이름을 마우스 설명(title)과 화면 낭독용 글(sr-only)로 함께 둔다. -->
+<extension target-layout="admin_user_list" priority="210">
+  <inject target-id="users_data_grid" position="inject_props">
+    <props>
+      <prop name="columns">
+        <append>
+          <item>
+            <field name="field" value="social_providers"/>
+            <field name="header" value="$t:sirsoft-social_login.admin.users.column_header"/>
+            <field name="sortable" :value="false"/>
+            <field name="cellChildren">
+              <item>
+                <field name="type" value="basic"/>
+                <field name="name" value="Div"/>
+                <field name="if" value="{{(row.social_providers ?? []).length > 0}}"/>
+                <field name="props">
+                  <field name="className" value="sl:flex sl:items-center sl:gap-1"/>
+                  <field name="title" value="{{(row.social_providers ?? []).map(sp => sp.label).join(', ')}}"/>
+                </field>
+                <field name="children">
+                  <item>
+                    <field name="type" value="basic"/>
+                    <field name="name" value="Span"/>
+                    <field name="props">
+                      <field name="className" value="sl:sr-only"/>
+                    </field>
+                    <field name="text" value="{{(row.social_providers ?? []).map(sp => sp.label).join(', ')}}"/>
+                  </item>
+                  <item>
+                    <field name="type" value="basic"/>
+                    <field name="name" value="sirsoft-social_login.ProviderMark"/>
+                    <field name="iteration">
+                      <field name="source" value="row.social_providers ?? []"/>
+                      <field name="item_var" value="sp"/>
+                    </field>
+                    <field name="props">
+                      <field name="brand" value="{{sp.brand}}"/>
+                      <field name="label" value="{{sp.label}}"/>
+                    </field>
+                  </item>
+                </field>
+              </item>
+              <item>
+                <field name="type" value="basic"/>
+                <field name="name" value="Span"/>
+                <field name="if" value="{{(row.social_providers ?? []).length === 0}}"/>
+                <field name="props">
+                  <field name="className" value="sl:text-gray-400 sl:dark:text-gray-500"/>
+                </field>
+                <field name="text" value="-"/>
+              </item>
+            </field>
+          </item>
+        </append>
+      </prop>
+    </props>
+  </inject>
+  <inject target-id="column_selector" position="inject_props">
+    <props>
+      <prop name="columns">
+        <append>
+          <item field="social_providers" header="$t:sirsoft-social_login.admin.users.column_header"/>
+        </append>
+      </prop>
+    </props>
+  </inject>
+</extension>

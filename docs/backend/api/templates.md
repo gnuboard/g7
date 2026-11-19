@@ -8,11 +8,17 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Templates 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
+
+---
+
+## 검수 서버(실행 역할 stage)에서의 응답
+
+`.env` 의 `G7_RUNTIME_ROLE=stage` 로 띄운 검수 서버에서는 설치·켜기/끄기·업데이트(업데이트 미리보기 포함 — GitHub 새 판을 내려받는다)·호환성 복구·제거처럼 확장을 바꾸는 요청이 **409** `{"success": false, "message": "검수 서버(실행 역할 stage)에서는 이 작업을 할 수 없습니다 — …"}` 로 거절됩니다(언어팩·코어 업데이트도 같음). 목록·상세·업데이트 확인·레이아웃 갱신(미리보기 포함)은 그대로 동작합니다. 자세한 내용은 [실행 역할](../runtime-role.md)을 봅니다.
 
 ---
 
@@ -66,8 +72,12 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | icon_url | string\|null | `/api/extensions/template/sirsoft-admin_basic/icon?v=1.1.0` | 확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체). `?v=` 는 캐시 무효화용 버전 |
 | icon_source | string | `convention` | 아이콘을 어디서 얻었는지 (`manifest` 선언 · `convention` 관례 파일 · `none` 없음) |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
+| has_settings | boolean | `true` | 템플릿 환경설정 화면을 열 수 있는지 — 선언(섹션 1개 이상)이 있고 템플릿이 설정 화면(`settings/template_settings.*`)을 공급할 때 true |
+| settings_route | string|null | `/admin/templates/sirsoft-admin_basic/settings` | 템플릿 환경설정 화면 주소 (`has_settings` 가 false 면 null) |
 | stuck_update | boolean | `false` | 업데이트가 도중에 멈춘 상태인지 — `updating` 으로 10분이 지났고 진행 중인 업데이트 잠금이 없으면 `true`. 관리자 카드가 「업데이트 멈춤」 표시와 「정리 후 다시 업데이트」 단추를 보일 때 쓴다 |
 | update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | latest_version | string | `1.0.4` | 감지된 최신 배포 버전 |
 | file_version | string | `1.0.4` | 설치된 파일의 manifest 버전 |
 | github_url | string | `https://github.com/gnuboard/g7-templa…` | GitHub 저장소 URL |
@@ -77,7 +87,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | deactivated_reason | null | `null` | 비활성화 사유: manual(사용자 수동) \| incompatible_core(코어 버전 호환성) \| null(active) |
 | deactivated_at | null | `null` | deactivated 일시 |
 | incompatible_required_version | null | `null` | 요구 코어 버전 미충족 시 필요한 버전 (호환되면 null) |
-| abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":t…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
+| abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":t…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반). `can_update_settings` 는 템플릿 환경설정 저장 권한(`core.templates.settings`) — 없으면 목록 「설정」 메뉴가 자물쇠·「읽기 전용」으로 보인다 |
 
 **응답 예시**
 
@@ -355,6 +365,8 @@ _단건 응답: `data` 객체의 필드._
 | details[].current_version | string | `1.0.0` | 현재 설치된 버전 |
 | details[].latest_version | string | `1.0.1` | 감지된 최신 버전 |
 | details[].update_source | string | `github` | 업데이트 감지 출처 (`github` \| `bundled`) |
+| checked_count | integer | `5` | 확인한 템플릿 수 |
+| failures | array | `[]` | GitHub 조회에 실패한 템플릿 — 각 원소 `identifier`·`reason`(실패 사유). 실패한 템플릿의 업데이트 정보는 「없음」으로 덮지 않고 그대로 둔다 |
 
 **응답 예시**
 
@@ -386,6 +398,8 @@ _단건 응답: `data` 객체의 필드._
 | 500 | Server Error | 업데이트 확인 처리 실패 (GitHub API 호출 실패 등) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 설치된 모든 템플릿의 배포 최신 버전을 조회해 업데이트 가능 여부를 확인합니다(TemplateService::checkForUpdates). 별도 요청 파라미터는 없으며, 목록 화면의 업데이트 배지 갱신에 사용됩니다. `core.templates.install` 권한이 필요합니다.
 
@@ -436,7 +450,11 @@ _단건 응답: `data` 객체의 필드 (TemplateResource)._
 | integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
 | dependencies_met | boolean | `true` | 의존 확장이 모두 활성·버전 충족인지 여부 |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
+| has_settings | boolean | `true` | 템플릿 환경설정 화면을 열 수 있는지 — 선언(섹션 1개 이상)이 있고 템플릿이 설정 화면(`settings/template_settings.*`)을 공급할 때 true |
+| settings_route | string|null | `/admin/templates/sirsoft-admin_basic/settings` | 템플릿 환경설정 화면 주소 (`has_settings` 가 false 면 null) |
 | update_source | string\|null | `null` | 업데이트 감지 출처 (`github` \| `bundled` \| null) |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | latest_version | string\|null | `null` | 감지된 최신 배포 버전 |
 | file_version | string\|null | `1.0.0` | 설치된 파일의 manifest 버전 |
 | github_url | string\|null | `null` | GitHub 저장소 URL |
@@ -501,6 +519,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource)._
 
 <!-- @generated:end -->
 
+
+
 **설명** 활성 상태의 템플릿을 비활성화합니다(TemplateService::deactivateTemplate). `core.templates.activate` 권한이 필요합니다.
 
 
@@ -561,6 +581,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource + cascade 결과)._
 | dependencies_met | boolean | `true` | 의존 확장이 모두 활성·버전 충족인지 여부 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |
 | update_source | string\|null | `null` | 업데이트 감지 출처 |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | latest_version | string\|null | `null` | 감지된 최신 배포 버전 |
 | file_version | string\|null | `1.0.0` | 설치된 파일의 manifest 버전 |
 | github_url | string\|null | `null` | GitHub 저장소 URL |
@@ -648,6 +670,9 @@ _단건 응답: `data` 객체의 필드 (TemplateResource + cascade 결과)._
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | file | body | file | 예 | max 51200 | 업로드 파일 |
+| signature | body | file | 아니오 | max 64 (KB) | 서명 파일 `{zip}.sig.json` (7.2.0). 업로드 ZIP 은 옆 파일을 자동으로 찾지 않으므로 서명을 확인하려면 이 칸으로 준다. 비우면 미서명 |
+| allow_unsigned | body | boolean | 아니오 | — | 미서명·검증 불가 패키지를 확인하고 계속 (7.2.0). 409 `package_unsigned` 경고 창의 「미서명으로 계속」이 같은 요청을 `1` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
+| integrity_aware | body | boolean | 아니오 | — | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `1` 을 보낸다. 이 칸이 없는 요청은 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 패키지를 확인 없이 진행한다(서버 경고 로그, 설치 행 `integrity_status=unsigned`). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.template.install_from_file_validation_rules`).
 
@@ -688,6 +713,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | dependencies_met | boolean | `true` | 의존 확장 충족 여부 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |
 | update_source | string\|null | `null` | 업데이트 감지 출처 |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | latest_version | string\|null | `null` | 감지된 최신 배포 버전 |
 | file_version | string\|null | `1.0.0` | 설치된 파일의 manifest 버전 |
 | github_url | string\|null | `null` | GitHub 저장소 URL |
@@ -749,12 +776,18 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 파일 검증 위반 또는 ZIP 처리 실패 (template.json 누락/무효, 이미 설치된 식별자, 잘못된 디렉토리명 등) |
 | 409 | Conflict | 같은 템플릿에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 409 | Conflict | 미서명·검증 불가 패키지 (7.2.0) — `errors.package_unsigned: true` 와 `errors.integrity`. `errors.integrity.can_continue` 가 true 면 같은 요청을 `allow_unsigned=1` 로 다시 보내 계속하고, 「미서명 패키지 차단」이 켜져 있으면 false ([오류 응답](../../extension/package-signing.md#오류-응답)) |
+| 422 | Unprocessable Entity | 서명 불일치(`errors.package_signature_invalid: true`)·신뢰하지 않는 키(`errors.package_signer_untrusted: true`) — `errors.integrity.reason` 에 사유, 확인으로도 계속할 수 없다 (7.2.0) |
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 설치 처리 중 예기치 못한 오류 |
 
 <!-- @generated:end -->
 
+
+
 **설명** 업로드된 ZIP 파일에서 템플릿을 설치합니다(TemplateService::installFromZipFile). 최대 50MB(51200KB)까지 허용합니다. `core.templates.install` 권한이 필요합니다.
+
+**패키지 서명(7.2.0)** `signature` 로 준 서명 파일로 ZIP 을 풀기 전에 검증하고, 푼 manifest 의 식별자·버전을 서명과 대조한다. 서명 파일을 주지 않으면 미서명이라 409 를 내고, 같은 요청을 `allow_unsigned=1` 로 다시 보내면 계속한다. 서명 불일치·신뢰하지 않는 키는 422 로 멈추고 설치 경로에 파일을 남기지 않는다. 검증 결과는 설치 행 `integrity_status`·`integrity_key_id` 에 남는다. 상세: [패키지 서명](../../extension/package-signing.md)
 
 
 ### POST /api/admin/templates/install-from-github
@@ -768,6 +801,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | github_url | body | string | 예 | — | GitHub 저장소 URL |
+| allow_unsigned | body | boolean | 아니오 | — | 미서명·검증 불가 패키지를 확인하고 계속 (7.2.0). 409 `package_unsigned` 경고 창의 「미서명으로 계속」이 같은 요청을 `1` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
+| integrity_aware | body | boolean | 아니오 | — | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `1` 을 보낸다. 이 칸이 없는 요청은 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 패키지를 확인 없이 진행한다(서버 경고 로그, 설치 행 `integrity_status=unsigned`). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.template.install_from_github_validation_rules`).
 
@@ -805,6 +840,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | dependencies_met | boolean | `true` | 의존 확장 충족 여부 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |
 | update_source | string\|null | `null` | 업데이트 감지 출처 |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | latest_version | string\|null | `null` | 감지된 최신 배포 버전 |
 | file_version | string\|null | `1.0.0` | 설치된 파일의 manifest 버전 |
 | github_url | string\|null | `https://github.com/gnuboard/g7-template-basic` | manifest 에 선언된 GitHub 저장소 URL |
@@ -866,12 +903,18 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | URL 검증 위반 또는 설치 실패 (유효하지 않은 GitHub URL, 저장소 없음, 다운로드 실패, 이미 설치된 식별자 등) |
 | 409 | Conflict | 같은 템플릿에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 409 | Conflict | 미서명·검증 불가 패키지 (7.2.0) — `errors.package_unsigned: true` 와 `errors.integrity`. `errors.integrity.can_continue` 가 true 면 같은 요청을 `allow_unsigned=1` 로 다시 보내 계속하고, 「미서명 패키지 차단」이 켜져 있으면 false. 서명 자산이 없는 릴리스는 ZIP 을 받기 전에 이 응답을 낸다 ([오류 응답](../../extension/package-signing.md#오류-응답)) |
+| 422 | Unprocessable Entity | 서명 불일치(`errors.package_signature_invalid: true`)·신뢰하지 않는 키(`errors.package_signer_untrusted: true`) — `errors.integrity.reason` 에 사유, 확인으로도 계속할 수 없다 (7.2.0) |
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 설치 처리 중 예기치 못한 오류 |
 
 <!-- @generated:end -->
 
+
+
 **설명** 지정한 GitHub 저장소 URL에서 템플릿을 내려받아 설치합니다(TemplateService::installFromGithub). `core.templates.install` 권한이 필요합니다.
+
+**패키지 서명(7.2.0)** 태그 릴리스만 받는다 — 최신 릴리스가 없으면 `main`·`master` 브랜치로 물러서지 않고 「릴리스를 찾을 수 없음」(`common.errors.github_release_not_found`)으로 실패한다. 릴리스에 `{identifier}-{version}.zip` 과 `.sig.json` 자산 짝이 있으면 그것을 받아 풀기 전에 검증하고, 짝이 없으면 미서명으로 다뤄 ZIP 을 받기 전에 409 를 낸다(같은 요청을 `allow_unsigned=1` 로 다시 보내면 계속). 검증 결과는 설치 행 `integrity_status`·`integrity_key_id` 에 남는다. 상세: [패키지 서명](../../extension/package-signing.md)
 
 
 ### DELETE /api/admin/templates/layout-attachments/{attachment}
@@ -920,6 +963,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (`data`: `null`, �
 | 500 | Server Error | 첨부 파일 삭제 실패 (스토리지/DB 삭제 실패 — `첨부 파일 삭제에 실패했습니다.`) |
 
 <!-- @generated:end -->
+
 
 **설명** 레이아웃 편집 중 업로드된 첨부(배경 이미지 등)를 삭제합니다. 스토리지의 실제 파일과 DB 행을 함께 삭제합니다(TemplateLayoutAttachmentService::delete). `core.templates.layouts.edit` 권한이 필요합니다.
 
@@ -1001,6 +1045,8 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
+
+
 **설명** 업로드된 ZIP을 실제 설치하지 않고 manifest와 검증 결과만 추출해 반환합니다(TemplateService::previewManifest). 설치 전 확인 다이얼로그에서 사용합니다. `core.templates.install` 권한이 필요합니다.
 
 
@@ -1016,6 +1062,8 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- | --- | --- | --- |
 | template_name | body | string | 예 | max 255 | template 이름 (식별자) |
 | layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
+| layout_strategy | body | string | 아니오 | `keep`, `overwrite` | 레이아웃 처리 방식 — 기본 `keep`(편집기로 고친 화면은 고친 부분을 지키고 손대지 않은 부분만 새 판으로). `overwrite` 는 파일 판으로 덮는다(덮기 전 운영자 판은 편집기 버전 이력에 남는다) |
+| decisions | body | object | 아니오 | 값 `take-theirs`·`keep-ours` | 화면별 결정 — 키는 미리보기 응답 `entries[].key`(레이아웃 `layout:{템플릿}:{이름}`, 조각 `extension:{템플릿}:{출처}:{조각 키}`). `take-theirs` 는 그 화면만 새 판으로 덮고, `keep-ours` 는 운영자 판을 통째로 둔다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.template.refresh_layouts_validation_rules`).
 
@@ -1052,6 +1100,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 갱신 후 템플�
 | dependencies_met | boolean | `true` | 의존 확장 충족 여부 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |
 | update_source | string\|null | `null` | 업데이트 감지 출처 |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | latest_version | string\|null | `null` | 감지된 최신 배포 버전 |
 | file_version | string\|null | `1.0.0` | 설치된 파일의 manifest 버전 |
 | github_url | string\|null | `null` | GitHub 저장소 URL |
@@ -1063,6 +1113,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 갱신 후 템플�
 | incompatible_required_version | string\|null | `null` | 코어 버전 미충족 시 요구 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true,"can_edit_layouts":true}` | 현재 사용자의 수행 가능 작업 맵 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
+| layout_preview | object | — | 판정별 결과 (7.2.0) — `strategy`, `entries[]`(`key`·`kind`·`template`·`name`·`verdict`·`applied`·`conflicts`·`will_delete`), `summary`(판정 → 화면 수), `has_conflicts`, `conflict_screens`. 미리보기 응답과 같은 모양이다 |
+| layout_sync | object | — | 운영자가 고친 화면만 모은 보고 (확장 업데이트 응답과 같은 모양) |
 | warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
@@ -1116,7 +1168,79 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 갱신 후 템플�
 
 <!-- @generated:end -->
 
+
+
 **설명** 템플릿의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다(TemplateService::refreshTemplateLayouts). 파일로 직접 수정한 레이아웃을 반영할 때 사용합니다. `core.templates.activate` 권한이 필요합니다.
+
+
+**레이아웃 처리 방식(7.2.0)** 전략을 생략하면 keep 이다 — 편집기로 고친 화면은 고친 부분을 지키고, 새 판에서 빠진 화면이라도 운영자가 고쳤으면 남긴다. 파일 판으로 덮으려면 `layout_strategy=overwrite` 를 보낸다. 관리자 [레이아웃 갱신] 창은 먼저 아래 미리보기를 부르고, 운영자가 고른 처리 방식·화면별 결정을 이 요청에 싣는다.
+
+
+### POST /api/admin/templates/refresh-layouts/preview
+<!-- @generated:start:api.admin.templates.refresh-layouts.preview -->
+- **라우트명**: `api.admin.templates.refresh-layouts.preview`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\TemplateController@refreshLayoutsPreview`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.activate`
+
+**요청 파라미터**
+
+`POST /api/admin/templates/refresh-layouts` 와 같다 (`template_name`·`layout_source`·`layout_strategy`·`decisions`).
+
+**요청 예시**
+
+```http
+POST /api/admin/templates/refresh-layouts/preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "template_name": "sirsoft-basic",
+    "layout_strategy": "keep"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| strategy | string | `keep` | 계산에 쓴 처리 방식 |
+| entries | array | — | 화면·조각마다 한 항목 — `key`(화면별 결정 키), `kind`(`layout`·`extension`), `template`, `name`, `verdict`, `applied`(새 판을 반영한 단위), `conflicts`(운영자 수정과 겹쳐 운영자 판을 남긴 단위), `will_delete` |
+| summary | object | `{"merged":1,"unchanged":12,...}` | 판정 → 화면 수 (`created`·`updated`·`unchanged`·`took_theirs`·`kept`·`merged`·`conflict`·`kept_no_base`·`kept_invalid`·`kept_removed`·`kept_deleted_by_operator`·`kept_name_collision`·`deleted`) |
+| has_conflicts | boolean | `false` | 운영자 수정과 겹친 화면이 있는지 |
+| conflict_screens | array | `[]` | 겹친 화면 이름 목록 (`템플릿 · 화면`) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "레이아웃 갱신 미리보기를 만들었습니다.",
+    "data": {
+        "strategy": "keep",
+        "entries": [
+            {"key": "layout:sirsoft-basic:home", "kind": "layout", "template": "sirsoft-basic", "name": "home", "verdict": "merged", "applied": [{"unit": "partials/home/_banner", "kind": "partial"}], "conflicts": [], "will_delete": false}
+        ],
+        "summary": {"merged": 1},
+        "has_conflicts": false,
+        "conflict_screens": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.activate`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 실패(알 수 없는 처리 방식·결정 값), 또는 템플릿를 찾을 수 없거나 비활성 |
+| 500 | Internal Server Error | 판정 계산 중 예외 |
+
+<!-- @generated:end -->
+
+**설명** 레이아웃 갱신을 실제로 하지 않고, 같은 코드로 화면마다 어떻게 바뀔지만 계산합니다. DB·캐시는 바뀌지 않습니다. 같은 입력이면 이 응답의 `entries` 와 실제 갱신 응답의 `layout_preview.entries` 가 같습니다.
 
 
 ### DELETE /api/admin/templates/uninstall
@@ -1184,6 +1308,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | 500 | Server Error | 제거 처리 중 예기치 못한 오류 |
 
 <!-- @generated:end -->
+
+
 
 **설명** 활성 디렉토리의 템플릿을 제거합니다(`_bundled` 원본은 보존). `delete_data=true`인 경우 관련 데이터까지 함께 삭제합니다(TemplateService::uninstallTemplate). `core.templates.uninstall` 권한이 필요합니다.
 
@@ -1325,6 +1451,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 특정 템플릿의 변경 내역(CHANGELOG)을 조회합니다. `source`(active/bundled/github)로 출처를, `from_version`/`to_version`으로 버전 범위를 지정할 수 있습니다(TemplateService::getTemplateChangelog). `core.templates.read` 권한이 필요합니다.
 
@@ -1472,6 +1600,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
@@ -1538,6 +1668,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 데이터소스 websocket 후보용으로 등록된 브로드캐스트 채널/이벤트 카탈로그를 반환합니다(BroadcastCatalogService::collect). 편집기 전용 가드 하에서만 노출되며(admin 전역 broadcast 회피), `identifier`는 라우트 일관성용이고 카탈로그는 설치본 전역 기준입니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -1585,6 +1717,7 @@ Content-Type: text/css; charset=UTF-8
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
+
 
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
@@ -1642,7 +1775,7 @@ Content-Type: text/css; charset=UTF-8
 
 <!-- @generated:end -->
 
-**설명** 레이아웃 편집기 프리뷰 전용 CSS를 서빙합니다. 편집기 진입 시에만 components.css의 다크 조상 셀렉터를 프리뷰 마커로 치환하고(editor-spec `darkMode.previewIsolation` 규칙), 필요 시 `@layer` 래퍼를 평탄화해 라이트/다크 프리뷰를 격리합니다. 변환 결과는 캐시 버전+파일 mtime 키로 캐시하며, CSS 부재 시 빈 응답으로 폴백합니다. CSS 와 치환 규칙(editor-spec)은 설치본만 읽으며, 설치본에 CSS 가 없으면 배포 원본을 대신 서빙하지 않고 빈 응답을 돌려줍니다. `core.templates.layouts.edit` 권한이 필요합니다.
+**설명** 레이아웃 편집기 프리뷰 전용 CSS를 서빙합니다. 편집기 진입 시에만 components.css의 다크 조상 셀렉터를 프리뷰 마커로 치환하고(editor-spec `darkMode.previewIsolation` 규칙), 필요 시(`flattenLayers`) 템플릿의 `@layer` 이름을 프리뷰 층 `g7-preview` 하나로 모아 관리자 화면 CSS 의 같은 층 이름과 섞이지 않게 합니다(층 밖 규칙은 그대로, 순서 선언은 삭제). 관리자 화면 머리가 `@layer g7-preview, g7-extension;` 을 선언하므로 프리뷰 템플릿 규칙은 관리자 층 규칙보다 위·확장 CSS 의미 칸보다 아래에 놓입니다. 변환 결과는 캐시 버전+파일 mtime 키로 캐시하며, CSS 부재 시 빈 응답으로 폴백합니다. CSS 와 치환 규칙(editor-spec)은 설치본만 읽으며, 설치본에 CSS 가 없으면 배포 원본을 대신 서빙하지 않고 빈 응답을 돌려줍니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 URI 가 `editor/components.css` 가 아니라 `editor/component-styles.css` 인 이유는 [자산 URL 이중 모드](README.md#자산-url-이중-모드) 때문입니다. 확장자를 뗀 형태(`editor/components`)가 `editor/components.json` 의 확장자 없는 형태와 충돌하므로 CSS 쪽 URI 를 분리했습니다. 확장자 없는 형태는 `editor/component-styles` 입니다.
 
@@ -1708,6 +1841,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
@@ -1738,6 +1873,10 @@ _`data` 는 템플릿의 `components.json` 내용을 그대로 담은 **컴포�
 
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
+| $schema | string | `https://json-schema.org/draft/2020-12…` | JSON 스키마 선언 URL (편집기/검증 도구용) |
+| templateId | string | `sirsoft-admin_basic` | 대상 템플릿의 식별자 |
+| version | string | `1.0.0` | 템플릿 버전 (예: 1.0.0) |
+| components | object | `{"basic":[{"name":"Button","type":"basic","description":"…` | 컴포넌트 트리 (레이아웃이 렌더할 컴포넌트 정의) |
 | (컴포넌트명) | object | `{"type":"basic","tag":"div"}` | 컴포넌트 정의. 키는 레이아웃 JSON 의 `name` 과 일치한다 |
 
 > 설치본(`templates/{identifier}/components.json`)에 파일이 없거나 JSON 이 깨져 있으면 배포 원본을 대신 읽지 않고 `404`(`templates.messages.installed_file_missing` — 템플릿을 다시 업데이트하라는 안내)다.
@@ -1836,6 +1975,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
@@ -1898,6 +2039,8 @@ HTTP/1.1 200
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명** 편집기 스펙(editor-spec.json)을 서빙합니다. 분할 스펙은 manifest + `$include` 블록을 합본한 단일 spec으로 반환하며(활성 디렉토리 기준), sampleData/sampleGlobal/states 등 전 블록이 포함됩니다. 파일 미존재 시 `spec=null`로 폴백합니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
@@ -2106,7 +2249,14 @@ HTTP/1.1 200
                             "type": "layout",
                             "name": "Grid",
                             "props": {
-                                "className": "grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[40px] p-2 border border-dashed border-gray-300 dark:border-gray-600"
+                                "className": "grid grid-cols-1 gap-4 min-h-[40px] p-2 border border-dashed border-gray-300 dark:border-gray-600"
+                            },
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "grid grid-cols-2 gap-4 min-h-[40px] p-2 border border-dashed border-gray-300 dark:border-gray-600"
+                                    }
+                                }
                             }
                         }
                     },
@@ -2139,7 +2289,14 @@ HTTP/1.1 200
                             "type": "basic",
                             "name": "Section",
                             "props": {
-                                "className": "min-h-[40px] p-4 sm:p-6 border border-dashed border-gray-300 dark:border-gray-600"
+                                "className": "min-h-[40px] p-4 border border-dashed border-gray-300 dark:border-gray-600"
+                            },
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "min-h-[40px] p-6 border border-dashed border-gray-300 dark:border-gray-600"
+                                    }
+                                }
                             }
                         }
                     },
@@ -2174,7 +2331,14 @@ HTTP/1.1 200
                             "type": "basic",
                             "name": "H1",
                             "props": {
-                                "className": "text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white"
+                                "className": "text-xl font-semibold text-gray-900 dark:text-white"
+                            },
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "text-2xl font-semibold text-gray-900 dark:text-white"
+                                    }
+                                }
                             },
                             "text": "$t:layout_editor.palette.h1.default_text"
                         }
@@ -92522,7 +92686,6 @@ HTTP/1.1 200
                                 "timezone": "Asia/Seoul",
                                 "language": "ko",
                                 "currency": "KRW",
-                                "maintenance_mode": false,
                                 "site_logo": []
                             },
                             "security": {
@@ -92593,8 +92756,6 @@ HTTP/1.1 200
                                 "cache_ttl": 7200,
                                 "sitemap_enabled": true,
                                 "sitemap_cache_ttl": 86400,
-                                "sitemap_schedule": "daily",
-                                "sitemap_schedule_time": "02:00",
                                 "sitemap_last_updated_at": "",
                                 "generator_enabled": true,
                                 "generator_content": ""
@@ -93706,6 +93867,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
@@ -93847,6 +94010,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
@@ -93909,6 +94074,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 레이아웃 편집기의 표시 권한 지정용으로 코어+활성 확장의 전체 권한을 `{key, name}` 목록으로 반환합니다(PermissionService::getPermissionCandidates). 편집기 진입 가드 하에서만 노출되어, 권한 카탈로그가 모든 admin 페이지에 상시 노출되던 방식보다 범위가 편집기로 한정됩니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
@@ -94070,6 +94237,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
@@ -94102,6 +94271,9 @@ _`data` 는 템플릿 `routes.json` 에 모듈·플러그인 라우트를 병합
 | --- | --- | --- | --- |
 | version | string | `1.0.0` | routes.json 스키마 버전 |
 | routes | array | `[{"path":"/","layout":"home","source":{"kind":"template","identifier":"sirsoft-basic"}}]` | 라우트 목록. **`source` 태깅이 필수**다 — 편집기 라우트 트리가 `source.kind` 로 그룹핑하므로 태깅이 없으면 클라이언트가 라우트 트리 렌더에서 실패한다 |
+| base_layouts | array | `[{"layout_name":"_admin_base","label":null}]` | 상속 가능한 베이스 레이아웃 목록 |
+| modals | array | `[{"modal_id":"identity-challenge-modal","host_layout":"_a…` | 모달 컴포넌트 정의 배열 |
+| layout_versions | object | `{"admin_dashboard":6}` | 레이아웃 버전 이력 목록 |
 
 > 공개 라우트 엔드포인트와 달리 **비활성 템플릿도 조회 가능**하다 (편집 대상이 활성일 필요가 없다). routes.json 과 템플릿 레이아웃은 **설치본만** 읽으며, 설치본에 routes.json 이 없으면 배포 원본을 대신 읽지 않고 `404`(`templates.messages.installed_file_missing`)다.
 
@@ -94226,6 +94398,8 @@ _단건 응답: `data` 객체의 필드._
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 편집기 [검색엔진] 탭의 봇 HTML 실시간 미리보기를 반환합니다. dirty 레이아웃 + 편집기 샘플 데이터로 운영과 동일한 렌더 경로를 거쳐(SEO 캐시 우회) 완성 HTML을 만들며, `meta.seo.enabled=false`이거나 미렌더 시 `enabled=false`로 미노출을 안내합니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
@@ -94473,6 +94647,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
@@ -94543,6 +94719,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 편집기 [검색엔진] 탭의 SEO 후보(page_type/toggle_setting/유효 vars)를 한 번에 공급합니다(SeoCandidateService::collect). `extensions`(JSON `[{type,id}]`)와 `page_type` query로 편집 중 레이아웃 문맥을 전달하며, 후보 미존재 시 빈 목록 → 자유 텍스트 폴백입니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
@@ -94687,6 +94865,8 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
+
+
 **설명** 편집기 [검색엔진] 탭의 OG/Twitter/구조화 데이터 미리보기를 반환합니다. dirty `meta.seo` + 샘플로 og/twitter cascade를 실제 계산하고 필터 전/후 diff로 각 키의 출처·잠김을 산출합니다(SeoOgPreviewService::preview). `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -94756,6 +94936,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 해당 템플릿의 레이아웃 첨부(배경 이미지 등) 목록을 조회합니다(ImagePickerControl의 이미지 재선택용). `layout_name` query로 특정 레이아웃의 첨부만 필터할 수 있습니다(TemplateLayoutAttachmentService::list). `core.templates.layouts.edit` 권한이 필요합니다.
 
@@ -94839,6 +95021,8 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
+
+
 **설명** 레이아웃 편집 중 첨부 파일을 업로드합니다. 스토리지 저장 후 DB 행을 생성하고 접근 URL을 반환합니다(TemplateLayoutAttachmentService::upload). 최대 10MB(10240KB)까지 허용합니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 허용 형식은 **이름 확장자와 파일 내용을 둘 다** 봅니다(7.1.6) — 내용은 이미지이고 이름만 `.html` 인 파일, 이름만 이미지인 다른 형식은 422 입니다. 허용 목록은 환경설정 > 업로드 「레이아웃 첨부 허용 확장자」 (기본 jpg·jpeg·png·gif·webp)이며 템플릿별 목록이 있으면 그것이 우선합니다. 저장 파일의 확장자는 올린 이름이 아니라 파일 내용으로 정합니다(`original_name` 은 올린 이름 그대로). 응답의 `url` 은 공개 자산 디스크가 선언돼 있고 저장 확장자가 「공개 디스크로 내보낼 확장자」 안일 때만 직접 주소이고, 그 밖에는 서버를 거치는 주소(`/api/templates/{identifier}/layout-attachments/{id}/file`)입니다.
@@ -94902,6 +95086,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 템플릿의 라이선스 파일(LICENSE) 내용을 반환합니다(LicenseService::getExtensionLicense). 식별자는 소문자/숫자/`_`/`-` 형식만 허용하며, 파일이 없으면 404를 반환합니다. `core.templates.read` 권한이 필요합니다.
 
 
@@ -94939,9 +95125,13 @@ _단건 응답: `data` 객체의 필드 (TemplateResource::toDetailArray + `lang
 | latest_version | string\|null | `null` | 감지된 최신 배포 버전 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |
 | update_source | string\|null | `null` | 업데이트 감지 출처 (`github` \| `bundled`) |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | file_version | string\|null | `1.0.0` | 설치된 파일의 manifest 버전 |
 | type | string | `admin` | 템플릿 타입 (`admin` \| `user`) |
 | status | string | `active` | 템플릿 상태 |
+| has_settings | boolean | `true` | 템플릿 환경설정 화면을 열 수 있는지 (목록 응답과 같은 판정) |
+| settings_route | string|null | `/admin/templates/sirsoft-admin_basic/settings` | 템플릿 환경설정 화면 주소 (없으면 null) |
 | description | string | `그누보드7 기본 관리자 템플릿` | 템플릿 설명 (현재 로케일 값) |
 | github_url | string\|null | `null` | GitHub 저장소 URL |
 | github_changelog_url | string\|null | `null` | GitHub 변경 내역 URL |
@@ -95025,9 +95215,278 @@ _단건 응답: `data` 객체의 필드 (TemplateResource::toDetailArray + `lang
 
 <!-- @generated:end -->
 
+
+
 **설명** 특정 템플릿의 상세 정보를 조회합니다(TemplateService::getTemplateInfo). 목록보다 상세한 필드(toDetailArray)와 함께 지원 언어팩 정보를 주입해 반환하며, 템플릿이 없으면 404를 반환합니다. `core.templates.read` 권한이 필요합니다.
 
 **권한 값(7.1.0)** 상세 응답에도 행 목록과 같은 `abilities` 가 실린다 — 상세 창이 목록 행을 담던 전역을 이 응답으로 덮어써도 권한 값이 남는다.
+
+### GET /api/admin/templates/{identifier}/settings
+<!-- @generated:start:api.admin.templates.settings.show -->
+- **라우트명**: `api.admin.templates.settings.show`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\TemplateSettingsController@show`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | path | string | 예 | — | 대상 템플릿 식별자 |
+
+**요청 예시**
+
+```http
+GET /api/admin/templates/{identifier}/settings HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: 템플릿 환경설정 화면이 읽는 값과 칸 서술._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| identifier | string | `sirsoft-admin_basic` | 템플릿 식별자 |
+| name | string | `Admin Basic` | 현재 로케일의 템플릿 이름 |
+| type | string | `admin` | 템플릿 종류 (`user`·`admin`) |
+| status | string | `active` | 설치 상태 |
+| is_active | boolean | `true` | 켜져 있는지 — 꺼진 템플릿의 값은 켜진 뒤 적용된다 |
+| settings | object | `{"branding": {"favicon": [], "accent": "blue", …}}` | 섹션별 현재 설정 — 선언 기본값 위에 저장값을 병합. 첨부·이미지 칸은 첨부 객체 목록(업로더 초기 파일), 계산 키 `{칸}_url`(예 `branding.favicon_url`) 포함, 비밀값(`sensitive`)은 가려서 보낸다 |
+| sections | array | `[{"key": "branding", "label": "브랜딩", "fields": […]}]` | 섹션(화면의 탭) 순서대로 칸 서술 — 칸마다 `key`·`type`·`label`·`hint`·`placeholder`·`required`·`sensitive`, 종류별로 `options`(`{value,label}`)·`min`·`max`·`step`·`max_length`·`max_items`·`item_fields`·`visible_if`, 첨부·이미지 칸은 `collection`(`template_settings.{식별자}.{섹션}.{칸}`)·`max_files`·`max_size_kb`·`accept`. 라벨·안내는 현재 로케일로 풀어 싣는다 |
+| locales | object | `{"available": ["ko", "en", "ja"], "default": "ko"}` | 언어별 문구 칸의 탭 — 사이트 활성 언어와 기본 언어(비운 언어는 기본 언어로 표시) |
+| effective_favicon | object | `{"source": "bundled", "url": "…"}` | 이 템플릿이 켜져 있을 때 실제로 쓰일 파비콘 계층(`template`·`core`·`custom_ico`·`bundled`)과 첫 링크 주소 |
+| abilities.can_update | boolean | `true` | 저장 권한(`core.templates.settings`) 보유 여부 — false 면 화면이 읽기 전용 |
+| abilities.can_reset | boolean | `true` | 기본값으로 되돌리기 가능 여부 — 저장 권한과 같다 |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "identifier": "sirsoft-admin_basic",
+        "name": "Admin Basic",
+        "type": "admin",
+        "status": "active",
+        "is_active": true,
+        "settings": {
+            "branding": {
+                "favicon": [],
+                "accent": "blue",
+                "color_scheme_default": "system",
+                "logo": [],
+                "favicon_url": null,
+                "logo_url": null
+            }
+        },
+        "sections": [
+            {
+                "key": "branding",
+                "label": "브랜딩",
+                "hint": "관리자 화면의 아이콘·색·로고. 비운 칸은 환경설정 값(없으면 기본값)을 씁니다.",
+                "fields": [
+                    {
+                        "key": "favicon",
+                        "type": "attachments",
+                        "label": "파비콘",
+                        "hint": "이 템플릿이 켜져 있을 때 관리자 화면 브라우저 탭에 표시되는 아이콘입니다.",
+                        "placeholder": null,
+                        "required": false,
+                        "sensitive": false,
+                        "collection": "template_settings.sirsoft-admin_basic.branding.favicon",
+                        "max_files": 1,
+                        "max_size_kb": 1024,
+                        "accept": ".ico,.png,.svg,.gif,.jpg,.jpeg,.webp"
+                    },
+                    {
+                        "key": "accent",
+                        "type": "enum",
+                        "label": "포인트 색",
+                        "hint": "버튼·링크·안내 상자의 색입니다.",
+                        "placeholder": null,
+                        "required": false,
+                        "sensitive": false,
+                        "options": [
+                            { "value": "blue", "label": "파랑(기본)" },
+                            { "value": "green", "label": "초록" }
+                        ]
+                    },
+                    {
+                        "key": "logo",
+                        "type": "image",
+                        "label": "관리자 로고",
+                        "hint": "관리자 사이드바에 쓸 로고입니다. 비우면 환경설정 사이트 로고를 씁니다.",
+                        "placeholder": null,
+                        "required": false,
+                        "sensitive": false,
+                        "collection": "template_settings.sirsoft-admin_basic.branding.logo",
+                        "max_files": 1,
+                        "max_size_kb": 2048,
+                        "accept": ".png,.jpg,.jpeg,.webp,.gif"
+                    }
+                ]
+            }
+        ],
+        "locales": {
+            "available": ["ko", "en", "ja"],
+            "default": "ko"
+        },
+        "effective_favicon": {
+            "source": "bundled",
+            "url": "/assets/core/favicon/favicon.ico?v=1793720460"
+        },
+        "abilities": {
+            "can_update": true,
+            "can_reset": true
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 404 | Not Found | 설치되지 않았거나 설정 선언(섹션 1개 이상)이 없는 템플릿 (`templates.settings.not_found`) |
+
+<!-- @generated:end -->
+
+**설명** 템플릿 환경설정(#434)을 조회합니다. 템플릿의 `config/settings/defaults.json` 선언(섹션·칸·기본값·노출)을 기준으로 섹션별 저장 파일(`templates` 디스크 `{식별자}/settings/{섹션}.json`)을 병합한 값을 돌려줍니다. 설치돼 있으면 꺼진 템플릿도 조회·저장할 수 있습니다(값은 켜진 뒤 적용). 라벨이 `$t:키` 면 그 템플릿의 프론트 언어 데이터(활성 언어팩 포함, 꺼진 템플릿도 포함)로 현재 로케일 문자열을 풀어 싣습니다 — 사용자 템플릿 언어 파일은 관리자 화면에 로드되지 않기 때문입니다. 보기는 `core.templates.read`, 저장·되돌리기 가능 여부는 `abilities.can_update`·`can_reset`(`core.templates.settings`)으로 알립니다. 형식 전체는 [템플릿 환경설정](../../extension/template-settings.md).
+
+### PUT /api/admin/templates/{identifier}/settings
+<!-- @generated:start:api.admin.templates.settings.update -->
+- **라우트명**: `api.admin.templates.settings.update`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\TemplateSettingsController@update`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.settings`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | path | string | 예 | — | 대상 템플릿 식별자 |
+| {섹션}.{칸} | body | 선언 타입 | 선언의 `required` | 선언의 `options`·`min`·`max` 등 | 보낸 섹션만 저장되고 보내지 않은 섹션·칸은 저장값을 유지한다. 첨부·이미지 칸은 첨부 ID 배열(첨부 객체 배열도 받아 ID 로 바꾼다), 언어별 문구 칸은 `{"ko": "…", "en": "…"}`, 목록 칸은 행 객체 배열, 링크 칸은 `/` 로 시작하는 경로 또는 http·https 주소 |
+
+**요청 예시**
+
+```http
+PUT /api/admin/templates/{identifier}/settings HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {YOUR_TOKEN}
+
+{"branding": {"accent": "green", "color_scheme_default": "dark"}}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: 저장 후 다시 조회한 값 — 조회 응답과 같은 모양(`identifier`·`name`·`type`·`status`·`is_active`·`settings`·`sections`·`locales`·`effective_favicon`·`abilities`)._
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.settings`)이 없는 경우 |
+| 404 | Not Found | 설치되지 않았거나 설정 선언이 없는 템플릿 (`templates.settings.not_found`) |
+| 422 | Unprocessable Entity | 선언 검증 실패 — 칸 종류·범위·선택지, 링크 칸의 `javascript:`·`data:` 주소, 목록 칸 최대 행 수(`max_items`), 첨부·이미지 칸은 그 칸 컬렉션에 실재하는 ID 만(이미지 칸은 이미지 형식만)·최대 개수(`max_files`). 오류 키는 `{섹션}.{칸}` |
+| 500 | Server Error | 설정 파일 쓰기 실패 (`templates.settings.update_failed`) |
+<!-- @generated:end -->
+
+**설명** 템플릿 환경설정을 저장합니다. 검증 규칙은 선언의 칸 종류(`string`·`text`·`integer`·`boolean`·`enum`·`url`·`link`·`email`·`color`·`multilingual`·`list`·`attachments`·`image`·`menu`)에서 만들어지고, 확장은 필터 훅 `core.template_settings.update_validation_rules` 로 규칙을 더할 수 있습니다. 검증을 통과한 선언 칸만 섹션 파일에 병합 저장하며 계산 키(`{칸}_url`)·`abilities` 는 저장하지 않고, 비밀값(`sensitive`)은 암호화해 저장합니다(가린 값 그대로 보내면 기존 값 유지). 첨부 칸에서 빠진 첨부는 **저장이 성공한 뒤** 파일까지 파기합니다. 저장 훅은 `core.template_settings.before_save` → `filter_save_data` → `after_save` 순이며, 저장 뒤 검색엔진용 화면 캐시를 비우고 활동 로그(`template_settings.save`)를 남깁니다. 탭 아이콘(파비콘)·`<html>` 표준 속성은 다음 화면 로드부터 바뀝니다.
+
+메뉴 칸(`menu`)은 항목 트리(`{id, kind, label, url, new_tab, is_active, visibility, roles, children}`, 2단까지)를 받습니다. 항목 칸 검증(주소 안전성·실재하는 역할 식별자·이름 길이) 뒤에 구조 검사(종류별 필수 — 링크는 이름, 하위 메뉴가 없으면 주소 / 자동 항목은 한 번만·하위 메뉴 없음 / 깊이 / 하위 포함 전체 수 / id 형식·중복)를 해, 오류를 **그 항목 위치**(`header.menu.2`, `header.menu.0.children.1`, `header.menu.0.url`)에 답니다. 저장값은 알려진 키만 남기고, 자동 항목의 주소·새 창과 「특정 역할」이 아닐 때의 역할 목록은 버립니다. 조회 응답의 칸 서술에는 `max_items`·`max_depth`·`auto_items[{key, label, hint}]` 가 실립니다.
+
+### POST /api/admin/templates/{identifier}/settings/reset
+<!-- @generated:start:api.admin.templates.settings.reset -->
+- **라우트명**: `api.admin.templates.settings.reset`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\TemplateSettingsController@reset`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.settings`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | path | string | 예 | — | 대상 템플릿 식별자 |
+| section | body | string | 아니오 | 선언된 섹션 키 | 되돌릴 섹션 하나 — 없으면 전체 |
+
+**요청 예시**
+
+```http
+POST /api/admin/templates/{identifier}/settings/reset HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {YOUR_TOKEN}
+
+{"section": "header"}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: 되돌린 뒤 다시 조회한 값 — 조회 응답과 같은 모양._
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.settings`)이 없는 경우 |
+| 404 | Not Found | 설치되지 않았거나 설정 선언이 없는 템플릿 (`templates.settings.not_found`) |
+| 422 | Unprocessable Entity | `section` 이 선언에 없는 섹션 |
+| 500 | Server Error | 설정 파일 삭제 실패 (`templates.settings.reset_failed`) |
+<!-- @generated:end -->
+
+**설명** 템플릿 환경설정을 선언 기본값으로 되돌립니다. 그 섹션(또는 전체)의 저장 파일을 지우고 그 섹션 첨부 칸의 첨부를 파일까지 파기한 뒤 설정 미러·버전을 갱신합니다. 훅은 `core.template_settings.before_reset` → `after_reset`(+ 필터 `reset_validation_rules`)이며, 검색엔진용 화면 캐시를 비우고 활동 로그(`template_settings.reset`)를 남깁니다. 관리자 화면의 「기본값으로」 단추는 본문 없이(전체) 부릅니다.
+
+### GET /api/admin/templates/{identifier}/settings/layout
+<!-- @generated:start:api.admin.templates.settings.layout -->
+- **라우트명**: `api.admin.templates.settings.layout`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\TemplateSettingsController@layout`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | path | string | 예 | — | 대상 템플릿 식별자 |
+
+**요청 예시**
+
+```http
+GET /api/admin/templates/{identifier}/settings/layout HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: 템플릿이 직접 쓴 설정 화면 레이아웃 JSON(sanitize 적용)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| layout_name | string | `template_settings` | 레이아웃 이름 |
+| extends | string | `_admin_base` | 상속하는 베이스 레이아웃 |
+| data_sources | array | `[{"id": "template_settings", …}]` | 설정 조회 데이터소스 |
+| slots | object | `{"content": [...]}` | 화면 본문 |
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 404 | Not Found | 설치되지 않은 템플릿, 또는 설정 화면을 공급하지 않은 템플릿 (`templates.settings.not_found`) |
+
+<!-- @generated:end -->
+
+**설명** 템플릿이 직접 쓴 설정 화면 레이아웃(`templates/{id}/settings/template_settings.g7.html` 을 컴파일한 JSON, 없으면 짝 `.json`)을 돌려줍니다. 그런 화면을 둔 템플릿은 켜진 관리자 템플릿에 `{식별자}.template_settings` 로 등록돼(설치·업데이트·관리자 템플릿 활성화 때) 그 화면으로 그려집니다 — 켜진 관리자 템플릿이 `layouts/overrides/{식별자}/template_settings.*` 를 두면 그 파일로 등록됩니다. 화면은 그 템플릿 부품 묶음(`templates/{id}/dist/settings/settings.iife.js`·`settings.css`, 관리자 화면이 설치된 템플릿마다 싣는다)으로 그립니다. 공용 화면은 없어, 화면을 두지 않은 템플릿은 404 이고 설정 라우트도 없습니다. 이 엔드포인트는 원본 확인용입니다.
 
 ### GET /api/admin/templates/{templateName}/check-modified-layouts
 <!-- @generated:start:api.admin.templates.check-modified-layouts -->
@@ -95156,6 +95615,8 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
+
+
 **설명** 관리 모달의 '선택 삭제'/'미사용 전체 삭제'로 커스텀 다국어 키를 일괄 삭제합니다. 요청 `ids` 중 해당 템플릿 소속 키만 추려 삭제해(교차 템플릿 삭제 차단) 삭제 건수를 반환합니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -95235,6 +95696,8 @@ _목록 응답: `data` 는 커스텀 다국어 키 배열입니다 (페이지네
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 레이아웃 편집기의 인라인 편집/번역 탭에서 사용하는 커스텀 다국어 키 목록을 조회합니다. `layout_name`으로 특정 레이아웃을, `status`(active/orphaned)로 사용 여부를 필터할 수 있습니다(TemplateCustomTranslationService::getList). `core.templates.layouts.edit` 권한이 필요합니다.
 
@@ -95322,6 +95785,8 @@ _단건 응답: `data` 객체의 필드 (생성된 커스텀 다국어 키, HTTP
 
 <!-- @generated:end -->
 
+
+
 **설명** 인라인 편집 확정 시 커스텀 다국어 키를 생성합니다. `layout_name`/`locale`/`value`를 받아 트랜잭션으로 키를 만들고 생성자를 기록합니다(TemplateCustomTranslationService::createKey). `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -95372,6 +95837,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (`data`: `null`, �
 | 500 | Server Error | 삭제 트랜잭션 실패 |
 
 <!-- @generated:end -->
+
 
 **설명** 커스텀 다국어 키 1건을 삭제합니다. 대상 키가 경로의 템플릿 소속인지 교차검증한 뒤 삭제합니다(TemplateCustomTranslationService::deleteKey). `core.templates.layouts.edit` 권한이 필요합니다.
 
@@ -95461,6 +95927,8 @@ _단건 응답: `data` 객체의 필드 (수정된 커스텀 다국어 키)._
 | 500 | Server Error | 수정 트랜잭션 실패 |
 
 <!-- @generated:end -->
+
+
 
 **설명** 번역 탭의 일괄 편집으로 커스텀 다국어 키의 로케일별 값을 수정합니다. `expected_lock_version` 기반 낙관적 잠금을 적용해 동시 수정 충돌 시 409(current/your version)를 반환합니다(TemplateCustomTranslationService::updateValues). `core.templates.layouts.edit` 권한이 필요합니다.
 
@@ -95589,6 +96057,8 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
+
+
 **설명** 템플릿 설치 cascade 프리뷰를 반환합니다. 의존 확장 목록과 동반 가능한 번들 언어팩을 미리 계산해(ExtensionInstallPreviewBuilder::build) 설치 확인 화면에서 사용합니다. `core.templates.install` 권한이 필요합니다.
 
 **항목별 권한(7.1.0)** `dependencies[]`·`language_packs[]` 의 각 항목에 `can_select`(불리언)가 실린다. 현재 사용자가 그 항목을 함께 설치·활성화할 권한이 있는지이며(판정은 설치 API 의 403 과 같다), false 면 `default_selected` 도 false 다.
@@ -95702,6 +96172,8 @@ _목록 응답: `data` 는 출처(모듈/플러그인)별 그룹 배열입니다
 
 <!-- @generated:end -->
 
+
+
 **설명** 특정 템플릿에 모듈/플러그인이 주입한 레이아웃 확장 목록을 출처별로 그룹핑해 조회합니다. 각 확장에는 호스트 레이아웃 목록(`host_layouts`)이 부착되어, 캔버스 로드 없이 화면별 연결 확장을 정적 구성할 수 있습니다(LayoutExtensionService::getExtensionsByTemplateId). 응답에는 라우트 트리가 실제로 그리는 필드만 담기고 **확장 레이아웃 본문(`content`)은 제외됩니다** — 목록은 페이지네이션 없이 전 확장을 반환하므로 본문을 함께 실으면 전 행의 JSON 전문이 전송됩니다. 본문은 단건 조회(`GET /api/admin/templates/{template}/layout-extensions/{extension}`)가 공급합니다. `core.templates.read` 권한이 필요합니다.
 
 
@@ -95803,6 +96275,8 @@ _단건 응답: `data` 객체의 필드 (LayoutExtensionResource + `host_layouts
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 특정 레이아웃 확장 1건의 상세를 조회합니다. 확장이 경로의 템플릿 소속인지 교차검증하며, 편집 모드 캔버스가 호스트 병합 렌더에 쓰는 호스트 레이아웃 후보(`host_layouts`)를 함께 반환합니다. `core.templates.read` 권한이 필요합니다.
 
@@ -95925,6 +96399,8 @@ _단건 응답: `data` 객체의 필드 (수정된 LayoutExtensionResource)._
 
 <!-- @generated:end -->
 
+
+
 **설명** 레이아웃 확장의 content를 수정합니다. `expected_lock_version` 기반 낙관적 잠금으로 동시 수정 시 409를 반환하며, `content`는 최상위 키(extension_point/components 등) 누락을 막기 위해 검증된 하위 규칙이 아닌 원본 배열을 그대로 저장합니다. `priority`도 함께 갱신할 수 있습니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -96000,6 +96476,8 @@ _단건 응답: `data` 객체의 필드._
 | 500 | Server Error | 미리보기 생성 실패 |
 
 <!-- @generated:end -->
+
+
 
 **설명** 편집 중인 레이아웃 확장 content를 임시 저장하고 대표 레이아웃에 적용한 미리보기 URL/토큰을 반환합니다. overlay 타입은 target_name이, extension_point 타입은 `preview_layout` 파라미터가 대표 레이아웃이 되며, 미지정 시 422를 반환합니다(LayoutPreviewService::createExtensionPreview). `core.templates.read` 권한이 필요합니다.
 
@@ -96147,6 +96625,8 @@ _목록 응답: `data` 는 버전 이력 배열입니다 (페이지네이션 없
 
 <!-- @generated:end -->
 
+
+
 **설명** 레이아웃 확장의 버전 이력을 최신순으로 조회합니다(LayoutExtensionService::getExtensionVersions). 한 번에 돌려주는 개수는 `limit` 으로 정하며 기본 100건, 최대 500건입니다 — 전체를 무제한으로 돌려주지 않습니다. 상한을 넘는 과거 버전은 단건 조회로 접근합니다. `core.templates.read` 권한이 필요합니다. 응답에는 목록 표시용 필드만 담기고 본문(`content`)은 제외됩니다.
 
 
@@ -96223,6 +96703,8 @@ _단건 응답: `data` 객체의 필드 (복원 결과로 새로 기록된 버�
 
 <!-- @generated:end -->
 
+
+
 **설명** 레이아웃 확장을 지정한 버전으로 복원합니다. 복원은 새 버전으로 기록되며 복원 후 새 버전 정보를 반환합니다(LayoutExtensionService::restoreExtensionVersion). `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -96297,6 +96779,8 @@ _단건 응답: `data` 객체의 필드 (LayoutExtensionVersionResource)._
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 레이아웃 확장의 특정 버전 content를 조회합니다(버전 비교/diff용, LayoutExtensionService::getExtensionVersion). `core.templates.read` 권한이 필요합니다.
 
@@ -96387,6 +96871,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 특정 템플릿의 모든 레이아웃 목록을 조회합니다. 각 레이아웃에 이름 → 라우트 path 매핑을 부착해, 코드 편집기가 파일 선택 시 `?route=` URL 동기화나 위지윅에서 넘어온 라우트로 파일을 복원할 수 있게 합니다(LayoutService::getLayoutListByTemplateId). 응답에는 파일트리가 실제로 그리는 필드(이름·설명·라우트 path·크기·수정일시·업데이트 여부)만 담기고, **레이아웃 본문(`content`)과 파싱된 블록(`components`·`data_sources`·`metadata`)은 제외됩니다** — 목록은 페이지네이션 없이 템플릿의 전 레이아웃을 반환하므로 본문을 함께 실으면 편집기 진입만으로 모든 레이아웃 JSON 전문이 전송됩니다. 설명·크기는 조회 계층이 본문에서 파생값만 뽑아 넘기며 본문 자체는 응답에 남지 않습니다. 본문은 단건 조회(`GET /api/admin/templates/{template}/layouts/{layout}`)가 공급합니다. `core.templates.read` 권한이 필요합니다.
 
@@ -96665,6 +97151,8 @@ _단건 응답: `data` 객체의 필드 (LayoutResource)._
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 특정 레이아웃 1건의 상세(content 포함)를 조회합니다(LayoutService::getLayoutByName). 레이아웃이 없으면 404를 반환합니다. `core.templates.read` 권한이 필요합니다.
 
@@ -96965,6 +97453,8 @@ _단건 응답: `data` 객체의 필드 (수정된 LayoutResource)._
 
 <!-- @generated:end -->
 
+
+
 **설명** 레이아웃 content를 수정합니다. `expected_lock_version` 기반 낙관적 잠금을 적용해 동시 수정 충돌 시 409(current/your version)를 반환합니다(LayoutService::updateLayout). `core.templates.layouts.edit` 권한이 필요합니다.
 
 **`content` 하위 키는 화이트리스트다.** 위 표의 `content` 는 배열 한 칸으로 요약되지만, 실제 검증은 `content.<키>` 단위 화이트리스트이고 **명시되지 않은 최상위 키는 저장 시 조용히 삭제된다**(Laravel `validated()` 의 동작). 레이아웃 JSON 에 새 최상위 키를 도입하면 이 엔드포인트의 규칙에 함께 넣어야 하며, 그러지 않으면 편집기로 저장한 순간 그 키가 사라진다. 현재 허용되는 최상위 키는 `version`·`layout_name`·`meta`·`metadata`·`comment`·`data_sources`·`init_actions`·`init_state`·`state`·`initLocal`·`initGlobal`·`initIsolated`·`global_state`·`computed`·`modals`·`named_actions`·`defines`·`errorHandling`·`globalHeaders`·`permissions`·`extends`·`slots`·`components`·`routes`·`endpoint`·`transition_overlay`·`actions`·`pageConfig`·`schema` 다.
@@ -97040,6 +97530,8 @@ _단건 응답: `data` 객체의 필드._
 | 500 | Server Error | 미리보기 생성 실패 |
 
 <!-- @generated:end -->
+
+
 
 **설명** 편집 중인 레이아웃 content를 임시 저장하고 미리보기 URL/토큰을 반환합니다(LayoutPreviewService::createPreview). 토큰은 만료 시각을 함께 반환합니다. `core.templates.read` 권한이 필요합니다.
 
@@ -97190,6 +97682,8 @@ _목록 응답: `data` 는 버전 이력 배열입니다 (페이지네이션 없
 
 <!-- @generated:end -->
 
+
+
 **설명** 레이아웃의 버전 이력을 최신순으로 조회합니다(LayoutService::getLayoutVersions). 한 번에 돌려주는 개수는 `limit` 으로 정하며 기본 100건, 최대 500건입니다 — 전체를 무제한으로 돌려주지 않습니다. 상한을 넘는 과거 버전은 단건 조회(`GET .../versions/{version}`)로 접근합니다. `core.templates.read` 권한이 필요합니다. 응답에는 목록 표시용 필드만 담기고 본문(`components` 등)은 제외됩니다.
 
 
@@ -97271,6 +97765,8 @@ _단건 응답: `data` 객체의 필드 (복원 결과로 새로 기록된 버�
 | 500 | Server Error | 복원 트랜잭션 실패 |
 
 <!-- @generated:end -->
+
+
 
 **설명** 레이아웃을 지정한 버전으로 복원합니다. 복원 결과는 새 버전으로 기록되어 반환됩니다(LayoutService::restoreVersion). `core.templates.layouts.edit` 권한이 필요합니다.
 
@@ -97359,6 +97855,8 @@ _단건 응답: `data` 객체의 필드 (LayoutVersionResource + `full_content` 
 
 <!-- @generated:end -->
 
+
+
 **설명** 레이아웃의 특정 버전 content를 조회합니다. 버전 비교 diff용으로 slots/extends 등을 포함한 content 원본 전체를 노출합니다(LayoutService::getLayoutVersion). `core.templates.read` 권한이 필요합니다.
 
 
@@ -97422,6 +97920,8 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
+
+
 **설명** 템플릿 제거 시 함께 삭제될 데이터 정보를 조회합니다(TemplateService::getTemplateUninstallInfo). 제거 확인 다이얼로그에서 사용하며, 템플릿이 없으면 404를 반환합니다. `core.templates.uninstall` 권한이 필요합니다.
 
 
@@ -97439,6 +97939,10 @@ _단건 응답: `data` 객체의 필드._
 | layout_strategy | body | string | 아니오 | `overwrite`, `keep` | 업데이트 시 레이아웃 처리 전략 (overwrite: 새 파일로 전면 교체, keep: 운영자 수정본에 새 버전 3자 병합) |
 | force | body | boolean | 아니오 | — | 강제 실행 여부 (안전 확인/선행 검사 우회) |
 | layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
+| allow_unsigned | body | boolean | 아니오 | — | 미서명·검증 불가 패키지를 확인하고 계속 (7.2.0). 409 `package_unsigned` 경고 창의 「미서명으로 계속」이 같은 요청을 `1` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
+| integrity_aware | body | boolean | 아니오 | — | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `1` 을 보낸다. 이 칸이 없는 요청은 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 패키지를 확인 없이 진행한다(서버 경고 로그, 설치 행 `integrity_status=unsigned`). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
+| pending_token | body | string | 아니오 | 영숫자 40자 | 업데이트 미리보기가 GitHub 에서 내려받은 새 판을 다시 쓰는 토큰 (`…/update/preview` 응답의 `pending_token`, 1시간 유효). 미리보기로 본 파일을 그대로 적용한다 |
+| decisions | body | object | 아니오 | 값 `take-theirs`·`keep-ours` | 화면별 결정 — 미리보기 응답 `layouts.entries[].key` 기준 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.template.perform_update_validation_rules`).
 
@@ -97477,6 +97981,8 @@ _단건 응답: `data` 객체의 필드 (업데이트 후 TemplateResource)._
 | dependencies_met | boolean | `true` | 의존 확장 충족 여부 |
 | update_available | boolean | `false` | 업데이트 가능 여부 (업데이트 직후 false) |
 | update_source | string\|null | `github` | 업데이트를 가져온 출처 (`github` \| `bundled`) |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | latest_version | string\|null | `1.0.1` | 감지된 최신 배포 버전 |
 | file_version | string\|null | `1.0.1` | 설치된 파일의 manifest 버전 |
 | github_url | string\|null | `https://github.com/gnuboard/g7-template-basic` | GitHub 저장소 URL |
@@ -97541,6 +98047,8 @@ _업데이트할 내용이 없거나 템플릿 정보를 다시 읽지 못한 �
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 위반 또는 업데이트 실패 (미설치, 다운그레이드 차단, 다운로드 실패, 코어 버전 비호환 등 — `errors.template_name` 에 번역된 사유) |
 | 409 | Conflict | 같은 템플릿의 업데이트가 이미 진행 중인 경우 — 관리자 화면·Artisan 커맨드 공통 (`extensions.errors.update_already_running`) · 7.1.5 부터 `errors.operation_in_progress: true` 를 싣고, 같은 확장의 설치·활성화·비활성화·제거가 진행 중이어도 같은 응답이다 |
+| 409 | Conflict | 미서명·검증 불가 패키지 (7.2.0) — `errors.package_unsigned: true` 와 `errors.integrity`. `errors.integrity.can_continue` 가 true 면 같은 요청을 `allow_unsigned=1` 로 다시 보내 계속하고, 「미서명 패키지 차단」이 켜져 있으면 false. 서명 자산이 없는 릴리스는 ZIP 을 받기 전에 이 응답을 낸다 ([오류 응답](../../extension/package-signing.md#오류-응답)) |
+| 422 | Unprocessable Entity | 서명 불일치(`errors.package_signature_invalid: true`)·신뢰하지 않는 키(`errors.package_signer_untrusted: true`) — `errors.integrity.reason` 에 사유, 확인으로도 계속할 수 없다 (7.2.0) |
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 업데이트 처리 중 예기치 못한 오류 |
 
@@ -97548,6 +98056,87 @@ _업데이트할 내용이 없거나 템플릿 정보를 다시 읽지 못한 �
 
 **설명** 설치된 템플릿을 최신 버전으로 업데이트합니다. `layout_strategy`(overwrite: 레이아웃 전면 교체 / keep: 운영자 수정본에 새 버전 3자 병합)로 레이아웃 처리 방식을 결정하며, `force`로 강제 진행할 수 있습니다(TemplateService::performVersionUpdate). `core.templates.install` 권한이 필요합니다. `keep` 을 지정하면 운영자가 수정한 레이아웃·확장 조각에 새 버전을 3자 병합합니다 — 고친 부분(조각·최상위 키·data_sources 항목 단위)은 운영자 것, 손대지 않은 부분은 새 버전이고, 같은 곳을 양쪽이 고쳤으면 운영자 것을 남깁니다. 운영자가 고치지 않은 레이아웃은 파일 기준으로 갱신됩니다. 보고할 행이 있으면 성공 메시지 뒤에 「레이아웃: 새 버전 변경 N곳 자동 반영, 운영자 수정과 겹친 M곳은 운영자 것 유지.」 요약이 붙고, 응답 `data.layout_sync` 에 `{strategy, applied_count, conflict_count, kept_no_base_count, kept_removed_count, kept_deleted_by_operator_count, kept_name_collision_count, kept_invalid_count, modified_count, entries[{kind, template, name, verdict, applied, conflicts}]}` 가 실립니다(규칙: docs/extension/extension-update-system.md §10). 성공 응답 메시지에는 대상 식별자와 적용된 버전이 채워집니다. 업데이트할 것이 없으면(현재 버전이 최신) 200 으로 응답하되 메시지는 `templates.no_update_available`(「업데이트할 내용이 없습니다」)입니다. 같은 템플릿의 업데이트는 한 번에 하나만 수행되며, 진행 중에 들어온 요청(버튼 연속 클릭 등)은 아무 단계도 거치지 않고 409 로 거절됩니다.
 
+**패키지 서명(7.2.0)** GitHub 출처는 그 판의 태그 릴리스 자산 짝으로 풀기 전에 검증하고, 짝이 없으면 ZIP 을 받기 전에 409 를 낸다(같은 요청을 `allow_unsigned=1` 로 다시 보내면 계속). 번들 출처(`_bundled`)는 코어 배포본 서명이 덮으므로 검증하지 않고 `bundled` 로 기록한다. 서명 불일치·신뢰하지 않는 키는 422 로 멈추며 백업 전에 끝나 설치본을 건드리지 않는다. 상세: [패키지 서명](../../extension/package-signing.md)
+
+
+### POST /api/admin/templates/{templateName}/update/preview
+<!-- @generated:start:api.admin.templates.update.preview -->
+- **라우트명**: `api.admin.templates.update.preview`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\TemplateController@performUpdatePreview`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.install`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| templateName | path | string | 예 | — | 템플릿 식별자 |
+| layout_strategy | body | string | 아니오 | `keep`, `overwrite` | 판정에 쓸 처리 방식 (기본 `keep` — 창이 기본으로 보여 주는 값) |
+| decisions | body | object | 아니오 | 값 `take-theirs`·`keep-ours` | 화면별 결정 |
+| layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 |
+
+**요청 예시**
+
+```http
+POST /api/admin/templates/sirsoft-basic/update/preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "layout_strategy": "keep"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| type | string | `template` | 확장 종류 |
+| identifier | string | `sirsoft-basic` | 식별자 |
+| update_available | boolean | `true` | 적용할 업데이트가 있는지 (없으면 나머지는 비어 있다) |
+| update_source | string\|null | `bundled` | 새 판 출처 (`bundled`·`github`) |
+| from_version | string\|null | `1.0.0` | 지금 판 |
+| to_version | string\|null | `1.1.0` | 새 판 |
+| pending_token | string\|null | `null` | GitHub 소스면 내려받은 새 판(`_pending`)의 토큰 — 이어지는 업데이트 요청의 `pending_token` 으로 넘기면 다시 내려받지 않는다 (1시간 유효, 한 번만 쓴다) |
+| layouts_skipped | string\|null | `null` | `inactive` — 꺼 둔 확장은 업데이트 때 레이아웃을 갱신하지 않으므로 판정 목록이 비어 있다 |
+| layouts | object | — | 레이아웃 판정 — `refresh-layouts/preview` 응답과 같은 모양(새 판 파일 기준, 지금 활성 디렉토리를 병합 기준으로 쓴다) |
+| declarative_deletions | array | `[]` | 이 업데이트로 지워질 선언 항목 — 각 원소 `type`(`notification_definition`·`notification_template`·`menu`·`permission`·`role`·`identity_policy`·`schedule`)·`key`·`has_operator_overrides`(운영자 수정본이면 지우기 직전 활동 로그에 기록된다). `notification_template` 의 key 는 `{알림 type}:{발송 수단}` 이다 |
+| check_error | string\|null | `null` | GitHub 조회 실패 사유 — 조회에 실패하면 `update_available=false` 와 함께 사유가 실린다(「업데이트 없음」과 구분) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "업데이트 미리보기를 만들었습니다.",
+    "data": {
+        "type": "template",
+        "identifier": "sirsoft-basic",
+        "update_available": true,
+        "update_source": "bundled",
+        "from_version": "1.0.0",
+        "to_version": "1.1.0",
+        "pending_token": null,
+        "layouts_skipped": null,
+        "layouts": {"strategy": "keep", "entries": [], "summary": {}, "has_conflicts": false, "conflict_screens": []},
+        "declarative_deletions": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 실패 |
+| 500 | Internal Server Error | 설치되지 않은 템플릿, 새 판을 내려받지 못함 등 (`extensions.update_preview.failed`) |
+
+<!-- @generated:end -->
+
+**설명** 업데이트를 하지 않고, 새 판으로 바꾸면 화면마다 어떻게 되는지와 지워질 선언 항목을 계산합니다. DB·활성 파일은 바뀌지 않습니다. CLI `template:update {id} --dry-run --json` 이 같은 서비스를 부르므로 결과가 같습니다.
 
 ### GET /api/templates/assets/{identifier}
 <!-- @generated:start:api.public.templates.assets.extensionless -->
@@ -97782,6 +98371,9 @@ HTTP/1.1 200
 
 
 ### GET /api/templates/{identifier}/config
+
+> 응답은 활성 템플릿의 template.json 전체 + `cache_version` 이다(형식 불변). 템플릿이 template.json 최상위 `expose` 에 키 이름을 선언하면 그 키의 값만 화면 HTML(`G7Config.templateConfig`)에도 실리고, 엔진은 앱 시작 때 이 API 를 부르지 않는다(engine-v1.96.0). 레이아웃 편집기와 확장 상태 재로드는 최신 값을 확인하려고 계속 이 API 를 부른다 — [템플릿 기초](../../extension/template-basics.md).
+
 <!-- @generated:start:api.public.templates.config.extensionless -->
 - **라우트명**: `api.public.templates.config.extensionless`
 - **컨트롤러**: `App\Http\Controllers\Api\Public\PublicTemplateController@serveConfig`
@@ -97997,6 +98589,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
@@ -98027,8 +98621,25 @@ _`data` 는 템플릿의 `template.json` 매니페스트 내용이다 (고정 �
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | identifier | string | `sirsoft-basic` | 템플릿 식별자 |
+| vendor | string | `sirsoft` | 벤더/개발자명 (예: sirsoft) |
+| name | object | `{"ko":"Admin Basic","en":"Admin Basic"}` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
 | version | string | `1.1.1` | 템플릿 버전 |
+| license | string | `MIT` | 라이선스 식별자 (manifest license) |
+| description | object | `{"ko":"그누보드7 기본 관리자 템플릿","en":"Gnuboard7 default admin te…` | 설명 (다국어 필드는 로케일별 값 객체) |
 | type | string | `user` | 템플릿 유형 (`admin`/`user`) |
+| locales | array | `["ko","en"]` | 활성 로케일 코드 배열 |
+| author | object | `{"name":"sirsoft","email":"contact@sirsoft.com","url":"ht…` | 작성자 사용자 객체 (uuid/name — author 관계 파생) |
+| release_date | string | `2026-05-15` | 배포일 |
+| g7_version | string | `>=7.0.7` | 요구하는 코어 최소 버전 (manifest requires.g7_version) |
+| dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}) |
+| assets | object | `{"css":["assets\/css\/main.css","assets\/css\/ui-system.c…` | 프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략) |
+| components | object | `{"basic":["a","button","checkbox","div","form","h1","h2",…` | 컴포넌트 트리 (레이아웃이 렌더할 컴포넌트 정의) |
+| preview | object | `{"thumbnail":"preview\/thumbnail.png","screenshots":["pre…` | 미리보기 정보 객체 |
+| error_config | object | `{"layouts":{"401":"errors\/401","403":"errors\/403","404"…` | 에러 표시 설정 객체 |
+| github_url | string | `https://github.com/gnuboard/g7-templa…` | GitHub 저장소 URL (manifest 파생) |
+| github_changelog_url | string | `https://github.com/gnuboard/g7-templa…` | GitHub 변경 이력(CHANGELOG) URL (manifest 파생) |
+| externals | array | `[{"id":"fontawesome","type":"style","url":"https:\/\/cdnj…` | 외부 의존 라이브러리 목록 (번들에서 제외되고 전역에서 해석) |
+| cache_version | integer | `1788165896` | 에셋 캐시 무효화 버전 (번들 URL 파일명에 포함) |
 | (그 외 매니페스트 키) | mixed | — | `template.json` 이 선언한 나머지 키가 그대로 실린다 |
 
 > **활성 템플릿만** 조회된다 — 비활성이거나 매니페스트가 없으면 `404`. 응답은 1시간 캐시된다.
@@ -98129,7 +98740,106 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 템플릿의 편집기 스펙(editor-spec.json)을 서빙하는 공개 엔드포인트입니다. 분할 스펙은 manifest + `$include` 블록을 합본한 단일 spec으로(활성 디렉토리 기준) 반환하며, 파일 미존재 시 `spec=null`로 폴백합니다. 인증이 필요 없습니다.
+
+
+**설명** 템플릿의 편집기 스펙(editor-spec.json)을 서빙하는 공개 엔드포인트입니다. 분할 스펙은 manifest + `$include` 블록을 합본한 단일 spec으로(활성 디렉토리 기준) 반환하며, 파일 미존재 시 `spec=null`로 폴백합니다. 인증이 필요 없습니다. 7.2.0 부터 코어 레이아웃 편집기는 이 엔드포인트 대신 아래 묶음 엔드포인트(`editor-spec-bundle`)를 부릅니다. 이 엔드포인트는 응답 모양 그대로 남아 있고, 묶음 엔드포인트의 `template` 항목과 같은 판정 메서드(`EditorSpecBundleService::templateEditorSpec`)를 씁니다.
+
+
+### GET /api/templates/{identifier}/editor-spec-bundle
+<!-- @generated:start:api.public.templates.editor_spec_bundle -->
+- **라우트명**: `api.public.templates.editor_spec_bundle`
+- **컨트롤러**: `App\Http\Controllers\Api\Public\PublicTemplateController@serveEditorSpecBundle`
+- **인증/권한**: 공개 (인증 불필요)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | path | string | 예 | 영숫자·`_`·`-`·`.` (최대 100자, `..` 불가) | 편집 대상 템플릿 식별자. 묶음의 마지막 항목(`kind=template`)이 된다 |
+| modules | query | array | 아니오 | 최대 200개 | 스펙을 받을 모듈 식별자 목록(`modules[]=a&modules[]=b`). 편집기는 `window.G7Config.activeModules` 순서로 보낸다 |
+| modules.* | query | string | 예 | 영숫자·`_`·`-`·`.` (최대 100자, `..` 불가) | 모듈 식별자 |
+| plugins | query | array | 아니오 | 최대 200개 | 스펙을 받을 플러그인 식별자 목록(`plugins[]=a`). 편집기는 `window.G7Config.activePlugins` 순서로 보낸다 |
+| plugins.* | query | string | 예 | 영숫자·`_`·`-`·`.` (최대 100자, `..` 불가) | 플러그인 식별자 |
+
+**요청 예시**
+
+```http
+GET /api/templates/sirsoft-admin_basic/editor-spec-bundle?modules[]=sirsoft-board&plugins[]=sirsoft-ckeditor5 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| identifier | string | `sirsoft-admin_basic` | 편집 대상 템플릿 식별자 |
+| items | array | `[{"kind":"module",…}, …]` | 스펙 항목 목록. 순서는 모듈(요청 순서) → 플러그인(요청 순서) → 템플릿이며, 편집기는 이 순서로 병합한다(뒤가 우선). 같은 식별자를 두 번 보내면 한 번만 담긴다 |
+| items[].kind | string | `module` | 항목 종류 — `module` · `plugin` · `template` |
+| items[].identifier | string | `sirsoft-board` | 확장 식별자 |
+| items[].status | integer | `200` | 항목 판정. `200` 정상(스펙 파일 미작성이면 `spec=null`), `404` 비활성·미존재 확장(개별 엔드포인트가 404 를 내는 경우와 같다), `500` 그 항목의 스펙 판정 중 예외(서버 로그 경고). 한 항목이 실패해도 다른 항목과 응답 상태(200)는 그대로다 |
+| items[].spec | object \| null | `{"controls":{…},"sampleData":{…}}` | 합본된 편집기 스펙. 개별 엔드포인트(`/api/{modules\|plugins\|templates}/{identifier}/editor-spec`)의 `data.spec` 과 같은 값이다. 실패 항목은 `null` |
+| items[].error | string \| null | `null` | 실패 사유 코드 — `module_not_found` · `plugin_not_found` · `spec_load_failed`. 정상 항목은 `null` |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "편집기 스펙을 조회했습니다.",
+    "data": {
+        "identifier": "sirsoft-admin_basic",
+        "items": [
+            {
+                "kind": "module",
+                "identifier": "sirsoft-board",
+                "status": 200,
+                "spec": {
+                    "states": {"groups": ["…"]},
+                    "sampleData": {"byDataSourceId": {"…": "…"}}
+                },
+                "error": null
+            },
+            {
+                "kind": "plugin",
+                "identifier": "sirsoft-ckeditor5",
+                "status": 404,
+                "spec": null,
+                "error": "plugin_not_found"
+            },
+            {
+                "kind": "template",
+                "identifier": "sirsoft-admin_basic",
+                "status": 200,
+                "spec": {
+                    "templateId": "sirsoft-admin_basic",
+                    "...": "(합본 스펙 전체)"
+                },
+                "error": null
+            }
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Unprocessable Entity | 식별자 형식 위반(경로 구분자, `..`, 100자 초과), `modules`·`plugins` 가 배열이 아니거나 200개 초과 (`error.errors` 에 필드별 메시지) |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
+
+<!-- @generated:end -->
+
+
+
+**설명** 레이아웃 편집기가 편집 대상 템플릿과 활성 모듈·플러그인의 편집기 스펙을 **한 요청으로** 받는 공개 엔드포인트입니다(7.2.0). 종전 편집기는 확장마다 개별 엔드포인트를 불러 편집기를 열 때 요청이 확장 수만큼 나갔습니다. 항목마다 개별 엔드포인트와 같은 판정을 합니다 — 모듈·플러그인은 활성 상태만 내고 설치본만 읽으며(`ModuleService::getEditorSpec`·`PluginService::getEditorSpec`), 템플릿은 설치본 파일만 읽습니다. 서버 캐시를 두지 않고 요청마다 확장 상태와 파일을 새로 읽으므로 확장 활성화·비활성화·업데이트가 다음 요청에 바로 반영됩니다(개별 엔드포인트와 같다). 인증이 필요 없고 개별 엔드포인트와 같은 공개 lane 속도 제한을 받습니다. 개별 엔드포인트(`GET /api/templates/{identifier}/editor-spec`, `GET /api/modules/{identifier}/editor-spec`, `GET /api/plugins/{identifier}/editor-spec`)는 서드파티 호환을 위해 이름과 응답 모양 그대로 남아 있습니다.
 
 
 ### GET /api/templates/{identifier}/lang/{locale}
@@ -98335,7 +99045,14 @@ HTTP/1.1 200
                             "type": "layout",
                             "name": "Grid",
                             "props": {
-                                "className": "grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[40px] p-2 border border-dashed border-gray-300 dark:border-gray-600"
+                                "className": "grid grid-cols-1 gap-4 min-h-[40px] p-2 border border-dashed border-gray-300 dark:border-gray-600"
+                            },
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "grid grid-cols-2 gap-4 min-h-[40px] p-2 border border-dashed border-gray-300 dark:border-gray-600"
+                                    }
+                                }
                             }
                         }
                     },
@@ -98368,7 +99085,14 @@ HTTP/1.1 200
                             "type": "basic",
                             "name": "Section",
                             "props": {
-                                "className": "min-h-[40px] p-4 sm:p-6 border border-dashed border-gray-300 dark:border-gray-600"
+                                "className": "min-h-[40px] p-4 border border-dashed border-gray-300 dark:border-gray-600"
+                            },
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "min-h-[40px] p-6 border border-dashed border-gray-300 dark:border-gray-600"
+                                    }
+                                }
                             }
                         }
                     },
@@ -98403,7 +99127,14 @@ HTTP/1.1 200
                             "type": "basic",
                             "name": "H1",
                             "props": {
-                                "className": "text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white"
+                                "className": "text-xl font-semibold text-gray-900 dark:text-white"
+                            },
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "text-2xl font-semibold text-gray-900 dark:text-white"
+                                    }
+                                }
                             },
                             "text": "$t:layout_editor.palette.h1.default_text"
                         }
@@ -188751,7 +189482,6 @@ HTTP/1.1 200
                                 "timezone": "Asia/Seoul",
                                 "language": "ko",
                                 "currency": "KRW",
-                                "maintenance_mode": false,
                                 "site_logo": []
                             },
                             "security": {
@@ -188822,8 +189552,6 @@ HTTP/1.1 200
                                 "cache_ttl": 7200,
                                 "sitemap_enabled": true,
                                 "sitemap_cache_ttl": 86400,
-                                "sitemap_schedule": "daily",
-                                "sitemap_schedule_time": "02:00",
                                 "sitemap_last_updated_at": "",
                                 "generator_enabled": true,
                                 "generator_content": ""
@@ -190007,6 +190735,8 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 | --- | --- | --- | --- | --- | --- |
 | identifier | path | string | 예 | — | 대상 리소스의 식별자 |
 | attachment | path | string | 예 | — | 대상 attachment의 식별자 |
+| size | query | string | 아니오 | 정의된 썸네일 규격 이름 | 래스터 이미지면 그 규격 썸네일을 낸다. `w` 보다 우선 |
+| w | query | integer | 아니오 | 1~10000 | 요청 가로 — 「숫자 요청 대상」 규격 중 가로가 이 값 이상인 가장 작은 규격으로 올려 맞춘다 |
 
 **요청 예시**
 
@@ -190031,6 +190761,19 @@ ETag: "9f2c1a4e8b7d3c5f"
 (첨부 이미지 파일의 원본 바이트)
 ```
 
+썸네일 요청(`?size=sm`) — 공개 썸네일 디스크가 비공개 디스크(`thumbnails`, 기본)일 때:
+
+```http
+HTTP/1.1 200
+Content-Type: image/png
+Cache-Control: public, max-age=86400
+X-G7-Thumbnail: miss
+
+(썸네일 바이트)
+```
+
+공개 썸네일 디스크가 공개 자산 디스크(public·S3·CDN)일 때는 `302` + `Location: {썸네일 직접 URL}` + `X-G7-Thumbnail: hit|miss` 입니다. 썸네일을 낼 수 없으면 원본 200 에 `X-G7-Thumbnail: bypass:{사유}` 가 붙습니다.
+
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
@@ -190040,6 +190783,8 @@ ETag: "9f2c1a4e8b7d3c5f"
 <!-- @generated:end -->
 
 **설명** 레이아웃 첨부 이미지 파일을 서빙하는 공개 엔드포인트입니다. 발행된 배경 이미지가 일반 방문자에게도 로드되어야 하므로 인증 없이 노출하며, 비공개 attachments 디스크의 파일을 캐싱 헤더와 함께 스트림합니다(래스터 이미지만 인라인, 그 밖은 다운로드 + nosniff). 첨부가 경로의 템플릿 소속이 아니거나 파일이 없으면 404입니다. 인증이 필요 없습니다.
+
+**썸네일 (`?size=` · `?w=`)** 래스터 이미지에 `?size={규격}` 또는 `?w={가로}` 를 붙이면 환경설정 업로드 탭의 규격으로 줄인 썸네일을 냅니다. 레이아웃 첨부는 완전 공개 원본이라 공개 썸네일 디스크(`upload.thumbnail_disk_public`)에 저장하고, 그 디스크가 공개 자산 디스크면 직접 URL 로 302 를 냅니다. 응답 헤더 `X-G7-Thumbnail` 은 `hit`(저장본)·`miss`(이번에 만듦)·`bypass:{사유}`(원본을 냄 — `disabled`·`no-engine`·`not-raster`·`animated`·`unknown-preset`·`smaller-than-preset`·`rate-limited`·`too-large`·`error`) 중 하나입니다.
 
 
 ### GET /api/templates/{identifier}/routes

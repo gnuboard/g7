@@ -167,8 +167,9 @@ describe('목록 검색칸 최근 검색어 — 구조', () => {
       // 종전 검색 입력칸(type=search)의 × 지우기 단추 — 글자와 겹치지 않게 오른쪽 여백을 단추 폭만큼 둔다
       expect(box.props.showClear).toBe(true);
       expect(String(box.props.inputClassName).split(/\s+/)).toContain('pr-11');
-      // 종전 폭(모바일 한 줄 꽉 참, 태블릿 이상 w-64)
-      expect(box.props.className).toBe('w-full sm:w-64');
+      // 종전 폭(모바일 한 줄 꽉 참, 640px 이상 w-64) — 폭 분기는 Tailwind 중단점 접두사가 아니라 responsive 오버라이드로 건다
+      expect(box.props.className).toBe('w-full');
+      expect(box.responsive).toEqual({ '640-': { props: { className: 'w-64' } } });
       expect(findAll(readJson(file), (n) => n.name === 'SearchBar')).toHaveLength(0);
       expect(handlersOf(readJson(file))).not.toContain('recordSearchKeyword');
     });

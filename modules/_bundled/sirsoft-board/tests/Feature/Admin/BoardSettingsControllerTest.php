@@ -19,7 +19,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  *
  * BoardSettingsController의 CRUD + bulkApply + clearCache를 검증합니다.
  *
- * @effects permission_failure_rolls_back_all_boards,
+ * 효과 요약(마커 아님 — 평문): permission_failure_rolls_back_all_boards,
  *   permission_failure_response_has_rolled_back_and_board_name,
  *   column_failure_rolls_back_all_changes,
  *   column_failure_response_has_rolled_back_and_null_board
@@ -365,6 +365,8 @@ class BoardSettingsControllerTest extends ModuleTestCase
     // bulkApply (일괄 적용) 테스트
     // ========================================
 
+    // (board-settings-bulk-apply-rollback 매니페스트의 failure_point 축 — docblock 은 @scenario 를 1건만 읽으므로 라인 주석으로 병기)
+    // @scenario failure_point=none
     /**
      * 관리자가 설정을 전체 게시판에 일괄 적용할 수 있는지 확인
      *
@@ -895,6 +897,8 @@ class BoardSettingsControllerTest extends ModuleTestCase
     // bulkApply 원자적 롤백 (회귀: issue#413-26)
     // ========================================
 
+    // (board-settings-bulk-apply-rollback 매니페스트의 failure_point 축 — docblock 은 @scenario 를 1건만 읽으므로 라인 주석으로 병기)
+    // @scenario failure_point=permission
     /**
      * 권한 적용이 중간 게시판에서 실패하면 전체 변경이 롤백되는지 확인 (회귀: issue#413-26)
      *
@@ -956,6 +960,8 @@ class BoardSettingsControllerTest extends ModuleTestCase
         }
     }
 
+    // (board-settings-bulk-apply-rollback 매니페스트의 failure_point 축 — docblock 은 @scenario 를 1건만 읽으므로 라인 주석으로 병기)
+    // @scenario failure_point=column
     /**
      * 컬럼 일괄 업데이트가 실패하면 전체 롤백되고 generic 안내가 반환되는지 확인 (회귀: issue#413-26)
      *

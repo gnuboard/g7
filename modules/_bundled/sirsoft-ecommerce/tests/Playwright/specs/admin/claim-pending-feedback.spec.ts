@@ -44,11 +44,11 @@ test('새 미리보기 예약 중 이전 응답이 와도 완료 버튼은 잠�
   await oldResponse;
   await page.clock.runFor(16);
   await expect(submit).toBeDisabled();
-  await expect(submit.locator('.spinner-sm')).toBeVisible();
+  await expect(submit.locator('.ecommerce-spinner-sm')).toBeVisible();
   expect(await page.evaluate(() => (window as any).G7Core.state.get().claimCompleteRestore['31'])).toBe(true);
   await page.clock.runFor(200);
   await expect(submit).toBeEnabled();
-  await expect(submit.locator('.spinner-sm')).toHaveCount(0);
+  await expect(submit.locator('.ecommerce-spinner-sm')).toHaveCount(0);
 });
 
 /** @effects claim_pending_feedback_preserves_responsive_label */
@@ -84,9 +84,9 @@ test('모바일 상태 변경 버튼이 긴 라벨과 처리 스피너를 함께
   try {
     await expect.poll(() => writes).toBe(1);
     await expect(confirm).toBeDisabled();
-    await expect(confirm.locator('.spinner-sm')).toBeVisible();
+    await expect(confirm.locator('.ecommerce-spinner-sm')).toBeVisible();
   } finally {
     release();
   }
-  await expect(confirm.locator('.spinner-sm')).toHaveCount(0);
+  await expect(confirm.locator('.ecommerce-spinner-sm')).toHaveCount(0);
 });

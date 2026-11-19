@@ -17,8 +17,18 @@ type LayoutNode = {
     name?: string;
     text?: string;
     props?: { className?: string };
+    responsive?: Record<string, { props?: { className?: string } }>;
     children?: LayoutNode[];
 };
+
+/**
+ * 3열 그리드 입력 줄인지 — 좁은 폭 1열, 1024px 이상 3열을 접두 유틸과 엔진 responsive(`1024-` 구간)로 쓴다.
+ * 폭 미디어를 품은 옛 의미 클래스(`grid-3col-responsive`)는 쓰지 않는다.
+ */
+const GRID3_BASE = 'ckeditor:grid ckeditor:grid-cols-1 ckeditor:gap-4 ckeditor:items-start';
+const isGrid3col = (n: { props?: { className?: string }; responsive?: Record<string, { props?: { className?: string } }> }) =>
+    (typeof n.props?.className === 'string' ? n.props.className : '').startsWith(GRID3_BASE) &&
+    String(n.responsive?.['1024-']?.props?.className ?? '').split(/\s+/).includes('ckeditor:grid-cols-3');
 
 /**
  * 레이아웃 트리의 모든 노드를 펼친다.
@@ -53,9 +63,10 @@ describe('CKEditor5 환경설정 — 의미 클래스 위치', () => {
         const fields = nodes.filter((n) => typeof n.id === 'string' && n.id.startsWith('field_'));
         expect(fields.length).toBeGreaterThanOrEqual(7);
         for (const field of fields) {
-            expect({ id: field.id, className: field.props?.className }).toEqual({
+            expect({ id: field.id, className: field.props?.className, wide: field.responsive?.['1024-']?.props?.className }).toEqual({
                 id: field.id,
-                className: 'grid-3col-responsive',
+                className: GRID3_BASE,
+                wide: 'ckeditor:grid ckeditor:grid-cols-3 ckeditor:gap-4 ckeditor:items-start',
             });
         }
     });
@@ -76,13 +87,13 @@ describe('CKEditor5 환경설정 — 의미 클래스 위치', () => {
         for (const heading of headings) {
             expect({ text: heading.text, className: heading.props?.className }).toEqual({
                 text: heading.text,
-                className: 'section-heading-md',
+                className: 'ckeditor-section-heading-md',
             });
         }
         for (const title of buttonTitles) {
             expect({ text: title.text, className: title.props?.className }).toEqual({
                 text: title.text,
-                className: 'block section-heading-md',
+                className: 'ckeditor:block ckeditor-section-heading-md',
             });
         }
     });
@@ -93,10 +104,10 @@ describe('CKEditor5 환경설정 — 의미 클래스 위치', () => {
      */
     it('저장 오류 상자는 제목에 강한 오류색, 목록 줄에 옅은 오류색을 쓴다', () => {
         const title = nodes.find((n) => n.text === '$t:admin.plugins.settings.validation_error');
-        expect(title?.props?.className).toBe('text-error-strong');
+        expect(title?.props?.className).toBe('ckeditor-text-error-strong');
 
         const item = nodes.find((n) => n.name === 'Li' && n.text === '{{message}}');
-        expect(item?.props?.className).toBe('text-error-soft');
+        expect(item?.props?.className).toBe('ckeditor-text-error-soft');
     });
 
     /**
@@ -105,7 +116,7 @@ describe('CKEditor5 환경설정 — 의미 클래스 위치', () => {
      */
     it('3열 그리드 클래스는 입력 칸 줄에만 쓴다', () => {
         const misplaced = nodes.filter(
-            (n) => n.props?.className === 'grid-3col-responsive' && !(typeof n.id === 'string' && n.id.startsWith('field_')),
+            (n) => (isGrid3col(n) || String(n.props?.className ?? '').includes('ckeditor-grid-3col-responsive')) && !(typeof n.id === 'string' && n.id.startsWith('field_')),
         );
         expect(misplaced.map((n) => n.name ?? n.id)).toEqual([]);
     });

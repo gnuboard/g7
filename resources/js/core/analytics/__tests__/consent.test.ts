@@ -5,10 +5,8 @@
  * 안 된다(서버가 익명 모드로 내려가 개인정보 없이 수집한다). 판정 출처는 코어 동의 런타임이며
  * (#639), 브리지는 자체 조회·자체 이벤트를 두지 않는다.
  *
- * @scenario mode=consent
- * @effects consent_bridge_blocks_sending_until_consent_is_known,
- *   consent_bridge_does_not_block_when_there_is_no_consent_source,
- *   consent_bridge_updates_on_consent_change_events
+ * 동의 연동 모드에서 판정 전 송신 차단, 동의 출처가 없을 때 막지 않음, 판정 변경 알림을
+ * 각 시험이 재고, 조합과 효과 표식은 그 시험 앞에 있다.
  */
 
 import { describe, expect, it, vi } from 'vitest';
@@ -141,7 +139,7 @@ describe('ConsentBridge', () => {
   // @scenario mode=consent, visitor=member
   // @effects consent_lookup_identifies_the_logged_in_member
   it('회원 판별은 런타임이 맡는다 — 브리지는 토큰을 읽거나 직접 조회하지 않는다', () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch' as never);
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
     const bridge = new ConsentBridge(true, source(READY(true)));
     bridge.allowsSending();

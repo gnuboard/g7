@@ -7,7 +7,8 @@
       <h3 class="card-title">$t:admin.settings.general.site_info</h3>
       <div class="card-description">$t:admin.settings.general.site_info_desc</div>
       <div class="row-stack">
-        <div class="grid-2col-responsive">
+        <div class="grid grid-cols-1 gap-4">
+          <responsive on="768-" class="grid grid-cols-2 gap-4"/>
           <div data-ref="field_site_name">
             <label class="form-label">
               <span>$t:admin.settings.general.site_name</span>
@@ -25,7 +26,18 @@
             </label>
             <input type="url" name="general.site_url" placeholder="https://example.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['general.site_url'] === true}}" class="input {{_local.errors?.['general.site_url'] ? 'input-error' : ''}}"/>
             <span data-if="{{_local.errors?.['general.site_url']}}" class="form-error">{{_local.errors?.['general.site_url']?.[0] ?? ''}}</span>
+            <p class="form-help text-gray-500 dark:text-gray-400">$t:admin.settings.general.site_url_help</p>
           </div>
+        </div>
+        <!-- 사용자 화면 URL — 외부 화면(Next.js 등)을 다른 주소에서 운영할 때만. 비밀번호 재설정·알림 메일 링크와
+     결제 뒤 돌아가는 주소의 베이스가 된다(관리자 화면 주소는 그대로). 비우면 사이트 URL 과 같다. -->
+        <div data-ref="field_user_screen_url">
+          <label class="form-label">
+            <span>$t:admin.settings.general.user_screen_url</span>
+          </label>
+          <input type="url" name="general.user_screen_url" placeholder="https://www.example.com" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['general.user_screen_url'] ? 'input-error' : ''}}"/>
+          <span data-if="{{_local.errors?.['general.user_screen_url']}}" class="form-error">{{_local.errors?.['general.user_screen_url']?.[0] ?? ''}}</span>
+          <p class="form-hint">$t:admin.settings.general.user_screen_url_help</p>
         </div>
         <div data-ref="field_site_description">
           <label class="form-label">$t:admin.settings.general.site_description</label>
@@ -38,46 +50,224 @@
           </label>
           <input type="email" name="general.admin_email" placeholder="admin@example.com" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['general.admin_email'] ? 'input-error' : ''}}"/>
           <span data-if="{{_local.errors?.['general.admin_email']}}" class="form-error">{{_local.errors?.['general.admin_email']?.[0] ?? ''}}</span>
+          <!-- 이 주소의 쓰임새 — 알림 템플릿 받는 사람 「사이트 관리자 이메일」 규칙이 여기로 메일을 보낸다(#888). -->
+          <p data-ref="admin_email_desc" class="text-tertiary mt-1">$t:admin.settings.general.admin_email_desc</p>
         </div>
         <div data-ref="field_site_logo">
           <label class="form-label">$t:admin.settings.general.site_logo</label>
           <p class="text-tertiary mb-2">$t:admin.settings.general.site_logo_desc</p>
-          <file-uploader data-type="composite" data-ref="site_logo_uploader" collection="site_logo" disabled="{{_computed.isReadOnly}}" :maxFiles="5" maxSize="{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}" accept="{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}" initialFiles="{{settings?.data?.general?.site_logo ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:site_logo" :confirmBeforeRemove="true">
-            <prop name="imageCompression">
-              <field name="maxSizeMB" :value="1"/>
-              <field name="maxWidthOrHeight" value="{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 800}}"/>
+          <!-- 첨부 업로더 확장점(#916) — 업로더 플러그인이 mode="replace" 로 바꿔 끼울 수 있다. 계약은 기존 값만으로 조립하고(새 API 없음),
+               콜백은 기본 업로더의 이벤트 처리와 같은 동작이다($args[0] → $event). 기본 업로더는 <default> 안에 그대로 둔다. -->
+          <extension-point name="attachment_uploader" data-ref="site_logo_uploader_slot" class="contents">
+            <prop name="uploader">
+              <field name="version" :value="1"/>
+              <field name="mode" value="upload"/>
+              <field name="endpoints">
+                <field name="upload" value="/api/admin/attachments"/>
+                <field name="delete" value="/api/admin/attachments/:id"/>
+                <field name="reorder" value="/api/admin/attachments/reorder"/>
+              </field>
+              <field name="fields" :value="{}"/>
+              <field name="policy">
+                <field name="accept" value="{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}"/>
+                <field name="maxSize" value="{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}"/>
+                <field name="maxFiles" :value="5"/>
+                <field name="maxConcurrentUploads" :value="1"/>
+                <field name="imageCompression">
+                  <field name="maxSizeMB" :value="1"/>
+                  <field name="maxWidthOrHeight" value="{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 800}}"/>
+                </field>
+              </field>
+              <field name="collection" value="site_logo"/>
+              <field name="attachmentable">
+                <field name="type" :value="null"/>
+                <field name="id" :value="null"/>
+              </field>
+              <field name="triggerEvent" value="upload:site_logo"/>
+              <field name="initialFiles" value="{{settings?.data?.general?.site_logo ?? []}}"/>
+              <field name="disabled" value="{{!!_computed.isReadOnly}}"/>
+              <field name="autoUpload" :value="false"/>
+              <field name="ui">
+                <field name="confirmBeforeRemove" :value="true"/>
+              </field>
+              <field name="context">
+                <field name="owner" value="core"/>
+                <field name="purpose" value="site_logo"/>
+              </field>
             </prop>
-            <on type="change" event="onFilesChange">
-              <!-- 파일을 고른 것만으로 **아직 올라가지 않는다**(`autoUpload=false`) — 저장 버튼이 보내는
-                   신호를 받아야 올린다. 여기서는 "고친 것이 있다" 표시만 켜 저장 버튼을 풀어 준다.
-                   고른 파일이 없어지는 경우까지 표시를 켜지 않도록 조건을 단다. -->
-              <set-state if="{{$args[0] &amp;&amp; $args[0].length > 0}}" target="local" :hasChanges="true"/>
-            </on>
-            <on type="change" event="onUploadComplete">
-              <!-- 업로드가 끝나면 올라간 파일을 폼 값에 **덧붙인다**(덮어쓰지 않는다) — 이미 있던 로고를
-                   남긴 채 새 것을 더하는 화면이라 그렇다. -->
-              <set-state target="local" :hasChanges="true" form.general.site_logo="{{[...(_local.form?.general?.site_logo ?? []), ...$args[0]]}}"/>
-            </on>
-            <on type="custom" event="onUploadComplete">
-              <!-- 같은 완료 이벤트를 **두 번 받는다** — 위는 값 갱신, 여기는 알림.
-                   갈라 둔 것은 값 갱신이 실패해도 알림이 뜨지 않게 하려는 것이 아니라, 한 블록에
-                   섞으면 어느 쪽이 화면 표시이고 어느 쪽이 상태 변경인지 읽기 어렵기 때문이다. -->
+            <callback name="onFilesChange">
+              <!-- 고른 것만으로는 올라가지 않는다 — 저장 버튼을 풀어 주는 표시만 켠다(기본 업로더와 같다) -->
+              <set-state if="{{$event &amp;&amp; $event.length > 0}}" target="local" :hasChanges="true"/>
+            </callback>
+            <callback name="onUploadComplete">
+              <!-- 올라간 파일을 폼 값에 반영하고 성공을 알린다(기본 업로더와 같다) -->
+              <set-state target="local" :hasChanges="true" form.general.site_logo="{{[...(_local.form?.general?.site_logo ?? []), ...$event]}}"/>
               <toast type="success" message="$t:attachment.upload_success"/>
-            </on>
-            <on type="custom" event="onUploadError">
-              <!-- 업로드 실패 — 업로더가 준 문구를 그대로 띄운다(크기·확장자 제한은 업로드 탭이 정한다). -->
-              <toast type="error" message="{{$args[0]}}"/>
-            </on>
-            <on type="change" event="onRemove">
-              <!-- 뺀 파일을 폼 값에서도 걸러 낸다 — 화면에서만 사라지고 저장 값에 남으면 다음 저장에
-                   되살아난다. 실제 삭제는 저장 시점에 정해진다. -->
-              <set-state target="local" :hasChanges="true" form.general.site_logo="{{(_local.form?.general?.site_logo ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"/>
-            </on>
-            <on type="custom" event="onRemove">
-              <!-- 위 제거와 같은 이벤트의 알림 몫이다(완료 이벤트를 둘로 나눈 것과 같은 이유). -->
+            </callback>
+            <callback name="onUploadError">
+              <!-- 업로드 실패 사유를 그대로 띄운다 -->
+              <toast type="error" message="{{$event}}"/>
+            </callback>
+            <callback name="onRemove">
+              <!-- 뺀 파일을 폼 값에서 걸러 내고 알린다 — 실제 삭제는 저장 때 정해진다 -->
+              <set-state target="local" :hasChanges="true" form.general.site_logo="{{(_local.form?.general?.site_logo ?? []).filter(item => (item.hash || item.id) !== $event)}}"/>
               <toast type="info" message="$t:attachment.deleted"/>
-            </on>
-          </file-uploader>
+            </callback>
+            <default>
+              <file-uploader data-type="composite" data-ref="site_logo_uploader" collection="site_logo" disabled="{{_computed.isReadOnly}}" :maxFiles="5" maxSize="{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}" accept="{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}" initialFiles="{{settings?.data?.general?.site_logo ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:site_logo" :confirmBeforeRemove="true">
+                <prop name="imageCompression">
+                  <field name="maxSizeMB" :value="1"/>
+                  <field name="maxWidthOrHeight" value="{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 800}}"/>
+                </prop>
+                <on type="change" event="onFilesChange">
+                  <!-- 파일을 고른 것만으로 **아직 올라가지 않는다**(`autoUpload=false`) — 저장 버튼이 보내는
+                       신호를 받아야 올린다. 여기서는 "고친 것이 있다" 표시만 켜 저장 버튼을 풀어 준다.
+                       고른 파일이 없어지는 경우까지 표시를 켜지 않도록 조건을 단다. -->
+                  <set-state if="{{$args[0] &amp;&amp; $args[0].length > 0}}" target="local" :hasChanges="true"/>
+                </on>
+                <on type="change" event="onUploadComplete">
+                  <!-- 업로드가 끝나면 올라간 파일을 폼 값에 **덧붙인다**(덮어쓰지 않는다) — 이미 있던 로고를
+                       남긴 채 새 것을 더하는 화면이라 그렇다. -->
+                  <set-state target="local" :hasChanges="true" form.general.site_logo="{{[...(_local.form?.general?.site_logo ?? []), ...$args[0]]}}"/>
+                </on>
+                <on type="custom" event="onUploadComplete">
+                  <!-- 같은 완료 이벤트를 **두 번 받는다** — 위는 값 갱신, 여기는 알림.
+                       갈라 둔 것은 값 갱신이 실패해도 알림이 뜨지 않게 하려는 것이 아니라, 한 블록에
+                       섞으면 어느 쪽이 화면 표시이고 어느 쪽이 상태 변경인지 읽기 어렵기 때문이다. -->
+                  <toast type="success" message="$t:attachment.upload_success"/>
+                </on>
+                <on type="custom" event="onUploadError">
+                  <!-- 업로드 실패 — 업로더가 준 문구를 그대로 띄운다(크기·확장자 제한은 업로드 탭이 정한다). -->
+                  <toast type="error" message="{{$args[0]}}"/>
+                </on>
+                <on type="change" event="onRemove">
+                  <!-- 뺀 파일을 폼 값에서도 걸러 낸다 — 화면에서만 사라지고 저장 값에 남으면 다음 저장에
+                       되살아난다. 실제 삭제는 저장 시점에 정해진다. -->
+                  <set-state target="local" :hasChanges="true" form.general.site_logo="{{(_local.form?.general?.site_logo ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"/>
+                </on>
+                <on type="custom" event="onRemove">
+                  <!-- 위 제거와 같은 이벤트의 알림 몫이다(완료 이벤트를 둘로 나눈 것과 같은 이유). -->
+                  <toast type="info" message="$t:attachment.deleted"/>
+                </on>
+              </file-uploader>
+            </default>
+          </extension-point>
+        </div>
+        <!-- 파비콘(#434) — 로고와 같은 지연 업로드(저장 버튼이 `upload:site_favicon` 신호를 보낸다). 1개만 두므로
+             완료 시 폼 값을 **교체**한다. ico·svg 를 받는 파비콘 전용 형식 목록을 쓰고, 이미지 압축은 두지 않는다
+             (ico·svg 를 다른 형식으로 바꾸지 않게). 허용 형식·크기는 서버가 파비콘 컬렉션에만 따로 정한다. -->
+        <div data-ref="field_site_favicon">
+          <label class="form-label">$t:admin.settings.general.site_favicon</label>
+          <p class="text-tertiary mb-2">$t:admin.settings.general.site_favicon_desc</p>
+          <!-- 첨부 업로더 확장점(#916) — 업로더 플러그인이 mode="replace" 로 바꿔 끼울 수 있다. 계약은 기존 값만으로 조립하고(새 API 없음),
+               콜백은 기본 업로더의 이벤트 처리와 같은 동작이다($args[0] → $event). 기본 업로더는 <default> 안에 그대로 둔다. -->
+          <extension-point name="attachment_uploader" data-ref="site_favicon_uploader_slot" class="contents">
+            <prop name="uploader">
+              <field name="version" :value="1"/>
+              <field name="mode" value="upload"/>
+              <field name="endpoints">
+                <field name="upload" value="/api/admin/attachments"/>
+                <field name="delete" value="/api/admin/attachments/:id"/>
+                <field name="reorder" value="/api/admin/attachments/reorder"/>
+              </field>
+              <field name="fields" :value="{}"/>
+              <field name="policy">
+                <field name="accept" value=".ico,.png,.svg,.gif,.jpg,.jpeg,.webp"/>
+                <field name="maxSize" :value="1"/>
+                <field name="maxFiles" :value="1"/>
+                <field name="maxConcurrentUploads" :value="1"/>
+                <field name="imageCompression" :value="null"/>
+              </field>
+              <field name="collection" value="site_favicon"/>
+              <field name="attachmentable">
+                <field name="type" :value="null"/>
+                <field name="id" :value="null"/>
+              </field>
+              <field name="triggerEvent" value="upload:site_favicon"/>
+              <field name="initialFiles" value="{{settings?.data?.general?.site_favicon ?? []}}"/>
+              <field name="disabled" value="{{!!_computed.isReadOnly}}"/>
+              <field name="autoUpload" :value="false"/>
+              <field name="ui">
+                <field name="confirmBeforeRemove" :value="true"/>
+              </field>
+              <field name="context">
+                <field name="owner" value="core"/>
+                <field name="purpose" value="site_favicon"/>
+              </field>
+            </prop>
+            <callback name="onFilesChange">
+              <!-- 고른 것만으로는 올라가지 않는다 — 저장 버튼을 풀어 주는 표시만 켠다(기본 업로더와 같다) -->
+              <set-state if="{{$event &amp;&amp; $event.length > 0}}" target="local" :hasChanges="true"/>
+            </callback>
+            <callback name="onUploadComplete">
+              <!-- 올라간 파일을 폼 값에 반영하고 성공을 알린다(기본 업로더와 같다) -->
+              <set-state target="local" :hasChanges="true" form.general.site_favicon="{{$event}}"/>
+              <toast type="success" message="$t:attachment.upload_success"/>
+            </callback>
+            <callback name="onUploadError">
+              <!-- 업로드 실패 사유를 그대로 띄운다 -->
+              <toast type="error" message="{{$event}}"/>
+            </callback>
+            <callback name="onRemove">
+              <!-- 뺀 파일을 폼 값에서 걸러 내고 알린다 — 실제 삭제는 저장 때 정해진다 -->
+              <set-state target="local" :hasChanges="true" form.general.site_favicon="{{(_local.form?.general?.site_favicon ?? []).filter(item => (item.hash || item.id) !== $event)}}"/>
+              <toast type="info" message="$t:attachment.deleted"/>
+            </callback>
+            <default>
+              <file-uploader data-type="composite" data-ref="site_favicon_uploader" collection="site_favicon" disabled="{{_computed.isReadOnly}}" :maxFiles="1" :maxSize="1" accept=".ico,.png,.svg,.gif,.jpg,.jpeg,.webp" initialFiles="{{settings?.data?.general?.site_favicon ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:site_favicon" :confirmBeforeRemove="true">
+                <on type="change" event="onFilesChange">
+                  <!-- 고른 것만으로는 올라가지 않는다 — 저장 버튼을 풀어 주는 표시만 켠다(로고 칸과 같다). -->
+                  <set-state if="{{$args[0] &amp;&amp; $args[0].length > 0}}" target="local" :hasChanges="true"/>
+                </on>
+                <on type="change" event="onUploadComplete">
+                  <!-- 파비콘은 1개라 덧붙이지 않고 **교체**한다 — 이전 값은 저장 때 서버가 파기한다. -->
+                  <set-state target="local" :hasChanges="true" form.general.site_favicon="{{$args[0]}}"/>
+                </on>
+                <on type="custom" event="onUploadComplete">
+                  <!-- 올리기를 마쳤다 — 성공 안내만 띄운다(값 교체는 위 change 블록이 한다) -->
+                  <toast type="success" message="$t:attachment.upload_success"/>
+                </on>
+                <on type="custom" event="onUploadError">
+                  <!-- 업로드 실패 — 서버 문구(형식·1MB·SVG 안전 검사)를 그대로 띄운다 -->
+                  <toast type="error" message="{{$args[0]}}"/>
+                </on>
+                <on type="change" event="onRemove">
+                  <!-- 파비콘을 뺐다 — 목록에서 그 파일을 걸러 내고 저장 버튼을 풀어 준다. 서버 파기는 저장 때 한다 -->
+                  <set-state target="local" :hasChanges="true" form.general.site_favicon="{{(_local.form?.general?.site_favicon ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"/>
+                </on>
+                <on type="custom" event="onRemove">
+                  <!-- 뺀 것을 알린다 — 저장해야 확정된다 -->
+                  <toast type="info" message="$t:attachment.deleted"/>
+                </on>
+              </file-uploader>
+            </default>
+          </extension-point>
+          <span data-if="{{_local.errors?.['general.site_favicon']}}" class="form-error">{{_local.errors?.['general.site_favicon']?.[0] ?? ''}}</span>
+          <!-- 우선순위 안내(D9) — 그 화면 종류의 활성 템플릿 설정에 파비콘이 있으면 이 칸보다 그것이 쓰인다 -->
+          <div data-ref="favicon_override_user" data-if="{{settings?.data?._meta?.favicon?.user?.source === 'template'}}" role="note" class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-xs text-blue-700 dark:text-blue-300">
+            <icon name="circle-info" class="flex-shrink-0"/>
+            <span>$t:admin.settings.general.favicon_override_user|name={{settings?.data?._meta?.favicon?.user?.template_name ?? settings?.data?._meta?.favicon?.user?.template_identifier ?? ''}}</span>
+            <a data-if="{{!!settings?.data?._meta?.favicon?.user?.settings_route}}" href="{{settings?.data?._meta?.favicon?.user?.settings_route}}" class="underline font-medium hover:no-underline">
+              $t:admin.settings.general.favicon_go_template_settings
+              <on type="click">
+                <!-- 다른 화면 이동은 실제 주소를 가진 링크로 둔다(#757 WP-L) — 클릭은 SPA 이동, 이탈 경고는 그대로 받는다.
+                     audit:allow layout-list-context-navigate-merge-query 템플릿 설정 화면으로 이동(#434) — 목적지는 활성 템플릿마다 다른 설정 화면이라 환경설정 탭 쿼리를 이어 갈 이유가 없다. -->
+                <navigate path="{{settings?.data?._meta?.favicon?.user?.settings_route}}"/>
+              </on>
+            </a>
+          </div>
+          <div data-ref="favicon_override_admin" data-if="{{settings?.data?._meta?.favicon?.admin?.source === 'template'}}" role="note" class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-xs text-blue-700 dark:text-blue-300">
+            <icon name="circle-info" class="flex-shrink-0"/>
+            <span>$t:admin.settings.general.favicon_override_admin|name={{settings?.data?._meta?.favicon?.admin?.template_name ?? settings?.data?._meta?.favicon?.admin?.template_identifier ?? ''}}</span>
+            <a data-if="{{!!settings?.data?._meta?.favicon?.admin?.settings_route}}" href="{{settings?.data?._meta?.favicon?.admin?.settings_route}}" class="underline font-medium hover:no-underline">
+              $t:admin.settings.general.favicon_go_template_settings
+              <on type="click">
+                <!-- 다른 화면 이동은 실제 주소를 가진 링크로 둔다(#757 WP-L) — 클릭은 SPA 이동, 이탈 경고는 그대로 받는다.
+                     audit:allow layout-list-context-navigate-merge-query 템플릿 설정 화면으로 이동(#434) — 목적지는 활성 템플릿마다 다른 설정 화면이라 환경설정 탭 쿼리를 이어 갈 이유가 없다. -->
+                <navigate path="{{settings?.data?._meta?.favicon?.admin?.settings_route}}"/>
+              </on>
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -85,7 +275,8 @@
       <h3 class="card-title">$t:admin.settings.general.localization</h3>
       <div class="card-description">$t:admin.settings.general.localization_desc</div>
       <div>
-        <div class="grid-2col-responsive">
+        <div class="grid grid-cols-1 gap-4">
+          <responsive on="768-" class="grid grid-cols-2 gap-4"/>
           <div data-ref="field_language">
             <label class="form-label">
               <span>$t:admin.settings.general.default_language</span>
@@ -120,10 +311,12 @@
               </options>
             </select>
           </div>
-          <button data-ref="asset_url_mode_detect_button" type="button" class="btn btn-secondary whitespace-nowrap" disabled="{{_computed.isReadOnly}}">
+          <!-- 감지는 브라우저가 두 번 왕복하는 조작이다. 아래 안내 문구가 'detecting' 을 이미 그리지만 그것은 필드 밑에 있어 누른 손이 보는 자리가 아니다 — 버튼 자신이 잠기고 돌지 않으면 운영자는 다시 누르고, 그때마다 탐침이 겹쳐 돈다. 플래그는 핸들러가 이미 소유한다(`detectAssetUrlModeHandler` 가 시작에 'detecting', 성공·실패·판정불가 모든 경로에서 다른 값으로 덮는다). -->
+          <button data-ref="asset_url_mode_detect_button" type="button" class="btn btn-secondary whitespace-nowrap" disabled="{{_computed.isReadOnly || _local.asset_url_mode_detect_status === 'detecting'}}">
             <on event="onClick">
               <action handler="detectAssetUrlMode"/>
             </on>
+            <icon data-if="{{_local.asset_url_mode_detect_status === 'detecting'}}" name="spinner" class="spinner-sm"/>
             <span>$t:admin.settings.general.asset_url_mode_detect</span>
           </button>
         </div>
@@ -131,6 +324,21 @@
         <p data-ref="asset_url_mode_msg_extension" data-if="{{_local.asset_url_mode_detect_status === 'extension'}}" class="mt-2 text-sm text-green-700 dark:text-green-400">$t:admin.settings.general.asset_url_mode_detect_extension</p>
         <p data-ref="asset_url_mode_msg_extensionless" data-if="{{_local.asset_url_mode_detect_status === 'extensionless'}}" class="mt-2 text-sm text-amber-700 dark:text-amber-400">$t:admin.settings.general.asset_url_mode_detect_extensionless</p>
         <p data-ref="asset_url_mode_msg_unavailable" data-if="{{_local.asset_url_mode_detect_status === 'unavailable'}}" class="mt-2 text-sm text-red-600 dark:text-red-400">$t:admin.settings.general.asset_url_mode_detect_unavailable</p>
+      </div>
+    </div>
+    <!-- 레이아웃 편집 단추(7.2.0) — 편집 권한이 있는 로그인 사용자에게 운영 화면 오른쪽 아래에 뜨는 「레이아웃 편집」 단추를
+      켜고 끈다. 값은 공개 설정 `general.layout_edit_button_enabled` 로 화면에 내려가고, 저장 성공 갈래가 `_global.settings` 를
+      바꾸므로 단추는 새로고침 없이 바로 사라지거나 나타난다. -->
+    <div data-ref="card_layout_edit_button" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.general.layout_edit_button</h3>
+      <div class="card-description">$t:admin.settings.general.layout_edit_button_description</div>
+      <div data-ref="toggle_layout_edit_button_enabled" class="flex-between">
+        <div>
+          <span class="text-heading">$t:admin.settings.general.layout_edit_button_enabled</span>
+          <p class="text-label-subtle">$t:admin.settings.general.layout_edit_button_enabled_desc</p>
+          <span data-if="{{_local.errors?.['general.layout_edit_button_enabled']}}" class="form-error">{{_local.errors?.['general.layout_edit_button_enabled']?.[0] ?? ''}}</span>
+        </div>
+        <toggle data-type="composite" name="general.layout_edit_button_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
       </div>
     </div>
     <!-- 초기 화면 정적 파일 — 이 탭에서 **유일하게 저장 대상이 아닌 카드**다. `name=` 입력이 하나도 없고,

@@ -4,6 +4,8 @@ namespace App\Privacy;
 
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\DisplayNameResolver;
 use App\Enums\ActivityLogType;
 use App\Enums\PermissionType;
 use App\Enums\UserStatus;
@@ -256,7 +258,8 @@ class DormantAccountService
         $byDormantAt = in_array($stage, ['withdraw_notice', 'withdraw'], true);
         $query = $this->stageQuery($stage);
 
-        $query->select(['id', 'uuid', 'name', 'email', 'last_login_at', 'created_at', 'dormant_at']);
+        // 명단의 회원 칸은 관리자 영역의 표시 이름이다 — 계산에 필요한 컬럼을 함께 읽는다.
+        $query->select([...User::DISPLAY_COLUMNS, 'last_login_at', 'created_at', 'dormant_at']);
 
         if ($byDormantAt) {
             $query->orderBy('dormant_at');
@@ -271,11 +274,13 @@ class DormantAccountService
                 );
         }
 
-        return $query->orderBy('id')
-            ->paginate($perPage, ['*'], 'page', $page)
+        $targets = $query->orderBy('id')->paginate($perPage, ['*'], 'page', $page);
+        $names = app(DisplayNameResolver::class)->resolveMany($targets->getCollection(), DisplayNameAreaRegistry::AREA_ADMIN);
+
+        return $targets
             ->through(fn (User $user) => new PrivacyRetentionTarget(
                 id: $user->id,
-                title: (string) $user->name,
+                title: (string) ($names[$user->id] ?? ''),
                 subtitle: $user->email,
                 date: $byDormantAt ? $user->dormant_at : $this->lastActivityAt($user),
                 url: '/admin/users/'.$user->uuid,

@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#599 |
 #   축(귀속 상태 × 업로더)의 조합은 백필 판정 규칙 그 자체라 케이스 표가 곧 effects 다 —
 #   조합마다 별도 @scenario 마킹을 두면 같은 것을 두 번 적는다. effects 축은 면제하지 않는다.
 feature: claim_attachment_uploader_type
@@ -27,6 +27,12 @@ axes:
     - none
     - requester
     - staff
+  # 구매자 화면의 첨부 계약(옛 키 이름, 상한 설정 키)이 서는 시점 — 작성 중과 접수 뒤
+  claim_type:
+    - exchange
+  claim_stage:
+    - applying
+    - applied
 
 exclusions:
   - { claimable_state: pending, uploader: requester, reason: "미귀속 업로드 경로는 신청 화면뿐이라 업로더 구분이 판정을 바꾸지 않는다" }
@@ -61,6 +67,21 @@ effects:
   # 주체 미상에 뱃지가 서면 「고객이 낸 증거」로 거짓 표시된다(R17 의 렌더 축).
   - claim_attachment_unknown_origin_renders_no_badge
   - claim_attachment_hint_live_measurement
+  # 첨부 서비스 계약 — 미귀속 업로드의 귀속 판정, 다운로드 게이트, 삭제 정리
+  - pending_upload_is_bound_to_the_order
+  - pending_upload_respects_the_max_images_setting
+  - attach_pending_binds_images_to_the_claim
+  - attach_pending_rejects_images_of_another_order
+  - attach_pending_rejects_images_uploaded_by_another_member
+  - attach_pending_rejects_unknown_ids_and_already_attached_images
+  - attach_pending_with_no_ids_is_a_no_op
+  - guest_pending_images_attach_with_the_order_token_alone
+  - owned_by_judges_pending_by_uploader_and_attached_by_requester
+  - download_gate_blocks_strangers_and_allows_owner_or_signature
+  - download_gate_lets_an_operator_with_claims_read_through_without_a_signature
+  - delete_removes_the_file_and_the_row
+  - delete_for_claimable_removes_every_attachment_of_the_claim
+  - deleting_an_order_leaves_no_orphan_claim_rows_or_attachments
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Database/Migrations/ClaimImageUploaderTypeBackfillTest.php

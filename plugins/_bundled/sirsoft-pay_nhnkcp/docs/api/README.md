@@ -1,6 +1,25 @@
 # API 레퍼런스 문서 목차
 
-> **소유**: 플러그인 `sirsoft-pay_nhnkcp` · 이 확장의 웹 라우트는 대부분 결제대행사(NHN KCP)와 브라우저가 직접 주고받는 콜백/통보 경로이며, 표준 JSON API 표면이 아니다. 아래 문서는 그중 운영·보안상 명시가 필요한 경로를 사람이 서술한 레퍼런스다.
+> **소유**: 플러그인 `sirsoft-pay_nhnkcp` · **생성**: `php artisan api:docgen` (실측 기반).
+> 아래 표는 자동 생성됩니다. 각 문서를 열면 엔드포인트별 파라미터·응답·예시를 볼 수 있습니다.
+
+<!-- @generated:start:api-readme-index -->
+- **문서 수**: 6 · **엔드포인트 수**: 15
+
+| 문서 | 도메인 | 엔드포인트 |
+| --- | --- | --- |
+| [health.md](health.md) | `health` | 1 |
+| [mobile.md](mobile.md) | `mobile` | 1 |
+| [orders.md](orders.md) | `orders` | 6 |
+| [payment.md](payment.md) | `payment` | 5 |
+| [settings.md](settings.md) | `settings` | 1 |
+| [vbank.md](vbank.md) | `vbank` | 1 |
+
+<!-- @generated:end -->
+
+## 사람이 서술한 레퍼런스
+
+이 확장의 웹 라우트는 대부분 결제대행사(NHN KCP)와 브라우저가 직접 주고받는 콜백/통보 경로이며, 표준 JSON API 표면이 아니다. 아래 문서는 그중 운영·보안상 명시가 필요한 경로를 사람이 서술한 레퍼런스다.
 
 | 문서 | 도메인 | 설명 |
 | --- | --- | --- |

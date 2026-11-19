@@ -10,7 +10,7 @@
 1. 구조: User → Role → role_menus 피벗 → Menu
 2. 권한: MenuPermissionType (read, write, delete)
 3. 모든 메뉴: role_menus에 명시적 역할 권한 필요 (코어/확장 구분 없음)
-4. 자동 부여: 메뉴 생성 시 관리자 역할 + 생성자/설치자 역할 자동 부여
+4. 자동 부여: 메뉴 생성 시 관리자 역할 + 생성자/설치자 역할 자동 부여, 확장이 선언한 역할에는 그 역할 권한으로 열 수 있는 확장 메뉴 부여
 5. 시더: Menu::create() + grantAdminRoleToMenus() 패턴
 ```
 
@@ -380,6 +380,16 @@ $role->menus()->wherePivot('permission_type', 'write')->get();
 - **액터가 관리할 수 없는 메뉴(비활성 확장 메뉴 등)의 기존 할당은 건드리지 않습니다.**
 - 바뀐 메뉴마다 `core.menu.after_sync_roles` 가 발화하고, 운영자가 바꾼 역할은 `user_overrides` 에 기록돼 확장 업데이트가 덮어쓰지 않습니다. 일괄 경로는 앞뒤로 `core.menu.before_bulk_update_roles`·`core.menu.after_bulk_update_roles` 도 발화합니다.
 - 관리 목록(`GET /api/admin/menus`)은 메뉴마다 부여된 역할 ID 를 `role_ids` 로 싣습니다. 역할 이름·권한 타입은 단건 조회(`GET /api/admin/menus/{id}`)의 `roles` 를 씁니다.
+
+### 확장이 선언한 역할의 메뉴
+
+확장이 `getRoles()` 로 선언한 역할(예: 이커머스 관리자, SSO 운영자)에는 확장 메뉴 동기화가 그 확장 메뉴 중 **역할이 가진 권한으로 열 수 있는 메뉴**를 붙입니다. 새 설치, 확장 업데이트, 플러그인 활성화, 활성 확장 재동기화가 모두 같은 경로(`ExtensionMenuSyncHelper::grantMenusToDeclaredRoles()`)를 지나므로, 이미 운영 중인 사이트도 다음 동기화 때 채워집니다.
+
+- 메뉴의 필요 권한은 `getAdminMenus()` 정의의 `permission` 키입니다. 그 화면이 쓰는 목록 API 의 권한을 적습니다. 권한 범위(본인 것만 등)가 있는 권한도 가진 것으로 봅니다.
+- 필요 권한이 없는 상위 메뉴(하위 메뉴 묶음)는 붙는 하위 메뉴가 하나라도 있을 때 붙습니다.
+- `permission` 을 적지 않은 단독 메뉴는 판정할 근거가 없어 선언 역할에 붙이지 않습니다. 이런 메뉴를 선언 역할에 보이려면 `permission` 을 적거나 확장이 직접 붙입니다.
+- 운영자가 역할 관리·메뉴 관리에서 그 역할을 넣거나 뺀 메뉴(메뉴 `user_overrides` 에 역할 식별자)는 건드리지 않습니다. 상위 메뉴에서 뺐으면 그 아래 메뉴도 붙이지 않습니다.
+- 붙이기만 하고 떼지 않습니다. 역할에서 권한을 빼도 이미 붙은 메뉴는 남으므로, 메뉴도 함께 빼려면 역할 관리의 「접근 가능 메뉴」에서 뺍니다.
 
 ### 확장 비활성화와 메뉴
 

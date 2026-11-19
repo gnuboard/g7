@@ -44,6 +44,11 @@ class InicisIdentityProviderBindingTest extends PluginTestCase
 
     private InicisIdentityRecordRepositoryInterface $recordRepository;
 
+    /**
+     * 로그·record 저장소와, 더미 gateway·매핑 저장소를 끼운 DI 기준 provider 를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -60,6 +65,15 @@ class InicisIdentityProviderBindingTest extends PluginTestCase
         );
     }
 
+    /**
+     * 비로그인 가입 흐름(log.user_id 없음)은 binding 검증을 건너뛰고 통과한다.
+     *
+     * @scenario flow=self_idv_verify, duplicate_field=di, existing_record_state=none, verify_hash_state=di_set, log_provider_id=inicis, log_user_id=null
+     *
+     * @effects verify_succeeds_when_log_user_id_is_null_guest_signup
+     *
+     * @return void 반환값 없음
+     */
     public function test_verify_succeeds_for_guest_signup_flow_skipping_binding_check(): void
     {
         // log.user_id = null (비로그인 가입 흐름) — binding 검증 자체가 skip 되어야 함
@@ -70,6 +84,15 @@ class InicisIdentityProviderBindingTest extends PluginTestCase
         $this->assertTrue($result->success);
     }
 
+    /**
+     * 로그인 회원이라도 저장된 record 가 없으면(IDV 미가입자) 허용 통과한다.
+     *
+     * @scenario flow=self_idv_verify, duplicate_field=di, existing_record_state=none, verify_hash_state=di_set, log_provider_id=inicis, log_user_id=present
+     *
+     * @effects verify_succeeds_when_user_has_no_existing_record_permissive
+     *
+     * @return void 반환값 없음
+     */
     public function test_verify_succeeds_when_user_has_no_existing_record(): void
     {
         // log.user_id 있지만 record 없음 — permissive 통과 (IDV 미가입자)
@@ -81,6 +104,15 @@ class InicisIdentityProviderBindingTest extends PluginTestCase
         $this->assertTrue($result->success);
     }
 
+    /**
+     * 저장된 record 의 di_hash 와 인증 결과 DI 가 같으면 통과한다.
+     *
+     * @scenario flow=self_idv_verify, duplicate_field=di, existing_record_state=same_user_match, verify_hash_state=di_set, log_provider_id=inicis, log_user_id=present
+     *
+     * @effects verify_succeeds_when_record_di_hash_matches
+     *
+     * @return void 반환값 없음
+     */
     public function test_verify_succeeds_when_existing_record_di_hash_matches(): void
     {
         $user = User::factory()->create();
@@ -93,6 +125,15 @@ class InicisIdentityProviderBindingTest extends PluginTestCase
         $this->assertTrue($result->success);
     }
 
+    /**
+     * 저장된 record 의 di_hash 와 인증 결과 DI 가 다르면 IDENTITY_BINDING_MISMATCH 로 실패하고 로그가 failed 가 된다.
+     *
+     * @scenario flow=self_idv_verify, duplicate_field=di, existing_record_state=same_user_mismatch, verify_hash_state=di_set, log_provider_id=inicis, log_user_id=present
+     *
+     * @effects verify_fails_with_binding_mismatch_when_di_hash_differs, verify_failure_updates_log_status_to_failed
+     *
+     * @return void 반환값 없음
+     */
     public function test_verify_fails_with_binding_mismatch_when_di_hash_differs(): void
     {
         $user = User::factory()->create();
@@ -110,6 +151,13 @@ class InicisIdentityProviderBindingTest extends PluginTestCase
         $this->assertSame(IdentityVerificationStatus::Failed->value, $reload->status->value);
     }
 
+    /**
+     * DI 기준 설정에서 인증 결과 식별값(DI·CI)이 모두 비면 신원 가드가 INCOMPLETE_IDENTITY 로 막는다.
+     *
+     * @scenario flow=self_idv_verify, duplicate_field=di, verify_hash_state=di_empty, log_provider_id=inicis, log_user_id=present
+     *
+     * @return void 반환값 없음
+     */
     public function test_verify_blocks_when_both_identifiers_null(): void
     {
         $user = User::factory()->create();
@@ -125,6 +173,15 @@ class InicisIdentityProviderBindingTest extends PluginTestCase
         $this->assertSame('INCOMPLETE_IDENTITY', $result->failureCode);
     }
 
+    /**
+     * CI 기준 설정에서 저장된 ci_hash 와 인증 결과 CI 가 다르면 IDENTITY_BINDING_MISMATCH 로 실패한다.
+     *
+     * @scenario flow=self_idv_verify, duplicate_field=ci, existing_record_state=same_user_mismatch, verify_hash_state=ci_set, log_provider_id=inicis, log_user_id=present
+     *
+     * @effects verify_fails_with_binding_mismatch_in_ci_mode_when_ci_hash_differs
+     *
+     * @return void 반환값 없음
+     */
     public function test_verify_fails_with_binding_mismatch_in_ci_mode_when_ci_hash_differs(): void
     {
         $user = User::factory()->create();
@@ -145,6 +202,15 @@ class InicisIdentityProviderBindingTest extends PluginTestCase
         $this->assertSame('IDENTITY_BINDING_MISMATCH', $result->failureCode);
     }
 
+    /**
+     * CI 기준 설정에서 ci_hash 는 다르지만 ci2_hash 가 같으면(통신사 변경) 대체 비교로 통과한다.
+     *
+     * @scenario flow=self_idv_verify, duplicate_field=ci, existing_record_state=ci2_fallback_match, verify_hash_state=ci_set, log_provider_id=inicis, log_user_id=present
+     *
+     * @effects verify_succeeds_in_ci_mode_when_ci2_hash_fallback_matches
+     *
+     * @return void 반환값 없음
+     */
     public function test_verify_succeeds_in_ci_mode_when_ci2_hash_fallback_matches(): void
     {
         $user = User::factory()->create();
@@ -173,7 +239,9 @@ class InicisIdentityProviderBindingTest extends PluginTestCase
     /**
      * STEP3 성공 페이로드 mockup.
      *
-     * @return array<string, mixed>
+     * @param  string  $di  인증 결과 DI(빈 문자열이면 누락)
+     * @param  string  $ci  인증 결과 CI(빈 문자열이면 누락)
+     * @return array<string, mixed> 이니시스 STEP3 결과 페이로드
      */
     private function validInput(string $di = 'DI-DEFAULT', string $ci = ''): array
     {
@@ -194,6 +262,12 @@ class InicisIdentityProviderBindingTest extends PluginTestCase
         ];
     }
 
+    /**
+     * verify 직전 상태(sent)의 이니시스 본인인증 로그를 만든다.
+     *
+     * @param  int|null  $userId  대상 회원 ID(null 이면 비로그인 가입 흐름)
+     * @return IdentityVerificationLog 만든 로그
+     */
     private function createPendingLog(?int $userId): IdentityVerificationLog
     {
         return $this->logRepository->create([
@@ -217,21 +291,42 @@ class InicisIdentityProviderBindingTest extends PluginTestCase
 
     /**
      * binding 검증 흐름에서 호출되지 않는 더미 gateway.
+     *
+     * @return InicisGatewayInterface 호출되지 않는 더미 gateway
      */
     private function makeNullGateway(): InicisGatewayInterface
     {
         return new class implements InicisGatewayInterface
         {
+            /**
+             * 인증 URL 검증 더미 — 이 시험 경로에서는 쓰이지 않아 늘 거부한다.
+             *
+             * @param  string  $url  검사할 인증 URL
+             * @return bool 늘 false
+             */
             public function validateAuthUrl(string $url): bool
             {
                 return false;
             }
 
+            /**
+             * 결과 조회 더미 — 이 시험 경로에서 호출되면 안 되므로 예외를 던진다.
+             *
+             * @param  string  $authRequestUrl  결과 조회 URL
+             * @param  string  $txId  이니시스 거래 ID
+             * @param  string  $token  인증 토큰
+             * @return array<string, mixed> 반환하지 않음(늘 예외)
+             */
             public function verifyResult(string $authRequestUrl, string $txId, string $token): array
             {
                 throw new \LogicException('not used in binding test');
             }
 
+            /**
+             * 거래 ID 생성 더미 — 빈 문자열을 돌려준다.
+             *
+             * @return string 늘 빈 문자열
+             */
             public function generateMTxId(): string
             {
                 return '';
@@ -241,21 +336,53 @@ class InicisIdentityProviderBindingTest extends PluginTestCase
 
     /**
      * binding 검증 흐름에서 호출되지 않는 더미 mapping repository.
+     *
+     * @return InicisChallengeMappingRepositoryInterface 호출되지 않는 더미 매핑 저장소
      */
     private function makeNullMappingRepository(): InicisChallengeMappingRepositoryInterface
     {
         return new class implements InicisChallengeMappingRepositoryInterface
         {
+            /**
+             * 보관주기 정리 전 매핑 삭제 — 이 시험에서는 호출되지 않는다(7.2.0 이 인터페이스에 더한 메서드).
+             *
+             * @param  array<int, string>  $challengeIds  코어 IdentityVerificationLog UUID 목록
+             * @return int 늘 0
+             */
+            public function deleteByChallengeIds(array $challengeIds): int
+            {
+                return 0;
+            }
+
+            /**
+             * 매핑 생성 더미 — 이 시험 경로에서 호출되면 안 되므로 예외를 던진다.
+             *
+             * @param  string  $mtxid  이니시스 거래 ID
+             * @param  string  $challengeId  코어 challenge UUID
+             * @return \Plugins\Sirsoft\VerificationKginicis\Models\InicisChallengeMapping 반환하지 않음(늘 예외)
+             */
             public function create(string $mtxid, string $challengeId): \Plugins\Sirsoft\VerificationKginicis\Models\InicisChallengeMapping
             {
                 throw new \LogicException('not used in binding test');
             }
 
+            /**
+             * mTxId 로 challenge ID 를 찾는 더미 — 늘 찾지 못한다.
+             *
+             * @param  string  $mtxid  이니시스 거래 ID
+             * @return string|null 늘 null
+             */
             public function findChallengeIdByMtxid(string $mtxid): ?string
             {
                 return null;
             }
 
+            /**
+             * challenge ID 로 매핑을 찾는 더미 — 늘 찾지 못한다.
+             *
+             * @param  string  $challengeId  코어 challenge UUID
+             * @return \Plugins\Sirsoft\VerificationKginicis\Models\InicisChallengeMapping|null 늘 null
+             */
             public function findByChallengeId(string $challengeId): ?\Plugins\Sirsoft\VerificationKginicis\Models\InicisChallengeMapping
             {
                 return null;
@@ -264,7 +391,11 @@ class InicisIdentityProviderBindingTest extends PluginTestCase
     }
 
     /**
-     * @param  array<string, mixed>  $hashes
+     * 회원의 이니시스 본인인증 record 를 저장한다 — 비교 대상 해시만 덮어쓴다.
+     *
+     * @param  int  $userId  record 를 가질 회원 ID
+     * @param  array<string, mixed>  $hashes  덮어쓸 해시 컬럼(di_hash·ci_hash·ci2_hash)
+     * @return void 반환값 없음
      */
     private function createRecordForUser(int $userId, array $hashes): void
     {

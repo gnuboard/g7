@@ -373,6 +373,7 @@
     },
     "detail_title": "상세검색",
     "claim_flags": "추가 조건",
+    "request_source": "접수 출처",
     "request_source_option": {
       "all": "접수 출처 전체",
       "admin": "판매자 접수",

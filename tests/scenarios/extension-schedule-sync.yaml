@@ -1,0 +1,29 @@
+feature: extension_schedule_sync_registration
+
+description: |
+  7.2.0 확장 스케줄 경로 — 확장 선언(getSchedules) → 스케줄 표 동기화(ExtensionScheduleSyncHelper) → 등록기
+  (ScheduleRegistrar)가 활성 행만 schedule:{id} 이벤트로 등록. 옛 ExtensionScheduleRegistrationTest(routes/console.php
+  직접 등록)의 네 시나리오(활성 모듈·활성 플러그인·설정 게이트·빈 선언)를 새 경로로 대체하고 비활성 확장 차단을 더한다.
+
+coverage_strategy: full
+
+axes:
+  owner: [module, plugin]
+  owner_state: [active, inactive]
+  declaration: [new_schema, legacy_schema, empty]
+
+exclusions:
+  - { owner: plugin, declaration: legacy_schema, reason: "옛 형식 정규화는 소유 타입과 무관한 같은 경로다 — 모듈로 확인하고 플러그인 정규화는 S1 의 ExtensionScheduleSyncHelperTest 가 덮는다" }
+  - { owner: plugin, declaration: empty, reason: "빈 선언은 소유 타입과 무관하다 — 모듈로 확인" }
+  - { owner: plugin, owner_state: inactive, reason: "비활성 차단은 Schedule::ownerIsActive 의 모듈·플러그인 대칭 분기 — 모듈로 확인하고 플러그인 분기는 S2 등록기 시험이 덮는다" }
+  - { owner_state: inactive, declaration: legacy_schema, reason: "비활성이면 형식과 무관하게 등록되지 않는다" }
+  - { owner_state: inactive, declaration: empty, reason: "빈 선언은 행이 없어 활성 여부를 볼 대상이 없다" }
+
+effects:
+  - active_extension_schedule_registered
+  - inactive_extension_schedule_not_registered
+  - legacy_enabled_config_gates_execution
+  - empty_declaration_registers_nothing
+
+test_files:
+  - tests/Feature/Extension/ExtensionScheduleSyncTest.php

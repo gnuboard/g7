@@ -1,0 +1,33 @@
+feature: 개인정보 플러그인 설정 → 알림 템플릿 편집 창 — 저장 경고와 회원 항목 변수 묶음 (#490)
+
+description: |
+  이 창은 코어 알림 템플릿 저장 API 로 저장한다. 저장 응답의 data.warnings 는 제목, 본문, 이동 주소가 쓰는 회원 항목 변수 가운데
+  지금 없는 것(지워졌거나 꺼진 항목, 잘못 적은 이름)의 목록이다. 저장은 그대로 되므로 목록 재조회와 성공 안내는 유지하고,
+  경고가 있으면 창을 닫지 않은 채 창 안의 경고 상자(스크롤 영역 앞)와 경고 토스트로 알린다. 경고가 없으면 종전처럼 창을 닫고
+  창 이름 공간(_global.gdpr_notification_template_form_modal)을 비운다. 다시 저장하면 지난 경고를 먼저 지우고, 경고만 보이는 동안 취소 단추는 「닫기」로 읽힌다.
+  알림 정의의 variables 뒤에 서버가 회원 공통 변수를 group: "member" 로 덧붙이므로, 변수 안내를 이 알림의 변수와 「회원 항목」
+  묶음으로 가르고 묶음은 접힌 채로 시작한다. 문구는 코어 알림 템플릿 창과 같은 키를 쓴다.
+
+# axis 의미:
+#   case — 저장 응답의 모양과 창의 상태, 변수 목록의 모양
+axes:
+  case:
+    - save_without_warnings
+    - save_with_warnings
+    - resave_clears_warnings
+    - member_variables_group
+
+effects:
+  - ext_template_save_without_warnings_closes_modal
+  - ext_template_save_with_warnings_keeps_modal_open_and_shows_list
+  - ext_template_resave_clears_previous_warnings
+  - ext_template_cancel_button_reads_close_after_warned_save
+  - ext_template_variables_split_into_own_and_member_groups
+  - ext_template_member_variable_group_is_collapsible
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/gdprNotificationTemplateSaveWarnings.test.ts
+
+notes: |
+  e2e_browser=pending — 성공 처리의 갈래와 상자, 묶음의 조건식은 레이아웃 식을 엔진에 넣어 잰다. 창이 실제로 열린 채 남는지,
+  경고 상자가 스크롤과 무관하게 보이는지는 #490 통합 실측에서 본다.

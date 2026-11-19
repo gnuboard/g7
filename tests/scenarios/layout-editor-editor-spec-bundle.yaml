@@ -1,0 +1,38 @@
+feature: 레이아웃 편집기 — 편집기 스펙 묶음 한 요청
+
+description: |
+  편집기를 열 때 활성 확장마다 editor-spec 을 따로 요청하던 것(개발 서버 27건, 건당 2~5.7초)을
+  묶음 엔드포인트 `GET /api/templates/{id}/editor-spec-bundle` 한 요청으로 바꾼다(설계 확정 2026-11-08, #869).
+  묶음 항목은 개별 엔드포인트와 같은 내용, 같은 활성 판정, 같은 무효화 성질(요청마다 새로 읽기)을 지키고,
+  한 확장이 실패해도 그 항목만 비운다(부분 실패). 개별 엔드포인트는 서드파티 호환용으로 남는다.
+
+axes:
+  case:
+    - all_kinds_ok
+    - inactive_or_missing
+    - item_exception
+    - activation_and_update
+    - guest_missing_template_spec
+    - invalid_identifier
+    - many_extensions_one_request
+    - no_extensions_one_request
+    - request_failed
+    - transient_failure
+    - malformed_identifier
+
+effects:
+  - editor_spec_bundle_matches_individual_endpoints
+  - editor_spec_bundle_marks_inactive_item_without_failing_others
+  - editor_spec_bundle_isolates_item_exception
+  - editor_spec_bundle_reflects_activation_and_update_immediately
+  - editor_spec_bundle_is_public_like_individual_endpoints
+  - editor_spec_bundle_rejects_unsafe_identifiers
+  - editor_requests_editor_spec_once
+  - editor_spec_bundle_partial_failure_keeps_other_specs
+  - editor_spec_bundle_request_failure_degrades_without_retry_storm
+  - editor_spec_bundle_retries_once_on_transient_failure
+  - editor_spec_bundle_skips_malformed_identifier
+
+test_files:
+  - tests/Feature/Api/Public/EditorSpecBundleTest.php
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/editorSpecLoader.bundleRequest.test.ts

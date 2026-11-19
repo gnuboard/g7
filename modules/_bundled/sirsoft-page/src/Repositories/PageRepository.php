@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Page\Repositories;
 
 use App\Helpers\PermissionHelper;
+use App\Models\User;
 use App\Repositories\Concerns\HasMultipleSearchFilters;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Repositories\Concerns\ResolvesSortSpec;
@@ -70,7 +71,8 @@ class PageRepository implements PageRepositoryInterface
             ],
             sort: $this->resolveListSortSpec($filters),
             perPage: $perPage,
-            relations: ['creator', 'updater'],
+            // 작성자, 수정자 이름은 관리자 영역 표시 이름이다 — 계산에 필요한 회원 컬럼(닉네임, 상태, 회원이 고른 종류)을 함께 읽는다.
+            relations: ['creator:'.User::displayColumns(), 'updater:'.User::displayColumns()],
             resultCap: PaginationLimits::resultCap('admin.pages'),
         );
     }
@@ -154,7 +156,7 @@ class PageRepository implements PageRepositoryInterface
     }
 
     /**
-     * 페이지를 삭제합니다 (소프트 삭제).
+     * 페이지를 영구 삭제합니다 (소프트 삭제 없음).
      *
      * @param  Page  $page  페이지 모델
      * @return bool 삭제 성공 여부
@@ -275,6 +277,7 @@ class PageRepository implements PageRepositoryInterface
      * 엔진이 정하므로 플러그인 엔진도 이 경로를 그대로 탄다.
      *
      * @param  string  $keyword  검색 키워드
+     * @return Builder 발행 페이지에 키워드 조건을 건 쿼리
      */
     private function buildKeywordQuery(string $keyword): Builder
     {
@@ -309,6 +312,7 @@ class PageRepository implements PageRepositoryInterface
      *
      * @param  Builder  $query  쿼리 빌더
      * @param  array  $filters  필터 조건 (sort_by, sort_order 포함)
+     * @return void 반환값 없음
      */
     private function applySorting($query, array $filters): void
     {
@@ -333,6 +337,7 @@ class PageRepository implements PageRepositoryInterface
      *
      * @param  Builder  $query  쿼리 빌더
      * @param  array  $filters  필터 조건
+     * @return void 반환값 없음
      */
     private function applyFilters($query, array $filters): void
     {
@@ -371,6 +376,7 @@ class PageRepository implements PageRepositoryInterface
      * @param  Builder  $query  쿼리 빌더
      * @param  string  $keyword  검색 키워드
      * @param  bool  $includeSlug  슬러그도 함께 검색할지 여부 (전체 검색 시 true)
+     * @return void 반환값 없음
      */
     private function applyTitleKeywordSearch($query, string $keyword, bool $includeSlug = false): void
     {

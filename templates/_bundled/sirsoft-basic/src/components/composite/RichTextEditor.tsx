@@ -1,3 +1,4 @@
+import { apiUrl } from '../../support/apiUrl';
 /**
  * RichTextEditor 컴포넌트
  *
@@ -153,7 +154,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     formData.append('file', file);
 
     try {
-      const response = await fetch(imageUploadUrl, {
+      const response = await fetch(apiUrl(imageUploadUrl), {
         method: 'POST',
         body: formData,
         credentials: 'include',

@@ -9,7 +9,51 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.title",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-outline"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.product.modal.common.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "적용. 확인 창에 보여 줄 조건 문구를 여기서 만든다 — 지정이면 값 그대로, 증감이면 부호를 붙여 적는다",
+                        "type": "click",
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "bulkStockCondition": "{{(_local.bulkStockMethod || 'increase') === 'set' ? (_local.bulkStockValue || 0) + $t('sirsoft-ecommerce.admin.product.modal.bulk_stock.quantity_unit') : ((_local.bulkStockMethod || 'increase') === 'increase' ? '+' : '-') + (_local.bulkStockValue || 0) + $t('sirsoft-ecommerce.admin.product.modal.bulk_stock.quantity_unit')}}",
+                            "bulkStockMethod": "{{_local.bulkStockMethod || 'increase'}}",
+                            "bulkStockValue": "{{_local.bulkStockValue || 0}}"
+                        }
+                    },
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "data-testid": "bulk-stock-apply",
+                    "className": "ecommerce-btn ecommerce-btn-primary"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.product.modal.common.change"
+            }
+        ]
     },
     "children": [
         {
@@ -26,7 +70,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "ecommerce-form-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method"
                         },
@@ -45,7 +89,7 @@
                                 }
                             ],
                             "props": {
-                                "className": "w-full",
+                                "className": "ecommerce:w-full",
                                 "aria-label": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method",
                                 "value": "{{_local.bulkStockMethod || 'increase'}}",
                                 "options": [
@@ -75,7 +119,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "ecommerce-form-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.value"
                         },
@@ -97,7 +141,7 @@
                                 "type": "number",
                                 "data-testid": "bulk-stock-value",
                                 "placeholder": "0",
-                                "className": "input"
+                                "className": "ecommerce-input"
                             }
                         }
                     ]
@@ -107,7 +151,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "bg-gray-50 dark:bg-gray-900 rounded-lg p-4"
+                        "className": "ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg ecommerce:p-4"
                     },
                     "children": [
                         {
@@ -116,7 +160,7 @@
                             "name": "Span",
                             "if": "{{(_local.bulkStockMethod || 'increase') === 'increase'}}",
                             "props": {
-                                "className": "text-label"
+                                "className": "ecommerce-text-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.preview_increase|value={{_local.bulkStockValue || 0}}"
                         },
@@ -126,7 +170,7 @@
                             "name": "Span",
                             "if": "{{(_local.bulkStockMethod || 'increase') === 'decrease'}}",
                             "props": {
-                                "className": "text-label"
+                                "className": "ecommerce-text-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.preview_decrease|value={{_local.bulkStockValue || 0}}"
                         },
@@ -136,63 +180,11 @@
                             "name": "Span",
                             "if": "{{(_local.bulkStockMethod || 'increase') === 'set'}}",
                             "props": {
-                                "className": "text-label"
+                                "className": "ecommerce-text-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.preview_set|value={{_local.bulkStockValue || 0}}"
                         }
                     ]
-                }
-            ]
-        },
-        {
-            "id": "bulk_stock_footer",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "flex justify-end gap-2 mt-6"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-outline"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.product.modal.common.cancel"
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "적용. 확인 창에 보여 줄 조건 문구를 여기서 만든다 — 지정이면 값 그대로, 증감이면 부호를 붙여 적는다",
-                            "type": "click",
-                            "handler": "setState",
-                            "params": {
-                                "target": "global",
-                                "bulkStockCondition": "{{(_local.bulkStockMethod || 'increase') === 'set' ? (_local.bulkStockValue || 0) + $t('sirsoft-ecommerce.admin.product.modal.bulk_stock.quantity_unit') : ((_local.bulkStockMethod || 'increase') === 'increase' ? '+' : '-') + (_local.bulkStockValue || 0) + $t('sirsoft-ecommerce.admin.product.modal.bulk_stock.quantity_unit')}}",
-                                "bulkStockMethod": "{{_local.bulkStockMethod || 'increase'}}",
-                                "bulkStockValue": "{{_local.bulkStockValue || 0}}"
-                            }
-                        },
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "data-testid": "bulk-stock-apply",
-                        "className": "btn btn-primary"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.product.modal.common.change"
                 }
             ]
         }

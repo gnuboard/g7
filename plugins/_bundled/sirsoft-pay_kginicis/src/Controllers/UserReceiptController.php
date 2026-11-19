@@ -8,14 +8,14 @@ use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Services\PluginSettingsService;
+use App\Support\AssetUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
-use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentRecord;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\ReceiptRequester;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Plugins\Sirsoft\PayKginicis\Concerns\IssuesReceiptCookie;
 
 class UserReceiptController extends PublicBaseController
@@ -47,13 +47,52 @@ class UserReceiptController extends PublicBaseController
 
     /**
      * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스(테스트 모드 판정)
-     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 공개 계약 (영수증 결제 조회·비회원 토큰 검증)
      */
     public function __construct(
         private readonly PluginSettingsService $pluginSettingsService,
-        private readonly GuestOrderAuthService $guestOrderAuthService,
+        private readonly PaymentGatewayBridge $bridge,
     ) {
         parent::__construct();
+    }
+
+    /**
+     * 영수증 결제 DTO 를 화면 조립용 행으로 옮깁니다.
+     *
+     * 아래 조립 코드는 DB 행 모양(snake_case, 금액은 소수 2자리 문자열, 시각은 `Y-m-d H:i:s` 문자열)을 읽으므로
+     * 같은 모양으로 옮긴다. 주문 통화와 주문 합계는 주문 DTO 에서 읽는다.
+     *
+     * @param  PaymentRecord|null  $payment  영수증 결제
+     * @return object|null 화면 조립용 행 (없으면 null)
+     */
+    private function receiptRow(?PaymentRecord $payment): ?object
+    {
+        if ($payment === null) {
+            return null;
+        }
+
+        $order = $payment->orderNumber === null ? null : $this->bridge->findOrderByNumber($payment->orderNumber, 'kginicis');
+
+        return (object) [
+            'order_number' => $payment->orderNumber,
+            'order_currency' => $order?->currency,
+            'total_amount' => $order === null ? null : number_format($order->totalAmount, 2, '.', ''),
+            'transaction_id' => $payment->transactionId,
+            'payment_status' => $payment->paymentStatus->value,
+            'payment_method' => $payment->paymentMethod,
+            'embedded_pg_provider' => $payment->embeddedPgProvider,
+            'paid_amount_local' => number_format($payment->paidAmountLocal, 2, '.', ''),
+            'currency' => $payment->currency,
+            'card_approval_number' => $payment->cardApprovalNumber,
+            'card_installment_months' => $payment->cardInstallmentMonths,
+            'vbank_code' => $payment->vbankCode,
+            'vbank_name' => $payment->vbankName,
+            'vbank_number' => $payment->vbankNumber,
+            // audit:allow datetime-display-user-timezone reason: DB 저장 원문(UTC)과 같은 기계값으로 옮긴다 — 화면 표시는 아래 조립 코드가 바꾼다
+            'vbank_due_at' => $payment->vbankDueAt?->format('Y-m-d H:i:s'),
+            'payment_meta' => $payment->paymentMeta,
+            'is_escrow' => $payment->isEscrow ? 1 : 0,
+        ];
     }
 
     /**
@@ -72,56 +111,26 @@ class UserReceiptController extends PublicBaseController
     // audit:allow controller-base-request-injection reason: 본문 입력을 읽지 않음 — user()/비회원 영수증 쿠키만 참조 (검증 대상 필드 없음)
     public function show(Request $request, string $orderNumber): JsonResponse
     {
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        $query = DB::table((new OrderPayment)->getTable().' as p')
-            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
-            ->where('o.order_number', $orderNumber)
-            ->where('p.pg_provider', 'kginicis');
-
         if (Auth::check()) {
-            $query->where('o.user_id', Auth::id());
+            $requester = ReceiptRequester::member((int) Auth::id());
         } else {
-            // 1차: X-Guest-Order-Token 헤더 (코어 globalHeaders 또는 명시 헤더)
+            // 1차: X-Guest-Order-Token 헤더 (코어 globalHeaders 또는 명시 헤더) — 검증은 이커머스 계약이 한다
             $token = $request->header('X-Guest-Order-Token');
-            $order = $this->guestOrderAuthService->verifyToken($token, $orderNumber);
 
-            // 2차 폴백: 결제 완료 직후 PG callback 이 발급한 단기 영수증 쿠키.
-            // sessionStorage 토큰이 없거나 브라우저 캐시가 stale 한 환경에서도 5분간 동작.
-            if (! $order) {
+            if ($this->bridge->verifyGuestOrderToken($token, $orderNumber)) {
+                $requester = ReceiptRequester::guestToken($token);
+            } else {
+                // 2차 폴백: 결제 완료 직후 PG callback 이 발급한 단기 영수증 쿠키.
+                // sessionStorage 토큰이 없거나 브라우저 캐시가 stale 한 환경에서도 5분간 동작.
                 $cookieValue = $request->cookie(self::RECEIPT_COOKIE_NAME);
-                if ($this->verifyReceiptCookie($cookieValue, $orderNumber)) {
-                    $query->where('o.id', function ($sub) use ($orderNumber) {
-                        $sub->select('id')->from((new Order)->getTable())->where('order_number', $orderNumber);
-                    });
-                } else {
+                if (! $this->verifyReceiptCookie($cookieValue, $orderNumber)) {
                     return ResponseHelper::notFound();
                 }
-            } else {
-                $query->whereNull('o.user_id')->where('o.id', $order->id);
+                $requester = ReceiptRequester::guestVerifiedByPg();
             }
         }
 
-        $payment = $query
-            ->select([
-                'o.order_number',
-                'o.currency as order_currency',
-                'o.total_amount',
-                'p.transaction_id',
-                'p.payment_status',
-                'p.payment_method',
-                'p.embedded_pg_provider',
-                'p.paid_amount_local',
-                'p.currency',
-                'p.card_approval_number',
-                'p.card_installment_months',
-                'p.vbank_code',
-                'p.vbank_name',
-                'p.vbank_number',
-                'p.vbank_due_at',
-                'p.payment_meta',
-                'p.is_escrow',
-            ])
-            ->first();
+        $payment = $this->receiptRow($this->bridge->findReceiptPayment('kginicis', $orderNumber, $requester));
 
         if (! $payment || ! $payment->transaction_id) {
             return ResponseHelper::notFound();
@@ -212,9 +221,12 @@ class UserReceiptController extends PublicBaseController
      * 사이트 화면 로그인은 API 토큰이라 [구매결정] 이 여는 새 창에는 로그인 정보가 실리지 않는다 — 토큰으로 본인을
      * 확인한 이 응답이 회원 번호를 담은 10분짜리 서명 주소를 주고, 구매결정 창은 그 서명을 본인 확인으로 받는다.
      *
+     * 상대 서명 주소는 마운트 접두사를 벗긴 경로에 서명되고 검증도 같은 경로로 하므로, 접두사는 서명된
+     * 값 밖에 붙인다 — 붙이지 않으면 하위 폴더 설치에서 새 창이 사이트 밖을 연다.
+     *
      * @param  string  $orderNumber  주문번호
      * @param  bool  $isEscrow  에스크로 결제 여부
-     * @return string|null 상대 서명 주소(비회원·에스크로 아님이면 null)
+     * @return string|null 마운트 접두사를 실은 상대 서명 주소(비회원·에스크로 아님이면 null)
      */
     private function escrowConfirmUrl(string $orderNumber, bool $isEscrow): ?string
     {
@@ -222,12 +234,12 @@ class UserReceiptController extends PublicBaseController
             return null;
         }
 
-        return URL::temporarySignedRoute(
+        return AssetUrl::sitePath(URL::temporarySignedRoute(
             'web.plugins.sirsoft-pay_kginicis.payment.escrow-confirm.show',
             now()->addMinutes(10),
             ['orderNumber' => $orderNumber, 'uid' => Auth::id()],
             absolute: false,
-        );
+        ));
     }
 
     /**

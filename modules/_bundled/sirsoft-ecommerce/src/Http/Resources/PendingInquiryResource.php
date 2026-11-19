@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use App\Http\Resources\BaseApiResource;
 use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 대시보드 미답변 문의 리소스
@@ -27,7 +28,8 @@ class PendingInquiryResource extends BaseApiResource
             // 상품 문의 원본은 게시판 Post (inquirable). 관리자 상세는 게시판 글 상세로 이동한다.
             'inquirable_id' => $this->inquirable_id,
             'product_name' => $this->getLocalizedProductName(),
-            'author_name' => $this->user?->name ?? '',
+            // 이커머스 관리자 영역의 표시 이름 (탈퇴 회원은 탈퇴 문구)
+            'author_name' => MemberDisplayName::name($this->user, MemberDisplayName::AREA_ADMIN) ?? '',
             'created_at' => $this->formatDateTimeStringForUser($this->created_at),
         ];
     }

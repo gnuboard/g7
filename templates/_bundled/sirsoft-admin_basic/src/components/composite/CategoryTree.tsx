@@ -7,6 +7,7 @@ import { IconName } from '../basic/IconTypes';
 import { Checkbox } from '../basic/Checkbox';
 import type { EditorAttrs } from '../../types';
 import { HighlightText } from '../shared/HighlightText';
+import { keyboardActivationProps, FOCUS_VISIBLE_RING } from '../../support/keyboardActivation';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖이면 대체 문구를 쓴다
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
@@ -188,8 +189,12 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
           {/* 펼치기/접기 토글 */}
           {hasChildren ? (
             <Div
-              className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-gray-500 dark:text-gray-400"
+              className={`flex-shrink-0 w-5 h-5 flex items-center justify-center text-gray-500 dark:text-gray-400 rounded ${FOCUS_VISIBLE_RING}`}
               onClick={() => handleToggle(node.id)}
+              // 키보드로도 펼치고 접는다 — 이름 칸은 같은 동작의 마우스 지름길이라 따로 Tab 을 받지 않는다(#869 키보드 접근)
+              {...keyboardActivationProps(() => handleToggle(node.id))}
+              aria-expanded={isExpanded}
+              aria-label={`${isExpanded ? tOr('common.collapse', 'Collapse') : tOr('common.expand', 'Expand')} ${displayName}`}
               data-testid={`toggle-${node.id}`}
             >
               <Icon
@@ -228,7 +233,7 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
 
           {/* 카테고리 이름 */}
           <Span
-            className="text-sm text-gray-700 dark:text-gray-300 select-none"
+            className={`text-sm text-gray-700 dark:text-gray-300 select-none${hasChildren ? ' cursor-pointer' : ''}`}
             onClick={() => hasChildren && handleToggle(node.id)}
           >
             <HighlightText text={displayName} keyword={searchKeyword} />

@@ -7,102 +7,102 @@
 <partial description="입금 일괄 매칭 모달">
   <modal data-type="composite" data-ref="modal_bulk_match" title="$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.title" size="xl">
     <footer>
-      <button type="button" class="btn btn-outline">
+      <button type="button" class="ecommerce-btn ecommerce-btn-outline">
         <on type="click">
           <close-modal/>
         </on>
         $t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.cancel
       </button>
-      <button type="button" class="btn btn-primary">
+      <button type="button" class="ecommerce-btn ecommerce-btn-primary">
         <on type="click">
           <close-modal/>
         </on>
         $t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.save
       </button>
     </footer>
-    <div data-ref="bulk_match_instructions" class="text-secondary text-sm mb-4 space-y-1">
+    <div data-ref="bulk_match_instructions" class="ecommerce-text-secondary ecommerce:text-sm ecommerce:mb-4 ecommerce:space-y-1">
       <div>$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.instruction_1</div>
       <div>$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.instruction_2</div>
     </div>
-    <div data-ref="bulk_match_table_wrapper" class="overflow-x-auto">
+    <div data-ref="bulk_match_table_wrapper" class="ecommerce:overflow-x-auto">
       <responsive on="portable" class="">
-        <div data-ref="mobile_card_list" class="stack-tight">
-          <div data-ref="mobile_card_1" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-            <div class="flex-between mb-2">
-              <span class="text-primary font-medium">$t:sirsoft-ecommerce.admin.sample.people.park_minsu</span>
-              <span class="text-blue-600 dark:text-blue-400 font-semibold">\49,000</span>
+        <div data-ref="mobile_card_list" class="ecommerce-stack-tight">
+          <div data-ref="mobile_card_1" class="ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4">
+            <div class="ecommerce-flex-between ecommerce:mb-2">
+              <span class="ecommerce-text-primary ecommerce:font-medium">$t:sirsoft-ecommerce.admin.sample.people.park_minsu</span>
+              <span class="ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:font-semibold">\49,000</span>
             </div>
-            <div class="text-secondary text-sm mb-3">$t:sirsoft-ecommerce.admin.sample.fmt.bank_time|bank=$t:sirsoft-ecommerce.admin.sample.banks.kakaobank|time=11:25</div>
-            <div class="relative mb-2">
-              <input type="text" aria-label="$t:common.row_cell|row=$t:sirsoft-ecommerce.admin.sample.people.park_minsu|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}" value="ORD20251118-0003" class="input pr-8"/>
-              <button aria-label="$t:common.close" type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
-                <icon name="x" class="text-base"/>
+            <div class="ecommerce-text-secondary ecommerce:text-sm ecommerce:mb-3">$t:sirsoft-ecommerce.admin.sample.fmt.bank_time|bank=$t:sirsoft-ecommerce.admin.sample.banks.kakaobank|time=11:25</div>
+            <div class="ecommerce:relative ecommerce:mb-2">
+              <input type="text" aria-label="$t:common.row_cell|row=$t:sirsoft-ecommerce.admin.sample.people.park_minsu|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}" value="ORD20251118-0003" class="ecommerce-input ecommerce:pr-8"/>
+              <button aria-label="$t:common.close" type="button" class="ecommerce:absolute ecommerce:right-2 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:text-gray-500 ecommerce:hover:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-gray-300">
+                <icon name="x" class="ecommerce:text-base"/>
               </button>
             </div>
-            <div class="flex-between text-sm mb-2">
+            <div class="ecommerce-flex-between ecommerce:text-sm ecommerce:mb-2">
               <span>
-                <span class="text-label">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.orderer</span>
-                <span class="text-primary ml-1">$t:sirsoft-ecommerce.admin.sample.people.park_minsu</span>
+                <span class="ecommerce-text-label">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.orderer</span>
+                <span class="ecommerce-text-primary ecommerce:ml-1">$t:sirsoft-ecommerce.admin.sample.people.park_minsu</span>
               </span>
               <span>
-                <span class="text-label">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_amount</span>
-                <span class="text-red-600 dark:text-red-400 ml-1">\250,000</span>
+                <span class="ecommerce-text-label">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_amount</span>
+                <span class="ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:ml-1">\250,000</span>
               </span>
             </div>
-            <div class="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg p-2 text-sm flex items-center gap-1">
-              <icon name="triangle-exclamation" class="text-base"/>
+            <div class="ecommerce:bg-red-50 ecommerce:dark:bg-red-900/20 ecommerce:text-red-700 ecommerce:dark:text-red-400 ecommerce:rounded-lg ecommerce:p-2 ecommerce:text-sm ecommerce:flex ecommerce:items-center ecommerce:gap-1">
+              <icon name="triangle-exclamation" class="ecommerce:text-base"/>
               <span>$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.amount_mismatch_full</span>
             </div>
           </div>
-          <div data-ref="mobile_card_2" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-            <div class="flex-between mb-2">
-              <span class="text-primary font-medium">$t:sirsoft-ecommerce.admin.sample.people.choi_jieun</span>
-              <span class="text-blue-600 dark:text-blue-400 font-semibold">\120,000</span>
+          <div data-ref="mobile_card_2" class="ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4">
+            <div class="ecommerce-flex-between ecommerce:mb-2">
+              <span class="ecommerce-text-primary ecommerce:font-medium">$t:sirsoft-ecommerce.admin.sample.people.choi_jieun</span>
+              <span class="ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:font-semibold">\120,000</span>
             </div>
-            <div class="text-secondary text-sm mb-3">$t:sirsoft-ecommerce.admin.sample.fmt.bank_time|bank=$t:sirsoft-ecommerce.admin.sample.banks.shinhan|time=10:15</div>
-            <input type="text" aria-label="$t:common.row_cell|row=$t:sirsoft-ecommerce.admin.sample.people.choi_jieun|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}" placeholder="$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_number_placeholder" class="input"/>
+            <div class="ecommerce-text-secondary ecommerce:text-sm ecommerce:mb-3">$t:sirsoft-ecommerce.admin.sample.fmt.bank_time|bank=$t:sirsoft-ecommerce.admin.sample.banks.shinhan|time=10:15</div>
+            <input type="text" aria-label="$t:common.row_cell|row=$t:sirsoft-ecommerce.admin.sample.people.choi_jieun|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}" placeholder="$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_number_placeholder" class="ecommerce-input"/>
           </div>
         </div>
       </responsive>
-      <table data-ref="bulk_match_table" class="w-full text-sm">
-        <thead class="bg-gray-50 dark:bg-gray-800">
+      <table data-ref="bulk_match_table" class="ecommerce:w-full ecommerce:text-sm">
+        <thead class="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800">
           <tr>
-            <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.depositor_name</th>
-            <th class="text-table-header px-4 py-3 text-right">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.amount</th>
-            <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.bank_account</th>
-            <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.deposit_time</th>
-            <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number</th>
+            <th class="ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.depositor_name</th>
+            <th class="ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-right">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.amount</th>
+            <th class="ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.bank_account</th>
+            <th class="ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.deposit_time</th>
+            <th class="ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number</th>
           </tr>
         </thead>
-        <tbody class="divider-list bg-white dark:bg-gray-900">
+        <tbody class="ecommerce-divider-list ecommerce:bg-white ecommerce:dark:bg-gray-900">
           <tr>
-            <td class="px-4 py-4 text-primary font-medium">$t:sirsoft-ecommerce.admin.sample.people.park_minsu</td>
-            <td class="px-4 py-4 text-right text-blue-600 dark:text-blue-400 font-semibold">\49,000</td>
-            <td class="px-4 py-4">
-              <div class="text-primary">$t:sirsoft-ecommerce.admin.sample.banks.kakaobank</div>
-              <div class="text-secondary text-xs">789-012-3456</div>
+            <td class="ecommerce:px-4 ecommerce:py-4 ecommerce-text-primary ecommerce:font-medium">$t:sirsoft-ecommerce.admin.sample.people.park_minsu</td>
+            <td class="ecommerce:px-4 ecommerce:py-4 ecommerce:text-right ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:font-semibold">\49,000</td>
+            <td class="ecommerce:px-4 ecommerce:py-4">
+              <div class="ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.banks.kakaobank</div>
+              <div class="ecommerce-text-secondary ecommerce:text-xs">789-012-3456</div>
             </td>
-            <td class="px-4 py-4">
-              <div class="text-primary">2024. 01. 27.</div>
-              <div class="text-secondary text-xs">11:25</div>
+            <td class="ecommerce:px-4 ecommerce:py-4">
+              <div class="ecommerce-text-primary">2024. 01. 27.</div>
+              <div class="ecommerce-text-secondary ecommerce:text-xs">11:25</div>
             </td>
-            <td class="px-4 py-4">
-              <div class="relative mb-2">
-                <input type="text" aria-label="$t:common.row_cell|row=$t:sirsoft-ecommerce.admin.sample.people.park_minsu|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}" value="ORD20251118-0003" class="input pr-8"/>
-                <button aria-label="$t:common.close" type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
-                  <icon name="x" class="text-base"/>
+            <td class="ecommerce:px-4 ecommerce:py-4">
+              <div class="ecommerce:relative ecommerce:mb-2">
+                <input type="text" aria-label="$t:common.row_cell|row=$t:sirsoft-ecommerce.admin.sample.people.park_minsu|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}" value="ORD20251118-0003" class="ecommerce-input ecommerce:pr-8"/>
+                <button aria-label="$t:common.close" type="button" class="ecommerce:absolute ecommerce:right-2 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:text-gray-500 ecommerce:hover:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-gray-300">
+                  <icon name="x" class="ecommerce:text-base"/>
                 </button>
               </div>
-              <div class="flex-between text-sm">
-                <span class="text-secondary">
-                  <span class="text-label">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.orderer</span>
-                  <span class="text-primary ml-1">$t:sirsoft-ecommerce.admin.sample.people.park_minsu</span>
+              <div class="ecommerce-flex-between ecommerce:text-sm">
+                <span class="ecommerce-text-secondary">
+                  <span class="ecommerce-text-label">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.orderer</span>
+                  <span class="ecommerce-text-primary ecommerce:ml-1">$t:sirsoft-ecommerce.admin.sample.people.park_minsu</span>
                 </span>
                 <span>
-                  <span class="text-label">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_amount</span>
-                  <span class="text-required">\250,000</span>
-                  <span class="text-red-600 dark:text-red-400 ml-2 inline-flex items-center gap-1">
-                    <icon name="triangle-exclamation" class="text-sm"/>
+                  <span class="ecommerce-text-label">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_amount</span>
+                  <span class="ecommerce-text-required">\250,000</span>
+                  <span class="ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:ml-2 ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1">
+                    <icon name="triangle-exclamation" class="ecommerce:text-sm"/>
                     <span>$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.amount_mismatch</span>
                   </span>
                 </span>
@@ -110,18 +110,18 @@
             </td>
           </tr>
           <tr>
-            <td class="px-4 py-4 text-primary font-medium">$t:sirsoft-ecommerce.admin.sample.people.kang_haerin</td>
-            <td class="px-4 py-4 text-right text-blue-600 dark:text-blue-400 font-semibold">\250,000</td>
-            <td class="px-4 py-4">
-              <div class="text-primary">$t:sirsoft-ecommerce.admin.sample.banks.tossbank</div>
-              <div class="text-secondary text-xs">100-200-3000</div>
+            <td class="ecommerce:px-4 ecommerce:py-4 ecommerce-text-primary ecommerce:font-medium">$t:sirsoft-ecommerce.admin.sample.people.kang_haerin</td>
+            <td class="ecommerce:px-4 ecommerce:py-4 ecommerce:text-right ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:font-semibold">\250,000</td>
+            <td class="ecommerce:px-4 ecommerce:py-4">
+              <div class="ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.banks.tossbank</div>
+              <div class="ecommerce-text-secondary ecommerce:text-xs">100-200-3000</div>
             </td>
-            <td class="px-4 py-4">
-              <div class="text-primary">2024. 01. 26.</div>
-              <div class="text-secondary text-xs">09:30</div>
+            <td class="ecommerce:px-4 ecommerce:py-4">
+              <div class="ecommerce-text-primary">2024. 01. 26.</div>
+              <div class="ecommerce-text-secondary ecommerce:text-xs">09:30</div>
             </td>
-            <td class="px-4 py-4">
-              <input type="text" aria-label="$t:common.row_cell|row=$t:sirsoft-ecommerce.admin.sample.people.kang_haerin|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}" placeholder="$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_number_placeholder" class="input"/>
+            <td class="ecommerce:px-4 ecommerce:py-4">
+              <input type="text" aria-label="$t:common.row_cell|row=$t:sirsoft-ecommerce.admin.sample.people.kang_haerin|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}" placeholder="$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_number_placeholder" class="ecommerce-input"/>
             </td>
           </tr>
         </tbody>

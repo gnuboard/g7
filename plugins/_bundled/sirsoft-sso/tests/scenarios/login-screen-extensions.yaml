@@ -1,0 +1,34 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: 거절된 시작의 콜백 단계)이 대부분이라 명목상이다.
+feature: sso_login_screen_extensions
+description: |
+  로그인 화면 SSO 흐름 조각(사용자·관리자)과 흐름 핸들러 — 오류 토스트, 동의·연결 확인 모달의 API 주소, handoff_code 로 loginHandoff 실행 후 화면의 로그인 응답 분기, 화면 주인 전역 상태 미사용, 같은 출처 시작 경로로만 이동. 브라우저 실측은 F1(계획서 §10 M1) 담당.
+axes:
+  surface: ["user|admin", user, admin]
+  locale: ["ko|en", ko, en]
+  query: ["sso_error|sso_pending|sso_link", sso_error, sso_pending, sso_link]
+  completion: ["consent|link", consent, link]
+  global_state: [writes]
+  modal: [consent]
+  url: ["same_origin_start|foreign|other_path|protocol_relative", same_origin_start, foreign, other_path, protocol_relative, "valid|invalid", valid, invalid]
+  handler: [startLogin, startWithTicket]
+  endpoint: ["plugin|foreign", plugin, foreign]
+  response: [start_url]
+  registry: [handler_map]
+effects:
+  - extension_i18n_keys_present
+  - injected_into_login_layout
+  - error_toast
+  - pending_fetch
+  - link_fetch
+  - handoff_code_runs_login_handoff_action
+  - routed_to_login_result
+  - only_sso_prefixed_globals
+  - submit_needs_both_consents
+  - only_plugin_start_paths
+  - full_page_navigation_or_error_toast
+  - navigates_to_ticket_url
+  - flow_handlers_exported
+  - every_component_exists_in_target_template
+test_files:
+  - plugins/_bundled/sirsoft-sso/resources/js/__tests__/layouts/sso-modals.test.tsx
+  - plugins/_bundled/sirsoft-sso/resources/js/__tests__/handlers/flow.test.ts

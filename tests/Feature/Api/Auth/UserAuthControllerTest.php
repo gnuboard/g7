@@ -942,7 +942,7 @@ class UserAuthControllerTest extends TestCase
      */
     public function test_logout_invalidates_current_token(): void
     {
-        $user = $this->createUserWithPermissions([], ['core.auth.logout']);
+        $user = $this->createUserWithPermissions();
 
         $response = $this->authRequest($user)->postJson('/api/user/auth/logout');
 
@@ -981,7 +981,7 @@ class UserAuthControllerTest extends TestCase
      */
     public function test_logout_all_devices_invalidates_all_tokens(): void
     {
-        $user = $this->createUserWithPermissions([], ['core.auth.logout']);
+        $user = $this->createUserWithPermissions();
 
         // 여러 토큰 생성
         $user->createToken('device-1');
@@ -1016,7 +1016,7 @@ class UserAuthControllerTest extends TestCase
      */
     public function test_refresh_returns_new_token(): void
     {
-        $user = $this->createUserWithPermissions([], ['core.auth.refresh']);
+        $user = $this->createUserWithPermissions();
 
         $response = $this->authRequest($user)->postJson('/api/user/auth/refresh');
 
@@ -1065,7 +1065,7 @@ class UserAuthControllerTest extends TestCase
         $user = $this->createUserWithPermissions([
             'name' => '테스트 사용자',
             'email' => 'test@example.com',
-        ], ['core.auth.user']);
+        ]);
 
         $response = $this->authRequest($user)->getJson('/api/user/auth/user');
 

@@ -40,6 +40,11 @@ class ProductReviewImageServiceTest extends ModuleTestCase
 
     private User $user;
 
+    /**
+     * 모의 스토리지와 모의 설정 서비스로 ProductReviewImageService 를 만들고, 로그인한 회원의 리뷰 한 건을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -67,16 +72,33 @@ class ProductReviewImageServiceTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * Mockery 기대를 검증하고 닫은 뒤 부모 정리를 실행합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     // ========================================
     // upload() 테스트
     // ========================================
 
+    /**
+     * 업로드가 리뷰에 묶인 이미지 행을 만들고 원본 파일명, MIME, 해시, 업로더를 기록하는지 확인
+     *
+     * @scenario case=upload
+     *
+     * @effects review_image_upload_creates_record_with_file_meta
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_creates_image_record(): void
     {
@@ -107,6 +129,15 @@ class ProductReviewImageServiceTest extends ModuleTestCase
         $this->assertEquals($this->user->id, $image->created_by);
     }
 
+    /**
+     * 이미 최대 장수만큼 이미지가 있으면 업로드가 RuntimeException 으로 거절되는지 확인
+     *
+     * @scenario case=upload_over_limit
+     *
+     * @effects review_image_upload_rejected_over_max_images
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_throws_when_max_images_exceeded(): void
     {
@@ -127,6 +158,15 @@ class ProductReviewImageServiceTest extends ModuleTestCase
         $this->service->upload($file, $this->review);
     }
 
+    /**
+     * 최대 장수 설정이 0 이면 첫 업로드부터 거절되는지 확인
+     *
+     * @scenario case=upload_limit_zero
+     *
+     * @effects max_images_zero_blocks_first_upload
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_blocks_first_image_when_max_images_zero(): void
     {
@@ -143,6 +183,15 @@ class ProductReviewImageServiceTest extends ModuleTestCase
         $this->service->upload($file, $this->review);
     }
 
+    /**
+     * 첫 이미지가 대표 이미지로 지정되고 정렬 순서 1 을 받는지 확인
+     *
+     * @scenario case=upload_first_image
+     *
+     * @effects review_image_first_upload_becomes_thumbnail
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_sets_first_image_as_thumbnail(): void
     {
@@ -158,6 +207,15 @@ class ProductReviewImageServiceTest extends ModuleTestCase
         $this->assertEquals(1, $image->sort_order);
     }
 
+    /**
+     * 기존 이미지가 있으면 다음 정렬 순서를 받고 대표 이미지로 지정되지 않는지 확인
+     *
+     * @scenario case=upload_next_image
+     *
+     * @effects review_image_upload_takes_next_sort_order
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_increments_sort_order(): void
     {
@@ -178,6 +236,15 @@ class ProductReviewImageServiceTest extends ModuleTestCase
         $this->assertFalse($image->is_thumbnail);
     }
 
+    /**
+     * 업로드가 before_upload, filter_upload_file, after_upload 훅을 발행하고 필터가 돌려준 파일로 저장하는지 확인
+     *
+     * @scenario case=upload_hooks
+     *
+     * @effects review_image_upload_fires_before_filter_after_hooks, review_image_filter_upload_file_hook_applied
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_fires_hooks(): void
     {
@@ -227,6 +294,15 @@ class ProductReviewImageServiceTest extends ModuleTestCase
     // delete() 테스트
     // ========================================
 
+    /**
+     * 삭제가 저장 파일을 지우고 이미지 행을 소프트 삭제하는지 확인
+     *
+     * @scenario case=delete
+     *
+     * @effects review_image_delete_removes_file_and_soft_deletes_row
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_delete_removes_file_and_record(): void
     {
@@ -258,6 +334,15 @@ class ProductReviewImageServiceTest extends ModuleTestCase
         $this->assertSoftDeleted('ecommerce_product_review_images', ['id' => $image->id]);
     }
 
+    /**
+     * 저장 파일이 없으면 스토리지 삭제를 호출하지 않고 삭제가 성공하는지 확인
+     *
+     * @scenario case=delete_file_missing
+     *
+     * @effects review_image_delete_skips_storage_when_file_missing
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_delete_skips_file_removal_when_not_exists(): void
     {
@@ -289,6 +374,15 @@ class ProductReviewImageServiceTest extends ModuleTestCase
     // findByHash() 테스트
     // ========================================
 
+    /**
+     * 해시로 이미지를 찾아 돌려주는지 확인
+     *
+     * @scenario case=find_by_hash
+     *
+     * @effects review_image_found_by_hash
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_find_by_hash_returns_image(): void
     {
@@ -302,6 +396,15 @@ class ProductReviewImageServiceTest extends ModuleTestCase
         $this->assertEquals($image->id, $found->id);
     }
 
+    /**
+     * 모르는 해시로 찾으면 null 을 돌려주는지 확인
+     *
+     * @scenario case=find_unknown_hash
+     *
+     * @effects review_image_find_returns_null_for_unknown_hash
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_find_by_hash_returns_null_when_not_found(): void
     {
@@ -314,6 +417,15 @@ class ProductReviewImageServiceTest extends ModuleTestCase
     // download() 테스트
     // ========================================
 
+    /**
+     * 모르는 해시의 다운로드는 null 을 돌려주는지 확인
+     *
+     * @scenario case=download_unknown_hash
+     *
+     * @effects review_image_download_returns_null_for_unknown_hash
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_download_returns_null_when_hash_not_found(): void
     {
@@ -322,6 +434,15 @@ class ProductReviewImageServiceTest extends ModuleTestCase
         $this->assertNull($result);
     }
 
+    /**
+     * 스토리지가 응답을 주지 못하면 다운로드가 null 을 돌려주는지 확인
+     *
+     * @scenario case=download_file_missing
+     *
+     * @effects review_image_download_returns_null_when_file_missing
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_download_returns_null_when_file_missing(): void
     {

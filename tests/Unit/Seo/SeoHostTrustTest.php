@@ -446,4 +446,49 @@ class SeoHostTrustTest extends TestCase
             Mockery::mock(PluginManagerInterface::class)->shouldIgnoreMissing(),
         );
     }
+
+    /**
+     * 하위 폴더 설치의 홈 canonical·og:url·hreflang 은 마운트 루트의 끝 슬래시 형태다.
+     *
+     * 접힌 `…/g7` 은 웹서버가 `…/g7/` 로 301 을 돌려보내, 검색엔진이 정본으로 받은 주소가 매번 이동을
+     * 거쳤다. 마운트 루트 밖 화면과 루트 설치의 홈은 종전과 같이 끝 슬래시가 없다.
+     *
+     * @scenario host_header=genuine, sink=rendered_urls
+     *
+     * @effects mount_root_canonical_keeps_the_trailing_slash
+     *
+     * @return void 반환값 없음
+     */
+    public function test_subfolder_home_canonical_keeps_the_mount_root_slash(): void
+    {
+        config(['app.locale' => 'ko', 'app.supported_locales' => ['ko', 'en'], 'app.url' => self::SITE.'/g7']);
+        app()->setLocale('ko');
+
+        $captured = null;
+        $request = $this->bindRequest(self::SITE, '/');
+        $renderer = $this->makeRenderer('/', function (array $data) use (&$captured) {
+            $captured = $data;
+
+            return true;
+        });
+
+        $this->assertNotNull($renderer->render($request));
+        $this->assertSame(self::SITE.'/g7/', $captured['canonicalUrl']);
+        $this->assertStringContainsString('<meta property="og:url" content="'.self::SITE.'/g7/">', $captured['ogTags']);
+        $this->assertStringContainsString('hreflang="ko" href="'.self::SITE.'/g7/"', $captured['hreflangTags']);
+        $this->assertStringContainsString('hreflang="en" href="'.self::SITE.'/g7/?locale=en"', $captured['hreflangTags']);
+        $this->assertStringContainsString('hreflang="x-default" href="'.self::SITE.'/g7/"', $captured['hreflangTags']);
+
+        // 루트 설치의 홈은 종전 그대로
+        config(['app.url' => self::SITE]);
+        $captured = null;
+        $renderer = $this->makeRenderer('/', function (array $data) use (&$captured) {
+            $captured = $data;
+
+            return true;
+        });
+
+        $this->assertNotNull($renderer->render($request));
+        $this->assertSame(self::SITE, $captured['canonicalUrl']);
+    }
 }

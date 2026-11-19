@@ -76,6 +76,57 @@ function suppressCoreDuplicateNotice(): void {
     }, CORE_DUPLICATE_SWEEP_MS);
 }
 
+/** 회복 뒤 코어 안내가 늦게 도착하는 경우를 살피는 시간(ms) */
+const CORE_RECOVERY_SWEEP_LIMIT_MS = 5000;
+
+/** 회복 뒤 코어 안내를 걷는 타이머 */
+let coreRecoverySweep: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * 플러그인이 본체를 직접 실어 편집기를 세웠을 때 같은 본체에 대한 코어 실패 안내를 걷습니다.
+ *
+ * 코어 레이아웃 스크립트 로더가 끝내 실패하면 「편집기 불러오기에 실패했습니다」를 띄우는데, 그 뒤 플러그인
+ * 대체 로드(`ensureCkeditorGlobal`)가 성공하면 안내는 사실이 아니다 — 남겨 두면 편집기가 멀쩡한 화면에 실패 띠가
+ * 상시 뜬다. 코어 안내가 회복 직후에 도착할 수도 있어 짧게 다시 살핀다. 다른 자산의 안내는 건드리지 않는다.
+ *
+ * @return void
+ */
+export function withdrawCoreScriptFailureAfterRecovery(): void {
+    const assets = (window as any)?.G7Core?.assets;
+
+    if (typeof assets?.clearFailure !== 'function' || typeof assets?.getFailures !== 'function') {
+        return;
+    }
+
+    const sweep = (): void => {
+        const failures: Array<{ id?: string }> = assets.getFailures() ?? [];
+
+        if (failures.some((failure) => failure?.id === CORE_SCRIPT_FAILURE_ID)) {
+            assets.clearFailure(CORE_SCRIPT_FAILURE_ID);
+        }
+    };
+
+    sweep();
+
+    if (coreRecoverySweep !== null) {
+        clearInterval(coreRecoverySweep);
+    }
+
+    const startedAt = Date.now();
+    coreRecoverySweep = setInterval(() => {
+        if (Date.now() - startedAt >= CORE_RECOVERY_SWEEP_LIMIT_MS) {
+            if (coreRecoverySweep !== null) {
+                clearInterval(coreRecoverySweep);
+                coreRecoverySweep = null;
+            }
+
+            return;
+        }
+
+        sweep();
+    }, CORE_DUPLICATE_SWEEP_MS);
+}
+
 /**
  * 자산 로드 실패를 코어 안내 배너에 알립니다.
  *

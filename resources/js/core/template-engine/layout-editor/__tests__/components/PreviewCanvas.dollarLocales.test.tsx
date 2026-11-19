@@ -136,26 +136,25 @@ describe('PreviewCanvas — $locales 엔진 전역 lift', () => {
   function renderCanvas() {
     const engine = new TranslationEngine();
     return render(
-      React.createElement(
-        TranslationProvider,
-        {
-          translationEngine: engine,
-          translationContext: { templateId: 'sirsoft-admin_basic', locale: 'ko' },
-        },
-        React.createElement(
-          LayoutEditorProvider,
-          { templateIdentifier: 'sirsoft-basic', initialLocale: 'ko' },
-          React.createElement(
+      React.createElement(TranslationProvider, {
+        translationEngine: engine,
+        translationContext: { templateId: 'sirsoft-admin_basic', locale: 'ko' },
+        children: React.createElement(LayoutEditorProvider, {
+          templateIdentifier: 'sirsoft-basic',
+          initialLocale: 'ko',
+          children: React.createElement(
             EditorModalProvider,
             null,
             React.createElement(SelectRoute, { path: '/login', layoutName: 'auth/login' }),
-            React.createElement(PreviewCanvas, { sampleGlobalSources }),
+            <PreviewCanvas sampleGlobalSources={sampleGlobalSources} />,
           ),
-        ),
-      ),
+        }),
+      }),
     );
   }
 
+  // @scenario area=dollar_locales
+  // @effects preview_lifts_dollar_locales_into_context
   it('sampleGlobal 의 $locales 가 렌더 컨텍스트 최상위로 lift 되어 {{$locales}} 바인딩이 해석된다', async () => {
     renderCanvas();
 

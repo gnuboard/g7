@@ -1,0 +1,25 @@
+feature: 관리자 주문상세 — 상품 목록 숫자 열 정렬 일치
+
+description: |
+  관리자 주문 상세(`admin/ecommerce/orders/:orderNumber`) 상품 목록의 숫자 열 6개
+  (정가/판매가·구매수량·할인가격·실 구매가격·적립예정·소계)는 같은 쪽으로 정렬돼야 한다.
+  `구매수량`·`적립예정` 만 `flex flex-col items-center` 로 가운데 정렬이라 값이 서로
+  어긋나 보이던 결함을 표(≥768px)와 카드(<768px) 양쪽에서 잠근다.
+  `items-center` 는 `text-align` 이 아니라 `align-items` 로 정렬하므로 계산 스타일 대신
+  콘텐츠의 우측 여백이 열끼리 같은지를 잰다(spec 머리 주석).
+
+  axes 는 audit fallback YAML 파서 호환을 위해 flat 인라인 배열로만 선언한다.
+  폭은 축 값에 묶여 있다(desktop_table = 1280px 표, mobile_card = 390px 카드).
+
+axes:
+  order_detail_numeric_alignment: [desktop_table, mobile_card]
+
+effects:
+  # 브라우저 E2E (Playwright — 표·카드 두 폭에서 실측)
+  - numeric_columns_right_aligned_consistently   # 숫자 열 6개의 우측 여백이 행 안에서 하나로 모인다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/order-detail-numeric-alignment.spec.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e

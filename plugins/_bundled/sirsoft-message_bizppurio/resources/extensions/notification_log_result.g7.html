@@ -10,30 +10,30 @@
             <field name="name" value="Div"/>
             <field name="if" value="{{!!(dispatchResults?.data?.results ?? {})[row.id]}}"/>
             <field name="props">
-              <field name="className" value="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 space-y-2"/>
+              <field name="className" value="bizppurio:p-4 bizppurio:bg-gray-50 bizppurio:dark:bg-gray-900 bizppurio:border-t bizppurio:border-gray-200 bizppurio:dark:border-gray-700 bizppurio:space-y-2"/>
             </field>
             <field name="children">
               <item>
                 <field name="type" value="basic"/>
                 <field name="name" value="Div"/>
                 <field name="props">
-                  <field name="className" value="flex items-center gap-2"/>
+                  <field name="className" value="bizppurio:flex bizppurio:items-center bizppurio:gap-2"/>
                 </field>
                 <field name="children">
                   <item>
                     <field name="type" value="basic"/>
                     <field name="name" value="Icon"/>
                     <field name="props">
-                      <field name="name" value="fas fa-comment-dots"/>
+                      <field name="name" value="comment-dots"/>
                       <field name="size" value="sm"/>
-                      <field name="className" value="text-teal-600 dark:text-teal-400"/>
+                      <field name="className" value="bizppurio:text-teal-600 bizppurio:dark:text-teal-400"/>
                     </field>
                   </item>
                   <item>
                     <field name="type" value="basic"/>
                     <field name="name" value="Span"/>
                     <field name="props">
-                      <field name="className" value="text-sm font-medium text-gray-800 dark:text-gray-100"/>
+                      <field name="className" value="bizppurio:text-sm bizppurio:font-medium bizppurio:text-gray-800 bizppurio:dark:text-gray-100"/>
                     </field>
                     <field name="text" value="$t:sirsoft-message_bizppurio.dispatch_result.detail_title"/>
                   </item>
@@ -43,14 +43,14 @@
                 <field name="type" value="basic"/>
                 <field name="name" value="Div"/>
                 <field name="props">
-                  <field name="className" value="flex flex-wrap items-center gap-2"/>
+                  <field name="className" value="bizppurio:flex bizppurio:flex-wrap bizppurio:items-center bizppurio:gap-2"/>
                 </field>
                 <field name="children">
                   <item>
                     <field name="type" value="basic"/>
                     <field name="name" value="Span"/>
                     <field name="props">
-                      <field name="className" value="{{(dispatchResults?.data?.results ?? {})[row.id]?.is_test_mode === true ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-600 dark:text-yellow-50' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'success' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'failed' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-600 dark:text-yellow-50'}}"/>
+                      <field name="className" value="{{(dispatchResults?.data?.results ?? {})[row.id]?.is_test_mode === true ? 'bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-yellow-100 bizppurio:text-yellow-800 bizppurio:dark:bg-yellow-600 bizppurio:dark:text-yellow-50' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'success' ? 'bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-green-100 bizppurio:text-green-800 bizppurio:dark:bg-green-700 bizppurio:dark:text-green-100' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'failed' ? 'bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-red-100 bizppurio:text-red-800 bizppurio:dark:bg-red-700 bizppurio:dark:text-red-100' : 'bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-yellow-100 bizppurio:text-yellow-800 bizppurio:dark:bg-yellow-600 bizppurio:dark:text-yellow-50'}}"/>
                     </field>
                     <field name="text" value="{{(dispatchResults?.data?.results ?? {})[row.id]?.is_test_mode === true ? $t('sirsoft-message_bizppurio.dispatch_result.inspection_label') : (dispatchResults?.data?.results ?? {})[row.id]?.result_label ?? (dispatchResults?.data?.results ?? {})[row.id]?.status_label ?? '-'}}"/>
                   </item>
@@ -59,7 +59,7 @@
                     <field name="name" value="Span"/>
                     <field name="if" value="{{(dispatchResults?.data?.results ?? {})[row.id]?.is_low_balance === true}}"/>
                     <field name="props">
-                      <field name="className" value="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-600 dark:text-orange-50"/>
+                      <field name="className" value="bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-orange-100 bizppurio:text-orange-800 bizppurio:dark:bg-orange-600 bizppurio:dark:text-orange-50"/>
                     </field>
                     <field name="text" value="$t:sirsoft-message_bizppurio.dispatch_result.low_balance"/>
                   </item>
@@ -68,7 +68,7 @@
                     <field name="name" value="Span"/>
                     <field name="if" value="{{!!(dispatchResults?.data?.results ?? {})[row.id]?.fallback_status}}"/>
                     <field name="props">
-                      <field name="className" value="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800 dark:bg-sky-700 dark:text-sky-100"/>
+                      <field name="className" value="bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-sky-100 bizppurio:text-sky-800 bizppurio:dark:bg-sky-700 bizppurio:dark:text-sky-100"/>
                     </field>
                     <field name="text" value="$t:sirsoft-message_bizppurio.dispatch_result.fallback|status={{(dispatchResults?.data?.results ?? {})[row.id]?.fallback_status}}"/>
                   </item>
@@ -80,14 +80,14 @@
                 <field name="name" value="Div"/>
                 <field name="if" value="{{row.channel === 'alimtalk' &amp;&amp; !!(dispatchResults?.data?.results ?? {})[row.id]?.content}}"/>
                 <field name="props">
-                  <field name="className" value="pt-2 border-t border-gray-200 dark:border-gray-700"/>
+                  <field name="className" value="bizppurio:pt-2 bizppurio:border-t bizppurio:border-gray-200 bizppurio:dark:border-gray-700"/>
                 </field>
                 <field name="children">
                   <item>
                     <field name="type" value="basic"/>
                     <field name="name" value="Span"/>
                     <field name="props">
-                      <field name="className" value="form-label"/>
+                      <field name="className" value="bizppurio-form-label"/>
                     </field>
                     <field name="text" value="$t:sirsoft-message_bizppurio.dispatch_result.sent_content_label"/>
                   </item>
@@ -95,7 +95,7 @@
                     <field name="type" value="basic"/>
                     <field name="name" value="P"/>
                     <field name="props">
-                      <field name="className" value="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-line admin-card"/>
+                      <field name="className" value="bizppurio:text-sm bizppurio:text-gray-700 bizppurio:dark:text-gray-200 bizppurio:whitespace-pre-line bizppurio-admin-card"/>
                     </field>
                     <field name="text" value="{{(dispatchResults?.data?.results ?? {})[row.id]?.content}}"/>
                   </item>
@@ -103,7 +103,7 @@
                     <field name="type" value="basic"/>
                     <field name="name" value="P"/>
                     <field name="props">
-                      <field name="className" value="text-xs text-gray-400 dark:text-gray-500 mt-1"/>
+                      <field name="className" value="bizppurio:text-xs bizppurio:text-gray-400 bizppurio:dark:text-gray-500 bizppurio:mt-1"/>
                     </field>
                     <field name="text" value="$t:sirsoft-message_bizppurio.dispatch_result.sent_content_hint"/>
                   </item>
@@ -135,7 +135,7 @@
                     <field name="name" value="Span"/>
                     <field name="if" value="{{!(dispatchResults?.data?.results ?? {})[row.id]}}"/>
                     <field name="props">
-                      <field name="className" value="text-gray-300 dark:text-gray-600"/>
+                      <field name="className" value="bizppurio:text-gray-300 bizppurio:dark:text-gray-600"/>
                     </field>
                     <field name="text" value="-"/>
                   </item>
@@ -144,14 +144,14 @@
                     <field name="name" value="Div"/>
                     <field name="if" value="{{!!(dispatchResults?.data?.results ?? {})[row.id]}}"/>
                     <field name="props">
-                      <field name="className" value="flex flex-col gap-1 items-start"/>
+                      <field name="className" value="bizppurio:flex bizppurio:flex-col bizppurio:gap-1 bizppurio:items-start"/>
                     </field>
                     <field name="children">
                       <item>
                         <field name="type" value="basic"/>
                         <field name="name" value="Span"/>
                         <field name="props">
-                          <field name="className" value="{{(dispatchResults?.data?.results ?? {})[row.id]?.is_test_mode === true ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-600 dark:text-yellow-50' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'success' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'failed' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-600 dark:text-yellow-50'}}"/>
+                          <field name="className" value="{{(dispatchResults?.data?.results ?? {})[row.id]?.is_test_mode === true ? 'bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-yellow-100 bizppurio:text-yellow-800 bizppurio:dark:bg-yellow-600 bizppurio:dark:text-yellow-50' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'success' ? 'bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-green-100 bizppurio:text-green-800 bizppurio:dark:bg-green-700 bizppurio:dark:text-green-100' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'failed' ? 'bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-red-100 bizppurio:text-red-800 bizppurio:dark:bg-red-700 bizppurio:dark:text-red-100' : 'bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-yellow-100 bizppurio:text-yellow-800 bizppurio:dark:bg-yellow-600 bizppurio:dark:text-yellow-50'}}"/>
                         </field>
                         <field name="text" value="{{(dispatchResults?.data?.results ?? {})[row.id]?.is_test_mode === true ? $t('sirsoft-message_bizppurio.dispatch_result.inspection_label') : (dispatchResults?.data?.results ?? {})[row.id]?.result_label ?? (dispatchResults?.data?.results ?? {})[row.id]?.status_label ?? '-'}}"/>
                       </item>
@@ -160,7 +160,7 @@
                         <field name="name" value="Span"/>
                         <field name="if" value="{{(dispatchResults?.data?.results ?? {})[row.id]?.is_low_balance === true}}"/>
                         <field name="props">
-                          <field name="className" value="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-600 dark:text-orange-50"/>
+                          <field name="className" value="bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-orange-100 bizppurio:text-orange-800 bizppurio:dark:bg-orange-600 bizppurio:dark:text-orange-50"/>
                         </field>
                         <field name="text" value="$t:sirsoft-message_bizppurio.dispatch_result.low_balance"/>
                       </item>
@@ -169,7 +169,7 @@
                         <field name="name" value="Span"/>
                         <field name="if" value="{{!!(dispatchResults?.data?.results ?? {})[row.id]?.fallback_status}}"/>
                         <field name="props">
-                          <field name="className" value="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800 dark:bg-sky-700 dark:text-sky-100"/>
+                          <field name="className" value="bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-sky-100 bizppurio:text-sky-800 bizppurio:dark:bg-sky-700 bizppurio:dark:text-sky-100"/>
                         </field>
                         <field name="text" value="$t:sirsoft-message_bizppurio.dispatch_result.fallback|status={{(dispatchResults?.data?.results ?? {})[row.id]?.fallback_status}}"/>
                       </item>

@@ -1,0 +1,328 @@
+<!-- 예약 작업 목록 — 일괄 작업 줄 · 표 머리 줄(총 개수 · 정렬 · 쪽당 개수) · 표.
+
+  작업명 칸은 **표시 명칭**(`label_localized` — 지금 언어 → 기본 언어 → 이름)이 주이고, 식별자와 명령은
+  작은 글씨로 덧붙인다. 수정 권한이 있으면 작업명을 눌러 바로 수정 창을 연다(행 메뉴 「수정」과 같은 동작).
+  소유 칸은 확장 이름이 주이고 [모듈/플러그인 배지 · 식별자]가 보조다(코어·직접 등록은 배지만).
+  실행 조건이 충족되지 않아 예약 실행이 건너뛰어지는 작업은 「설정에서 꺼짐」 배지를 단다 — 코어 설정이면
+  배지를 눌러 그 설정 탭으로 간다. 중복 실행 방지는 잠금 유지 분으로 「끔 / N분」이다.
+
+  일괄 작업 줄과 표 머리 줄은 다른 관리자 목록(쿠폰·배송정책·회원)처럼 **두 줄로 나눈다** — 회색 일괄 바에는
+  [선택 수 · 상태 고르기 · ─ · 선택 삭제 · 일괄 적용], 그 아래 줄에는 [총 N개 ─ 정렬 · 쪽당 개수]가 온다.
+  일괄 작업은 상태 변경(활성/비활성)과 삭제이고 **둘 다 확인 창을 거친다**(예전에는 상태 변경이 바로 PATCH 했다).
+  좁은 화면에서는 회원 목록처럼 일괄 바가 「일괄 작업 선택」 드롭다운 하나로 접힌다.
+  코어·확장이 등록한 작업은 지울 수 없어(선언 동기화가 다시 만든다) 고른 줄에 하나라도 섞이면 삭제가 잠긴다 —
+  서버도 같은 규칙으로 거절한다. 일괄 「실행」은 없다(그런 API 가 없다). -->
+<partial name="partial_schedule_datagrid">
+  <div data-ref="schedule_datagrid_section">
+  <div data-ref="bulk_actions_area" class="bulk-actions-bar flex-wrap">
+    <responsive on="portable" class="bulk-actions-bar">
+      <span data-ref="mobile_selected_count" class="text-body font-medium whitespace-nowrap">$t:admin.schedules.selected_count|count={{_global.selectedScheduleIds?.length ?? 0}}</span>
+      <dropdown data-type="composite" data-ref="mobile_bulk_action_dropdown" label="$t:admin.schedules.bulk.action_select" position="bottom-right" class="ml-auto">
+        <prop name="items">
+          <item value="active" label="$t:admin.schedules.bulk.to_active" disabled="{{!(_global.selectedScheduleIds?.length &gt; 0) || schedules?.data?.abilities?.can_update !== true}}"/>
+          <item value="inactive" label="$t:admin.schedules.bulk.to_inactive" disabled="{{!(_global.selectedScheduleIds?.length &gt; 0) || schedules?.data?.abilities?.can_update !== true}}"/>
+          <item value="delete" label="$t:admin.schedules.action.bulk_delete" disabled="{{!(_global.selectedScheduleIds?.length &gt; 0) || schedules?.data?.abilities?.can_delete !== true || (schedules?.data?.data ?? []).filter(r =&gt; (_global.selectedScheduleIds ?? []).includes(r.id)).some(r =&gt; r.is_owned)}}"/>
+        </prop>
+        <on type="action" event="onItemClick">
+          <!-- 좁은 화면 일괄 작업 — 넓은 화면 버튼과 **같은 확인 창**을 연다. 상태 변경은 고른 방향을 전역에 담고 연다(창이 그 값으로 문구를 고른다).
+               고른 줄이 없거나 권한이 없으면 항목이 잠긴다. -->
+          <switch>
+            <case when="active">
+              <set-state target="global" bulkStatusAction="active"/>
+              <open-modal target="schedule_bulk_status_modal"/>
+            </case>
+            <case when="inactive">
+              <set-state target="global" bulkStatusAction="inactive"/>
+              <open-modal target="schedule_bulk_status_modal"/>
+            </case>
+            <case when="delete">
+              <set-state target="global" deleteTargetIds="{{_global.selectedScheduleIds}}" :deleteTargetId="null" deleteTargetName=""/>
+              <open-modal target="schedule_delete_modal"/>
+            </case>
+          </switch>
+        </on>
+      </dropdown>
+    </responsive>
+    <span data-ref="selected_count" class="text-body font-medium whitespace-nowrap">$t:admin.schedules.selected_count|count={{_global.selectedScheduleIds?.length ?? 0}}</span>
+    <select name="bulk_status" aria-label="$t:admin.schedules.bulk.select_status" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_global.bulkStatusAction ?? ''}}" disabled="{{schedules?.data?.abilities?.can_update !== true}}">
+      <options>
+        <option value="" disabled>$t:admin.schedules.bulk.select_status</option>
+        <option value="active">$t:admin.schedules.status.active</option>
+        <option value="inactive">$t:admin.schedules.status.inactive</option>
+      </options>
+      <on type="change">
+        <!-- 고르기만 하고 아직 아무것도 하지 않는다 — 실제 적용은 일괄 적용 버튼 → 확인 창이고, 그 버튼은 이 값이 있을 때만 움직인다.
+             잠금은 권한만 본다(쿠폰·배송정책과 같다) — 줄을 고르기 전에도 방향을 먼저 고를 수 있다. -->
+        <set-state target="global" bulkStatusAction="{{$event.target.value}}"/>
+      </on>
+    </select>
+    <div class="flex-1"/>
+    <button data-ref="bulk_delete_button" type="button" class="px-3 py-1.5 text-sm border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_delete !== true || (schedules?.data?.data ?? []).filter(r => (_global.selectedScheduleIds ?? []).includes(r.id)).some(r => r.is_owned)}}" title="{{(schedules?.data?.data ?? []).filter(r => (_global.selectedScheduleIds ?? []).includes(r.id)).some(r => r.is_owned) ? '$t:admin.schedules.bulk.delete_owned_blocked' : ''}}">
+      <on type="click">
+        <!-- 선택 삭제 — 단건 삭제와 같은 확인 창을 대상 목록으로 연다. 직접 등록 줄만 골랐을 때만 열린다. 문구는 창이 개수로 고른다. -->
+        <sequence>
+          <set-state target="global" deleteTargetIds="{{_global.selectedScheduleIds}}" :deleteTargetId="null" deleteTargetName=""/>
+          <open-modal target="schedule_delete_modal"/>
+        </sequence>
+      </on>
+      $t:admin.schedules.action.bulk_delete
+    </button>
+    <button data-ref="bulk_status_apply" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.selectedScheduleIds?.length || !_global.bulkStatusAction || schedules?.data?.abilities?.can_update !== true}}">
+      <on type="click">
+        <!-- 일괄 적용 — 바로 바꾸지 않고 확인 창을 연다(기준 목록 모두 같다). 고른 방향·대상은 이미 전역에 있다. -->
+        <open-modal target="schedule_bulk_status_modal"/>
+      </on>
+      $t:admin.schedules.action.bulk_apply
+    </button>
+  </div>
+  <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
+    <span data-ref="total_count" data-if="{{schedules?.data?.pagination?.total_is_exact !== false}}" class="text-label"><blur-until-loaded sources="schedules"/>$t:admin.schedules.total_count|count={{schedules?.data?.pagination?.total ?? 0}}</span>
+    <span data-ref="total_count_at_least" data-if="{{schedules?.data?.pagination?.total_is_exact === false}}" class="text-label"><blur-until-loaded sources="schedules"/>$t:admin.schedules.total_at_least|count={{schedules?.data?.pagination?.total ?? 0}}</span>
+    <div data-ref="list_options" class="flex-center gap-3">
+      <select name="sort_by" class="w-40" value="{{query.sort_by ? query.sort_by + '_' + (query.sort_order || 'desc') : 'created_at_desc'}}" aria-label="$t:admin.schedules.sort.label">
+        <options>
+          <option value="created_at_desc">$t:admin.schedules.sort.created_at_desc</option>
+          <option value="created_at_asc">$t:admin.schedules.sort.created_at_asc</option>
+          <option value="name_asc">$t:admin.schedules.sort.name_asc</option>
+          <option value="name_desc">$t:admin.schedules.sort.name_desc</option>
+          <option value="next_run_at_asc">$t:admin.schedules.sort.next_run_at_asc</option>
+          <option value="next_run_at_desc">$t:admin.schedules.sort.next_run_at_desc</option>
+          <option value="last_run_at_desc">$t:admin.schedules.sort.last_run_at_desc</option>
+          <option value="last_run_at_asc">$t:admin.schedules.sort.last_run_at_asc</option>
+        </options>
+        <on type="change">
+          <!-- 「무엇을·어느 방향으로」를 한 칸에 담아 두고 여기서 **마지막 마디를 떼어** 둘로 가른다(`created_at_desc` → 기준 `created_at` + 방향 `desc`). 그래서 기준 이름에 밑줄이 들어가도 괜찮다. 정렬은 검색 버튼을 기다리지 않는다 — 조건이 아니라 보는 순서다. -->
+          <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
+            <query sort_by="{{$event.target.value.split('_').slice(0, -1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}" :page="1"/>
+          </navigate>
+        </on>
+      </select>
+      <select name="per_page" class="w-24" value="{{query.per_page ?? '20'}}" aria-label="$t:admin.schedules.per_page_label">
+        <options>
+          <option value="10">$t:admin.schedules.per_page|count=10</option>
+          <option value="20">$t:admin.schedules.per_page|count=20</option>
+          <option value="50">$t:admin.schedules.per_page|count=50</option>
+          <option value="100">$t:admin.schedules.per_page|count=100</option>
+        </options>
+        <on type="change">
+          <!-- 한 쪽에 몇 줄을 볼지. 개수가 바뀌면 지금 쪽 번호가 뜻을 잃으므로 첫 쪽으로 돌아간다. -->
+          <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
+            <query per_page="{{$event.target.value}}" :page="1"/>
+          </navigate>
+        </on>
+      </select>
+    </div>
+  </div>
+  <data-grid data-type="composite" selectedCountText="" data-ref="schedules_data_grid" rowLabelField="label_localized" data="{{schedules?.data?.data}}" :pagination="true" :serverSidePagination="true" pageHref="/admin/schedules?page={page}" :pageHrefMergeQuery="true" serverCurrentPage="{{schedules?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{schedules?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{schedules?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{schedules?.data?.abilities?.can_update === true || schedules?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedScheduleIds || []}}" :showColumnSelector="false" visibleColumns="{{_global.visibleColumns_admin_schedules}}" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions" emptyMessage="{{schedules === undefined ? '' : $t('admin.schedules.empty')}}">
+    <blur-until-loaded sources="schedules"/>
+    <column field="name" header="$t:admin.schedules.columns.name" width="280px" :sortable="false" :required="true">
+      <cell>
+        <div class="min-w-0">
+          <!-- 작업명 — 수정 권한이 있으면 눌러서 수정 창을 연다(행 메뉴 「수정」과 같은 값을 담는다). 권한이 없으면 글자만 보인다. -->
+          <span data-ref="schedule_name_text" data-if="{{row.abilities?.can_update !== true}}" class="font-medium text-gray-900 dark:text-white">{{row.label_localized}}</span>
+          <button data-ref="schedule_name_link" data-if="{{row.abilities?.can_update === true}}" type="button" class="font-medium text-left text-blue-600 dark:text-blue-400 hover:underline">
+            <on type="click">
+              <!-- 행 메뉴 「수정」과 같은 담기 — 중복 방지는 분 값과 켜짐 여부를 따로 담는다(끈 채로 열었다 켜면 기본 1440분). -->
+              <sequence>
+                <set-state target="global" selectedSchedule="{{row}}" :isEditMode="true" :scheduleFormErrors="null" scheduleFormErrorMessage="">
+                  <field name="scheduleForm">
+                    <field name="label" value="{{row.label ?? {} }}"/>
+                    <field name="description" value="{{row.description ?? {} }}"/>
+                    <field name="type" value="{{row.type ?? 'artisan'}}"/>
+                    <field name="frequency" value="{{row.frequency ?? 'daily'}}"/>
+                    <field name="overlapEnabled" value="{{(row.without_overlapping ?? 0) &gt; 0}}"/>
+                    <field name="without_overlapping" value="{{(row.without_overlapping ?? 0) &gt; 0 ? row.without_overlapping : 1440}}"/>
+                    <field name="on_one_server" value="{{!!row.on_one_server}}"/>
+                    <field name="dispatch_mode" value="{{row.dispatch_mode ?? 'sync'}}"/>
+                    <field name="queue_connection" value="{{row.queue_connection ?? ''}}"/>
+                    <field name="queue_name" value="{{row.queue_name ?? ''}}"/>
+                    <field name="history_mode" value="{{row.history_mode ?? 'all'}}"/>
+                    <field name="notify_on_failure" value="{{row.notify_on_failure !== false}}"/>
+                    <field name="run_in_maintenance" value="{{!!row.run_in_maintenance}}"/>
+                    <field name="is_active" value="{{!!row.is_active}}"/>
+                  </field>
+                </set-state>
+                <open-modal target="schedule_form_modal"/>
+              </sequence>
+            </on>
+            {{row.label_localized}}
+          </button>
+          <span class="block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">{{row.name}}</span>
+          <code class="block text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-400 font-mono mt-1 max-w-xs truncate">{{row.command}}</code>
+          <div data-if="{{(row.unmet_conditions ?? []).length &gt; 0}}" class="mt-1">
+            <!-- 실행 조건 미충족 배지 — 그 설정이 꺼져 있어 예약 실행이 건너뛰어진다(즉시 실행은 된다). 첫 조건이 코어 환경설정이고
+                 그 탭이 있으면 그 탭으로 가는 링크다(가운데 클릭·새 탭 열기 — #757 링크화). 확장 설정·config 조건은 화면 위치가
+                 정해져 있지 않아 누를 수 없는 배지로 이름만 보인다(마우스를 올리면 키). -->
+            <a data-ref="schedule_condition_unmet_link" data-if="{{row.unmet_conditions[0]?.source === 'core_setting' &amp;&amp; ['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'identity', 'privacy'].includes((row.unmet_conditions[0]?.key ?? '').split('.')[0])}}" href="{{'/admin/settings?tab=' + (row.unmet_conditions[0]?.key ?? '').split('.')[0]}}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 hover:underline" title="{{(row.unmet_conditions ?? []).map(c => c.key).join(', ')}}">
+              <on type="click">
+                <navigate/>
+              </on>
+              <icon name="triangle-exclamation" class="text-xs"/>
+              <span>$t:admin.schedules.condition_unmet</span>
+            </a>
+            <span data-ref="schedule_condition_unmet_badge" data-if="{{!(row.unmet_conditions[0]?.source === 'core_setting' &amp;&amp; ['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'identity', 'privacy'].includes((row.unmet_conditions[0]?.key ?? '').split('.')[0]))}}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" title="{{(row.unmet_conditions ?? []).map(c => c.key).join(', ')}}">
+              <icon name="triangle-exclamation" class="text-xs"/>
+              <span>$t:admin.schedules.condition_unmet</span>
+            </span>
+          </div>
+        </div>
+      </cell>
+    </column>
+    <column field="owner" header="$t:admin.schedules.columns.owner" width="160px" :sortable="false">
+      <cell>
+        <div>
+          <span data-if="{{['module', 'plugin'].includes(row.owner?.type)}}" class="block text-sm font-medium text-gray-900 dark:text-white">{{row.owner?.name}}</span>
+          <div class="flex-center flex-wrap gap-1 mt-0.5">
+            <badge data-type="composite" data-if="{{row.owner?.type === 'core'}}" color="gray" size="md" text="$t:admin.schedules.owner.core"/>
+            <badge data-type="composite" data-if="{{row.owner?.type === 'module'}}" color="blue" size="md" text="$t:admin.schedules.owner.module"/>
+            <badge data-type="composite" data-if="{{row.owner?.type === 'plugin'}}" color="teal" size="md" text="$t:admin.schedules.owner.plugin"/>
+            <badge data-type="composite" data-if="{{row.owner?.type === 'custom'}}" color="yellow" size="md" text="$t:admin.schedules.owner.custom"/>
+            <span data-if="{{['module', 'plugin'].includes(row.owner?.type)}}" class="text-xs text-gray-500 dark:text-gray-400 font-mono">{{row.owner?.identifier}}</span>
+          </div>
+        </div>
+      </cell>
+    </column>
+    <column field="type" header="$t:admin.schedules.columns.type" width="100px" :sortable="false">
+      <cell>
+        <badge data-type="composite" data-if="{{row.type === 'artisan'}}" color="purple" size="md" text="$t:admin.schedules.type.artisan"/>
+        <badge data-type="composite" data-if="{{row.type === 'shell'}}" color="orange" size="md" text="$t:admin.schedules.type.shell"/>
+        <badge data-type="composite" data-if="{{row.type === 'url'}}" color="blue" size="md" text="$t:admin.schedules.type.url"/>
+        <badge data-type="composite" data-if="{{row.type === 'job'}}" color="cyan" size="md" text="$t:admin.schedules.type.job"/>
+      </cell>
+    </column>
+    <column field="frequency" header="$t:admin.schedules.columns.frequency" width="150px" :sortable="false">
+      <cell>
+        <div>
+          <span class="text-sm text-gray-900 dark:text-white">{{row.frequency_label}}</span>
+          <span data-if="{{row.frequency !== 'everyThirtySeconds'}}" class="block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">{{row.expression}}</span>
+          <div class="flex-center flex-wrap gap-1 mt-1">
+            <badge data-type="composite" data-if="{{row.dispatch_mode === 'queue'}}" color="blue" size="sm" text="$t:admin.schedules.dispatch_mode.queue"/>
+            <badge data-type="composite" data-if="{{row.history_mode === 'failures_only'}}" color="gray" size="sm" text="$t:admin.schedules.history_mode.failures_only"/>
+          </div>
+        </div>
+      </cell>
+    </column>
+    <column field="without_overlapping" header="$t:admin.schedules.columns.without_overlapping" width="100px" :sortable="false">
+      <cell>
+        <span data-if="{{(row.without_overlapping ?? 0) &gt; 0}}" class="text-sm text-gray-900 dark:text-white whitespace-nowrap">$t:defer:admin.schedules.overlap_minutes|minutes={{row.without_overlapping}}</span>
+        <span data-if="{{!((row.without_overlapping ?? 0) &gt; 0)}}" class="text-sm text-gray-400 dark:text-gray-500">$t:admin.schedules.overlap_off</span>
+      </cell>
+    </column>
+    <column field="next_run_at" header="$t:admin.schedules.columns.next_run" width="150px" :sortable="false">
+      <cell>
+        <span data-if="{{row.is_active &amp;&amp; row.next_run_at}}" class="text-label whitespace-nowrap">{{row.next_run_at | datetime}}</span>
+        <span data-if="{{!row.is_active || !row.next_run_at}}" class="text-sm text-gray-400 dark:text-gray-500">-</span>
+      </cell>
+    </column>
+    <column field="last_run_at" header="$t:admin.schedules.columns.last_run" width="150px" :sortable="false">
+      <cell>
+        <div data-if="{{row.last_run_at}}">
+          <span class="text-label whitespace-nowrap">{{row.last_run_at | datetime}}</span>
+          <span data-if="{{row.last_duration}}" class="block text-tertiary mt-0.5">$t:defer:admin.schedules.duration_display|duration={{row.last_duration}}</span>
+        </div>
+        <span data-if="{{!row.last_run_at}}" class="text-sm text-gray-400 dark:text-gray-500">-</span>
+      </cell>
+    </column>
+    <column field="last_result" header="$t:admin.schedules.columns.last_result" width="120px" :sortable="false">
+      <cell>
+        <badge data-type="composite" data-if="{{row.last_result === 'success'}}" color="green" size="md" text="$t:admin.schedules.result.success"/>
+        <badge data-type="composite" data-if="{{row.last_result === 'failed'}}" color="red" size="md" text="$t:admin.schedules.result.failed"/>
+        <badge data-type="composite" data-if="{{row.last_result === 'running'}}" color="yellow" size="md" text="$t:admin.schedules.result.running"/>
+        <badge data-type="composite" data-if="{{row.last_result === 'never' || !row.last_result}}" color="gray" size="md" text="$t:admin.schedules.result.never"/>
+      </cell>
+    </column>
+    <column field="is_active" header="$t:admin.schedules.columns.status" width="80px" :sortable="false" :required="true">
+      <cell>
+        <toggle data-type="composite" checked="{{row.is_active}}" disabled="{{row.abilities?.can_update !== true}}" size="sm" ariaLabel="{{row.label_localized}}">
+          <on type="change">
+            <!-- 줄 하나만 바꾸는데도 **일괄 변경 창구를 그대로 쓴다** — 그래서 대상 목록에 이 줄 하나만 담아 보낸다(단건 전용 창구를 따로 두지 않았다).
+                 확장 설정 화면의 스케줄 탭도 같은 창구를 쓴다. 스위치 한 번은 확인 창 없이 바로 바꾼다(되돌리기가 같은 스위치다). -->
+            <api-call :auth_required="true" target="/api/admin/schedules/bulk-status" method="PATCH">
+              <success>
+                <toast type="success" message="$t:admin.schedules.messages.status_updated"/>
+                <refetch-data-source dataSourceId="schedules"/>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.message ?? '$t:admin.schedules.errors.status_update_failed'}}"/>
+                <!-- 실패하면 목록을 다시 받아 스위치를 서버 값으로 되돌린다(바뀐 채로 남지 않게). -->
+                <refetch-data-source dataSourceId="schedules"/>
+              </fail>
+              <field name="body">
+                <field name="ids">
+                  <item>{{row.id}}</item>
+                </field>
+                <field name="is_active" value="{{$event.target.checked}}"/>
+              </field>
+            </api-call>
+          </on>
+        </toggle>
+      </cell>
+    </column>
+    <prop name="rowActions">
+      <item id="edit" label="$t:admin.schedules.action.edit" iconName="pencil" disabledField="abilities.can_update"/>
+      <item id="run" label="$t:admin.schedules.action.run" iconName="play" disabledField="abilities.can_run"/>
+      <item id="history" label="$t:admin.schedules.action.history" iconName="clock"/>
+      <item id="duplicate" label="$t:admin.schedules.action.duplicate" iconName="copy" disabledField="abilities.can_create"/>
+      <item id="divider" :divider="true"/>
+      <item id="delete" label="$t:admin.schedules.action.delete" iconName="trash" variant="danger" disabledField="abilities.can_delete" disabledReason="{{row.delete_blocked_reason === 'owned' ? $t('admin.schedules.action.delete_disabled_reason') : $t('auth.permission_denied')}}"/>
+    </prop>
+    <on type="change" event="onPageChange">
+      <!-- 쪽 이동만 이력에 쌓지 않는다 — 조건을 바꾼 것은 남기고 쪽 넘긴 것은 남기지 않아, 뒤로 가기가 조건 단위로 움직인다. -->
+      <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
+        <query page="{{$args[0]}}"/>
+      </navigate>
+    </on>
+    <on type="action" event="onSelectionChange">
+      <!-- 고른 줄을 전역에 둔다 — 일괄 작업 영역이 표 위쪽에 따로 있어 그 버튼들의 잠금과 대상 목록이 이 값을 읽는다. -->
+      <set-state target="global" selectedScheduleIds="{{$args[0]}}"/>
+    </on>
+    <on type="action" event="onRowAction">
+      <!-- 메뉴 순서는 [수정 · 즉시 실행 · 실행 이력 · 복사 · ─ · 삭제]. 다섯 갈래가 모두 「고른 줄을 담고 창을 연다」는
+        같은 모양이다 — 창들이 서버를 다시 부르지 않고 이 값만 읽기 때문이다. 수정은 「고치는 중」 표시를 함께 켜고 폼 값을 줄에서 옮겨 담는다
+        (중복 방지는 분 값과 켜짐 여부를 따로 담는다 — 끈 채로 열었다 켜면 기본 1440분이 보인다).
+        삭제는 줄 전체가 아니라 번호와 명칭만 담는다(그 창이 그 둘만 쓴다). 코어·확장이 등록한 줄은 삭제가 잠기고 그 이유를 메뉴에 적는다. -->
+      <switch>
+        <case when="edit">
+          <set-state target="global" selectedSchedule="{{$args[1]}}" :isEditMode="true" :scheduleFormErrors="null" scheduleFormErrorMessage="">
+            <field name="scheduleForm">
+              <field name="label" value="{{$args[1].label ?? {} }}"/>
+              <field name="description" value="{{$args[1].description ?? {} }}"/>
+              <field name="type" value="{{$args[1].type ?? 'artisan'}}"/>
+              <field name="frequency" value="{{$args[1].frequency ?? 'daily'}}"/>
+              <field name="overlapEnabled" value="{{($args[1].without_overlapping ?? 0) &gt; 0}}"/>
+              <field name="without_overlapping" value="{{($args[1].without_overlapping ?? 0) &gt; 0 ? $args[1].without_overlapping : 1440}}"/>
+              <field name="on_one_server" value="{{!!$args[1].on_one_server}}"/>
+              <field name="dispatch_mode" value="{{$args[1].dispatch_mode ?? 'sync'}}"/>
+              <field name="queue_connection" value="{{$args[1].queue_connection ?? ''}}"/>
+              <field name="queue_name" value="{{$args[1].queue_name ?? ''}}"/>
+              <field name="history_mode" value="{{$args[1].history_mode ?? 'all'}}"/>
+              <field name="notify_on_failure" value="{{$args[1].notify_on_failure !== false}}"/>
+              <field name="run_in_maintenance" value="{{!!$args[1].run_in_maintenance}}"/>
+              <field name="is_active" value="{{!!$args[1].is_active}}"/>
+            </field>
+          </set-state>
+          <open-modal target="schedule_form_modal"/>
+        </case>
+        <case when="run">
+          <!-- 지난 실행 결과를 비우고 연다 — 결과가 남으면 실행 버튼이 감춰진 채 열린다(Esc·X 로 닫으면 닫기 단추의 초기화를 거치지 않는다). -->
+          <set-state target="global" selectedSchedule="{{$args[1]}}" :runResult="null"/>
+          <open-modal target="schedule_run_modal"/>
+        </case>
+        <case when="history">
+          <!-- 앞서 연 작업의 이력·쪽 번호가 남아 새 작업의 창에 잠깐이라도 보이지 않게 비우고 1쪽부터 연다(Esc 로 닫으면 닫기 단추의 초기화를 거치지 않는다). -->
+          <set-state target="global" selectedSchedule="{{$args[1]}}" :scheduleHistory="null" :historyPage="1"/>
+          <open-modal target="schedule_history_modal"/>
+        </case>
+        <case when="duplicate">
+          <set-state target="global" selectedSchedule="{{$args[1]}}"/>
+          <open-modal target="schedule_duplicate_modal"/>
+        </case>
+        <case when="delete">
+          <set-state target="global" :deleteTargetIds="null" deleteTargetId="{{$args[1].id}}" deleteTargetName="{{$args[1].label_localized}}"/>
+          <open-modal target="schedule_delete_modal"/>
+        </case>
+      </switch>
+    </on>
+  </data-grid>
+  </div>
+</partial>

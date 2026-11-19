@@ -83,6 +83,7 @@ class EmptyMapResponseShapeTest extends TestCase
             foreach (['settings', 'plugins', 'modules', 'appConfig'] as $key) {
                 // 빈 배열 `[]` 이 아니라 빈 객체 `{}` 여야 엔진이 키 접근으로 읽는다.
                 $this->assertStringContainsString('"'.$key.'":{}', $m[1], "{$shell}: {$key}");
+                $this->assertStringNotContainsString('"'.$key.'":[]', $m[1], "{$shell}: {$key}");
                 $this->assertIsObject($config->{$key} ?? null, "{$shell}: {$key}");
             }
         }

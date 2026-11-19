@@ -392,6 +392,29 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 기본 Button은 `loading` 속성으로 스피너를 자동 표시하지 않습니다. 비동기 버튼은 기존 레이아웃처럼 처리 상태를 `disabled`에 연결하고, 자식 `Icon(name: "spinner")`을 같은 상태로 조건부 표시합니다. 성공·실패 모두 처리 상태를 해제해야 합니다. 부분 조회 탭처럼 포커스를 유지해야 하는 컨트롤은 `aria-disabled`와 액션 실행 조건을 함께 사용합니다.
 
+### className 규약 — 베이스 `btn` 과 색 변형은 **함께** 쓴다
+
+`btn` 이 베이스이고(`inline-flex` · `gap-2` · `px-4 py-2` · `text-sm` · `font-medium` ·
+`rounded-lg` · transition · disabled 처리), `btn-primary` 계열은 **색만** 갖는다
+(background / text / border). 그래서 베이스를 빼고 변형만 달면 padding·모서리·굵기가
+통째로 빠진 **브라우저 기본 버튼**이 그대로 나간다.
+
+| className | 베이스 필요 | 이유 |
+|---|---|---|
+| `btn-primary` `btn-secondary` `btn-outline` `btn-ghost` `btn-neutral` `btn-success` `btn-danger` `btn-warning` `btn-info` | **필요** | 색만 갖는다 |
+| `btn-icon` `btn-preset` `btn-date` `btn-badge` | 불필요 | padding·모서리를 스스로 갖는다 |
+| `btn-sm` | `btn` 과 함께 | 크기 수정자(`px-3 py-1.5`)일 뿐 색이 없다 |
+
+```json
+"className": "btn btn-secondary"      // ✅
+"className": "btn-secondary"          // ❌ padding 0 · radius 0 · font-weight 400
+```
+
+삼항식도 **가지마다** 베이스를 넣는다 — `{{cond ? 'btn btn-primary' : 'btn btn-outline'}}`.
+
+오류가 나지 않고 클릭도 되므로 테스트·콘솔이 잡지 못한다. 정적 룰
+`layout-button-variant-needs-base-class` 가 커밋 전에 막는다.
+
 ### 레이아웃 JSON 사용 예시
 
 ```html
@@ -473,7 +496,7 @@ export interface DataGridProps {
 
   // 행 액션 메뉴
   rowActions?: ActionMenuItem[];    // 행별 액션 메뉴 항목 (항목 href → 링크, 행마다 평가)
-  rowClassName?: string;            // 데이터 행에 덧붙일 CSS 클래스 (행 표현식 가능)
+  rowClassName?: string;            // 데이터 행에 덧붙일 CSS 클래스 (행 표현식 가능, 식 안에서 $selected = 그 행 선택 여부)
 
   // SubRow Props (engine-v1.6.0+)
   subRowChildren?: ComponentDefinition[];  // 서브 행 컴포넌트 배열
@@ -567,7 +590,7 @@ export interface DataGridProps {
 
 | Props | 타입 | 필수 | 기본값 | 설명 |
 |-------|------|------|--------|------|
-| `rowClassName` | `string` | ❌ | `''` | 데이터 행에 덧붙일 CSS 클래스. 행 유형을 배경색으로 구분할 때 쓰며, 마크업에서 행 표현식을 넘기면 엔진은 원문 그대로 넘기고(components.json `skipBindingKeys`) DataGrid 가 행마다 엔진 바인딩 해석기로 푼다 (예: `rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}}"`). 선택 행 강조보다 먼저 놓여 선택 상태가 덮어쓴다 |
+| `rowClassName` | `string` | ❌ | `''` | 데이터 행에 덧붙일 CSS 클래스. 행 유형을 배경색으로 구분할 때 쓰며, 마크업에서 행 표현식을 넘기면 엔진은 원문 그대로 넘기고(components.json `skipBindingKeys`) DataGrid 가 행마다 엔진 바인딩 해석기로 푼다 (예: `rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}}"`). 선택 행 강조보다 먼저 놓여 선택 상태가 덮어쓴다. 식 안에서 `$selected`(그 행이 선택됐는지 — 표 보기 행만, 카드 보기는 선택 강조 색이 없어 늘 거짓)를 읽을 수 있다 — 확장 앞글자 클래스는 선택 강조를 늘 이기므로 선택 색을 직접 고를 때 쓴다(예: `{{row.row_type === 'notice' ? ($selected ? 'board:bg-blue-50/50' : 'board:bg-blue-50') : ''}}`) |
 | `subRowChildren` | `ComponentDefinition[]` | ❌ | - | 서브 행에 렌더링할 컴포넌트 배열 |
 | `subRowCondition` | `string` | ❌ | - | 서브 행 표시 조건 (예: `"{{row.status !== 'free'}}"`) |
 | `subRowClassName` | `string` | ❌ | - | 서브 행 CSS 클래스 |
@@ -885,6 +908,7 @@ interface DataGridCellChild {
 | Props | 타입 | 필수 | 기본값 | 설명 |
 |-------|------|------|--------|------|
 | `disabledField` | `string` | ❌ | - | 행 데이터 내 비활성화 판단 경로 (dot notation). falsy 값이면 비활성화 |
+| `disabledReason` | `string` | ❌ | - | 잠긴 항목 아래(와 `title`)에 보일 안내. 고정 문구(`$t:키`) 또는 행 표현식 — 엔진은 원문을 넘기고(`skipBindingKeys`) DataGrid 가 행마다 푼다. 막힌 까닭이 행마다 다르면(권한 없음·소유 잠김 등) 서버가 사유 값을 싣고 식으로 고른다 |
 
 ```json
 {
@@ -914,6 +938,16 @@ disabledField 동작
 - 경로가 존재하지 않으면 undefined → 비활성화
 
 ✅ abilities 패턴: API Resource에서 abilities 객체 반환 → disabledField로 참조
+```
+
+막힌 까닭이 둘 이상이면 고정 안내 하나로 묶지 않는다 — 삭제 권한이 없는 운영자에게 「직접 등록한 작업만 삭제할 수 있습니다.」처럼 사실과 다른 안내가 나온다. 리소스가 사유 값(예: 스케줄 행의 `delete_blocked_reason`: `owned`·`permission`·`null`)을 싣고 안내를 행 표현식으로 고른다.
+
+```json
+{
+  "id": "delete",
+  "disabledField": "abilities.can_delete",
+  "disabledReason": "{{row.delete_blocked_reason === 'owned' ? $t('admin.schedules.action.delete_disabled_reason') : $t('auth.permission_denied')}}"
+}
 ```
 
 ### 잔여 Props (위 절에서 다루지 않은 것 — 이 표로 §DataGrid 가 전수가 된다)
@@ -1151,7 +1185,7 @@ export interface ModalProps {
   title?: string;                     // 모달 타이틀
   titlePrefix?: ComponentDefinition[]; // 타이틀 앞 컴포넌트 배열 (sirsoft-admin_basic만)
   titleSuffix?: ComponentDefinition[]; // 타이틀 뒤 컴포넌트 배열 (sirsoft-admin_basic만)
-  footer?: ComponentDefinition[];     // 본문 스크롤 밖 고정 하단 영역 (sirsoft-admin_basic만)
+  footer?: ComponentDefinition[];     // 본문 스크롤 밖 고정 하단 영역 (두 번들 템플릿, sirsoft-basic 은 7.2.0 부터)
   icon?: string;                      // 타이틀 옆 아이콘 (sirsoft-basic만)
   iconClassName?: string;             // 아이콘 색상 클래스 (sirsoft-basic만)
   closeOnBackdropClick?: boolean;     // 배경 클릭 시 닫기 (기본: true)
@@ -1175,7 +1209,7 @@ export interface ModalProps {
 | `title` | `string` | ❌ | - | 모달 타이틀 |
 | `titlePrefix` | `ComponentDefinition[]` | ❌ | - | 타이틀 **앞**에 렌더링할 컴포넌트 배열 (sirsoft-admin_basic) |
 | `titleSuffix` | `ComponentDefinition[]` | ❌ | - | 타이틀 **뒤**에 렌더링할 컴포넌트 배열 (sirsoft-admin_basic) |
-| `footer` | `ComponentDefinition[]` | ❌ | - | 본문 스크롤 **밖** 고정 하단 영역 — 취소/확인 버튼 자리 (sirsoft-admin_basic) |
+| `footer` | `ComponentDefinition[]` | ❌ | - | 본문 스크롤 **밖** 고정 하단 영역 — 취소/확인 버튼 자리 (두 번들 템플릿, 640px 이하 세로 쌓기) |
 | `icon` | `string` | ❌ | - | 타이틀 옆 아이콘 (sirsoft-basic) |
 | `iconClassName` | `string` | ❌ | `'text-gray-500'` | 아이콘 색상 클래스 |
 | `closeOnBackdropClick` | `boolean` | ❌ | `true` | 배경 클릭 시 닫기 |
@@ -1188,10 +1222,10 @@ export interface ModalProps {
 
 ### 서브트리 Props 는 템플릿마다 다르다
 
-`titlePrefix`/`titleSuffix`/`footer` 세 표면은 **`sirsoft-admin_basic` 의 `Modal` 에만 구현**되어 있다
-([Modal.tsx](../../templates/_bundled/sirsoft-admin_basic/src/components/composite/Modal.tsx) `ModalProps`).
-`sirsoft-basic` 의 `Modal` 은 이 props 를 받지 않으므로, 사용자 템플릿 모달에 넘기면 **조용히 렌더되지 않는다**
-(취소/확인 버튼이 통째로 사라진다). 사용자측 모달의 하단 버튼은 `children` 안에 둔다.
+`footer` 는 **두 번들 템플릿 `Modal` 모두**가 같은 계약으로 그린다(본문 스크롤 밖 `modal-footer-bar`, 본문 자식과 같은
+데이터 컨텍스트, 렌더 폭 640px 이하 세로 쌓기 — `sirsoft-basic` 은 7.2.0 부터, #869). `titlePrefix`/`titleSuffix` 두 표면은
+**`sirsoft-admin_basic` 의 `Modal` 에만 구현**되어 있다([Modal.tsx](../../templates/_bundled/sirsoft-admin_basic/src/components/composite/Modal.tsx) `ModalProps`).
+`sirsoft-basic` 의 `Modal` 은 그 둘을 받지 않으므로 사용자 템플릿 모달에 넘기면 **조용히 렌더되지 않는다**.
 
 `.g7.html` 마크업 표기는 `<title-prefix>`/`<title-suffix>`/`<footer>` 이며 `Modal` 자식일 때만 해당 props 로 hoist 된다
 ([layout-markup.md §6 임베딩](layout-markup.md)). 관리자 모달의 footer 배치 규칙은 [modal-usage.md](modal-usage.md) 참조.

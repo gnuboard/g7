@@ -19,8 +19,8 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'node',
-        // jest-dom 매처를 등록한다 — 없으면 MemoCard 편집기 표식 시험이 확장 단독 실행에서 전부 실패했다
-        setupFiles: ['./resources/js/__tests__/setup.ts'],
+        // DOM 단언(toHaveClass·toHaveAttribute)을 등록한다 — 루트 설정은 setup 에서 싣지만 이 설정으로 돌면 빠져 「Invalid Chai property」로 실패했다
+        setupFiles: ['resources/js/vitest.setup.ts'],
         include: ['resources/js/**/*.{test,spec}.{ts,tsx}'],
         exclude: ['node_modules/', 'dist/'],
     },

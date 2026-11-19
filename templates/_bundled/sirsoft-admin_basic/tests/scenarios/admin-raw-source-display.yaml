@@ -1,0 +1,26 @@
+# 시나리오 매니페스트 — 저장된 원문을 보여 주는 관리자 화면은 번역 단계를 건너뛴다
+# 참조: docs/frontend/data-binding-i18n.md 「번역 면제 바인딩 (raw: 접두사)」
+
+feature: admin_raw_source_display
+
+description: >-
+  활동 로그 「지우기 전 본문 보기」가 레이아웃 본문을 일반 글자 바인딩으로 그려, 본문 안의 `$t:error.default.title` 이
+  엔진 번역 단계에서 `error.default.title` 로 접두가 빠져 보였다(저장값은 온전). 화면에서 복사해 되살리면 다국어 키가 깨진다.
+  원문(지우기 전 본문, 변경 전후 값, 본인인증 기록·큐 작업의 JSON)을 그리는 글자 바인딩은 `{{raw:…}}` 로 그린다.
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-raw-source-display.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-raw-source-display-render.test.tsx
+
+axes:
+  surface:
+    - activity_log_snapshot   # 활동 로그 지우기 전 본문·변경 전후 값, 본인인증 기록·큐 작업 JSON(관리자 템플릿 레이아웃 전수 스캔이 함께 덮는다)
+
+effects:
+  - raw_source_keeps_translation_tokens   # 원문을 그리는 글자 바인딩은 raw: 이고, raw 로 평가한 본문은 `$t:` 를 그대로 둔다
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: — 활동 로그 「삭제 직전 기록만 보기」 → 행 펼치기 → 「지우기 전 본문 보기」 에 `"$t:error.default.title"` 가 그대로 보이는지
+  note: |
+    수정 전 red(2026-11-18): 1 failed / 2 — 원문 바인딩 10곳이 raw: 아님(활동 로그 본문 1·변경 전후 4, 본인인증 기록 JSON 4, 큐 작업 JSON 1). 수정 후 green 2 / 2.

@@ -1,0 +1,23 @@
+feature: 레이아웃 편집기 — 슬롯이 둘 이상인 자식 레이아웃의 저장
+
+description: |
+  편집 모드 응답은 부모 레이아웃 트리에 자식 slots 를 끼운 머지 트리다. 저장 마스킹(stripInheritedFromLayoutContent)은
+  머지 트리에서 자식(route) 콘텐츠만 뽑아 slots 로 되돌리는데, 슬롯 래퍼에 슬롯 이름이 없어 슬롯이 둘 이상이면
+  원본 slots 를 그대로 보냈다 — 7.2.0 에 page_top 슬롯이 생긴 홈·게시판 목록·쇼핑 목록·상품 상세·카테고리의 편집이
+  「저장됨」(PUT 200)인데 저장되지 않았다. 서버(LayoutService::replaceSlots)가 편집 모드에서만 슬롯 래퍼에 `__slot` 을 달고,
+  저장 마스킹이 래퍼별로 route 콘텐츠를 모은다. 표식이 없는 응답(옛 서버)은 종전 폴백(원본 보존).
+
+axes:
+  case:
+    - multi_slot_edit_saved        # 다중 슬롯 화면의 편집(data-if 아래 노드 포함)이 슬롯별 저장 본문에 들어간다
+    - multi_slot_legacy_response   # 슬롯 표식 없는 응답은 원본 slots 보존
+    - server_marks_slot_wrapper    # 서버 편집 모드 응답의 슬롯 래퍼에 __slot, 공개 응답에는 없음
+
+effects:
+  - multi_slot_edits_reach_save_payload
+  - multi_slot_without_markers_keeps_original
+  - edit_mode_slot_wrapper_carries_slot_name
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/multiSlotSave.test.ts
+  - tests/Unit/Services/LayoutServiceSlotMarkerTest.php

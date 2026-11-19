@@ -12,7 +12,6 @@
  * @vitest-environment jsdom
  */
 
-import React from 'react';
 import fs from 'node:fs';
 import path from 'node:path';
 import { render, screen, fireEvent, within } from '@testing-library/react';

@@ -122,6 +122,16 @@
 코어 `App\Seo\SeoRenderRequest::matches()` 로 걸러 세지 않습니다 — 세면 글을 쓰자마자 조회수가
 1 이 되고 서버 IP 키가 같은 IP 의 비로그인 방문을 「이미 봄」으로 막습니다.
 
+**회원의 알림 수신 설정**: 알림 수신 여부 4칸(`notify_post_complete`, `notify_post_reply`, `notify_comment`,
+`notify_reply_comment`)은 `module.php` 의 `getFields()` 가 회원 항목 집합(`core.user`)에 선언한 항목입니다
+(예/아니오, `storage = handler`, `ui.group = notifications`, 가입 화면 표시는 기본 꺼짐). 코어가 가입, 관리자 추가,
+관리자 수정, 내 정보 수정의 검증 규칙을 만들고, 회원 저장과 같은 트랜잭션에서 바뀐 칸만
+`Fields\UserNotificationFieldHandler::write()` 로 넘깁니다. 값은 종전과 같이 `board_user_notification_settings` 의
+회원별 한 행입니다. 요청에 실리지 않은 칸은 건드리지 않습니다. `UserNotificationSettingsListener` 는
+`core.user.filter_resource_data` 만 구독해 회원 응답의 최상위 키에 값을 싣습니다. 화면은 템플릿의 회원 항목 공용
+조각이 그리며 이 모듈은 회원 폼에 조각을 넣지 않습니다. 항목 이름과 안내 문구는 `src/lang/{언어}/fields.php` 에 있고
+선언이 그 파일을 직접 읽습니다.
+
 **신고 접수 → 처리**: `User\ReportController` → `StoreReportRequest` → `ReportService::create()`
 (`before_create`→`filter_create_data`→`after_create`) → 신고 접수 관리자 알림 발송. 관리자가
 `Admin\ReportController` 에서 처리(블라인드/삭제/복원)하면 `ReportService` 가 대상 게시글/댓글
@@ -137,8 +147,8 @@
 |---|---|---|
 | 발행 훅 | 169개 | [발행 훅](docs/extension-points.md#발행-훅) |
 | 구독 훅 | 104개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 22개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
-| 레이아웃 확장 | 8개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
+| 훅 리스너 | 26개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 레이아웃 확장 | 6개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 2개 | [스케줄](docs/extension-points.md#스케줄) |
@@ -166,8 +176,9 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:sirsoft-board` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 관리자 템플릿의 빌드된 CSS 에 존재하는지 확인하고 없으면 `resources/css/main.css` 에 `board-` 접두 클래스로 정의한 뒤 `php artisan module:build sirsoft-board --production`
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스를 새로 쓰지 않았으면 빌드 없이 update 만, 새 클래스(`board:` 유틸리티·`board-*`)를 쓰면 `module:build` 로 자기 CSS 를 다시 만든다(「화면 클래스 규약」)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 회원 항목 선언(`getFields()`)을 바꿀 때는 `src/lang/{ko,en}/fields.php` 의 이름과 안내 문구, 값 핸들러(`Fields\UserNotificationFieldHandler::FIELD_KEYS`), 응답 리스너가 같은 키를 쓰는지 함께 확인한다. 알림 칸의 검증이나 저장을 `core.user.*` 훅 리스너에 다시 넣지 않는다(항목 엔진과 겹쳐 두 번 검증하고 두 번 저장한다)
 - [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
 - [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(#148)
 - [ ] 한국어 문구에 「이(가)」「(으)로」처럼 조사를 괄호로 남기거나 자리표시 바로 뒤에 조사를 붙이지 않는다(값의 받침에 따라 틀린 문장이 된다) — 「값이」「상태로」「에 대해」처럼 받침과 무관한 말로 잇는다. 새 FormRequest 에 `in`·`exists`·`required_with` 같은 규칙을 두면 칸별 문구를 주거나 `Concerns\ProvidesFallbackRuleMessages` 를 쓴다(코어 기본 문구는 조사 자리표시를 남긴다). 잠금: `tests/Unit/Lang/KoreanParticlePlaceholderTest.php`
@@ -178,14 +189,16 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan module:update sirsoft-board --force`
 - [ ] 개인정보 보유기간 핸들러(`src/Privacy/`)를 고칠 때는 건수(`preview()`)·대상 명단(`targets()`)·실행(`process()`)이 **같은 조건식**을 쓰는지, 명단 권한(`targetPermissions()` = 설정 읽기 + 게시판 관리 읽기)과 식별 최소 열(본문·첨부 제외)을 지키는지 확인 — 계약 전체는 [코어 개인정보 보유기간 처리 가이드](../../../docs/backend/privacy-retention.md)
 - [ ] 새 `.g7.html` 을 만들었다면 저작 트랙 종료 게이트(`LayoutMarkup` PHPUnit 스위트)의 코퍼스 목록에 등재하고, 파일 헤더·데이터소스·모달·액션 블록 주석(S21, `docs/frontend/layout-markup.md` §10.5)을 채운다 — 굽기·왕복이 초록이어도 이 스위트만 미등재·미주석을 잡는다(2026-09-26 develop-7.1.0 1차 병합 판독: 게시판 개인정보 조치 창이 미등재·미주석으로 들어왔다).
-- [ ] 게시판 이름·글 제목처럼 입력값을 그리는 관리자 화면 글은 넘침을 막는다 — 단추·배지와 같은 flex 줄의 글은 감싼 칸 `min-w-0` + 글 `min-w-0 wrap-anywhere`, 카드의 한 줄 요약(게시판 · 작성자 · 시각)은 `truncate`. `.admin_layout_root` 가 `overflow-hidden` 이라 문서 넘침은 늘 0 이므로 `#right_content_area` 초과분으로 잰다 (#143)
+- [ ] 게시판 이름·글 제목처럼 입력값을 그리는 관리자 화면 글은 넘침을 막는다 — 단추·배지와 같은 flex 줄의 글은 감싼 칸 `board:min-w-0` + 글 `board:min-w-0 board:wrap-anywhere`, 카드의 한 줄 요약(게시판 · 작성자 · 시각)은 `board:truncate`. `.admin_layout_root` 가 `overflow-hidden` 이라 문서 넘침은 늘 0 이므로 `#right_content_area` 초과분으로 잰다 (#143)
 - [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_board_form`·`admin_board_post_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비우고, 생성 모드에서도 폼을 채우는 데이터소스(`boards` form-data·`form_data`)의 `initLocal` 은 `{"_merge":"replace","form":"{{data}}"}` 맵으로 둔다 — 문자열형 `initLocal` 은 엔진이 기존 form 과 깊은 병합해 직전 글의 id·게시판 다국어 이름이 등록 폼에 남는다(트러블슈팅 state-global 사례 7)
+- [ ] 금지 키워드 판정은 코어 `App\Rules\ForbiddenWords::firstMatch()` 가 한다(`BlockedKeywordsRule` 은 게시판 문구만 입힌다, 코어 7.2.0) — 막는 기준을 바꾸려면 코어 규칙의 다른 호출처(회원 닉네임 금지어)까지 함께 본다. 게시판만 다르게 막아야 하면 이 규칙 안에서 따로 구현하지 말고 코어 규칙에 선택 인자를 더한다
 
 ## 6. 금지 패턴
 
 <!-- @intent START -->
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
+| 상대 서명 URL(`temporarySignedRoute(..., absolute: false)`)을 그대로 응답에 싣기 | `AssetUrl::sitePath(URL::temporarySignedRoute(..., absolute: false))` | 상대 URL 생성은 요청의 마운트 접두사를 벗기므로 하위 폴더 설치에서 사이트 밖을 가리킨다. 서명은 접두사를 뺀 경로에 걸리고 검증(`hasValidSignature(absolute: false)`)도 접두사를 뺀 `Request::path()` 로 하므로, 서명된 값 밖에서 붙인 접두사는 서명을 깨지 않는다 |
 | 비밀글 상세만 `SecretContentGate` 로 막고 댓글 목록·첨부 다운로드는 그대로 노출 | 댓글 목록은 부모 글 비밀 여부 확인 후 빈 배열, 첨부 서빙은 403 — 두 경로 모두 게이트 재적용 | 상세 API 하나만 막으면 같은 정보가 형제 엔드포인트로 새어나간다 (KVE-2026-1914) |
 | 첨부 접근 URL 을 저장소 직접 URL(CDN)로 발급 | 게이트를 통과하는 다운로드 서빙 URL(`download_url`)을 돌려준다 | 직접 URL 은 비밀글·삭제글 확인이 걸린 서빙 경로를 통째로 우회한다 — 응답에서 감춰도 그 주소를 아는 쪽은 계속 열 수 있어 회수되지 않는다 |
 | 게시글/댓글 삭제·복원 시 `posts_count`/`comments_count` 를 Service 에서 `increment()`/`decrement()` | 훅(`after_create`/`after_delete`/`after_restore`) 리스너의 count 동기화에 맡긴다 | 직접 증감은 훅 기반 동기화와 이중 집계되어 카운트가 어긋난다 |
@@ -200,7 +213,7 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 | 임시 첨부 조회·연결을 `board_id=0` + `temp_key` 만으로 쿼리하거나 번호 연결 소유를 `created_by` 하나로 판정 | `AttachmentRepository` 의 `whereBoardTemp`(이 게시판 `{slug}/temp/…`) + `findLinkableTempAttachmentIds`(회원=본인, 비회원=비회원 업로드 + 같은 임시 키), 업로드 응답의 `temp_key` | 다른 게시판 임시 첨부가 이어지고 파일까지 옮겨졌고, 비회원끼리 번호만으로 남의 임시 첨부를 가져갔다 |
 | 기존 글에 붙이는 업로드(`post_id`)를 업로드 권한만으로 통과 | 같은 게시판 글(`PostService::getPost`) + `Support\PostModifyGate::allows(..., consume: false)`(사용자)·`admin.posts.write` 스코프(관리자) | 남의 글·다른 게시판 글에 파일이 붙었다. 비회원 글 검증 토큰은 저장(PUT)에서 다시 쓰므로 업로드가 소비하지 않는다 |
 | 임시 첨부를 본경로로 옮긴 뒤 임시 디렉토리 정리(`deleteDirectory`)의 예외를 그대로 던지게 두기 | `AttachmentService::linkTempAttachmentsWithMove()` 처럼 정리만 `try/catch` 로 감싸 경고 로그(`게시판 임시 첨부 디렉토리 정리 실패`)를 남기고 연결 결과는 그대로 반환 | 정리는 부수 작업이다. 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던지고, 그 예외가 글 저장 전체를 「게시글 등록에 실패했습니다」(500)로 되돌려 파일은 본경로·DB 는 임시 경로를 가리키는 어긋남이 남았다(#703). 정리에 실패해 남는 것은 빈 임시 디렉토리뿐이다 |
-| 레이아웃·확장 조각의 메뉴·목록·제목 단추에 폭(`w-full`·`flex-1`)만 주고 가로 정렬을 지정하지 않기 | 왼쪽에 둘 단추는 `justify-start` 를 함께 둔다 | 템플릿 기본 단추가 가운데 정렬을 넣는다(사용자 `Button` 의 `justify-center` 병합, 관리자 `.button`) — 넓어진 단추의 글이 가운데로 간다 |
+| 레이아웃·확장 조각의 메뉴·목록·제목 단추에 폭(`board:w-full`·`board:flex-1`)만 주고 가로 정렬을 지정하지 않기 | 왼쪽에 둘 단추는 `board:justify-start` 를 함께 둔다 | 템플릿 기본 단추가 가운데 정렬을 넣는다(사용자 `Button` 의 `justify-center` 병합, 관리자 `.button`) — 넓어진 단추의 글이 가운데로 간다 |
 | 본문 미디어(`collection=content_media`)의 업로드·저장 동기화·영구 삭제를 게시판 코드에서 따로 구현하거나 행·파일을 직접 지우기 | 코어 본문 미디어 골격을 거친다 — `Services\ContentMedia\BoardContentMediaService`(업로드·동기화·`purgeRows`·`pruneStale`)와 어댑터 `BoardContentMediaStore`, 호출자 시그니처는 `PostContentMediaService`. 서빙 라우트 이름을 바꾸면 `BoardContentMediaStore::SERVE_ROUTE` 와 `BoardServiceProvider` 의 출처 등록(`ContentMediaRegistrar::register`)을 함께 맞춘다 | 골격을 건너뛰면 공용 훅 `core.content_media.*`(업로드·영구 삭제)가 발화하지 않아 그 훅을 구독한 플러그인이 게시판 미디어만 놓친다. 출처 등록이 빠지면 코어가 기본 출처 패턴을 두지 않으므로 본문의 동영상·오디오가 화면·봇 정화에서 지워진다(#887) |
 | 새 쿨다운·도배 방지 검사를 `has()` 로 확인하고 저장은 작성 성공 뒤 Service 에서 `put()` | `CooldownRule` 처럼 검증 시점에 같은 키를 `add()` 로 원자적으로 선점하고, 성공하면 Service 가 덮어쓰고 실패한 요청은 응답 뒤 반납한다 | 확인과 저장 사이에 들어온 동시 요청이 모두 검사를 통과해 쿨다운을 켠 게시판에 글이 여러 개 써졌다(#161). 캐시 오류면 통과시킨다 — 도배 방지가 캐시 장애로 글쓰기 전체를 막으면 안 된다 |
 <!-- @intent END -->
@@ -210,10 +223,10 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 282개 | `modules/_bundled/sirsoft-board/tests` |
-| Vitest | 102개 | `vitest.config.ts` |
-| Playwright | 39개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 194개 | `tests/scenarios` |
+| PHPUnit | 301개 | `modules/_bundled/sirsoft-board/tests` |
+| Vitest | 111개 | `vitest.config.ts` |
+| Playwright | 41개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 230개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
@@ -259,26 +272,26 @@ cd modules/_bundled/sirsoft-board && npm run test:e2e -- specs/<대상>.spec.ts
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
 
-## 확장 조각의 CSS 클래스 규약
+## 화면 클래스 규약 — 이 모듈이 자기 CSS 를 싣는다
 
-resources/extensions/ 아래 의 조각은 **다른 패키지의 화면 안에서** 그려진다. 그래서 여기 쓰는
-클래스는 그 화면을 소유한 **템플릿의 CSS 에 실재해야** 한다.
+관리자 레이아웃과 `resources/extensions/` 조각(다른 패키지 화면 안에서 그려지는 회원 상세·회원 수정·대시보드·쇼핑몰 문의 게시판 설정)은 **템플릿 CSS 에 기대지 않는다.** 모든 클래스는 이
+모듈 앞글자를 쓰고, 규칙은 이 모듈의 `dist/css/module.css` 에 실재한다(manifest `assets.css.namespace: board`).
 
-두 가지를 지킨다.
+1. **배치·색 유틸리티는 `board:` 접두 Tailwind 로 쓴다**(`board:flex board:dark:bg-gray-800`).
+   Tailwind 는 이 모듈의 작성 도구일 뿐이고(preflight 없음), `resources/css/main.css` 맨 앞 생성 블록이
+   `resources/{layouts,extensions,js}` 를 훑어 쓰인 클래스만 만든다. 새 클래스를 쓰면
+   `php artisan module:build sirsoft-board --production` 으로 CSS 를 다시 만들고 update 한다 — 빌드하지 않으면
+   그 스타일만 조용히 빠진다. 앞글자 없는 `flex` 를 쓰면 정적 검사가 막는다.
+2. **템플릿 의미 클래스는 `board-*` 사본을 쓴다**(`board-btn`·`board-input`·`board-admin-card`).
+   정의는 `resources/css/g7-extension.generated.css`(생성 파일, 손으로 고치지 않는다)의 가장 낮은 칸
+   `@layer g7-extension` 에 있어 템플릿이 같은 이름을 덮을 수 있다. 템플릿 의미 클래스를 새로 가져오려면
+   원래 이름으로 적은 뒤 `node scripts/extension-css/convert-layout-classes.mjs modules/_bundled/sirsoft-board` 를
+   다시 돌린다(같은 입력이면 결과가 같다).
+3. **이 모듈 고유의 호버·다크 짝과 의미 색은 손 CSS 다** — `resources/css/main.css` 의 생성 블록 아래.
+   호버·다크 짝은 층 없이 두고, 의미 색 `board-tone-*` 는 `@layer g7-extension` 안에 둔다(색만 맡는다).
+   템플릿 표지 `group` 대신 레이아웃은 `board:group`, 손 CSS 선택자는 `.board\:group` 을 쓴다.
+4. **다크 모드는 `board:dark:` 변형이나 중립 표식(`[data-g7-color-scheme="dark"]`)으로 쓴다.** 템플릿 표지
+   `.dark` 를 손 CSS 선택자에 쓰지 않는다.
 
-1. **템플릿의 의미 클래스를 쓰지 않는다.** `flex-start` · `text-heading` · `section-heading-md`
-   같은 이름의 규칙은 `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `@layer components` 에만
-   있다. 사용자 템플릿(`sirsoft-basic`)에는 그 규칙이 없어 `display:flex` 같은 기본 배치까지
-   통째로 사라진다. 평범한 Tailwind 유틸로 쓴다(`flex items-start`).
-   슬롯 확장(`extension-point=`)은 한 조각이 관리자·사용자 양쪽에 들어가므로, 어느 한쪽의
-   어휘를 쓰면 **반드시** 다른 쪽이 깨진다.
-
-2. **새 유틸은 safelist 에 실린다.** 두 템플릿 모두 Tailwind 가 레이아웃을 스캔하지 않는다 —
-   `sirsoft-admin_basic` 은 `templates/_bundled/sirsoft-admin_basic/scripts/extract-safelist.cjs` 가(확장 조각 포함) 자동 생성하고,
-   `sirsoft-basic` 은 `templates/_bundled/sirsoft-basic/src/styles/safelist.txt` 를 손으로 단다. 새 클래스를 쓴 뒤에는
-   `php artisan template:build <템플릿>` 로 CSS 를 다시 만든다.
-
-이 규약을 어겨도 **빌드는 성공하고 경고도 없으며 테스트도 전부 초록이다** — 사람이 브라우저를
-열어야만 드러난다(2026-09-21, 마이페이지 「내 정보 수정」의 확장 카드에서 체크박스가 설명 위로
-떨어져 있었다). 그래서 확장 조각이 쓰는 클래스가 대상 템플릿의 CSS 에 실제로 만들어졌는지를
-정적 검사가 대조한다.
+정적 검사가 레이아웃·조각의 클래스 앞글자와 `dist/css` 실재를, CSS 선택자의 앞글자와 `.dark` 사용을 대조한다.
+규약 전문은 `docs/extension/module-assets.md` 「확장 CSS 자기 공급 규약」이다.

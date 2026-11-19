@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 입력 axis 의 완전 cross-product(5축)는 조합 폭발이라 대표 조합만 마킹한다. effects 축은 면제하지 않는다 — 모든 effect 가 테스트 마킹으로 도달해야 한다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#659 입력 axis 의 완전 cross-product(5축)는 조합 폭발이라 대표 조합만 마킹한다. effects 축은 면제하지 않는다 — 모든 effect 가 테스트 마킹으로 도달해야 한다.
 
 feature: SEO 봇 캐시 상한 (키 정규화 · 렌더 예산 · 저장 규모 · 통계 기록)
 

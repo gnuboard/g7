@@ -78,9 +78,9 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 제공 컴포넌트 | 134개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
-| 레이아웃 | 191개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
-| 전용 핸들러 | 23개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
+| 제공 컴포넌트 | 135개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
+| 레이아웃 | 223개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
+| 전용 핸들러 | 29개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 0개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
 <!-- @generated:extension-points-summary END -->
 
@@ -121,6 +121,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 - [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_role_form`·`admin_user_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비우고 `state.form` 기본값을 다시 쓴다 — 엔진은 `layout_name` 이 바뀔 때만 `_local` 을 비우므로 수정 → 등록 SPA 이동에서 직전 값이 등록 폼에 남는다. 새 폼 레이아웃을 같은 구조로 만들면 같은 액션을 둔다(트러블슈팅 state-global 사례 7)
 - [ ] 사이트·회원·게시판 이름처럼 입력값을 그리는 글은 넘침을 막는다 — 모바일 상단 좌측 칸은 `min-w-0 flex-1`(이름 `truncate`, 우측 `flex-shrink-0`), 블록 제목·설명은 `break-words`, 이름·이메일 같은 좁은 칸은 `truncate` + 폭 상한. `.admin_layout_root` 가 `overflow-hidden` 이라 문서 넘침은 늘 0 이므로 우측 묶음 clip 이나 `#right_content_area` 초과분으로 잰다 (#143)
 - [ ] 확장·언어팩 작업(설치·활성화·업데이트·레이아웃 갱신) 성공 갈래를 새로 만들면 응답 `data.warnings` 를 `_global.lifecycleWarnings` 에 담고(`lifecycleWarningsOpen` 은 false) 경고가 있을 때만 `lifecycle_warnings_modal` 을 연다 — 그 화면에 `layouts/partials/_modal_lifecycle_warnings.g7.html` 을 포함한다. 항목 `level` 이 `notice`(실패 아닌 안내)뿐이면 창이 안내 제목·파란 상자로 바뀐다(코어 7.1.3). 항목 `cause` 가 `declaration`(확장 manifest 선언 형식 오류 — 다시 실행해도 같음)이면 항목 아래에 「확장 개발자가 고칠 선언」 안내가 붙고, 실패가 모두 그런 항목이면 「다시 실행하세요」 문구 대신 `declaration_description` 을 쓴다(코어 7.1.5). `admin-extension-lifecycle-warnings-modal.test.tsx` 가 성공 갈래 전수를 잠근다
+- [ ] 확장(모듈·플러그인·템플릿)·언어팩·코어 업데이트의 수명주기 단추(설치·켜기/끄기·업데이트·삭제·시작)를 새로 만들면 검수 서버(셸 설정 `_global.appConfig?.runtime_role === 'stage'`)에서 잠근다 — 단추는 `disabled` + `title`(`$t:admin.stage_role.locked_hint`), 카드 항목은 `disabled`·`title`/`disabledReason`. 서버는 그 API 를 409 `errors.stage_role_locked` 로 막으므로 화면이 먼저 알린다(#888). `admin-stage-role-gating.test.tsx` 가 지금 자리들을 잠근다
 - [ ] `_admin_base` 자식 레이아웃에 progressive 데이터소스를 추가하면 `transition_overlay.wait_for` 에도 같은 ID 를 넣는다 — 레이아웃 테스트(`admin-base-transition-overlay`)가 누락을 잡는다
 
 ## 6. 금지 패턴
@@ -140,6 +141,8 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | `CodeEditor` 에서 심기(prime)보다 먼저 `<Editor>` 를 렌더하거나 `loader.init()` 호출 | 심기가 끝난 뒤에 렌더·init 한다(`primed` 게이트) | `<Editor>` 는 렌더되자마자 자기 effect 에서 `init()` 을 부른다. 먼저 불리면 라이브러리가 **자기 AMD 로더 스크립트를 따로 주입**해 `_amdLoaderGlobal` 이 두 번 선언되고 그 판의 `require` 가 통째로 죽는다 (S3-D12) |
 | `CodeEditor` 의 중복 심기 가드를 모듈 수준 변수로 선언 | `window.__g7MonacoPriming` 에 둔다 | 이 번들은 화면마다 따로 평가될 수 있어 모듈 변수로는 같은 판에서 두 번 도는 것을 못 막는다 (실측: 로더 스크립트 태그가 3개까지 늘었다) |
 | 컴포넌트·핸들러가 `fetch` 로 직접 요청하며 대상 출처를 보지 않고 토큰(Bearer·XSRF)을 싣거나, prop 으로 받은 주소로 곧장 `location.href` 이동 | `src/support/sameOriginRequest.ts` 의 `isSameOriginRequest(url)` 이 true 일 때만 토큰을 싣고 이동한다 | 주소가 레이아웃 prop·응답 본문이면 레이아웃 편집 권한만으로 관리자 토큰을 외부로 보내거나 `javascript:` 를 실행시킬 수 있다(KVE-2026-2350) |
+| 크기 변형 클래스(`.btn-sm` 등)를 기본 클래스(`.btn`)보다 앞에 선언 | 변형은 기본 바로 뒤에 둔다 | 같은 `@layer components`·같은 명시도라 원문 순서가 승패를 정한다 — 앞에 두면 `btn btn-sm` 이 늘 기본 여백으로 그려진다. 확장 화면 CSS 도 이 순서를 복사한다. 가드: `src/__tests__/styles/sizeModifierOrder.test.ts` |
+| 레이아웃에서 폭에 따라 모양이 바뀌는 의미 클래스(`grid-2col-responsive`·`filter-row`·`page-title`·`admin-page-content-responsive` 등, 정의 안에 `sm:`·`md:`·`lg:`)를 쓰기 | 기본 모양은 접두 없는 유틸(또는 폭과 무관한 의미 클래스 — 필터 줄 라벨은 `filter-field-label`, 곁 라벨 잇기 표식을 겸한다), 폭별 모양은 엔진 `responsive` 구간 값 | 폭 판정이 CSS 미디어 쿼리와 엔진 두 곳으로 갈려 편집기 미리보기 폭·검색 봇 렌더와 어긋난다. 그 클래스들(`filter-label`, 층 밖 폭 미디어의 `page-header`·`page-header-padded`·`page-header-fullbleed`·`page-actions`·`input-split`·`grid-cols-1-lg-3`·`col-span-1-lg`·`col-span-2-lg`·`table-desktop`·`responsive-grid` 포함)은 사이트에서 직접 고친 레이아웃과 확장 화면 CSS 사본의 호환을 위해 폭 부분까지 폐지 예정으로 남아 있고(감사 면제 표식), 다음 출시 이후 제거된다 |
 | 메뉴·목록 단추에 `w-full`·`flex-1` 로 폭을 주면서 가로 정렬을 지정하지 않기 | 왼쪽에 둘 단추는 `justify-start` 를 함께 둔다(`text-left` 만으로는 부족) | 기본 `Button` 의 `.button` 클래스가 `inline-flex items-center justify-center` 라, 넓어진 단추의 글·아이콘이 가운데로 간다 — 언어 선택·다국어 입력 목록이 이렇게 가운데로 갔다 |
 <!-- @intent END -->
 
@@ -188,6 +191,9 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 규칙**으로 갈아 끼우고(앞 종류의 `value`·`display_names`·`relation` 은 버린다 — 남기면 회원 UUID 가 역할로
 저장돼 수신자 0명), 관련 사용자면 정의가 선언한 첫 `relation` 을 채운다(서버가 선언 안의 값만 받는다).
 「행위자 제외」는 역할↔특정 회원 사이에서만 이어 간다. 이 규칙을 바꾸면 네 벌을 함께 바꾼다.
+수신자 유형 선택지(값 칸 없는 「사이트 관리자 이메일」 `site_admin_email` 과 고르면 뜨는 안내 포함, #888)와 정의 탭 받는 사람 요약도
+같은 목록이어야 한다 — 개인정보 동의(`sirsoft-gdpr`)·소셜 로그인(`sirsoft-social_login`) 플러그인 사본까지 다섯 벌을 함께 바꾼다
+(문구는 이 템플릿의 `admin.settings.notification_definitions.recipients.*` 키를 그대로 쓴다).
 
 ## 7. 테스트 실행
 
@@ -195,9 +201,9 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 466개 | `vitest.config.ts` |
-| Playwright | 30개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 131개 | `tests/scenarios` |
+| Vitest | 583개 | `vitest.config.ts` |
+| Playwright | 41개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 225개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

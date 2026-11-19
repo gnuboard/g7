@@ -1,0 +1,78 @@
+feature: 트러블슈팅 회귀 — setState, init_actions, dataKey 자동 바인딩, deepMergeState, 3모드 merge, setLocal 이중 저장소
+
+description: |
+  troubleshooting-state-setstate.test.ts 의 해결된 트러블슈팅 사례를 잠그는 회귀 시험이다.
+  사례마다 원인이 달라 사례끼리 곱할 입력 축이 없다. 축 case 는 문서의 사례(시험 파일의 가장 안쪽 describe) 하나씩이고,
+  효과는 그 사례가 지키는 해결 성질 하나씩이다(같은 사례의 시험 여럿은 같은 칸과 같은 효과를 서로 다른 각도로 잠근다).
+
+axes:
+  case: [tab_navigation_highlight, sequence_multi_setstate, shared_root_dot_keys, sequence_if_condition, dot_key_null, nested_array_item, sequence_errors_clear, custom_change_event, global_dot_notation, close_modal_order, custom_handler_on_success, sequence_local_sync, auto_binding_change_race, init_setstate_local, multi_result_to, init_underscore_local, composite_callback_render, template_handler_unknown, datakey_global, datakey_setstate_forced, child_setlocal_parent_form, setlocal_open_modal_dynamic, dual_store_spec, validation_errors_merge, sparse_array_merge, deep_merge_default, merge_replace, merge_shallow, merge_default_deep, merge_mode_comparison, merge_isolated, merge_mode_metadata, merge_parent_scope, forced_fields_replace, setlocal_stale_dynamic_state, remove_matching_leaf_keys, sequence_forced_fields_overwrite, callback_action_preeval, async_handler_context_state, set_parent_local_array, setstate_expression_key, setlocal_array_overwrite, shallow_copy_mutation, raw_value_on_change, get_local_snapshot_fallback, real_component_context_changed_fields, modal_setlocal_pollution, init_conditions, local_init_child_effect_stale, flatten_leaf_paths, auto_binding_registry_refcount, auto_promotion_decision, registry_reset_on_navigation, local_init_temp_key, local_init_layout_sync, local_init_normal_cases, local_init_dual_store, event_prop_name, dot_setstate_canonical_sync]
+
+effects:
+  - global_setstate_then_navigate_applies_immediately
+  - single_setstate_applies_all_changes
+  - setstate_shared_root_dot_keys_applied
+  - sequence_runs_only_true_if_actions
+  - dot_key_null_sets_without_error
+  - nested_item_update_keeps_array
+  - cleared_errors_stay_null
+  - custom_change_event_calls_setstate
+  - global_dot_notation_keeps_existing_state
+  - setstate_runs_before_close_modal
+  - on_success_defined_as_array
+  - sequence_local_sync_preserved_by_setstate
+  - setstate_merges_on_pending_local_state
+  - init_setstate_updates_component_state
+  - separate_result_to_keys_do_not_overwrite
+  - init_underscore_local_equals_local
+  - composite_callback_setstate_renders
+  - template_handlers_registered_before_init
+  - datakey_supports_local_only
+  - setstate_accumulates_forced_local_fields
+  - child_setlocal_preserves_parent_form
+  - setlocal_includes_dynamic_state
+  - dual_store_behavior_matches_spec
+  - errors_replaced_not_deep_merged
+  - merge_never_creates_sparse_array
+  - deep_merge_recurses_objects_replaces_arrays
+  - merge_replace_discards_existing_state
+  - merge_shallow_overwrites_top_level_only
+  - merge_defaults_to_deep
+  - merge_modes_differ_as_specified
+  - merge_mode_passed_to_isolated_context
+  - merge_mode_metadata_only_for_non_deep
+  - merge_mode_passed_to_parent_scope
+  - replace_resets_forced_local_fields
+  - setlocal_clears_stale_dynamic_state
+  - remove_matching_leaf_keys_prunes_payload_leaves
+  - sequence_custom_handler_state_survives_forced_fields
+  - action_definitions_not_pre_evaluated
+  - handler_context_state_preferred_over_get_local
+  - numeric_key_merge_keeps_array
+  - expression_key_in_setstate_warns
+  - setlocal_merges_override_keys_only
+  - new_references_needed_for_change_detection
+  - raw_value_callback_skips_event_handler
+  - get_local_falls_back_to_last_snapshot
+  - component_setstate_receives_changed_fields_only
+  - modal_setlocal_keeps_global_local_clean
+  - init_actions_carry_conditions
+  - layout_effect_syncs_api_data_before_child_effects
+  - flatten_leaf_paths_lists_leaf_paths
+  - auto_binding_registry_counts_mounts
+  - render_false_promotes_only_registered_paths
+  - registry_resets_on_route_change
+  - local_init_keeps_init_action_temp_key
+  - local_init_presyncs_api_data
+  - local_init_normal_cases_unchanged
+  - local_init_baseline_keeps_dual_store_in_sync
+  - event_key_normalizes_prop_and_payload
+  - dot_setstate_syncs_canonical_local
+
+test_files:
+  - resources/js/core/template-engine/__tests__/troubleshooting-state-setstate.test.ts
+
+notes: |
+  2026-11-09(#869) tsc 오류를 정리하며 이 파일을 손대자 audit `test-scenario-reverse-mapping` 의 선행 부채(시험별 매핑 누락)가
+  드러나 이 매니페스트로 해소했다. 시험 동작은 바꾸지 않았다(마킹 주석만). 선례는 troubleshooting-state-advanced.yaml(#757).
+  사례 40(리사이즈 후 저장 시 편집기 본문 보존) 시험은 editor-resize-save-body-integrity.yaml 의 효과로 표식한다.

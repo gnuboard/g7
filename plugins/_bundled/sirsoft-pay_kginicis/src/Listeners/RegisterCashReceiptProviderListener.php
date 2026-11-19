@@ -6,8 +6,10 @@ namespace Plugins\Sirsoft\PayKginicis\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\OrderAccess;
 use Modules\Sirsoft\Ecommerce\Enums\CashReceiptType;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Plugins\Sirsoft\PayKginicis\Concerns\DescribesRefundFailure;
 use Plugins\Sirsoft\PayKginicis\Concerns\SanitizesPgResponse;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
@@ -20,6 +22,7 @@ use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
  */
 class RegisterCashReceiptProviderListener implements HookListenerInterface
 {
+    use DescribesRefundFailure;
     use SanitizesPgResponse;
 
     /**
@@ -44,6 +47,15 @@ class RegisterCashReceiptProviderListener implements HookListenerInterface
         'mid',
         'MID',
     ];
+
+    /**
+     * RegisterCashReceiptProviderListener 생성자
+     *
+     * @param  OrderAccess  $orders  이커머스 공개 주문 계약(구매자 연락처 조회)
+     */
+    public function __construct(
+        private readonly OrderAccess $orders,
+    ) {}
 
     /**
      * 구독할 훅 매핑 반환
@@ -120,6 +132,8 @@ class RegisterCashReceiptProviderListener implements HookListenerInterface
         $taxFree = (int) ($payload['tax_free_amount'] ?? 0);
         $vat = isset($payload['vat_amount']) ? (int) $payload['vat_amount'] : null;
         [$supplyPrice, $tax] = $this->splitSupplyAndTax($amount, $taxFree, $vat);
+        // 훅이 넘긴 주문 Model 은 읽기 전용이다 — 관계(결제 행, 배송지)를 읽지 않고 공개 계약으로 구매자 연락처를 받는다.
+        $buyer = $this->orders->findBuyerContact((string) $order->order_number);
 
         try {
             $response = app(KgInicisApiService::class)->issueCashReceipt([
@@ -129,9 +143,9 @@ class RegisterCashReceiptProviderListener implements HookListenerInterface
                 'supplyPrice' => $supplyPrice,
                 'tax' => $tax,
                 'goodName' => (string) ($payload['order_name'] ?? ''),
-                'buyerName' => $this->resolveBuyerName($order),
-                'buyerEmail' => $this->resolveBuyerEmail($order),
-                'buyerTel' => $this->resolveBuyerTel($order),
+                'buyerName' => (string) ($buyer?->name ?? ''),
+                'buyerEmail' => (string) ($buyer?->email ?? ''),
+                'buyerTel' => (string) ($buyer?->phone ?? ''),
             ]);
 
             $resultCode = $response['resultCode'] ?? '';
@@ -180,7 +194,9 @@ class RegisterCashReceiptProviderListener implements HookListenerInterface
             return [
                 'success' => false,
                 'error_code' => 'PG_API_ERROR',
-                'error_message' => $e->getMessage(),
+                // 이 사유는 현금영수증 이력에 남아 관리자 주문 상세 결제 정보·구매자 응답에 그대로 보인다 —
+                // 결제대행사 거절 사유만 그대로 싣고 통신·내부 오류 원문은 위 로그에만 남긴다(#858).
+                'error_message' => $this->pgFailureReason($e, 'cash_receipt.pg_failed'),
                 'receipt_key' => null,
                 'receipt_url' => null,
                 'issue_number' => null,
@@ -233,7 +249,9 @@ class RegisterCashReceiptProviderListener implements HookListenerInterface
             return [
                 'success' => false,
                 'error_code' => 'PG_API_ERROR',
-                'error_message' => $e->getMessage(),
+                // 이 사유는 현금영수증 이력에 남아 관리자 주문 상세 결제 정보·구매자 응답에 그대로 보인다 —
+                // 결제대행사 거절 사유만 그대로 싣고 통신·내부 오류 원문은 위 로그에만 남긴다(#858).
+                'error_message' => $this->pgFailureReason($e, 'cash_receipt.pg_failed'),
                 'receipt_key' => $receiptKey,
                 'raw_response' => null,
             ];
@@ -275,44 +293,5 @@ class RegisterCashReceiptProviderListener implements HookListenerInterface
         $supplyPrice = $amount - $tax;
 
         return [$supplyPrice, $tax];
-    }
-
-    /**
-     * 구매자명을 해석합니다. (결제 → 주문 배송지 순)
-     *
-     * @param  Order  $order  주문
-     * @return string 구매자명
-     */
-    private function resolveBuyerName(Order $order): string
-    {
-        return (string) ($order->payment?->buyer_name
-            ?? $order->shippingAddress?->orderer_name
-            ?? '');
-    }
-
-    /**
-     * 구매자 이메일을 해석합니다.
-     *
-     * @param  Order  $order  주문
-     * @return string 구매자 이메일
-     */
-    private function resolveBuyerEmail(Order $order): string
-    {
-        return (string) ($order->payment?->buyer_email
-            ?? $order->shippingAddress?->orderer_email
-            ?? '');
-    }
-
-    /**
-     * 구매자 연락처를 해석합니다.
-     *
-     * @param  Order  $order  주문
-     * @return string 구매자 연락처
-     */
-    private function resolveBuyerTel(Order $order): string
-    {
-        return (string) ($order->payment?->buyer_phone
-            ?? $order->shippingAddress?->orderer_phone
-            ?? '');
     }
 }

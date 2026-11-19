@@ -164,6 +164,13 @@ Authorization: Bearer {YOUR_TOKEN}
 **활성 상태일 때만** 존재합니다. 비활성화·제거된 확장의 엔드포인트는 404 를 반환하며, 이는 권한
 문제가 아니라 라우트가 등록되지 않은 상태입니다. 확장을 업데이트하는 동안에도 잠시 같은 상태가 됩니다.
 
+경로의 숫자 번호 자리(`{id}`·`{historyId}`·`{version}` 등)는 라우트 제약(`whereNumber`)으로 숫자만 받습니다. 숫자가 아닌 값은 라우트가 없는 것과 같아 404 입니다 — 새 라우트도 컨트롤러가 `int` 로 받는 자리에는 제약을 둡니다(라우트 계약 시험 `tests/Feature/Routing/NonNumericRouteIdNotFoundTest.php`).
+
+위 상태코드를 포함해 `api/*` 의 HTTP 예외(404·403·503 등)는 요청의 `Accept` 헤더와 무관하게
+언제나 같은 JSON 봉투(`{ "success": false, "message": … }`)로 응답합니다 — 자산 요청처럼
+`Accept: image/*` 로 오는 경우에도 HTML 오류 페이지가 아니라 JSON 이며, 예외가 지정한 응답 헤더
+(`Retry-After` 등)는 그대로 승계됩니다.
+
 428 응답은 `error_code: "identity_verification_required"` 와 함께 `verification` 객체를 반환합니다.
 클라이언트는 이 값으로 본인인증 화면을 띄운 뒤 원래 요청을 재시도합니다.
 
@@ -196,9 +203,10 @@ location ~* \.(js|css|json)$ { expires max; access_log off; }
 | `/api/layouts/{tpl}/{layout}.json` | `/api/layouts/{tpl}/{layout}` | 접미사 제거 |
 | `/api/modules/bundle.js` | `/api/modules/bundle/js` | 접미사를 경로 세그먼트로 (js/css 구분이 필요) |
 | `/api/templates/assets/{id}/js/a.js` | `/api/templates/assets/{id}?file=js/a.js` | 파일 경로를 `file` 쿼리로 (경로가 곧 파일명이라 제거 불가) |
+| `/api/system/public-storage/images/a.png` | `/api/system/public-storage?file=images/a.png` | 동일 — 공개 스토리지 대체 서빙 ([system.md](system.md) 참조) |
 
 `file` 쿼리 형태가 안전한 이유는 nginx 의 location 정규식이 쿼리스트링을 제외한 경로에만 매칭되기 때문입니다.
-확장자 없는 형태에도 경로 탈출 방어와 확장자 화이트리스트가 동일하게 적용됩니다.
+확장자 없는 형태에도 경로 탈출 방어가 동일하게 적용되며, 확장 자산 통로(모듈·플러그인·템플릿)에는 확장자 화이트리스트도 함께 걸립니다. 공개 스토리지는 사용자가 올린 파일을 내주는 통로라 화이트리스트를 두지 않고, 확장자 표에 없는 유형은 `application/octet-stream` 으로 고정하며 점(`.`)으로 시작하는 경로 구성요소를 404 로 거부합니다.
 
 두 형태는 **모두 영구 유지**됩니다. 확장자 형태를 제거하면 URL 을 하드코딩한 서드파티 확장이 깨집니다.
 
@@ -277,10 +285,25 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 게시글 목록·상세, 댓글 목록, 게시판 상세, 상품평 목록처럼 인증 없이 열람되는 경로가 이에 해당합니다.
 회원 이메일이 필요한 화면은 관리자 엔드포인트를 사용하세요.
 
+### 회원 이름과 실명 보조 (7.2.0)
+
+응답에 실리는 회원 이름(`user.name`, `creator.name`, `author.name`, `member.name`, `created_by_name` 등)은 그 자리의 **표시 이름**입니다.
+운영자가 환경설정의 회원 탭에서 자리(영역)마다 정한 방식으로 계산하며, 설정을 바꾸지 않은 사이트에서는 종전처럼 회원 이름입니다.
+관리자 엔드포인트는 관리자 화면 영역, 그 밖의 엔드포인트는 사이트 기본 영역(또는 그 기능의 영역)을 씁니다.
+
+실명은 별도 키 `real_name` 으로만 옵니다. 다음을 모두 만족할 때만 키가 실리고, 아니면 키 자체가 없습니다.
+
+- 관리자 엔드포인트의 응답이다.
+- 요청한 관리자에게 회원 조회 권한(`core.users.read`)이 있다. 권한 범위가 「본인」이나 「소유 역할」이면 자기 자신의 실명만 온다.
+- 실명이 비어 있지 않고 표시 이름과 다르다. 탈퇴한 회원이 아니다.
+
+이름 키가 `name` 이 아닌 응답은 같은 꼬리말의 키를 씁니다(`created_by_name` 과 `created_by_real_name`, `requester_name` 과 `requester_real_name`).
+회원 자신의 정보를 다루는 응답(관리자 회원 목록과 상세, 본인 응답)의 `name`, `nickname` 은 원본 그대로이고 표시 이름은 `display_name` 으로 함께 옵니다.
+
 ## 코어 API 레퍼런스
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 41 · **엔드포인트 수**: 364
+- **문서 수**: 51 · **엔드포인트 수**: 413
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
@@ -288,7 +311,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | [analytics.md](analytics.md) | `analytics` | 28 |
 | [attachment.md](attachment.md) | `attachment` | 1 |
 | [attachments.md](attachments.md) | `attachments` | 4 |
-| [auth.md](auth.md) | `auth` | 18 |
+| [auth.md](auth.md) | `auth` | 19 |
 | [avatar.md](avatar.md) | `avatar` | 2 |
 | [broadcasting.md](broadcasting.md) | `broadcasting` | 1 |
 | [changelog.md](changelog.md) | `changelog` | 1 |
@@ -297,14 +320,21 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | [csp-report.md](csp-report.md) | `csp-report` | 1 |
 | [dashboard.md](dashboard.md) | `dashboard` | 5 |
 | [extensions.md](extensions.md) | `extensions` | 8 |
+| [extension-trust-keys.md](extension-trust-keys.md) | `extension-trust-keys` | 3 |
+| [favicon.md](favicon.md) | `favicon` | 1 |
+| [fields.md](fields.md) | `fields` | 3 |
+| [field-sets.md](field-sets.md) | `field-sets` | 7 |
+| [frontend-config.md](frontend-config.md) | `frontend-config` | 2 |
 | [identity.md](identity.md) | `identity` | 27 |
 | [language-packs.md](language-packs.md) | `language-packs` | 15 |
-| [layouts.md](layouts.md) | `layouts` | 2 |
+| [layouts.md](layouts.md) | `layouts` | 4 |
 | [license.md](license.md) | `license` | 1 |
 | [locales.md](locales.md) | `locales` | 1 |
 | [me.md](me.md) | `me` | 3 |
+| [member-fields.md](member-fields.md) | `member-fields` | 4 |
+| [member-notifications.md](member-notifications.md) | `member-notifications` | 3 |
 | [menus.md](menus.md) | `menus` | 10 |
-| [modules.md](modules.md) | `modules` | 25 |
+| [modules.md](modules.md) | `modules` | 29 |
 | [notification-channels.md](notification-channels.md) | `notification-channels` | 1 |
 | [notification-definitions.md](notification-definitions.md) | `notification-definitions` | 5 |
 | [notification-logs.md](notification-logs.md) | `notification-logs` | 3 |
@@ -315,15 +345,18 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | [plugins.md](plugins.md) | `plugins` | 27 |
 | [privacy.md](privacy.md) | `privacy` | 3 |
 | [profile.md](profile.md) | `profile` | 4 |
+| [queue.md](queue.md) | `schedules/queue` | 10 |
+| [required-fields.md](required-fields.md) | `required-fields` | 1 |
 | [roles.md](roles.md) | `roles` | 7 |
-| [schedules.md](schedules.md) | `schedules` | 12 |
-| [search.md](search.md) | `search` | 1 |
+| [schedules.md](schedules.md) | `schedules` | 14 |
 | [search-history.md](search-history.md) | `search-history` | 6 |
-| [seo.md](seo.md) | `seo` | 5 |
-| [settings.md](settings.md) | `settings` | 18 |
-| [system.md](system.md) | `system` | 2 |
-| [templates.md](templates.md) | `templates` | 57 |
-| [users.md](users.md) | `users` | 12 |
+| [search.md](search.md) | `search` | 1 |
+| [seo.md](seo.md) | `seo` | 6 |
+| [settings.md](settings.md) | `settings` | 24 |
+| [system.md](system.md) | `system` | 5 |
+| [templates.md](templates.md) | `templates` | 70 |
+| [thumbnails.md](thumbnails.md) | `thumbnails` | 3 |
+| [users.md](users.md) | `users` | 13 |
 | [verify-password.md](verify-password.md) | `verify-password` | 1 |
 
 <!-- @generated:end -->
@@ -333,25 +366,29 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 > 각 확장이 자신의 API 문서를 소유합니다. 아래 표는 자동 생성됩니다.
 
 <!-- @generated:start:api-readme-extensions -->
-- **확장 수**: 16 · **엔드포인트 수**: 464
+- **확장 수**: 20 · **엔드포인트 수**: 745
 
 | 확장 | 유형 | API 문서 목차 | 문서/엔드포인트 |
 | --- | --- | --- | --- |
 | `gnuboard7-hello_module` | 모듈 | [docs/api/](../../../modules/_bundled/gnuboard7-hello_module/docs/api/README.md) | 1 / 7 |
-| `sirsoft-board` | 모듈 | [docs/api/](../../../modules/_bundled/sirsoft-board/docs/api/README.md) | 12 / 94 |
-| `sirsoft-ecommerce` | 모듈 | [docs/api/](../../../modules/_bundled/sirsoft-ecommerce/docs/api/README.md) | 36 / 248 |
-| `sirsoft-page` | 모듈 | [docs/api/](../../../modules/_bundled/sirsoft-page/docs/api/README.md) | 2 / 17 |
+| `sirsoft-board` | 모듈 | [docs/api/](../../../modules/_bundled/sirsoft-board/docs/api/README.md) | 14 / 111 |
+| `sirsoft-ecommerce` | 모듈 | [docs/api/](../../../modules/_bundled/sirsoft-ecommerce/docs/api/README.md) | 41 / 326 |
+| `sirsoft-page` | 모듈 | [docs/api/](../../../modules/_bundled/sirsoft-page/docs/api/README.md) | 2 / 18 |
 | `sirsoft-ckeditor5` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-ckeditor5/docs/api/README.md) | 3 / 5 |
-| `sirsoft-gdpr` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-gdpr/docs/api/README.md) | 6 / 17 |
+| `sirsoft-gdpr` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-gdpr/docs/api/README.md) | 6 / 19 |
+| `sirsoft-hero_section` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-hero_section/docs/api/README.md) | 6 / 17 |
 | `sirsoft-koreaexim` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-koreaexim/docs/api/README.md) | 2 / 4 |
 | `sirsoft-marketing` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-marketing/docs/api/README.md) | 2 / 2 |
 | `sirsoft-message_bizppurio` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-message_bizppurio/docs/api/README.md) | 6 / 21 |
-| `sirsoft-pay_kginicis` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_kginicis/docs/api/README.md) | 6 / 35 |
-| `sirsoft-pay_nhnkcp` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_nhnkcp/docs/api/README.md) | 0 / 0 |
-| `sirsoft-pay_nicepayments` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_nicepayments/docs/api/README.md) | 0 / 0 |
-| `sirsoft-tosspayments` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-tosspayments/docs/api/README.md) | 2 / 4 |
-| `sirsoft-totp` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-totp/docs/api/README.md) | 1 / 6 |
+| `sirsoft-pay_kginicis` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_kginicis/docs/api/README.md) | 6 / 37 |
+| `sirsoft-pay_nhnkcp` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_nhnkcp/docs/api/README.md) | 6 / 15 |
+| `sirsoft-pay_nicepayments` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_nicepayments/docs/api/README.md) | 6 / 14 |
+| `sirsoft-popup` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-popup/docs/api/README.md) | 4 / 16 |
+| `sirsoft-social_login` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-social_login/docs/api/README.md) | 15 / 49 |
+| `sirsoft-sso` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-sso/docs/api/README.md) | 14 / 66 |
+| `sirsoft-tosspayments` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-tosspayments/docs/api/README.md) | 3 / 6 |
+| `sirsoft-totp` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-totp/docs/api/README.md) | 3 / 6 |
 | `sirsoft-verification_kginicis` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-verification_kginicis/docs/api/README.md) | 2 / 3 |
-| `sirsoft-verification_nhnkcp` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-verification_nhnkcp/docs/api/README.md) | 1 / 1 |
+| `sirsoft-verification_nhnkcp` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-verification_nhnkcp/docs/api/README.md) | 2 / 3 |
 
 <!-- @generated:end -->

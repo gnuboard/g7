@@ -39,6 +39,10 @@ export interface ToggleProps {
      * 바깥 작업이 진행 중인지 — true 면 잠그고(누를 수 없음, 금지 커서·흐린 트랙) 손잡이 자리에 스피너를 보인다(`aria-busy`).
      */
     pending?: boolean;
+    /**
+     * 스위치에 마우스를 올렸을 때 보일 안내(title) — 잠긴 스위치가 왜 잠겼는지(예: 검수 서버에서는 바꿀 수 없음) 알릴 때 쓴다.
+     */
+    title?: string;
 }
 /**
  * Toggle 스위치 컴포넌트

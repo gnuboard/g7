@@ -1,0 +1,21 @@
+feature: 스켈레톤 전환 덮개의 3단계 대상 결정 단위 검사
+
+description: |
+  transition_overlay 의 skeleton 스타일은 네비게이션 맥락에 따라 덮는 범위를 정한다. target DOM 이 있으면 그 영역(페이지 내부
+  전환), 없고 fallback_target 이 있으면 그 영역(페이지 전환), 둘 다 없으면 #app 전체(초기 로드)를 덮는다. 범위에 맞춰
+  <head> 에 ::after 규칙을 주입하고, body 직속 컨테이너를 영역 크기(absolute) 또는 전체 뷰포트(fixed)로 놓고, 스켈레톤
+  컴포넌트에는 범위에 맞는 하위 트리(대상 id 가 트리에 없으면 전체 트리)를 넘긴다. #app 도 없거나 스켈레톤 컴포넌트가
+  등록되지 않았으면 opaque 덮개로 폴백한다.
+  시험은 실제 TemplateApp.renderSkeletonOverlay 를 부른다(#869: 종전에는 시험 안에 베낀 함수만 검사해 원본이 깨져도 통과했다).
+
+axes:
+  area: [scope_target, scope_fallback, scope_fullpage, no_container, css_target, component_tree, real_navigation]
+
+effects:
+  - skeleton_scope_resolved
+  - skeleton_missing_target_falls_back
+  - skeleton_css_target_matches_scope
+  - skeleton_tree_matches_scope
+
+test_files:
+  - resources/js/core/__tests__/skeletonFallbackChain.test.ts

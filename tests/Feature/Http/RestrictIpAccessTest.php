@@ -550,10 +550,36 @@ class RestrictIpAccessTest extends TestCase
     {
         $this->registerBundledExtensionRoutes();
 
+        // CSRF 를 빼도 외부 서버가 아니라 회원 브라우저가 들어오는 자리(제공자 → 브라우저 복귀)는 모집단이 아니다 —
+        // 제외 경로로 풀면 운영자가 막은 IP 의 브라우저가 로그인을 끝낸다
+        $browserReturns = [
+            'web.plugins.sirsoft-social_login.oauth.callback',
+            // SSO — OIDC 인가 코드 복귀, SAML HTTP-POST 자동 제출(ACS), 프런트 채널 로그아웃(SLS)
+            'web.plugins.sirsoft-sso.oidc.callback',
+            'web.plugins.sirsoft-sso.saml.acs',
+            'web.plugins.sirsoft-sso.saml.sls',
+        ];
+
+        // 개발용 모의 제공자 — 게이트를 켜기 전엔 404 이고, 부르는 쪽은 회원 브라우저와 사이트 자신이다(외부 통보 아님)
+        $mockPrefixes = [
+            'web.plugins.sirsoft-social_login.mock.',
+            'web.plugins.sirsoft-sso.mock.',
+        ];
+
         $inbound = [];
 
         foreach (Route::getRoutes()->getRoutes() as $route) {
             $name = (string) $route->getName();
+
+            if (in_array($name, $browserReturns, true)) {
+                continue;
+            }
+
+            foreach ($mockPrefixes as $prefix) {
+                if (str_starts_with($name, $prefix)) {
+                    continue 2;
+                }
+            }
             $isCsrfExemptWeb = str_starts_with($name, 'web.plugins.')
                 && in_array(ValidateCsrfToken::class, $route->excludedMiddleware(), true);
             $isWebhookApi = str_starts_with($name, 'api.plugins.')
@@ -566,8 +592,46 @@ class RestrictIpAccessTest extends TestCase
 
         $this->assertGreaterThanOrEqual(10, count($inbound), '인바운드 콜백 모집단이 예상보다 작습니다 — 라우트 적재를 확인하세요.');
 
+        $registered = $this->bundledExemptPatterns();
+
         foreach ($inbound as $uri) {
-            $this->assertTrue(IpAccessMatcher::isExempt($uri), "인바운드 콜백 {$uri} 가 제외 경로 밖입니다 — 운영자 규칙에 걸리면 결제·인증 통보가 403 으로 끊깁니다.");
+            $this->assertTrue(IpAccessMatcher::isExempt($uri, $registered), "인바운드 콜백 {$uri} 가 제외 경로 밖입니다 — 운영자 규칙에 걸리면 결제·인증 통보가 403 으로 끊깁니다.");
         }
+    }
+
+    /**
+     * 번들 플러그인 리스너가 제외 경로 훅으로 등록하는 패턴을 모읍니다 (관례 밖 경로의 정식 등록 수단).
+     *
+     * 설치 여부와 무관하게 소스의 리스너를 직접 불러 훅 체인과 같은 순서로 덧붙인다.
+     *
+     * @return array<int, mixed> 등록 패턴
+     */
+    private function bundledExemptPatterns(): array
+    {
+        $patterns = [];
+
+        foreach (File::allFiles(base_path('plugins/_bundled')) as $file) {
+            $path = str_replace('\\', '/', $file->getPathname());
+            if (! str_contains($path, '/src/Listeners/') || ! str_ends_with($path, '.php')) {
+                continue;
+            }
+
+            $source = (string) file_get_contents($file->getPathname());
+            if (! str_contains($source, 'EXEMPT_PATHS_HOOK') && ! str_contains($source, IpAccessMatcher::EXEMPT_PATHS_HOOK)) {
+                continue;
+            }
+            if (! preg_match('/^namespace\s+([^;]+);/m', $source, $ns) || ! preg_match('/^class\s+(\w+)/m', $source, $cls)) {
+                continue;
+            }
+
+            $fqcn = $ns[1].'\\'.$cls[1];
+            foreach ($fqcn::getSubscribedHooks() as $hook => $options) {
+                if ($hook === IpAccessMatcher::EXEMPT_PATHS_HOOK) {
+                    $patterns = app($fqcn)->{$options['method']}($patterns);
+                }
+            }
+        }
+
+        return $patterns;
     }
 }

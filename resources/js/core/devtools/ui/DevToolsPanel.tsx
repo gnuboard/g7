@@ -560,7 +560,7 @@ export const DevToolsPanel: React.FC = () => {
             <div className="g7dt-footer">
                 <span>Ctrl+Shift+G 토글 | 헤더 드래그로 이동</span>
                 <span>
-                    액션: {actions.length} | 캐시 히트율: {(cacheStats.hitRate * 100).toFixed(1)}%
+                    액션: {actions.length} | 캐시 히트율: {((cacheStats.hitRate ?? 0) * 100).toFixed(1)}%
                 </span>
             </div>
         </div>

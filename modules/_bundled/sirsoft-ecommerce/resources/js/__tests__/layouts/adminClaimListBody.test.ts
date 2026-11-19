@@ -323,7 +323,7 @@ describe('클레임 목록 셸 — 본체 배선 (S8b)', () => {
   });
 });
 
-describe('컬럼 표시 영속 — SSoT 는 ColumnSelector 자기 키 하나다 (2차 F5 이월)', () => {
+describe('컬럼 표시 영속 — SSoT 는 ColumnSelector 자기 키 하나다 (이월)', () => {
   /**
    * @effects visible_columns_single_persistence_owner
    */
@@ -677,7 +677,7 @@ describe('완료 처리 모달 — 세 진입점 공용 (D26)', () => {
       const text = JSON.parse(fs.readFileSync(file, 'utf8')).complete.discard_note as string;
 
       expect(text, `${locale} 안내가 비어 있다`).toBeTruthy();
-      // 활동 로그·기록을 약속하는 어휘가 없어야 한다 (S8b 4차 N8 — 기록 자체는 S6b 이월).
+      // 활동 로그·기록을 약속하는 어휘가 없어야 한다 (기록 자체는 후속 작업으로 미뤘다).
       expect(/활동 로그|기록됩니다|기록된다|activity log|logged|記録され/.test(text), `${locale} 안내가 없는 이력을 약속한다`).toBe(false);
     });
   });
@@ -1015,16 +1015,16 @@ describe('빌드 CSS 에 있는 간격 클래스만 쓴다 (3차 검증 인터�
    *
    * @effects claim_list_spacing_classes_exist_in_the_admin_build
    */
-  it('완료 창·목록의 gap-*·min-w-* 클래스가 관리자 빌드 CSS 에 있다', () => {
+  it('완료 창·목록의 gap-*·min-w-* 클래스가 이 모듈 빌드 CSS 에 있다', () => {
     const here = path.dirname(fileURLToPath(import.meta.url));
-    const css = fs.readFileSync(path.resolve(here, '../../../../../../../templates/_bundled/sirsoft-admin_basic/dist/css/components.css'), 'utf8');
+    const css = fs.readFileSync(path.resolve(here, '../../../../dist/css/module.css'), 'utf8');
     const dir = path.resolve(here, '../../../layouts/admin/partials/admin_ecommerce_claim_list');
     const classes = new Set<string>();
 
     for (const file of ['_modal_claim_complete.g7.html', '_partial_claim_datagrid.g7.html']) {
       const source = fs.readFileSync(path.join(dir, file), 'utf8');
       for (const [, list] of source.matchAll(/class="([^"]*)"/g)) {
-        list.split(/\s+/).filter((c) => /^(gap|gap-x|gap-y|min-w)-/.test(c)).forEach((c) => classes.add(c));
+        list.split(/\s+/).filter((c) => /^ecommerce:(gap|gap-x|gap-y|min-w)-/.test(c)).forEach((c) => classes.add(c));
       }
     }
 

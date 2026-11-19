@@ -1,4 +1,5 @@
-// e2e:allow 결제창은 외부 나이스페이먼츠 테스트 결제창으로 이어져 공용 E2E 로 재현하지 않는다. 대체 검증: Vitest 바이트 절단 단언 2건 + 브라우저 실측(한글 6자 주문자 → 결제창 예금주명 5자 「남궁홍길동」, 주문 입금대기), 과세 필드(#820)는 Vitest 합계·필드명 단언(복합과세 협의 MID 가 없어 나이스 매출 구분은 실측 불가)
+// e2e:allow 결제창은 외부 나이스페이먼츠 테스트 결제창으로 이어져 공용 E2E 로 재현하지 않는다. 대체 검증: Vitest 바이트 절단 단언 2건 + 브라우저 실측(한글 6자 주문자 → 결제창 예금주명 5자 「남궁홍길동」, 주문 입금대기), 과세 필드(#820)는 Vitest 합계·필드명 단언(복합과세 협의 MID 가 없어 나이스 매출 구분은 실측 불가) / #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
+import { sitePath } from '../apiUrl';
 import { buildGuestOrderTokenHeaders } from '../guestOrderToken';
 import { reportPaymentWindowClosed } from '../paymentCloseReport';
 import { translateNicepay as t } from '../translate';
@@ -350,6 +351,42 @@ function isMobileDevice(): boolean {
 }
 
 /**
+ * 결제창을 열기 전의 실패를 알립니다.
+ *
+ * 주문 결제는 주문서의 진행 표시를 내리고 오류 토스트를 띄운다(문구가 없으면 종전처럼 콘솔에만 남기고 아무것도 바꾸지 않는다). 클레임 추가결제(교환·반품·환불
+ * 신청서의 결제)는 토스트만으로는 신청서의 [결제하기]가 「결제 진행 중…」에 멈춘다 — 신청서 화면의 진행 표시는 결제창이 열린 동안
+ * 일부러 끄지 않는다. 그래서 문구를 담아 던지고(문구가 없으면 빈 문구 — 신청서가 「결제를 시작하지 못했습니다.」로 대신한다),
+ * 이커머스 신청서 핸들러가 `G7Core.dispatch` 결과로 받아 진행 표시를 내리고 문구를 버튼 아래에 보여 준다. 상태 코드 없는 오류라
+ * 템플릿의 상태 코드별 오류 처리는 타지 않는다.
+ *
+ * @param G7Core 코어 전역
+ * @param pgPaymentData 결제 데이터
+ * @param message 사용자에게 보일 문구 (null 이면 주문 결제에서는 토스트를 띄우지 않는다)
+ * @param paymentMethod 결제수단 (주문서 상태에 남길 값, 없으면 생략)
+ * @throws Error 클레임 추가결제면 문구를 담아 던진다
+ */
+function reportPaymentError(
+    G7Core: Window['G7Core'],
+    pgPaymentData: PgPaymentData,
+    message: string | null,
+    paymentMethod?: string,
+): void {
+    const claimReturnUrl = pgPaymentData.claim_cancel_return_url;
+
+    if (typeof claimReturnUrl === 'string' && claimReturnUrl !== '') {
+        throw new Error(message ?? '');
+    }
+
+    // 문구 없는 실패(설정 조회 실패)는 주문 결제에서 종전대로 콘솔에만 남긴다.
+    if (message === null) {
+        return;
+    }
+
+    G7Core?.state?.setLocal?.({ isSubmittingOrder: false, ...(paymentMethod !== undefined ? { paymentMethod } : {}) });
+    G7Core?.toast?.error?.(message);
+}
+
+/**
  * 나이스페이먼츠 결제창 호출 핸들러 (나이스페이 구형 API, goPay 방식)
  *
  * 체크아웃 레이아웃에서 주문 생성 API 성공 후 호출됩니다:
@@ -388,8 +425,7 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
 
     if (typeof paymentMethod !== 'string' || paymentMethod === '') {
         console.error('[sirsoft-pay_nicepayments] payment method is required (paymentMethod or pgPaymentData.payment_method)');
-        G7Core?.state?.setLocal?.({ isSubmittingOrder: false });
-        G7Core?.toast?.error?.(t('payment.error.request_failed', '결제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'));
+        reportPaymentError(G7Core, pgPaymentData, t('payment.error.request_failed', '결제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'));
         return;
     }
 
@@ -399,6 +435,7 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
 
         if (!configJson.data) {
             console.error('[sirsoft-pay_nicepayments] Failed to fetch client config', configJson);
+            reportPaymentError(G7Core, pgPaymentData, null);
             return;
         }
 
@@ -410,8 +447,12 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
             await loadScript(config.sdk_url);
 
             if (typeof window.goPay !== 'function') {
-                G7Core?.toast?.error?.(t('payment.error.sdk_load_failed', '나이스페이먼츠 SDK를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.'));
-                G7Core?.state?.setLocal?.({ isSubmittingOrder: false, paymentMethod });
+                reportPaymentError(
+                    G7Core,
+                    pgPaymentData,
+                    t('payment.error.sdk_load_failed', '나이스페이먼츠 SDK를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.'),
+                    paymentMethod,
+                );
                 return;
             }
         }
@@ -617,7 +658,9 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
             // (신청서 화면의 진행 표시는 결제창이 열린 동안 일부러 끄지 않는다 — 돌아온 화면이 다시 읽는다).
             const claimReturnUrl = pgPaymentData.claim_cancel_return_url;
             if (typeof claimReturnUrl === 'string' && claimReturnUrl !== '') {
-                window.location.href = claimReturnUrl;
+                // 서버가 주는 신청서 상세 주소는 앱 내 경로(`/mypage/...`)라 사이트 마운트 접두사를 붙여 이동한다
+                // (절대 URL·이미 접두사가 붙은 값은 그대로 — 멱등).
+                window.location.href = sitePath(claimReturnUrl);
                 return;
             }
 
@@ -639,8 +682,7 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
     } catch (error: unknown) {
         console.error('[sirsoft-pay_nicepayments] requestPayment error', error);
         (window as unknown as Record<string, unknown>)['__sirsoftNicepayPaymentInProgress'] = false;
-        G7Core?.state?.setLocal?.({ isSubmittingOrder: false, paymentMethod });
-        G7Core?.toast?.error?.(t('payment.error.request_failed', '결제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'));
+        reportPaymentError(G7Core, pgPaymentData, t('payment.error.request_failed', '결제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'), paymentMethod);
     }
 }
 

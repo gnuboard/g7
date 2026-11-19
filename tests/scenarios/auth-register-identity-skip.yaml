@@ -1,0 +1,27 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험 주석(@scenario)에서 모은 입력 변종이고, 회귀 가드는 effects 다 — 모든 effect 가 test_files 의 @effects 로 귀속된다(#798 A1).
+
+feature: "확장 내부 가입의 본인인증 정책 생략과 동의 기록 선택 (#798 K12 · P6)"
+
+description: |
+  확장 내부 가입의 본인인증 정책 생략과 동의 기록 선택 (#798 K12 · P6)
+  회사 IdP 가 신원을 보증한 가입(SSO 자동 생성 등)은 사이트의 가입 본인인증 정책(가입 전 인증, 가입 후 인증 대기)을 따르지 않게
+  고를 수 있다 — `register($data, ['identity_policy' => 'skip', 'identity_policy_reason' => …])`. 사유가 없으면 생략하지 않고,
+  공개 가입 API 는 이 옵션을 받지 않는다. `record_consents => false` 면 약관 동의 기록을 남기지 않는다.
+
+axes:
+  policy: ["before_submit+after_create"]
+  option: [skip_with_reason, skip_without_reason]
+  surface: [public_api]
+  record_consents: [default, false]
+
+effects:
+  - skip_creates_active_user
+  - skip_issues_no_challenge
+  - skip_records_activity_log
+  - skip_requires_reason
+  - public_register_ignores_skip
+  - consents_recorded_by_default
+  - consents_skipped_when_disabled
+
+test_files:
+  - tests/Feature/Auth/RegisterIdentityPolicySkipTest.php

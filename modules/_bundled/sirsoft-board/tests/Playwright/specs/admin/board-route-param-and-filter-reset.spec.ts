@@ -1,5 +1,5 @@
 /**
- * 게시판 관리 화면 — 라우트 파라미터 판정 · 필터 page 초기화 · 답글 첨부 (76차).
+ * 게시판 관리 화면 — 라우트 파라미터 판정 · 필터 page 초기화 · 답글 첨부.
  *
  * 넷 다 브라우저에서만 드러난 결함이다. 단위(Vitest)는 레이아웃 JSON 의 조건식·query 키를
  * 보고, Feature(PHPUnit)는 검증 규칙과 직렬화를 보지만, 「편집 화면인데 신규 화면과 똑같이
@@ -21,7 +21,7 @@
  *          narrowing_filter_resets_page_when_merging_query,
  *          pager_navigation_keeps_its_own_page
  *
- * 이 spec 은 skip 하지 않는다 — 76차에 실제 브라우저에서 전건 통과를 확인했고, 선택자도
+ * 이 spec 은 skip 하지 않는다 — 실제 브라우저에서 전건 통과를 확인했고, 선택자도
  * 그때 잡힌 것만 쓴다. `free` 게시판과 그 게시글은 시드가 항상 만든다.
  */
 import { test, expect, authenticatePage } from '../../fixtures/board-auth';
@@ -34,7 +34,7 @@ const EDIT_URL = `/admin/boards/${BOARD_SLUG}/edit`;
 const POSTS_URL = `/admin/board/${BOARD_SLUG}`;
 
 /**
- * 선택자는 76차 브라우저 실측에서 실제로 잡힌 것만 쓴다.
+ * 선택자는 브라우저 실측에서 실제로 잡힌 것만 쓴다.
  *
  * - 소스의 `data-ref` 는 DOM 에 **`id`** 로 내려온다 (`[data-ref=...]` 속성 선택자는 안 잡힌다)
  * - 페이지네이션은 `<nav>` 이 아니라 `.pagination` 컨테이너 안의 버튼이다 (aria-label 은 번역된다)
@@ -66,7 +66,7 @@ async function openAdvancedSearch(page: any): Promise<void> {
 
 test.describe.configure({ timeout: 120_000 });
 
-test.describe('게시판 관리 화면 — 라우트 파라미터 · 필터 초기화 (76차)', () => {
+test.describe('게시판 관리 화면 — 라우트 파라미터 · 필터 초기화', () => {
   // @scenario screen=edit
   // @effects edit_screen_shows_role_permission_sections, create_mode_notice_only_on_create
   test('편집 화면에서 역할별 접근 제어 아코디언이 관리자·사용자 모두 나타난다', async ({
@@ -135,7 +135,7 @@ test.describe('게시판 관리 화면 — 라우트 파라미터 · 필터 초�
     await expect(slugInput).toBeEnabled();
   });
 
-  // @scenario filter=status, page_origin=later
+  // @scenario filter=status
   // @effects narrowing_filter_resets_page_when_merging_query
   test('뒷페이지에서 상태 필터를 좁히면 1페이지로 돌아온다', async ({
     page,
@@ -157,7 +157,7 @@ test.describe('게시판 관리 화면 — 라우트 파라미터 · 필터 초�
     expect(new URL(page.url()).searchParams.get('status')).toBe('blinded');
   });
 
-  // @scenario filter=enter_search, page_origin=later
+  // @scenario filter=enter_search
   // @effects narrowing_filter_resets_page_when_merging_query
   test('뒷페이지에서 엔터로 검색해도 1페이지로 돌아온다', async ({
     page,
@@ -179,7 +179,7 @@ test.describe('게시판 관리 화면 — 라우트 파라미터 · 필터 초�
     expect(new URL(page.url()).searchParams.get('page') ?? '1').toBe('1');
   });
 
-  // @scenario filter=category, page_origin=later
+  // @scenario filter=category
   // @effects pager_navigation_keeps_its_own_page
   test('페이지 이동 자신은 고른 페이지로 간다 (초기화 규칙의 예외)', async ({
     page,

@@ -1,5 +1,5 @@
 {
-    "comment": "배송정책 목록의 검색 조건. 마일리지 내역 필터와 같은 규약이다 — 입력하는 동안에는 아무것도\n  조회하지 않고 `_local.filter` 에 모아 두었다가 [검색]에서 한 번에 내보낸다.\n  조건이 네 갈래다: 검색어 · 배송 방법(복수 선택) · 부과 방식(복수 선택) · 사용 여부(택일).\n  복수 선택은 모두 같은 형태로 움직인다 — '전체' 칸은 목록을 **비우는 것**이고(비었으면 곧 전체),\n  낱개 칸은 같은 코드를 먼저 걸러 낸 뒤 넣거나 뺀다. 그래서 두 번 눌러도 중복이 쌓이지 않는다.\n  배송 방법과 나라 선택지는 하드코딩이 아니라 **이커머스 설정의 활성 항목**에서 온다 — 설정에서\n  끈 방법·나라는 여기 나오지 않는다. 부과 방식만 코드가 마크업에 박혀 있다.\n  검색 실행은 명명 액션(`searchShippingPolicies`)이라 엔터와 버튼이 같은 것을 가리킨다.",
+    "comment": "배송정책 목록의 검색 조건. 마일리지 내역 필터와 같은 규약이다 — 입력하는 동안에는 아무것도\n  조회하지 않고 `_local.filter` 에 모아 두었다가 [검색]에서 한 번에 내보낸다.\n  조건이 네 갈래다: 검색어 · 배송 방법(복수 선택) · 부과 방식(복수 선택) · 사용 여부(택일).\n  복수 선택은 모두 같은 형태로 움직인다 — '전체' 칸은 목록을 **비우는 것**이고(비었으면 곧 전체),\n  낱개 칸은 같은 코드를 먼저 걸러 낸 뒤 넣거나 뺀다. 그래서 두 번 눌러도 중복이 쌓이지 않는다.\n  배송 방법과 나라 선택지는 하드코딩이 아니라 **이커머스 설정의 활성 항목**에서 온다 — 설정에서\n  끈 방법·나라는 여기 나오지 않는다. 부과 방식만 코드가 마크업에 박혀 있다.\n  검색 실행은 명명 액션(`searchShippingPolicies`)이라 엔터와 버튼이 같은 것을 가리킨다.\n  검색어는 정책명에서만 찾는다 — 선택지가 하나뿐이던 검색대상 select 는 서버로 보내지도 않는 표시 전용이라 없앴다(#17).",
     "meta": {
         "is_partial": true,
         "description": "Shipping Policy List Filter Section"
@@ -8,7 +8,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card"
+        "className": "ecommerce-admin-card"
     },
     "children": [
         {
@@ -16,48 +16,21 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "mb-4"
+                "className": "ecommerce:mb-4"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-center gap-2"
+                        "className": "ecommerce-flex-center ecommerce:gap-2"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Select",
-                            "actions": [
-                                {
-                                    "comment": "검색 대상 — 지금은 선택지가 '정책명' 하나뿐이라 실질 선택지가 없다. 대상이 늘 때를 위한 자리다.",
-                                    "type": "change",
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "_local",
-                                        "filter.searchType": "{{$event.target.value}}"
-                                    }
-                                }
-                            ],
-                            "props": {
-                                "name": "searchType",
-                                "aria-label": "$t:common.search_field",
-                                "className": "select-composite w-36",
-                                "value": "{{_local.filter.searchType || 'name'}}",
-                                "options": [
-                                    {
-                                        "value": "name",
-                                        "label": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.search_type.name"
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "relative flex-1"
+                                "className": "ecommerce:relative ecommerce:flex-1"
                             },
                             "children": [
                                 {
@@ -65,7 +38,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "search",
-                                        "className": "absolute left-3 top-1/2 -translate-y-1/2 text-xl text-gray-500 dark:text-gray-400"
+                                        "className": "ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                     }
                                 },
                                 {
@@ -91,7 +64,7 @@
                                         "type": "text",
                                         "name": "search",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.search.placeholder",
-                                        "className": "input pl-10",
+                                        "className": "ecommerce-input ecommerce:pl-10",
                                         "value": "{{_local.filter.search || ''}}"
                                     }
                                 }
@@ -106,22 +79,36 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "filter-grid"
+                "className": "ecommerce-filter-grid"
             },
             "children": [
                 {
                     "id": "shipping_method_filter",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "filter-label w-32"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.shipping_method"
                         },
@@ -129,14 +116,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center flex-wrap gap-2"
+                                "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -155,7 +142,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{!_local.filter.shipping_methods || _local.filter.shipping_methods.length === 0}}"
                                             }
                                         },
@@ -163,7 +150,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.all"
                                         }
@@ -177,7 +164,7 @@
                                         "item_var": "option"
                                     },
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -196,7 +183,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{(_local.filter.shipping_methods || []).includes(option.value)}}"
                                             }
                                         },
@@ -204,7 +191,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "{{option.label}}"
                                         }
@@ -218,15 +205,29 @@
                     "id": "charge_policy_filter",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "filter-label w-32"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.charge_policy"
                         },
@@ -234,14 +235,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center flex-wrap gap-2"
+                                "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -260,7 +261,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{!_local.filter.charge_policies || _local.filter.charge_policies.length === 0}}"
                                             }
                                         },
@@ -268,7 +269,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.all"
                                         }
@@ -278,7 +279,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -297,7 +298,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{(_local.filter.charge_policies || []).includes('free')}}"
                                             }
                                         },
@@ -305,7 +306,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.enums.charge_policy.free"
                                         }
@@ -315,7 +316,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -334,7 +335,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{(_local.filter.charge_policies || []).includes('fixed')}}"
                                             }
                                         },
@@ -342,7 +343,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.enums.charge_policy.fixed"
                                         }
@@ -352,7 +353,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -371,7 +372,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{(_local.filter.charge_policies || []).includes('conditional_free')}}"
                                             }
                                         },
@@ -379,7 +380,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.enums.charge_policy.conditional_free"
                                         }
@@ -389,7 +390,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -408,7 +409,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{(_local.filter.charge_policies || []).includes('range_amount')}}"
                                             }
                                         },
@@ -416,7 +417,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.enums.charge_policy.range_amount"
                                         }
@@ -426,7 +427,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -445,7 +446,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{(_local.filter.charge_policies || []).includes('range_quantity')}}"
                                             }
                                         },
@@ -453,7 +454,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.enums.charge_policy.range_quantity"
                                         }
@@ -463,7 +464,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -482,7 +483,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{(_local.filter.charge_policies || []).includes('range_weight')}}"
                                             }
                                         },
@@ -490,7 +491,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.enums.charge_policy.range_weight"
                                         }
@@ -500,7 +501,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -519,7 +520,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{(_local.filter.charge_policies || []).includes('range_volume')}}"
                                             }
                                         },
@@ -527,7 +528,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.enums.charge_policy.range_volume"
                                         }
@@ -537,7 +538,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -556,7 +557,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{(_local.filter.charge_policies || []).includes('api')}}"
                                             }
                                         },
@@ -564,7 +565,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.enums.charge_policy.api"
                                         }
@@ -574,7 +575,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -593,7 +594,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{(_local.filter.charge_policies || []).includes('range_volume_weight')}}"
                                             }
                                         },
@@ -601,7 +602,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.enums.charge_policy.range_volume_weight"
                                         }
@@ -611,7 +612,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -630,7 +631,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{(_local.filter.charge_policies || []).includes('per_quantity')}}"
                                             }
                                         },
@@ -638,7 +639,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.enums.charge_policy.per_quantity"
                                         }
@@ -648,7 +649,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -667,7 +668,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{(_local.filter.charge_policies || []).includes('per_weight')}}"
                                             }
                                         },
@@ -675,7 +676,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.enums.charge_policy.per_weight"
                                         }
@@ -685,7 +686,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -704,7 +705,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{(_local.filter.charge_policies || []).includes('per_volume')}}"
                                             }
                                         },
@@ -712,7 +713,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.enums.charge_policy.per_volume"
                                         }
@@ -722,7 +723,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -741,7 +742,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{(_local.filter.charge_policies || []).includes('per_volume_weight')}}"
                                             }
                                         },
@@ -749,7 +750,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.enums.charge_policy.per_volume_weight"
                                         }
@@ -759,7 +760,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -778,7 +779,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{(_local.filter.charge_policies || []).includes('per_amount')}}"
                                             }
                                         },
@@ -786,7 +787,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.enums.charge_policy.per_amount"
                                         }
@@ -801,15 +802,29 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).length > 0}}",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "filter-label w-32"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.country"
                         },
@@ -817,14 +832,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center flex-wrap gap-2"
+                                "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -843,7 +858,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{!_local.filter.countries || _local.filter.countries.length === 0}}"
                                             }
                                         },
@@ -851,7 +866,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.all"
                                         }
@@ -865,7 +880,7 @@
                                         "item_var": "acountry"
                                     },
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -884,7 +899,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "checked": "{{(_local.filter.countries || []).includes(acountry.code)}}"
                                             }
                                         },
@@ -892,14 +907,14 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "fi fi-{{acountry.code?.toLowerCase()}} fis rounded"
+                                                "className": "ecommerce-flag ecommerce-flag-{{acountry.code?.toLowerCase()}} ecommerce-flag--square ecommerce:rounded"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "{{acountry.code}}"
                                         }
@@ -913,15 +928,29 @@
                     "id": "is_active_filter",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "filter-label w-32"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.is_active"
                         },
@@ -929,14 +958,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center flex-wrap gap-2"
+                                "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -956,7 +985,7 @@
                                             "props": {
                                                 "type": "radio",
                                                 "name": "is_active_filter",
-                                                "className": "radio",
+                                                "className": "ecommerce-radio",
                                                 "checked": "{{!_local.filter.is_active || _local.filter.is_active === ''}}"
                                             }
                                         },
@@ -964,7 +993,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.all"
                                         }
@@ -974,7 +1003,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -994,7 +1023,7 @@
                                             "props": {
                                                 "type": "radio",
                                                 "name": "is_active_filter",
-                                                "className": "radio",
+                                                "className": "ecommerce-radio",
                                                 "checked": "{{_local.filter.is_active === 'true'}}"
                                             }
                                         },
@@ -1002,7 +1031,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.active"
                                         }
@@ -1012,7 +1041,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-clickable"
+                                        "className": "ecommerce-inline-clickable"
                                     },
                                     "children": [
                                         {
@@ -1032,7 +1061,7 @@
                                             "props": {
                                                 "type": "radio",
                                                 "name": "is_active_filter",
-                                                "className": "radio",
+                                                "className": "ecommerce-radio",
                                                 "checked": "{{_local.filter.is_active === 'false'}}"
                                             }
                                         },
@@ -1040,7 +1069,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.inactive"
                                         }
@@ -1059,12 +1088,12 @@
             "responsive": {
                 "portable": {
                     "props": {
-                        "className": "flex gap-3 mt-6"
+                        "className": "ecommerce:flex ecommerce:gap-3 ecommerce:mt-6"
                     }
                 }
             },
             "props": {
-                "className": "flex justify-center gap-3 mt-6"
+                "className": "ecommerce:flex ecommerce:justify-center ecommerce:gap-3 ecommerce:mt-6"
             },
             "children": [
                 {
@@ -1073,7 +1102,7 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "btn btn-primary flex-1"
+                                "className": "ecommerce-btn ecommerce-btn-primary ecommerce:flex-1"
                             }
                         }
                     },
@@ -1085,7 +1114,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-primary px-6"
+                        "className": "ecommerce-btn ecommerce-btn-primary ecommerce:px-6"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.action.search"
                 },
@@ -1096,7 +1125,7 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "btn btn-secondary flex-1"
+                                "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:flex-1"
                             }
                         }
                     },
@@ -1110,7 +1139,6 @@
                                     "params": {
                                         "target": "_local",
                                         "filter": {
-                                            "searchType": "name",
                                             "search": "",
                                             "shipping_methods": [],
                                             "charge_policies": [],
@@ -1132,7 +1160,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-secondary px-6"
+                        "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:px-6"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.action.reset"
                 }

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\LanguagePack;
 
 use App\Extension\HookManager;
+use App\Http\Requests\Concerns\HasPackageIntegrityRules;
 use App\Http\Requests\LanguagePack\Concerns\ValidatesLanguagePackArchive;
 use App\Rules\LanguagePack\RequiresActivationPermission;
 use Illuminate\Foundation\Http\FormRequest;
@@ -12,6 +13,7 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class InstallFromFileRequest extends FormRequest
 {
+    use HasPackageIntegrityRules;
     use ValidatesLanguagePackArchive;
 
     /**
@@ -39,6 +41,9 @@ class InstallFromFileRequest extends FormRequest
             'auto_activate' => ['nullable', 'boolean', new RequiresActivationPermission],
         ];
 
+        // 패키지 무결성 입력 — 미서명 계속(allow_unsigned)·서명 파일(signature) (7.2.0)
+        $rules = array_merge($rules, $this->packageIntegrityRules(signatureFile: true));
+
         // 모듈/플러그인이 validation rules 를 동적으로 추가할 수 있도록 훅 제공
         return HookManager::applyFilters('core.language_packs.install_from_file_validation_rules', $rules, $this);
     }
@@ -50,6 +55,16 @@ class InstallFromFileRequest extends FormRequest
      */
     public function messages(): array
     {
-        return $this->languagePackArchiveMessages();
+        return $this->languagePackArchiveMessages() + $this->packageIntegrityMessages();
+    }
+
+    /**
+     * 검증 오류 문구에 쓸 칸 이름 라벨을 돌려줍니다.
+     *
+     * @return array<string, string> 라벨
+     */
+    public function attributes(): array
+    {
+        return $this->packageIntegrityAttributes();
     }
 }

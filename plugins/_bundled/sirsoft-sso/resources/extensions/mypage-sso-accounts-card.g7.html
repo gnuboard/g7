@@ -1,0 +1,114 @@
+<!-- e2e:allow Playwright 스펙 없음(이 플러그인 tests/Playwright/specs/sso-*.spec.ts 는 로그인 흐름만 덮는다) — 브라우저 실측은 F1 Chrome MCP 계획서 §10 M4·M14(W40) — P4 는 Vitest 로 덮음
+     마이페이지 프로필에 「연결된 회사 계정」 카드를 덧붙이는 조각 — IdP, 연결일, 마지막 로그인을 보고 연결하거나 해제한다.
+     연결은 API 가 1회용 시작 티켓 주소를 발급한 뒤 그리로 이동한다(브라우저 이동에는 로그인 토큰이 실리지 않으므로 — W25).
+     해제는 두 경우에 막힌다 — 비밀번호가 없고 이 연결이 마지막 로그인 수단일 때, SSO 강제 대상일 때. 서버 응답의 `unlink_block` 으로 미리 안내한다.
+     priority 95 — 같은 자리에 붙는 마케팅 카드(100)보다 앞. 해제 확인 창이 읽고 쓰는 값은 _global 이다(모달은 페이지 _local 의 낡은 값을 본다). -->
+<extension target-layout="mypage/profile" priority="95">
+  <inject target-id="profile_view_bio_card" position="append">
+    <div data-ref="sso_accounts_card" data-if="{{!!ssoMyAccounts?.data &amp;&amp; ((ssoMyAccounts?.data?.accounts ?? []).length > 0 || (ssoMyAccounts?.data?.linkable ?? []).length > 0)}}" class="sso:bg-white sso:dark:bg-gray-800 sso:rounded-lg sso:shadow-sm sso:border sso:border-gray-200 sso:dark:border-gray-700 sso:p-6">
+      <responsive on="portable" class="sso:bg-white sso:dark:bg-gray-800 sso:rounded-lg sso:shadow-sm sso:border sso:border-gray-200 sso:dark:border-gray-700 sso:p-4"/>
+      <div class="sso:mb-4 sso:pb-3 sso:border-b sso:border-gray-200 sso:dark:border-gray-700">
+        <h2 class="sso:text-base sso:font-semibold sso:text-gray-900 sso:dark:text-white">$t:sirsoft-sso.mypage.title</h2>
+      </div>
+      <p data-if="{{ssoMyAccounts?.data?.enforced === true}}" data-ref="sso_accounts_enforced" class="sso:mb-4 sso:p-3 sso:rounded-lg sso:bg-blue-50 sso:dark:bg-blue-900/20 sso:border sso:border-blue-200 sso:dark:border-blue-800 sso:text-sm sso:text-blue-700 sso:dark:text-blue-300">$t:sirsoft-sso.mypage.enforced</p>
+      <p data-if="{{(ssoMyAccounts?.data?.accounts ?? []).length === 0}}" class="sso:py-2 sso:text-sm sso:text-gray-500 sso:dark:text-gray-400">$t:sirsoft-sso.mypage.empty</p>
+      <ul data-if="{{(ssoMyAccounts?.data?.accounts ?? []).length > 0}}" data-ref="sso_accounts_list" class="sso:divide-y sso:divide-gray-200 sso:dark:divide-gray-700">
+        <li data-each="account in ssoMyAccounts?.data?.accounts ?? []" data-key="{{account.id}}" class="sso:py-3 sso:flex sso:flex-col sso:gap-2">
+          <responsive on="640-" class="sso:py-3 sso:flex sso:flex-row sso:items-center sso:gap-3"/>
+          <div class="sso:flex-1 sso:min-w-0">
+            <p class="sso:text-sm sso:font-medium sso:text-gray-900 sso:dark:text-white">{{account.idp_label}}</p>
+            <p class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">
+              <span>$t:sirsoft-sso.mypage.linked_at</span>
+              <span> {{account.linked_at | date}}</span>
+            </p>
+            <p class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">
+              <span>$t:sirsoft-sso.mypage.last_login_at</span>
+              <span data-if="{{!!account.last_login_at}}"> {{account.last_login_at | datetime}}</span>
+              <span data-if="{{!account.last_login_at}}"> -</span>
+            </p>
+            <p data-if="{{account.active === false}}" class="sso:text-xs sso:text-red-600 sso:dark:text-red-400">$t:sirsoft-sso.mypage.inactive</p>
+          </div>
+          <button type="button" data-ref="sso_account_unlink_{{account.id}}" class="sso:shrink-0 sso:px-3 sso:py-1.5 sso:text-xs sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:text-gray-700 sso:dark:text-gray-300 sso:rounded sso:hover:bg-gray-50 sso:dark:hover:bg-gray-700 sso:cursor-pointer sso:disabled:opacity-50" disabled="{{!!account.unlink_block}}" aria-label="$t:sirsoft-sso.mypage.unlink_named|idp={{account.idp_label}}">
+            <on type="click">
+              <!-- 해제 — 확인 창에 대상을 넘기고 연다 -->
+              <sequence>
+                <set-state target="global" ssoUnlinkTarget="{{account}}" :ssoUnlinkError="null"/>
+                <open-modal target="sso_unlink_confirm"/>
+              </sequence>
+            </on>
+            $t:sirsoft-sso.mypage.unlink
+          </button>
+          <p data-if="{{!!account.unlink_block}}" class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"><responsive on="768-" class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:max-w-xs"/>{{$t('sirsoft-sso.mypage.unlink_block.' + account.unlink_block)}}</p>
+        </li>
+      </ul>
+      <p data-if="{{!!_global.ssoUnlinkError}}" class="sso:mt-3 sso:text-sm sso:text-red-600 sso:dark:text-red-400" role="alert">{{_global.ssoUnlinkError ?? ''}}</p>
+      <!-- 연결할 수 있는 회사 계정 -->
+      <div data-if="{{(ssoMyAccounts?.data?.linkable ?? []).length > 0}}" data-ref="sso_accounts_linkable" class="sso:mt-4 sso:pt-4 sso:border-t sso:border-gray-200 sso:dark:border-gray-700">
+        <p class="sso:mb-3 sso:text-sm sso:text-gray-600 sso:dark:text-gray-400">$t:sirsoft-sso.mypage.linkable</p>
+        <div class="sso:flex sso:flex-col sso:gap-2 sso:flex-wrap">
+          <responsive on="640-" class="sso:flex sso:gap-2 sso:flex-row sso:flex-wrap"/>
+          <button data-each="idp in ssoMyAccounts?.data?.linkable ?? []" data-key="{{idp.key}}" data-ref="sso_link_button_{{idp.key}}" type="button" class="sso:inline-flex sso:items-center sso:justify-center sso:gap-2 sso:px-4 sso:py-2 sso:text-sm sso:font-medium sso:rounded-lg sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:text-gray-800 sso:dark:text-gray-200 sso:hover:bg-gray-50 sso:dark:hover:bg-gray-700 sso:cursor-pointer">
+            <on type="click">
+              <!-- 연결 시작 — API 가 시작 티켓 주소를 주면 그 회사 계정 로그인으로 이동한다 -->
+              <action handler="sirsoft-sso.startWithTicket" endpoint="/plugins/sirsoft-sso/me/links/start" body="{{({ idp: idp.key })}}"/>
+            </on>
+            <span aria-hidden="true" class="sso:inline-flex sso:items-center sso:justify-center sso:w-5 sso:h-5 sso:rounded-full sso:ring-1 sso:ring-current sso:text-xs sso:font-semibold">{{idp.initial}}</span>
+            <span>$t:sirsoft-sso.mypage.link_with|idp={{idp.label}}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </inject>
+  <!-- 내 연결 — 로그인 회원 본인 -->
+  <data-source id="ssoMyAccounts" label_key="$t:sirsoft-sso.editor.data_source.my_accounts" type="api" endpoint="/api/plugins/sirsoft-sso/me/accounts" method="GET" :auto_fetch="true" :auth_required="true">
+    <error-handling>
+      <on-code code="default">
+        <!-- 마이페이지 덧붙임 — 못 받으면 카드만 그리지 않는다 -->
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <init>
+    <!-- 연결 왕복에서 돌아온 결과 안내 (sso_linked = 연결한 IdP 키) -->
+    <toast if="{{!!query.sso_linked}}" type="success" message="$t:sirsoft-sso.mypage.linked_toast"/>
+    <!-- 연결 실패(sso_error = 사유 코드, 이 화면에서 시작한 연결이 돌아온다) — 문구 키가 없으면(IdP 가 준 낯선 코드) 일반 실패 문구 -->
+    <toast if="{{!!query.sso_error}}" type="error" message="{{$t('sirsoft-sso.errors.' + query.sso_error) === 'sirsoft-sso.errors.' + query.sso_error ? $t('sirsoft-sso.errors.generic') : $t('sirsoft-sso.errors.' + query.sso_error)}}"/>
+  </init>
+  <modal>
+    <!-- 해제 확인 — 확인하면 연결을 끊고 목록을 다시 받는다 -->
+    <modal data-type="composite" data-ref="sso_unlink_confirm" title="$t:sirsoft-sso.mypage.unlink_title" size="sm">
+      <div class="sso:space-y-4">
+        <p class="sso:text-sm sso:text-gray-700 sso:dark:text-gray-300">$t:sirsoft-sso.mypage.unlink_confirm|idp={{_global.ssoUnlinkTarget?.idp_label ?? ''}}</p>
+        <div class="sso:flex sso:gap-2">
+          <button type="button" class="sso:flex-1 sso:px-3 sso:py-2 sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:text-sm sso:text-gray-700 sso:dark:text-gray-300 sso:cursor-pointer">
+            <on type="click">
+              <close-modal/>
+            </on>
+            $t:common.cancel
+          </button>
+          <button type="button" data-ref="sso_unlink_confirm_submit" class="sso:flex-1 sso:px-3 sso:py-2 sso:bg-red-600 sso:text-white sso:rounded-lg sso:text-sm sso:cursor-pointer sso:disabled:opacity-50" disabled="{{_global.ssoUnlinking}}">
+            <on type="click">
+              <!-- 연결 해제 확정 — 성공하면 창을 닫고 목록을 다시 받으며, 실패하면 사유를 카드에 남긴다 -->
+              <sequence>
+                <set-state target="global" :ssoUnlinking="true"/>
+                <api-call :auth_required="true" target="/api/plugins/sirsoft-sso/me/accounts/{{_global.ssoUnlinkTarget?.id}}" method="DELETE">
+                  <success>
+                    <set-state target="global" :ssoUnlinking="false" :ssoUnlinkTarget="null"/>
+                    <close-modal/>
+                    <refetch-data-source dataSourceId="ssoMyAccounts"/>
+                    <toast type="success" message="$t:sirsoft-sso.mypage.unlinked_toast"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :ssoUnlinking="false" ssoUnlinkError="{{error.message}}"/>
+                    <close-modal/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            $t:sirsoft-sso.mypage.unlink
+          </button>
+        </div>
+      </div>
+    </modal>
+  </modal>
+</extension>

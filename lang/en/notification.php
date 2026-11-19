@@ -23,6 +23,7 @@ return [
     'channel_skipped_no_template' => 'Skipped :channel channel for :type — no active template found.',
     'channel_disabled_by_extension' => 'Skipped because the channel is disabled in extension settings.',
     'channel_guest_not_allowed' => 'Skipped because this channel does not allow sending to guests.',
+    'recipient_email_undeliverable' => 'Skipped because the recipient address cannot receive mail (placeholder email).',
     'channel_unavailable' => 'Skipped because the extension providing this channel is inactive or removed.',
 
     // Notification templates
@@ -68,6 +69,7 @@ return [
         'related_user' => 'Related user (:relation)',
         'role' => 'Role (:roles)',
         'specific_users' => 'Specific users (:count)',
+        'site_admin_email' => 'Site admin email',
         'exclude_trigger_user' => ':rule, excluding the event trigger user',
         'legacy' => 'Default recipients of the definition',
     ],
@@ -102,6 +104,9 @@ return [
         // 역할 수신자는 다중 선택이 되면서 값이 배열일 수 있다. 객체·숫자가 섞이면
         // 저장은 되고 발송 시점에 수신자 0명으로만 드러나므로 여기서 세운다.
         'role_value_shape' => 'A role recipient value must be an identifier string or an array of identifier strings.',
+        // 운영자가 발송 수단을 켜서 만든 빈 템플릿은 내용을 채우기 전에 켜지 못한다(빈 제목·본문, 받는 사람 0명 발송 방지).
+        'user_template_needs_recipients' => 'Set and save the recipients before turning this on. Add a recipient rule in [Edit template].',
+        'user_template_needs_body' => 'Write and save the body before turning this on. Fill in the content in [Edit template].',
         'attributes' => [
             'recipients' => 'recipient rules',
             'recipient_type' => 'recipient type',
@@ -126,6 +131,15 @@ return [
         ],
     ],
     // Notification template editor "Available variables" descriptions — common: default per variable key, by_type: variables whose meaning differs for that notification, identity: shared identity verification variables. Missing keys fall back to the declared string.
+    // 템플릿 편집 창의 회원 공통 변수 설명 ({member.display_name}, {member.<키>}, {member.custom.<키>})
+    'member_variables' => [
+        'display_name' => 'Name shown for the recipient',
+        'field' => 'Member field: :name',
+    ],
+    // 템플릿 저장 응답의 경고 (data.warnings)
+    'warnings' => [
+        'unknown_variable' => 'This variable does not exist now: :variable (it is sent as empty text when the member field was deleted or turned off)',
+    ],
     'variables' => [
         'common' => [
             'name' => 'Recipient name',
@@ -185,6 +199,13 @@ return [
             ],
             'password_expiry_notice' => [
                 'action_url' => 'Password change page URL',
+            ],
+            'schedule_failed' => [
+                'schedule_label' => 'Task display name',
+                'schedule_name' => 'Task identifier (name)',
+                'owner' => 'Owner (core, extension name, or manually registered)',
+                'failed_at' => 'Failure time',
+                'schedule_url' => 'Schedule management page URL',
             ],
         ],
         'identity' => [

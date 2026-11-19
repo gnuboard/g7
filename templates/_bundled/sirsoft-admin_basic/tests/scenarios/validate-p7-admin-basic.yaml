@@ -13,7 +13,7 @@ description: |
   ⑤ components.json 에 Badge icon·variant, SearchableDropdown selectedCountLabel 을 싣는다.
 
 axes:
-  case: [named, specific_users_to_role, to_related_user, related_user_to_trigger_user, exclude_trigger_user_carry, other_rows_untouched, empty, undeclared, multiple, prime_timeout, primed, prime_slow_after_loader, marker_beyond_model_lines, non_korean, en, Badge, SearchableDropdown, status_badge_regression]
+  case: [named, specific_users_to_role, to_related_user, related_user_to_trigger_user, exclude_trigger_user_carry, other_rows_untouched, empty, undeclared, multiple, prime_timeout, primed, prime_slow_after_loader, marker_beyond_model_lines, non_korean, en, Badge, SearchableDropdown, CardGrid, Container, status_badge_regression]
 
 effects:
   - recipient_rule_type_switch_clears_previous_value
@@ -29,6 +29,7 @@ effects:
   - vendored_amd_loader_runs_exactly_once
   - component_default_texts_come_from_translation_keys
   - component_manifest_lists_every_source_prop
+  - component_manifest_has_no_phantom_props
   - status_badge_renders_translated_default_label_and_style
 
 test_files:

@@ -6,6 +6,8 @@
   },
   "alerts": {
     "language_pack_install_failed": "Could not install the selected language packs ({{names}}): {{reason}}",
+    "check_updates_github_failed": "Could not check GitHub for the latest version of {{count}} extensions ({{names}}) — they were not marked as up to date and their update info was left unchanged. Reason: {{reason}}",
+    "check_updates_github_failed_one": "Could not check GitHub for the latest version of {{count}} extension ({{names}}) — it was not marked as up to date and its update info was left unchanged. Reason: {{reason}}",
     "language_pack_awaiting_host": "The selected language packs ({{names}}) were installed turned off because this extension is not active yet. They will be turned on when you activate the extension.",
     "incompatible_deactivated": "{{type}} \"{{name}}\" automatically deactivated",
     "incompatible_message": "Required: {{required}}, Installed: {{installed}}",

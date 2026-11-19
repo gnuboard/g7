@@ -272,7 +272,7 @@ describe('sirsoftBasicIdentityLauncher — 전역 상태 구독 해제', () => {
     await sirsoftBasicIdentityLauncher({ ...basePayload, purpose: 'password_reset' } as any);
 
     expect(sentTarget()).toEqual({ email: 'reset@example.test' });
-    const redirected = g7.identity.redirectExternally.mock.calls[0]?.[0] as Record<string, any>;
+    const redirected = (g7.identity.redirectExternally.mock.calls[0] as unknown[] | undefined)?.[0] as Record<string, any>;
     expect(redirected.target).toEqual({ email: 'reset@example.test' });
     expect(redirected.redirect_url).toContain('/identity/challenge?challenge_id=ch_1');
   });

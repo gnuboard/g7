@@ -9,6 +9,7 @@ use App\Seo\SeoCacheRegenerator;
 use App\Seo\SitemapIndexer;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Support\BoardScreenUrl;
 use Modules\Sirsoft\Board\Support\PostQueryExtensions;
 
 /**
@@ -90,7 +91,7 @@ class SeoBoardRegenerateListener implements HookListenerInterface
 
         try {
             $regenerator = app(SeoCacheRegenerator::class);
-            $url = "/board/{$slug}/{$post->id}";
+            $url = BoardScreenUrl::defaultPath(BoardScreenUrl::POST, ['slug' => $slug, 'id' => $post->id]);
             $regenerator->renderAndCache($url);
 
             Log::debug('[SEO] Board post detail cache regenerated', [
@@ -156,7 +157,7 @@ class SeoBoardRegenerateListener implements HookListenerInterface
                 $extensions = PostQueryExtensions::collect(['sitemap'], ['audience' => 'user', 'board' => $board]);
                 foreach ($postRepository->streamPublishedForSitemap((int) $board->id, 500, $extensions) as $post) {
                     $batch[$post->id] = [[
-                        'url' => "/board/{$board->slug}/{$post->id}",
+                        'url' => BoardScreenUrl::post((string) $board->slug, $post->id),
                         'lastmod' => $post->updated_at?->toW3cString(),
                         'changefreq' => SitemapChangeFreq::Monthly->value,
                         'priority' => 0.5,

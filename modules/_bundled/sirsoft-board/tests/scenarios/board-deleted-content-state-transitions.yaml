@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#759 |
 #   transition 과 target 은 서로 독립인 분기가 아니다 — 신고 처리(게시 중단·반려)의 삭제 대상 보호는
 #   게시글과 댓글이 같은 판정(isTargetDeleted)을 지나므로 게시글로 대표하고, 명시적 복구의 회귀는
 #   게시글 경로 하나로 충분하다. 실제 커버리지 계약은 effects 목록이며 선언한 항목은 모두 테스트가 잰다.

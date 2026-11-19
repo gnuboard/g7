@@ -7,8 +7,9 @@ namespace Plugins\Sirsoft\Tosspayments\Controllers;
 use App\Helpers\ResponseHelper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\RateLimiter;
-use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Exceptions\ProviderMismatch;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Plugins\Sirsoft\Tosspayments\Concerns\RecordsPaymentWindowClosure;
 use Plugins\Sirsoft\Tosspayments\Concerns\VerifiesOrderOwnership;
 use Plugins\Sirsoft\Tosspayments\Http\Requests\PaymentCloseReportRequest;
@@ -31,12 +32,10 @@ class PaymentCloseReportController
     private const FAILURE_MESSAGE = '사용자가 토스페이먼츠 결제창을 닫았습니다.';
 
     /**
-     * @param  OrderProcessingService  $orderService  주문 처리 서비스
-     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스 (주문 소유자 확인)
+     * @param  PaymentGatewayBridge  $bridge  이커머스 공개 결제 계약 (주문 조회, 비회원 토큰 확인, 결제창 닫힘 기록)
      */
     public function __construct(
-        private readonly OrderProcessingService $orderService,
-        private readonly GuestOrderAuthService $guestOrderAuthService,
+        private readonly PaymentGatewayBridge $bridge,
     ) {}
 
     /**
@@ -54,19 +53,19 @@ class PaymentCloseReportController
         $rateLimitKey = $this->rateLimitKey($request->ip() ?? '', $orderId);
         if (RateLimiter::tooManyAttempts($rateLimitKey, 20)) {
             return ResponseHelper::error('common.failed', 429, [
-                'message' => ['Too many TossPayments payment close reports. Please try again later.'],
+                'message' => [__('sirsoft-tosspayments::messages.responses.too_many_requests')],
             ]);
         }
         RateLimiter::hit($rateLimitKey, 60);
 
-        $order = $this->orderService->findByOrderNumber($orderId);
+        $order = $this->bridge->findOrderByNumber($orderId, self::TOSS_PROVIDER);
         if (! $order) {
             return ResponseHelper::error('common.failed', 404, [
-                'message' => ['Order not found.'],
+                'message' => [__('sirsoft-tosspayments::messages.responses.order_not_found')],
             ]);
         }
 
-        if (! $order->order_status->isBeforePayment()) {
+        if (! $order->orderStatus->isBeforePayment()) {
             return ResponseHelper::success('common.success', [
                 'status' => 'ignored',
                 'reason' => 'order_not_payable',
@@ -76,16 +75,26 @@ class PaymentCloseReportController
         // 결제 성공 콜백(success → confirmPayment)과 이 보고가 경쟁할 수 있다. 카드 주문은 승인
         // 직전까지 order_status=PENDING_ORDER 라 위 가드를 통과하므로, 결제가 이미 성공했으면
         // 여기서 차단해 옵션이 취소로 덮이는 것을 막는다.
-        if ($order->payment?->isPaid()) {
+        if ($order->payment?->isPaid) {
             return ResponseHelper::success('common.success', [
                 'status' => 'ignored',
                 'reason' => 'payment_already_paid',
             ]);
         }
 
-        if (! $this->requestOwnsOrder($request, $order, $this->guestOrderAuthService)) {
+        // 가상계좌가 이미 발급된(입금대기) 주문은 주문 상태가 아직 결제 전이라 위 가드를 통과한다. 발급 저장이 커밋된 뒤
+        // 후속 처리(장바구니 정리)가 실패하면 성공 콜백이 실패 화면으로 보내고, 그 화면이 이 보고를 보낸다 — 발급된 주문을
+        // 실패와 취소로 덮으면 고객은 받은 계좌로 입금할 수 없다. 결제창이 승인, 발급 단계로 넘어가기 전(READY)만 실패로 기록한다.
+        if ($order->payment && $order->payment->paymentStatus !== PaymentStatusEnum::READY) {
+            return ResponseHelper::success('common.success', [
+                'status' => 'ignored',
+                'reason' => 'payment_not_ready',
+            ]);
+        }
+
+        if (! $this->requestOwnsOrder($request, $order)) {
             return ResponseHelper::error('common.failed', 403, [
-                'message' => ['Order ownership verification failed.'],
+                'message' => [__('sirsoft-tosspayments::messages.responses.ownership_verification_failed')],
             ]);
         }
 
@@ -96,13 +105,13 @@ class PaymentCloseReportController
         ]);
         if ($expectedAmount === null) {
             return ResponseHelper::error('common.failed', 422, [
-                'message' => ['Payment currency is not chargeable.'],
+                'message' => [__('sirsoft-tosspayments::messages.responses.currency_not_chargeable')],
             ]);
         }
 
         if ($amount !== $expectedAmount) {
             return ResponseHelper::error('common.failed', 422, [
-                'message' => ['Payment amount does not match the order amount.'],
+                'message' => [__('sirsoft-tosspayments::messages.responses.amount_mismatch')],
             ]);
         }
 
@@ -111,14 +120,21 @@ class PaymentCloseReportController
         $failureCode = trim((string) ($validated['code'] ?? ''));
         $closeReason = trim((string) ($validated['reason'] ?? ''));
 
-        $this->markPaymentWindowClosed(
-            $this->orderService,
-            $order,
-            $failureCode !== '' ? $failureCode : self::FAILURE_CODE,
-            self::FAILURE_MESSAGE,
-            $closeReason !== '' ? $closeReason : self::FAILURE_MESSAGE,
-            $failureCode !== '' ? 'payment_failed' : 'window_closed',
-        );
+        try {
+            $this->markPaymentWindowClosed(
+                $order,
+                $failureCode !== '' ? $failureCode : self::FAILURE_CODE,
+                self::FAILURE_MESSAGE,
+                $closeReason !== '' ? $closeReason : self::FAILURE_MESSAGE,
+                $failureCode !== '' ? 'payment_failed' : 'window_closed',
+            );
+        } catch (ProviderMismatch) {
+            // 다른 결제사가 이미 결제(발급)한 행 — 결제 대기 행이 아니다(계약이 쓰기를 거부했고 아무것도 바뀌지 않았다)
+            return ResponseHelper::success('common.success', [
+                'status' => 'ignored',
+                'reason' => 'payment_not_ready',
+            ]);
+        }
 
         return ResponseHelper::success('common.success', [
             'status' => 'recorded',

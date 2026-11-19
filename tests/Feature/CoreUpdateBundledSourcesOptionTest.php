@@ -442,15 +442,17 @@ class CoreUpdateBundledSourcesOptionTest extends TestCase
         $service->shouldReceive('snapshotOwnershipDetailed')->andReturn([]);
         $service->shouldReceive('isComposerUnchangedForCore')->andReturn(true);
         $service->shouldReceive('applyUpdate')->once()->andReturnUsing(
-            function ($path, $progress, $prune, $applyList, $skipPaths) use (&$captured): void {
+            function ($path, $progress, $prune, $applyList, $skipPaths) use (&$captured): array {
                 $captured['skip'] = $skipPaths;
+
+                return ['root_file_warnings' => []];
             },
         );
         $service->shouldReceive('runMigrations')->once()->andReturnUsing(function () use (&$captured, $planner): void {
             $captured['record'] = json_decode((string) file_get_contents($planner->recordPath()), true);
             throw new \RuntimeException('migration failed');
         });
-        $service->shouldReceive('restoreFromBackup')->once()->andReturn([]);
+        $service->shouldReceive('restoreFromBackup')->once()->andReturn(['failed_targets' => [], 'root_file_warnings' => []]);
         $service->shouldReceive('clearAllCaches')->once();
         $service->shouldReceive('cleanupPending')->once();
         $service->shouldReceive('generateFailureReport')->andReturn('report.log');
@@ -579,7 +581,17 @@ class CoreUpdateBundledSourcesOptionTest extends TestCase
     private function mockService(): MockInterface
     {
         $service = Mockery::mock(CoreUpdateService::class);
+        // handle() 은 본문 전에 동시 실행 잠금을 잡고 finally 에서 놓는다 — 잠금 획득 성공으로 둬
+        // 실제 커맨드가 각 단계까지 진행하게 한다. 실패 경로(catch)는 복원 전에 루트 진입 파일
+        // 경고 게터를 읽으므로 빈 목록을 기본값으로 둔다.
+        $service->shouldReceive('acquireRunLock')->andReturn(true)->byDefault();
+        $service->shouldReceive('releaseRunLock')->byDefault();
+        $service->shouldReceive('getLastRootFileWarnings')->andReturn([])->byDefault();
         $service->shouldReceive('normalizeRuntimeOwnershipAfterRootRun')->byDefault();
+        // 패키지 서명 검증(7.2.0)은 이 시험의 관심사가 아니다 — 통과(미서명 확인됨)로 둔다
+        $service->shouldReceive('preflightReleaseIntegrity')->byDefault();
+        $service->shouldReceive('verifyCoreZipIntegrity')->andReturn(\App\Extension\Integrity\PackageVerification::unsigned())->byDefault();
+        $service->shouldReceive('confirmCoreIntegrity')->andReturnUsing(fn ($verification) => $verification)->byDefault();
         $this->app->instance(CoreUpdateService::class, $service);
 
         return $service;
@@ -638,15 +650,17 @@ class CoreUpdateBundledSourcesOptionTest extends TestCase
         $service->shouldReceive('snapshotOwnershipDetailed')->andReturn([]);
         $service->shouldReceive('isComposerUnchangedForCore')->andReturn(true);
         $service->shouldReceive('applyUpdate')->once()->andReturnUsing(
-            function ($path, $progress, $prune, $applyList, $skipPaths) use ($captured): void {
+            function ($path, $progress, $prune, $applyList, $skipPaths) use ($captured): array {
                 $captured->skip = $skipPaths;
+
+                return ['root_file_warnings' => []];
             },
         );
         $service->shouldReceive('runMigrations')->once()->andReturnUsing(function () use ($captured, $planner): void {
             $captured->record = json_decode((string) file_get_contents($planner->recordPath()), true);
             throw new \RuntimeException('migration failed');
         });
-        $service->shouldReceive('restoreFromBackup')->once()->andReturn([]);
+        $service->shouldReceive('restoreFromBackup')->once()->andReturn(['failed_targets' => [], 'root_file_warnings' => []]);
         $service->shouldReceive('clearAllCaches')->once();
         $service->shouldReceive('cleanupPending')->once();
         $service->shouldReceive('generateFailureReport')->andReturn('report.log');

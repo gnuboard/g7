@@ -7,7 +7,8 @@
  * `row-stack` 묶음에 붙어 메모마다 자식 하나뿐인 묶음이 생기고, `row-stack` 은 첫·마지막 자식의 위아래
  * 여백을 0 으로 두므로 카드가 간격 없이 붙었다. 반복은 카드에 두고, 카드를 감싸는 묶음 하나가 간격을 준다.
  *
- * 레이아웃 계약만 본다(짝 JSON 트리 직접 분석). 실제 간격 픽셀은 템플릿 CSS 가 정한다.
+ * 레이아웃 계약만 본다(짝 JSON 트리 직접 분석). 실제 간격 픽셀은 모듈 CSS(`hellomodule-list`)가 정한다(0.3.0 부터
+ * 모듈 자기 CSS — 종전 `space-y-3` 은 템플릿 Tailwind 가 만든 클래스였다).
  *
  * @scenario-manifest tests/scenarios/admin-memo-list-iteration.yaml
  */
@@ -48,11 +49,11 @@ describe('[case:admin-memo-list-iteration] 관리자 메모 목록 반복 위치
     expect(found).not.toBeNull();
     const { node, parent } = found!;
 
-    // 반복 노드가 곧 카드다(테두리·여백을 가진 상자)
-    expect(node.props?.className ?? '').toContain('border');
+    // 반복 노드가 곧 카드다(테두리·여백을 가진 상자 — 모듈 CSS 의 hellomodule-card)
+    expect((node.props?.className ?? '').split(/\s+/)).toContain('hellomodule-card');
     expect(node.children?.some((c) => c.name === 'Div')).toBe(false);
     // 묶음은 반복되지 않고 간격 클래스를 갖는다
     expect(parent?.iteration).toBeUndefined();
-    expect(parent?.props?.className ?? '').toContain('space-y-3');
+    expect((parent?.props?.className ?? '').split(/\s+/)).toContain('hellomodule-list');
   });
 });

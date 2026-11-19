@@ -95,6 +95,11 @@
         "intl_state_placeholder": "都道府県を入力してください",
         "intl_postal_code_placeholder": "郵便番号を入力してください"
       },
+      "extra_fields": {
+        "title": "注文書の追加項目",
+        "section_orderer": "注文者",
+        "section_shipping": "配送先"
+      },
       "admin_memo": {
         "title": "管理者メモ",
         "placeholder": "管理者メモを入力してください..."

@@ -111,66 +111,17 @@ class SettingsControllerTest extends TestCase
     }
 
     /**
-     * super_admin 역할을 가진 사용자 생성 (필요한 권한 포함)
-     * admin 미들웨어를 통과하기 위해 admin 역할도 함께 할당
+     * 최고관리자(`is_super`) 사용자 생성 (앱 키 재생성 등 최고관리자 전용 라우트용)
      *
-     * @return User admin·super_admin 역할이 할당된 사용자
+     * 코어에는 최고관리자 역할이 없다 — 판정은 회원의 최고관리자 표지다. 그래서 역할을 따로 만들지 않고
+     * 일반 관리자와 같은 역할·권한에 표지만 켠다(기본 설치와 같은 모양).
+     *
+     * @return User 최고관리자 표지(is_super)가 켜진 관리자 사용자
      */
     private function createSuperAdminUser(): User
     {
-        $user = User::factory()->create([
-            'password' => Hash::make('password123'),
-        ]);
-
-        // admin 역할 생성 (admin 미들웨어 통과용)
-        $adminRole = Role::firstOrCreate(
-            ['identifier' => 'admin'],
-            [
-                'name' => json_encode(['ko' => '관리자', 'en' => 'Administrator']),
-                'description' => json_encode(['ko' => '시스템 관리자', 'en' => 'System Administrator']),
-                'extension_type' => ExtensionOwnerType::Core,
-                'extension_identifier' => 'core',
-                'is_active' => true,
-            ]
-        );
-
-        // super_admin 역할 생성
-        $superAdminRole = Role::firstOrCreate(
-            ['identifier' => 'super_admin'],
-            [
-                'name' => json_encode(['ko' => '최고관리자', 'en' => 'Super Administrator']),
-                'description' => json_encode(['ko' => '최고 권한 관리자', 'en' => 'Super Administrator']),
-                'extension_type' => ExtensionOwnerType::Core,
-                'extension_identifier' => 'core',
-                'is_active' => true,
-            ]
-        );
-
-        // core.settings.update 권한 생성 및 역할에 할당
-        $permission = Permission::firstOrCreate(
-            ['identifier' => 'core.settings.update'],
-            [
-                'name' => json_encode(['ko' => '설정 수정', 'en' => 'Update Settings']),
-                'description' => json_encode(['ko' => '설정 수정 권한', 'en' => 'Update Settings Permission']),
-                'extension_type' => ExtensionOwnerType::Core,
-                'extension_identifier' => 'core',
-                'type' => 'admin',
-            ]
-        );
-
-        if (! $superAdminRole->permissions()->where('permissions.id', $permission->id)->exists()) {
-            $superAdminRole->permissions()->attach($permission->id);
-        }
-
-        // 사용자에게 admin 역할과 super_admin 역할 모두 할당
-        $user->roles()->attach($adminRole->id, [
-            'assigned_at' => now(),
-            'assigned_by' => null,
-        ]);
-        $user->roles()->attach($superAdminRole->id, [
-            'assigned_at' => now(),
-            'assigned_by' => null,
-        ]);
+        $user = $this->createAdminUser();
+        $user->forceFill(['is_super' => true])->save();
 
         return $user->fresh();
     }
@@ -898,6 +849,154 @@ class SettingsControllerTest extends TestCase
             ->assertJsonValidationErrors(['value']);
     }
 
+    /**
+     * 허용값이 닫힌 설정(실행 모드)은 단건 저장 경로에서도 선언 밖 값을 거부한다.
+     *
+     * 회귀 테스트 (#609 G1 검증 16.2 #1): 벌크 저장(`SaveSettingsRequest`)만 허용값을
+     * 검사하면 `PUT /settings/{key}` 가 우회로가 되어 임의 문자열이 `system.json` 에 남는다.
+     * 런타임은 Auto 로 폴백해 파손은 없지만 설정 파일에 뜻 모를 값이 기록되는 것 자체를 막는다.
+     *
+     * @scenario setting_key=system.execution_mode,value_kind=undeclared
+     *
+     * @effects single_key_update_rejects_undeclared_enumerated_value
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_rejects_undeclared_execution_mode(): void
+    {
+        $response = $this->authRequest()->putJson('/api/admin/settings/system.execution_mode', [
+            'value' => 'garbage',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['value']);
+    }
+
+    /**
+     * 선언된 실행 모드 값은 단건 저장 경로로 저장된다.
+     *
+     * @scenario setting_key=system.execution_mode,value_kind=declared
+     *
+     * @effects single_key_update_accepts_declared_enumerated_value
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_accepts_declared_execution_mode(): void
+    {
+        $response = $this->authRequest()->putJson('/api/admin/settings/system.execution_mode', [
+            'value' => 'inprocess',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true]);
+    }
+
+    /**
+     * 형제 허용값 설정(자산 URL 방식)도 같은 게이트를 탄다 — 허용값 표는 한 곳(SSoT)이다.
+     *
+     * @scenario setting_key=general.asset_url_mode,value_kind=undeclared
+     *
+     * @effects single_key_update_rejects_undeclared_enumerated_value
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_rejects_undeclared_asset_url_mode(): void
+    {
+        $response = $this->authRequest()->putJson('/api/admin/settings/general.asset_url_mode', [
+            'value' => 'garbage',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['value']);
+    }
+
+    /**
+     * 벌크 저장 경로도 같은 허용값 표를 탄다.
+     *
+     * 규정은 「허용값이 닫힌 설정 키의 규칙을 벌크·단건 **양쪽**이 공유한다」인데,
+     * 측정은 단건 쪽에만 있었다 — `SaveSettingsRequest` 의 두 줄을 지워도 전 테스트가
+     * 초록이라, 한쪽이 우회로가 되는 상태를 아무것도 잡지 못했다.
+     *
+     * @scenario save_path=bulk,setting_key=general.asset_url_mode,value_kind=undeclared
+     *
+     * @effects bulk_save_rejects_undeclared_enumerated_value
+     *
+     * @return void 반환값 없음
+     */
+    public function test_store_rejects_undeclared_asset_url_mode(): void
+    {
+        $response = $this->authRequest()->postJson('/api/admin/settings', [
+            '_tab' => 'general',
+            'general' => [
+                'site_name' => 'Test Site',
+                'site_url' => 'https://test.example.com',
+                'admin_email' => 'admin@example.com',
+                'timezone' => 'Asia/Seoul',
+                'language' => 'ko',
+                'asset_url_mode' => 'garbage',
+            ],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['general.asset_url_mode']);
+    }
+
+    /**
+     * 형제 키(실행 모드)도 벌크 경로에서 같은 게이트를 탄다.
+     *
+     * @scenario save_path=bulk,setting_key=system.execution_mode,value_kind=undeclared
+     *
+     * @effects bulk_save_rejects_undeclared_enumerated_value
+     *
+     * @return void 반환값 없음
+     */
+    public function test_store_rejects_undeclared_execution_mode(): void
+    {
+        $response = $this->authRequest()->postJson('/api/admin/settings', [
+            '_tab' => 'general',
+            'general' => [
+                'site_name' => 'Test Site',
+                'site_url' => 'https://test.example.com',
+                'admin_email' => 'admin@example.com',
+                'timezone' => 'Asia/Seoul',
+                'language' => 'ko',
+            ],
+            'system' => [
+                'execution_mode' => 'garbage',
+            ],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['system.execution_mode']);
+    }
+
+    /**
+     * 선언된 값은 벌크 경로로 저장된다 — 게이트가 정상 입력까지 막지 않는다.
+     *
+     * @scenario save_path=bulk,setting_key=general.asset_url_mode,value_kind=declared
+     *
+     * @effects bulk_save_accepts_declared_enumerated_value
+     *
+     * @return void 반환값 없음
+     */
+    public function test_store_accepts_declared_asset_url_mode(): void
+    {
+        $response = $this->authRequest()->postJson('/api/admin/settings', [
+            '_tab' => 'general',
+            'general' => [
+                'site_name' => 'Test Site',
+                'site_url' => 'https://test.example.com',
+                'admin_email' => 'admin@example.com',
+                'timezone' => 'Asia/Seoul',
+                'language' => 'ko',
+                'asset_url_mode' => 'extensionless',
+            ],
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true]);
+    }
+
     // ========================================================================
     // 시스템 정보 테스트 (systemInfo)
     // ========================================================================
@@ -1151,7 +1250,7 @@ class SettingsControllerTest extends TestCase
     }
 
     /**
-     * 앱 키 재생성 시 super_admin 역할 필수
+     * 앱 키 재생성은 최고관리자(`is_super`)만 — 최고관리자가 아닌 관리자는 403
      *
      * @scenario case=maintenance
      *
@@ -1159,19 +1258,20 @@ class SettingsControllerTest extends TestCase
      *
      * @return void 반환값 없음
      */
-    public function test_regenerate_app_key_requires_super_admin_role(): void
+    public function test_regenerate_app_key_requires_super_admin(): void
     {
-        // 일반 admin 역할로 요청
+        // 최고관리자 표지가 없는 관리자로 요청
         $response = $this->authRequest()->postJson('/api/admin/settings/regenerate-app-key', [
             'password' => 'password123',
         ]);
 
-        // authorize 실패로 403 반환
-        $response->assertStatus(403);
+        // 라우트의 최고관리자 관문(super.admin)이 거부
+        $response->assertStatus(403)
+            ->assertJsonPath('message', __('auth.super_admin_required'));
     }
 
     /**
-     * super_admin 역할로 앱 키 재생성 성공
+     * 최고관리자로 앱 키 재생성 성공
      *
      * @scenario case=maintenance
      *
@@ -2058,11 +2158,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 사용량 조회 실패 시 폴백 배열 구조 검증: unknownUsage 는 total/used/free 를
-     * 'unknown' 으로, percentage 를 0 으로 채워 memory_usage·disk_usage 형식을 유지한다.
+     * 'unknown' 으로, percentage 를 null(측정 불가) 로 채워 memory_usage·disk_usage 형식을 유지한다.
+     * 0 이 아니다 — 0 은 실측 0% 라 측정 불가와 구분되지 않는다 (#609 A-8).
      *
      * @scenario probe_item=memory_usage,probe_outcome=throws_error,auth_state=authenticated_with_permission
      *
-     * @effects usage_array_fallback_keeps_total_used_free_unknown_and_percentage_zero
+     * @effects usage_array_fallback_keeps_total_used_free_unknown_and_percentage_null
      *
      * @return void 반환값 없음
      */
@@ -2082,7 +2183,7 @@ class SettingsControllerTest extends TestCase
         $this->assertSame(__('common.unknown'), $fallback['total']);
         $this->assertSame(__('common.unknown'), $fallback['used']);
         $this->assertSame(__('common.unknown'), $fallback['free']);
-        $this->assertSame(0, $fallback['percentage']);
+        $this->assertNull($fallback['percentage']);
     }
 
     /**

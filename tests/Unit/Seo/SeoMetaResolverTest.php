@@ -5,6 +5,7 @@ namespace Tests\Unit\Seo;
 use App\Seo\ExpressionEvaluator;
 use App\Seo\SeoMetaResolver;
 use App\Services\SettingsService;
+use App\Support\AssetUrl;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
@@ -41,6 +42,10 @@ class SeoMetaResolverTest extends TestCase
         // 실려 들어오므로, 미고정 시 og site_name fallback 단언이 환경에 좌우된다.
         Config::set('g7_settings.core.seo.og_default_site_name', '');
         Config::set('g7_settings.core.general.site_name', '그누보드7 쇼핑몰');
+        // og:image 썸네일 변환(ThumbnailUrl::for(…, 'og'))이 보는 키 — 로컬 업로드 탭 저장값이 스며들지 않게 고정
+        Config::set('core.thumbnail.enabled', true);
+        Config::set('g7_settings.core.seo.og_image_default_width', 1200);
+        Config::set('g7_settings.core.seo.og_image_default_height', 630);
     }
 
     /**
@@ -1600,6 +1605,140 @@ class SeoMetaResolverTest extends TestCase
     }
 
     /**
+     * 선언 경로의 `og:image` 가 마운트 접두사를 **한 번만** 싣는다.
+     *
+     * 이 자리에 오는 값은 레이아웃이 선언한 표현식의 평가 결과이고, 그 표현식을
+     * **모듈이 편집기 칩으로 광고한다** — `sirsoft-board` 는 `{{post.data.thumbnail}}`,
+     * `sirsoft-ecommerce` 는 `{{product.data.thumbnail_url}}` 를 칩으로 제시한다.
+     * 두 값의 생산자는 `AssetUrl::basePrefix()` 를 이미 실어 주므로, 종전의 `url()`
+     * (오리진 + 접두사)로는 `https://host/g7/g7/api/…` 가 나가고 그 주소는 404 다.
+     *
+     * 앞서 게시판 모듈의 **기본값** 경로에서 고친 것과 같은 실패가 한 계층 위
+     * (코어 해석기)에 남아 있었다 — 운영자가 편집기에서 칩을 고르는 순간 재현된다.
+     *
+     * @effects declared_og_image_carries_the_mount_prefix_once
+     *
+     * @return void 반환값 없음
+     */
+    public function test_declared_og_image_carries_the_mount_prefix_once(): void
+    {
+        // 마운트를 **실제로** 재현한다. `forceBasePrefix` 만 걸면 `url()` 은 그 값을
+        // 보지 않아 되돌림 변이가 동작 축에서 조용히 통과한다 — `url()` 의 오리진은
+        // config 가 아니라 **요청 root** 이므로 `URL::forceRootUrl()` 까지 걸어야
+        // 그 헬퍼가 진짜로 이중 접두를 만든다 (실측).
+        Config::set('app.url', 'https://example.test/g7');
+        URL::forceRootUrl('https://example.test/g7');
+        AssetUrl::forceBasePrefix('/g7');
+
+        try {
+            $seoConfig = [
+                'og' => [
+                    'image' => '{{product.data.thumbnail_url}}',
+                    'image_secure_url' => '{{product.data.thumbnail_url}}',
+                ],
+                'twitter' => ['image' => '{{product.data.thumbnail_url}}'],
+            ];
+            // 생산자(`ProductImage::apiDownloadUrl()`)가 접두사를 실은 값
+            $context = ['product' => ['data' => [
+                'thumbnail_url' => '/g7/api/modules/sirsoft-ecommerce/product-image/abc',
+            ]]];
+
+            $result = $this->resolver->resolve($seoConfig, $context, 'sirsoft-ecommerce', null, []);
+
+            foreach ([$result['og']['image'], $result['og']['image_secure_url'], $result['twitter']['image']] as $url) {
+                $this->assertStringNotContainsString('/g7/g7/', $url, '접두사가 두 번 실렸다 — 그 주소는 404 다');
+                $this->assertStringStartsWith('http', $url);
+                $this->assertStringEndsWith('/g7/api/modules/sirsoft-ecommerce/product-image/abc', $url);
+            }
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+            URL::forceRootUrl(null);
+        }
+    }
+
+    /**
+     * 접두사가 없는 사이트 경로에는 접두사를 **채운다** — 반대 방향 대조.
+     *
+     * 레이아웃이 리터럴로 적은 경로(`/img/og.png`)에 접두사를 붙일 주체는 이 자리뿐이다.
+     * 오리진만 붙이는 것으로 고치면 이쪽이 조용히 깨진다.
+     *
+     * @effects declared_og_image_carries_the_mount_prefix_once
+     *
+     * @return void 반환값 없음
+     */
+    public function test_declared_og_image_gains_the_prefix_when_it_has_none(): void
+    {
+        Config::set('app.url', 'https://example.test/g7');
+        URL::forceRootUrl('https://example.test/g7');
+        AssetUrl::forceBasePrefix('/g7');
+
+        try {
+            $result = $this->resolver->resolve(
+                ['og' => ['image' => '/img/og.png']],
+                [],
+                'sirsoft-ecommerce',
+                null,
+                [],
+            );
+
+            $this->assertStringEndsWith('/g7/img/og.png', $result['og']['image']);
+            $this->assertStringStartsWith('http', $result['og']['image']);
+            $this->assertStringNotContainsString('/g7/g7/', $result['og']['image']);
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+            URL::forceRootUrl(null);
+        }
+    }
+
+    /**
+     * 사이트 경로가 아닌 값은 손대지 않는다 — 과잉 전환 대조.
+     *
+     * @effects declared_og_image_carries_the_mount_prefix_once
+     *
+     * @return void 반환값 없음
+     */
+    public function test_declared_og_image_leaves_non_site_paths_untouched(): void
+    {
+        AssetUrl::forceBasePrefix('/g7');
+
+        try {
+            $result = $this->resolver->resolve(
+                ['og' => ['image' => '//cdn.example.com/y.png']],
+                [],
+                'sirsoft-ecommerce',
+                null,
+                [],
+            );
+
+            $this->assertSame('//cdn.example.com/y.png', $result['og']['image']);
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
+    }
+
+    /**
+     * 봇 메타의 자산 주소를 `url()` 로 만들지 않는다 (소스 계약).
+     *
+     * 값 단언만으로는 재발을 못 막는다 — `config('app.url')` 에 접두사가 없는 개발
+     * 환경에서는 `url()` 도 같은 값을 내기 때문이다.
+     *
+     * @effects declared_og_image_carries_the_mount_prefix_once
+     *
+     * @return void 반환값 없음
+     */
+    public function test_meta_resolver_never_builds_asset_urls_with_the_url_helper(): void
+    {
+        $source = (string) file_get_contents(base_path('app/Seo/SeoMetaResolver.php'));
+        $code = (string) preg_replace(['#/\*.*?\*/#s', '#//[^\n]*#'], '', $source);
+
+        $this->assertSame(
+            0,
+            preg_match_all('/(?<![\w>$])url\s*\(/', $code),
+            'SeoMetaResolver 가 `url()` 을 쓴다 — 그 헬퍼는 오리진과 마운트 접두사를 함께 붙이므로 접두사를 이미 실은 값에서 이중 접두가 된다',
+        );
+    }
+
+    /**
      * og:image:width / og:image:height 가 코어 설정 fallback 으로 채워집니다.
      *
      * @scenario field=og, source=core_settings
@@ -1692,7 +1831,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=og, source=layout_declaration
      *
-     * @effects og_extra_product_price_emitted
+     * @effects og_extra_product_price_emitted, og_extra_meta_tags_are_emitted
      *
      * @return void 반환값 없음
      */
@@ -2204,6 +2343,91 @@ class SeoMetaResolverTest extends TestCase
         $this->assertSame('', SeoMetaResolver::composeTitleSuffix('가죽 크로스백', ''));
         $this->assertSame('', SeoMetaResolver::composeTitleSuffix('', '  '));
         $this->assertSame('', SeoMetaResolver::composeTitleSuffix('', '| '));
+    }
+
+    /**
+     * og 이미지가 코어 첨부 주소면 og 규격 썸네일 주소(`size=og`)로 렌더한다 — og:image·secure_url·twitter:image 셋 다.
+     *
+     * 선언 크기(SEO 탭 1200×630)와 실제 이미지 크기를 맞춘다(D40). 데이터(`og.image`)는 바꾸지 않고 렌더에서만 바꾼다.
+     *
+     * @effects og_image_rendered_as_og_thumbnail
+     *
+     * @return void 반환값 없음
+     */
+    public function test_core_attachment_og_image_renders_as_og_thumbnail(): void
+    {
+        Config::set('app.url', 'https://site.test');
+
+        $result = $this->resolver->resolve([
+            'og' => [
+                'title' => '글',
+                'image' => '/api/attachment/abcdefabcdef',
+                'image_secure_url' => 'https://site.test/api/attachment/abcdefabcdef',
+            ],
+        ], [], null, null, []);
+
+        $this->assertStringContainsString('og:image" content="https://site.test/api/attachment/abcdefabcdef?size=og"', $result['ogTags']);
+        $this->assertStringContainsString('og:image:secure_url" content="https://site.test/api/attachment/abcdefabcdef?size=og"', $result['ogTags']);
+        $this->assertStringContainsString('og:image:width" content="1200"', $result['ogTags']);
+        $this->assertStringContainsString('twitter:image" content="https://site.test/api/attachment/abcdefabcdef?size=og"', $result['twitterTags']);
+        $this->assertStringNotContainsString('size=og', (string) $result['og']['image'], '해석 데이터는 원 주소 그대로');
+    }
+
+    /**
+     * 레이아웃이 og 이미지 크기를 직접 선언했으면 변환하지 않는다(선언 존중). 트위터가 따로 이미지를 주면 그것은 변환한다.
+     *
+     * @effects og_image_declared_size_respected
+     *
+     * @return void 반환값 없음
+     */
+    public function test_declared_og_image_size_skips_the_thumbnail(): void
+    {
+        Config::set('app.url', 'https://site.test');
+
+        $declared = $this->resolver->resolve([
+            'og' => [
+                'image' => '/api/templates/sirsoft-basic/layout-attachments/3/file',
+                'image_width' => 800,
+                'image_height' => 800,
+            ],
+        ], [], null, null, []);
+
+        $this->assertStringContainsString('og:image" content="https://site.test/api/templates/sirsoft-basic/layout-attachments/3/file"', $declared['ogTags']);
+        $this->assertStringContainsString('og:image:width" content="800"', $declared['ogTags']);
+        $this->assertStringNotContainsString('size=og', $declared['ogTags'].$declared['twitterTags'], '트위터도 og 선언 크기를 승계한다');
+
+        $ownTwitterImage = $this->resolver->resolve([
+            'og' => [
+                'image' => '/api/attachment/abcdefabcdef',
+                'image_width' => 800,
+            ],
+            'twitter' => ['image' => '/api/attachment/bbbbbbbbbbbb'],
+        ], [], null, null, []);
+
+        $this->assertStringNotContainsString('abcdefabcdef?size=og', $ownTwitterImage['ogTags']);
+        $this->assertStringContainsString('twitter:image" content="https://site.test/api/attachment/bbbbbbbbbbbb?size=og"', $ownTwitterImage['twitterTags']);
+    }
+
+    /**
+     * 외부 주소·정적 주소·기능 꺼짐은 그대로 둔다.
+     *
+     * @effects og_image_external_untouched
+     *
+     * @return void 반환값 없음
+     */
+    public function test_external_or_static_og_image_is_untouched(): void
+    {
+        Config::set('app.url', 'https://site.test');
+
+        $external = $this->resolver->resolve(['og' => ['image' => 'https://cdn.example.com/api/attachment/abcdefabcdef']], [], null, null, []);
+        $this->assertStringContainsString('og:image" content="https://cdn.example.com/api/attachment/abcdefabcdef"', $external['ogTags']);
+
+        $static = $this->resolver->resolve(['og' => ['image' => '/storage/og/default.png']], [], null, null, []);
+        $this->assertStringNotContainsString('size=og', $static['ogTags']);
+
+        Config::set('core.thumbnail.enabled', false);
+        $disabled = $this->resolver->resolve(['og' => ['image' => '/api/attachment/abcdefabcdef']], [], null, null, []);
+        $this->assertStringNotContainsString('size=og', $disabled['ogTags'].$disabled['twitterTags']);
     }
 
     /**

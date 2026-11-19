@@ -170,13 +170,55 @@ if (! function_exists('g7_cli_run_install')) {
         }
 
         // [5] 설치
-        $plan = installer_begin_installation(getInstallationState(), $config, [], $action, $drop['token'] ?? null, ['installation_mode' => 'cli']);
+        $plan = g7_cli_begin_installation(getInstallationState(), $config, [], $action, $drop['token'] ?? null);
         // 새 설치 시작이 로그를 새로 만들므로 넘겨받은 사실을 그 뒤에 다시 남긴다 (3.6).
         if ($takeover && $plan['ok']) {
             addLog(lang('log_cli_takeover'));
         }
 
         return g7_cli_execute($out, $plan, $drop['token'] ?? null, $webUser);
+    }
+}
+
+if (! function_exists('g7_cli_begin_installation')) {
+    /**
+     * [5] 설치 시작 계획 확정 — 웹 설치 시작(api/install-process.php)과 같이 실행 방식을 진입 때 한 번 판정해 state 에 고정한다.
+     *
+     * 판정은 설치 계획 확정보다 먼저 내리고, 그 결과(`execution_mode_resolved`·`php_binary_resolved`)는 state_extra 로
+     * 넘겨 계획 서명에 함께 들어가게 한다. 고정하지 않으면 작업마다 감지를 다시 해 한 설치 안에서 두 판정이 어긋날 수
+     * 있고(R1), 자동 탐색한 PHP 경로가 실행에 쓰이지 않는다(D35). vendor 방식은 유효 실행 방식으로 보정한다(A-4) —
+     * inprocess 면 composer 가 성립하지 않으므로 bundled 다. 새 설치·이어 설치가 이 함수 하나를 지난다.
+     *
+     * @param  array<string, mixed>  $state  현재 state (generation 포함)
+     * @param  array<string, mixed>  $config  설치 config
+     * @param  array<string, string>  $secrets  비밀값 (admin_password·db_write_password·db_read_password)
+     * @param  string  $existingDbAction  skip|drop_tables
+     * @param  string|null  $dropConfirmToken  기존 테이블 삭제 확인 토큰
+     * @return array<string, mixed> installer_begin_installation 결과
+     */
+    function g7_cli_begin_installation(array $state, array $config, array $secrets, string $existingDbAction, ?string $dropConfirmToken): array
+    {
+        $executionResolution = installerResolveExecutionMode($config);
+        $executionMode = $executionResolution['mode'];
+        $config['vendor_mode'] = installerCoerceVendorModeForExecution((string) ($config['vendor_mode'] ?? 'auto'), $executionMode);
+
+        $plan = installer_begin_installation($state, $config, $secrets, $existingDbAction, $dropConfirmToken, [
+            'installation_mode' => 'cli',
+            'state_extra' => [
+                'execution_mode_resolved' => $executionMode,
+                'php_binary_resolved' => installerResolvedPhpBinary($config, $executionResolution),
+            ],
+        ]);
+
+        // 설치 계획 확정이 새 시작의 로그를 비운 뒤에 남긴다 (웹 설치 시작과 같은 순서·같은 문구).
+        if ($plan['ok']) {
+            addLog(lang('log_execution_mode_resolved', [
+                'mode' => lang('execution_mode_label_'.$executionMode),
+                'source' => lang('execution_mode_source_'.$executionResolution['source']),
+            ]));
+        }
+
+        return $plan;
     }
 }
 
@@ -364,6 +406,10 @@ if (! function_exists('g7_cli_collect_configuration')) {
             return g7_cli_fail($out, $lines, G7_CLI_EXIT_INVALID);
         }
         $config = $validated['config'];
+        // 아래 Composer 검증 여부는 vendor 방식으로 정한다 — 그 값은 유효 실행 방식으로 보정된 값이어야 한다(R9, A-4:
+        // inprocess 면 composer 가 성립하지 않으므로 bundled). 공유 검증이 이미 같은 보정을 했고 감지는 요청 안에서
+        // 캐시되므로 다시 부르는 비용은 없다 — 이 지점이 보정된 값을 읽는다는 것을 여기서 드러낸다.
+        $config['vendor_mode'] = installerCoerceVendorModeForExecution((string) $config['vendor_mode'], installerResolveExecutionMode($config)['mode']);
 
         // DB 연결·권한 (웹 DB 테스트와 같은 함수)
         $write = installer_test_database([
@@ -544,7 +590,7 @@ if (! function_exists('g7_cli_resume')) {
         }
 
         $token = is_string($runtime['cli_drop_confirm_token'] ?? null) ? $runtime['cli_drop_confirm_token'] : null;
-        $plan = installer_begin_installation($state, $state['config'] ?? [], $secrets, (string) ($state['existing_db_action'] ?? 'skip'), $token, ['installation_mode' => 'cli']);
+        $plan = g7_cli_begin_installation($state, $state['config'] ?? [], $secrets, (string) ($state['existing_db_action'] ?? 'skip'), $token);
 
         return g7_cli_execute($out, $plan, $token, $webUser);
     }
@@ -563,13 +609,23 @@ if (! function_exists('g7_cli_execute')) {
     function g7_cli_execute(G7CliOutput $out, array $plan, ?string $dropToken, ?array $webUser): int
     {
         if (! $plan['ok']) {
-            $code = match ($plan['error_code']) {
+            // `.env` 가 없거나 쓸 수 없는 것은 입력 오류가 아니라 서버 준비 문제다 — 요구사항 미충족(4)으로 끝내고
+            // 고칠 명령을 함께 보인다. 쓰기 불가로 시작하면 작업이 다 끝나도 완료 표식을 남기지 못해 설치 화면이
+            // 열린 채 남으므로 설치 계획 확정이 시작을 거부한다(22차 #22-1) — 웹 설치 화면의 쓰기 불가 안내와 같은 갈래다.
+            $code = match ($plan['error_code'] ?? null) {
                 'state_conflict' => G7_CLI_EXIT_CONFLICT,
-                'env_not_found' => G7_CLI_EXIT_REQUIREMENTS,
+                'env_not_found', 'env_not_writable' => G7_CLI_EXIT_REQUIREMENTS,
                 default => G7_CLI_EXIT_INVALID,
             };
 
-            return g7_cli_fail($out, [(string) $plan['message']], $code);
+            $lines = [(string) $plan['message']];
+            if (($plan['error_code'] ?? null) === 'env_not_writable') {
+                $lines[] = getPermissionFixCommand(BASE_PATH.'/.env', 'file');
+            } elseif (($plan['error_code'] ?? null) === 'env_not_found') {
+                $lines[] = getEnvCopyCommand(BASE_PATH);
+            }
+
+            return g7_cli_fail($out, $lines, $code);
         }
         if ($plan['warning'] !== null) {
             $out->warn($plan['warning']);
@@ -590,6 +646,11 @@ if (! function_exists('g7_cli_execute')) {
         $out->step(5, lang('step_5_installation'));
         $out->info(lang('cli_abort_hint'));
         $workerId = (string) $lock['worker_id'];
+        // 이 프로세스가 점유한 잠금을 알린다 — 웹 워커 입구(run-task·install-worker·install-process)와 같은 배선.
+        // 알리지 않으면 상태를 읽는 단일 지점의 「예산을 넘긴 점유자 = 죽은 워커」 승격이 자기 자신을 대상으로 삼아,
+        // 심장박동 없이 오래 걸린 단계가 끝나는 순간 자기 잠금을 지우고 「다른 설치 작업이 잠금을 넘겨받았다」로
+        // 멈춘다(그 단계의 완료 표시도 남지 않는다). 하위 명령 실행 직전의 점유 시간 연장도 이 값으로 자기 잠금을 찾는다.
+        installerCurrentWorkerId($workerId);
         setProgressEmitter($out->json ? new JsonLinesEmitter($workerId) : new CliEmitter($workerId));
 
         try {
@@ -634,7 +695,7 @@ if (! function_exists('g7_cli_execute')) {
         }
         $appUrl = rtrim((string) ($state['config']['app_url'] ?? ''), '/');
 
-        $finalize = installer_finalize_env();
+        $finalize = g7_cli_finalize_env();
         if (! $finalize['success']) {
             $warnings[] = lang('cli_finalize_failed_warning');
         } elseif (! empty($finalize['runtime_cleanup_failed'])) {
@@ -645,6 +706,39 @@ if (! function_exists('g7_cli_execute')) {
         g7_cli_apply_web_user_if_root($out, $webUser);
 
         return g7_cli_print_completion($out, $appUrl, $warnings, $webUser['group'] ?? null);
+    }
+}
+
+if (! function_exists('g7_cli_finalize_env')) {
+    /**
+     * .env 확정 + 웹 노출 점검 잔여물 정리 — 웹 마무리 엔드포인트(api/finalize-env.php)와 같은 정리를 터미널도 한다.
+     *
+     * 정리 대상은 Step 2 노출 점검·링크 실측이 storage 에 남긴 1회용 sentinel 과 점검 상한 상태 파일이다. 터미널이
+     * 넘겨받은 웹 설치나 같은 사이트에서 먼저 열었던 설치 화면이 남긴 것도 여기서만 걷힌다. 확정이 실패하거나
+     * 예외로 끝나도 정리는 한다(`finally`) — 성공 흐름에만 두면 실패 경로마다 파일이 남는다. 쓸지 못했다는 사실은
+     * 웹과 같은 문구로 설치 로그에 남긴다.
+     *
+     * @return array<string, mixed> installer_finalize_env 결과
+     */
+    function g7_cli_finalize_env(): array
+    {
+        try {
+            return installer_finalize_env();
+        } finally {
+            $probeCleanup = installerCleanupExposureProbe();
+            if (! $probeCleanup['swept']) {
+                addLog(lang('log_finalize_env_probe_sweep_unwritable', [
+                    'reason' => (string) ($probeCleanup['reason'] ?? 'unknown'),
+                ]));
+            } elseif ($probeCleanup['failed'] > 0) {
+                addLog(lang('log_finalize_env_probe_sweep_partial', [
+                    'failed' => (string) $probeCleanup['failed'],
+                    'removed' => (string) $probeCleanup['removed'],
+                ]));
+            } else {
+                addLog(lang('log_finalize_env_probe_sweep_done', ['removed' => (string) $probeCleanup['removed']]));
+            }
+        }
     }
 }
 

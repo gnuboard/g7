@@ -1,0 +1,39 @@
+feature: 레이아웃 편집기 — 편집기 스펙 네임스페이스 병합
+
+description: |
+  편집기 스펙 로더(`editorSpecLoader.ts` `loadEditorSpecBundle`)가 코어 시드, 활성 모듈, 활성 플러그인,
+  편집 대상 템플릿의 스펙을 한 병합본으로 합치는 규칙을 잠근다. record 블록은 key 병합(템플릿 최우선),
+  팔레트·상태 묶음은 concat, nesting 은 union, sampleGlobal 은 순서 있는 소스 목록으로 낸다.
+  비활성 확장은 묶음 요청에 넣지 않는다. 요청 수(묶음 한 번)는 layout-editor-editor-spec-bundle 이 잠근다.
+
+axes:
+  merge_case:
+    - all_sources
+    - action_chip_candidates
+    - record_conflict
+    - sample_global_order
+    - inactive_not_requested
+    - all_missing
+    - by_source_split
+    - by_source_accumulate
+    - lookup_helpers
+    - state_scope_lookup
+    - page_setting_blocks
+    - core_seed
+
+effects:
+  - template_module_plugin_specs_merge_into_one
+  - action_chip_candidates_concat_per_context
+  - template_wins_record_block_conflict
+  - sample_global_sources_keep_merge_order
+  - inactive_extension_not_requested
+  - all_missing_specs_yield_null
+  - by_source_keeps_each_source_separately
+  - by_source_accumulates_ids_of_same_source
+  - lookup_helpers_read_merged_spec
+  - state_groups_filtered_by_scope
+  - page_setting_blocks_merge_with_source
+  - core_seed_is_base_and_overridable
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/editorSpecLoader.test.ts

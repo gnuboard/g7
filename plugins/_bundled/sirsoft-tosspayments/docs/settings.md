@@ -38,7 +38,10 @@
 플래그가 실제로 체크아웃 화면의 개별 버튼 노출 여부를 결정합니다(§AGENTS.md "이 확장은
 무엇인가"). `vbank_valid_hours`(1~2160시간)와 `use_escrow`(`off`/`on`/`buyer_choice`)는
 `ValidateTossSettingsListener`가 저장 시점에 범위를 강제합니다 — UI 의 input 힌트만으로는
-관리자 설정 저장 API 직접 호출을 막을 수 없기 때문입니다. `webhook_secret_verify`를 끄면
+관리자 설정 저장 API 직접 호출을 막을 수 없기 때문입니다. 설정 화면의 에스크로 운영 안내는
+`(_local.form?.use_escrow ?? settings?.data?.use_escrow ?? 'off') !== 'off'` 일 때만 보입니다 — 폼 값
+(initLocal)은 받은 설정을 그린 다음 박자에 들어오므로, 폼 값만 보면 그 한 박자에 `undefined !== 'off'` 로
+안내가 번쩍입니다. `webhook_secret_verify`를 끄면
 가상계좌 웹훅의 유일한 위조 방지 수단이 사라지므로 기본값 `true`를 유지해야 합니다.
 끄면 주문번호만 아는 사람도 입금 없이 주문을 결제완료로 만들 수 있고, 끈 상태에서 생긴 보안 사고는 운영자 책임입니다(스위치는 운영자 선택으로 남겨 둡니다 — 2026-09-29 결정).
 <!-- @intent END -->
@@ -67,6 +70,11 @@ _등록하는 메뉴가 없습니다._
 난립합니다.
 <!-- @intent END -->
 
+## 설정 화면 권한
+
+- 들어가기: 「플러그인 보기」(`core.plugins.read`). 「플러그인 수정」 권한이 없으면 읽기 전용 안내와 함께 보이고 입력·저장·변경 단추가 잠깁니다 — 화면 계산값 `isPluginReadOnly` 는 조회 응답 `abilities.can_update !== true` 입니다.
+- 저장·변경: 서버가 수정 권한으로 막습니다(아래 「라우트」 표의 권한). 화면 진입 권한을 「수정」으로 올리지 마세요 — 보기 권한만 있는 운영자가 「레이아웃 접근 권한이 없습니다」 오류 화면만 보게 됩니다(#434, 잠금 시험 `tests/Unit/Plugins/PluginSettingsLayoutPermissionTest.php`).
+
 ## 라우트
 
 <!-- @generated:routes START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
@@ -92,7 +100,7 @@ _등록하는 메뉴가 없습니다._
 
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
-| `sirsoft-ecommerce` | 모듈 | `>=1.3.3` | ✅ |
+| `sirsoft-ecommerce` | 모듈 | `>=1.4.0` | ✅ |
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 

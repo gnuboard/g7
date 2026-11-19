@@ -78,6 +78,18 @@ src/index.ts               initTemplate() — 핸들러 등록 · IDV launcher �
 
 이커머스가 공개하는 키(`preferredCurrency`·`guestOrderToken` 등)는 이 템플릿이 쓰는 쪽이며, 목록은 이커머스 모듈 문서
 「다른 확장이 읽는 전역 상태」에 있습니다.
+
+### 고정 헤더와 스크롤 기준선
+
+데스크톱 헤더(`Header`)와 모바일 툴바는 화면 위에 붙어 있습니다(`sticky top-0`, 둘 다 `.g7-site-header`). 데스크톱 헤더가 부르는
+`useHeaderOverlayController`(`src/support/headerOverlay.ts`)가 보이는 헤더 높이를 문서 뿌리 CSS 변수로 알립니다.
+
+| 변수 | 언제 | 쓰는 곳 |
+|---|---|---|
+| `--g7-sticky-header-height` | 언제나(헤더가 없으면 지움) | `main.css` 의 `html { scroll-padding-top }` — 키보드 초점 이동·앵커 이동이 대상을 헤더 밑에 두지 않게 한다(WCAG 2.4.11) |
+| `--g7-header-height` | 배너가 메뉴 겹침(`data-header-overlay`)을 알릴 때만 | 본문 앞 전폭 자리(`.g7-page-top`)를 위로 당기고, 배너가 문구를 그만큼 내린다 |
+
+헤더를 고정하지 않도록 바꾸거나 다른 고정 요소를 화면 위에 더하면 `--g7-sticky-header-height` 계산(`visibleHeaderHeight()`)도 함께 맞춥니다.
 <!-- @intent END -->
 
 ## 디렉토리
@@ -102,3 +114,7 @@ src/index.ts               initTemplate() — 핸들러 등록 · IDV launcher �
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
+
+## 첫 화면에 미리 싣는 템플릿 설정 (expose)
+
+`template.json` 최상위 `expose` 에 `scroll_restoration`·`errorHandling`·`error_config` 를 선언한다. 서버가 그 키의 값만 화면 HTML (`G7Config.templateConfig`)에 함께 실어 엔진이 앱 시작 때 템플릿 설정 API 를 부르지 않는다(코어 engine-v1.96.0 부터). template.json 에 없는 키는 `null` 로 실린다. 엔진이 읽는 키를 새로 template.json 에 더하면 `expose` 에도 더한다 — 빠지면 설치·업데이트 결과에 경고가 나오고 첫 화면에 API 왕복이 1회 남는다. 형식은 코어 문서 「템플릿 기초 — 첫 화면에 미리 싣는 키」.

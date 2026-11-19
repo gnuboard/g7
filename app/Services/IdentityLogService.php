@@ -38,12 +38,21 @@ class IdentityLogService
     /**
      * 보관주기 경과 로그를 파기합니다.
      *
+     * 로그를 참조하는 자식 행은 확장(본인확인 플러그인 등)이 소유해 코어가 그 테이블을 모른다. 그래서 배치마다
+     * 지우기 직전에 `core.identity_logs.before_purge` 훅을 그 배치의 로그 ID 목록으로 발화하고, 소유 확장의
+     * 리스너가 자기 자식 행을 명시적으로 지운다(DB CASCADE 비의존).
+     *
      * @param  int  $days  보관 일수 (기본 180)
      * @return int 삭제된 행 수
      */
     public function purge(int $days = 180): int
     {
-        return $this->logRepository->purgeOlderThan(max(1, $days));
+        return $this->logRepository->purgeOlderThan(
+            max(1, $days),
+            static function (array $logIds): void {
+                HookManager::doAction('core.identity_logs.before_purge', $logIds);
+            }
+        );
     }
 
     /**

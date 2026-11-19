@@ -1,0 +1,64 @@
+<!-- 제작자 신뢰 키 삭제 확인 창(#916, 「확장 신뢰 키」 카드의 키 행 [삭제]가 연다). 대상은 행이 담아 준 `_global.trustKeyDeleteTarget`.
+  삭제는 탭 저장과 분리된 전용 API(DELETE /api/admin/extension-trust-keys/{id}) 이고 본인 비밀번호를 다시 받는다 —
+  지운 키로 서명된 확장은 다음 설치·업데이트부터 미신뢰 키로 막히므로 자리를 비운 사이 남이 누르는 것을 막는다.
+  비밀번호 없는 관리자는 칸이 없고 서버의 본인인증 요구(428)를 엔진이 받는다. 입력한 비밀번호는 창을 닫으면(어느 갈래로든) 지운다. -->
+<partial editor_label="$t:admin.modal_label.admin_settings.extension_trust_key_delete_modal" description="확장 신뢰 키 삭제 확인 모달">
+  <modal data-type="composite" data-ref="extension_trust_key_delete_modal" title="$t:admin.settings.extension_trust_key_modal.delete_title" size="sm">
+    <div class="py-2 space-y-3">
+      <on event="unmount">
+        <!-- 창이 닫혀 본문이 내려갈 때(어느 갈래로 닫든) 입력한 비밀번호를 지운다 -->
+        <set-state target="global" trustKeyPassword=""/>
+      </on>
+      <p class="text-body break-all">$t:admin.settings.extension_trust_key_modal.delete_confirm|key_id={{_global.trustKeyDeleteTarget?.key_id ?? ''}}</p>
+      <div class="alert-warning">
+        <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" aria-hidden="true"/>
+        <p class="text-warning-soft">$t:admin.settings.extension_trust_key_modal.delete_warning</p>
+      </div>
+      <p data-if="{{!!_global.trustKeyError &amp;&amp; !_global.trustKeyErrors?.password}}" class="form-error">{{_global.trustKeyError}}</p>
+      <div data-if="{{current_user?.data?.has_password !== false}}">
+        <label class="form-label">$t:admin.settings.modals.enter_password</label>
+        <input type="password" value="{{_global.trustKeyPassword ?? ''}}" placeholder="$t:admin.settings.modals.password_placeholder" autoComplete="current-password" class="{{_global.trustKeyErrors?.password ? 'input input-error' : 'input'}}">
+          <on type="change">
+            <!-- 입력한 비밀번호를 전역에 담는다 — 삭제 버튼의 잠금 조건과 요청 본문이 이 값을 함께 읽는다 -->
+            <set-state target="global" trustKeyPassword="{{$event.target.value}}"/>
+          </on>
+        </input>
+        <span data-if="{{_global.trustKeyErrors?.password}}" class="form-error">{{_global.trustKeyErrors?.password?.[0] ?? ''}}</span>
+      </div>
+    </div>
+    <footer>
+      <button type="button" class="btn btn-secondary" disabled="{{_global.isDeletingTrustKey}}">
+        <on type="click">
+          <!-- 취소 — 입력한 비밀번호와 대상을 지우고 닫는다 -->
+          <sequence>
+            <set-state target="global" trustKeyPassword="" :trustKeyDeleteTarget="null" :trustKeyErrors="null" :trustKeyError="null"/>
+            <close-modal/>
+          </sequence>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button data-ref="trust_key_delete_submit" type="button" class="btn btn-danger" disabled="{{_global.isDeletingTrustKey || !_global.trustKeyDeleteTarget?.id || (current_user?.data?.has_password !== false &amp;&amp; !_global.trustKeyPassword)}}">
+        <on type="click">
+          <!-- 삭제 실행 — 성공하면 비밀번호·대상을 지우고 목록 소스만 다시 받는다. 실패(비밀번호 틀림 422·이미 없음 404)는 창 안에 남긴다 -->
+          <sequence>
+            <set-state target="global" :isDeletingTrustKey="true" :trustKeyErrors="null" :trustKeyError="null"/>
+            <api-call :auth_required="true" target="/api/admin/extension-trust-keys/{{_global.trustKeyDeleteTarget?.id}}" method="DELETE">
+              <success>
+                <set-state target="global" :isDeletingTrustKey="false" trustKeyPassword="" :trustKeyDeleteTarget="null"/>
+                <toast type="success" message="$t:admin.settings.extension_trust_key_modal.delete_success"/>
+                <refetch-data-source dataSourceId="extensionTrustKeys"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isDeletingTrustKey="false" trustKeyError="{{error.message}}" trustKeyErrors="{{error.errors &amp;&amp; Object.keys(error.errors).length &gt; 0 ? error.errors : null}}"/>
+              </fail>
+              <body password="{{_global.trustKeyPassword ?? ''}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isDeletingTrustKey}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isDeletingTrustKey ? '$t:admin.settings.extension_trust_key_modal.deleting' : '$t:admin.settings.extension_trust_key_modal.delete_submit'}}</span>
+      </button>
+    </footer>
+  </modal>
+</partial>

@@ -1,0 +1,41 @@
+feature: cache_settings_geoip_migration
+
+description: |
+  시스템 설정 캐시(`settings.system`)와 GeoIP 타임존 캐시(`geoip.timezone.{ip}`)가 코어 캐시 드라이버의
+  새 접두사(`g7:core:`)로 옮겨졌는지 고정한다(계획서 §13 E-1, E-2). SettingsService::saveSettings() 는 mail, advanced,
+  seo, drivers 탭 어느 것을 저장해도 settings.system 키를 지우고 config:clear 를 한 번 부르며, drivers 탭은
+  queue:restart 도 부른다. GeoIpService 는 조회 결과를 저장하고, 저장된 타임존이 지원 목록에 있으면 그대로 돌려준다.
+  조회에 실패하면 빈 문자열을 저장해 같은 IP 를 반복 조회하지 않고(null 반환), 캐시를 끄면 저장하지 않으며,
+  키가 사라진 뒤(TTL 만료 모사)에는 다시 조회해 저장한다.
+
+axes:
+  case:
+    - settings_store         # 설정 캐시 저장 (E-1-1)
+    - settings_hit           # 설정 캐시 재조회 (E-1-2)
+    - mail_tab_save          # mail 탭 저장 (E-1-3)
+    - advanced_tab_save      # advanced 탭 저장 (E-1-4)
+    - seo_tab_save           # seo 탭 저장 (E-1-5)
+    - drivers_tab_save       # drivers 탭 저장 (E-1-6)
+    - geoip_store            # GeoIP 조회 결과 저장 (E-2-1)
+    - geoip_hit              # GeoIP 캐시 적중 (E-2-2)
+    - geoip_failure          # GeoIP 조회 실패 (E-2-3)
+    - geoip_disabled         # GeoIP 캐시 끔 (E-2-4)
+    - geoip_expired          # GeoIP 캐시 키 소실 뒤 재조회 (E-2-5)
+
+exclusions:
+  - { case: settings_store, reason: "제외 없음 — 사례 단일 축(서비스, 탭, 캐시 상태 조합은 사례로 고정)" }
+
+effects:
+  - settings_cached_under_core_key      # settings.system 값이 has, get 으로 읽히고 g7:core: 접두사로 풀린다
+  - settings_cache_hit                  # settings.system 을 다시 읽어도 같은 값이다
+  - settings_cache_invalidated_on_save  # 탭 저장이 true 를 돌려주고 settings.system 키가 없다
+  - config_clear_called                 # 탭 저장 때 Artisan config:clear 가 한 번 불린다
+  - queue_restart_called                # drivers 탭 저장 때 Artisan queue:restart 가 한 번 불린다
+  - geoip_cached_under_core_key         # 조회 뒤 geoip.timezone.{ip} 키가 있고 g7:core: 접두사로 풀린다
+  - geoip_cached_timezone_returned      # 저장된 타임존이 지원 목록에 있으면 그 값을 돌려준다
+  - geoip_failure_cached_as_empty       # 조회 실패는 빈 문자열로 저장되고 결과는 null 이다
+  - geoip_disabled_not_stored           # 캐시를 끄면 geoip.timezone.{ip} 키가 생기지 않는다
+  - geoip_relookup_after_expiry         # 키가 사라진 뒤 조회는 다시 조회해 저장한다
+
+test_files:
+  - tests/Unit/Cache/Migration/SettingsCacheTest.php

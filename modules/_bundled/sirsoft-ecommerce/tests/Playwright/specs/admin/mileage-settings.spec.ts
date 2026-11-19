@@ -1,9 +1,9 @@
 /**
  * 관리자 마일리지 설정 — 통화 규칙 인라인 추가 확정 가드 (skeleton, placeholder).
  *
- * @scenario settings_currency_add_confirm_guard
- * @effects settings_currency_add_requires_check_confirm_before_persisting_to_rules,
- *          settings_save_blocked_with_warning_when_currency_add_row_unconfirmed
+ * @scenario ecommerce-mileage
+ * 케이스(마커 아님 — 평문): settings_currency_add_confirm_guard
+ * 효과 요약(마커 아님 — 평문): 미확정 저장 차단과 확정 후 저장 유지. 효과 마킹은 각 테스트 주석에 있다.
  *
  * 배경: 통화 추가는 2단계다 — ① 인라인 입력 행에 통화 입력(임시 객체 newMileageCurrency)
  *       → ② 체크(✓) 버튼으로 currency_rules 배열에 확정. 입력만 하고 체크 없이 저장하면
@@ -27,6 +27,7 @@ import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 const SETTINGS_URL = '/admin/ecommerce/settings?tab=mileage';
 
 test.describe.skip('관리자 마일리지 설정 — 통화 추가 확정 가드 (placeholder — data-testid 보강 후 활성화)', () => {
+  /** @effects settings_save_blocked_with_warning_when_currency_add_row_unconfirmed */
   test('미확정(체크 미클릭) 저장 — 경고 토스트 + 저장 차단', async ({ page, settingsToken }) => {
     await authenticatePage(page, settingsToken);
     await page.goto(SETTINGS_URL);
@@ -43,6 +44,7 @@ test.describe.skip('관리자 마일리지 설정 — 통화 추가 확정 가�
     await expect(page.getByTestId('mileage-currency-row-USD')).not.toBeVisible();
   });
 
+  /** @effects settings_currency_add_requires_check_confirm_before_persisting_to_rules */
   test('확정(체크 클릭) 저장 — USD 가 currency_rules 에 push 되어 저장·유지', async ({
     page,
     settingsToken,

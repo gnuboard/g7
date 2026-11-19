@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\LanguagePackScope;
+use App\Enums\LayoutSyncMode;
 use App\Exceptions\ExtensionOperationLockException;
+use App\Exceptions\PackageIntegrityException;
 use App\Exceptions\TemplateOperationException;
 use App\Extension\Helpers\IntegrationNotices;
 use App\Extension\Layout\LayoutInstallSourceScope;
@@ -11,6 +13,7 @@ use App\Extension\Layout\LayoutSyncSummary;
 use App\Extension\Vendor\VendorMode;
 use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Controllers\Concerns\HandlesExtensionUpdatePreview;
 use App\Http\Controllers\Concerns\InjectsExtensionLanguagePacks;
 use App\Http\Controllers\Concerns\OrchestratesCascadeInstall;
 use App\Http\Controllers\Concerns\RespondsWithIntegrationNotices;
@@ -44,6 +47,7 @@ use Illuminate\Validation\ValidationException;
  */
 class TemplateController extends AdminBaseController
 {
+    use HandlesExtensionUpdatePreview;
     use InjectsExtensionLanguagePacks;
     use OrchestratesCascadeInstall;
     use RespondsWithIntegrationNotices;
@@ -422,13 +426,16 @@ class TemplateController extends AdminBaseController
     {
         try {
             $file = $request->file('file');
-            $template = $this->templateService->installFromZipFile($file);
+            $template = $this->templateService->installFromZipFile($file, $request->packageIntegrityOptions());
 
             // 파일·GitHub 설치도 일반 설치와 같이 연동 안내를 싣는다 (#822 §3.3)
             return $this->withIntegrationNotices(
                 $this->successWithResource('templates.install_success', new TemplateResource($template), 201),
                 $this->buildIntegrationNotices('template', (string) data_get($template, 'identifier', ''))
             );
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409, 「미서명으로 계속」 가능 여부 포함)·서명 불일치·미신뢰 키(422) — 7.2.0
+            return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);
@@ -451,13 +458,16 @@ class TemplateController extends AdminBaseController
     {
         try {
             $githubUrl = $request->validated()['github_url'];
-            $template = $this->templateService->installFromGithub($githubUrl);
+            $template = $this->templateService->installFromGithub($githubUrl, $request->packageIntegrityOptions());
 
             // 파일·GitHub 설치도 일반 설치와 같이 연동 안내를 싣는다 (#822 §3.3)
             return $this->withIntegrationNotices(
                 $this->successWithResource('templates.install_success', new TemplateResource($template), 201),
                 $this->buildIntegrationNotices('template', (string) data_get($template, 'identifier', ''))
             );
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409, 「미서명으로 계속」 가능 여부 포함)·서명 불일치·미신뢰 키(422) — 7.2.0
+            return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);
@@ -480,10 +490,12 @@ class TemplateController extends AdminBaseController
     {
         try {
             $templateName = $request->validated()['template_name'];
+            $mode = LayoutSyncMode::from($request->validated('layout_strategy') ?? LayoutSyncMode::Keep->value);
+            $decisions = (array) ($request->validated('decisions') ?? []);
             // 관리자 창 '고급 설정'의 레이아웃 설치 소스 — 이 요청 동안만 설정을 덮고 끝나면 되돌린다(CLI --layout-source 와 같은 자리).
             $template = LayoutInstallSourceScope::run(
                 $request->validated('layout_source'),
-                fn () => $this->templateService->refreshTemplateLayouts($templateName)
+                fn () => $this->templateService->refreshTemplateLayouts($templateName, $mode, $decisions)
             );
 
             if ($template) {
@@ -498,6 +510,33 @@ class TemplateController extends AdminBaseController
             }
         } catch (ValidationException $e) {
             // 서비스가 이미 번역·포장한 문구를 그대로 쓴다 (이중 래핑 방지)
+            return $this->validationError(
+                $e->errors(),
+                collect($e->errors())->flatten()->first() ?? __('templates.refresh_layouts_failed', ['error' => SafeExceptionMessage::for($e)])
+            );
+        } catch (\Exception $e) {
+            return $this->error('templates.refresh_layouts_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
+        }
+    }
+
+    /**
+     * 레이아웃 갱신을 미리 봅니다 — 화면별 판정만 계산하고 DB 는 그대로 둡니다.
+     *
+     * @param  RefreshTemplateLayoutsRequest  $request  레이아웃 갱신 요청 (template_name·layout_strategy·decisions·layout_source)
+     * @return JsonResponse `{entries, summary, has_conflicts, conflict_screens, strategy}` 응답
+     */
+    public function refreshLayoutsPreview(RefreshTemplateLayoutsRequest $request): JsonResponse
+    {
+        try {
+            $templateName = $request->validated()['template_name'];
+            $mode = LayoutSyncMode::from($request->validated('layout_strategy') ?? LayoutSyncMode::Keep->value);
+            $preview = LayoutInstallSourceScope::run(
+                $request->validated('layout_source'),
+                fn () => $this->templateService->previewTemplateLayoutRefresh($templateName, $mode, (array) ($request->validated('decisions') ?? []))
+            );
+
+            return $this->success('templates.refresh_layouts_preview_success', $preview);
+        } catch (ValidationException $e) {
             return $this->validationError(
                 $e->errors(),
                 collect($e->errors())->flatten()->first() ?? __('templates.refresh_layouts_failed', ['error' => SafeExceptionMessage::for($e)])
@@ -562,6 +601,21 @@ class TemplateController extends AdminBaseController
     }
 
     /**
+     * 업데이트를 미리 봅니다 — 업데이트하지 않고 화면별 레이아웃 판정과 지워질 선언 항목을 계산합니다.
+     *
+     * GitHub 소스면 새 판을 `_pending` 에 내려받고 `pending_token` 을 돌려준다 — 이어지는 업데이트 요청이 그 토큰을 넘기면
+     * 같은 파일을 다시 쓴다.
+     *
+     * @param  PerformTemplateUpdateRequest  $request  업데이트 요청 (layout_strategy·decisions·layout_source)
+     * @param  string  $templateName  식별자
+     * @return JsonResponse 미리보기 응답
+     */
+    public function performUpdatePreview(PerformTemplateUpdateRequest $request, string $templateName): JsonResponse
+    {
+        return $this->respondUpdatePreview($request, 'template', $templateName);
+    }
+
+    /**
      * 특정 템플릿을 업데이트합니다.
      *
      * layout_strategy 파라미터로 레이아웃 처리 방식을 결정합니다:
@@ -581,7 +635,7 @@ class TemplateController extends AdminBaseController
             // 관리자 창 '고급 설정'의 레이아웃 설치 소스 — 이 요청 동안만 설정을 덮고 끝나면 되돌린다(CLI --layout-source 와 같은 자리).
             $result = LayoutInstallSourceScope::run(
                 $validated['layout_source'] ?? null,
-                fn () => $this->templateService->performVersionUpdate($templateName, $layoutStrategy, $force)
+                fn () => $this->withUpdatePreviewContext($validated, fn () => $this->templateService->performVersionUpdate($templateName, $layoutStrategy, $force, $request->packageIntegrityOptions()))
             );
 
             $templateInfo = $result['template_info'] ?? null;
@@ -621,6 +675,9 @@ class TemplateController extends AdminBaseController
                 $this->success($messageKey, $result, 200, $messageParams),
                 $result['integration_notices'] ?? []
             );
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409, 「미서명으로 계속」 가능 여부 포함)·서명 불일치·미신뢰 키(422) — 7.2.0
+            return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);

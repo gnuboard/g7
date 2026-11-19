@@ -1,0 +1,34 @@
+feature: 히어로섹션 관리자 운영 안내 (등록 동선·저장 잠김 이유·버튼과 링크 안내·목록 제작 상태·빈 상태 구분)
+
+description: |
+  배너 담당자가 화면만 보고 다음 할 일을 알 수 있게 한다. 등록·수정은 사진을 먼저 올리고(이미지 → 이미지 표시 → 문구),
+  좁은 화면에서는 미리보기가 입력 위에 온다. 저장 단추가 잠기면 그 옆에 이유(올리는 중 / PC 이미지 없음)를 보이고,
+  버튼 문구만 있고 주소가 없으면 사이트에 버튼이 안 보인다고 알린다. 목록은 행마다 제작 상태(제목이 빈 사이트 언어 ·
+  모바일 이미지 없음 · 버튼 문구만 있고 주소 없음)를 보이고, 그 위치 자리가 있는 사이트 주소로 「사이트에서 보기」를,
+  활성 사용자 템플릿에 자리가 없으면 안내를 보인다. 비어 있는 상황은 위치에 배너 없음(첫 등록 카드) · 조건 결과 없음 ·
+  지금 노출 없음(예약·비노출·종료 건수)으로 나눈다. 사이트 주소는 위치 설정 응답의 구좌 틀이 활성 사용자 템플릿 라우트에서 찾는다.
+
+axes:
+  surface:
+    - form_section_order_image_first
+    - form_preview_first_on_mobile
+    - form_save_blocked_reason
+    - form_button_needs_link_warning
+    - form_link_behavior_summary
+    - list_row_readiness_flags
+    - list_site_link_and_missing_slot
+    - list_empty_states_distinguished
+    - preview_frame_site_path
+
+effects:
+  - accessible_names_present
+  - form_guides_operator_before_save   # 입력 순서·좁은 화면 미리보기 위치·버튼 주소 경고·링크 동작 요약으로 저장 전에 결과를 알린다
+  - row_readiness_flags_shown   # 목록 제목 칸에 모바일 이미지 없음·주소 없는 버튼·제목 빈 언어(언어 탭과 같은 이름)를 보인다
+  - site_link_opens_position_slot   # 사이트에서 보기는 그 위치 자리가 있는 사이트 주소를 새 창으로 열고, 자리가 없으면 안내만 보인다
+
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_form.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_list.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/BannerControllerTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Services/PreviewFrameResolverTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/operator-guidance.spec.ts

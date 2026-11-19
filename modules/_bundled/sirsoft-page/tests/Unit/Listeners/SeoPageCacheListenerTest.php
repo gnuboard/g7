@@ -24,6 +24,11 @@ class SeoPageCacheListenerTest extends ModuleTestCase
 
     private SeoCacheManagerInterface $cache;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,16 +42,28 @@ class SeoPageCacheListenerTest extends ModuleTestCase
         $this->listener = new SeoPageCacheListener;
     }
 
+    /**
+     * 테스트가 바꾼 상태를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     // ─── 훅 구독 등록 ──────────────────────────────────────
 
     /**
      * 훅 구독이 올바르게 등록되어 있는지 확인합니다.
+     *
+     * @effects page_seo_listener_subscribes_page_lifecycle_hooks
+     *
+     * @return void 반환값 없음
      */
     public function test_get_subscribed_hooks_all_hooks_map_to_on_page_change(): void
     {
@@ -83,6 +100,12 @@ class SeoPageCacheListenerTest extends ModuleTestCase
      * onPageChange 호출 시 page/show 레이아웃 캐시가 무효화되는지 확인합니다.
      *
      * putWithLayout()으로 캐시를 넣고, onPageChange 후 getCachedUrls()로 확인합니다.
+     *
+     * @scenario cached_entry=layout_tagged
+     *
+     * @effects page_change_invalidates_page_show_layout_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_on_page_change_invalidates_page_show_layout_cache(): void
     {
@@ -98,6 +121,12 @@ class SeoPageCacheListenerTest extends ModuleTestCase
 
     /**
      * onPageChange 호출 시 home 레이아웃 캐시가 무효화되는지 확인합니다.
+     *
+     * @scenario cached_entry=layout_tagged
+     *
+     * @effects page_change_invalidates_home_and_search_and_sitemap_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_on_page_change_invalidates_home_layout_cache(): void
     {
@@ -113,6 +142,12 @@ class SeoPageCacheListenerTest extends ModuleTestCase
 
     /**
      * onPageChange 호출 시 search/index 레이아웃 캐시가 무효화되는지 확인합니다.
+     *
+     * @scenario cached_entry=layout_tagged
+     *
+     * @effects page_change_invalidates_home_and_search_and_sitemap_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_on_page_change_invalidates_search_layout_cache(): void
     {
@@ -128,6 +163,10 @@ class SeoPageCacheListenerTest extends ModuleTestCase
 
     /**
      * onPageChange 호출 시 seo.sitemap 캐시가 무효화되는지 확인합니다.
+     *
+     * @effects page_change_invalidates_home_and_search_and_sitemap_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_on_page_change_invalidates_sitemap_cache(): void
     {
@@ -144,6 +183,10 @@ class SeoPageCacheListenerTest extends ModuleTestCase
 
     /**
      * page가 null이어도 예외 없이 실행되는지 확인합니다.
+     *
+     * @effects page_change_without_page_or_slug_does_not_throw
+     *
+     * @return void 반환값 없음
      */
     public function test_on_page_change_handles_null_page_without_exception(): void
     {
@@ -153,6 +196,10 @@ class SeoPageCacheListenerTest extends ModuleTestCase
 
     /**
      * slug가 없는 page도 예외 없이 실행되는지 확인합니다.
+     *
+     * @effects page_change_without_page_or_slug_does_not_throw
+     *
+     * @return void 반환값 없음
      */
     public function test_on_page_change_handles_page_without_slug_without_exception(): void
     {
@@ -171,6 +218,12 @@ class SeoPageCacheListenerTest extends ModuleTestCase
      *
      * 회귀 배경: 기존 패턴은 복수형 "*​/pages/{slug}" 라서 실제 단수형 URL과 매칭되지 않아
      * 레이아웃 태그가 없는 페이지 상세 캐시가 영구히 남았다.
+     *
+     * @scenario cached_entry=url_only
+     *
+     * @effects page_change_invalidates_page_detail_url_by_singular_pattern, page_change_invalidates_url_only_cached_detail_without_layout_tag
+     *
+     * @return void 반환값 없음
      */
     public function test_on_page_change_invalidates_page_detail_url_by_pattern(): void
     {
@@ -189,6 +242,10 @@ class SeoPageCacheListenerTest extends ModuleTestCase
 
     /**
      * handle 메서드가 존재하는지 확인합니다 (HookListenerInterface 준수).
+     *
+     * @effects page_seo_listener_handle_is_callable
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_method_exists(): void
     {

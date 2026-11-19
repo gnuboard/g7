@@ -11,7 +11,7 @@ use App\Seo\SitemapIndexer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
-use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
+use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
 
 /**
  * 상품 변경 시 SEO 캐시 무효화 리스너
@@ -124,7 +124,7 @@ class SeoProductCacheListener implements HookListenerInterface
             $cache = app(SeoCacheManagerInterface::class);
 
             // 상품 상세 페이지 캐시 무효화 — 상세 라우트는 번호와 상품 코드를 모두 받는다(Product::resolveRouteBinding).
-            // 사이트맵은 번호 주소(products/{id})를, 사용자 화면 링크는 상품 코드 주소를 쓰므로 두 주소를 함께 비운다.
+            // 화면 주소·사이트맵은 상품 코드 주소(#792 W12)를, 이전에 공유·색인된 링크는 번호 주소를 쓰므로 두 주소를 함께 비운다.
             $cache->invalidateByUrl("*/products/{$product->id}");
             foreach ($this->productCodesToInvalidate($product, $args[1] ?? null) as $productCode) {
                 $cache->invalidateByUrl("*/products/{$productCode}");
@@ -205,7 +205,7 @@ class SeoProductCacheListener implements HookListenerInterface
 
             if ($visible) {
                 $indexer->indexResource('product', $product->id, 'sirsoft-ecommerce', [[
-                    'url' => ShopPathResolver::path("products/{$product->id}"),
+                    'url' => EcommerceScreenUrl::product((string) $product->product_code),
                     'lastmod' => $product->updated_at?->toW3cString(),
                     'changefreq' => SitemapChangeFreq::Weekly->value,
                     'priority' => 0.8,

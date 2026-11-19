@@ -9,7 +9,7 @@ description: |
   태그 입력의 Tab 은 옵션을 고르지 않고, 머리말 버튼은 좁은 화면에서 글자 단위로 꺾이지 않는다.
 
 axes:
-  control: [action_menu, icon, page_header, column_checkbox, datagrid_checkbox, datagrid_expand, explicit_name, extension_card_switch, file_input, header_controls, icon_only_button, input_number, select, select_filter_label, select_placeholder, select_search_box, switch, switch_after_button, switch_after_other_field, switch_in_clickable_card, switch_label_after, switch_without_label, tag_input, textarea]
+  control: [action_menu, icon, page_header, column_checkbox, datagrid_checkbox, datagrid_expand, explicit_name, extension_card_switch, file_input, header_controls, icon_only_button, input_number, select, select_filter_label, select_filter_field_label, select_placeholder, select_search_box, switch, switch_after_button, switch_after_other_field, switch_in_clickable_card, switch_label_after, switch_without_label, tag_input, textarea]
 
 effects:
   - decorative_icon_hidden_from_a11y_tree

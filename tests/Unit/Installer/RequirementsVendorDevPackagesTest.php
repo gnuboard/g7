@@ -6,6 +6,8 @@ use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\CleansTemporaryBasePath;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 설치 2단계(설치 환경 확인)의 Composer 의존성 구성 카드 회귀 테스트 (dev-g7 #658).
@@ -20,6 +22,9 @@ use PHPUnit\Framework\TestCase;
 #[PreserveGlobalState(false)]
 class RequirementsVendorDevPackagesTest extends TestCase
 {
+    use CleansTemporaryBasePath;
+    use ScansPhpSourceFunctions;
+
     private static string $sharedBase = '';
 
     private static string $skipReason = '';
@@ -85,6 +90,8 @@ class RequirementsVendorDevPackagesTest extends TestCase
     /**
      * vendor 가 없는 신규 설치: 판정 불가로 두고, 마법사가 자동 설치한다는 안내만 낸다.
      *
+     * @scenario vendor_state=absent
+     *
      * @effects installer_env_check_shows_dev_vendor_card_without_gating
      *
      * @return void 반환값 없음
@@ -103,6 +110,8 @@ class RequirementsVendorDevPackagesTest extends TestCase
 
     /**
      * dev vendor 를 감지하면 목록과 함께 보고하되 `required` 는 그대로 false 다.
+     *
+     * @scenario vendor_state=present_dev, surface=env_check_card
      *
      * @effects installer_env_check_shows_dev_vendor_card_without_gating
      *
@@ -124,7 +133,9 @@ class RequirementsVendorDevPackagesTest extends TestCase
     /**
      * `--no-dev` vendor 는 통과로 보고한다.
      *
-     * @effects installer_env_check_shows_dev_vendor_card_without_gating
+     * @scenario vendor_state=present_no_dev, surface=env_check_card
+     *
+     * @effects installer_env_check_shows_dev_vendor_card_without_gating, installer_reports_production_vendor_as_pass
      *
      * @return void 반환값 없음
      */
@@ -147,6 +158,8 @@ class RequirementsVendorDevPackagesTest extends TestCase
      * 반환값 검사만으로는 부족하다: 게이트가 나중에 이 키를 참조하도록 바뀌어도
      * `required=false` 자체는 그대로라 행위 테스트가 통과한다.
      *
+     * @scenario vendor_state=present_dev, surface=env_check_card
+     *
      * @effects installer_env_check_shows_dev_vendor_card_without_gating
      *
      * @return void 반환값 없음
@@ -155,7 +168,7 @@ class RequirementsVendorDevPackagesTest extends TestCase
     public function 필수_통과_판정이_이_항목을_참조하지_않는다(): void
     {
         // 게이트 본문은 웹·터미널 공유 함수로 옮겨졌다 (includes/requirements.php).
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/requirements.php');
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/requirements.php');
 
         $start = strpos($source, 'function installer_requirements_all_passed(');
         $this->assertNotFalse($start, '전제: 게이트 메서드가 존재한다');
@@ -175,6 +188,8 @@ class RequirementsVendorDevPackagesTest extends TestCase
     /**
      * 화면 카드가 존재하고 실패 목록에 넣지 않는다 — 소스 계약.
      *
+     * @scenario vendor_state=present_dev, surface=env_check_card
+     *
      * @effects installer_env_check_shows_dev_vendor_card_without_gating
      *
      * @return void 반환값 없음
@@ -182,15 +197,23 @@ class RequirementsVendorDevPackagesTest extends TestCase
     #[Test]
     public function 설치_화면_카드가_실패_목록에_넣지_않는다(): void
     {
+        // meta:allow raw-source-read — 블록 경계(다음 카드의 번호 주석)가 주석 안에 있어 원문에서 자른다.
+        // 잘라 낸 블록의 판정은 주석을 지운 뒤에 한다.
         $js = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/assets/js/installer.js');
 
         $start = strpos($js, 'data.vendor_dev_packages && data.vendor_dev_packages.vendor_exists');
         $this->assertNotFalse($start, 'vendor_dev_packages 카드 렌더 블록이 있어야 한다');
 
-        $end = strpos($js, '// 10. 자산 URL 방식 카드', $start);
-        $this->assertNotFalse($end, '전제: 다음 카드 블록이 경계를 이룬다');
+        // 경계는 **다음 카드의 번호 주석**이다 — 카드 번호는 카드가 늘 때마다 밀리므로(실행 예산
+        // 카드가 끼어 자산 URL 카드가 11번이 됐다) 특정 번호·제목에 묶지 않는다.
+        $this->assertSame(
+            1,
+            preg_match('~\n[ \t]*// \d+\. [^\n]*카드~u', $js, $next, PREG_OFFSET_CAPTURE, $start),
+            '전제: 다음 카드 블록이 경계를 이룬다'
+        );
+        $end = $next[0][1];
 
-        $block = substr($js, $start, $end - $start);
+        $block = $this->stripJsComments(substr($js, $start, $end - $start));
 
         $this->assertStringContainsString("lang('vendor_dev_packages')", $block, '카드 제목을 언어 키로 그려야 한다');
         $this->assertStringNotContainsString('failedRequirements.push', $block, '선택 항목은 실패 목록에 넣지 않는다');
@@ -217,7 +240,6 @@ class RequirementsVendorDevPackagesTest extends TestCase
      * 임시 BASE_PATH 아래에 vendor 픽스처를 만듭니다.
      *
      * @param  array<string, mixed>  $installedJson  installed.json 내용
-     *
      * @return void 반환값 없음
      */
     private function writeVendor(array $installedJson): void

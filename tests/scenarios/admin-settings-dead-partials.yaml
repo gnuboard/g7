@@ -21,6 +21,7 @@ sub_flows:
 
 effects:
   - admin_settings_partials_are_all_included
+  - member_tab_partials_are_included   # 회원 탭(#490) 조각 일곱이 소스와 짝 JSON 으로 있고 끌려온다(표시 이름 조각은 뒤 단계)
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-dead-partials.test.ts

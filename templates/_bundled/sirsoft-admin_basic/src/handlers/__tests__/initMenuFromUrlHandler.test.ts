@@ -169,7 +169,7 @@ describe('initMenuFromUrlHandler', () => {
     expect(formCall.formData.roles).toEqual([1]);
   });
   /**
-   * @scenario resource=menu,entry=url_mode_edit,permission=read_only
+   * @scenario resource=menu,endpoint=detail,observation=consumer_screen
    * @effects menu_url_edit_mode_requires_update_ability
    */
   it('수정 권한(can_update)이 없으면 ?mode=edit 로 들어와도 보기 패널로 열고 편집 폼을 채우지 않는다', async () => {

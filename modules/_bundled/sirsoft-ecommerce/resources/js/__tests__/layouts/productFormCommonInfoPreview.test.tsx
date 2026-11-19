@@ -10,6 +10,9 @@
  * 편집기 플러그인이 있으면 그 표시기가, 없으면 템플릿의 `HtmlContent`(정화 포함)가 그린다. 텍스트 모드 본문도
  * 같은 확장점이 `isHtml=false` 로 그린다(줄바꿈 보존).
  *
+ * 본문 서식 클래스는 이 모듈 앞글자(`ecommerce:prose …`)로 쓴다 — 확장 CSS 자기 공급 규약(#816)에 따라 모듈 CSS
+ * (`dist/css/module.css`, typography 플러그인을 실은 접두 빌드)가 규칙을 싣고, 보기 패널(`_panel_view`)도 같은 클래스를 쓴다.
+ *
  * @scenario-manifest modules/_bundled/sirsoft-ecommerce/tests/scenarios/product-form-common-info-preview.yaml
  * @vitest-environment node
  */
@@ -47,6 +50,8 @@ function findById(node: any, id: string): Node | null {
 
 const CONTENT_EXPR = "{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[_local.ui.commonInfoLocale ?? $locale] ?? ''}}";
 const IS_HTML_EXPR = "{{((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content_mode ?? 'text') === 'html'}}";
+/** 본문 서식 — 모듈 접두 typography 클래스(템플릿 CSS 의 `prose` 에 기대지 않는다) */
+const PROSE_CLASS = 'ecommerce:prose ecommerce:prose-sm ecommerce:dark:prose-invert ecommerce:max-w-none';
 
 describe('상품 폼 — 공통정보 본문 미리보기', () => {
   /**
@@ -83,7 +88,9 @@ describe('상품 폼 — 공통정보 본문 미리보기', () => {
 
     expect(point.props.content).toBe(CONTENT_EXPR);
     expect(point.props.isHtml).toBe(IS_HTML_EXPR);
-    expect(point.props.className).toBe('prose prose-sm dark:prose-invert max-w-none');
+    expect(point.props.className).toBe(PROSE_CLASS);
+    // 클래스는 모두 이 모듈 앞글자다 — 앞글자 없는 `prose` 는 템플릿 CSS 에 기대어 다른 템플릿에서 무서식이 된다
+    expect(point.props.className.split(/\s+/).every((c: string) => c.startsWith('ecommerce:'))).toBe(true);
   });
 
   /**
@@ -117,7 +124,7 @@ describe('상품 폼 — 공통정보 본문 미리보기', () => {
     expect(fallback.name).toBe('HtmlContent');
     expect(fallback.props.content).toBe(CONTENT_EXPR);
     expect(fallback.props.isHtml).toBe(IS_HTML_EXPR);
-    expect(fallback.props.className).toBe('prose prose-sm dark:prose-invert max-w-none');
+    expect(fallback.props.className).toBe(PROSE_CLASS);
   });
 
   /**
@@ -133,5 +140,8 @@ describe('상품 폼 — 공통정보 본문 미리보기', () => {
     expect(Object.keys(point.props).sort()).toEqual(Object.keys(reference.props).sort());
     expect(point.default[0].name).toBe(reference.default[0].name);
     expect(point.default[0].type).toBe(reference.default[0].type);
+    // 본문 서식 클래스도 보기 패널과 같다(패널은 배경·여백 클래스를 더 갖는다)
+    const panelClasses = String(reference.props.className).split(/\s+/);
+    expect(PROSE_CLASS.split(' ').every((c) => panelClasses.includes(c))).toBe(true);
   });
 });

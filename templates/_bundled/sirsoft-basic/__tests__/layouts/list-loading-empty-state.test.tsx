@@ -345,6 +345,7 @@ describe('사용자 목록 — 전수', () => {
     { file: 'partials/shop/_checkout_items.json', match: 'item.product_option_id', reason: '받은 주문서 항목을 도는 반복 항목 안(금액 표기)' },
     { file: 'partials/shop/_checkout_mileage.json', match: 'mileage?.available', reason: '`checkoutData.data.mileage?.enabled` 감싸개 안 — 받은 뒤에만 그린다' },
     { file: 'partials/mypage/claims/_detail', match: 'claim.data', reason: 'claim 은 클레임 상세에서 blocking' },
+    { file: 'mypage/required-info.json', match: '!!profileFields?.data &&', reason: '빈 안내가 아니라 남은 항목 0개 진입의 이동 방아쇠 — 받은 응답이 있어야 참' },
   ];
 
   /**

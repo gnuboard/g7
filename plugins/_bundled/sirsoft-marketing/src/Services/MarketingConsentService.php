@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\Marketing\Services;
 
+use App\Extension\Helpers\ExtensionLangTexts;
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
 use App\Support\LocalizedValue;
@@ -191,10 +192,22 @@ class MarketingConsentService
     }
 
     /**
+     * 회원이 한 항목에 지금 동의한 상태인지 반환합니다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  string  $consentKey  동의 항목 키
+     * @return bool 동의한 상태면 true (기록이 없으면 false)
+     */
+    public function isConsented(int $userId, string $consentKey): bool
+    {
+        return (bool) ($this->repository->findByUserAndKey($userId, $consentKey)?->is_consented ?? false);
+    }
+
+    /**
      * 특정 채널 키에 동의(is_consented=true)한 사용자 수를 반환합니다.
      *
      * @param  string  $channelKey  채널 키
-     * @return int
+     * @return int 동의한 사용자 수
      */
     public function countConsentedByKey(string $channelKey): int
     {
@@ -264,6 +277,16 @@ class MarketingConsentService
                     $map[$locale] = (string) $translator->get($labelKey, [], $locale, false);
                 }
             }
+
+            // 이 플러그인의 키(`sirsoft-marketing::{파일}.{경로}`)는 언어 파일과 활성 언어팩 파일을 직접 읽어 빈 로케일을 채운다.
+            // 언어팩을 막 켠 요청(팩을 켜면 코어가 항목 선언을 다시 동기화한다)에서는 팩의 번역 경로가 아직 등록되지 않아
+            // 번역기가 그 로케일을 모른다 — 그대로 두면 회원 항목 행의 채널 이름에서 그 로케일이 빠진다.
+            if (preg_match('/^'.preg_quote(self::PLUGIN_ID, '/').'::([a-z_]+)\.(.+)$/', $labelKey, $matches) === 1) {
+                $texts = ExtensionLangTexts::collect(self::PLUGIN_ID, dirname(__DIR__, 2).'/lang', $matches[1], $matches[2]);
+                foreach ($texts as $locale => $text) {
+                    $map[$locale] ??= $text;
+                }
+            }
         }
 
         return $map;
@@ -280,7 +303,7 @@ class MarketingConsentService
      * @param  string  $consentKey  동의 항목 키
      * @param  bool  $value  동의 여부
      * @param  string  $source  변경 경로 (register/profile/admin)
-     * @return void
+     * @return void 반환값 없음
      */
     public function updateConsent(int $userId, string $consentKey, bool $value, string $source): void
     {
@@ -351,7 +374,7 @@ class MarketingConsentService
      * @param  int  $userId  사용자 ID
      * @param  array<string, bool>  $data  동의 데이터 [key => bool]
      * @param  string  $source  변경 경로
-     * @return void
+     * @return void 반환값 없음
      */
     public function updateConsents(int $userId, array $data, string $source): void
     {
@@ -388,7 +411,7 @@ class MarketingConsentService
      * DB CASCADE에 의존하지 않고 명시적으로 삭제합니다.
      *
      * @param  int  $userId  사용자 ID
-     * @return void
+     * @return void 반환값 없음
      */
     public function deleteByUserId(int $userId): void
     {
@@ -403,7 +426,7 @@ class MarketingConsentService
      * @param  string  $channelKey  동의 항목 키
      * @param  string  $action  변경 유형 (granted/revoked)
      * @param  string  $source  변경 경로
-     * @return void
+     * @return void 반환값 없음
      */
     private function recordHistory(int $userId, string $channelKey, string $action, string $source): void
     {

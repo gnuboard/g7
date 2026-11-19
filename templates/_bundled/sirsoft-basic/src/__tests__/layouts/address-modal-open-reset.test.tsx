@@ -34,7 +34,6 @@ import {
 
 import addressList from '../../../layouts/partials/mypage/addresses/_list.json';
 import addressModal from '../../../layouts/partials/mypage/addresses/_modal_address.json';
-import addressManageModal from '../../../layouts/partials/shop/_modal_address_manage.json';
 
 type Node = Record<string, any>;
 

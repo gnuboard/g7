@@ -12,7 +12,6 @@
  * @since engine-v1.50.0
  */
 
-import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import {
@@ -28,16 +27,22 @@ const t = (k: string) => k;
 afterEach(() => cleanup());
 
 describe('buildChipSlots — 칩 양옆·사이·끝 평문 슬롯 보장 (어디서나 타이핑/이동)', () => {
+  // @scenario area=placeholder_chip
+  // @effects chip_slots_surround_every_chip_with_text
   it('칩만(`{p0}`) → [text(빈), chip, text(빈)] — 칩 앞뒤 커서 슬롯 보장', () => {
     const slots = buildChipSlots('{p0}');
     expect(slots.map((s) => s.kind)).toEqual(['text', 'chip', 'text']);
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_slots_surround_every_chip_with_text
   it('인접 칩(`{p0}{p1}`) → 칩 사이에도 빈 평문 슬롯', () => {
     const slots = buildChipSlots('{p0}{p1}');
     expect(slots.map((s) => s.kind)).toEqual(['text', 'chip', 'text', 'chip', 'text']);
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_slots_surround_every_chip_with_text
   it('칩으로 끝남(`안녕 {p0}`) → 끝에 편집 슬롯(칩 뒤 타이핑 가능)', () => {
     const slots = buildChipSlots('안녕 {p0}');
     expect(slots.map((s) => s.kind)).toEqual(['text', 'chip', 'text']);
@@ -45,10 +50,14 @@ describe('buildChipSlots — 칩 양옆·사이·끝 평문 슬롯 보장 (어�
     expect(slots[2].text).toBe('');
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_slots_surround_every_chip_with_text
   it('빈 값 → 편집 슬롯 1개(타이핑 시작점)', () => {
     expect(buildChipSlots('')).toEqual([{ kind: 'text', text: '' }]);
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_slots_surround_every_chip_with_text
   it('멀티 칩 + 평문 혼합 → 모든 칩이 평문으로 둘러싸임', () => {
     const slots = buildChipSlots('{p0} 작성 {p1} 끝');
     // text, chip, text(' 작성 '), chip, text(' 끝')
@@ -57,17 +66,23 @@ describe('buildChipSlots — 칩 양옆·사이·끝 평문 슬롯 보장 (어�
 });
 
 describe('parseChipSegments — 칩/평문 무손실 분해', () => {
+  // @scenario area=placeholder_chip
+  // @effects chip_segments_parse_lossless_with_positions
   it('평문만 → text 1개', () => {
     const segs = parseChipSegments('안녕하세요');
     expect(segs).toEqual([{ kind: 'text', raw: '안녕하세요', start: 0, end: 5 }]);
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_segments_parse_lossless_with_positions
   it('자리표시만 → chip 1개(param 이름)', () => {
     const segs = parseChipSegments('{p0}');
     expect(segs).toHaveLength(1);
     expect(segs[0]).toMatchObject({ kind: 'chip', paramName: 'p0', raw: '{p0}' });
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_segments_parse_lossless_with_positions
   it('평문+자리표시 혼합 — 순서/위치 보존, raw 이으면 원문', () => {
     const v = '{p0} 작성 {p1}';
     const segs = parseChipSegments(v);
@@ -75,17 +90,23 @@ describe('parseChipSegments — 칩/평문 무손실 분해', () => {
     expect(segs.map((s) => s.raw).join('')).toBe(v);
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_segments_parse_lossless_with_positions
   it('이중 중괄호 {{pN}} 도 인지', () => {
     const segs = parseChipSegments('{{p0}} 끝');
     expect(segs[0]).toMatchObject({ kind: 'chip', paramName: 'p0' });
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_segments_parse_lossless_with_positions
   it('빈 문자열 → 빈 배열', () => {
     expect(parseChipSegments('')).toEqual([]);
   });
 });
 
 describe('PlaceholderChipInput — 렌더', () => {
+  // @scenario area=placeholder_chip
+  // @effects paramized_key_value_renders_placeholders_as_atomic_chips
   it('자리표시는 원자 칩(contentEditable=false, 포인터 드래그), 평문은 편집 가능', () => {
     render(<PlaceholderChipInput value="{p0} 작성 {p1}" onChange={vi.fn()} t={t} testIdSuffix="ko" />);
     const chip0 = screen.getByTestId('g7le-chip-ko-p0');
@@ -100,6 +121,8 @@ describe('PlaceholderChipInput — 렌더', () => {
     expect(screen.getByTestId('g7le-chip-text-ko-4')).toHaveAttribute('contenteditable', 'true');
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_label_uses_param_labels_or_name
   it('paramLabels 친화명 표시(없으면 param 이름)', () => {
     render(
       <PlaceholderChipInput
@@ -113,21 +136,29 @@ describe('PlaceholderChipInput — 렌더', () => {
     expect(screen.getByTestId('g7le-chip-ko-p0')).toHaveTextContent('회원명');
   });
 
+  // @scenario area=placeholder_chip
+  // @effects plain_only_chips_allowed_keyvalue_equals_placeholder_alone
   it('평문 0(칩만) 렌더 허용 — 칩만 표시', () => {
     render(<PlaceholderChipInput value="{p0}" onChange={vi.fn()} t={t} testIdSuffix="ko" />);
     expect(screen.getByTestId('g7le-chip-ko-p0')).toBeInTheDocument();
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_input_empty_value_renders_editable_slot
   it('빈 값 → 편집 가능한 빈 평문 span(타이핑 시작점)', () => {
     render(<PlaceholderChipInput value="" onChange={vi.fn()} t={t} testIdSuffix="ko" />);
     expect(screen.getByTestId('g7le-chip-text-ko-0')).toHaveAttribute('contenteditable', 'true');
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_input_insert_button_follows_handler
   it('onRequestInsert 미전달 시 +데이터 버튼 숨김', () => {
     render(<PlaceholderChipInput value="{p0}" onChange={vi.fn()} t={t} testIdSuffix="ko" />);
     expect(screen.queryByTestId('g7le-chip-insert-ko')).toBeNull();
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_input_insert_button_follows_handler
   it('onRequestInsert 전달 시 +데이터 버튼 노출', () => {
     render(
       <PlaceholderChipInput
@@ -143,12 +174,16 @@ describe('PlaceholderChipInput — 렌더', () => {
 });
 
 describe('칩 우측 X = 데이터 연결 해제', () => {
+  // @scenario area=placeholder_chip
+  // @effects chip_remove_button_needs_handler_and_enabled
   it('onRemoveChip 미전달 시 칩 X 미노출 (키 관리 모달 등 node 미보유 컨텍스트)', () => {
     render(<PlaceholderChipInput value="{p0} 작성 {p1}" onChange={vi.fn()} t={t} testIdSuffix="ko" />);
     expect(screen.queryByTestId('g7le-chip-remove-ko-p0')).toBeNull();
     expect(screen.queryByTestId('g7le-chip-remove-ko-p1')).toBeNull();
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_remove_button_needs_handler_and_enabled
   it('onRemoveChip 전달 시 칩마다 X 노출', () => {
     render(
       <PlaceholderChipInput value="{p0} 작성 {p1}" onChange={vi.fn()} t={t} testIdSuffix="ko" onRemoveChip={vi.fn()} />,
@@ -157,6 +192,8 @@ describe('칩 우측 X = 데이터 연결 해제', () => {
     expect(screen.getByTestId('g7le-chip-remove-ko-p1')).toBeInTheDocument();
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_remove_button_needs_handler_and_enabled
   it('disabled 시 칩 X 미노출(onRemoveChip 전달돼도)', () => {
     render(
       <PlaceholderChipInput value="{p0}" onChange={vi.fn()} t={t} testIdSuffix="ko" onRemoveChip={vi.fn()} disabled />,
@@ -164,6 +201,8 @@ describe('칩 우측 X = 데이터 연결 해제', () => {
     expect(screen.queryByTestId('g7le-chip-remove-ko-p0')).toBeNull();
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_remove_click_calls_handler_with_param
   it('칩 X 클릭 → 해당 param 으로 onRemoveChip 호출', () => {
     const onRemoveChip = vi.fn();
     render(
@@ -174,6 +213,8 @@ describe('칩 우측 X = 데이터 연결 해제', () => {
     expect(onRemoveChip).toHaveBeenCalledTimes(1);
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_remove_pointerdown_does_not_start_drag
   it('칩 X pointerdown 은 칩 드래그 시작과 분리(stopPropagation) — onChange 미발화', () => {
     const onChange = vi.fn();
     render(
@@ -186,6 +227,8 @@ describe('칩 우측 X = 데이터 연결 해제', () => {
   // (계측 확정): 칩을 드래그해 놓으면 이동한 칩이 커서 아래(드롭 지점)로 와서, 그 칩의
   // X 가 커서 아래 위치 → pointerup 직후 합성 click 이 X 에 떨어져 onRemoveChip 이 **오발화**(node.text
   // `|pN=` 제거되고 칩 사라짐). 드래그 직후의 X click 1회는 무시돼야 한다.
+  // @scenario area=placeholder_chip
+  // @effects chip_remove_trailing_click_after_drag_ignored
   it('칩 드래그(pointerdown→move→up) 직후 그 칩 X click → onRemoveChip 미발화(드래그 trailing click 차단)', () => {
     const onRemoveChip = vi.fn();
     render(
@@ -206,6 +249,8 @@ describe('칩 우측 X = 데이터 연결 해제', () => {
     (document as unknown as { elementFromPoint?: unknown }).elementFromPoint = prevEFP;
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_remove_click_calls_handler_with_param
   it('드래그 없이 X 만 click → onRemoveChip 정상 발화(의도적 해제는 유지)', () => {
     const onRemoveChip = vi.fn();
     render(
@@ -224,6 +269,8 @@ describe('recomposeChipMove — 칩을 글자 한 자 한 자 사이로 이동 (
     { kind: 'text', text: after },
   ];
 
+  // @scenario area=placeholder_chip
+  // @effects chip_move_recompose_inserts_at_any_offset
   it('글자 사이 각 위치(0~4)에 칩 삽입 — 모든 offset', () => {
     expect(recomposeChipMove(slots('abcd'), 'p0', 0, 0)).toBe('{p0}abcd');
     expect(recomposeChipMove(slots('abcd'), 'p0', 0, 1)).toBe('a{p0}bcd');
@@ -232,15 +279,21 @@ describe('recomposeChipMove — 칩을 글자 한 자 한 자 사이로 이동 (
     expect(recomposeChipMove(slots('abcd'), 'p0', 0, 4)).toBe('abcd{p0}');
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_move_recompose_inserts_at_any_offset
   it('한글 글자 사이 삽입', () => {
     expect(recomposeChipMove(slots('하나둘'), 'p0', 0, 1)).toBe('하{p0}나둘');
     expect(recomposeChipMove(slots('하나둘'), 'p0', 0, 2)).toBe('하나{p0}둘');
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_move_recompose_inserts_at_any_offset
   it('offset clamp(범위 밖) — 끝으로', () => {
     expect(recomposeChipMove(slots('ab'), 'p0', 0, 99)).toBe('ab{p0}');
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_move_recompose_inserts_at_any_offset
   it('멀티 칩 — 지정 칩만 이동, 다른 칩 위치 불변', () => {
     // 슬롯: [text("A "), chip(p0), text(" B "), chip(p1), text(" C")] = "A {p0} B {p1} C"
     const multi: ChipSlot[] = [
@@ -254,6 +307,8 @@ describe('recomposeChipMove — 칩을 글자 한 자 한 자 사이로 이동 (
     expect(recomposeChipMove(multi, 'p0', 4, 2)).toBe('A  B {p1} C{p0}');
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_move_recompose_inserts_at_any_offset
   it('이동 후 재이동 가능(연속) — 결과가 다시 슬롯화되어 또 이동', () => {
     // 1차: "ab{p0}" 에서 p0 를 0 으로 → "{p0}ab"
     const v1 = recomposeChipMove(slots('ab'), 'p0', 0, 0);
@@ -266,6 +321,8 @@ describe('recomposeChipMove — 칩을 글자 한 자 한 자 사이로 이동 (
 });
 
 describe('insertChipInValue — 커서 위치 자리표시 삽입', () => {
+  // @scenario area=placeholder_chip
+  // @effects chip_insert_at_cursor_pads_with_spaces
   it('앞/중/끝 삽입', () => {
     expect(insertChipInValue('님 환영', 0, 'p0')).toBe('{p0} 님 환영');
     expect(insertChipInValue('작성함', 2, 'p1')).toBe('작성 {p1} 함');
@@ -274,6 +331,8 @@ describe('insertChipInValue — 커서 위치 자리표시 삽입', () => {
 });
 
 describe('타이핑 안전성 — 비제어 평문(글자 뒤섞임 결함 회귀)', () => {
+  // @scenario area=placeholder_chip
+  // @effects chip_input_plain_slots_keep_typed_dom
   it('평문 타이핑(연속 입력) 시 평문 span 을 React 가 덮어쓰지 않는다(비제어)', () => {
     // 결함 재현 방지: controlled 였다면 onChange→value 갱신→리렌더로 span textContent 가
     // 매 입력마다 재설정되어 커서가 튀고 글자 순서가 깨졌다("하나둘"→"퉁둘낭나한하").
@@ -297,6 +356,8 @@ describe('타이핑 안전성 — 비제어 평문(글자 뒤섞임 결함 회�
     expect(screen.getByTestId('g7le-chip-text-ko-2').textContent).toBe(' 하나둘');
   });
 
+  // @scenario area=placeholder_chip
+  // @effects chip_input_structure_change_reinjects_text
   it('칩 구조 변경(삽입) 시에는 평문 textContent 재주입(구조 동기)', () => {
     const onChange = vi.fn();
     const { rerender } = render(

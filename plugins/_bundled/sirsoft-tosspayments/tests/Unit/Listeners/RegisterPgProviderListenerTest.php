@@ -7,8 +7,6 @@ use Tests\PureTestCase;
 
 /**
  * RegisterPgProviderListener 단위 테스트
- *
- * @effects toss_provider_registered_with_payment_handler
  */
 class RegisterPgProviderListenerTest extends PureTestCase
 {

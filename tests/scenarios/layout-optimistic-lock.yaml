@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: Phase 3 S5a-1 인프라 (낙관적 잠금) 의 핵심 effects 는 LayoutControllerEditorSaveTest 의 6 개 단위 케이스가 직접 매핑. layoutTreeUtils/nestingRules Vitest 가 보조.
+# audit:allow test-scenario-coverage reason: issue:#609 Phase 3 S5a-1 인프라 (낙관적 잠금) 의 핵심 effects 는 LayoutControllerEditorSaveTest 의 6 개 단위 케이스가 직접 매핑. layoutTreeUtils/nestingRules Vitest 가 보조.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 
 feature: 레이아웃 편집기 낙관적 잠금 — template_layouts / template_layout_extensions 동시 저장 가드
 

@@ -13,14 +13,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "admin-card"
+                "className": "board-admin-card"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "board-row-stack"
                     },
                     "children": [
                         {
@@ -35,8 +35,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "board:grid board:grid-cols-2 board:gap-4"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "grid-2col-responsive"
+                                        "className": "board:grid board:grid-cols-1 board:gap-4"
                                     },
                                     "children": [
                                         {
@@ -48,7 +55,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-label-subtle block font-medium mb-1"
+                                                        "className": "board-text-label-subtle board:block board:font-medium board:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.posts.form.author_info"
                                                 },
@@ -56,14 +63,14 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-center gap-2"
+                                                        "className": "board-flex-center board:gap-2"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-heading"
+                                                                "className": "board-text-heading"
                                                             },
                                                             "text": "{{form_meta?.data?.author?.email ? form_meta.data.author.name + ' (' + form_meta.data.author.email + ')' : form_meta?.data?.author?.name}}"
                                                         },
@@ -72,7 +79,7 @@
                                                             "name": "Span",
                                                             "if": "{{form_meta?.data?.author?.is_guest}}",
                                                             "props": {
-                                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                                                                "className": "board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-gray-100 board:text-gray-700 board:dark:bg-gray-700 board:dark:text-gray-300"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.posts.guest"
                                                         }
@@ -89,7 +96,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-label-subtle block font-medium mb-1"
+                                                        "className": "board-text-label-subtle board:block board:font-medium board:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.posts.form.created_at"
                                                 },
@@ -97,7 +104,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-center gap-2 text-heading"
+                                                        "className": "board-flex-center board:gap-2 board-text-heading"
                                                     },
                                                     "children": [
                                                         {
@@ -126,15 +133,22 @@
                                     "type": "basic",
                                     "name": "H3",
                                     "props": {
-                                        "className": "text-label-subtle font-medium mb-3"
+                                        "className": "board-text-label-subtle board:font-medium board:mb-3"
                                     },
                                     "text": "$t:sirsoft-board.admin.posts.form.post_options"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "board:grid board:grid-cols-2 board:gap-4"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "grid-2col-responsive"
+                                        "className": "board:grid board:grid-cols-1 board:gap-4"
                                     },
                                     "children": [
                                         {
@@ -144,14 +158,14 @@
                                             "if": "{{!_local.form?.parent_id}}",
                                             "props": {
                                                 "disabled": "{{_computed.isReadOnly || !form_meta?.data?.board?.user_abilities?.can_write_notice}}",
-                                                "className": "bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-blue-400 dark:hover:border-blue-600 transition-colors"
+                                                "className": "board:bg-gray-50 board:dark:bg-gray-800 board:rounded-lg board:p-4 board:border board:border-gray-200 board:dark:border-gray-700 board:cursor-pointer board:hover:border-blue-400 board:dark:hover:border-blue-600 board:transition-colors"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-start gap-3"
+                                                        "className": "board-flex-start board:gap-3"
                                                     },
                                                     "children": [
                                                         {
@@ -161,21 +175,21 @@
                                                                 "type": "checkbox",
                                                                 "name": "is_notice",
                                                                 "disabled": "{{_computed.isReadOnly || !form_meta?.data?.board?.user_abilities?.can_write_notice}}",
-                                                                "className": "mt-0.5 w-4 h-4 text-blue-600 dark:text-blue-400 rounded dark:focus:ring-blue-600 dark:ring-offset-gray-800"
+                                                                "className": "board:mt-0.5 board:w-4 board:h-4 board:text-blue-600 board:dark:text-blue-400 board:rounded board:dark:focus:ring-blue-600 board:dark:ring-offset-gray-800"
                                                             }
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex-1"
+                                                                "className": "board:flex-1"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Div",
                                                                     "props": {
-                                                                        "className": "flex-center gap-2 mb-1"
+                                                                        "className": "board-flex-center board:gap-2 board:mb-1"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -183,14 +197,14 @@
                                                                             "name": "Icon",
                                                                             "props": {
                                                                                 "name": "bullhorn",
-                                                                                "className": "text-base text-blue-600 dark:text-blue-400"
+                                                                                "className": "board:text-base board:text-blue-600 board:dark:text-blue-400"
                                                                             }
                                                                         },
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "text-primary text-sm font-semibold"
+                                                                                "className": "board-text-primary board:text-sm board:font-semibold"
                                                                             },
                                                                             "text": "$t:sirsoft-board.admin.posts.form.is_notice"
                                                                         }
@@ -200,7 +214,7 @@
                                                                     "type": "basic",
                                                                     "name": "P",
                                                                     "props": {
-                                                                        "className": "text-tertiary"
+                                                                        "className": "board-text-tertiary"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.posts.form.notice_description"
                                                                 }
@@ -216,14 +230,14 @@
                                             "name": "Label",
                                             "if": "{{form_meta?.data?.board?.secret_mode !== 'disabled'}}",
                                             "props": {
-                                                "className": "bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 cursor-pointer board-secret-card transition-colors"
+                                                "className": "board:bg-gray-50 board:dark:bg-gray-800 board:rounded-lg board:p-4 board:border board:border-gray-200 board:dark:border-gray-700 board:cursor-pointer board-secret-card board:transition-colors"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-start gap-3"
+                                                        "className": "board-flex-start board:gap-3"
                                                     },
                                                     "children": [
                                                         {
@@ -233,21 +247,21 @@
                                                                 "type": "checkbox",
                                                                 "name": "is_secret",
                                                                 "disabled": "{{_computed.isReadOnly || form_meta?.data?.board?.secret_mode === 'always'}}",
-                                                                "className": "mt-0.5 w-4 h-4 text-amber-600 rounded focus:ring-amber-500 dark:focus:ring-amber-600 dark:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                "className": "board:mt-0.5 board:w-4 board:h-4 board:text-amber-600 board:rounded board:focus:ring-amber-500 board:dark:focus:ring-amber-600 board:dark:ring-offset-gray-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed"
                                                             }
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex-1"
+                                                                "className": "board:flex-1"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Div",
                                                                     "props": {
-                                                                        "className": "flex-center gap-2 mb-1"
+                                                                        "className": "board-flex-center board:gap-2 board:mb-1"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -255,14 +269,14 @@
                                                                             "name": "Icon",
                                                                             "props": {
                                                                                 "name": "lock",
-                                                                                "className": "text-base text-amber-600 dark:text-amber-400"
+                                                                                "className": "board:text-base board:text-amber-600 board:dark:text-amber-400"
                                                                             }
                                                                         },
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "text-primary text-sm font-semibold"
+                                                                                "className": "board-text-primary board:text-sm board:font-semibold"
                                                                             },
                                                                             "text": "$t:sirsoft-board.admin.posts.form.is_secret"
                                                                         }
@@ -272,7 +286,7 @@
                                                                     "type": "basic",
                                                                     "name": "P",
                                                                     "props": {
-                                                                        "className": "text-tertiary"
+                                                                        "className": "board-text-tertiary"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.posts.form.secret_description"
                                                                 }
@@ -294,27 +308,34 @@
                     "name": "Div",
                     "if": "{{form_meta?.data?.board?.categories && form_meta.data.board.categories.length > 0}}",
                     "props": {
-                        "className": "pb-6"
+                        "className": "board:pb-6"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "board-form-label"
                             },
                             "text": "$t:sirsoft-board.admin.posts.form.category"
                         },
                         {
                             "type": "basic",
                             "name": "Select",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "board:block board:w-64 board:rounded-lg board:border board:border-gray-300 board:dark:border-gray-600 board:bg-white board:dark:bg-gray-800 board:px-3 board:py-2 board:focus:border-blue-500 board:focus:outline-none board:focus:ring-1 board:focus:ring-blue-500 board:dark:focus:ring-blue-400 board:disabled:opacity-50 board:disabled:cursor-not-allowed"
+                                    }
+                                }
+                            },
                             "props": {
                                 "name": "category",
                                 "aria-label": "$t:sirsoft-board.admin.posts.form.category",
                                 "value": "{{_local.form?.category ?? ''}}",
                                 "options": "{{[{ value: '', label: $t('sirsoft-board.admin.posts.form.select_category') }].concat((form_meta?.data?.board?.categories ?? []).map(category => ({ value: category, label: category })))}}",
                                 "disabled": "{{_computed.isReadOnly || !!_local.form?.parent_id}}",
-                                "className": "text-primary block w-full board-category-select rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "board:block board:w-full board:rounded-lg board:border board:border-gray-300 board:dark:border-gray-600 board:bg-white board:dark:bg-gray-800 board:px-3 board:py-2 board:focus:border-blue-500 board:focus:outline-none board:focus:ring-1 board:focus:ring-blue-500 board:dark:focus:ring-blue-400 board:disabled:opacity-50 board:disabled:cursor-not-allowed"
                             }
                         }
                     ]
@@ -323,7 +344,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "board-row-stack"
                     },
                     "children": [
                         {
@@ -342,7 +363,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-label-subtle block font-medium"
+                                                "className": "board-text-label-subtle board:block board:font-medium"
                                             },
                                             "text": "$t:sirsoft-board.admin.posts.form.title"
                                         },
@@ -355,7 +376,7 @@
                                                 "value": "{{_local.form?.title ?? ''}}",
                                                 "disabled": "{{_computed.isReadOnly}}",
                                                 "placeholder": "$t:sirsoft-board.admin.posts.form.title_placeholder",
-                                                "className": "block focus:ring-1 dark:focus:ring-blue-400"
+                                                "className": "board:block board:focus:ring-1 board:dark:focus:ring-blue-400"
                                             }
                                         }
                                     ]

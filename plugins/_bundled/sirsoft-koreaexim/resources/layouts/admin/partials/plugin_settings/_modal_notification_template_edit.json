@@ -10,7 +10,240 @@
     "props": {
         "title": "$t:sirsoft-koreaexim.notification_definitions.edit_modal.title",
         "size": "xl",
-        "closeOnOverlayClick": false
+        "closeOnOverlayClick": false,
+        "footer": [
+            {
+                "comment": "미리보기 — 편집 중인 제목·본문을 서버에 보내 변수를 채운 모습을 받아 미리보기 창에 띄운다. 저장 중에는 잠긴다 — 요청이 도는 도중 창이 바뀌면 성공·실패 안내가 갈 곳을 잃는다",
+                "type": "basic",
+                "name": "Button",
+                "if": "{{!((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.koreaexim_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
+                "responsive": {
+                    "-640": {
+                        "comment": "왼쪽 단추는 오른쪽 묶음과 떨어뜨린다. 640px 이하에서는 Modal 이 세로로 쌓으므로 여백을 빼고 폭을 채운다(#869)",
+                        "props": {
+                            "className": "koreaexim-text-body koreaexim:px-4 koreaexim:py-2 koreaexim:rounded-md koreaexim:border koreaexim:border-gray-300 koreaexim:dark:border-gray-600 koreaexim:hover:bg-gray-50 koreaexim:dark:hover:bg-gray-700 koreaexim:transition-colors"
+                        }
+                    }
+                },
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "apiCall",
+                        "target": "/api/admin/notification-templates/preview",
+                        "auth_required": true,
+                        "params": {
+                            "method": "POST",
+                            "body": {
+                                "definition_id": "{{_global.koreaexim_notification_template_form_modal?.definition?.id}}",
+                                "subject": "{{_global.koreaexim_notification_template_form_modal?.template?.subject}}",
+                                "body": "{{_global.koreaexim_notification_template_form_modal?.template?.body}}",
+                                "locale": "{{_global.koreaexim_notification_template_form_modal?.editLang ?? $locale}}"
+                            }
+                        },
+                        "onSuccess": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "koreaexim_notification_template_form_modal.preview": "{{response.data}}"
+                                }
+                            },
+                            {
+                                "handler": "openModal",
+                                "target": "modal_koreaexim_notification_definition_preview"
+                            }
+                        ],
+                        "onError": {
+                            "handler": "toast",
+                            "params": {
+                                "type": "error",
+                                "message": "{{error.message}}"
+                            }
+                        }
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "koreaexim-text-body koreaexim:px-4 koreaexim:py-2 koreaexim:rounded-md koreaexim:border koreaexim:border-gray-300 koreaexim:dark:border-gray-600 koreaexim:hover:bg-gray-50 koreaexim:dark:hover:bg-gray-700 koreaexim:transition-colors koreaexim:mr-auto",
+                    "disabled": "{{_global.koreaexim_notification_template_form_modal?.isSaving ?? false}}"
+                },
+                "text": "$t:sirsoft-koreaexim.notification_definitions.edit_modal.btn_preview"
+            },
+            {
+                "comment": "취소 — 편집 창을 닫고 창 이름 공간의 폼 상태를 비운다",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "closeModal",
+                                "target": "modal_koreaexim_notification_template_edit"
+                            },
+                            {
+                                "comment": "취소로 닫으면 창 이름 공간을 바로 비운다(7.1.1)",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "koreaexim_notification_template_form_modal": null
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "koreaexim-text-body koreaexim:px-4 koreaexim:py-2 koreaexim:rounded-md koreaexim:border koreaexim:border-gray-300 koreaexim:dark:border-gray-600 koreaexim:hover:bg-gray-50 koreaexim:dark:hover:bg-gray-700 koreaexim:transition-colors koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.koreaexim_notification_template_form_modal?.isSaving ?? false}}"
+                },
+                "children": [
+                    {
+                        "comment": "저장이 끝나 경고만 보이는 상태에서는 되돌릴 것이 없으므로 「닫기」로 읽힌다.",
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{(_global.koreaexim_notification_template_form_modal?.warnings ?? []).length > 0 ? '$t:common.close' : '$t:common.cancel'}}"
+                    }
+                ]
+            },
+            {
+                "comment": "편집 모달 푸터 확장 슬롯(범용). template_editor='none' 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다.",
+                "id": "koreaexim_template_form_footer_ext",
+                "type": "extension_point",
+                "name": "notification_template_form_footer_actions",
+                "props": {
+                    "definition": "{{_global.koreaexim_notification_template_form_modal?.definition}}",
+                    "template": "{{_global.koreaexim_notification_template_form_modal?.template}}",
+                    "channel": "{{_global.koreaexim_notification_template_form_modal?.template?.channel ?? ''}}",
+                    "modalId": "modal_koreaexim_notification_template_edit",
+                    "stateKey": "koreaexim_notification_template_form_modal",
+                    "saveEndpoint": "{{'/api/admin/notification-templates/' + _global.koreaexim_notification_template_form_modal?.template?.id}}",
+                    "refetchDataSourceId": "koreaeximNotificationDefinitions"
+                }
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "if": "{{!((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.koreaexim_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
+                "actions": [
+                    {
+                        "comment": "저장. 성공하면 알림 목록을 다시 부른다 — 목록이 제목·사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다.\n               서버가 경고(지금 없는 회원 항목 변수)를 함께 주면 저장은 된 것이므로 목록 재조회와 성공 안내는 그대로 하고,\n               창은 닫지 않은 채 경고를 창 안 상자와 경고 토스트로 알린다. 다시 저장하기 전에 지난 경고를 비운다.\n               갈래는 응답 값으로만 가른다(성공 처리 안에서 방금 쓴 전역 상태를 형제 액션의 조건으로 다시 읽으면 갱신 전 값이다).",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "koreaexim_notification_template_form_modal.isSaving": true,
+                                    "koreaexim_notification_template_form_modal.errors": null,
+                                    "koreaexim_notification_template_form_modal.warnings": null
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "{{'/api/admin/notification-templates/' + _global.koreaexim_notification_template_form_modal?.template?.id}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "PUT",
+                                    "body": {
+                                        "subject": "{{_global.koreaexim_notification_template_form_modal?.template?.subject}}",
+                                        "body": "{{_global.koreaexim_notification_template_form_modal?.template?.body}}",
+                                        "click_url": "{{_global.koreaexim_notification_template_form_modal?.template?.click_url ?? null}}",
+                                        "recipients": "{{_global.koreaexim_notification_template_form_modal?.recipients ?? []}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "koreaeximNotificationDefinitions"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "message": "$t:sirsoft-koreaexim.notification_definitions.save_success",
+                                            "type": "success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "modal_koreaexim_notification_template_edit",
+                                        "if": "{{(response?.data?.warnings ?? []).length === 0}}"
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "if": "{{(response?.data?.warnings ?? []).length === 0}}",
+                                        "params": {
+                                            "target": "global",
+                                            "koreaexim_notification_template_form_modal": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "if": "{{(response?.data?.warnings ?? []).length > 0}}",
+                                        "params": {
+                                            "target": "global",
+                                            "koreaexim_notification_template_form_modal.isSaving": false,
+                                            "koreaexim_notification_template_form_modal.warnings": "{{response?.data?.warnings ?? []}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "if": "{{(response?.data?.warnings ?? []).length > 0}}",
+                                        "params": {
+                                            "type": "warning",
+                                            "message": "$t:admin.settings.notification_definitions.edit_modal.warnings_toast|count={{(response?.data?.warnings ?? []).length}}"
+                                        }
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "koreaexim_notification_template_form_modal.isSaving": false,
+                                            "koreaexim_notification_template_form_modal.errors": "{{error.errors}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "message": "{{error.message ?? $t('sirsoft-koreaexim.notification_definitions.save_error')}}",
+                                            "type": "error"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "koreaexim-flex-center koreaexim:gap-2 koreaexim:text-sm koreaexim:px-4 koreaexim:py-2 koreaexim:rounded-md koreaexim:bg-indigo-600 koreaexim:text-white koreaexim:hover:bg-indigo-700 koreaexim:dark:bg-indigo-500 koreaexim:dark:hover:bg-indigo-600 koreaexim:transition-colors koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.koreaexim_notification_template_form_modal?.isSaving ?? false}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.koreaexim_notification_template_form_modal?.isSaving}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "koreaexim:animate-spin",
+                            "size": "sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.koreaexim_notification_template_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -31,14 +264,93 @@
                 ]
             },
             "props": {
-                "className": "flex flex-col max-h-[calc(90vh-140px)] -my-4"
+                "className": "koreaexim:flex koreaexim:flex-col koreaexim:max-h-[calc(90vh-140px)] koreaexim:-my-4"
             },
             "children": [
+                {
+                    "comment": "저장은 됐지만 알릴 것이 있을 때의 경고 상자. 지금 없는 회원 항목 변수(지워졌거나 꺼진 항목, 잘못 적은 이름)를\n           제목, 본문, 이동 주소에 썼으면 서버가 저장 응답의 warnings 에 실어 준다. 그 자리는 빈 글자로 발송되므로\n           운영자가 창을 닫기 전에 고칠 수 있게 창을 닫지 않고 여기에 보인다. 스크롤 영역 밖(위)에 두어 본문을 아래까지\n           내린 채 저장해도 보인다. 문구는 코어 알림 템플릿 창과 같은 키를 쓴다.",
+                    "id": "koreaexim_template_save_warnings",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_global.koreaexim_notification_template_form_modal?.warnings ?? []).length > 0}}",
+                    "props": {
+                        "role": "alert",
+                        "className": "koreaexim:flex-shrink-0 koreaexim:mb-3 koreaexim:p-3 koreaexim:rounded-lg koreaexim:border koreaexim:border-amber-300 koreaexim:dark:border-amber-700 koreaexim:bg-amber-50 koreaexim:dark:bg-amber-900/30 koreaexim:text-amber-800 koreaexim:dark:text-amber-300 koreaexim:text-sm"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "koreaexim:flex koreaexim:gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "triangle-exclamation",
+                                        "size": "sm",
+                                        "className": "koreaexim:flex-shrink-0 koreaexim:mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "koreaexim:min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "H3",
+                                            "props": {
+                                                "className": "koreaexim:font-medium"
+                                            },
+                                            "text": "$t:admin.settings.notification_definitions.edit_modal.warnings_title"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "koreaexim:mt-1"
+                                            },
+                                            "text": "$t:admin.settings.notification_definitions.edit_modal.warnings_description"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Ul",
+                                            "props": {
+                                                "className": "koreaexim:mt-2 koreaexim:list-disc koreaexim:list-inside koreaexim:space-y-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "koreaexim_template_save_warning_{{warnIdx}}",
+                                                    "type": "basic",
+                                                    "name": "Li",
+                                                    "iteration": {
+                                                        "source": "{{_global.koreaexim_notification_template_form_modal?.warnings ?? []}}",
+                                                        "item_var": "warn",
+                                                        "index_var": "warnIdx"
+                                                    },
+                                                    "props": {
+                                                        "className": "koreaexim:break-words"
+                                                    },
+                                                    "text": "{{warn.message ?? warn.target ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-1 overflow-y-auto space-y-5 pr-1"
+                        "className": "koreaexim:flex-1 koreaexim:overflow-y-auto koreaexim:space-y-5 koreaexim:pr-1"
                     },
                     "children": [
                         {
@@ -47,14 +359,14 @@
                             "name": "Div",
                             "if": "{{_global.koreaexim_notification_template_form_modal?.errors}}",
                             "props": {
-                                "className": "alert-danger"
+                                "className": "koreaexim-alert-danger"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex gap-3"
+                                        "className": "koreaexim:flex koreaexim:gap-3"
                                     },
                                     "children": [
                                         {
@@ -63,7 +375,7 @@
                                             "props": {
                                                 "name": "triangle-exclamation",
                                                 "size": "sm",
-                                                "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                                "className": "koreaexim:text-red-600 koreaexim:dark:text-red-400 koreaexim:flex-shrink-0 koreaexim:mt-0.5"
                                             }
                                         },
                                         {
@@ -74,7 +386,7 @@
                                                     "type": "basic",
                                                     "name": "H3",
                                                     "props": {
-                                                        "className": "text-error-strong"
+                                                        "className": "koreaexim-text-error-strong"
                                                     },
                                                     "text": "$t:sirsoft-koreaexim.notification_definitions.edit_modal.validation_error"
                                                 },
@@ -87,14 +399,14 @@
                                                         "item_var": "errMsg"
                                                     },
                                                     "props": {
-                                                        "className": "mt-2 list-disc list-inside space-y-1"
+                                                        "className": "koreaexim:mt-2 koreaexim:list-disc koreaexim:list-inside koreaexim:space-y-1"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Li",
                                                             "props": {
-                                                                "className": "text-error-soft"
+                                                                "className": "koreaexim-text-error-soft"
                                                             },
                                                             "text": "{{errMsg}}"
                                                         }
@@ -111,14 +423,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center flex-wrap gap-2"
+                                "className": "koreaexim-flex-center koreaexim:flex-wrap koreaexim:gap-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-label-subtle font-medium"
+                                        "className": "koreaexim-text-label-subtle koreaexim:font-medium"
                                     },
                                     "text": "$t:sirsoft-koreaexim.notification_definitions.edit_modal.type_label"
                                 },
@@ -126,7 +438,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-primary text-sm font-semibold"
+                                        "className": "koreaexim-text-primary koreaexim:text-sm koreaexim:font-semibold"
                                     },
                                     "text": "{{$localized(_global.koreaexim_notification_template_form_modal?.definition?.name)}}"
                                 },
@@ -134,7 +446,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
+                                        "className": "koreaexim-text-tertiary koreaexim:font-mono koreaexim:px-1.5 koreaexim:py-0.5 koreaexim:bg-gray-100 koreaexim:dark:bg-gray-700 koreaexim:rounded"
                                     },
                                     "text": "{{_global.koreaexim_notification_template_form_modal?.definition?.type ?? ''}}"
                                 },
@@ -142,7 +454,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                        "className": "koreaexim:text-sm koreaexim:text-gray-500 koreaexim:dark:text-gray-400"
                                     },
                                     "text": "·"
                                 },
@@ -150,7 +462,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-label-subtle"
+                                        "className": "koreaexim-text-label-subtle"
                                     },
                                     "text": "$t:sirsoft-koreaexim.notification_definitions.edit_modal.channel_label"
                                 },
@@ -158,7 +470,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm font-medium text-indigo-600 dark:text-indigo-400"
+                                        "className": "koreaexim:text-sm koreaexim:font-medium koreaexim:text-indigo-600 koreaexim:dark:text-indigo-400"
                                     },
                                     "text": "{{((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.koreaexim_notification_template_form_modal?.template?.channel)?.name ?? _global.koreaexim_notification_template_form_modal?.template?.channel)}}"
                                 }
@@ -169,14 +481,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4 space-y-3"
+                                "className": "koreaexim:bg-purple-50 koreaexim:dark:bg-purple-900/20 koreaexim:border koreaexim:border-purple-200 koreaexim:dark:border-purple-700 koreaexim:rounded-lg koreaexim:p-4 koreaexim:space-y-3"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "H4",
                                     "props": {
-                                        "className": "text-sm font-medium text-purple-800 dark:text-purple-200"
+                                        "className": "koreaexim:text-sm koreaexim:font-medium koreaexim:text-purple-800 koreaexim:dark:text-purple-200"
                                     },
                                     "text": "$t:admin.settings.notification_definitions.recipients.title"
                                 },
@@ -184,7 +496,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "stack-tight"
+                                        "className": "koreaexim-stack-tight"
                                     },
                                     "children": [
                                         {
@@ -196,21 +508,21 @@
                                                 "index_var": "rcptIdx"
                                             },
                                             "props": {
-                                                "className": "bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-600 rounded-lg p-3 space-y-2"
+                                                "className": "koreaexim:bg-white koreaexim:dark:bg-gray-800 koreaexim:border koreaexim:border-purple-200 koreaexim:dark:border-purple-600 koreaexim:rounded-lg koreaexim:p-3 koreaexim:space-y-2"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-between"
+                                                        "className": "koreaexim-flex-between"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs font-medium text-purple-700 dark:text-purple-300"
+                                                                "className": "koreaexim:text-xs koreaexim:font-medium koreaexim:text-purple-700 koreaexim:dark:text-purple-300"
                                                             },
                                                             "text": "$t:admin.settings.notification_definitions.recipients.rule_label|index={{rcptIdx + 1}}"
                                                         },
@@ -231,14 +543,14 @@
                                                             "props": {
                                                                 "aria-label": "$t:admin.settings.notification_definitions.recipients.remove_rule|index={{rcptIdx + 1}}",
                                                                 "type": "button",
-                                                                "className": "p-1 text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                                                "className": "koreaexim:p-1 koreaexim:text-gray-500 koreaexim:hover:text-red-500 koreaexim:dark:hover:text-red-400 koreaexim:transition-colors"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Icon",
                                                                     "props": {
-                                                                        "name": "fa-solid fa-xmark",
+                                                                        "name": "xmark",
                                                                         "size": "sm"
                                                                     }
                                                                 }
@@ -250,14 +562,14 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "row-stack"
+                                                        "className": "koreaexim-row-stack"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "row-stack"
+                                                                "className": "koreaexim-row-stack"
                                                             },
                                                             "children": [
                                                                 {
@@ -268,7 +580,7 @@
                                                                             "type": "basic",
                                                                             "name": "Label",
                                                                             "props": {
-                                                                                "className": "text-secondary block text-xs font-medium"
+                                                                                "className": "koreaexim-text-secondary koreaexim:block koreaexim:text-xs koreaexim:font-medium"
                                                                             },
                                                                             "text": "$t:admin.settings.notification_definitions.recipients.type_label"
                                                                         },
@@ -290,8 +602,8 @@
                                                                             "props": {
                                                                                 "aria-label": "$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.type_label')}}",
                                                                                 "value": "{{rcpt.type ?? ''}}",
-                                                                                "className": "w-full text-sm",
-                                                                                "options": "{{[{ value: 'trigger_user', label: '$t:admin.settings.notification_definitions.recipients.types.trigger_user' }, ...(((_global.koreaexim_notification_template_form_modal?.definition?.relations ?? []).length > 0) ? [{ value: 'related_user', label: '$t:admin.settings.notification_definitions.recipients.types.related_user' }] : []), { value: 'role', label: '$t:admin.settings.notification_definitions.recipients.types.role' }, { value: 'specific_users', label: '$t:admin.settings.notification_definitions.recipients.types.specific_users' }]}}"
+                                                                                "className": "koreaexim:w-full koreaexim:text-sm",
+                                                                                "options": "{{[{ value: 'trigger_user', label: '$t:admin.settings.notification_definitions.recipients.types.trigger_user' }, ...(((_global.koreaexim_notification_template_form_modal?.definition?.relations ?? []).length > 0) ? [{ value: 'related_user', label: '$t:admin.settings.notification_definitions.recipients.types.related_user' }] : []), { value: 'role', label: '$t:admin.settings.notification_definitions.recipients.types.role' }, { value: 'specific_users', label: '$t:admin.settings.notification_definitions.recipients.types.specific_users' }, { value: 'site_admin_email', label: '$t:admin.settings.notification_definitions.recipients.types.site_admin_email' }]}}"
                                                                             }
                                                                         }
                                                                     ]
@@ -303,14 +615,14 @@
                                                             "name": "Div",
                                                             "if": "{{rcpt.type === 'related_user'}}",
                                                             "props": {
-                                                                "className": "row-stack"
+                                                                "className": "koreaexim-row-stack"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Label",
                                                                     "props": {
-                                                                        "className": "text-secondary block text-xs font-medium"
+                                                                        "className": "koreaexim-text-secondary koreaexim:block koreaexim:text-xs koreaexim:font-medium"
                                                                     },
                                                                     "text": "$t:admin.settings.notification_definitions.recipients.relation_label"
                                                                 },
@@ -331,7 +643,7 @@
                                                                     "props": {
                                                                         "aria-label": "$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.relation_label')}}",
                                                                         "value": "{{rcpt.relation ?? ''}}",
-                                                                        "className": "w-full text-sm",
+                                                                        "className": "koreaexim:w-full koreaexim:text-sm",
                                                                         "options": "{{[{ value: '', label: '$t:admin.settings.notification_definitions.recipients.relation_placeholder', disabled: true }, ...(_global.koreaexim_notification_template_form_modal?.definition?.relations ?? []).map(r => ({ value: r, label: _global.koreaexim_notification_template_form_modal?.definition?.relation_labels?.[r] ?? r }))]}}"
                                                                     }
                                                                 },
@@ -341,7 +653,7 @@
                                                                     "name": "P",
                                                                     "if": "{{((rcpt.relation ?? '') !== '') && !(_global.koreaexim_notification_template_form_modal?.definition?.relations ?? []).includes(rcpt.relation)}}",
                                                                     "props": {
-                                                                        "className": "text-xs text-yellow-700 dark:text-yellow-300 mt-1"
+                                                                        "className": "koreaexim:text-xs koreaexim:text-yellow-700 koreaexim:dark:text-yellow-300 koreaexim:mt-1"
                                                                     },
                                                                     "text": "$t:admin.settings.notification_definitions.recipients.relation_undeclared|relation={{rcpt.relation}}"
                                                                 }
@@ -352,14 +664,14 @@
                                                             "name": "Div",
                                                             "if": "{{rcpt.type === 'role'}}",
                                                             "props": {
-                                                                "className": "row-stack"
+                                                                "className": "koreaexim-row-stack"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Label",
                                                                     "props": {
-                                                                        "className": "text-secondary block text-xs font-medium"
+                                                                        "className": "koreaexim-text-secondary koreaexim:block koreaexim:text-xs koreaexim:font-medium"
                                                                     },
                                                                     "text": "$t:admin.settings.notification_definitions.recipients.role_label"
                                                                 },
@@ -370,7 +682,7 @@
                                                                     "name": "Div",
                                                                     "if": "{{(rcpt.value ?? []).length > 0}}",
                                                                     "props": {
-                                                                        "className": "flex flex-wrap gap-1.5"
+                                                                        "className": "koreaexim:flex koreaexim:flex-wrap koreaexim:gap-1.5"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -382,7 +694,7 @@
                                                                                 "index_var": "ridIdx"
                                                                             },
                                                                             "props": {
-                                                                                "className": "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300"
+                                                                                "className": "koreaexim:inline-flex koreaexim:items-center koreaexim:gap-1 koreaexim:text-xs koreaexim:font-medium koreaexim:px-2 koreaexim:py-0.5 koreaexim:rounded-full koreaexim:bg-purple-100 koreaexim:text-purple-800 koreaexim:dark:bg-purple-900/40 koreaexim:dark:text-purple-300"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -406,7 +718,7 @@
                                                                                     ],
                                                                                     "props": {
                                                                                         "type": "button",
-                                                                                        "className": "inline-flex items-center hover:text-purple-900 dark:hover:text-purple-200",
+                                                                                        "className": "koreaexim:inline-flex koreaexim:items-center koreaexim:hover:text-purple-900 koreaexim:dark:hover:text-purple-200",
                                                                                         "aria-label": "$t:admin.settings.notification_definitions.recipients.remove_selected|name={{String((rcpt.display_names ?? [])[ridIdx] ?? rid)}}"
                                                                                     },
                                                                                     "children": [
@@ -415,7 +727,7 @@
                                                                                             "name": "Icon",
                                                                                             "props": {
                                                                                                 "name": "xmark",
-                                                                                                "className": "text-xs"
+                                                                                                "className": "koreaexim:text-xs koreaexim:leading-none"
                                                                                             }
                                                                                         }
                                                                                     ]
@@ -479,7 +791,7 @@
                                                                         "initialText": "$t:admin.settings.notification_definitions.recipients.role_search_placeholder",
                                                                         "triggerLabel": "$t:admin.settings.notification_definitions.recipients.role_label",
                                                                         "selectedCountLabel": "$t:admin.settings.notification_definitions.recipients.roles_selected_count|count={{(rcpt.value ?? []).length}}",
-                                                                        "className": "w-full"
+                                                                        "className": "koreaexim:w-full"
                                                                     }
                                                                 }
                                                             ]
@@ -489,14 +801,14 @@
                                                             "name": "Div",
                                                             "if": "{{rcpt.type === 'specific_users'}}",
                                                             "props": {
-                                                                "className": "row-stack"
+                                                                "className": "koreaexim-row-stack"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Label",
                                                                     "props": {
-                                                                        "className": "text-secondary block text-xs font-medium"
+                                                                        "className": "koreaexim-text-secondary koreaexim:block koreaexim:text-xs koreaexim:font-medium"
                                                                     },
                                                                     "text": "$t:admin.settings.notification_definitions.recipients.users_label"
                                                                 },
@@ -507,7 +819,7 @@
                                                                     "name": "Div",
                                                                     "if": "{{(rcpt.value ?? []).length > 0}}",
                                                                     "props": {
-                                                                        "className": "flex flex-wrap gap-1.5"
+                                                                        "className": "koreaexim:flex koreaexim:flex-wrap koreaexim:gap-1.5"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -519,7 +831,7 @@
                                                                                 "index_var": "uidIdx"
                                                                             },
                                                                             "props": {
-                                                                                "className": "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300"
+                                                                                "className": "koreaexim:inline-flex koreaexim:items-center koreaexim:gap-1 koreaexim:text-xs koreaexim:font-medium koreaexim:px-2 koreaexim:py-0.5 koreaexim:rounded-full koreaexim:bg-purple-100 koreaexim:text-purple-800 koreaexim:dark:bg-purple-900/40 koreaexim:dark:text-purple-300"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -543,7 +855,7 @@
                                                                                     ],
                                                                                     "props": {
                                                                                         "type": "button",
-                                                                                        "className": "inline-flex items-center hover:text-purple-900 dark:hover:text-purple-200",
+                                                                                        "className": "koreaexim:inline-flex koreaexim:items-center koreaexim:hover:text-purple-900 koreaexim:dark:hover:text-purple-200",
                                                                                         "aria-label": "$t:admin.settings.notification_definitions.recipients.remove_selected|name={{String((rcpt.display_names ?? [])[uidIdx] ?? uid)}}"
                                                                                     },
                                                                                     "children": [
@@ -552,7 +864,7 @@
                                                                                             "name": "Icon",
                                                                                             "props": {
                                                                                                 "name": "xmark",
-                                                                                                "className": "text-xs"
+                                                                                                "className": "koreaexim:text-xs koreaexim:leading-none"
                                                                                             }
                                                                                         }
                                                                                     ]
@@ -617,17 +929,28 @@
                                                                         "initialText": "$t:admin.settings.notification_definitions.recipients.users_placeholder",
                                                                         "triggerLabel": "$t:admin.settings.notification_definitions.recipients.users_label",
                                                                         "selectedCountLabel": "$t:admin.settings.notification_definitions.recipients.users_selected_count|count={{(rcpt.value ?? []).length}}",
-                                                                        "className": "w-full"
+                                                                        "className": "koreaexim:w-full"
                                                                     }
                                                                 }
                                                             ]
+                                                        },
+                                                        {
+                                                            "comment": "사이트 관리자 이메일(#888) — 값 칸이 없다. 환경설정 > 일반의 관리자 이메일 한 곳으로 메일만 가므로 그 사실과 빈 값의 결과를 밝힌다(코어 편집 창과 같은 규칙).",
+                                                            "id": "rcpt_site_admin_email_hint_{{rcptIdx}}",
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "if": "{{rcpt.type === 'site_admin_email'}}",
+                                                            "props": {
+                                                                "className": "koreaexim:text-xs koreaexim:text-gray-500 koreaexim:dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:admin.settings.notification_definitions.recipients.site_admin_email_hint"
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "if": "{{rcpt.type === 'role' || rcpt.type === 'specific_users'}}",
                                                             "props": {
-                                                                "className": "flex-center gap-2"
+                                                                "className": "koreaexim-flex-center koreaexim:gap-2"
                                                             },
                                                             "children": [
                                                                 {
@@ -675,7 +998,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium"
+                                        "className": "koreaexim:text-sm koreaexim:text-purple-600 koreaexim:dark:text-purple-400 koreaexim:hover:text-purple-800 koreaexim:dark:hover:text-purple-200 koreaexim:font-medium"
                                     },
                                     "text": "$t:admin.settings.notification_definitions.recipients.add_rule"
                                 }
@@ -702,7 +1025,7 @@
                             "name": "Div",
                             "if": "{{!((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.koreaexim_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
                             "props": {
-                                "className": "flex border-b border-gray-200 dark:border-gray-700"
+                                "className": "koreaexim:flex koreaexim:border-b koreaexim:border-gray-200 koreaexim:dark:border-gray-700"
                             },
                             "children": [
                                 {
@@ -725,7 +1048,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{(_global.koreaexim_notification_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"
+                                        "className": "{{(_global.koreaexim_notification_template_form_modal?.editLang ?? $locale) === loc ? 'koreaexim:border-b-2 koreaexim:border-indigo-500 koreaexim:dark:border-indigo-400 koreaexim:text-indigo-600 koreaexim:dark:text-indigo-400' : 'koreaexim:text-gray-500 koreaexim:dark:text-gray-400 koreaexim:hover:text-gray-700 koreaexim:dark:hover:text-gray-300'}} koreaexim:px-4 koreaexim:py-2 koreaexim:text-sm koreaexim:font-medium koreaexim:focus:outline-none"
                                     },
                                     "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
                                 }
@@ -737,7 +1060,7 @@
                             "name": "Div",
                             "if": "{{!((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.koreaexim_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
                             "props": {
-                                "className": "row-stack"
+                                "className": "koreaexim-row-stack"
                             },
                             "children": [
                                 {
@@ -748,7 +1071,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "koreaexim-form-label"
                                             },
                                             "children": [
                                                 {
@@ -760,7 +1083,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-required"
+                                                        "className": "koreaexim-text-required"
                                                     },
                                                     "text": "*"
                                                 }
@@ -796,7 +1119,7 @@
                             "name": "Div",
                             "if": "{{!((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.koreaexim_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
                             "props": {
-                                "className": "row-stack"
+                                "className": "koreaexim-row-stack"
                             },
                             "children": [
                                 {
@@ -807,7 +1130,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "koreaexim-form-label"
                                             },
                                             "children": [
                                                 {
@@ -819,7 +1142,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-required"
+                                                        "className": "koreaexim-text-required"
                                                     },
                                                     "text": "*"
                                                 }
@@ -871,7 +1194,7 @@
                                                                         "content": "{{_global.koreaexim_notification_template_form_modal?.template?.body?.[bodyLoc] ?? ''}}",
                                                                         "isHtml": true,
                                                                         "showHtmlModeToggle": false,
-                                                                        "className": "min-h-[200px]"
+                                                                        "className": "koreaexim:min-h-[200px]"
                                                                     }
                                                                 }
                                                             ]
@@ -898,7 +1221,7 @@
                                                         "content": "{{_global.koreaexim_notification_template_form_modal?.template?.body?.[_global.koreaexim_notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
                                                         "isHtml": false,
                                                         "showHtmlModeToggle": false,
-                                                        "className": "min-h-[200px]"
+                                                        "className": "koreaexim:min-h-[200px]"
                                                     }
                                                 }
                                             ]
@@ -913,7 +1236,7 @@
                             "name": "Div",
                             "if": "{{(_global.koreaexim_notification_template_form_modal?.template?.channel === 'database') && !((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.koreaexim_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
                             "props": {
-                                "className": "row-stack"
+                                "className": "koreaexim-row-stack"
                             },
                             "children": [
                                 {
@@ -924,7 +1247,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "koreaexim-form-label"
                                             },
                                             "text": "$t:admin.settings.notification_definitions.edit_modal.click_url"
                                         },
@@ -946,7 +1269,7 @@
                                                 "type": "text",
                                                 "value": "{{_global.koreaexim_notification_template_form_modal?.template?.click_url ?? ''}}",
                                                 "placeholder": "/mypage/orders/{order_number}",
-                                                "className": "font-mono"
+                                                "className": "koreaexim:font-mono"
                                             }
                                         }
                                     ]
@@ -955,7 +1278,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "koreaexim-form-hint"
                                     },
                                     "text": "$t:admin.settings.notification_definitions.edit_modal.click_url_hint"
                                 }
@@ -967,40 +1290,43 @@
                             "name": "Div",
                             "if": "{{((_global.koreaexim_notification_template_form_modal?.definition?.variables ?? []).length > 0) && !((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.koreaexim_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
                             "props": {
-                                "className": "bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4"
+                                "className": "koreaexim:bg-gray-50 koreaexim:dark:bg-gray-900 koreaexim:border koreaexim:border-gray-200 koreaexim:dark:border-gray-700 koreaexim:rounded-md koreaexim:p-4"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "H4",
                                     "props": {
-                                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                        "className": "koreaexim:text-sm koreaexim:font-medium koreaexim:text-gray-700 koreaexim:dark:text-gray-300 koreaexim:mb-2"
                                     },
                                     "text": "$t:sirsoft-koreaexim.notification_definitions.edit_modal.variables_title"
                                 },
                                 {
+                                    "comment": "이 알림이 선언한 변수. 회원 공통 변수(group 이 member)는 아래 「회원 항목」 묶음으로 가른다.",
+                                    "id": "koreaexim_template_variables_own",
                                     "type": "basic",
                                     "name": "Div",
+                                    "if": "{{(_global.koreaexim_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group !== 'member').length > 0}}",
                                     "props": {
-                                        "className": "flex flex-wrap gap-2"
+                                        "className": "koreaexim:flex koreaexim:flex-wrap koreaexim:gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "iteration": {
-                                                "source": "{{_global.koreaexim_notification_template_form_modal?.definition?.variables ?? []}}",
+                                                "source": "{{(_global.koreaexim_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group !== 'member')}}",
                                                 "item_var": "v"
                                             },
                                             "props": {
-                                                "className": "inline-flex items-center gap-1 text-xs px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300"
+                                                "className": "koreaexim:inline-flex koreaexim:items-center koreaexim:gap-1 koreaexim:text-xs koreaexim:px-2 koreaexim:py-1 koreaexim:bg-white koreaexim:dark:bg-gray-800 koreaexim:border koreaexim:border-gray-200 koreaexim:dark:border-gray-600 koreaexim:rounded koreaexim:text-gray-700 koreaexim:dark:text-gray-300"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "font-mono"
+                                                        "className": "koreaexim:font-mono"
                                                     },
                                                     "text": "{"
                                                 },
@@ -1008,7 +1334,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "font-mono"
+                                                        "className": "koreaexim:font-mono"
                                                     },
                                                     "text": "{{v.key}}"
                                                 },
@@ -1016,7 +1342,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "font-mono"
+                                                        "className": "koreaexim:font-mono"
                                                     },
                                                     "text": "}"
                                                 },
@@ -1028,225 +1354,115 @@
                                             ]
                                         }
                                     ]
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "id": "koreaexim_template_modal_footer",
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "flex-between pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
+                                },
                                 {
-                                    "comment": "미리보기 — 편집 중인 제목·본문을 서버에 보내 변수를 채운 모습을 받아 미리보기 창에 띄운다. 저장 중에는 잠긴다 — 요청이 도는 도중 창이 바뀌면 성공·실패 안내가 갈 곳을 잃는다",
+                                    "comment": "회원 항목 묶음. 서버가 알림 정의의 변수 뒤에 회원 공통 변수(표시 이름, 코어와 확장 항목, 운영자 추가 항목)를\n               group: member 로 덧붙인다. 운영자가 항목을 더할수록 길어지므로 접어 두고, 제목 단추로 펼친다. 문구는 코어 창과 같은 키다.",
+                                    "id": "koreaexim_template_variables_member",
                                     "type": "basic",
-                                    "name": "Button",
-                                    "if": "{{!((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.koreaexim_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
-                                    "actions": [
+                                    "name": "Div",
+                                    "if": "{{(_global.koreaexim_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group === 'member').length > 0}}",
+                                    "props": {
+                                        "className": "koreaexim:mt-3 koreaexim:pt-3 koreaexim:border-t koreaexim:border-gray-200 koreaexim:dark:border-gray-700"
+                                    },
+                                    "children": [
                                         {
-                                            "type": "click",
-                                            "handler": "apiCall",
-                                            "target": "/api/admin/notification-templates/preview",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "POST",
-                                                "body": {
-                                                    "definition_id": "{{_global.koreaexim_notification_template_form_modal?.definition?.id}}",
-                                                    "subject": "{{_global.koreaexim_notification_template_form_modal?.template?.subject}}",
-                                                    "body": "{{_global.koreaexim_notification_template_form_modal?.template?.body}}",
-                                                    "locale": "{{_global.koreaexim_notification_template_form_modal?.editLang ?? $locale}}"
-                                                }
-                                            },
-                                            "onSuccess": [
+                                            "id": "koreaexim_template_variables_member_toggle",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
                                                 {
+                                                    "comment": "펼침 상태는 창 이름 공간에 둔다. 창을 열 때마다 이름 공간을 새로 채우므로 다시 열면 접힌 채로 시작한다.",
+                                                    "type": "click",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "global",
-                                                        "koreaexim_notification_template_form_modal.preview": "{{response.data}}"
+                                                        "koreaexim_notification_template_form_modal.memberVariablesOpen": "{{!(_global.koreaexim_notification_template_form_modal?.memberVariablesOpen === true)}}"
                                                     }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "modal_koreaexim_notification_definition_preview"
                                                 }
                                             ],
-                                            "onError": {
-                                                "handler": "toast",
-                                                "params": {
-                                                    "type": "error",
-                                                    "message": "{{error.message}}"
-                                                }
-                                            }
-                                        }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
-                                        "disabled": "{{_global.koreaexim_notification_template_form_modal?.isSaving ?? false}}"
-                                    },
-                                    "text": "$t:sirsoft-koreaexim.notification_definitions.edit_modal.btn_preview"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "flex gap-2"
-                            },
-                            "children": [
-                                {
-                                    "comment": "취소 — 편집 창을 닫고 창 이름 공간의 폼 상태를 비운다",
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "actions": [
-                                        {
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
+                                            "props": {
+                                                "type": "button",
+                                                "aria-expanded": "{{_global.koreaexim_notification_template_form_modal?.memberVariablesOpen === true}}",
+                                                "aria-controls": "koreaexim_template_variables_member_list",
+                                                "className": "koreaexim:flex koreaexim:items-center koreaexim:gap-2 koreaexim:min-h-[44px] koreaexim:text-sm koreaexim:font-medium koreaexim:text-gray-700 koreaexim:dark:text-gray-300 koreaexim:hover:text-gray-900 koreaexim:dark:hover:text-gray-100"
+                                            },
+                                            "children": [
                                                 {
-                                                    "handler": "closeModal",
-                                                    "target": "modal_koreaexim_notification_template_edit"
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "{{_global.koreaexim_notification_template_form_modal?.memberVariablesOpen === true ? 'chevron-down' : 'chevron-right'}}",
+                                                        "className": "koreaexim:text-xs"
+                                                    }
                                                 },
                                                 {
-                                                    "comment": "취소로 닫으면 창 이름 공간을 바로 비운다(7.1.1)",
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "koreaexim_notification_template_form_modal": null
-                                                    }
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{$t('admin.settings.notification_definitions.edit_modal.member_variables_title', { count: (_global.koreaexim_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group === 'member').length })}}"
                                                 }
                                             ]
-                                        }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{_global.koreaexim_notification_template_form_modal?.isSaving ?? false}}"
-                                    },
-                                    "text": "$t:common.cancel"
-                                },
-                                {
-                                    "comment": "편집 모달 푸터 확장 슬롯(범용). template_editor='none' 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다.",
-                                    "id": "koreaexim_template_form_footer_ext",
-                                    "type": "extension_point",
-                                    "name": "notification_template_form_footer_actions",
-                                    "props": {
-                                        "definition": "{{_global.koreaexim_notification_template_form_modal?.definition}}",
-                                        "template": "{{_global.koreaexim_notification_template_form_modal?.template}}",
-                                        "channel": "{{_global.koreaexim_notification_template_form_modal?.template?.channel ?? ''}}",
-                                        "modalId": "modal_koreaexim_notification_template_edit",
-                                        "stateKey": "koreaexim_notification_template_form_modal",
-                                        "saveEndpoint": "{{'/api/admin/notification-templates/' + _global.koreaexim_notification_template_form_modal?.template?.id}}",
-                                        "refetchDataSourceId": "koreaeximNotificationDefinitions"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "if": "{{!((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.koreaexim_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
-                                    "actions": [
+                                        },
                                         {
-                                            "comment": "저장. 성공하면 알림 목록을 다시 부른다 — 목록이 제목·사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다.",
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{_global.koreaexim_notification_template_form_modal?.memberVariablesOpen === true}}",
+                                            "props": {
+                                                "className": "koreaexim-form-hint koreaexim:mb-2"
+                                            },
+                                            "text": "$t:admin.settings.notification_definitions.edit_modal.member_variables_hint"
+                                        },
+                                        {
+                                            "id": "koreaexim_template_variables_member_list",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{_global.koreaexim_notification_template_form_modal?.memberVariablesOpen === true}}",
+                                            "props": {
+                                                "className": "koreaexim:flex koreaexim:flex-wrap koreaexim:gap-2"
+                                            },
+                                            "children": [
                                                 {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "koreaexim_notification_template_form_modal.isSaving": true,
-                                                        "koreaexim_notification_template_form_modal.errors": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "apiCall",
-                                                    "target": "{{'/api/admin/notification-templates/' + _global.koreaexim_notification_template_form_modal?.template?.id}}",
-                                                    "auth_required": true,
-                                                    "params": {
-                                                        "method": "PUT",
-                                                        "body": {
-                                                            "subject": "{{_global.koreaexim_notification_template_form_modal?.template?.subject}}",
-                                                            "body": "{{_global.koreaexim_notification_template_form_modal?.template?.body}}",
-                                                            "click_url": "{{_global.koreaexim_notification_template_form_modal?.template?.click_url ?? null}}",
-                                                            "recipients": "{{_global.koreaexim_notification_template_form_modal?.recipients ?? []}}"
-                                                        }
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "iteration": {
+                                                        "source": "{{(_global.koreaexim_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group === 'member')}}",
+                                                        "item_var": "mv"
                                                     },
-                                                    "onSuccess": [
+                                                    "props": {
+                                                        "className": "koreaexim:inline-flex koreaexim:items-center koreaexim:gap-1 koreaexim:text-xs koreaexim:px-2 koreaexim:py-1 koreaexim:bg-white koreaexim:dark:bg-gray-800 koreaexim:border koreaexim:border-gray-200 koreaexim:dark:border-gray-600 koreaexim:rounded koreaexim:text-gray-700 koreaexim:dark:text-gray-300"
+                                                    },
+                                                    "children": [
                                                         {
-                                                            "handler": "refetchDataSource",
-                                                            "params": {
-                                                                "dataSourceId": "koreaeximNotificationDefinitions"
-                                                            }
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "koreaexim:font-mono"
+                                                            },
+                                                            "text": "{"
                                                         },
                                                         {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "message": "$t:sirsoft-koreaexim.notification_definitions.save_success",
-                                                                "type": "success"
-                                                            }
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "koreaexim:font-mono"
+                                                            },
+                                                            "text": "{{mv.key}}"
                                                         },
                                                         {
-                                                            "handler": "closeModal",
-                                                            "target": "modal_koreaexim_notification_template_edit"
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "koreaexim:font-mono"
+                                                            },
+                                                            "text": "}"
                                                         },
                                                         {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "koreaexim_notification_template_form_modal": null
-                                                            }
-                                                        }
-                                                    ],
-                                                    "onError": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "koreaexim_notification_template_form_modal.isSaving": false,
-                                                                "koreaexim_notification_template_form_modal.errors": "{{error.errors}}"
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "message": "{{error.message ?? $t('sirsoft-koreaexim.notification_definitions.save_error')}}",
-                                                                "type": "error"
-                                                            }
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": " — {{mv.description ?? ''}}"
                                                         }
                                                     ]
                                                 }
                                             ]
-                                        }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{_global.koreaexim_notification_template_form_modal?.isSaving ?? false}}"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "if": "{{_global.koreaexim_notification_template_form_modal?.isSaving}}",
-                                            "props": {
-                                                "name": "spinner",
-                                                "className": "animate-spin",
-                                                "size": "sm"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "{{_global.koreaexim_notification_template_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
                                         }
                                     ]
                                 }

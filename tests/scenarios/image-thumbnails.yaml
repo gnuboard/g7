@@ -1,0 +1,141 @@
+feature: 이미지 썸네일 1단계 코어 — 엔진·규격·저장소 계층 무효화·퍼지 묶음·코어 서빙 2곳·og 변환 (#869)
+
+description: |
+  이미지 서빙 주소에 `?size={규격}` 또는 `?w={숫자}` 를 붙이면 서버가 환경설정의 규격으로 썸네일을 만들어 저장해 두고 낸다.
+  - 엔진: GD(기본)·Imagick. 맞춤 cover·contain·width, 기준점 5종, 투명도 보존, EXIF 방향, WebP·AVIF(못 쓰면 원본 형식).
+    업로드 축소(ImageResizer)도 같은 엔진.
+  - 규격: 고정 슬롯 xs~xl(defaults.json), og(SEO 탭 크기), 확장(필터 core.thumbnail.filter_presets), 운영자 규격.
+    `w` 는 숫자 요청 대상 중 가로 ≥ w 최소로 올려 맞춤. 배열·중복·음수·비정수·미정의는 원본.
+  - 저장: thumbnails/{원본 disk}/{원본 전체 경로}/{규격}_{지문}.{ext}. 드라이버 put(덮어쓰기)·delete·deleteDirectory·deleteAll
+    이 같은 접두 파생본을 모든 썸네일 디스크에서 지우고 core.thumbnail.after_purge 를 묶음으로 발화. 확장 제거도 지운다.
+  - 서빙: /api/attachment/{hash}(게이트 — 비공개 디스크·private 캐시), /api/templates/{id}/layout-attachments/{id}/file(공개 —
+    공개 썸네일 디스크가 공개 자산 디스크면 302). 낼 수 없으면 원본 + X-G7-Thumbnail: bypass:{사유}.
+  - og: renderOgHtml/renderTwitterHtml 이 등록된 서빙 주소의 og 이미지를 size=og 로 바꾼다(크기를 직접 선언했으면 그대로).
+
+# 입력 축 — 코어 서빙 지점 × 썸네일 파라미터(2×4)를 전부 서빙 Feature 테스트가 덮는다.
+# 엔진(gd·imagick × 맞춤·기준점·형식)·규격 출처(고정·og·확장·운영자)·저장소 계층(세 드라이버 × put·delete·
+# deleteDirectory·deleteAll)·퍼지 시점(콘솔·묶음·큐·HTTP)은 각 층의 단위 테스트가 데이터 공급자·표로 전부 잰다 —
+# 층을 가로지르는 조합은 같은 경로를 되풀이할 뿐이라 축으로 올리지 않고 effects 로 대조한다.
+axes:
+  serving_point: [core_attachment, layout_attachment]
+  request_param: [none, size, w, invalid]
+
+effects:
+  # 검토 결함 회귀
+  - preparation_failure_falls_back_to_original
+  - transient_bypass_is_not_cacheable
+  - permanent_bypass_original_uses_thumbnail_ttl
+  - permanent_bypass_original_ttl_capped_at_one_year
+  - permanent_bypass_shared_max_age_follows_thumbnail_ttl
+  - truncated_source_copy_is_rejected
+  - public_thumbnail_disk_limited_to_catalog
+  - gated_thumbnail_disk_limited_to_allowlist   # 권한 썸네일 디스크는 ThumbnailDiskOptions 판정 밖이면 비공개 디스크, 판정 실패 시 thumbnails·s3 로 좁힘
+  - retired_thumbnail_disk_is_purged
+  - thumbnail_cache_capped_by_source_max_age
+  - core_attachment_original_private_only_behind_gate
+  - truncated_remote_source_copy_is_rejected
+  - og_preview_matches_rendered_card
+  - public_original_purged_without_thumbnails
+  # 엔진
+  - fit_produces_declared_geometry
+  - anchor_keeps_declared_side
+  - transparency_preserved
+  - exif_orientation_applied
+  - exif_orientation_all_eight_placed               # 방향 1~8(뒤집기 2·4·5·7 포함) 사분면 배치를 GD·Imagick 이 같은 표로 잰다
+  - extension_processor_used_via_filter             # core.thumbnail.filter_processors 로 넘긴 엔진을 설정이 고르면 쓴다
+  - invalid_processor_filter_falls_back_to_core     # 필터가 배열이 아니거나 코어 id 자리가 엔진이 아니면 코어 엔진
+  - output_format_honoured_or_falls_back
+  - animated_gif_detected
+  - animated_webp_apng_detected
+  - animated_original_configurable
+  - upload_resize_shares_engine
+  - non_raster_bypassed
+  # 규격·파라미터
+  - preset_resolution_table_holds
+  - invalid_params_fall_back_to_original
+  - fixed_slots_follow_defaults_json
+  - saved_rows_overlay_values_only
+  - og_preset_follows_seo_size
+  - extension_presets_merged_by_filter
+  - custom_preset_name_rules
+  - frontend_preset_list_shape
+  - fingerprint_tracks_output_affecting_values
+  - signature_ignores_only_size_and_w
+  # URL 유틸
+  - url_util_adds_size_only_to_registered_same_origin_paths
+  - url_util_preserves_query_and_fragment
+  - url_patterns_extendable_by_filter
+  - url_filter_can_delegate
+  # srcset — 프론트 thumbnailSrcset·contentSrcset 과 같은 기대값(봇 화면과 사람 화면이 같은 파생본을 쓴다)
+  - srcset_2x_is_smallest_same_shape_preset_at_one_and_half_times
+  - srcset_keeps_query_and_replaces_existing_size
+  - srcset_empty_for_non_target_or_disabled
+  - srcset_unknown_preset_is_one_x_only
+  - content_srcset_lists_numeric_presets_by_width
+  - srcset_encodes_spaces_in_candidates
+  # 저장소 계층·퍼지
+  - derivatives_purged_on_overwrite
+  - derivatives_purged_on_delete
+  - derivatives_purged_on_directory_delete
+  - non_raster_never_purges
+  - thumbnail_paths_are_skipped
+  - public_disk_sources_still_purged
+  - source_key_matches_driver_path
+  - purge_hook_fired_with_payload
+  - purge_batched_once
+  - purge_flushed_at_right_time
+  - purge_listener_failure_is_isolated
+  - extension_removal_purges_its_derivatives
+  - remote_put_overhead_bounded
+  - non_raster_public_original_invalidated       # 래스터가 아닌 원본(PDF 등)도 공개 주소가 있으면 덮어쓰기·삭제 때 원본 주소를 CDN 무효화에 싣는다(썸네일 연동은 래스터만)
+  - disabled_thumbnails_skip_put_sync            # 썸네일을 끄면 put 의 파생본 연동을 건너뛰고(원본 공개 주소가 있으면 판정과 원본 CDN 무효화만), 삭제 연동은 남긴다
+  # 서빙
+  - original_response_unchanged_without_params
+  - thumbnail_generated_on_first_request
+  - thumbnail_served_from_cache_on_second
+  - thumbnail_key_mirrors_source_path
+  - thumbnail_conditional_request_304
+  - stale_derivative_regenerated_when_local_source_newer
+  - gate_runs_before_thumbnail
+  - generation_rate_limited
+  - concurrent_generation_single_file
+  - thumbnail_lock_wait_configurable              # 생성 잠금 대기는 core.thumbnail.lock_wait_seconds(기본 10, 1~30 으로 묶음)
+  - core_attachment_private_behind_identity_policy  # 켜진 본인인증 정책(hook·route)이 걸린 코어 첨부 원본은 private, 없으면 public
+  - identity_hook_policy_applies_to_inline_images   # hook 범위 정책이 이미지 원본·썸네일도 막고(428) 유예 안 인증은 통과, 훅은 요청당 1회
+  - attachment_before_download_filter_runs_once_per_request   # 내려받기 전 필터·액션 훅이 이미지·비이미지·SVG·썸네일·304 모두 요청당 1회
+  - attachment_gate_checked_once_per_request                 # 비이미지 내려받기도 첨부 조회·권한 확인이 이미지와 같은 횟수(한 요청에 한 번 조회, 다시 찾지 않음)
+  - gated_thumbnail_cache_is_private
+  - public_thumbnail_redirects_to_public_disk
+  - public_thumbnail_redirect_hardened               # 302(miss·hit)에도 스트림과 같은 InlineMediaPolicy::harden 헤더(nosniff)
+  - attachment_serving_branch_follows_filtered_row  # 인라인·내려받기 갈래는 서비스가 필터 뒤 행 MIME 으로 한 번 정하고 컨트롤러가 따른다
+  - original_bytes_on_bypass
+  - smaller_source_bypassed
+  - screen_img_requests_thumbnail_only
+  # og
+  - og_image_rendered_as_og_thumbnail
+  - og_image_declared_size_respected
+  - og_image_external_untouched
+  # 등록 시 생성
+  - pregenerated_after_response_on_sync_queue
+  - pregenerate_job_dispatched_on_real_queue
+  - pregenerate_skipped_without_preset_or_provider
+
+test_files:
+  - tests/Feature/Thumbnails/ThumbnailReviewFixesTest.php
+  - tests/Unit/Thumbnails/GdImageProcessorTest.php
+  - tests/Unit/Thumbnails/ImagickImageProcessorTest.php
+  - tests/Unit/Thumbnails/ImageProcessorResolverTest.php
+  - tests/Unit/Thumbnails/ThumbnailPresetRegistryTest.php
+  - tests/Unit/Thumbnails/ThumbnailQueryTest.php
+  - tests/Unit/Thumbnails/ThumbnailUrlTest.php
+  - tests/Unit/Thumbnails/ThumbnailUrlSrcsetTest.php
+  - tests/Unit/Thumbnails/SyncsThumbnailsTest.php
+  - tests/Unit/Thumbnails/RemoteDiskThumbnailSyncRequestTest.php
+  - tests/Unit/Thumbnails/ThumbnailPurgeBufferTest.php
+  - tests/Unit/Thumbnails/ExtensionRemovalThumbnailPurgeTest.php
+  - tests/Unit/Thumbnails/ThumbnailPregenerateOnStoreTest.php
+  - tests/Feature/Thumbnails/CoreThumbnailServingTest.php
+  - tests/Feature/Thumbnails/ThumbnailLockWaitTest.php
+  - tests/Feature/Identity/AttachmentIdentityPolicyServingTest.php
+  - tests/Playwright/specs/image-thumbnails.spec.ts
+  - tests/Unit/Seo/SeoMetaResolverTest.php

@@ -104,13 +104,16 @@ class MemberNotificationRepository implements MemberNotificationRepositoryInterf
         $body = "JSON_UNQUOTE(JSON_EXTRACT({$table}.data, '$.body'))";
 
         match ($type) {
+            // 수신 회원은 이름과 닉네임을 모두 찾는다 — 화면의 회원 칸이 표시 이름이라 닉네임으로 보이는 회원도 찾을 수 있어야 한다.
             'recipient' => $query->where(fn (Builder $w) => $w
                 ->where('recipient.name', 'like', $needle)
+                ->orWhere('recipient.nickname', 'like', $needle)
                 ->orWhere('recipient.email', 'like', $needle)),
             'subject' => $query->whereRaw("{$subject} LIKE ?", [$needle]),
             'body' => $query->whereRaw("{$body} LIKE ?", [$needle]),
             default => $query->where(fn (Builder $w) => $w
                 ->where('recipient.name', 'like', $needle)
+                ->orWhere('recipient.nickname', 'like', $needle)
                 ->orWhere('recipient.email', 'like', $needle)
                 ->orWhereRaw("{$subject} LIKE ?", [$needle])
                 ->orWhereRaw("{$body} LIKE ?", [$needle])),

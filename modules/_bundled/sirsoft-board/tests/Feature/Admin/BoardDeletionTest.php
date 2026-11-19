@@ -286,6 +286,55 @@ class BoardDeletionTest extends ModuleTestCase
     }
 
     /**
+     * 외래키 검사를 끈 채 게시판을 삭제해도 게시판별 관리자·스텝 역할의 메뉴 연결(`role_menus`)·메뉴 권한
+     * (`menu_permissions`)이 고아로 남지 않는다 — 역할 삭제가 DB 외래키 연쇄에 기대지 않는다 (#888).
+     *
+     * @scenario child_type=board_role
+     *
+     * @effects board_roles_menu_links_explicitly_deleted
+     *
+     * @return void 반환값 없음
+     */
+    public function test_deleting_board_removes_board_role_menu_links_without_fk_cascade(): void
+    {
+        $board = $this->createTestBoard('del-test-role');
+        $roleIds = DB::table('roles')
+            ->whereIn('identifier', ['sirsoft-board.del-test-role.manager', 'sirsoft-board.del-test-role.step'])
+            ->pluck('id')
+            ->all();
+        $this->assertCount(2, $roleIds, '게시판 생성 시 관리자·스텝 역할이 만들어져야 합니다.');
+
+        $menuId = DB::table('menus')->insertGetId([
+            'name' => json_encode(['ko' => '역할 정리 메뉴', 'en' => 'Role Cleanup Menu']),
+            'slug' => 'del-test-role-cleanup-menu',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        try {
+            foreach ($roleIds as $roleId) {
+                DB::table('role_menus')->insert(['role_id' => $roleId, 'menu_id' => $menuId, 'permission_type' => 'read', 'created_at' => now(), 'updated_at' => now()]);
+                DB::table('menu_permissions')->insert(['menu_id' => $menuId, 'role_id' => $roleId, 'permission_type' => 'read', 'created_at' => now(), 'updated_at' => now()]);
+            }
+
+            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+            try {
+                $this->boardService->deleteBoard($board->id);
+            } finally {
+                DB::statement('SET FOREIGN_KEY_CHECKS=1');
+            }
+
+            $this->assertSame(0, DB::table('roles')->whereIn('id', $roleIds)->count(), '게시판별 역할이 삭제되지 않았습니다.');
+            $this->assertSame(0, DB::table('role_menus')->whereIn('role_id', $roleIds)->count(), '역할의 메뉴 연결이 고아로 남았습니다.');
+            $this->assertSame(0, DB::table('menu_permissions')->whereIn('role_id', $roleIds)->count(), '역할의 메뉴 권한이 고아로 남았습니다.');
+        } finally {
+            DB::table('role_menus')->where('menu_id', $menuId)->delete();
+            DB::table('menu_permissions')->where('menu_id', $menuId)->delete();
+            DB::table('menus')->where('id', $menuId)->delete();
+        }
+    }
+
+    /**
      * 테스트용 게시판을 생성합니다.
      *
      * @param  string  $slug  게시판 슬러그

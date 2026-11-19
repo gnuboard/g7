@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import moduleList from '../../layouts/admin_module_list.json';
 import pluginList from '../../layouts/admin_plugin_list.json';
 import scheduleListLayout from '../../layouts/admin_schedule_list.json';
-import scheduleTab from '../../layouts/partials/admin_schedule_list/_tab_schedules.json';
+// 예약 작업 표·페이저는 7.2.0 에서 탭 조각에서 표 조각으로 옮겨졌다
+import scheduleTab from '../../layouts/partials/admin_schedule_list/_partial_schedule_datagrid.json';
 import scheduleHistory from '../../layouts/partials/admin_schedule_list/_modal_history.json';
 import languagePackContent from '../../layouts/partials/admin_language_pack_list/_content.json';
 

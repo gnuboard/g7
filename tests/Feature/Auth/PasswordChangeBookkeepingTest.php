@@ -382,14 +382,37 @@ class PasswordChangeBookkeepingTest extends TestCase
     #[Test]
     public function install_seeder_records_the_changed_at(): void
     {
-        putenv('INSTALLER_ADMIN_EMAIL=pw-install@example.test');
-        putenv('INSTALLER_ADMIN_PASSWORD=Passw0rd!install');
+        // 시더는 설치 마법사의 짝 함수처럼 `$_ENV` → `$_SERVER` → `getenv()` 순으로 읽는다. phpunit.xml 이
+        // `$_ENV` 에 기본 설치 관리자 값(admin@example.com)을 넣어 두므로 `putenv` 만으로는 그 값이 이긴다.
+        // 세 통로를 모두 이 시험 값으로 바꾸고 끝나면 원래대로 되돌린다.
+        $overrides = [
+            'INSTALLER_ADMIN_EMAIL' => 'pw-install@example.test',
+            'INSTALLER_ADMIN_PASSWORD' => 'Passw0rd!install',
+        ];
+        $previous = [];
+        foreach ($overrides as $key => $value) {
+            $previous[$key] = [$_ENV[$key] ?? null, $_SERVER[$key] ?? null, getenv($key)];
+            $_ENV[$key] = $value;
+            $_SERVER[$key] = $value;
+            putenv("{$key}={$value}");
+        }
 
         try {
             $this->seed(AdminUserSeeder::class);
         } finally {
-            putenv('INSTALLER_ADMIN_EMAIL');
-            putenv('INSTALLER_ADMIN_PASSWORD');
+            foreach ($previous as $key => [$env, $server, $process]) {
+                if ($env === null) {
+                    unset($_ENV[$key]);
+                } else {
+                    $_ENV[$key] = $env;
+                }
+                if ($server === null) {
+                    unset($_SERVER[$key]);
+                } else {
+                    $_SERVER[$key] = $server;
+                }
+                putenv($process === false ? $key : "{$key}={$process}");
+            }
         }
 
         $user = User::where('email', 'pw-install@example.test')->firstOrFail();

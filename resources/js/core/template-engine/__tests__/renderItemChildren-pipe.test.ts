@@ -17,6 +17,9 @@ import { renderItemChildren } from '../helpers/RenderHelpers';
 import { DataBindingEngine } from '../DataBindingEngine';
 import { TranslationEngine } from '../TranslationEngine';
 
+/** 렌더 결과 요소의 props — 시험은 몇 개 키만 읽는다(React 19 의 ReactElement 기본 props 는 unknown) */
+type RenderedProps = Record<string, unknown>;
+
 // AuthManager mock
 vi.mock('../../auth/AuthManager', () => ({
   AuthManager: {
@@ -58,6 +61,8 @@ describe('renderItemChildren - 파이프 표현식', () => {
     (translationEngine as any).translations.set(':ko', {});
   });
 
+  // @scenario binding_form=args_pipe
+  // @effects single_binding_pipe_applied
   it('text 단일 바인딩 + 인자 있는 파이프(datetime) 가 포맷된 값을 반환한다', () => {
     const children = [
       {
@@ -69,11 +74,13 @@ describe('renderItemChildren - 파이프 표현식', () => {
 
     const result = render(children, { row: { created_at: '2026-07-26T05:42:00.000000Z' } });
 
-    const element = result[0] as React.ReactElement;
+    const element = result[0] as React.ReactElement<RenderedProps>;
     // 브라우저 타임존에 의존하지 않도록 형식만 검증
     expect(element.props.children).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
   });
 
+  // @scenario binding_form=no_arg_pipe
+  // @effects single_binding_pipe_applied
   it('text 단일 바인딩 + 인자 없는 파이프(number) 가 천단위 구분자를 적용한다', () => {
     const children = [
       { type: 'basic' as const, name: 'Span', text: '{{row.price | number}}' },
@@ -81,10 +88,12 @@ describe('renderItemChildren - 파이프 표현식', () => {
 
     const result = render(children, { row: { price: 1234567 } });
 
-    const element = result[0] as React.ReactElement;
+    const element = result[0] as React.ReactElement<RenderedProps>;
     expect(element.props.children).toBe('1,234,567');
   });
 
+  // @scenario binding_form=string_pipe
+  // @effects single_binding_pipe_applied
   it('문자열 파이프(uppercase) 가 비트 연산으로 오염되지 않는다', () => {
     const children = [
       { type: 'basic' as const, name: 'Span', text: '{{row.code | uppercase}}' },
@@ -92,10 +101,12 @@ describe('renderItemChildren - 파이프 표현식', () => {
 
     const result = render(children, { row: { code: 'abc' } });
 
-    const element = result[0] as React.ReactElement;
+    const element = result[0] as React.ReactElement<RenderedProps>;
     expect(element.props.children).toBe('ABC');
   });
 
+  // @scenario binding_form=pipe_chain
+  // @effects single_binding_pipe_applied
   it('파이프 체인이 순차 적용된다', () => {
     const children = [
       { type: 'basic' as const, name: 'Span', text: '{{row.code | uppercase | truncate(2)}}' },
@@ -103,10 +114,12 @@ describe('renderItemChildren - 파이프 표현식', () => {
 
     const result = render(children, { row: { code: 'abcdef' } });
 
-    const element = result[0] as React.ReactElement;
+    const element = result[0] as React.ReactElement<RenderedProps>;
     expect(element.props.children).toContain('AB');
   });
 
+  // @scenario binding_form=props_pipe
+  // @effects single_binding_pipe_applied
   it('props 값의 파이프도 해석된다', () => {
     const children = [
       {
@@ -119,10 +132,12 @@ describe('renderItemChildren - 파이프 표현식', () => {
 
     const result = render(children, { row: { price: 12345 } });
 
-    const element = result[0] as React.ReactElement;
+    const element = result[0] as React.ReactElement<RenderedProps>;
     expect(element.props.title).toBe('12,345');
   });
 
+  // @scenario binding_form=mixed_interpolation
+  // @effects non_pipe_binding_unchanged
   it('혼합 보간 형태의 파이프는 기존대로 동작한다 (회귀 보호)', () => {
     const children = [
       { type: 'basic' as const, name: 'Span', text: '[{{row.price | number}}]' },
@@ -130,10 +145,12 @@ describe('renderItemChildren - 파이프 표현식', () => {
 
     const result = render(children, { row: { price: 12345 } });
 
-    const element = result[0] as React.ReactElement;
+    const element = result[0] as React.ReactElement<RenderedProps>;
     expect(element.props.children).toBe('[12,345]');
   });
 
+  // @scenario binding_form=no_pipe
+  // @effects non_pipe_binding_unchanged
   it('파이프가 없는 단일 바인딩은 원본 타입을 유지한다 (회귀 보호)', () => {
     const children = [
       { type: 'basic' as const, name: 'Span', text: '{{row.count}}' },
@@ -141,10 +158,12 @@ describe('renderItemChildren - 파이프 표현식', () => {
 
     const result = render(children, { row: { count: 0 } });
 
-    const element = result[0] as React.ReactElement;
+    const element = result[0] as React.ReactElement<RenderedProps>;
     expect(element.props.children).toBe(0);
   });
 
+  // @scenario binding_form=logical_or
+  // @effects non_pipe_binding_unchanged
   it('논리 OR(||) 표현식은 파이프로 오인되지 않는다 (회귀 보호)', () => {
     const children = [
       { type: 'basic' as const, name: 'Span', text: "{{row.name || '-'}}" },
@@ -152,7 +171,7 @@ describe('renderItemChildren - 파이프 표현식', () => {
 
     const result = render(children, { row: { name: '' } });
 
-    const element = result[0] as React.ReactElement;
+    const element = result[0] as React.ReactElement<RenderedProps>;
     expect(element.props.children).toBe('-');
   });
 });

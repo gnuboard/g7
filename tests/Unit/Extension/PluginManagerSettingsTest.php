@@ -66,8 +66,11 @@ class PluginManagerSettingsTest extends TestCase
             File::deleteDirectory($this->testDefaultsDir);
         }
 
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

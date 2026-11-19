@@ -15,7 +15,7 @@ use Tests\TestCase;
 /**
  * SaveSettingsRequest SEO 필드 검증 테스트
  *
- * 코어 SEO 설정 필드(bot_user_agents, cache_ttl, sitemap_schedule 등)의
+ * 코어 SEO 설정 필드(bot_user_agents, cache_ttl, sitemap_cache_ttl 등)의
  * 유효성 검증 규칙이 올바르게 동작하는지 API 요청을 통해 검증합니다.
  */
 class SaveSettingsRequestSeoTest extends TestCase
@@ -289,98 +289,27 @@ class SaveSettingsRequestSeoTest extends TestCase
     // ========================================
 
     /**
-     * sitemap_schedule 유효 값(daily) 전송 시 검증 통과
+     * 사이트맵 생성 주기·시각은 더 이상 SEO 설정 키가 아니다 — 스케줄 관리의 `sitemap-generate` 행이 정한다
+     * (#17 D10). 보내도 검증하지 않고(형식이 틀려도 422 아님) 저장하지도 않는다.
      *
      * @scenario tab=seo
      *
-     * @effects sitemap_schedule_accepts_only_known_periods
+     * @effects sitemap_schedule_keys_are_no_longer_settings
      *
      * @return void 반환값 없음
      */
-    public function test_sitemap_schedule_valid_value_passes_validation(): void
+    public function test_sitemap_schedule_keys_are_neither_validated_nor_stored(): void
     {
-        $response = $this->postSeoSettings([
-            'sitemap_schedule' => 'daily',
-        ]);
-
-        $response->assertStatus(200);
-    }
-
-    /**
-     * sitemap_schedule 유효하지 않은 값(monthly) 전송 시 422 응답
-     *
-     * @scenario tab=seo
-     *
-     * @effects sitemap_schedule_accepts_only_known_periods
-     *
-     * @return void 반환값 없음
-     */
-    public function test_sitemap_schedule_invalid_value_fails_validation(): void
-    {
-        $response = $this->postSeoSettings([
+        $this->postSeoSettings([
+            'sitemap_enabled' => true,
             'sitemap_schedule' => 'monthly',
-        ]);
+            'sitemap_schedule_time' => '99:99',
+        ])->assertStatus(200);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['seo.sitemap_schedule']);
-    }
-
-    /**
-     * sitemap_schedule_time 유효 형식(02:00) 전송 시 검증 통과
-     *
-     * @scenario tab=seo
-     *
-     * @effects sitemap_schedule_time_requires_a_real_clock_time
-     *
-     * @return void 반환값 없음
-     */
-    public function test_sitemap_schedule_time_valid_format_passes(): void
-    {
-        $response = $this->postSeoSettings([
-            'sitemap_schedule_time' => '02:00',
-        ]);
-
-        $response->assertStatus(200);
-    }
-
-    /**
-     * sitemap_schedule_time 유효하지 않은 형식(2:00) 전송 시 422 응답
-     *
-     * @scenario tab=seo
-     *
-     * @effects sitemap_schedule_time_requires_a_real_clock_time
-     *
-     * @return void 반환값 없음
-     */
-    public function test_sitemap_schedule_time_invalid_format_fails(): void
-    {
-        $response = $this->postSeoSettings([
-            'sitemap_schedule_time' => '2:00',
-        ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['seo.sitemap_schedule_time']);
-    }
-
-    /**
-     * 형식은 맞아도 없는 시각(99:99·24:00·12:60)은 422 — 저장되면 스케줄러가 `at('99:99')` 로 잘못된
-     * 크론 식을 만들어 예약 작업 목록 전체가 깨진다(2026-10-06 실측).
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario tab=seo
-     *
-     * @effects sitemap_schedule_time_requires_a_real_clock_time
-     */
-    public function test_sitemap_schedule_time_out_of_range_fails(): void
-    {
-        foreach (['99:99', '24:00', '12:60'] as $time) {
-            $this->postSeoSettings(['sitemap_schedule_time' => $time])
-                ->assertStatus(422)
-                ->assertJsonValidationErrors(['seo.sitemap_schedule_time']);
-        }
-
-        $this->postSeoSettings(['sitemap_schedule_time' => '23:59'])->assertStatus(200);
+        $stored = $this->storedSettings('seo');
+        $this->assertArrayNotHasKey('sitemap_schedule', $stored);
+        $this->assertArrayNotHasKey('sitemap_schedule_time', $stored);
+        $this->assertTrue((bool) ($stored['sitemap_enabled'] ?? false), '사이트맵 사용 여부는 그대로 설정 키다');
     }
 
     // ========================================

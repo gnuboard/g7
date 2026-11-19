@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayNicepayments\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentLookup;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Plugins\Sirsoft\PayNicepayments\Concerns\ResolvesEasyPayDisplay;
 
 /**
@@ -41,7 +43,7 @@ class ProvidePaymentMethodDisplayLabelListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — 개별 메서드에서 처리).
      *
      * @param  mixed  ...$args  훅 인수
-     * @return void
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -62,7 +64,14 @@ class ProvidePaymentMethodDisplayLabelListener implements HookListenerInterface
             return $label;
         }
 
-        $display = $this->resolvePaymentDisplay($payment);
+        // 이커머스 결제 행이면 계약 DTO 로 읽고(훅 인자 Model 은 속성 읽기만), 그 밖의 객체는 같은 이름의 속성을 읽는다.
+        $display = $payment instanceof OrderPayment
+            ? $this->resolvePaymentDisplay(app(PaymentLookup::class)->describePayment($payment))
+            : $this->resolvePaymentDisplayFields(
+                $payment->payment_meta ?? null,
+                $payment->embedded_pg_provider ?? null,
+                $payment->payment_method ?? null,
+            );
 
         // 간편결제 원 수단을 알아낸 결제만 라벨을 바꾼다 — 일반 카드·계좌이체는 이커머스 기본 라벨이 맞다.
         if (($display['embedded_pg_provider_label'] ?? null) === null) {

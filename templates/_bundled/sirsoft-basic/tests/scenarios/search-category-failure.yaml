@@ -27,6 +27,9 @@ effects:
   - exception_stack_logged               # 리스너 catch 가 exception 인스턴스를 Log::error context 로 남김
   - like_fallback_on_missing_index       # 인덱스 부재 시 MATCH 대신 LIKE 폴백 (1191 예방)
   - missing_index_fallback_logged_once   # 인덱스 부재 폴백 warning 이 조합당 1회
+  - failure_flags_default_to_false       # 실패가 없어도 categories_failed / search_failed 키가 false 로 실려 「실패 없음」과 「구버전 키 부재」가 구분된다
+  - no_failure_keeps_empty_notice        # 실패 키가 모두 false 면 화면은 종전 "결과 없음" 문구를 그리고 오류 안내는 없다 (회귀 기준선)
+  - legacy_response_keeps_empty_notice   # 실패 키가 아예 없는 구버전 응답도 `?? false` 기본값으로 종전 "결과 없음" 렌더를 유지한다
 
 test_files:
   - tests/Unit/Search/DatabaseFulltextEngineIndexGateTest.php

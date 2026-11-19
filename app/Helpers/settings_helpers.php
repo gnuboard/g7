@@ -25,6 +25,9 @@ if (! function_exists('g7_settings')) {
      * // 플러그인 설정 조회
      * $displayMode = g7_settings('plugins.sirsoft-daum_postcode.display_mode');
      * @example
+     * // 템플릿 설정 조회 (#434 — 처음 읽을 때 미러를 채운다)
+     * $maxBoards = g7_settings('templates.sirsoft-basic.header.max_boards');
+     * @example
      * // 전체 설정 조회
      * $allSettings = g7_settings();
      */
@@ -32,6 +35,15 @@ if (! function_exists('g7_settings')) {
     {
         if ($key === null) {
             return Config::get('g7_settings', []);
+        }
+
+        // 템플릿 미러는 부팅 때 채우지 않는다 — 이 경로로 처음 읽을 때도 g7_template_settings() 와 같이 채운다
+        if (str_starts_with($key, 'templates.')) {
+            $identifier = explode('.', $key, 3)[1] ?? '';
+
+            if ($identifier !== '' && ! Config::has("g7_settings.templates.{$identifier}")) {
+                app(\App\Support\ExtensionSettingsMirror::class)->refreshTemplate($identifier);
+            }
         }
 
         return Config::get("g7_settings.{$key}", $default);
@@ -134,6 +146,32 @@ if (! function_exists('g7_plugin_settings')) {
     }
 }
 
+if (! function_exists('g7_template_settings')) {
+    /**
+     * 템플릿 환경설정 값을 조회합니다 (#434).
+     *
+     * 미러(`g7_settings.templates.{id}`)는 처음 읽을 때 채운다 — 부팅 때 모든 요청이 설정 파일을 읽지 않게 한다.
+     * 꺼진 템플릿의 설정도 읽힌다(값이 화면에 영향을 주는지는 호출자가 판단한다).
+     *
+     * @param  string  $identifier  템플릿 식별자 (예: 'sirsoft-basic')
+     * @param  string|null  $key  설정 키 (null 이면 전체 설정, 도트 표기 지원)
+     * @param  mixed  $default  기본값
+     * @return mixed 설정 값
+     */
+    function g7_template_settings(string $identifier, ?string $key = null, mixed $default = null): mixed
+    {
+        if (! Config::has("g7_settings.templates.{$identifier}")) {
+            app(\App\Support\ExtensionSettingsMirror::class)->refreshTemplate($identifier);
+        }
+
+        if ($key === null) {
+            return Config::get("g7_settings.templates.{$identifier}", []);
+        }
+
+        return Config::get("g7_settings.templates.{$identifier}.{$key}", $default);
+    }
+}
+
 if (! function_exists('g7_meta_generator_tag')) {
     /**
      * `<meta name="generator">` 태그 HTML을 생성합니다.
@@ -159,5 +197,79 @@ if (! function_exists('g7_meta_generator_tag')) {
         }
 
         return '<meta name="generator" content="'.e($content).'">';
+    }
+}
+
+if (! function_exists('g7_template_html_attributes')) {
+    /**
+     * 활성 템플릿 표준 설정을 `<html>` 속성으로 만듭니다 (#434).
+     *
+     * 템플릿 설정의 표준 키 `branding.accent`·`branding.color_scheme_default` 를 선언한 활성 템플릿이면
+     * ` data-g7-accent="green" data-g7-color-scheme-default="dark"` 꼴을 돌려준다. 값은 그 템플릿이 선언한 선택지 안의
+     * 값만 싣는다(검증된 enum — 속성·CSS 주입 불가). 색 팔레트·첫 화면 모드는 템플릿 CSS·컴포넌트가 이 속성을 읽어 정한다.
+     * 실패해도 문서 출력을 막지 않는다(빈 문자열).
+     *
+     * @param  string  $type  화면 종류 (`user`|`admin`)
+     * @return string 앞에 공백이 붙은 속성 문자열 (없으면 빈 문자열)
+     */
+    function g7_template_html_attributes(string $type): string
+    {
+        try {
+            $attributes = app(\App\Services\TemplateSettingsService::class)->standardAttributes($type);
+        } catch (\Throwable) {
+            return '';
+        }
+
+        $html = '';
+
+        foreach (['accent' => 'data-g7-accent', 'color_scheme_default' => 'data-g7-color-scheme-default'] as $key => $name) {
+            if (isset($attributes[$key])) {
+                $html .= ' '.$name.'="'.e($attributes[$key]).'"';
+            }
+        }
+
+        return $html;
+    }
+}
+
+if (! function_exists('g7_favicon_tags')) {
+    /**
+     * 파비콘 `<link>` 태그 HTML 을 생성합니다 (#434).
+     *
+     * 우선순위: 그 화면 종류의 활성 템플릿 설정 `favicon` > 코어 일반 탭 `site_favicon` > 번들 기본
+     * (운영자가 직접 바꾼 `public/favicon.ico` 가 있으면 그것). SPA 셸·관리자 셸·SEO 봇 화면이 공통 호출한다.
+     * 해석 중 예외(DB 장애 등)가 나면 번들 계층으로 내려간다 — 아이콘 때문에 화면이 깨지지 않게.
+     *
+     * @param  string  $target  화면 종류 (`user`|`admin`)
+     * @param  string|null  $templateIdentifier  템플릿 식별자 (생략하면 그 종류의 활성 템플릿)
+     * @return string `<link>` 태그 HTML (속성값 이스케이프)
+     */
+    function g7_favicon_tags(string $target, ?string $templateIdentifier = null): string
+    {
+        try {
+            $links = app(\App\Services\FaviconService::class)->resolve($target, $templateIdentifier)['links'];
+        } catch (\Throwable $e) {
+            return g7_favicon_tags_static();
+        }
+
+        return \App\Support\Favicon\BundledFavicon::render($links);
+    }
+}
+
+if (! function_exists('g7_favicon_tags_static')) {
+    /**
+     * 번들 계층 파비콘 `<link>` 태그 HTML 을 생성합니다 — DB·API 를 보지 않는다 (#434).
+     *
+     * 오류 화면·점검 화면·DB 접속 오류 화면처럼 DB 와 `/api/*` 를 믿을 수 없는 화면용. 예외를 삼켜 빈 문자열을 돌려준다.
+     *
+     * @return string `<link>` 태그 HTML
+     */
+    function g7_favicon_tags_static(): string
+    {
+        try {
+            return \App\Support\Favicon\BundledFavicon::render(\App\Support\Favicon\BundledFavicon::links());
+        } catch (\Throwable $e) {
+            return '';
+        }
     }
 }

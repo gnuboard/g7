@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Me 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -57,6 +57,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 
 <!-- @generated:end -->
+
 
 **설명**
 
@@ -117,6 +118,9 @@ _단건 응답: `data` 객체의 필드._
 | uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `최고관리자` | 사용자 이름 |
 | nickname | string | `최고관리자` | 닉네임 |
+| display_name | string\|null | `길동이` | 다른 회원에게 보이는 이름(사이트 기본 영역). `name`, `nickname` 은 원본 그대로이고 이 값이 더해진다 |
+| display_name_kind | string\|null | `nickname` | 회원이 고른 표시 이름 종류. 고르지 않았으면 null (회원 기본 종류로 보인다) |
+| can_choose_display_name | boolean | `true` | 표시 이름 종류를 직접 고를 수 있는지 (권한 `core.profile.display_name.choose` 가 있고 운영자가 허용한 종류가 둘 이상) |
 | email | string | `admin@example.com` | 이메일 주소 |
 | avatar | null | `null` | 아바타 이미지 URL (User::getAvatarUrl() 산물, 미등록 시 null) |
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
@@ -126,7 +130,7 @@ _단건 응답: `data` 객체의 필드._
 | status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴, dormant: 휴면) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
-| homepage | null | `null` | 홈페이지 URL |
+| homepage | string | `https://example.com` | 홈페이지 URL |
 | mobile | null | `null` | 휴대폰 번호 |
 | phone | null | `null` | 전화번호 |
 | zipcode | null | `null` | 우편번호 |
@@ -141,6 +145,11 @@ _단건 응답: `data` 객체의 필드._
 | last_login_human | string | `2시간 전` | 마지막 로그인 시각의 상대 표현 (diffForHumans() 산물, 사용자 시간대 기준) |
 | created_at | string | `2026-07-30 23:37:44` | 생성 일시 |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
+| can_set_password | boolean | `true` | 이 회원이 비밀번호를 만들거나 바꿀 수 있는지 — 비밀번호 인증 정책(필터 `core.auth.password_auth_decision` 의 `set_password`, 예: 회사 계정 로그인 강제)이 막으면 false. 저장(`PUT /api/me/password`)의 403 `auth.password_auth_disabled` 와 같은 판정 (7.2.0) |
+| password_set_blocked_message | string\|null | `null` | `can_set_password` 가 false 일 때 보일 안내 문구 — 저장 403 의 문구와 같다. 만들 수 있으면 null (7.2.0) |
+| reauth_provider | string\|null | `null` | 비밀번호가 없고 메일을 받을 수 없는 회원의 민감 작업 재확인에 코어가 실제로 고를 본인인증 수단 ID(예: 회사 계정 다시 로그인). 비밀번호가 있거나 메일을 받는 회원, 쓸 수 있는 수단이 없는 회원은 null (7.2.0) |
 | password_changed_at | string\|null | `2026-07-01 10:20:00` | 비밀번호 마지막 변경 일시 (사용자 시간대, 기능 도입 전 회원은 null — #736) |
 | password_expires_at | string\|null | `2026-09-29 10:20:00` | 비밀번호 만료 예정 일시 — 만료가 적용되지 않으면 null |
 | password_expiry_days_left | integer\|null | `3` | 만료까지 남은 날수 (지났으면 0, 적용되지 않으면 null) |
@@ -264,6 +273,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 현재 로그인한 사용자의 프로필 정보를 조회한다. 프론트의 마이페이지(`mypage/profile.g7.html`)와 프로필 수정 화면(`mypage/profile-edit.g7.html`)이 소비한다. 응답은 `UserResource::toProfileArray()` 산물로, 비밀번호 등 민감 필드는 제외된다. 표의 `notify_*`(게시판 모듈)·`marketing_consent*`/`email_subscription*`/`third_party_consent*`/`info_disclosure*`/`channels`/`consent_histories`(마케팅 플러그인)·`ecommerce_*`(이커머스 모듈) 필드는 코어가 아니라 각 확장이 `core.user.filter_resource_data` 훅으로 병합하는 확장 소유 필드이며, 해당 확장이 비활성인 환경에서는 응답에 나타나지 않는다.
@@ -281,11 +292,13 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| name | body | string | 예 | max 255 | 대상의 이름/명칭 |
-| nickname | body | string | 아니오 | max 50 | 닉네임 |
-| email | body | email | 예 | max 255 | 이메일 주소 |
+| name | body | string | 항목 설정에 따름 (기본값 예) | max 255 | 이름. 회원 항목이라 운영자가 환경설정 > 회원에서 사용과 필수를 정한다. 기본 설정은 사용, 필수다 |
+| nickname | body | string | 항목 설정에 따름 (기본값 아니오) | max 50 | 닉네임. 닉네임 정책(중복 금지, 금지어, 변경 주기)에 걸리면 422 |
+| custom_fields.{키} | body | 항목 유형에 따름 | 항목 설정에 따름 | 항목 설정에 따름 | 운영자가 추가한 회원 항목의 값. 범위가 「본인 수정」인 항목만 받는다. 파일, 이미지 항목은 이 본문이 아니라 `POST /api/me/fields/{key}/file` 로 올린다. 폼 경로와 오류 키는 `GET /api/me/fields` 의 `fields[].name` 이다 |
+| display_name_kind | body | string\|null | 아니오 | 운영자가 허용한 종류 | 표시 이름 종류 선택. 보내지 않으면 지금 값 유지, null 이면 고른 종류를 지운다(회원 기본 종류로 보인다). 고를 권한이 없거나 허용하지 않은 종류면 422 |
+| email | body | email | 예 | max 255 | 이메일 주소. 항목이 아닌 고정 칸이라 늘 필수다 |
 | password | body | string | 아니오 | 보안 설정의 작성 규칙 | 새 비밀번호 — 보안 설정의 작성 규칙(길이·특수문자·조합·추측 방지)을 따른다. 바꾸면 현재 기기만 남기고 다른 기기는 로그아웃된다(#736) |
-| current_password | body | string | password 를 보낼 때 | — | 현재 비밀번호 (변경 전 확인용). password 를 함께 보내면 전용 경로(`PUT /api/me/password`)와 같은 본인인증 정책(`core.profile.password_change`)과 재사용 금지가 걸린다 — 정책 위반이면 `428`(#736 D18) |
+| current_password | body | string | password 를 보낼 때 | — | 현재 비밀번호 (변경 전 확인용). password 를 함께 보내면 전용 경로(`PUT /api/me/password`)와 같은 본인인증 정책(`core.profile.password_change`)과 재사용 금지가 걸린다 — 정책 위반이면 `428`(#736 D18). 비밀번호가 없는 회원(외부 인증 전용)이 보내면 그 값은 버린다(보내지 않은 것과 같다, 7.2.0) |
 | language | body | string | 아니오 | — | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | timezone | body | string | 아니오 | — | 타임존 식별자 |
@@ -306,6 +319,8 @@ HTTP/1.1 200
 | third_party_consent | body | boolean | 아니오 | — | 제3자 정보 제공 동의 (법적 항목, 마케팅 플러그인 추가) |
 | info_disclosure | body | boolean | 아니오 | — | 개인정보 이용 안내 동의 (법적 항목, 마케팅 플러그인 추가) |
 
+> 이름, 닉네임, 언어, 국가, 시간대, 연락처, 주소, 서명, 자기소개와 운영자 추가 항목은 회원 항목입니다. 받는 키와 필수 여부는 운영자의 회원 항목 설정에서 오고, 이 표의 필수 칸은 기본 설정 기준입니다. 지금 사이트가 받는 항목과 잠긴 칸은 `GET /api/me/fields` 가 알려 줍니다. 회원 항목을 그리는 화면은 항목 응답의 `fields_version` 을 이 요청에 싣습니다(회원 항목을 아는 화면이라는 표식이고, 버전을 대조하지 않아 409 를 내지 않습니다). 싣지 않은 요청은 회원 항목을 모르는 옛 화면(7.1.x 템플릿)으로 보고, 운영자 추가 항목과 확장이 선언한 항목의 필수 규칙을 값을 보냈을 때만 겁니다. 보내지 않은 항목은 저장된 값이 그대로 남고, 비어 있는 필수 항목은 추가 정보 입력 요구가 받습니다. 형식 규칙과 이름, 닉네임, 연락처 같은 기본 항목 규칙은 그대로입니다.
+>
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.user.update_profile_validation_rules`).
 
 **요청 예시**
@@ -354,6 +369,7 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — GE
 | uuid | string | `a234c2b1-cde8-437f-b28b-23323be2b98d` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `홍길동` | 사용자 이름 |
 | nickname | string\|null | `gildong` | 닉네임 |
+| display_name | string\|null | `길동이` | 다른 회원에게 보이는 이름(사이트 기본 영역). `name`, `nickname` 은 원본 그대로이고 이 값이 더해진다 |
 | email | string | `user@example.com` | 이메일 주소 |
 | avatar | string\|null | `null` | 아바타 이미지 URL (`User::getAvatarUrl()` 산물, 미등록 시 null) |
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
@@ -373,6 +389,8 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — GE
 | bio | string\|null | `null` | 자기소개 |
 | last_login_at | string\|null | `2026-07-07 10:41:24` | 마지막 로그인 일시 (사용자 시간대 기준 문자열) |
 | email_verified_at | string\|null | `null` | 이메일 인증 일시 (미인증 시 null) |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string\|null | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | created_at | string | `2026-07-08 10:41:24` | 생성 일시 (사용자 시간대 기준 문자열) |
 | updated_at | string | `2026-07-08 11:02:10` | 수정 일시 (사용자 시간대 기준 문자열) |
@@ -430,13 +448,15 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — GE
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지. 오류 키는 항목의 폼 경로다). 잠긴 칸에 현재 값과 다른 값을 보낸 경우도 422 다: 본인인증으로 채워져 잠긴 항목(`fields.validation.locked_identity`), 외부가 관리하는 칸(`user.field_locked`), 변경 주기가 지나지 않은 닉네임. 표시 이름 종류를 고를 권한이 없거나 허용하지 않은 종류를 보낸 경우는 `errors.display_name_kind`, 적용될 종류가 닉네임이 필요한데 닉네임이 비면 `errors.nickname` |
 | 428 | Precondition Required | `password` 를 보냈는데 비밀번호 변경 본인인증 정책(`core.profile.password_change`)이 요구하는 인증을 마치지 않은 경우 — 인증 뒤 `verification_token` 으로 다시 요청한다 (#736 D18). 이메일·전화(`phone`)·휴대폰(`mobile`)을 **저장된 값과 다르게** 보냈는데 연락처 변경 본인인증 정책(`core.profile.contact_change`, 기본 켜짐)의 인증을 마치지 않은 경우도 같다 — 같은 값·앞뒤 공백·빈 칸(=null)은 변경이 아니고, 관리자는 대상이 아니다 |
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
-현재 로그인한 사용자가 자신의 프로필을 수정한다. 프론트의 프로필 수정 화면(`partials/mypage/profile/_edit.g7.html`)이 사용한다. `name`·`email` 은 필수이며 `email` 은 본인을 제외한 중복이 허용되지 않는다. 비밀번호를 함께 변경하려면 `password`(+ `password_confirmation`)와 현재 비밀번호(`current_password`)를 함께 보내야 하며, `password` 가 빈 문자열이면 비밀번호 미변경으로 처리된다. `notify_*`·`marketing_consent`·`email_subscription` 등 확장 소유 파라미터는 게시판 모듈·마케팅 플러그인이, `ecommerce_preferred_currency`·`ecommerce_preferred_shipping_country`(결제 통화·배송국가)는 이커머스 모듈이 `core.user.update_profile_validation_rules` 훅으로 추가하며, 해당 확장이 비활성인 환경에서는 수용되지 않는다. 이커머스 두 필드는 이 요청 안에서 함께 저장되므로 프로필 수정 화면은 별도 저장 호출을 하지 않는다. 성공 시 갱신된 프로필이 `UserResource` 형태로 반환된다.
+현재 로그인한 사용자가 자신의 프로필을 수정한다. 프론트의 프로필 수정 화면(`templates/_bundled/sirsoft-basic/layouts/partials/mypage/profile/_edit.g7.html`)이 사용한다. `email` 은 고정 필수이며 본인을 제외한 중복이 허용되지 않는다. `name` 은 회원 항목이라 운영자의 항목 설정을 따른다(기본 설정이 필수이고, 운영자가 필수를 풀거나 사용을 끄면 비워 보낼 수 있다). 닉네임, 연락처, 주소 같은 그 밖의 회원 항목도 항목 설정의 사용 여부와 필수 여부를 따르고, 운영자 추가 항목은 `custom_fields.{키}` 로 보낸다. 받는 것은 범위가 「본인 수정」인 항목뿐이다. `display_name_kind` 는 표시 이름 종류를 고를 권한이 있을 때만 받고, 저장 뒤 적용될 종류가 닉네임이 필요한 종류면 닉네임이 필수가 된다. 본인인증으로 채워져 잠긴 항목(`GET /api/me/fields` 의 `locked_reason: identity`)과 외부가 관리하는 칸은 현재 값과 같은 값만 받고, 다른 값을 보내면 422 다. 비밀번호를 함께 변경하려면 `password`(+ `password_confirmation`)와 현재 비밀번호(`current_password`)를 함께 보내야 하며, `password` 가 빈 문자열이면 비밀번호 미변경으로 처리된다. `notify_*`·`marketing_consent`·`email_subscription` 등 확장 소유 파라미터는 게시판 모듈·마케팅 플러그인이, `ecommerce_preferred_currency`·`ecommerce_preferred_shipping_country`(결제 통화·배송국가)는 이커머스 모듈이 `core.user.update_profile_validation_rules` 훅으로 추가하며, 해당 확장이 비활성인 환경에서는 수용되지 않는다. 이커머스 두 필드는 이 요청 안에서 함께 저장되므로 프로필 수정 화면은 별도 저장 호출을 하지 않는다. 성공 시 갱신된 프로필이 `UserResource` 형태로 반환된다.
 
 

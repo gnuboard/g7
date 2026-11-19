@@ -1,0 +1,67 @@
+feature: profile_controller
+
+description: |
+  로그인한 회원이 자기 정보를 다루는 API(`/api/user/profile`, `/api/me`). 조회, 수정, 언어 변경, 활동 로그,
+  아바타 올리기와 지우기, 비밀번호 변경, 본인 탈퇴의 응답 코드와 저장 결과를 고정한다.
+
+  본인 탈퇴의 원자성과 접미사 규칙은 `user-withdraw-atomicity.yaml` 이 소유한다. 이 파일의 탈퇴 테스트가
+  그쪽 효과(접미사의 사용자 ID, 컬럼 길이 클램프, 차단 응답 422)를 함께 재는 경우 그 이름을 그대로 쓴다.
+
+coverage_strategy: full
+
+axes:
+  endpoint: [show, update, update_language, activity_log, avatar_upload, avatar_delete, change_password, withdraw]
+
+effects:
+  # 조회
+  - profile_show_requires_authentication
+  - profile_show_returns_success
+  - profile_show_returns_email_and_name
+  - me_show_returns_email_and_name
+  - me_show_requires_authentication
+  # 수정
+  - profile_update_requires_authentication
+  - profile_update_persists_name
+  - profile_update_requires_name
+  - profile_update_rejects_email_of_other_user
+  - profile_update_allows_own_email
+  - profile_update_password_requires_current_password
+  - profile_update_password_requires_confirmation_match
+  - me_update_persists_name
+  - me_update_persists_contact_and_intro_fields
+  - me_update_rejects_invalid_mobile_format
+  - me_update_rejects_invalid_phone_format
+  # 언어 변경
+  - language_change_persists
+  - language_change_rejects_unsupported_locale
+  # 활동 로그
+  - activity_log_returns_empty_activities
+  # 아바타
+  - avatar_upload_creates_avatar_attachment
+  - avatar_upload_requires_file
+  - avatar_upload_rejects_non_image
+  - avatar_upload_rejects_oversized_file
+  - avatar_delete_removes_attachment_record
+  - avatar_delete_returns_404_without_avatar
+  # 비밀번호 변경
+  - password_change_stores_new_hash
+  - password_change_rejects_wrong_current_password
+  - password_change_rejects_confirmation_mismatch
+  - password_change_rejects_short_password
+  - password_change_requires_current_password
+  - password_change_requires_new_password
+  - password_change_requires_confirmation
+  - password_change_requires_authentication
+  # 본인 탈퇴
+  - self_withdraw_anonymizes_email_and_name
+  - self_withdraw_sets_withdrawn_status
+  - self_withdraw_revokes_all_tokens
+  - self_withdraw_deletes_avatar_attachment_and_file
+  - self_withdraw_super_admin_account_untouched
+  - self_withdraw_admin_account_untouched
+  - self_withdraw_nickname_gets_suffix_within_limit
+  - self_withdraw_truncated_nickname_keeps_user_id_suffix
+  - self_withdraw_requires_authentication
+
+test_files:
+  - tests/Feature/Api/Auth/ProfileControllerTest.php

@@ -47,7 +47,8 @@ export interface EditorNode {
   name?: string;
   text?: unknown;
   props?: Record<string, unknown>;
-  iteration?: { source?: unknown } | null;
+  /** 반복 설정 — 런타임 `ComponentDefinition.iteration`(DynamicRenderer)과 같은 키. 편집 중엔 source 가 비거나 바인딩 문자열이라 unknown 이다. */
+  iteration?: { source?: unknown; item_var?: string; index_var?: string } | null;
   children?: EditorNode[] | unknown;
   __source?: NodeSource;
   /**
@@ -358,9 +359,30 @@ export interface ResponsiveSegment {
 }
 
 /**
- * path 세그먼트 — 일반 자식 인덱스(number) 또는 디바이스 분기 선택자.
+ * 컴포넌트 배열 prop 세그먼트 — base children 이 아니라 `node.props[propSlot]` 배열로 내려가는
+ * 선택자다(#141). Modal 의 `footer`(본문 아래 고정 단추 자리)처럼 children 이 아닌 prop 에 레이아웃
+ * 컴포넌트 배열을 담는 자리를 편집 path 1급으로 다룬다.
+ *
+ * responsive 세그먼트와 같이 노드를 한 단계 내리지 않고 「다음 number 세그먼트가 인덱싱할 배열을
+ * 이 prop 배열로 바꾼다」는 뜻만 갖는다. DOM path 표기는 `{owner}.props.{propSlot}.{index}` 다
+ * (`children` 접두 없음). 어떤 prop 을 슬롯으로 볼지는 `EDITOR_PROP_SLOTS` 가 정한다.
  */
-export type PathSegment = number | ResponsiveSegment;
+export interface PropSlotSegment {
+  propSlot: string;
+}
+
+/**
+ * 편집 path 로 다루는 컴포넌트 배열 prop 이름 목록.
+ *
+ * 목록 밖 prop(`props.tabs` 같은 배열 prop 항목 등)은 path 세그먼트로 해석하지 않는다 — 그 항목은
+ * 노드가 아니라 값이라 `data-editor-item-path` 로 따로 다룬다.
+ */
+export const EDITOR_PROP_SLOTS: readonly string[] = ['footer'];
+
+/**
+ * path 세그먼트 — 일반 자식 인덱스(number), 디바이스 분기 선택자, 컴포넌트 배열 prop 선택자.
+ */
+export type PathSegment = number | ResponsiveSegment | PropSlotSegment;
 
 /**
  * 트리 인덱스 경로 — 루트의 children 인덱스부터 시작.
@@ -386,6 +408,21 @@ export function isResponsiveSegment(seg: PathSegment): seg is ResponsiveSegment 
 }
 
 /**
+ * 세그먼트가 컴포넌트 배열 prop 선택자인지 판정.
+ */
+export function isPropSlotSegment(seg: PathSegment): seg is PropSlotSegment {
+  return typeof seg === 'object' && seg !== null && typeof (seg as PropSlotSegment).propSlot === 'string';
+}
+
+/**
+ * 세그먼트가 「다음 인덱스의 배열을 바꾸는」 선택자(디바이스 분기 또는 prop 슬롯)인지 판정.
+ * 노드를 내리는 number 세그먼트가 아닌 모든 세그먼트다.
+ */
+export function isArraySwitchSegment(seg: PathSegment): seg is ResponsiveSegment | PropSlotSegment {
+  return typeof seg === 'object' && seg !== null;
+}
+
+/**
  * 세그먼트 동등 비교 — number 는 `===`, responsive 는 `key` 문자열 비교.
  *
  * 세그먼트가 객체(ResponsiveSegment)가 되면서 원시 `!==` 는 **참조 비교**로 바뀐다.
@@ -397,7 +434,10 @@ export function segEqual(a: PathSegment, b: PathSegment): boolean {
   if (isResponsiveSegment(a)) {
     return isResponsiveSegment(b) && a.responsive === b.responsive;
   }
-  return !isResponsiveSegment(b) && a === b;
+  if (isPropSlotSegment(a)) {
+    return isPropSlotSegment(b) && a.propSlot === b.propSlot;
+  }
+  return !isArraySwitchSegment(b) && a === b;
 }
 
 /**
@@ -422,16 +462,26 @@ export function segEqual(a: PathSegment, b: PathSegment): boolean {
 export function serializeEditorPath(path: ComponentPath): string {
   const out: string[] = [];
   let sawIndex = false;
+  // prop 슬롯 바로 뒤 인덱스는 `children` 접두 없이 붙는다(`0.props.footer.1`).
+  let rawNext = false;
   for (const seg of path) {
     if (isResponsiveSegment(seg)) {
       out.push('responsive', seg.responsive);
       // 다음 number 세그먼트는 분기 children 의 인덱스 — 'children' prefix 가 필요.
       sawIndex = true;
+      rawNext = false;
       continue;
     }
-    if (!sawIndex) {
+    if (isPropSlotSegment(seg)) {
+      out.push('props', seg.propSlot);
+      sawIndex = true;
+      rawNext = true;
+      continue;
+    }
+    if (!sawIndex || rawNext) {
       out.push(String(seg));
       sawIndex = true;
+      rawNext = false;
     } else {
       out.push('children', String(seg));
     }
@@ -456,6 +506,21 @@ function asResponsiveChildren(node: EditorNode, key: string): EditorNode[] {
 }
 
 /**
+ * 컴포넌트 배열 prop 을 안전하게 반환. prop 부재·배열 아님이면 빈 배열.
+ */
+function asPropSlotChildren(node: EditorNode, key: string): EditorNode[] {
+  const value = (node.props as Record<string, unknown> | undefined)?.[key];
+  return Array.isArray(value) ? (value as EditorNode[]) : [];
+}
+
+/**
+ * 배열 전환 세그먼트(디바이스 분기·prop 슬롯)가 가리키는 배열.
+ */
+function asSegmentChildren(node: EditorNode, seg: ResponsiveSegment | PropSlotSegment): EditorNode[] {
+  return isResponsiveSegment(seg) ? asResponsiveChildren(node, seg.responsive) : asPropSlotChildren(node, seg.propSlot);
+}
+
+/**
  * path 의 조상 노드 배열 (루트의 **자식**부터 부모까지, 자기 자신·루트 제외).
  *
  * `classifyLockKind` 의 `ancestors` 입력 SSoT. responsive 세그먼트는 노드를 내리지 않고
@@ -475,8 +540,8 @@ export function collectAncestors(root: EditorNode, path: ComponentPath): EditorN
   let childArray: EditorNode[] = asChildrenArray(root);
   for (let i = 0; i < path.length - 1; i++) {
     const seg = path[i]!;
-    if (isResponsiveSegment(seg)) {
-      childArray = asResponsiveChildren(current, seg.responsive);
+    if (isArraySwitchSegment(seg)) {
+      childArray = asSegmentChildren(current, seg);
       continue;
     }
     const next = childArray[seg] ?? null;
@@ -504,8 +569,8 @@ export function findNodeByPath(root: EditorNode, path: ComponentPath): EditorNod
   let current: EditorNode = root;
   let childArray: EditorNode[] = asChildrenArray(root);
   for (const seg of path) {
-    if (isResponsiveSegment(seg)) {
-      childArray = asResponsiveChildren(current, seg.responsive);
+    if (isArraySwitchSegment(seg)) {
+      childArray = asSegmentChildren(current, seg);
       continue;
     }
     if (seg < 0 || seg >= childArray.length) return null;
@@ -551,8 +616,8 @@ export function normalizeToExtensionEntry(
     // responsive 세그먼트는 노드를 내리지 않고 childArray 만 분기로 전환 — 출처
     // 판정에는 영향 없음(다음 number 세그먼트가 실제 노드를 선택). 잘린 path 반환
     // 시에도 분기 세그먼트는 보존돼야 해당 분기 진입점을 정확히 가리킨다.
-    if (isResponsiveSegment(seg)) {
-      childArray = asResponsiveChildren(current, seg.responsive);
+    if (isArraySwitchSegment(seg)) {
+      childArray = asSegmentChildren(current, seg);
       continue;
     }
     const node = childArray[seg] ?? null;
@@ -585,7 +650,7 @@ export function findParentByPath(root: EditorNode, path: ComponentPath): EditorN
   // 마지막 number 세그먼트 제거. 그 직전이 responsive 세그먼트면 함께 제거 —
   // 분기 children 의 소유 노드(분기 세그먼트 이전)가 진짜 부모.
   let cut = path.length - 1;
-  if (cut > 0 && isResponsiveSegment(path[cut - 1]!)) {
+  if (cut > 0 && isArraySwitchSegment(path[cut - 1]!)) {
     cut -= 1;
   }
   return findNodeByPath(root, path.slice(0, cut));
@@ -608,21 +673,29 @@ interface ChildSlot {
   owner: EditorNode;
   children: EditorNode[];
   branchKey?: string;
+  /** prop 슬롯 배열(`owner.props[propSlot]`)이면 그 prop 이름 */
+  propSlot?: string;
   index: number;
 }
 
 function resolveChildSlot(root: EditorNode, path: ComponentPath): ChildSlot | null {
   if (path.length === 0) return null;
   const last = path[path.length - 1]!;
-  if (isResponsiveSegment(last)) return null; // 분기 세그먼트로 끝나는 path 는 슬롯 아님
+  if (isArraySwitchSegment(last)) return null; // 배열 전환 세그먼트로 끝나는 path 는 슬롯 아님
   const index = last;
 
-  // 마지막 number 직전이 responsive 세그먼트면 분기 children, 아니면 base children.
+  // 마지막 number 직전이 responsive 세그먼트면 분기 children, prop 슬롯이면 그 prop 배열,
+  // 아니면 base children.
   const prev = path.length >= 2 ? path[path.length - 2]! : undefined;
   if (prev !== undefined && isResponsiveSegment(prev)) {
     const owner = findNodeByPath(root, path.slice(0, -2));
     if (!owner) return null;
     return { owner, children: asResponsiveChildren(owner, prev.responsive), branchKey: prev.responsive, index };
+  }
+  if (prev !== undefined && isPropSlotSegment(prev)) {
+    const owner = findNodeByPath(root, path.slice(0, -2));
+    if (!owner) return null;
+    return { owner, children: asPropSlotChildren(owner, prev.propSlot), propSlot: prev.propSlot, index };
   }
   const owner = findNodeByPath(root, path.slice(0, -1));
   if (!owner) return null;
@@ -635,6 +708,10 @@ function resolveChildSlot(root: EditorNode, path: ComponentPath): ChildSlot | nu
  * 사본이어야 한다(immutable 보장은 호출자 책임).
  */
 function writeSlotChildren(slot: ChildSlot, next: EditorNode[]): void {
+  if (slot.propSlot !== undefined) {
+    slot.owner.props = { ...((slot.owner.props as Record<string, unknown>) ?? {}), [slot.propSlot]: next };
+    return;
+  }
   if (slot.branchKey !== undefined) {
     const responsive = { ...(slot.owner.responsive ?? {}) } as Record<string, { children?: unknown }>;
     responsive[slot.branchKey] = { ...(responsive[slot.branchKey] ?? {}), children: next };
@@ -663,6 +740,15 @@ function deepCloneTree(node: EditorNode): EditorNode {
   const children = asChildrenArray(node);
   if (children.length > 0) {
     cloned.children = children.map(deepCloneTree);
+  }
+  // 컴포넌트 배열 prop(footer 등) 깊은 사본 — children 과 같은 이유(스냅샷 간 참조 공유 차단).
+  if (cloned.props && typeof cloned.props === 'object') {
+    const props = cloned.props as Record<string, unknown>;
+    for (const key of EDITOR_PROP_SLOTS) {
+      if (Array.isArray(props[key])) {
+        props[key] = (props[key] as EditorNode[]).map((n) => (n && typeof n === 'object' ? deepCloneTree(n) : n));
+      }
+    }
   }
   // 디바이스 분기 children 깊은 사본 — 각 분기 객체와 그 children 배열을 새 인스턴스로.
   if (node.responsive && typeof node.responsive === 'object') {
@@ -705,6 +791,17 @@ export function insertNode(
   // parentPath 가 responsive 분기 세그먼트로 끝나면(예 `[0,{responsive:'portable'}]`)
   // 그 분기 children 에 삽입. 아니면 base children 에 삽입.
   const lastSeg = parentPath.length > 0 ? parentPath[parentPath.length - 1]! : undefined;
+  // prop 슬롯 세그먼트로 끝나면(예 `[0,{propSlot:'footer'}]`) 그 prop 배열에 삽입.
+  if (lastSeg !== undefined && isPropSlotSegment(lastSeg)) {
+    const owner = findNodeByPath(cloned, parentPath.slice(0, -1));
+    if (!owner) return cloned;
+    const children = asPropSlotChildren(owner, lastSeg.propSlot);
+    const safeIndex = Math.max(0, Math.min(index, children.length));
+    const next = [...children];
+    next.splice(safeIndex, 0, newNode);
+    writeSlotChildren({ owner, children, propSlot: lastSeg.propSlot, index: safeIndex }, next);
+    return cloned;
+  }
   if (lastSeg !== undefined && isResponsiveSegment(lastSeg)) {
     const owner = findNodeByPath(cloned, parentPath.slice(0, -1));
     if (!owner) return cloned;
@@ -781,7 +878,7 @@ export function separateBranch(
   sourceKey?: string,
 ): EditorNode {
   if (path.length === 0 || !key) return root;
-  if (isResponsiveSegment(path[path.length - 1]!)) return root; // 분기 노드는 대상 아님
+  if (isArraySwitchSegment(path[path.length - 1]!)) return root; // 분기 노드는 대상 아님
   const cloned = deepCloneTree(root);
   const node = findNodeByPath(cloned, path);
   if (!node) return cloned;
@@ -829,7 +926,7 @@ export function separateBranch(
  */
 export function mergeBranch(root: EditorNode, path: ComponentPath, key: string): EditorNode {
   if (path.length === 0 || !key) return root;
-  if (isResponsiveSegment(path[path.length - 1]!)) return root;
+  if (isArraySwitchSegment(path[path.length - 1]!)) return root;
   const cloned = deepCloneTree(root);
   const node = findNodeByPath(cloned, path);
   if (!node || !node.responsive || typeof node.responsive !== 'object') return cloned;
@@ -925,7 +1022,7 @@ export function rebasePathAfterRemoval(
   const targetSeg = targetPath[parentLevel]!;
   // 제거로 인한 인덱스 당김은 같은 children 배열 안 number 세그먼트에만 적용된다.
   // 한쪽이 responsive 세그먼트면(다른 children 배열) rebase 대상 아님.
-  if (isResponsiveSegment(fromSeg) || isResponsiveSegment(targetSeg)) return targetPath;
+  if (isArraySwitchSegment(fromSeg) || isArraySwitchSegment(targetSeg)) return targetPath;
   if (targetSeg > fromSeg) {
     const next = [...targetPath];
     next[parentLevel] = targetSeg - 1;
@@ -973,6 +1070,15 @@ export function duplicateNode(node: EditorNode): EditorNode {
   const children = asChildrenArray(node);
   if (children.length > 0) {
     cloned.children = children.map(duplicateNode);
+  }
+  // 컴포넌트 배열 prop(footer 등) 안 노드도 같은 규칙으로 복제 — 원본과 배열을 공유하지 않게.
+  if (cloned.props && typeof cloned.props === 'object') {
+    const props = cloned.props as Record<string, unknown>;
+    for (const key of EDITOR_PROP_SLOTS) {
+      if (Array.isArray(props[key])) {
+        props[key] = (props[key] as EditorNode[]).map((n) => (n && typeof n === 'object' ? duplicateNode(n) : n));
+      }
+    }
   }
 
   return cloned;
@@ -1119,6 +1225,80 @@ function walk(node: EditorNode, path: ComponentPath, issues: ValidationIssue[]):
  *
  * @since engine-v1.50.0
  */
+/**
+ * 출처 메타(`__source`/`_fromBase`)를 디바이스 분기 children·컴포넌트 배열 prop(footer) 안으로 잇는다(#869).
+ *
+ * 서버는 편집 모드 응답에서 출처 메타를 `children` 으로만 내려 단다. 공통 레이아웃(base)·partial·확장 노드의
+ * `responsive.{키}.children` 과 `props.footer` 안 노드는 메타가 없어 잠금 판정(`classifyLockKind`)이 「잠금 없음」이
+ * 됐다. 그래서 화면 편집에서 공통 레이아웃 헤더 단추의 분기 자식에 드래그 핸들이 생기고 속성 편집까지 열렸는데,
+ * 놓을 칸이 없고 저장하면 소유 노드째 버려져 편집분이 사라졌다. 메타가 있는 노드의 분기·prop 슬롯 자식(과 그
+ * 자손) 중 메타가 없는 것에 가장 가까운 소유 노드의 메타를 붙인다. 이미 메타가 있으면 그대로 둔다.
+ *
+ * 저장 마스킹(`stripInheritedNodes`)은 base·partial·확장 소유 노드를 분기째 버리므로 저장 내용은 바뀌지 않는다.
+ *
+ * @param components 편집 모드 응답 components
+ * @returns 메타를 이은 새 배열(입력 불변). 바꿀 것이 없으면 같은 노드 참조를 돌려준다
+ */
+export function inheritSourceIntoBranches(components: EditorNode[] | undefined): EditorNode[] {
+  if (!Array.isArray(components)) return [];
+  type Meta = { __source?: EditorNode['__source']; _fromBase?: unknown } | null;
+  const metaOf = (n: EditorNode): Meta => {
+    const src = n.__source;
+    if (!src || (src.kind !== 'base' && src.kind !== 'partial' && src.kind !== 'extension')) return null;
+    const fromBase = (n as Record<string, unknown>)._fromBase;
+    return { __source: src, ...(fromBase !== undefined ? { _fromBase: fromBase } : {}) };
+  };
+  const visit = (node: EditorNode, inherited: Meta, inBranch: boolean): EditorNode => {
+    if (!node || typeof node !== 'object') return node;
+    let out: EditorNode = node;
+    // 분기·prop 슬롯 안(또는 그 자손)이고 자기 메타가 없으면 소유 노드 메타를 잇는다.
+    if (inBranch && inherited && !node.__source) {
+      out = { ...node, ...inherited } as EditorNode;
+    }
+    const own = metaOf(out) ?? (inBranch ? inherited : null);
+    // base children 은 서버가 이미 메타를 단다 — 분기 안에 들어온 뒤의 children 만 잇는다.
+    if (Array.isArray(out.children)) {
+      const kids = out.children as EditorNode[];
+      const next = kids.map((k) => visit(k, own, inBranch));
+      if (next.some((k, i) => k !== kids[i])) out = { ...out, children: next };
+    }
+    const branchOwner = metaOf(out) ?? (inBranch ? inherited : null);
+    if (out.responsive && typeof out.responsive === 'object') {
+      let changed = false;
+      const resp: Record<string, unknown> = { ...(out.responsive as Record<string, unknown>) };
+      for (const key of Object.keys(resp)) {
+        const branch = resp[key] as { children?: unknown } | undefined;
+        if (branch && Array.isArray(branch.children)) {
+          const kids = branch.children as EditorNode[];
+          const next = kids.map((k) => visit(k, branchOwner, branchOwner !== null));
+          if (next.some((k, i) => k !== kids[i])) {
+            resp[key] = { ...branch, children: next };
+            changed = true;
+          }
+        }
+      }
+      if (changed) out = { ...out, responsive: resp as EditorNode['responsive'] };
+    }
+    if (out.props && typeof out.props === 'object') {
+      const props = out.props as Record<string, unknown>;
+      let nextProps: Record<string, unknown> | null = null;
+      for (const key of EDITOR_PROP_SLOTS) {
+        if (Array.isArray(props[key])) {
+          const kids = props[key] as EditorNode[];
+          const next = kids.map((k) => visit(k, branchOwner, branchOwner !== null));
+          if (next.some((k, i) => k !== kids[i])) {
+            nextProps = nextProps ?? { ...props };
+            nextProps[key] = next;
+          }
+        }
+      }
+      if (nextProps) out = { ...out, props: nextProps as EditorNode['props'] };
+    }
+    return out;
+  };
+  return components.map((c) => visit(c, null, false));
+}
+
 export function stripInheritedNodes(components: EditorNode[] | undefined): EditorNode[] {
   if (!Array.isArray(components) || components.length === 0) {
     return [];
@@ -1181,7 +1361,54 @@ function stripInheritedNode(node: EditorNode | undefined | null): EditorNode[] {
   if (Array.isArray(cleaned.children)) {
     cleaned.children = stripInheritedNodes(cleaned.children as EditorNode[]);
   }
+  // 컴포넌트 배열 prop(footer 등) 안 노드도 같은 규칙으로 마스킹한다(#869). 서버가 편집 모드 응답에서
+  // footer 안 노드에도 출처 메타를 붙이면, children 만 재귀할 때 그 메타가 저장 content 에 남고 확장·partial
+  // 노드가 자식 레이아웃에 박힌다.
+  if (cleaned.props && typeof cleaned.props === 'object') {
+    const props = cleaned.props as Record<string, unknown>;
+    let nextProps: Record<string, unknown> | null = null;
+    for (const key of EDITOR_PROP_SLOTS) {
+      if (Array.isArray(props[key])) {
+        nextProps = nextProps ?? { ...props };
+        nextProps[key] = stripInheritedNodes(props[key] as EditorNode[]);
+      }
+    }
+    if (nextProps) cleaned.props = nextProps as EditorNode['props'];
+  }
   return [cleaned];
+}
+
+/**
+ * 머지 트리에서 슬롯 래퍼(`__slot` 표식이 있는 base 노드)의 children 을 슬롯 이름별로 모은다.
+ *
+ * 서버 `LayoutService::replaceSlots` 가 편집 모드에서만 슬롯 래퍼에 `__slot` 을 단다. 래퍼 안의 route 콘텐츠는
+ * 그 슬롯의 편집분이다. 래퍼는 base 노드의 children 아래에만 있으므로 base 노드의 children 만 내려간다
+ * (route 노드 안에는 부모 레이아웃의 슬롯이 없다). 같은 이름이 여러 번이면 순서대로 잇는다.
+ *
+ * @param components 머지된 편집 트리
+ * @returns 슬롯 이름 → 래퍼 children(마스킹 전)
+ * @since engine-v1.96.5
+ */
+function collectSlotWrapperContents(components: EditorNode[]): Map<string, EditorNode[]> {
+  const found = new Map<string, EditorNode[]>();
+  const visit = (nodes: unknown): void => {
+    if (!Array.isArray(nodes)) return;
+    for (const node of nodes as EditorNode[]) {
+      if (!node || typeof node !== 'object') continue;
+      const rec = node as Record<string, unknown>;
+      const slotName = rec.__slot;
+      if (typeof slotName === 'string' && slotName !== '') {
+        const kids = Array.isArray(node.children) ? (node.children as EditorNode[]) : [];
+        found.set(slotName, [...(found.get(slotName) ?? []), ...kids]);
+        continue;
+      }
+      if (node.__source?.kind === 'base' || rec._fromBase === true) {
+        visit(node.children);
+      }
+    }
+  };
+  visit(components);
+  return found;
 }
 
 /**
@@ -1208,7 +1435,8 @@ function stripInheritedNode(node: EditorNode | undefined | null): EditorNode[] {
  * **slots 재구성 (extends 자식 레이아웃)**:
  * `__editor.original.slots` 의 각 슬롯 이름을 키로 두고, 값은 마스킹된 components 의
  * 자식 트리에서 추출한다. 단일 슬롯(`content`) 레이아웃은 마스킹된 components 전체를
- * 그 슬롯에 매핑. 다중 슬롯은 슬롯별 매핑이 모호하므로 폴백 — 원본 slots 보존.
+ * 그 슬롯에 매핑. 다중 슬롯은 서버가 슬롯 래퍼에 단 `__slot` 으로 슬롯별 매핑(engine-v1.96.5) —
+ * 표식이 없는 슬롯만 원본 slots 보존.
  *
  * @since engine-v1.50.0
  */
@@ -1271,12 +1499,18 @@ export function stripInheritedFromLayoutContent(
       // 슬롯 정의 부재 — base 머지 결과에서 슬롯 이름을 알 수 없음. 안전 폴백: 'content' 슬롯에 매핑
       skeleton.slots = { content: maskedComponents };
     } else {
-      // Path B 다중 슬롯: 슬롯별 매핑 불가 — 각 슬롯의 마스킹된 원본 보존 (사용자 편집 손실 방지를 위한 차선)
+      // Path B 다중 슬롯: 서버가 편집 모드 슬롯 래퍼에 단 `__slot`(슬롯 이름)으로 슬롯별 편집분을 모은다.
+      // 표식이 있는 슬롯은 머지 트리의 편집분, 없는 슬롯(옛 서버 응답·트리에 래퍼가 없는 슬롯)은 마스킹된 원본 보존.
+      const marked = collectSlotWrapperContents(mergedComponents);
       const nextSlots: Record<string, unknown> = {};
       for (const [slotName, slotValue] of Object.entries(skeletonSlots)) {
-        nextSlots[slotName] = Array.isArray(slotValue)
-          ? stripInheritedNodes(slotValue as EditorNode[])
-          : slotValue;
+        if (marked.has(slotName)) {
+          nextSlots[slotName] = stripInheritedNodes(marked.get(slotName));
+        } else {
+          nextSlots[slotName] = Array.isArray(slotValue)
+            ? stripInheritedNodes(slotValue as EditorNode[])
+            : slotValue;
+        }
       }
       skeleton.slots = nextSlots;
     }
@@ -1290,5 +1524,51 @@ export function stripInheritedFromLayoutContent(
   delete skeleton.lock_version;
   delete skeleton.__editor;
 
+  // 4) 동작이 빈 오류 코드 항목 제거(설계 확정 2026-11-09, #869) — 페이지 설정과 데이터 소스 편집기의
+  //    [덮기]가 시작한 빈 동작(`{}`)을 고르지 않고 저장하면 런타임 findHandler 가 「처리됨」으로 보아
+  //    같은 맵 default, onError, 템플릿 기본 처리를 가린다. 편집 중 문서(raw)는 건드리지 않는다.
+  pruneEmptyErrorHandlingOnSave(skeleton);
+
   return skeleton;
+}
+
+/** 오류 처리 동작이 비었는지 — 키 없는 객체 또는 빈 배열. */
+function isEmptyErrorAction(action: unknown): boolean {
+  if (Array.isArray(action)) return action.length === 0;
+  return !!action && typeof action === 'object' && Object.keys(action as object).length === 0;
+}
+
+/** errorHandling 맵에서 빈 동작 코드를 뺀 사본. 바뀐 것이 없으면 원본, 다 비면 undefined. */
+function prunedErrorMap(map: unknown): unknown {
+  if (!map || typeof map !== 'object' || Array.isArray(map)) return map;
+  const entries = Object.entries(map as Record<string, unknown>);
+  const kept = entries.filter(([, action]) => !isEmptyErrorAction(action));
+  // 코드를 모두 지워 처음부터 빈 맵(`{}`)인 경우도 키째 뺀다(빈 항목만 지우고 맵은 남기던 비대칭 정리).
+  if (kept.length === 0) return undefined;
+  if (kept.length === entries.length) return map;
+  return Object.fromEntries(kept);
+}
+
+/**
+ * 저장 골격의 최상위 errorHandling 과 data_sources[].errorHandling 에서 빈 동작 코드를 지운다.
+ * 골격은 이미 사본이지만 data_sources 항목은 원본 객체를 공유하므로 바뀌는 항목만 새로 만든다.
+ *
+ * @param skeleton 저장 골격(제자리 수정)
+ */
+function pruneEmptyErrorHandlingOnSave(skeleton: Record<string, unknown>): void {
+  if ('errorHandling' in skeleton) {
+    const next = prunedErrorMap(skeleton.errorHandling);
+    if (next === undefined) delete skeleton.errorHandling;
+    else skeleton.errorHandling = next;
+  }
+  if (Array.isArray(skeleton.data_sources)) {
+    skeleton.data_sources = (skeleton.data_sources as unknown[]).map((entry) => {
+      if (!entry || typeof entry !== 'object' || !('errorHandling' in (entry as object))) return entry;
+      const source = entry as Record<string, unknown>;
+      const next = prunedErrorMap(source.errorHandling);
+      if (next === source.errorHandling) return entry;
+      const { errorHandling: _dropped, ...rest } = source;
+      return next === undefined ? rest : { ...rest, errorHandling: next };
+    });
+  }
 }

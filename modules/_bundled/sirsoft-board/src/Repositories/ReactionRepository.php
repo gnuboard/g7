@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Board\Repositories;
 
 use App\Helpers\PermissionHelper;
+use App\Models\User;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Models\Reaction;
@@ -30,6 +32,11 @@ class ReactionRepository implements ReactionRepositoryInterface
 {
     use FiltersByDateRange;
     use PaginatesWithDeferredJoin;
+
+    /**
+     * 여러 대상 반응 카운트 재집계에서 한 번에 잠그고 세는 대상 수
+     */
+    private const RECALCULATE_CHUNK_SIZE = 1000;
 
     /**
      * {@inheritDoc}
@@ -139,6 +146,61 @@ class ReactionRepository implements ReactionRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function recalculateReactionCountsForTargets(string $targetType, array $targetIds): int
+    {
+        $targetIds = array_values(array_unique(array_map('intval', $targetIds)));
+        $recalculated = 0;
+
+        // 한 회원의 반응 대상은 그 회원의 반응 행위 수에 묶이지만 오래 활동한 회원은 수천 건이 될 수 있다 —
+        // 대상 잠금·집계 쿼리의 바인딩 수를 묶음 크기로 제한한다.
+        foreach (array_chunk($targetIds, self::RECALCULATE_CHUNK_SIZE) as $chunkIds) {
+            $query = $targetType === ReactionService::TARGET_COMMENT ? Comment::query() : Post::query();
+
+            // 대상을 ID 순으로 한 번에 잠근다 — 하드 삭제된 대상은 결과에 없어 자연히 건너뛴다
+            /** @var EloquentCollection<int, Post|Comment> $targets */
+            $targets = $query->withTrashed()
+                ->whereIn('id', $chunkIds)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+
+            if ($targets->isEmpty()) {
+                continue;
+            }
+
+            /** @var array<int, array<string, int>> $actualByTarget 대상 ID → (유형 ID 문자열 → 건수) */
+            $actualByTarget = [];
+            Reaction::query()
+                ->where('target_type', $targetType)
+                ->whereIn('target_id', $targets->modelKeys())
+                ->selectRaw('target_id, reaction_type_id, COUNT(*) as total')
+                ->groupBy('target_id', 'reaction_type_id')
+                ->orderBy('target_id')
+                ->orderBy('reaction_type_id')
+                ->toBase()
+                ->get()
+                ->each(function ($row) use (&$actualByTarget) {
+                    $actualByTarget[(int) $row->target_id][(string) $row->reaction_type_id] = (int) $row->total;
+                });
+
+            foreach ($targets as $target) {
+                // recalculateReactionCounts() 와 같은 병합 — 등장했던 유형 키는 0 으로 남기고 실제 건수가 우선한다
+                $zeroed = array_fill_keys(array_keys($target->reaction_counts ?? []), 0);
+
+                $target->reaction_counts = ($actualByTarget[$target->getKey()] ?? []) + $zeroed;
+                $target->timestamps = false;
+                $target->save();
+
+                $recalculated++;
+            }
+        }
+
+        return $recalculated;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function countByReactionType(int $reactionTypeId): int
     {
         return Reaction::query()->where('reaction_type_id', $reactionTypeId)->count();
@@ -179,14 +241,14 @@ class ReactionRepository implements ReactionRepositoryInterface
         // 삭제된 대상도 목록에는 "삭제된 게시글/댓글" 행으로 남아야 하므로 withTrashed 로 싣는다.
         $posts = $postIds === [] ? collect() : Post::query()
             ->withTrashed()
-            ->with('user:id,name,status')
+            ->with('user:'.User::displayColumns())
             ->whereIn('id', $postIds)
             ->get(['id', 'board_id', 'user_id', 'title', 'status', 'author_name', 'deleted_at'])
             ->keyBy('id');
 
         $comments = $commentIds === [] ? collect() : Comment::query()
             ->withTrashed()
-            ->with('user:id,name,status')
+            ->with('user:'.User::displayColumns())
             ->whereIn('id', $commentIds)
             ->get(['id', 'board_id', 'post_id', 'user_id', 'content', 'status', 'author_name', 'deleted_at'])
             ->keyBy('id');
@@ -306,7 +368,7 @@ class ReactionRepository implements ReactionRepositoryInterface
             sort: [['column' => 'created_at', 'direction' => $direction]],
             perPage: $perPage,
             relations: [
-                'user:id,uuid,name,email,status',
+                'user:'.User::displayColumns(),
                 'board:id,slug,name,is_active,use_reaction,use_comment_reaction',
                 'reactionType.iconAttachment:id,hash,original_filename,mime_type,size',
             ],
@@ -412,6 +474,27 @@ class ReactionRepository implements ReactionRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function deleteByUser(int $userId): EloquentCollection
+    {
+        $reactions = Reaction::query()
+            ->where('user_id', $userId)
+            ->get(['id', 'user_id', 'target_type', 'target_id', 'reaction_type_id', 'board_id']);
+
+        if ($reactions->isEmpty()) {
+            return $reactions;
+        }
+
+        // 읽은 행만 지운다 — 조회 뒤에 생긴 행까지 지우면 반환 목록에 없어 카운트 재집계에서 빠진다
+        foreach ($reactions->pluck('id')->chunk(1000) as $ids) {
+            Reaction::query()->whereIn('id', $ids->all())->delete();
+        }
+
+        return $reactions;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function summaryByUser(int $userId): array
     {
         $row = Reaction::query()
@@ -471,13 +554,14 @@ class ReactionRepository implements ReactionRepositoryInterface
         $commentsTable = (new Comment)->getTable();
         $reactionsTable = (new Reaction)->getTable();
 
-        $keyword = addcslashes(trim($search), '%_\\');
+        $rawKeyword = trim($search);
+        $keyword = addcslashes($rawKeyword, '%_\\');
         $like = "%{$keyword}%";
 
         $searchesTitle = in_array($field, ['title', 'title_content', 'all', 'target_title'], true);
         $searchesContent = in_array($field, ['content', 'title_content', 'all', 'target_content'], true);
 
-        $query->where(function (Builder $outer) use ($like, $field, $searchesTitle, $searchesContent, $excludeDeletedTargets, $postsTable, $commentsTable, $reactionsTable) {
+        $query->where(function (Builder $outer) use ($like, $rawKeyword, $field, $searchesTitle, $searchesContent, $excludeDeletedTargets, $postsTable, $commentsTable, $reactionsTable) {
             if ($searchesTitle || $searchesContent) {
                 $outer->orWhereExists(function ($sub) use ($like, $searchesTitle, $searchesContent, $excludeDeletedTargets, $postsTable, $reactionsTable) {
                     $sub->select(DB::raw(1))
@@ -520,26 +604,37 @@ class ReactionRepository implements ReactionRepositoryInterface
             }
 
             if ($field === 'member' || $field === 'all') {
-                $outer->orWhereHas('user', fn (Builder $u) => $u->where(
-                    fn (Builder $w) => $w->where('name', 'like', $like)->orWhere('email', 'like', $like)
-                ));
+                // 반응한 회원: 이름, 닉네임, 이메일
+                $outer->orWhereHas('user', fn (Builder $u) => $u->where(function (Builder $w) use ($rawKeyword, $like) {
+                    app(BoardDisplayNames::class)->constrainUsersForAdmin($w, $rawKeyword);
+                    $w->orWhere('email', 'like', $like);
+                }));
             }
 
             if ($field === 'author_name' || $field === 'all') {
-                $outer->orWhereExists(function ($sub) use ($like, $postsTable, $reactionsTable) {
+                // 대상 글과 댓글의 작성자: 비회원은 입력한 이름, 회원은 이름과 닉네임.
+                // 회원이 쓴 글과 댓글은 작성자 이름 컬럼이 비어 있어, 회원을 따로 찾지 않으면 걸리지 않는다.
+                $memberAuthor = fn (string $table) => app(BoardDisplayNames::class)->constrainUsersForAdmin(
+                    User::query()->selectRaw('1')->whereColumn((new User)->getTable().'.id', "{$table}.user_id"),
+                    $rawKeyword,
+                );
+
+                $outer->orWhereExists(function ($sub) use ($like, $postsTable, $reactionsTable, $memberAuthor) {
                     $sub->select(DB::raw(1))
                         ->from($postsTable)
                         ->whereColumn("{$postsTable}.id", "{$reactionsTable}.target_id")
                         ->where("{$reactionsTable}.target_type", ReactionService::TARGET_POST)
-                        ->where("{$postsTable}.author_name", 'like', $like);
+                        ->where(fn ($w) => $w->where("{$postsTable}.author_name", 'like', $like)
+                            ->orWhereExists($memberAuthor($postsTable)));
                 });
 
-                $outer->orWhereExists(function ($sub) use ($like, $commentsTable, $reactionsTable) {
+                $outer->orWhereExists(function ($sub) use ($like, $commentsTable, $reactionsTable, $memberAuthor) {
                     $sub->select(DB::raw(1))
                         ->from($commentsTable)
                         ->whereColumn("{$commentsTable}.id", "{$reactionsTable}.target_id")
                         ->where("{$reactionsTable}.target_type", ReactionService::TARGET_COMMENT)
-                        ->where("{$commentsTable}.author_name", 'like', $like);
+                        ->where(fn ($w) => $w->where("{$commentsTable}.author_name", 'like', $like)
+                            ->orWhereExists($memberAuthor($commentsTable)));
                 });
             }
         });

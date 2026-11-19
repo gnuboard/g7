@@ -248,7 +248,7 @@ describe('[case:components-misc-tag-input-menu-stays-open-after-create] TagInput
 
     expect(menuPortal()).not.toBeNull();
     const rows = screen.getAllByRole('option').map((o) => o.textContent);
-    expect(rows).toEqual(['10.15 추가']);
+    expect(rows).toEqual(['Add 10.15']);
   });
 
   // @scenario mode=creatable, input=prefilled_focus_only

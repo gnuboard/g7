@@ -185,7 +185,8 @@ export function installPreviewCanvasStore(
     if (G7Core && typeof G7Core.dispatch === 'function') {
         G7Core.dispatch = (action: any, context?: any) => {
             try {
-                return opts.actionDispatcher.executeAction(action, context ?? {});
+                // dispatchAction 은 confirm 과 defaultContext 병합이 끼어 동작이 달라진다 — 비공개 executeAction 을 괄호 표기로 그대로 부른다.
+                return opts.actionDispatcher['executeAction'](action, context ?? {});
             } catch {
                 return undefined;
             }

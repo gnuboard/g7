@@ -1,0 +1,47 @@
+feature: 옛 화면(7.1.x 템플릿)의 회원 폼 요청 호환 — 회원 항목 표식 없는 요청의 운영자 추가 필수 항목
+
+description: |
+  7.1.x 템플릿의 가입, 관리자 회원 추가와 수정, 내 정보 수정 화면에는 회원 항목 조각이 없어 운영자 추가 항목과 확장 선언 항목의
+  입력칸이 없다. 회원 항목을 그리는 화면은 항목 응답의 정의 버전 `fields_version` 을 요청에 늘 싣고, 이 표식이 없는 요청은
+  옛 화면으로 본다(UsesMemberFields::fromLegacyMemberFieldScreen). 옛 화면 요청은 그 화면에 입력칸이 없던 항목(운영자 추가 항목,
+  확장 선언 항목, 7.1.x 화면에 없던 코어 칸 — LegacyScreenFields)의 필수 규칙을 「값을 보냈을 때만」으로 늦추고
+  (FieldRuleFactory::rules, FieldContext::onLegacyScreen), 형식 규칙과 7.1.x 화면에 있던 코어 칸 규칙은 그대로다.
+  추가 정보 입력 대기 표시(users.required_fields_deferred_at)는 남기지 않아 쓰기 요청이 403 으로 막히지 않고,
+  로그에 「옛 화면 호환」을 남긴다. 수정 표면은 보내지 않은 항목의 저장된 값을 그대로 둔다.
+
+coverage_strategy: full
+
+axes:
+  surface: [signup, admin_create, admin_update, self_update]
+  marker: [absent, present]
+  field: [operator_and_extension_required, operator_required, core_missing_on_7_1, format_and_core, composite_partial, none]
+
+exclusions:
+  - { surface: [admin_create, admin_update, self_update], field: core_missing_on_7_1, reason: "7.1.x 내 정보 수정과 관리자 폼은 코어 칸을 모두 그렸으므로 이 표면에는 7.1.x 에 없던 코어 칸이 없다(LegacyScreenFields, LegacyScreenFieldsTest 가 7.1.6 태그로 대조)" }
+  - { surface: [admin_create, admin_update, self_update], field: [operator_and_extension_required, format_and_core, none], reason: "확장 선언 항목, 형식 규칙, 코어 항목 유지, 필수 항목 없는 사이트는 같은 규칙 생성기(FieldRuleFactory)를 타는 가입 표면에서 잰다 — 수정 표면은 표식 유무만 가른다" }
+  - { surface: signup, marker: present, field: [operator_and_extension_required, format_and_core, none], reason: "표식을 실은 가입은 종전 계약이다 — 운영자 필수 항목 누락 422 하나로 종전 계약 유지를 잰다(형식, 코어 규칙은 RegisterFieldSetTest)" }
+  - { surface: signup, marker: absent, field: operator_required, reason: "operator_and_extension_required 가 운영자 추가 항목을 포함해 함께 잰다" }
+  - { surface: [admin_create, admin_update, self_update], field: composite_partial, reason: "묶음 항목 일부 전송 판정은 표면과 무관하게 같은 규칙 생성기(FieldRuleFactory::legacyScreenPresence)가 만든다 — 가입 표면에서 잰다" }
+  - { surface: signup, marker: present, field: composite_partial, reason: "표식을 실은 가입은 묶음 항목을 늦추지 않는 종전 계약이다(필수 하위 칸 required)" }
+
+effects:
+  - legacy_signup_skips_operator_required_fields
+  - legacy_signup_member_not_deferred
+  - legacy_signup_next_write_not_blocked
+  - legacy_signup_skips_core_fields_missing_on_7_1
+  - marked_signup_missing_core_field_rejected
+  - legacy_screen_compat_logged
+  - marked_signup_missing_required_rejected
+  - legacy_signup_format_rules_kept
+  - legacy_signup_core_required_kept
+  - legacy_signup_composite_partial_rejected
+  - legacy_signup_unchanged_without_operator_required
+  - legacy_admin_create_skips_without_deferral
+  - marked_admin_create_missing_required_rejected
+  - legacy_admin_update_keeps_stored_value
+  - marked_admin_update_missing_required_rejected
+  - legacy_profile_update_skips_required
+  - marked_profile_update_missing_required_rejected
+
+test_files:
+  - tests/Feature/Auth/LegacyMemberFieldScreenTest.php

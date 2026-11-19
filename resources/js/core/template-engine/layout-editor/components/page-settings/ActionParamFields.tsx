@@ -768,4 +768,3 @@ const lockedParamLabel: React.CSSProperties = { fontSize: 11, color: '#64748b', 
 const lockedParamBadge: React.CSSProperties = { fontSize: 11, color: '#92400e' };
 const ifWrap: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4 };
 const ifToggle: React.CSSProperties = { textAlign: 'left', border: 'none', background: 'transparent', color: '#475569', cursor: 'pointer', fontSize: 11, padding: 0 };
-const ifInput: React.CSSProperties = { width: '100%', padding: '5px 8px', fontSize: 12, border: '1px solid #cbd5e1', borderRadius: 6, boxSizing: 'border-box' };

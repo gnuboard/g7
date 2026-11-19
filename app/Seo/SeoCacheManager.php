@@ -4,9 +4,10 @@ namespace App\Seo;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Seo\Contracts\SeoCacheManagerInterface;
+use App\Support\RuntimeRole;
+use Illuminate\Cache\Lock;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\LockTimeoutException;
-use Illuminate\Cache\Lock;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -325,6 +326,11 @@ class SeoCacheManager implements SeoCacheManagerInterface
      */
     private function storePage(string $url, string $locale, string $html, ?string $layoutName): void
     {
+        // 검수 서버의 렌더 결과(검수용 레이아웃)가 공유 캐시를 거쳐 운영 봇 응답으로 나가지 않게 한다
+        if (RuntimeRole::isStage()) {
+            return;
+        }
+
         if (! $this->isEnabled()) {
             return;
         }

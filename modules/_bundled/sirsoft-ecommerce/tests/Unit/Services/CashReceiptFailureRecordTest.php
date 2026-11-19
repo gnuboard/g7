@@ -125,6 +125,67 @@ class CashReceiptFailureRecordTest extends ModuleTestCase
     }
 
     /**
+     * 프로바이더 예외 원문은 운영 모드에서 이력 사유에 남기지 않는다 — 이력 사유는 관리자 주문 상세와 구매자 응답에
+     * 그대로 보이므로 번역된 실패 문구를 남기고 원문은 서버 로그에만 둔다(#858).
+     *
+     * @scenario item=b1_issue_exception
+     *
+     * @effects provider_exception_reason_hides_internal_detail
+     *
+     * @return void 반환값 없음
+     */
+    public function test_provider_exception_reason_hides_internal_detail(): void
+    {
+        config(['app.debug' => false]);
+        app()->setLocale('ko');
+        $raw = 'cURL error 28: Operation timed out for https://pg.example.com/v1/cash-receipts';
+        HookManager::addFilter('sirsoft-ecommerce.cash_receipt.issue', function () use ($raw) {
+            throw new \RuntimeException($raw);
+        });
+        $order = $this->paidDbankOrder();
+
+        $receipt = app(CashReceiptService::class)->issue($order, CashReceiptType::INCOME, '01012345678');
+
+        $this->assertSame('PROVIDER_EXCEPTION', $receipt->error_code);
+        $this->assertSame(__('sirsoft-ecommerce::cash_receipt.errors.issue_failed'), $receipt->error_message);
+    }
+
+    /**
+     * 취소 프로바이더 예외도 운영 모드에서는 취소 실패 문구를 남긴다(#858).
+     *
+     * @scenario item=b2_cancel_exception
+     *
+     * @effects provider_exception_reason_hides_internal_detail
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cancel_provider_exception_reason_hides_internal_detail(): void
+    {
+        config(['app.debug' => false]);
+        app()->setLocale('ko');
+        $order = $this->paidDbankOrder();
+        OrderCashReceipt::create([
+            'order_id' => $order->id,
+            'provider' => self::PROVIDER,
+            'receipt_key' => 'rk-858',
+            'transaction_type' => CashReceiptTransactionType::ISSUE->value,
+            'receipt_type' => CashReceiptType::INCOME->value,
+            'amount' => 11000,
+            'tax_free_amount' => 0,
+            'issue_status' => CashReceiptIssueStatus::COMPLETED->value,
+            'issued_at' => now(),
+        ]);
+        HookManager::addFilter('sirsoft-ecommerce.cash_receipt.cancel', function () {
+            throw new \Error('Call to undefined method on /var/www/html/plugins/foo/src/Bar.php line 12');
+        });
+
+        app(CashReceiptService::class)->cancelAll($order->fresh(['payment']));
+
+        $cancel = OrderCashReceipt::where('order_id', $order->id)->where('transaction_type', CashReceiptTransactionType::CANCEL->value)->first();
+        $this->assertSame(__('sirsoft-ecommerce::cash_receipt.errors.cancel_failed'), $cancel->error_message);
+    }
+
+    /**
      * 결제 통화 환산이 안 되면 기준 통화 금액으로 발급하지 않고 FAILED 이력과 사유를 남긴다(B3).
      *
      * @scenario item=b3_conversion_failure

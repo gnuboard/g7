@@ -16,6 +16,7 @@ use App\Models\Analytics\AnalyticsVisit;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * 정보주체 요청 처리
@@ -72,6 +73,27 @@ class DataSubjectService
             'visits' => $this->visits->findBySubject($this->resolveSubject($subject, $config), $from, $to),
             'notice' => $this->notice($subject),
         ];
+    }
+
+    /**
+     * 내보낼 내용을 내려받을 JSON 파일 응답으로 흘려보냅니다.
+     *
+     * 기록을 받는 사람이 읽을 파일이다 — 사람이 볼 수 있게 들여쓰고, 주소·한글 라벨이
+     * 이스케이프 코드로 바뀌지 않게 둔다. 매 요청 새로 만드는 문서라 캐시하지 않는다.
+     *
+     * @param  array<string, mixed>  $payload  export() 가 만든 내보낼 내용
+     * @param  string  $filename  내려받을 파일 이름
+     * @return StreamedResponse 내려받기 응답
+     */
+    public function streamExport(array $payload, string $filename): StreamedResponse
+    {
+        return new StreamedResponse(function () use ($payload): void {
+            echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }, 200, [
+            'Content-Type' => 'application/json; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate',
+        ]);
     }
 
     /**

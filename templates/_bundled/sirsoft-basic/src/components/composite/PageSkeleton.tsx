@@ -1,4 +1,6 @@
 import React from 'react';
+import { gridColsClass, resolveGridCols } from '../layout/gridColumns';
+import { BREAKPOINTS, containerPaddingClass, productRailColumnClass, resolveViewportWidth } from '../layout/viewportWidth';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
@@ -21,10 +23,8 @@ interface LayoutComponent {
         index_var?: string;
     };
     if?: string;
-    responsive?: {
-        desktop?: { props?: Record<string, any> };
-        tablet?: { props?: Record<string, any> };
-    };
+    /** 엔진 responsive — 프리셋(mobile·tablet·desktop·portable)·커스텀 구간(min-max·min-·-max) 키 */
+    responsive?: Record<string, Partial<LayoutComponent>>;
 }
 
 /**
@@ -40,10 +40,8 @@ export interface PageSkeletonProps {
     };
 }
 
-/** Tailwind 반응형 breakpoint (px) */
-const TAILWIND_BREAKPOINTS: Record<string, number> = {
-    sm: 640, md: 768, lg: 1024, xl: 1280, '2xl': 1536,
-};
+/** Tailwind 반응형 breakpoint (px) — 레이아웃 className 에 남은 접두를 해석할 때 쓴다 */
+const TAILWIND_BREAKPOINTS: Record<string, number> = { ...BREAKPOINTS };
 
 /** CSS display 관련 클래스 (Tailwind) */
 const DISPLAY_CLASSES = new Set([
@@ -76,8 +74,13 @@ const MEDIA_COMPONENTS = new Set([
     'ProductImageViewer', 'FileUploader',
 ]);
 
-/** 복합 컴포넌트 → 특화된 스켈레톤 */
-const COMPOSITE_SKELETONS: Record<string, (animClass: string, iterCount: number) => React.ReactElement> = {
+/**
+ * 복합 컴포넌트 → 특화된 스켈레톤
+ *
+ * 뼈대 자체의 폭 분기(여백·메뉴 자리)는 Tailwind 반응형 접두 대신 받은 폭(`width`, 편집기 미리보기에서는 기기 폭)으로
+ * 고른다 — 접두는 창 폭으로 판정되어 미리보기 폭을 따르지 못한다.
+ */
+const COMPOSITE_SKELETONS: Record<string, (animClass: string, iterCount: number, width: number) => React.ReactElement> = {
     DataGrid: (animClass, iterCount) => (
         <div className="w-full border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
             <div className={`h-10 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 ${animClass}`}>
@@ -139,13 +142,14 @@ const COMPOSITE_SKELETONS: Record<string, (animClass: string, iterCount: number)
     QuantitySelector: (animClass) => (
         <div className={`h-9 w-28 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 ${animClass}`} />
     ),
-    Header: (animClass) => (
+    Header: (animClass, _iterCount, width) => (
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className={`max-w-7xl mx-auto ${containerPaddingClass(width)}`}>
                 <div className="flex items-center justify-between h-16">
                     <div className="flex items-center gap-8">
                         <div className={`h-8 w-24 bg-gray-200 dark:bg-gray-700 rounded ${animClass}`} />
-                        <div className="hidden lg:flex items-center gap-6">
+                        {/* 메뉴 자리는 1024px 이상에서만 보인다 */}
+                        <div className={width >= BREAKPOINTS.lg ? 'flex items-center gap-6' : 'hidden items-center gap-6'}>
                             {Array.from({ length: 4 }, (_, i) => (
                                 <div key={i} className={`h-3.5 w-16 bg-gray-200 dark:bg-gray-700 rounded ${animClass}`} />
                             ))}
@@ -160,9 +164,9 @@ const COMPOSITE_SKELETONS: Record<string, (animClass: string, iterCount: number)
             </div>
         </header>
     ),
-    Footer: (animClass) => (
+    Footer: (animClass, _iterCount, width) => (
         <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className={`max-w-7xl mx-auto ${containerPaddingClass(width)} py-8`}>
                 <div className="flex flex-col items-center gap-4">
                     <div className={`h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded ${animClass}`} />
                     <div className={`h-3 w-48 bg-gray-100 dark:bg-gray-800 rounded ${animClass}`} />
@@ -342,10 +346,13 @@ function sanitizeClassName(className: string, name: string): string {
  * 실제 렌더 시 Tailwind 클래스로 변환한다.
  * 스켈레톤은 이 컴포넌트들을 plain <div>로 대체하므로,
  * props → Tailwind 변환을 여기서 수행하여 className에 병합해야 한다.
+ * Grid 의 responsive prop 은 Grid 부품과 같은 폭 판정(`resolveGridCols`)으로 접두 없는 열 클래스 하나만 낸다.
  *
+ * @param component 레이아웃 노드(responsive 적용 뒤)
+ * @param width G7Core.useResponsive()로 구독한 viewport width (overrideWidth 반영)
  * @since engine-v1.17.0
  */
-function resolveLayoutProps(component: LayoutComponent): string {
+function resolveLayoutProps(component: LayoutComponent, width: number): string {
     const { name, props } = component;
     if (!props || !name) return '';
 
@@ -387,17 +394,7 @@ function resolveLayoutProps(component: LayoutComponent): string {
     if (name === 'Grid') {
         classes.push('grid');
 
-        const cols = props.cols || 1;
-        classes.push(`grid-cols-${cols}`);
-
-        if (props.responsive) {
-            const r = props.responsive;
-            if (r.sm) classes.push(`sm:grid-cols-${r.sm}`);
-            if (r.md) classes.push(`md:grid-cols-${r.md}`);
-            if (r.lg) classes.push(`lg:grid-cols-${r.lg}`);
-            if (r.xl) classes.push(`xl:grid-cols-${r.xl}`);
-            if (r['2xl']) classes.push(`2xl:grid-cols-${r['2xl']}`);
-        }
+        classes.push(gridColsClass(resolveGridCols(props.cols || 1, props.responsive, width)));
 
         if (props.gap !== undefined && props.gap > 0) classes.push(`gap-${props.gap}`);
         if (props.rowGap !== undefined && props.rowGap > 0) classes.push(`gap-y-${props.rowGap}`);
@@ -433,35 +430,50 @@ function renderChildren(
     width: number,
 ): (React.ReactElement | null)[] {
     if (!children || children.length === 0) return [];
-    const filtered = filterChildren(children);
+    // responsive 를 먼저 적용한다 — 구간이 if 를 바꾸면 분기 판정도 그 폭의 값으로 해야 한다
+    const filtered = filterChildren(children.map((child) => applyResponsive(child, width)));
     return filtered.map((child, i) =>
         renderSkeletonNode(child, animClass, iterCount, i, width)
     );
 }
 
 /**
- * 현재 뷰포트에 맞는 className 결정
+ * 현재 폭에 맞는 responsive 덮어쓰기를 노드에 적용합니다.
  *
- * responsive 속성이 있으면 호출자가 전달한 viewport width 기준으로 적절한 className 선택.
- * - desktop (lg, 1024px+): responsive.desktop.props.className
- * - tablet (md, 768px+): responsive.tablet.props.className
- * - 기본: props.className
+ * 키 선택은 엔진(`G7Core.ResponsiveManager.getMatchingKey`)에 맡긴다 — 프리셋과 커스텀 구간,
+ * 「커스텀이 프리셋보다·좁은 구간이 넓은 구간보다 우선」 규칙이 화면 렌더와 같아야 스켈레톤이 실제
+ * 화면과 같은 모양을 낸다. 덮어쓰기도 엔진과 같다: props 는 얕은 병합(className 은 통째 교체),
+ * 그 밖의 키(children·text·iteration 등)는 교체. 적용한 뒤 responsive 는 지운다 — 재귀(반복 노드)에서
+ * 다시 적용되지 않게.
  *
+ * @param component 레이아웃 노드
  * @param width G7Core.useResponsive()로 구독한 viewport width (overrideWidth 반영)
+ * @returns 덮어쓰기를 적용한 노드
  */
-function resolveClassName(component: LayoutComponent, width: number): string {
-    const baseClassName = component.props?.className || component.className || '';
+function applyResponsive(component: LayoutComponent, width: number): LayoutComponent {
+    const responsive = component.responsive;
+    if (!responsive || typeof responsive !== 'object') return component;
 
-    if (!component.responsive) return baseClassName;
+    const manager = (window as any).G7Core?.ResponsiveManager;
+    const key: string | null = manager?.getMatchingKey?.(responsive, width) ?? null;
+    const { responsive: _omit, ...rest } = component;
+    if (!key || !responsive[key]) return rest;
 
-    if (width >= 1024 && component.responsive.desktop?.props?.className) {
-        return component.responsive.desktop.props.className;
-    }
-    if (width >= 768 && component.responsive.tablet?.props?.className) {
-        return component.responsive.tablet.props.className;
-    }
+    const { props: overrideProps, ...overrideRest } = responsive[key];
+    return {
+        ...rest,
+        ...overrideRest,
+        props: overrideProps ? { ...(component.props ?? {}), ...overrideProps } : component.props,
+    };
+}
 
-    return baseClassName;
+/**
+ * 노드의 className (props.className 우선)
+ *
+ * @param component 레이아웃 노드(responsive 적용 뒤)
+ */
+function resolveClassName(component: LayoutComponent): string {
+    return component.props?.className || component.className || '';
 }
 
 /**
@@ -484,26 +496,30 @@ function resolveResponsiveDisplay(className: string, width: number): { visible: 
     const otherClasses: string[] = [];
 
     for (const token of tokens) {
+        // 확장 접두 빌드 클래스(`ecommerce:md:hidden`)는 앞글자를 떼고 같은 뜻으로 읽는다(engine-v1.94.0)
+        const split = (window as any).G7Core?.style?.splitExtensionClassPrefix?.(token) ?? { prefix: '', rest: token };
+        const extPrefix: string = split.prefix;
+        const bare: string = split.rest;
         // 반응형 접두사 + display 클래스: "lg:grid", "sm:flex", "md:hidden"
-        const responsiveMatch = token.match(/^(sm|md|lg|xl|2xl):(.+)$/);
+        const responsiveMatch = bare.match(/^(sm|md|lg|xl|2xl):(.+)$/);
         if (responsiveMatch) {
             const [, prefix, cls] = responsiveMatch;
             if (DISPLAY_CLASSES.has(cls)) {
                 displayEntries.push({
                     breakpoint: TAILWIND_BREAKPOINTS[prefix] || 0,
-                    display: cls,
+                    display: extPrefix + cls,
                 });
                 continue;
             }
             // 반응형 접두사지만 display가 아닌 클래스 (lg:gap-4 등) → 뷰포트 체크 후 포함
             if ((TAILWIND_BREAKPOINTS[prefix] || 0) <= width) {
-                otherClasses.push(cls); // 접두사 제거하고 포함
+                otherClasses.push(extPrefix + cls); // 반응형 접두사 제거하고 포함(확장 앞글자는 유지)
             }
             continue;
         }
 
         // 기본(접두사 없는) display 클래스: "hidden", "flex", "grid"
-        if (DISPLAY_CLASSES.has(token)) {
+        if (DISPLAY_CLASSES.has(bare)) {
             displayEntries.push({ breakpoint: 0, display: token });
             continue;
         }
@@ -531,7 +547,7 @@ function resolveResponsiveDisplay(className: string, width: number): { visible: 
         effectiveDisplay = displayEntries[0].display;
     }
 
-    const visible = effectiveDisplay !== 'hidden';
+    const visible = ((window as any).G7Core?.style?.splitExtensionClassPrefix?.(effectiveDisplay)?.rest ?? effectiveDisplay) !== 'hidden';
     const resolvedClassName = visible
         ? [effectiveDisplay, ...otherClasses].join(' ')
         : '';
@@ -572,11 +588,12 @@ function renderSkeletonNode(
     index: number,
     width: number,
 ): React.ReactElement | null {
+    // 1. responsive 덮어쓰기(엔진과 같은 키 판정) — renderChildren 이 이미 적용했으면 그대로 돌아온다
+    component = applyResponsive(component, width);
     const { name, children, iteration } = component;
-    // 1. responsive 속성에서 뷰포트에 맞는 className 선택
-    const rawClassName = resolveClassName(component, width);
+    const rawClassName = resolveClassName(component);
     // 1.5. Flex/Grid 레이아웃 props → Tailwind 클래스 병합
-    const layoutClasses = resolveLayoutProps(component);
+    const layoutClasses = resolveLayoutProps(component, width);
     const mergedClassName = layoutClasses
         ? `${layoutClasses} ${rawClassName}`.trim()
         : rawClassName;
@@ -613,7 +630,7 @@ function renderSkeletonNode(
     if (COMPOSITE_SKELETONS[name]) {
         return (
             <div key={index} className={className}>
-                {COMPOSITE_SKELETONS[name](animClass, iterCount)}
+                {COMPOSITE_SKELETONS[name](animClass, iterCount, width)}
             </div>
         );
     }
@@ -624,7 +641,7 @@ function renderSkeletonNode(
         return (
             <section key={index} className={className}>
                 <div className={`h-6 w-40 mb-4 bg-gray-200 dark:bg-gray-700 rounded ${animClass}`} />
-                <div className="grid grid-flow-col auto-cols-[calc(50%_-_8px)] sm:auto-cols-[calc(33.333%_-_11px)] lg:auto-cols-[calc(25%_-_12px)] gap-4 overflow-hidden">
+                <div className={`grid grid-flow-col ${productRailColumnClass(width)} gap-4 overflow-hidden`}>
                     {renderChildren(children, animClass, iterCount, width)}
                 </div>
             </section>
@@ -779,9 +796,8 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({ components, options 
     const G7Core = (window as any).G7Core;
     const useResponsive = G7Core?.useResponsive;
     const responsiveValue = useResponsive?.();
-    const width = responsiveValue
-        ? responsiveValue.width
-        : (typeof window !== 'undefined' ? window.innerWidth : 1024);
+    // 훅 폭 → 창 폭 → 엔진 기본 폭(1024) — 부품 공용 판정(viewportWidth.ts)
+    const width = resolveViewportWidth(responsiveValue);
 
     return (
         <div

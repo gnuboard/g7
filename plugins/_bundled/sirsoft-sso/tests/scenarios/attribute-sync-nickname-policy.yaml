@@ -1,0 +1,18 @@
+feature: sso_attribute_sync_nickname_policy
+
+description: |
+  회사 계정이 준 닉네임이 사이트의 닉네임 정책(중복 금지, 금지어)에 걸리면 닉네임만 반영하지 않고
+  나머지 칸은 반영한다. 동기화 결과에 사유가 남고 동기화는 실패하지 않는다.
+
+coverage_strategy: full
+
+axes:
+  violation: [duplicate, forbidden_word]
+
+effects:
+  - synced_nickname_skipped_on_policy_violation
+  - other_fields_still_synced
+  - skip_reason_recorded
+
+test_files:
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Attributes/AttributeSyncNicknamePolicyTest.php

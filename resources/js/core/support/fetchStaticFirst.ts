@@ -31,10 +31,12 @@ export async function fetchStaticFirst(
     options: RetryOptions & { init?: RequestInit } = {}
 ): Promise<Response> {
     if (!staticUrl) {
+        // base-path:allow 두 주소는 **호출부가 만들어 넘긴 값**이다 — 접두사 책임은 `fetchStaticFirst(` 호출부에 있고, 그 자리는 래퍼 목록에 등록되어 같은 게이트가 잰다.
         return fetchWithRetry(legacyUrl, options);
     }
 
     try {
+        // base-path:allow 두 주소는 **호출부가 만들어 넘긴 값**이다 — 접두사 책임은 `fetchStaticFirst(` 호출부에 있고, 그 자리는 래퍼 목록에 등록되어 같은 게이트가 잰다.
         const response = await fetch(staticUrl, options.init);
 
         if (response.ok) {
@@ -61,6 +63,7 @@ export async function fetchStaticFirst(
                     `[fetchStaticFirst] Static fast path returned malformed JSON — falling back to API: ${staticUrl}`
                 );
 
+                // base-path:allow 두 주소는 **호출부가 만들어 넘긴 값**이다 — 접두사 책임은 `fetchStaticFirst(` 호출부에 있고, 그 자리는 래퍼 목록에 등록되어 같은 게이트가 잰다.
                 return fetchWithRetry(legacyUrl, options);
             }
         }
@@ -77,5 +80,6 @@ export async function fetchStaticFirst(
         );
     }
 
+    // base-path:allow 두 주소는 **호출부가 만들어 넘긴 값**이다 — 접두사 책임은 `fetchStaticFirst(` 호출부에 있고, 그 자리는 래퍼 목록에 등록되어 같은 게이트가 잰다.
     return fetchWithRetry(legacyUrl, options);
 }

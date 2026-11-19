@@ -39,5 +39,23 @@
       "title": "Under Maintenance",
       "message": "The system is under maintenance. Please try again later."
     }
+  },
+  "settings": {
+    "favicon": {
+      "label": "Favicon",
+      "hint": "Icon shown on the browser tab of admin screens while this template is active."
+    },
+    "sections": {
+      "branding": {
+        "label": "Branding"
+      }
+    },
+    "screen": {
+      "choose_file": "Choose file",
+      "remove_file": "Remove",
+      "picked_file": "Selected: {{name}} (uploaded when you save)",
+      "upload_failed": "Could not upload the file.",
+      "unsupported_field": "This screen cannot draw this field type."
+    }
   }
 }

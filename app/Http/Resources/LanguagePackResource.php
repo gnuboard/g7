@@ -44,6 +44,9 @@ class LanguagePackResource extends BaseApiResource
             'status' => $this->getValue('status'),
             'is_protected' => (bool) $this->getValue('is_protected', false),
             'source_type' => $this->getValue('source_type'),
+            // 패키지 서명 검증 결과(verified·unsigned·unverifiable·bundled, 기록 없으면 null) — 상세 「패키지 서명」 배지 (7.2.0)
+            'integrity_status' => $this->getValue('integrity_status'),
+            'integrity_key_id' => $this->getValue('integrity_key_id'),
             'origin' => LanguagePackOrigin::fromSourceTypeValue($this->getValue('source_type'))?->value,
             'source_url' => $this->getValue('source_url'),
             'github_url' => $this->resolveManifestField('github_url'),

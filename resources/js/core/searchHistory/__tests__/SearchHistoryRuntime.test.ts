@@ -13,6 +13,7 @@ import {
     SEARCH_HISTORY_STORAGE_KEY,
     SearchHistoryRuntime,
     normalizeSearchKeyword,
+    type SearchHistoryApi,
     type SearchHistoryAuthState,
     type SearchHistoryChange,
     type SearchHistoryRuntimeDeps,
@@ -38,10 +39,10 @@ function harness(options: { authenticated?: boolean; storage?: ReturnType<typeof
     const changes: SearchHistoryChange[] = [];
     const storage = options.storage ?? memoryStorage();
     const api = {
-        get: vi.fn(async () => ({ success: true, data: { enabled: true, auto_save: true, max_count: 10, items: [] } })),
-        post: vi.fn(async () => ({ success: true, data: { recorded: true, item: { id: 1, keyword: 'x', searched_at_ms: 1 } } })),
-        put: vi.fn(async () => ({ success: true, data: {} })),
-        delete: vi.fn(async () => ({ success: true, data: {} })),
+        get: vi.fn<SearchHistoryApi['get']>(async () => ({ success: true, data: { enabled: true, auto_save: true, max_count: 10, items: [] } })),
+        post: vi.fn<SearchHistoryApi['post']>(async () => ({ success: true, data: { recorded: true, item: { id: 1, keyword: 'x', searched_at_ms: 1 } } })),
+        put: vi.fn<SearchHistoryApi['put']>(async () => ({ success: true, data: {} })),
+        delete: vi.fn<SearchHistoryApi['delete']>(async () => ({ success: true, data: {} })),
     };
 
     const deps: SearchHistoryRuntimeDeps = {

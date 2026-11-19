@@ -19,13 +19,21 @@ const baseDir = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.resolve(baseDir, rel), 'utf8');
 
 describe('B1 — .modal-container 뷰포트 clamp', () => {
-  const css = read('src/styles/main.css');
+  const css = read('src/styles/semantic.css');
 
+  /**
+   * @scenario surface=semantic_css
+   * @effects modal_container_clamped_to_viewport
+   */
   it('max-w-[calc(100vw-2rem)] 로 좌우 16px 여백을 확보한다', () => {
     const rule = css.match(/\.modal-container\s*\{[\s\S]*?\}/)?.[0] ?? '';
     expect(rule).toContain('max-w-[calc(100vw-2rem)]');
   });
 
+  /**
+   * @scenario surface=semantic_css
+   * @effects modal_container_clamped_to_viewport
+   */
   it('선언 순서 트랩 경고가 주석으로 남아 있다', () => {
     // .max-w-full 은 명시도가 같고(0,1,0) 빌드 CSS 에서 뒤에 정의되어 이 clamp 를 이긴다.
     // 이 사실을 모르면 레이아웃에 max-w-full 을 붙여 clamp 를 무효화하기 쉽다.
@@ -35,8 +43,12 @@ describe('B1 — .modal-container 뷰포트 clamp', () => {
 });
 
 describe('C4 — .pagination 줄바꿈', () => {
-  const css = read('src/styles/main.css');
+  const css = read('src/styles/semantic.css');
 
+  /**
+   * @scenario surface=semantic_css
+   * @effects pagination_wraps_on_narrow_viewport
+   */
   it('flex-wrap 이 있어 페이지 수가 많아도 넘치지 않는다', () => {
     const rule = css.match(/\.pagination\s*\{[\s\S]*?\}/)?.[0] ?? '';
     expect(rule).toContain('flex-wrap');
@@ -46,6 +58,10 @@ describe('C4 — .pagination 줄바꿈', () => {
 });
 
 describe('C1 — 다국어 로케일 탭 줄바꿈', () => {
+  /**
+   * @scenario surface=component_source
+   * @effects locale_tabs_wrap_on_narrow_viewport
+   */
   it.each([
     ['MultilingualInput.tsx', 'src/components/composite/MultilingualInput.tsx'],
     ['HtmlEditor.tsx', 'src/components/composite/HtmlEditor.tsx'],

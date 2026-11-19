@@ -157,6 +157,17 @@ interface IdentityVerificationLogRepositoryInterface
     ): ?IdentityVerificationLog;
 
     /**
+     * 회원이 한 수단으로 마친 가장 최근의 본인인증 요청 행을 찾습니다 (목적, 만료와 무관).
+     *
+     * 내 정보 수정의 본인인증 잠금이 지금 값과 인증 값을 비교할 때 쓴다(7.2.0).
+     *
+     * @param  int  $userId  회원 ID
+     * @param  string  $providerId  수단 식별자
+     * @return IdentityVerificationLog|null 가장 최근의 확인 완료 행 (없으면 null)
+     */
+    public function findLatestVerifiedForUser(int $userId, string $providerId): ?IdentityVerificationLog;
+
+    /**
      * 특정 토큰(verification_token) 으로 verified 상태의 challenge 를 찾습니다.
      * IdvTokenRule 이 register 검증 시 사용합니다.
      *
@@ -165,6 +176,18 @@ interface IdentityVerificationLogRepositoryInterface
      * @return IdentityVerificationLog|null 매칭 로그 또는 null
      */
     public function findVerifiedForToken(string $token, string $purpose): ?IdentityVerificationLog;
+
+    /**
+     * 토큰으로 verified 상태의 challenge 를 소비·만료 여부와 무관하게 찾습니다.
+     *
+     * 가입 직후처럼 같은 요청에서 방금 소비한 토큰이 무엇을 확인했는지 다시 읽을 때 씁니다 — 통과 판정에는 쓰지 않는다
+     * (통과 판정은 소비 전 토큰만 보는 {@see self::findVerifiedForToken()}).
+     *
+     * @param  string  $token  verification_token
+     * @param  string  $purpose  IDV 목적 (예: signup)
+     * @return IdentityVerificationLog|null 매칭 로그 또는 null
+     */
+    public function findVerifiedByToken(string $token, string $purpose): ?IdentityVerificationLog;
 
     /**
      * 만료 경과 challenge 를 일괄 expire 처리합니다.
@@ -198,9 +221,10 @@ interface IdentityVerificationLogRepositoryInterface
      * 보관주기 경과 로그를 일괄 삭제합니다.
      *
      * @param  int  $days  보관 일수 (이보다 오래된 로그가 삭제됨)
+     * @param  \Closure(array<int, string>): void|null  $beforeEachBatch  배치마다 지우기 직전에 그 배치의 로그 ID 목록으로 부를 콜백
      * @return int 삭제된 행 수
      */
-    public function purgeOlderThan(int $days): int;
+    public function purgeOlderThan(int $days, ?\Closure $beforeEachBatch = null): int;
 
     /**
      * 목록 조회 (관리자 인증 이력 화면).

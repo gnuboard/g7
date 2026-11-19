@@ -1,0 +1,16 @@
+feature: 관리자 환경설정 탭 막대 — 1280 폭 실측(단추 글자 한 줄, 막대 줄 수)
+
+description: |
+  1280 폭에서 환경설정 탭 단추 글자가 꺾이지 않고(`white-space: nowrap`, 글자 한 줄, 단추 안에 맞음), 막대는 가로로 넘치지
+  않으며 1~3줄로 감긴다(#869, 설계 확정 2026-11-08). 부품 규칙은 관리자 템플릿 `tab-navigation-wrap.yaml` 이 잠근다.
+
+axes:
+  viewport: [1280]
+  tabs: [14]
+
+effects:
+  - settings_tab_labels_stay_on_one_line
+  - settings_tab_bar_wraps_instead_of_squeezing
+
+test_files:
+  - tests/Playwright/specs/admin/settings-tab-labels-no-wrap.spec.ts

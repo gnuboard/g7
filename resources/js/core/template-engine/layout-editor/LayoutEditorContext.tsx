@@ -149,8 +149,20 @@ export interface LayoutEditorState {
   locale: string;
   /** 프리뷰 디바이스 (Phase 2 에서 사용) */
   previewDevice: PreviewDevice;
-  /** 프리뷰 줌 (Phase 2 에서 사용) */
+  /** 프리뷰 줌 (Phase 2 에서 사용) — 미리보기 배율의 상한(가용 폭이 모자라면 그보다 작게 맞춘다) */
   previewZoom: number;
+  /**
+   * 캔버스가 미리보기 프레임에 내줄 수 있는 가로 폭(px, 캔버스 안쪽 여백 제외).
+   * PreviewCanvas 가 캔버스 크기를 재서 넣는다. 아직 재지 않았으면 null(배율 = 줌).
+   * 모든 `useDevicePreview()` 호출처(캔버스, 오버레이 리사이즈 환산, 줌 표시)가 같은 배율을 쓰도록
+   * 지역 상태가 아니라 여기 둔다.
+   */
+  previewAvailableWidth?: number | null;
+  /**
+   * 실제 크기(1:1) 보기 — 켜면 줌과 가용 폭을 무시하고 배율 1 로 그린다. 캔버스가 좁으면 문서 가로
+   * 스크롤로 넘친 폭을 본다. 기본 false(맞춤 줌).
+   */
+  previewActualSize?: boolean;
   /**
    * custom 디바이스 선택 시 적용할 프레임 폭(px).
    * previewDevice === 'custom' 일 때만 의미. 320~1920 클램프.
@@ -230,6 +242,8 @@ export type LayoutEditorAction =
   | { type: 'EXIT_ITERATION_ITEM_EDIT' }
   | { type: 'SET_PREVIEW_DEVICE'; device: PreviewDevice }
   | { type: 'SET_PREVIEW_ZOOM'; zoom: number }
+  | { type: 'SET_PREVIEW_AVAILABLE_WIDTH'; width: number | null }
+  | { type: 'SET_PREVIEW_ACTUAL_SIZE'; actualSize: boolean }
   | { type: 'SET_PREVIEW_CUSTOM_WIDTH'; width: number }
   | { type: 'SET_PREVIEW_COLOR_SCHEME'; scheme: PreviewColorScheme }
   | { type: 'TOGGLE_PALETTE' }
@@ -261,6 +275,8 @@ function createInitialState(templateIdentifier: string, locale: string): LayoutE
     locale,
     previewDevice: 'desktop',
     previewZoom: 1,
+    previewAvailableWidth: null,
+    previewActualSize: false,
     previewCustomWidth: DEFAULT_PREVIEW_CUSTOM_WIDTH,
     previewColorScheme: 'light',
     history: { canUndo: false, canRedo: false },
@@ -391,6 +407,14 @@ export function layoutEditorReducer(state: LayoutEditorState, action: LayoutEdit
       return { ...state, previewDevice: action.device };
     case 'SET_PREVIEW_ZOOM':
       return { ...state, previewZoom: action.zoom };
+    case 'SET_PREVIEW_AVAILABLE_WIDTH':
+      // 같은 값이면 상태 객체를 바꾸지 않는다 — 편집기 문맥 소비자 전체(미리보기 트리 포함)가
+      // 다시 렌더되지 않게 한다(창 크기 조절 중 ResizeObserver 가 자주 울린다).
+      if ((state.previewAvailableWidth ?? null) === action.width) return state;
+      return { ...state, previewAvailableWidth: action.width };
+    case 'SET_PREVIEW_ACTUAL_SIZE':
+      if ((state.previewActualSize ?? false) === action.actualSize) return state;
+      return { ...state, previewActualSize: action.actualSize };
     case 'SET_PREVIEW_CUSTOM_WIDTH':
       return { ...state, previewCustomWidth: action.width };
     case 'SET_PREVIEW_COLOR_SCHEME':
@@ -537,4 +561,16 @@ export function useLayoutEditor(): LayoutEditorContextValue {
     throw new Error('useLayoutEditor must be used within LayoutEditorProvider');
   }
   return ctx;
+}
+
+/**
+ * 편집기 컨텍스트를 예외 없이 읽는다 — 공급자 밖(속성 컨트롤 단독 렌더)에서는 null.
+ *
+ * 컨텍스트가 있으면 덧붙이고 없으면 생략하는 부가 표시(예: 템플릿 설정 화면 링크)에만 쓴다.
+ * 상태를 바꾸는 쪽은 {@link useLayoutEditor} 를 쓴다.
+ *
+ * @return 편집기 컨텍스트 또는 null
+ */
+export function useOptionalLayoutEditor(): LayoutEditorContextValue | null {
+  return useContext(LayoutEditorContext);
 }

@@ -14,10 +14,7 @@ use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
  * 결제를 마친 구매자가 존재하지 않는 페이지로 떨어지는데, 리다이렉트라 예외도 로그도
  * 남지 않아 증상이 드러나지 않는다.
  *
- * @scenario case=payment_redirect_follows_shop_route_path
- *
- * @effects payment_redirect_follows_route_path, payment_redirect_drops_segment_when_no_route,
- *          operator_supplied_redirect_url_is_preserved
+ * @scenario route_setting=custom
  */
 #[Group('payment')]
 class ShopRedirectUrlTest extends PluginTestCase

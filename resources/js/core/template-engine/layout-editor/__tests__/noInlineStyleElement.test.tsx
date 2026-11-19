@@ -11,7 +11,6 @@
  * @scenario-manifest tests/scenarios/strict-style-csp-compat.yaml
  */
 
-import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, renderHook, screen, waitFor } from '@testing-library/react';
 
@@ -35,6 +34,10 @@ import {
   BASE_SLOT_LABEL_VAR,
   BASE_SLOT_STYLE_CSS,
   BASE_SLOT_STYLE_KEY,
+  DEVICE_ROW_STYLE_KEY,
+  DEVICE_TOOLBAR_STYLE_KEY,
+  EDIT_ENTRY_FAB_STYLE_CSS,
+  EDIT_ENTRY_FAB_STYLE_KEY,
   EMPTY_CELL_STYLE_KEY,
   TOOLBAR_STYLE_KEY,
   applyBaseSlotStyle,
@@ -44,6 +47,7 @@ import {
 } from '../utils/editorRuntimeStyles';
 import { usePreviewMediaIsolation, MEDIA_ISOLATION_STYLE_KEY } from '../hooks/usePreviewMediaIsolation';
 import { useEditorTemplateAssets, editorAssetStyleKey } from '../hooks/useEditorTemplateAssets';
+import { EditEntryFab } from '../components/EditEntryFab';
 
 /** 생성형 시트 지원 환경 스텁 — 되돌리는 함수를 돌려준다 */
 function installAdoptedStub(): { replaceSync: ReturnType<typeof vi.fn>; restore: () => void } {
@@ -123,14 +127,19 @@ describe('편집기 동적 규칙 — 생성형 시트 환경에서 <style> 요�
 
     expect(screen.getByTestId('g7le-toolbar').querySelector('style')).toBeNull();
     expect(styleCount()).toBe(baseline);
-    const marker = document.getElementById(TOOLBAR_STYLE_KEY);
-    expect(marker?.tagName).toBe('META');
-    expect(marker?.getAttribute('data-g7-runtime-style')).toBe('adopted');
-    expect((document as any).adoptedStyleSheets).toContain(getSheet(TOOLBAR_STYLE_KEY));
+    // 기기 줄·기기 툴바 압착 차단 규칙(7.2.0 「두 줄로 감기」)도 런타임 시트로 붙는다
+    for (const key of [TOOLBAR_STYLE_KEY, DEVICE_ROW_STYLE_KEY, DEVICE_TOOLBAR_STYLE_KEY]) {
+      const marker = document.getElementById(key);
+      expect(marker?.tagName).toBe('META');
+      expect(marker?.getAttribute('data-g7-runtime-style')).toBe('adopted');
+      expect((document as any).adoptedStyleSheets).toContain(getSheet(key));
+    }
 
     unmount();
-    expect(has(TOOLBAR_STYLE_KEY)).toBe(false);
-    expect(document.getElementById(TOOLBAR_STYLE_KEY)).toBeNull();
+    for (const key of [TOOLBAR_STYLE_KEY, DEVICE_ROW_STYLE_KEY, DEVICE_TOOLBAR_STYLE_KEY]) {
+      expect(has(key)).toBe(false);
+      expect(document.getElementById(key)).toBeNull();
+    }
     expect(styleCount()).toBe(baseline);
   });
 
@@ -175,6 +184,46 @@ describe('편집기 동적 규칙 — 생성형 시트 환경에서 <style> 요�
     expect(styleCount()).toBe(baseline);
     expect(document.querySelectorAll(`[id="${EMPTY_CELL_STYLE_KEY}"]`).length).toBe(1);
     expect((document as any).adoptedStyleSheets.length).toBe(1);
+  });
+
+  /**
+   * @scenario case=layout_editor_no_style_element
+   * @effects editor_entry_fab_rules_via_runtime_sheet
+   */
+  it('편집 진입 단추(운영 화면): 보이는 동안만 런타임 시트로 규칙을 붙이고 <style> 을 만들지 않는다, 숨으면 뗀다', () => {
+    const engine = new TranslationEngine();
+    const fab = (canEdit: boolean) => (
+      <TranslationProvider translationEngine={engine} translationContext={{ templateId: 'test', locale: 'ko' }}>
+        <EditEntryFab
+          templateIdentifier="sirsoft-basic"
+          pathname="/"
+          isAuthenticated
+          hasLayoutEditPermission={canEdit}
+          currentRoutePath="/"
+          openWindow={() => {}}
+        />
+      </TranslationProvider>
+    );
+    const { rerender, unmount } = render(fab(true));
+
+    expect(screen.getByTestId('g7le-edit-entry-fab').className).toBe('g7le-edit-entry-fab');
+    expect(styleCount()).toBe(baseline);
+    const marker = document.getElementById(EDIT_ENTRY_FAB_STYLE_KEY);
+    expect(marker?.tagName).toBe('META');
+    expect((document as any).adoptedStyleSheets).toContain(getSheet(EDIT_ENTRY_FAB_STYLE_KEY));
+    expect(getCssText(EDIT_ENTRY_FAB_STYLE_KEY)).toBe(EDIT_ENTRY_FAB_STYLE_CSS);
+    // 고정 위치·층·인쇄 숨김·다크 규칙이 시트에 있다(종전 <style> 은 엄격한 정책에서 막혀 단추가 문서 흐름에 그려졌다)
+    expect(EDIT_ENTRY_FAB_STYLE_CSS).toContain('.g7le-edit-entry-fab{position:fixed;z-index:39;');
+    expect(EDIT_ENTRY_FAB_STYLE_CSS).toContain('@media print{.g7le-edit-entry-fab{display:none !important}}');
+    expect(EDIT_ENTRY_FAB_STYLE_CSS).toContain('[data-g7-color-scheme="dark"]');
+
+    // 권한이 사라져 단추가 숨으면 규칙도 뗀다
+    rerender(fab(false));
+    expect(screen.queryByTestId('g7le-edit-entry-fab')).toBeNull();
+    expect(has(EDIT_ENTRY_FAB_STYLE_KEY)).toBe(false);
+    expect(document.getElementById(EDIT_ENTRY_FAB_STYLE_KEY)).toBeNull();
+    unmount();
+    expect(styleCount()).toBe(baseline);
   });
 
   /**

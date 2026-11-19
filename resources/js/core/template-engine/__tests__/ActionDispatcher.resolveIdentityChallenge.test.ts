@@ -27,10 +27,16 @@ describe('ActionDispatcher.resolveIdentityChallenge', () => {
     vi.restoreAllMocks();
   });
 
+  /**
+   * @scenario case=verified_with_token
+   *
+   * @effects verified_result_passed_with_token
+   */
   it('result=verified + token → resolver 가 verified 결과 받음', async () => {
     const deferred = IdentityGuardInterceptor.createDeferred();
 
     await dispatcher.dispatchAction({
+      type: 'click',
       handler: 'resolveIdentityChallenge',
       params: { result: 'verified', token: 'tok-abc' },
     });
@@ -41,10 +47,16 @@ describe('ActionDispatcher.resolveIdentityChallenge', () => {
     });
   });
 
+  /**
+   * @scenario case=verified_missing_token
+   *
+   * @effects verified_without_token_downgraded_to_missing_token
+   */
   it('result=verified 인데 token 누락 → failed/MISSING_TOKEN 으로 강등', async () => {
     const deferred = IdentityGuardInterceptor.createDeferred();
 
     await dispatcher.dispatchAction({
+      type: 'click',
       handler: 'resolveIdentityChallenge',
       params: { result: 'verified' },
     });
@@ -55,10 +67,16 @@ describe('ActionDispatcher.resolveIdentityChallenge', () => {
     });
   });
 
+  /**
+   * @scenario case=cancelled
+   *
+   * @effects cancelled_result_passed
+   */
   it('result=cancelled → resolver 가 cancelled 받음', async () => {
     const deferred = IdentityGuardInterceptor.createDeferred();
 
     await dispatcher.dispatchAction({
+      type: 'click',
       handler: 'resolveIdentityChallenge',
       params: { result: 'cancelled' },
     });
@@ -66,10 +84,16 @@ describe('ActionDispatcher.resolveIdentityChallenge', () => {
     await expect(deferred).resolves.toEqual({ status: 'cancelled' });
   });
 
+  /**
+   * @scenario case=failed_with_code
+   *
+   * @effects failed_result_passed_with_code_and_reason
+   */
   it('result=failed + failureCode/reason → 그대로 전달', async () => {
     const deferred = IdentityGuardInterceptor.createDeferred();
 
     await dispatcher.dispatchAction({
+      type: 'click',
       handler: 'resolveIdentityChallenge',
       params: {
         result: 'failed',
@@ -85,10 +109,16 @@ describe('ActionDispatcher.resolveIdentityChallenge', () => {
     });
   });
 
+  /**
+   * @scenario case=failed_missing_code
+   *
+   * @effects failed_without_code_normalized_to_unknown
+   */
   it('result=failed + failureCode 누락 → UNKNOWN 으로 보정', async () => {
     const deferred = IdentityGuardInterceptor.createDeferred();
 
     await dispatcher.dispatchAction({
+      type: 'click',
       handler: 'resolveIdentityChallenge',
       params: { result: 'failed' },
     });
@@ -99,10 +129,16 @@ describe('ActionDispatcher.resolveIdentityChallenge', () => {
     });
   });
 
+  /**
+   * @scenario case=pending_complete
+   *
+   * @effects pending_result_passed_with_poll_info
+   */
   it('result=pending + pollUrl + expiresAt → pending 그대로 전달', async () => {
     const deferred = IdentityGuardInterceptor.createDeferred();
 
     await dispatcher.dispatchAction({
+      type: 'click',
       handler: 'resolveIdentityChallenge',
       params: {
         result: 'pending',
@@ -120,10 +156,16 @@ describe('ActionDispatcher.resolveIdentityChallenge', () => {
     });
   });
 
+  /**
+   * @scenario case=pending_malformed
+   *
+   * @effects malformed_pending_downgraded
+   */
   it('result=pending 인데 pollUrl/expiresAt 누락 → MALFORMED_PENDING 으로 강등', async () => {
     const deferred = IdentityGuardInterceptor.createDeferred();
 
     await dispatcher.dispatchAction({
+      type: 'click',
       handler: 'resolveIdentityChallenge',
       params: { result: 'pending' },
     });
@@ -134,10 +176,16 @@ describe('ActionDispatcher.resolveIdentityChallenge', () => {
     });
   });
 
+  /**
+   * @scenario case=unknown_result
+   *
+   * @effects unknown_result_downgraded_to_cancelled
+   */
   it('알 수 없는 result 문자열 → cancelled 로 강등 (방어적 기본값)', async () => {
     const deferred = IdentityGuardInterceptor.createDeferred();
 
     await dispatcher.dispatchAction({
+      type: 'click',
       handler: 'resolveIdentityChallenge',
       params: { result: 'mystery' },
     });
@@ -145,10 +193,16 @@ describe('ActionDispatcher.resolveIdentityChallenge', () => {
     await expect(deferred).resolves.toEqual({ status: 'cancelled' });
   });
 
+  /**
+   * @scenario case=no_pending_resolver
+   *
+   * @effects no_pending_resolver_does_not_throw
+   */
   it('대기 중 resolver 없을 때 호출되어도 throw 하지 않음', async () => {
     // createDeferred 호출 전 resolveIdentityChallenge 발생 시나리오 (정상 흐름은 아님)
     await expect(
       dispatcher.dispatchAction({
+        type: 'click',
         handler: 'resolveIdentityChallenge',
         params: { result: 'verified', token: 'tok' },
       }),

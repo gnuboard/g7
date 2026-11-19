@@ -94,6 +94,20 @@ describe('CSP 카드 — 스타일 정책 블록 구조', () => {
     expect(String(mode!.props.options)).toMatch(/value: 'off'.*value: 'report_only'.*value: 'enforce'/);
     expect(String(level!.props.options)).toMatch(/value: 'basic'.*level_basic.*value: 'strict'.*level_strict/);
   });
+
+  /** @effects csp_style_block_structure */
+  it('모드·강도 select 폭은 스크립트 모드 select 처럼 엔진 responsive 로 가른다 — 640px 미만 w-full, 이상 w-80', () => {
+    const select = (id: string) => flatten(byId(id)).find((n) => n.name === 'Select')!;
+    const script = select('field_csp_mode');
+
+    for (const id of ['field_csp_style_mode', 'field_csp_style_level']) {
+      const node = select(id);
+      // Tailwind 반응형 접두(`sm:w-80`)는 창 폭을 따라 편집기 미리보기 폭과 어긋난다 — 접두 없는 기본값 + 구간 값
+      expect(node.props.className, id).toBe('w-full');
+      expect(node.responsive, id).toEqual({ '640-': { props: { className: 'w-80' } } });
+      expect(node.responsive, id).toEqual(script.responsive);
+    }
+  });
 });
 
 // ──────────────────────────────────────────────────────────────────────────────

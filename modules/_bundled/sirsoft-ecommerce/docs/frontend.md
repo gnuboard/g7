@@ -9,11 +9,11 @@
 완료 요약의 선택 변경은 debounce 예약 시점부터 이전 응답을 무효화한다. 다음 요청이 아직 전송되지 않았더라도 이전 성공/실패 응답이 최신 선택이나 실행 잠금을 바꾸면 안 된다. 반응형 버튼 라벨은 내부 `Span.responsive`에 둔다. Button 자체의 `responsive.text`는 `children`보다 우선하므로 함께 둔 스피너를 가린다. 회귀 검증은 예약 사이 응답 경합과 desktop/portable의 대기 표시·기존 라벨을 포함한다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 249개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 266개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 249개 |
+| `admin` | 266개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -24,6 +24,7 @@
 | `admin_ecommerce_claim_list` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_deposit_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_excel_download_index` | `admin` | 화면 | `_admin_base` |
+| `admin_ecommerce_export_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_inquiry_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_main_banner_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_mileage_transaction_index` | `admin` | 화면 | `_admin_base` |
@@ -86,6 +87,16 @@
 | `_modal_manual_match` | `admin` | partial | - |
 | `_modal_process_history` | `admin` | partial | - |
 | `_modal_download_history` | `admin` | partial | - |
+| `_modal_export_request` | `admin` | partial | - |
+| `_partial_tracking_status` | `admin` | partial | - |
+| `_modal_bulk_delete` | `admin` | partial | - |
+| `_modal_delete` | `admin` | partial | - |
+| `_modal_downloads` | `admin` | partial | - |
+| `_modal_retry` | `admin` | partial | - |
+| `_partial_bulk_actions` | `admin` | partial | - |
+| `_partial_datagrid` | `admin` | partial | - |
+| `_partial_filter` | `admin` | partial | - |
+| `_partial_warnings` | `admin` | partial | - |
 | `_modal_delete_confirm` | `admin` | partial | - |
 | `_modal_edit_cancel` | `admin` | partial | - |
 | `_modal_status_change` | `admin` | partial | - |
@@ -200,6 +211,8 @@
 | `_bank_accounts_cards` | `admin` | partial | - |
 | `_bank_accounts_table` | `admin` | partial | - |
 | `_bank_management_modal` | `admin` | partial | - |
+| `_checkout_fields_cards` | `admin` | partial | - |
+| `_checkout_fields_table` | `admin` | partial | - |
 | `_claim_policy_section` | `admin` | partial | - |
 | `_content_media_policy` | `admin` | partial | - |
 | `_currency_exchange_cards` | `admin` | partial | - |
@@ -207,6 +220,8 @@
 | `_disable_international_shipping_modal` | `admin` | partial | - |
 | `_exchange_reason_cards` | `admin` | partial | - |
 | `_exchange_reason_section` | `admin` | partial | - |
+| `_modal_checkout_field_delete` | `admin` | partial | - |
+| `_modal_checkout_field_form` | `admin` | partial | - |
 | `_modal_clear_seo_cache` | `admin` | partial | - |
 | `_modal_identity_policy_delete` | `admin` | partial | - |
 | `_modal_identity_policy_form` | `admin` | partial | - |
@@ -235,6 +250,7 @@
 | `_tab_mileage` | `admin` | partial | - |
 | `_tab_mileage_basic_card` | `admin` | partial | - |
 | `_tab_mileage_currency_cards` | `admin` | partial | - |
+| `_tab_mileage_currency_mismatch` | `admin` | partial | - |
 | `_tab_mileage_currency_table` | `admin` | partial | - |
 | `_tab_mileage_expiry_card` | `admin` | partial | - |
 | `_tab_mileage_notification_card` | `admin` | partial | - |
@@ -243,6 +259,7 @@
 | `_tab_privacy_retention` | `admin` | partial | - |
 | `_tab_product_display` | `admin` | partial | - |
 | `_tab_review_settings` | `admin` | partial | - |
+| `_tab_schedules` | `admin` | partial | - |
 | `_tab_seo` | `admin` | partial | - |
 | `_tab_shipping` | `admin` | partial | - |
 | `_modal_extra_fee_template` | `admin` | partial | - |
@@ -287,21 +304,17 @@
 화면 권한보다 좁은 권한이 걸린 **선택지 데이터소스**는 403 을 화면 전체의 오류로 키우지 않습니다.
 상품 등록·수정 폼의 분류·브랜드·고시 템플릿·공통정보·배송정책·상품 라벨·회원 등급 7개는 403 을
 `suppress` 로 끊고 `fallback` 으로 빈 목록 + `unavailable: true` 를 실은 뒤, 그 칸 아래에서
-「… 조회 권한이 없습니다」 를 말합니다(`admin.product.selector_forbidden.*`). 「등록된 것이 없다」
+「… 조회 권한이 없습니다」 를 말합니다(`admin.product.selector_forbidden.*`). 선택지 소스는 쪽 하나만 받지 않습니다 — 공통정보·고시 템플릿·배송정책은 `per_page=all`(분류 트리·브랜드·라벨 API 는 쪽 나눔이 없음)로 전부 받아, 100건을 넘는 사이트에서도 101번째 이후를 고를 수 있습니다. 「등록된 것이 없다」
 빈 상태와는 갈라 그립니다 — 실재하는 정책·라벨을 없다고 읽게 하지 않기 위해서입니다. 403 이 아닌
 실패는 종전대로 본문 오류 화면입니다. 배송정책은 비워 저장해도 거절되지 않고 주문 계산이 기본
 배송정책으로 폴백하므로(`ShippingPolicyResolver`), 그 칸의 안내는 「고르지 않으면 기존·기본 정책이
 적용된다」고 말합니다. 주문 상세의 클레임 내역(`orderClaims`)도 같은 형태입니다.
 
-레이아웃 JSON 만 고쳤다면 빌드는 필요 없고 `php artisan module:update sirsoft-ecommerce --force`
-로 활성 디렉토리에 반영합니다. 다만 **새로 쓴 Tailwind 클래스가 빌드된 CSS 에 없으면** 그
-스타일만 조용히 빠지므로, 기존 레이아웃에 쓰이지 않던 클래스를 도입할 때는 확인이 필요합니다.
-이 모듈은 자체 Tailwind 빌드가 없고 관리자 템플릿(`sirsoft-admin_basic`)의 `templates/_bundled/sirsoft-admin_basic/dist/css/components.css`
-에 의존하며, 그 safelist 는 템플릿 자신의 레이아웃만 스캔합니다. 임의값(`min-w-[9rem]`)만이 아니라
-정수 단계 유틸리티도 빠져 있을 수 있습니다 — 예컨대 폭은 `w-36`·`w-40`·`w-48`·`w-52`·`w-56`·`w-64`
-는 있지만 `w-44` 는 없습니다(2026-09-13, 상태 변경 Select 가 `w-44` 를 써서 글자폭으로 수축했던
-사례). 쓰기 전에 `grep -c ".w-44{" templates/_bundled/sirsoft-admin_basic/dist/css/components.css`
-처럼 컴파일 여부를 확인하고, 없으면 있는 단계로 바꾸거나 템플릿 safelist 절차를 밟습니다.
+레이아웃 JSON 만 고쳤고 클래스를 새로 쓰지 않았다면 빌드는 필요 없고 `php artisan module:update sirsoft-ecommerce --force`
+로 활성 디렉토리에 반영합니다. 화면 클래스는 이 모듈 자기 CSS(`dist/css/module.css`)가 싣습니다 — 배치·색 유틸리티는
+`ecommerce:` 접두 Tailwind(`ecommerce:flex`), 템플릿 의미 클래스는 `ecommerce-*` 사본(`ecommerce-btn`)입니다(규약:
+[AGENTS.md](../AGENTS.md) 「화면 클래스 규약」). **새 클래스를 쓰면** `php artisan module:build sirsoft-ecommerce --production`
+으로 CSS 를 다시 만든 뒤 update 합니다 — 빌드하지 않으면 그 스타일만 조용히 빠집니다. 템플릿 CSS 의 safelist 에는 더 기대지 않습니다.
 
 클레임 화면은 관리자 목록·상세(`admin_ecommerce_claim_list` · `admin_ecommerce_claim_detail`)와
 주문상세의 '클레임 내역' 섹션, 환경설정 '클레임' 탭, 배송정책의 회수지·클레임 배송비 항목입니다.
@@ -354,7 +367,7 @@
 
 ### 환경설정 본인인증 정책 탭의 목록 조작
 
-환경설정 「본인인증 정책」 탭(`_tab_identity_policies`)의 검색·필터·초기화·쪽 넘김은 `navigate`(replace)에 `refetch_data_sources="ecommerceIdentityPolicies"` 를 붙여 목록 소스만 다시 받습니다(7.1.0~). 붙이지 않으면 설정 본체(`settings`, initLocal)까지 다시 받아 다른 구획의 설정 폼을 서버 값으로 되돌립니다. 목록만 다시 받을 때도 목록 영역 덮개가 뜨도록 `ecommerceIdentityPolicies` 를 `transition_overlay` 의 `wait_for` 에 둡니다. 잠금: `admin-ecommerce-settings-unsaved-tab-confirm.test.ts`. 필터 칸과 검색칸은 설정 폼 밖이라 자동 바인딩을 끄고(`:autoBinding="false"`), 입력 중인 검색어는 `_local.identityPolicySearch` 에 받아 두었다가 Enter 나 검색 단추가 쿼리로 싣습니다. 자동 바인딩되면 `form.filter.*` 에 남아 「변경 있음」을 켜고 탭 전환 확인 창을 잘못 띄웠습니다(7.1.0 실측).
+환경설정 「본인인증 정책」 탭(`_tab_identity_policies`)의 검색·필터·초기화·쪽 넘김은 `navigate`(replace)에 `refetch_data_sources="ecommerceIdentityPolicies"` 를 붙여 목록 소스만 다시 받습니다(7.1.0~). 붙이지 않으면 설정 본체(`settings`, initLocal)까지 다시 받아 다른 구획의 설정 폼을 서버 값으로 되돌립니다. 목록만 다시 받을 때도 목록 영역 덮개가 뜨도록 `ecommerceIdentityPolicies` 를 `transition_overlay` 의 `wait_for` 에 둡니다. 잠금: `admin-ecommerce-settings-unsaved-tab-confirm.test.ts`. 필터 칸과 검색칸은 설정 폼 밖이라 자동 바인딩을 끄고(`:autoBinding="false"`), 입력 중인 검색어는 `_local.identityPolicySearch` 에 받아 두었다가 Enter 나 검색 단추가 쿼리로 싣습니다. 자동 바인딩되면 `form.filter.*` 에 남아 「변경 있음」을 켜고 탭 전환 확인 창을 잘못 띄웠습니다(7.1.0 G2 실측).
 
 이 탭의 목록·켜고 끄기·추가·수정·삭제는 모듈 경로(`/api/modules/sirsoft-ecommerce/admin/identity-policies`)를 쓰고, 모듈 권한 `sirsoft-ecommerce.identity.policies.read`/`.update` 로 동작합니다(7.1.0~). 목록이 403 이면 데이터소스 `error_handling` 이 `_local.identityPoliciesLoadError='forbidden'` 을 남기고, computed `identityPoliciesNoReadPermission` 이 탭 내용 대신 「권한 없음」 안내(`identity_policies_no_permission`)를 띄웁니다. 수정 권한은 목록 응답 `abilities.can_update`·`can_delete` 로 읽어 읽기 전용 안내(`identity_policies_read_only_notice`)와 추가·토글·편집·삭제, 정책 창 [저장]·삭제 창 [삭제]를 잠급니다. 인증 제공자 선택지(`identityProviders`)는 권한이 필요 없는 공개 목록 `/api/identity/providers` 에서 받습니다. 잠금: `admin-ecommerce-identity-policy-gate.test.ts`.
 
@@ -376,10 +389,14 @@
 
 비회원 화면의 요청(클레임 신청·미리보기·수정, 클레임 첨부 업로드·삭제, 구매확정, 배송지 변경)은 로그인 토큰 없이 주문 조회 토큰(`X-Guest-Order-Token`)으로 주인을 증명한다. 토큰이 없거나 만료되면 서버가 401 을 주는데, 코어(engine-v1.88.2)는 토큰 없이 보낸 요청의 401 을 세션 만료로 보지 않아 로그인 화면으로 옮기지 않고 호출자에게 돌려준다. 핸들러는 4xx 화면 안내(`isUserFixableClaimError`)보다 **먼저** `resources/js/utils/guestOrderAuth.ts` 의 `isGuestOrderAuthFailure(error)`(= `G7Core.api.isAnonymousUnauthorized`)로 판정해 안내 토스트(`user.claim.guest_auth_required`·`user.guest_order.auth_required`)를 띄우고 입력을 그대로 둔다(1.3.4). 새 비회원 요청 핸들러도 같은 판정을 쓴다 — 빠지면 서버 문구 「인증이 필요합니다.」만 남거나 4xx 로 분류되어 「상품·수량을 확인하라」로 잘못 안내된다.
 
+### 클레임 추가결제의 결제 플러그인 실패
+
+클레임 결제 진입(`payClaimOutstanding`·`submitClaim`·`saveClaimEdit`)은 결제 시작 API 가 지목한 결제 플러그인 핸들러를 `resources/js/utils/claimPgDispatch.ts` 의 `claimPgDispatchAction()` 으로 만든 동작으로 부른다 — 이 동작은 디스패처의 기본 오류 처리를 `suppress` 로 막아 내부 문구(「Failed to execute action: …」) 토스트가 뜨지 않게 한다. 결제 플러그인은 결제창을 열기 전에 실패하면 사용자 문구를 담은 오류를 던지고(계약: `docs/api/claim-payments.md` 「결제 플러그인 연동 계약」), 디스패처는 그 오류를 `{ success: false, error }` 로 돌려준다. 핸들러는 `claimPgDispatchFailureMessage()` 로 문구를 꺼내(원래 오류 `error.originalError.message`, 비면 `user.claim.pay.failed`) 신청서 상세는 `isPayingClaim` 을 내리고 `claimPayError`(버튼 아래)에 남기며, 신청·수정 직후의 결제는 토스트로 알린 뒤 신청서 상세로 옮긴다(1.4.0, #855). 결과를 보지 않으면 결제창이 열리지 않았는데도 진행 표시가 「결제 진행 중…」에 멈춘다 — 결제창이 열리는 동안 일부러 끄지 않기 때문이다.
+
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 228개 (정의: `resources/js/handlers/index.ts`).
+핸들러 230개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -388,6 +405,7 @@
 | `calculateCurrencyPrices` | `sirsoft-ecommerce.calculateCurrencyPrices` |
 | `initPreferredCurrency` | `sirsoft-ecommerce.initPreferredCurrency` |
 | `initPreferredShippingCountry` | `sirsoft-ecommerce.initPreferredShippingCountry` |
+| `watchAccountPreferences` | `sirsoft-ecommerce.watchAccountPreferences` |
 | `setDateRange` | `sirsoft-ecommerce.setDateRange` |
 | `focusElement` | `sirsoft-ecommerce.focusElement` |
 | `stopEventPropagation` | `sirsoft-ecommerce.stopEventPropagation` |
@@ -484,6 +502,7 @@
 | `buildOrderBulkConfirmData` | `sirsoft-ecommerce.buildOrderBulkConfirmData` |
 | `executeOrderBulkAction` | `sirsoft-ecommerce.executeOrderBulkAction` |
 | `downloadFile` | `sirsoft-ecommerce.downloadFile` |
+| `downloadExportFile` | `sirsoft-ecommerce.downloadExportFile` |
 | `saveVisibleColumns` | `sirsoft-ecommerce.saveVisibleColumns` |
 | `loadVisibleColumns` | `sirsoft-ecommerce.loadVisibleColumns` |
 | `loadVisibleFilters` | `sirsoft-ecommerce.loadVisibleFilters` |
@@ -646,7 +665,7 @@ store 를, 그것도 없으면 취소 여부만 봅니다. 구매자 신청서 �
 | 무리 | 예 | 하는 일 |
 |---|---|---|
 | 상품 편집 | `updateProductField` · `toggleOption` · `loadExpandedOptions` | 옵션이 많은 상품 폼의 부분 상태 갱신 |
-| 통화 | `calculateCurrencyPrices` · `initPreferredCurrency` | 표시 통화 전환과 통화별 가격 재계산. 원화 표기(`formatCurrency`)는 서버 `messages.currency.prefix/suffix.KRW` 와 같은 구성의 `currency.krw_prefix`·`krw_suffix` 번역을 따른다 — 문구에 금액과 단위를 붙인 문형을 두지 않는다 |
+| 통화 | `calculateCurrencyPrices` · `initPreferredCurrency` | 표시 통화 전환과 통화별 가격 재계산. `initPreferredCurrency` 의 화면 언어 기반 통화 추정은 게스트용이라 관리자 인증 문맥에서는 돌리지 않는다(관리자 헤더는 브라우저 저장값, 없으면 기본 통화) — 관리자 화면 언어를 바꿔도 표시 통화가 따라 바뀌지 않는다. 원화 표기(`formatCurrency`)는 서버 `messages.currency.prefix/suffix.KRW` 와 같은 구성의 `currency.krw_prefix`·`krw_suffix` 번역을 따른다 — 문구에 금액과 단위를 붙인 문형을 두지 않는다 |
 | 취소·환불 | `updateCancelQuantity` · `estimateRefundAmount` · `changeRefundPriority` | 옵션 단위 취소 수량 조정과 예상 환불액 조회 (관리자·구매자 두 벌) |
 | 배송정책·주소 | `testShippingApi` · `updateExtraFeeField` · `changeShippingAddress` | 외부 배송비 API 시험 호출과 주소 변경 |
 | 클레임 | `claimHandlers.ts` · `claimListHandlers.ts` · `claimApplyHandlers.ts` · `claimImageHandlers.ts` 의 핸들러 | 관리자 일괄 전이·완료 모달, **신청서 단위 전이**(`executeClaimStatusTransition`), 환불신청서 수동 접수(`storeClaimRefundRequest`), 운영자 대리 첨부(업로드는 `composite/FileUploader` 가 직접 하고 핸들러는 `refreshClaimAttachments` · `clearClaimImages` 로 목록만 되읽는다), 구매자 신청서 작성(교환 상품 선택·실시간 요약)·첨부 업로드 — 템플릿 화면도 이 핸들러를 쓴다 |
@@ -733,6 +752,7 @@ store 를, 그것도 없으면 취소 여부만 봅니다. 구매자 신청서 �
 |---|---|
 | `dist/css/module.css` | 빌드 산출물 (커밋 대상) |
 | `dist/js/module.iife.js` | 빌드 산출물 (커밋 대상) |
+| `dist/vendor/flag-icons/7.2.3` | 동봉 제3자 자산 (자체 제공) |
 | `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
 
 로딩 설정: `{"strategy":"global","priority":100,"dependencies":[]}`
@@ -752,4 +772,10 @@ store 를, 그것도 없으면 취소 여부만 봅니다. 구매자 신청서 �
 서버 로그도 남기지 않고 화면 기능만 조용히 사라지기 때문입니다. 자산 URL 을 문자열로 조립하지
 않고 `G7Core.asset.module` 을 쓰는 것도 같은 이유입니다 — 확장자를 정적 location 이 가로채는
 서버에서는 조립한 URL 만 404 가 됩니다.
+
+레이아웃의 안내·경고 글자색은 템플릿의 의미 색 클래스(`text-info-soft`·`text-warning-soft` 등)를
+빌려 쓰지 않고 `resources/css/main.css` 의 `ecommerce-tone-info-soft`·`ecommerce-tone-warning-soft` 등(다크 짝 포함)을
+씁니다. 템플릿 의미 클래스는 템플릿마다 이름·값이 달라 다른 관리자 템플릿에서는 색이 조용히 사라지기
+때문입니다. 접두 클래스는 색만 맡으므로 글자 크기(`text-xs` 등)는 레이아웃에 함께 적고, 새 의미 색이
+필요하면 같은 파일에 `ecommerce-tone-*` 로 더한 뒤 `--production` 으로 다시 굽습니다.
 <!-- @intent END -->

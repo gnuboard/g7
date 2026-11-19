@@ -1,4 +1,7 @@
-# audit:allow test-scenario-coverage reason: axes cross product 의 회귀 가드는 test_files 의 단위(s7-followup-style-controls=recipeEngine apply/reverse 라운드트립 전 컨트롤×전 옵션, property-controls=TagInput 식별자)·Feature(PermissionServiceTest 리프 필터)·E2E(property-editor-new-style-controls.spec.ts // @scenario/@effects)가 cover.
+# audit:allow test-scenario-coverage reason: issue:#609 axes cross product 의 회귀 가드는 test_files 의 단위(s7-followup-style-controls=recipeEngine apply/reverse 라운드트립 전 컨트롤×전 옵션, property-controls=TagInput 식별자)·Feature(PermissionServiceTest 리프 필터)·E2E(property-editor-new-style-controls.spec.ts // @scenario/@effects)가 cover.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# 원장: 이 매니페스트는 :cross-product 로 좁히면 effects 24건이 미검증으로 드러난다.
+#   그 짝 맞추기는 이 공정(레이아웃 편집기)의 몫이며, 좁히는 시점에 함께 처리한다.
 
 feature: 레이아웃 편집기 속성 모달 — 신규 스타일 컨트롤(그림자/테두리/라운드/투명도/스크롤/텍스트 서식) + 고급 탭 권한 식별자
 
@@ -64,6 +67,21 @@ effects:
   # 템플릿/화면/엘리먼트 패리티
   - both_templates_expose_same_new_controls
   - controls_render_across_screens_and_element_types
+  # 2026-10-31 issue609 테스트 매핑 부채 정리: 레이아웃 편집기 단위 테스트가 실제로 재는 효과 (메서드 단위 마킹)
+  - color_picker_hex_blur_emits_normalized_hex                      # 색 HEX 입력 blur 가 정규화한 #값을 내보낸다
+  - color_picker_preset_click_emits_preset_value                    # 색 프리셋(HEX, 토큰) 클릭이 그 값을 내보낸다
+  - color_picker_clear_emits_undefined                              # 색 기본 버튼이 undefined 를 내보내 미적용으로 돌린다
+  - color_picker_syncs_current_value_to_swatch_and_input            # 현재 색 값이 입력칸과 활성 스와치에 동기된다
+  - color_picker_invalid_hex_emits_nothing                          # 잘못된 HEX 입력은 값을 내보내지 않는다
+  - color_picker_dark_scope_hides_free_input_keeps_token_presets    # 다크 scope 에서는 자유 입력을 숨기고 토큰 프리셋만 남긴다
+  - spacing_widget_renders_all_and_sides_modes                      # 여백 위젯이 일괄 모드와 개별 4방향 모드를 렌더한다
+  - spacing_widget_all_enable_applies_uniform_token                 # 일괄 사용을 켜면 전체 방향 토큰을 단다
+  - spacing_widget_side_values_coexist_and_reverse_resolve          # 방향별 여백 값이 공존하고 축약 토큰도 방향별로 역해석된다
+  - spacing_widget_unrelated_tokens_leave_it_unset                  # 무관한 토큰만 있으면 여백 위젯은 미설정 상태다
+  - tag_input_adds_candidate_chip_emitting_key_array                # 태그 입력이 후보에서 칩을 더해 키 배열을 내보낸다
+  - tag_input_chip_label_is_friendly_name_value_is_key              # 칩 표시는 친화 이름이고 내부 값은 키다
+  - tag_input_chip_remove_emits_rest_or_undefined_when_last         # 칩 제거가 나머지를 내보내고 마지막이면 undefined 다
+  - tag_input_candidates_exclude_selected_and_disallow_free_input   # 이미 고른 항목은 후보에서 빠지고 후보가 다 차면 추가가 막힌다
 
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/spec/s7-followup-style-controls.test.ts

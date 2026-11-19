@@ -4,6 +4,9 @@ return [
     'image' => [
         'not_found' => 'Image not found.',
     ],
+    'thumbnail' => [
+        'source_label' => 'Editor content images',
+    ],
     'upload' => [
         'required' => 'An image file is required.',
         'invalid_file' => 'Invalid file.',

@@ -11,6 +11,7 @@ use App\Support\LocalizedValue;
 use App\Support\Query\BoundedCount;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Page\Services\PageService;
+use Modules\Sirsoft\Page\Support\PageScreenUrl;
 
 /**
  * 통합 검색에 페이지 검색 결과를 제공하는 리스너
@@ -255,7 +256,7 @@ class SearchPagesListener implements HookListenerInterface
             'content_preview_highlighted' => $this->highlightKeyword($contentPreview, $keyword),
             // 검색은 웹 요청 — 발행일은 보는 사람 시간대 날짜(UTC 날짜면 새벽 발행분이 전날로 보인다)
             'published_at' => TimezoneHelper::toUserDateString($page->published_at),
-            'url' => "/page/{$page->slug}",
+            'url' => PageScreenUrl::show($page->slug),
         ];
     }
 

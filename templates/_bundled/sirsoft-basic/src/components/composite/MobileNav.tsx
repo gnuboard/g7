@@ -42,7 +42,10 @@ interface Board {
 
 interface User {
   id: number;
-  name: string;
+  /** 실명. 이름 항목을 쓰지 않는 사이트에서는 null 이다 */
+  name: string | null;
+  /** 사이트 기본 영역에서 보이는 이름(표시 이름). 드로어는 이 값을 먼저 쓴다 */
+  display_name?: string | null;
   avatar?: string;
 }
 
@@ -61,6 +64,8 @@ interface MobileNavProps {
   boards?: Board[];
   /** 장바구니 아이템 수 */
   cartCount?: number;
+  /** 일반 회원가입을 받는지 — false 면 회원가입 버튼을 숨긴다 (기본 true, 7.2.0) */
+  registrationEnabled?: boolean;
 }
 
 /**
@@ -86,6 +91,7 @@ const MobileNav: React.FC<MobileNavProps> = ({
   user,
   boards = [],
   cartCount = 0,
+  registrationEnabled = true,
 }) => {
   const drawerRef = useRef<HTMLDivElement>(null);
 
@@ -97,6 +103,9 @@ const MobileNav: React.FC<MobileNavProps> = ({
   const isPortable = responsiveValue
     ? responsiveValue.width < 1024
     : typeof window !== 'undefined' && window.innerWidth < 1024;
+
+  // 드로어에 보일 이름: 표시 이름이 먼저이고, 없으면(옛 응답) 실명, 둘 다 없으면 빈 글자
+  const userShownName = user?.display_name ?? user?.name ?? '';
 
   // ESC 키로 닫기
   useEffect(() => {
@@ -147,7 +156,7 @@ const MobileNav: React.FC<MobileNavProps> = ({
           {/* 이름이 길면 이 칸이 줄어들고 이름은 한 줄 … — 닫기 단추는 제자리를 지킨다(#143). */}
           <LinkButton href={'/'} onNavigate={() => { onClose(); navigate('/'); }} className="justify-start flex items-center gap-2 min-w-0 flex-1 cursor-pointer">
             {logo ? (
-              <Img src={logo} alt={siteName} className="h-8 max-w-full object-contain object-left" />
+              <Img src={logo} alt={siteName} className="h-8 max-w-full object-contain object-left" thumbPreset="md" loading="eager" />
             ) : (
               <Span className="text-xl font-bold text-gray-900 dark:text-white truncate">{siteName}</Span>
             )}
@@ -166,14 +175,14 @@ const MobileNav: React.FC<MobileNavProps> = ({
           <Div className="p-4 border-b border-gray-200 dark:border-gray-800">
             <Div className="flex items-center gap-3">
               {user.avatar ? (
-                <Img src={user.avatar} alt={user.name} className="w-12 h-12 shrink-0 rounded-full" />
+                <Img src={user.avatar} alt={userShownName} className="w-12 h-12 shrink-0 rounded-full" thumbPreset="sm" />
               ) : (
                 <Div className="w-12 h-12 shrink-0 rounded-full bg-blue-600 dark:bg-blue-600 flex items-center justify-center text-white text-lg font-medium">
-                  {(user.name || 'U').charAt(0).toUpperCase()}
+                  {(userShownName || 'U').charAt(0).toUpperCase()}
                 </Div>
               )}
               <Div className="min-w-0">
-                <P className="font-medium text-gray-900 dark:text-white truncate">{user.name}</P>
+                <P className="font-medium text-gray-900 dark:text-white truncate">{userShownName}</P>
                 <LinkButton href={'/mypage'} onNavigate={() => { onClose(); navigate('/mypage'); }} className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                   {t('common.mypage')}
                 </LinkButton>
@@ -190,13 +199,15 @@ const MobileNav: React.FC<MobileNavProps> = ({
               >
                 {t('auth.login')}
               </LinkButton>
-              <LinkButton
-                href={'/register'}
-                onNavigate={() => { onClose(); navigate('/register'); }}
-                className="flex-1 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer"
-              >
-                {t('auth.register')}
-              </LinkButton>
+              {registrationEnabled && (
+                <LinkButton
+                  href={'/register'}
+                  onNavigate={() => { onClose(); navigate('/register'); }}
+                  className="flex-1 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer"
+                >
+                  {t('auth.register')}
+                </LinkButton>
+              )}
             </Div>
           </Div>
         )}

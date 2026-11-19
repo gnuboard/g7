@@ -48,8 +48,20 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "640-1023": {
+                            "props": {
+                                "className": "grid grid-cols-2 gap-3"
+                            }
+                        },
+                        "desktop": {
+                            "props": {
+                                "className": "grid grid-cols-3 gap-3"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+                        "className": "grid grid-cols-1 gap-3"
                     },
                     "children": [
                         {
@@ -192,8 +204,15 @@
                     "id": "notif_category_bar",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "640-": {
+                            "props": {
+                                "className": "flex gap-2 pt-3 flex-row items-center justify-between"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "flex flex-col gap-2 pt-3 sm:flex-row sm:items-center sm:justify-between"
+                        "className": "flex flex-col gap-2 pt-3"
                     },
                     "children": [
                         {
@@ -250,6 +269,13 @@
                             "type": "basic",
                             "name": "Button",
                             "if": "{{(query.category ?? '') === 'identity' && notificationDefinitions?.data?.abilities?.can_create === true}}",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "w-auto text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    }
+                                }
+                            },
                             "actions": [
                                 {
                                     "comment": "정책별 문구 추가 창 — 창은 이 화면 상태를 못 읽으므로 빈 폼을 전역에 마련한 뒤 연다.\n                 「문구가 이미 있는 정책」 목록은 열 때마다 다시 받는다 — 다른 창·다른 관리자가 그사이 추가했으면\n                 옛 목록으로는 그 정책이 선택지에 남아 저장이 중복(422)으로 거절된다.",
@@ -289,7 +315,7 @@
                             "props": {
                                 "type": "button",
                                 "disabled": "{{_computed.isReadOnly}}",
-                                "className": "w-full sm:w-auto text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "w-full text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "text": "$t:admin.settings.notification_definitions.btn_add_identity"
                         }
@@ -448,8 +474,15 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
+                                                    "responsive": {
+                                                        "640-": {
+                                                            "props": {
+                                                                "className": "flex gap-2 flex-row items-start justify-between"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
-                                                        "className": "flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"
+                                                        "className": "flex flex-col gap-2"
                                                     },
                                                     "children": [
                                                         {
@@ -539,6 +572,16 @@
                                                                     "text": "$t:admin.settings.notification_definitions.no_template_for_channel"
                                                                 },
                                                                 {
+                                                                    "comment": "운영자가 발송 수단을 켜서 코어가 만든 빈 템플릿 — 내용과 받는 사람을 채우고 켜야 이 수단으로 발송된다",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_user_created && !(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active}}",
+                                                                    "props": {
+                                                                        "className": "text-sm text-amber-700 dark:text-amber-400"
+                                                                    },
+                                                                    "text": "$t:admin.settings.notification_definitions.user_template_inactive"
+                                                                },
+                                                                {
                                                                     "comment": "본인인증 알림은 수신자가 「인증을 요청한 대상」으로 고정이다(수신자 규칙이 없다) — 편집 대신 고정 문구.",
                                                                     "type": "basic",
                                                                     "name": "P",
@@ -579,7 +622,7 @@
                                                                                 {
                                                                                     "type": "basic",
                                                                                     "name": "Span",
-                                                                                    "text": "{{rcpt.type === 'trigger_user' ? '$t:admin.settings.notification_definitions.recipients.types.trigger_user' : rcpt.type === 'related_user' ? '$t:admin.settings.notification_definitions.recipients.types.related_user' + (rcpt.relation ? ' (' + (def.relation_labels?.[rcpt.relation] ?? rcpt.relation) + ')' : '') : rcpt.type === 'role' ? '$t:admin.settings.notification_definitions.recipients.types.role' + ': ' + ((rcpt.display_names ?? []).join(', ') || rcpt.display_name || '') : rcpt.type === 'specific_users' ? '$t:admin.settings.notification_definitions.recipients.types.specific_users' + ': ' + ((rcpt.display_names ?? []).join(', ') || '') : rcpt.type}}"
+                                                                                    "text": "{{rcpt.type === 'trigger_user' ? '$t:admin.settings.notification_definitions.recipients.types.trigger_user' : rcpt.type === 'related_user' ? '$t:admin.settings.notification_definitions.recipients.types.related_user' + (rcpt.relation ? ' (' + (def.relation_labels?.[rcpt.relation] ?? rcpt.relation) + ')' : '') : rcpt.type === 'role' ? '$t:admin.settings.notification_definitions.recipients.types.role' + ': ' + ((rcpt.display_names ?? []).join(', ') || rcpt.display_name || '') : rcpt.type === 'specific_users' ? '$t:admin.settings.notification_definitions.recipients.types.specific_users' + ': ' + ((rcpt.display_names ?? []).join(', ') || '') : rcpt.type === 'site_admin_email' ? '$t:admin.settings.notification_definitions.recipients.types.site_admin_email' : rcpt.type}}"
                                                                                 },
                                                                                 {
                                                                                     "type": "basic",
@@ -656,7 +699,7 @@
                                                                     "if": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}",
                                                                     "actions": [
                                                                         {
-                                                                            "comment": "이 정의의 **지금 채널 템플릿** 하나를 켜거나 끈다(위쪽 채널 토글과 다른 층이다).\n                           그 채널 템플릿이 없는 정의에서는 스위치 자체가 렌더되지 않는다.\n                           실패 갈래가 없어 실패하면 스위치가 눌린 채로 남는다.",
+                                                                            "comment": "이 정의의 **지금 채널 템플릿** 하나를 켜거나 끈다(위쪽 채널 토글과 다른 층이다).\n                           그 채널 템플릿이 없는 정의는 아래 「템플릿 만들기」 스위치가 대신 선다.\n                           거절되면(운영자가 만든 빈 템플릿을 내용 없이 켬) 실패 갈래가 목록을 다시 마운트해 눌린 모양을 되돌린다.",
                                                                             "type": "change",
                                                                             "handler": "apiCall",
                                                                             "target": "{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.id + '/toggle-active'}}",
@@ -679,18 +722,82 @@
                                                                                     }
                                                                                 }
                                                                             ],
-                                                                            "onError": {
-                                                                                "handler": "toast",
-                                                                                "params": {
-                                                                                    "type": "error",
-                                                                                    "message": "{{error.message}}"
+                                                                            "onError": [
+                                                                                {
+                                                                                    "handler": "toast",
+                                                                                    "params": {
+                                                                                        "type": "error",
+                                                                                        "message": "{{error.message}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "comment": "서버가 거절하면(예: 운영자가 만든 빈 템플릿을 내용 없이 켬) 스위치는 눌린 모양으로 남는다 — 목록 상자를 다시 마운트해 저장된 값으로 돌린다(엔진은 반복 안 동적 id 로는 다시 마운트하지 못한다)",
+                                                                                    "handler": "remount",
+                                                                                    "params": {
+                                                                                        "componentId": "notif_definitions_list"
+                                                                                    }
                                                                                 }
-                                                                            }
+                                                                            ]
                                                                         }
                                                                     ],
                                                                     "props": {
                                                                         "ariaLabel": "{{$localized(def.name) || def.type}}",
                                                                         "checked": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}",
+                                                                        "disabled": "{{_computed.isReadOnly}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "comment": "이 수단의 템플릿이 없는 정의 — 켜면 이 수단을 정의의 발송 수단에 더해 바로 저장하고, 코어가 빈 템플릿(꺼짐·운영자 생성)을\n                       만든다. 다시 받은 목록에는 위 스위치와 [편집]·「채우고 켜야 발송」 안내가 선다(이 화면은 스위치마다 즉시 반영한다).",
+                                                                    "type": "composite",
+                                                                    "name": "Toggle",
+                                                                    "if": "{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "change",
+                                                                            "handler": "apiCall",
+                                                                            "target": "{{'/api/admin/notification-definitions/' + def.id}}",
+                                                                            "auth_required": true,
+                                                                            "params": {
+                                                                                "method": "PUT",
+                                                                                "body": {
+                                                                                    "channels": "{{[...new Set([...(def.channels ?? []), (query.channel ?? 'mail')])]}}"
+                                                                                }
+                                                                            },
+                                                                            "onSuccess": [
+                                                                                {
+                                                                                    "handler": "refetchDataSource",
+                                                                                    "params": {
+                                                                                        "dataSourceId": "notificationDefinitions"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "toast",
+                                                                                    "params": {
+                                                                                        "type": "success",
+                                                                                        "message": "$t:admin.settings.notification_definitions.user_template_created"
+                                                                                    }
+                                                                                }
+                                                                            ],
+                                                                            "onError": [
+                                                                                {
+                                                                                    "handler": "toast",
+                                                                                    "params": {
+                                                                                        "type": "error",
+                                                                                        "message": "{{error.message}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "remount",
+                                                                                    "params": {
+                                                                                        "componentId": "notif_definitions_list"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "ariaLabel": "{{$localized(def.name) || def.type}}",
+                                                                        "checked": false,
                                                                         "disabled": "{{_computed.isReadOnly}}"
                                                                     }
                                                                 },

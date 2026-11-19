@@ -1,0 +1,109 @@
+// e2e:allow #855 후속: 키보드 초점이 고정 헤더에 가려지던 접근성 결함(scroll-padding-top) — Chrome MCP 실측(휴대폰 비회원 주문서 Shift+Tab, 체크박스 top 16 → 434, PC 변수 113px)과 Vitest 로 고정한다.
+import { useEffect } from 'react';
+
+/**
+ * 메뉴 겹침 — 화면 맨 위 배너(히어로섹션 등)가 사이트 상단 메뉴를 자기 위에 겹쳐 달라고 알리면 그에 맞춘다.
+ *
+ * 계약(템플릿 ↔ 배너 확장):
+ * - 배너가 문서 뿌리에 `data-header-overlay="dark|light"` 를 단다(값: 지금 보이는 배너 바탕 밝기). 지우면 겹침이 끝난다.
+ * - 이 템플릿은 그동안 보이는 헤더 높이를 `--g7-header-height`(px)로 문서 뿌리에 알리고, 본문 앞 전폭 자리(`.g7-page-top`)를
+ *   그만큼 위로 당겨 배너가 메뉴 밑으로 들어가게 한다(main.css). 배너는 이 값만큼 문구를 아래로 내린다.
+ * - 화면 맨 위(스크롤 10px 이하)에서만 `data-header-overlay-active` 를 같은 값으로 달아 메뉴를 투명하게, 글자를 바탕에 맞게 바꾼다.
+ *   내리면 속성을 지워 원래 배경으로 돌아온다.
+ *
+ * 데스크톱 헤더(Header)가 이 훅을 부른다 — 휴대폰에서는 데스크톱 헤더가 감춰져 있어도 그려져 있으므로 모바일 툴바도 함께 잰다.
+ */
+
+/** 배너가 다는 신호 속성 */
+export const OVERLAY_ATTRIBUTE = 'data-header-overlay';
+
+/** 이 템플릿이 화면 맨 위에서만 다는 속성 — CSS 가 메뉴를 투명하게 한다 */
+export const OVERLAY_ACTIVE_ATTRIBUTE = 'data-header-overlay-active';
+
+/** 보이는 헤더 높이 CSS 변수 */
+export const HEADER_HEIGHT_VARIABLE = '--g7-header-height';
+
+/**
+ * 고정 헤더 높이 CSS 변수 — 겹침 신호와 무관하게 언제나 갱신한다.
+ *
+ * 데스크톱 헤더와 모바일 툴바는 화면 위에 붙어 있다(`sticky top-0`). 키보드로 초점을 옮기거나 앵커로 이동할 때 브라우저는 대상을
+ * 화면 맨 위에 맞추는데, 그 자리가 헤더 밑이라 초점이 가려졌다(WCAG 2.4.11 — 휴대폰 비회원 주문서에서 Shift+Tab 으로 「주문자 정보와
+ * 동일」에 초점을 옮기면 56px 툴바 밑 top 16 에 놓였다). main.css 가 이 값만큼 `scroll-padding-top` 을 둔다(#855).
+ */
+export const STICKY_HEADER_HEIGHT_VARIABLE = '--g7-sticky-header-height';
+
+/** 겹침을 푸는 스크롤 거리(px) */
+const SCROLL_THRESHOLD = 10;
+
+/**
+ * 지금 보이는 사이트 헤더(데스크톱 헤더·모바일 툴바 중 화면에 있는 것)의 높이를 잽니다.
+ *
+ * @returns 높이(px), 보이는 헤더가 없으면 0
+ */
+function visibleHeaderHeight(): number {
+  let height = 0;
+  document.querySelectorAll<HTMLElement>('.g7-site-header').forEach((element) => {
+    height = Math.max(height, element.getBoundingClientRect().height);
+  });
+  return Math.round(height);
+}
+
+/**
+ * 배너의 메뉴 겹침 신호를 따라 헤더 높이·투명 상태를 문서 뿌리에 반영합니다. 신호가 없으면 아무것도 바꾸지 않는다(종전 화면).
+ */
+export function useHeaderOverlayController(): void {
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+    const root = document.documentElement;
+    let observed: HTMLElement[] = [];
+    const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => update());
+
+    /** 신호·스크롤·헤더 크기를 다시 읽어 맞춘다 */
+    function update(): void {
+      // 헤더가 다시 그려져(화면 폭 전환·로그인) 요소가 바뀌었으면 새 요소를 잰다 — 고정 헤더 높이는 겹침과 무관하게 늘 쓰인다
+      const headers = Array.from(document.querySelectorAll<HTMLElement>('.g7-site-header'));
+      if (resize && (headers.length !== observed.length || headers.some((element, i) => element !== observed[i]))) {
+        resize.disconnect();
+        headers.forEach((element) => resize.observe(element));
+        observed = headers;
+      }
+      const height = visibleHeaderHeight();
+      if (root.style.getPropertyValue(STICKY_HEADER_HEIGHT_VARIABLE) !== `${height}px`) {
+        root.style.setProperty(STICKY_HEADER_HEIGHT_VARIABLE, `${height}px`);
+      }
+
+      const tone = root.getAttribute(OVERLAY_ATTRIBUTE);
+      if (tone !== 'dark' && tone !== 'light') {
+        root.style.removeProperty(HEADER_HEIGHT_VARIABLE);
+        root.removeAttribute(OVERLAY_ACTIVE_ATTRIBUTE);
+        return;
+      }
+      root.style.setProperty(HEADER_HEIGHT_VARIABLE, `${height}px`);
+      if (window.scrollY <= SCROLL_THRESHOLD) {
+        if (root.getAttribute(OVERLAY_ACTIVE_ATTRIBUTE) !== tone) {
+          root.setAttribute(OVERLAY_ACTIVE_ATTRIBUTE, tone);
+        }
+      } else {
+        root.removeAttribute(OVERLAY_ACTIVE_ATTRIBUTE);
+      }
+    }
+
+    const mutation = new MutationObserver(update);
+    mutation.observe(root, { attributes: true, attributeFilter: [OVERLAY_ATTRIBUTE] });
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+
+    return () => {
+      mutation.disconnect();
+      resize?.disconnect();
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+      root.style.removeProperty(HEADER_HEIGHT_VARIABLE);
+      root.style.removeProperty(STICKY_HEADER_HEIGHT_VARIABLE);
+      root.removeAttribute(OVERLAY_ACTIVE_ATTRIBUTE);
+    };
+  }, []);
+}

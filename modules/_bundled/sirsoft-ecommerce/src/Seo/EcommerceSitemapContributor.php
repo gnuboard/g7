@@ -7,7 +7,7 @@ use App\Seo\AbstractSitemapContributor;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
+use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
 
 /**
  * Ecommerce 모듈 Sitemap 기여자
@@ -80,7 +80,7 @@ class EcommerceSitemapContributor extends AbstractSitemapContributor
         // 상품 목록 페이지 — 'SEO 제공 페이지' 토글 OFF 시 제외
         if ((bool) g7_module_settings('sirsoft-ecommerce', 'seo.seo_shop_index', true)) {
             yield [
-                'url' => ShopPathResolver::path('products'),
+                'url' => EcommerceScreenUrl::products(),
                 'changefreq' => SitemapChangeFreq::Daily->value,
                 'priority' => 0.7,
                 'resource_type' => 'shop_index',
@@ -92,7 +92,7 @@ class EcommerceSitemapContributor extends AbstractSitemapContributor
         if ((bool) g7_module_settings('sirsoft-ecommerce', 'seo.seo_category', true)) {
             foreach ($this->categoryRepository->streamActiveForSitemap() as $category) {
                 yield [
-                    'url' => ShopPathResolver::path("category/{$category->slug}"),
+                    'url' => EcommerceScreenUrl::category((string) $category->slug),
                     'lastmod' => $category->updated_at?->toW3cString(),
                     'changefreq' => SitemapChangeFreq::Weekly->value,
                     'priority' => 0.6,
@@ -106,7 +106,8 @@ class EcommerceSitemapContributor extends AbstractSitemapContributor
         if ((bool) g7_module_settings('sirsoft-ecommerce', 'seo.seo_product_detail', true)) {
             foreach ($this->productRepository->streamVisibleForSitemap() as $product) {
                 yield [
-                    'url' => ShopPathResolver::path("products/{$product->id}"),
+                    // 화면·검색과 같은 상품 코드 주소(#792 W12) — 같은 상품이 두 주소로 색인되지 않게 한다
+                    'url' => EcommerceScreenUrl::product((string) $product->product_code),
                     'lastmod' => $product->updated_at?->toW3cString(),
                     'changefreq' => SitemapChangeFreq::Weekly->value,
                     'priority' => 0.8,

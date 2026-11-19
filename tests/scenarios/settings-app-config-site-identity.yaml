@@ -1,0 +1,19 @@
+feature: 설정 주입 — 사이트 이름과 사이트 주소를 app 설정으로 옮기는 applyAppConfig
+
+description: |
+  SettingsServiceProvider::applyAppConfig() 는 general.site_name 을 config('app.name') 으로,
+  general.site_url 을 config('app.url') 로 주입한다. site_name 이 다국어 JSON 배열이면 현재 로케일,
+  없으면 폴백 로케일 문자열로 정규화해 Blade e() 가 TypeError 없이 렌더하게 하고, site_url 은 앞뒤 공백과
+  후행 슬래시를 걷은 형태로 고정한다(공개#49).
+
+axes:
+  site_name_shape: [plain_string, multilingual_current_locale, multilingual_fallback_locale]
+
+effects:
+  - plain_site_name_is_applied_as_is
+  - multilingual_site_name_is_normalized_to_a_locale_string
+  - site_url_is_injected_without_trailing_slash_or_whitespace
+  - normalized_site_name_renders_in_blade_without_type_error
+
+test_files:
+  - tests/Unit/Providers/SettingsServiceProviderAppConfigTest.php

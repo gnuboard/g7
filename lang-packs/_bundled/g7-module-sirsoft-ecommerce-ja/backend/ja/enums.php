@@ -368,4 +368,16 @@ return [
         'collected' => '回収到着',
         'unreturned' => '未回収',
     ],
+    'export_status' => [
+        'pending' => '待機中',
+        'processing' => '進行中',
+        'completed' => '完了',
+        'failed' => '失敗',
+        'expired' => '期限切れ',
+    ],
+    'export_type' => [
+        'orders' => '注文履歴',
+        'products' => '商品履歴',
+        'mileage' => 'マイレージ履歴',
+    ],
 ];

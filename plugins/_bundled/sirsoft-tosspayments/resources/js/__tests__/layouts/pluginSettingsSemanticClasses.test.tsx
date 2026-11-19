@@ -14,6 +14,7 @@
  *
  * 시맨틱 클래스 정의 (templates/_bundled/sirsoft-admin_basic/src/styles/main.css):
  *   .grid-3col-responsive → @apply grid grid-cols-1 lg:grid-cols-3 gap-4 items-start
+ *     (폭 미디어를 품은 이 클래스는 이제 쓰지 않는다 — 같은 값을 접두 유틸과 엔진 responsive `1024-` 구간으로 쓴다)
  *   .section-heading-md   → @apply text-base font-semibold text-gray-900 dark:text-white
  *   .text-error-strong    → @apply text-sm font-medium text-red-800 dark:text-red-200
  *   .text-error-soft      → @apply text-sm text-red-700 dark:text-red-300
@@ -21,6 +22,9 @@
 
 import { describe, it, expect } from 'vitest';
 import pluginSettingsLayout from '../../../layouts/admin/plugin_settings.json';
+
+/** 의미 클래스는 이 플러그인 접두 판본이다 — 템플릿 CSS 가 아니라 플러그인 CSS(`@layer g7-extension`)가 정의한다 */
+const NS = 'pay-tosspayments-';
 
 type Node = Record<string, unknown>;
 
@@ -37,6 +41,17 @@ function collect(node: unknown, predicate: (n: Node) => boolean, acc: Node[] = [
     collect(child, predicate, acc);
   }
   return acc;
+}
+
+/** 3열 그리드 입력 줄 — 좁은 폭 1열, 1024px 이상 3열 */
+const GRID3_BASE = 'paytosspayments:grid paytosspayments:grid-cols-1 paytosspayments:gap-4 paytosspayments:items-start';
+const GRID3_WIDE = 'paytosspayments:grid paytosspayments:grid-cols-3 paytosspayments:gap-4 paytosspayments:items-start';
+
+/** 노드의 1024px 이상 구간(`1024-`) 클래스 */
+function wideClassNameOf(node: Node | undefined): string {
+  const responsive = (node?.responsive ?? {}) as Record<string, { props?: Record<string, unknown> }>;
+  const value = responsive['1024-']?.props?.className;
+  return typeof value === 'string' ? value : '';
 }
 
 function classNameOf(node: Node | undefined): string {
@@ -56,27 +71,33 @@ const GRID_FIELD_IDS = [
 
 describe('plugin_settings 시맨틱 클래스 매핑', () => {
   describe('필드 행 컨테이너', () => {
+    // @scenario case=semantic_c01
+    // @effects plugin_settings_semantic_classes_in_place
     it.each(GRID_FIELD_IDS)('%s 는 grid-3col-responsive 를 가져야 한다', (id) => {
       const [node] = collect(pluginSettingsLayout, (n) => n.id === id);
       expect(node).toBeDefined();
-      expect(classNameOf(node)).toBe('grid-3col-responsive');
+      expect({ base: classNameOf(node), wide: wideClassNameOf(node) }).toEqual({ base: GRID3_BASE, wide: GRID3_WIDE });
     });
 
+    // @scenario case=semantic_c02
+    // @effects plugin_settings_semantic_classes_in_place
     it('자식의 lg:col-span-* 가 유효하도록 부모가 그리드 컨테이너여야 한다', () => {
       for (const id of GRID_FIELD_IDS) {
         const [parent] = collect(pluginSettingsLayout, (n) => n.id === id);
         const children = (parent?.children ?? []) as Node[];
-        const spans = children.map(classNameOf).filter((c) => c.includes('col-span'));
+        const spans = children.flatMap((c) => [classNameOf(c), wideClassNameOf(c), String(((c.responsive ?? {}) as Record<string, { props?: Record<string, unknown> }>).desktop?.props?.className ?? '')]).filter((c) => c.includes('col-span'));
 
         // col-span 을 쓰는 자식이 있다면 부모는 반드시 그리드여야 한다.
         if (spans.length > 0) {
-          expect(classNameOf(parent)).toBe('grid-3col-responsive');
+          expect({ base: classNameOf(parent), wide: wideClassNameOf(parent) }).toEqual({ base: GRID3_BASE, wide: GRID3_WIDE });
         }
       }
     });
   });
 
   describe('섹션 제목 H3', () => {
+    // @scenario case=semantic_c03
+    // @effects plugin_settings_semantic_classes_in_place
     it('모든 section_* 제목은 section-heading-md 를 가져야 한다', () => {
       const sectionHeadings = collect(
         pluginSettingsLayout,
@@ -86,12 +107,14 @@ describe('plugin_settings 시맨틱 클래스 매핑', () => {
       // 테스트키 · 라이브키 · 리다이렉트 · 결제방식(S4) · 가상계좌(S4) = 5개
       expect(sectionHeadings).toHaveLength(5);
       for (const heading of sectionHeadings) {
-        expect(classNameOf(heading)).toBe('section-heading-md');
+        expect(classNameOf(heading)).toBe(`${NS}section-heading-md`);
       }
     });
   });
 
   describe('검증 에러 영역', () => {
+    // @scenario case=semantic_c04
+    // @effects plugin_settings_semantic_classes_in_place
     it('에러 제목 H3 는 text-error-strong 을 가져야 한다', () => {
       const [errorHeading] = collect(
         pluginSettingsLayout,
@@ -99,23 +122,27 @@ describe('plugin_settings 시맨틱 클래스 매핑', () => {
       );
 
       expect(errorHeading).toBeDefined();
-      expect(classNameOf(errorHeading)).toBe('text-error-strong');
+      expect(classNameOf(errorHeading)).toBe(`${NS}text-error-strong`);
     });
 
+    // @scenario case=semantic_c05
+    // @effects plugin_settings_semantic_classes_in_place
     it('에러 메시지 Li 는 text-error-soft 를 가져야 한다 (그리드 클래스 금지)', () => {
       const items = collect(pluginSettingsLayout, (n) => n.name === 'Li');
 
       expect(items.length).toBeGreaterThan(0);
       for (const item of items) {
-        expect(classNameOf(item)).toBe('text-error-soft');
+        expect(classNameOf(item)).toBe(`${NS}text-error-soft`);
       }
     });
   });
 
+  // @scenario case=semantic_c06
+  // @effects plugin_settings_semantic_classes_in_place
   it('타이포그래피 시맨틱 클래스가 그리드 역할로 오용되지 않는다', () => {
     const misused = collect(
       pluginSettingsLayout,
-      (n) => n.id !== undefined && /^field_/.test(String(n.id)) && classNameOf(n) === 'section-heading-md',
+      (n) => n.id !== undefined && /^field_/.test(String(n.id)) && classNameOf(n) === `${NS}section-heading-md`,
     );
 
     expect(misused).toHaveLength(0);

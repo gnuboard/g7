@@ -16,6 +16,15 @@ use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
 class SignatureControllerTest extends PluginTestCase
 {
+    /**
+     * 주문 금액·구매자 연락처가 주문과 맞으면 PC 서명 요청에 서명·검증값·mKey 를 발급한다.
+     *
+     * @scenario case=pc_matching_order_context
+     *
+     * @effects pc_signature_issued_for_matching_order_context
+     *
+     * @return void 반환값 없음
+     */
     public function test_pc_signature_accepts_matching_order_context(): void
     {
         $order = $this->makePendingOrder('ORD-SIGN-001', 10000);
@@ -57,6 +66,15 @@ class SignatureControllerTest extends PluginTestCase
             ->assertJsonPath('data.mKey', 'mkey-ok');
     }
 
+    /**
+     * 요청 금액이 주문 청구액과 다르면 PC 서명을 발급하지 않고 422 로 거절한다.
+     *
+     * @scenario case=pc_amount_mismatch
+     *
+     * @effects signature_rejects_amount_mismatch
+     *
+     * @return void 반환값 없음
+     */
     public function test_pc_signature_rejects_amount_mismatch(): void
     {
         $order = $this->makePendingOrder('ORD-SIGN-002', 10000);
@@ -80,9 +98,18 @@ class SignatureControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('message', 'Payment amount does not match the order amount.');
+            ->assertJsonPath('message', __('sirsoft-pay_kginicis::messages.responses.amount_mismatch'));
     }
 
+    /**
+     * 주문 결제 통화의 청구액을 계산할 수 없으면 PC 서명 요청을 500 이 아니라 422 로 거절한다.
+     *
+     * @scenario case=pc_unchargeable_currency
+     *
+     * @effects signature_rejects_unchargeable_currency_with_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_pc_signature_rejects_unchargeable_payment_currency_without_server_error(): void
     {
         $order = $this->makePendingOrder('ORD-SIGN-CURRENCY-001', 10000, 'KRW', self::unchargeableKrwCurrencySnapshot());
@@ -107,9 +134,18 @@ class SignatureControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('message', 'Payment currency is not chargeable.');
+            ->assertJsonPath('message', __('sirsoft-pay_kginicis::messages.responses.currency_not_chargeable'));
     }
 
+    /**
+     * 원화가 아닌 주문은 PC 표준결제 서명을 받을 수 없다(422).
+     *
+     * @scenario case=pc_non_krw_order
+     *
+     * @effects signature_rejects_non_krw_order
+     *
+     * @return void 반환값 없음
+     */
     public function test_pc_signature_rejects_non_krw_order(): void
     {
         $order = $this->makePendingOrder('ORD-SIGN-USD-001', 10000, 'USD');
@@ -133,9 +169,18 @@ class SignatureControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('message', 'Standard KG Inicis signature is only available for KRW orders.');
+            ->assertJsonPath('message', __('sirsoft-pay_kginicis::messages.responses.krw_only'));
     }
 
+    /**
+     * 요청 구매자 연락처가 주문자와 다르면 PC 서명을 발급하지 않고 403 으로 거절한다.
+     *
+     * @scenario case=pc_buyer_mismatch
+     *
+     * @effects pc_signature_rejects_buyer_mismatch
+     *
+     * @return void 반환값 없음
+     */
     public function test_pc_signature_rejects_order_buyer_mismatch(): void
     {
         $order = $this->makePendingOrder('ORD-SIGN-003', 10000);
@@ -166,9 +211,18 @@ class SignatureControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(403)
-            ->assertJsonPath('message', 'Order buyer verification failed.');
+            ->assertJsonPath('message', __('sirsoft-pay_kginicis::messages.responses.buyer_verification_failed'));
     }
 
+    /**
+     * 표준결제 가맹점 자격이 설정되지 않았으면 PC 서명 요청을 422 로 거절한다.
+     *
+     * @scenario case=pc_missing_credentials
+     *
+     * @effects signature_rejects_missing_credentials
+     *
+     * @return void 반환값 없음
+     */
     public function test_pc_signature_rejects_missing_standard_credentials(): void
     {
         $order = $this->makePendingOrder('ORD-SIGN-NOCFG-001', 10000);
@@ -193,9 +247,18 @@ class SignatureControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('message', 'KG Inicis standard payment credentials are not configured.');
+            ->assertJsonPath('message', __('sirsoft-pay_kginicis::messages.responses.credentials_not_configured'));
     }
 
+    /**
+     * 원화가 아닌 주문은 모바일 결제 서명을 받을 수 없다(422).
+     *
+     * @scenario case=mobile_non_krw_order
+     *
+     * @effects signature_rejects_non_krw_order
+     *
+     * @return void 반환값 없음
+     */
     public function test_mobile_signature_rejects_non_krw_order(): void
     {
         $order = $this->makePendingOrder('ORD-SIGN-004', 100, 'JPY');
@@ -218,9 +281,18 @@ class SignatureControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('message', 'Standard KG Inicis signature is only available for KRW orders.');
+            ->assertJsonPath('message', __('sirsoft-pay_kginicis::messages.responses.krw_only'));
     }
 
+    /**
+     * 모바일 결제 가맹점 자격이 설정되지 않았으면 모바일 서명 요청을 422 로 거절한다.
+     *
+     * @scenario case=mobile_missing_credentials
+     *
+     * @effects signature_rejects_missing_credentials
+     *
+     * @return void 반환값 없음
+     */
     public function test_mobile_signature_rejects_missing_mobile_credentials(): void
     {
         $order = $this->makePendingOrder('ORD-SIGN-NOCFG-002', 10000);
@@ -244,9 +316,18 @@ class SignatureControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('message', 'KG Inicis mobile payment credentials are not configured.');
+            ->assertJsonPath('message', __('sirsoft-pay_kginicis::messages.responses.credentials_not_configured'));
     }
 
+    /**
+     * 주문 결제 통화의 청구액을 계산할 수 없으면 모바일 서명 요청을 500 이 아니라 422 로 거절한다.
+     *
+     * @scenario case=mobile_unchargeable_currency
+     *
+     * @effects signature_rejects_unchargeable_currency_with_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_mobile_signature_rejects_unchargeable_payment_currency_without_server_error(): void
     {
         $order = $this->makePendingOrder('ORD-SIGN-CURRENCY-002', 10000, 'KRW', self::unchargeableKrwCurrencySnapshot());
@@ -270,9 +351,18 @@ class SignatureControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('message', 'Payment currency is not chargeable.');
+            ->assertJsonPath('message', __('sirsoft-pay_kginicis::messages.responses.currency_not_chargeable'));
     }
 
+    /**
+     * 기본 통화와 결제 통화가 다르면 서명 요청 금액은 결제 통화로 환산한 청구액이어야 한다(기본 통화 금액은 422).
+     *
+     * @scenario case=pc_converted_price
+     *
+     * @effects pc_signature_expects_converted_price
+     *
+     * @return void 반환값 없음
+     */
     public function test_pc_signature_expects_converted_price_for_non_base_order_currency(): void
     {
         // base=USD, 결제통화=KRW. base $6 → KRW 7058 환산이 검증 기준(price)이어야 한다.
@@ -325,6 +415,8 @@ class SignatureControllerTest extends PluginTestCase
      * @scenario channel=all, price_boundary=rule_parity
      *
      * @effects price_lower_bound_identical_across_request_paths
+     *
+     * @return void 반환값 없음
      */
     public function test_price_lower_bound_is_shared_across_signature_requests(): void
     {
@@ -347,6 +439,8 @@ class SignatureControllerTest extends PluginTestCase
      * @scenario channel=pc, price_boundary=minimum
      *
      * @effects minimum_price_accepted_on_pc
+     *
+     * @return void 반환값 없음
      */
     public function test_pc_signature_accepts_minimum_price(): void
     {
@@ -390,6 +484,8 @@ class SignatureControllerTest extends PluginTestCase
      * @scenario channel=mobile, price_boundary=minimum
      *
      * @effects minimum_price_accepted_on_mobile
+     *
+     * @return void 반환값 없음
      */
     public function test_mobile_signature_accepts_minimum_price(): void
     {
@@ -424,6 +520,8 @@ class SignatureControllerTest extends PluginTestCase
      * @scenario channel=mobile, price_boundary=zero
      *
      * @effects zero_price_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_mobile_signature_rejects_zero_price(): void
     {
@@ -440,6 +538,8 @@ class SignatureControllerTest extends PluginTestCase
      * @scenario channel=pc, price_boundary=zero
      *
      * @effects zero_price_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_pc_signature_rejects_zero_price(): void
     {
@@ -452,6 +552,15 @@ class SignatureControllerTest extends PluginTestCase
         ])->assertStatus(422);
     }
 
+    /**
+     * 저장하지 않은 결제 대기 주문 Model 을 만듭니다.
+     *
+     * @param  string  $orderNumber  주문번호
+     * @param  int  $amount  결제 예정액
+     * @param  string  $currency  주문 통화 코드
+     * @param  array  $currencySnapshot  통화 스냅샷(비우면 통화 기본 스냅샷)
+     * @return Order 결제 대기 주문
+     */
     private function makePendingOrder(string $orderNumber, int $amount, string $currency = 'KRW', array $currencySnapshot = []): Order
     {
         $order = new Order;
@@ -466,6 +575,11 @@ class SignatureControllerTest extends PluginTestCase
         return $order;
     }
 
+    /**
+     * 서명 요청의 신선도 검사를 통과하는 현재 시각(밀리초)을 만듭니다.
+     *
+     * @return string 밀리초 단위 현재 시각
+     */
     private function freshEpochMs(): string
     {
         return (string) round(microtime(true) * 1000);

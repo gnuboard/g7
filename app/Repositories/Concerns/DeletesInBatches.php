@@ -31,9 +31,10 @@ trait DeletesInBatches
      *
      * @param  Builder  $query  삭제 대상 조건이 적용된 쿼리 (정렬·제한 미적용 상태)
      * @param  int|null  $batchSize  배치 크기 (미지정 시 $deleteBatchSize)
+     * @param  \Closure(array<int, int|string>): void|null  $beforeEach  배치마다 지우기 직전에 그 배치의 기본키 목록으로 부를 콜백
      * @return int 삭제된 총 건수
      */
-    protected function deleteInBatches(Builder $query, ?int $batchSize = null): int
+    protected function deleteInBatches(Builder $query, ?int $batchSize = null, ?\Closure $beforeEach = null): int
     {
         $batchSize = max(1, $batchSize ?? $this->deleteBatchSize);
         $model = $query->getModel();
@@ -46,6 +47,11 @@ trait DeletesInBatches
 
             if ($keys->isEmpty()) {
                 return $total;
+            }
+
+            // 이 배치를 지우기 직전 — 다른 확장 소유의 자식 행을 그 확장이 명시적으로 지우게 알린다(DB CASCADE 비의존)
+            if ($beforeEach !== null) {
+                $beforeEach($keys->all());
             }
 
             $total += $model->newQuery()->whereIn($keyName, $keys)->delete();

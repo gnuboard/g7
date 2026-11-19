@@ -7,7 +7,6 @@
  * 칸에 디바운스 동작과 바로 실행하는 동작을 섞으면 디바운스 동작도 매 입력 실행된다. 동작은 그대로 두고
  * 칸에 경고를 띄운다(결정).
  */
-import React from 'react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { ActionRecipeEditor } from '../../../components/property-controls/ActionRecipeEditor';

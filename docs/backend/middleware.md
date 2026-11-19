@@ -70,6 +70,26 @@
    - 특정 라우트에만 적용
    - 가장 마지막에 실행
 
+### 회원 상태 공통 관문 (7.2.0)
+
+api 그룹 전체에 `EnsureActiveUser` 가 붙어 인증된 회원의 상태(차단·탈퇴·휴면·가입 후 인증 대기)를 매 요청 다시 본다.
+
+- `auth:sanctum` 라우트: 비활성 회원은 403(상태별 문구 키 `auth.account_*`).
+- `optional.sanctum` 라우트: 비활성 회원을 손님으로 낮춰 통과시킨다 — 공개 목록은 그대로 보이고 회원 자격 쓰기만 막힌다.
+- 확장 라우트에 상태 검사 미들웨어를 따로 붙이지 않는다. 비활성 회원이 꼭 써야 하는 경로(가입 후 본인인증 등)만 표식 `allow.inactive_user` 를
+  붙인다(코어는 `api.identity.*` 하나). 자세한 규칙은 [authentication.md](authentication.md#외부-인증-확장점-720) 공통 규칙.
+
+### HTTPS 강제 이동 (7.2.0)
+
+관리자 환경설정 > 보안의 「HTTPS 강제 적용」(`security.force_https`)이 켜져 있으면 `ForceHttps` 가 http 요청을 같은 호스트·경로·쿼리의
+https 주소로 보낸다(#888). GET·HEAD 는 301, 그 밖의 메서드는 308(메서드·본문 유지)이다.
+
+- web·api 그룹 **맨 앞**에 있다 — `prependToGroup` 은 나중에 부른 것이 앞에 놓이므로 확장 before_core 게이트 등록 뒤에 부른다.
+  점검 모드(`MaintenanceModePage`)·신뢰 프록시·신뢰 Host 는 전역이라 이보다 먼저 판정된다.
+- https 판정은 `$request->secure()` 다. 리버스 프록시·CDN 뒤에서는 `TRUSTED_PROXIES` 를 적어야 `X-Forwarded-Proto: https` 가
+  인정된다 — 적지 않으면 이동이 끝없이 반복된다. 잠겼을 때는 `php artisan settings:set security.force_https false` 로 끈다.
+- 콘솔 실행 안의 내부 요청(큐·스케줄)과 설치기(`public/install`, Laravel 밖)는 대상이 아니다.
+
 ---
 
 ## 미들웨어 등록 방식
@@ -352,6 +372,20 @@ PermissionHelper::applyPermissionScope($query, 'core.users.read');
 
 ---
 
+## 개발자 화면 미들웨어 (custom, 7.2.0)
+
+`routes/custom.php` 의 라우트에는 `web` 과 `custom.screen` 이 자동으로 붙는다. 회원·관리자 제한은 라우트에 직접 단다.
+
+| 이름 | 종류 | 동작 |
+| --- | --- | --- |
+| `custom.screen` | 그룹 | `canonical.host`(정식 주소 이동) → `canonical.path`(끝·연속 슬래시 GET·HEAD 를 정규형으로 301) → `MarkBotRequest`(봇 표식) → `analytics.bots`(봇 방문 기록) → `analytics.fallback`(서버 방문 집계) |
+| `custom.auth` | 별칭 (`RequireScreenUser`) | `ScreenAuth::user()` 가 없으면 로그인 화면(`ScreenUrl` 키 `auth.login`)으로 `?redirect=` 를 붙여 보내고, JSON 요청이면 401 |
+| `custom.admin` | 별칭 (`RequireScreenAdmin`) | 비회원은 관리자 로그인(`admin.login`)으로, 관리자가 아닌 회원은 403 |
+
+등록 위치는 `bootstrap/app.php`. 사용법은 [개발자 화면 가이드](../custom-development.md).
+
+---
+
 ## OptionalSanctumMiddleware (선택적 인증)
 
 공개 API이면서 인증된 사용자에게는 추가 정보를 제공해야 하는 경우 사용합니다.
@@ -523,6 +557,7 @@ if (Auth::check()) {  // ✅ 정상 작동! Sanctum 인증 후이므로
 
 - [권한 시스템](../extension/permissions.md) - scope_type 시스템 상세, resource_route_key/owner_key 매핑
 - [인증 시스템](authentication.md) - Sanctum 인증 및 세션 처리
+- [개발자 화면 가이드](../custom-development.md) - `custom.auth`·`custom.admin`·`custom.screen`
 - [서비스 프로바이더 안전성](service-provider.md) - 프로바이더 등록 규칙
 - [백엔드 가이드 인덱스](README.md) - 전체 가이드 목록
 

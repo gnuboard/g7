@@ -134,7 +134,7 @@ class BootAxisRunner implements BenchmarkAxisRunner
             base_path(),
         );
 
-        foreach (array_reverse(preg_split('/\R/', (string) $outcome['stdout'])) as $line) {
+        foreach (array_reverse(preg_split('~\r\n|\r|\n~', (string) $outcome['stdout'])) as $line) {
             if (! str_starts_with($line, self::OUTPUT_PREFIX)) {
                 continue;
             }

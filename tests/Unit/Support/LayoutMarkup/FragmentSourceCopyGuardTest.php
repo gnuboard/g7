@@ -209,7 +209,7 @@ class FragmentSourceCopyGuardTest extends LayoutMarkupTestCase
                         // `layout:decompile --all --sync` 가 짝을 기계로 수렴시키면 그 조건이 전건
                         // 사라진다. 그래서 값이 아니라 **선택 자체**를 함께 관측한다 — 기대값이
                         // 리터럴(`.g7.html` 접미사)이라 짝이 수렴해도 red 경로가 살아 있다
-                        // (32차가 이 수렴을 예견하고 공유 오라클에 미리 넣어 둔 단언이다).
+                        // (이 수렴을 예견하고 공유 오라클에 미리 넣어 둔 단언이다).
                         $this->assertFragmentSourceIsAuthoringMarkup($jsonSibling);
 
                         if ($rawJson !== $compiled) {
@@ -242,7 +242,7 @@ class FragmentSourceCopyGuardTest extends LayoutMarkupTestCase
 
         // **S18.5 — 종전의 divergence 하한(루트별 + 전역)을 여기서 걷어냈다.**
         //
-        // 31차가 세운 그 하한은 *"컴파일 산출과 원본 `.json` 이 갈리는 짝이 0건이면 우선순위 단언이
+        // 앞서 세운 그 하한은 *"컴파일 산출과 원본 `.json` 이 갈리는 짝이 0건이면 우선순위 단언이
         // 어느 소스가 이겨도 통과한다"* 는 정확한 진단이었고, 그 독블록은 굽기 착수 시 이 단언이
         // **정상적으로 red 로 뒤집힌다**는 것과 그때 할 일이 *"하한을 지우는 것이 아니라 합성 표본으로
         // 관측력을 옮기는 것"* 이라는 처방까지 함께 적어 두었다. S18.5 가 그 처방을 이행한다:
@@ -253,7 +253,7 @@ class FragmentSourceCopyGuardTest extends LayoutMarkupTestCase
         //    시험한다 ({@see test_value_oracle_detects_a_json_win_on_a_divergent_pair()}).
         //
         // divergence 자체는 이제 정상 상태가 0 이므로 **수를 단언하지 않는다** — `>= 0` 같은 형태는
-        // 어떤 변경으로도 red 가 되지 않아 초록이 아무것도 뜻하지 않는다(31차가 세운 축을 그대로
+        // 어떤 변경으로도 red 가 되지 않아 초록이 아무것도 뜻하지 않는다(앞서 세운 축을 그대로
         // 유지하려다 이 함정에 빠지기 쉬운데, 게이트의 무효 단언 가드가 즉시 잡는다). 대신 순회가
         // 두 계량에서 **같은 루트 집합**을 돌았는지만 확인한다 — 이것은 갈리면 red 인 명제다.
         $this->assertSame(array_keys($pairsPerRoot), array_keys($divergentPerRoot),
@@ -339,8 +339,8 @@ class FragmentSourceCopyGuardTest extends LayoutMarkupTestCase
      *
      * 아래 자기시험들은 판정식(`readSignalsIn()`·`mentionsFragmentDirectory()`)에 표본을 직접
      * 넘긴다 — 그것만으로는 "판정식이 그 형태를 안다" 만 증명되고, 표본이 **문지기를 지나
-     * 판정식까지 도달하는지**는 증명되지 않는다. 32차가 오라클 독립성 가드에서 정확히 그
-     * 차이(문지기가 표기 기반이라 6파일이 검사 밖) 때문에 실물 사각을 찾았다.
+     * 판정식까지 도달하는지**는 증명되지 않는다. 오라클 독립성 가드에서 정확히 그
+     * 차이(문지기가 표기 기반이라 6파일이 검사 밖) 때문에 실물 사각이 나왔다.
      *
      * @scenario compile_unit=install,source_health=valid
      *
@@ -390,10 +390,10 @@ class FragmentSourceCopyGuardTest extends LayoutMarkupTestCase
      *
      * 위반 표본이 통과하거나 준수 표본이 걸리면 이 가드의 초록은 아무것도 뜻하지 않는다.
      * 특히 ⓒ 는 **최초 판본이 놓쳤던 형태**다 — 디렉토리 단위 사본은 후행 슬래시 없이 경로를
-     * 만든다. ⓓ 는 19차가 겪은 주석 제거기 사고의 재발 방지다.
+     * 만든다. ⓓ 는 앞서 겪은 주석 제거기 사고의 재발 방지다.
      *
-     * (35차 — 이 독블록은 종전에 앞 메서드에 **두 겹으로** 붙어 있어 이 메서드는 독블록이 없었다.
-     * 34차가 라우팅 가드에서 지적한 고아 독블록과 같은 형태다.)
+     * (이 독블록은 종전에 앞 메서드에 **두 겹으로** 붙어 있어 이 메서드는 독블록이 없었다.
+     * 라우팅 가드에서 지적한 고아 독블록과 같은 형태다.)
      *
      * @scenario compile_unit=install,source_health=valid
      *
@@ -595,7 +595,7 @@ class FragmentSourceCopyGuardTest extends LayoutMarkupTestCase
     /**
      * PHP 소스에서 주석만 제거합니다 (문자열·정규식 리터럴 보존).
      *
-     * 정규식 치환을 쓰지 않는 이유는 이 저장소가 이미 그 대가를 치렀기 때문이다 — 19차의 메타가드가
+     * 정규식 치환을 쓰지 않는 이유는 이 저장소가 이미 그 대가를 치렀기 때문이다 — 예전 메타가드가
      * `/\/\*[\s\S]*?\*\//` 로 주석을 지우다 글롭 리터럴 사이를 통째로 먹어, 가드 전량이 후보 0건인
      * 채 초록으로 통과했다. 토크나이저는 문자열 안의 `/*` 를 주석으로 오인하지 않는다.
      *

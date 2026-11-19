@@ -16,47 +16,40 @@
  * 그래서 이 spec 은 "칸이 편집 가능한가" 가 아니라 **친 값이 주문 상태에 도달하는가** 를 잰다.
  * 편집 가능 여부만 보면 이 결함이 있는 채로도 통과한다.
  *
- * @scenario asset_class=service_sdk, outcome=failed
- * @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice
+ * 조합 요약(마커 아님 — 평문): asset_class=service_sdk, outcome=failed
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice
  */
 import { test, expect, type Page } from '@playwright/test';
 
 import { issueToken, authenticatePage } from '../../../../../../tests/Playwright/fixtures/auth';
+import { seedOptionProduct, deleteSeededProduct, type SeededOptionProduct } from '../fixtures/option-product-seed';
 
 /** 주소 검색 SDK (외부 서비스 — 자체 제공 대상이 아니다). 카카오 주소와 옛 다음 주소를 모두 막는다 */
 const POSTCODE_SDK = /t1\.(kakaocdn|daumcdn)\.net/i;
 
 /**
- * 판매 중인 상품 1건을 장바구니에 담습니다 (주문서 진입 조건).
+ * 시드 상품 1건을 장바구니에 담습니다 (주문서 진입 조건).
+ *
+ * 공개 목록 첫 상품을 담지 않는다 — 그 자리를 다른 작업의 재고 0 시험 상품이 차지하면 담기가
+ * 422 `cart_unavailable` 로 거부된다(실측). spec 이 만든 구매 가능한 상품을 담는다.
  *
  * @param page 대상 페이지 (인증 토큰 주입 상태)
+ * @param product 담을 시드 상품
  * @return void
  */
-async function seedCart(page: Page): Promise<void> {
-  const result = await page.evaluate(async () => {
+async function seedCart(page: Page, product: SeededOptionProduct): Promise<void> {
+  const result = await page.evaluate(async ({ productId, optionId }) => {
     const token = localStorage.getItem('auth_token');
     const headers = { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${token}` };
-
-    const listResponse = await fetch('/api/modules/sirsoft-ecommerce/products?per_page=1', { headers });
-    const productCode = (await listResponse.json())?.data?.data?.[0]?.product_code ?? null;
-    if (!productCode) {
-      return { status: 0, reason: '판매 중인 상품이 없습니다' };
-    }
-
-    const detail = await (await fetch(`/api/modules/sirsoft-ecommerce/products/${productCode}`, { headers })).json();
-    const product = detail?.data ?? {};
 
     const addResponse = await fetch('/api/modules/sirsoft-ecommerce/cart', {
       method: 'POST',
       headers,
-      body: JSON.stringify({
-        product_id: product.id,
-        items: [{ product_option_id: product.options?.[0]?.id ?? null, quantity: 1 }],
-      }),
+      body: JSON.stringify({ product_id: productId, items: [{ product_option_id: optionId, quantity: 1 }] }),
     });
 
     return { status: addResponse.status, reason: addResponse.ok ? null : JSON.stringify(await addResponse.json()) };
-  });
+  }, { productId: product.id, optionId: product.firstOptionId });
 
   expect(result.status, `장바구니 담기에 실패했습니다: ${result.reason}`).toBe(201);
 }
@@ -102,16 +95,21 @@ test.describe('#123 주소 검색 실패 시 직접 입력', () => {
   });
 
   // @scenario asset_class=service_sdk, outcome=failed
-  // @effects failed_asset_falls_back_to_plain_input, address_fields_editable_when_sdk_missing
-  test('SDK 를 못 불러와도 직접 친 주소가 주문 상태에 도달하고 결제로 넘어갈 수 있다', async ({ page }) => {
+  // @effects failed_asset_falls_back_to_plain_input, address_fields_editable_when_sdk_missing, failed_asset_shows_retry_notice
+  test('SDK 를 못 불러와도 직접 친 주소가 주문 상태에 도달하고 결제로 넘어갈 수 있다', async ({ page, request }) => {
     await page.route(POSTCODE_SDK, route => route.abort());
-    await authenticatePage(page, issueToken());
 
-    await page.goto('/shop/products');
-    await dismissCookieBanner(page);
-    await seedCart(page);
+    // 이 시험 계정(admin 역할 포함)으로 담을 상품을 직접 만들고, 끝나면 성패와 무관하게 지운다
+    const token = issueToken();
+    const product = await seedOptionProduct(request, token);
 
     try {
+      await authenticatePage(page, token);
+
+      await page.goto('/shop/products');
+      await dismissCookieBanner(page);
+      await seedCart(page, product);
+
       await page.goto('/shop/cart');
       await dismissCookieBanner(page);
       await page.getByRole('button', { name: '주문하기' }).first().click();
@@ -144,6 +142,8 @@ test.describe('#123 주소 검색 실패 시 직접 입력', () => {
       // 결제 버튼의 활성 조건이 바로 그 두 값이다 — 도달하지 못하면 영영 비활성이었다.
       await expect(page.getByRole('button', { name: /결제하기/ }).first()).toBeEnabled({ timeout: 15_000 });
     } finally {
+      // 상품을 먼저 지운다 — 장바구니 비우기는 페이지 상태에 기대므로 그쪽이 실패해도 시드 상품은 남지 않게
+      await deleteSeededProduct(request, token, product.id);
       await clearCart(page);
     }
   });

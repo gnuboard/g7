@@ -97,9 +97,11 @@
 <permission>sirsoft-koreaexim.exchange_rate.view</permission>
 </permissions>
 <slot name="content">
-<div data-ref="koreaexim_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+<div data-ref="koreaexim_settings_content" data-key="form" data-track-changes class="koreaexim:p-4 koreaexim:min-h-screen koreaexim:bg-gray-50 koreaexim:dark:bg-gray-900">
+  <responsive on="640-1023" class="koreaexim:p-6 koreaexim:min-h-screen koreaexim:bg-gray-50 koreaexim:dark:bg-gray-900"/>
+  <responsive on="1024-" class="koreaexim:p-8 koreaexim:min-h-screen koreaexim:bg-gray-50 koreaexim:dark:bg-gray-900"/>
 <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-koreaexim.title" description="$t:sirsoft-koreaexim.description">
-<a href="/admin/plugins" data-ref="koreaexim_back" class="button btn btn-secondary whitespace-nowrap" aria-label="$t:admin.plugins.back_to_list">
+<a href="/admin/plugins" data-ref="koreaexim_back" class="koreaexim-button koreaexim-btn koreaexim-btn-secondary koreaexim:whitespace-nowrap" aria-label="$t:admin.plugins.back_to_list">
 <on type="click">
 <navigate/>
 </on>
@@ -107,7 +109,9 @@
 <span>$t:common.back</span>
 </a>
 </page-header>
-<tab-navigation data-type="composite" data-ref="koreaexim_tab_navigation" activeTabId="{{_computed.activeTab}}" variant="default" class="sticky-tab-nav-responsive">
+<tab-navigation data-type="composite" data-ref="koreaexim_tab_navigation" activeTabId="{{_computed.activeTab}}" variant="default" class="koreaexim:sticky koreaexim:top-0 koreaexim:z-40 koreaexim:-mx-4 koreaexim:px-4 koreaexim:border-b koreaexim:bg-gray-50 koreaexim:border-gray-200 koreaexim:dark:bg-gray-900 koreaexim:dark:border-gray-700">
+  <responsive on="640-1023" class="koreaexim:sticky koreaexim:top-0 koreaexim:z-40 koreaexim:-mx-6 koreaexim:px-6 koreaexim:border-b koreaexim:bg-gray-50 koreaexim:border-gray-200 koreaexim:dark:bg-gray-900 koreaexim:dark:border-gray-700"/>
+  <responsive on="1024-" class="koreaexim:sticky koreaexim:top-0 koreaexim:z-40 koreaexim:-mx-8 koreaexim:px-8 koreaexim:border-b koreaexim:bg-gray-50 koreaexim:border-gray-200 koreaexim:dark:bg-gray-900 koreaexim:dark:border-gray-700"/>
 <prop name="tabs">
 <item href="/admin/plugins/sirsoft-koreaexim/settings?tab=settings" id="settings" label="$t:sirsoft-koreaexim.settings_tab"/>
 <item href="/admin/plugins/sirsoft-koreaexim/settings?tab=history" id="history" label="$t:sirsoft-koreaexim.history_tab"/>
@@ -123,24 +127,24 @@
 </on>
 </tab-navigation>
 <!-- 읽기 전용 안내 — 빠진 권한마다 따로 알린다. 플러그인 설정 수정 권한이 없으면 설정 폼이, 환율 관리 권한이 없으면 설정 폼과 환율 갱신이 잠긴다. 응답이 오기 전·설정 403 일 때는 띄우지 않는다 -->
-<div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mb-4">
-<icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-<span class="text-xs text-yellow-700 dark:text-yellow-300">$t:sirsoft-koreaexim.plugin_read_only</span>
+<div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="koreaexim-alert-warning koreaexim:mb-4">
+<icon name="lock" class="koreaexim:text-xl koreaexim:leading-none koreaexim:text-amber-600 koreaexim:dark:text-amber-400 koreaexim:flex-shrink-0"/>
+<span class="koreaexim:text-xs koreaexim:text-yellow-700 koreaexim:dark:text-yellow-300">$t:sirsoft-koreaexim.plugin_read_only</span>
 </div>
-<div data-ref="koreaexim_read_only_banner" data-if="{{_computed.isReadOnly &amp;&amp; !!koreaeximStatus?.data}}" role="status" class="alert-info mb-4">$t:sirsoft-koreaexim.read_only</div>
-<div data-ref="koreaexim_settings_forbidden" data-if="{{_local.koreaeximSettingsForbidden === true}}" role="status" class="alert-warning mb-4">$t:sirsoft-koreaexim.settings_forbidden</div>
-<div data-ref="koreaexim_tab_content" class="tab-content">
+<div data-ref="koreaexim_read_only_banner" data-if="{{_computed.isReadOnly &amp;&amp; !!koreaeximStatus?.data}}" role="status" class="koreaexim-alert-info koreaexim:mb-4">$t:sirsoft-koreaexim.read_only</div>
+<div data-ref="koreaexim_settings_forbidden" data-if="{{_local.koreaeximSettingsForbidden === true}}" role="status" class="koreaexim-alert-warning koreaexim:mb-4">$t:sirsoft-koreaexim.settings_forbidden</div>
+<div data-ref="koreaexim_tab_content" class="koreaexim-tab-content">
 <include src="partials/plugin_settings/_tab_settings.g7.html"/>
 <include src="partials/plugin_settings/_tab_history.g7.html"/>
 </div>
-<div data-if="{{_computed.activeTab === 'settings'}}" class="sticky-footer-buttons">
-<a data-ref="koreaexim_cancel" href="/admin/plugins" class="button btn btn-secondary">
+<div data-if="{{_computed.activeTab === 'settings'}}" class="koreaexim-sticky-footer-buttons">
+<a data-ref="koreaexim_cancel" href="/admin/plugins" class="koreaexim-button koreaexim-btn koreaexim-btn-secondary">
 <on type="click">
 <navigate :bypassLeaveGuard="true"/>
 </on>
 <span>$t:common.cancel</span>
 </a>
-<button type="button" data-ref="koreaexim_save" disabled="{{_computed.isSettingsReadOnly || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
+<button type="button" data-ref="koreaexim_save" disabled="{{_computed.isSettingsReadOnly || !_local.hasChanges || _local.isSaving}}" class="koreaexim-btn koreaexim-btn-primary koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed">
 <on type="click">
 <!-- 설정 저장 — 폼 전체를 PUT 하고 성공하면 설정·상태를 다시 받아 변경 표시를 내린다. 검증 오류는 _local.errors 로 각 필드 밑에 그린다 -->
 <sequence>

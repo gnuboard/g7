@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\Log;
  * - role: 특정 역할의 사용자들 (admin, manager 등)
  * - permission: 특정 권한을 가진 역할에 소속된 사용자들 (예: sirsoft-board.reports.manage)
  * - specific_users: 지정된 사용자 UUID 목록
+ * - site_admin_email: 환경설정 > 일반의 관리자 이메일(`general.admin_email`) 한 곳. 비회원 수신자로 만들어 메일만 받는다(#888).
+ *   비어 있으면 0명이고 경고 로그를 남긴다.
  *
  * 비회원 수신자는 user_id 없이 이메일/이름/로케일만 가진 1급 Notifiable 로,
  * 회원과 동일한 발송 경로($notifiable->notify())를 공유합니다.
@@ -71,6 +73,7 @@ class NotificationRecipientResolver
                     'role' => $this->addByRole($ruleRecipients, $rule),
                     'permission' => $this->addByPermission($ruleRecipients, $rule),
                     'specific_users' => $this->addSpecificUsers($ruleRecipients, $rule),
+                    'site_admin_email' => $this->addSiteAdminEmail($ruleRecipients),
                     default => Log::warning('NotificationRecipientResolver: 알 수 없는 수신자 타입', [
                         'type' => $type,
                     ]),
@@ -136,6 +139,7 @@ class NotificationRecipientResolver
                     'specific_users' => $this->userRefs(
                         empty($rule['value']) || ! is_array($rule['value']) ? [] : $this->userRepository->findIdsByUuids($rule['value'])
                     ),
+                    'site_admin_email' => $this->siteAdminEmailRefs(),
                     // 모르는 타입은 참조로 바꾸지 않는다 — null 로 종전 resolve() 인라인 경로에 넘겨, 그쪽에만 새 타입이
                     // 더해져도 분할 발송에서 수신자가 조용히 빠지지 않게 한다(경고 로그는 resolve() 가 남긴다)
                     default => null,
@@ -224,6 +228,18 @@ class NotificationRecipientResolver
         }
 
         return [];
+    }
+
+    /**
+     * 사이트 관리자 이메일 참조를 만듭니다 — addSiteAdminEmail() 과 같은 판정입니다 (#888).
+     *
+     * @return array<int, array<string, mixed>> 참조 목록 (비었거나 형식이 틀리면 빈 배열)
+     */
+    private function siteAdminEmailRefs(): array
+    {
+        $guest = $this->siteAdminRecipient();
+
+        return $guest === null ? [] : [$this->guestRef($guest)];
     }
 
     /**
@@ -347,7 +363,7 @@ class NotificationRecipientResolver
      *
      * @param  Collection  $recipients  수신자 컬렉션
      * @param  array  $context  컨텍스트
-     * @return void
+     * @return void 반환값 없음
      */
     private function addTriggerUser(Collection $recipients, array $context): void
     {
@@ -373,7 +389,7 @@ class NotificationRecipientResolver
      * @param  Collection  $recipients  수신자 컬렉션
      * @param  array  $context  컨텍스트
      * @param  array  $rule  수신자 규칙 (relation 키 필요)
-     * @return void
+     * @return void 반환값 없음
      */
     private function addRelatedUser(Collection $recipients, array $context, array $rule): void
     {
@@ -397,7 +413,7 @@ class NotificationRecipientResolver
      *
      * @param  Collection  $recipients  수신자 컬렉션
      * @param  array  $rule  수신자 규칙 (value = role identifier)
-     * @return void
+     * @return void 반환값 없음
      */
     private function addByRole(Collection $recipients, array $rule): void
     {
@@ -439,7 +455,7 @@ class NotificationRecipientResolver
      *
      * @param  Collection  $recipients  수신자 컬렉션
      * @param  array  $rule  수신자 규칙 (value = permission identifier)
-     * @return void
+     * @return void 반환값 없음
      */
     private function addByPermission(Collection $recipients, array $rule): void
     {
@@ -453,11 +469,50 @@ class NotificationRecipientResolver
     }
 
     /**
+     * 사이트 관리자 이메일을 수신자에 추가합니다 (#888).
+     *
+     * 환경설정 > 일반의 관리자 이메일(`general.admin_email`)을 비회원 수신자로 만든다 — 비회원을 허용하는 채널(메일)만 받는다.
+     * 비었거나 형식이 틀리면 아무도 넣지 않고 경고를 남긴다. 화면은 이 칸을 필수로 받지만 설정 파일을 직접 고친 사이트·
+     * 설치 직후 사이트에서는 빌 수 있고, 그때 「보냈는데 아무도 못 받는」 원인을 로그에서 찾을 수 있어야 한다.
+     *
+     * @param  Collection  $recipients  수신자 컬렉션
+     * @return void 반환값 없음
+     */
+    private function addSiteAdminEmail(Collection $recipients): void
+    {
+        $guest = $this->siteAdminRecipient();
+
+        if ($guest !== null) {
+            $recipients->push($guest);
+        }
+    }
+
+    /**
+     * 설정의 관리자 이메일로 비회원 수신자를 만듭니다. 비었거나 형식이 틀리면 경고를 남기고 null 입니다.
+     *
+     * @return GuestNotifiable|null 수신자 또는 null
+     */
+    private function siteAdminRecipient(): ?GuestNotifiable
+    {
+        $email = g7_core_settings('general.admin_email');
+        $guest = GuestNotifiable::fromSiteAdminEmail($email);
+
+        if ($guest === null) {
+            Log::warning('NotificationRecipientResolver: 사이트 관리자 이메일이 비었거나 형식이 틀려 수신자가 없습니다', [
+                'setting' => 'general.admin_email',
+                'empty' => ! is_string($email) || trim($email) === '',
+            ]);
+        }
+
+        return $guest;
+    }
+
+    /**
      * 특정 사용자 UUID 목록을 수신자에 추가합니다.
      *
      * @param  Collection  $recipients  수신자 컬렉션
      * @param  array  $rule  수신자 규칙 (value = user UUID 배열)
-     * @return void
+     * @return void 반환값 없음
      */
     private function addSpecificUsers(Collection $recipients, array $rule): void
     {

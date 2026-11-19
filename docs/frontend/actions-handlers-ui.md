@@ -22,7 +22,7 @@
 14. [ensureIdentityVerified / resolveIdentityChallenge](#ensureidentityverified--resolveidentitychallenge)
 15. [실전 예시](#실전-예시)
 
-> `login` 절에 `loginTwoFactor` · `loginTwoFactorResend` · `loginPasswordChange` · `loginPasswordChangePostpone` 가 함께 설명되어 있습니다.
+> `login` 절에 `loginTwoFactor` · `loginTwoFactorResend` · `loginPasswordChange` · `loginPasswordChangePostpone` 가 함께 설명되어 있고, 로그인 인계 코드를 교환하는 `loginHandoff` 는 그 뒤 절에 있습니다.
 
 ---
 
@@ -312,6 +312,37 @@
 
 반환값은 `{ user, password_change_required: false, postponed_until, dormancy_restored? }` 입니다. 마크업 태그는 `<login-password-change-postpone>` 입니다.
 
+### loginHandoff
+
+외부 인증(소셜 로그인 등)이 본인 확인을 마친 회원에 대해 코어가 발급한 **로그인 인계 코드**를 교환해 로그인합니다(engine-v1.92.0+).
+확장이 회원을 `/login?login_handoff={코드}` 로 보내면 로그인 화면이 진입 시 이 액션을 실행합니다. 서버가 계정 잠금·회원 상태·
+2단계 인증·비밀번호 변경·휴면 해제를 비밀번호 로그인과 똑같이 처리하므로, **반환값은 `login` 과 키 단위로 같습니다** —
+로그인 화면은 `login` 의 성공 분기를 그대로 씁니다(명명 액션으로 두고 두 액션이 함께 부르는 것을 권장).
+
+```html
+<init>
+  <sequence if="{{!!query?.login_handoff}}">
+    <set-state target="global" :isLoggingIn="true" :loginError="null"/>
+    <action handler="loginHandoff" target="user">
+      <success>
+        <action-ref name="applyLoginResult"/>
+      </success>
+      <fail>
+        <set-state target="global" :isLoggingIn="false" loginError="{{error.message}}"/>
+        <replace-url path="/login"/>
+      </fail>
+      <body code="{{query.login_handoff}}"/>
+    </action>
+  </sequence>
+</init>
+```
+
+- `body.code` 가 없으면 요청하지 않고 실패합니다.
+- 코드는 한 번·120초만 통합니다. 만료·재사용·위조는 422(`errors.code`) — 실패하면 주소에서 코드를 지워(`replaceUrl`) 새로고침이 다시 교환하지 않게 합니다.
+- `/api/auth/*` 패턴의 `globalHeaders`(장바구니 키 등)가 함께 실립니다.
+- `target` 은 `user` 만 지원합니다(관리자 인계는 서버가 아직 지원하지 않음 — `admin` 이면 요청 없이 실패).
+- 확장이 코드를 발급하는 쪽 계약은 [인증 및 세션 처리 — 외부 인증 로그인 · 로그인 인계](../backend/authentication.md#외부-인증-로그인--로그인-인계-720) 를 봅니다.
+
 ### logout
 
 로그아웃하고 토큰을 삭제합니다.
@@ -380,9 +411,24 @@
 
 > `closeModal` 은 `target` 을 읽지 않는다 — 모달 id 를 적어도 **모달 스택의 맨 위 모달 하나**를 닫는다. 특정 모달을 골라 닫는 인자는 없다.
 
+**모두 닫기** (engine-v1.95.0+): `params.all` 이 `true` 면 열린 모달을 **모두** 닫는다(`_global.modalStack` 을 비우고 `activeModal` 은 `null`, 모달마다 쌓인 `$parent` 문맥도 비운다). 다른 모달 위에서 뜰 수 있는 안내 모달이 다른 화면으로 보낼 때 쓴다 — 맨 위만 닫으면 밑의 모달이 스택에 남아, 그 화면으로 돌아왔을 때 다시 열린 채 보인다. 값은 엄격 비교라 문자열 `"false"`·숫자 `1` 은 하나만 닫는다.
+
+```html
+<on type="click">
+  <sequence>
+    <close-modal target="required_info_pending_modal" :all="true"/>
+    <navigate path="/mypage/required-info"/>
+  </sequence>
+</on>
+```
+
+```json
+{ "handler": "closeModal", "target": "required_info_pending_modal", "params": { "all": true } }
+```
+
 **작동 원리**:
 - `openModal`: `_global.modalStack`에 모달 ID를 push, `_global.activeModal`도 동시 설정
-- `closeModal`: `_global.modalStack`에서 최상위 모달만 제거, 이전 모달 유지
+- `closeModal`: `_global.modalStack`에서 최상위 모달만 제거, 이전 모달 유지(`params.all: true` 면 전부 제거)
 
 **멀티 모달 지원** (engine-v1.2.0+):
 
@@ -451,6 +497,8 @@
 
 같은 `type`·같은 문구의 토스트가 3초 안에 이미 쌓였으면 새로 쌓지 않는다(engine-v1.78.5) — 화면 공통 데이터소스 여러 개가 같은 오류로 한꺼번에 실패할 때 한 장만 뜬다. 문구가 다르거나 3초가 지나면 종전대로 쌓인다.
 
+자동 닫힘 시간은 토스트를 띄운 시각(항목의 `createdAt`)부터 센다. 번들 템플릿(`sirsoft-admin_basic`·`sirsoft-basic`)의 Toast 는 띄운 뒤 화면이 바뀌어 새로 마운트돼도(로그인 화면 → 관리자 화면처럼 베이스 레이아웃이 다른 이동) 남은 시간만 보이고, 시간이 이미 지난 항목은 다시 그리지 않고 `_global.toasts` 에서 지운다. 그래서 `toast` 다음에 `navigate` 를 두어도 같은 알림이 정해진 시간보다 오래 보이거나 다음 화면에서 다시 나타나지 않는다.
+
 ---
 
 ## confirm (액션 속성)
@@ -504,15 +552,25 @@
 
 | 필드 | 타입 | 필수 | 설명 |
 |------|------|------|------|
-| `confirm` | string | ❌ | 확인 대화상자에 표시할 메시지 (`$t:` 다국어 지원) |
+| `confirm` | string | ❌ | 확인 대화상자에 표시할 메시지 (`$t:` 다국어 지원, `{{}}` 바인딩 가능) |
 
 ### 작동 원리
 
 1. 액션이 트리거되면 `confirm` 속성이 있는지 확인
-2. `$t:` 접두사가 있으면 다국어 번역 수행
-3. `window.confirm(message)` 호출
-4. 사용자가 "확인" → 핸들러 실행
-5. 사용자가 "취소" → 핸들러 실행 중단 (아무 동작 없음)
+2. `{{}}` 바인딩을 풀고, `$t:` 접두사가 있으면 다국어 번역 수행
+3. 풀린 문구가 비었으면(빈 문자열·공백) 확인 창 없이 핸들러 실행 (engine-v1.93.0)
+4. 문구가 있으면 `window.confirm(message)` 호출
+5. 사용자가 "확인" → 핸들러 실행
+6. 사용자가 "취소" → 핸들러 실행 중단 (아무 동작 없음)
+
+조건에 따라 물을 때는 묻지 않는 갈래가 빈 문자열을 돌려주게 쓴다 — `false` 는 문자열 "false" 로 풀려 그 글자로 묻는다.
+
+```json
+{
+  "handler": "apiCall",
+  "confirm": "{{_local.hasToken ? '$t:my.reissue_confirm' : ''}}"
+}
+```
 
 ### 주의사항
 
@@ -1026,6 +1084,17 @@ sequence 내에서 `setState` 실행 후 다음 스텝은 **갱신된 상태**�
 
 sequence 안의 재계산도 화면 렌더와 같은 규칙을 따릅니다(engine-v1.74.0+): 정의 순서대로 계산해 앞의 computed 를 뒤의 computed 가 최신값으로 읽고, `$switch`·파이프·리터럴 computed 도 재계산 뒤 키가 사라지지 않습니다. 계산에 실패한 키는 직전 값을 유지합니다.
 
+`_global` 은 읽는 자리에 따라 다릅니다.
+
+| 자리 | 읽는 값 |
+| --- | --- |
+| params·`body`·apiCall `target`(engine-v1.96.2+)·중첩 sequence(`action-ref`·switch case 배열) 안의 같은 자리 | 지금의 전역 상태 — 앞 단계 `setState target="global"`, 앞 단계 apiCall 의 `onSuccess` 가 쓴 값이 보인다 |
+| 단계 `if`·`conditions` 분기 판정 | 이벤트가 일어난 때의 값 — 같은 동작 안에서 바뀐 전역 값은 보이지 않는다 |
+
+target 은 engine-v1.96.2 부터 params 와 같아졌습니다. 그 전에는 target 만 이벤트 때 값을 읽어, `<set-state target="global" req="{{({url: '/api/x'})}}"/>` 다음 `<api-call target="{{_global.req?.url}}"/>` 가 첫 클릭에 빈 주소(현재 페이지)로 나갔습니다.
+
+판정이 이벤트 때 값인 것은 의도된 동작이고 번들 레이아웃이 기댑니다 — 로그인 폼은 1단계 `login`(onSuccess 가 `_global.twoFactor` 를 심음)과 2단계 `if="{{_global.twoFactor?.required}}"` 가 한 제출에 하나만 돌고, 게시판 삭제는 `deleteModal` 을 비운 뒤에도 같은 onSuccess 안에서 `if="{{_global.deleteModal.type === 'comment'}}"` 로 댓글·글을 가릅니다. 같은 동작 안에서 바꾼 값으로 분기하려면 그 값을 `_local` 에 두거나(sequence 가 `_local` 을 단계마다 이어 준다) `{{response.*}}` 로 가릅니다.
+
 #### $prev와 $results 상세
 
 | 변수 | 타입 | 설명 |
@@ -1363,6 +1432,8 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 외부 스크립트를 동적으로 로드합니다. 외부 서비스(Daum 우편번호, 결제 SDK 등) 연동 시 사용합니다.
 
 `src` 는 레이아웃 `scripts[]` 와 **같은 출처 정책**을 받습니다 — same-origin 절대 경로(`/` 로 시작)이거나, 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트여야 합니다. 그 밖의 원격 URL 은 로드 전에 차단되고 액션이 실패합니다(`onError`·`errorHandling` 오류 채널로 전달). 상세: [security.md](security.md#외부-스크립트-신뢰-출처-허용목록)
+
+same-origin 경로는 레이아웃에 **접두사 없이**(`/api/plugins/assets/…`) 적습니다. 사이트를 하위 폴더(`https://host/g7/`)에 설치하면 엔진이 싣는 시점에 마운트 접두사를 붙입니다(이미 붙은 값과 `//host`·절대 URL 은 그대로). 레이아웃 `scripts[]` 와 레이아웃 편집기 미리보기도 같은 규칙입니다.
 
 ```html
 <on type="click">

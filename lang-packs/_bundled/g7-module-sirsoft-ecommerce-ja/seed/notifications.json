@@ -1310,5 +1310,45 @@
         "body": "決済本人確認 決済を進行するために本人確認が必要です。以下の認証コードを入力してください。 {code} このコードは {expire_minutes}分 後に失効します。 ご本人が決済を進行していない場合は、このメールを無視し、すぐにパスワードを変更してください。 ありがとうございます。 {app_name}"
       }
     }
+  },
+  "export_completed": {
+    "definition": {
+      "name": "エクスポート完了",
+      "description": "リクエストされたエクスポートファイルが準備されたら、リクエスターに送信"
+    },
+    "templates": {
+      "database": {
+        "subject": "エクスポートファイルが準備されました",
+        "body": "{type_label}エクスポート({row_count}行)が完了しました。{expires_at}までダウンロードできます。"
+      },
+      "sms": {
+        "subject": "エクスポートファイルが準備されました",
+        "body": "{type_label}エクスポート({row_count}行)が完了しました。{expires_at}までダウンロードできます。"
+      },
+      "alimtalk": {
+        "subject": "エクスポートファイルが準備されました",
+        "body": "{type_label}エクスポート({row_count}行)が完了しました。{expires_at}までダウンロードできます。"
+      }
+    }
+  },
+  "export_failed": {
+    "definition": {
+      "name": "エクスポート失敗",
+      "description": "リクエストされたエクスポートファイルを作成できない場合、リクエスターに送信"
+    },
+    "templates": {
+      "database": {
+        "subject": "エクスポートに失敗しました",
+        "body": "{type_label}エクスポートを作成できませんでした。理由：{error_message}"
+      },
+      "sms": {
+        "subject": "エクスポートに失敗しました",
+        "body": "{type_label}エクスポートを作成できませんでした。理由：{error_message}"
+      },
+      "alimtalk": {
+        "subject": "エクスポートに失敗しました",
+        "body": "{type_label}エクスポートを作成できませんでした。理由：{error_message}"
+      }
+    }
   }
 }

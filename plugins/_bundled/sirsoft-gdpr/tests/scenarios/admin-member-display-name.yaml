@@ -1,0 +1,53 @@
+feature: GDPR 관리자 화면의 회원 표시 이름 (#490)
+
+description: |
+  동의 기록의 회원 이름(`user.name`), 정책 버전의 발행자 이름(`publisher.name`, 목록, 현재 버전, 버전 상세), 연간 안내 대상
+  명단의 회원 칸(`title`)은 회원 이름 컬럼을 직접 읽지 않고 관리자 영역(`core:admin`) 표시 이름으로 계산한다. 회원 관계는 표시
+  이름 계산에 필요한 컬럼(닉네임, 상태, 회원이 고른 종류 포함)으로 읽고, 목록은 한 페이지의 회원 값을 한 번에 읽어 둔다.
+
+  실명은 이름 키에 싣지 않는다. 보는 관리자에게 회원 조회 권한(`core.users.read`)이 있고 실명이 표시 이름과 다를 때만 같은
+  묶음의 `real_name` 으로 싣고, 화면은 그 키가 있을 때만 이름 아래에 작은 글씨 보조 줄(접근 가능한 이름 「실명 ○○」)을 그린다.
+  대상 명단은 코어 개인정보 대상 명단과 같이 실명을 싣지 않는다. 설정을 바꾸지 않은 사이트의 응답은 수정 전과 같다.
+
+  축은 하나(`case`)다. 자리, 영역, 권한을 축으로 나누면 곱이 미커버로 남으므로 잠그는 사실 하나를 한 사례로 편다.
+
+axes:
+  case:
+    # 응답
+    - consent_log_nickname_with_member_read
+    - consent_log_nickname_without_member_read
+    - consent_log_default_site_unchanged
+    - policy_publisher_nickname_with_member_read
+    - policy_publisher_nickname_without_member_read
+    - policy_publisher_default_site_unchanged
+    - annual_targets_nickname_admin_area
+    - annual_targets_default_site_unchanged
+    # 화면
+    - sub_line_markup
+    - consent_log_sub_line_rendering
+    - policy_history_sub_line_rendering
+    - policy_current_and_snapshot_sub_line_rendering
+
+effects:
+  - consent_log_member_name_follows_admin_area
+  - consent_log_real_name_added_for_member_readers
+  - consent_log_real_name_hidden_without_member_read
+  - consent_log_member_name_unchanged_on_default_site
+  - consent_log_guest_row_has_no_member
+  - policy_publisher_name_follows_admin_area
+  - policy_publisher_real_name_added_for_member_readers
+  - policy_publisher_real_name_hidden_without_member_read
+  - policy_publisher_name_unchanged_on_default_site
+  - policy_publisher_null_without_publisher
+  - annual_target_title_follows_admin_area
+  - annual_target_has_no_real_name_key
+  - annual_target_title_unchanged_on_default_site
+  - sub_line_in_each_member_name_spot
+  - sub_line_label_uses_expression_translation
+  - consent_log_sub_line_drawn_only_when_key_present
+  - policy_history_sub_line_drawn_only_when_key_present
+  - policy_current_and_snapshot_sub_line_drawn_only_when_key_present
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/Api/Admin/AdminMemberDisplayNameTest.php
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/adminRealNameSub.test.tsx

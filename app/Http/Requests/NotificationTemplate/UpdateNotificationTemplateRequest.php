@@ -5,6 +5,7 @@ namespace App\Http\Requests\NotificationTemplate;
 use App\Extension\HookManager;
 use App\Models\NotificationTemplate;
 use App\Rules\LocaleRequiredTranslatable;
+use App\Services\NotificationChannelService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -31,10 +32,15 @@ class UpdateNotificationTemplateRequest extends FormRequest
             // subject 컬럼은 nullable 이다 (제목 개념이 없는 채널이 존재).
             // 스키마와 정합하도록 미전송/null 을 허용한다.
             'subject' => ['sometimes', 'nullable', 'array', new LocaleRequiredTranslatable(maxLength: 500)],
-            'body' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 65535)],
+            // 본문을 확장이 자기 저장소에서 받는 채널(편집기 `none`, 예: 알림톡)은 코어 본문 칸이 화면에 없다 — 그 확장의
+            // 저장 버튼이 받는 사람을 저장하려고 이 API 를 부를 때, 운영자가 수단을 켜서 만든 빈 템플릿이면 본문이 비어 있다.
+            'body' => $this->isExtensionEditedChannel()
+                ? ['sometimes', 'array']
+                : ['required', 'array', new LocaleRequiredTranslatable(maxLength: 65535)],
             'click_url' => ['nullable', 'string', 'max:500'],
             'recipients' => ['sometimes', 'nullable', 'array'],
-            'recipients.*.type' => ['required', 'string', 'in:trigger_user,related_user,role,specific_users'],
+            // site_admin_email(#888): 환경설정 > 일반의 관리자 이메일 한 곳 — 값 칸이 없다.
+            'recipients.*.type' => ['required', 'string', 'in:trigger_user,related_user,role,specific_users,site_admin_email'],
             // 값의 모양은 타입이 정한다. `nullable` 하나만 두면 역할 칸에 객체가, 사용자 칸에
             // 문자열이 들어와도 그대로 저장되고 **발송 시점에 수신자 0명**으로만 드러난다 —
             // 예외도 로그도 화면에 남지 않는다.
@@ -81,6 +87,19 @@ class UpdateNotificationTemplateRequest extends FormRequest
     }
 
     /**
+     * 이 템플릿의 채널이 본문을 확장이 따로 받는 채널(편집기 `none`)인지 판정합니다.
+     *
+     * @return bool 편집기가 `none` 이면 true
+     */
+    private function isExtensionEditedChannel(): bool
+    {
+        $template = $this->route('template');
+
+        return $template instanceof NotificationTemplate
+            && app(NotificationChannelService::class)->templateEditorFor((string) $template->channel) === 'none';
+    }
+
+    /**
      * 이 템플릿이 속한 정의가 선언한 relation 키 목록을 반환합니다.
      *
      * 선언 밖의 키를 저장하면 발송 시점에 **수신자 0명**이 되고 예외도 로그도 남지 않는다.
@@ -108,7 +127,7 @@ class UpdateNotificationTemplateRequest extends FormRequest
      * - `role`: 식별자 문자열 **또는** 문자열 배열(다중 선택). 기존 저장값이 문자열이라
      *   둘 다 받는다 — 배열만 받으면 손대지 않은 8행이 저장 시점에 422 가 된다.
      * - `specific_users`: UUID 배열.
-     * - 그 외(`trigger_user`·`related_user`): 값 축이 없다.
+     * - 그 외(`trigger_user`·`related_user`·`site_admin_email`): 값 축이 없다.
      *
      * @param  mixed  $type  수신자 타입
      * @return array<int, mixed> 검증 규칙

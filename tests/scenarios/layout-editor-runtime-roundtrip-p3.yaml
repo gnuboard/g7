@@ -1,0 +1,58 @@
+# π3 (#869) 레이아웃 편집기 시험 표식 부채 채우기 — 이 매니페스트는 아래 test_files 의 각 시험이 재는 효과를
+# 시험 단위로 선언한다. 축 roundtrip 은 시험 대상 단위이다.
+
+feature: 레이아웃 편집기 산출물의 런타임 라운드트립 — 드래그 이동, 에러 처리, init_actions, 초기 상태, computed, 페이지 상태, 버전 content
+
+description: |
+  편집기가 만든 레이아웃 조각이 실제 엔진 경로(DynamicRenderer, TemplateApp, ErrorHandlingResolver,
+  ErrorPageHandler, useLayoutDocument 저장)를 거쳐도 의도대로 실행되고 렌더되는지 잰다.
+
+axes:
+  roundtrip: [drag_drop, error_handling, init_actions, initial_state, page_settings, page_state, version_content]
+
+effects:
+  - dnd_move_undo_redo_via_drag_history
+  - dnd_move_persists_in_save_payload_and_reload
+  - dnd_blocks_ancestor_into_descendant
+  - dnd_moves_nested_node_out_to_root
+  - dnd_moves_root_node_into_container
+  - dnd_consecutive_moves_accumulate
+  - dnd_moves_node_within_container_and_pushes_history
+  - error_page_default_key_renders_undefined_code
+  - error_page_resolves_layout_by_error_config_code
+  - error_handling_stripped_child_matches_merged_runtime
+  - error_handling_default_row_falls_back
+  - error_handling_registered_code_dispatches_handler
+  - init_actions_parent_unchanged_after_child_edit
+  - init_actions_source_meta_keeps_order
+  - init_actions_source_meta_reaches_handler_and_runs
+  - init_actions_parent_first_child_after
+  - initial_state_global_merged_injected
+  - initial_state_legacy_state_alias_injected
+  - initial_state_reverted_key_uses_parent
+  - initial_state_deep_value_injected
+  - initial_state_nested_object_replaced_with_depth
+  - initial_state_child_overrides_parent_shallow
+  - computed_plain_remove_patches_merged_only
+  - computed_route_override_revert_patches_merged_and_own
+  - computed_add_patches_merged_and_reappears
+  - page_state_query_tab_patch_renders_tab
+  - page_state_route_id_null_create_mode
+  - page_state_route_id_edit_mode
+  - page_state_local_flag_branch_actual_edit
+  - page_state_local_flag_branch_password_entry
+  - page_state_global_login_error_rendered
+  - page_state_local_form_error_rendered
+  - page_state_no_form_errors_shows_none
+  - version_content_with_data_sources_binds
+  - version_content_swap_renders_new_tree_only
+  - version_content_renders
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/layouts/drag-drop-matrix.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/layouts/error-handling-tab-roundtrip.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/layouts/init-actions-inheritance-render.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/layouts/initial-state-inheritance-render.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/layouts/page-settings-roundtrip.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/layouts/pageStateSimulation.render.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/layouts/version-content-render.test.tsx

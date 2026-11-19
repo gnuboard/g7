@@ -8,7 +8,7 @@
  * 만든 파일은 이 스펙이 끝에서 지운다. 실패로 중단돼도 이름에 `__pwtmp` 접두가 붙어 있어
  * 사람이 알아볼 수 있다.
  *
- * @scenario surface=code_editor,entry=direct
+ * 소속 시나리오(마커 아님 — 평문): code-editor-file-crud
  * @effects code_editor_can_create_rename_and_delete_files
  *
  * **이 묶음은 `--workers=1` 로 돌린다.** `code-editor-*.spec.ts` 는 같은 시드 화면
@@ -77,7 +77,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 파일 조작', () => {
   });
 
   /**
-   * @scenario promise=file_lifecycle, surface=browser
+   * @scenario operation=create, operation=rename, operation=delete, target=layout
    *
    * @effects code_editor_creates_renames_and_deletes_a_file
    */
@@ -131,8 +131,6 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 파일 조작', () => {
   /**
    * 새 폴더는 **서버를 부르지 않는다** — 폴더는 파일 이름의 `/` 일 뿐이다.
    *
-   * @scenario promise=virtual_folders, surface=browser
-   *
    * @effects code_editor_new_folder_is_virtual_until_a_file_is_saved
    */
   test('새 폴더는 서버 왕복 없이 트리에만 선다', async ({ page, layoutEditToken }) => {
@@ -160,7 +158,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 파일 조작', () => {
    *
    * "삭제할 수 없습니다" 만 띄우면 사용자는 무엇을 정리해야 할지 알 수 없어 결국 DB 를 연다.
    *
-   * @scenario promise=delete_is_blocked_with_reasons, surface=browser
+   * @scenario operation=delete, target=layout
    *
    * @effects code_editor_shows_what_blocks_a_delete
    */
@@ -190,7 +188,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 파일 조작', () => {
   /**
    * 이름 규칙은 서버가 판정하고, 그 사유가 창 안에 남는다.
    *
-   * @scenario promise=invalid_name_is_rejected, surface=browser
+   * @scenario operation=create, target=layout
    *
    * @effects code_editor_rejects_invalid_file_names
    */

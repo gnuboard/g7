@@ -14,8 +14,6 @@ use Tests\TestCase;
  *
  * 잠긴 키는 Config::set 이 아예 발생하지 않아야 한다 — 그것이 `.env` 값이 살아남는
  * 유일한 조건이다. 스위치가 꺼진 축은 종전 주입이 그대로 일어나는지도 함께 고정한다.
- *
- * @effects switch_off_behaves_identically, explicit_env_skips_injection, false_env_is_explicit, websocket_enabled_lock_skips_off_branch, debug_mode_lock_corrects_outbound_gate
  */
 class SettingsServiceProviderEnvPriorityTest extends TestCase
 {
@@ -23,6 +21,7 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
      * 스위치를 켜고 지정한 env 변수만 명시 상태로 만듭니다.
      *
      * @param  array<int, string>  $explicitVars  명시 상태로 만들 env 변수 목록
+     * @return void 반환값 없음
      */
     private function enableWith(array $explicitVars): void
     {
@@ -32,6 +31,8 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
 
     /**
      * 스위치를 끕니다 (현행 동작).
+     *
+     * @return void 반환값 없음
      */
     private function disableSwitch(): void
     {
@@ -46,6 +47,8 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
      * 그 본문의 분기를 검증하려면 환경을 바꿔야 합니다. 컨테이너의 `env` 바인딩을 교체하면
      * `app()->environment()` 의 해석이 바뀝니다. 앱 인스턴스는 테스트마다 새로 만들어지므로
      * 이 변경은 그 테스트 안에만 머뭅니다.
+     *
+     * @return void 반환값 없음
      */
     private function forceNonTestingEnvironment(): void
     {
@@ -58,6 +61,7 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
      * @param  string  $method  메서드명 (예: applyMailConfig)
      * @param  string  $category  카테고리명
      * @param  array<string, mixed>  $settings  그 카테고리의 설정 데이터
+     * @return void 반환값 없음
      */
     private function callApply(string $method, string $category, array $settings): void
     {
@@ -75,6 +79,10 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
      * 잠긴 general 키는 주입되지 않고 `.env` 유래 config 값이 살아남습니다.
      *
      * @scenario switch=on, key_state=unlocked, surface=inject
+     *
+     * @effects explicit_env_skips_injection
+     *
+     * @return void 반환값 없음
      */
     public function test_locked_general_key_is_not_injected(): void
     {
@@ -95,6 +103,10 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
      * 스위치가 꺼져 있으면 general 주입이 종전과 동일합니다.
      *
      * @scenario switch=off, key_state=unlocked, surface=inject
+     *
+     * @effects switch_off_behaves_identically
+     *
+     * @return void 반환값 없음
      */
     public function test_switch_off_injects_general_as_before(): void
     {
@@ -108,6 +120,12 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
 
     /**
      * timezone 이 잠기면 그 키가 파생시키는 config 2곳 모두 주입되지 않습니다.
+     *
+     * @scenario switch=on, key_state=locked_plain, surface=inject
+     *
+     * @effects explicit_env_skips_injection
+     *
+     * @return void 반환값 없음
      */
     public function test_locked_timezone_skips_both_derived_config_keys(): void
     {
@@ -125,6 +143,10 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
 
     /**
      * 잠긴 mail 키만 주입에서 빠집니다.
+     *
+     * @effects explicit_env_skips_injection
+     *
+     * @return void 반환값 없음
      */
     public function test_locked_mail_keys_are_not_injected(): void
     {
@@ -150,6 +172,12 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
      *
      * 이 지점은 저장값이 비어도 기본값('api.mailgun.net')을 박는 무조건 주입이었다.
      * 잠금으로 키가 제거되면 그 강제까지 멈춰야 `.env` 값이 살아남는다.
+     *
+     * @scenario switch=on, key_state=locked_plain, surface=inject
+     *
+     * @effects explicit_env_skips_injection
+     *
+     * @return void 반환값 없음
      */
     public function test_locked_mailgun_endpoint_skips_unconditional_default(): void
     {
@@ -167,6 +195,10 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
 
     /**
      * 스위치가 꺼져 있으면 mailgun_endpoint 의 기본값 강제가 종전대로 유지됩니다.
+     *
+     * @effects switch_off_behaves_identically
+     *
+     * @return void 반환값 없음
      */
     public function test_switch_off_keeps_mailgun_endpoint_default_forcing(): void
     {
@@ -183,6 +215,12 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
 
     /**
      * 잠긴 ses_region 도 기본값 강제 주입을 하지 않습니다 (F3).
+     *
+     * @scenario switch=on, key_state=locked_plain, surface=inject
+     *
+     * @effects explicit_env_skips_injection
+     *
+     * @return void 반환값 없음
      */
     public function test_locked_ses_region_skips_unconditional_default(): void
     {
@@ -202,10 +240,13 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
     /**
      * debug.mode 잠금 4케이스: app.debug 주입 스킵 + 로그 레벨 2차 효과 보정.
      *
+     * @effects debug_mode_lock_corrects_outbound_gate
+     *
      * @param  bool  $modeLocked  APP_DEBUG 명시 여부
      * @param  bool  $levelLocked  LOG_LEVEL 명시 여부
      * @param  bool  $envDebug  `.env` 의 APP_DEBUG 유효값
      * @param  string  $expectedLogLevel  기대 logging.level
+     * @return void 반환값 없음
      */
     #[DataProvider('debugLockCases')]
     public function test_debug_lock_matrix(bool $modeLocked, bool $levelLocked, bool $envDebug, string $expectedLogLevel): void
@@ -239,7 +280,7 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
     /**
      * debug 잠금 매트릭스 케이스.
      *
-     * @return array<string, array{bool, bool, bool, string}>
+     * @return array<string, array{bool, bool, bool, string}> 사례 이름을 키로 한 mode 잠금, level 잠금, 저장 mode, 기대 로그 레벨
      */
     public static function debugLockCases(): array
     {
@@ -261,6 +302,10 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
      *
      * 보정이 없으면 잠금으로 mode 키가 사라져 게이트가 항상 닫히고, 운영자가 저장한
      * 프록시가 오류·로그 없이 영구 미적용된다.
+     *
+     * @effects debug_mode_lock_corrects_outbound_gate
+     *
+     * @return void 반환값 없음
      */
     public function test_locked_debug_mode_corrects_outbound_proxy_gate(): void
     {
@@ -281,6 +326,10 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
 
     /**
      * `.env` 의 APP_DEBUG 가 꺼져 있으면 잠금 상태에서도 프록시는 적용되지 않습니다.
+     *
+     * @effects debug_mode_lock_corrects_outbound_gate
+     *
+     * @return void 반환값 없음
      */
     public function test_locked_debug_mode_off_keeps_proxy_gate_closed(): void
     {
@@ -300,6 +349,12 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
 
     /**
      * redis 관련 키가 잠기면 default·cache 두 커넥션 모두 주입되지 않습니다.
+     *
+     * @scenario switch=on, key_state=locked_plain, surface=inject
+     *
+     * @effects explicit_env_skips_injection
+     *
+     * @return void 반환값 없음
      */
     public function test_locked_redis_keys_skip_both_connections(): void
     {
@@ -328,6 +383,10 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
      *
      * 잠금으로 키가 제거되면 `empty()` 가 참이 되어 OFF 강제 분기로 오진입한다.
      * 그러면 `.env` 로 웹소켓을 켠 운영자에게 강제 OFF 가 걸린다.
+     *
+     * @effects websocket_enabled_lock_skips_off_branch
+     *
+     * @return void 반환값 없음
      */
     public function test_locked_websocket_toggle_does_not_force_off(): void
     {
@@ -348,6 +407,10 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
 
     /**
      * 스위치가 꺼져 있으면 웹소켓 OFF 강제 3종이 종전대로 동작합니다.
+     *
+     * @effects switch_off_behaves_identically
+     *
+     * @return void 반환값 없음
      */
     public function test_switch_off_keeps_websocket_off_forcing(): void
     {
@@ -367,6 +430,12 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
 
     /**
      * 잠긴 log_driver 는 stack 채널 목록을 덮지 않습니다.
+     *
+     * @scenario switch=on, key_state=locked_plain, surface=inject
+     *
+     * @effects explicit_env_skips_injection
+     *
+     * @return void 반환값 없음
      */
     public function test_locked_log_driver_skips_stack_channels(): void
     {
@@ -386,6 +455,12 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
 
     /**
      * 잠긴 upload 키는 KB 환산 주입도 하지 않습니다.
+     *
+     * @scenario switch=on, key_state=locked_plain, surface=inject
+     *
+     * @effects explicit_env_skips_injection
+     *
+     * @return void 반환값 없음
      */
     public function test_locked_upload_key_is_not_injected(): void
     {
@@ -404,6 +479,12 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
 
     /**
      * 잠긴 core_update 키는 주입되지 않습니다.
+     *
+     * @scenario switch=on, key_state=locked_plain, surface=inject
+     *
+     * @effects explicit_env_skips_injection
+     *
+     * @return void 반환값 없음
      */
     public function test_locked_core_update_key_is_not_injected(): void
     {
@@ -421,6 +502,10 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
 
     /**
      * 잠긴 geoip 불리언 키는 주입되지 않습니다 (falsy 명시 축).
+     *
+     * @effects false_env_is_explicit
+     *
+     * @return void 반환값 없음
      */
     public function test_locked_geoip_boolean_key_is_not_injected(): void
     {
@@ -447,6 +532,8 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
      * 문자열이 되어 어느 분기에도 들어가지 않고, mailgun 자격증명이 오류 없이 사라집니다.
      *
      * @scenario switch=on, key_state=locked_plain, surface=inject
+     *
+     * @return void 반환값 없음
      */
     public function test_locked_mailer_still_injects_unlocked_driver_children(): void
     {
@@ -474,6 +561,8 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
      * 그 값이 `.env` 가 소유한 REVERB_HOST/PORT/SCHEME 자리에 실려 잠금이 무력해집니다.
      *
      * @scenario switch=on, key_state=locked_plain, surface=inject
+     *
+     * @return void 반환값 없음
      */
     public function test_locked_websocket_server_endpoint_is_not_overwritten_by_client_fallback(): void
     {
@@ -499,6 +588,12 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
 
     /**
      * 미잠금 상태에서는 server endpoint 폴백이 종전대로 동작합니다 (음성 대조).
+     *
+     * @scenario switch=on, key_state=unlocked, surface=inject
+     *
+     * @effects unlocked_websocket_server_endpoint_falls_back_to_client
+     *
+     * @return void 반환값 없음
      */
     public function test_websocket_server_endpoint_falls_back_to_client_when_unlocked(): void
     {
@@ -523,6 +618,8 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
      * 첨부 업로드만 로컬 디스크로 되돌아갑니다 (오류 없이 갈라집니다).
      *
      * @scenario switch=on, key_state=locked_plain, surface=inject
+     *
+     * @return void 반환값 없음
      */
     public function test_locked_storage_driver_still_derives_attachment_disk(): void
     {
@@ -541,6 +638,10 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
 
     /**
      * ATTACHMENT_DISK 가 명시된 설치에서는 파생이 발동하지 않습니다 (음성 대조).
+     *
+     * @effects explicit_attachment_disk_wins_over_derivation
+     *
+     * @return void 반환값 없음
      */
     public function test_explicit_attachment_disk_still_wins_over_derivation(): void
     {

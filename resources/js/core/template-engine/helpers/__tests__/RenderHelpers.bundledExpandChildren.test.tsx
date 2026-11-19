@@ -2,7 +2,8 @@
  * 실제 번들 레이아웃으로 잠그는 셀 경로 반응형 분기 (이슈 #141, §7 V4 대체)
  *
  * 이커머스 상품 관리 목록의 확장 행(`expandChildren`)은 `responsive.portable` 에서 옵션을
- * 카드(`option-row-*`)로, 기본(데스크톱)에서 표(`overflow-x-auto > table`)로 그린다.
+ * 카드(`option-row-*`)로, 기본(데스크톱)에서 표(`ecommerce:overflow-x-auto > table`)로 그린다.
+ * 클래스 이름은 이 모듈이 자기 CSS 로 싣는 앞글자 이름이다(#816 — `admin-card` → `ecommerce-admin-card`).
  * 편집기 미리보기는 옵션을 불러오는 핸들러를 돌리지 않아 카드 분기(iteration)를 라이브로
  * 볼 수 없으므로, 번들 JSON 을 그대로 읽어 렌더 환경 폭에 따른 분기를 잠근다.
  */
@@ -39,9 +40,11 @@ const componentMap = new Proxy({} as Record<string, React.ComponentType<any>>, {
   },
 });
 
-/** 좁은 화면 카드(`admin-card`)와 표 행(`Tr`)은 같은 `option-row-*` testid 를 쓴다 */
-const CARD = '.admin-card[data-testid^="option-row-"]';
+/** 좁은 화면 카드(`ecommerce-admin-card`)와 표 행(`Tr`)은 같은 `option-row-*` testid 를 쓴다 */
+const CARD = '.ecommerce-admin-card[data-testid^="option-row-"]';
 const TABLE_ROW = '[data-name="Tr"][data-testid^="option-row-"]';
+/** 표 가로 스크롤 래퍼 — 접두 유틸리티 이름의 `:` 는 선택자에서 이스케이프한다 */
+const TABLE_WRAPPER = '.ecommerce\\:overflow-x-auto';
 
 /** 레이아웃 트리에서 첫 `expandChildren` 을 찾는다 */
 function findExpandChildren(node: any): any[] | null {
@@ -111,7 +114,7 @@ describe('번들 상품 목록 확장 행 — 렌더 환경 폭으로 카드/표
     const { container } = renderWithWidth(390);
     expect(container.querySelectorAll(CARD)).toHaveLength(2);
     expect(container.querySelectorAll(TABLE_ROW)).toHaveLength(0);
-    expect(container.querySelectorAll('.overflow-x-auto')).toHaveLength(0);
+    expect(container.querySelectorAll(TABLE_WRAPPER)).toHaveLength(0);
   });
 
   /**
@@ -122,6 +125,6 @@ describe('번들 상품 목록 확장 행 — 렌더 환경 폭으로 카드/표
     const { container } = renderWithWidth(1280);
     expect(container.querySelectorAll(CARD)).toHaveLength(0);
     expect(container.querySelectorAll(TABLE_ROW)).toHaveLength(2);
-    expect(container.querySelectorAll('.overflow-x-auto').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll(TABLE_WRAPPER).length).toBeGreaterThan(0);
   });
 });

@@ -3,17 +3,25 @@
 namespace Modules\Sirsoft\Ecommerce;
 
 use App\Extension\AbstractModule;
+use App\Extension\Helpers\ExtensionLangTexts;
 use App\Notifications\Identity\IdentityNotificationType;
 use App\Seo\Concerns\LocalizesSeoValues;
-use App\Support\SiteUrl;
+use App\Support\AssetUrl;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Ecommerce\Benchmark\OrderCreationBenchmark;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ClaimReasonSeeder;
+use Modules\Sirsoft\Ecommerce\Database\Seeders\ManagerNotificationPermissionSeeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\SequenceSeeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingCarrierSeeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingTypeSeeder;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExportStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Fields\OrderContactFields;
+use Modules\Sirsoft\Ecommerce\Fields\UserPreferenceFieldHandler;
 use Modules\Sirsoft\Ecommerce\Http\Middleware\DetectDevice;
 use Modules\Sirsoft\Ecommerce\Http\Middleware\ResolveShippingCountry;
 use Modules\Sirsoft\Ecommerce\Http\Middleware\VerifyGuestOrderToken;
@@ -34,6 +42,10 @@ use Modules\Sirsoft\Ecommerce\Listeners\EcommerceAdminActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceNotificationDataListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceScopeLedgerListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceUserActivityLogListener;
+use Modules\Sirsoft\Ecommerce\Listeners\ExemptRequiredFieldsRoutesListener;
+use Modules\Sirsoft\Ecommerce\Listeners\ExportActivityLogDescriptionResolver;
+use Modules\Sirsoft\Ecommerce\Listeners\ExportActivityLogListener;
+use Modules\Sirsoft\Ecommerce\Listeners\ExportNotificationDataListener;
 use Modules\Sirsoft\Ecommerce\Listeners\GrantSignupMileageListener;
 use Modules\Sirsoft\Ecommerce\Listeners\InjectAppConfigDeviceListener;
 use Modules\Sirsoft\Ecommerce\Listeners\IssueCashReceiptOnDepositListener;
@@ -48,6 +60,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\ProvideNecessaryStorageKeysListener;
 use Modules\Sirsoft\Ecommerce\Listeners\PurgeCashReceiptIdentifierListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SearchProductsListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoCategoryCacheListener;
+use Modules\Sirsoft\Ecommerce\Listeners\SeoMemberDisplayNameCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoProductCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoProductDetailRegenerateListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoSettingsCacheListener;
@@ -57,16 +70,19 @@ use Modules\Sirsoft\Ecommerce\Listeners\StripBusinessInfoWhenHiddenListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SyncOptionGroupsListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SyncProductFromOptionListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SystemActorContextListener;
+use Modules\Sirsoft\Ecommerce\Listeners\ThumbnailSourcesListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserCurrencyInfoListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserEcommerceDataInfoListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserListAddressFilterListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserListMileageFilterListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserMileageCleanupListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserMileageInfoListener;
-use Modules\Sirsoft\Ecommerce\Listeners\UserPreferenceCoreSaveListener;
+use Modules\Sirsoft\Ecommerce\Listeners\UserPreferenceFieldDefinitionListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserShippingCountryInfoListener;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderRepository;
+use Modules\Sirsoft\Ecommerce\Services\ExportService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimNotificationHooks;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 class Module extends AbstractModule
 {
@@ -92,6 +108,54 @@ class Module extends AbstractModule
                 'description' => ['ko' => '결제 통화에서 고를 수 있는 결제수단 (뺄 수만 있음)', 'en' => 'Payment methods selectable for a payment currency (remove only)'],
                 'parameters' => ['methodIds' => 'array - 후보 결제수단 id', 'currency' => 'string - 결제 통화 (ISO 4217)'],
                 'return' => 'array'],
+            ...$this->exportHooks(),
+        ];
+    }
+
+    /**
+     * 내보내기(#787)의 공개 훅 계약 — 작업 수명 주기 액션, 유형·형식·필드 확장 필터, 요청 검증 규칙 필터.
+     *
+     * @return array<int, array<string, mixed>> 훅 정의
+     */
+    private function exportHooks(): array
+    {
+        $exportParam = ['export' => 'Modules\\Sirsoft\\Ecommerce\\Models\\Export - 내보내기 작업'];
+        $rules = static fn (string $key, string $ko, string $en): array => [
+            'name' => "sirsoft-ecommerce.export.{$key}_validation_rules", 'type' => 'filter',
+            'description' => ['ko' => $ko, 'en' => $en],
+            'parameters' => ['rules' => 'array', 'request' => 'FormRequest'], 'return' => 'array',
+        ];
+
+        return [
+            ['name' => 'sirsoft-ecommerce.export.after_request', 'type' => 'action', 'description' => ['ko' => '내보내기 요청 접수 후', 'en' => 'After an export request is accepted'], 'parameters' => $exportParam + ['user' => 'App\\Models\\User - 요청자']],
+            ['name' => 'sirsoft-ecommerce.export.request_denied', 'type' => 'action', 'description' => ['ko' => '내보내기 요청 거부', 'en' => 'Export request denied'], 'parameters' => ['type' => 'string - 작업 유형', 'reason' => 'string - 거부 사유(forbidden·too_many_pending)', 'user' => 'App\\Models\\User|null - 요청자']],
+            ['name' => 'sirsoft-ecommerce.export.after_start', 'type' => 'action', 'description' => ['ko' => '내보내기 파일 생성 시작 후', 'en' => 'After export generation starts'], 'parameters' => $exportParam],
+            ['name' => 'sirsoft-ecommerce.export.after_complete', 'type' => 'action', 'description' => ['ko' => '내보내기 파일 생성 완료 후 (완료 알림 발송)', 'en' => 'After an export file is created (sends completion notice)'], 'parameters' => $exportParam],
+            ['name' => 'sirsoft-ecommerce.export.after_fail', 'type' => 'action', 'description' => ['ko' => '내보내기 파일 생성 실패 후 (실패 알림 발송)', 'en' => 'After export generation fails (sends failure notice)'], 'parameters' => $exportParam + ['error_code' => 'string|null - 실패 코드']],
+            ['name' => 'sirsoft-ecommerce.export.after_download', 'type' => 'action', 'description' => ['ko' => '내보내기 파일 다운로드 후', 'en' => 'After an export file is downloaded'], 'parameters' => $exportParam + ['user' => 'App\\Models\\User - 내려받은 사람']],
+            ['name' => 'sirsoft-ecommerce.export.after_view_downloads', 'type' => 'action', 'description' => ['ko' => '다운로드 이력 조회 후', 'en' => 'After download history is viewed'], 'parameters' => $exportParam + ['user' => 'App\\Models\\User - 조회한 사람']],
+            ['name' => 'sirsoft-ecommerce.export.after_delete', 'type' => 'action', 'description' => ['ko' => '내보내기 작업 삭제 후', 'en' => 'After an export job is deleted'], 'parameters' => $exportParam + ['user' => 'App\\Models\\User - 삭제한 사람']],
+            ['name' => 'sirsoft-ecommerce.export.after_expire', 'type' => 'action', 'description' => ['ko' => '보관 기간 만료로 파일 삭제 후', 'en' => 'After a file is removed at the end of retention'], 'parameters' => $exportParam],
+            ['name' => 'sirsoft-ecommerce.export.after_retry', 'type' => 'action', 'description' => ['ko' => '실패 작업 다시 요청 후', 'en' => 'After a failed export is requested again'], 'parameters' => ['new' => 'Export - 새 작업', 'original' => 'Export - 실패한 작업', 'user' => 'App\\Models\\User - 요청자']],
+            ['name' => 'sirsoft-ecommerce.export.before_request', 'type' => 'action', 'description' => ['ko' => '내보내기 요청 저장 전', 'en' => 'Before an export request is saved'], 'parameters' => ['type' => 'string - 작업 유형', 'data' => 'array - 검증된 요청', 'user' => 'App\\Models\\User - 요청자']],
+            ['name' => 'sirsoft-ecommerce.export.filter_request_data', 'type' => 'filter', 'description' => ['ko' => '요청 본문 가공(저장 전)', 'en' => 'Filter request data before saving'], 'parameters' => ['data' => 'array', 'type' => 'string', 'user' => 'App\\Models\\User'], 'return' => 'array'],
+            ['name' => 'sirsoft-ecommerce.export.filter_row', 'type' => 'filter', 'description' => ['ko' => '파일 한 행의 셀 가공', 'en' => 'Filter the cells of one file row'], 'parameters' => ['cells' => 'array', 'export' => 'Export', 'columns' => 'array'], 'return' => 'array'],
+            ['name' => 'sirsoft-ecommerce.export.registered_types', 'type' => 'filter', 'description' => ['ko' => '내보내기 유형 추가', 'en' => 'Register export types'], 'parameters' => ['types' => 'array<ExportTypeInterface>'], 'return' => 'array'],
+            ['name' => 'sirsoft-ecommerce.export.registered_formats', 'type' => 'filter', 'description' => ['ko' => '파일 형식 추가 (예: XLSX 플러그인)', 'en' => 'Register file formats (e.g. an XLSX plugin)'], 'parameters' => ['formats' => 'array<ExportFormatInterface>'], 'return' => 'array'],
+            ['name' => 'sirsoft-ecommerce.export.declarations', 'type' => 'filter', 'description' => ['ko' => '모델 내보내기 선언 추가·교체', 'en' => 'Add or replace model export declarations'], 'parameters' => ['declarations' => 'array<class-string<ModelDeclaration>>'], 'return' => 'array'],
+            ['name' => 'sirsoft-ecommerce.export.orders.fields', 'type' => 'filter', 'description' => ['ko' => '주문내역 내보내기 필드 추가', 'en' => 'Add order export fields'], 'parameters' => ['fields' => 'array<ExportField>', 'unit' => 'string - 행 단위'], 'return' => 'array'],
+            ['name' => 'sirsoft-ecommerce.export.products.fields', 'type' => 'filter', 'description' => ['ko' => '상품내역 내보내기 필드 추가', 'en' => 'Add product export fields'], 'parameters' => ['fields' => 'array<ExportField>', 'unit' => 'string - 행 단위'], 'return' => 'array'],
+            ['name' => 'sirsoft-ecommerce.export.mileage.fields', 'type' => 'filter', 'description' => ['ko' => '마일리지 내역 내보내기 필드 추가', 'en' => 'Add mileage export fields'], 'parameters' => ['fields' => 'array<ExportField>', 'unit' => 'string - 행 단위'], 'return' => 'array'],
+            $rules('list', '관리 목록 검증 규칙', 'Validation rules for export list'),
+            $rules('catalog', '창 카탈로그 검증 규칙', 'Validation rules for modal catalog'),
+            $rules('request', '내보내기 요청·예상 건수 검증 규칙', 'Validation rules for export request and estimate'),
+            $rules('show', '작업 상세 검증 규칙', 'Validation rules for export detail'),
+            $rules('download', '파일 다운로드 검증 규칙', 'Validation rules for file download'),
+            $rules('downloads', '다운로드 이력 검증 규칙', 'Validation rules for download history'),
+            $rules('retry', '다시 요청 검증 규칙', 'Validation rules for retry'),
+            $rules('destroy', '삭제 검증 규칙', 'Validation rules for delete'),
+            $rules('bulk_delete', '선택 삭제 검증 규칙', 'Validation rules for bulk delete'),
+            $rules('download_by_token', '일회용 다운로드 주소 검증 규칙', 'Validation rules for one-time download links'),
         ];
     }
 
@@ -1349,6 +1413,57 @@ class Module extends AbstractModule
                     ],
                 ],
 
+                // 내보내기 권한 (#787) — 목록 화면의 내보내기 요청과 내보내기 관리 화면.
+                // 데이터 범위는 그 유형의 조회 권한(주문=orders.read …)이 정하고, 이 카테고리는 작업(파일)에 대한 권한이다.
+                // 작업 범위는 코어 표준 권한 범위다 — 주인은 요청자(requested_by)이고, 역할 관리에서 권한마다 본인만/소유 역할/전체를
+                // 고른다(Support\ExportAccess). 기본은 admin 전체, 이커머스 관리자 본인만(요청한 내보내기만 조회·다운로드·삭제).
+                // 개인정보 대량 반출이라 기본 역할은 admin·이커머스 관리자만이고, 개인정보 포함 내보내기는 admin 만이다.
+                [
+                    'identifier' => 'exports',
+                    'resource_route_key' => 'export',
+                    'owner_key' => 'requested_by',
+                    'name' => [
+                        'ko' => '내보내기',
+                        'en' => 'Exports',
+                    ],
+                    'description' => [
+                        'ko' => '상품·주문·마일리지 내보내기 요청과 파일 관리 권한',
+                        'en' => 'Request and manage product, order and mileage exports',
+                    ],
+                    'permissions' => [
+                        [
+                            'action' => 'read',
+                            'name' => ['ko' => '내보내기 관리 조회', 'en' => 'Read Exports'],
+                            'description' => ['ko' => '내보내기 관리 메뉴·목록·다운로드 이력 조회', 'en' => 'View the export management menu, list and download history'],
+                            'roles' => ['admin', ['role' => 'sirsoft-ecommerce.manager', 'scope_type' => 'self']],
+                        ],
+                        [
+                            'action' => 'create',
+                            'name' => ['ko' => '내보내기 요청', 'en' => 'Request Exports'],
+                            'description' => ['ko' => '목록 화면에서 내보내기 요청 (그 목록의 조회 권한도 필요)', 'en' => 'Request exports from list screens (also requires read permission of that list)'],
+                            'roles' => ['admin', 'sirsoft-ecommerce.manager'],
+                        ],
+                        [
+                            'action' => 'download',
+                            'name' => ['ko' => '내보내기 파일 다운로드', 'en' => 'Download Exports'],
+                            'description' => ['ko' => '완료된 내보내기 파일 다운로드 (그 목록의 조회 권한도 필요)', 'en' => 'Download completed export files (also requires read permission of that list)'],
+                            'roles' => ['admin', ['role' => 'sirsoft-ecommerce.manager', 'scope_type' => 'self']],
+                        ],
+                        [
+                            'action' => 'delete',
+                            'name' => ['ko' => '내보내기 삭제', 'en' => 'Delete Exports'],
+                            'description' => ['ko' => '내보내기 작업과 파일 삭제 (다운로드 이력은 남음)', 'en' => 'Delete export jobs and files (download history is kept)'],
+                            'roles' => ['admin', ['role' => 'sirsoft-ecommerce.manager', 'scope_type' => 'self']],
+                        ],
+                        [
+                            'action' => 'personal_data',
+                            'name' => ['ko' => '개인정보 포함 내보내기', 'en' => 'Export Personal Data'],
+                            'description' => ['ko' => '연락처·주소 등 개인정보 필드를 골라 내보내고 그 파일을 받기 (사유 입력 필수)', 'en' => 'Export and download personal data fields such as phone and address (reason required)'],
+                            'roles' => ['admin'],
+                        ],
+                    ],
+                ],
+
                 // 회원 결제 통화 관리 권한 (A3 — 관리자 회원 편집에서 통화 변경)
                 [
                     'identifier' => 'user-currency',
@@ -1444,7 +1559,8 @@ class Module extends AbstractModule
     public function getStorageDiskFor(string $category): string
     {
         if (! in_array($category, self::PUBLIC_ASSET_CATEGORIES, true)) {
-            return $this->getStorageDisk();
+            // 공개 자산이 아닌 키는 부모 규칙(비공개 첨부 저장소 바인딩 등, #916)을 거친다
+            return parent::getStorageDiskFor($category);
         }
 
         $override = module_setting('sirsoft-ecommerce', 'basic_info.public_asset_disk', '');
@@ -1469,6 +1585,8 @@ class Module extends AbstractModule
             ShippingTypeSeeder::class,
             ShippingCarrierSeeder::class,
             ClaimReasonSeeder::class,
+            // 기본 역할 「이커머스 관리자」가 이 모듈이 보내는 사이트 알림을 볼 수 있게 코어 알림 조회·읽음 처리 권한을 붙인다
+            ManagerNotificationPermissionSeeder::class,
         ];
     }
 
@@ -1584,7 +1702,79 @@ class Module extends AbstractModule
             $this->mileageExpiringSoonDefinition(),
             $this->orderCustomEmailDefinition(),
             $this->checkoutVerificationIdentityDefinition(),
+            ...$this->exportNotificationDefinitions(),
         ], $this->claimNotificationDefinitions());
+    }
+
+    /**
+     * 내보내기(#787) 완료·실패 알림 정의 — 요청자에게 사이트 내 알림으로 보낸다.
+     *
+     * 데이터는 {@see ExportNotificationDataListener} 가 채운다. 알림 센터는 같은 탭 이동을 사이트 내 경로(`/…`)로만
+     * 허용하고 전체 주소는 첫 화면으로 보내므로 click_url 은 경로 변수 `{exports_path}` 를 쓴다.
+     *
+     * @return array<int, array<string, mixed>> 알림 정의 2건
+     */
+    private function exportNotificationDefinitions(): array
+    {
+        $variables = [
+            ['key' => 'name', 'description' => '수신자(요청자) 이름'],
+            ['key' => 'app_name', 'description' => '사이트 이름'],
+            ['key' => 'type_label', 'description' => '작업유형 (주문내역·상품내역·마일리지 내역)'],
+            ['key' => 'exports_url', 'description' => '내보내기 관리 URL'],
+            ['key' => 'exports_path', 'description' => '내보내기 관리 경로 (사이트 주소 없이)'],
+            ['key' => 'site_url', 'description' => '사이트 URL'],
+        ];
+
+        return [
+            [
+                'type' => 'export_completed',
+                'hook_prefix' => 'sirsoft-ecommerce',
+                'audience' => 'staff',
+                'name' => ['ko' => '내보내기 완료', 'en' => 'Export Completed'],
+                'description' => ['ko' => '요청한 내보내기 파일이 준비되면 요청자에게 발송', 'en' => 'Sent to the requester when an export file is ready'],
+                'channels' => ['database'],
+                'hooks' => ['sirsoft-ecommerce.export.after_complete'],
+                'variables' => [
+                    ...$variables,
+                    ['key' => 'file_name', 'description' => '파일명'],
+                    ['key' => 'row_count', 'description' => '행 수'],
+                    ['key' => 'expires_at', 'description' => '파일 만료일'],
+                ],
+                'templates' => [[
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '내보내기 파일이 준비되었습니다', 'en' => 'Your export file is ready'],
+                    'body' => [
+                        'ko' => '{type_label} 내보내기({row_count}행)가 완료되었습니다. {expires_at}까지 내려받을 수 있습니다.',
+                        'en' => 'Your {type_label} export ({row_count} rows) is ready. Download it by {expires_at}.',
+                    ],
+                    'click_url' => '{exports_path}',
+                ]],
+            ],
+            [
+                'type' => 'export_failed',
+                'hook_prefix' => 'sirsoft-ecommerce',
+                'audience' => 'staff',
+                'name' => ['ko' => '내보내기 실패', 'en' => 'Export Failed'],
+                'description' => ['ko' => '요청한 내보내기 파일을 만들지 못하면 요청자에게 발송', 'en' => 'Sent to the requester when an export could not be created'],
+                'channels' => ['database'],
+                'hooks' => ['sirsoft-ecommerce.export.after_fail'],
+                'variables' => [
+                    ...$variables,
+                    ['key' => 'error_message', 'description' => '실패 사유'],
+                ],
+                'templates' => [[
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '내보내기에 실패했습니다', 'en' => 'Export failed'],
+                    'body' => [
+                        'ko' => '{type_label} 내보내기를 만들지 못했습니다. 사유: {error_message}',
+                        'en' => 'Your {type_label} export could not be created. Reason: {error_message}',
+                    ],
+                    'click_url' => '{exports_path}',
+                ]],
+            ],
+        ];
     }
 
     /**
@@ -3710,6 +3900,211 @@ class Module extends AbstractModule
     }
 
     /**
+     * 이 모듈이 선언하는 항목 목록을 반환합니다.
+     *
+     * 회원의 결제 통화와 배송국가를 회원 항목 집합(core.user)의 항목으로 선언한다. 값은 종전과 같이
+     * `ecommerce_user_profiles` 에 두고 `UserPreferenceFieldHandler` 로 잇는다. 요청 키와 응답 키는 최상위
+     * `ecommerce_preferred_currency`, `ecommerce_preferred_shipping_country` 이고, 가입 요청이 종전에 쓰던
+     * `preferred_currency`, `preferred_shipping_country` 는 옛 키로 받는다.
+     *
+     * - 선택지는 선언에 두지 않는다. 사이트 설정(통화와 환율, 배송 가능 국가)에 따라 달라지므로
+     *   `UserPreferenceFieldDefinitionListener` 가 요청 시점에 채운다.
+     * - 관리자 회원 추가에서는 받지 않는다(`ui.surfaces` 에 `admin_create` 없음). 추가 직후의 값은
+     *   기본값 지정 리스너(`AssignDefault*OnRegisterListener`)가 정한다.
+     *
+     * 주문서 항목 집합(`sirsoft-ecommerce.order_contact`)에는 주문서의 기본 항목 8개를 선언한다({@see self::orderContactFields()}).
+     *
+     * @return array<int, array<string, mixed>> 항목 선언 목록
+     */
+    public function getFields(): array
+    {
+        $surfaces = ['signup', 'self_update', 'admin_update', 'required_info'];
+
+        return [
+            ...$this->orderContactFields(),
+            [
+                'field_set' => 'core.user',
+                'key' => UserPreferenceFieldHandler::CURRENCY_FIELD,
+                'type' => 'choice',
+                'storage' => 'handler',
+                'storage_target' => UserPreferenceFieldHandler::class,
+                'name' => $this->fieldTexts('user.'.UserPreferenceFieldHandler::CURRENCY_FIELD.'.name'),
+                'description' => $this->fieldTexts('user.'.UserPreferenceFieldHandler::CURRENCY_FIELD.'.description'),
+                'constraints' => ['display' => 'select'],
+                'enabled' => true,
+                'required' => false,
+                'show_on_signup' => true,
+                'edit_scope' => 'self',
+                'legacy_keys' => [UserPreferenceFieldHandler::LEGACY_CURRENCY_FIELD],
+                'ui' => ['group' => 'shop', 'surfaces' => $surfaces],
+                'sort_order' => 2100,
+            ],
+            [
+                'field_set' => 'core.user',
+                'key' => UserPreferenceFieldHandler::SHIPPING_COUNTRY_FIELD,
+                'type' => 'choice',
+                'storage' => 'handler',
+                'storage_target' => UserPreferenceFieldHandler::class,
+                'name' => $this->fieldTexts('user.'.UserPreferenceFieldHandler::SHIPPING_COUNTRY_FIELD.'.name'),
+                'description' => $this->fieldTexts('user.'.UserPreferenceFieldHandler::SHIPPING_COUNTRY_FIELD.'.description'),
+                'constraints' => ['display' => 'select'],
+                'enabled' => true,
+                'required' => false,
+                'show_on_signup' => true,
+                'edit_scope' => 'self',
+                'legacy_keys' => [UserPreferenceFieldHandler::LEGACY_SHIPPING_COUNTRY_FIELD],
+                'ui' => ['group' => 'shop', 'surfaces' => $surfaces],
+                'sort_order' => 2110,
+            ],
+        ];
+    }
+
+    /**
+     * 이 모듈이 가진 항목 집합 선언을 반환합니다.
+     *
+     * 주문서 항목 집합(`sirsoft-ecommerce.order_contact`)은 주문서에서 받는 주문자와 배송지 항목이 모이는 자리다.
+     * 운영자는 이커머스 환경설정의 주문 설정 탭에서 코어 공용 항목 API 로 이 집합의 표를 보고 고친다(권한은 이커머스 설정 권한).
+     * 다른 확장도 `getFields()` 에서 이 집합에 항목을 선언할 수 있고, 그 항목은 같은 표에 출처와 함께 나타난다.
+     * 추가 항목의 요청 키는 `extra_fields.{항목 키}`, 값은 공용 값 테이블(소유자 종류 `ecommerce_order`)에 저장한다.
+     *
+     * @return array<int, array<string, mixed>> 집합 선언 목록
+     */
+    public function getFieldSets(): array
+    {
+        return [
+            [
+                'key' => OrderContactFields::SET,
+                'label' => 'sirsoft-ecommerce::fields.order_contact.set_label',
+                'owner_types' => [OrderContactFields::OWNER_TYPE],
+                'surfaces' => [OrderContactFields::SURFACE],
+                // 주문서에는 파일을 올릴 자리가 없다. 파일과 이미지 유형은 받지 않는다.
+                'allowed_types' => OrderContactFields::ALLOWED_TYPES,
+                'accepts_contributions' => true,
+                'allows_custom' => true,
+                'read_permission' => 'sirsoft-ecommerce.settings.read',
+                'manage_permission' => 'sirsoft-ecommerce.settings.update',
+                'bundle_key' => OrderContactFields::BUNDLE,
+            ],
+        ];
+    }
+
+    /**
+     * 이 모듈이 등록하는 표시 이름 영역을 반환합니다.
+     *
+     * | 영역 | 쓰는 자리 | 상위 | 기본값 |
+     * | --- | --- | --- | --- |
+     * | `sirsoft-ecommerce:review` | 사용자 화면의 상품 후기 작성자 | 사이트 기본 | 따름 |
+     * | `sirsoft-ecommerce:inquiry` | 사용자 화면의 상품 문의 작성자 | 사이트 기본 | 가린 이름 고정 (종전 표시와 같다) |
+     * | `sirsoft-ecommerce:admin` | 이커머스 관리자 화면의 회원 이름, 새로 남기는 기록 | 관리자 화면 | 따름 |
+     *
+     * 기능별 설정은 영역 설정 자체(코어 `member.display_name_areas`)에 저장하므로 인스턴스 판정과 사용처 목록을 두지 않는다.
+     * 후기와 문의 영역은 쇼핑몰 환경설정(리뷰 설정 탭, 기본 정보 탭)과 환경설정의 회원 탭 어느 쪽에서 바꿔도 같은 값이다.
+     *
+     * @return array<int, array<string, mixed>> 영역 선언 목록
+     */
+    public function getDisplayNameAreas(): array
+    {
+        return [
+            [
+                'key' => MemberDisplayName::AREA_REVIEW,
+                'label' => 'sirsoft-ecommerce::display_name.areas.review',
+                'audience' => 'user',
+                'parent' => 'core:site',
+                'default' => ['mode' => 'inherit'],
+                'sort_order' => 200,
+            ],
+            [
+                'key' => MemberDisplayName::AREA_INQUIRY,
+                'label' => 'sirsoft-ecommerce::display_name.areas.inquiry',
+                'audience' => 'user',
+                'parent' => 'core:site',
+                'default' => ['mode' => 'fixed', 'kind' => 'masked_name'],
+                'sort_order' => 210,
+            ],
+            [
+                'key' => MemberDisplayName::AREA_ADMIN,
+                'label' => 'sirsoft-ecommerce::display_name.areas.admin',
+                'audience' => 'admin',
+                'parent' => 'core:admin',
+                'default' => ['mode' => 'inherit'],
+                'sort_order' => 220,
+            ],
+        ];
+    }
+
+    /**
+     * 주문서 항목 집합에 선언하는 기본 항목 8개를 반환합니다.
+     *
+     * | 항목 | 구획 | 기본 | 잠금 |
+     * | --- | --- | --- | --- |
+     * | 주문자 이름, 주문자 연락처 | 주문자 | 사용, 필수 | 사용과 필수 |
+     * | 주문자 이메일 | 주문자 | 사용, 선택 (비회원 주문은 늘 필수) | 없음 |
+     * | 수령인 이름, 수령인 연락처, 배송 주소 | 배송지 | 사용, 필수 | 사용과 필수 |
+     * | 상세 주소 | 배송지 | 사용, 필수 | 없음 |
+     * | 배송 메모 | 배송지 | 사용, 선택 | 없음 |
+     *
+     * 모두 주문 주소의 컬럼에 저장하는 항목이라 `column` 으로 선언한다(항목 엔진은 이 값을 값 테이블에 쓰지 않고, 저장은 주문 생성 코드가 한다).
+     * 잠긴 항목의 검증 규칙은 주문 요청의 고정 규칙이고, 표에는 잠긴 행으로 보이기만 한다. `locks` 의 값은 사유 문구의 번역 키다.
+     *
+     * @return array<int, array<string, mixed>> 항목 선언 목록
+     */
+    private function orderContactFields(): array
+    {
+        $lockReason = 'sirsoft-ecommerce::fields.order_contact.locked';
+        $locked = ['enabled' => $lockReason, 'required' => $lockReason];
+
+        // [키, 유형, 컬럼, 구획, 필수, 잠금, 제한]
+        $rows = [
+            ['orderer_name', 'text', 'orderer_name', OrderContactFields::GROUP_ORDERER, true, $locked, ['max_length' => 50]],
+            ['orderer_phone', 'phone', 'orderer_phone', OrderContactFields::GROUP_ORDERER, true, $locked, null],
+            ['orderer_email', 'email', 'orderer_email', OrderContactFields::GROUP_ORDERER, false, null, null],
+            ['recipient_name', 'text', 'recipient_name', OrderContactFields::GROUP_SHIPPING, true, $locked, ['max_length' => 50]],
+            ['recipient_phone', 'phone', 'recipient_phone', OrderContactFields::GROUP_SHIPPING, true, $locked, null],
+            ['address', 'address', 'zipcode,address', OrderContactFields::GROUP_SHIPPING, true, $locked, null],
+            ['address_detail', 'text', 'address_detail', OrderContactFields::GROUP_SHIPPING, true, null, ['max_length' => 255]],
+            ['shipping_memo', 'textarea', 'delivery_memo', OrderContactFields::GROUP_SHIPPING, false, null, ['max_length' => 500]],
+        ];
+
+        $fields = [];
+        foreach ($rows as $index => [$key, $type, $column, $group, $required, $locks, $constraints]) {
+            $fields[] = [
+                'field_set' => OrderContactFields::SET,
+                'key' => $key,
+                'type' => $type,
+                'storage' => 'column',
+                'storage_target' => $column,
+                'name' => $this->fieldTexts("order_contact.{$key}.name"),
+                'description' => $this->fieldTexts("order_contact.{$key}.description") ?: null,
+                'constraints' => $constraints,
+                'enabled' => true,
+                'required' => $required,
+                'locks' => $locks,
+                'ui' => ['group' => $group],
+                'sort_order' => 10 + ($index * 10),
+            ];
+        }
+
+        return $fields;
+    }
+
+    /**
+     * 항목 문구 파일(`src/lang/{언어}/fields.php`)과 이 모듈을 대상으로 하는 활성 언어팩의
+     * `backend/{언어}/fields.php` 에서 한 키의 언어별 글을 모읍니다(코어 `ExtensionLangTexts`).
+     *
+     * 번역기를 거치지 않고 파일을 직접 읽는다. 선언 동기화는 설치와 갱신 도중에도 돌아, 그때는 이 모듈의
+     * 번역 네임스페이스가 아직 등록되지 않았을 수 있다. 경로는 `getModulePath()` 로 얻는다. 갱신 도중 새 코드를 다시 읽는
+     * 인스턴스에서는 `__DIR__` 이 모듈 디렉터리를 가리키지 않을 수 있다. 언어팩(ja 등)을 읽지 않으면 그 언어 화면에서
+     * 이 모듈의 항목 이름만 한국어로 보인다. 팩을 켜고 끄면 코어가 이 선언을 다시 동기화한다.
+     *
+     * @param  string  $path  점 표기 키 (예: user.ecommerce_preferred_currency.name)
+     * @return array<string, string> 언어 => 글
+     */
+    private function fieldTexts(string $path): array
+    {
+        return ExtensionLangTexts::collect('sirsoft-ecommerce', $this->getModulePath().'/src/lang', 'fields', $path);
+    }
+
+    /**
      * 훅 리스너 목록 반환
      */
     public function getHookListeners(): array
@@ -3728,6 +4123,10 @@ class Module extends AbstractModule
             EcommerceAdminActivityLogListener::class,
             EcommerceUserActivityLogListener::class,
             ActivityLogDescriptionResolver::class,
+            // 내보내기(#787) — 활동 로그·설명 해석·완료/실패 알림 데이터
+            ExportActivityLogListener::class,
+            ExportActivityLogDescriptionResolver::class,
+            ExportNotificationDataListener::class,
             MergeCartOnLoginListener::class,
             ProductInquiryBoardListener::class,
             SearchProductsListener::class,
@@ -3740,13 +4139,18 @@ class Module extends AbstractModule
             SeoCategoryCacheListener::class,
             CategoryTreeCacheListener::class,
             SeoSettingsCacheListener::class,
+            // 회원의 표시 이름이 바뀌면 후기와 문의 작성자가 구워진 상품 상세 SEO 캐시를 비운다(#490)
+            SeoMemberDisplayNameCacheListener::class,
             ShippingPolicyCacheListener::class,
             MileageTransactionListener::class,
             UserMileageInfoListener::class,
             UserEcommerceDataInfoListener::class,
             UserCurrencyInfoListener::class,
             UserShippingCountryInfoListener::class,
-            UserPreferenceCoreSaveListener::class,
+            // 회원 항목 「결제 통화」「배송국가」의 선택지를 요청 시점에 채운다(검증과 저장은 선언 + UserPreferenceFieldHandler)
+            UserPreferenceFieldDefinitionListener::class,
+            // 추가 정보를 아직 입력하지 않은 회원에게도 열어 둘 쓰기 라우트(결제 결과 처리, 통화와 배송국가 전환)를 코어에 알린다
+            ExemptRequiredFieldsRoutesListener::class,
             AssignDefaultCurrencyOnRegisterListener::class,
             SystemActorContextListener::class,
             AssignDefaultShippingCountryOnRegisterListener::class,
@@ -3766,110 +4170,309 @@ class Module extends AbstractModule
             ProvideNecessaryStorageKeysListener::class,
             // 스코프 강제 지점 원장 (core.permission.scope_enforcement_ledger 필터)
             EcommerceScopeLedgerListener::class,
+            // 이미지 썸네일 — 서빙 경로 패턴·원본 제공자 (core.thumbnail.filter_* 필터, #869)
+            ThumbnailSourcesListener::class,
         ];
     }
 
     /**
      * 스케줄 작업 목록 반환
      *
-     * 모듈에서 등록하는 스케줄 작업 목록입니다.
-     * 코어에서 이 메서드를 호출하여 모듈 스케줄러를 등록합니다.
+     * 설치·갱신 때 코어가 이 선언을 스케줄 표(`schedules`)에 동기화하고, 운영자는 관리자 > 스케줄 관리(또는
+     * 이커머스 설정의 「스케줄」 탭)에서 주기·활성을 바꾼다. 운영자가 바꾼 칸은 다음 갱신에서도 보존된다.
+     * 시각은 사이트 시간대 기준이다(`timezone` 미지정).
      *
-     * @return array 스케줄 작업 배열
-     *               [
-     *               [
-     *               'command' => 'artisan:command',
-     *               'schedule' => 'daily' | 'hourly' | 'everyMinute' | 'weekly' | cron expression,
-     *               'description' => '작업 설명 (선택)',
-     *               'enabled_config' => 'config.key' (선택, 설정에 따라 활성화 여부 결정),
-     *               ],
-     *               ]
+     * - `enabled_condition` 은 모듈 설정이 꺼져 있으면 그 틱에서 실행하지 않는다(설정 기본값 true 폴백 — 옛 등록 의미 보존).
+     * - 판매 현황 집계의 `dashboard.scheduler_enabled` 는 화면 없는 config 전용 값이라 조건에 두지 않는다 —
+     *   커맨드가 스스로 건너뛰고, 운영자 제어는 스케줄 활성 토글로 한다.
+     *
+     * @return array<int, array<string, mixed>> 스케줄 선언 목록 (형식: AbstractModule::getSchedules() 참고)
      */
     public function getSchedules(): array
     {
+        $setting = static fn (string $key): array => [
+            ['source' => 'module_setting', 'key' => $key, 'operator' => 'truthy', 'default' => true],
+        ];
+
         return [
             [
+                'name' => 'cancel-pending-orders',
+                'type' => 'artisan',
+                'label' => ['ko' => '입금 기한 만료 주문 취소', 'en' => 'Cancel overdue unpaid orders'],
+                'description' => ['ko' => '입금 기한이 지난 주문을 자동으로 취소합니다(주문 설정에서 켠 경우만).', 'en' => 'Automatically cancels orders past the payment deadline (only when enabled in order settings).'],
                 'command' => 'sirsoft-ecommerce:cancel-pending-orders',
-                'schedule' => 'daily',
-                'description' => '입금 기한 만료 주문 자동 취소',
-                'enabled_config' => 'sirsoft-ecommerce.order_settings.auto_cancel_expired',
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
+                'enabled_condition' => $setting('order_settings.auto_cancel_expired'),
             ],
             [
+                'name' => 'prune-expired-carts',
+                'type' => 'artisan',
+                'label' => ['ko' => '만료 장바구니 삭제', 'en' => 'Prune expired carts'],
+                // cart_expiry_days < 1 이면 커맨드가 스스로 건너뛴다 (별도 토글 없음)
+                'description' => ['ko' => '보관 기간이 지난 장바구니를 지웁니다.', 'en' => 'Deletes carts past the retention period.'],
                 'command' => 'sirsoft-ecommerce:prune-expired-carts',
-                'schedule' => 'daily',
-                'description' => '보관기간 만료 장바구니 자동 삭제',
-                // cart_expiry_days < 1 시 커맨드 내부 self-guard 로 비활성 (별도 토글 없음)
-                'enabled_config' => null,
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
             ],
             [
+                'name' => 'prune-temp-product-images',
+                'type' => 'artisan',
+                'label' => ['ko' => '임시 상품 이미지 삭제', 'en' => 'Prune temporary product images'],
+                // temp_key 가 남아 있으면 끝내 연결되지 않은 폼 세션 부산물이라 오탐 여지가 없다 (보존기간은 커맨드 옵션)
+                // 같은 명령이 본문 미디어(끝내 저장하지 않은 것, 본문에서 빠진 것)도 같은 보존기간으로 지운다
+                'description' => ['ko' => '상품에 연결되지 않은 임시 이미지와, 저장하지 않았거나 본문에서 빠진 상품 설명·공통정보 본문 이미지를 지웁니다.', 'en' => 'Deletes temporary images not linked to any product, and product description and common info content images that were never saved or were removed from the content.'],
                 'command' => 'sirsoft-ecommerce:prune-temp-product-images',
-                'schedule' => 'daily',
-                'description' => '미연결 임시 상품 이미지 자동 삭제',
-                // temp_key 가 남아 있으면 끝내 연결되지 않은 폼 세션 부산물이라 오탐 여지가 없다.
-                // 운영 데이터가 아니므로 별도 토글 없이 상시 동작한다 (보존기간은 커맨드 옵션).
-                'enabled_config' => null,
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
             ],
             [
+                'name' => 'prune-temp-category-images',
+                'type' => 'artisan',
+                'label' => ['ko' => '임시 카테고리 이미지 삭제', 'en' => 'Prune temporary category images'],
+                // 카테고리를 저장하면 temp_key 가 비워지므로 남아 있으면 끝내 저장되지 않은 폼 세션 부산물이다 (보존기간은 커맨드 옵션, #876)
+                'description' => ['ko' => '새 카테고리 폼에서 올리고 저장하지 않은 임시 이미지를 지웁니다.', 'en' => 'Deletes temporary images uploaded in the new category form that were never saved.'],
+                'command' => 'sirsoft-ecommerce:prune-temp-category-images',
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
+            ],
+            [
+                'name' => 'prune-temp-orders',
+                'type' => 'artisan',
+                'label' => ['ko' => '만료 임시 주문 삭제', 'en' => 'Prune expired temporary orders'],
+                // 만료 판정은 임시 주문 자체의 TTL 이 정한다 (별도 토글 없음)
+                'description' => ['ko' => '유효 시간이 지난 임시 주문을 지웁니다.', 'en' => 'Deletes temporary orders past their validity period.'],
                 'command' => 'sirsoft-ecommerce:prune-temp-orders',
-                'schedule' => 'hourly',
-                'description' => '만료 임시 주문 자동 삭제',
-                // 만료 판정은 임시 주문 자체의 TTL 이 정하므로 별도 토글 없음
-                'enabled_config' => null,
+                'frequency' => 'hourly',
+                'expression' => '0 * * * *',
             ],
             [
+                'name' => 'earn-mileage',
+                'type' => 'artisan',
+                'label' => ['ko' => '지연 마일리지 적립', 'en' => 'Earn deferred mileage'],
+                'description' => ['ko' => '적립 예정일이 된 마일리지를 적립합니다(마일리지를 켠 경우만).', 'en' => 'Credits mileage whose earning date has arrived (only when mileage is enabled).'],
                 'command' => 'sirsoft-ecommerce:earn-mileage',
-                'schedule' => 'hourly',
-                'description' => '지연 마일리지 적립',
-                'enabled_config' => 'sirsoft-ecommerce.mileage.enabled',
+                'frequency' => 'hourly',
+                'expression' => '0 * * * *',
+                'enabled_condition' => $setting('mileage.enabled'),
             ],
             [
+                'name' => 'expire-mileage',
+                'type' => 'artisan',
+                'label' => ['ko' => '마일리지 소멸', 'en' => 'Expire mileage'],
+                'description' => ['ko' => '유효 기간이 지난 마일리지를 소멸시킵니다(소멸을 켠 경우만).', 'en' => 'Expires mileage past its validity period (only when expiry is enabled).'],
                 'command' => 'sirsoft-ecommerce:expire-mileage',
-                'schedule' => 'daily',
-                'description' => '마일리지 자동 소멸',
-                'enabled_config' => 'sirsoft-ecommerce.mileage.expiry_enabled',
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
+                'enabled_condition' => $setting('mileage.expiry_enabled'),
             ],
             [
+                'name' => 'notify-expiring-mileage',
+                'type' => 'artisan',
+                'label' => ['ko' => '소멸 예정 마일리지 알림', 'en' => 'Notify expiring mileage'],
+                'description' => ['ko' => '곧 소멸될 마일리지를 회원에게 알립니다(소멸 예정 알림을 켠 경우만).', 'en' => 'Notifies members of mileage about to expire (only when expiry notices are enabled).'],
                 'command' => 'sirsoft-ecommerce:notify-expiring-mileage',
-                'schedule' => 'daily',
-                'description' => '소멸 예정 마일리지 알림',
-                'enabled_config' => 'sirsoft-ecommerce.mileage.expiry_notification_enabled',
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
+                'enabled_condition' => $setting('mileage.expiry_notification_enabled'),
             ],
             [
+                'name' => 'reconcile-mileage-balance',
+                'type' => 'artisan',
+                'label' => ['ko' => '마일리지 잔액 교정', 'en' => 'Reconcile mileage balances'],
+                'description' => ['ko' => '회원 마일리지 잔액 캐시를 원장과 맞춥니다(마일리지를 켠 경우만).', 'en' => 'Reconciles cached member mileage balances with the ledger (only when mileage is enabled).'],
                 'command' => 'sirsoft-ecommerce:reconcile-mileage-balance',
-                'schedule' => 'daily',
-                'description' => '마일리지 잔액 캐시 정합 교정',
-                'enabled_config' => 'sirsoft-ecommerce.mileage.enabled',
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
+                'enabled_condition' => $setting('mileage.enabled'),
             ],
             [
+                'name' => 'aggregate-stats',
+                'type' => 'artisan',
+                'label' => ['ko' => '판매 현황 집계', 'en' => 'Aggregate sales stats'],
+                'description' => ['ko' => '대시보드 판매 현황을 집계합니다.', 'en' => 'Aggregates sales statistics for the dashboard.'],
                 'command' => 'sirsoft-ecommerce:aggregate-stats',
-                'schedule' => 'hourly',
-                'description' => '대시보드 판매 현황 집계',
-                'enabled_config' => 'sirsoft-ecommerce.dashboard.scheduler_enabled',
+                'frequency' => 'hourly',
+                'expression' => '0 * * * *',
             ],
             [
+                'name' => 'prune-pending-claim-images',
+                'type' => 'artisan',
+                'label' => ['ko' => '클레임 임시 첨부 삭제', 'en' => 'Prune pending claim attachments'],
+                // 귀속된 첨부는 유형 값이 바뀌어 대상에서 빠지므로 오탐 여지가 없다 (보존기간은 커맨드 옵션)
+                'description' => ['ko' => '신청으로 이어지지 않은 클레임 임시 첨부를 지웁니다.', 'en' => 'Deletes temporary claim attachments that never became a request.'],
                 'command' => 'sirsoft-ecommerce:prune-pending-claim-images',
-                'schedule' => 'daily',
-                'description' => '신청으로 이어지지 않은 클레임 임시 첨부 자동 삭제',
-                // 귀속된 첨부는 유형 값이 바뀌어 대상에서 빠지므로 오탐 여지가 없다.
-                // 운영 데이터가 아니므로 별도 토글 없이 상시 동작한다 (보존기간은 커맨드 옵션).
-                'enabled_config' => null,
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
             ],
             [
+                'name' => 'cancel-orphan-claim-payments',
+                'type' => 'artisan',
+                'label' => ['ko' => '고아 클레임 결제 취소', 'en' => 'Cancel orphan claim payments'],
+                // 살아 있는 신청서의 결제 대기 건은 커맨드가 스스로 건너뛴다 (별도 토글 없음)
+                'description' => ['ko' => '종결된 신청서에 남은 클레임 결제 대기 건을 취소합니다.', 'en' => 'Cancels pending claim payments left on closed requests.'],
                 'command' => 'sirsoft-ecommerce:cancel-orphan-claim-payments',
-                'schedule' => 'daily',
-                'description' => '종결된 신청서에 남은 클레임 결제 대기 건 자동 취소',
-                // 살아 있는 신청서의 결제 대기 건은 커맨드가 스스로 건너뛴다 (별도 토글 없음).
-                'enabled_config' => null,
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
             ],
             [
+                'name' => 'notify-overdue-collections',
+                'type' => 'artisan',
+                'label' => ['ko' => '회수 지연 알림', 'en' => 'Notify overdue collections'],
+                // 선교환 설정을 꺼도 이미 선교환인 건의 지연은 알려야 하므로 별도 토글 없이 돈다 (대상이 없으면 아무 일도 하지 않음)
+                'description' => ['ko' => '선교환 후 헌 상품 회수가 늦어진 건을 관리자에게 한 번 알립니다.', 'en' => 'Notifies administrators once about overdue returns of exchanged items.'],
                 'command' => 'sirsoft-ecommerce:claims:notify-overdue-collections',
-                'schedule' => 'daily',
-                'description' => '선교환 헌 상품 회수 지연 관리자 알림 (1회)',
-                // 선교환 설정을 꺼도 이미 선교환인 건의 지연은 알려야 하므로 별도 토글 없이 돈다 —
-                // 대상이 없으면 아무 일도 하지 않는다.
-                'enabled_config' => null,
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
+            ],
+            [
+                'name' => 'prune-exports',
+                'type' => 'artisan',
+                'label' => ['ko' => '내보내기 파일 정리', 'en' => 'Prune export files'],
+                // 보관 기간은 환경설정 › 기본정보 「내보내기 파일 보관 기간」이 정한다. 대상이 없으면 아무 일도 하지 않으므로 별도 토글 없이 돈다
+                'description' => [
+                    'ko' => '보관 기간이 지난 내보내기 파일을 지우고, 오래 멈춘 작업을 실패로 처리합니다.',
+                    'en' => 'Deletes export files past their retention period and marks long-stalled jobs as failed.',
+                ],
+                'command' => 'sirsoft-ecommerce:prune-exports',
+                'frequency' => 'hourly',
+                'expression' => '0 * * * *',
             ],
         ];
+    }
+
+    /**
+     * 모듈 비활성화 — 보관 기간이 지난 내보내기 파일을 지금 정리한다(#787).
+     *
+     * 비활성 동안에는 정리 스케줄이 돌지 않아 만료 파일이 남는다 — 그래서 끄기 직전에 한 번 정리한다. 아직 기간이 남은
+     * 파일은 지우지 않는다(다시 켜면 내려받을 수 있어야 한다).
+     *
+     * @return bool 비활성화 성공 여부
+     */
+    public function deactivate(): bool
+    {
+        try {
+            app(ExportService::class)->prune();
+        } catch (\Throwable $e) {
+            // 정리 실패가 비활성화를 막지 않게 한다 — 다시 켜면 정리 스케줄이 이어 받는다
+            Log::warning('[내보내기] 비활성화 전 만료 파일 정리 실패', ['error' => $e->getMessage()]);
+        }
+
+        return true;
+    }
+
+    /**
+     * 모듈 제거 — 내보낸 파일을 모두 지운다(#787).
+     *
+     * 개인정보가 담길 수 있는 파일이라 「데이터 유지」로 제거해도 남기지 않는다(작업 기록·다운로드 이력은 테이블에 남는다).
+     *
+     * @return bool 제거 성공 여부
+     */
+    public function uninstall(): bool
+    {
+        // 데이터를 남기는 제거에서 파일을 못 지우면 멈춘다 — 기록이 남아 있어 다시 제거하면 그 파일을 다시 지운다
+        if (! $this->purgeExportFiles()) {
+            app('translator')->addNamespace($this->getIdentifier(), __DIR__.'/src/lang');
+
+            return $this->failWith(__('sirsoft-ecommerce::messages.lifecycle.purge_failed'));
+        }
+
+        return true;
+    }
+
+    /**
+     * 모듈 저장소의 내보내기 파일을 모두 지우고, 기록이 남아 있으면 「만료」로 바꿉니다.
+     *
+     * 제거 때 부른다. 「데이터도 삭제」면 코어가 테이블과 저장소를 먼저 지우므로 테이블이 없을 수 있다 — 그때는 파일만 지운다.
+     * 비활성 상태에서 제거하면 서비스가 등록돼 있지 않을 수 있어 컨테이너 바인딩에 기대지 않는다.
+     *
+     * 파일을 못 지웠는데 기록을 만료로 바꾸면 남은 파일을 다시 찾을 수 없다. 그래서 테이블이 있으면(데이터를 남기는 제거)
+     * 기록을 그대로 두고 실패를 돌려준다. 테이블이 이미 없으면(데이터도 삭제) 오류 로그만 남기고 성공으로 본다.
+     *
+     * 파일은 저장할 때의 디스크(행 `disk` — 관리자가 고른 「비공개 첨부 저장소」)에 있다(#916). 그래서 기본 디스크에 더해
+     * 남은 행이 가리키는 디스크마다 `exports` 폴더를 지운다. 테이블이 이미 없으면 행을 볼 수 없으므로 지금의 비공개 첨부
+     * 디스크를 대신 지운다. config 에서 사라진(고아) 디스크는 건너뛴다 — 닿을 수 없는 디스크를 이유로 제거를 멈추지 않는다.
+     *
+     * @return bool 파일을 지웠거나 더 할 수 있는 일이 없으면 true, 기록을 남긴 채 멈춰야 하면 false
+     */
+    public function purgeExportFiles(): bool
+    {
+        $hasTable = false;
+        try {
+            $hasTable = Schema::hasTable('ecommerce_exports');
+        } catch (\Throwable $e) {
+            Log::warning('[내보내기] 제거 중 테이블 확인 실패', ['error' => $e->getMessage()]);
+        }
+
+        $deleted = true;
+        $base = $this->getStorageFor(ExportService::STORAGE_CATEGORY);
+        foreach ($this->exportFileDisks($hasTable, $base->getDisk()) as $disk) {
+            try {
+                $storage = $disk === $base->getDisk() ? $base : $base->withDisk($disk);
+                if (! $storage->deleteAll(ExportService::STORAGE_CATEGORY)) {
+                    $deleted = false;
+                }
+            } catch (\Throwable $e) {
+                Log::error('[내보내기] 제거 중 파일 정리 실패', ['disk' => $disk, 'error' => $e->getMessage()]);
+                $deleted = false;
+            }
+        }
+
+        if (! $deleted) {
+            if ($hasTable) {
+                Log::error('[내보내기] 내보낸 파일을 지우지 못해 기록을 남기고 제거를 멈춥니다');
+
+                return false;
+            }
+            Log::error('[내보내기] 데이터 삭제 제거에서 내보낸 파일을 지우지 못했습니다 — 모듈 저장소에 파일이 남았을 수 있습니다');
+
+            return true;
+        }
+
+        if ($hasTable) {
+            try {
+                DB::table('ecommerce_exports')->whereNotNull('file_path')->update([
+                    'status' => ExportStatusEnum::EXPIRED->value,
+                    'file_path' => null,
+                    'updated_at' => now(),
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('[내보내기] 제거 중 작업 상태 정리 실패', ['error' => $e->getMessage()]);
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 내보내기 파일이 있을 수 있는 디스크 목록을 반환합니다(기본 디스크 먼저, 고아 디스크 제외).
+     *
+     * @param  bool  $hasTable  내보내기 테이블이 남아 있는가 (데이터를 남기는 제거)
+     * @param  string  $baseDisk  모듈 기본 디스크
+     * @return array<int, string> 정리할 디스크 이름
+     */
+    private function exportFileDisks(bool $hasTable, string $baseDisk): array
+    {
+        $disks = [$baseDisk];
+
+        if ($hasTable) {
+            try {
+                if (Schema::hasColumn('ecommerce_exports', 'disk')) {
+                    $rowDisks = DB::table('ecommerce_exports')->whereNotNull('file_path')->distinct()->pluck('disk')->all();
+                    $disks = array_merge($disks, array_map('strval', $rowDisks));
+                }
+            } catch (\Throwable $e) {
+                Log::warning('[내보내기] 제거 중 저장 디스크 확인 실패', ['error' => $e->getMessage()]);
+            }
+        } else {
+            // 행이 없으니 지금 새 파일이 가는 디스크를 지운다
+            $disks[] = $this->getStorageDiskFor(self::PRIVATE_ATTACHMENT_BINDING);
+        }
+
+        return array_values(array_filter(
+            array_unique($disks),
+            static fn (string $disk): bool => $disk !== '' && config("filesystems.disks.{$disk}") !== null
+        ));
     }
 
     /**
@@ -4015,12 +4618,25 @@ class Module extends AbstractModule
             }
 
             // 절대 URL 변환 — 슬랙/페이스북/쓰레드는 og:image 가 절대 URL 이어야 인식.
-            // ProductImage::download_url 은 "/api/..." 상대 경로 형식이므로 url() 통과 필수.
+            //
+            // `url()` 을 쓰면 안 된다. `ProductImage::download_url` 은 이제
+            // `AssetUrl::basePrefix()` 를 거쳐 **마운트 접두사를 이미 품은** 사이트 절대
+            // 경로(`/g7/api/…`)인데, `url()` 은 요청 루트(접두사 포함)를 앞에 다시 붙여
+            // `https://host/g7/g7/api/…` 가 된다. 크롤러만 받는 값이라 화면에는 아무
+            // 표시가 없고 미리보기 이미지만 404 다. 접두사를 멱등으로 보정한 뒤 오리진만
+            // 붙이는 `AssetUrl::siteAbsolute()` 가 그 SSoT 이며, 그 독블록이 이 실패를
+            // 이름으로 적고 있다.
+            //
+            // 종전에는 이 자리에 `str_starts_with('http') ? … : AssetUrl::absolute()` 라는
+            // 순진한 형태가 있었다. 그 형태는 세 입력을 조용히 망가뜨린다 —
+            // 프로토콜 상대(`//cdn/…` → `https://host//cdn/…`) · 상대 경로
+            // (`img.png` → `https://hostimg.png`) · `data:` URI. 그리고 접두사를 채우는
+            // 주체가 없어 리터럴 사이트 경로(`/images/logo.png`)는 하위 폴더 배치에서
+            // 접두사를 잃었다.
             $imageRaw = $this->resolveLocalizedValue($product['thumbnail_url'] ?? '');
-            $image = $imageRaw !== ''
-                // 보안: 요청 Host 가 아니라 사이트 주소 — 봇 화면은 캐시되어 모든 크롤러·미리보기에 나간다.
-                ? (str_starts_with($imageRaw, 'http') ? $imageRaw : SiteUrl::absolute($imageRaw))
-                : '';
+            // 보안: 요청 Host 가 아니라 사이트 주소 — 봇 화면은 캐시되어 모든 크롤러·미리보기에 나간다.
+            // `AssetUrl::siteAbsolute()` 의 본체는 `SiteUrl::absolute()` 이고, 사이트 경로가 아닌 값은 그대로 둔다.
+            $image = AssetUrl::siteAbsolute($imageRaw);
 
             // thumbnail_width/height 는 어떤 Resource 도 방출하지 않는 死키였다 — 값 공급이
             // 불가능한 축이므로 제거하고 크기 메타는 코어 기본값 폴백에 맡긴다 (공개 #22 부수 정리)
@@ -4035,9 +4651,8 @@ class Module extends AbstractModule
         if ($pageType === 'category') {
             $category = data_get($context, 'category.data', []);
             $catImageRaw = $this->resolveLocalizedValue($category['thumbnail_url'] ?? '');
-            $catImage = $catImageRaw !== ''
-                ? (str_starts_with($catImageRaw, 'http') ? $catImageRaw : SiteUrl::absolute($catImageRaw))
-                : '';
+            // 형제와 같은 변환기를 쓴다 — `AssetUrl::siteAbsolute()` 독블록(본체 `SiteUrl::absolute()`).
+            $catImage = AssetUrl::siteAbsolute($catImageRaw);
 
             return array_filter([
                 'type' => 'website',
@@ -4085,7 +4700,8 @@ class Module extends AbstractModule
         // 절대 URL 변환 (Schema.org image 도 검색엔진이 절대 URL 권장)
         $imageRaw = $this->resolveLocalizedValue($product['thumbnail_url'] ?? '');
         if ($imageRaw !== '') {
-            $schema['image'] = str_starts_with($imageRaw, 'http') ? $imageRaw : SiteUrl::absolute($imageRaw);
+            // 형제(`seoOgDefaults`)와 **같은 변환기**를 쓴다 — `AssetUrl::siteAbsolute()` 독블록(본체 `SiteUrl::absolute()`).
+            $schema['image'] = AssetUrl::siteAbsolute($imageRaw);
         }
 
         if (! empty($product['sku'])) {
@@ -4371,6 +4987,18 @@ class Module extends AbstractModule
                         'icon' => 'fas fa-comments',
                         'order' => 16,
                         'permission' => 'sirsoft-ecommerce.inquiries.read',
+                    ],
+                    [
+                        'name' => [
+                            'ko' => '내보내기 관리',
+                            'en' => 'Export Management',
+                        ],
+                        'slug' => 'sirsoft-ecommerce-exports',
+                        'url' => '/admin/ecommerce/exports',
+                        'icon' => 'fas fa-file-export',
+                        // 기존 하위 메뉴(1~16) 뒤 — 앞 메뉴들의 순서를 바꾸지 않는다
+                        'order' => 17,
+                        'permission' => 'sirsoft-ecommerce.exports.read',
                     ],
                 ],
             ],

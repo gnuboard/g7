@@ -5,6 +5,7 @@ namespace App\Services;
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\ChallengeDeliveryAwareProviderInterface;
+use App\Contracts\Extension\ExternalCredentialVerifierInterface;
 use App\Contracts\Extension\IdentityVerificationInterface;
 use App\Contracts\Extension\MailFallbackAwareProviderInterface;
 use App\Contracts\Extension\UserScopedIdentityProviderInterface;
@@ -13,6 +14,7 @@ use App\Contracts\Repositories\PasswordResetTokenRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserConsentRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\DisplayName\DisplayNameChoicePolicy;
 use App\Enums\ActivityLogType;
 use App\Enums\ConsentType;
 use App\Enums\IdentityVerificationPurpose;
@@ -20,18 +22,34 @@ use App\Enums\IdentityVerificationStatus;
 use App\Enums\PasswordChangeSource;
 use App\Enums\UserStatus;
 use App\Exceptions\Auth\AccountLockedException;
+use App\Exceptions\Auth\ExternalStepRequiredException;
+use App\Exceptions\Auth\LoginMethodRequiredException;
+use App\Exceptions\Auth\PasswordAuthDisallowedException;
 use App\Exceptions\Auth\PasswordChangeUnavailableException;
 use App\Exceptions\Auth\TwoFactorDeliveryFailedException;
 use App\Exceptions\Auth\TwoFactorEnrollmentRequiredException;
+use App\Exceptions\Auth\TwoFactorMeansRequiredException;
 use App\Exceptions\Auth\TwoFactorResendCooldownException;
 use App\Exceptions\Auth\TwoFactorResendNotSupportedException;
+use App\Extension\Auth\CredentialVerifierManager;
+use App\Extension\Auth\ExternalCredentialMatch;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
+use App\Fields\FieldContext;
+use App\Fields\FieldSet;
+use App\Fields\FieldValueService;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
+use App\Services\Auth\PasswordAuthPolicyService;
+use App\Services\Screen\ScreenAuth;
 use App\Support\LocaleTag;
+use App\Support\SameOriginPath;
+use App\Support\ScreenUrl;
+use App\Support\UndeliverableEmail;
 use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -50,6 +68,11 @@ class AuthService
      * 코어 메일 프로바이더 id — 2단계 인증의 최후 폴백 수단.
      */
     private const MAIL_PROVIDER_ID = 'g7:core.mail';
+
+    /**
+     * 단계(2단계 인증·비밀번호 변경) 식별자에 묶은 로그인 수단 이름의 캐시 키 접두어.
+     */
+    private const LOGIN_METHOD_CACHE_PREFIX = 'core:login_method:';
 
     /**
      * 인증 서비스를 생성합니다.
@@ -146,12 +169,32 @@ class AuthService
      * @param  string  $guard  로그인 경로 (user | admin — 관리자 로그인만 'admin', 변경 단계 식별자를 이 경로에 묶는다)
      * @return array 사용자 정보와 토큰을 포함한 배열 (2단계 인증·비밀번호 변경 단계면 그 안내)
      *
+     * 외부 인증 확장점(7.2.0):
+     * 1. 외부 자격 증명 검증자(`core.auth.registered_credential_verifiers`)가 식별자를 담당하면 비밀번호를 G7 이 아니라 그 검증자가
+     *    확인한다 — 비밀번호 인증 정책보다 **먼저** 본다(디렉터리 비밀번호가 정책 거절로 디렉터리에 닿지 못하는 일이 없게).
+     * 2. 비밀번호 인증 정책(`core.auth.password_auth_decision`)을 두 번 묻는다 — 식별자 기준은 시도 **전**(실패 횟수 0),
+     *    회원 기준은 비밀번호가 맞은 **뒤**(틀린 비밀번호로는 「이 이메일은 막힌 회원」이 드러나지 않는다).
+     *
+     * @throws PasswordAuthDisallowedException 비밀번호 인증 정책이 거절할 때
+     * @throws ExternalStepRequiredException 외부 자격 증명 로그인에 화면 단계가 더 필요할 때
+     * @throws TwoFactorMeansRequiredException 정책이 2단계 인증을 요구하는데 수단이 없을 때
      * @throws ValidationException 인증 정보가 올바르지 않을 때
      * @throws AccountLockedException 계정이 잠겨 있을 때
      * @throws PasswordChangeUnavailableException 변경 단계를 열 수 없을 때
      */
     public function login(string $email, string $password, string $guard = 'user'): array
     {
+        $external = app(CredentialVerifierManager::class)->match($email, $guard);
+
+        if ($external !== null) {
+            return $this->loginWithExternalCredential($external['verifier'], $external['match'], $password, $guard);
+        }
+
+        $policy = app(PasswordAuthPolicyService::class);
+
+        // 식별자 기준 판정 — 시도 전에 막아 강제 대상 회원이 남의 오입력으로 잠기지도 않는다.
+        $identifierDecision = $policy->assertAllowed(['identifier' => $email, 'user' => null, 'guard' => $guard, 'purpose' => 'login']);
+
         // 사전 잠금 체크 — 잠긴 계정은 Auth::attempt 자체를 시도하지 않는다.
         // (실패 카운트가 0 으로 리셋된 잠금 상태에서 Failed 이벤트가 다시
         //  카운트를 올려 재잠금 시각을 갱신하는 부작용 방지)
@@ -178,6 +221,18 @@ class AuthService
 
         $user = Auth::user();
 
+        // 회원 기준 판정 — 비밀번호가 맞은 뒤에만 묻는다(열거 방지). 거절 전에 `Auth::attempt()` 가 연 세션을 닫는다 —
+        // 판정 뒤에 닫으면 거절 응답에도 세션 쿠키가 발급된다.
+        $userDecision = $policy->decide(['identifier' => $email, 'user' => $user, 'guard' => $guard, 'purpose' => 'login']);
+
+        if (! $userDecision->allowed) {
+            Auth::logout();
+
+            throw new PasswordAuthDisallowedException($userDecision);
+        }
+
+        $requireTwoFactor = $identifierDecision->requireTwoFactor || $userDecision->requireTwoFactor;
+
         // 사용자 상태 체크 — Active 와 Dormant 만 로그인 허용
         //
         // 휴면은 **막는 상태가 아니라 되돌리는 상태**다. 로그인 성공(비밀번호 확인, 2FA 사이트는
@@ -187,16 +242,7 @@ class AuthService
         if (! $this->isLoginAllowedStatus($user->status)) {
             Auth::logout();
 
-            $messageKey = match ($user->status) {
-                UserStatus::Inactive->value => 'auth.account_inactive',
-                UserStatus::Blocked->value => 'auth.account_blocked',
-                UserStatus::Withdrawn->value => 'auth.account_withdrawn',
-                default => 'auth.invalid_credentials',
-            };
-
-            throw ValidationException::withMessages([
-                'email' => [__($messageKey)],
-            ]);
+            $this->assertLoginAllowedStatus($user);
         }
 
         // 2단계 인증이 켜져 있으면 여기서 토큰을 발급하지 않는다.
@@ -209,7 +255,13 @@ class AuthService
         // `issueLoginSession()` 이 자기 자리에서 다시 로그인시키므로 성공 경로는 불변이다.
         Auth::logout();
 
-        $twoFactorProviderId = $this->resolveTwoFactorProviderId($user);
+        // 관리자 로그인에 관리자가 아닌 회원 — 휴면 해제·로그인 완료 훅·2단계 인증 메일보다 **먼저** 거절한다.
+        $this->assertGuardAllowed($user, $guard);
+
+        // 정책이 2단계 인증을 요구하면(예: 회사 계정 강제 중 비상 계정) 사이트 2단계 설정과 무관하게 그 단계를 탄다.
+        $twoFactorProviderId = $requireTwoFactor
+            ? $this->resolveRequiredTwoFactorProviderId($user)
+            : $this->resolveTwoFactorProviderId($user);
 
         if ($twoFactorProviderId !== null) {
             return $this->startTwoFactorChallenge($user, $email, $twoFactorProviderId);
@@ -226,10 +278,283 @@ class AuthService
     }
 
     /**
+     * 외부 자격 증명 검증자로 로그인합니다.
+     *
+     * 잠긴 회원은 디렉터리에 비밀번호를 보내기 전에 거절한다. 인증 성공은 `loginVerifiedUser()` 로 합류해 비밀번호 로그인과 같은
+     * 관문을 지난다. 거절 응답은 계정 열거를 막으려고 비밀번호 로그인 실패와 같다 — 검증자가 실패로 센다고 하면 그 회원의 로그인
+     * 실패 횟수에 더한다(비밀번호 없는 회원도 — 디렉터리 비밀번호는 실제 비밀이다).
+     *
+     * @param  ExternalCredentialVerifierInterface  $verifier  일치한 검증자
+     * @param  ExternalCredentialMatch  $match  일치 결과
+     * @param  string  $password  입력한 비밀번호
+     * @param  string  $guard  로그인 경로 (user | admin)
+     * @return array 로그인 결과 (`login()` 과 같은 모양)
+     *
+     * @throws ExternalStepRequiredException 화면 단계가 더 필요할 때
+     * @throws ValidationException 거절일 때
+     * @throws AccountLockedException 계정이 잠겨 있을 때
+     */
+    private function loginWithExternalCredential(
+        ExternalCredentialVerifierInterface $verifier,
+        ExternalCredentialMatch $match,
+        string $password,
+        string $guard,
+    ): array {
+        if ($match->user !== null) {
+            $this->assertNotLocked($match->user);
+        }
+
+        $result = $verifier->verify($match, $password, $guard);
+
+        if ($result->isAuthenticated() && $result->user !== null) {
+            return $this->loginVerifiedUser($result->user, $result->context, $guard);
+        }
+
+        if ($result->isStepRequired() && $result->redirectUrl !== null) {
+            throw new ExternalStepRequiredException($result->redirectUrl, $result->reasonKey);
+        }
+
+        if ($result->countsAsFailure && $match->user !== null) {
+            HookManager::doAction('core.auth.login_failed', (string) $match->user->email, [
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'attempted_at' => now(),
+                // 외부 자격 증명 실패 — 비밀번호 없는 회원도 실패 횟수에 센다(HandleFailedLoginListener)
+                'external_credential' => true,
+                'verifier' => $verifier->getId(),
+            ]);
+        }
+
+        throw ValidationException::withMessages([
+            'email' => [__('auth.invalid_credentials')],
+        ]);
+    }
+
+    /**
+     * 정책이 요구한 2단계 인증의 수단을 고릅니다 — 사이트 2단계 설정(켜짐·적용 범위)과 무관하다.
+     *
+     * @param  User  $user  로그인 회원
+     * @return string 수단 id
+     *
+     * @throws TwoFactorMeansRequiredException 이 회원에게 쓸 수 있는 수단이 없을 때
+     */
+    private function resolveRequiredTwoFactorProviderId(User $user): string
+    {
+        try {
+            $providerId = $this->resolveTwoFactorProvider($user);
+        } catch (TwoFactorEnrollmentRequiredException) {
+            $providerId = null;
+        }
+
+        if ($providerId === null) {
+            throw new TwoFactorMeansRequiredException;
+        }
+
+        return $providerId;
+    }
+
+    /**
+     * 비밀번호가 아닌 다른 수단으로 본인이 확인된 회원을 로그인시킵니다.
+     *
+     * 외부 인증(소셜 로그인·향후 패스키 등)이 코어 로그인 관문을 그대로 통과하는 공개 API 다. 비밀번호 로그인
+     * ({@see login()})에서 자격 증명 단계만 뺀 순서를 **같은 메서드로** 밟는다: 잠금 → 회원 상태 → 관리자 경로 판정 →
+     * 2단계 인증(인증 앱(TOTP) 포함) → 비밀번호 변경 관문(비밀번호가 있는 회원만) → 휴면 해제 + 토큰 발급.
+     * 그래서 응답 모양도 `login()` 과 같다 — 인증 완료(`user`·`token`) / `two_factor_required` / `password_change_required`.
+     *
+     * 본인 확인 책임은 호출자에게 있다 — 이 메서드는 「이 회원이 본인이다」를 믿고 관문만 적용한다. 확장은 직접 부르지 말고
+     * 로그인 인계(`LoginHandoffService::issue()`)로 코드를 받아 로그인 화면이 교환하게 한다 — 화면이 2단계 인증·비밀번호
+     * 변경·휴면 안내를 비밀번호 로그인과 똑같이 보여 준다.
+     *
+     * @param  User  $user  본인 확인을 마친 회원
+     * @param  array{login_method: string, skip_two_factor?: bool}  $context  login_method = 로그인 수단 이름(필수 — 예 `social:kakao`,
+     *                                                                        로그인 완료 훅에 실린다), skip_two_factor = 2단계 인증
+     *                                                                        단계만 건너뜀(운영자가 그 수단에 2단계 인증을 끈 경우)
+     * @param  string  $guard  로그인 경로 (user | admin)
+     * @return array 로그인 결과 (`login()` 과 같은 모양)
+     *
+     * @throws LoginMethodRequiredException 로그인 수단 이름(`login_method`)이 없을 때
+     * @throws ValidationException 회원 상태가 로그인을 허용하지 않을 때 (`email` 오류 — 코어 문구)
+     * @throws AccountLockedException 계정이 잠겨 있을 때
+     * @throws AuthorizationException 관리자 경로에 관리자가 아닌 회원일 때
+     * @throws TwoFactorEnrollmentRequiredException 2단계 인증 수단이 없는데 운영자가 메일 폴백을 껐을 때
+     * @throws TwoFactorDeliveryFailedException 2단계 인증 코드를 보내지 못했을 때
+     * @throws PasswordChangeUnavailableException 변경 단계를 열 수 없을 때
+     *
+     * @since 7.2.0
+     */
+    public function loginVerifiedUser(User $user, array $context = [], string $guard = 'user'): array
+    {
+        self::assertLoginMethodGiven($context);
+
+        $this->assertNotLocked($user);
+        $this->assertLoginAllowedStatus($user);
+        $this->assertGuardAllowed($user, $guard);
+
+        $context = self::normalizeLoginContext($context);
+
+        if (! $context['skip_two_factor']) {
+            $twoFactorProviderId = $this->resolveTwoFactorProviderId($user);
+
+            if ($twoFactorProviderId !== null) {
+                $challenge = $this->startTwoFactorChallenge($user, (string) $user->email, $twoFactorProviderId);
+                $this->rememberLoginContext((string) $challenge['challenge_id'], $context);
+
+                return $challenge;
+            }
+        }
+
+        // 비밀번호 변경 관문 — 비밀번호가 없는 회원은 만료·관리자 지정 둘 다 비대상이라 열리지 않는다.
+        $passwordChange = $this->passwordChangeGate($user, $guard);
+
+        if ($passwordChange !== null) {
+            $this->rememberLoginContext((string) $passwordChange['challenge_id'], $context);
+
+            return $passwordChange;
+        }
+
+        return $this->issueLoginSession($user, (string) $user->email, $context);
+    }
+
+    /**
+     * 외부 인증 컨텍스트에 로그인 수단 이름이 있는지 확인합니다.
+     *
+     * 이름이 없으면 로그인 완료 훅·활동 로그가 그 로그인을 비밀번호 로그인(`password`)으로 기록하게 되므로 받지 않는다.
+     *
+     * @param  array<string, mixed>  $context  호출자 컨텍스트
+     * @return void 반환값 없음
+     *
+     * @throws LoginMethodRequiredException 로그인 수단 이름(`login_method`)이 비었거나 문자열이 아닐 때
+     */
+    public static function assertLoginMethodGiven(array $context): void
+    {
+        $method = $context['login_method'] ?? null;
+
+        if (! is_string($method) || trim($method) === '') {
+            throw new LoginMethodRequiredException;
+        }
+    }
+
+    /**
+     * 로그인 컨텍스트를 정리합니다 (알려진 키만, 수단 이름 기본값 `password`).
+     *
+     * 외부 인증 확장이 넘기는 키는 네 개다 — 범위를 벗어난 값은 버린다(없는 것과 같다).
+     * - `login_method` 로그인 수단 이름(≤64자)
+     * - `skip_two_factor` 2단계 인증 단계만 건너뜀
+     * - `max_session_minutes` 세션 수명 상한(분, 1~10080) — 토큰 만료가 이 시각을 넘지 않는다(연장·갱신 포함)
+     * - `external_ref` 외부 세션 참조(≤100자) — 로그인 완료 훅에 실려 확장이 자기 세션 기록과 토큰을 잇는다
+     *
+     * @param  array<string, mixed>  $context  호출자 컨텍스트
+     * @return array{login_method: string, skip_two_factor: bool, max_session_minutes: int|null, external_ref: string|null} 정리한 컨텍스트
+     */
+    public static function normalizeLoginContext(array $context): array
+    {
+        $method = $context['login_method'] ?? 'password';
+        $cap = $context['max_session_minutes'] ?? null;
+        $ref = $context['external_ref'] ?? null;
+
+        return [
+            'login_method' => is_string($method) && $method !== '' ? mb_substr($method, 0, 64) : 'password',
+            'skip_two_factor' => ($context['skip_two_factor'] ?? false) === true,
+            'max_session_minutes' => is_int($cap) && $cap >= 1 && $cap <= 10080 ? $cap : null,
+            'external_ref' => is_string($ref) && $ref !== '' && mb_strlen($ref) <= 100 ? $ref : null,
+        ];
+    }
+
+    /**
+     * 로그인이 단계(2단계 인증·비밀번호 변경)로 넘어갈 때 정리한 로그인 컨텍스트 전체를 그 단계 식별자에 묶어 둡니다.
+     *
+     * 단계를 마치는 요청(`completeTwoFactor()` 등)은 컨텍스트를 모른다 — 묶어 두지 않으면 외부 인증 로그인이 2단계 인증을
+     * 거치는 순간 로그인 완료 훅에 `password` 로 기록되고 세션 수명 상한·외부 참조가 사라진다. 비밀번호 로그인(기본 컨텍스트)은 남기지 않는다.
+     *
+     * @param  string  $challengeId  단계 식별자
+     * @param  array<string, mixed>  $context  컨텍스트
+     * @return void 반환값 없음
+     */
+    private function rememberLoginContext(string $challengeId, array $context): void
+    {
+        $context = self::normalizeLoginContext($context);
+
+        if ($challengeId === '' || $context === self::normalizeLoginContext([])) {
+            return;
+        }
+
+        app(CacheInterface::class)->put(self::LOGIN_METHOD_CACHE_PREFIX.hash('sha256', $challengeId), $context, 1800);
+    }
+
+    /**
+     * 단계 식별자에 묶어 둔 로그인 컨텍스트를 꺼냅니다 (꺼내면 지운다).
+     *
+     * @param  string  $challengeId  단계 식별자
+     * @return array<string, mixed> 컨텍스트 (묶인 것이 없으면 빈 배열 — 비밀번호 로그인)
+     */
+    private function pullLoginContext(string $challengeId): array
+    {
+        $cache = app(CacheInterface::class);
+        $key = self::LOGIN_METHOD_CACHE_PREFIX.hash('sha256', $challengeId);
+        $stored = $cache->get($key);
+        $cache->forget($key);
+
+        if (is_array($stored)) {
+            return self::normalizeLoginContext($stored);
+        }
+
+        // 7.2.0 이전 형식(수단 이름 문자열)으로 남은 단계 — 배포 직후 진행 중이던 로그인을 잇는다.
+        return is_string($stored) && $stored !== '' ? ['login_method' => $stored] : [];
+    }
+
+    /**
+     * 회원 상태가 로그인을 허용하지 않으면 그 상태의 코어 문구로 거절합니다.
+     *
+     * 비밀번호 로그인과 외부 인증 로그인이 같은 판정·같은 문구를 쓴다. 휴면은 통과한다(세션을 여는 자리에서 해제).
+     *
+     * @param  User  $user  로그인하는 회원
+     * @return void 반환값 없음
+     *
+     * @throws ValidationException 로그인을 허용하지 않는 상태일 때 (`email` 오류)
+     */
+    private function assertLoginAllowedStatus(User $user): void
+    {
+        if ($this->isLoginAllowedStatus($user->status)) {
+            return;
+        }
+
+        $messageKey = match ($user->status) {
+            UserStatus::Inactive->value => 'auth.account_inactive',
+            UserStatus::Blocked->value => 'auth.account_blocked',
+            UserStatus::Withdrawn->value => 'auth.account_withdrawn',
+            default => 'auth.invalid_credentials',
+        };
+
+        throw ValidationException::withMessages([
+            'email' => [__($messageKey)],
+        ]);
+    }
+
+    /**
+     * 관리자 로그인 경로에 관리자가 아닌 회원이면 거절합니다.
+     *
+     * 세션을 여는 자리(휴면 해제·로그인 완료 훅) **앞**과 2단계 인증 코드 발송 앞에서 부른다 — 뒤에서 거절하면
+     * 관리자가 아닌 휴면 회원이 관리자 로그인 화면에서 휴면이 풀리고 로그인 완료 훅(장바구니 병합 등)까지 돈 뒤 403 을
+     * 받는다. 판정은 관리자 컨트롤러가 쓰는 `User::isAdmin()` 과 같다.
+     *
+     * @param  User  $user  로그인하는 회원
+     * @param  string  $guard  로그인 경로 (user | admin)
+     * @return void 반환값 없음
+     *
+     * @throws AuthorizationException 관리자 경로에 관리자가 아닌 회원일 때
+     */
+    private function assertGuardAllowed(User $user, string $guard): void
+    {
+        if ($guard === 'admin' && ! $user->isAdmin()) {
+            throw new AuthorizationException(__('auth.admin_required'));
+        }
+    }
+
+    /**
      * 비밀번호 변경 관문 — 바꿔야 하면 토큰 대신 변경 단계 식별자를 돌려줍니다.
      *
-     * 관리자 로그인에 비관리자가 들어오면 관문을 건너뛴다(A16) — 종전 경로(토큰 발급 → 컨트롤러 회수 +
-     * 403)를 그대로 타야 비관리자의 비밀번호가 관리자 경로로 바뀌지 않는다.
+     * 관리자 로그인에 비관리자가 들어오면 관문을 건너뛴다(A16) — 호출 경로가 앞에서 `assertGuardAllowed()` 로 이미
+     * 거절하므로 도달하지 않는 방어선이다. 비관리자의 비밀번호가 관리자 경로로 바뀌지 않게 남겨 둔다.
      *
      * @param  User  $user  비밀번호·2단계 인증을 통과한 회원
      * @param  string  $guard  로그인 경로 (user | admin)
@@ -289,6 +614,9 @@ class AuthService
         return $this->withPasswordChangeLock($challengeId, function () use ($challengeId, $password, $guard) {
             [$user, $payload] = $this->resolvePasswordChangeChallenge($challengeId, $guard);
 
+            // 단계를 연 뒤 비밀번호 인증 정책이 바뀌었으면 이 단계로 비밀번호를 바꾸지 못한다.
+            app(PasswordAuthPolicyService::class)->assertAllowed(['identifier' => (string) $user->email, 'user' => $user, 'guard' => $guard, 'purpose' => 'login_password_change']);
+
             $oldHash = $user->getRawOriginal('password');
 
             DB::transaction(function () use ($user, $password, $oldHash, $payload) {
@@ -312,7 +640,7 @@ class AuthService
 
             Auth::login($user);
 
-            return $this->issueLoginSession($user, (string) $user->email);
+            return $this->issueLoginSession($user, (string) $user->email, $this->pullLoginContext($challengeId));
         });
     }
 
@@ -352,7 +680,7 @@ class AuthService
 
             Auth::login($user);
 
-            $result = $this->issueLoginSession($user, (string) $user->email);
+            $result = $this->issueLoginSession($user, (string) $user->email, $this->pullLoginContext($challengeId));
             $result['postponed_until'] = $until->toIso8601String();
 
             return $result;
@@ -404,9 +732,9 @@ class AuthService
         // 그 세션을 지우지 않는다. 식별자는 더 쓸 데가 없으므로 소비한다.
         if ($guard === 'admin' && ! $user->isAdmin()) {
             $this->passwordChangeChallengeService->consume($challengeId);
-
-            throw new AuthorizationException(__('auth.admin_required'));
         }
+
+        $this->assertGuardAllowed($user, $guard);
 
         if (! $this->isLoginAllowedStatus($user->status)) {
             $this->passwordChangeChallengeService->consume($challengeId);
@@ -649,7 +977,8 @@ class AuthService
             return $provider->canChallengeUser($user);
         }
 
-        return filled($user->email);
+        // 대체 주소(`…@xxx.invalid`)는 이메일이 없는 것과 같다 — 닿지 않는 주소로 인증번호를 보내면 영영 로그인할 수 없다.
+        return ! UndeliverableEmail::is($user->email);
     }
 
     /**
@@ -770,16 +1099,24 @@ class AuthService
         // Auth::login() 앞에 두어야 로그인 완료 훅이 잠금 필드를 초기화하지 못한다.
         $this->assertNotLocked($user);
 
+        // 관리자 경로에 관리자가 아닌 회원 — 세션을 열기 전에 거절한다(휴면 해제·로그인 완료 훅 미실행).
+        $this->assertGuardAllowed($user, $guard);
+
+        // 외부 인증 로그인이 2단계 인증으로 넘어왔으면 그 수단 이름을 이어받는다.
+        $loginContext = $this->pullLoginContext($challengeId);
+
         // 비밀번호 변경 관문 — 2단계 인증을 통과한 뒤, 토큰 발급 앞.
         $passwordChange = $this->passwordChangeGate($user, $guard);
 
         if ($passwordChange !== null) {
+            $this->rememberLoginContext((string) $passwordChange['challenge_id'], $loginContext);
+
             return $passwordChange;
         }
 
         Auth::login($user);
 
-        return $this->issueLoginSession($user, (string) $user->email);
+        return $this->issueLoginSession($user, (string) $user->email, $loginContext);
     }
 
     /**
@@ -792,17 +1129,24 @@ class AuthService
      * 해석된 사용자는 응답 페이로드에 실리지 않고 out 파라미터로만 올린다 — 관리자 경로가
      * 그 사용자로 등급을 판정해야 하지만, 사용자 경로가 그대로 내보내면 모델이 응답에 새는다.
      *
+     * 관리자 경로는 기존 challenge 를 취소하고 새 인증번호를 보내기 **전에** 관리자인지 판정한다 — 사용자 로그인에서 받은
+     * challenge 를 관리자 재발송에 들고 와도 메일이 다시 가지 않고 원 challenge 도 살아 있다.
+     *
+     * 원 challenge 에 묶인 로그인 수단(외부 인증 로그인의 `login_method`)은 새 challenge 로 옮긴다.
+     *
      * @param  string  $challengeId  비밀번호 확인 단계가 돌려준 challenge UUID
      * @param  User|null  $resolvedUser  (out) challenge 가 식별한 사용자
+     * @param  string  $guard  로그인 경로 (user | admin)
      * @return array{two_factor_required: bool, challenge_id: string, provider_id: string, expires_at: mixed} 새 challenge 정보
      *
      * @throws ValidationException challenge 가 재발송 대상이 아닐 때
      * @throws AccountLockedException 계정이 잠겨 있을 때
+     * @throws AuthorizationException 관리자 경로에 관리자가 아닌 회원일 때
      * @throws TwoFactorDeliveryFailedException 인증번호를 보내지 못했을 때
      * @throws TwoFactorResendNotSupportedException 코드를 보내지 않는 수단(인증 앱)일 때
      * @throws TwoFactorResendCooldownException 메일 재발송 대기 시간이 남았을 때
      */
-    public function resendTwoFactorChallenge(string $challengeId, ?User &$resolvedUser = null): array
+    public function resendTwoFactorChallenge(string $challengeId, ?User &$resolvedUser = null, string $guard = 'user'): array
     {
         $log = $this->identityLogRepository->findById($challengeId);
 
@@ -838,8 +1182,10 @@ class AuthService
 
         $resolvedUser = $user;
 
+        $this->assertGuardAllowed($user, $guard);
+
         // 재발송은 같은 수단으로 다시 발급한다 — 원 challenge 의 프로바이더를 그대로 쓰고,
-        // 그 사이 사용할 수 없게 됐으면(플러그인 비활성화 등) 현재 해석 결과로 되돌린다.
+        // 그 사이 사용할 수 없게 됐으면(플러그인 비활성화·자격증명 삭제 등) 현재 해석 결과로 되돌린다.
         // 명시 수단을 쓸 수 없으면 발행 단계가 예외를 던지므로(폴백 없음), 여기서 미리 가려 현재 해석 결과로 바꾼다.
         $providerId = $this->loginProviderStillUsable((string) $log->provider_id)
             ? (string) $log->provider_id
@@ -865,11 +1211,17 @@ class AuthService
 
         app(IdentityVerificationService::class)->cancel($log->id);
 
-        return $this->startTwoFactorChallenge(
+        $challenge = $this->startTwoFactorChallenge(
             $user,
             (string) $user->email,
             $providerId,
         );
+
+        // 외부 인증 로그인의 수단 이름은 challenge 식별자에 묶여 있다 — 새 식별자로 옮기지 않으면
+        // 재발송 뒤 완료가 로그인 완료 훅에 password 로 기록된다. 발급이 성공한 뒤에 옮긴다.
+        $this->rememberLoginContext((string) $challenge['challenge_id'], $this->pullLoginContext($challengeId));
+
+        return $challenge;
     }
 
     /**
@@ -975,9 +1327,10 @@ class AuthService
     {
         PersonalAccessToken::findToken($plainTextToken)?->delete();
 
-        // completeTwoFactor() 의 Auth::login() 이 연 세션도 함께 닫는다.
+        // completeTwoFactor() 의 Auth::login() 이 연 세션도 함께 닫는다(개발자 화면 짝 표식 포함).
         if (request()->hasSession() && request()->session()->isStarted() && Auth::guard('web')->check()) {
             Auth::guard('web')->logout();
+            request()->session()->forget(ScreenAuth::SESSION_KEY);
         }
     }
 
@@ -986,20 +1339,38 @@ class AuthService
      *
      * @param  User  $user  로그인 사용자
      * @param  string  $email  로그인에 사용한 이메일
+     * @param  array<string, mixed>  $context  로그인 컨텍스트 (없으면 비밀번호 로그인 — 키는 {@see normalizeLoginContext()})
      * @return array{user: User, token: string, token_type: string} 로그인 결과
      */
-    private function issueLoginSession(User $user, string $email): array
+    private function issueLoginSession(User $user, string $email, array $context = []): array
     {
+        $context = self::normalizeLoginContext($context);
+
         // 세션을 여는 **유일한 자리**에서 휴면을 해제한다 — 비밀번호 경로와 2FA 경로가
         // 둘 다 여기로 모이므로 한 곳만 고쳐도 두 경로가 같은 강도를 갖는다.
         $dormancyRestored = $this->restoreDormantAccount($user);
 
-        $token = $user->createToken('auth-token', ['*'], $this->getTokenExpiresAt())->plainTextToken;
+        // 세션 수명 상한 — 평소 만료와 상한 중 이른 쪽이 만료이고(평소 무기한이면 상한), 상한은 절대 만료로 남아
+        // 사용 중 연장(TokenExpirySlider)과 토큰 갱신(refreshToken)이 넘지 못한다.
+        $absoluteExpiresAt = $context['max_session_minutes'] !== null ? now()->addMinutes($context['max_session_minutes']) : null;
+        $expiresAt = $this->getTokenExpiresAt();
 
-        // 세션에 사용자 저장 (/dev 대시보드 인증용)
-        // StartApiSession 미들웨어가 세션을 시작한 경우에만 동작
+        if ($absoluteExpiresAt !== null && ($expiresAt === null || $absoluteExpiresAt->lessThan($expiresAt))) {
+            $expiresAt = $absoluteExpiresAt;
+        }
+
+        $newToken = $user->createToken('auth-token', ['*'], $expiresAt);
+        $token = $newToken->plainTextToken;
+
+        // 토큰을 연 로그인 수단과 절대 만료를 남긴다 — 운영 정책이 바뀌어 특정 수단의 토큰만 회수할 때 쓴다.
+        $this->userRepository->updateAccessTokenSessionMeta($newToken->accessToken, $context['login_method'], $absoluteExpiresAt);
+
+        // 세션에 사용자 저장 (/dev 대시보드 인증·개발자 화면 회원 판정용)
+        // StartApiSession 미들웨어가 세션을 시작한 경우에만 동작. 이번 로그인의 토큰을 세션에 짝으로 묶어
+        // 그 토큰이 회수되면 세션 로그인도 무효가 되게 한다(ScreenAuth, #792).
         if (request()->hasSession() && request()->session()->isStarted()) {
             Auth::guard('web')->login($user);
+            ScreenAuth::pair($user, $newToken->accessToken);
         }
 
         // Hook 발생 (로그인 완료)
@@ -1008,6 +1379,11 @@ class AuthService
             'login_time' => now(),
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
+            // 로그인 수단 — 비밀번호 로그인은 `password`, 외부 인증은 호출자가 정한 이름(예 `social:kakao`). 키 추가만(기존 키 불변).
+            'login_method' => $context['login_method'],
+            // 이번 로그인의 토큰 id 와 외부 세션 참조 — 외부 인증 확장이 자기 세션 기록과 토큰을 잇는다(7.2.0, 키 추가만).
+            'token_id' => (int) $newToken->accessToken->getKey(),
+            'external_ref' => $context['external_ref'],
         ]);
 
         $result = [
@@ -1028,18 +1404,15 @@ class AuthService
     /**
      * 로그인을 허용하는 상태인지 판정합니다.
      *
-     * 휴면은 "막을 상태" 가 아니라 "되돌릴 상태" 라서 통과 목록에 든다 — 판정을 한 곳에 두어
-     * 비밀번호 경로·2FA 완료 경로·재발송 경로가 같은 어휘를 쓰게 한다.
+     * 판정은 `UserStatus::allowsLogin()` 한 곳에 둔다 — 비밀번호 경로·2FA 완료 경로·재발송 경로와
+     * 터미널 비밀번호 재설정 경고가 같은 어휘를 쓴다.
      *
      * @param  string|null  $status  사용자 상태 값
      * @return bool 로그인 허용 여부
      */
     private function isLoginAllowedStatus(?string $status): bool
     {
-        return in_array($status, [
-            UserStatus::Active->value,
-            UserStatus::Dormant->value,
-        ], true);
+        return UserStatus::allowsLogin($status);
     }
 
     /**
@@ -1102,21 +1475,44 @@ class AuthService
      *   - core.auth.signup_before_submit (route): RegisterRequest 검증 단계에서 평가
      *   - core.auth.signup_after_create (hook): 가입 직후 PendingVerification 으로 둘지 결정
      *
-     * @param  array<string, mixed>  $data  RegisterRequest 가 검증한 가입 데이터
-     * @return array{user: User, token: string, token_type: string} 사용자 + 토큰
+     * 비밀번호가 비어 있으면 비밀번호 없는 회원(외부 인증 전용)으로 만든다 — 공개 가입 API 는 `RegisterRequest` 가
+     * 비밀번호를 필수로 받으므로 이 분기는 확장(소셜 로그인 등)이 서버에서 직접 부를 때만 열린다.
+     *
+     * @param  array<string, mixed>  $data  RegisterRequest 가 검증한 가입 데이터 (확장 호출은 같은 키 모양)
+     *                                      확장 내부 가입 옵션(7.2.0 — 공개 가입 API 는 이 옵션을 넘기지 않는다):
+     *                                      - `identity_policy => 'skip'` + `identity_policy_reason`(필수 문자열, 예 `external:vendor-plugin:{idp}`) — 사이트의 가입
+     *                                      본인인증 정책(가입 전 인증, 가입 후 인증 대기)을 따르지 않는다. 회사 IdP 처럼 신원을 이미 보증한 가입에만 쓴다. 사유가 없으면
+     *                                      생략하지 않는다. 생략하면 활동 로그 `user.register_identity_policy_skipped` 가 남는다.
+     *                                      - `record_consents => false` — 이용약관·개인정보 동의 기록을 남기지 않는다(동의를 받지 않은 사전 등록·프로비저닝).
+     *                                      - `required_fields => 'defer'` — 필수 회원 항목을 받지 않고 만든다(화면 없는 생성). `users.required_fields_deferred_at` 에
+     *                                      생성 시각을 남기고, 그 회원이 처음 로그인하면 추가 정보 입력 화면으로 보낸다.
+     *                                      - `nickname_policy => 'skip_field'` — 닉네임이 닉네임 정책(중복 금지, 금지어)에 걸리면 닉네임만 비우고 만든다(화면 없는 생성).
+     *                                      버린 사실은 액션 `core.user.nickname_rejected` 로 알린다. 이 옵션이 없으면 검증 예외(`nickname`)를 던진다.
+     * @param  array<string, mixed>  $data  RegisterRequest 가 검증한 가입 데이터 (확장 호출은 같은 키 모양)
+     * @param  array{issue_token?: bool, identity_policy?: string, identity_policy_reason?: string, record_consents?: bool, required_fields?: string, nickname_policy?: string}  $options
+     *                                                                                                                                                                                     issue_token=false 면 토큰·세션을 만들지 않는다 — 호출자가 로그인
+     *                                                                                                                                                                                     인계(`LoginHandoffService`)로 코어 로그인 관문을 거치게 할 때
+     * @return array{user: User, token: string|null, token_type: string} 사용자 + 토큰 (issue_token=false 면 token=null)
      */
-    public function register(array $data): array
+    public function register(array $data, array $options = []): array
     {
+        $issueToken = (bool) ($options['issue_token'] ?? true);
+        $recordConsents = ($options['record_consents'] ?? true) !== false;
+        $skipReason = self::identityPolicySkipReason($options);
+
         $now = now();
 
         // 사전 검증 훅: AssertIdentityVerifiedBeforeRegister 가 정책 기반으로 verification_token 검증
-        HookManager::doAction('core.auth.before_register', $data, [
+        // (확장이 본인인증 정책 생략을 고르면 그 사실을 문맥에 실어 리스너가 건너뛴다)
+        HookManager::doAction('core.auth.before_register', $data, array_filter([
             'signup_stage' => 'before_submit',
             'http_method' => 'POST',
-        ]);
+            'identity_policy' => $skipReason !== null ? 'skip' : null,
+            'identity_policy_reason' => $skipReason,
+        ], fn ($value) => $value !== null));
 
-        // signup_after_create 정책 매칭 시 PendingVerification, 아니면 Active
-        $modeCPolicy = $this->policyService->resolve(
+        // signup_after_create 정책 매칭 시 PendingVerification, 아니면 Active (정책 생략 가입은 Active)
+        $modeCPolicy = $skipReason !== null ? null : $this->policyService->resolve(
             scope: 'hook',
             target: 'core.auth.after_register',
             context: ['signup_stage' => 'after_create'],
@@ -1125,52 +1521,108 @@ class AuthService
             ? UserStatus::PendingVerification->value
             : UserStatus::Active->value;
 
-        $userData = [
-            'name' => $data['name'],
-            'nickname' => $data['nickname'] ?? null,
+        // 회원 항목 — 운영자 설정(환경설정 > 회원)에서 사용 중이고 가입에서 받는 항목만 저장한다.
+        // 컬럼 저장 항목(이름, 닉네임, 휴대폰 등)은 회원 행에, 그 밖의 항목(운영자 추가 항목 등)은 생성 뒤 같은 트랜잭션에서 저장한다.
+        // 꺼진 항목의 값은 요청에 실려 와도 버린다(이름을 끈 사이트는 users.name 이 NULL 이다).
+        $fieldContext = FieldContext::for(FieldContext::SURFACE_SIGNUP);
+        $fieldValues = app(FieldValueService::class);
+        $fields = $fieldValues->partition(FieldSet::CORE_USER, $data, $fieldContext);
+
+        $fixedData = [
             'email' => $data['email'], // audit:allow resource-member-email-ungated 가입 저장 데이터(응답 아님)
-            'password' => Hash::make($data['password']),
-            'mobile' => $data['mobile'] ?? null,
-            'phone' => $data['phone'] ?? null,
-            'language' => $data['language'] ?? 'ko',
-            'country' => $this->detectCountryFromAcceptLanguage(),
+            'password' => isset($data['password']) && $data['password'] !== '' ? Hash::make($data['password']) : null,
             'ip_address' => request()->ip(),
             'status' => $status,
         ];
+        $userData = array_merge($fields['columns'], ['country' => $this->detectCountryFromAcceptLanguage()], $fixedData);
+        // 언어를 받지 않았으면 종전 기본값을 쓴다(컬럼이 NOT NULL).
+        $userData['language'] = $userData['language'] ?? 'ko';
+
+        // 표시 이름 종류 — 고를 권한이 있고 운영자가 허용한 종류일 때만 저장한다. 요청 규칙을 거친 가입은 이미 통과했고,
+        // 요청을 거치지 않는 경로가 실어 보낸 값도 같은 판정으로 거른다(맞지 않으면 버리고 회원 기본 종류로 보인다).
+        $chosenKind = $data['display_name_kind'] ?? null;
+        if (is_string($chosenKind) && $chosenKind !== '' && app(DisplayNameChoicePolicy::class)->rejection(null, $chosenKind) === null) {
+            $userData['display_name_kind'] = $chosenKind;
+        }
+
+        // 필수 항목을 건너뛰고 만드는 경로(화면 없는 외부 인증 생성, 관리자 사전 등록 등)는 그 사실을 남긴다 —
+        // 그 회원이 처음 로그인하면 추가 정보 입력 화면으로 보낸다.
+        if (($options['required_fields'] ?? null) === 'defer') {
+            $userData['required_fields_deferred_at'] = $now;
+        }
+
+        // 확장이 가입 저장 데이터(회원 행의 컬럼 값)를 조정할 수 있게 한다. 이메일, 비밀번호, 상태, 접속 IP 는 필터가 바꾸지 못한다.
+        $filteredData = HookManager::applyFilters('core.auth.filter_register_data', $userData, $data, $options);
+        if (is_array($filteredData)) {
+            $userData = array_merge($filteredData, $fixedData);
+        }
+
+        // 닉네임 정책 — 요청 규칙을 거친 가입은 이미 통과했고, 요청을 거치지 않는 경로(외부 인증 가입 등)는 여기서 판정한다.
+        // 통과하면 비교용 정규화 값과 중복 키를 함께 저장한다.
+        $nicknamePolicy = app(NicknamePolicyService::class);
+        [$userData, $nicknameRejected] = $nicknamePolicy->apply(null, $userData, FieldContext::SURFACE_SIGNUP, null, $options);
 
         // 계정 생성 이후 단계에서 실패하면 이메일만 점유한 유령 계정이 남아
         // 같은 이메일로 재가입조차 불가능해진다. 생성~토큰 발급을 하나로 묶는다.
-        [$user, $token] = DB::transaction(function () use ($userData, $data, $now) {
-            $user = $this->userRepository->create($userData);
+        try {
+            [$user, $newToken] = DB::transaction(function () use ($userData, $data, $now, $issueToken, $recordConsents, $fields, $fieldValues, $fieldContext) {
+                $user = $this->userRepository->create($userData);
 
-            // 비밀번호 만료 기준일 — 가입 시점이 첫 변경일이다.
-            $this->passwordChangeService->initializeNewUser($user, PasswordChangeSource::Register);
+                // 컬럼이 아닌 회원 항목 값(운영자 추가 항목, 확장 핸들러 항목)
+                $fieldValues->write($user, FieldSet::CORE_USER, $fields['values'], $fieldContext);
 
-            // 약관 동의 이력 기록
-            $this->recordConsents($user, $data, $now);
+                // 비밀번호 만료 기준일 — 가입 시점이 첫 변경일이다.
+                $this->passwordChangeService->initializeNewUser($user, PasswordChangeSource::Register);
 
-            // 'user' 역할 자동 할당 (UserService 패턴과 동일)
-            $userRole = $this->roleRepository->findByIdentifier('user');
-            if ($userRole) {
-                $user->roles()->sync([$userRole->id]);
-            }
+                // 약관 동의 이력 기록 (동의를 받지 않은 확장 내부 가입은 남기지 않는다)
+                if ($recordConsents) {
+                    $this->recordConsents($user, $data, $now);
+                }
 
-            // 가입 트랜잭션 안 훅 — 동일인 선점처럼 「가입과 함께 성공하거나 함께 취소」되어야 하는 기록을 확장이 남긴다
-            // (KVE-2026-3192). 동기 구독만 의미가 있고(큐 구독은 커밋 뒤로 밀린다), 구독자가 예외를 던지면 가입 전체가 롤백된다.
-            HookManager::doAction(
-                'core.auth.registering',
-                $user,
-                Arr::except($data, ['password', 'password_confirmation']),
-                ['signup_stage' => 'in_transaction'],
-            );
+                // 'user' 역할 자동 할당 (UserService 패턴과 동일)
+                $userRole = $this->roleRepository->findByIdentifier('user');
+                if ($userRole) {
+                    $user->roles()->sync([$userRole->id]);
+                }
 
-            $token = $user->createToken('auth-token', ['*'], $this->getTokenExpiresAt())->plainTextToken;
+                // 가입 트랜잭션 안 훅 — 동일인 선점처럼 「가입과 함께 성공하거나 함께 취소」되어야 하는 기록을 확장이 남긴다
+                // (KVE-2026-3192). 동기 구독만 의미가 있고(큐 구독은 커밋 뒤로 밀린다), 구독자가 예외를 던지면 가입 전체가 롤백된다.
+                HookManager::doAction(
+                    'core.auth.registering',
+                    $user,
+                    Arr::except($data, ['password', 'password_confirmation']),
+                    ['signup_stage' => 'in_transaction'],
+                );
 
-            return [$user, $token];
-        });
+                $newToken = $issueToken
+                    ? $user->createToken('auth-token', ['*'], $this->getTokenExpiresAt())
+                    : null;
+
+                return [$user, $newToken];
+            });
+        } catch (UniqueConstraintViolationException $e) {
+            // 판정과 저장 사이에 다른 회원이 같은 닉네임을 먼저 저장한 경우 — 닉네임 칸의 검증 오류로 알린다.
+            throw $nicknamePolicy->duplicateFrom($e) ?? $e;
+        }
+        $token = $newToken?->plainTextToken;
 
         // 커밋 후 부수효과 (캐시는 DB 트랜잭션의 롤백 대상이 아니다)
         $user->flushPermissionCaches();
+
+        // 정책에 걸려 버린 닉네임을 알린다(외부 인증 확장이 자기 기록에 사유를 남긴다).
+        if ($nicknameRejected !== null) {
+            HookManager::doAction('core.user.nickname_rejected', $user, $nicknameRejected['nickname'], $nicknameRejected['reason'], [
+                'surface' => FieldContext::SURFACE_SIGNUP,
+                'operation' => 'register',
+            ]);
+        }
+
+        // 가입 직후에도 개발자 화면에서 로그인으로 보이도록 서버 세션에 로그인을 남기고 토큰과 짝을 맺는다
+        // (가입 라우트가 세션을 연 경우에만 — #792 D20).
+        if ($newToken !== null && request()->hasSession() && request()->session()->isStarted()) {
+            Auth::guard('web')->login($user);
+            ScreenAuth::pair($user, $newToken->accessToken);
+        }
 
         // Hook 발생 (회원가입 완료) — 알림 발송은 NotificationHookListener,
         // signup_after_create 정책이 enabled 면 InitiateIdentityChallengeAfterRegister 가 challenge 발행.
@@ -1180,11 +1632,26 @@ class AuthService
             'user_agent' => request()->userAgent(),
             'signup_stage' => 'after_create',
             'verification_token' => $data['verification_token'] ?? null,
+            // 본인인증 정책 생략 가입이면 가입 후 인증 대기 리스너가 challenge 를 만들지 않는다(7.2.0, 키 추가만)
+            'identity_policy' => $skipReason !== null ? 'skip' : null,
             // 모듈이 동적 추가한 가입 필드(예: 결제 통화)를 리스너가 읽을 수 있도록 검증된 가입 데이터 전달.
             // request() 직접 접근을 피하기 위해 Service 가 도메인 객체로 넘긴다(Listener 규율).
             // 비밀번호 원문은 뺀다 — 큐 구독자마다 작업 표에 사본이 남고, 읽는 구독자가 없다(#138 후속 — 설계 결정).
             'registration_data' => Arr::except($data, ['password', 'password_confirmation']),
         ]);
+
+        if ($skipReason !== null) {
+            $this->logActivity('user.register_identity_policy_skipped', [
+                'log_type' => ActivityLogType::User,
+                'description_key' => 'activity_log.description.user_register_identity_policy_skipped',
+                'description_params' => ['user_id' => (string) $user->uuid, 'reason' => $skipReason],
+                'user_id' => $user->id,
+                'properties' => [
+                    'user_uuid' => (string) $user->uuid,
+                    'reason' => $skipReason,
+                ],
+            ]);
+        }
 
         return [
             'user' => $user,
@@ -1194,26 +1661,72 @@ class AuthService
     }
 
     /**
+     * 본인이 스스로 하는 가입(공개 가입 API, 소셜 가입 등)을 받는지 돌려줍니다.
+     *
+     * 환경설정 「일반 회원가입 받기」(`security.registration_enabled`)와 필터 `core.auth.self_registration_open(bool $open)` 결과를
+     * 함께 본다(확장이 닫을 수 있다 — 예: 사이트 전체 회사 계정 강제). 회사가 만드는 계정(외부 인증 자동 생성, 프로비저닝, 관리자
+     * 추가)은 이 판정과 무관하게 `register()`·`UserService::createUser()` 로 만든다.
+     *
+     * @return bool 받으면 true
+     *
+     * @since 7.2.0
+     */
+    public function isSelfRegistrationOpen(): bool
+    {
+        $open = (bool) g7_core_settings('security.registration_enabled', true);
+
+        return (bool) HookManager::applyFilters('core.auth.self_registration_open', $open);
+    }
+
+    /**
+     * 가입 옵션에서 본인인증 정책 생략 사유를 꺼냅니다.
+     *
+     * `identity_policy === 'skip'` 이고 사유가 비어 있지 않은 문자열일 때만 생략한다 — 사유 없는 생략은 받지 않는다.
+     *
+     * @param  array<string, mixed>  $options  가입 옵션
+     * @return string|null 생략 사유 (생략하지 않으면 null)
+     */
+    private static function identityPolicySkipReason(array $options): ?string
+    {
+        if (($options['identity_policy'] ?? null) !== 'skip') {
+            return null;
+        }
+
+        $reason = $options['identity_policy_reason'] ?? null;
+
+        if (! is_string($reason) || trim($reason) === '') {
+            Log::warning('가입 본인인증 정책 생략에 사유가 없어 생략하지 않습니다');
+
+            return null;
+        }
+
+        return mb_substr(trim($reason), 0, 100);
+    }
+
+    /**
      * 사용자를 로그아웃시키고 현재 디바이스의 인증 토큰만 삭제합니다.
      *
+     * 토큰을 지우기 **전**에 필터 `core.auth.logout_redirect_url(null, User $user, array{guard, token_id})` 로 로그아웃 뒤 갈
+     * 곳을 묻는다(7.2.0) — 외부 인증 확장이 그 토큰에 묶인 자기 세션을 찾아 IdP 로그아웃 경로를 돌려준다. 같은 출처 경로만 남긴다.
+     *
      * @param  User  $user  로그아웃할 사용자
-     * @return void 반환값 없음
+     * @param  string  $guard  로그아웃 경로 (user | admin)
+     * @return string|null 로그아웃 뒤 이동할 같은 출처 경로 (없으면 null — 화면이 로그인 화면으로 간다)
      */
-    public function logout(User $user): void
+    public function logout(User $user, string $guard = 'user'): ?string
     {
         // Hook 발생 (로그아웃 시작)
         HookManager::doAction('core.auth.before_logout', $user);
 
-        // 토큰 삭제 처리
+        // 지울 토큰을 먼저 찾는다
         $currentToken = $user->currentAccessToken();
 
         // Case 1: 토큰만 보낸 경우 - currentAccessToken()이 PersonalAccessToken 반환
-        if ($currentToken instanceof PersonalAccessToken) {
-            $currentToken->delete();
-        }
         // Case 2: 쿠키 + 토큰을 함께 보낸 경우 또는 TransientToken
-        // Authorization 헤더에서 Bearer 토큰을 직접 추출하여 삭제
-        else {
+        // Authorization 헤더에서 Bearer 토큰을 직접 추출한다
+        $personalAccessToken = $currentToken instanceof PersonalAccessToken ? $currentToken : null;
+
+        if ($personalAccessToken === null) {
             $bearerToken = request()->bearerToken();
 
             if ($bearerToken && str_contains($bearerToken, '|')) {
@@ -1226,13 +1739,17 @@ class AuthService
                     $personalAccessToken = $user->tokens()
                         ->where('token', $hashedToken)
                         ->first();
-
-                    if ($personalAccessToken) {
-                        $personalAccessToken->delete();
-                    }
                 }
             }
         }
+
+        // 로그아웃 뒤 이동 경로 — 확장이 어느 세션인지 알도록 토큰을 지우기 전에 묻는다
+        $redirectUrl = SameOriginPath::normalize(HookManager::applyFilters('core.auth.logout_redirect_url', null, $user, [
+            'guard' => $guard,
+            'token_id' => $personalAccessToken?->getKey(),
+        ]));
+
+        $personalAccessToken?->delete();
 
         // 세션 무효화 (StartApiSession 미들웨어가 세션을 시작한 경우)
         if (request()->hasSession() && request()->session()->isStarted() && Auth::guard('web')->check()) {
@@ -1243,6 +1760,8 @@ class AuthService
 
         // Hook 발생 (로그아웃 완료)
         HookManager::doAction('core.auth.logout', $user);
+
+        return $redirectUrl;
     }
 
     /**
@@ -1262,13 +1781,38 @@ class AuthService
         // 현재 토큰 삭제 (다른 디바이스는 유지)
         $currentToken = $user->currentAccessToken();
 
+        // 외부 인증이 준 세션 수명 상한과 로그인 수단은 새 토큰이 물려받는다 — 갱신으로 상한을 넘지 못하게.
+        $absoluteExpiresAt = null;
+        $loginMethod = null;
+
         // PersonalAccessToken만 삭제 (TransientToken은 세션 기반이므로 삭제 불필요)
         if ($currentToken instanceof PersonalAccessToken) {
+            $absoluteExpiresAt = $currentToken->absolute_expires_at ? Carbon::parse($currentToken->absolute_expires_at) : null;
+            $loginMethod = $currentToken->login_method;
             $currentToken->delete();
+
+            if ($absoluteExpiresAt !== null && $absoluteExpiresAt->isPast()) {
+                throw new AuthenticationException(__('auth.session_cap_reached'));
+            }
         }
 
         // 새 토큰 생성
-        $token = $user->createToken('auth-token', ['*'], $this->getTokenExpiresAt())->plainTextToken;
+        $expiresAt = $this->getTokenExpiresAt();
+
+        if ($absoluteExpiresAt !== null && ($expiresAt === null || $absoluteExpiresAt->lessThan($expiresAt))) {
+            $expiresAt = $absoluteExpiresAt;
+        }
+
+        $newToken = $user->createToken('auth-token', ['*'], $expiresAt);
+        $token = $newToken->plainTextToken;
+
+        if ($currentToken instanceof PersonalAccessToken) {
+            $this->userRepository->updateAccessTokenSessionMeta($newToken->accessToken, $loginMethod, $absoluteExpiresAt);
+        }
+
+        // 웹 세션 회원이 같으면 개발자 화면 세션의 짝을 새 토큰으로 바꾼다 — 지운 옛 토큰을 짝으로 둔 채면
+        // 갱신 직후 개발자 화면이 로그아웃으로 보인다(#792 F6-2).
+        ScreenAuth::repair($user, $newToken->accessToken);
 
         return [
             'user' => $user,
@@ -1319,13 +1863,31 @@ class AuthService
      */
     public function forgotPassword(string $email, ?string $redirectPrefix = null): void
     {
+        $policy = app(PasswordAuthPolicyService::class);
+        $guard = $redirectPrefix ? 'admin' : 'user';
+
+        // 식별자 기준 비밀번호 인증 정책 — 도메인 정책은 화면에 바로 안내한다(회원 유무와 무관하므로 열거가 아니다).
+        $policy->assertAllowed(['identifier' => $email, 'user' => null, 'guard' => $guard, 'purpose' => 'reset_request']);
+
         $user = $this->userRepository->findByEmail($email);
 
         // 토큰 생성 (64자 랜덤 문자열) — 해시 연산은 어느 경로에서나 한 번 한다(응답 시간 균일).
         $token = Str::random(64);
         $tokenHash = Hash::make($token);
 
-        if (! $user) {
+        // 없는 이메일과 메일을 보낼 수 없는 대체 주소(`…@xxx.invalid`)는 조용히 끝낸다 — 응답은 일반 성공과 같아
+        // 계정의 존재를 드러내지 않고(7.1.6), 닿지 않는 메일도 보내지 않는다.
+        if (! $user || UndeliverableEmail::is($user->email)) {
+            return;
+        }
+
+        // 회원 기준 비밀번호 인증 정책 — 응답은 일반 성공과 같게 두고(열거 방지), 재설정 링크 대신 확장이 안내 메일을 보내도록
+        // 액션만 발화한다. 재설정 토큰은 만들지 않는다.
+        $decision = $policy->decide(['identifier' => $email, 'user' => $user, 'guard' => $guard, 'purpose' => 'reset_request']);
+
+        if (! $decision->allowed) {
+            HookManager::doAction('core.auth.password_reset_blocked', $user, $decision);
+
             return;
         }
 
@@ -1351,20 +1913,30 @@ class AuthService
             $redirectPrefix = null;
         }
 
-        // 리셋 URL 생성 (extract_data 필터에서 사용)
-        $resetPath = $redirectPrefix
-            ? '/'.$redirectPrefix.'/reset-password'
-            : '/reset-password';
-        $resetUrl = config('app.url').$resetPath.'?'.http_build_query([
+        // 리셋 URL 생성 (extract_data 필터에서 사용) — 메일에 싣는 링크라 화면 주소 헬퍼의 링크 변형을 거친다(#792·#888).
+        // 관리자 재설정 화면은 관리자 범위라 밖으로 나가는 링크의 주소(G7_PUBLIC_LINK_URL, 비면 사이트 주소), 사용자 재설정
+        // 화면은 「사용자 화면 URL」(비면 그 링크 주소)과 주소 필터를 따른다.
+        $resetQuery = [
             'token' => $token,
             'email' => $user->email, // audit:allow resource-member-email-ungated 재설정 메일 URL 쿼리(응답 아님)
-        ]);
+        ];
+        $resetUrl = $redirectPrefix
+            ? ScreenUrl::absoluteForLinks('admin.reset_password', '/'.$redirectPrefix.'/reset-password', [], ScreenUrl::SCOPE_ADMIN)
+            : ScreenUrl::absoluteForLinks('auth.reset_password', '/reset-password', $resetQuery);
+        if ($redirectPrefix) {
+            $resetUrl .= (str_contains($resetUrl, '?') ? '&' : '?').http_build_query($resetQuery);
+        } elseif (! str_contains($resetUrl, 'token=')) {
+            // 주소 필터가 쿼리를 떨어뜨린 경로를 돌려줘도 토큰·이메일은 반드시 싣는다
+            $resetUrl .= (str_contains($resetUrl, '?') ? '&' : '?').http_build_query($resetQuery);
+        }
 
         // Hook 발생 (비밀번호 재설정 요청) — 알림 발송은 NotificationHookListener가 처리.
+        // `redirect_prefix` 는 재설정 화면이 관리자 쪽인지 알린다 — 메일의 사이트 링크도 같은 쪽 주소로 만든다.
         // 응답을 보낸 뒤에 발화한다: 발송 시간이 응답 시간에 실리면 가입 주소만 느려진다.
-        defer(static function () use ($user, $resetUrl): void {
+        defer(static function () use ($user, $resetUrl, $redirectPrefix): void {
             HookManager::doAction('core.auth.after_reset_password_request', $user, [
                 'reset_url' => $resetUrl,
+                'redirect_prefix' => $redirectPrefix,
             ]);
         });
     }
@@ -1392,9 +1964,10 @@ class AuthService
      *
      * @param  string  $token  비밀번호 재설정 토큰
      * @param  string  $email  사용자 이메일
+     * @param  string|null  $redirectPrefix  재설정 화면 구분값 (`admin` 이면 관리자 재설정 화면 — 비밀번호 인증 정책을 관리자 경로로 판정)
      * @return array{valid: bool, error?: string}
      */
-    public function validateResetToken(string $token, string $email): array
+    public function validateResetToken(string $token, string $email, ?string $redirectPrefix = null): array
     {
         // 1·2. 사용자와 토큰 레코드 조회 — 가입되지 않은 주소와 토큰 기록이 없는 주소는 토큰이 틀린 것과
         //      같은 문구로 답한다(계정 존재를 알려 주지 않는다). 해시 비교도 같은 횟수로 한다.
@@ -1430,6 +2003,11 @@ class AuthService
             ];
         }
 
+        // 비밀번호 인증 정책 — 정책이 바뀌기 전에 받은 재설정 링크로 비밀번호를 만들지 못하게 한다. 유효한 링크를
+        // 확인한 뒤에만 묻는다 — 앞에서 물으면 이메일과 아무 토큰으로 그 회원이 회사 계정 전용인지 드러난다(열거 방지).
+        // 경로는 재설정 화면을 따른다 — 관리자 재설정 화면이면 거절 응답의 다른 로그인 수단 주소가 관리자 로그인으로 온다.
+        app(PasswordAuthPolicyService::class)->assertAllowed(['identifier' => $email, 'user' => $user, 'guard' => $redirectPrefix ? 'admin' : 'user', 'purpose' => 'reset_complete']);
+
         return ['valid' => true];
     }
 
@@ -1439,11 +2017,12 @@ class AuthService
      * @param  string  $token  비밀번호 재설정 토큰
      * @param  string  $email  사용자 이메일
      * @param  string  $password  새로운 비밀번호
+     * @param  string|null  $redirectPrefix  재설정 화면 구분값 (`admin` 이면 관리자 재설정 화면 — 비밀번호 인증 정책을 관리자 경로로 판정)
      * @return void 반환값 없음
      *
      * @throws ValidationException 토큰이 유효하지 않을 때 (가입되지 않은 이메일도 같은 오류)
      */
-    public function resetPassword(string $token, string $email, string $password): void
+    public function resetPassword(string $token, string $email, string $password, ?string $redirectPrefix = null): void
     {
         // 가입되지 않은 주소와 토큰 기록이 없는 주소는 토큰이 틀린 것과 같은 필드·문구로 답한다
         // (계정 존재를 알려 주지 않는다). 해시 비교도 같은 횟수로 한다.
@@ -1477,6 +2056,10 @@ class AuthService
                 'token' => [__('auth.reset_token_expired')],
             ]);
         }
+
+        // 비밀번호 인증 정책 — 정책이 바뀌기 전에 받은 재설정 링크로 비밀번호를 만들지 못하게 한다. 유효한 링크를
+        // 확인한 뒤에만 묻는다 — 앞에서 물으면 이메일과 아무 토큰으로 그 회원이 회사 계정 전용인지 드러난다(열거 방지).
+        app(PasswordAuthPolicyService::class)->assertAllowed(['identifier' => $email, 'user' => $user, 'guard' => $redirectPrefix ? 'admin' : 'user', 'purpose' => 'reset_complete']);
 
         // 재설정 실행 본문(잠금 해제·변경 기록·모든 기기 로그아웃·완료 훅)은 터미널 재설정과 같은 서비스가 소유한다.
         // 비밀번호를 바꾼 뒤 토큰 삭제가 실패하면 그 재설정 토큰이 계속 유효한 채로 남아 재사용된다(보안) —

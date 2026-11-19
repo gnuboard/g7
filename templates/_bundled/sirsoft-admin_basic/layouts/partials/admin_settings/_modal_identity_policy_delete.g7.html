@@ -3,7 +3,7 @@
 <partial description="본인인증 정책 삭제 확인 모달" editor_label="$t:admin.modal_label.admin_settings.identity_policy_delete_modal">
   <modal data-type="composite" data-ref="identity_policy_delete_modal" title="$t:admin.identity.policies.delete_title" size="sm">
     <p class="text-gray-700 dark:text-gray-300">$t:admin.identity.policies.delete_confirm</p>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary" disabled="{{_global.identityPolicyDeleting}}">
         <on type="click">
           <close-modal target="identity_policy_delete_modal"/>
@@ -33,6 +33,6 @@
         <icon data-if="{{_global.identityPolicyDeleting}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.identityPolicyDeleting ? '$t:common.deleting' : '$t:common.delete'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

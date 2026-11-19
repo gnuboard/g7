@@ -62,6 +62,14 @@ return [
         'template_init_error' => '템플릿 엔진을 초기화하는 중 오류가 발생했습니다',
         'contact_admin_for_template' => '시스템 관리자에게 문의하여 템플릿을 활성화해주세요.',
 
+        // template.json 확장 CSS 계약 검증 메시지
+        'color_scheme_invalid_strategy' => 'features.color_scheme.strategy 는 ancestor-class, media-query, none 중 하나여야 합니다.',
+        'color_scheme_selector_required' => 'features.color_scheme 의 ancestor-class 방식에는 selector 가 필요합니다.',
+        'extension_css_overrides_not_list' => 'extension_css_overrides 는 배열이어야 합니다.',
+        'extension_css_override_invalid' => 'extension_css_overrides 의 :index 번째 항목에 target 과 dist/ 아래 path 가 필요합니다.',
+        'extension_css_override_invalid_version' => 'extension_css_overrides 의 :target 항목 targetVersion 을 해석할 수 없습니다.',
+        'extension_css_override_duplicate' => 'extension_css_overrides 에 :target 이 두 번 선언되었습니다.',
+
         // 에러 레이아웃 검증 메시지
         'missing_error_config' => '템플릿에 error_config 섹션이 없습니다. 에러 페이지 레이아웃 설정이 필요합니다.',
         'missing_error_layout' => ':code 에러 레이아웃이 정의되지 않았습니다.',
@@ -215,6 +223,7 @@ return [
     'fetch_success' => '템플릿 정보를 성공적으로 가져왔습니다.',
     'license_not_found' => '템플릿 라이선스 파일을 찾을 수 없습니다.',
     'refresh_layouts_success' => '템플릿 레이아웃이 성공적으로 갱신되었습니다.',
+    'refresh_layouts_preview_success' => '레이아웃 갱신 미리보기를 만들었습니다.',
     'refresh_layouts_failed' => '템플릿 레이아웃 갱신에 실패했습니다: :error',
 
     // 업데이트 관련 메시지
@@ -260,7 +269,7 @@ return [
             'success' => '템플릿 ":template" 활성화 완료',
             'language_packs_restored' => '언어팩 :count개를 함께 켰습니다: :list',
             'language_packs_kept' => '다시 켜지 않은 언어팩: :list (관리자 화면에서 다시 켤 수 있습니다)',
-            'language_pack_restore_failed' => '언어팩 ":pack" 을(를) 다시 켜지 못했습니다: :error',
+            'language_pack_restore_failed' => '언어팩 ":pack" 다시 켜기에 실패했습니다: :error',
             'option_without_language_packs' => '이 확장을 끌 때 함께 꺼진 언어팩을 다시 켜지 않습니다 (기본은 함께 켭니다)',
             'not_installed' => '":template" 템플릿이 설치되지 않았습니다.',
             'deactivated_previous' => '기존 :type 템플릿 ":previous" 비활성화',
@@ -280,6 +289,7 @@ return [
             'success' => '템플릿 ":template" 비활성화 완료',
             'not_active' => '":template" 템플릿이 활성화되지 않았습니다.',
             'no_active_warning' => '현재 활성화된 :type 템플릿이 없습니다.',
+            'last_active_force_hint' => '그래도 끄려면 --force 를 붙여 다시 실행하세요: php artisan template:deactivate :template --force',
         ],
         'uninstall' => [
             'success' => '템플릿 ":template" 삭제 완료',
@@ -293,6 +303,8 @@ return [
             'versions_deleted' => '버전 히스토리 :count개 삭제됨',
             'custom_preserved' => '운영자 파일(:directory)을 :archive 에 보관했습니다.',
             'aborted' => '삭제가 취소되었습니다.',
+            'confirm_unavailable' => '확인 질문에 답할 수 없는 실행(터미널 없음 또는 --no-interaction)이라 ":template" 템플릿을 삭제하지 않았습니다.',
+            'confirm_unavailable_hint' => 'cron, CI, 원격 명령처럼 확인 없이 삭제해야 하면 --yes(확인만 생략) 또는 --force 옵션을 붙여 다시 실행하세요. 예: php artisan template:uninstall :template --yes',
             'delete_data_notice' => '⚠️  --delete-data: 「데이터도 삭제」를 선택한 것으로 제거합니다(활동 로그와 제거를 구독하는 확장에 전달됩니다).',
         ],
         'list' => [
@@ -347,8 +359,10 @@ return [
             'modified_layout_item' => '  - :name (수정일: :date)',
             'confirm_question' => '업데이트를 진행하시겠습니까?',
             'aborted' => '업데이트가 취소되었습니다.',
+            'confirm_unavailable' => '확인 질문에 답할 수 없는 실행(터미널 없음 또는 --no-interaction)이라 ":template" 템플릿 업데이트를 시작하지 않았습니다. (템플릿은 바뀌지 않았습니다)',
+            'confirm_unavailable_hint' => 'cron, CI, 원격 명령처럼 확인 없이 진행해야 하면 --yes 옵션(확인만 생략)을 붙여 다시 실행하세요. --force 는 6가지를 함께 켭니다 — ① 확인 생략 ② 같은 판 재적용 ③ 다운그레이드 허용 ④ 코어 호환 검사 생략 ⑤ 같은 판 업그레이드 스텝 재실행 ⑥ 멈춘 업데이트 정리. 예: php artisan template:update :template --yes',
             'backup_restored' => '백업에서 이전 버전이 복원되었습니다.',
-            'force_mode' => '강제 업데이트 모드: 버전 비교를 건너뛰고 재설치합니다.',
+            'force_mode' => '강제 업데이트 모드(--force): 6가지를 함께 켭니다 — ① 확인 생략 ② 같은 판 재적용 ③ 다운그레이드 허용 ④ 코어 호환 검사 생략 ⑤ 같은 판 업그레이드 스텝 재실행 ⑥ 멈춘 업데이트 정리.',
         ],
         // `template:build` 명령 출력
         'build' => [
@@ -403,6 +417,62 @@ return [
             'file_extensions' => '올릴 수 없는 파일 형식입니다. 허용 형식: :extensions',
             'file_max' => '파일 크기는 최대 :max MB까지 허용됩니다.',
             'layout_name_max' => '레이아웃 이름은 최대 150자까지 허용됩니다.',
+        ],
+    ],
+
+    // 템플릿 환경설정 (#434)
+    'settings' => [
+        'updated' => '템플릿 설정을 저장했습니다.',
+        'reset' => '템플릿 설정을 기본값으로 되돌렸습니다.',
+        'attributes' => [
+            'section' => '설정 섹션',
+        ],
+        'reset_failed' => '템플릿 설정을 기본값으로 되돌리지 못했습니다: :error',
+        'warnings' => [
+            'owned_elsewhere' => '템플릿 ":template" 의 설정 칸 :fields — 코어·다른 확장이 이미 가진 값과 이름이 같습니다. 그 값을 읽어 쓰고 다시 저장하지 마세요.',
+        ],
+        'update_failed' => '템플릿 설정 저장에 실패했습니다: :error',
+        'not_found' => '설정 화면이 없는 템플릿입니다.',
+        'errors' => [
+            'invalid_json' => '템플릿 ":template" 의 설정 선언(config/settings/defaults.json)이 올바른 JSON 이 아닙니다: :error',
+            'invalid_schema' => '템플릿 ":template" 의 설정 선언이 규약에 맞지 않습니다: :errors',
+            'not_available' => '템플릿 ":template" 은 설치되지 않았거나 설정 선언이 없습니다.',
+            'save_failed' => '설정 파일을 쓰지 못했습니다.',
+        ],
+        'menu' => [
+            'not_list' => '메뉴 값은 항목 목록이어야 합니다.',
+            'item_invalid' => '메뉴 항목 형식이 올바르지 않습니다.',
+            'id_invalid' => '메뉴 항목 식별값이 올바르지 않습니다.',
+            'id_duplicate' => '같은 식별값을 가진 메뉴 항목이 둘 이상 있습니다.',
+            'kind_invalid' => '알 수 없는 메뉴 항목 종류입니다.',
+            'auto_duplicate' => '자동 항목은 메뉴에 한 번만 둘 수 있습니다.',
+            'auto_no_children' => '자동 항목 아래에는 하위 메뉴를 둘 수 없습니다.',
+            'label_required' => '메뉴 이름을 입력하세요.',
+            'url_required' => '이동할 주소를 입력하세요. 하위 메뉴가 있는 상위 메뉴만 주소를 비워 둘 수 있습니다.',
+            'too_deep' => '메뉴는 :depth단까지만 둘 수 있습니다.',
+            'visibility_invalid' => '보이기 설정이 올바르지 않습니다.',
+            'roles_required' => '「특정 역할만」을 고르면 역할을 하나 이상 선택해야 합니다.',
+            'too_many' => '메뉴 항목은 하위 메뉴를 합쳐 최대 :max개까지 둘 수 있습니다.',
+        ],
+        // 메뉴·목록 칸 항목의 검증 오류에 쓸 표시 이름 — 내부 키(header.menu.5.url) 대신 칸 이름·1부터 센 자리·항목 이름으로 말한다
+        'item_attributes' => [
+            'item' => ':field :position번째 항목',
+            'item_named' => ':field :position번째 항목(:name)',
+            'child' => ':parent의 :position번째 하위 항목',
+            'child_named' => ':parent의 :position번째 하위 항목(:name)',
+            'key' => ':item의 :key',
+            'row' => ':field :position번째 항목의 :key',
+            'keys' => [
+                'id' => '식별값',
+                'kind' => '종류',
+                'label' => '메뉴 이름',
+                'url' => '이동할 주소',
+                'new_tab' => '새 창으로 열기',
+                'is_active' => '사용',
+                'visibility' => '보이기',
+                'roles' => '역할',
+                'children' => '하위 메뉴',
+            ],
         ],
     ],
 ];

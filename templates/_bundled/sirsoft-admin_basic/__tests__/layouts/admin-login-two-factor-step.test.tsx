@@ -47,9 +47,27 @@ function flatten(node: Node | Node[] | undefined): Node[] {
 }
 
 // 컴파일러가 원소 하나짜리 배열을 객체로 접으므로(D67) 배열 모양을 단정하지 않는다 — asArray 로 정규화.
+// 레이아웃 이름 붙은 액션(`named_actions`) — `actionRef` 는 런타임처럼 그 정의로 펼쳐 본다(7.2.0 `applyAdminLoginResult`).
+const namedActions: Record<string, Action> = (adminLogin as any).named_actions ?? {};
+
+/**
+ * `actionRef` 를 이름 붙은 액션 정의로 바꾼다(정의가 없으면 실패).
+ *
+ * @param actions 액션(들)
+ * @returns 펼친 액션 목록
+ */
+function resolveRefs(actions: Action[] | Action | undefined): Action[] {
+  return asArray<Action & { actionRef?: string }>(actions).flatMap((a) => {
+    if (!a.actionRef) return [a];
+    expect(namedActions[a.actionRef], `이름 붙은 액션 ${a.actionRef}`).toBeDefined();
+    const named = namedActions[a.actionRef];
+    return named.handler === 'sequence' ? resolveRefs(named.actions) : [named];
+  });
+}
+
 function flattenActions(actions: Action[] | Action | undefined): Action[] {
   if (!actions) return [];
-  return asArray<Action>(actions).flatMap((a) => [
+  return resolveRefs(actions).flatMap((a) => [
     a,
     ...flattenActions(a.actions),
     ...flattenActions(a.onSuccess),
@@ -70,10 +88,17 @@ describe('sirsoft-admin_basic 관리자 로그인 2단계 인증 단계', () => 
   it('1단계 입력과 2단계 블록의 조건이 상보적이다', () => {
     // #736 이후 1단계는 2단계 인증·비밀번호 변경 두 단계가 모두 아닐 때만 보인다(세 단계 상보 — 변경 단계 쪽은
     // admin-login-password-change-step.test.tsx 가 잠근다).
-    const stepOne = nodes.filter((n) => n.if === '{{!_local.twoFactor?.required && !_local.passwordChange?.required}}');
+    // 7.2.0 A1t — 비밀번호 칸, 찾기 링크, 로그인 버튼은 이메일 판정이 외부 수단일 때도 숨으므로 1단계 조건 뒤에 판정 조건이 붙는다.
+    // 그 셋을 포함해 1단계 칸 넷이 모두 같은 1단계 조건으로 시작한다.
+    const STEP_ONE = '{{!_local.twoFactor?.required && !_local.passwordChange?.required';
+    const stepOne = nodes.filter(
+      (n) => n.if === `${STEP_ONE}}}` || n.if === `${STEP_ONE} && _global.adminLoginDiscovery?.method !== 'external'}}`,
+    );
     const stepTwo = nodes.filter((n) => n.if === '{{_local.twoFactor?.required}}');
 
-    expect(stepOne.length).toBeGreaterThanOrEqual(3);
+    expect(stepOne.map((n) => n.id)).toEqual(
+      expect.arrayContaining(['login_email_field', 'login_password_field', 'login_forgot_password', 'login_submit_button']),
+    );
     expect(stepTwo.length).toBe(1);
     expect(stepTwo[0]?.id).toBe('login_two_factor_step');
   });
@@ -121,7 +146,8 @@ describe('sirsoft-admin_basic 관리자 로그인 2단계 인증 단계', () => 
    */
   it('login 의 성공 후속 액션이 challenge 응답에서는 실행되지 않는다', () => {
     const login = formActions.find((a) => a.handler === 'login');
-    const onSuccess = login?.onSuccess ?? [];
+    // 성공 분기는 이름 붙은 액션 applyAdminLoginResult 로 뽑혀 인계 교환과 공유된다(7.2.0) — 펼쳐서 본다
+    const onSuccess = resolveRefs(login?.onSuccess);
 
     expect(onSuccess.length).toBeGreaterThan(0);
     for (const action of onSuccess) {

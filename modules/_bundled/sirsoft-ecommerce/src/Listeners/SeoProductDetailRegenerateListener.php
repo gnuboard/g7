@@ -87,7 +87,8 @@ class SeoProductDetailRegenerateListener implements HookListenerInterface
 
         try {
             $regenerator = app(SeoCacheRegenerator::class);
-            $url = ShopPathResolver::path("products/{$product->id}");
+            // G7 화면의 상품 주소는 상품 코드다(#792 W12) — 엔진 SEO 캐시는 필터 없는 기본 경로로 만든다(W16)
+            $url = ShopPathResolver::path('products/'.($product->product_code ?? $product->id));
             $regenerator->renderAndCache($url);
 
             Log::debug('[SEO] Product detail cache regenerated', [

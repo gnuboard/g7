@@ -13,11 +13,15 @@
 import { describe, it, expect } from 'vitest';
 import pluginSettingsLayout from '../../../layouts/admin/plugin_settings.json';
 
+/** 의미 클래스는 이 플러그인 접두 판본이다 — 템플릿 CSS 가 아니라 플러그인 CSS(`@layer g7-extension`)가 정의한다 */
+const NS = 'pay-nhnkcp-';
+
 type LayoutNode = {
     id?: string;
     name?: string;
     text?: string;
     props?: { className?: string };
+    responsive?: Record<string, { props?: { className?: string } }>;
     children?: LayoutNode[];
 };
 
@@ -45,6 +49,20 @@ function flatten(node: unknown): LayoutNode[] {
 
 const nodes = flatten(pluginSettingsLayout);
 const cls = (n: LayoutNode) => (typeof n.props?.className === 'string' ? n.props.className : '');
+
+/**
+ * 3열 그리드 입력 줄인지 — 좁은 폭 1열, 1024px 이상 3열을 접두 유틸과 엔진 responsive(`1024-` 구간)로 쓴다.
+ * 폭 미디어를 품은 옛 의미 클래스(`grid-3col-responsive`)는 쓰지 않는다.
+ */
+const GRID3_BASE = 'paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:gap-4 paynhnkcp:items-start';
+const isGrid3col = (n: { props?: { className?: string }; responsive?: Record<string, { props?: { className?: string } }> }) =>
+    (typeof n.props?.className === 'string' ? n.props.className : '').startsWith(GRID3_BASE) &&
+    String(n.responsive?.['1024-']?.props?.className ?? '').split(/\s+/).includes('paynhnkcp:grid-cols-3');
+/** 넓은 화면(1024px 이상) 갈래의 클래스 토큰에 접두를 뗀 유틸리티(`col-span-1` 등)가 있는지 — 화면 폭 분기는 엔진 responsive(desktop)로 쓴다 */
+const hasDesktopUtility = (n: LayoutNode, utility: string) => {
+    const c = n.responsive?.desktop?.props?.className;
+    return typeof c === 'string' && c.split(/\s+/).some((t) => t.split(':').pop() === utility);
+};
 const HEADINGS = ['H2', 'H3', 'H4'];
 
 describe('NHN KCP 결제 환경설정 — 의미 클래스 위치', () => {
@@ -56,11 +74,11 @@ describe('NHN KCP 결제 환경설정 — 의미 클래스 위치', () => {
     it('라벨(1칸)·입력(2칸)으로 나뉜 입력 줄은 3열 그리드 클래스를 쓴다', () => {
         const rows = nodes.filter((n) => {
             const kids = Array.isArray(n.children) ? n.children : [];
-            return kids.some((k) => cls(k).includes('lg:col-span-1')) && kids.some((k) => cls(k).includes('lg:col-span-2'));
+            return kids.some((k) => hasDesktopUtility(k, 'col-span-1')) && kids.some((k) => hasDesktopUtility(k, 'col-span-2'));
         });
         expect(rows.length).toBeGreaterThanOrEqual(2);
         for (const row of rows) {
-            expect({ id: row.id, className: cls(row).split(' ')[0] }).toEqual({ id: row.id, className: 'grid-3col-responsive' });
+            expect({ id: row.id, grid3col: isGrid3col(row), legacy: cls(row).includes(`${NS}grid-3col-responsive`) }).toEqual({ id: row.id, grid3col: true, legacy: false });
         }
     });
 
@@ -80,7 +98,7 @@ describe('NHN KCP 결제 환경설정 — 의미 클래스 위치', () => {
         );
         expect(headings.length).toBeGreaterThanOrEqual(4);
         for (const heading of headings) {
-            expect({ text: heading.text, className: cls(heading) }).toEqual({ text: heading.text, className: 'section-heading-md' });
+            expect({ text: heading.text, className: cls(heading) }).toEqual({ text: heading.text, className: `${NS}section-heading-md` });
         }
     });
 
@@ -91,10 +109,10 @@ describe('NHN KCP 결제 환경설정 — 의미 클래스 위치', () => {
      */
     it('저장 오류 상자는 제목에 강한 오류색, 목록 줄에 옅은 오류색을 쓴다', () => {
         const title = nodes.find((n) => typeof n.text === 'string' && n.text.endsWith('.validation_error'));
-        expect(cls(title ?? {})).toBe('text-error-strong');
+        expect(cls(title ?? {})).toBe(`${NS}text-error-strong`);
 
         const item = nodes.find((n) => n.name === 'Li' && n.text === '{{message}}');
-        expect(cls(item ?? {})).toBe('text-error-soft');
+        expect(cls(item ?? {})).toBe(`${NS}text-error-soft`);
     });
 
     /**
@@ -103,10 +121,10 @@ describe('NHN KCP 결제 환경설정 — 의미 클래스 위치', () => {
      * @effects semantic_classes_not_misplaced
      */
     it('섹션 제목 클래스는 제목에만, 3열 그리드 클래스는 목록 줄이 아닌 곳에만 쓴다', () => {
-        const headingMisuse = nodes.filter((n) => cls(n) === 'section-heading-md' && !HEADINGS.includes(n.name ?? ''));
+        const headingMisuse = nodes.filter((n) => cls(n) === `${NS}section-heading-md` && !HEADINGS.includes(n.name ?? ''));
         expect(headingMisuse.map((n) => n.id ?? n.name)).toEqual([]);
 
-        const gridOnLi = nodes.filter((n) => n.name === 'Li' && cls(n).startsWith('grid-3col-responsive'));
+        const gridOnLi = nodes.filter((n) => n.name === 'Li' && isGrid3col(n));
         expect(gridOnLi.map((n) => n.text)).toEqual([]);
     });
 });

@@ -6,16 +6,16 @@
   아직 나라가 하나도 없으면 탭 대신 안내가 뜬다. -->
 <partial description="배송정책 폼 - 국가 탭 바 (섹션 타이틀 + 국가 추가 + 탭 전환)">
   <div data-ref="country_tab_bar_section">
-    <div class="flex-between mb-4">
-      <h2 class="section-heading">$t:sirsoft-ecommerce.admin.shipping_policy.form.section_country_settings</h2>
-      <div data-ref="add_country_area" data-if="{{(_computed.addableCountries ?? []).length > 0}}" class="flex-center gap-2">
-        <select aria-label="$t:sirsoft-ecommerce.admin.shipping_policy.form.country_select_placeholder" class="input w-40 text-sm" value="{{_local._selectedCountryToAdd ?? ''}}" options="{{[{value: '', label: '$t:sirsoft-ecommerce.admin.shipping_policy.form.country_select_placeholder'}].concat(_computed.addableCountryOptions ?? [])}}" disabled="{{_computed.isReadOnly}}">
+    <div class="ecommerce-flex-between ecommerce:mb-4">
+      <h2 class="ecommerce-section-heading">$t:sirsoft-ecommerce.admin.shipping_policy.form.section_country_settings</h2>
+      <div data-ref="add_country_area" data-if="{{(_computed.addableCountries ?? []).length > 0}}" class="ecommerce-flex-center ecommerce:gap-2">
+        <select aria-label="$t:sirsoft-ecommerce.admin.shipping_policy.form.country_select_placeholder" class="ecommerce:h-9 ecommerce:w-40 ecommerce:text-sm" value="{{_local._selectedCountryToAdd ?? ''}}" options="{{[{value: '', label: '$t:sirsoft-ecommerce.admin.shipping_policy.form.country_select_placeholder'}].concat(_computed.addableCountryOptions ?? [])}}" disabled="{{_computed.isReadOnly}}">
           <on type="change">
             <!-- 추가할 나라 고르기 — 아직 폼에 넣지 않은 임시 선택이라 `form` 이 아니라 `_local` 바로 아래에 둔다. 옆 [추가] 버튼의 잠금 조건이기도 하다. -->
             <set-state target="_local" _selectedCountryToAdd="{{$event.target.value}}"/>
           </on>
         </select>
-        <button type="button" class="btn btn-sm btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local._selectedCountryToAdd || _computed.isReadOnly}}">
+        <button type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-primary ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{!_local._selectedCountryToAdd || _computed.isReadOnly}}">
           <on type="click">
             <!-- 나라 추가 — 배열에 기본값을 갖춘 칸을 하나 만들고(핸들러), 그 다음 임시 선택을 비운다. 비우지 않으면 방금 넣은 나라가 선택칸에 남아 같은 나라를 또 넣기 쉽다. -->
             <sequence>
@@ -23,17 +23,17 @@
               <set-state target="_local" _selectedCountryToAdd=""/>
             </sequence>
           </on>
-          <icon name="plus" class="text-xs mr-1"/>
+          <icon name="plus" class="ecommerce:text-xs ecommerce:mr-1"/>
           <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.country_tab_add</span>
         </button>
       </div>
     </div>
-    <div data-ref="empty_country_settings" data-if="{{(_local.form?.country_settings ?? []).length === 0}}" class="p-8 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
-      <icon name="globe" class="text-3xl text-gray-500 dark:text-gray-500 mb-2"/>
-      <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.shipping_policy.form.no_country_settings</p>
+    <div data-ref="empty_country_settings" data-if="{{(_local.form?.country_settings ?? []).length === 0}}" class="ecommerce:p-8 ecommerce:text-center ecommerce:border-2 ecommerce:border-dashed ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg">
+      <icon name="globe" class="ecommerce:text-3xl ecommerce:text-gray-500 ecommerce:dark:text-gray-500 ecommerce:mb-2"/>
+      <p class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.shipping_policy.form.no_country_settings</p>
     </div>
-    <div data-ref="country_tab_buttons" data-if="{{(_local.form?.country_settings ?? []).length > 0}}" class="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
-      <button data-each="tabItem, tabIdx in (_local.form?.country_settings ?? []).map((cs, i) => ({...cs, _idx: i}))" type="button" class="{{(_local.activeCountryTab ?? 0) === tabItem._idx ? 'px-4 py-2 text-sm font-medium border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 whitespace-nowrap' : 'px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 whitespace-nowrap'}}">
+    <div data-ref="country_tab_buttons" data-if="{{(_local.form?.country_settings ?? []).length > 0}}" class="ecommerce:flex ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:overflow-x-auto">
+      <button data-each="tabItem, tabIdx in (_local.form?.country_settings ?? []).map((cs, i) => ({...cs, _idx: i}))" type="button" class="{{(_local.activeCountryTab ?? 0) === tabItem._idx ? 'ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:border-b-2 ecommerce:border-blue-500 ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:whitespace-nowrap' : 'ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300 ecommerce:whitespace-nowrap'}}">
         <on type="click">
           <!-- 탭 전환 — 번호만 바꾸는 것이 아니라 그 나라의 부과 방식에 맞춰 아래 조건들(`_local.show*`)까지 다시 세워야 해서 핸들러가 맡는다. -->
           <action handler="sirsoft-ecommerce.switchCountryTab" index="{{tabItem._idx}}"/>

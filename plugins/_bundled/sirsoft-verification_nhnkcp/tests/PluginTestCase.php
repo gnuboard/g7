@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\AssertNoDuplicateKcpIdentity;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\ClaimKcpIdentityOnRegistering;
+use Plugins\Sirsoft\VerificationNhnkcp\Listeners\CleanKcpCertTransactionsOnLogPurge;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\CleanKcpRecordOnUserDelete;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\CleanKcpRecordOnUserWithdraw;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\CompleteKcpRecordAfterRegister;
@@ -191,6 +192,7 @@ abstract class PluginTestCase extends TestCase
             CompleteKcpRecordAfterRegister::class,
             CleanKcpRecordOnUserWithdraw::class,
             CleanKcpRecordOnUserDelete::class,
+            CleanKcpCertTransactionsOnLogPurge::class,
             AssertNoDuplicateKcpIdentity::class,
             ClaimKcpIdentityOnRegistering::class,
             ValidateKcpSettingsListener::class,

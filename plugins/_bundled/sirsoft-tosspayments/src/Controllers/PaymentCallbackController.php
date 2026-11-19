@@ -4,20 +4,20 @@ namespace Plugins\Sirsoft\Tosspayments\Controllers;
 
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
-use App\Support\SiteUrl;
+use App\Support\ScreenUrl;
 use Carbon\Carbon;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\OrderRecord;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentCompletion;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\VbankIssuance;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
 use Modules\Sirsoft\Ecommerce\Helpers\DeviceDetector;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentCallback;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
 use Plugins\Sirsoft\Tosspayments\Concerns\RecordsPaymentWindowClosure;
@@ -73,16 +73,14 @@ class PaymentCallbackController
     ];
 
     /**
-     * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
+     * @param  PaymentGatewayBridge  $bridge  이커머스 공개 결제 계약 (주문·클레임 결제 조회, 결제완료, 가상계좌 발급 기록)
      * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 조회 서비스
      * @param  TossPaymentsApiService  $apiService  토스페이먼츠 API 서비스
-     * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
      */
     public function __construct(
-        private OrderProcessingService $orderService,
+        private PaymentGatewayBridge $bridge,
         private PluginSettingsService $pluginSettingsService,
         private TossPaymentsApiService $apiService,
-        private ClaimPaymentRepositoryInterface $claimPaymentRepository,
     ) {}
 
     /**
@@ -103,7 +101,7 @@ class PaymentCallbackController
         $callbackAmount = (int) $validated['amount'];
 
         // 클레임 추가결제(CP 채번)는 주문이 아니다 — 주문 분기를 태우면 order_not_found 로 끝난다.
-        if (ClaimPayment::isClaimPaymentNumber($orderId)) {
+        if ($this->bridge->isClaimPaymentNumber($orderId)) {
             return $this->handleClaimPaymentSuccess($orderId, $validated);
         }
 
@@ -112,7 +110,7 @@ class PaymentCallbackController
 
         try {
             // 1. 주문 조회 (주문번호 기반)
-            $order = $this->orderService->findByOrderNumber($orderId);
+            $order = $this->bridge->findOrderByNumber($orderId, self::TOSS_PROVIDER);
 
             if (! $order) {
                 Log::error('TossPayments: order not found', ['orderId' => $orderId]);
@@ -136,8 +134,8 @@ class PaymentCallbackController
             if (! $this->isOrderPayable($order)) {
                 Log::warning('TossPayments: order is not payable — confirm skipped', [
                     'orderId' => $orderId,
-                    'order_status' => $order->order_status?->value,
-                    'payment_status' => $order->payment?->payment_status?->value,
+                    'order_status' => $order->orderStatus->value,
+                    'payment_status' => $order->payment?->paymentStatus->value,
                 ]);
 
                 return redirect($this->resolveFailUrl([
@@ -165,14 +163,18 @@ class PaymentCallbackController
             }
 
             // 3. TossPayments Confirm API 호출 — 청구액으로 승인을 요청한다.
-            HookManager::doAction('sirsoft-tosspayments.payment.before_confirm', $order, $paymentKey, $expectedAmount);
+            //    두 훅의 첫 인자는 종전대로 이커머스 주문 Model 이다(공개 훅 시그니처 유지). 이커머스 계약의
+            //    읽기 전용 조회로 얻으며, 이 플러그인은 그 Model 로 쓰기나 조회를 하지 않는다.
+            $hookOrder = $this->bridge->findOrderModel($orderId, self::TOSS_PROVIDER);
+
+            HookManager::doAction('sirsoft-tosspayments.payment.before_confirm', $hookOrder, $paymentKey, $expectedAmount);
 
             $pgResponse = $this->apiService->confirmPayment($paymentKey, $orderId, $expectedAmount);
             $confirmed = true;
 
             // 가상계좌 웹훅 검증값(secret)은 훅 인자에서 뺀다 — 큐 구독자가 있으면 작업 표에 사본이 남는다.
             // 웹훅 대조는 결제행 payment_meta.toss_secret 으로 한다.
-            HookManager::doAction('sirsoft-tosspayments.payment.after_confirm', $order, Arr::except($pgResponse, ['secret']));
+            HookManager::doAction('sirsoft-tosspayments.payment.after_confirm', $hookOrder, Arr::except($pgResponse, ['secret']));
 
             // 4. 승인 후 대조 — 토스가 실제로 승인(가상계좌는 발급)한 금액이 청구액과 같아야 한다.
             //    응답에 금액이 없으면 검증할 수 없으므로 불일치와 같게 취소한다.
@@ -195,7 +197,7 @@ class PaymentCallbackController
 
             // 승인 왕복 사이에 주문이 결제 불가 상태가 됐으면(관리자 취소 등) 결과를 쓰지 않고 되돌린다.
             // 결제행은 여기서 다시 읽은 상태로만 갱신한다 — 결제완료·취소된 행을 덮어쓰지 않는다.
-            $order = $order->fresh(['payment']) ?? $order;
+            $order = $this->bridge->findOrderByNumber($orderId, self::TOSS_PROVIDER) ?? $order;
 
             if (! $this->isOrderPayable($order)) {
                 if ($this->isAlreadyRecordedWith($order, $paymentKey)) {
@@ -204,7 +206,7 @@ class PaymentCallbackController
 
                 Log::error('TossPayments: order became not payable during confirm — cancelling approval', [
                     'orderId' => $orderId,
-                    'order_status' => $order->order_status?->value,
+                    'order_status' => $order->orderStatus->value,
                 ]);
 
                 $this->cancelApprovalQuietly($paymentKey, $orderId);
@@ -226,22 +228,29 @@ class PaymentCallbackController
             }
 
             // 5-b. 즉시 결제완료(카드/계좌이체/휴대폰/간편결제) — 금액 근거는 대조를 마친 청구액이다.
-            $this->orderService->completePayment($order, [
-                'transaction_id' => $pgResponse['paymentKey'] ?? null,
-                'card_approval_number' => $pgResponse['card']['approveNo'] ?? null,
-                'card_number_masked' => $pgResponse['card']['number'] ?? null,
-                'card_name' => $this->resolveCardIssuer($pgResponse['card']['issuerCode'] ?? null),
-                'card_installment_months' => $pgResponse['card']['installmentPlanMonths'] ?? 0,
-                'is_interest_free' => $pgResponse['card']['isInterestFree'] ?? false,
-                'embedded_pg_provider' => $pgResponse['easyPay']['provider'] ?? null,
-                'receipt_url' => $pgResponse['receipt']['url'] ?? null,
-                'payment_meta' => [
-                    'method' => $pgResponse['method'] ?? null,
-                    'toss_approved_amount' => $approvedAmount,
-                    'pg_raw_response' => $pgResponse,
-                ],
-                'payment_device' => DeviceDetector::detect($request),
-            ], $expectedAmount);
+            //      결제 meta 는 통째로 바꾼다(병합 아님). 결제사 id 는 종전대로 쓰지 않는다.
+            $this->bridge->completePayment(
+                $orderId,
+                self::TOSS_PROVIDER,
+                new PaymentCompletion(
+                    transactionId: $pgResponse['paymentKey'] ?? null,
+                    cardApprovalNumber: $pgResponse['card']['approveNo'] ?? null,
+                    cardNumberMasked: $pgResponse['card']['number'] ?? null,
+                    cardName: $this->resolveCardIssuer($pgResponse['card']['issuerCode'] ?? null),
+                    cardInstallmentMonths: $pgResponse['card']['installmentPlanMonths'] ?? 0,
+                    isInterestFree: $pgResponse['card']['isInterestFree'] ?? false,
+                    embeddedPgProvider: $pgResponse['easyPay']['provider'] ?? null,
+                    receiptUrl: $pgResponse['receipt']['url'] ?? null,
+                    paymentMeta: [
+                        'method' => $pgResponse['method'] ?? null,
+                        'toss_approved_amount' => $approvedAmount,
+                        'pg_raw_response' => $pgResponse,
+                    ],
+                    paymentDevice: DeviceDetector::detect($request),
+                    takeOverProvider: false,
+                ),
+                $expectedAmount,
+            );
 
             // 6. SPA 주문 완료 페이지로 redirect
             return redirect($this->resolveSuccessUrl($orderId));
@@ -284,34 +293,34 @@ class PaymentCallbackController
      *
      * 결제 전 주문 상태이고 결제행이 아직 결제완료가 아니어야 한다.
      *
-     * @param  Order  $order  대상 주문
+     * @param  OrderRecord  $order  대상 주문
      * @return bool 결제 가능 여부
      */
-    private function isOrderPayable(Order $order): bool
+    private function isOrderPayable(OrderRecord $order): bool
     {
-        if (! $order->order_status?->isBeforePayment()) {
+        if (! $order->orderStatus->isBeforePayment()) {
             return false;
         }
 
-        return ! ($order->payment?->isPaid() ?? false);
+        return ! ($order->payment?->isPaid ?? false);
     }
 
     /**
      * 같은 결제 키로 결제완료 또는 가상계좌 발급이 이미 반영됐는지 확인합니다.
      *
-     * @param  Order  $order  대상 주문
+     * @param  OrderRecord  $order  대상 주문
      * @param  string  $paymentKey  토스 결제 키
      * @return bool 이미 반영됐으면 true
      */
-    private function isAlreadyRecordedWith(Order $order, string $paymentKey): bool
+    private function isAlreadyRecordedWith(OrderRecord $order, string $paymentKey): bool
     {
         $payment = $order->payment;
 
-        if (! $payment || $paymentKey === '' || $payment->transaction_id !== $paymentKey) {
+        if (! $payment || $paymentKey === '' || $payment->transactionId !== $paymentKey) {
             return false;
         }
 
-        return $payment->isPaid() || $payment->isWaitingDeposit();
+        return $payment->isPaid || $payment->isWaitingDeposit;
     }
 
     /**
@@ -373,14 +382,15 @@ class PaymentCallbackController
 
         // 클레임 추가결제(CP 채번)도 같은 원칙이다 — 결제 건의 상태를 바꾸지 않고 신청서 상세로
         // 돌려보내기만 한다. 결제 건은 결제 대기로 남아 신청서 상세에서 재시도한다.
-        if ($orderId && ClaimPayment::isClaimPaymentNumber($orderId)) {
-            $payment = $this->claimPaymentRepository->findByPaymentNumber($orderId);
+        if ($orderId && $this->bridge->isClaimPaymentNumber($orderId)) {
+            // 공개 Support(ClaimPaymentRedirect)가 결제 건 Model 을 받으므로 계약의 읽기 전용 조회로 얻는다.
+            $payment = $this->bridge->findClaimPaymentModel($orderId, self::TOSS_PROVIDER);
 
             if ($payment) {
                 // 사용자가 결제창을 스스로 닫은 중단은 실패가 아니다 — 오류 안내 없이 복귀.
                 return $code === 'PAY_PROCESS_CANCELED'
-                    ? redirect(SiteUrl::absolute(ClaimPaymentRedirect::cancelled($payment)))
-                    : redirect(SiteUrl::absolute(ClaimPaymentRedirect::fail($payment, $code)));
+                    ? redirect(ScreenUrl::toAbsolute(ClaimPaymentRedirect::cancelled($payment)))
+                    : redirect(ScreenUrl::toAbsolute(ClaimPaymentRedirect::fail($payment, $code)));
             }
 
             return redirect($this->resolveFailUrl(['error' => $code, 'orderId' => $orderId]));
@@ -406,7 +416,8 @@ class PaymentCallbackController
      */
     private function handleClaimPaymentSuccess(string $paymentNumber, array $callback): RedirectResponse
     {
-        $payment = $this->claimPaymentRepository->findByPaymentNumber($paymentNumber);
+        // 공개 Support(ClaimPaymentCallback)가 결제 건 Model 을 받으므로 계약의 읽기 전용 조회로 얻는다.
+        $payment = $this->bridge->findClaimPaymentModel($paymentNumber, self::TOSS_PROVIDER);
 
         if (! $payment) {
             Log::error('TossPayments: claim payment not found', ['orderId' => $paymentNumber]);
@@ -431,7 +442,7 @@ class PaymentCallbackController
             // 구현하므로, 서버 콜백 경로와 클라이언트 승인 API 경로의 보상이 한 구현이 된다.
             return ClaimPaymentCallback::approveAndRedirect($payment, $callback);
         } catch (LockTimeoutException) {
-            return redirect(SiteUrl::absolute($this->redirectBusyClaimCallback($payment)));
+            return redirect(ScreenUrl::toAbsolute($this->redirectBusyClaimCallback($payment)));
         } finally {
             $this->releaseOrderCallbackLock($lock);
         }
@@ -448,14 +459,15 @@ class PaymentCallbackController
      */
     private function redirectBusyClaimCallback(ClaimPayment $payment): string
     {
-        $latest = $this->claimPaymentRepository->findByPaymentNumber($payment->payment_number) ?? $payment;
+        $latest = $this->bridge->findClaimPaymentModel((string) $payment->payment_number, self::TOSS_PROVIDER) ?? $payment;
+        $latestRecord = $this->bridge->describeClaimPayment($latest);
 
         Log::warning('TossPayments: claim payment callback skipped because the callback lock is busy', [
             'payment_number' => $payment->payment_number,
-            'payment_status' => $latest->payment_status?->value,
+            'payment_status' => $latestRecord->paymentStatus?->value,
         ]);
 
-        return $latest->isPaid()
+        return $latestRecord->isPaid
             ? ClaimPaymentRedirect::success($latest)
             : ClaimPaymentRedirect::fail($latest, 'callback_locked');
     }
@@ -467,14 +479,14 @@ class PaymentCallbackController
      * 입금통보 웹훅(deposit)에서 처리한다. secret 은 이 응답에만 내려오므로 payment_meta 에
      * 저장해 웹훅 위조 방지 대조(hash_equals)에 사용한다.
      *
-     * @param  Order  $order  대상 주문
+     * @param  OrderRecord  $order  대상 주문
      * @param  array<string, mixed>  $pgResponse  토스 confirm 응답
      * @param  string  $paymentKey  토스 결제 키
      * @param  int  $approvedAmount  청구액과 대조를 마친 발급 금액 (입금통보 반영의 근거)
      * @param  Request  $request  HTTP 요청 (디바이스 판별용)
      * @return void 반환값 없음
      */
-    private function handleVirtualAccountIssued(Order $order, array $pgResponse, string $paymentKey, int $approvedAmount, Request $request): void
+    private function handleVirtualAccountIssued(OrderRecord $order, array $pgResponse, string $paymentKey, int $approvedAmount, Request $request): void
     {
         $vbank = $pgResponse['virtualAccount'] ?? [];
 
@@ -493,34 +505,41 @@ class PaymentCallbackController
         // 에스크로 여부는 결제 시점 스냅샷 — 응답의 useEscrow 를 그대로 저장한다.
         $isEscrow = (bool) ($vbank['useEscrow'] ?? $pgResponse['useEscrow'] ?? false);
 
-        $order->payment()->update(array_filter([
-            'pg_provider' => 'tosspayments',
-            'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT->value,
-            'transaction_id' => $paymentKey ?: null,
-            'vbank_code' => $vbank['bankCode'] ?? null,
-            'vbank_name' => $vbank['bank'] ?? ($vbank['bankCode'] ?? null),
-            'vbank_number' => $vbank['accountNumber'] ?? null,
-            'vbank_holder' => $vbank['customerName'] ?? null,
-            'vbank_due_at' => $dueAt,
-            'vbank_issued_at' => Carbon::now(),
-            'is_escrow' => $isEscrow,
-            'payment_device' => DeviceDetector::detect($request),
-            'payment_meta' => [
-                'status' => 'WAITING_FOR_DEPOSIT',
-                'method' => $pgResponse['method'] ?? null,
-                // 웹훅 secret — DEPOSIT_CALLBACK 대조용 (이 응답에만 존재)
-                'toss_secret' => $pgResponse['secret'] ?? null,
-                // 발급 시점에 청구액과 대조한 금액 — 입금통보 웹훅이 결제완료 금액 근거로 쓴다.
-                'toss_approved_amount' => $approvedAmount,
-                'pg_raw_response' => $pgResponse,
-            ],
-        ], fn ($v) => $v !== null));
-
+        // 결제 행을 입금 대기로 바꾸고 결제사 id 를 이 플러그인으로 기록한다. 값이 없는(null) 항목은 쓰지 않고,
+        // 결제 meta 는 통째로 바꾼다(병합 아님).
+        //
         // 계좌를 받은 순간 고객의 주문은 끝났다 — 입금 전이라도 주문한 장바구니 항목을 정리한다(재고는 입금 때 차감).
-        $this->orderService->onVbankAccountIssued($order);
+        // 정리는 발급 저장이 커밋된 뒤에 이커머스가 한다(clearCart).
+        $this->bridge->onVbankAccountIssued(
+            $order->orderNumber,
+            self::TOSS_PROVIDER,
+            new VbankIssuance(
+                vbankIssuedAt: Carbon::now(),
+                transactionId: $paymentKey ?: null,
+                vbankCode: $vbank['bankCode'] ?? null,
+                vbankName: $vbank['bank'] ?? ($vbank['bankCode'] ?? null),
+                vbankNumber: $vbank['accountNumber'] ?? null,
+                vbankHolder: $vbank['customerName'] ?? null,
+                vbankDueAt: $dueAt,
+                isEscrow: $isEscrow,
+                paymentDevice: DeviceDetector::detect($request),
+                paymentMeta: [
+                    'status' => 'WAITING_FOR_DEPOSIT',
+                    'method' => $pgResponse['method'] ?? null,
+                    // 웹훅 secret — DEPOSIT_CALLBACK 대조용 (이 응답에만 존재)
+                    'toss_secret' => $pgResponse['secret'] ?? null,
+                    // 발급 시점에 청구액과 대조한 금액 — 입금통보 웹훅이 결제완료 금액 근거로 쓴다.
+                    'toss_approved_amount' => $approvedAmount,
+                    'pg_raw_response' => $pgResponse,
+                ],
+                writeNulls: false,
+                clearCart: true,
+                takeOverProvider: true,
+            ),
+        );
 
         Log::info('TossPayments: virtual account issued', [
-            'orderId' => $order->order_number,
+            'orderId' => $order->orderNumber,
             'paymentKey' => $paymentKey,
             'vbank_number' => $vbank['accountNumber'] ?? null,
             // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
@@ -555,8 +574,8 @@ class PaymentCallbackController
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
         $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
 
-        // 보안: 상대 경로를 redirect() 에 넘기면 요청 Host 로 절대화된다 — 사이트 주소로 만든다.
-        return SiteUrl::absolute(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
+        // 보안: 상대 경로를 redirect() 에 넘기면 요청 Host 로 절대화된다 — 설정 주소로 만든다. 결제·인증 뒤 사람이 돌아가는 화면이라 「사용자 화면 URL」(비면 사이트 주소) 기준이다(#792 W15).
+        return ScreenUrl::toAbsolute(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
     }
 
     /**
@@ -568,7 +587,7 @@ class PaymentCallbackController
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $baseUrl = SiteUrl::absolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
+        $baseUrl = ScreenUrl::toAbsolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
 
         if (empty($queryParams)) {
             return $baseUrl;

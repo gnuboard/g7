@@ -1,4 +1,17 @@
 {
+  "common": {
+    "real_name": {
+      "label": "Real name",
+      "with_label": "Real name: {{name}}"
+    }
+  },
+  "extension_public_api": {
+    "title": "Public API (PHP surface other extensions may use)",
+    "hint": "Other extensions should only use the namespaces and classes listed here plus public hooks. Anything else is internal and may change without notice.",
+    "namespaces": "Namespaces",
+    "classes": "Classes",
+    "readonly_models": "Read-only models (type hints and property reads only)"
+  },
   "extension_integrations": {
     "title": "Works together with",
     "hint": "When these extensions are installed, their features connect with this one. This extension works without them.",
@@ -21,6 +34,35 @@
     "deactivate_confirm": "Deactivate",
     "uninstall_notice": "The extensions below are integrated with this one — deleting it removes the menus and screens they use from it.",
     "notice_toast": "Extensions that work together: {{items}}"
+  },
+  "package_integrity": {
+    "signature_label": "Package signature",
+    "status_verified": "Signature verified: {{signer}}",
+    "status_unsigned": "Unsigned",
+    "status_unverifiable": "Cannot verify (sodium missing on server)",
+    "status_bundled": "Bundled original",
+    "status_none": "No record",
+    "unsigned_title": "This package is not signed",
+    "unverifiable_title": "This server cannot verify the signature",
+    "invalid_title": "Stopped because the signature does not match",
+    "untrusted_title": "This package is signed with an untrusted key",
+    "package": "Package: {{identifier}} {{version}}",
+    "signer_key": "Signing key: {{key}}",
+    "continue_hint": "Press \"Continue unsigned\" below only if you trust the author. The same request is sent again without signature verification.",
+    "blocked_hint": "\"Block unsigned packages\" is on in Settings > Security, so this cannot proceed. Use a signed package or turn the block off.",
+    "invalid_hint": "The package contents changed or the signature file belongs to another package. Download the ZIP and signature file again from the publisher.",
+    "untrusted_hint": "Check that the author key is registered under \"Extension trust keys\" in Settings > Security and that its vendor scope matches this identifier.",
+    "continue_unsigned": "Continue unsigned",
+    "result_verified": "Package signature verified (signer: {{signer}}).",
+    "result_unsigned": "Proceeded with a package whose signature was not verified.",
+    "signature_file_label": "Signature file (.sig.json, optional)",
+    "no_signature_selected": "No signature file selected.",
+    "signature_file_hint": "Choose the signature file published with the ZIP in the release (the ZIP name followed by .sig.json) to verify it before installing. Without it the package is treated as unsigned.",
+    "signature_url_label": "Signature file URL (optional)",
+    "signature_url_hint": "The https URL of the .sig.json file published with the ZIP. Leave it empty to treat the package as unsigned (no URL is guessed or requested).",
+    "core_signature_label": "Release signature",
+    "core_signature_available": "Signed",
+    "core_signature_missing": "Unsigned"
   },
   "sidebar": {
     "no_accessible_menus": "No accessible menus",
@@ -171,6 +213,40 @@
     "alert_action_no_permission": "You do not have permission to handle this alert. Ask an administrator who has the permission."
   },
   "users": {
+    "member_fields": {
+      "select_placeholder": "Select",
+      "other": "Other (enter your own)",
+      "other_input": "Enter {{label}}",
+      "other_placeholder": "Enter your own",
+      "range_start": "{{label}} start date",
+      "range_end": "{{label}} end date",
+      "zipcode_label": "{{label}} postal code",
+      "address_label": "{{label}} address",
+      "address_detail_label": "{{label}} address line 2",
+      "upload_after_save": "You can upload this from the edit screen after saving the member.",
+      "file_add": "Add file",
+      "file_add_label": "Add file for {{label}}",
+      "file_remove": "Remove {{name}}",
+      "file_rules": "Allowed extensions: {{extensions}} / Max size per file: {{size}}MB / Max files: {{count}}",
+      "locked_identity": "This field was confirmed by identity verification and cannot be edited.",
+      "locked_generic": "This field cannot be edited.",
+      "extra_title": "Additional fields",
+      "extension_title": "Extension fields",
+      "tab_has_error": "This section has errors",
+      "status": {
+        "nickname_changed_at": "Nickname last changed",
+        "nickname_next_changeable_at": "Nickname can next be changed",
+        "nickname_next_changeable_hint": "This is when the member can change the nickname again. Administrators can change it at any time.",
+        "pending_required": "Missing required fields",
+        "display_name_kind": "Display name kind chosen by the member",
+        "display_name_kind_none": "Not chosen (member default kind: {{kind}})",
+        "display_name_kind_unavailable": "This kind can no longer be chosen. The member is shown by the member default kind ({{kind}}).",
+        "display_name_kind_hint": "Only the member can change this.",
+        "display_name_current": "Name shown now",
+        "display_name_site": "Site default",
+        "display_name_admin": "Admin screens"
+      }
+    },
     "page_title": "User Management",
     "page_description": "Manage system users.",
     "title": "User Management",
@@ -178,6 +254,16 @@
     "add_user": "Add User",
     "search": "Search",
     "search_placeholder": "Enter search term...",
+    "list_member_fields": {
+      "pending_column": "Missing",
+      "pending_count": "{{count}} fields",
+      "pending_count_one": "{{count}} field",
+      "filter_required_missing": "Missing required fields",
+      "filter_required_missing_only": "Only members with missing fields",
+      "filter_nickname_duplicate": "Duplicate nickname",
+      "filter_nickname_duplicate_only": "Only members sharing a nickname",
+      "display_name_column": "Shown name"
+    },
     "search_fields": {
       "all": "All",
       "name": "Name",
@@ -318,8 +404,6 @@
       },
       "fields": {
         "id": "ID",
-        "name": "Name",
-        "nickname": "Nickname",
         "role": "Role",
         "role_placeholder": "Select roles",
         "role_no_options": "No roles available",
@@ -329,27 +413,22 @@
         "email": "Email",
         "email_verified": "Verified",
         "email_verify_btn": "Verify",
-        "mobile": "Mobile",
-        "phone": "Phone",
-        "homepage": "Homepage",
         "address": "Address",
         "zipcode": "Zipcode",
         "address_detail": "Detail Address",
-        "country": "Country",
-        "language": "Language",
-        "timezone": "Timezone",
         "password": "Password",
         "password_confirmation": "Confirm Password",
         "password_hint": "Leave empty to keep current password",
-        "signature": "Signature",
-        "bio": "Bio",
         "admin_memo": "Admin Memo",
         "created_at": "Created At",
         "last_login_at": "Last Login",
         "ip_address": "IP Address",
         "country_select": "Select Country",
         "country_search": "Search country...",
-        "lock_status": "Account lock status"
+        "lock_status": "Account lock status",
+        "create_without_password": "Create without password (external sign-in only)",
+        "create_without_password_hint": "Creates the member without a password. The member signs in through external authentication and can set a password later with Forgot Password if needed.",
+        "locked_by_company": "Managed by your company account"
       },
       "verification": {
         "method": "Verification Method",
@@ -403,6 +482,17 @@
         "create_notice": "The new member must change the password at the first login.",
         "current_password": "Current password",
         "current_password_hint": "Enter your current password to change your own account's password.",
+        "reauth_notice": "This account has no password. To set a password for the first time, verify yourself with a code sent to your email.",
+        "reauth_request_code": "Get code",
+        "reauth_resend_code": "Resend code",
+        "reauth_code_placeholder": "6-digit code",
+        "reauth_confirm": "Verify",
+        "reauth_verified": "Verified. Saving will set the password.",
+        "reauth_code_sent": "We sent a verification code to your email.",
+        "reauth_code_sent_generic": "We sent you a verification code.",
+        "reauth_notice_other": "This account has no password. To set a password for the first time, click Start verification and verify yourself with a method available to this account (such as signing in again with your company account).",
+        "reauth_start": "Start verification",
+        "reauth_external_failed": "We could not open the verification page. Please try again later.",
         "expiry": "Password expiry",
         "expiry_inherit": "Follow role and site settings",
         "expiry_apply": "Apply",
@@ -432,8 +522,6 @@
       "info_public": "Public",
       "info_private": "Private",
       "consent_history": "Consent History",
-      "enabled": "Enabled",
-      "disabled": "Disabled",
       "withdrawn_at": "Withdrawn At",
       "blocked_at": "Blocked At",
       "dormant_at": "Dormant Since",
@@ -473,6 +561,10 @@
         "yes": "Yes",
         "no": "No",
         "postponed_until": "Postponed until",
+        "state": "Password",
+        "set": "Set",
+        "not_set": "Not set",
+        "not_set_hint": "This member signed up only with external sign-in (such as social login) and has no password. Password expiry does not apply.",
         "policy": "Expiry setting"
       },
       "search_history": {
@@ -483,6 +575,13 @@
         "keywords": "Searches",
         "count": "{{count}}",
         "empty": "No saved searches."
+      },
+      "revoke_sessions": {
+        "button": "Sign out of all devices",
+        "confirm_title": "Sign out of all devices",
+        "confirm_message": "This signs the member out on every device. The member will need to sign in again. Continue?",
+        "confirm": "Sign out",
+        "success": "Signed the member out of all devices"
       }
     },
     "filter": {
@@ -684,16 +783,22 @@
     },
     "install_modal": {
       "title": "Install Language Pack",
-      "description": "Install a language pack via ZIP file upload or GitHub URL.",
+      "description": "Install a language pack from a ZIP file, a GitHub URL or a ZIP URL.",
       "tabs": {
         "zip": "ZIP file",
-        "github": "GitHub"
+        "github": "GitHub",
+        "url": "URL"
       },
       "file_label": "ZIP file",
       "no_file_selected": "No file selected.",
       "file_requirements": "The following manifest file must be at the ZIP root.",
       "github_url_label": "GitHub URL",
-      "github_requirements": "Public repositories only. The following manifest file must be at the repository root."
+      "github_requirements": "Public repositories only. The following manifest file must be at the repository root.",
+      "url_label": "Package URL (https)",
+      "url_hint": "An https URL that serves the language pack ZIP directly.",
+      "checksum_label": "SHA-256 checksum (optional)",
+      "checksum_hint": "Enter the SHA-256 of the ZIP given by the publisher (64 hex characters) to check the downloaded file.",
+      "url_requirements": "The following manifest file must be at the root of the downloaded ZIP."
     },
     "installing": "Installing...",
     "messages": {
@@ -706,6 +811,8 @@
       "protected_badge": "🔒 Protected",
       "check_updates_done": "Update check complete ({{count}} available).",
       "check_updates_none": "All language packs are up to date.",
+      "check_updates_github_failed": "Could not check GitHub for the latest version of {{count}} language packs ({{names}}) — they were not marked as up to date and their latest version info was left unchanged. Reason: {{reason}}",
+      "check_updates_github_failed_one": "Could not check GitHub for the latest version of {{count}} language pack ({{names}}) — it was not marked as up to date and its latest version info was left unchanged. Reason: {{reason}}",
       "check_updates_failed": "Failed to check for updates.",
       "activate_success": "Language pack activated.",
       "deactivate_success": "Language pack deactivated.",
@@ -886,7 +993,8 @@
         "permissions": "Permissions",
         "menus": "Admin Menus",
         "notification_definitions": "Notification Definitions",
-        "identity_policies": "Identity Policies"
+        "identity_policies": "Identity Policies",
+        "schedules": "Schedules"
       },
       "no_tables": "No tables to delete.",
       "no_storage": "No storage to delete.",
@@ -899,7 +1007,6 @@
       "refresh_layouts_description": "Database layouts will be replaced with layouts from module files. All previously modified layout content will be deleted.",
       "deactivate_warning_title": "Module Deactivation Warning",
       "deactivate_warning_message": "There are active extensions (templates, modules, plugins) that depend on this module.",
-      "affected_templates": "The following templates will be affected:",
       "dependent_templates": "Dependent Templates",
       "dependent_modules": "Dependent Modules",
       "dependent_plugins": "Dependent Plugins",
@@ -955,7 +1062,7 @@
       "file_requirements": "Module package must include",
       "file_structure_hint": "file and follow Gnuboard7 module standard structure.",
       "github_url_label": "GitHub Repository URL",
-      "github_url_hint": "Download module from the default branch of the GitHub repository.",
+      "github_url_hint": "Downloads the module from the latest tagged release of the GitHub repository. Repositories without a release are not installed.",
       "github_requirements": "The root directory must contain",
       "github_public_only": "file in the root directory."
     },
@@ -1121,7 +1228,8 @@
         "permissions": "Permissions",
         "menus": "Admin Menus",
         "notification_definitions": "Notification Definitions",
-        "identity_policies": "Identity Policies"
+        "identity_policies": "Identity Policies",
+        "schedules": "Schedules"
       },
       "no_tables": "No tables to delete.",
       "no_storage": "No storage to delete.",
@@ -1189,7 +1297,7 @@
       "file_requirements": "Plugin package must include",
       "file_structure_hint": "file and follow Gnuboard7 plugin standard structure.",
       "github_url_label": "GitHub Repository URL",
-      "github_url_hint": "Downloads the plugin from the default branch of the GitHub repository.",
+      "github_url_hint": "Downloads the plugin from the latest tagged release of the GitHub repository. Repositories without a release are not installed.",
       "github_requirements": "The root directory must contain",
       "github_public_only": "file in the root directory."
     },
@@ -1411,102 +1519,104 @@
     "page_title": "Schedule Management",
     "page_description": "Manage system scheduled tasks.",
     "title": "Schedule Management",
-    "description": "View and manage schedules (crontab, Jobs) registered in the system.",
-    "add_schedule": "Add Schedule",
-    "register_schedule": "Register Schedule",
-    "search_placeholder": "Search by schedule name...",
-    "search_input_placeholder": "Enter search term...",
-    "pagination_info": "Showing {{from}}-{{to}} of {{total}}",
-    "advanced_search": "Advanced Search",
-    "apply_filters": "Apply Filters",
-    "reset_filters": "Reset",
-    "column_select": "Columns ({{count}})",
+    "description": "View and manage schedules (crontab, jobs) registered in the system.",
+    "search_input_placeholder": "Enter a search term...",
     "total_count": "Total {{count}}",
+    "total_at_least": "Total {{count}}+",
     "selected_count": "{{count}} selected",
+    "per_page": "{{count}}",
+    "per_page_label": "Rows per page",
     "duration_display": "{{duration}} elapsed",
+    "empty": "No schedules registered.",
     "tabs": {
-      "schedules": "Scheduled Tasks",
-      "queue": "Queue Monitoring"
+      "schedules": "Scheduled tasks",
+      "queue": "Queue monitoring"
     },
-    "stats": {
-      "total": "Total",
-      "active": "Active",
-      "success": "Success",
-      "failed": "Failed"
+    "action": {
+      "register": "Register schedule",
+      "security_policy": "Security policy",
+      "edit": "Edit",
+      "run": "Run now",
+      "history": "Run history",
+      "duplicate": "Copy",
+      "delete": "Delete",
+      "delete_disabled_reason": "Only custom tasks can be deleted.",
+      "bulk_apply": "Apply to selected",
+      "bulk_delete": "Delete selected",
+      "advanced_search": "Advanced search",
+      "edit_search": "Edit search",
+      "reset": "Reset"
     },
     "search_fields": {
       "all": "All",
-      "name": "Task Name",
-      "command": "Command",
-      "description": "Description"
+      "name": "Task name",
+      "identifier": "Identifier",
+      "command": "Command"
     },
-    "filters": {
-      "type": "Task Type",
+    "filter": {
+      "detail_title": "Advanced search",
+      "owner": "Owner",
+      "owner_schedule_count": "Schedules",
+      "owner_search": "Search extension name or identifier",
+      "owner_select": "Select extension",
+      "show_in_basic": "Show the {{label}} filter in basic search",
+      "type": "Task type",
       "status": "Status",
-      "result": "Execution Result",
-      "last_result": "Last Result",
-      "all_types": "All Types",
-      "all_status": "All Status",
-      "all_results": "All Results",
-      "all": "All",
+      "last_result": "Last run result",
       "frequency": "Frequency",
-      "created_at": "Created Date",
-      "start_date": "Start Date",
-      "end_date": "End Date",
-      "without_overlapping": "Without Overlapping",
-      "run_in_maintenance": "Run in Maintenance",
-      "module": "Module",
-      "yes": "Yes",
-      "no": "No",
-      "use": "Use",
-      "not_use": "Not Use",
-      "allow": "Allow",
-      "disallow": "Disallow",
+      "created_at": "Created date",
+      "without_overlapping": "Overlap prevention",
+      "overlap_on": "On",
+      "overlap_off": "Off",
+      "dispatch_mode": "Dispatch mode",
+      "history_mode": "Run history",
       "preset": {
         "today": "Today",
-        "week": "1 Week",
-        "month": "1 Month",
-        "3months": "3 Months",
-        "6months": "6 Months",
-        "year": "1 Year"
+        "week": "1 week",
+        "month": "1 month",
+        "3months": "3 months",
+        "6months": "6 months",
+        "1year": "1 year"
       }
     },
     "bulk": {
-      "status_change": "Status Change",
-      "action_run": "Run Action",
-      "apply": "Apply"
+      "select_status": "Select a status",
+      "action_select": "Bulk actions",
+      "to_active": "Set to active",
+      "to_inactive": "Set to inactive",
+      "delete_owned_blocked": "The selection includes tasks registered by the core or an extension, which cannot be deleted. Select only custom tasks."
     },
     "sort": {
-      "created_at_desc": "Newest First",
-      "created_at_asc": "Oldest First",
-      "name_asc": "Name (A-Z)",
-      "name_desc": "Name (Z-A)",
-      "next_run_at_asc": "Next Run (Soonest)",
-      "next_run_at_desc": "Next Run (Latest)"
-    },
-    "per_page": {
-      "10": "10",
-      "20": "20",
-      "50": "50",
-      "100": "100"
+      "label": "Sort",
+      "created_at_desc": "Newest first",
+      "created_at_asc": "Oldest first",
+      "name_asc": "Task name A→Z",
+      "name_desc": "Task name Z→A",
+      "next_run_at_asc": "Next run (soonest)",
+      "next_run_at_desc": "Next run (latest)",
+      "last_run_at_desc": "Last run (newest)",
+      "last_run_at_asc": "Last run (oldest)"
     },
     "columns": {
-      "name": "Task Name",
-      "type": "Type",
-      "command": "Command",
+      "name": "Task name",
+      "owner": "Owner",
+      "type": "Task type",
       "frequency": "Frequency",
-      "last_result": "Last Result",
-      "last_run": "Last Run",
-      "next_run": "Next Run",
+      "without_overlapping": "Overlap",
+      "next_run": "Next run",
+      "last_run": "Last run",
+      "last_result": "Last run result",
       "status": "Status"
     },
     "type": {
       "artisan": "Artisan",
       "shell": "Shell",
-      "url": "URL"
+      "url": "URL",
+      "job": "Job"
     },
     "frequency": {
-      "everyMinute": "Every Minute",
+      "everyThirtySeconds": "Every 30 seconds",
+      "everyMinute": "Every minute",
       "hourly": "Hourly",
       "daily": "Daily",
       "weekly": "Weekly",
@@ -1517,7 +1627,7 @@
       "success": "Success",
       "failed": "Failed",
       "running": "Running",
-      "never": "Never Run"
+      "never": "Not run yet"
     },
     "status": {
       "active": "Active",
@@ -1527,69 +1637,323 @@
       "scheduled": "Scheduled",
       "manual": "Manual"
     },
-    "actions": {
-      "run": "Run Now",
-      "history": "History",
-      "duplicate": "Duplicate"
+    "dispatch_mode": {
+      "sync": "Run immediately",
+      "queue": "Send to queue"
     },
+    "history_mode": {
+      "all": "Record all runs",
+      "failures_only": "Record failures only"
+    },
+    "owner": {
+      "core": "Core",
+      "module": "Module",
+      "plugin": "Plugin",
+      "custom": "Custom"
+    },
+    "condition_unmet": "Off in settings",
+    "overlap_minutes": "{{minutes}} min",
+    "overlap_off": "Off",
     "form": {
-      "name": "Name",
-      "name_placeholder": "Enter schedule name",
+      "label": "Task name",
+      "label_placeholder": "Enter a task name",
       "description": "Description",
-      "description_placeholder": "Enter schedule description",
-      "type": "Task Type",
+      "description_placeholder": "Enter a description of the task",
+      "type": "Task type",
+      "name": "Identifier",
+      "name_placeholder": "e.g. cleanup_temp_files",
+      "name_help": "Machine identifier. Left empty, it is filled from the task name.",
       "command": "Command",
-      "command_placeholder": "Enter command to execute",
-      "command_help": "Enter an Artisan command, shell command, or URL",
+      "command_placeholder": {
+        "artisan": "e.g. cache:prune-stale-tags",
+        "shell": "e.g. /usr/bin/php -v",
+        "url": "e.g. https://example.com/ping",
+        "job": "e.g. App\\Jobs\\GenerateSitemapJob"
+      },
+      "command_help": {
+        "artisan": "Enter the command and options that follow php artisan. Only commands on the security allowlist run.",
+        "shell": "Enter a command that starts with an executable allowed by the server settings.",
+        "url": "Enter the URL to call. Private network addresses may be blocked by the security settings.",
+        "job": "Enter the fully qualified name of a Job class on the security allowlist."
+      },
+      "command_multiline_hint": "Line breaks are joined into one line when saved.",
+      "shell_disabled": "Shell execution is turned off in the server settings. To turn it on, set SCHEDULE_SHELL_ENABLED=true and the allowed executables (SCHEDULE_SHELL_ALLOWED_BINARIES, e.g. php,python3) in the server .env.",
+      "locked_hint": "Registered by the core or an extension, so it cannot be changed.",
       "frequency": "Frequency",
-      "expression": "Cron Expression",
-      "expression_help": "e.g., * * * * * (every minute), 0 0 * * * (daily at midnight)",
-      "timeout": "Timeout (seconds)",
-      "timeout_help": "Maximum execution time (1-86400 seconds)",
-      "without_overlapping": "Prevent Overlapping",
-      "without_overlapping_help": "Skip new task when previous is still running",
-      "run_in_maintenance": "Run in Maintenance Mode",
-      "run_in_maintenance_help": "Execute task even during system maintenance",
+      "expression": "Cron expression",
+      "expression_help": "e.g. * * * * * (every minute), 0 0 * * * (daily at midnight)",
+      "timeout": "Time limit",
+      "timeout_help": "The run stops when it exceeds this time. (1 – 86400 seconds)",
+      "timeout_placeholder": "Default",
+      "timeout_default": {
+        "artisan_sync": "Leave blank to run without a time limit.",
+        "artisan_queue": "Leave blank for 600 seconds. If that exceeds the queue connection's retry wait, it is shortened below it.",
+        "shell": "Leave blank for 60 seconds.",
+        "url": "Leave blank for 30 seconds.",
+        "job": "Job tasks ignore this value and follow the time limit set in the job class."
+      },
+      "seconds_suffix": "sec",
+      "minutes_suffix": "min",
+      "without_overlapping": "Overlap prevention",
+      "without_overlapping_help": "Skip a new run while the previous one is still running.",
+      "overlap_minutes": "Lock duration",
+      "overlap_minutes_help": "If the previous run does not finish within this time, the lock is released. (1 – 10080 minutes)",
+      "on_one_server": "Run on one server only",
+      "on_one_server_help": "When several servers run the scheduler, only one runs this task (requires a shared cache).",
+      "notify_on_failure": "Failure notification",
+      "notify_on_failure_help": "Notify administrators when a scheduled run fails (at most once a day per task).",
+      "run_in_maintenance": "Run in maintenance mode",
+      "run_in_maintenance_help": "Run the task even while the site is in maintenance mode.",
       "is_active": "Active",
-      "is_active_help": "Inactive schedules will not run automatically"
+      "is_active_help": "When off, the task does not run on schedule.",
+      "conditions": "Run conditions",
+      "conditions_help": "Scheduled runs happen only when all of these settings are on (yellow = currently off). Conditions are set by the core or extension and cannot be changed here.",
+      "dispatch_mode": "Dispatch mode",
+      "dispatch_mode_help": "Run immediately works without a worker. Send long-running tasks to the queue so a worker processes them.",
+      "history_mode": "Run history",
+      "history_mode_help": "\"Record failures only\" keeps frequently running tasks from piling up history.",
+      "queue_connection": "Queue connection",
+      "queue_name": "Queue",
+      "queue_default": "Default",
+      "overridden_badge": "Modified by operator",
+      "owned_badge": "Registered by {{owner}} — name, type and command are locked",
+      "timezone_badge": "Timezone: {{timezone}}",
+      "allow_unsigned_hint": "When registering install or update commands (such as module:update), add --allow-unsigned so they do not stop at unsigned packages."
     },
     "modals": {
-      "create_title": "Add Schedule",
-      "edit_title": "Edit Schedule",
-      "delete_title": "Delete Schedule",
-      "delete_confirm": "Are you sure you want to delete this schedule? Related execution history will also be deleted.",
-      "run_title": "Run Schedule Now",
-      "run_confirm": "Are you sure you want to run this schedule now?",
-      "run_duration": "Duration: {{duration}}",
+      "create_title": "Register schedule",
+      "edit_title": "Edit schedule",
+      "bulk_status_title": "Change status of selected",
+      "bulk_status_confirm_active": "Set the {{count}} selected schedules to active?",
+      "bulk_status_confirm_active_one": "Set the selected schedule to active?",
+      "bulk_status_confirm_inactive": "Set the {{count}} selected schedules to inactive?",
+      "bulk_status_confirm_inactive_one": "Set the selected schedule to inactive?",
+      "delete_title": "Delete schedule",
+      "delete_confirm": "Delete this schedule?",
+      "delete_confirm_bulk": "Delete the {{count}} selected schedules?",
+      "delete_confirm_bulk_one": "Delete the selected schedule?",
+      "delete_warning": "Deleted schedules and their run history cannot be restored.",
+      "run_title": "Run schedule now",
+      "run_confirm": "Run this schedule now?",
+      "duration": "Duration",
       "output": "Output",
+      "error_output": "Error output",
       "running": "Running...",
-      "history_title": "Execution History",
-      "no_history": "No execution history.",
-      "duplicate_title": "Duplicate Schedule",
-      "duplicate_confirm": "Are you sure you want to duplicate this schedule?",
-      "duplicate_note": "Duplicated schedule will be created as inactive.",
-      "duplicating": "Duplicating..."
+      "run_not_recorded": "This task records failures only, so no history was kept for the successful run.",
+      "run_queue_hint": "This task is sent to the queue. It will be recorded in the run history once a worker processes it.",
+      "run_queued": "Sent to the queue. It will be recorded in the run history once a worker processes it.",
+      "run_unmet_warning": "Its run conditions are off, so scheduled runs skip this task. Running it now still runs it.",
+      "history_title": "Run history",
+      "no_history": "No run history.",
+      "duplicate_title": "Copy schedule",
+      "duplicate_confirm": "Copy this schedule?",
+      "duplicate_note": "The copy is created as inactive.",
+      "duplicate_owned_note": "Copying a task registered by the core or an extension creates a custom task.",
+      "duplicating": "Copying..."
     },
     "history": {
-      "duration": "Duration: {{duration}}",
-      "memory": "Memory: {{memory}}",
-      "triggered_by": "Triggered by: {{user}}"
+      "duration": "Duration {{duration}}",
+      "memory": "Memory {{memory}}",
+      "triggered_by": "Run by {{user}}"
     },
     "messages": {
-      "create_success": "Schedule created successfully.",
-      "update_success": "Schedule updated successfully.",
-      "delete_success": "Schedule deleted successfully.",
-      "duplicate_success": "Schedule duplicated successfully.",
-      "status_updated": "Schedule status updated.",
-      "bulk_status_updated": "Selected schedules status updated."
+      "create_success": "Schedule registered.",
+      "update_success": "Schedule updated.",
+      "delete_success": "Schedule deleted.",
+      "bulk_delete_success": "Selected schedules deleted.",
+      "duplicate_success": "Schedule copied.",
+      "status_updated": "Schedule status changed.",
+      "bulk_status_updated": "Status of the selected schedules changed."
     },
     "errors": {
-      "save_failed": "Failed to save schedule.",
-      "delete_failed": "Failed to delete schedule.",
-      "run_failed": "Failed to run schedule.",
-      "duplicate_failed": "Failed to duplicate schedule.",
-      "status_update_failed": "Failed to update status.",
-      "bulk_status_failed": "Failed to update bulk status."
+      "save_failed": "Failed to save the schedule.",
+      "delete_failed": "Failed to delete the schedule.",
+      "run_failed": "Failed to run the schedule.",
+      "duplicate_failed": "Failed to copy the schedule.",
+      "status_update_failed": "Failed to change the status.",
+      "bulk_status_failed": "Failed to change the status of the selected schedules."
+    },
+    "security": {
+      "title": "Schedule security policy",
+      "description": "What scheduled tasks are allowed to run. This screen is read-only.",
+      "guide": "A server administrator can add entries in storage/app/schedule_security.json (the core denylist cannot be lifted). Shell execution and its allowed executables are set by SCHEDULE_SHELL_ENABLED and SCHEDULE_SHELL_ALLOWED_BINARIES in .env.",
+      "load_failed": "Could not load the security policy.",
+      "none": "None",
+      "count": "{{count}} items",
+      "count_one": "{{count}} item",
+      "allowed": "Allowed",
+      "not_allowed": "Not allowed",
+      "source": {
+        "core": "Core",
+        "override": "Added",
+        "extension": "Extension"
+      },
+      "denied": "Denied",
+      "override": {
+        "title": "Override file",
+        "path": "Path",
+        "status": "Status",
+        "applied": "Applied",
+        "missing": "None — core defaults only",
+        "invalid": "Invalid — the whole file is ignored"
+      },
+      "shell": {
+        "title": "Shell execution",
+        "enabled": "On",
+        "disabled": "Off",
+        "allowed_binaries": "Allowed executables",
+        "no_binaries": "SCHEDULE_SHELL_ENABLED is on, but no executables are allowed, so Shell tasks cannot be used."
+      },
+      "artisan": {
+        "allowlist": "Allowed Artisan commands",
+        "allow_extension_commands": "Allow extension commands automatically",
+        "denylist": "Denied commands",
+        "denylist_prefixes": "Denied prefixes",
+        "denylist_hint": "When an allowed entry overlaps the denylist, the denylist wins."
+      },
+      "job": {
+        "allowed_classes": "Allowed Job classes"
+      },
+      "url": {
+        "block_private_hosts": "Block private network addresses"
+      }
+    },
+    "status_card": {
+      "scheduler": "Scheduler",
+      "healthy": "Running",
+      "stopped": "Stopped",
+      "last_tick": "Last tick {{minutes}} min ago",
+      "never_ticked": "No ticks recorded",
+      "cron_hint": "Register this line in the server cron.",
+      "schedules": "Registered tasks",
+      "active_inactive": "Active {{active}} · Inactive {{inactive}}",
+      "results": "Last run results",
+      "failed_count": "{{count}} failed",
+      "success_never": "Succeeded {{success}} · Not run yet {{never}}",
+      "queue": "Queue ({{driver}})",
+      "pending_count": "{{count}} pending",
+      "pending_unmeasurable": "Pending count not measurable",
+      "queue_detail": "{{failed}} failed · Workers {{alive}}/{{registered}}",
+      "mobile_summary": "{{minutes}} min ago · Workers {{alive}}/{{registered}} · Failed {{failed}}",
+      "mobile_summary_never": "Not run yet · Workers {{alive}}/{{registered}} · Failed {{failed}}",
+      "detail_open": "Details",
+      "detail_close": "Hide"
+    },
+    "queue": {
+      "views": {
+        "pending": "Pending",
+        "failed": "Failed",
+        "logs": "Processing log"
+      },
+      "status": {
+        "driver": "Driver",
+        "connection": "Connection {{connection}}",
+        "pending": "Pending",
+        "failed": "Failed",
+        "count": "{{count}}",
+        "unmeasurable": "Not measurable",
+        "workers": "Workers",
+        "workers_hint": "Running / registered",
+        "worker_warnings": "{{count}} worker warnings",
+        "worker_warnings_one": "{{count}} worker warning"
+      },
+      "notice": {
+        "unmeasurable": "The current queue driver ({{driver}}) cannot count pending jobs. The pending list is only available with the database driver.",
+        "no_worker": "The default queue driver is {{driver}}, so there is no worker to process retried jobs. Retries will be rejected.",
+        "no_permission": "You do not have permission to view queue monitoring. The \"View Queue Jobs\" permission is required."
+      },
+      "filter": {
+        "queue": "Queue",
+        "connection": "Connection",
+        "connection_all": "All connections",
+        "result": "Result",
+        "failed_at": "Failed at",
+        "processed_at": "Processed at"
+      },
+      "search_fields": {
+        "label": "Search in",
+        "all": "All",
+        "job": "Queue job",
+        "error": "Error",
+        "uuid": "UUID"
+      },
+      "search_placeholder": "Enter a search term",
+      "sort": {
+        "created_at_desc": "Queued (newest)",
+        "created_at_asc": "Queued (oldest)",
+        "available_at_asc": "Available (soonest)",
+        "available_at_desc": "Available (latest)",
+        "attempts_desc": "Most attempts",
+        "attempts_asc": "Fewest attempts",
+        "failed_at_desc": "Failed (newest)",
+        "failed_at_asc": "Failed (oldest)",
+        "finished_at_desc": "Processed (newest)",
+        "finished_at_asc": "Processed (oldest)",
+        "duration_ms_desc": "Longest duration",
+        "duration_ms_asc": "Shortest duration"
+      },
+      "columns": {
+        "job": "Queue job",
+        "queue": "Queue",
+        "state": "State",
+        "attempts": "Attempts",
+        "queued_at": "Queued at",
+        "available_at": "Available at",
+        "error": "Error",
+        "failed_at": "Failed at",
+        "result": "Result",
+        "duration": "Duration",
+        "processed_at": "Processed at"
+      },
+      "state": {
+        "waiting": "Waiting",
+        "delayed": "Delayed",
+        "running": "Running"
+      },
+      "log_status": {
+        "processed": "Processed",
+        "failed": "Failed"
+      },
+      "schedule_ref": "Schedule #{{id}}",
+      "duration_ms": "{{ms}} ms",
+      "empty": {
+        "pending": "No pending jobs.",
+        "failed": "No failed jobs.",
+        "logs": "No processing records."
+      },
+      "action": {
+        "detail": "View details",
+        "retry": "Retry",
+        "retry_selected": "Retry selected",
+        "delete_selected": "Delete selected"
+      },
+      "confirm": {
+        "retry_title": "Retry failed jobs",
+        "retry_message": "The jobs below will be pushed back onto their original queue.",
+        "delete_title": "Delete failed jobs",
+        "delete_message": "The jobs below will be removed from the failed list. This cannot be undone.",
+        "bulk_target": "{{count}} selected jobs",
+        "bulk_target_one": "{{count}} selected job"
+      },
+      "detail": {
+        "title": "Queue job details",
+        "uuid": "UUID",
+        "period": "Processing period",
+        "schedule": "Schedule",
+        "exception": "Error",
+        "payload": "Job payload"
+      },
+      "messages": {
+        "retry_done": "Retry requested.",
+        "delete_done": "Deleted."
+      },
+      "errors": {
+        "retry_failed": "Could not retry the job.",
+        "delete_failed": "Could not delete the job.",
+        "detail_failed": "Could not load the job details.",
+        "list_load_failed": "Could not load the list. Please refresh in a moment.",
+        "status_load_failed": "Could not load the queue status. Please refresh in a moment."
+      }
     }
   },
   "settings": {
@@ -1605,12 +1969,15 @@
       "content": "Content",
       "seo": "SEO",
       "security": "Security",
+      "member": "Members",
       "drivers": "Drivers",
       "advanced": "Advanced",
       "notification_definitions": "Notifications",
       "language_packs": "Language Packs",
       "identity": "Identity",
       "info": "Info",
+      "system": "System",
+      "update": "Update",
       "privacy": "Privacy"
     },
     "general": {
@@ -1618,11 +1985,18 @@
       "site_info_desc": "Configure basic site information.",
       "site_name": "Site Name",
       "site_url": "Site URL",
+      "site_url_help": "This address is the basis for notification and password-reset email links and payment return URLs. On a proxy or subfolder deployment it must match the actual site address.",
       "site_description": "Site Description",
       "site_description_placeholder": "Enter a brief description of your site.",
       "admin_email": "Admin Email",
+      "admin_email_desc": "Notification templates whose recipient is set to \"Site admin email\" send mail to this address. If left empty, that rule sends to no one.",
       "site_logo": "Site Title Image",
       "site_logo_desc": "Logo image to be displayed in the header.",
+      "site_favicon": "Favicon",
+      "site_favicon_desc": "Icon shown on the browser tab. One square PNG/SVG of 32px or larger, or an ICO file (up to 1MB), is recommended.",
+      "favicon_override_user": "The user screens currently use the favicon from the \"{{name}}\" template settings.",
+      "favicon_override_admin": "The admin screens currently use the favicon from the \"{{name}}\" template settings.",
+      "favicon_go_template_settings": "Go to template settings",
       "upload_drag_drop": "Click or drag and drop files to upload",
       "max_size": "Max",
       "localization": "Localization",
@@ -1640,6 +2014,10 @@
       "asset_url_mode_detect_extension": "File extensions work fine on this server.",
       "asset_url_mode_detect_extensionless": "A static-file optimization rule (e.g. nginx location ~* \\.(js|css|json|png|jpg|jpeg|gif|ico|svg|woff2?)$) is intercepting extension URLs. Switch to \"No file extensions\" and save.",
       "asset_url_mode_detect_unavailable": "Detection failed. The server did not respond, so the style could not be determined.",
+      "layout_edit_button": "Layout edit button",
+      "layout_edit_button_description": "When an administrator with layout edit permission is signed in, a layout edit button appears at the bottom right of the admin and site screens. Clicking it opens the current screen in the layout editor.",
+      "layout_edit_button_enabled": "Show layout edit button",
+      "layout_edit_button_enabled_desc": "When turned off, the button is hidden even for users with permission. The layout editor can still be opened from template management.",
       "static_cache_title": "Startup static files",
       "static_cache_description": "Translations, routes, component definitions and extension bundles are pre-built as static files so the first screen loads fast. They are rebuilt automatically after extension installs/updates and setting changes; if a screen shows stale content, rebuild them here right away.",
       "static_cache_status": "Status",
@@ -1667,7 +2045,9 @@
       "static_cache_republish_confirm_warning": "This may take a moment. The site keeps working in the meantime.",
       "static_cache_republished": "Startup static files were rebuilt.",
       "static_cache_republish_not_publishable": "Static files are not built in this environment (not production, or disabled).",
-      "static_cache_republish_failed": "Startup static files could not be rebuilt. See the failure reason below. The site keeps working normally."
+      "static_cache_republish_failed": "Startup static files could not be rebuilt. See the failure reason below. The site keeps working normally.",
+      "user_screen_url": "User screen URL",
+      "user_screen_url_help": "Leave empty to use the site URL. Enter it only when you run an external screen (e.g. Next.js) at another address. It is used for links in password reset and notification emails and for the address you return to after payment; admin screen addresses do not change."
     },
     "mail": {
       "smtp_settings": "SMTP Settings",
@@ -1718,23 +2098,164 @@
       "image_max_height": "Max Height",
       "image_quality": "Image Quality",
       "image_quality_hint": "Enter a value between 1-100. Higher values mean better quality.",
+      "thumbnail": {
+        "title": "Thumbnails",
+        "desc": "When an image URL carries a preset (such as ?size=sm), a resized file is generated per the \"Thumbnail Presets\" below, stored, and served.",
+        "engine_missing": "This server has no image processing engine (GD or Imagick), so thumbnails cannot be generated. Images are sent as originals.",
+        "enabled": "Use Thumbnails",
+        "enabled_hint": "When off, URLs with a preset also serve the original. Existing thumbnail files are not deleted.",
+        "content_preset": "Content Image Preset",
+        "content_preset_hint": "Preset used when displaying images in post and page content. The stored content HTML is not changed.",
+        "prune_enabled": "Prune Thumbnails Automatically",
+        "prune_enabled_hint": "The cleanup schedule deletes thumbnail files whose preset changed or whose original is gone.",
+        "animated_original": "Serve Animated Images as Originals",
+        "animated_original_hint": "Animated GIF, WebP and PNG images are sent as the original instead of a thumbnail. When off, a still thumbnail is made from the first frame. The GD engine cannot read animated WebP, so those are sent as the original even when off.",
+        "prune_schedule_notice": "Thumbnail cleanup is run by the thumbnail cleanup schedule.",
+        "server_limits": {
+          "title": "Advanced — Server Protection",
+          "desc": "Values that keep thumbnail generation from tying up the server. Leave a field empty to use the server default (G7_THUMBNAIL_* in .env if set); the faded number in the field is that value. With .env priority mode on, fields set in .env are locked as \"Set in .env\".",
+          "generate_per_minute": "New Thumbnails per Minute (per IP)",
+          "generate_per_minute_hint": "One IP can generate up to this many missing thumbnails per minute. Beyond that the original is sent. 1-10000",
+          "lock_wait_seconds": "Generation Wait Time",
+          "lock_wait_seconds_hint": "How long to wait while another request is generating the same thumbnail. After that the original is sent and not cached. 1-30 seconds",
+          "max_source_pixels": "Maximum Source Pixels",
+          "max_source_pixels_hint": "Larger originals are sent as is without resizing (memory protection). A lower value is used when the server memory limit is small. 1000000-100000000",
+          "pregenerate_batch": "Originals per Batch",
+          "pregenerate_batch_hint": "Number of originals processed at once by \"Generate Thumbnails for Existing Images\" and the thumbnails:pregenerate command. 1-500",
+          "pregenerate_time_budget": "Time Budget per Call",
+          "pregenerate_time_budget_hint": "Maximum time one \"Generate Thumbnails for Existing Images\" call may use. When exceeded, it continues from that point in the next call. If the server execution time limit is shorter, half of it is used. 1-60 seconds",
+          "purge_time_budget": "Time Budget per Purge Call",
+          "purge_time_budget_hint": "Maximum time one thumbnail \"Purge\" call may use. When both locations share a storage, only one preset is purged, or a remote storage is purged, it continues from that point in the next call once exceeded. If the server execution time limit is shorter, half of it is used. 1-60 seconds",
+          "unit_count": "items",
+          "unit_seconds": "sec",
+          "unit_pixels": "px"
+        },
+        "storage": {
+          "title": "Storage & Cache",
+          "desc": "Thumbnail files are stored in two places depending on whether the original is public. Storage changes apply when you press Save; purging runs immediately.",
+          "kinds": {
+            "public": "Public image thumbnails",
+            "gated": "Access-controlled image thumbnails"
+          },
+          "kind_hints": {
+            "public": "Images anyone can view, such as layout attachments, products and categories. A public storage (CDN) can be selected.",
+            "gated": "Images sent after an access check, such as attachments, secret posts and reviews. Only private storage can be selected."
+          },
+          "disk": "Storage Disk",
+          "private_disk": "Private thumbnail storage",
+          "usage": "{{count}} files, {{size}}",
+          "usage_one": "{{count}} file, {{size}}",
+          "not_counted": "Not counted (remote storage)",
+          "after_save": "Counted after saving",
+          "load_failed": "Could not load thumbnail usage. Please try again later.",
+          "locked_hint": "Rows whose storage was changed cannot be purged until you save. After saving, usage is counted for the new storage.",
+          "purge_preset": "Preset to purge",
+          "all_presets": "All presets",
+          "purge": "Purge",
+          "purge_success": "Deleted {{count}} thumbnails.",
+          "purge_success_one": "Deleted {{count}} thumbnail.",
+          "purge_failed": "Could not purge thumbnails.",
+          "purge_all": "Purge Both",
+          "pregenerate": "Generate Thumbnails for Existing Images",
+          "cdn_purge_notice": "When public thumbnails are stored on a public storage (CDN), CDN cache invalidation on purge or original deletion is handled by a CDN plugin. Without one, copies left on the CDN may be served until they expire.",
+          "same_bucket_warning": "The public asset disk on the Drivers tab is also Amazon S3, so access-controlled image thumbnails share its bucket. If the bucket allows public reads, these thumbnails can also be read directly from the bucket URL. Make sure no public policy applies to the thumbnail path (thumbnails/)."
+        },
+        "purge_all_modal": {
+          "title": "Purge All Thumbnails",
+          "body": "All thumbnail files in both storage locations below will be deleted.",
+          "disk": "Disk: {{disk}}",
+          "warning": "Original images are kept. Deleted thumbnails are generated again on the next request.",
+          "confirm": "Purge All",
+          "success": "Thumbnails deleted. Public {{public}}, access-controlled {{gated}}"
+        },
+        "pregenerate_modal": {
+          "title": "Generate Thumbnails for Existing Images",
+          "body": "Generates thumbnails in advance for images already uploaded. Existing thumbnails are skipped.",
+          "sources": "Target Images",
+          "no_sources": "There is no image source that can have thumbnails.",
+          "presets": "Presets to Generate",
+          "counts": "Processed {{processed}} / {{total}}, Generated {{generated}}",
+          "running": "Generating…",
+          "paused": "Paused",
+          "done": "Done",
+          "done_toast": "Thumbnail generation finished. {{generated}} new files",
+          "failed": "Could not generate thumbnails.",
+          "start": "Start",
+          "restart": "Start Again",
+          "pause": "Pause"
+        },
+        "presets": {
+          "title": "Thumbnail Presets",
+          "desc": "Set the size, fit and format of each preset. Core and extension presets cannot be renamed; only their values can be changed.",
+          "col": {
+            "name": "Name",
+            "source": "Source",
+            "width": "Width",
+            "height": "Height",
+            "fit": "Fit",
+            "anchor": "Anchor",
+            "format": "Format",
+            "quality": "Quality",
+            "upscale": "Upscale",
+            "pregenerate": "Generate on Upload",
+            "numeric": "Numeric Requests",
+            "enabled": "Enabled",
+            "actions": "Actions"
+          },
+          "kinds": {
+            "fixed": "Core",
+            "og": "Core (SEO)",
+            "extension": "Extension",
+            "custom": "Custom"
+          },
+          "fit": {
+            "cover": "Crop",
+            "contain": "Fit",
+            "width": "Width only"
+          },
+          "anchor": {
+            "center": "Center",
+            "top": "Top",
+            "bottom": "Bottom",
+            "left": "Left",
+            "right": "Right"
+          },
+          "format": {
+            "original": "Original format",
+            "webp": "WebP",
+            "avif": "AVIF"
+          },
+          "og_size_notice": "Set in the SEO tab",
+          "reset": "Reset to Default",
+          "remove": "Delete",
+          "add": "Add Preset",
+          "name_rule": "A preset name starts with a lowercase letter and uses lowercase letters, digits and underscores, 2 to 32 characters (^[a-z][a-z0-9_]{1,31}$). xs, sm, md, lg, xl and og are reserved. Leave height empty to fit width only, and leave quality empty to follow the image quality setting.",
+          "placeholder": {
+            "name": "e.g. banner_wide",
+            "height": "Auto"
+          }
+        }
+      },
       "orphan_cleanup": "Orphan Attachment Cleanup",
       "orphan_cleanup_desc": "Clean up attachments left without an owner because a form was abandoned before saving.",
       "orphan_cleanup_enabled": "Auto cleanup orphan attachments",
-      "orphan_cleanup_enabled_hint": "Off by default — the operator must turn it on. When on, files and records of orphan attachments past the retention period are deleted daily. Attachments currently in use, such as the site logo, are never deleted.",
+      "orphan_cleanup_enabled_hint": "Off by default — an operator must turn it on. When on, a cleanup schedule deletes the files and records of orphan attachments past the retention period. Attachments in use, such as the site logo, are not deleted.",
       "orphan_retention_days": "Orphan attachment retention (days)",
-      "orphan_retention_days_hint": "Only orphan attachments older than this period are eligible for cleanup. Allow generous headroom for forms left open. (1 ~ 3650 days)"
+      "orphan_retention_days_hint": "Only orphan attachments older than this period are eligible for cleanup. Allow generous headroom for forms left open. (1 ~ 3650 days)",
+      "orphan_cleanup_schedule_notice": "Orphan attachment cleanup is run by the attachment cleanup schedule."
     },
     "seo": {
       "meta_settings": "Meta Tag Settings",
       "meta_settings_desc": "Configure meta tags for search engine optimization.",
       "meta_title_suffix": "Title Suffix",
       "meta_title_suffix_hint": "Text appended to every page title (the search engine title and the visitor's browser tab title). {site_name} is replaced with the site name; when empty, ' - site name' is appended. It is not appended again when the title already ends with the site name. (e.g., ' | {site_name}')",
+      "meta_title_suffix_placeholder": " | Gnuboard7",
       "meta_description": "Default Meta Description",
       "meta_description_placeholder": "Enter the default meta description for your site.",
       "meta_description_hint": "Description shown in search results. Max 160 characters recommended.",
       "meta_keywords": "Meta Keywords",
       "meta_keywords_hint": "Enter keywords separated by commas.",
+      "meta_keywords_placeholder": "CMS, Gnuboard7, open source",
       "generator_settings": "Generator Meta Tag",
       "generator_settings_desc": "Generator meta tag for CMS identification. W3Techs and similar market-share trackers use this to classify the site as GnuBoard7.",
       "generator_enabled": "Show Generator Tag",
@@ -1783,12 +2304,7 @@
       "sitemap_settings_desc": "Configure automatic sitemap.xml generation.",
       "sitemap_enabled": "Enable Sitemap Generation",
       "sitemap_enabled_desc": "Automatically generate sitemap.xml for search engines.",
-      "sitemap_schedule": "Generation Schedule",
-      "sitemap_schedule_hourly": "Hourly",
-      "sitemap_schedule_daily": "Daily",
-      "sitemap_schedule_weekly": "Weekly",
-      "sitemap_schedule_time": "Generation Time",
-      "sitemap_schedule_time_hint": "Enter in HH:mm format. (e.g., 02:00)",
+      "sitemap_schedule_managed": "The sitemap generation frequency and time are managed in Schedule Management.",
       "sitemap_cache_ttl": "Sitemap Cache TTL (seconds)",
       "sitemap_cache_ttl_hint": "Leave empty to follow the sitemap cache TTL in Advanced settings. Enter a value to override it here — min 3600s (1 hour), max 604800s (7 days)",
       "sitemap_last_updated_at": "Last generated",
@@ -1812,15 +2328,14 @@
       "sitemap_progress_phase": "Processing: {{phase}}",
       "sitemap_progress_urls": "URLs so far: {{count}}",
       "sitemap_realtime_connected": "Connected in real time.",
-      "sitemap_polling": "Checking progress periodically.",
-      "meta_title_suffix_placeholder": " | Gnuboard7",
-      "meta_keywords_placeholder": "CMS, Gnuboard7, open source"
+      "sitemap_polling": "Checking progress periodically."
     },
     "security": {
       "title": "Security Settings",
       "desc": "Manage site security settings.",
       "force_https": "Force HTTPS",
       "force_https_desc": "Force all connections to use HTTPS.",
+      "force_https_notice": "Turn this on only after the HTTPS certificate is ready. If you get locked out: php artisan settings:set security.force_https false",
       "allow_internal_outbound_urls": "Allow internal network addresses",
       "allow_internal_outbound_urls_desc": "Allows private IPs and localhost to be used for outbound calls such as external API integrations and scheduled URL calls. Turn this on only when you need to reach servers inside your own network. It lets the server send requests to your internal network, so it is off by default.",
       "login_attempt_limit": "Login Attempt Limit",
@@ -1937,7 +2452,7 @@
         "remind_days_hint": "1-90 days. Members who chose \"Change later\" are asked again after this period.",
         "batch_size": "Limit per run (members)",
         "batch_size_hint": "Applies to advance notices and expiry processing separately. Members closest to expiry go first; the rest are handled in the next run. Enter 0 for no limit.",
-        "schedule_notice": "The scheduler sends notice emails and site notifications every day at 05:15. Mail settings and the \"Password expiry notice\" / \"Password expired\" notifications must be on. Tell members about the password change cycle in your privacy policy in advance.",
+        "schedule_notice": "The scheduler sends the notice mail and site notifications. They are sent only when \"Password expiry advance notice\" and \"Password expired\" are on in the mail and notification settings. Announce the password change cycle in your privacy policy in advance.",
         "rows": {
           "notice": "Expiry notice",
           "expire": "Expiry processing"
@@ -1977,11 +2492,17 @@
       },
       "activity_log_retention": {
         "title": "Activity log (access record) retention",
-        "desc": "How long to keep the activity log — the record of admin and member access and actions. Records older than this are deleted automatically every day at 04:45.",
+        "desc": "How long to keep access and action records (activity logs) of administrators and members. Records past this period are deleted automatically by a cleanup schedule.",
         "days": "Retention period",
         "days_suffix": "days",
         "days_hint": "{{min}}–{{max}} days. It cannot be shorter than the legal minimum.",
-        "legal_notice": "Legal minimum: access records 1 year (2 years with 50,000+ members or when processing unique identifiers or sensitive data) · Permission and role change records are kept at least 3 years regardless of this value."
+        "legal_notice": "Legal minimum: access records 1 year (2 years with 50,000+ members or when processing unique identifiers or sensitive data) · Permission and role change records are kept at least 3 years regardless of this value.",
+        "schedule_notice": "Activity logs past the period are removed by a cleanup schedule."
+      },
+      "registration": {
+        "title": "Sign-up",
+        "enabled": "Allow self sign-up",
+        "enabled_desc": "When off, the sign-up page, public sign-up and new social sign-ups are closed. Existing members can still sign in and link social accounts, and accounts added by administrators or created by external authentication extensions are still created."
       },
       "csp": {
         "title": "Content Security Policy (CSP)",
@@ -2010,8 +2531,8 @@
           "level_strict": "Strict — Basic plus block style attributes on tags",
           "level_desc": "Basic keeps most screens working as they are. Strict also blocks style attributes that third-party libraries add themselves, so more screens break.",
           "enforce_warning": "Check storage/logs/csp-*.log with 'Report only' first and switch to Enforce only when there are no violations.",
-          "known_issues_basic": "Enforcing breaks these screens: tag inputs and multi-selects (including the allowed-host input on this card) — the field layout collapses and screen-reader-only helper text becomes visible; the layout code editor — syntax colors and the background theme are lost; the color picker in the post editor (CKEditor) — the free-form picker collapses (color swatches and the hex input still work). If your site uses these screens, keep this on 'Report only'.",
-          "known_issues_strict": "Enforcing breaks these screens: tag inputs and multi-selects (including the allowed-host input on this card) — the field layout collapses and screen-reader-only helper text becomes visible; the layout code editor — syntax colors, the background theme and line highlights are lost; the color picker in the post editor (CKEditor) — the free-form picker collapses (color swatches and the hex input still work). If your site uses these screens, keep this on 'Report only'.",
+          "known_issues_basic": "Enforcing breaks these screens: the layout code editor — syntax colors and the background theme are lost; the color picker in the post editor (CKEditor) — the free-form picker collapses (color swatches and the hex input still work). If your site uses these screens, keep this on 'Report only'.",
+          "known_issues_strict": "Enforcing breaks these screens: the layout code editor — syntax colors, the background theme and line highlights are lost; the color picker in the post editor (CKEditor) — the free-form picker collapses (color swatches and the hex input still work). If your site uses these screens, keep this on 'Report only'.",
           "override_notice": "G7_CSP_STYLE_MODE={{mode}} in .env takes precedence over this setting. To change it, edit .env and run php artisan config:clear.",
           "extra_hosts": "Additional allowed style hosts (press Enter after each)",
           "extra_hosts_placeholder": "fonts.example.com",
@@ -2020,6 +2541,308 @@
           "auto_hosts_empty": "The active template and extensions declare no external stylesheet host.",
           "preview": "Style policy preview"
         }
+      },
+      "extension_trust": {
+        "title": "Extension trust keys",
+        "desc": "Public keys trusted when verifying extension, language pack and core package signatures. Built-in core keys ship with the core; author keys are added here. Adding and deleting keys take effect immediately, separately from the Save button.",
+        "block_unsigned": "Block unsigned packages",
+        "block_unsigned_desc": "When on, installing or updating packages that are unsigned or cannot be verified on this server is blocked (\"Continue unsigned\" is not offered). Press Save to apply.",
+        "sodium_missing": "The PHP sodium extension is missing on this server, so signatures cannot be verified. Signed packages are treated as \"cannot verify\" and follow the unsigned policy.",
+        "builtin_title": "Built-in core keys",
+        "builtin_hint": "These keys ship with the core and cannot be changed here.",
+        "builtin_empty": "There are no built-in core keys yet. They will ship with a core update.",
+        "vendor_title": "Author keys",
+        "vendor_empty": "No author keys registered.",
+        "add_key": "Add key",
+        "delete_key": "Delete",
+        "field_key_id": "Key ID",
+        "field_signer": "Signer",
+        "field_vendor_scope": "Vendor scope",
+        "field_created_at": "Added",
+        "status_active": "Active",
+        "status_retired": "Retired (no new signatures)",
+        "status_revoked": "Revoked",
+        "load_failed": "Failed to load the trust key list."
+      }
+    },
+    "member": {
+      "sub_tabs": {
+        "fields": "Signup Fields",
+        "nickname": "Nickname Policy"
+      },
+      "display_name": {
+        "sub_tab": "Display Name",
+        "title": "Display Name",
+        "description": "Choose which name members are shown by on screen. Press \"Save\" below to apply.",
+        "selectable_kinds": "Kinds members can choose",
+        "selectable_kinds_hint": "When two or more are checked, members pick one on the signup screen and in profile editing. The chosen kind is used in areas set to \"Member's choice\".",
+        "selectable_default_locked": "The member default kind cannot be removed. Change the member default kind first.",
+        "requires_nickname_badge": "Needs nickname",
+        "sample": "Preview member: name {{name}}, nickname {{nickname}}, ID {{id}}",
+        "member_default_kind": "Member default kind",
+        "member_default_kind_hint": "Used when a member has not chosen a kind. It must be one of the kinds members can choose.",
+        "member_default_kind_usage": "Areas using this value now: {{areas}}",
+        "member_default_kind_usage_more": "Areas using this value now: {{areas}} and {{count}} more",
+        "member_default_kind_unused": "No area uses this value now. It is used only in areas whose method is \"Member's choice\".",
+        "areas_title": "Method by area",
+        "areas_hint": "Set the method for each area a name appears in. An indented area can follow the area above it.",
+        "col": {
+          "area": "Area",
+          "mode": "Method",
+          "kind": "Kind"
+        },
+        "mode": {
+          "inherit": "Follow parent area",
+          "fixed": "Fixed kind",
+          "member": "Member's choice"
+        },
+        "area_mode_label": "{{area}} method",
+        "area_kind_label": "{{area}} kind",
+        "effective_member": "Members who have not chosen: {{kind}}",
+        "effective_inherit": "Currently applied: {{kind}}",
+        "effective_inherit_member": "Currently applied: member's choice",
+        "effective_inherit_pending": "Follows the parent area once saved",
+        "extension_note": "Areas that are split further inside (such as each board) are set on that extension's settings screen.",
+        "nickname_notice": {
+          "all": "Saving locks the nickname field to enabled and required.",
+          "chosen": "Saving locks the nickname field to enabled, and the nickname becomes required for members shown by a kind that needs it.",
+          "empty_count": "{{count}} members currently have an empty nickname.",
+          "empty_count_one": "{{count}} member currently has an empty nickname.",
+          "require_existing": "Ask for a nickname at login",
+          "require_existing_hint": "When on, existing members with an empty nickname must enter one first when they log in.",
+          "already_required": "Existing members are already asked to enter a nickname."
+        },
+        "lock_link": "View display name settings",
+        "usage": {
+          "title": "This field is used as a display name and cannot be deleted.",
+          "hint": "Remove this field from the settings below, then delete it again.",
+          "link": "Go to display name settings"
+        },
+        "data_source": {
+          "options": "Display name kinds and areas",
+          "nickname_empty_count": "Members with an empty nickname"
+        }
+      },
+      "fields": {
+        "title": "Signup Fields",
+        "description": "Choose the fields collected on the signup screen, the profile edit screen and the admin member form.",
+        "add_button": "Add Field",
+        "instant_save_notice": "Changes in this table (use, required, show on signup, order) are saved immediately.",
+        "fixed_notice": "Fixed: email, password, terms agreement (always used)",
+        "layout_modified_notice": "The signup screen layout is kept as a modified copy, so new fields may not appear.",
+        "layout_modified_hint": "Restore the signup screen to its original in the layout editor to show the fields set here.",
+        "empty_custom": "No fields have been added. Use \"Add Field\" to create a signup field.",
+        "unavailable": "Unavailable",
+        "unavailable_desc": "The extension that provides this type is turned off. It is restored when the extension is turned on again.",
+        "signup_unsupported": "This type is not collected on the signup screen.",
+        "signup_unsupported_short": "Not on signup",
+        "drag_handle": "Reorder {{name}}",
+        "drag_hint": "Drag to reorder",
+        "move_up": "Move {{name}} up",
+        "move_down": "Move {{name}} down",
+        "move_up_short": "Move up",
+        "move_down_short": "Move down",
+        "saved": "Saved.",
+        "order_saved": "Order saved.",
+        "save_failed": "Could not save. The table was reloaded.",
+        "load_failed": "Could not load the field.",
+        "changed_by_other": "Another administrator changed the fields. They were reloaded.",
+        "col": {
+          "order": "Order",
+          "name": "Field",
+          "type": "Type",
+          "source": "Source",
+          "enabled": "Use",
+          "required": "Required",
+          "show_on_signup": "On Signup",
+          "edit_scope": "Scope"
+        },
+        "source": {
+          "core": "Built-in",
+          "custom": "Added",
+          "extension": "Extension"
+        },
+        "scope": {
+          "self": "Member can edit",
+          "admin_edit": "Admin edit only",
+          "admin_only": "Admin view only"
+        },
+        "btn": {
+          "settings": "Settings",
+          "edit": "Edit",
+          "view": "View"
+        },
+        "delete": {
+          "title": "Delete Field",
+          "message": "The field \"{{name}}\" will be deleted.",
+          "values_warning": "Values entered by {{count}} members are deleted with it and cannot be restored.",
+          "values_warning_one": "The value entered by {{count}} member is deleted with it and cannot be restored.",
+          "no_values_warning": "No values have been entered yet. A deleted field cannot be restored.",
+          "confirm_check": "I have read the above",
+          "success": "The field was deleted.",
+          "failed": "Could not delete the field."
+        },
+        "required_confirm": {
+          "title": "Make Required",
+          "message": "{{count}} existing members have not filled in \"{{name}}\".",
+          "message_one": "{{count}} existing member has not filled in \"{{name}}\".",
+          "mode_label": "When should these members be asked to fill it in?",
+          "on_edit": "Only when editing their profile",
+          "on_login": "Right after they log in",
+          "submit": "Make Required",
+          "hint": {
+            "on_edit": "Members are asked only when they edit and save their profile. Until then they can use the site as before.",
+            "on_login": "Logged-in members are sent to the additional information screen, and requests such as posting are not accepted until they fill it in."
+          }
+        },
+        "form": {
+          "title": {
+            "create": "Add Field",
+            "edit": "Edit Field",
+            "settings": "Field Settings",
+            "view": "View Field"
+          },
+          "readonly_notice": "You only have view permission, so nothing can be changed.",
+          "declared_notice": "For built-in fields and fields provided by extensions, only the name, help text and common options can be changed.",
+          "type": "Type",
+          "type_locked": "The type cannot be changed after the field is created.",
+          "change_type": "Change",
+          "type_step": {
+            "description": "Choose the type of value to collect, then press \"Next\". You can choose again before saving.",
+            "unavailable": "Extension off"
+          },
+          "key": "Key",
+          "key_hint": "Start with a lowercase letter and use only lowercase letters, digits and underscores (2-50 characters). It cannot be changed after the field is created.",
+          "name": "Name",
+          "description": "Help Text",
+          "description_hint": "Shown below the input.",
+          "placeholder": "Placeholder",
+          "placeholder_hint": "Shown faintly in the empty input.",
+          "save_success": "The field was saved.",
+          "section": {
+            "type_options": "Type Options",
+            "common": "Common Options"
+          },
+          "c": {
+            "min_length": "Minimum Length",
+            "max_length": "Maximum Length",
+            "regex": "Format (Regular Expression)",
+            "regex_hint": "Include the delimiters, as in /^[a-z]+$/. Leave empty to skip the format check.",
+            "regex_message": "Format Error Message",
+            "regex_message_hint": "Shown to the member when the value does not match the format. Leave empty to use the default message.",
+            "rows": "Rows",
+            "rows_hint": "Height of the input (2-20 rows).",
+            "min": "Minimum",
+            "max": "Maximum",
+            "decimals": "Decimal Places",
+            "decimals_hint": "0 accepts whole numbers only (0-6).",
+            "unit": "Unit",
+            "unit_hint": "Shown next to the input (for example: years, pcs).",
+            "widget": "Input Style",
+            "widget_toggle": "Switch",
+            "widget_checkbox": "Checkbox",
+            "inline_label": "Side Text",
+            "inline_label_hint": "Shown next to the switch or checkbox.",
+            "default_on": "Show turned on from the start",
+            "date_min": "Earliest Date",
+            "date_max": "Latest Date",
+            "date_hint": "\"Today\" follows the site time zone.",
+            "display": "Display",
+            "display_select": "Dropdown list",
+            "display_radio": "Radio buttons",
+            "display_checkbox": "Checkboxes",
+            "display_multi_select": "Multi-select list",
+            "allow_other": "Allow \"Other (enter directly)\"",
+            "allow_other_hint": "When a member chooses \"Other\", they can type a value in the input right below.",
+            "min_select": "Minimum Selections",
+            "max_select": "Maximum Selections",
+            "address_note": "Collects the postal code, address and detailed address. If a postal code search plugin is on, a search button is shown as well.",
+            "extensions": "Allowed Extensions",
+            "extensions_placeholder": "Type jpg and press Enter",
+            "extensions_hint": "Leave empty to use the default extensions of the type.",
+            "max_count": "Maximum Count",
+            "max_size_mb": "Maximum Size (MB)",
+            "file_signup_note": "Files and images are not collected on the signup screen. Members can upload them from the profile edit screen after signing up."
+          },
+          "date_bound": {
+            "none": "No limit",
+            "today": "Today",
+            "after_today": "After today",
+            "date": "Specific date"
+          },
+          "options": {
+            "title": "Options",
+            "add_button": "Add Option",
+            "paste_button": "Paste Multiple Lines",
+            "paste_label": "One option per line",
+            "paste_placeholder": "Student\nEmployee\nSelf-employed",
+            "paste_hint": "Values are generated automatically, and a number is added when a value already exists. Up to 50 options are allowed.",
+            "paste_apply": "Add as Options",
+            "empty": "There are no options.",
+            "value": "Value",
+            "value_placeholder": "Value",
+            "label": "Name",
+            "label_placeholder": "Name shown to members",
+            "usage": "Used by {{count}}",
+            "remove_warning": "The value of {{count}} members who chose this option will be cleared. It applies when you save.",
+            "remove_warning_one": "The value of {{count}} member who chose this option will be cleared. It applies when you save.",
+            "remove_pending": "This option is deleted when you save.",
+            "restore": "Restore"
+          },
+          "opt": {
+            "enabled": "Use",
+            "required": "Required",
+            "show_on_signup": "Show on signup screen",
+            "edit_scope": "Scope",
+            "edit_scope_hint": {
+              "self": "The member and administrators can edit it.",
+              "admin_edit": "Members can only view it, and only administrators can edit it.",
+              "admin_only": "Shown only on admin screens and hidden from members."
+            },
+            "require_existing_members": "Also require from existing members",
+            "require_existing_locked": "With the \"Admin edit only\" or \"Admin view only\" scope, existing members cannot be asked to fill it in.",
+            "public_profile": "Show on public profile",
+            "admin_list_column": "Member list column",
+            "admin_searchable": "Member search",
+            "unique": "No duplicates",
+            "display_name_usable": "Usable as display name",
+            "display_name_usable_hint": "Only available for the single-line text type.",
+            "idv_claim": "Identity Verification Link",
+            "idv_claim_none": "None",
+            "idv_claim_name": "Name",
+            "idv_claim_mobile": "Mobile",
+            "idv_claim_birth_date": "Date of birth",
+            "idv_claim_gender": "Gender",
+            "idv_lock": "Fill with the verified value and lock"
+          },
+          "close_confirm": {
+            "message": "You have unsaved input. It is lost if you close.",
+            "keep": "Keep Editing",
+            "discard": "Close Without Saving"
+          }
+        }
+      },
+      "nickname": {
+        "title": "Nickname Policy",
+        "description": "Set the rules applied to nicknames. They apply after you press \"Save\" below.",
+        "unique": "No Duplicates",
+        "unique_desc": "Two members cannot use the same nickname. Differences in letter case, full-width characters and spaces are treated as the same nickname.",
+        "duplicates_message": "Some members currently share a nickname: {{nicknames}} nicknames, {{members}} members.",
+        "duplicates_hint": "Turning this on keeps their nicknames as they are. Duplicates are blocked from the next nickname change or new signup.",
+        "duplicates_view": "View Members with Duplicates",
+        "duplicates_confirm": "Turn On Anyway",
+        "duplicates_failed": "Could not check for duplicate nicknames, so it was not turned on.",
+        "recompute_running": "Preparing the duplicate check",
+        "recompute_count": "{{processed}} / {{total}} members",
+        "recompute_running_hint": "Existing nicknames are being prepared for comparison. It continues even if you leave this screen.",
+        "recompute_done": "The duplicate check is ready. {{total}} members were checked.",
+        "banned_words": "Banned Words",
+        "banned_words_placeholder": "Type a word and press Enter",
+        "banned_words_hint": "A nickname containing any of these words cannot be used. Up to 500 words are allowed.",
+        "change_interval": "Change Interval",
+        "change_interval_unit": "days",
+        "change_interval_hint": "The number of days before a nickname can be changed again. 0 means no limit.",
+        "display_note": "While a display name uses the nickname, the nickname is required."
       }
     },
     "identity": {
@@ -2106,6 +2929,35 @@
         "hardening_warning": "Web server protection rules are not applied. Responses from /storage direct URLs have no protective headers — check the nginx/Apache settings in the installation guide.",
         "hardening_rules_write_failed": "Could not update the web server protection rules file to the current settings. Make sure the web server account can write to the public disk folder (storage/app/public) and its .htaccess file, then save again."
       },
+      "private_attachment": {
+        "title": "Private Attachment Storage",
+        "desc": "The disk for files the server sends after checking permissions (board, page and core attachments, claim images, post-body media, export files). With Default, the site storage driver is used as before. Only files uploaded after changing this go to the new disk; files already uploaded keep being served from their original disk.",
+        "disk": "Disk",
+        "same_disk_warning": "This is the same disk as the public asset storage. If the bucket allows public reads, private files can be read directly from the bucket URL. Use a bucket or path without a public policy.",
+        "s3_help": "When you choose S3, the S3 connection in the File Storage card above is used. Block public reads on the bucket.",
+        "pins_title": "Fixed by .env",
+        "pin_core": "Core attachments",
+        "pins_hint": "These use the disk set in .env and ignore the selection above. Remove the value from .env to make them follow the selection."
+      },
+      "file_delegation": {
+        "title": "Web Server File Delegation",
+        "desc": "Let the web server send files stored on this server — template, module and plugin assets, public storage files, extension icons, hero section banner videos and local media in post bodies — instead of PHP reading and sending them. Range requests (video seeking, resumed downloads) are handled by the web server too. Web server configuration is required. Files on remote disks (S3) and attachment downloads are not covered.",
+        "mode": "Delegation method",
+        "accel_prefix": "Internal location prefix",
+        "accel_prefix_desc": "The nginx internal location path. It must start and end with /; use a name that is hard to guess from outside. The app builds the mapping (X-Accel-Mapping) from this prefix and the install location.",
+        "apache_guide": "Install and enable mod_xsendfile in Apache (e.g. a2enmod xsendfile), add the two lines below to the site configuration, then reload Apache.",
+        "nginx_guide": "Add the location below to the server block of the nginx site configuration, then reload nginx. Without internal, the whole install folder is exposed.",
+        "saved_differs": "The value on screen is not applied yet. \"Check actual delivery\" tests the applied settings, so save first.",
+        "test_hint": "\"Check configuration\" only looks at the web server type and modules of this server and does not block saving. After saving, use \"Check actual delivery\" to confirm the web server sends files.",
+        "test_button": "Check configuration",
+        "test_mapping": "Mapping the app will send (X-Accel-Mapping): {{mapping}}",
+        "probe_button": "Check actual delivery",
+        "probe_ok": "The web server sent the file. Delegation is working.",
+        "probe_failed": "The file body was not received. Check the web server configuration or set the delegation method back to \"Disabled\".",
+        "probe_inactive": "The applied method is \"Disabled\", so PHP sends the file, not the web server. Save a delegation method and check again.",
+        "probe_skipped": "Delegation is on, but this file is outside the delegation path, so PHP sent it. Check that the install location (including symbolic links) matches the delegation mapping.",
+        "recover_hint": "If screen assets or images stop loading after turning this on, save the delegation method as \"Disabled\". If you cannot reach the admin screen, change file_delegation to none in storage/app/settings/drivers.json on the server."
+      },
       "cache": {
         "title": "Cache",
         "desc": "Configure application cache driver settings.",
@@ -2119,6 +2971,7 @@
         "redis_port": "Redis Port",
         "redis_password": "Redis Password",
         "redis_database": "Redis Database",
+        "redis_shared_hint": "Shown because sessions or queues use Redis. Cache, sessions and queues share these connection settings.",
         "memcached_host": "Memcached Host",
         "memcached_port": "Memcached Port"
       },
@@ -2133,7 +2986,7 @@
         },
         "lifetime": "Session Lifetime",
         "minutes": "minutes",
-        "redis_shared_notice": "Uses Redis settings from cache when Redis is selected."
+        "redis_shared_notice": "When Redis is selected, the Redis connection settings in the cache card are shared. The settings and the connection test are in the cache card."
       },
       "queue": {
         "title": "Queue",
@@ -2145,7 +2998,7 @@
           "redis": "Redis"
         },
         "worker_notice": "Queue worker must be running when using database or redis.",
-        "redis_shared_notice": "Uses Redis settings from cache when Redis is selected.",
+        "redis_shared_notice": "When Redis is selected, the Redis connection settings in the cache card are shared. The settings and the connection test are in the cache card.",
         "worker": {
           "title": "Queue workers",
           "not_required": "The sync driver runs jobs inside the request, so no queue worker is needed.",
@@ -2204,6 +3057,16 @@
             "title": "Supervisor commands",
             "desc": "Start a worker for each registered connection with the commands below. Long-job connections must be started under that connection name."
           }
+        },
+        "records": {
+          "title": "Processing records",
+          "job_log_enabled": "Record job processing",
+          "job_log_enabled_desc": "Keep a record every time a queue job finishes or fails.",
+          "retention_days": "Retention period",
+          "retention_days_hint": "Processing records and failed jobs are kept for this period. ({{min}} – {{max}} days)",
+          "view_link": "View processing log",
+          "days_suffix": "days",
+          "schedule_managed": "Older processing records and failed jobs are removed by a cleanup schedule."
         }
       },
       "log": {
@@ -2257,6 +3120,13 @@
         "driver": "Search Engine Driver",
         "driver_desc": "The built-in MySQL FULLTEXT (ngram) engine supports Korean search without additional configuration.",
         "plugin_notice": "Additional drivers will appear when search engine plugins (Meilisearch, Elasticsearch, etc.) are installed."
+      },
+      "image": {
+        "title": "Image Processing",
+        "desc": "Choose the image processing engine used to downscale uploads and generate thumbnails.",
+        "driver": "Image Processing Engine",
+        "driver_desc": "GD is available on most servers. Imagick appears only on servers with the PHP imagick extension installed.",
+        "plugin_notice": "Additional engines appear when image processing plugins are installed. If the selected engine becomes unavailable, GD is used."
       },
       "test_connection": "Test Connection",
       "testing": "Testing...",
@@ -2313,7 +3183,7 @@
       "geoip_license_key": "MaxMind License Key",
       "geoip_license_key_desc": "Enter the license key issued from your free MaxMind account. Get one at https://www.maxmind.com/en/geolite2/signup.",
       "geoip_auto_update_enabled": "Auto-update GeoIP DB",
-      "geoip_auto_update_enabled_desc": "Automatically re-downloads the MaxMind GeoLite2-City DB once a week (Wednesday 03:00).",
+      "geoip_auto_update_enabled_desc": "Re-download the MaxMind GeoLite2-City DB automatically on a schedule.",
       "geoip_last_updated_at": "Last updated",
       "geoip_manual_update": "Update now",
       "geoip_updating": "Updating...",
@@ -2322,7 +3192,7 @@
       "seo_sitemap_cache": "Sitemap cache",
       "seo_sitemap_cache_desc": "Caches sitemap.xml.",
       "trusted_proxy": "Reverse proxy (trusted proxies)",
-      "trusted_proxy_desc": "Lets the site recognize the real address and visitor IP when HTTPS is terminated in front of it (AWS ALB, CloudFront, Cloudflare, nginx). The value can only be changed through TRUSTED_PROXIES in .env.",
+      "trusted_proxy_desc": "Lets the site recognize the real address and visitor IP when HTTPS is terminated in front of it (AWS ALB, CloudFront, Cloudflare, nginx).",
       "trusted_proxy_status": "Diagnostic result",
       "trusted_proxy_status_ok": "OK",
       "trusted_proxy_status_warning": "Action required",
@@ -2337,7 +3207,27 @@
       "trusted_proxy_client_ip": "Address recognized as the visitor IP",
       "trusted_proxy_remote_addr": "Immediate caller IP (REMOTE_ADDR)",
       "trusted_proxy_same_ip_hint": "These two values match while proxy headers are being received — every visitor is being recorded as the same person.",
-      "trusted_proxy_doc_hint": "Configuration and post-adoption steps:"
+      "trusted_proxy_doc_hint": "Configuration and post-adoption steps:",
+      "trusted_proxy_scope": "Trust scope",
+      "trusted_proxy_scope_desc": "Choose how far to trust the X-Forwarded-* headers sent by the upstream. Saving applies it immediately.",
+      "trusted_proxy_mode_none": "Trust none",
+      "trusted_proxy_mode_none_desc": "Directly exposed with no upstream. This is correct when no proxy is in front.",
+      "trusted_proxy_mode_nearest": "Trust the nearest proxy only (*)",
+      "trusted_proxy_mode_nearest_desc": "A web server or load balancer on the same host sits in front — the usual shared hosting setup.",
+      "trusted_proxy_mode_list": "Trust listed addresses only",
+      "trusted_proxy_mode_list_desc": "For multi-hop proxies (CDN to load balancer). List every IP or CIDR in the chain.",
+      "trusted_proxy_list_label": "Trusted addresses",
+      "trusted_proxy_list_placeholder": "Enter 10.0.0.1 or 10.0.0.0/24 and press Enter",
+      "trusted_proxy_list_hint": "Use an IP address or CIDR. Pasting a comma-separated list splits it automatically. If any hop is missing, that proxy is recorded as the visitor.",
+      "trusted_proxy_spoof_warning": "If the app can be reached directly, bypassing the upstream, visitors can forge X-Forwarded-For and manipulate IP records and login throttling.",
+      "trusted_proxy_env_locked_notice": "This installation uses TRUSTED_PROXIES in .env as the source of truth. It cannot be changed here, and the server drops this field when saving.",
+      "trusted_proxy_probe_button": "Check with this value",
+      "trusted_proxy_probe_hint": "Nothing is saved. This only shows how the current request would be resolved.",
+      "trusted_proxy_probe_title": "Result of checking with this value",
+      "trusted_proxy_probe_client_ip": "Visitor IP",
+      "trusted_proxy_probe_is_secure": "HTTPS detection",
+      "trusted_proxy_probe_trusted": "Upstream that would be trusted",
+      "geoip_schedule_notice": "Automatic updates are run by the GeoIP update schedule."
     },
     "notification_definitions": {
       "title": "Notification Settings",
@@ -2373,6 +3263,8 @@
         "btn_confirming": "Resetting..."
       },
       "no_template_for_channel": "No template for this channel.",
+      "user_template_inactive": "An empty template was created. Fill in the content and recipients, then turn it on to send through this channel.",
+      "user_template_created": "An empty template was created. Fill in the content and recipients in [Edit], then turn it on.",
       "body_preview": "Body Preview",
       "save_success": "Notification settings have been saved.",
       "save_error": "Failed to save notification settings.",
@@ -2391,7 +3283,8 @@
         "dormant_converted": "Dormancy Applied",
         "dormant_withdraw_notice": "Dormant Account Withdrawal Notice",
         "password_expiry_notice": "Password Expiry Advance Notice",
-        "password_expired": "Password Expired"
+        "password_expired": "Password Expired",
+        "schedule_failed": "Scheduled Task Failed"
       },
       "channels_label": "Channels:",
       "edit_modal": {
@@ -2405,7 +3298,12 @@
         "variables_title": "Available Variables",
         "btn_preview": "Preview",
         "is_active_label": "Active",
-        "validation_error": "Please check the input fields."
+        "validation_error": "Please check the input fields.",
+        "warnings_title": "Saved, but there is something to check.",
+        "warnings_description": "The variables below are member fields that do not exist right now, so they are sent as empty text. Fix them and save again, or close as is.",
+        "warnings_toast": "Saved, but some variables do not exist right now ({{count}}). Check the warning in the window.",
+        "member_variables_title": "Member fields ({{count}})",
+        "member_variables_hint": "Replaced with the recipient member's values. An empty value is sent as empty text."
       },
       "recipients_label": "Recipients:",
       "category": {
@@ -2467,7 +3365,8 @@
           "trigger_user": "Trigger User",
           "related_user": "Related User",
           "role": "Role-based",
-          "specific_users": "Specific Users"
+          "specific_users": "Specific Users",
+          "site_admin_email": "Site admin email"
         },
         "badge": {
           "trigger_user": "Trigger User",
@@ -2483,6 +3382,7 @@
         "role_no_options": "No matching role",
         "relation_placeholder": "Select a relation",
         "relation_undeclared": "This notification does not support the '{{relation}}' relation. Choose one from the list — it cannot be saved as is.",
+        "site_admin_email_hint": "Sends mail only to the admin email in Settings > General (other channels such as site notifications are not used). If it is empty, nothing is sent.",
         "roles_selected_count": "{count} roles selected",
         "roles_selected_count_one": "{count} role selected",
         "users_selected_count": "{count} users selected",
@@ -2510,6 +3410,7 @@
       "cpu": "CPU",
       "memory": "Memory",
       "disk": "Disk",
+      "not_measurable": "Not measurable",
       "php_memory": "PHP Memory Limit",
       "opcache": "OPcache",
       "opcache_enabled": "Enabled",
@@ -2556,8 +3457,8 @@
       "changelog_title": "Changelog",
       "no_changelog": "No changelog information available.",
       "changelog_load_failed": "Failed to load changelog.",
-      "update_guide_title": "Update via Terminal",
-      "update_guide_warning": "Core updates can only be performed from the terminal. Please backup your database before updating.",
+      "update_guide_title": "Update via command line (if you have SSH)",
+      "update_guide_warning": "This method is available when you can reach the server over SSH. If you cannot use SSH, close this dialog and continue from the web screen as directed. Please back up your database before updating.",
       "update_guide_desc": "Connect to your server terminal and run the following command in the Gnuboard7 installation directory.",
       "update_guide_note": "Maintenance mode is automatically enabled during updates and disabled after completion.",
       "manual_update_title": "Manual Update (When GitHub Download Is Unavailable)",
@@ -2568,15 +3469,40 @@
       "update_guide_cmd": "$ sudo php artisan core:update",
       "manual_update_cmd": "$ sudo php artisan core:update --source=/path/to/extracted",
       "upgrade_guide_link_desc": "See the upgrade guide for permission notes and per-version paths.",
-      "upgrade_guide_link_label": "Open the full upgrade guide"
+      "upgrade_guide_link_label": "Open the full upgrade guide",
+      "custom_preflight_title": "The update was not started",
+      "custom_preflight_desc": "{count} developer packages (custom/composer.json) do not match the new core {version}. No files were changed and the site keeps running as before.",
+      "custom_preflight_desc_one": "{count} developer package (custom/composer.json) does not match the new core {version}. No files were changed and the site keeps running as before.",
+      "custom_conflict_package": "Developer package",
+      "custom_conflict_reason": "What does not match",
+      "custom_conflict_core": "New core",
+      "custom_conflict_installed": "Installed {version}",
+      "custom_conflict_constraint": "The new core does not satisfy the {requires} version constraint ({constraint}) this package requires",
+      "custom_conflict_duplicate": "The core ships the same package in a different version — the core version is used at runtime",
+      "custom_reserved_files": "The release ships files in the developer-only custom locations:",
+      "custom_fix_title": "How to fix",
+      "custom_fix_step1": "Upgrade the developer package to a version compatible with the new core: composer update [package] -d custom",
+      "custom_fix_step2": "Confirm there is no conflict with php artisan custom:check, then run the update again.",
+      "custom_fix_step3": "On servers without composer, fix it on another machine and rebuild the bundle with php artisan custom:vendor-bundle."
     },
     "modals": {
       "password_confirm_title": "Password Confirmation",
+      "identity_confirm_title": "Verify It's You",
       "app_key_warning": "Changing the key will invalidate all sessions and may make previously encrypted data inaccessible. Please proceed with caution.",
       "enter_password": "Administrator Password",
       "password_placeholder": "Enter your password",
       "regenerate": "Regenerate Key",
       "regenerating": "Regenerating...",
+      "reauth_notice": "This account has no password. Verify yourself with a code sent to your email before regenerating. Once you set a password, you can verify with it instead.",
+      "reauth_request_code": "Get code",
+      "reauth_resend_code": "Resend code",
+      "reauth_code_sent": "We sent a verification code to your email.",
+      "reauth_code_sent_generic": "We sent you a verification code.",
+      "reauth_notice_other": "This account has no password. Click Start verification and verify yourself with a method available to this account (such as signing in again with your company account) before regenerating.",
+      "reauth_start": "Start verification",
+      "reauth_external_failed": "We could not open the verification page. Please try again later.",
+      "reauth_verified": "Verification complete. Click [Regenerate Key] to create a new app key.",
+      "reauth_code_placeholder": "6-digit code",
       "cache_delete_title": "Confirm Cache Deletion",
       "cache_delete_confirm": "Are you sure you want to clear all cache?",
       "cache_delete_warning": "Site response may be temporarily slower after clearing cache.",
@@ -2595,6 +3521,112 @@
     "validation_error": "Please check your input",
     "app_key_regenerated": "Application key has been regenerated.",
     "cache_cleared": "All cache has been cleared.",
+    "system": {
+      "execution_title": "Execution method",
+      "execution_desc": "Whether tasks started from the admin screen, such as installs and updates, may use server commands.",
+      "current": "Current",
+      "reason": "Reason",
+      "running_with_cli": "Running with server commands",
+      "running_without_cli": "Running without server commands",
+      "blocked_functions": "Blocked functions:",
+      "execution_mode": "Execution method",
+      "execution_mode_auto": "Detect automatically",
+      "execution_mode_subprocess": "Always use server commands",
+      "execution_mode_inprocess": "Never use server commands",
+      "execution_mode_hint": "Leave this on automatic and the site follows changes in the server environment. Change it only to pin one method.",
+      "detect_again": "Detect again",
+      "detect_done": "The execution environment was detected again.",
+      "detect_failed": "Failed to detect the execution environment.",
+      "cron_title": "Scheduled tasks",
+      "scheduler_off_on_this_server": "Schedule execution is turned off on the server that handled this page (G7_SCHEDULER=off). If you run several servers, check which server runs the schedules.",
+      "cron_desc": "Tasks that run at set times, such as clearing old data and building the sitemap. On hosting where you cannot register a server schedule, call the address below to run them instead.",
+      "cron_mode": "How to run",
+      "cron_mode_auto": "Detect automatically",
+      "cron_mode_web": "URL call",
+      "cron_mode_cron": "Server schedule",
+      "cron_mode_both": "Both",
+      "cron_url": "Call address",
+      "cron_url_masked": "••••••••  Press Show to reveal the address",
+      "cron_url_reveal": "Show",
+      "cron_url_copied": "The call address was copied.",
+      "cron_url_failed": "Could not retrieve the call address.",
+      "cron_url_hint": "Register this address in the scheduled task feature of your hosting control panel. It contains a secret number, so do not share it.",
+      "cron_token_rotate": "Reissue number",
+      "cron_token_rotate_title": "Reissue the call number?",
+      "cron_token_rotate_confirm": "Issuing a new number makes the current call address invalid immediately.",
+      "cron_token_rotate_warning": "Replace the address registered in your hosting control panel or external scheduling service. If you do not, scheduled tasks will stop running.",
+      "cron_token_rotated": "A new call number was issued.",
+      "cron_token_rotate_failed": "Failed to issue a new call number.",
+      "cron_allowed_ips": "Allowed addresses",
+      "cron_allowed_ips_hint": "Leave empty for no restriction. One per line, or separated by commas.",
+      "cron_min_interval": "Minimum interval (minutes)",
+      "cron_min_interval_hint": "Calls that arrive sooner than this interval are skipped without running. Pending tasks are handled on the next call, so nothing is lost.",
+      "cron_visit_fallback": "Run on visitor traffic",
+      "cron_visit_fallback_desc": "A last resort when no URL call can be scheduled. Nothing runs while there are no visitors.",
+      "cron_last_run": "Last run",
+      "cron_last_run_none": "Has not run yet.",
+      "cron_last_run_legend": "Time / duration / processed / failed",
+      "cron_history": "Execution history",
+      "cron_history_none": "No runs recorded yet.",
+      "cron_history_success": "Success",
+      "cron_history_failed": "Failed",
+      "cron_history_duration": "{{seconds}}s",
+      "cron_state_persist_failed": "Could not save the run record. Check write permission on the storage folder — without it, already-processed tasks run again on every call.",
+      "cron_run_now": "Run now",
+      "cron_run_done": "Scheduled tasks were run.",
+      "cron_run_failed": "Failed to run scheduled tasks."
+    },
+    "core_update": {
+      "title": "Core update",
+      "desc": "Updates the Gnuboard7 core to a new version. The site switches to maintenance mode while it runs, and any failure is rolled back to the backup automatically.",
+      "current_version": "Current version",
+      "latest_version": "New version",
+      "up_to_date": "You are on the latest version.",
+      "check_update": "Check for updates",
+      "view_changelog": "View changelog",
+      "together_title": "Also update",
+      "together_bundled": "Bundled extensions and language packs",
+      "together_bundled_hint": "Continues with any bundled module, plugin, template or language pack that ships a newer version.",
+      "together_rebuild_index": "Rebuild the search index",
+      "together_rebuild_index_hint": "Locks the index and reindexes everything. Run it during quiet hours. This choice applies to this run only.",
+      "layout_strategy": "Layouts",
+      "layout_overwrite": "Overwrite with the new version",
+      "layout_keep": "Keep layouts you have edited",
+      "modified_layouts_hint": "{{count}} edited layouts - keeping them is recommended.",
+      "modified_layouts_hint_one": "{{count}} edited layout - keeping it is recommended.",
+      "layout_per_extension_hint": "To use a different choice for one extension, leave it out here and update it individually from the extension management screen.",
+      "maintenance_warning": "The site switches to maintenance mode while the update runs.",
+      "start": "Start update",
+      "starting": "Running...",
+      "advanced_title": "Advanced",
+      "manual_zip_label": "Update from a ZIP you uploaded",
+      "manual_zip_hint": "For servers that cannot download the new version. Upload the release ZIP to storage/app/core_pending over FTP, then choose it below.",
+      "manual_zip_none": "No uploaded ZIP file was found.",
+      "manual_zip_auto": "Download automatically",
+      "cli_guide_title": "Update from the command line (when SSH is available)",
+      "progress_title": "Update in progress",
+      "progress_count": "Step {{done}} of {{total}}",
+      "view_log": "View log",
+      "hide_log": "Hide log",
+      "resume": "Continue",
+      "completed_desc": "The update to {{version}} has finished.",
+      "failed_title": "Failed during {{step}}. {{detail}}",
+      "rolled_back": "Restored from the backup. The site is working normally.",
+      "rolled_back_not_applied": "Stopped before any file was changed. The site is untouched.",
+      "rollback_failed": "The rollback also failed.",
+      "rollback_manual": "Manual recovery is required. Review the report below, then restore the backup (the newest folder under `storage/app/core_backups`) over FTP and delete `storage/framework/down` to leave maintenance mode. If you have SSH access, you can run `php artisan up` instead.",
+      "rollback_failed_targets": "Targets that could not be restored: {{targets}}",
+      "report_path": "Failure report",
+      "backup_path": "Backup location",
+      "dismiss": "Dismiss",
+      "warnings_title": "Needs your attention",
+      "notices_title": "Notices",
+      "advance_limit": "This is taking longer than expected. Press [Continue] to keep going.",
+      "check_failed_hint": "Could not check for a new version.",
+      "preflight_blocked_title": "The update cannot be started right now",
+      "preflight_blocked_hint": "Resolve the items above and try again, or use the command-line procedure under Advanced below if you have SSH access.",
+      "view_guide": "View what to do"
+    },
     "privacy": {
       "consent_provider": {
         "title": "Consent provider",
@@ -2615,10 +3647,11 @@
         "title": "Erasing residual data of withdrawn members",
         "desc": "On withdrawal the original name and email are kept with a suffix so disputes can still be handled. Once the retention period passes, that residual data is actually erased.",
         "enabled": "Erase automatically after the retention period",
-        "enabled_desc": "Off by default. When on, the nightly batch processes matching members.",
+        "enabled_desc": "Off by default. When on, the personal data retention schedule processes the targets.",
         "days": "Retention period after withdrawal (days)",
         "days_hint": "Members whose withdrawal is older than this are affected. Default 365 days.",
-        "irreversible_warning": "Contact details, address, bio and identity-verification identifiers are erased and cannot be recovered. The name becomes a fixed placeholder and the email an unidentifiable form."
+        "irreversible_warning": "Contact details, address, bio and identity-verification identifiers are erased and cannot be recovered. The name becomes a fixed placeholder and the email an unidentifiable form.",
+        "schedule_notice": "Withdrawn member data is destroyed by the personal data retention schedule."
       },
       "dormant": {
         "title": "Dormant accounts",
@@ -2781,6 +3814,39 @@
         "description": "Content media that only certain people may see (secret posts, unpublished pages) is served through short-lived URLs. If a screen stays open longer than this, reload it to play.",
         "unit": "minutes (5-1440)"
       }
+    },
+    "schedule_link": {
+      "next_run": "Next run",
+      "inactive": "This schedule is inactive, so it does not run now.",
+      "change": "Change in Schedule Management"
+    },
+    "permission_required": {
+      "language_packs": "You do not have permission to view language packs. The \"View Language Packs\" permission is required.",
+      "identity_providers": "You do not have permission to view identity verification providers. The \"View IDV Providers\" permission is required.",
+      "identity_policies": "You do not have permission to view identity verification policies. The \"View IDV Policies\" permission is required."
+    },
+    "extension_trust_key_modal": {
+      "add_title": "Add author trust key",
+      "add_desc": "Register a public key given by an extension author. Packages signed with this key are trusted only for identifiers within the vendor scope.",
+      "public_key": "Public key",
+      "public_key_placeholder": "Base64-encoded 32-byte Ed25519 public key",
+      "public_key_hint": "Paste the single-line public key the author generated with the extension:keygen command. The server computes the key ID.",
+      "label": "Signer name",
+      "label_placeholder": "e.g. glitter",
+      "label_hint": "Up to 32 letters, digits, underscores or hyphens, and it cannot start with sirsoft. It becomes the first part of the key ID.",
+      "vendor_scope": "Vendor scope",
+      "vendor_scope_placeholder": "e.g. glitter, glitter-labs",
+      "vendor_scope_hint": "Enter one or more vendors (the part before the hyphen in extension identifiers) whose signatures this key may vouch for, separated by commas. sirsoft is not allowed.",
+      "password_notice": "Changing trust keys changes which packages are trusted, so your password is confirmed again.",
+      "submit": "Add key",
+      "submitting": "Adding...",
+      "add_success": "Trust key added.",
+      "delete_title": "Delete author trust key",
+      "delete_confirm": "Delete the key {{key_id}}.",
+      "delete_warning": "Extensions signed with this key will be blocked as \"untrusted key\" from their next install or update.",
+      "delete_submit": "Delete",
+      "deleting": "Deleting...",
+      "delete_success": "Trust key deleted."
     }
   },
   "templates": {
@@ -2837,7 +3903,7 @@
       "file_requirements": "Template package must include",
       "file_structure_hint": "file and follow Gnuboard7 template standard structure.",
       "github_url_label": "GitHub Repository URL",
-      "github_url_hint": "Download template from the default branch of the GitHub repository.",
+      "github_url_hint": "Downloads the template from the latest tagged release of the GitHub repository. Repositories without a release are not installed.",
       "github_requirements": "The root directory must contain",
       "github_public_only": "file in the root directory."
     },
@@ -2869,6 +3935,9 @@
       "recover_update": "Clean up and update again",
       "check_updates": "Check Updates",
       "view_detail": "Details",
+      "settings": "Settings",
+      "settings_read_only": "Settings (read-only)",
+      "settings_unavailable": "No settings, or this template does not provide a settings screen",
       "refresh_layouts": "Refresh Layouts",
       "edit_layouts": "Edit Layouts",
       "edit_code": "Edit Code",
@@ -2992,11 +4061,22 @@
         "restore_success": "Version has been successfully restored.",
         "restore_note": "You must click the save button after restoring for changes to take effect.",
         "saved_by": "Saved by: {{name}}",
+        "saved_by_system": "Saved by: System",
         "lines": "lines",
         "modified": "modified",
         "chars": "chars",
         "load_more": "Load older versions",
-        "limit_reached": "Reached the maximum number of versions that can be listed."
+        "limit_reached": "Reached the maximum number of versions that can be listed.",
+        "source_labels": {
+          "before_extension_update": "Operator version before an extension update replaced it",
+          "before_refresh": "Operator version before a layout refresh replaced it",
+          "before_decision_take_theirs": "Operator version before \"Use new version\" replaced it",
+          "before_upgrade_step": "Operator version before an upgrade changed it",
+          "before_other": "Operator version before it was replaced",
+          "merge_refresh": "Merged by a layout refresh",
+          "merge_extension_update": "Merged by an extension update",
+          "merge_other": "Merge result"
+        }
       },
       "extension_version_history": {
         "title": "Extension Version History",
@@ -3029,7 +4109,7 @@
       "file_requirements": "Template package must include",
       "file_structure_hint": "file and follow Gnuboard7 template standard structure.",
       "github_url_label": "GitHub Repository URL",
-      "github_url_hint": "Download template from the default branch of the GitHub repository.",
+      "github_url_hint": "Downloads the template from the latest tagged release of the GitHub repository. Repositories without a release are not installed.",
       "github_requirements": "The root directory must contain",
       "github_public_only": "file in the root directory."
     },
@@ -3228,6 +4308,9 @@
       "actor_select": "Select Actor",
       "actor_search_placeholder": "Search by name or email",
       "actor_search_initial": "Search for an actor",
+      "deletion_snapshot_label": "Deletion records",
+      "deletion_snapshot_only": "Show pre-deletion records only",
+      "deletion_snapshot_hint": "Shows only records saved right before a permanent deletion, a declaration cleanup or a custom translation deletion. Expand a row to see the deleted content and versions.",
       "date_range_label": "Period",
       "date_from_label": "From",
       "date_to_label": "To",
@@ -3264,7 +4347,16 @@
       "column_field": "Field",
       "column_old": "Before",
       "column_new": "After",
-      "no_value": "-"
+      "no_value": "-",
+      "snapshot_title": "Recorded before deletion",
+      "snapshot_target": "Target: {{target}}",
+      "snapshot_reason": "Reason: {{reason}}",
+      "snapshot_versions": "{{count}} versions kept",
+      "snapshot_versions_one": "{{count}} version kept",
+      "snapshot_versions_truncated": "Only the latest 50 kept",
+      "snapshot_show": "Show content before deletion",
+      "snapshot_hide": "Hide content",
+      "snapshot_content_truncated": "The content is long — only the beginning is shown."
     },
     "pagination": {
       "total": "Total {{count}} items",
@@ -4351,9 +5443,9 @@
       },
       "reports": {
         "weekly": "Weekly report mail",
-        "weekly_hint": "Sent to the admin role every Monday at 08:00.",
+        "weekly_hint": "Sends the weekly report to the admin role.",
         "monthly": "Monthly report mail",
-        "monthly_hint": "Sent to the admin role on the 1st at 08:00.",
+        "monthly_hint": "Sends the monthly report to the admin role.",
         "definitions_title": "Notification definitions",
         "definitions_description": "Whether report and alert notifications are active and their channels. Edit templates in Settings › Notification definitions.",
         "definition_inactive_alert": "Report mail is on but its notification definition is off, so no mail will be sent — enable the definition below.",
@@ -4443,7 +5535,6 @@
       "module_refresh_layouts_modal": "Refresh Module Layouts",
       "module_uninstall_modal": "Uninstall Module",
       "module_update_modal": "Update Module",
-      "module_deactivate_warning_modal": "Module Deactivation Warning",
       "module_detail_modal": "Module Details",
       "module_manifest_preview_drawer": "Module Manifest Preview"
     },
@@ -4477,7 +5568,15 @@
       "settings_password_confirm_modal": "Verify Password for App Key Regeneration",
       "core_changelog_modal": "Core Changelog",
       "core_update_guide_modal": "Core Update Guide",
-      "core_update_result_modal": "Core Update Check Result"
+      "core_update_result_modal": "Core Update Check Result",
+      "cron_token_rotate_modal": "Web cron call number reissue modal",
+      "settings_thumbnail_purge_all_modal": "Purge All Thumbnails Confirmation",
+      "settings_thumbnail_pregenerate_modal": "Generate Thumbnails for Existing Images",
+      "member_field_form_modal": "Add or Edit Member Field",
+      "member_field_delete_modal": "Confirm Member Field Deletion",
+      "member_field_required_modal": "Confirm Making Member Field Required",
+      "extension_trust_key_add_modal": "Add extension trust key modal",
+      "extension_trust_key_delete_modal": "Delete extension trust key modal"
     },
     "admin_template_list": {
       "template_activate_modal": "Activate Template",
@@ -4529,10 +5628,14 @@
     },
     "admin_schedule_list": {
       "schedule_delete_modal": "Delete Schedule",
-      "schedule_duplicate_modal": "Duplicate Schedule",
+      "schedule_duplicate_modal": "Copy schedule",
       "schedule_form_modal": "Add or Edit Schedule",
       "schedule_history_modal": "Schedule Run History",
-      "schedule_run_modal": "Run Schedule Now"
+      "schedule_run_modal": "Run Schedule Now",
+      "queue_job_detail_modal": "Queue job details",
+      "queue_confirm_modal": "Retry or delete failed queue jobs",
+      "schedule_bulk_status_modal": "Change schedule status in bulk",
+      "schedule_security_modal": "Schedule security policy"
     },
     "admin_notification_log_list": {
       "modal_notification_log_detail": "Notification Log Details"
@@ -4563,6 +5666,11 @@
   },
   "brand_name": "Gnuboard7",
   "default_user_name": "Administrator",
+  "stage_role": {
+    "banner": "Review server — it shares production data. Extension and core changes go through the deployment process only.",
+    "locked_hint": "This cannot be changed on a review server. Apply it through the deployment process.",
+    "editor_banner": "Saved for review only — not applied to the production site and discarded at the next deployment."
+  },
   "template_partial_test": {
     "title": "Template Partial System Test",
     "meta_description": "Checks the partial system of the sirsoft-admin_basic template",
@@ -4625,6 +5733,64 @@
         "search_scopes": "Recent search scope declaration",
         "seeder": "Seeder"
       }
+    }
+  },
+  "layout_sync_preview": {
+    "title": "Per-screen preview",
+    "refresh_description": "Reloads the layouts from the files. Check below how each screen will change before applying. The preview changes nothing.",
+    "strategy_title": "Layout handling",
+    "strategy_keep": "Keep modifications (recommended)",
+    "strategy_keep_desc": "Parts you changed in the editor stay as they are; only untouched parts take the new version.",
+    "strategy_overwrite": "Overwrite all",
+    "strategy_overwrite_desc": "Replaces every screen with the new version. The operator version is kept in the editor [Version history] before it is replaced.",
+    "overwrite_warning": "Screens you changed in the editor will also be replaced. To go back, restore them from the editor [Version history].",
+    "loading": "Comparing with the new version…",
+    "error": "Could not load the preview. You can apply after the preview loads.",
+    "retry": "Try again",
+    "summary_changed": "{{count}} screens change",
+    "summary_changed_one": "{{count}} screen changes",
+    "summary_conflicts": "{{count}} overlap operator edits",
+    "summary_conflicts_one": "{{count}} overlaps operator edits",
+    "summary_deleted": "{{count}} will be deleted",
+    "skipped_inactive": "Disabled extensions do not refresh layouts on update — they are merged with your modifications kept when enabled.",
+    "skipped_files_missing": "This extension's files are missing from the active directory, so the per-screen check is skipped — the update copies the new version's files first and then syncs the screens.",
+    "empty": "No screen changes.",
+    "kind_extension": "Extension fragment",
+    "conflict_units": "{{count}} overlaps",
+    "conflict_units_one": "{{count}} overlap",
+    "decision_merge": "Apply non-overlapping parts (recommended)",
+    "decision_merge_hint": "Parts that overlap operator edits keep the operator version; everything else takes the new version.",
+    "decision_keep_ours": "Keep operator version",
+    "decision_take_theirs": "Use new version",
+    "decision_keep_ours_hint": "This screen takes nothing from the new version and keeps the whole operator version.",
+    "decision_take_theirs_hint": "Only this screen is replaced with the new version. The operator version is kept in the editor [Version history] before it is replaced.",
+    "deletions_title": "{{count}} items this update will delete",
+    "deletions_title_one": "{{count}} item this update will delete",
+    "deletion_operator": "Operator-modified — recorded in the activity log before deletion",
+    "verdict": {
+      "created": "Added",
+      "updated": "Replaced with the new version",
+      "unchanged": "No change",
+      "took_theirs": "New version applied",
+      "merged": "Partly updated",
+      "conflict": "Overlap — operator version kept",
+      "kept": "Operator version kept",
+      "kept_no_base": "No comparison base — operator version kept",
+      "kept_invalid": "Merge check failed — operator version kept",
+      "kept_removed": "Removed in the new version but kept (modified)",
+      "kept_deleted_by_operator": "Deleted by the operator — skipped",
+      "kept_name_collision": "Operator screen with the same name — skipped",
+      "deleted": "Will be deleted"
+    },
+    "deletion_type": {
+      "notification_definition": "Notification definition",
+      "notification_template": "Notification template",
+      "menu": "Admin menu",
+      "permission": "Permission",
+      "role": "Role",
+      "identity_policy": "Identity verification policy",
+      "schedule": "Schedule",
+      "entity": "Seed data"
     }
   }
 }

@@ -49,6 +49,8 @@ class DaysOptionValidationTest extends TestCase
             ['attachments:prune-orphans', '--days', 0],
             ['storage:prune-leftovers', '--days', 0],
             ['storage:prune-leftovers', '--backup-days', 0],
+            // 썸네일 정리는 0일(=전부 지움)을 받지 않는다 — 캐시 통째 비우기는 관리자 「비우기」 몫 (#869)
+            ['thumbnails:prune', '--days', 1],
         ];
 
         $cases = [];

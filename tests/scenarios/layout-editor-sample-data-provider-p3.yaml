@@ -1,0 +1,32 @@
+# π3 (#869) 레이아웃 편집기 시험 표식 부채 채우기 — 이 매니페스트는 아래 test_files 의 각 시험이 재는 효과를
+# 시험 단위로 선언한다. 축 behavior 은 그 파일 안의 동작 묶음이다.
+
+feature: 레이아웃 편집기 샘플 데이터 공급자 — 매핑 우선순위, 출처별 해소, 빈 응답 디그레이드, 상태 오버라이드
+
+description: |
+  sampleDataProvider 가 데이터소스별 샘플 응답을 정해진 우선순위로 고르고, 실패해도 빈 응답으로 디그레이드하는지 잰다.
+
+axes:
+  behavior: [override_absent_keeps_behavior, override_explicit_stages_only, override_unmatched_falls_back_base, override_spec_replaces_base, on_match_throw_degrades_safely, on_match_called_with_meta, has_always_true, source_missing_entry_falls_back_flat, source_missing_defaults_to_template, source_scoped_resolution, no_match_returns_empty_object, fallback_data_wrapped, no_spec_degrades_empty, endpoint_wildcard_match, endpoint_exact_match, by_id_wins_over_endpoint_pattern, by_id_returns_mapped_response]
+
+effects:
+  - sample_override_absent_keeps_behavior
+  - sample_override_explicit_stages_only
+  - sample_override_unmatched_falls_back_base
+  - sample_override_spec_replaces_base
+  - sample_on_match_throw_degrades_safely
+  - sample_on_match_called_with_meta
+  - sample_has_always_true
+  - sample_source_missing_entry_falls_back_flat
+  - sample_source_missing_defaults_to_template
+  - sample_source_scoped_resolution
+  - sample_no_match_returns_empty_object
+  - sample_fallback_data_wrapped
+  - sample_no_spec_degrades_empty
+  - sample_endpoint_wildcard_match
+  - sample_endpoint_exact_match
+  - sample_by_id_wins_over_endpoint_pattern
+  - sample_by_id_returns_mapped_response
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/sample-data/sampleDataProvider.test.ts

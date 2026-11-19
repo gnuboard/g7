@@ -7,12 +7,16 @@ use App\Extension\HookManager;
 use App\Models\ActivityLog;
 use App\Models\NotificationLog;
 use App\Models\User;
+use App\Notifications\GenericNotification;
 use App\Services\NotificationDefinitionService;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Testing\TestResponse;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderEmailChannelUnavailableException;
 use Modules\Sirsoft\Ecommerce\Listeners\OrderActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Module;
+use Modules\Sirsoft\Ecommerce\Services\OrderService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Tests\Support\Concerns\CapturesSentMail;
 
@@ -121,6 +125,31 @@ class OrderCustomEmailNotificationTest extends ModuleTestCase
 
         $log = NotificationLog::where('notification_type', 'order_custom_email')->latest('id')->first();
         $this->assertSame($member->id, (int) $log->recipient_user_id);
+    }
+
+    /**
+     * 주문 안내 메일의 {site_url} 은 회원이 여는 화면 주소(「사용자 화면 URL」)입니다 (#792).
+     *
+     * @scenario surface=ecommerce_order_mail
+     *
+     * @effects order_mail_site_url_user_screen
+     *
+     * @return void 반환값 없음
+     */
+    public function test_order_mail_site_url_is_user_screen_url(): void
+    {
+        config(['app.url' => 'https://site.example.test', 'g7_settings.core.general.user_screen_url' => 'https://front.example.test']);
+        $member = User::factory()->create(['email' => 'member-site-url@example.test']);
+        $order = OrderFactory::new()->create(['user_id' => $member->id]);
+        Notification::fake();
+
+        try {
+            app(OrderService::class)->sendEmail($order, 'member-site-url@example.test', '안내');
+        } catch (OrderEmailChannelUnavailableException) {
+            // 가짜 발송은 발송 결과를 남기지 않아 서비스가 채널 미사용으로 끝낸다 — 여기서는 실린 값만 본다.
+        }
+
+        Notification::assertSentTo($member, GenericNotification::class, fn (GenericNotification $n) => ($n->getData()['site_url'] ?? null) === 'https://front.example.test');
     }
 
     /**

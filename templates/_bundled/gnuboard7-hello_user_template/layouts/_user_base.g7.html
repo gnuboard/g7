@@ -16,7 +16,8 @@
       <span>$t:user.footer.copyright</span>
     </div>
     <!-- === 최소 모바일 네비 (홈 링크만) === -->
-    <div data-ref="mobile_nav" class="fixed bottom-0 inset-x-0 border-t border-gray-200 bg-white px-4 py-2 flex justify-center md:hidden">
+    <div data-ref="mobile_nav" class="fixed bottom-0 inset-x-0 border-t border-gray-200 bg-white px-4 py-2 flex justify-center">
+      <responsive on="768-" class="fixed bottom-0 inset-x-0 border-t border-gray-200 bg-white px-4 py-2 flex justify-center hidden"/>
       <a href="/" class="text-sm text-gray-700 hover:text-blue-600">$t:user.nav.home</a>
     </div>
   </div>

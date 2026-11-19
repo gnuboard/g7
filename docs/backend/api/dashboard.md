@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Dashboard 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -117,6 +117,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
 **설명** 관리자 대시보드에 표시할 최근 활동 내역(사용자 등록, 모듈 활성화 등)을 조회합니다. 인증(`auth:sanctum`)과 `core.dashboard.activities` 권한이 필요합니다. 각 항목은 유형·아이콘·제목·설명과 상대 시간(`time`)·절대 시각(`timestamp`)을 포함하며, 대시보드 최근 활동 카드를 렌더링할 때 사용합니다.
 
 
@@ -153,9 +154,9 @@ _목록 응답: `data` 배열 항목의 필드. `data` 는 `core.dashboard.alert
 | message | string | `필요 버전: 7.0.0-beta.9, 현재 설치됨: 7.0.0-beta.8` | 알림 본문 (다국어 문구 — `extensions.alerts.incompatible_message` / `recovered_body`) |
 | extension_type | string | `plugin` | 대상 확장 종류 (`module` / `plugin` / `template`) |
 | identifier | string | `sirsoft-gdpr` | 대상 확장 식별자 |
-| recover_endpoint | string | `/api/admin/extensions/plugin/sirsoft-gdpr/recover` | 재활성화 호출 엔드포인트 (재호환 알림 `subtype=recovery_available` 에만 존재) |
-| time | string\|null | `3시간 전` | 자동 비활성화 시각의 상대 표시 (diffForHumans() 산물, 비활성화 시각이 없으면 `null`) |
+| time | string | `1주 전` | 자동 비활성화 시각의 상대 표시 (diffForHumans() 산물, 비활성화 시각이 없으면 `null`) |
 | read | boolean | `false` | 읽음 여부 (주입 시점에는 항상 `false`) |
+| recover_endpoint | string | `/api/admin/extensions/plugin/sirsoft-gdpr/recover` | 재활성화 호출 엔드포인트 (재호환 알림 `subtype=recovery_available` 에만 존재) |
 
 **응답 예시**
 
@@ -328,6 +329,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
 **설명** 대시보드 "최근 알림" 카드에 표시할 최근 알림 발송 이력을 조회합니다. 인증(`auth:sanctum`)과 `core.notification-logs.read` 권한이 필요합니다. 각 항목은 알림 타입·채널·수신자·제목·상태와 상대 시간(`time`)·절대 시각(`timestamp`)을 포함하며, 전체 이력 목록(notification-logs)의 요약 뷰를 대시보드에 노출할 때 사용합니다.
 
 
@@ -356,9 +358,9 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| cpu | object | `{"percentage":21,"color":"green"}` | CPU 사용률 정보 (percentage: 0~100 사용률, color: 임계 색상 — green<50, blue 50~69, yellow 70~89, red≥90) |
-| memory | object | `{"percentage":77,"used":"24.3 GB","total":"31.5 GB","colo…` | 메모리 사용량 정보 (percentage 사용률, used/total: 사용량·총량 형식화 문자열, color: 임계 색상). 수집 불가 시 percentage 0·"알 수 없음"·color gray 폴백 |
-| disk | object | `{"percentage":86,"used":"408.2 GB","total":"474.7 GB","co…` | 디스크 사용량 정보 (percentage 사용률, used/total: 사용량·총량 형식화 문자열, color: 임계 색상). 수집 불가 시 percentage 0·"알 수 없음"·color gray 폴백 |
+| cpu | object | `{"percentage":21,"color":"green"}` | CPU 사용률 정보 (percentage: 0~100 사용률 또는 측정 불가 시 `null`, color: 임계 색상 — green<50, blue 50~69, yellow 70~89, red≥90, 측정 불가 시 gray). 측정 불가 = 서버가 외부 명령 실행(`exec` 등)을 막아 수집 경로가 없는 경우로, `0` 과 구분된다 |
+| memory | object | `{"percentage":77,"used":"24.3 GB","total":"31.5 GB","colo…` | 메모리 사용량 정보 (percentage 사용률, used/total: 사용량·총량 형식화 문자열, color: 임계 색상). 측정 불가 시 percentage `null`·"알 수 없음"·color gray 폴백 (`0` 은 실측 0% 다) |
+| disk | object | `{"percentage":86,"used":"408.2 GB","total":"474.7 GB","co…` | 디스크 사용량 정보 (percentage 사용률, used/total: 사용량·총량 형식화 문자열, color: 임계 색상). 측정 불가 시 percentage `null`·"알 수 없음"·color gray 폴백 (`0` 은 실측 0% 다) |
 
 **응답 예시**
 
@@ -400,7 +402,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 서버의 CPU·메모리·디스크 사용량을 조회합니다. 인증(`auth:sanctum`)과 `core.dashboard.resources` 권한이 필요합니다(7.1.0 — 전용 권한 정의에 맞춤). 각 항목은 사용률(`percentage`)과 상태 색상(`color`), 메모리·디스크의 경우 사용량/총량 문자열을 포함하며, 대시보드 시스템 리소스 게이지를 렌더링할 때 사용합니다.
+**설명** 서버의 CPU·메모리·디스크 사용량을 조회합니다. 인증(`auth:sanctum`)과 `core.dashboard.resources` 권한이 필요합니다(7.1.0 — 전용 권한 정의에 맞춤). 각 항목은 사용률(`percentage`)과 상태 색상(`color`), 메모리·디스크의 경우 사용량/총량 문자열을 포함하며, 대시보드 시스템 리소스 게이지를 렌더링할 때 사용합니다. 수집 경로가 없는 서버(외부 명령 실행 차단 등)에서는 `percentage` 가 `null` 로 내려가며 화면은 이를 "측정 불가" 로 표기해야 합니다 — `0` 으로 채우면 실측 0% 와 구분되지 않습니다.
 
 
 ### GET /api/admin/dashboard/stats
@@ -485,6 +487,8 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.dashboard.read`)이 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명** 대시보드 상단 통계 카드에 표시할 집계 데이터를 조회합니다. 인증(`auth:sanctum`)과 `core.dashboard.read` 권한이 필요합니다. 총 사용자 수(증감률 포함), 설치/활성 모듈·플러그인·템플릿·언어팩 수, 시스템 상태를 객체 형태로 반환하며, 대시보드 진입 시 요약 지표를 렌더링할 때 사용합니다.
 

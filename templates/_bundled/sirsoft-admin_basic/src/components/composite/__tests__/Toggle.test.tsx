@@ -309,4 +309,44 @@ describe('Toggle', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
   });
+
+  /**
+   * @scenario component=toggle
+   * @effects toggle_awaiting_confirmation_ignores_repeat_clicks
+   */
+  it('확정을 기다리는 스위치는 연타해도 한 번만 알리고, 바깥이 진행 중을 그렸다 끝내면 다시 받는다', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const { rerender } = render(<Toggle checked={false} awaitConfirmation ariaLabel="표시" onChange={onChange} />);
+    const toggle = screen.getByRole('switch');
+
+    await user.click(toggle);
+    await user.click(toggle);
+    await user.click(toggle);
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    // 바깥이 진행 중을 그리면 pending 이 잠그고, 끝나서 값이 바뀌면 다시 누를 수 있다
+    rerender(<Toggle checked={false} awaitConfirmation pending ariaLabel="표시" onChange={onChange} />);
+    await user.click(toggle);
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    rerender(<Toggle checked awaitConfirmation ariaLabel="표시" onChange={onChange} />);
+    await user.click(toggle);
+    expect(onChange).toHaveBeenCalledTimes(2);
+  });
+
+  /**
+   * @scenario component=toggle
+   * @effects toggle_awaiting_confirmation_ignores_repeat_clicks
+   */
+  it('확정을 기다리지 않는 스위치는 누를 때마다 알린다 (연타 가드 없음)', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<Toggle checked={false} ariaLabel="표시" onChange={onChange} />);
+    const toggle = screen.getByRole('switch');
+
+    await user.click(toggle);
+    await user.click(toggle);
+    expect(onChange).toHaveBeenCalledTimes(2);
+  });
 });

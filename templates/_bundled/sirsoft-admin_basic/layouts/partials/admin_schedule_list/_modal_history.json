@@ -1,5 +1,5 @@
 {
-    "comment": "한 예약 작업이 지금까지 돌았던 기록을 보는 창. 예약대로 돈 것과 사람이 눌러 돌린 것을 표시로\n  갈라 보여 주므로, 「왜 이때 돌았나」를 여기서 가른다.\n  실패한 회차는 보통 출력이 두 덩이로 온다(정상 출력과 오류 출력) — 둘 다 있으면 나란히 실린다.",
+    "comment": "e2e:allow 브라우저 실측(2026-11-11) — 이력 창에서 거절 행 2건(잠금 저장소 장애, 실행 중)이 1280px 과 390px 두 폭에서 회색 「거절됨」 표시(47x20)와 사유 문구 한 단락으로 그려지고 가로 넘침 0, 같은 창의 성공 행 8건은 종전대로임을 화면에서 확인. 이력 API 응답의 status_label 과 reject_reason_label 이 화면 글자와 같다.\n  한 예약 작업이 지금까지 돌았던 기록을 보는 창. 예약대로 돈 것과 사람이 눌러 돌린 것을 표시로\n  갈라 보여 주므로, 「왜 이때 돌았나」를 여기서 가른다.\n  실패한 회차는 보통 출력이 두 덩이로 온다(정상 출력과 오류 출력) — 둘 다 있으면 나란히 실린다.\n  출력 상자는 즉시 실행 창·큐 작업 상세 창과 같은 상자다(줄 접기, 상자 안 세로 스크롤). 대상은 표시 명칭(작업명)으로 보이고\n  식별자는 작은 글씨로 덧붙인다. 이력을 받는 동안에는 진행 표시를 둔다(예전에는 빈 칸이었다).\n  큐로 보낸 「즉시 실행」이 워커에서 거절되면(이미 실행 중, 잠금 저장소 오류 등) 「거절됨」 표시와 사유 한 줄이 실린다 —\n  요청은 접수로 끝났으므로 누른 사람이 거절을 알 수 있는 곳이 여기뿐이다.",
     "meta": {
         "is_partial": true,
         "description": "스케줄 실행 이력 모달",
@@ -27,10 +27,42 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.schedules.modals.history_title",
-        "size": "large"
+        "size": "lg",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "닫으면서 쪽 번호를 1로 되돌린다 — 안 그러면 다음에 다른 작업의 이력을 열었을 때 있지도 않은 쪽부터 보여 빈 화면이 뜬다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "historyPage": 1
+                                }
+                            },
+                            {
+                                "handler": "closeModal",
+                                "target": "schedule_history_modal"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary"
+                },
+                "text": "$t:common.close"
+            }
+        ]
     },
     "children": [
         {
+            "id": "history_target",
             "type": "basic",
             "name": "Div",
             "props": {
@@ -41,9 +73,44 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-primary font-medium"
+                        "className": "text-primary font-medium break-all"
+                    },
+                    "text": "{{_global.selectedSchedule?.label_localized ?? _global.selectedSchedule?.name}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "block text-xs font-mono text-gray-500 dark:text-gray-400 mt-0.5 break-all"
                     },
                     "text": "{{_global.selectedSchedule?.name}}"
+                }
+            ]
+        },
+        {
+            "id": "history_loading",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!_global.scheduleHistory}}",
+            "props": {
+                "className": "flex-center justify-center gap-2 py-8"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "spinner",
+                        "className": "spinner-sm"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-tertiary"
+                    },
+                    "text": "$t:common.loading"
                 }
             ]
         },
@@ -105,49 +172,66 @@
                                     },
                                     "children": [
                                         {
-                                            "type": "basic",
-                                            "name": "Span",
+                                            "type": "composite",
+                                            "name": "Badge",
                                             "if": "{{item.status === 'success'}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                            },
-                                            "text": "$t:admin.schedules.result.success"
+                                                "color": "green",
+                                                "size": "md",
+                                                "text": "$t:admin.schedules.result.success"
+                                            }
                                         },
                                         {
-                                            "type": "basic",
-                                            "name": "Span",
+                                            "type": "composite",
+                                            "name": "Badge",
                                             "if": "{{item.status === 'failed'}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                                            },
-                                            "text": "$t:admin.schedules.result.failed"
+                                                "color": "red",
+                                                "size": "md",
+                                                "text": "$t:admin.schedules.result.failed"
+                                            }
                                         },
                                         {
-                                            "type": "basic",
-                                            "name": "Span",
+                                            "type": "composite",
+                                            "name": "Badge",
                                             "if": "{{item.status === 'running'}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                                            },
-                                            "text": "$t:admin.schedules.result.running"
+                                                "color": "yellow",
+                                                "size": "md",
+                                                "text": "$t:admin.schedules.result.running"
+                                            }
                                         },
                                         {
-                                            "type": "basic",
-                                            "name": "Span",
+                                            "comment": "거절됨: 큐로 보낸 「즉시 실행」을 워커가 시작하지 않고 돌려보낸 기록. 문구는 서버가 보는 사람의 언어로 실어 준다.",
+                                            "id": "history_rejected_{{$idx}}",
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{item.status === 'rejected'}}",
+                                            "props": {
+                                                "color": "gray",
+                                                "size": "md",
+                                                "text": "{{item.status_label}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
                                             "if": "{{item.trigger_type === 'manual'}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                                            },
-                                            "text": "$t:admin.schedules.trigger_type.manual"
+                                                "color": "blue",
+                                                "size": "md",
+                                                "text": "$t:admin.schedules.trigger_type.manual"
+                                            }
                                         },
                                         {
-                                            "type": "basic",
-                                            "name": "Span",
+                                            "type": "composite",
+                                            "name": "Badge",
                                             "if": "{{item.trigger_type === 'scheduled'}}",
                                             "props": {
-                                                "className": "text-body inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700"
-                                            },
-                                            "text": "$t:admin.schedules.trigger_type.scheduled"
+                                                "color": "gray",
+                                                "size": "md",
+                                                "text": "$t:admin.schedules.trigger_type.scheduled"
+                                            }
                                         }
                                     ]
                                 },
@@ -165,7 +249,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-4 text-label"
+                                "className": "flex-center flex-wrap gap-x-4 gap-y-1 text-label"
                             },
                             "children": [
                                 {
@@ -185,8 +269,29 @@
                                     "name": "Span",
                                     "if": "{{item.triggered_by?.name}}",
                                     "text": "$t:admin.schedules.history.triggered_by|user={{item.triggered_by?.name}}"
+                                },
+                                {
+                                    "comment": "실명 보조. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 real_name 을 싣는다.",
+                                    "id": "history_triggered_by_real_name_{{$idx}}",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!!item.triggered_by?.real_name}}",
+                                    "props": {
+                                        "className": "text-tertiary"
+                                    },
+                                    "text": "$t:admin.common.real_name.with_label|name={{item.triggered_by?.real_name}}"
                                 }
                             ]
+                        },
+                        {
+                            "id": "history_reject_reason_{{$idx}}",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{item.status === 'rejected' && item.reject_reason_label}}",
+                            "props": {
+                                "className": "mt-2 text-label break-words"
+                            },
+                            "text": "{{item.reject_reason_label}}"
                         },
                         {
                             "type": "basic",
@@ -200,7 +305,7 @@
                                     "type": "basic",
                                     "name": "Pre",
                                     "props": {
-                                        "className": "text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded overflow-x-auto max-h-20 text-gray-700 dark:text-gray-300"
+                                        "className": "max-h-40 overflow-auto whitespace-pre-wrap break-all text-xs font-mono bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-3 rounded-lg"
                                     },
                                     "text": "{{item.output}}"
                                 }
@@ -218,7 +323,7 @@
                                     "type": "basic",
                                     "name": "Pre",
                                     "props": {
-                                        "className": "text-danger-soft bg-red-50 dark:bg-red-900/20 p-2 rounded overflow-x-auto max-h-20"
+                                        "className": "max-h-40 overflow-auto whitespace-pre-wrap break-all text-xs font-mono bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-3 rounded-lg"
                                     },
                                     "text": "{{item.error_output}}"
                                 }
@@ -265,49 +370,8 @@
                     "props": {
                         "currentPage": "{{_global.scheduleHistory?.pagination?.current_page ?? 1}}",
                         "totalPages": "{{_global.scheduleHistory?.pagination?.last_page ?? null}}",
-                        "hasMorePages": "{{_global.scheduleHistory?.pagination?.has_more_pages ?? false}}",
-                        "totalItems": "{{_global.scheduleHistory?.pagination?.total ?? 0}}",
-                        "perPage": 10,
-                        "showAlways": false
+                        "hasMorePages": "{{_global.scheduleHistory?.pagination?.has_more_pages ?? false}}"
                     }
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "flex justify-end mt-6 pt-4"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "닫으면서 쪽 번호를 1로 되돌린다 — 안 그러면 다음에 다른 작업의 이력을 열었을 때 있지도 않은 쪽부터 보여 빈 화면이 뜬다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "historyPage": 1
-                                    }
-                                },
-                                {
-                                    "handler": "closeModal",
-                                    "target": "schedule_history_modal"
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                    },
-                    "text": "$t:common.close"
                 }
             ]
         }

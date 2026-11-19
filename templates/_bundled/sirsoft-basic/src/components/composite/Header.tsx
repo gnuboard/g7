@@ -13,6 +13,7 @@
  * └─────────────────────────────────────────────────────────────────┘
  */
 
+import { routePath } from '../../support/apiUrl';
 import React, { useState, useRef, useEffect, useId } from 'react';
 
 // 기본 컴포넌트 import
@@ -42,6 +43,9 @@ import { RecentSearchCombobox } from './RecentSearchCombobox';
 // NotificationCenter 컴포넌트 import
 import { NotificationCenter, type NotificationItem } from './NotificationCenter';
 import { getLocaleDisplayName } from '../../support/localeName';
+import { useLocaleSwitchFocusReturn } from '../../support/localeSwitchFocus';
+import { useHeaderOverlayController } from '../../support/headerOverlay';
+import { BREAKPOINTS, containerPaddingClass, useViewportWidth } from '../layout/viewportWidth';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -64,14 +68,78 @@ interface Board {
 
 interface User {
   uuid: string;
-  name: string;
+  /** 실명. 이름 항목을 쓰지 않는 사이트에서는 null 이다 */
+  name: string | null;
+  /** 사이트 기본 영역에서 보이는 이름(표시 이름). 헤더는 이 값을 먼저 쓴다 */
+  display_name?: string | null;
   avatar?: string;
   is_admin?: boolean;
 }
 
+/**
+ * 헤더 메뉴 항목 — 템플릿 설정 `header.menu` (#434). 레이아웃 계산값 `siteMenu` 가 보이기 조건·꺼진 항목을 이미 걸러서 넘긴다.
+ *
+ * `kind` 가 `link` 면 운영자가 적은 주소, 그 밖(`home`·`popular`·`shop`·`boards`)은 이 컴포넌트가 그 자리에 그리는 자동 항목이다.
+ */
+export interface HeaderMenuItem {
+  id?: string;
+  kind: string;
+  /** 이름 — 언어별 맵(`{ko, en}`) 또는 문자열. 자동 항목은 비우면 기본 이름 */
+  label?: string | Record<string, string>;
+  /** 사이트 안 경로(`/…`) 또는 http(s) 주소 — 서버가 검증한 값 */
+  url?: string;
+  /** 새 창으로 열기 */
+  new_tab?: boolean;
+  /** 하위 메뉴 (1단) */
+  children?: HeaderMenuItem[];
+}
+
+/** 메뉴 값이 없을 때(편집기 미리보기 등) — 템플릿 설정 기본값과 같은 순서 */
+export const DEFAULT_HEADER_MENU: HeaderMenuItem[] = [
+  { id: 'home', kind: 'home' },
+  { id: 'popular', kind: 'popular' },
+  { id: 'shop', kind: 'shop' },
+  { id: 'boards', kind: 'boards' },
+];
+
+/**
+ * 언어별 이름에서 현재 언어 값을 고릅니다 — 비었으면 다른 언어의 첫 값(기본 언어 대체는 서버·엔진과 같은 규칙).
+ *
+ * @param label 이름
+ * @param locale 현재 언어
+ * @returns 표시할 이름
+ */
+export const pickLocalizedLabel = (label: HeaderMenuItem['label'], locale: string): string => {
+  if (typeof label === 'string') {
+    return label;
+  }
+
+  if (!label || typeof label !== 'object') {
+    return '';
+  }
+
+  return label[locale] || Object.values(label).find((value) => typeof value === 'string' && value !== '') || '';
+};
+
 interface HeaderProps {
   /** 사이트 로고 URL */
   logo?: string;
+  /** 다크 모드 로고 URL — 있으면 어두운 화면에서 사이트 로고 대신 보인다(템플릿 설정 `branding.logo_dark`, #434) */
+  logoDark?: string;
+  /** 테마(라이트/다크) 단추를 보일지 — 기본 true (템플릿 설정 `header.show_theme_toggle`) */
+  showThemeToggle?: boolean;
+  /** 헤더 메뉴 — 템플릿 설정 `header.menu` 를 보이기 조건으로 거른 값(레이아웃 `_computed.siteMenu`). 없으면 기본 메뉴 */
+  menu?: HeaderMenuItem[] | null;
+  /**
+   * 봇 화면 전용 — `menu` 를 펴서 링크로 만든 목록(`{href, label}`). 검색봇 HTML 매핑(`seo-config.json` header_nav)이
+   * 1단 순회만 하므로 레이아웃이 미리 펴서 넘긴다. 사람 화면 렌더에는 쓰지 않는다.
+   */
+  seoMenuLinks?: Array<{ href: string; label: string }>;
+  /**
+   * 봇 화면 전용 — `"false"` 면 `seo-config.json` 의 옛 고정 링크(홈·인기글·쇼핑·게시판 목록)를 끈다. 이 prop 이 없는
+   * keep 된 옛 레이아웃은 종전대로 고정 링크가 나간다.
+   */
+  seoLegacyNav?: string;
   /** 사이트 이름 */
   siteName?: string;
   /** 현재 로그인된 사용자 */
@@ -99,6 +167,8 @@ interface HeaderProps {
   currentLocale?: string;
   /** 쇼핑몰 기본 경로 (예: "/shop", "/") */
   shopBase?: string;
+  /** 일반 회원가입을 받는지 — false 면 비로그인 헤더의 회원가입 버튼을 숨긴다 (기본 true, 7.2.0) */
+  registrationEnabled?: boolean;
   /**
    * 게시판 모듈이 켜져 있는가 — false 면 「인기글」 탭과 게시판 탭·더보기를 그리지 않는다.
    * 기본값 true: 레이아웃이 `_global.activeModules` 로 판정해 넘긴다. 값이 오지 않는 경우(루트 레이아웃을 keep 으로
@@ -194,6 +264,9 @@ interface HeaderProps {
  */
 const Header: React.FC<HeaderProps> = ({
   logo,
+  logoDark,
+  showThemeToggle = true,
+  menu,
   siteName = '그누보드7',
   user,
   userLoading = false,
@@ -205,6 +278,7 @@ const Header: React.FC<HeaderProps> = ({
   availableLocales = [],
   currentLocale = 'ko',
   shopBase = '/shop',
+  registrationEnabled = true,
   boardEnabled = true,
   shopEnabled = true,
   searchEnabled = true,
@@ -232,31 +306,42 @@ const Header: React.FC<HeaderProps> = ({
   onNotificationUnreadOnlyToggle,
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  // 헤더에 보일 이름: 표시 이름이 먼저이고, 없으면(옛 응답) 실명, 둘 다 없으면 빈 글자
+  const userShownName = user?.display_name ?? user?.name ?? '';
   const [showMoreBoards, setShowMoreBoards] = useState(false);
+  // 하위 메뉴가 열린 상위 항목 id 와 그 펼침 위치 — 탭 줄이 가로 스크롤이라 펼침은 fixed 로 띄운다(더보기와 같은 방식)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [menuDropdownPosition, setMenuDropdownPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const [currentPath, setCurrentPath] = useState(routePath(window.location.pathname));
   const userMenuRef = useRef<HTMLDivElement>(null);
   const moreButtonRef = useRef<HTMLDivElement>(null);
+  const menuNavRef = useRef<HTMLDivElement>(null);
   const langMenuRef = useRef<HTMLDivElement>(null);
   // 언어 메뉴는 listbox 패턴이다(7.1.0, 관리자 템플릿 LanguageSelector 와 같은 계약) — 단추가 aria-controls 로
   // 목록을 가리키고, 열면 현재 언어 항목에 초점을 두며 ↓/↑/Home/End 로 옮기고 Enter 로 고른다. Esc 는 닫고 단추로.
   const langListboxId = `${useId()}-language-listbox`;
   const langTriggerRef = useRef<HTMLButtonElement>(null);
+  // 언어 전환이 끝날 때까지 참 — 그 사이에는 목록을 다시 열지 않는다(곧 화면 전체가 다시 그려져 연 목록이 사라진다, #869 8차 7부)
+  const [switchingLocale, setSwitchingLocale] = useState(false);
   const langOptionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const langPendingFocusRef = useRef<number | null>(null);
+  // 언어 전환은 같은 화면을 새로 마운트한다 — 고른 뒤 언어 단추에 있던 포커스를 새 헤더의 단추로 돌린다(#869 브라우저 실측)
+  useLocaleSwitchFocusReturn('site-header:language', langMenuRef, () => langTriggerRef.current);
 
-  // G7Core.useResponsive를 통해 반응형 상태 구독 (G7 표준 — 위지윅 overrideWidth 호환)
-  const G7Core = (window as any).G7Core;
-  const useResponsive = G7Core?.useResponsive;
-  const responsiveValue = useResponsive?.();
-  const isMobile = responsiveValue
-    ? responsiveValue.width < 768
-    : typeof window !== 'undefined' && window.innerWidth < 768;
+  // 메뉴 겹침 — 화면 맨 위 배너가 `data-header-overlay` 로 알리면 헤더 높이를 알리고 맨 위에서만 투명하게 한다(모바일 툴바 포함, main.css)
+  useHeaderOverlayController();
+
+  // 엔진 폭 구독 (G7 표준 — 위지윅 overrideWidth 호환). 여백·이름 표시도 이 폭으로 고른다 — Tailwind 반응형
+  // 접두는 창 폭으로 판정되어 편집기 미리보기 폭을 따르지 못한다(폭을 모르면 엔진 기본 폭 1024).
+  const viewportWidth = useViewportWidth();
+  const isMobile = viewportWidth < BREAKPOINTS.md;
+  const containerPadding = containerPaddingClass(viewportWidth);
 
   // 경로 변경 감지 (SPA 네비게이션 대응)
   useEffect(() => {
-    const handlePopState = () => setCurrentPath(window.location.pathname);
+    const handlePopState = () => setCurrentPath(routePath(window.location.pathname));
     window.addEventListener('popstate', handlePopState);
 
     // G7Core의 navigate 이벤트 감지
@@ -264,7 +349,7 @@ const Header: React.FC<HeaderProps> = ({
     // audit:allow extension-private-core-internals reason: 템플릿 자기 컴포넌트가 원본 pushState 를 그대로 호출하고 현재 경로만 갱신하는 래퍼
     history.pushState = function(...args) {
       originalPushState.apply(this, args);
-      setCurrentPath(window.location.pathname);
+      setCurrentPath(routePath(window.location.pathname));
     };
 
     return () => {
@@ -318,15 +403,181 @@ const Header: React.FC<HeaderProps> = ({
       if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
         setShowLangMenu(false);
       }
+      if (menuNavRef.current && !menuNavRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // 열린 하위 메뉴는 Esc 로 닫는다
+  useEffect(() => {
+    if (!openMenuId) {
+      return undefined;
+    }
+
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [openMenuId]);
+
   // 게시판 모듈이 꺼져 있으면 게시판 탭·더보기를 비운다(목록이 남아 있어도 — 옛 응답이 캐시에 남은 경우)
   const navBoards = boardEnabled ? boards : [];
   const visibleBoards = navBoards.slice(0, maxVisibleBoards);
-  const hiddenBoards = navBoards.slice(maxVisibleBoards);
+  // 넘친 게시판의 「더보기」는 게시판 전체(자동)가 상위 메뉴에 있을 때만 — 하위 메뉴에 두면 그 펼침 메뉴가 전부 보인다
+  const boardsAtTop = (Array.isArray(menu) ? menu : DEFAULT_HEADER_MENU).some((item) => item?.kind === 'boards');
+  const hiddenBoards = boardsAtTop ? navBoards.slice(maxVisibleBoards) : [];
+
+  const navMenu: HeaderMenuItem[] = Array.isArray(menu) ? menu : DEFAULT_HEADER_MENU;
+  const shopProductsPath = `${shopBase === '/' ? '' : shopBase}/products`;
+  const shopReviewsPath = `${shopBase === '/' ? '' : shopBase}/reviews`;
+  const dropdownItemClass = (active: boolean) =>
+    `block w-full text-left px-4 py-2 text-sm cursor-pointer ${active ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`;
+  const isInternalPath = (url: string) => url.startsWith('/') && !url.startsWith('//');
+  const autoLabel = (item: HeaderMenuItem, fallbackKey: string) => pickLocalizedLabel(item.label, currentLocale) || t(fallbackKey);
+
+  /**
+   * 운영자 링크 하나 — 사이트 안 경로는 SPA 이동, 바깥 주소·새 창은 일반 링크(새 창이면 opener 를 끊는다).
+   */
+  const renderLink = (item: HeaderMenuItem, key: string, inDropdown: boolean) => {
+    const label = pickLocalizedLabel(item.label, currentLocale);
+    const url = String(item.url ?? '');
+
+    if (!url) {
+      return null;
+    }
+
+    const active = isInternalPath(url) && isActiveRoute(url);
+    const className = inDropdown ? dropdownItemClass(active) : `flex items-center gap-1 max-w-xs ${getNavButtonClass(active)}`;
+
+    return isInternalPath(url) && !item.new_tab ? (
+      <LinkButton key={key} href={url} onNavigate={() => { navigate(url); setOpenMenuId(null); }} className={className} data-testid="nav-menu-link" aria-current={active ? 'page' : undefined}>
+        <Span className="min-w-0 truncate">{label}</Span>
+      </LinkButton>
+    ) : (
+      <A key={key} href={url} target={item.new_tab ? '_blank' : undefined} rel={item.new_tab ? 'noopener noreferrer' : undefined} className={className} data-testid="nav-menu-link">
+        <Span className="min-w-0 truncate">{label}</Span>
+        {item.new_tab && <Icon name="arrow-up-right-from-square" className="w-3 h-3 ml-1" />}
+      </A>
+    );
+  };
+
+  /**
+   * 자동 항목 하나 — 홈·인기글·쇼핑·게시판 전체. 해당 모듈이 꺼져 있으면 그리지 않는다.
+   * 게시판 전체는 상위에서는 「게시판 메뉴 개수」만큼 탭으로 펴고 나머지를 더보기로, 펼침 메뉴 안에서는 전부 나열한다.
+   */
+  const renderAuto = (item: HeaderMenuItem, key: string, inDropdown: boolean): React.ReactNode => {
+    const close = () => setOpenMenuId(null);
+
+    switch (item.kind) {
+      case 'home':
+        return (
+          <LinkButton key={key} href="/" onNavigate={() => { navigate('/'); close(); }} className={inDropdown ? dropdownItemClass(isActiveRoute('/', true)) : getNavButtonClass(isActiveRoute('/', true))} data-testid="nav-home" aria-current={isActiveRoute('/', true) ? 'page' : undefined}>
+            {autoLabel(item, 'nav.home')}
+          </LinkButton>
+        );
+      case 'popular':
+        return boardEnabled ? (
+          <LinkButton key={key} href="/boards/popular" onNavigate={() => { navigate('/boards/popular'); close(); }} className={inDropdown ? dropdownItemClass(isActiveRoute('/boards/popular')) : `flex items-center gap-1 ${getNavButtonClass(isActiveRoute('/boards/popular'))}`} data-testid="nav-popular" aria-current={isActiveRoute('/boards/popular') ? 'page' : undefined}>
+            <Span className="text-orange-500">🔥</Span>
+            {autoLabel(item, 'nav.popular')}
+          </LinkButton>
+        ) : null;
+      case 'shop':
+        // 쇼핑 항목은 「쇼핑」 바로 뒤에 「리뷰 모아보기」 탭을 함께 편다 — 쇼핑몰 모듈이 꺼져 있으면 둘 다 숨긴다
+        return shopEnabled ? (
+          <React.Fragment key={key}>
+            <LinkButton href={shopProductsPath} onNavigate={() => { navigate(shopProductsPath); close(); }} className={inDropdown ? dropdownItemClass(isShopActive()) : `flex items-center gap-1 ${getNavButtonClass(isShopActive())}`} data-testid="nav-shop" aria-current={isShopActive() ? 'page' : undefined}>
+              <Span>🛒</Span>
+              {autoLabel(item, 'nav.shop')}
+            </LinkButton>
+            <LinkButton href={shopReviewsPath} onNavigate={() => { navigate(shopReviewsPath); close(); }} className={inDropdown ? dropdownItemClass(isReviewsActive()) : `flex items-center gap-1 ${getNavButtonClass(isReviewsActive())}`} data-testid="nav-reviews" aria-current={isReviewsActive() ? 'page' : undefined}>
+              {t('nav.reviews')}
+            </LinkButton>
+          </React.Fragment>
+        ) : null;
+      case 'boards': {
+        const list = inDropdown ? navBoards : visibleBoards;
+
+        return (
+          <React.Fragment key={key}>
+            {/* 게시판 탭은 최대 20rem 에서 이름을 한 줄 … 로 자른다 — 긴 이름 탭 하나가 줄 전체(768px)를 차지했다(#143). */}
+            {list.map((board) => (
+              <LinkButton
+                key={board.id}
+                href={`/board/${board.slug}`}
+                onNavigate={() => { navigate(`/board/${board.slug}`); close(); }}
+                className={inDropdown ? dropdownItemClass(isActiveRoute(`/board/${board.slug}`)) : `flex items-center max-w-xs ${getNavButtonClass(isActiveRoute(`/board/${board.slug}`))}`}
+                aria-current={isActiveRoute(`/board/${board.slug}`) ? 'page' : undefined}
+              >
+                {board.icon && <Span className="mr-1">{board.icon}</Span>}
+                <Span className={inDropdown ? 'block min-w-0 truncate' : 'min-w-0 truncate'}>{board.name}</Span>
+              </LinkButton>
+            ))}
+          </React.Fragment>
+        );
+      }
+      default:
+        return null;
+    }
+  };
+
+  const renderItem = (item: HeaderMenuItem, key: string, inDropdown: boolean) =>
+    item.kind === 'link' ? renderLink(item, key, inDropdown) : renderAuto(item, key, inDropdown);
+
+  /**
+   * 상위 항목 — 하위 메뉴가 있는 링크면 펼침 단추, 아니면 탭 하나.
+   */
+  const renderTopItem = (item: HeaderMenuItem, index: number): React.ReactNode => {
+    const key = item.id ?? `menu-${index}`;
+    const children = (item.children ?? []).filter(Boolean);
+
+    if (item.kind !== 'link' || children.length === 0) {
+      return renderItem(item, key, false);
+    }
+
+    const open = openMenuId === key;
+    const parentUrl = String(item.url ?? '');
+    const childActive = children.some((child) => child.kind === 'link' && isInternalPath(String(child.url ?? '')) && isActiveRoute(String(child.url)))
+      || (parentUrl !== '' && isInternalPath(parentUrl) && isActiveRoute(parentUrl));
+
+    return (
+      <Div key={key} className="relative">
+        <Button
+          type="button"
+          aria-haspopup="true"
+          aria-expanded={open}
+          data-testid="nav-menu-parent"
+          onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+            if (!open) {
+              const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+              setMenuDropdownPosition({ top: rect.bottom + 4, left: rect.left });
+            }
+            setOpenMenuId(open ? null : key);
+          }}
+          className={`flex items-center gap-1 max-w-xs ${getNavButtonClass(childActive)}`}
+        >
+          <Span className="min-w-0 truncate">{pickLocalizedLabel(item.label, currentLocale)}</Span>
+          <Icon name="chevron-down" className="w-4 h-4" />
+        </Button>
+        {open && (
+          <Div
+            className="fixed w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 z-50"
+            style={{ top: `${menuDropdownPosition.top}px`, left: `${menuDropdownPosition.left}px` }}
+            data-testid="nav-menu-dropdown"
+          >
+            {parentUrl !== '' && renderLink({ ...item, children: [] }, `${key}-self`, true)}
+            {children.map((child, childIndex) => renderItem(child, child.id ?? `${key}-${childIndex}`, true))}
+          </Div>
+        )}
+      </Div>
+    );
+  };
 
   // 검색 — 최근 검색어 기록은 검색창이 기다리지 않고 맡고, 여기서는 통합검색 화면으로만 옮긴다
   const handleSearch = (keyword: string) => {
@@ -350,6 +601,7 @@ const Header: React.FC<HeaderProps> = ({
 
   // 언어 메뉴를 연다 — 초점은 현재 언어 항목(없으면 where 쪽 끝 항목)
   const openLangMenu = (where: 'first' | 'last' = 'first') => {
+    if (switchingLocale) return;
     const locales = availableLocales ?? [];
     const selected = locales.indexOf(currentLocale);
     const index = selected >= 0 ? selected : (where === 'last' ? locales.length - 1 : 0);
@@ -411,10 +663,15 @@ const Header: React.FC<HeaderProps> = ({
 
   // 언어 변경 핸들러 — 헤더 독립 언어 버튼(코어 기능)에서 호출. setLocale 은 비회원도 동작.
   const handleLocaleChange = (locale: string) => {
-    (window as any).G7Core?.dispatch?.({
+    const pending = (window as any).G7Core?.dispatch?.({
       handler: 'setLocale',
       target: locale,
     });
+    if (locale !== currentLocale) {
+      setSwitchingLocale(true);
+      // 전환이 실패하거나 화면을 다시 그리지 않고 끝나면 다시 열 수 있게 푼다(다시 그리면 새 인스턴스라 상관없다)
+      void Promise.resolve(pending).finally(() => setSwitchingLocale(false));
+    }
     // 고른 뒤 초점은 언어 단추로 돌린다(목록 항목이 사라지며 초점이 문서 맨 위로 빠지지 않게)
     closeLangMenu(true);
   };
@@ -425,20 +682,23 @@ const Header: React.FC<HeaderProps> = ({
   return (
     <HeaderBasic
       {...((editorAttrs ?? {}) as Record<string, never>)}
-      className={`sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 ${className}`}
+      className={`g7-site-header sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 ${className}`}
     >
       {/* 상단 바 */}
-      <Div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Div className={`max-w-7xl mx-auto ${containerPadding}`}>
         <Div className="flex items-center justify-between h-16">
           {/* 로고 — 이름이 길면 이 칸이 먼저 줄어들고(shrink-1000, 최소 6rem) 최대 20rem 에서 이름이 한 줄 … 로 잘린다.
               검색창은 32rem 을 기준 폭으로 잡고(basis-lg) 줄어드는 몫은 로고·회원 이름이 먼저 진다 — 이름 길이와 무관하게 검색창 폭이
               같다(#143). 종전에는 검색창이 남는 폭만 받아(flex-1) 이름이 길수록 좁아졌다(1024px 329→192·1280px 512→345 실측). */}
           <LinkButton href="/" onNavigate={() => navigate('/')} className="justify-start flex items-center gap-2 min-w-24 max-w-xs shrink-1000 cursor-pointer">
+            {/* 다크 로고가 있으면 어두운 화면에서는 그것만 보인다 — 밝은 화면은 사이트 로고(없으면 이름) */}
             {logo ? (
-              <Img src={logo} alt={siteName} className="h-8 max-w-full object-contain object-left" />
+              // 로고는 첫 화면이라 지연 로딩하지 않는다(Img 기본 lazy). 높이 32px — md(가로 640)면 충분하다
+              <Img src={logo} alt={siteName} className={`h-8 max-w-full object-contain object-left ${logoDark ? 'dark:hidden' : ''}`} thumbPreset="md" loading="eager" />
             ) : (
-              <Span className="text-xl font-bold text-gray-900 dark:text-white truncate">{siteName}</Span>
+              <Span className={`text-xl font-bold text-gray-900 dark:text-white truncate ${logoDark ? 'dark:hidden' : ''}`}>{siteName}</Span>
             )}
+            {logoDark && <Img src={logoDark} alt={siteName} className="hidden dark:block h-8 max-w-full object-contain object-left" thumbPreset="md" loading="eager" data-testid="header-logo-dark" />}
           </LinkButton>
 
           {/* 검색바 (데스크톱 전용) — 검색 공급자가 하나도 없으면(searchEnabled=false) 숨긴다 */}
@@ -458,12 +718,14 @@ const Header: React.FC<HeaderProps> = ({
           {/* 우측 액션 버튼들 — 회원 이름만 줄어들 수 있고(최소 3rem) 나머지 단추는 제 폭을 지킨다. 줄어드는 몫은 로고와 이 묶음이
               먼저 지고(shrink-1000) 검색창은 그 뒤에 준다. 묶음의 최소 폭은 안쪽 글의 최소 폭이라, 글이 든 단추는 줄바꿈하지 않는다(whitespace-nowrap). */}
           <Div className="flex items-center gap-2 shrink-1000">
-            {/* 다크모드 전환 */}
-            <ThemeToggle
-              autoText={t('common.theme.auto')}
-              lightText={t('common.theme.light')}
-              darkText={t('common.theme.dark')}
-            />
+            {/* 다크모드 전환 — 템플릿 설정에서 끌 수 있다 */}
+            {showThemeToggle && (
+              <ThemeToggle
+                autoText={t('common.theme.auto')}
+                lightText={t('common.theme.light')}
+                darkText={t('common.theme.dark')}
+              />
+            )}
 
             {/* 알림센터 드롭다운 — 로그인 사용자에게만 노출. 사용자 정보를 받는 동안에는 같은 크기의 빈 자리(받은 뒤 회원이면
                 종 단추가 같은 크기로 들어온다 — 받는 사람은 사실상 회원뿐이다) */}
@@ -513,6 +775,7 @@ const Header: React.FC<HeaderProps> = ({
                   ref={langTriggerRef}
                   onClick={() => (showLangMenu ? closeLangMenu(false) : openLangMenu())}
                   onKeyDown={handleLangTriggerKeyDown}
+                  aria-busy={switchingLocale || undefined}
                   className="flex items-center gap-1.5 px-2.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition-colors"
                   aria-haspopup="listbox"
                   aria-expanded={showLangMenu}
@@ -570,7 +833,15 @@ const Header: React.FC<HeaderProps> = ({
             {userLoading ? (
               <Div role="status" aria-label={t('common.loading')} className="flex items-center gap-2 p-2" data-testid="header-user-skeleton">
                 <Span aria-hidden="true" data-skeleton="avatar" className="block w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                <Span aria-hidden="true" data-skeleton="name" className="hidden sm:block h-4 w-20 max-w-32 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                <Span
+                  aria-hidden="true"
+                  data-skeleton="name"
+                  className={
+                    viewportWidth >= BREAKPOINTS.sm
+                      ? 'block h-4 w-20 max-w-32 rounded bg-gray-200 dark:bg-gray-700 animate-pulse'
+                      : 'hidden h-4 w-20 max-w-32 rounded bg-gray-200 dark:bg-gray-700 animate-pulse'
+                  }
+                />
                 <Span aria-hidden="true" className="block w-4 h-4" />
               </Div>
             ) : user?.uuid ? (
@@ -581,12 +852,20 @@ const Header: React.FC<HeaderProps> = ({
                 >
                   <Avatar
                     avatar={user.avatar}
-                    name={user.name}
+                    name={userShownName}
                     size="sm"
                   />
                   {/* 이름은 한 줄 … (최대 8rem). truncate(nowrap)는 최소 폭이 이름 전체라 묶음이 줄지 못한다 — 줄바꿈을 허용하고(break-all)
                       한 줄만 보이게(line-clamp-1) 해 최소 폭을 3rem 으로 낮춘다. 이름이 길어도 검색창이 좁아지지 않는다(#143). */}
-                  <Span className="hidden sm:line-clamp-1 break-all text-sm font-medium max-w-32 min-w-12" title={user.name}>{user.name}</Span>
+                  <Span
+                    className={
+                      viewportWidth >= BREAKPOINTS.sm
+                        ? 'line-clamp-1 break-all text-sm font-medium max-w-32 min-w-12'
+                        : 'hidden break-all text-sm font-medium max-w-32 min-w-12'
+                    }
+                    title={userShownName}
+                    data-testid="header-user-name"
+                  >{userShownName}</Span>
                   <Icon name="chevron-down" className="w-4 h-4" />
                 </Button>
 
@@ -598,11 +877,11 @@ const Header: React.FC<HeaderProps> = ({
                       <Div className="flex items-center gap-3">
                         <Avatar
                           avatar={user.avatar}
-                          name={user.name}
+                          name={userShownName}
                           size="md"
                         />
                         <Div className="min-w-0">
-                          <Div className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.name}</Div>
+                          <Div className="text-sm font-medium text-gray-900 dark:text-white truncate">{userShownName}</Div>
                           <Div className="text-xs text-gray-500 dark:text-gray-400">{t('common.member')}</Div>
                         </Div>
                       </Div>
@@ -674,13 +953,15 @@ const Header: React.FC<HeaderProps> = ({
                 >
                   {t('auth.login')}
                 </LinkButton>
-                <LinkButton
-                  href="/register"
-                  onNavigate={() => navigate('/register')}
-                  className="ml-1 px-3 py-2 text-sm font-medium text-white bg-emerald-700 dark:bg-emerald-700 rounded-lg hover:bg-emerald-800 dark:hover:bg-emerald-800 cursor-pointer"
-                >
-                  {t('auth.register_link')}
-                </LinkButton>
+                {registrationEnabled && (
+                  <LinkButton
+                    href="/register"
+                    onNavigate={() => navigate('/register')}
+                    className="ml-1 px-3 py-2 text-sm font-medium text-white bg-emerald-700 dark:bg-emerald-700 rounded-lg hover:bg-emerald-800 dark:hover:bg-emerald-800 cursor-pointer"
+                  >
+                    {t('auth.register_link')}
+                  </LinkButton>
+                )}
               </Div>
             )}
 
@@ -701,46 +982,9 @@ const Header: React.FC<HeaderProps> = ({
       {/* 탭 네비게이션 (데스크톱 전용) */}
       {!isMobile && (
       <Nav className="border-t border-gray-200 dark:border-gray-800">
-        <Div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Div className="flex items-center gap-1 h-12 overflow-x-auto">
-            <LinkButton href="/" onNavigate={() => navigate('/')} className={getNavButtonClass(isActiveRoute('/', true))} data-testid="nav-home" aria-current={isActiveRoute('/', true) ? 'page' : undefined}>
-              {t('nav.home')}
-            </LinkButton>
-            {/* 인기글 — 게시판 모듈이 꺼져 있으면 숨긴다 */}
-            {boardEnabled && (
-              <LinkButton href="/boards/popular" onNavigate={() => navigate('/boards/popular')} className={`flex items-center gap-1 ${getNavButtonClass(isActiveRoute('/boards/popular'))}`} data-testid="nav-popular" aria-current={isActiveRoute('/boards/popular') ? 'page' : undefined}>
-                <Span className="text-orange-500">🔥</Span>
-                {t('nav.popular')}
-              </LinkButton>
-            )}
-            {/* 쇼핑 — 쇼핑몰 모듈이 꺼져 있으면 숨긴다 */}
-            {shopEnabled && (
-              <LinkButton href={`${shopBase === '/' ? '' : shopBase}/products`} onNavigate={() => navigate(`${shopBase === '/' ? '' : shopBase}/products`)} className={`flex items-center gap-1 ${getNavButtonClass(isShopActive())}`} data-testid="nav-shop" aria-current={isShopActive() ? 'page' : undefined}>
-                <Span>🛒</Span>
-                {t('nav.shop')}
-              </LinkButton>
-            )}
-            {/* 리뷰 모아보기 — 쇼핑몰 모듈이 꺼져 있으면 숨긴다 */}
-            {shopEnabled && (
-              <LinkButton href={`${shopBase === '/' ? '' : shopBase}/reviews`} onNavigate={() => navigate(`${shopBase === '/' ? '' : shopBase}/reviews`)} className={`flex items-center gap-1 ${getNavButtonClass(isReviewsActive())}`} data-testid="nav-reviews" aria-current={isReviewsActive() ? 'page' : undefined}>
-                {t('nav.reviews')}
-              </LinkButton>
-            )}
-
-            {/* 게시판 링크 */}
-            {/* 게시판 탭은 최대 20rem 에서 이름을 한 줄 … 로 자른다 — 긴 이름 탭 하나가 줄 전체(768px)를 차지했다(#143). */}
-            {visibleBoards.map((board) => (
-              <LinkButton
-                key={board.id}
-                href={`/board/${board.slug}`}
-                onNavigate={() => navigate(`/board/${board.slug}`)}
-                className={`flex items-center max-w-xs ${getNavButtonClass(isActiveRoute(`/board/${board.slug}`))}`}
-                aria-current={isActiveRoute(`/board/${board.slug}`) ? 'page' : undefined}
-              >
-                {board.icon && <Span className="mr-1">{board.icon}</Span>}
-                <Span className="min-w-0 truncate">{board.name}</Span>
-              </LinkButton>
-            ))}
+        <Div className={`max-w-7xl mx-auto ${containerPadding}`}>
+          <Div ref={menuNavRef} className="flex items-center gap-1 h-12 overflow-x-auto" data-testid="header-menu-nav">
+            {navMenu.map((item, index) => renderTopItem(item, index))}
 
             {/* 더보기 드롭다운 */}
             {hiddenBoards.length > 0 && (

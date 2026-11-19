@@ -113,7 +113,11 @@ public function handleUserAfterCreate(User $user, array $data): void
         'loggable' => $user,
         'description_key' => 'activity_log.description.user_create',
         'description_params' => ['user_id' => $user->uuid],
-        'properties' => ['email' => $user->email, 'name' => $user->name],
+        // 기록에 남기는 회원 이름은 그 시점의 관리자 화면 영역 표시 이름이다 (users.name 을 직접 읽지 않는다)
+        'properties' => [
+            'email' => $user->email,
+            'name' => app(DisplayNameResolver::class)->resolve($user, DisplayNameAreaRegistry::AREA_ADMIN),
+        ],
     ]);
 }
 
@@ -149,7 +153,12 @@ private function logActivity(string $action, array $context): void
 | `locale` | 다국어 메시지가 원래 요청 로케일로 발송 |
 | `origin` | 진입점(`cli`/`http`). 워커 자신도 콘솔 프로세스라 이 값이 없으면 어드민 화면에서 한 작업까지 CLI 로 오판한다. `HookContextCapture::origin()` 이 복원값을 우선한다 |
 
-데몬 워커는 컨테이너를 작업 간에 재사용하므로 `DispatchHookListenerJob` 은 작업이 끝나면 복원한 진입점(`origin`)과 인증 사용자를 **작업 전 상태로 되돌린다** — 되돌리지 않으면 회원 작업 다음에 처리된 시스템 작업이 그 회원을 행위자로 물려받는다.
+데몬 워커는 컨테이너를 작업 간에 재사용하므로 복원한 문맥(인증 사용자·요청·로케일·진입점)은 작업이 끝나면 **작업 전 상태로 되돌린다** — 되돌리지 않으면 앞 작업의 사용자가 다음 작업(다른 관리자의 작업, 시스템 작업)의 행위자로 기록된다.
+
+- `DispatchHookListenerJob`·`RunScheduledTaskJob`·이커머스 내보내기 파일 생성은 `HookContextCapture::snapshot()`/`revert()`(또는 `within()`)로 복원 범위를 작업 안으로 한정한다.
+- 워커는 작업을 집을 때마다(`JobProcessing`, `sync` 연결 제외) `HookContextCapture::resetForQueueJob()` 으로 사용자 없음·콘솔 요청·기본 로케일로 돌린다 — 되돌리기를 빠뜨린 작업이 있어도 다음 작업이 물려받지 않는다.
+- 컨텍스트에 `user_id` 가 없으면 `restore()` 는 인증 사용자를 비운다(비회원·시스템 작업은 사용자 없이 기록).
+- 큐로 보낸 예약 작업의 「즉시 실행」은 누른 관리자의 요청 문맥을 잡에 싣고, 실행 로그(`schedule.run`)의 행위자는 실행 이력의 실행자(`triggered_by`)로 명시한다.
 
 리스너 코드는 변경 불필요 — `Log::channel('activity')->info()` 호출만으로 동작합니다.
 
@@ -281,6 +290,8 @@ $this->logActivity('schedule.auto_run', [
     'description_key' => 'activity_log.description.schedule_auto_run',
 ]);
 ```
+
+> **예약 작업 실행 기록 (7.2.0~)**: 예약 작업의 실행 결과는 스케줄 실행 이력에 남고, 활동 로그 `schedule.run` 은 관리자가 화면에서 누른 **수동 실행만** 남깁니다. 스케줄러가 돌린 예약 실행과 큐 워커가 처리한 실행은 활동 로그에 남기지 않습니다 — 30초 주기 작업이 있으면 활동 로그가 실행 기록으로 덮이기 때문입니다. 실행 이력·실패는 [예약 작업(스케줄) 시스템](scheduling.md)을 봅니다.
 
 ### 핵심 규칙
 
@@ -426,6 +437,8 @@ activity_log.description.{entity}_{verb}
 | `activity_log.description.user_delete` | 사용자 삭제 |
 | `activity_log.description.role_create` | 역할 생성 |
 | `activity_log.description.settings_save` | 설정 저장 |
+| `activity_log.description.template_settings_save` | 템플릿 환경설정 저장 — 훅 `core.template_settings.after_save`, 액션 `template_settings.save`, 속성 `identifier`·`keys`(저장한 섹션) (#434) |
+| `activity_log.description.template_settings_reset` | 템플릿 환경설정 기본값 되돌리기 — 훅 `core.template_settings.after_reset`, 액션 `template_settings.reset`, 속성 `identifier`·`section`(전체면 null) (#434) |
 
 lang 파일 위치: `lang/ko/activity_log.php`, `lang/en/activity_log.php`
 

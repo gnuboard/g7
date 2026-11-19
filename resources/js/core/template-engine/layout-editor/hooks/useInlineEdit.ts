@@ -36,6 +36,7 @@ import {
 import { setPendingValue, setPendingValues } from './pendingCustomTranslations';
 import { TranslationEngine } from '../../TranslationEngine';
 import { suffixed } from '../../../support/assetUrl';
+import { withBasePrefix } from '../../../support/assetUrl';
 import {
   stripBindingTokens,
   buildParamizedKeyText,
@@ -256,12 +257,12 @@ export interface UseInlineEditResult {
    *
    * @param path 대상 노드 path
    * @param editedKeyValue 칩 편집기에서 편집된 자리표시 키 값(`"발행일: {p0}"`)
-   * @return 생성된 키 또는 error
+   * @return 생성된 키(created), 이미 custom param 키라 현재 로케일 값만 버퍼에 쓴 경우(updated), 또는 error
    */
   keyifyChipValue: (
     path: ComponentPath,
     editedKeyValue: string,
-  ) => Promise<{ kind: 'created' | 'error'; translationKey?: string; message?: string }>;
+  ) => Promise<{ kind: 'created' | 'updated' | 'error'; translationKey?: string; message?: string }>;
 }
 
 /**
@@ -571,7 +572,7 @@ export async function createCustomKey(
 ): Promise<{ kind: 'ok' | 'error'; resource?: CreatedKeyResource; message?: string }> {
   const url = `/api/admin/templates/${encodeURIComponent(templateIdentifier)}/custom-translations`;
   try {
-    const response = await fetch(url, {
+    const response = await fetch(withBasePrefix(url), {
       method: 'POST',
       credentials: 'same-origin',
       headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
@@ -620,7 +621,7 @@ export async function updateCustomKeyValue(
   // 다른 로케일 값 보존 — 기존 values 위에 현재 로케일만 덮어쓴다.
   const nextValues = { ...(row.values ?? {}), [locale]: value };
   try {
-    const response = await fetch(url, {
+    const response = await fetch(withBasePrefix(url), {
       method: 'PUT',
       credentials: 'same-origin',
       headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
@@ -652,7 +653,7 @@ export async function findCustomKeyRow(
 ): Promise<CreatedKeyResource | null> {
   const url = `/api/admin/templates/${encodeURIComponent(templateIdentifier)}/custom-translations`;
   try {
-    const response = await fetch(url, {
+    const response = await fetch(withBasePrefix(url), {
       method: 'GET',
       credentials: 'same-origin',
       headers: buildAuthHeaders(),

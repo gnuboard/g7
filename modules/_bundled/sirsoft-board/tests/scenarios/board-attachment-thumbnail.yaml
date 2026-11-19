@@ -1,0 +1,55 @@
+feature: 게시판 첨부 미리보기 이미지 썸네일 (#869) + 게시판 삭제의 행 disk 정리 (R1)
+
+description: |
+  첨부 미리보기(`…/attachment/{hash}/preview`)에 `?size={규격}`·`?w={숫자}` 를 붙이면 콘텐츠 상태
+  게이트(삭제글·비밀글·블라인드 글)를 지난 뒤 규격 크기로 줄인 파생본을 낸다. 코어 썸네일 헬퍼
+  (`ThumbnailResponder`)를 게이트 바로 뒤·원본 응답 바로 앞에서 한 줄로 부른다.
+
+  - 파라미터가 없으면 종전 원본 응답과 같다(헤더 `X-G7-Thumbnail` 도 없다).
+  - 게시판 첨부는 게이트 원본이라 파생본은 비공개 썸네일 디스크·`private` 캐시다.
+  - 비밀글·삭제글·블라인드 글 첨부와 서명으로 연 원본도 `private` 캐시다(정상글 원본은 종전처럼 공개 캐시).
+  - 원본 정보(디스크·전체 경로)는 행 disk 를 따른다 — 파생본 키가 `thumbnails/{행 disk}/sirsoft-board/attachments/…`.
+  - 미리보기 주소는 필터 `core.thumbnail.filter_url_patterns` 로, 게시판 첨부는 필터
+    `core.thumbnail.filter_source_providers` 로 등록된다(권한 원본, 임시 첨부 제외). 제공자는 필터 호출마다
+    새로 만들지 않고, `chunk` 는 `next` 커서로 끝까지 이어 읽힌다(마지막 묶음은 null).
+  - 삭제글·블라인드 글 첨부는 `?size=`·`?w=` 를 붙여도 원본과 같은 403 이다.
+  - 서명은 `size`·`w` 만 빼고 검증한다 — 서명 주소 + `w=` 는 통과, 서명 주소 + 썸네일 외 파라미터(`foo=1`)는 403.
+
+  게시판 영구 삭제(`BoardService::deleteAttachmentFiles()`)는 주입 디스크 하나가 아니라 첨부 행이
+  기록한 디스크마다 `{slug}` 디렉토리를 지운다 — 디스크를 전환한 사이트에서 옛 디스크 파일이 남던 축.
+
+  서명 + size 축(통과·변조·만료·배열 파라미터)은 비밀 게이트 매니페스트
+  `tests/scenarios/board-secret-content-gate.yaml` 이 소유한다.
+
+# 축은 하나다 — 서빙 축(파라미터·게이트·행 disk·등록)과 삭제 축(행 disk 배치)은 서로 곱해지는 조합이 아니라
+# 각 경우가 독립 계약이라, 경우마다 테스트 하나가 잰다.
+axes:
+  case: [no_param, preset, unknown_preset, secret_gate, signed_private, row_disk_thumbnail, registration, deleted_blinded_gate, signed_width, signed_extra_param, chunk_cursor, provider_reuse, delete_mixed_disks, delete_other_board, delete_blank_disk, delete_orphan_disk]
+
+effects:
+  - preview_without_size_serves_the_original_unchanged
+  - preview_reads_parent_post_once
+  - preview_with_size_serves_the_preset_dimensions
+  - gated_thumbnail_is_private_and_hardened
+  - unknown_preset_serves_the_original_with_bypass_reason
+  - secret_post_gate_applies_to_thumbnail
+  - signed_secret_original_is_private
+  - thumbnail_reads_the_disk_recorded_on_the_row
+  - preview_route_is_registered_as_thumbnail_pattern_and_gated_source
+  - deleted_and_blinded_post_gate_applies_to_thumbnail
+  - signed_url_with_numeric_width_passes_gate
+  - signed_url_with_extra_param_is_rejected
+  - provider_chunk_pages_with_next_cursor
+  - source_provider_resolved_once
+  - board_delete_removes_files_on_every_row_disk
+  - board_delete_keeps_other_board_files_on_row_disk
+  - board_delete_normalizes_blank_disk_rows_to_base_storage
+  - board_delete_succeeds_when_row_disk_is_orphaned
+  # 브라우저 E2E (Playwright)
+  - download_route_ignores_thumbnail_query
+  - screen_img_requests_thumbnail_only
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/AttachmentPreviewThumbnailTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardAttachmentRowDiskTest.php
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/user/board-image-thumbnails.spec.ts

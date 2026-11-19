@@ -879,7 +879,7 @@ describe('TemplateApp', () => {
         await app.executeInitActions(initActions, {});
 
         expect(waitSpy).toHaveBeenCalledTimes(1);
-        expect([...waitSpy.mock.calls[0][1]].sort()).toEqual(
+        expect([...(waitSpy.mock.calls[0][1] as string[])].sort()).toEqual(
           ['ext-mod.fromNamed', 'ext-mod.inCase', 'ext-mod.inElse', 'ext-mod.inOnError', 'ext-mod.inSeq', 'ext-mod.inThen', 'ext-mod.top'].sort(),
         );
       });
@@ -922,7 +922,7 @@ describe('TemplateApp', () => {
             { handler: 'test-template.fromTemplate' },
           ], {});
 
-          expect([...waitSpy.mock.calls[0][1]].sort()).toEqual(['ext-mod.inElse', 'ext-plug.top', 'test-template.fromTemplate']);
+          expect([...(waitSpy.mock.calls[0][1] as string[])].sort()).toEqual(['ext-mod.inElse', 'ext-plug.top', 'test-template.fromTemplate']);
         });
 
         // @scenario slot=init, shape=conditions
@@ -1361,11 +1361,7 @@ describe('TemplateApp', () => {
       // @scenario surface=state_init
       // @effects template_app_initializes_layout_level_state
       it('replace 전략이 기존 값을 완전히 교체해야 함', () => {
-        const existing = {
-          item_coupons: { '1': 100 },
-          use_points: 0,
-        };
-
+        // 기존 값 { item_coupons: { '1': 100 }, use_points: 0 } 을 새 값으로 덮는다
         const newValue = {
           item_coupons: { '2': 200 },
         };

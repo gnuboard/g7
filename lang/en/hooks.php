@@ -15,4 +15,5 @@ return [
     'cache_listener_hooks_failed' => 'Hook cache generation: getSubscribedHooks() error — entry excluded',
     'cache_listener_interface_missing' => 'Hook cache generation: listener does not implement HookListenerInterface — excluded',
     'cache_stale_extension_changed' => 'Files of an active extension changed, so the hook cache is stale — falling back to scanning and rebuilding it at the end of this request',
+    'cache_write_skipped_stale_declaration' => 'Skipped writing the hook cache because this process holds an outdated extension entry definition — the next request will rebuild it from the current files',
 ];

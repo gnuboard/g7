@@ -31,7 +31,7 @@ import {
 } from '../../spec/actionRecipeEngine';
 import type { ActionRecipeSpec, EditorActionChipCandidatesSpec } from '../../spec/specTypes';
 import type { RecipeSource } from '../../spec/editorSpecLoader';
-import { buildActionContextCandidates, type BindingCandidate } from '../../spec/bindingCandidates';
+import { buildActionContextCandidates } from '../../spec/bindingCandidates';
 import { DropLine } from '../DropLine';
 import { useListDragReorder } from '../../hooks/useListDragReorder';
 import { ActionAddPicker } from './ActionAddPicker';

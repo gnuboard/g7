@@ -126,6 +126,23 @@
                         "required": false,
                         "description": "대체 텍스트"
                     },
+                    "thumbPreset": {
+                        "type": "string",
+                        "required": false,
+                        "description": "썸네일 규격 이름. 서빙 경로 이미지에 size 를 붙이고 srcSet 이 없으면 1x·2x srcset 을 만든다. DOM 속성으로 나가지 않는다"
+                    },
+                    "loading": {
+                        "type": "string",
+                        "required": false,
+                        "default": "lazy",
+                        "description": "지연 로딩 (lazy|eager)"
+                    },
+                    "decoding": {
+                        "type": "string",
+                        "required": false,
+                        "default": "async",
+                        "description": "디코딩 방식 (async|sync|auto)"
+                    },
                     "className": {
                         "type": "string",
                         "required": false,

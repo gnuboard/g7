@@ -1,4 +1,7 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는(트리 버전 배지 레이아웃+확장 / 버전 기록·복원 / 모달 편집 스크롤 격리) 시나리오 매트릭스 SSoT. 축이 직교(5축)라 full cross product fingerprint 마킹이 실효 없고, 회귀 가드는 test_files 의 통과 테스트(Vitest 단위 18건 + PHPUnit Feature/Unit + Playwright E2E 3건 example.com 실측 + Chrome MCP 9축 매트릭스 라이브 실측 — 내부 검증 이력)로 effects 전수를 커버. 편집기 도메인 선례(layout-editor-page-state-switcher/preview-canvas)와 동일 면제 방식.
+# audit:allow test-scenario-coverage reason: issue:#609 본 매니페스트는(트리 버전 배지 레이아웃+확장 / 버전 기록·복원 / 모달 편집 스크롤 격리) 시나리오 매트릭스 SSoT. 축이 직교(5축)라 full cross product fingerprint 마킹이 실효 없고, 회귀 가드는 test_files 의 통과 테스트(Vitest 단위 18건 + PHPUnit Feature/Unit + Playwright E2E 3건 example.com 실측 + Chrome MCP 9축 매트릭스 라이브 실측 — 내부 검증 이력)로 effects 전수를 커버. 편집기 도메인 선례(layout-editor-page-state-switcher/preview-canvas)와 동일 면제 방식.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# 원장: 이 매니페스트는 :cross-product 로 좁히면 effects 13건이 미검증으로 드러난다.
+#   그 짝 맞추기는 이 공정(레이아웃 편집기)의 몫이며, 좁히는 시점에 함께 처리한다.
 feature: 레이아웃 편집기 라우트 트리 버전 배지 + 모달 편집 캔버스 스크롤 유지
 phase: S9-followup
 session: S9-followup
@@ -16,6 +19,9 @@ exclusions:
   - { version_change_action: restore, layout_history: none,
       reason: "이력이 없으면 버전 기록 모달에 복원 대상이 없음" }
 effects:
+  - editor_document_scroll_not_smoothed_by_template_css   # 편집 대상 템플릿의 html scroll-behavior:smooth 를 편집기 생존 동안 auto 로 덮음(#869 λ C1·C4)
+  - editor_preview_autofocus_does_not_scroll_editor        # 미리보기 안 자동 포커스(sirsoft-popup 대화창 등)가 편집기 문서를 스크롤하지 않음(preventScroll)
+  - editor_layout_fetched_once_with_provider               # 문서 Provider 가 있으면 PreviewCanvas 사본 훅이 같은 레이아웃을 다시 받지 않음
   - editor_routes_response_includes_layout_versions_map
   - layout_versions_map_only_contains_layouts_with_history
   - tree_version_badge_matches_versions_map
@@ -35,11 +41,16 @@ effects:
   - extension_save_response_current_version_syncs_extension_badge
   - extension_restore_new_version_syncs_extension_badge
   - extension_version_list_shows_creator_name
+  # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
+  - restore_version_increments_lock_version_for_layout_and_extension
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/components/VersionHistoryModal.test.tsx
   - tests/Unit/Repositories/LayoutExtensionVersionRepositoryTest.php
   - tests/Feature/Api/Admin/LayoutExtensionControllerTest.php
   - resources/js/core/template-engine/layout-editor/__tests__/hooks/usePreviewBodyScrollIsolation.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/usePreviewBodyScrollIsolation.scrollBehavior.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/usePreviewBodyScrollIsolation.focus.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useLayoutDocument.enabled.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/LayoutEditorReducer.layoutVersions.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/hooks/useEditorRoutes.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/hooks/useLayoutDocument.test.ts

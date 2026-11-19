@@ -62,6 +62,18 @@ class ShippingCountryResolver
     }
 
     /**
+     * 해외배송을 켠 사이트인지 반환합니다.
+     *
+     * 끈 사이트에서는 고를 나라가 하나뿐이라 회원 항목 「배송국가」를 화면에 내지 않는다.
+     *
+     * @return bool 해외배송을 켰으면 true
+     */
+    public function isInternationalShippingEnabled(): bool
+    {
+        return (bool) $this->settings->getSetting('shipping.international_shipping_enabled', false);
+    }
+
+    /**
      * 국가 코드가 활성 배송가능 국가인지 검사합니다.
      *
      * @param  string|null  $countryCode  검사할 국가 코드
@@ -124,6 +136,41 @@ class ShippingCountryResolver
         }
 
         return $code;
+    }
+
+    /**
+     * 선택지에 보일 국가 이름을 반환합니다 (화면의 `$localized(name, 언어 키)` 와 같은 순서).
+     *
+     * 저장된 국가명에 지금 언어의 글이 있으면 그것을, 없으면 언어 파일의 국가명
+     * (`sirsoft-ecommerce::settings.countries.{코드}.name`, 언어팩이 보강한다)을, 그것도 없으면 `countryName()` 을 쓴다.
+     *
+     * @param  string  $countryCode  국가 코드
+     * @return string 표시할 국가 이름
+     */
+    public function countryLabel(string $countryCode): string
+    {
+        $code = strtoupper($countryCode);
+        $shipping = $this->settings->getSettings('shipping');
+        $countries = is_array($shipping['available_countries'] ?? null) ? $shipping['available_countries'] : [];
+        $locale = app()->getLocale();
+
+        foreach ($countries as $country) {
+            if (strtoupper((string) ($country['code'] ?? '')) !== $code) {
+                continue;
+            }
+            $name = $country['name'] ?? null;
+            if (is_array($name) && is_string($name[$locale] ?? null) && $name[$locale] !== '') {
+                return $name[$locale];
+            }
+            break;
+        }
+
+        $key = 'sirsoft-ecommerce::settings.countries.'.$code.'.name';
+        if (trans()->has($key)) {
+            return (string) __($key);
+        }
+
+        return $this->countryName($code) ?? $code;
     }
 
     /**

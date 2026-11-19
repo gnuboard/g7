@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 슬롯 등록 환경 유무(2)×컨테이너 환경 유무(2)의 우선순위는 세 단계(등록 > 컨테이너 > 호스트)라 effects 로 단계마다 잠근다. effects·test_files 축은 계속 검사한다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#714 슬롯 등록 환경 유무(2)×컨테이너 환경 유무(2)의 우선순위는 세 단계(등록 > 컨테이너 > 호스트)라 effects 로 단계마다 잠근다. effects·test_files 축은 계속 검사한다.
 feature: 레이아웃 편집기 미리보기 렌더 환경 — 기본 사용자 템플릿 SlotContainer (공개 이슈 #141)
 
 description: |

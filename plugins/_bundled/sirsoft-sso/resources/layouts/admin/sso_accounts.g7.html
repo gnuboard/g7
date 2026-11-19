@@ -1,0 +1,422 @@
+<!-- e2e:allow Playwright 스펙 없음(이 플러그인 tests/Playwright/specs/sso-*.spec.ts 는 로그인 흐름만 덮는다) — 브라우저 실측은 F1 Chrome MCP 계획서 §10 M11·M14(W40) — P4 는 Vitest 로 덮음
+     「회원 연결」(/admin/plugins/sirsoft-sso/accounts, 권한 accounts.view) — 연결 목록(회원, IdP, 고유 식별자 일부, 방식, 상태, 마지막 로그인) + 필터(IdP, 상태, 방식, 검색).
+     「연결 추가」(accounts.provision): 기존 회원 검색 → IdP → 고유 식별자, 회원이 없으면 「새 회원으로 사전 등록」(이름, 이메일 → 비밀번호 없이 생성).
+     「CSV 가져오기」(accounts.provision): 열 email,name,idp_key,subject — 미리보기 표(만들기/연결/충돌/오류 건수) → [가져오기] → 결과 내려받기.
+     행 「연결 해제」(accounts.unlink): 비밀번호 없고 연결 1개인 회원은 마지막 수단 경고 뒤 확인해야 지운다. 관리자, 최고관리자 대상 연결은 최고관리자만(W26 — 서버 403, CSV 는 그 행을 건너뜀). -->
+<layout name="sso_accounts" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-sso.admin.accounts.title" description="$t:sirsoft-sso.admin.accounts.description"/>
+  <!-- 연결 목록 — 필터·쪽은 모두 주소(query.*)에서 읽는다. 응답이 가능한 일(abilities)과 IdP 목록도 함께 준다. 403 은 빈 표 대신 오류 화면으로 바꾼다(빈 표는 「연결이 없다」로 읽힌다) -->
+  <data-source id="ssoAccounts" label_key="$t:sirsoft-sso.editor.data_source.admin_accounts" type="api" endpoint="/api/plugins/sirsoft-sso/admin/accounts" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" per_page="20" idp_id="{{query.idp_id || ''}}" status="{{query.status || ''}}" via="{{query.via || ''}}" q="{{query.q || ''}}"/>
+    <fallback>
+      <field name="data">
+        <field name="idps" :value="[]"/>
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="per_page" :value="20"/>
+          <field name="total" :value="0"/>
+        </field>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <computed name="canProvision">{{ssoAccounts?.data?.abilities?.can_provision === true}}</computed>
+  <init-local>
+    <field name="showAdd" :value="false"/>
+    <field name="addForm">
+      <field name="idp_id" value=""/>
+      <field name="subject" value=""/>
+      <field name="mode" value="existing"/>
+      <field name="user_search" value=""/>
+      <field name="user_id" :value="null"/>
+      <field name="user_label" value=""/>
+      <field name="new_name" value=""/>
+      <field name="new_email" value=""/>
+    </field>
+    <field name="userCandidates" :value="[]"/>
+    <field name="addErrors" :value="null"/>
+    <field name="showCsv" :value="false"/>
+    <field name="csvText" value=""/>
+    <field name="csvPreview" :value="null"/>
+    <field name="csvResult" :value="null"/>
+    <field name="isImporting" :value="false"/>
+    <field name="unlinkTarget" :value="null"/>
+    <field name="unlinkLastMethod" :value="false"/>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-sso.accounts.view</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="sso_accounts_content" class="sso-admin-page-content">
+      <div data-ref="page_header" class="sso:flex sso:flex-wrap sso:items-start sso:justify-between sso:gap-3 sso:mb-6">
+        <div>
+          <h1 class="sso:text-xl sso:font-semibold sso:text-gray-900 sso:dark:text-white"><responsive on="640-" class="sso:text-2xl sso:font-semibold sso:text-gray-900 sso:dark:text-white"/>$t:sirsoft-sso.admin.accounts.title</h1>
+          <p class="sso-text-label-subtle sso:mt-1">$t:sirsoft-sso.admin.accounts.description</p>
+        </div>
+        <div class="sso:flex sso:flex-wrap sso:gap-2">
+          <button data-ref="open_add_link" type="button" class="sso-btn sso-btn-primary sso:text-sm" disabled="{{!_computed.canProvision}}">
+            <on type="click">
+              <!-- 연결 추가 칸을 열고 CSV 칸은 닫는다 — 지난 오류·후보는 비운다 -->
+              <set-state target="local" :showAdd="true" :showCsv="false" :addErrors="null" :userCandidates="[]"/>
+            </on>
+            <icon name="fa-solid fa-plus" class="sso:text-xs"/>
+            <span>$t:sirsoft-sso.admin.accounts.add</span>
+          </button>
+          <button data-ref="open_csv_import" type="button" class="sso-btn sso-btn-secondary sso:text-sm" disabled="{{!_computed.canProvision}}">
+            <on type="click">
+              <!-- CSV 칸을 열고 연결 추가 칸은 닫는다 — 지난 미리보기·결과는 비운다 -->
+              <set-state target="local" :showCsv="true" :showAdd="false" :csvPreview="null" :csvResult="null"/>
+            </on>
+            <icon name="fa-solid fa-file-csv" class="sso:text-xs"/>
+            <span>$t:sirsoft-sso.admin.accounts.csv.open</span>
+          </button>
+        </div>
+      </div>
+      <!-- 연결 추가 -->
+      <div data-ref="add_link_card" data-if="{{_local.showAdd}}" data-key="addForm" class="sso-admin-card sso:mb-6 sso:space-y-4">
+        <h2 class="sso:text-base sso:font-semibold sso:text-gray-900 sso:dark:text-white">$t:sirsoft-sso.admin.accounts.add_title</h2>
+        <p class="sso-form-hint">$t:sirsoft-sso.admin.accounts.add_hint</p>
+        <div class="sso:grid sso:grid-cols-1 sso:gap-4">
+          <responsive on="768-" class="sso:grid sso:grid-cols-2 sso:gap-4"/>
+          <div>
+            <label class="sso-form-label">$t:sirsoft-sso.admin.accounts.fields.idp</label>
+            <select name="idp_id" class="sso:w-full">
+              <option value="">$t:sirsoft-sso.admin.accounts.select_idp</option>
+              <option data-each="idp in ssoAccounts?.data?.idps ?? []" value="{{idp.id}}">{{idp.label}}</option>
+            </select>
+          </div>
+          <div>
+            <label class="sso-form-label">$t:sirsoft-sso.admin.accounts.fields.subject</label>
+            <input type="text" name="subject" class="sso-input" autoComplete="off"/>
+            <p class="sso-form-hint">$t:sirsoft-sso.admin.accounts.hints.subject</p>
+          </div>
+        </div>
+        <div class="sso:flex sso:flex-wrap sso:gap-4">
+          <label class="sso:inline-flex sso:items-center sso:gap-2 sso:text-sm sso:text-gray-800 sso:dark:text-gray-200">
+            <input type="radio" :autoBinding="false" name="mode" value="existing" checked="{{(_local.addForm?.mode ?? 'existing') === 'existing'}}" class="sso:h-4 sso:w-4">
+              <on type="change">
+                <!-- 기존 회원에 연결. 라디오는 폼 자동 바인딩을 끄고 checked 식과 이 액션으로 addForm.mode 를 직접 다룬다 -->
+                <set-state target="_local" addForm.mode="existing"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-sso.admin.accounts.mode_existing</span>
+          </label>
+          <label class="sso:inline-flex sso:items-center sso:gap-2 sso:text-sm sso:text-gray-800 sso:dark:text-gray-200">
+            <input type="radio" :autoBinding="false" name="mode" value="new" checked="{{(_local.addForm?.mode ?? 'existing') === 'new'}}" class="sso:h-4 sso:w-4">
+              <on type="change">
+                <!-- 새 회원으로 사전 등록. 라디오는 폼 자동 바인딩을 끄고 checked 식과 이 액션으로 addForm.mode 를 직접 다룬다 -->
+                <set-state target="_local" addForm.mode="new"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-sso.admin.accounts.mode_new</span>
+          </label>
+        </div>
+        <div data-ref="add_existing_user" data-if="{{(_local.addForm?.mode ?? 'existing') === 'existing'}}" class="sso:space-y-2">
+          <div class="sso:flex sso:flex-col sso:gap-2">
+            <responsive on="640-" class="sso:flex sso:flex-row sso:gap-2"/>
+            <input type="text" name="user_search" class="sso-input sso:flex-1 sso:min-w-0" placeholder="$t:sirsoft-sso.admin.accounts.user_search_placeholder" aria-label="$t:sirsoft-sso.admin.accounts.user_search_placeholder"/>
+            <button data-ref="add_user_search_button" type="button" class="sso-btn sso-btn-secondary sso:text-sm" disabled="{{!_local.addForm?.user_search}}">
+              <on type="click">
+                <!-- 회원 검색 — 코어 관리자 회원 목록 검색을 쓴다 -->
+                <api-call :auth_required="true" target="/api/admin/users" method="GET">
+                  <query search="{{_local.addForm?.user_search}}" :per_page="5"/>
+                  <success>
+                    <set-state target="local" userCandidates="{{response.data?.data ?? []}}"/>
+                  </success>
+                  <fail>
+                    <toast type="error" message="{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"/>
+                  </fail>
+                </api-call>
+              </on>
+              <span>$t:sirsoft-sso.admin.common.search</span>
+            </button>
+          </div>
+          <p data-if="{{!!_local.addForm?.user_id}}" class="sso:text-sm sso:text-gray-800 sso:dark:text-gray-200">$t:sirsoft-sso.admin.accounts.selected_user|name={{_local.addForm?.user_label ?? ''}}</p>
+          <ul data-if="{{(_local.userCandidates ?? []).length > 0}}" class="sso:divide-y sso:divide-gray-100 sso:dark:divide-gray-700">
+            <li data-each="candidate in _local.userCandidates ?? []" data-key="{{candidate.uuid}}" class="sso:py-2 sso:flex sso:items-center sso:gap-3">
+              <div class="sso:flex-1 sso:min-w-0">
+                <p class="sso:text-sm sso:text-gray-900 sso:dark:text-white">{{candidate.name}}</p>
+                <p class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:break-all sso-break-all">{{candidate.email ?? ''}}</p>
+              </div>
+              <button type="button" class="sso-btn sso-btn-secondary sso:text-xs">
+                <on type="click">
+                  <!-- 이 후보를 연결할 회원으로 고르고 후보 목록을 닫는다 -->
+                  <set-state target="local" addForm.user_id="{{candidate.id}}" addForm.user_label="{{candidate.name + ' (' + (candidate.email ?? '') + ')'}}" :userCandidates="[]"/>
+                </on>
+                <span>$t:sirsoft-sso.admin.accounts.choose</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+        <div data-ref="add_new_user" data-if="{{_local.addForm?.mode === 'new'}}" class="sso:grid sso:grid-cols-1 sso:gap-4">
+          <responsive on="768-" class="sso:grid sso:grid-cols-2 sso:gap-4"/>
+          <div>
+            <label class="sso-form-label">$t:sirsoft-sso.admin.accounts.fields.new_name</label>
+            <input type="text" name="new_name" class="sso-input"/>
+          </div>
+          <div>
+            <label class="sso-form-label">$t:sirsoft-sso.admin.accounts.fields.new_email</label>
+            <input type="email" name="new_email" class="sso-input"/>
+            <p class="sso-form-hint">$t:sirsoft-sso.admin.accounts.hints.new_user</p>
+          </div>
+        </div>
+        <p data-if="{{!!_local.addErrors}}" role="alert" class="sso-form-error">{{_local.addErrors}}</p>
+        <div class="sso:flex sso:flex-wrap sso:gap-2">
+          <button data-ref="add_link_submit" type="button" class="sso-btn sso-btn-primary sso:text-sm" disabled="{{!_local.addForm?.idp_id || !_local.addForm?.subject}}">
+            <on type="click">
+              <!-- 연결 추가 — 기존 회원이면 user_id, 새 회원이면 new_user 를 보낸다 -->
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-sso/admin/accounts" method="POST" body="{{_local.addForm?.mode === 'new' ? { idp_id: Number(_local.addForm.idp_id), subject: _local.addForm.subject, new_user: { name: _local.addForm.new_name, email: _local.addForm.new_email } } : { idp_id: Number(_local.addForm?.idp_id), subject: _local.addForm?.subject, user_id: _local.addForm?.user_id }}}">
+                <success>
+                  <set-state target="local" :showAdd="false" :addErrors="null"/>
+                  <toast type="success" message="$t:sirsoft-sso.admin.accounts.created"/>
+                  <refetch-data-source dataSourceId="ssoAccounts"/>
+                </success>
+                <fail>
+                  <set-state target="local" addErrors="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </on>
+            <span>$t:sirsoft-sso.admin.accounts.add_submit</span>
+          </button>
+          <button type="button" class="sso-btn sso-btn-secondary sso:text-sm">
+            <on type="click">
+              <!-- 연결 추가 칸만 닫는다 — 입력한 값은 지우지 않는다 -->
+              <set-state target="local" :showAdd="false"/>
+            </on>
+            <span>$t:common.cancel</span>
+          </button>
+        </div>
+      </div>
+      <!-- CSV 가져오기 -->
+      <div data-ref="csv_import_card" data-if="{{_local.showCsv}}" class="sso-admin-card sso:mb-6 sso:space-y-4">
+        <h2 class="sso:text-base sso:font-semibold sso:text-gray-900 sso:dark:text-white">$t:sirsoft-sso.admin.accounts.csv.title</h2>
+        <p class="sso-form-hint">$t:sirsoft-sso.admin.accounts.csv.hint</p>
+        <input data-ref="csv_file_input" type="file" accept=".csv,text/csv" class="sso:text-sm" aria-label="$t:sirsoft-sso.admin.accounts.csv.file">
+          <on type="change">
+            <!-- 파일을 글자로 읽어 아래 칸에 넣는다(서버에는 글자로 보낸다) -->
+            <action handler="sirsoft-sso.readCsvFile"/>
+          </on>
+        </input>
+        <textarea data-ref="csv_text" class="sso-input sso:font-mono sso:text-xs" rows="6" value="{{_local.csvText}}" placeholder="email,name,idp_key,subject" aria-label="$t:sirsoft-sso.admin.accounts.csv.text">
+          <on type="change">
+            <!-- 글이 바뀌면 지난 미리보기·결과는 맞지 않으므로 비운다 -->
+            <set-state target="local" csvText="{{$event.target.value}}" :csvPreview="null" :csvResult="null"/>
+          </on>
+        </textarea>
+        <div class="sso:flex sso:flex-wrap sso:gap-2">
+          <button data-ref="csv_preview_button" type="button" class="sso-btn sso-btn-secondary sso:text-sm" disabled="{{!_local.csvText || _local.isImporting}}">
+            <on type="click">
+              <!-- 미리보기 — 아무것도 바꾸지 않고 행마다 결과를 보인다 -->
+              <sequence>
+                <set-state target="local" :isImporting="true"/>
+                <api-call :auth_required="true" target="/api/plugins/sirsoft-sso/admin/accounts/import" method="POST" body="{{({ csv: _local.csvText, mode: 'preview' })}}">
+                  <success>
+                    <set-state target="local" :isImporting="false" csvPreview="{{response.data}}" :csvResult="null"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :isImporting="false"/>
+                    <toast type="error" message="{{error.message ?? '$t:sirsoft-sso.admin.accounts.csv.failed'}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            <span>$t:sirsoft-sso.admin.accounts.csv.preview</span>
+          </button>
+          <button data-ref="csv_execute_button" type="button" class="sso-btn sso-btn-primary sso:text-sm" disabled="{{!_local.csvPreview || _local.isImporting || ((_local.csvPreview?.counts?.create ?? 0) + (_local.csvPreview?.counts?.link ?? 0)) === 0}}">
+            <on type="click">
+              <!-- 가져오기 — 만들기, 연결 행만 처리한다. 나머지 행은 건너뛴다 -->
+              <sequence confirm="$t:sirsoft-sso.admin.accounts.csv.execute_confirm">
+                <set-state target="local" :isImporting="true"/>
+                <api-call :auth_required="true" target="/api/plugins/sirsoft-sso/admin/accounts/import" method="POST" body="{{({ csv: _local.csvText, mode: 'execute' })}}">
+                  <success>
+                    <set-state target="local" :isImporting="false" csvResult="{{response.data}}" :csvPreview="null"/>
+                    <toast type="success" message="$t:sirsoft-sso.admin.accounts.csv.done"/>
+                    <refetch-data-source dataSourceId="ssoAccounts"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :isImporting="false"/>
+                    <toast type="error" message="{{error.message ?? '$t:sirsoft-sso.admin.accounts.csv.failed'}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            <span>$t:sirsoft-sso.admin.accounts.csv.execute</span>
+          </button>
+          <button data-ref="csv_download_button" data-if="{{!!_local.csvResult}}" type="button" class="sso-btn sso-btn-secondary sso:text-sm">
+            <on type="click">
+              <!-- 가져오기 결과(행마다 처리 결과)를 CSV 로 내려받는다 -->
+              <action handler="sirsoft-sso.downloadCsvResult" rows="{{_local.csvResult?.rows ?? []}}" filename="sso-import-result.csv"/>
+            </on>
+            <icon name="fa-solid fa-download" class="sso:text-xs"/>
+            <span>$t:sirsoft-sso.admin.accounts.csv.download</span>
+          </button>
+        </div>
+        <div data-ref="csv_counts" data-if="{{!!(_local.csvResult ?? _local.csvPreview)}}" class="sso:flex sso:flex-wrap sso:gap-2">
+          <span data-each="outcome in ['create', 'link', 'exists', 'conflict', 'admin_target_manual_only', 'error']" data-key="{{outcome}}" class="sso:inline-flex sso:items-center sso:px-2 sso:py-0.5 sso:rounded-full sso:text-xs sso:font-medium sso:bg-gray-100 sso:text-gray-800 sso:dark:bg-gray-700 sso:dark:text-gray-200">{{$t('sirsoft-sso.admin.accounts.csv.outcomes.' + outcome) + ' ' + ((_local.csvResult ?? _local.csvPreview)?.counts?.[outcome] ?? 0)}}</span>
+        </div>
+        <div data-ref="csv_rows" data-if="{{((_local.csvResult ?? _local.csvPreview)?.rows ?? []).length > 0}}" class="sso:overflow-x-auto">
+          <table class="sso:w-full sso:text-xs">
+            <thead>
+              <tr class="sso:text-left sso:text-gray-500 sso:dark:text-gray-400 sso:border-b sso:border-gray-200 sso:dark:border-gray-700">
+                <th class="sso:py-2 sso:pr-3">$t:sirsoft-sso.admin.accounts.csv.col.line</th>
+                <th class="sso:py-2 sso:pr-3">$t:sirsoft-sso.admin.accounts.csv.col.email</th>
+                <th class="sso:py-2 sso:pr-3">$t:sirsoft-sso.admin.accounts.csv.col.idp</th>
+                <th class="sso:py-2 sso:pr-3">$t:sirsoft-sso.admin.accounts.csv.col.outcome</th>
+                <th class="sso:py-2 sso:pr-3">$t:sirsoft-sso.admin.accounts.csv.col.reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-each="row in (_local.csvResult ?? _local.csvPreview)?.rows ?? []" data-key="{{row.line}}" class="sso:border-b sso:border-gray-100 sso:dark:border-gray-700">
+                <td class="sso:py-1.5 sso:pr-3 sso:text-gray-500 sso:dark:text-gray-400">{{row.line}}</td>
+                <td class="sso:py-1.5 sso:pr-3 sso:text-gray-800 sso:dark:text-gray-200 sso:break-all sso-break-all">{{row.email}}</td>
+                <td class="sso:py-1.5 sso:pr-3 sso:text-gray-800 sso:dark:text-gray-200">{{row.idp_key}}</td>
+                <td class="sso:py-1.5 sso:pr-3 {{row.outcome === 'error' || row.outcome === 'conflict' ? 'sso:text-red-700 sso:dark:text-red-300' : 'sso:text-gray-800 sso:dark:text-gray-200'}}">{{$t('sirsoft-sso.admin.accounts.csv.outcomes.' + row.outcome)}}</td>
+                <td class="sso:py-1.5 sso:pr-3 sso:text-gray-600 sso:dark:text-gray-300">{{row.reason ? $t('sirsoft-sso.admin.accounts.csv.reasons.' + row.reason) : ''}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- 필터 -->
+      <div data-ref="accounts_filters" class="sso:flex sso:flex-wrap sso:items-center sso:gap-2 sso:mb-4">
+        <select data-ref="filter_idp" class="sso:w-44" value="{{query.idp_id || ''}}" aria-label="$t:sirsoft-sso.admin.accounts.fields.idp">
+          <option value="">$t:sirsoft-sso.admin.accounts.filters.all_idps</option>
+          <option data-each="idp in ssoAccounts?.data?.idps ?? []" value="{{idp.id}}">{{idp.label}}</option>
+          <on type="change">
+            <!-- IdP 필터 — 주소에 담아 목록을 다시 받고 첫 쪽으로 -->
+            <navigate path="/admin/plugins/sirsoft-sso/accounts" :mergeQuery="true">
+              <query idp_id="{{$event.target.value}}" :page="1"/>
+            </navigate>
+          </on>
+        </select>
+        <select data-ref="filter_status" class="sso:w-36" value="{{query.status || ''}}" aria-label="$t:sirsoft-sso.admin.accounts.col.status">
+          <option value="">$t:sirsoft-sso.admin.accounts.filters.all_status</option>
+          <option value="active">$t:sirsoft-sso.admin.accounts.status.active</option>
+          <option value="inactive">$t:sirsoft-sso.admin.accounts.status.deprovisioned</option>
+          <on type="change">
+            <!-- 상태 필터 — 주소에 담아 목록을 다시 받고 첫 쪽으로 -->
+            <navigate path="/admin/plugins/sirsoft-sso/accounts" :mergeQuery="true">
+              <query status="{{$event.target.value}}" :page="1"/>
+            </navigate>
+          </on>
+        </select>
+        <select data-ref="filter_via" class="sso:w-40" value="{{query.via || ''}}" aria-label="$t:sirsoft-sso.admin.accounts.col.via">
+          <option value="">$t:sirsoft-sso.admin.accounts.filters.all_via</option>
+          <option data-each="via in ['jit', 'domain', 'verify', 'admin', 'csv', 'scim']" value="{{via}}">{{$t('sirsoft-sso.admin.accounts.via.' + via)}}</option>
+          <on type="change">
+            <!-- 방식 필터 — 주소에 담아 목록을 다시 받고 첫 쪽으로 -->
+            <navigate path="/admin/plugins/sirsoft-sso/accounts" :mergeQuery="true">
+              <query via="{{$event.target.value}}" :page="1"/>
+            </navigate>
+          </on>
+        </select>
+        <input data-ref="filter_q" type="search" class="sso-input sso:w-56" value="{{query.q || ''}}" placeholder="$t:sirsoft-sso.admin.accounts.filters.search" aria-label="$t:sirsoft-sso.admin.accounts.filters.search">
+          <on type="change">
+            <!-- 검색어 — 주소에 담아 목록을 다시 받고 첫 쪽으로 -->
+            <navigate path="/admin/plugins/sirsoft-sso/accounts" :mergeQuery="true">
+              <query q="{{$event.target.value}}" :page="1"/>
+            </navigate>
+          </on>
+        </input>
+      </div>
+      <div data-ref="unlink_last_method_alert" data-if="{{_local.unlinkLastMethod === true &amp;&amp; !!_local.unlinkTarget}}" role="alert" class="sso-alert-warning sso:mb-4 sso:flex-col sso:items-start sso:gap-2">
+        <span class="sso:text-sm sso:text-amber-800 sso:dark:text-amber-200">$t:sirsoft-sso.admin.accounts.last_method_warning|name={{_local.unlinkTarget?.user?.name ?? ''}}</span>
+        <div class="sso:flex sso:gap-2">
+          <button data-ref="unlink_last_method_confirm" type="button" class="sso-btn sso-btn-danger sso:text-xs">
+            <on type="click">
+              <!-- 마지막 수단이라는 경고를 확인하고 해제한다 -->
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-sso/admin/accounts/{{_local.unlinkTarget?.id}}" method="DELETE" body="{{({ confirm_last_method: true })}}">
+                <success>
+                  <set-state target="local" :unlinkTarget="null" :unlinkLastMethod="false"/>
+                  <toast type="success" message="$t:sirsoft-sso.admin.accounts.unlinked"/>
+                  <refetch-data-source dataSourceId="ssoAccounts"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"/>
+                </fail>
+              </api-call>
+            </on>
+            <span>$t:sirsoft-sso.admin.accounts.unlink_anyway</span>
+          </button>
+          <button type="button" class="sso-btn sso-btn-secondary sso:text-xs">
+            <on type="click">
+              <!-- 마지막 수단 경고를 닫고 해제하지 않는다 -->
+              <set-state target="local" :unlinkTarget="null" :unlinkLastMethod="false"/>
+            </on>
+            <span>$t:common.cancel</span>
+          </button>
+        </div>
+      </div>
+      <data-grid data-type="composite" data-ref="accounts_datagrid" data="{{ssoAccounts?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{ssoAccounts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{ssoAccounts?.data?.pagination?.last_page ?? null}}" pageSize="20" idField="id" :selectable="false" emptyMessage="$t:sirsoft-sso.admin.accounts.empty">
+        <on type="change" event="onPageChange">
+          <!-- 쪽 이동 — 다른 필터는 주소에 그대로 둔다 -->
+          <navigate path="/admin/plugins/sirsoft-sso/accounts" :mergeQuery="true">
+            <query page="{{$args[0]}}"/>
+          </navigate>
+        </on>
+        <column field="user" header="$t:sirsoft-sso.admin.accounts.col.user" :sortable="false">
+          <cell>
+            <div class="sso:flex sso:flex-col">
+              <a href="/admin/users/{{row.user?.uuid}}" class="sso:text-sm sso:font-medium sso:text-blue-700 sso:dark:text-blue-300">{{row.user?.name ?? '-'}}</a>
+              <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+              <span data-if="{{!!row.user?.real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-sso.admin.common.real_name_sub', { name: row.user?.real_name })}}" class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">{{row.user?.real_name}}</span>
+              <span class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:break-all sso-break-all">{{row.user?.email ?? ''}}</span>
+            </div>
+          </cell>
+        </column>
+        <column field="idp" header="$t:sirsoft-sso.admin.accounts.col.idp" :sortable="false" width="140px">
+          <cell>
+            <span class="sso:text-sm sso:text-gray-800 sso:dark:text-gray-200">{{row.idp?.label ?? '-'}}</span>
+          </cell>
+        </column>
+        <column field="subject_masked" header="$t:sirsoft-sso.admin.accounts.col.subject" :sortable="false" width="140px">
+          <cell>
+            <span class="sso:text-xs sso:font-mono sso:text-gray-700 sso:dark:text-gray-300">{{row.subject_masked}}</span>
+          </cell>
+        </column>
+        <column field="linked_via" header="$t:sirsoft-sso.admin.accounts.col.via" :sortable="false" width="110px">
+          <cell>
+            <span class="sso:text-sm sso:text-gray-700 sso:dark:text-gray-300">{{$t('sirsoft-sso.admin.accounts.via.' + row.linked_via)}}</span>
+          </cell>
+        </column>
+        <column field="active" header="$t:sirsoft-sso.admin.accounts.col.status" :sortable="false" width="110px">
+          <cell>
+            <span class="{{row.active ? 'sso:text-green-700 sso:dark:text-green-300 sso:text-sm' : 'sso:text-red-700 sso:dark:text-red-300 sso:text-sm'}}">{{row.active ? $t('sirsoft-sso.admin.accounts.status.active') : $t('sirsoft-sso.admin.accounts.status.deprovisioned')}}</span>
+          </cell>
+        </column>
+        <column field="last_login_at" header="$t:sirsoft-sso.admin.accounts.col.last_login_at" :sortable="false" width="170px">
+          <cell>
+            <span class="sso:text-xs sso:text-gray-700 sso:dark:text-gray-300 sso:whitespace-nowrap">{{row.last_login_at | datetime | default('-')}}</span>
+          </cell>
+        </column>
+        <column field="id" header="" :sortable="false" width="100px">
+          <cell>
+            <!-- 표 셀 렌더 문맥에서는 레이아웃 계산값(computed)이 비어 있으므로 데이터소스 응답의 권한을 직접 읽는다 -->
+            <button data-ref="unlink_{{row.id}}" type="button" class="sso-btn sso-btn-secondary sso:text-xs" disabled="{{ssoAccounts?.data?.abilities?.can_unlink !== true}}" aria-label="$t:defer:sirsoft-sso.admin.accounts.unlink_named|name={{row.user?.name ?? ''}}">
+              <on type="click">
+                <!-- 연결 해제 — 마지막 로그인 수단이면 서버가 409 last_method 로 막고 화면이 경고를 띄운다 -->
+                <api-call :auth_required="true" target="/api/plugins/sirsoft-sso/admin/accounts/{{row.id}}" method="DELETE" confirm="$t:sirsoft-sso.admin.accounts.unlink_confirm">
+                  <success>
+                    <toast type="success" message="$t:sirsoft-sso.admin.accounts.unlinked"/>
+                    <refetch-data-source dataSourceId="ssoAccounts"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" unlinkTarget="{{error.errors?.code === 'last_method' ? row : null}}" unlinkLastMethod="{{error.errors?.code === 'last_method'}}"/>
+                    <toast if="{{error.errors?.code !== 'last_method'}}" type="error" message="{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"/>
+                  </fail>
+                </api-call>
+              </on>
+              <span>$t:sirsoft-sso.admin.accounts.unlink</span>
+            </button>
+          </cell>
+        </column>
+      </data-grid>
+    </div>
+  </slot>
+</layout>

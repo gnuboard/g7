@@ -400,7 +400,7 @@
                             ]
                         },
                         {
-                            "comment": "보조 버튼은 둘 중 하나로만 생긴다 — 올릴 판이 있으면 업데이트, 아니면 원문 편집.\n               업데이트가 도중에 멈췄으면(`stuck_update`) 「정리 후 다시 업데이트」가 같은 업데이트 창을 강제 업데이트로 연다 — 서버는\n               `force` 일 때만 멈춘 업데이트를 정리한다. 스위치(활성화 창)도 열어 둔다 — 활성화는 정리한 뒤 켠다.\n               원문 편집은 같은 창에서 연다(지금 보는 관리자 화면과 겹치지 않는다).\n               업데이트는 손으로 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다.",
+                            "comment": "보조 버튼은 둘 중 하나로만 생긴다 — 올릴 판이 있으면 업데이트, 아니면 원문 편집.\n               업데이트가 도중에 멈췄으면(`stuck_update`) 「정리 후 다시 업데이트」가 같은 업데이트 창을 강제 업데이트로 연다 — 서버는\n               `force` 일 때만 멈춘 업데이트를 정리한다. 스위치(활성화 창)도 열어 둔다 — 활성화는 정리한 뒤 켠다.\n               원문 편집은 같은 창에서 연다(지금 보는 관리자 화면과 겹치지 않는다).\n               업데이트는 창부터 열고 변경 이력과 화면별 처리 미리보기를 뒤이어 받는다.",
                             "type": "action",
                             "event": "onSecondaryAction",
                             "handler": "switch",
@@ -424,40 +424,23 @@
                                             "params": {
                                                 "target": "global",
                                                 "selectedTemplate": "{{$args[0]}}",
-                                                "templateLayoutStrategy": "overwrite",
+                                                "layoutSyncStrategy": "keep",
+                                                "layoutDecisions": {},
+                                                "layoutPreview": null,
+                                                "layoutUpdatePreview": null,
+                                                "layoutPreviewState": "loading",
+                                                "layoutPreviewRequest": "{{({url: '/api/admin/templates/' + $args[0].identifier + '/update/preview', body: {}})}}",
                                                 "templateLayoutSource": "auto",
                                                 "templateLayoutSourceOpen": false,
                                                 "templateForceUpdate": "{{$args[0].stuck_update === true}}",
-                                                "hasModifiedTemplateLayouts": false,
-                                                "modifiedTemplateLayoutsCount": 0,
-                                                "modifiedTemplateLayouts": [],
-                                                "modifiedTemplateLayoutsCheckFailed": false
+                                                "updateChangelog": [],
+                                                "templateUpdateError": null
                                             }
                                         },
                                         {
-                                            "handler": "apiCall",
-                                            "target": "/api/admin/templates/{{$args[0].identifier}}/check-modified-layouts",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "GET"
-                                            },
-                                            "onSuccess": {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "hasModifiedTemplateLayouts": "{{response.data?.has_modified_layouts ?? false}}",
-                                                    "modifiedTemplateLayoutsCount": "{{response.data?.modified_count ?? 0}}",
-                                                    "modifiedTemplateLayouts": "{{response.data?.modified_layouts ?? []}}",
-                                                    "modifiedTemplateLayoutsCheckFailed": false
-                                                }
-                                            },
-                                            "onError": {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "modifiedTemplateLayoutsCheckFailed": true
-                                                }
-                                            }
+                                            "comment": "창부터 연다 — 미리보기는 로딩 표시로 시작하고(GitHub 소스면 새 판을 내려받느라 오래 걸린다) 변경 이력·미리보기가 뒤이어 채운다.",
+                                            "handler": "openModal",
+                                            "target": "template_update_modal"
                                         },
                                         {
                                             "handler": "apiCall",
@@ -466,34 +449,24 @@
                                             "params": {
                                                 "method": "GET"
                                             },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "updateChangelog": "{{response.data.changelog ?? []}}",
-                                                        "templateUpdateError": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "template_update_modal"
+                                            "onSuccess": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "updateChangelog": "{{response.data.changelog ?? []}}"
                                                 }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "updateChangelog": [],
-                                                        "templateUpdateError": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "template_update_modal"
+                                            },
+                                            "onError": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "updateChangelog": []
                                                 }
-                                            ]
+                                            }
+                                        },
+                                        {
+                                            "comment": "새 판으로 바꾸면 화면마다 어떻게 되는지·지워질 선언 항목을 미리 본다(GitHub 소스면 새 판을 내려받아 둔다).",
+                                            "actionRef": "fetchLayoutPreview"
                                         }
                                     ]
                                 }
@@ -532,11 +505,19 @@
                             }
                         },
                         {
-                            "comment": "카드 더보기 메뉴. 업데이트는 손으로 고친 레이아웃 여부와 변경 이력을 미리 물어 두고,\n               삭제는 창을 먼저 열고 안내 정보를 뒤이어 받는다.",
+                            "comment": "카드 더보기 메뉴. 업데이트는 창부터 열고 변경 이력과 화면별 처리 미리보기를 뒤이어 받고,\n               삭제는 창을 먼저 열고 안내 정보를 뒤이어 받는다.",
                             "type": "action",
                             "event": "onAction",
                             "handler": "switch",
                             "cases": {
+                                "settings": {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 템플릿 설정 화면으로 이동 — 목적지는 각 템플릿의 설정 화면(#434)으로, 템플릿 목록 클러스터 밖이다.",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "{{$args[1].settings_route}}",
+                                        "fallbackPath": "/admin/templates"
+                                    }
+                                },
                                 "view_detail": {
                                     "handler": "sequence",
                                     "actions": [
@@ -591,40 +572,23 @@
                                             "params": {
                                                 "target": "global",
                                                 "selectedTemplate": "{{$args[1]}}",
-                                                "templateLayoutStrategy": "overwrite",
+                                                "layoutSyncStrategy": "keep",
+                                                "layoutDecisions": {},
+                                                "layoutPreview": null,
+                                                "layoutUpdatePreview": null,
+                                                "layoutPreviewState": "loading",
+                                                "layoutPreviewRequest": "{{({url: '/api/admin/templates/' + $args[1].identifier + '/update/preview', body: {}})}}",
                                                 "templateLayoutSource": "auto",
                                                 "templateLayoutSourceOpen": false,
                                                 "templateForceUpdate": false,
-                                                "hasModifiedTemplateLayouts": false,
-                                                "modifiedTemplateLayoutsCount": 0,
-                                                "modifiedTemplateLayouts": [],
-                                                "modifiedTemplateLayoutsCheckFailed": false
+                                                "updateChangelog": [],
+                                                "templateUpdateError": null
                                             }
                                         },
                                         {
-                                            "handler": "apiCall",
-                                            "target": "/api/admin/templates/{{$args[1].identifier}}/check-modified-layouts",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "GET"
-                                            },
-                                            "onSuccess": {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "hasModifiedTemplateLayouts": "{{response.data?.has_modified_layouts ?? false}}",
-                                                    "modifiedTemplateLayoutsCount": "{{response.data?.modified_count ?? 0}}",
-                                                    "modifiedTemplateLayouts": "{{response.data?.modified_layouts ?? []}}",
-                                                    "modifiedTemplateLayoutsCheckFailed": false
-                                                }
-                                            },
-                                            "onError": {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "modifiedTemplateLayoutsCheckFailed": true
-                                                }
-                                            }
+                                            "comment": "창부터 연다 — 미리보기는 로딩 표시로 시작하고(GitHub 소스면 새 판을 내려받느라 오래 걸린다) 변경 이력·미리보기가 뒤이어 채운다.",
+                                            "handler": "openModal",
+                                            "target": "template_update_modal"
                                         },
                                         {
                                             "handler": "apiCall",
@@ -633,38 +597,29 @@
                                             "params": {
                                                 "method": "GET"
                                             },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "updateChangelog": "{{response.data.changelog ?? []}}",
-                                                        "templateUpdateError": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "template_update_modal"
+                                            "onSuccess": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "updateChangelog": "{{response.data.changelog ?? []}}"
                                                 }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "updateChangelog": [],
-                                                        "templateUpdateError": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "template_update_modal"
+                                            },
+                                            "onError": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "updateChangelog": []
                                                 }
-                                            ]
+                                            }
+                                        },
+                                        {
+                                            "comment": "새 판으로 바꾸면 화면마다 어떻게 되는지·지워질 선언 항목을 미리 본다(GitHub 소스면 새 판을 내려받아 둔다).",
+                                            "actionRef": "fetchLayoutPreview"
                                         }
                                     ]
                                 },
                                 "refresh_layouts": {
+                                    "comment": "창을 열고 화면별 처리를 미리 본다 — 처리 방식은 수정 유지(keep)부터, 결정은 비운 채로.",
                                     "handler": "sequence",
                                     "actions": [
                                         {
@@ -673,12 +628,21 @@
                                                 "target": "global",
                                                 "selectedTemplate": "{{$args[1]}}",
                                                 "templateLayoutSource": "auto",
-                                                "templateLayoutSourceOpen": false
+                                                "templateLayoutSourceOpen": false,
+                                                "layoutSyncStrategy": "keep",
+                                                "layoutDecisions": {},
+                                                "layoutPreview": null,
+                                                "layoutUpdatePreview": null,
+                                                "layoutPreviewState": "loading",
+                                                "layoutPreviewRequest": "{{({url: '/api/admin/templates/refresh-layouts/preview', body: {template_name: $args[1].identifier}})}}"
                                             }
                                         },
                                         {
                                             "handler": "openModal",
                                             "target": "template_refresh_layouts_modal"
+                                        },
+                                        {
+                                            "actionRef": "fetchLayoutPreview"
                                         }
                                     ]
                                 },
@@ -752,7 +716,7 @@
                         "currentPage": "{{templates?.data?.pagination?.current_page ?? 1}}",
                         "totalPages": "{{templates?.data?.pagination?.last_page ?? null}}",
                         "hasMorePages": "{{templates?.data?.pagination?.has_more_pages ?? false}}",
-                        "items": "{{(templates?.data?.data ?? []).map(p => ({\n        id: p.identifier,\n        row: p,\n        name: p.name ?? p.identifier,\n        version: p.version,\n        description: p.description ?? '',\n        vendor: p.vendor,\n        iconUrl: p.icon_url,\n        fallbackIcon: 'cog',\n        dependencies: [\n          ...((p.dependencies?.modules ?? []).map(d => ({ type: 'module', name: d.name || d.identifier || d, unmet: d?.is_met === false, reason: d?.is_met === false ? (d.status === 'version_mismatch' ? $t('admin.plugins.dependency_unmet.version_mismatch', {installed: d.installed_version, required: d.required_version}) : (d.status === 'inactive' ? $t('admin.plugins.dependency_unmet.inactive') : $t('admin.plugins.dependency_unmet.not_installed'))) : undefined }))),\n          ...((p.dependencies?.plugins ?? []).map(d => ({ type: 'plugin', name: d.name || d.identifier || d, unmet: d?.is_met === false, reason: d?.is_met === false ? (d.status === 'version_mismatch' ? $t('admin.plugins.dependency_unmet.version_mismatch', {installed: d.installed_version, required: d.required_version}) : (d.status === 'inactive' ? $t('admin.plugins.dependency_unmet.inactive') : $t('admin.plugins.dependency_unmet.not_installed'))) : undefined })))\n        ],\n        badges: [\n          ...(p.status === 'active' ? [{ label: '$t:admin.templates.status.active', tone: 'success' }] : []),\n          ...(p.status === 'inactive' ? [{ label: '$t:admin.templates.status.inactive', tone: 'neutral' }] : []),\n          ...(p.status === 'uninstalled' ? [{ label: '$t:admin.templates.status.not_installed', tone: 'info' }] : []),\n          ...(p.status === 'installing' ? [{ label: '$t:admin.templates.status.installing', tone: 'warning' }] : []),\n          ...(p.status === 'uninstalling' ? [{ label: '$t:admin.templates.status.uninstalling', tone: 'warning' }] : []),\n          ...(p.status === 'updating' && p.stuck_update !== true ? [{ label: '$t:admin.templates.status.updating', tone: 'accent' }] : []),\n          ...(p.stuck_update === true ? [{ label: '$t:admin.templates.status.stuck_update', tone: 'warning', icon: 'exclamation-triangle', title: '$t:admin.templates.stuck_update_hint' }] : []),\n          ...(p.update_available && p.status !== 'uninstalled' && p.status !== 'updating' ? [{ label: '$t:admin.templates.update_available', tone: 'danger' }] : []),\n          ...(p.is_compatible === false || p.core_compatible === false ? [{ label: '$t:extensions.badges.incompatible', tone: 'warning', icon: 'exclamation-triangle' }] : [])\n        ],\n        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.status === 'active' || (['installing', 'uninstalling', 'updating'].includes(p.status) && p.stuck_update !== true) || p.abilities?.can_activate !== true || p.core_compatible === false, label: p.name ?? p.identifier } : null,\n        secondaryAction: p.stuck_update === true\n          ? { label: '$t:admin.templates.actions.recover_update', icon: 'refresh', title: '$t:admin.templates.stuck_update_hint', disabled: p.abilities?.can_install !== true }\n          : p.update_available && p.status !== 'uninstalled'\n          ? { label: '$t:admin.templates.actions.update', icon: 'refresh', disabled: ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true }\n          : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_code', icon: 'code', href: '/admin/templates/' + p.identifier + '/edit', disabled: p.abilities?.can_edit_layouts !== true } : null),\n        primaryAction: p.status === 'uninstalled'\n          ? { label: '$t:admin.templates.actions.install', icon: 'download', variant: 'solid', disabled: p.abilities?.can_install !== true || p.core_compatible === false }\n          : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_layout_visual', icon: 'edit', variant: 'solid', disabled: p.abilities?.can_edit_layouts !== true, href: '/admin/layout-editor/' + p.identifier, target: '_blank' } : null),\n        actions: [\n          { id: 'view_detail', label: '$t:admin.templates.actions.view_detail', iconName: 'info-circle' },\n          { id: 'update', label: '$t:admin.templates.actions.update', iconName: 'refresh', disabled: !p.update_available || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true },\n          { id: 'refresh_layouts', label: '$t:admin.templates.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },\n          { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', href: '/admin/templates/' + p.identifier + '/language-packs', mergeQuery: true, disabled: p.status !== 'active' || templates?.data?.abilities?.can_view_language_packs !== true },\n          { id: 'uninstall', label: '$t:admin.templates.actions.uninstall', iconName: 'trash', variant: 'danger', disabled: p.status === 'active' || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_uninstall !== true }\n        ]\n      }))}}"
+                        "items": "{{(templates?.data?.data ?? []).map(p => ({\n        id: p.identifier,\n        row: p,\n        name: p.name ?? p.identifier,\n        version: p.version,\n        description: p.description ?? '',\n        vendor: p.vendor,\n        iconUrl: p.icon_url,\n        fallbackIcon: 'cog',\n        dependencies: [\n          ...((p.dependencies?.modules ?? []).map(d => ({ type: 'module', name: d.name || d.identifier || d, unmet: d?.is_met === false, reason: d?.is_met === false ? (d.status === 'version_mismatch' ? $t('admin.plugins.dependency_unmet.version_mismatch', {installed: d.installed_version, required: d.required_version}) : (d.status === 'inactive' ? $t('admin.plugins.dependency_unmet.inactive') : $t('admin.plugins.dependency_unmet.not_installed'))) : undefined }))),\n          ...((p.dependencies?.plugins ?? []).map(d => ({ type: 'plugin', name: d.name || d.identifier || d, unmet: d?.is_met === false, reason: d?.is_met === false ? (d.status === 'version_mismatch' ? $t('admin.plugins.dependency_unmet.version_mismatch', {installed: d.installed_version, required: d.required_version}) : (d.status === 'inactive' ? $t('admin.plugins.dependency_unmet.inactive') : $t('admin.plugins.dependency_unmet.not_installed'))) : undefined })))\n        ],\n        badges: [\n          ...(p.status === 'active' ? [{ label: '$t:admin.templates.status.active', tone: 'success' }] : []),\n          ...(p.status === 'inactive' ? [{ label: '$t:admin.templates.status.inactive', tone: 'neutral' }] : []),\n          ...(p.status === 'uninstalled' ? [{ label: '$t:admin.templates.status.not_installed', tone: 'info' }] : []),\n          ...(p.status === 'installing' ? [{ label: '$t:admin.templates.status.installing', tone: 'warning' }] : []),\n          ...(p.status === 'uninstalling' ? [{ label: '$t:admin.templates.status.uninstalling', tone: 'warning' }] : []),\n          ...(p.status === 'updating' && p.stuck_update !== true ? [{ label: '$t:admin.templates.status.updating', tone: 'accent' }] : []),\n          ...(p.stuck_update === true ? [{ label: '$t:admin.templates.status.stuck_update', tone: 'warning', icon: 'exclamation-triangle', title: '$t:admin.templates.stuck_update_hint' }] : []),\n          ...(p.update_available && p.status !== 'uninstalled' && p.status !== 'updating' ? [{ label: '$t:admin.templates.update_available', tone: 'danger' }] : []),\n          ...(p.is_compatible === false || p.core_compatible === false ? [{ label: '$t:extensions.badges.incompatible', tone: 'warning', icon: 'exclamation-triangle' }] : [])\n        ],\n        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined, disabled: _global.appConfig?.runtime_role === 'stage' || p.status === 'active' || (['installing', 'uninstalling', 'updating'].includes(p.status) && p.stuck_update !== true) || p.abilities?.can_activate !== true || p.core_compatible === false, label: p.name ?? p.identifier } : null,\n        secondaryAction: p.stuck_update === true\n          ? { label: '$t:admin.templates.actions.recover_update', icon: 'refresh', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : '$t:admin.templates.stuck_update_hint', disabled: _global.appConfig?.runtime_role === 'stage' || p.abilities?.can_install !== true }\n          : p.update_available && p.status !== 'uninstalled'\n          ? { label: '$t:admin.templates.actions.update', icon: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true, title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined }\n          : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_code', icon: 'code', href: '/admin/templates/' + p.identifier + '/edit', disabled: p.abilities?.can_edit_layouts !== true } : null),\n        primaryAction: p.status === 'uninstalled'\n          ? { label: '$t:admin.templates.actions.install', icon: 'download', variant: 'solid', disabled: _global.appConfig?.runtime_role === 'stage' || p.abilities?.can_install !== true || p.core_compatible === false, title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined }\n          : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_layout_visual', icon: 'edit', variant: 'solid', disabled: p.abilities?.can_edit_layouts !== true, href: '/admin/layout-editor/' + p.identifier, target: '_blank' } : null),\n        actions: [\n          { id: 'view_detail', label: '$t:admin.templates.actions.view_detail', iconName: 'info-circle' },\n          { id: 'settings', label: p.abilities?.can_update_settings === true ? '$t:admin.templates.actions.settings' : '$t:admin.templates.actions.settings_read_only', iconName: p.abilities?.can_update_settings === true ? 'cog' : 'lock', href: p.settings_route, disabled: !p.has_settings || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status), disabledReason: !p.has_settings && p.status !== 'uninstalled' ? '$t:admin.templates.actions.settings_unavailable' : null },\n          { id: 'update', label: '$t:admin.templates.actions.update', iconName: 'refresh', disabledReason: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined, disabled: _global.appConfig?.runtime_role === 'stage' || !p.update_available || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true },\n          { id: 'refresh_layouts', label: '$t:admin.templates.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },\n          { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', href: '/admin/templates/' + p.identifier + '/language-packs', mergeQuery: true, disabled: p.status !== 'active' || templates?.data?.abilities?.can_view_language_packs !== true },\n          { id: 'uninstall', label: '$t:admin.templates.actions.uninstall', iconName: 'trash', variant: 'danger', disabledReason: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined, disabled: _global.appConfig?.runtime_role === 'stage' || p.status === 'active' || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_uninstall !== true }\n        ]\n      }))}}"
                     }
                 },
                 {

@@ -22,6 +22,8 @@ effects:
   - search_filter_remains_functional
   - empty_purpose_badge_card_removed
   - policy_list_renders_board_module_policies
+  # #609 docblock 정리 때 사후 등재 — 목적 배지 카드는 유지하고 모듈 식별자로 거른다(레이아웃 테스트 단언)
+  - purpose_badge_card_kept_with_module_filter
 
 test_files:
   - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/identityPolicySourceIdentifier.test.ts

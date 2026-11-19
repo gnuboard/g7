@@ -1,0 +1,94 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#40 버튼 컴포넌트(의도·계열), 왕복 시작 핸들러(주소 판정·응답), 확장 조각(화면별 주입·분기)은 서로 다른 표면이라 곱하면 성립하지 않는 조합만 늘어난다 — 표면별로 나눴다.
+feature: social_login_user_screens
+coverage_strategy: pairwise
+description: |
+  사용자 화면 프론트. 제공자 버튼 컴포넌트(로그인·가입은 시작 주소 링크, 연결·재확인은 플러그인 핸들러, 계열별 색·공식 심볼·문구)와 연결 목록 줄의 제공자 심볼,
+  로그인 회원 왕복 시작 핸들러(코어 API 클라이언트로 시작하고 같은 출처·https 주소로만 이동), 확장 조각 8개(로그인 버튼·안내, 가입 버튼·모달,
+  마이페이지 카드, 대체 이메일 회원 재확인 3종)의 주입 자리·조건·요청·응답 분기와 문구 키(ko·en)를 잰다. 재확인 자리 2종은 템플릿 기본 안내를
+  통째로 바꾸므로 소셜 재확인 대상이 아닌 회원(회사 계정 회원 등)에게는 소셜 안내 대신 템플릿 기본 안내를 그린다(실제 렌더).
+axes:
+  intent: [login, register, link, reauth]
+  brand: [all]
+  redirect: [external, safe, unsafe, absent]
+  i18n: [missing]
+  providers: [none]
+  network: [failed]
+  disabled: ['true']
+  url: [same_origin, https, http_external, javascript]
+  handler: [startLink, startReauth]
+  response: [ok, '409']
+  provider: [invalid, enabled, unknown]
+  surface: [all, login, register, register_modal, signup_modal, existing_modal, mypage_card, profile_edit_gate, change_password]
+  viewport: ['390']
+  locale: [ko, en]
+  query: [social_error, social_notice, social_pending]
+  step: [complete, existing, expired]
+  has_password: ['false']
+  member: [placeholder, company_account_only, social_placeholder, company_and_social, undeliverable_no_method]
+  reauth_via_social: ['false']
+  reauth_provider: [external, none]
+  iteration: [data_each]
+  client: [class_instance]
+  modal: [reopen]
+  accounts: [none, one]
+  policy: [allow_unlink_last_method, signup_before_submit]
+  code: [sent]
+  theme: [light, dark]
+  social_error: [email_required, other]
+  # 가입 모달과 기존 계정 모달의 입력칸
+  input: [name, nickname, email, existing_password]
+effects:
+  - buttons_are_links_with_redirect
+  - brand_class_per_provider
+  - custom_style_and_initial
+  - external_redirect_not_attached
+  - button_text_per_intent
+  - link_button_dispatches_start_link
+  - reauth_button_dispatches_start_reauth
+  - empty_providers_render_nothing
+  - disabled_link_has_no_href
+  - only_same_origin_or_https_followed
+  - start_link_posts_and_redirects
+  - api_client_called_with_its_receiver
+  - start_reauth_sends_return_path
+  - invalid_provider_ignored
+  - failure_shows_server_message
+  - extension_i18n_keys_present
+  - no_deferred_translation_in_data_each
+  - modal_state_lives_in_global
+  - login_buttons_slot_and_guard
+  - login_reconsent_button_for_email_refusal
+  - kakao_register_label_follows_bi
+  - kakao_label_follows_bi_for_every_intent
+  - provider_list_failure_is_silent
+  - login_notices_toast_with_fallback
+  - register_buttons_hidden_during_social_signup
+  - signup_modal_opens_by_step
+  - signup_submit_requires_consent_and_email
+  - signup_success_navigates_handoff
+  - signup_title_has_generic_provider
+  - signup_identity_target_is_signup_email
+  - existing_modal_hides_password_for_passwordless
+  - existing_discard_switches_modal
+  - mypage_card_after_other_cards
+  - unlink_409_shows_last_method
+  - unlink_last_method_warns_before_confirm
+  - mypage_card_empty_state
+  - signup_code_countdown
+  - reauth_slots_replace_default
+  - reauth_return_claims_and_opens_form
+  - google_dark_follows_site_theme
+  - mypage_row_shows_provider_symbol
+  - modal_action_buttons_reach_touch_size_on_phone
+  - signup_modal_inputs_have_labels
+  - mypage_link_buttons_touch_size
+  - non_social_member_sees_template_default_notice
+  - no_social_wording_for_non_social_member
+  - social_member_sees_social_notice_and_buttons
+  - both_linked_member_sees_actual_method_notice   # 코어가 다른 수단(회사 계정)을 고르면 소셜 안내·버튼 대신 실제 수단에 맞는 기본 안내
+test_files:
+  - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/ProviderButtons.test.tsx
+  - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/ProviderMark.test.tsx
+  - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/handlers.test.ts
+  - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/layouts/extensions.test.ts
+  - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/layouts/reauth-slots-render.test.tsx

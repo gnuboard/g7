@@ -1506,10 +1506,30 @@ return [
             'order_custom_email' => [
                 'app_name' => 'Site name',
             ],
+            // 내보내기(#787)
+            'export_completed' => [
+                'name' => 'Recipient (requester) name',
+                'type_label' => 'Export type (orders, products, mileage)',
+                'exports_url' => 'Export management URL',
+                'exports_path' => 'Export management path (without the site address)',
+                'file_name' => 'File name',
+                'row_count' => 'Row count',
+                'expires_at' => 'File expiry date',
+            ],
+            'export_failed' => [
+                'name' => 'Recipient (requester) name',
+                'type_label' => 'Export type (orders, products, mileage)',
+                'exports_url' => 'Export management URL',
+                'exports_path' => 'Export management path (without the site address)',
+                'error_message' => 'Failure reason',
+            ],
         ],
     ],
     // Console command output
     'console' => [
+        'prune_exports' => [
+            'done' => 'Expired exports: :expired, timed-out exports marked as failed: :failed.',
+        ],
         'mileage' => [
             'disabled' => 'The mileage feature is disabled.',
         ],
@@ -1573,6 +1593,11 @@ return [
             'retention_skipped' => 'Skipping cleanup because the retention period (--days) is less than 1.',
             'dry_run' => 'To delete: :count (past retention, days: :days)',
             'done' => 'Claim temporary attachment cleanup complete: targets :scanned / deleted :deleted / failed :failed',
+        ],
+        'prune_temp_category_images' => [
+            'retention_disabled' => 'Cleanup was skipped because the temporary image retention period is less than 1 day.',
+            'dry_run' => 'Unlinked temporary category images past retention (days: :days): :count',
+            'done' => 'Deleted :deleted of :scanned temporary category images past retention (days: :days). (Failed: :failed)',
         ],
         'prune_temp_product_images' => [
             'retention_disabled' => 'Cleanup was skipped because the temporary image retention period is less than 1 day.',
@@ -1641,11 +1666,13 @@ return [
             ],
         ],
         'shipping_carrier' => [
+            'entity_label' => 'Shipping carrier',
             'sync_start' => 'Starting shipping carrier initial data synchronization.',
             'created' => 'Shipping carrier created: :name (:code)',
             'sync_done' => 'Shipping carrier sync complete: :created created, :synced synced, :deleted stale deleted, :preserved in use kept (:total total)',
         ],
         'shipping_type' => [
+            'entity_label' => 'Shipping type',
             'sync_start' => 'Starting shipping type initial data synchronization.',
             'sync_done' => 'Shipping type sync complete: :defined defined / :count in DB / :deleted stale deleted / :preserved in use kept',
         ],
@@ -1796,6 +1823,7 @@ return [
             'created' => 'Category created: :name (depth: :depth)',
         ],
         'claim_reason' => [
+            'entity_label' => 'Claim reason',
             'sync_start' => 'Starting claim reason initial data synchronization.',
             'created' => 'Claim reason created: :name (:code)',
             'preserved' => 'Reasons kept because they are in use: :count',
@@ -1852,6 +1880,76 @@ return [
             'done' => 'Created :count shipping policy dummy records successfully.',
             'purged' => 'Deleted :count existing shipping policies.',
         ],
+        // Image thumbnail measure seeders (Sample\ThumbnailMeasureSeeder, ThumbnailMeasureCleanupSeeder)
+        'thumbnail_measure' => [
+            'start' => 'Creating ecommerce thumbnail measure data.',
+            'done' => 'Ecommerce thumbnail measure data created.',
+            'cleanup_start' => 'Cleaning up ecommerce thumbnail measure data.',
+            'cleanup_done' => 'Ecommerce thumbnail measure data cleaned up.',
+            'previous_removed' => 'Removed ecommerce measure data from the previous run: :counts',
+            'order_calculation_dropped' => 'The order calculation dropped a measure product option.',
+            'data_title' => 'Ecommerce measure data',
+            'data_headers' => [
+                'kind' => 'Kind',
+                'owner_id' => 'Owner ID',
+                'record' => 'Image ID / number',
+                'hash' => 'Hash',
+                'mime' => 'MIME',
+                'size' => 'Size',
+                'url' => 'URL',
+            ],
+            'kinds' => [
+                'category_banner' => 'Category banner',
+                'product_a_image' => 'Product A image',
+                'product_b_image' => 'Product B image',
+                'order_confirmed' => 'Order (purchase confirmed)',
+                'review_visible_image' => 'Visible review image',
+                'review_hidden_image' => 'Hidden review image',
+                'order_delivered' => 'Order (delivered)',
+                'return_claim' => 'Return request',
+                'claim_image' => 'Claim image',
+            ],
+            'category' => 'Category: :path (ID :id, banner image hash :hash)',
+            'products' => 'Products: :a_path (A, ID :a_id), :b_path (B, ID :b_id)',
+            'cleanup_title' => 'Ecommerce measure data cleanup',
+            'cleanup_headers' => [
+                'orders' => 'Orders',
+                'reviews' => 'Reviews',
+                'review_images' => 'Review images',
+                'claims' => 'Claims',
+                'claim_images' => 'Claim images',
+                'products' => 'Products',
+                'product_images' => 'Product images',
+                'categories' => 'Categories',
+                'category_images' => 'Category images',
+                'shipping_policies' => 'Shipping policies',
+                'activity_logs' => 'Activity logs',
+            ],
+        ],
+    ],
+    // 내보내기(#787)
+    'export' => [
+        'download_link_issued' => 'A download link has been issued.',
+        'catalog_retrieved' => 'Export options loaded.',
+        'estimated' => 'Estimated row count calculated.',
+        'requested' => 'Export requested. When it finishes you can download it from Export Management.',
+        'list_retrieved' => 'Export list loaded.',
+        'retrieved' => 'Export job loaded.',
+        'downloads_retrieved' => 'Download history loaded.',
+        'deleted' => 'Export file deleted.',
+        'bulk_deleted' => 'Deleted :count. (Skipped :skipped)',
+        'not_found' => 'Export job not found.',
+    ],
+    'lifecycle' => [
+        'purge_failed' => 'Removal stopped because the exported files could not be deleted. Check the storage permissions and status, then remove the module again (files that may hold personal data are not left behind).',
+    ],
+    // Source names in Settings > Upload "Create thumbnails for existing images"
+    'thumbnail_sources' => [
+        'product_image' => 'Product images',
+        'category_image' => 'Category images',
+        'review_image' => 'Review images',
+        'claim_image' => 'Exchange/return/refund attachments',
+        'content_media' => 'Product description and common information content images',
     ],
     // Recent search scope name (module.json search_scopes.products.label — admin Settings > Privacy "Recent searches" card)
     'search_history' => [

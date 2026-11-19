@@ -298,7 +298,10 @@
     <set-state if="{{!!query.route &amp;&amp; !!(layout_files?.data ?? []).find(f => f.route_path === query.route)?.name}}" target="global" selectedNodeKind="layout" selectedLayoutName="{{(layout_files?.data ?? []).find(f => f.route_path === query.route)?.name}}"/>
   </init>
   <slot name="content">
-    <div data-ref="page_container" class="admin-page-content-responsive pb-24 md:pb-0">
+    <div data-ref="page_container" class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900 pb-24">
+      <responsive on="640-767" class="p-6 min-h-screen bg-gray-50 dark:bg-gray-900 pb-24"/>
+      <responsive on="768-1023" class="p-6 min-h-screen bg-gray-50 dark:bg-gray-900 pb-0"/>
+      <responsive on="1024-" class="p-8 min-h-screen bg-gray-50 dark:bg-gray-900 pb-0"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:admin.templates.layout_edit.page_title ({{template_info?.data?.name ?? route.identifier}})" description="$t:admin.templates.layout_edit.page_description">
         <!-- `data-leave-guard` — `<code-workspace>` 가 이 표식이 붙은 요소의 클릭을 가로채, 미저장이
              있으면 되묻고 없으면 그대로 보낸다(D5). 엔진의 `confirm` 은 진입점에서 무조건 발화해
@@ -311,16 +314,18 @@
         </button>
         <!-- 머리말 버튼은 `md`(768) 이상에서만 펼친다. 모바일에서는 보조 동작(내려받기·복사)을 아래의
              ⋯ 더보기로 접고, 저장·미리보기는 하단 고정 바로 내린다(계획서 §7.5). -->
-        <button type="button" class="hidden md:flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-testid="layout-download-markup">
+        <button type="button" class="hidden items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-testid="layout-download-markup">
+          <responsive on="768-" class="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"/>
           <on type="click">
             <!-- HTML 버퍼를 `.g7.html` 파일로 내려받는다 — 설치본은 서버에 파일이 없으므로 브라우저가 만든다.
                  파일명은 레이아웃 이름(확장 갈래면 조각 식별자)이다. -->
             <action handler="downloadMarkupFile" filename="{{(_global.selectedNodeKind === 'extension' ? (current_extension?.data?.fragment_key ?? current_extension?.data?.target_name ?? 'extension') : (_global.selectedLayoutName || layout_files?.data?.[0]?.name || 'layout'))}}.g7.html" content="{{_global.editorMarkup ?? ''}}"/>
           </on>
           <icon name="fa-solid fa-download" class="text-base"/>
-          <span class="hidden sm:inline">$t:admin.templates.layout_edit.download_markup</span>
+          <span class="hidden"><responsive on="640-" class="inline"/>$t:admin.templates.layout_edit.download_markup</span>
         </button>
-        <button type="button" class="hidden md:flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-testid="layout-copy-markup">
+        <button type="button" class="hidden items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-testid="layout-copy-markup">
+          <responsive on="768-" class="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"/>
           <on type="click">
             <!-- HTML 버퍼를 클립보드에 담는다 — 위 내려받기와 같은 값을 파일 대신 붙여넣기로 넘기는 자리다.
                  성공·실패 문구를 둘 다 넘기는 이유는 클립보드 권한이 거부될 수 있어서다(브라우저가 막으면
@@ -328,23 +333,26 @@
             <action handler="copyMarkupToClipboard" content="{{_global.editorMarkup ?? ''}}" successMessage="$t:admin.templates.layout_edit.copy_success" failureMessage="$t:admin.templates.layout_edit.copy_failed"/>
           </on>
           <icon name="fa-regular fa-copy" class="text-base"/>
-          <span class="hidden sm:inline">$t:admin.templates.layout_edit.copy_markup</span>
+          <span class="hidden"><responsive on="640-" class="inline"/>$t:admin.templates.layout_edit.copy_markup</span>
         </button>
-        <button data-if="{{_global.selectedNodeKind !== 'extension'}}" type="button" class="hidden md:flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-testid="layout-preview">
+        <button data-if="{{_global.selectedNodeKind !== 'extension'}}" type="button" class="hidden items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-testid="layout-preview">
+          <responsive on="768-" class="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"/>
           <on type="click">
             <action-ref name="preview_current_file"/>
           </on>
           <icon name="fa-regular fa-eye" class="text-base"/>
-          <span class="hidden sm:inline">$t:admin.templates.layout_edit.preview</span>
+          <span class="hidden"><responsive on="640-" class="inline"/>$t:admin.templates.layout_edit.preview</span>
         </button>
-        <button data-if="{{_global.selectedNodeKind === 'extension'}}" type="button" class="hidden md:flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-testid="extension-preview">
+        <button data-if="{{_global.selectedNodeKind === 'extension'}}" type="button" class="hidden items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-testid="extension-preview">
+          <responsive on="768-" class="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"/>
           <on type="click">
             <action-ref name="preview_current_file"/>
           </on>
           <icon name="fa-regular fa-eye" class="text-base"/>
-          <span class="hidden sm:inline">$t:admin.templates.layout_edit.preview</span>
+          <span class="hidden"><responsive on="640-" class="inline"/>$t:admin.templates.layout_edit.preview</span>
         </button>
-        <button data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; current_layout?.data?.abilities?.can_update === true}}" type="button" class="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{_global.isSaving}}" data-testid="layout-save">
+        <button data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; current_layout?.data?.abilities?.can_update === true}}" type="button" class="hidden items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{_global.isSaving}}" data-testid="layout-save">
+          <responsive on="768-" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"/>
           <on type="click">
             <action-ref name="save_current_file"/>
           </on>
@@ -352,7 +360,8 @@
           <icon data-if="{{_global.isSaving}}" name="fa-solid fa-spinner" class="spinner-sm"/>
           <span>{{_global.isSaving ? '$t:admin.templates.layout_edit.saving' : '$t:admin.templates.layout_edit.save'}}</span>
         </button>
-        <button type="button" data-if="{{_global.selectedNodeKind === 'extension' &amp;&amp; current_extension?.data?.abilities?.can_update === true}}" class="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{_global.isSaving}}" data-testid="extension-save">
+        <button type="button" data-if="{{_global.selectedNodeKind === 'extension' &amp;&amp; current_extension?.data?.abilities?.can_update === true}}" class="hidden items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{_global.isSaving}}" data-testid="extension-save">
+          <responsive on="768-" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"/>
           <on type="click">
             <action-ref name="save_current_file"/>
           </on>
@@ -362,7 +371,8 @@
         </button>
         <!-- 모바일 ⋯ 더보기 — 내려받기·복사를 접는다. 같은 동작을 위 버튼과 두 벌로 적는 이유는
              `<action handler>` 가 문서 층 `<action name>` 으로 올릴 수 없는 인라인 핸들러이기 때문이다. -->
-        <div class="relative md:hidden">
+        <div class="relative">
+          <responsive on="768-" class="relative hidden"/>
           <button type="button" class="flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" aria-label="$t:common.more_actions" aria-haspopup="menu" aria-expanded="{{!!_global.headerMoreOpen}}" data-testid="layout-more-menu">
             <on type="click">
               <!-- 모바일 더보기 메뉴 — 내려받기·복사를 접어 둔 메뉴를 열고 닫는다 -->
@@ -396,9 +406,16 @@
           </div>
         </div>
       </page-header>
+      <!-- 검수용 저장 띠(#888) — 실행 역할이 stage 인 서버에서 이 편집기의 저장은 그 서버 전용 레이아웃에만 들어가고
+           운영 사이트에는 반영되지 않는다. 다음 배포가 검수 서버의 편집분을 버리므로, 저장 전에 그 사실을 알린다. -->
+      <div data-ref="stage_editor_banner" data-if="{{_global.appConfig?.runtime_role === 'stage'}}" role="status" class="alert-warning mt-4">
+        <icon name="flask" class="text-amber-700 dark:text-amber-300 flex-shrink-0"/>
+        <p class="text-warning-soft">$t:admin.stage_role.editor_banner</p>
+      </div>
       <!-- 모바일 하단 고정 바(계획서 §7.5) — 저장·미리보기만 남긴다. 아래 여백에 safe-area 를 더해
            홈 인디케이터에 가리지 않게 하고, 페이지 컨테이너는 그만큼 바닥 여백을 둔다. -->
-      <div class="md:hidden fixed bottom-0 inset-x-0 z-30 flex gap-2 px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700" data-testid="mobile-action-bar">
+      <div class="fixed bottom-0 inset-x-0 z-30 flex gap-2 px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700" data-testid="mobile-action-bar">
+        <responsive on="768-" class="hidden fixed bottom-0 inset-x-0 z-30 gap-2 px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700"/>
         <button type="button" class="flex-1 flex-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-testid="mobile-preview">
           <on type="click">
             <action-ref name="preview_current_file"/>
@@ -534,7 +551,8 @@
                   <span data-if="{{_global.selectedNodeKind === 'extension' &amp;&amp; current_extension?.data?.is_modified}}" class="px-2 py-0.5 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded">$t:admin.templates.layout_edit.extension_modified_badge</span>
                   <!-- 휴대폰 폭(md 미만)에서는 설명·수정일·이력 버튼·하단 안내를 접어 두어 코드 칸에 높이를 준다(7.1.0 P17,
                        실측 390x844 에서 코드 칸 128px). 이 버튼으로 펼친다. md 이상에서는 늘 펼쳐져 있어 버튼을 숨긴다. -->
-                  <button data-ref="code_editor_info_toggle" type="button" class="md:hidden ml-auto flex-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700" aria-controls="code_editor_file_desc code_editor_file_meta code_editor_inline_notice" aria-expanded="{{_global.codeEditorInfoOpen ? 'true' : 'false'}}">
+                  <button data-ref="code_editor_info_toggle" type="button" class="ml-auto flex-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700" aria-controls="code_editor_file_desc code_editor_file_meta code_editor_inline_notice" aria-expanded="{{_global.codeEditorInfoOpen ? 'true' : 'false'}}">
+                    <responsive on="768-" class="hidden ml-auto flex-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"/>
                     <on type="click">
                       <set-state target="global" codeEditorInfoOpen="{{!_global.codeEditorInfoOpen}}"/>
                     </on>
@@ -545,9 +563,10 @@
                 <!-- 설명·수정일·버전 히스토리는 «불러온 파일» 의 것이다. 없는 파일 탭은 서버를 부르지 않아 current_layout 이
                      직전 파일로 남으므로, 고른 파일과 불러온 파일이 다르면 그리지 않는다 — 그리면 지워진 파일 이름 옆에
                      다른 파일의 수정일·이력이 붙는다(실측 2026-10-03). 평소 파일 전환 중의 짧은 공백도 같은 이유로 비운다. -->
-                <p data-ref="layout_meta_description" data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; (current_layout !== undefined &amp;&amp; (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName))}}" id="code_editor_file_desc" class="mt-1 text-label-subtle {{_global.codeEditorInfoOpen ? '' : 'hidden md:block'}}">{{raw:current_layout?.data?.description || ''}}</p>
+                <p data-ref="layout_meta_description" data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; (current_layout !== undefined &amp;&amp; (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName))}}" id="code_editor_file_desc" class="mt-1 text-label-subtle {{_global.codeEditorInfoOpen ? '' : 'hidden'}}"><responsive on="768-" class="mt-1 text-label-subtle {{_global.codeEditorInfoOpen ? '' : 'block'}}"/>{{raw:current_layout?.data?.description || ''}}</p>
               </div>
-              <div id="code_editor_file_meta" class="{{_global.codeEditorInfoOpen ? 'flex-center' : 'hidden md:flex md:items-center'}} gap-3 shrink-0">
+              <div id="code_editor_file_meta" class="{{_global.codeEditorInfoOpen ? 'flex-center' : 'hidden'}} gap-3 shrink-0">
+                <responsive on="768-" class="{{_global.codeEditorInfoOpen ? 'flex-center' : 'flex items-center'}} gap-3 shrink-0"/>
                 <span data-ref="layout_meta_modified_at" data-if="{{_global.selectedNodeKind === 'extension' || (current_layout !== undefined &amp;&amp; (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName))}}" class="text-label-subtle whitespace-nowrap">$t:admin.templates.layout_edit.modified_at|date={{current_layout?.data?.updated_at ?? ''}}</span>
                 <!-- shrink-0·nowrap — 설명이 긴 레이아웃(시드 화면 등)에서 헤더 행이 눌리면 이 버튼 글자가 세로로 한 자씩 꺾였다(1280 실측). -->
                 <button data-ref="layout_meta_version_history" data-if="{{_global.selectedNodeKind === 'extension' || (current_layout !== undefined &amp;&amp; (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName))}}" type="button" class="flex-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shrink-0 whitespace-nowrap" data-testid="layout-version-history-open">
@@ -750,7 +769,8 @@
               <div data-if="{{!((warning.line ?? 0) > 0)}}" class="font-mono text-xs break-all">{{warning.message ?? ''}}{{warning.code ? (' · ' + warning.code) : ''}}</div>
             </div>
           </div>
-          <div id="code_editor_inline_notice" class="p-3 mt-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 {{_global.codeEditorInfoOpen ? '' : 'hidden md:block'}}">
+          <div id="code_editor_inline_notice" class="p-3 mt-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 {{_global.codeEditorInfoOpen ? '' : 'hidden'}}">
+            <responsive on="768-" class="p-3 mt-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 {{_global.codeEditorInfoOpen ? '' : 'block'}}"/>
             <div class="flex-center gap-2 text-label-subtle">
               <icon name="fa-solid fa-circle-info" class="text-base"/>
               <span>$t:admin.templates.layout_edit.inlined_notice</span>

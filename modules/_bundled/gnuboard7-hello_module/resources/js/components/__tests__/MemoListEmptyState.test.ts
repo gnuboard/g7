@@ -25,6 +25,9 @@ const MODULE_ROOT = path.resolve(__dirname, '../../../..');
 
 const readJson = (rel: string) => JSON.parse(fs.readFileSync(path.join(MODULE_ROOT, rel), 'utf8'));
 
+/** 모듈 자기 CSS — 화면 클래스의 정의가 있는 곳 */
+const MODULE_CSS = fs.readFileSync(path.join(MODULE_ROOT, 'resources/css/main.css'), 'utf8');
+
 /** 트리를 펼쳐 모든 노드를 모은다 */
 const flatten = (nodes: LayoutNode[]): LayoutNode[] =>
   nodes.flatMap((n) => [n, ...flatten(n.children ?? [])]);
@@ -43,8 +46,10 @@ const checkNotice = (layout: string, key: string) => {
   const notice = flatten(tree.slots.content).find((n) => n.text === `$t:gnuboard7-hello_module.${key}`);
   expect(notice).toBeDefined();
   expect(notice!.if ?? '').toContain('(memos?.data?.data ?? []).length === 0');
-  // 다크 모드 짝이 있는 글자색
-  expect(notice!.props?.className ?? '').toMatch(/text-gray-\d+ .*dark:text-gray-\d+/);
+  // 모듈 CSS 의 안내 문구 클래스 — 글자색과 그 다크 짝(중립 표식)이 모듈 CSS 에 있다
+  expect((notice!.props?.className ?? '').split(/\s+/)).toContain('hellomodule-empty');
+  expect(MODULE_CSS).toMatch(/\.hellomodule-empty\s*\{[^}]*color:/);
+  expect(MODULE_CSS).toMatch(/\.hellomodule-empty:is\(\[data-g7-color-scheme="dark"\][^{]*\{[^}]*color:/);
   // 안내 문구 키가 ko, en 언어 파일에 모두 있다
   for (const locale of ['ko', 'en']) {
     const value = pick(readJson(`resources/lang/${locale}.json`), key);

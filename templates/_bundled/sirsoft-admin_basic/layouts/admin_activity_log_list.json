@@ -1,5 +1,5 @@
 {
-    "comment": "활동 로그 목록. 조건이 일곱 가지(검색어·검색 대상·로그 종류·행위자·기간)라 **입력은 `_local.filter`\n  에 모아 두고 검색 버튼을 눌러야 URL 로 옮겨 간다** — 고를 때마다 조회하면 한 번 거를 때 대여섯 번\n  다녀온다. 데이터소스는 URL 만 읽으므로 그 사이에는 목록이 움직이지 않는다.\n  화면 이동은 전부 `replace` 다 — 조건을 몇 번 바꿔 가며 좁히는 화면이라 뒤로가기 이력에 다 쌓이면\n  빠져나가지 못한다.\n  본체는 조각 둘(`_partial_filter`·`_partial_datagrid`)로 나뉘어 있고 여기에는 뼈대와 삭제 창만 있다.",
+    "comment": "활동 로그 목록. 조건이 여러 가지(검색어·검색 대상·로그 종류·행위자·기간·삭제 직전 기록만)라 **입력은 `_local.filter`\n  에 모아 두고 검색 버튼을 눌러야 URL 로 옮겨 간다** — 고를 때마다 조회하면 한 번 거를 때 대여섯 번\n  다녀온다. 데이터소스는 URL 만 읽으므로 그 사이에는 목록이 움직이지 않는다.\n  화면 이동은 전부 `replace` 다 — 조건을 몇 번 바꿔 가며 좁히는 화면이라 뒤로가기 이력에 다 쌓이면\n  빠져나가지 못한다.\n  본체는 조각 둘(`_partial_filter`·`_partial_datagrid`)로 나뉘어 있고 여기에는 뼈대와 삭제 창만 있다.",
     "version": "1.0.0",
     "layout_name": "admin_activity_log_list",
     "extends": "_admin_base",
@@ -25,6 +25,7 @@
                 "created_by": "{{query.created_by}}",
                 "date_from": "{{query.date_from}}",
                 "date_to": "{{query.date_to}}",
+                "deletion_snapshot": "{{query.deletion_snapshot}}",
                 "sort_by": "{{query.sort_by || 'created_at'}}",
                 "sort_order": "{{query.sort_order || 'desc'}}"
             },
@@ -47,7 +48,8 @@
             "createdBy": "",
             "dateQuick": "",
             "dateFrom": "",
-            "dateTo": ""
+            "dateTo": "",
+            "deletionSnapshot": false
         },
         "actorSearchResults": []
     },
@@ -75,7 +77,8 @@
                     "log_type[]": "{{_local.filter.logTypes?.length > 0 ? _local.filter.logTypes : undefined}}",
                     "created_by": "{{_local.filter.createdBy || undefined}}",
                     "date_from": "{{_local.filter.dateFrom || undefined}}",
-                    "date_to": "{{_local.filter.dateTo || undefined}}"
+                    "date_to": "{{_local.filter.dateTo || undefined}}",
+                    "deletion_snapshot": "{{_local.filter.deletionSnapshot ? 1 : undefined}}"
                 }
             }
         }
@@ -93,7 +96,8 @@
                         "createdBy": "{{query.created_by || ''}}",
                         "dateQuick": "",
                         "dateFrom": "{{query.date_from || ''}}",
-                        "dateTo": "{{query.date_to || ''}}"
+                        "dateTo": "{{query.date_to || ''}}",
+                        "deletionSnapshot": "{{query.deletion_snapshot === '1' || query.deletion_snapshot === 'true'}}"
                     }
                 }
             }
@@ -124,8 +128,15 @@
                                     {
                                         "type": "basic",
                                         "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "text-2xl font-semibold text-gray-900 dark:text-white"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "page-title"
+                                            "className": "text-xl font-semibold text-gray-900 dark:text-white"
                                         },
                                         "text": "$t:admin.activity_log.page_title"
                                     },
@@ -381,7 +392,143 @@
             "name": "Modal",
             "props": {
                 "title": "$t:admin.activity_log.delete.confirm_title",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "btn btn-secondary",
+                            "disabled": "{{_global.isDeleting}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "삭제 실행. 조건이 URL 에 있고 여기서는 URL 이 바뀌지 않으므로 목록을 직접 다시 부른다.\n                 403 은 별도 갈래로 문구를 가른다 — 삭제 권한만 없는 경우가 있다.",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isDeleting": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/admin/activity-logs/{{_global.modal_data.id}}",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "DELETE"
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeleting": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "activityLogs"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "$t:admin.activity_log.delete.success"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeleting": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ],
+                                        "errorHandling": {
+                                            "403": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isDeleting": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "$t:auth.permission_denied"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                            "disabled": "{{_global.isDeleting}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.isDeleting}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "spin": true,
+                                    "className": "text-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.delete"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -400,149 +547,6 @@
                             "text": "$t:admin.activity_log.delete.confirm_message"
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "btn btn-secondary",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "삭제 실행. 조건이 URL 에 있고 여기서는 URL 이 바뀌지 않으므로 목록을 직접 다시 부른다.\n                 403 은 별도 갈래로 문구를 가른다 — 삭제 권한만 없는 경우가 있다.",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isDeleting": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/admin/activity-logs/{{_global.modal_data.id}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "DELETE"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isDeleting": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "activityLogs"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:admin.activity_log.delete.success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isDeleting": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                }
-                                            ],
-                                            "errorHandling": {
-                                                "403": {
-                                                    "handler": "sequence",
-                                                    "actions": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "isDeleting": false
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "type": "error",
-                                                                "message": "$t:auth.permission_denied"
-                                                            }
-                                                        }
-                                                    ]
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isDeleting}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "spin": true,
-                                        "className": "text-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.delete"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ],
             "meta": {
@@ -556,7 +560,147 @@
             "name": "Modal",
             "props": {
                 "title": "$t:admin.activity_log.delete.bulk_confirm_title",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "btn btn-secondary",
+                            "disabled": "{{_global.isDeleting}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "일괄 삭제 실행. 성공하면 선택을 비운다 — 지운 id 가 남아 있으면 다음 일괄이 없는 것을\n                 다시 보낸다. 403 갈래는 한 건 삭제와 같은 이유로 문구를 가른다.",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isDeleting": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/admin/activity-logs/bulk-delete",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "POST",
+                                            "body": {
+                                                "ids": "{{_global.selectedIds_admin_activity_logs ?? []}}"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeleting": false,
+                                                    "selectedIds_admin_activity_logs": []
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "activityLogs"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "$t:admin.activity_log.delete.bulk_success"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeleting": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ],
+                                        "errorHandling": {
+                                            "403": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isDeleting": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "$t:auth.permission_denied"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                            "disabled": "{{_global.isDeleting}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.isDeleting}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "spin": true,
+                                    "className": "text-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.delete"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -573,153 +717,6 @@
                                 "className": "text-gray-700 dark:text-gray-300"
                             },
                             "text": "$t:admin.activity_log.delete.bulk_confirm_message"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "btn btn-secondary",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "일괄 삭제 실행. 성공하면 선택을 비운다 — 지운 id 가 남아 있으면 다음 일괄이 없는 것을\n                 다시 보낸다. 403 갈래는 한 건 삭제와 같은 이유로 문구를 가른다.",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isDeleting": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/admin/activity-logs/bulk-delete",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "POST",
-                                                "body": {
-                                                    "ids": "{{_global.selectedIds_admin_activity_logs ?? []}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isDeleting": false,
-                                                        "selectedIds_admin_activity_logs": []
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "activityLogs"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:admin.activity_log.delete.bulk_success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isDeleting": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                }
-                                            ],
-                                            "errorHandling": {
-                                                "403": {
-                                                    "handler": "sequence",
-                                                    "actions": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "isDeleting": false
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "type": "error",
-                                                                "message": "$t:auth.permission_denied"
-                                                            }
-                                                        }
-                                                    ]
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isDeleting}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "spin": true,
-                                        "className": "text-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.delete"
-                                }
-                            ]
                         }
                     ]
                 }

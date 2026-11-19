@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#597 |
 #   Phase 3 는 코어 알림 채널 등록 + 문자 발송 위임 배선(백엔드)이다. axes cross product 의
 #   런타임 효과(채널 노출/readiness/전화번호 해석/발송 Job 위임)는 PHPUnit 로 전수 가드된다:
 #   RegisterNotificationChannelsListenerTest(14) + SmsChannelDriverTest(7) +
@@ -43,6 +43,8 @@ exclusions:
   - { readiness_state: missing_sender, channel: alimtalk, reason: "alimtalk readiness 는 자체 키(api_key/sender_key) 부족을 별도 판정 — sender 축은 sms 로 대표" }
 
 effects:
+  # 언어별 알림 변수 (#798 — GenericNotification::getDataFor)
+  - sms_body_resolves_localized_variables_for_recipient   # {ko,en} 값 변수를 수신자 언어로 치환
   # 채널 등록 (filter_available_channels)
   - sms_channel_exposed_in_available_channels
   - alimtalk_channel_exposed_in_available_channels

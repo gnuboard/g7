@@ -186,8 +186,11 @@ class ExtensionPendingBundledTest extends TestCase
         }
 
         Cache::flush();
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

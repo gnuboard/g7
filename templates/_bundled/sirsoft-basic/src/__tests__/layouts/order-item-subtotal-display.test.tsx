@@ -103,7 +103,7 @@ const discountItem = {
   mc_final_amount: { KRW: { formatted: '27,000원' } },
 };
 
-function buildProbeLayout(item: any, noDiscountIf: string, discountIf: string) {
+function buildProbeLayout(noDiscountIf: string, discountIf: string) {
   return {
     version: '1.0.0',
     layout_name: 'test/order-item-subtotal',
@@ -162,8 +162,10 @@ describe('U19② 무할인 주문 항목 소계 표시 (_items.json if 식 실 �
     vi.clearAllMocks();
   });
 
+  // @scenario case=member_no_discount
+  // @effects no_discount_subtotal_renders
   it('무할인 항목의 소계 Span 이 렌더된다 (decimal 문자열 strict 비교 회귀 차단)', async () => {
-    const layout = buildProbeLayout(noDiscountItem, getNoDiscountSubtotalIf(), getDiscountSubtotalIf());
+    const layout = buildProbeLayout(getNoDiscountSubtotalIf(), getDiscountSubtotalIf());
     testUtils = createLayoutTest(layout);
     testUtils.mockApi('order', { response: { data: { options: [noDiscountItem] } } });
     await testUtils.render();
@@ -176,8 +178,10 @@ describe('U19② 무할인 주문 항목 소계 표시 (_items.json if 식 실 �
     expect(screen.queryByTestId('discount-block')).not.toBeInTheDocument();
   });
 
+  // @scenario case=member_discounted
+  // @effects discount_branch_exclusive
   it('할인 항목은 할인 분기가 렌더되고 무할인 분기는 미렌더된다 (회귀 없음)', async () => {
-    const layout = buildProbeLayout(discountItem, getNoDiscountSubtotalIf(), getDiscountSubtotalIf());
+    const layout = buildProbeLayout(getNoDiscountSubtotalIf(), getDiscountSubtotalIf());
     testUtils = createLayoutTest(layout);
     testUtils.mockApi('order', { response: { data: { options: [discountItem] } } });
     await testUtils.render();
@@ -189,12 +193,13 @@ describe('U19② 무할인 주문 항목 소계 표시 (_items.json if 식 실 �
     expect(screen.queryByTestId('no-discount-subtotal')).not.toBeInTheDocument();
   });
 
+  // @scenario case=guest_no_discount
+  // @effects no_discount_subtotal_renders
   it('비회원 주문상세도 동일 partial 공유로 무할인 소계가 렌더된다 (GuestOrderResource shape)', async () => {
     // GuestOrderResource 는 OrderOptionResource::collection 을 그대로 노출하므로
     // subtotal_discount_amount_value 보조 필드를 회원과 동일하게 가진다.
     const guestNoDiscountItem = { ...noDiscountItem, id: 99 };
     const layout = buildProbeLayout(
-      guestNoDiscountItem,
       getNoDiscountSubtotalIf(),
       getDiscountSubtotalIf(),
     );

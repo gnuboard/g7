@@ -65,8 +65,11 @@ class PageAttachmentPermissionAxisTest extends FeatureTestCase
     protected function tearDown(): void
     {
         Page::where('slug', 'like', 'axis-%')->forceDelete();
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

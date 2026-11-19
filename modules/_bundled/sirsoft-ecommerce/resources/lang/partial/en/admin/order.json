@@ -104,6 +104,11 @@
         "intl_state_placeholder": "State / Province",
         "intl_postal_code_placeholder": "Postal Code"
       },
+      "extra_fields": {
+        "title": "Additional Checkout Fields",
+        "section_orderer": "Orderer",
+        "section_shipping": "Shipping"
+      },
       "admin_memo": {
         "title": "Admin Memo",
         "placeholder": "Enter admin memo..."

@@ -96,6 +96,21 @@ function isHttpUrl(value: string): boolean {
   return /^https?:\/\//i.test(value.trim());
 }
 
+/** 선언형 섀도 루트 속성 — 허용 목록에 있으면 DOMPurify 가 정화 결과를 화면 문서로 가져온다(importNode) */
+const SHADOW_ROOT_ATTRS = ['shadowroot', 'shadowrootmode'];
+
+/**
+ * 정화한 조각을 담을 비활성 문서를 돌려줍니다 — 조각이 화면 문서에 속해 있으면(있어서는 안 되는 경우) 새 비활성 문서를 만든다.
+ *
+ * @param fragment 정화한 조각
+ * @returns 리소스를 받지 않는 문서
+ */
+function inertDocumentOf(fragment: DocumentFragment): Document {
+  const owner = fragment.ownerDocument;
+
+  return owner && owner !== document ? owner : document.implementation.createHTMLDocument('');
+}
+
 export class ContentPolicyRuntime {
   constructor(private readonly deps: ContentPolicyRuntimeDeps) {}
 
@@ -199,14 +214,18 @@ export class ContentPolicyRuntime {
       ...purifyConfig,
       FORBID_TAGS: forbid,
       ADD_TAGS: Array.from(new Set([...(baseConfig.ADD_TAGS ?? []), ...(policy.extra_tags ?? []), ...(passEmbed ? [EMBED_TAG] : [])])).filter((tag) => !keepForbid.includes(tag) && !dropTags.includes(tag)),
-      ADD_ATTR: Array.from(new Set([...(baseConfig.ADD_ATTR ?? []), ...extraAttrs])),
+      // 선언형 섀도 루트 속성은 뺀다 — 허용하면 DOMPurify 가 조각을 화면 문서로 가져와 그 순간 본문 이미지 원본 요청이 나간다
+      // (innerHTML 은 선언형 섀도 루트를 만들지 않아 본문에서 쓸 곳이 없는 속성이다)
+      ADD_ATTR: Array.from(new Set([...(baseConfig.ADD_ATTR ?? []), ...extraAttrs])).filter((name) => !SHADOW_ROOT_ATTRS.includes(String(name).toLowerCase())),
       ADD_FORBID_CONTENTS: Array.from(new Set([...(Array.isArray(baseConfig.ADD_FORBID_CONTENTS) ? baseConfig.ADD_FORBID_CONTENTS : []), ...dropTags])),
       RETURN_DOM_FRAGMENT: true,
     }) as DocumentFragment;
 
     this.renderEmbeds(fragment, policy);
 
-    const holder = document.createElement('div');
+    // 직렬화 그릇은 조각과 같은 비활성 문서(DOMPurify 가 DOMParser 로 만든 문서)에서 만든다. 화면 문서의 요소에 조각을 옮기면
+    // 문서에 붙이지 않아도 브라우저가 그 안 `<img src>` 의 원본 주소를 받기 시작한다 — 호출자가 썸네일 주소로 바꾸기도 전이다.
+    const holder = inertDocumentOf(fragment).createElement('div');
     holder.appendChild(fragment);
 
     return holder.innerHTML;

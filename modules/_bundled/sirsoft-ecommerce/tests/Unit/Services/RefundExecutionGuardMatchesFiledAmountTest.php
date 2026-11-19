@@ -45,7 +45,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * @scenario return_round=refund_execution_guard
  *
- * @effects refund_execution_guard_accepts_the_amount_it_filed
+ * 효과 요약(마커 아님 — 평문): refund_execution_guard_accepts_the_amount_it_filed
  */
 class RefundExecutionGuardMatchesFiledAmountTest extends ModuleTestCase
 {

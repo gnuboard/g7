@@ -26,6 +26,10 @@
 
 레이아웃·조각 JSON 만 고쳤다면 빌드는 필요 없고
 `php artisan plugin:update sirsoft-daum_postcode --force` 로 반영합니다.
+
+화면 폭에 따라 달라지는 배치는 Tailwind 반응형 접두(`sm:`·`md:`·`lg:`)를 쓰지 않고 엔진 `responsive` 로 씁니다(예: `<responsive on="desktop" class="…"/>`, `on="640-"`). 갈래의 `class` 는 기본 `class` 를 통째로 바꾸므로 그 폭에서 필요한 토큰을 모두 적습니다.
+
+폭 미디어를 품은 의미 클래스 사본(`daumpostcode-grid-3col-responsive`·`daumpostcode-grid-2col-responsive`·`daumpostcode-page-title`·`daumpostcode-admin-page-content-responsive` 등)도 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="daumpostcode:grid daumpostcode:grid-cols-1 daumpostcode:gap-4 daumpostcode:items-start"` 에 `<responsive on="1024-" class="daumpostcode:grid daumpostcode:grid-cols-3 daumpostcode:gap-4 daumpostcode:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`daumpostcode:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->
 
 ## 액션 핸들러
@@ -94,12 +98,13 @@ SDK 가 막힌 환경에서 필드가 잠긴 채 남아 주소를 아예 입력�
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
-커밋되는 산출물은 `dist/js/plugin.iife.js` 와 `dist/css/plugin.css` 둘이며, 동봉 제3자 자산은 없습니다 — **Daum SDK
+커밋되는 산출물은 `dist/js/plugin.iife.js` 와 화면 스타일 `dist/css/plugin.css`(앞글자 `daumpostcode` — 설정 화면 클래스와,
+주소 검색으로만 채우는 읽기 전용 칸에 핸들러가 다는 `daumpostcode-readonly` — 옅은 회색 바탕·기본 커서, 다크 짝 포함, 주소 검색 창의 `daumpostcode-inline*`·`daumpostcode-layer`)이며, 동봉 제3자 자산은 없습니다 — **Daum SDK
 는 동봉하지 않고 외부 호스트에서 로드**하기 때문입니다.
 
 `dist/css/plugin.css` 는 엔트리가 import 하는 `resources/css/main.css` 를 빌드가 뽑아낸 것이고, `plugin.json` 의
 `assets.css` 가 그 경로를 선언합니다(1.2.1). 주소 검색 창(펼치기 영역·전체 화면 창·레이어)의 모양과 다크 모드 짝이 여기
-있습니다. 핸들러는 `<style>` 요소나 `style` 속성 문자열을 만들지 않습니다 — 엄격한 스타일 정책
+있습니다(다크 짝은 템플릿 `.dark` 가 아니라 중립 표식 `data-g7-color-scheme` 규격). 핸들러는 `<style>` 요소나 `style` 속성 문자열을 만들지 않습니다 — 엄격한 스타일 정책
 (`style-src 'self'; style-src-attr 'none'`)에서 둘 다 막혀 검색 창이 무스타일로 뜨기 때문입니다. 실행 중에 정해지는 값
 (펼치기 영역 높이, 레이어 설정 크기 `--dp-width`·`--dp-height`)은 `el.style.x = …`·`el.style.setProperty()` 로 싣습니다.
 

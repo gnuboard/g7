@@ -1495,10 +1495,30 @@ return [
             'order_custom_email' => [
                 'app_name' => '사이트명',
             ],
+            // 내보내기(#787)
+            'export_completed' => [
+                'name' => '수신자(요청자) 이름',
+                'type_label' => '작업유형 (주문내역·상품내역·마일리지 내역)',
+                'exports_url' => '내보내기 관리 URL',
+                'exports_path' => '내보내기 관리 경로 (사이트 주소 없이)',
+                'file_name' => '파일명',
+                'row_count' => '행 수',
+                'expires_at' => '파일 만료일',
+            ],
+            'export_failed' => [
+                'name' => '수신자(요청자) 이름',
+                'type_label' => '작업유형 (주문내역·상품내역·마일리지 내역)',
+                'exports_url' => '내보내기 관리 URL',
+                'exports_path' => '내보내기 관리 경로 (사이트 주소 없이)',
+                'error_message' => '실패 사유',
+            ],
         ],
     ],
     // 콘솔 명령 출력
     'console' => [
+        'prune_exports' => [
+            'done' => '만료 처리 :expired건, 시간 초과 실패 처리 :failed건',
+        ],
         'mileage' => [
             'disabled' => '마일리지 기능이 비활성화되어 있습니다.',
         ],
@@ -1562,6 +1582,11 @@ return [
             'retention_skipped' => '보존기간(--days)이 1 미만이라 정리를 건너뜁니다.',
             'dry_run' => '삭제 대상 :count건 (보존기간 :days일 초과)',
             'done' => '클레임 임시 첨부 정리 완료: 대상 :scanned건 / 삭제 :deleted건 / 실패 :failed건',
+        ],
+        'prune_temp_category_images' => [
+            'retention_disabled' => '임시 이미지 보존기간이 1일 미만이어서 정리를 수행하지 않았습니다.',
+            'dry_run' => '보존기간(:days일) 경과 미연결 임시 카테고리 이미지: :count건',
+            'done' => '보존기간(:days일) 경과 임시 카테고리 이미지 :scanned건 중 :deleted건을 삭제했습니다. (실패 :failed건)',
         ],
         'prune_temp_product_images' => [
             'retention_disabled' => '임시 이미지 보존기간이 1일 미만이어서 정리를 수행하지 않았습니다.',
@@ -1630,11 +1655,13 @@ return [
             ],
         ],
         'shipping_carrier' => [
+            'entity_label' => '택배사',
             'sync_start' => '배송사 초기 데이터 동기화를 시작합니다.',
             'created' => '배송사 생성: :name (:code)',
             'sync_done' => '배송사 동기화 완료: :created건 생성, :synced건 동기화, stale :deleted건 삭제, 사용 중 :preserved건 보존 (전체 :total건)',
         ],
         'shipping_type' => [
+            'entity_label' => '배송유형',
             'sync_start' => '배송유형 초기 데이터 동기화를 시작합니다.',
             'sync_done' => '배송유형 동기화 완료: 정의 :defined건 / DB :count건 / stale 삭제 :deleted건 / 사용 중 :preserved건 보존',
         ],
@@ -1785,6 +1812,7 @@ return [
             'created' => '카테고리 생성: :name (depth: :depth)',
         ],
         'claim_reason' => [
+            'entity_label' => '클레임 사유',
             'sync_start' => '클레임 사유 초기 데이터 동기화를 시작합니다.',
             'created' => '클레임 사유 생성: :name (:code)',
             'preserved' => '사용 중이라 보존한 사유: :count건',
@@ -1841,6 +1869,76 @@ return [
             'done' => '배송정책 더미 데이터 :count건이 성공적으로 생성되었습니다.',
             'purged' => '기존 배송정책 :count건을 삭제했습니다.',
         ],
+        // 이미지 썸네일 실측 시더 (Sample\ThumbnailMeasureSeeder·ThumbnailMeasureCleanupSeeder)
+        'thumbnail_measure' => [
+            'start' => '이커머스 썸네일 실측 데이터 생성을 시작합니다.',
+            'done' => '이커머스 썸네일 실측 데이터 생성을 마쳤습니다.',
+            'cleanup_start' => '이커머스 썸네일 실측 데이터 정리를 시작합니다.',
+            'cleanup_done' => '이커머스 썸네일 실측 데이터 정리를 마쳤습니다.',
+            'previous_removed' => '이전 실행의 이커머스 실측 데이터를 지웠습니다: :counts',
+            'order_calculation_dropped' => '주문 금액 계산 결과에서 실측 상품 옵션이 빠졌습니다.',
+            'data_title' => '이커머스 실측 데이터',
+            'data_headers' => [
+                'kind' => '구분',
+                'owner_id' => '소유 ID',
+                'record' => '이미지 ID / 번호',
+                'hash' => '해시',
+                'mime' => 'MIME',
+                'size' => '크기',
+                'url' => '주소',
+            ],
+            'kinds' => [
+                'category_banner' => '카테고리 배너',
+                'product_a_image' => '상품 A 이미지',
+                'product_b_image' => '상품 B 이미지',
+                'order_confirmed' => '주문 (구매확정)',
+                'review_visible_image' => '노출 리뷰 이미지',
+                'review_hidden_image' => '숨김 리뷰 이미지',
+                'order_delivered' => '주문 (배송완료)',
+                'return_claim' => '반품 신청',
+                'claim_image' => '클레임 이미지',
+            ],
+            'category' => '카테고리: :path (ID :id, 배너 이미지 해시 :hash)',
+            'products' => '상품: :a_path (A, ID :a_id), :b_path (B, ID :b_id)',
+            'cleanup_title' => '이커머스 실측 데이터 정리',
+            'cleanup_headers' => [
+                'orders' => '주문',
+                'reviews' => '리뷰',
+                'review_images' => '리뷰 이미지',
+                'claims' => '클레임',
+                'claim_images' => '클레임 이미지',
+                'products' => '상품',
+                'product_images' => '상품 이미지',
+                'categories' => '카테고리',
+                'category_images' => '카테고리 이미지',
+                'shipping_policies' => '배송정책',
+                'activity_logs' => '활동 로그',
+            ],
+        ],
+    ],
+    // 내보내기(#787)
+    'export' => [
+        'download_link_issued' => '다운로드 주소를 발급했습니다.',
+        'catalog_retrieved' => '내보내기 설정을 불러왔습니다.',
+        'estimated' => '예상 건수를 계산했습니다.',
+        'requested' => '내보내기를 요청했습니다. 완료되면 「내보내기 관리」에서 내려받을 수 있습니다.',
+        'list_retrieved' => '내보내기 목록을 불러왔습니다.',
+        'retrieved' => '내보내기 작업을 불러왔습니다.',
+        'downloads_retrieved' => '다운로드 이력을 불러왔습니다.',
+        'deleted' => '내보내기 파일을 삭제했습니다.',
+        'bulk_deleted' => ':count건을 삭제했습니다. (건너뜀 :skipped건)',
+        'not_found' => '내보내기 작업을 찾을 수 없습니다.',
+    ],
+    'lifecycle' => [
+        'purge_failed' => '내보낸 파일을 지우지 못해 제거를 멈췄습니다. 저장소의 권한·상태를 확인한 뒤 다시 제거해 주세요(개인정보가 담길 수 있는 파일이라 남긴 채 제거하지 않습니다).',
+    ],
+    // 환경설정 > 업로드 「기존 이미지 썸네일 만들기」의 원본 종류 이름
+    'thumbnail_sources' => [
+        'product_image' => '상품 이미지',
+        'category_image' => '카테고리 이미지',
+        'review_image' => '리뷰 이미지',
+        'claim_image' => '교환/반품/환불 첨부 이미지',
+        'content_media' => '상품 설명과 공통정보 본문 이미지',
     ],
     // 최근 검색어 범위 이름 (module.json search_scopes.products.label — 관리자 환경설정 > 개인정보 「최근 검색어」 카드)
     'search_history' => [

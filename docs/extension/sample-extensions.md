@@ -10,7 +10,7 @@
 ```text
 1. 샘플 확장 4종: gnuboard7-hello_module / _plugin / _admin_template / _user_template
 2. 위치: modules/_bundled/, plugins/_bundled/, templates/_bundled/ 하위
-3. 용도: 스캐폴딩 결과 검증, 계층 구조 1:1 비교, 훅/레이아웃/테스트 학습
+3. 용도: 스캐폴딩 결과 검증, 계층 구조 1:1 비교, 훅/레이아웃/테스트/확장 CSS 학습
 4. hidden: 모든 샘플은 manifest.hidden=true → 관리자 UI 기본 제외 (CLI 정상)
 5. 설치: php artisan {type}:install gnuboard7-hello_*
 ```
@@ -32,10 +32,10 @@
 
 | 확장 | 타입 | 경로 | 파일 수 | 테스트 | 주 시연 |
 |------|------|------|---------|--------|---------|
-| `gnuboard7-hello_module` | 모듈 | `modules/_bundled/gnuboard7-hello_module/` | 34 | 11/11 green | Memo CRUD + 훅 발행 |
+| `gnuboard7-hello_module` | 모듈 | `modules/_bundled/gnuboard7-hello_module/` | 34 | 11/11 green | Memo CRUD + 훅 발행 + 자기 CSS(순수 CSS) |
 | `gnuboard7-hello_plugin` | 플러그인 | `plugins/_bundled/gnuboard7-hello_plugin/` | 15 | 6/6 green | Action + Filter 훅 구독 |
 | `gnuboard7-hello_admin_template` | Admin 템플릿 | `templates/_bundled/gnuboard7-hello_admin_template/` | 31 | 13/13 green (공통) | Basic 8개 컴포넌트 + 에러 6종 |
-| `gnuboard7-hello_user_template` | User 템플릿 | `templates/_bundled/gnuboard7-hello_user_template/` | 28 | 13/13 green (공통) | 홈 + Memo 리스트 연동 |
+| `gnuboard7-hello_user_template` | User 템플릿 | `templates/_bundled/gnuboard7-hello_user_template/` | 28 | 13/13 green (공통) | 홈 + Memo 리스트 연동 + 확장 컴포넌트 대체·CSS 덮기 |
 
 모든 샘플은 `manifest.hidden = true` 로 설정되어 있어 관리자 UI 의 모듈/플러그인/템플릿 목록에서 기본 제외됩니다. artisan CLI 로는 정상 설치/관리할 수 있습니다.
 
@@ -61,12 +61,24 @@
 | Resource | `src/Http/Resources/MemoResource.php` | API 응답 포맷 |
 | Controller | `src/Http/Controllers/Admin/MemoController.php` | RESTful CRUD |
 | Listener | `src/Listeners/*Listener.php` | 훅 구독 (자체 발행도 예시) |
-| Layout | `resources/layouts/admin/admin_memo_{list,form}.g7.html` | 관리자 목록/폼 레이아웃 (소스 SSoT) |
+| Layout | `resources/layouts/admin/admin_memo_{list,form}.g7.html`, `modules/_bundled/gnuboard7-hello_module/resources/layouts/user/user_memo_list.g7.html` | 관리자 목록/폼, 사용자 목록 레이아웃 (소스 SSoT) |
+| Component | `modules/_bundled/gnuboard7-hello_module/resources/js/components/composite/MemoCard.tsx` + `for/gnuboard7-hello_admin_template/` | 모듈이 제공하는 컴포넌트 (자가등록, 템플릿별 판본) |
+| Stylesheet | `modules/_bundled/gnuboard7-hello_module/resources/css/main.css` → `modules/_bundled/gnuboard7-hello_module/dist/css/module.css` | 확장 자기 CSS — 순수 CSS, 앞글자 `hellomodule-`, 우선순위 칸 |
 | Test | `tests/Feature/MemoControllerTest.php` + `tests/Unit/` | Feature + Unit |
 | 다국어 (백엔드) | `src/lang/{ko,en}/messages.php` | PHP 배열 |
 | 다국어 (프론트) | `resources/lang/{ko,en}.json` | JSON |
 
 실제 모듈이 N 개 엔티티를 다룬다면, 위 계층을 N 배로 확장합니다.
+
+**확장 자기 CSS** — 확장 화면의 모양은 확장이 자기 CSS 로 싣습니다. 그누보드7 은 Tailwind 를 전제하지 않으므로 이 샘플은
+빌드 도구 없이 손으로 쓴 순수 CSS 한 장으로 그 최소 형태를 보입니다.
+
+- 클래스 이름은 `module.json` `assets.css.namespace`(`hellomodule`) 뒤에 `-` 를 붙여 시작합니다. 컴포넌트·레이아웃은 이 파일에 정의된 클래스만 씁니다.
+- 색·테두리·글자(의미)는 `@layer g7-extension { }` 안에 둡니다. 이 층은 템플릿 CSS **뒤**에 선언되므로 템플릿의 층 있는 규칙(Tailwind 등)은 여기에 지고, 템플릿의 층 없는 규칙과 템플릿 확장 CSS 덮기 파일만 이깁니다.
+- 여백·정렬(배치)은 층 밖에 둡니다 — 층 없는 규칙이 템플릿 CSS 뒤에 실려 이기므로 화면 짜임이 템플릿에 따라 무너지지 않습니다.
+- 다크 모드는 템플릿의 `.dark` 가 아니라 코어가 다는 `data-g7-color-scheme` 표식으로 씁니다.
+
+자세한 규약은 [확장 CSS 자기 공급 규약](module-assets.md#확장-css-자기-공급-규약)과 [템플릿 확장 CSS 덮기](module-assets.md#템플릿-확장-css-덮기), 샘플의 실제 코드는 모듈 `modules/_bundled/gnuboard7-hello_module/docs/frontend.md` 「스타일」 절을 봅니다.
 
 ### 2. `gnuboard7-hello_plugin` — 학습용 플러그인
 
@@ -92,7 +104,7 @@ Admin 템플릿의 최소 구성을 보여줍니다. `sirsoft-admin_basic` 의 �
 
 | 계층 | 예시 파일 | 역할 |
 |------|-----------|------|
-| Entry | `template.json` | type: admin, components 레지스트리, error_config |
+| Entry | `template.json` | type: admin, components 레지스트리, error_config, `expose`(첫 화면에 미리 실을 키 선언 예시) |
 | Components | `src/components/basic/{Div,Button,Input,...}.tsx` | HTML 태그 래핑 Basic 8개 |
 | Layouts (베이스) | `layouts/_admin_base.g7.html` | 헤더 + 사이드바 + 콘텐츠 슬롯 |
 | Layouts (초기) | `layouts/admin_dashboard.g7.html` | 대시보드 예시 |
@@ -103,17 +115,22 @@ Admin 템플릿의 최소 구성을 보여줍니다. `sirsoft-admin_basic` 의 �
 
 ### 4. `gnuboard7-hello_user_template` — 학습용 User 템플릿
 
-User 템플릿의 최소 구성을 보여줍니다. `gnuboard7-hello_module` 의 Memo API 를 `data_sources` 로 연동하여 홈 페이지에 리스트를 출력하는 예시를 포함합니다.
+User 템플릿의 최소 구성을 보여줍니다. `gnuboard7-hello_module` 의 Memo API 를 `data_sources` 로 연동하여 홈 페이지에 리스트를 출력하는 예시를 포함합니다. 확장 화면을 템플릿 모양으로 바꾸는 두 방법 — **확장 컴포넌트 대체**와 **확장 CSS 덮기** — 도 하나씩 담습니다.
 
 | 계층 | 예시 파일 | 역할 |
 |------|-----------|------|
-| Entry | `template.json` | type: user, features 플래그, components 레지스트리 |
+| Entry | `template.json` | type: user, features 플래그, components 레지스트리, `expose`(첫 화면에 미리 실을 키 선언 예시) |
 | Components | `src/components/basic/*.tsx` | Basic 컴포넌트 |
 | Layouts (베이스) | `layouts/_user_base.g7.html` | 헤더 + 콘텐츠 + 푸터 |
 | Layouts (홈) | `layouts/home.g7.html` | Memo 모듈 `data_sources` 연동 |
 | Layouts (에러) | `layouts/errors/*.g7.html` | 에러 6종 |
 | Routes | `routes.json` | `/` 루트, `auth_required: false` |
+| Stylesheet | `templates/_bundled/gnuboard7-hello_user_template/src/styles/main.css` → `templates/_bundled/gnuboard7-hello_user_template/dist/css/components.css` | 템플릿 자기 순수 CSS (`template.json` `assets.css`) |
+| 확장 컴포넌트 대체 | `templates/_bundled/gnuboard7-hello_user_template/src/components/overrides/gnuboard7-hello_module/MemoCard.tsx` | Hello 모듈 `MemoCard` 를 이 템플릿 판본으로 (`components.json` `overrides`, `targetVersion ^0.3`) |
+| 확장 CSS 덮기 | `templates/_bundled/gnuboard7-hello_user_template/src/styles/overrides/gnuboard7-hello_module.css` → `dist/css/overrides/` | Hello 모듈 `/memos` 쪽 제목 색 변경 (`template.json` `extension_css_overrides`, `targetVersion ^0.3`) |
 | Test | `__tests__/layouts/*.test.tsx` | API 모킹 + 렌더링 테스트 |
+
+확장 CSS 덮기 파일은 모든 확장 CSS 뒤에 실려 확장의 두 칸을 모두 덮습니다([템플릿 확장 CSS 덮기](module-assets.md#템플릿-확장-css-덮기)). 대상 확장이 꺼져 있거나 버전이 `targetVersion` 범위를 벗어나면 실리지 않고, 화면은 오류 없이 확장 원래 모양으로 돌아옵니다 — 확장이 클래스 이름을 바꾼 새 판을 내도 덮기 파일이 엉뚱한 곳을 칠하지 않게 하는 장치입니다. `/memos` 를 이 템플릿으로 열면 컴포넌트 대체(메모 카드)와 CSS 덮기(쪽 제목 색)를 함께 볼 수 있습니다.
 
 ---
 
@@ -166,7 +183,7 @@ php vendor/bin/phpunit modules/_bundled/acme-blog/tests
         ↓
 3) gnuboard7-hello_admin_template (프론트엔드 컴포넌트 + 레이아웃 테스트)
         ↓
-4) gnuboard7-hello_user_template  (모듈 API 연동 — data_sources)
+4) gnuboard7-hello_user_template  (모듈 API 연동 — data_sources, 확장 컴포넌트 대체·CSS 덮기)
         ↓
 5) sirsoft-page / sirsoft-board 등 실전 확장
         (다중 엔티티, 복잡한 권한 범위, 동적 메뉴 등 본격적인 패턴)

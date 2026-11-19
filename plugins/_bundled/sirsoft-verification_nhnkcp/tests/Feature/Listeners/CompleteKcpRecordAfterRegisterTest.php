@@ -8,9 +8,11 @@ use App\Enums\IdentityOriginType;
 use App\Enums\IdentityVerificationStatus;
 use App\Extension\Cache\PluginCacheDriver;
 use App\Extension\HookManager;
+use App\Models\IdentityPolicy;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
 use App\Services\IdentityTokenAcceptanceService;
+use Database\Seeders\IdentityPolicySeeder;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\VerificationNhnkcp\Identity\KcpIdentityProvider;
@@ -300,13 +302,19 @@ class CompleteKcpRecordAfterRegisterTest extends PluginTestCase
     /**
      * 같은 가입 요청에서 before_register 단계가 결과를 인정한 상태를 만듭니다 (1.1.4).
      *
-     * 리스너는 소비 여부와 무관한 토큰 재조회 대신, 이 요청에서 인정(1회 소비)한 결과만 받는다.
+     * 리스너는 소비 여부와 무관한 토큰 재조회 대신, 이 요청에서 인정(1회 소비)한 결과만 받는다. 가입 요청의 인정은 가입 전
+     * 본인인증 정책이 켜진 사이트에서만 일어나므로 그 정책도 켠다 — 정책이 꺼진 사이트는 가입 본인인증 결과를 인정하지도
+     * 쓰지도 않는다(코어 가입 기록도 남지 않는다, 2026-11-17 결정).
      *
      * @param  string  $token  확인 토큰
      * @return void 반환값 없음
      */
     private function acceptInRequest(string $token): void
     {
+        $this->seed(IdentityPolicySeeder::class);
+        IdentityPolicy::query()->update(['enabled' => false]);
+        IdentityPolicy::where('key', 'core.auth.signup_before_submit')->update(['enabled' => true]);
+
         app(IdentityTokenAcceptanceService::class)->accept($token, 'signup');
     }
 }

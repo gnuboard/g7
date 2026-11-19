@@ -1,5 +1,7 @@
 <?php
 
+// changelog:allow 숨김 파일 서빙 거부 문구 — 무CLI·고정 문서루트 축의 신규 키. 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -126,6 +128,7 @@ return [
     'present_unless' => 'The :attribute field must be present unless :other is :value.',
     'present_with' => 'The :attribute field must be present when :values is present.',
     'present_with_all' => 'The :attribute field must be present when :values are present.',
+    'forbidden_word' => 'This contains a word that is not allowed: :word',
     'prohibited' => 'The :attribute field is prohibited.',
     'prohibited_if' => 'The :attribute field is prohibited when :other is :value.',
     'prohibited_unless' => 'The :attribute field is prohibited unless :other is in :values.',
@@ -586,6 +589,7 @@ return [
     ],
 
     // Translatable field validation messages
+    'safe_link' => 'The :attribute must be a site path starting with / or an http/https URL.',
     'translatable' => [
         'must_be_array' => 'Translatable field must be an array.',
         'unsupported_language' => "Unsupported language code: ':lang'",
@@ -767,6 +771,7 @@ return [
         'absolute_path_not_allowed' => 'Absolute paths are not allowed.',
         'null_byte_detected' => 'NULL byte attack detected.',
         'outside_base_directory' => 'Paths outside the base directory are not allowed.',
+        'hidden_segment_not_allowed' => 'Files and directories whose names begin with a dot are not served.',
         'file_type_not_allowed' => 'File type not allowed. Extension: :extension (Allowed: :allowed)',
     ],
 
@@ -789,6 +794,7 @@ return [
         'absolute_path_not_allowed' => 'Absolute paths are not allowed.',
         'null_byte_detected' => 'NULL byte detected.',
         'outside_base_directory' => 'Access outside the base directory is not allowed.',
+        'hidden_segment_not_allowed' => 'Files and directories whose names begin with a dot are not served.',
     ],
 
     // Plugin path validation messages
@@ -799,6 +805,7 @@ return [
         'absolute_path_not_allowed' => 'Absolute paths are not allowed.',
         'null_byte_detected' => 'NULL byte detected.',
         'outside_base_directory' => 'Access outside the base directory is not allowed.',
+        'hidden_segment_not_allowed' => 'Files and directories whose names begin with a dot are not served.',
     ],
 
     // Auth validation messages
@@ -807,6 +814,10 @@ return [
             'challenge_required' => 'Verification request is missing. Please sign in again.',
             'challenge_invalid' => 'Verification request is not valid.',
             'code_required' => 'Enter the verification code.',
+        ],
+        // 로그인 인계 (#40)
+        'login_handoff' => [
+            'code_required' => 'The sign-in handoff code is missing. Please sign in again.',
         ],
         // Sign-in password change step (#736)
         'password_change' => [
@@ -864,6 +875,11 @@ return [
         ],
     ],
 
+    // IP allow list (web cron call restriction)
+    'ip_allow_list' => [
+        'invalid' => '":value" is not a valid IP address or range. List one per line, or separate them with commas.',
+    ],
+
     // Setting value validation messages
     'setting' => [
         'value' => [
@@ -875,6 +891,7 @@ return [
             'max' => 'Setting value may not be greater than :max characters.',
             'array_max' => 'Setting value may not be larger than :max characters.',
             'server_only' => 'This setting is recorded by the server and cannot be saved directly.',
+            'tab_only' => 'This setting can only be changed by saving its tab on the settings screen.',
             'env_locked' => 'This setting is set by .env and cannot be changed here. Edit :env in .env instead.',
         ],
     ],
@@ -926,6 +943,8 @@ return [
         'site_url_required' => 'Please enter the site URL.',
         'site_url_invalid' => 'Invalid URL format.',
         'site_url_max' => 'Site URL may not be greater than 255 characters.',
+        'user_screen_url_invalid' => 'Enter a full address starting with http:// or https://.',
+        'user_screen_url_max' => 'User screen URL may not be greater than 255 characters.',
         'site_description_max' => 'Site description may not be greater than 500 characters.',
         'admin_email_required' => 'Please enter the admin email.',
         'admin_email_invalid' => 'Invalid email format.',
@@ -935,7 +954,6 @@ return [
         'language_required' => 'Please select a default language.',
         'language_invalid' => 'Please select a valid language.',
         'currency_max' => 'Currency code may not be greater than 10 characters.',
-        'maintenance_mode_boolean' => 'Maintenance mode must be true or false.',
 
         // Security settings
         'force_https_required' => 'Please select the Force HTTPS setting.',
@@ -1018,6 +1036,11 @@ return [
         'outbound_proxy_bypass_array' => 'The proxy bypass list must be an array.',
         'outbound_proxy_bypass_item_string' => 'Each proxy bypass entry must be a string.',
         'outbound_proxy_bypass_item_max' => 'Each proxy bypass entry may not be greater than :max characters.',
+        'trusted_proxies_present' => 'The trusted proxy list is missing from the request.',
+        'trusted_proxies_array' => 'The trusted proxy list must be an array.',
+        'trusted_proxies_max' => 'The trusted proxy list may not have more than :max entries.',
+        'trusted_proxy_address_invalid' => 'The trusted proxy address format is invalid. Enter an IP address or CIDR (e.g. 10.0.0.1, 10.0.0.0/24).',
+        'trusted_proxy_address_max' => 'Each trusted proxy address may not be greater than :max characters.',
 
         // List limits
         'pagination_result_cap_integer' => 'The total count cap must be a number.',
@@ -1122,8 +1145,6 @@ return [
         'sitemap_max_urls_per_contributor_integer' => 'Maximum URLs per contributor must be an integer.',
         'sitemap_max_urls_per_contributor_min' => 'Maximum URLs per contributor must be at least 0.',
         'sitemap_hreflang_enabled_boolean' => 'The sitemap hreflang alternate links setting must be true or false.',
-        'sitemap_schedule_invalid' => 'Please select a valid sitemap generation schedule.',
-        'sitemap_schedule_time_invalid' => 'Sitemap generation time must be a valid HH:mm time between 00:00 and 23:59.',
 
         // Misc
         'session_lifetime_integer' => 'Session lifetime must be an integer.',
@@ -1221,9 +1242,41 @@ return [
         'log_days_integer' => 'Log retention days must be an integer.',
         'log_days_min' => 'Log retention days must be at least 1.',
         'log_days_max' => 'Log retention days may not be greater than 365.',
+        // Queue job records (#17)
+        'queue_job_log_enabled_boolean' => 'Job record logging must be on or off.',
+        'queue_record_retention_days_integer' => 'Job record retention must be a whole number of days.',
+        'queue_record_retention_days_min' => 'Job record retention must be at least :min days.',
+        'queue_record_retention_days_max' => 'Job record retention may not be greater than :max days.',
 
         // Public asset disk settings
         'public_asset_disk_invalid' => 'Please select a valid public asset disk.',
+        'private_attachment_disk_invalid' => 'Please select a valid private attachment storage.',
+        'file_delegation_invalid' => 'Please select a valid web server file delegation method.',
+        'file_delegation_accel_prefix_required' => 'An internal location prefix is required when nginx (X-Accel-Redirect) is selected.',
+        'file_delegation_accel_prefix_format' => 'The internal location prefix must start and end with / (e.g. /_g7_sendfile/) and may only contain letters, digits, ., _ and -.',
+
+        // Image processing engine, image thumbnails (#869)
+        'image_driver_invalid' => 'Please select a valid image processing engine.',
+        'thumbnail_presets_array' => 'The thumbnail preset table is not in a valid format.',
+        'thumbnail_presets_max' => 'You can have at most :max thumbnail presets (including built-in and extension presets).',
+        'thumbnail_preset_name_required' => 'Please enter a preset name.',
+        'thumbnail_preset_name_distinct' => 'A preset with the same name already exists.',
+        'thumbnail_preset_name_reserved' => "':name' is a built-in preset name and cannot be used.",
+        'thumbnail_preset_name_literal' => "':name' cannot be used as a preset name because layout pipes do not read it as text.",
+        'thumbnail_preset_name_format' => 'Preset names must start with a lowercase letter and use only lowercase letters, digits and underscores (2 to 32 characters).',
+        'thumbnail_preset_name_locked' => 'Built-in and extension presets cannot be renamed.',
+        'thumbnail_preset_extension_unknown' => "The extension that registers the ':name' preset is not active.",
+        'thumbnail_preset_width_required' => 'Please enter a width.',
+        'thumbnail_preset_height_required' => 'Crop and fit modes need a height.',
+        'thumbnail_preset_size_integer' => 'Sizes must be whole numbers (px).',
+        'thumbnail_preset_size_range' => 'Sizes must be between :min and :max px.',
+        'thumbnail_preset_quality_range' => 'Quality must be a whole number between :min and :max, or left empty.',
+        'thumbnail_preset_fit_invalid' => 'Please select a fit mode.',
+        'thumbnail_preset_anchor_invalid' => 'Please select a valid anchor.',
+        'thumbnail_preset_format_invalid' => 'Please select a valid output format.',
+        'thumbnail_content_preset_invalid' => 'Please choose the content image preset from the presets in use.',
+        'thumbnail_disk_public_invalid' => 'Please choose the storage for public image thumbnails from the list.',
+        'thumbnail_disk_gated_invalid' => 'Thumbnails of access-controlled images can only be stored in private server storage, Amazon S3, or a disk listed under private attachment storage. Public asset disks cannot be selected.',
 
         // Identity verification (IDV) settings
         'identity_default_provider_string' => 'Default provider must be a string.',
@@ -1383,6 +1436,10 @@ return [
         'embed_provider_id_rule' => 'id characters',
         'embed_provider_sample_url' => 'example URL',
         'layout_source' => 'layout install source',
+        'layout_strategy' => 'layout strategy',
+        'decisions' => 'per-screen decisions',
+        'decisions.*' => 'per-screen decision value',
+        'pending_token' => 'preview token',
         'layout_meta_icon' => 'menu icon',
         'layout_meta_editor_label' => 'editor label',
         'layout_meta_authoring_note' => 'authoring note',
@@ -1420,11 +1477,18 @@ return [
         // Settings fields
         'site_name' => 'site name',
         'site_url' => 'site URL',
+        'user_screen_url' => 'user screen URL',
         'site_description' => 'site description',
         'admin_email' => 'admin email',
         'timezone' => 'timezone',
         'language' => 'language',
         'default_language' => 'default language',
+        // Execution method / scheduled task fields (admin 'System' tab)
+        'system.execution_mode' => 'Execution method',
+        'system.cron_mode' => 'Scheduled task execution method',
+        'system.cron_allowed_ips' => 'Scheduled task allowed addresses',
+        'system.cron_min_interval' => 'Scheduled task minimum interval',
+        'system.cron_visit_fallback' => 'Run scheduled tasks on visitor traffic',
         // Identity verification (IDV) fields
         'identity_default_provider' => 'default provider',
         'identity_purpose_providers' => 'purpose-to-provider mapping',
@@ -1537,14 +1601,26 @@ return [
         'settings_tab_identity' => 'identity verification settings',
         'settings_tab_analytics' => 'visitor analytics settings',
         'settings_tab_privacy' => 'privacy settings',
+        'settings_tab_member' => 'member settings',
+        'member_nickname_unique' => 'unique nickname',
+        'member_nickname_banned_words' => 'banned nickname words',
+        'member_nickname_change_interval_days' => 'nickname change interval',
+        'member_display_name_selectable_kinds' => 'display name kinds members can choose',
+        'member_display_name_member_default_kind' => 'default display name kind for members',
+        'member_display_name_areas' => 'display name by area',
+        'member_display_name_area_mode' => 'display name mode',
+        'member_display_name_area_kind' => 'display name kind',
+        'member_nickname_require_existing_members' => 'require nickname on login',
+        'display_name_kind' => 'display name kind',
         'notification_channel_id' => 'notification channel id',
         'notification_channel_is_active' => 'notification channel active flag',
         'notification_channel_sort_order' => 'notification channel sort order',
         'currency' => 'currency',
         'default_currency' => 'default currency',
-        'maintenance_mode' => 'maintenance mode',
         'asset_url_mode' => 'asset URL mode',
+        'layout_edit_button_enabled' => 'layout edit button',
         'site_logo' => 'site logo',
+        'site_favicon' => 'site favicon',
         'og_image_default' => 'default share image',
         // SEO settings (additional)
         'bot_user_agents' => 'bot user agents',
@@ -1565,13 +1641,15 @@ return [
         'sitemap_serve_stale_on_miss' => 'serve stale sitemap on miss',
         'sitemap_max_urls_per_contributor' => 'sitemap max URLs per contributor',
         'sitemap_hreflang_enabled' => 'sitemap hreflang links',
-        'sitemap_schedule' => 'sitemap schedule',
-        'sitemap_schedule_time' => 'sitemap schedule time',
         'generator_enabled' => 'SEO page generator',
         'generator_content' => 'SEO page generator content',
         // Security settings (additional)
         'force_https' => 'force HTTPS',
         'login_attempt_enabled' => 'login attempt limit',
+        'registration_enabled' => 'accept public registration',
+        // Identity challenge — screen to return to after an external method finishes (7.2.0)
+        'return_path' => 'return path',
+        'scope' => 'starting screen scope',
         'auth_token_lifetime' => 'auth token lifetime',
         'max_login_attempts' => 'max login attempts',
         'login_lockout_time' => 'login lockout time',
@@ -1599,6 +1677,8 @@ return [
         'current_password' => 'current password',
         'password_confirmation' => 'password confirmation',
         'challenge_id' => 'password change step ID',
+        'verification_token' => 'identity verification',
+        'login_handoff_code' => 'sign-in handoff code',
         'two_factor_auth' => 'two-factor authentication',
         'two_factor_scope' => 'two-factor authentication scope',
         'allow_internal_outbound_urls' => 'allow internal outbound URLs',
@@ -1627,6 +1707,7 @@ return [
         'sql_query_log' => 'SQL query log',
         'outbound_proxy' => 'outbound proxy address',
         'outbound_proxy_bypass' => 'proxy bypass list',
+        'trusted_proxies' => 'trusted proxy list',
         'core_update_github_url' => 'core update GitHub URL',
         'core_update_github_token' => 'core update GitHub token',
         'geoip_enabled' => 'GeoIP',
@@ -1645,7 +1726,40 @@ return [
         'log_driver' => 'log driver',
         'log_level' => 'log level',
         'log_days' => 'log retention days',
+        'queue_job_log_enabled' => 'queue job records',
+        'queue_record_retention_days' => 'queue job record retention',
         'public_asset_disk' => 'public asset disk',
+        'private_attachment_disk' => 'private attachment storage',
+        'file_delegation' => 'web server file delegation',
+        'file_delegation_accel_prefix' => 'internal location prefix',
+        // Image processing engine, image thumbnails (#869)
+        'image_driver' => 'image processing engine',
+        'thumbnail_enabled' => 'image thumbnails',
+        'thumbnail_prune_enabled' => 'automatic thumbnail cleanup',
+        'thumbnail_animated_original' => 'serve animated images as originals',
+        'thumbnail_presets' => 'thumbnail presets',
+        'thumbnail_preset_row' => 'thumbnail preset row',
+        'thumbnail_preset_name' => 'preset name',
+        'thumbnail_preset_source' => 'preset source',
+        'thumbnail_preset_width' => 'width',
+        'thumbnail_preset_height' => 'height',
+        'thumbnail_preset_fit' => 'fit',
+        'thumbnail_preset_anchor' => 'anchor',
+        'thumbnail_preset_quality' => 'quality',
+        'thumbnail_preset_format' => 'format',
+        'thumbnail_preset_upscale' => 'upscale',
+        'thumbnail_preset_pregenerate' => 'generate on upload',
+        'thumbnail_preset_numeric' => 'numeric requests',
+        'thumbnail_preset_enabled' => 'enabled',
+        'thumbnail_content_preset' => 'content image preset',
+        'thumbnail_disk_public' => 'public image thumbnail storage',
+        'thumbnail_disk_gated' => 'access-controlled image thumbnail storage',
+        'thumbnail_generate_per_minute' => 'new thumbnails per minute (per IP)',
+        'thumbnail_lock_wait_seconds' => 'thumbnail generation wait time',
+        'thumbnail_max_source_pixels' => 'maximum source pixels for thumbnails',
+        'thumbnail_pregenerate_batch' => 'originals per batch',
+        'thumbnail_pregenerate_time_budget' => 'time budget per call',
+        'thumbnail_purge_time_budget' => 'time budget per purge call',
         'public_asset_extensions' => 'extensions exported to the public disk',
         'layout_attachment_extensions' => 'allowed extensions for layout attachments',
     ],

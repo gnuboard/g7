@@ -4,6 +4,7 @@ namespace App\Seo;
 
 use App\Helpers\TimezoneHelper;
 use App\Support\LocalizedValue;
+use App\Thumbnails\ThumbnailUrl;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 
@@ -467,6 +468,27 @@ class PipeRegistry
 
             // 대상 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148 — 화면 localized 파이프와 같은 SSoT)
             return LocalizedValue::pick($value, $locale ?? $this->locale) ?? '';
+        };
+
+        // ============================================
+        // 이미지 썸네일 파이프 (프론트 thumb·thumbSrcset 의 짝)
+        // ============================================
+
+        // 미러가 없으면 봇 화면이 조용히 원본 주소를 낸다 — 판정·덧붙임은 ThumbnailUrl 한 곳이다.
+        $this->pipes['thumb'] = function (mixed $value, mixed $preset = 'sm'): mixed {
+            if (! is_string($value) || $value === '' || ! is_string($preset) || trim($preset) === '') {
+                return $value;
+            }
+
+            return ThumbnailUrl::for($value, trim($preset));
+        };
+
+        $this->pipes['thumbSrcset'] = function (mixed $value, mixed $preset = 'sm'): string {
+            if (! is_string($value) || $value === '' || ! is_string($preset)) {
+                return '';
+            }
+
+            return ThumbnailUrl::srcset($value, $preset);
         };
     }
 

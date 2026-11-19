@@ -26,20 +26,23 @@ import {
     removeTextareaFallback,
     renderTextareaFallback,
 } from './textareaFallback';
+import { apiUrl, routePath } from '../apiUrl';
 
 /**
- * 편집기 최소 높이를 거는 컨테이너 속성·CSS 변수 — 규칙은 `resources/css/main.css` 에 있다.
+ * 편집기 최소 높이를 거는 컨테이너 속성·CSS 변수 — 규칙은 {@link LIBRARY_CSS}(라이브러리 DOM 보정 규칙) 4절에 있다.
  *
- * 다국어 탭·다크 모드·본문 보정·미리보기 규칙도 모두 그 파일(빌드 산출물 `dist/css/plugin.css`)에 있다. 여기서
- * `<style>` 요소나 `style="…"` 문자열을 만들지 않는다 — 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'`)
- * 에서 둘 다 막힌다. 실행 중에 정해지는 값은 `el.style.x = …`·`el.style.setProperty()` 로 싣는다.
+ * 이 플러그인이 이름을 정하는 클래스(다국어 탭·아이콘·미리보기, `ckeditor-*`)의 규칙은 플러그인 CSS 파일
+ * (`resources/css/main.css` → 빌드 산출물 `dist/css/plugin.css`)에, CKEditor 라이브러리 DOM(`.ck-*`)을 꾸미는 규칙은
+ * {@link LIBRARY_CSS} 를 코어 `G7Core.style.setRules` 로 싣는다. 여기서 `<style>` 요소나 `style="…"` 문자열을 만들지
+ * 않는다 — 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'`)에서 둘 다 막힌다. 실행 중에 정해지는 값은
+ * `el.style.x = …`·`el.style.setProperty()` 로 싣는다.
  */
 export const MIN_HEIGHT_ATTR = 'data-ckeditor5-min-height';
 export const MIN_HEIGHT_VAR = '--ckeditor5-min-height';
 
 /** 미디어 미리보기 상자·플레이어 클래스 — 규칙은 `resources/css/main.css` */
-export const EMBED_PREVIEW_CLASS = 'g7-ck-embed-preview';
-export const EMBED_PREVIEW_FRAME_CLASS = 'g7-ck-embed-preview__frame';
+export const EMBED_PREVIEW_CLASS = 'ckeditor-embed-preview';
+export const EMBED_PREVIEW_FRAME_CLASS = 'ckeditor-embed-preview__frame';
 
 /** CKEditor 전역 객체 타입 (CDN UMD 빌드 — window.CKEDITOR) */
 interface CKEditorGlobal {
@@ -326,6 +329,332 @@ function t(key: string, fallback: string): string {
 }
 
 /**
+ * CKEditor 라이브러리 DOM(`.ck-*`·`.ck-content`) 보정 규칙 — 본문·편집 영역 공통 보정, 읽기 화면 보정, 편집기 다크 모드,
+ * 편집기 최소 높이.
+ *
+ * 라이브러리가 정한 클래스라 플러그인 CSS 파일(`resources/css/main.css`)에 둘 수 없다 — 확장 CSS 는 자기 이름공간
+ * (`ckeditor-*`·`ckeditor:*`) 선택자만 싣는다(감사 룰 `extension-css-namespace`). 그렇다고 `<style>` 요소로 실으면
+ * 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'`)에서 막히므로, 코어 `G7Core.style.setRules`(생성형
+ * 스타일시트 `document.adoptedStyleSheets` — 이 정책에 걸리지 않는다)로 싣는다.
+ *
+ * - 생성형 시트는 문서의 스타일시트들 뒤에 적용된다. 편집기·본문이 뜰 때 뒤늦게 실리는 동봉 CKEditor CSS 와 같은
+ *   우선순위여도 이 규칙이 이기고, `:root ` 접두는 그 위에 한 단계를 더 얹는다.
+ * - 다크 규칙은 중립 표식 `html[data-g7-color-scheme="dark"]` 로 스코프한다 — 관측자 없이 전환을 따라간다. CKEditor
+ *   변수는 동봉 CSS 가 `:root` 에 선언하므로 요소 + 속성이어야 이긴다.
+ * - 「읽기 화면 전용」 규칙은 `:where(:not(.ck-editor__editable))` 로 편집 영역을 뺀다.
+ * - 본문의 사용자 서식(`style` 속성)을 고르는 `[style*="float"]` 선택자는 그대로 쓴다 — 서식을 `el.style.cssText`
+ *   로 입혀도 `style` 속성으로 비치므로 매칭된다.
+ */
+export const LIBRARY_STYLE_KEY = 'sirsoft-ckeditor5-library';
+
+/** {@link LIBRARY_STYLE_KEY} 로 싣는 규칙 본문 */
+export const LIBRARY_CSS = `
+/* ==========================================================================
+ * 1. 본문·편집 영역 공통 보정 (라이트)
+ * ========================================================================== */
+
+/* 표 너비 인라인 스타일 무력화 - 컨테이너에 맞게 100% (prose 와의 충돌 방지) */
+:root .ck-content figure.table { width: 100%; }
+:root .ck-content figure.table table { width: 100%; }
+/* 표 tr 배경색 초기화 */
+:root .ck-content table tr { background-color: unset; }
+/* 표 col 절대 px 너비 무력화 - 컨테이너에 맞게 비율로 */
+:root .ck-content table col { width: auto !important; }
+
+/* 표 정렬 보정: CKEditor5 기본 CSS 의 margin-left:auto 를 float 으로 덮어씀 */
+:root .ck-content figure.table[style*="float:left"],
+:root .ck-content figure.table[style*="float: left"] {
+    margin-left: 0 !important;
+    margin-right: 1em !important;
+}
+:root .ck-content figure.table[style*="float:right"],
+:root .ck-content figure.table[style*="float: right"] {
+    margin-left: 1em !important;
+    margin-right: 0 !important;
+}
+
+/* 이미지 캡션 - 라이트 모드 */
+:root .ck-content .image > figcaption {
+    background-color: #f3f4f6;
+    color: #374151;
+    font-size: 0.875em;
+    padding: 4px 8px;
+    text-align: center;
+}
+
+/* 목록 마커 및 들여쓰기 복원 (Tailwind preflight reset 대응) */
+:root .ck.ck-editor__editable ul,
+:root .ck-content ul {
+    list-style-type: disc;
+    padding-left: 2em;
+}
+:root .ck.ck-editor__editable ol,
+:root .ck-content ol {
+    list-style-type: decimal;
+    padding-left: 2em;
+}
+:root .ck.ck-editor__editable ul ul,
+:root .ck-content ul ul {
+    list-style-type: circle;
+    padding-left: 2em;
+}
+:root .ck.ck-editor__editable ul ul ul,
+:root .ck-content ul ul ul {
+    list-style-type: square;
+    padding-left: 2em;
+}
+:root .ck.ck-editor__editable ol ol,
+:root .ck-content ol ol {
+    list-style-type: lower-alpha;
+    padding-left: 2em;
+}
+:root .ck.ck-editor__editable ol ol ol,
+:root .ck-content ol ol ol {
+    list-style-type: lower-roman;
+    padding-left: 2em;
+}
+
+/* ==========================================================================
+ * 2. 읽기 화면(방문자가 보는 본문) 전용 보정 — 편집 영역에는 걸지 않는다
+ * ========================================================================== */
+
+/* figure.table 전체 너비 - prose 와의 충돌 방지 */
+:root .ck-content:where(:not(.ck-editor__editable)) figure.table { display: table; margin: 1em 0; }
+
+/* 이미지 인라인/정렬 - Tailwind preflight img:block 대응 */
+:root .ck-content:where(:not(.ck-editor__editable)) img { display: inline; margin: 0; max-width: 100%; }
+:root .ck-content:where(:not(.ck-editor__editable)) p:has(img) { line-height: 0; }
+:root .ck-content:where(:not(.ck-editor__editable)) p:has(img[style*="float"]) { overflow: hidden; }
+
+/* 이미지 캡션 - 다크 모드 (동봉 CSS 미지원) */
+html[data-g7-color-scheme="dark"] .ck-content:where(:not(.ck-editor__editable)) .image > figcaption { color: hsl(0, 0%, 80%); background-color: hsl(0, 0%, 15%); }
+
+/* 표 - 다크 모드 (동봉 CSS 미지원) */
+html[data-g7-color-scheme="dark"] .ck-content:where(:not(.ck-editor__editable)) figure.table table { border-color: hsl(0, 0%, 35%); }
+html[data-g7-color-scheme="dark"] .ck-content:where(:not(.ck-editor__editable)) figure.table table tr { background-color: unset; }
+html[data-g7-color-scheme="dark"] .ck-content:where(:not(.ck-editor__editable)) figure.table table td,
+html[data-g7-color-scheme="dark"] .ck-content:where(:not(.ck-editor__editable)) figure.table table th { border-color: hsl(0, 0%, 30%); color: hsl(0, 0%, 90%); background-color: unset; }
+html[data-g7-color-scheme="dark"] .ck-content:where(:not(.ck-editor__editable)) figure.table table th { background-color: hsl(215, 20%, 25%); }
+
+/* ==========================================================================
+ * 3. 편집기 다크 모드 — CKEditor 변수와 UI 색 덮어쓰기
+ * ========================================================================== */
+
+/* CSS 변수 — 동봉 CSS 의 :root 선언을 이기도록 html[data-g7-color-scheme="dark"] */
+html[data-g7-color-scheme="dark"] {
+    --ck-color-base-foreground: #1f2937;
+    --ck-color-base-background: #1f2937;
+    --ck-color-base-border: #374151;
+    --ck-color-text: #f3f4f6;
+    --ck-color-toolbar-background: #111827;
+    --ck-color-toolbar-border: #374151;
+    --ck-color-button-default-background: transparent;
+    --ck-color-button-default-hover-background: #374151;
+    --ck-color-button-default-active-background: #4b5563;
+    --ck-color-button-on-background: #374151;
+    --ck-color-button-on-hover-background: #4b5563;
+    --ck-color-focus-border: #3b82f6;
+    --ck-color-input-background: #1f2937;
+    --ck-color-input-text: #f3f4f6;
+    --ck-color-input-border: #374151;
+    --ck-color-panel-background: #1f2937;
+    --ck-color-panel-border: #374151;
+    --ck-color-list-button-hover-background: #374151;
+    --ck-color-list-button-on-background: #3b82f6;
+    --ck-color-list-button-on-color: #f3f4f6;
+    --ck-color-list-button-on-hover-background: #4b5563;
+    --ck-color-labeled-field-label-background: #1f2937;
+    --ck-color-link-default: #60a5fa;
+    --ck-color-link-selected-background: rgba(96, 165, 250, 0.1);
+    --ck-color-table-focused-cell-background: rgba(59, 130, 246, 0.1);
+}
+/* 에디터 본문 */
+html[data-g7-color-scheme="dark"] .ck.ck-editor__editable_inline {
+    background-color: #1f2937 !important;
+    color: #f3f4f6 !important;
+    border-color: #374151 !important;
+}
+/* 메인 툴바 */
+html[data-g7-color-scheme="dark"] .ck.ck-toolbar {
+    background-color: #111827 !important;
+    border-color: #374151 !important;
+}
+/* 모든 버튼 텍스트 */
+html[data-g7-color-scheme="dark"] .ck.ck-button,
+html[data-g7-color-scheme="dark"] .ck.ck-button .ck-button__label {
+    color: #f3f4f6 !important;
+}
+/* 모든 SVG 아이콘 (툴바, 드롭다운 화살표 포함) */
+html[data-g7-color-scheme="dark"] .ck.ck-icon,
+html[data-g7-color-scheme="dark"] .ck .ck-icon,
+html[data-g7-color-scheme="dark"] .ck.ck-button .ck-icon,
+html[data-g7-color-scheme="dark"] .ck.ck-dropdown__arrow {
+    color: #f3f4f6 !important;
+}
+html[data-g7-color-scheme="dark"] .ck.ck-button:hover,
+html[data-g7-color-scheme="dark"] .ck.ck-button.ck-on {
+    background-color: #374151 !important;
+}
+/* 툴팁 (호버 시 버튼 설명) */
+html[data-g7-color-scheme="dark"] .ck.ck-tooltip .ck-tooltip__text {
+    background-color: #1f2937 !important;
+    color: #f3f4f6 !important;
+}
+/* 드롭다운 패널 / 리스트 / balloon 팝업 공통 */
+html[data-g7-color-scheme="dark"] .ck.ck-dropdown__panel,
+html[data-g7-color-scheme="dark"] .ck.ck-list,
+html[data-g7-color-scheme="dark"] .ck.ck-balloon-panel {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+/* 리스트 아이템 */
+html[data-g7-color-scheme="dark"] .ck.ck-list__item .ck-button,
+html[data-g7-color-scheme="dark"] .ck.ck-list__item .ck-button .ck-button__label {
+    color: #f3f4f6 !important;
+}
+html[data-g7-color-scheme="dark"] .ck.ck-list__item .ck-button:hover {
+    background-color: #374151 !important;
+}
+html[data-g7-color-scheme="dark"] .ck.ck-list__item .ck-button.ck-disabled .ck-button__label {
+    color: #6b7280 !important;
+}
+/* 링크 팝업 / form */
+html[data-g7-color-scheme="dark"] .ck.ck-link-form,
+html[data-g7-color-scheme="dark"] .ck.ck-link-actions {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+html[data-g7-color-scheme="dark"] .ck.ck-input-text {
+    background-color: #111827 !important;
+    color: #f3f4f6 !important;
+    border-color: #374151 !important;
+}
+html[data-g7-color-scheme="dark"] .ck.ck-labeled-field-view__label {
+    background-color: #1f2937 !important;
+    color: #9ca3af !important;
+}
+/* 테이블 속성/셀 속성 폼 */
+html[data-g7-color-scheme="dark"] .ck.ck-table-form,
+html[data-g7-color-scheme="dark"] .ck.ck-table-cell-properties-form,
+html[data-g7-color-scheme="dark"] .ck.ck-table-properties-form {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+html[data-g7-color-scheme="dark"] .ck.ck-table-form .ck-label,
+html[data-g7-color-scheme="dark"] .ck.ck-table-cell-properties-form .ck-label,
+html[data-g7-color-scheme="dark"] .ck.ck-table-properties-form .ck-label {
+    color: #d1d5db !important;
+}
+/* 색상 선택 패널 */
+html[data-g7-color-scheme="dark"] .ck.ck-color-table,
+html[data-g7-color-scheme="dark"] .ck.ck-color-grid {
+    background-color: #1f2937 !important;
+}
+html[data-g7-color-scheme="dark"] .ck.ck-color-table .ck-color-table__remove-color,
+html[data-g7-color-scheme="dark"] .ck.ck-color-table .ck-color-table__remove-color .ck-button__label {
+    color: #f3f4f6 !important;
+}
+/* 헤딩/폰트 드롭다운 라벨 */
+html[data-g7-color-scheme="dark"] .ck.ck-heading_paragraph,
+html[data-g7-color-scheme="dark"] .ck.ck-heading_heading1,
+html[data-g7-color-scheme="dark"] .ck.ck-heading_heading2,
+html[data-g7-color-scheme="dark"] .ck.ck-heading_heading3 {
+    color: #f3f4f6 !important;
+}
+/* 이미지 선택 시 balloon toolbar (floating) */
+html[data-g7-color-scheme="dark"] .ck.ck-toolbar_floating {
+    background-color: #111827 !important;
+    border-color: #374151 !important;
+}
+/* 이미지 정렬 툴바 아이콘 */
+html[data-g7-color-scheme="dark"] .ck.ck-toolbar .ck-button .ck-icon {
+    color: #f3f4f6 !important;
+}
+/* 이미지 리사이즈 드롭다운 버튼 라벨 (25%, 50% 등) */
+html[data-g7-color-scheme="dark"] .ck.ck-dropdown .ck-button__label {
+    color: #f3f4f6 !important;
+}
+/* 이미지 리사이즈 드롭다운 내 선택 리스트 */
+html[data-g7-color-scheme="dark"] .ck.ck-resize-image-form,
+html[data-g7-color-scheme="dark"] .ck.ck-image-resize-form {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+    color: #f3f4f6 !important;
+}
+html[data-g7-color-scheme="dark"] .ck.ck-resize-image-form .ck-label,
+html[data-g7-color-scheme="dark"] .ck.ck-image-resize-form .ck-label {
+    color: #d1d5db !important;
+}
+html[data-g7-color-scheme="dark"] .ck.ck-resize-image-form .ck-input-text,
+html[data-g7-color-scheme="dark"] .ck.ck-image-resize-form .ck-input-text {
+    background-color: #111827 !important;
+    color: #f3f4f6 !important;
+    border-color: #374151 !important;
+}
+
+/*
+ * 편집 영역 안 본문 — 읽기 화면의 다크 규칙(2절)을 덮지 않도록 편집 영역(.ck-editor__editable)으로 좁힌다.
+ * 종전에는 편집기를 한 번 띄우면 이 규칙들이 읽기 화면에도 남았다.
+ */
+/* 이미지 캡션 */
+html[data-g7-color-scheme="dark"] .ck-content.ck-editor__editable .image > figcaption {
+    background-color: #374151 !important;
+    color: #d1d5db !important;
+}
+/* 이미지 리사이즈 핸들 */
+html[data-g7-color-scheme="dark"] .ck-content.ck-editor__editable .image.ck-widget_selected .ck-widget__resizer__handle {
+    background-color: #3b82f6 !important;
+    border-color: #1d4ed8 !important;
+}
+/* 표 안 에디터 내용 (다크 배경) */
+html[data-g7-color-scheme="dark"] .ck-content.ck-editor__editable table tr {
+    background-color: unset;
+}
+html[data-g7-color-scheme="dark"] .ck-content.ck-editor__editable table td,
+html[data-g7-color-scheme="dark"] .ck-content.ck-editor__editable table th {
+    border-color: #4b5563;
+    color: #f3f4f6 !important;
+}
+/* 목록 마커 색상 - 다크모드 */
+html[data-g7-color-scheme="dark"] .ck.ck-editor__editable ul,
+html[data-g7-color-scheme="dark"] .ck.ck-editor__editable ol {
+    color: #f3f4f6;
+}
+html[data-g7-color-scheme="dark"] .ck.ck-editor__editable li::marker {
+    color: #d1d5db;
+}
+
+/* ==========================================================================
+ * 4. 편집기 최소 높이 — 값은 핸들러가 컨테이너에 CSS 변수로 싣는다
+ * ========================================================================== */
+
+/*
+ * 편집 영역의 인라인 스타일은 포커스 때 CKEditor 가 다시 쓰므로 규칙으로 강제한다.
+ * 핸들러는 컨테이너에 data-ckeditor5-min-height 속성과 --ckeditor5-min-height 변수만 단다.
+ */
+[data-ckeditor5-min-height] .ck-editor__editable {
+    min-height: var(--ckeditor5-min-height) !important;
+}
+`;
+
+/**
+ * 라이브러리 DOM 보정 규칙을 문서에 싣습니다. 이미 실렸으면 다시 싣지 않습니다(같은 key 는 교체되므로 한 벌만 남는다).
+ * 코어 API 가 없으면(옛 코어·대역 환경) 아무것도 하지 않습니다 — `<style>` 요소로 되돌아가지 않습니다.
+ *
+ * @returns 반환값 없음
+ */
+export function applyLibraryStyles(): void {
+    const style = (window as any)?.G7Core?.style;
+    if (typeof style?.setRules !== 'function') {
+        return;
+    }
+    if (typeof style.has === 'function' && style.has(LIBRARY_STYLE_KEY)) {
+        return;
+    }
+    style.setRules(LIBRARY_STYLE_KEY, LIBRARY_CSS);
+}
+
+/**
  * 지원 locale 목록을 반환합니다.
  * localStorage의 g7_locale 값과 서버 설정을 활용합니다.
  */
@@ -411,7 +740,10 @@ function getPlugins(CKEDITOR: CKEditorGlobal, toolbarType: string, withImageUplo
  * 인가는 서버 라우트 게이트(auth:sanctum + admin)가 전담하므로 쿼리 파라미터는 붙이지 않습니다.
  */
 function buildUploadUrl(): string {
-    return '/api/plugins/sirsoft-ckeditor5/upload';
+    // CKEditor 의 `simpleUpload` 는 이 주소로 **자기가 직접** 요청을 보낸다 — `fetch(` 를
+    // 거치지 않으므로 주소 게이트의 수집기에 잡히지 않았고, 하위 폴더 배치에서 에디터
+    // 이미지 업로드만 사이트 밖으로 나갔다.
+    return apiUrl('/api/plugins/sirsoft-ckeditor5/upload');
 }
 
 /**
@@ -762,7 +1094,7 @@ function createMultilingualTabs(
     getEditorData?: (locale: string) => string | null
 ): { tabsEl: HTMLElement; contentEls: Map<string, HTMLElement>; updateCheckIcons: () => void } {
     const tabsEl = document.createElement('div');
-    tabsEl.className = 'ckeditor5-locale-tabs';
+    tabsEl.className = 'ckeditor-locale-tabs';
 
     const contentEls = new Map<string, HTMLElement>();
 
@@ -789,18 +1121,18 @@ function createMultilingualTabs(
         if (!getEditorData) return;
         tabsEl.querySelectorAll('button').forEach(btn => {
             const btnLocale = (btn as HTMLButtonElement).dataset.locale;
-            if (!btnLocale || btn.classList.contains('is-active')) {
+            if (!btnLocale || btn.classList.contains('ckeditor-locale-tab--active')) {
                 // 활성 탭은 체크 아이콘 제거
-                const existing = btn.querySelector('.ck5-check');
+                const existing = btn.querySelector('.ckeditor-check');
                 if (existing) existing.remove();
                 return;
             }
             const data = getEditorData(btnLocale);
             const hasValue = Boolean(data?.trim());
-            const existing = btn.querySelector('.ck5-check');
+            const existing = btn.querySelector('.ckeditor-check');
             if (hasValue && !existing) {
                 const icon = document.createElement('i');
-                icon.className = 'fas fa-check ck5-check';
+                icon.className = 'ckeditor-icon ckeditor-icon--check ckeditor-check';
                 btn.appendChild(icon);
             } else if (!hasValue && existing) {
                 existing.remove();
@@ -816,7 +1148,7 @@ function createMultilingualTabs(
         const tab = document.createElement('button');
         tab.type = 'button';
         tab.dataset.locale = locale;
-        tab.className = [isActive ? 'is-active' : '', isDefault ? 'is-default' : ''].filter(Boolean).join(' ');
+        tab.className = ['ckeditor-locale-tab', isActive ? 'ckeditor-locale-tab--active' : '', isDefault ? 'ckeditor-locale-tab--default' : ''].filter(Boolean).join(' ');
         // 언어 이름(언어팩 문자열)은 textContent 로만 넣는다 — innerHTML 금지 (#148 F5x)
         buildLocaleTabContent(tab, locale, isDefault);
         tab.addEventListener('click', async () => {
@@ -824,7 +1156,7 @@ function createMultilingualTabs(
             tabsEl.querySelectorAll('button').forEach(btn => {
                 const btnLocale = (btn as HTMLButtonElement).dataset.locale;
                 const btnIsActive = btnLocale === locale;
-                btn.classList.toggle('is-active', btnIsActive);
+                btn.classList.toggle('ckeditor-locale-tab--active', btnIsActive);
             });
             // 에디터 컨텐츠 영역 전환 (새 locale만 표시, 나머지 숨김)
             // wrapperEl(contentEl.parentElement)에 display를 적용해야
@@ -1047,7 +1379,8 @@ export async function initEditorHandler(
 
     // 마운트한 화면의 경로와 그 화면의 본문 — 아래 await(이전 인스턴스 정리·번역·본체 확보·생성) 동안 같은 레이아웃의
     // 다른 경로로 옮기면, 편집기(평문 입력칸)는 앞 화면 값으로 서면 안 된다. {@link planSeed} 참조.
-    const seedPath = location.pathname;
+    // 경로는 앱 기준(마운트 접두사를 벗긴 값)으로 잰다 — 이 파일과 externalContentSync 의 경로 대조가 모두 같은 기준을 쓴다.
+    const seedPath = routePath(location.pathname);
     const mountMultilingual = params.multilingual === true || params.multilingual === 'true';
     const mountSingle = mountMultilingual ? '' : resolveSingleContent(params, editorName);
     const mountMap = mountMultilingual ? resolveContentMap(params, editorName) : {};
@@ -1073,8 +1406,10 @@ export async function initEditorHandler(
         return;
     }
 
-    // CKEditor CSS 동적 로드 — 다국어 탭·다크 모드 규칙은 플러그인 CSS 파일(`html.dark` 스코프)이 맡는다
+    // CKEditor CSS 동적 로드 — 다국어 탭 규칙은 플러그인 CSS 파일이, 라이브러리 DOM 보정·다크 모드 규칙
+    // (`html[data-g7-color-scheme="dark"]` 스코프)은 applyLibraryStyles 가 생성형 스타일시트로 맡는다
     loadCkeditorCss();
+    applyLibraryStyles();
 
     // 번역 파일 로드 (에디터 생성 전 완료되어야 함)
     await loadCkeditorTranslations(getCurrentLocale());
@@ -1183,14 +1518,14 @@ export async function initEditorHandler(
         resolveNow: () => string,
         mountValue: string
     ): { value: string; path: string } => {
-        if (location.pathname === seedPath) {
+        if (routePath(location.pathname) === seedPath) {
             return { value: resolveNow(), path: seedPath };
         }
 
         const current = readCurrent(locale, multilingual) ?? '';
 
         return current !== mountValue
-            ? { value: current, path: location.pathname }
+            ? { value: current, path: routePath(location.pathname) }
             : { value: current, path: seedPath };
     };
 
@@ -1244,7 +1579,7 @@ export async function initEditorHandler(
                 : undefined,
             initialContent: isMultilingual ? undefined : fallbackPlans[0].value,
             // 한 칸이라도 앞 화면 값이면 앞 화면 경로로 붙인다(다국어 입력칸은 칸을 묶어 보낸다)
-            seedPath: fallbackPlans.find((plan) => plan.path !== location.pathname)?.path,
+            seedPath: fallbackPlans.find((plan) => plan.path !== routePath(location.pathname))?.path,
         };
 
         renderTextareaFallback(fallbackOptions);

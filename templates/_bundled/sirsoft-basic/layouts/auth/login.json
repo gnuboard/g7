@@ -7,6 +7,108 @@
         "title": "$t:auth.login",
         "guest_only": true
     },
+    "named_actions": {
+        "applyLoginResult": {
+            "comment": "로그인 응답 분기 — 비밀번호 로그인(`_login_form` 의 `login`)과 로그인 인계 교환(아래 `<init>` 의 `loginHandoff`)이 같은 분기를 쓴다.\n       2단계 인증이면 `_global.twoFactor`, 비밀번호 변경이면 `_global.passwordChange` 만 심고, 로그인이 끝났으면 사용자·안내·이동을 처리한다.",
+            "handler": "sequence",
+            "actions": [
+                {
+                    "comment": "2단계 인증이 켜진 사이트는 아직 로그인이 끝나지 않았다 — 토큰도 사용자도 없다.",
+                    "handler": "setState",
+                    "if": "{{response.two_factor_required}}",
+                    "params": {
+                        "target": "global",
+                        "isLoggingIn": false,
+                        "twoFactor": {
+                            "required": true,
+                            "challenge_id": "{{response.challenge_id}}",
+                            "provider_id": "{{response.provider_id}}",
+                            "expires_at": "{{response.expires_at}}",
+                            "code": "",
+                            "error": null,
+                            "verifying": false,
+                            "resending": false,
+                            "resent": false
+                        }
+                    }
+                },
+                {
+                    "comment": "비밀번호가 만료됐거나 관리자가 정해 준 비밀번호다 — 토큰 없이 변경 단계 식별자만 왔다.",
+                    "handler": "setState",
+                    "if": "{{response.password_change_required}}",
+                    "params": {
+                        "target": "global",
+                        "isLoggingIn": false,
+                        "passwordChange": {
+                            "required": true,
+                            "challenge_id": "{{response.challenge_id}}",
+                            "reason": "{{response.reason}}",
+                            "can_postpone": "{{response.can_postpone}}",
+                            "postpone_days": "{{response.postpone_days}}",
+                            "expired_at": "{{response.expired_at}}",
+                            "error": null,
+                            "errors": null
+                        }
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "if": "{{response.password_change_required}}",
+                    "params": {
+                        "target": "local",
+                        "passwordChangeInput": null
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "if": "{{!response.two_factor_required && !response.password_change_required}}",
+                    "params": {
+                        "target": "global",
+                        "currentUser": "{{response.user}}"
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "if": "{{!response.two_factor_required && !response.password_change_required}}",
+                    "params": {
+                        "target": "global",
+                        "isLoggingIn": false
+                    }
+                },
+                {
+                    "comment": "로그인 직전에 비회원으로 발급받은 주문 조회 토큰은 회원 컨텍스트에 무효 — 잔존 시 동일 브라우저로 회원/비회원 페이지 동시 열람 가능. sessionStorage 3개 키 (token/orderNumber/expiresAt) 와 _global.guestOrderToken 을 한 번에 정리하는 모듈 커스텀 핸들러 사용.",
+                    "handler": "clearGuestOrderToken",
+                    "if": "{{!response.two_factor_required && !response.password_change_required}}"
+                },
+                {
+                    "handler": "toast",
+                    "if": "{{!response.two_factor_required && !response.password_change_required}}",
+                    "params": {
+                        "type": "success",
+                        "message": "$t:auth.login_success"
+                    }
+                },
+                {
+                    "comment": "휴면이 풀린 로그인에만 실린다 — 서버가 해제했을 때만 이 키를 보내므로\n           평시 로그인에는 뜨지 않는다. 안내 없이 되돌리면 회원은 자기 계정이 잠겼다\n           풀린 사실을 끝내 모른다.",
+                    "handler": "toast",
+                    "if": "{{!response.two_factor_required && !response.password_change_required && response.dormancy_restored}}",
+                    "params": {
+                        "type": "info",
+                        "message": "$t:auth.dormancy_restored"
+                    }
+                },
+                {
+                    "comment": "최종 이동 — 필수 항목이 비어 있는 회원(응답의 pending_required_fields 에 키가 있다)은 원래 가려던 곳을 redirect 로 실어 추가 정보 입력 화면으로 보낸다.\n           그 밖에는 원래 가려던 곳, 없으면 홈이다. 원래 가려던 곳이 이미 추가 정보 입력 화면이면(그 화면에서 로그인이 풀려 다시 로그인한 경우) 겹쳐 싣지 않고 그 주소로 바로 보낸다.\n           폼 조각의 나머지 세 성공 지점(2단계 인증 완료, 비밀번호 변경 완료, 다음에 변경)도 같은 식을 쓴다.",
+                    "handler": "navigate",
+                    "if": "{{!response.two_factor_required && !response.password_change_required}}",
+                    "params": {
+                        "path": "{{((response.pending_required_fields ?? []).length > 0 && (query.redirect ?? '').indexOf('/mypage/required-info') !== 0) ? '/mypage/required-info' + (query.redirect ? '?redirect=' + encodeURIComponent(query.redirect) : '') : (query.redirect ?? '/')}}",
+                        "fallbackPath": "/"
+                    }
+                }
+            ]
+        }
+    },
     "init_actions": [
         {
             "comment": "2단계 인증·비밀번호 변경(#736) 단계 상태는 전역이라 화면을 떠나도 남는다 — 진입할 때마다 1단계로 되돌린다.",
@@ -24,6 +126,83 @@
                 "type": "warning",
                 "message": "$t:auth.session_expired_toast"
             }
+        },
+        {
+            "comment": "로그인 화면 자동 이동(7.2.0) — 사이트가 회사 계정 로그인으로 바로 보내도록 정했으면 이동한다. `?local=1`(비상 계정 진입로)이거나\n         인계 교환·외부 인증 오류·동의 대기·연결 확인 대기로 돌아온 화면이면 이동하지 않는다 — 오류 화면이 다시 IdP 로 튕기면 무한 왕복이 된다.",
+            "handler": "redirect",
+            "if": "{{!!_global.appConfig?.auth?.auto_redirect?.user && !query?.local && !query?.login_handoff && !query?.sso_error && !query?.sso_pending && !query?.sso_link}}",
+            "params": {
+                "replace": true,
+                "url": "{{_global.appConfig.auth.auto_redirect.user + (query?.redirect ? (_global.appConfig.auth.auto_redirect.user.includes('?') ? '&' : '?') + 'redirect=' + encodeURIComponent(query.redirect) : '')}}"
+            }
+        },
+        {
+            "comment": "로그인 인계 — 외부 인증(소셜 로그인 등)이 본인 확인을 마친 회원을 `/login?login_handoff={코드}` 로 보낸다. 코드를 교환하면\n         비밀번호 로그인과 같은 응답이 와서 2단계 인증·비밀번호 변경·휴면 해제 안내를 그대로 쓴다. 코드는 한 번만 통하므로\n         교환 뒤에는 주소에서 지운다(새로고침해도 다시 교환하지 않게). 실패(만료·재사용·상태 거절)는 오류 자리에 싣는다.",
+            "handler": "sequence",
+            "if": "{{!!query?.login_handoff}}",
+            "actions": [
+                {
+                    "comment": "로그인 진행 표지 — 비밀번호 로그인과 같다. 없으면 회원이 서는 순간 「이미 로그인됨 → 홈」 조각이 복귀 주소를 무시하고 홈으로 보낸다.",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "isLoginAction": true
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "isLoggingIn": true,
+                        "loginError": null,
+                        "loginErrors": null
+                    }
+                },
+                {
+                    "handler": "loginHandoff",
+                    "target": "user",
+                    "params": {
+                        "body": {
+                            "code": "{{query.login_handoff}}"
+                        }
+                    },
+                    "onSuccess": [
+                        {
+                            "handler": "replaceUrl",
+                            "if": "{{response.two_factor_required || response.password_change_required}}",
+                            "params": {
+                                "path": "/login",
+                                "query": {
+                                    "redirect": "{{query.redirect || undefined}}"
+                                }
+                            }
+                        },
+                        {
+                            "actionRef": "applyLoginResult"
+                        }
+                    ],
+                    "onError": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "isLoggingIn": false,
+                                "loginError": "{{error.message}}",
+                                "loginErrors": "{{error.errors}}"
+                            }
+                        },
+                        {
+                            "handler": "replaceUrl",
+                            "params": {
+                                "path": "/login",
+                                "query": {
+                                    "redirect": "{{query.redirect || undefined}}"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
         }
     ],
     "slots": {
@@ -72,7 +251,51 @@
                                 "text": "$t:auth.login"
                             },
                             {
+                                "comment": "비상 계정 진입(`?local=1`, 7.2.0) — 자동 이동을 건너뛴 비밀번호 화면임을 알린다(디자인 ⑤)",
+                                "id": "login_local_notice",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!!query.local}}",
+                                "props": {
+                                    "className": "mb-6 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200",
+                                    "role": "note"
+                                },
+                                "text": "$t:auth.external.local_notice"
+                            },
+                            {
                                 "partial": "partials/auth/_login_form.json"
+                            },
+                            {
+                                "comment": "확장 영역 — 소셜 로그인 버튼처럼 다른 로그인 수단을 확장이 붙이는 자리. 붙인 확장이 없으면 아무것도 그리지 않는다.",
+                                "id": "auth_login_extensions_slot",
+                                "type": "extension_point",
+                                "name": "auth_login_extensions"
+                            },
+                            {
+                                "comment": "자동 이동이 켜진 사이트에서도 이 화면(비밀번호 로그인)에 닿는 길 — 비상 계정용(7.2.0)",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!!_global.appConfig?.auth?.auto_redirect?.user}}",
+                                "props": {
+                                    "className": "mt-4 text-center text-sm"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "A",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate"
+                                            }
+                                        ],
+                                        "props": {
+                                            "href": "/login?local=1",
+                                            "className": "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer"
+                                        },
+                                        "text": "$t:auth.external.other_method"
+                                    }
+                                ]
                             },
                             {
                                 "comment": "하단 링크 영역",
@@ -98,8 +321,10 @@
                                         "text": "$t:auth.forgot_password_link"
                                     },
                                     {
+                                        "comment": "「일반 회원가입 받지 않음」이면 숨긴다(7.2.0)",
                                         "type": "basic",
                                         "name": "A",
+                                        "if": "{{(_global.appConfig?.auth?.registration_open ?? _global.settings?.security?.registration_enabled) !== false}}",
                                         "actions": [
                                             {
                                                 "type": "click",

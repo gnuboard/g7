@@ -7,7 +7,7 @@
  * 이 여섯이 **방금 친 글자**를 읽는지를 브라우저에서 하나씩 잰다. 선언층 단위 테스트는 «표현식이
  * 그 전역을 가리킨다» 까지만 잠그고, 실제로 값이 흘러 들어오는지는 여기서만 드러난다.
  *
- * @scenario surface=code_editor,entry=direct
+ * 축 요약(마커 아님 — 평문): surface=code_editor, entry=direct
  * @effects code_editor_markup_readers_receive_the_live_buffer
  *
  * 실행: `--workers=1` — 같은 시드 화면을 저장하므로 병렬이면 서로를 밟는다(`code-editor-file-crud.spec.ts` 헤더).
@@ -117,7 +117,7 @@ async function openExtensionFragment(page: Page): Promise<boolean> {
 
 test.describe('@sirsoft-admin_basic 코드 편집기 — editorMarkup 을 읽는 6곳', () => {
   /**
-   * @scenario reader=save_layout, surface=browser
+   * @scenario branch=layout, input=valid_edit, action=save
    * @effects code_editor_save_reads_the_live_buffer
    */
   test('① 저장(레이아웃)은 방금 친 본문을 실어 보낸다', async ({ page, layoutEditToken }) => {
@@ -144,7 +144,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — editorMarkup 을 읽는
   });
 
   /**
-   * @scenario reader=save_extension, surface=browser
+   * @scenario branch=extension, input=valid_edit, action=save
    * @effects code_editor_extension_save_reads_the_live_buffer
    */
   test('② 저장(확장 조각)은 방금 친 본문을 실어 보낸다', async ({ page, layoutEditToken }) => {
@@ -174,7 +174,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — editorMarkup 을 읽는
   });
 
   /**
-   * @scenario reader=preview_layout, surface=browser
+   * @scenario branch=layout, input=valid_edit, action=preview
    * @effects code_editor_preview_reads_the_live_buffer
    */
   test('③ 미리보기(레이아웃)는 저장하지 않은 본문을 올려 컴파일한다', async ({ page, layoutEditToken }) => {
@@ -203,7 +203,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — editorMarkup 을 읽는
    * 창은 JSON 산출물(`editorContent`)을 보낸다(다른 읽기 자리). 어느 쪽이든 **버튼이 그 갈래로
    * 이어지는지**를 잰다.
    *
-   * @scenario reader=preview_extension, surface=browser
+   * @scenario branch=extension, input=valid_edit, action=preview
    * @effects code_editor_extension_preview_reads_the_live_buffer
    */
   test('④ 미리보기(확장 조각)는 overlay 형이면 편집 중인 본문을 올린다', async ({ page, layoutEditToken }) => {
@@ -238,7 +238,6 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — editorMarkup 을 읽는
   });
 
   /**
-   * @scenario reader=download, surface=browser
    * @effects code_editor_download_reads_the_live_buffer
    */
   test('⑤ 내려받기는 편집 중인 본문을 .g7.html 파일로 만든다', async ({ page, layoutEditToken }) => {
@@ -259,7 +258,6 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — editorMarkup 을 읽는
   });
 
   /**
-   * @scenario reader=copy, surface=browser
    * @effects code_editor_copy_reads_the_live_buffer
    */
   test('⑥ 복사는 편집 중인 본문을 클립보드에 담는다', async ({ page, context, layoutEditToken }) => {

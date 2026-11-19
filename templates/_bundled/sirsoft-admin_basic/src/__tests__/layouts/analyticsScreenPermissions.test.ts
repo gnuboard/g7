@@ -14,14 +14,13 @@
  * 얻을 수 없는 값(상단 경고·저장소 현황·알림 정의)뿐이고, 그것들은 403 을 삼키고 화면이 권한 안내로
  * 갈음한다는 것을 함께 단언한다 — 삼키지 않으면 화면을 열 때마다 전역 오류 토스트가 뜬다.
  *
- * @scenario screen=settings, state=forbidden, viewport=1440, locale=ko
- * @effects every_analytics_screen_only_calls_its_own_permission
+ * 조합과 효과 표식은 그것을 재는 시험마다 단다.
  */
 import fs from 'fs';
 import path from 'path';
 import { describe, it, expect } from 'vitest';
 import { evaluateSafeExpression } from '@core/template-engine/SafeExpressionEvaluator';
-import { TEMPLATE_DIR, collectObjects, analyticsScreens, expandedObjects, analyticsLayoutFiles, loadLayout, adminAuthUserFields } from './analyticsLayoutTestUtils';
+import { TEMPLATE_DIR, analyticsScreens, expandedObjects, analyticsLayoutFiles, loadLayout, adminAuthUserFields } from './analyticsLayoutTestUtils';
 
 const LAYOUT_DIR = path.join(TEMPLATE_DIR, 'layouts');
 const REPO_ROOT = path.resolve(TEMPLATE_DIR, '../../..');
@@ -37,6 +36,8 @@ const CROSS_PERMISSION_SOURCES = new Set([
   'analytics_status',
   'analytics_storage',
   'analytics_notification_definitions',
+  // 리포트 탭 — 발송 스케줄의 다음 실행 일시(core.schedules.read, #17). 없으면 안내는 링크만 남는다.
+  'analytics_report_schedules',
 ]);
 
 /** 화면 → 권한. `routes.json` 의 통계 라우트에서 파생한다. */

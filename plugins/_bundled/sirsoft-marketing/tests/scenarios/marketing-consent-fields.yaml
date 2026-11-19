@@ -1,0 +1,57 @@
+feature: 동의 항목의 회원 항목 편입 — 선언, 저장소 어댑터, 요청 키 통일 (#490)
+
+description: |
+  마케팅 동의(전체 동의, 수신 채널, 제3자 제공, 정보 공개)를 코어 회원 항목 집합(core.user)의 예/아니오 항목으로 선언한다.
+  값은 종전대로 동의 테이블에 두고 저장소 어댑터가 잇는다. 가입, 관리자 회원 추가, 관리자 회원 수정, 내 정보 수정 네 경로가
+  같은 요청 키(접두 없는 항목 키)로 동의를 받고, 바뀐 항목마다 동의 이력과 변경 훅이 한 번씩만 일어난다.
+  가입 경로가 쓰던 옛 키(agree_ 접두)는 계속 받는다. 채널은 운영자 설정이라 설정을 저장할 때 항목 행이 따라간다.
+
+axis_notes:
+  case: |
+    declaration 은 선언 동기화 결과(항목 행), contract 는 가입 화면 항목 계약 API, signup 과 signup_legacy_keys 는 가입 요청,
+    admin_create, admin_update, self_update 는 각 회원 저장 API, operator_override 는 운영자가 회원 항목 표에서 바꾼 값,
+    settings_off 는 플러그인 설정에서 끈 동의, plugin_inactive 는 플러그인을 끈 상태, channel_settings_change 는 설정 저장 뒤
+    재동기화, channel_key_without_row 는 항목 키 형식에 맞지 않아 행이 되지 못하는 채널 키, purge 는 회원 파기다.
+    consent_date_notice 는 내 정보 화면 항목 계약에 실리는 동의일 알림 줄이다.
+
+axes:
+  case:
+    - declaration
+    - language_pack_names
+    - contract
+    - signup
+    - signup_legacy_keys
+    - admin_create
+    - admin_update
+    - self_update
+    - operator_override
+    - settings_off
+    - plugin_inactive
+    - channel_settings_change
+    - channel_key_without_row
+    - purge
+    - consent_date_notice
+
+effects:
+  - consent_fields_declared_in_core_user_set   # 전체 동의, 채널, 법적 동의가 core.user 의 예/아니오 항목 행으로 생긴다
+  - declared_field_names_include_active_language_pack_locale   # 활성 ja 언어팩이 있으면 전체 동의와 법적 동의 항목 이름, 안내문에 ja 가 실린다
+  - consent_fields_in_signup_contract          # 가입 항목 계약에 약관 묶음(ui.group)과 약관 링크(ui.link)가 실린다
+  - consent_saved_once_per_path                # 경로마다 바뀐 항목의 이력과 변경 훅이 한 번씩만 일어난다(이중 저장 없음)
+  - history_source_follows_surface             # 이력 출처가 경로대로 남는다(register, admin, profile)
+  - legacy_agree_keys_accepted                 # 옛 키가 정식 키로 옮겨 저장되고 가입 데이터에 둘 다 실린다. 둘 다 오면 정식 키
+  - consent_values_in_user_response            # 회원 응답에 동의 값과 동의 시각이 실린다
+  - operator_required_enforced_on_signup       # 운영자가 필수로 바꾼 동의를 가입 요청이 요구한다
+  - disabled_consent_ignored                   # 설정에서 끈 동의는 요청에 실려도 저장되지 않고 계약에도 없다
+  - fields_absent_when_plugin_inactive         # 플러그인을 끄면 항목이 빠지고 요청에 실린 값은 조용히 무시된다
+  - channel_rows_follow_settings               # 채널을 더하고 지우고 이름을 바꾸면 항목 행이 따라간다
+  - operator_overrides_survive_resync          # 운영자가 표에서 바꾼 값은 재동기화에서 남는다
+  - channel_without_row_still_accepted         # 행이 되지 못한 채널 키도 요청 시점에 항목으로 더해져 값을 받는다
+  - consent_purged_with_owner                  # 회원 파기 때 동의 상태와 이력이 함께 지워진다
+  - consented_on_notice_in_self_view           # 내 정보 화면 항목 계약에서 동의한 항목만 ui.notice 에 동의일(사용자 시간대 날짜)이 실린다
+
+test_files:
+  - plugins/_bundled/sirsoft-marketing/tests/Feature/MarketingConsentFieldsTest.php
+
+notes: |
+  e2e_browser=not_applicable — 서버 계약. 화면(가입 화면의 약관 묶음, 내 정보와 관리자 폼의 확장 항목 구획)은 코어 템플릿이
+  항목 계약대로 그리며 그쪽 실측에서 확인한다.

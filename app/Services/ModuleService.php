@@ -5,20 +5,31 @@ namespace App\Services;
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\ExtensionStatus;
+use App\Enums\LayoutSyncMode;
 use App\Exceptions\ExtensionOperationLockException;
 use App\Exceptions\ModuleOperationException;
+use App\Exceptions\PackageIntegrityException;
 use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\EditorSpecAssembler;
 use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
+use App\Extension\Integrity\ExtensionIntegrityRecorder;
+use App\Extension\Integrity\PackageAcquirer;
+use App\Extension\Integrity\PackageExpectation;
+use App\Extension\Integrity\PackageIntegrityOptions;
+use App\Extension\Layout\LayoutSyncOptions;
 use App\Extension\Vendor\VendorMode;
 use App\Helpers\PermissionHelper;
 use App\Models\Module;
+use App\Rules\AllowedModuleFileType;
+use App\Services\Concerns\ResolvesExtensionAssetType;
+use App\Services\Concerns\SecuresExtensionAssetPath;
 use App\Services\Extension\ExtensionIconResolver;
 use App\Support\LocalizedValue;
 use App\Support\SafeExceptionMessage;
+use App\Support\UploadedFileName;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
@@ -26,6 +37,9 @@ use Illuminate\Validation\ValidationException;
 
 class ModuleService
 {
+    use ResolvesExtensionAssetType;
+    use SecuresExtensionAssetPath;
+
     /**
      * 검색 가능한 필드 목록
      */
@@ -201,15 +215,18 @@ class ModuleService
      * @param  VendorMode  $vendorMode  Vendor 설치 모드
      * @param  string  $layoutStrategy  레이아웃 전략 (overwrite|keep)
      * @param  bool  $force  코어 버전 비호환 강제 우회 (위험 — 사용자 명시 필요)
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일 경로, 7.2.0) — null 이면 미서명은 409
      * @return array 업데이트 결과 (identifier, from_version, to_version 등)
      *
      * @throws ValidationException 업데이트 실패 시
+     * @throws PackageIntegrityException 받은 패키지의 서명 검증이 업데이트를 멈췄을 때
      */
     public function updateModule(
         string $moduleName,
         VendorMode $vendorMode = VendorMode::Auto,
         string $layoutStrategy = 'overwrite',
         bool $force = false,
+        ?PackageIntegrityOptions $integrity = null,
     ): array {
         // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
@@ -221,6 +238,7 @@ class ModuleService
                 null,
                 $vendorMode,
                 $layoutStrategy,
+                integrity: $integrity,
             );
 
             $moduleInfo = $this->moduleManager->getModuleInfo($moduleName);
@@ -234,6 +252,9 @@ class ModuleService
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
             // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            throw $e;
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 422 로 감싸지 않고 그대로 올린다(7.2.0)
             throw $e;
         } catch (\Exception $e) {
             // Manager의 RuntimeException은 이미 번역된 메시지를 포함하므로
@@ -482,6 +503,21 @@ class ModuleService
     public function getActiveModuleIdentifiers(): array
     {
         return $this->moduleRepository->getActiveModuleIdentifiers();
+    }
+
+    /**
+     * 이 서버가 불러온(활성 디렉터리에 파일이 있어 로드된) 모듈의 identifier 목록을 반환합니다.
+     *
+     * DB 상태와 무관하다 — 같은 DB 를 쓰는 다른 서버가 설치한 모듈은 DB 에 활성으로 있어도 이 서버에 파일이 없으면 빠진다.
+     *
+     * @return array<int, string> 로드된 모듈 identifier 배열
+     */
+    public function getLoadedModuleIdentifiers(): array
+    {
+        return array_values(array_map(
+            static fn ($module): string => (string) $module->getIdentifier(),
+            $this->moduleManager->getAllModules(),
+        ));
     }
 
     /**
@@ -784,7 +820,7 @@ class ModuleService
             File::ensureDirectoryExists($tempPath);
 
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'module.json', 'modules', $file->getClientOriginalName()
+                $file->getRealPath(), $extractPath, 'module.json', 'modules', UploadedFileName::original($file)
             );
 
             $manifest = $result['config'];
@@ -823,19 +859,28 @@ class ModuleService
      * `module.json` 검증 → identifier 충돌 검사 → _pending 이동 → 설치 파이프라인 진입.
      *
      * @param  UploadedFile  $file  사용자가 업로드한 모듈 ZIP 파일
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일 경로, 7.2.0) — null 이면 미서명은 409
      * @return array 설치 결과 (identifier/version/installed_at 포함)
      */
-    public function installFromZipFile(UploadedFile $file): array
+    public function installFromZipFile(UploadedFile $file, ?PackageIntegrityOptions $integrity = null): array
     {
+        $integrity ??= PackageIntegrityOptions::none();
         $tempPath = storage_path('app/temp/modules');
         $extractPath = $tempPath.'/'.uniqid('module_');
 
         try {
             File::ensureDirectoryExists($tempPath);
 
+            // 서명 검증(해제 전 바이트) — 업로드 임시 파일은 옆 서명 파일을 자동으로 찾지 않는다(서명 파일 칸으로만, 7.2.0)
+            $acquirer = app(PackageAcquirer::class);
+            $verification = $acquirer->verifyLocalZip($file->getRealPath(), PackageExpectation::forExtension('module'), $integrity, autoSidecar: false);
+
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'module.json', 'modules', $file->getClientOriginalName()
+                $file->getRealPath(), $extractPath, 'module.json', 'modules', UploadedFileName::original($file)
             );
+
+            // 해제 뒤·복사 전 manifest 대조 — 서명된 식별자·버전과 실제 manifest 가 같아야 한다
+            $verification = $acquirer->confirmManifest($verification, $result['config'], $integrity);
 
             // _pending 이동부터 설치까지 같은 확장의 다른 작업과 겹치지 않게 잠근다 — 동시 업로드가 `_pending/{id}` 를 덮거나,
             // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(#161).
@@ -848,7 +893,11 @@ class ModuleService
             );
 
             try {
-                return $this->executeModuleInstall($result['identifier']);
+                $info = $this->executeModuleInstall($result['identifier']);
+                // 검증 결과를 설치 행에 남긴다 — 확장 상세의 서명 배지
+                app(ExtensionIntegrityRecorder::class)->record('module', $result['identifier'], $verification);
+
+                return array_merge($info, $verification->toInstallColumns());
             } catch (\Throwable $e) {
                 $pendingPath = base_path('modules/_pending/'.$result['identifier']);
                 if (File::exists($pendingPath)) {
@@ -859,6 +908,9 @@ class ModuleService
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
             // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            throw $e;
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 표지와 페이로드를 그대로 올려 컨트롤러가 싣는다(7.2.0)
             throw $e;
         } catch (ModuleOperationException $e) {
             throw $e;
@@ -878,15 +930,18 @@ class ModuleService
      * GitHub 저장소에서 모듈을 설치합니다.
      *
      * @param  string  $githubUrl  GitHub 저장소 URL
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일 경로, 7.2.0) — null 이면 미서명은 409
      * @return array 설치된 모듈 정보
      *
      * @throws \RuntimeException 설치 실패 시
      */
-    public function installFromGithub(string $githubUrl): array
+    public function installFromGithub(string $githubUrl, ?PackageIntegrityOptions $integrity = null): array
     {
+        $integrity ??= PackageIntegrityOptions::none();
         $tempPath = storage_path('app/temp/modules');
         $extractPath = $tempPath.'/'.uniqid('module_');
         $zipPath = null;
+        $downloadDir = $tempPath.'/'.uniqid('download_');
 
         try {
             File::ensureDirectoryExists($tempPath);
@@ -899,11 +954,19 @@ class ModuleService
                 throw new ModuleOperationException('modules.errors.github_repo_not_found');
             }
 
-            $zipPath = GithubHelper::downloadZip($owner, $repo, $tempPath, $token);
+            // 태그 릴리스만 받는다(브랜치 폴백 없음) — 서명 자산이 있으면 검증하고, 없으면 미서명 정책(운영자 확인)을 거친다 (7.2.0)
+            $acquirer = app(PackageAcquirer::class);
+            $acquired = $acquirer->fromGithubRelease(
+                $owner, $repo, null, $token, PackageExpectation::forExtension('module'), $integrity, $downloadDir
+            );
+            $zipPath = $acquired->zipPath;
 
             $result = ZipInstallHelper::extractAndValidate(
                 $zipPath, $extractPath, 'module.json', 'modules'
             );
+
+            // 해제 뒤·복사 전 manifest 대조 — 서명된 식별자·버전과 실제 manifest 가 같아야 한다
+            $verification = $acquirer->confirmManifest($acquired->verification, $result['config'], $integrity);
 
             // _pending 이동부터 설치까지 같은 확장의 다른 작업과 겹치지 않게 잠근다 — 동시 업로드가 `_pending/{id}` 를 덮거나,
             // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(#161).
@@ -916,7 +979,11 @@ class ModuleService
             );
 
             try {
-                return $this->executeModuleInstall($result['identifier']);
+                $info = $this->executeModuleInstall($result['identifier']);
+                // 검증 결과를 설치 행에 남긴다 — 확장 상세의 서명 배지
+                app(ExtensionIntegrityRecorder::class)->record('module', $result['identifier'], $verification);
+
+                return array_merge($info, $verification->toInstallColumns());
             } catch (\Throwable $e) {
                 $pendingPath = base_path('modules/_pending/'.$result['identifier']);
                 if (File::exists($pendingPath)) {
@@ -927,6 +994,9 @@ class ModuleService
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
             // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            throw $e;
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 표지와 페이로드를 그대로 올려 컨트롤러가 싣는다(7.2.0)
             throw $e;
         } catch (ModuleOperationException $e) {
             throw $e;
@@ -940,6 +1010,9 @@ class ModuleService
             }
             if ($zipPath && File::exists($zipPath)) {
                 File::delete($zipPath);
+            }
+            if (File::isDirectory($downloadDir)) {
+                File::deleteDirectory($downloadDir);
             }
         }
     }
@@ -992,18 +1065,67 @@ class ModuleService
     /**
      * 모듈의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
+     * 기본은 keep — 운영자가 고친 화면을 지킨다. 덮어쓰기는 `$mode = Overwrite` 로 명시할 때만이다.
+     *
      * @param  string  $moduleName  모듈명
+     * @param  LayoutSyncMode  $mode  갱신 전략 (기본 keep)
+     * @param  array<string, string>  $decisions  화면별 결정 ({@see LayoutSyncOptions})
+     * @return array|null 갱신 결과 또는 null (모듈 정보 + `layout_sync`·`layout_preview`·`layout_warnings`)
+     *
+     * @throws ValidationException 레이아웃 갱신 실패 시
+     */
+    public function refreshModuleLayouts(string $moduleName, LayoutSyncMode $mode = LayoutSyncMode::Keep, array $decisions = []): ?array
+    {
+        return $this->refreshModuleLayoutsWith($moduleName, $mode, $decisions);
+    }
+
+    /**
+     * 레이아웃 갱신을 미리 봅니다 — 실제 갱신과 같은 코드로 판정만 계산하고 DB·캐시는 그대로 둡니다.
+     *
+     * @param  string  $moduleName  모듈명
+     * @param  LayoutSyncMode  $mode  갱신 전략
+     * @param  array<string, string>  $decisions  화면별 결정
+     * @return array{strategy: string, entries: list<array<string, mixed>>, summary: array<string, int>, has_conflicts: bool, conflict_screens: list<string>} 미리보기
+     *
+     * @throws ValidationException 모듈을 찾을 수 없거나 레이아웃을 읽지 못할 때
+     */
+    public function previewModuleLayoutRefresh(string $moduleName, LayoutSyncMode $mode = LayoutSyncMode::Keep, array $decisions = []): array
+    {
+        try {
+            $this->moduleManager->loadModules();
+            $result = LayoutSyncOptions::run(
+                new LayoutSyncOptions(true, $decisions, null, 'refresh'),
+                fn () => $this->moduleManager->refreshModuleLayouts($moduleName, $mode)
+            );
+
+            return $result['layout_preview'];
+        } catch (\Exception $e) {
+            throw ValidationException::withMessages([
+                'module_name' => [__('modules.refresh_layouts_failed', ['error' => SafeExceptionMessage::for($e)])],
+            ]);
+        }
+    }
+
+    /**
+     * 레이아웃 갱신 본체 — 전략·결정을 실행 범위로 걸고 매니저를 부릅니다.
+     *
+     * @param  string  $moduleName  모듈명
+     * @param  LayoutSyncMode  $mode  갱신 전략
+     * @param  array<string, string>  $decisions  화면별 결정
      * @return array|null 갱신 결과 또는 null
      *
      * @throws ValidationException 레이아웃 갱신 실패 시
      */
-    public function refreshModuleLayouts(string $moduleName): ?array
+    private function refreshModuleLayoutsWith(string $moduleName, LayoutSyncMode $mode, array $decisions): ?array
     {
         HookManager::doAction('core.modules.before_refresh_layouts', $moduleName);
 
         try {
             $this->moduleManager->loadModules();
-            $result = $this->moduleManager->refreshModuleLayouts($moduleName);
+            $result = LayoutSyncOptions::run(
+                new LayoutSyncOptions(false, $decisions, null, 'refresh'),
+                fn () => $this->moduleManager->refreshModuleLayouts($moduleName, $mode)
+            );
 
             if ($result['success']) {
                 $moduleInfo = $this->moduleManager->getModuleInfo($moduleName);
@@ -1013,6 +1135,8 @@ class ModuleService
                 // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
                 if (is_array($moduleInfo)) {
                     $moduleInfo['layout_warnings'] = $result['layout_warnings'] ?? [];
+                    $moduleInfo['layout_sync'] = $result['layout_sync'] ?? null;
+                    $moduleInfo['layout_preview'] = $result['layout_preview'] ?? null;
                 }
 
                 return $moduleInfo;
@@ -1047,10 +1171,21 @@ class ModuleService
             ];
         }
 
-        // 2. 파일 경로 구성 (모듈 루트 기준)
-        $filePath = base_path("modules/{$identifier}/{$path}");
+        // 2. Path Traversal 2차 봉쇄 — 요청 규칙이 1차이고 이것이 2차다.
+        //    형제 통로(템플릿)는 이 계층을 갖고 있었는데 여기만 없어, 규칙 한 줄이
+        //    무력해지면 이 통로에는 남는 방어선이 없었다.
+        $safePath = $this->sanitizeExtensionAssetPath($path);
 
-        // 3. 파일 존재 확인
+        // 3. 파일 경로 구성 (모듈 루트 기준)
+        $basePath = base_path('modules/'.$identifier);
+        // 구분자는 `/` 로 잇는다 — Windows 에서 `DIRECTORY_SEPARATOR` 로 이으면
+        // `base_path()` 가 돌려준 `/` 구간과 섞여 `modules/x\dist/js/a.js` 같은 혼합
+        // 경로가 되고, 그 값을 그대로 돌려받는 소비처·계약 테스트가 어긋난다.
+        // 봉쇄 판정(`extensionAssetPathIsContained`)은 `realpath()` 로 정규화한 뒤
+        // 비교하므로 이 자리의 구분자에 영향받지 않는다.
+        $filePath = $basePath.'/'.$safePath;
+
+        // 4. 파일 존재 확인
         if (! file_exists($filePath) || ! is_file($filePath)) {
             return [
                 'success' => false,
@@ -1060,8 +1195,34 @@ class ModuleService
             ];
         }
 
-        // 4. MIME 타입 감지
-        $mimeType = $this->getMimeType($filePath);
+        // 정제만으로는 심볼릭 링크 경유 탈출을 걸러내지 못한다 — 해석된 절대 경로가
+        // 기준 안인지 재확인한다.
+        if (! $this->extensionAssetPathIsContained($filePath, $basePath)) {
+            return [
+                'success' => false,
+                'filePath' => null,
+                'mimeType' => null,
+                'error' => 'file_not_found',
+            ];
+        }
+
+        // 5. 보안 검증 (허용된 확장자만) — 요청 규칙이 1차이고 이것이 2차다.
+        //    형제 통로(템플릿)는 이 계층을 갖고 있었는데 여기만 없어, 세 컨트롤러가 공통으로
+        //    갖는 `file_type_not_allowed` 403 분기가 이 통로에서는 도달 불가였다. 「요청
+        //    규칙이 이미 막으니 무해하다」는 방어가 되지 않는다 — 서비스는 확장에 열려 있어
+        //    요청 규칙을 거치지 않는 호출부가 생기면 그 순간 남는 방어선이 없다.
+        //    목록은 규칙 클래스가 SSoT 다(운영에서 소스맵을 차단하는 환경 분기가 거기 있다).
+        if (! $this->extensionAssetExtensionIsAllowed($filePath, AllowedModuleFileType::getAllowedExtensions())) {
+            return [
+                'success' => false,
+                'filePath' => null,
+                'mimeType' => null,
+                'error' => 'file_type_not_allowed',
+            ];
+        }
+
+        // 6. MIME 타입 감지
+        $mimeType = $this->extensionAssetMimeType($filePath);
 
         return [
             'success' => true,
@@ -1142,38 +1303,6 @@ class ModuleService
         $decoded = json_decode((string) file_get_contents($path), true);
 
         return is_array($decoded) ? $decoded : null;
-    }
-
-    /**
-     * MIME 타입 감지
-     *
-     * @param  string  $filePath  파일 경로
-     * @return string MIME 타입
-     */
-    private function getMimeType(string $filePath): string
-    {
-        $mimeTypes = [
-            'js' => 'application/javascript',
-            'mjs' => 'application/javascript',
-            'css' => 'text/css',
-            'json' => 'application/json',
-            'png' => 'image/png',
-            'jpg' => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'svg' => 'image/svg+xml',
-            'webp' => 'image/webp',
-            'gif' => 'image/gif',
-            'ico' => 'image/x-icon',
-            'woff' => 'font/woff',
-            'woff2' => 'font/woff2',
-            'ttf' => 'font/ttf',
-            'otf' => 'font/otf',
-            'eot' => 'application/vnd.ms-fontobject',
-        ];
-
-        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-
-        return $mimeTypes[$extension] ?? 'application/octet-stream';
     }
 
     /**

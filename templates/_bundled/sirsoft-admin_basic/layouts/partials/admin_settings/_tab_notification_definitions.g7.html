@@ -11,7 +11,9 @@
     </div>
     <div data-ref="channel_toggles" class="admin-card">
       <h4 class="text-body font-medium mb-3">$t:admin.settings.notification_definitions.channel_management</h4>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div class="grid grid-cols-1 gap-3">
+        <responsive on="640-1023" class="grid grid-cols-2 gap-3"/>
+        <responsive on="desktop" class="grid grid-cols-3 gap-3"/>
         <div data-each="ch, chIdx in {{availableChannels?.data?.channels ?? []}}" class="flex-between p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
           <div class="flex-center gap-2">
             <icon name="{{ch.icon ?? 'fas fa-bell'}}" class="text-gray-500 dark:text-gray-400"/>
@@ -47,7 +49,8 @@
            (채널을 바꿔도 분류는 그대로, 분류를 바꿔도 채널은 그대로). 칩이 많아지는 좁은 화면에서는 한 줄로
            가로 스크롤한다. [정책별 문구 추가]는 분류가 본인인증일 때만 보인다 — 운영자가 추가한 본인인증 정책에
            전용 문구를 붙이는 기능이라 일반 알림에는 해당하지 않는다. -->
-      <div data-ref="notif_category_bar" class="flex flex-col gap-2 pt-3 sm:flex-row sm:items-center sm:justify-between">
+      <div data-ref="notif_category_bar" class="flex flex-col gap-2 pt-3">
+        <responsive on="640-" class="flex gap-2 pt-3 flex-row items-center justify-between"/>
         <div data-ref="notif_category_chips" class="flex items-center gap-2 overflow-x-auto whitespace-nowrap">
           <span class="text-label-subtle flex-shrink-0">$t:admin.settings.notification_definitions.category.label</span>
           <button data-each='cat in [{"value":"","key":"all"},{"value":"general","key":"general"},{"value":"identity","key":"identity"}]' type="button" aria-pressed="{{(query.category ?? '') === cat.value}}" class="{{(query.category ?? '') === cat.value ? 'bg-indigo-600 text-white border-indigo-600 dark:bg-indigo-500 dark:border-indigo-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700'}} flex-shrink-0 text-sm px-3 py-1 rounded-full border transition-colors">
@@ -60,7 +63,8 @@
             {{$t('admin.settings.notification_definitions.category.' + cat.key)}}
           </button>
         </div>
-        <button data-ref="notif_identity_add_button" data-if="{{(query.category ?? '') === 'identity' &amp;&amp; notificationDefinitions?.data?.abilities?.can_create === true}}" type="button" disabled="{{_computed.isReadOnly}}" class="w-full sm:w-auto text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="notif_identity_add_button" data-if="{{(query.category ?? '') === 'identity' &amp;&amp; notificationDefinitions?.data?.abilities?.can_create === true}}" type="button" disabled="{{_computed.isReadOnly}}" class="w-full text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <responsive on="640-" class="w-auto text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"/>
           <on type="click">
             <!-- 정책별 문구 추가 창 — 창은 이 화면 상태를 못 읽으므로 빈 폼을 전역에 마련한 뒤 연다.
                  「문구가 이미 있는 정책」 목록은 열 때마다 다시 받는다 — 다른 창·다른 관리자가 그사이 추가했으면
@@ -118,7 +122,8 @@
               </button>
             </div>
             <div class="flex-1 min-w-0">
-              <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div class="flex flex-col gap-2">
+                <responsive on="640-" class="flex gap-2 flex-row items-start justify-between"/>
                 <div class="flex-1 min-w-0">
                   <div class="flex-center flex-wrap gap-2 mb-1">
                     <!-- 제목은 서버가 내려준 로케일 객체(이름)를 쓴다 — 운영자가 추가한 본인인증 정책 문구는 화면 번역
@@ -132,12 +137,14 @@
                   </div>
                   <p data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" class="text-label-subtle truncate">{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.subject?.[$locale] ?? ''}}</p>
                   <p data-if="{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" class="text-sm text-gray-500 dark:text-gray-400 italic">$t:admin.settings.notification_definitions.no_template_for_channel</p>
+                  <!-- 운영자가 발송 수단을 켜서 코어가 만든 빈 템플릿 — 내용과 받는 사람을 채우고 켜야 이 수단으로 발송된다 -->
+                  <p data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_user_created &amp;&amp; !(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active}}" class="text-sm text-amber-700 dark:text-amber-400">$t:admin.settings.notification_definitions.user_template_inactive</p>
                   <!-- 본인인증 알림은 수신자가 「인증을 요청한 대상」으로 고정이다(수신자 규칙이 없다) — 편집 대신 고정 문구. -->
                   <p data-if="{{def.category === 'identity'}}" class="text-tertiary mt-2">$t:admin.settings.notification_definitions.identity_recipient_fixed</p>
                   <div data-ref="recipients_badge_{{defIdx}}" data-if="{{def.category !== 'identity' &amp;&amp; ((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []).length > 0}}" class="flex-center flex-wrap gap-1.5 mt-2">
                     <span class="text-tertiary font-medium">$t:admin.settings.notification_definitions.recipients_label</span>
                     <span data-each="rcpt in {{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []}}" class="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 rounded-full">
-                      <span>{{rcpt.type === 'trigger_user' ? '$t:admin.settings.notification_definitions.recipients.types.trigger_user' : rcpt.type === 'related_user' ? '$t:admin.settings.notification_definitions.recipients.types.related_user' + (rcpt.relation ? ' (' + (def.relation_labels?.[rcpt.relation] ?? rcpt.relation) + ')' : '') : rcpt.type === 'role' ? '$t:admin.settings.notification_definitions.recipients.types.role' + ': ' + ((rcpt.display_names ?? []).join(', ') || rcpt.display_name || '') : rcpt.type === 'specific_users' ? '$t:admin.settings.notification_definitions.recipients.types.specific_users' + ': ' + ((rcpt.display_names ?? []).join(', ') || '') : rcpt.type}}</span>
+                      <span>{{rcpt.type === 'trigger_user' ? '$t:admin.settings.notification_definitions.recipients.types.trigger_user' : rcpt.type === 'related_user' ? '$t:admin.settings.notification_definitions.recipients.types.related_user' + (rcpt.relation ? ' (' + (def.relation_labels?.[rcpt.relation] ?? rcpt.relation) + ')' : '') : rcpt.type === 'role' ? '$t:admin.settings.notification_definitions.recipients.types.role' + ': ' + ((rcpt.display_names ?? []).join(', ') || rcpt.display_name || '') : rcpt.type === 'specific_users' ? '$t:admin.settings.notification_definitions.recipients.types.specific_users' + ': ' + ((rcpt.display_names ?? []).join(', ') || '') : rcpt.type === 'site_admin_email' ? '$t:admin.settings.notification_definitions.recipients.types.site_admin_email' : rcpt.type}}</span>
                       <span data-if="{{rcpt.exclude_trigger_user}}" class="text-purple-600 dark:text-purple-400">$t:admin.settings.notification_definitions.recipients.badge.exclude_self</span>
                     </span>
                   </div>
@@ -155,8 +162,8 @@
                   <toggle data-type="composite" data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" ariaLabel="{{$localized(def.name) || def.type}}" checked="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}" disabled="{{_computed.isReadOnly}}">
                     <on type="change">
                       <!-- 이 정의의 **지금 채널 템플릿** 하나를 켜거나 끈다(위쪽 채널 토글과 다른 층이다).
-                           그 채널 템플릿이 없는 정의에서는 스위치 자체가 렌더되지 않는다.
-                           실패 갈래가 없어 실패하면 스위치가 눌린 채로 남는다. -->
+                           그 채널 템플릿이 없는 정의는 아래 「템플릿 만들기」 스위치가 대신 선다.
+                           거절되면(운영자가 만든 빈 템플릿을 내용 없이 켬) 실패 갈래가 목록을 다시 마운트해 눌린 모양을 되돌린다. -->
                       <api-call :auth_required="true" target="{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.id + '/toggle-active'}}" method="PATCH">
                         <success>
                           <refetch-data-source dataSourceId="notificationDefinitions"/>
@@ -164,6 +171,25 @@
                         </success>
                         <fail>
                           <toast type="error" message="{{error.message}}"/>
+                          <!-- 서버가 거절하면(예: 운영자가 만든 빈 템플릿을 내용 없이 켬) 스위치는 눌린 모양으로 남는다 — 목록 상자를 다시 마운트해 저장된 값으로 돌린다(엔진은 반복 안 동적 id 로는 다시 마운트하지 못한다) -->
+                          <remount componentId="notif_definitions_list"/>
+                        </fail>
+                      </api-call>
+                    </on>
+                  </toggle>
+                  <!-- 이 수단의 템플릿이 없는 정의 — 켜면 이 수단을 정의의 발송 수단에 더해 바로 저장하고, 코어가 빈 템플릿(꺼짐·운영자 생성)을
+                       만든다. 다시 받은 목록에는 위 스위치와 [편집]·「채우고 켜야 발송」 안내가 선다(이 화면은 스위치마다 즉시 반영한다). -->
+                  <toggle data-type="composite" data-if="{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" ariaLabel="{{$localized(def.name) || def.type}}" :checked="false" disabled="{{_computed.isReadOnly}}">
+                    <on type="change">
+                      <api-call :auth_required="true" target="{{'/api/admin/notification-definitions/' + def.id}}" method="PUT">
+                        <body channels="{{[...new Set([...(def.channels ?? []), (query.channel ?? 'mail')])]}}"/>
+                        <success>
+                          <refetch-data-source dataSourceId="notificationDefinitions"/>
+                          <toast type="success" message="$t:admin.settings.notification_definitions.user_template_created"/>
+                        </success>
+                        <fail>
+                          <toast type="error" message="{{error.message}}"/>
+                          <remount componentId="notif_definitions_list"/>
                         </fail>
                       </api-call>
                     </on>

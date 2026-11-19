@@ -26,6 +26,7 @@ import { isDirectAssetUrl } from './assetOrigin';
 import { Div } from '../basic/Div';
 import { Img } from '../basic/Img';
 import type { EditorAttrs } from '../../types';
+import { thumbUrl } from '../../support/thumbnail';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const G7Core = (window as any).G7Core;
@@ -254,8 +255,13 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
   }
 
   // 이미지를 라이트박스 슬라이드 형식으로 변환 (썸네일 포함)
+  // 썸네일 줄(Thumbnails 플러그인)은 `slide.thumbnail` 이 있으면 그 주소를 그린다. 종전에는 넣지 않아 120×80 칸마다
+  // 원본을 받았다. 넘겨받은 thumbnail 이 없으면 서빙 경로 이미지에 sm(160 정사각)을 붙인다 — 칸이 가로 120·세로 80 이라
+  // xs(64)는 늘려 그려 흐려진다(외부·정적 주소는 그대로).
+  // 메인 슬라이드는 확대 보기라 원본이다.
   const slides: Slide[] = images.map((image) => ({
     src: image.src,
+    thumbnail: image.thumbnail ?? thumbUrl(image.src, 'sm'),
     title: image.title,
     description: image.description,
   }));

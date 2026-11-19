@@ -57,6 +57,22 @@ const applyTheme = (mode: ThemeMode): void => {
 };
 
 /**
+ * 저장값이 없을 때의 기본 모드 — 템플릿 설정 표준 키 `branding.color_scheme_default` 를 코어가 `<html data-g7-color-scheme-default>`
+ * 로 싣는다(#434). `system` 은 `auto` 다. 속성이 없거나 모르는 값이면 `auto`(종전 동작).
+ *
+ * @returns 기본 테마 모드
+ */
+export function getDefaultTheme(): ThemeMode {
+  const declared = typeof document !== 'undefined' ? document.documentElement.getAttribute('data-g7-color-scheme-default') : null;
+
+  if (declared === 'light' || declared === 'dark') {
+    return declared;
+  }
+
+  return 'auto';
+}
+
+/**
  * 저장된 테마를 로드하여 적용합니다.
  *
  * 템플릿 초기화 시 호출되어 localStorage에 저장된 테마를 즉시 적용합니다.
@@ -64,7 +80,7 @@ const applyTheme = (mode: ThemeMode): void => {
 export function initTheme(): void {
   try {
     const savedTheme = localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
-    const theme = savedTheme && VALID_THEMES.includes(savedTheme) ? savedTheme : 'auto';
+    const theme = savedTheme && VALID_THEMES.includes(savedTheme) ? savedTheme : getDefaultTheme();
     applyTheme(theme);
     // _global.theme에 저장하여 Segmented Control 활성 상태 반영
     try {

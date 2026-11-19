@@ -56,6 +56,10 @@
 삭제 완료 안내는 응답의 `kakao_deleted`·`kakao_skip_reason` 으로 가릅니다 — `not_registered`(카카오에 등록 안 됨),
 `state_not_deletable`(상태 제약), 그 밖(카카오 사유·서버 연결 실패 문구)은 그 사유를 안내 뒤에 붙입니다.
 
+화면 폭에 따라 달라지는 배치는 Tailwind 반응형 접두(`sm:`·`md:`·`lg:`)를 쓰지 않고 엔진 `responsive` 로 씁니다(예: `<responsive on="desktop" class="…"/>`, `on="640-"`). 갈래의 `class` 는 기본 `class` 를 통째로 바꾸므로 그 폭에서 필요한 토큰을 모두 적습니다.
+
+폭 미디어를 품은 의미 클래스 사본(`bizppurio-grid-3col-responsive`·`bizppurio-grid-2col-responsive`·`bizppurio-page-title`·`bizppurio-admin-page-content-responsive` 등)도 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4 bizppurio:items-start"` 에 `<responsive on="1024-" class="bizppurio:grid bizppurio:grid-cols-3 bizppurio:gap-4 bizppurio:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`bizppurio:mb-4` 등)을 직접 줍니다.
+
 신청일·동기화일 칸은 응답의 `*_date_formatted`(보는 사람 시간대 `Y-m-d`)를 씁니다 — 행 하단 요약처럼 `MM-DD`
 만 필요하면 그 값의 `.slice(5)` 를 씁니다. ISO 원문(`requested_at` 등)을 잘라 쓰면 UTC 날짜가 보여 한국 시간
 새벽 9시 전 신청분이 전날로 표시됩니다.
@@ -90,6 +94,19 @@
 업로드는 multipart 지만 코어 API 클라이언트(`G7Core.api.post(url, formData)`)로 보냅니다 — Bearer 부착,
 401 처리(토큰 갱신·재로그인 유도), 운영자 로케일(`Accept-Language`)을 코어가 맡으므로 핸들러가 로그인
 토큰을 읽어 헤더를 만들지 않습니다. 4xx·5xx 는 예외로 오므로 응답 본문의 사유를 꺼내 배너에 싣습니다.
+
+### 서버 주소는 `apiUrl()` 로 만듭니다
+
+`resources/js/apiUrl.ts` 는 번들 확장 전체가 **바이트 동일한 사본**으로 갖는 주소
+헬퍼입니다. 확장 번들은 코어와 별도 IIFE 라 코어 함수를 import 할 수 없으므로,
+사이트 마운트 접두사(`https://host/g7/` 의 `/g7`)를 붙일 공식 수단이 이것뿐입니다.
+
+`fetch('/api/…')` 처럼 루트 상대 주소를 그대로 쓰면 하위 폴더에 설치한 사이트에서
+요청이 **사이트 밖으로** 나갑니다. 증상은 오류가 아니라 버튼이 조용히 무반응인 것이라
+화면만 봐서는 드러나지 않습니다.
+
+접두사는 **호출 직전에** 붙입니다. 모듈 최상위 상수에서 부르면 그 시점에는 코어도
+설정도 아직 없을 수 있어 접두사 없는 값이 박제됩니다.
 
 핸들러 TS 를 고치면 빌드가 필요합니다 — `php artisan plugin:build` 후
 `plugin:update --force`. 프론트엔드 변경은 Playwright spec 을 함께 갱신·실행합니다.

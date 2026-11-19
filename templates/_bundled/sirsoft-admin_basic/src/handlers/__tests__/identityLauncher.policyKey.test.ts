@@ -90,4 +90,16 @@ describe('sirsoftAdminBasicIdentityLauncher — challenge 요청의 정책 키',
     expect(bodies[0]).toBeDefined();
     expect('policy_key' in (bodies[0] ?? {})).toBe(false);
   });
+
+  /**
+   * @effects launcher_sends_admin_scope
+   */
+  it('관리자 화면에서 시작한 인증임을 알리는 범위(scope=admin)를 싣는다', async () => {
+    // @scenario surface=launcher_admin_scope
+    await sirsoftAdminBasicIdentityLauncher(payload('admin.idv.board_write') as any);
+    await sirsoftAdminBasicIdentityLauncher(payload(undefined) as any);
+
+    expect(bodies).toHaveLength(2);
+    expect(bodies.map((b) => b.scope)).toEqual(['admin', 'admin']);
+  });
 });

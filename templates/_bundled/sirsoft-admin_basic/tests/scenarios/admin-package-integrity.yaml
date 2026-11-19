@@ -1,0 +1,70 @@
+# 시나리오 매니페스트 — 관리자 화면의 패키지 무결성 표시와 「미서명으로 계속」 (#916 ④)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: admin_package_integrity_screens
+
+description: |
+  서버 서명 검증·미서명 정책은 코어 `tests/scenarios/package-integrity.yaml` 이 소유하고, 여기서는 관리자 템플릿의 레이아웃과
+  핸들러 계약만 잰다. 확장 유형(module·plugin·template)·응답(409 package_unsigned, 422 package_signature_invalid,
+  409 operation_in_progress)·탭 같은 세부 구분은 각 시험 주석의 평문 「커버 축」 줄에 적었다.
+
+  - 수동 설치 창(모듈·플러그인·템플릿): ZIP 탭 서명 파일 칸, 409 미서명 경고 패널과 「미서명으로 계속」(같은 본문 + allow_unsigned=1,
+    GitHub 탭 포함), 차단 정책이면 안내만, 422 는 사유 패널만, 작업 잠금 409 는 일반 오류 띠.
+  - 업데이트 창: 같은 409·차단·422 분기. 언어팩 설치 창(ZIP·GitHub·URL 탭, 서명 파일·signature_url 전송)과 업데이트 창.
+  - 확장·언어팩 상세 「패키지 서명」 배지, 보안 탭 「확장 신뢰 키」 카드(내장 키·제작자 키·sodium 경고·차단 토글),
+    키 추가·삭제 창(비밀번호 전송, 성공 시 비밀번호 지움, 422 칸별 오류).
+  - 코어 업데이트 탭: 릴리스 서명 배지, 착수 거절 패널과 「미서명으로 계속」. 핸들러는 무결성 거절을 토스트 없이 전역에 싣고,
+    계속 착수는 allow_unsigned 만 더하며, 작업 잠금 409 는 종전대로 실패 토스트다.
+  - 스케줄 등록 창: Artisan 유형일 때만 --allow-unsigned 도움말.
+
+axes:
+  case: [manual_install_signature_field, manual_install_verified_toast,manual_install_unsigned_continue, manual_install_github_unsigned_continue, manual_install_unsigned_blocked, manual_install_signature_invalid, manual_install_operation_lock_409, update_unsigned_continue, update_unsigned_blocked, update_signature_invalid, language_pack_install_tabs, language_pack_install_url_unsigned_continue, language_pack_install_file_signature, language_pack_update_unsigned_continue, extension_detail_signature_badge, language_pack_detail_signature_badge, trust_key_card_render, trust_key_card_sodium_missing, trust_key_add_submit, trust_key_add_validation_error, trust_key_delete_submit, core_update_signature_badge, core_update_start_unsigned_panel, schedule_form_allow_unsigned_hint, core_update_start_unsigned, core_update_start_continue_unsigned, core_update_start_operation_lock, core_update_start_signature_invalid]
+
+effects:
+  # 설치·업데이트 창
+  - manual_install_zip_tab_has_signature_file_input   # 수동 설치 ZIP 탭에 서명 파일(.json) 칸이 있다
+  - verified_toast_names_signer                       # 서명 확인 설치의 성공 토스트가 서명자(key_id 콜론 앞)를 채운다 — 단추가 창 고정 하단(props.footer)에 있어도
+  - unsigned_panel_shown                              # 409 미서명이면 경고 패널을 그린다
+  - install_button_becomes_continue_unsigned          # 설치 버튼이 「미서명으로 계속」으로 바뀐다
+  - update_button_becomes_continue_unsigned           # 업데이트 버튼이 「미서명으로 계속」으로 바뀐다
+  - retry_sends_same_body_with_allow_unsigned         # 「미서명으로 계속」은 같은 본문에 allow_unsigned=1 만 더해 다시 보낸다
+  - blocked_hint_shown                                # 차단 정책(can_continue=false)이면 안내를 그린다
+  - no_continue_unsigned_button                       # 차단·422 이면 「미서명으로 계속」 버튼이 없다
+  - invalid_panel_shows_reason                        # 422 서명 불일치는 사유가 든 패널을 그린다
+  - lock_409_not_treated_as_integrity                 # 작업 잠금 409 는 무결성 패널이 아니라 일반 오류 띠로 간다
+  # 언어팩 창
+  - language_pack_install_has_url_tab                 # 언어팩 설치 창에 ZIP·GitHub·URL 세 탭이 있다
+  - language_pack_zip_tab_has_signature_file_input    # 언어팩 ZIP 탭에 서명 파일 칸이 있다
+  - language_pack_url_tab_sends_signature_url         # URL 탭은 주소·체크섬·서명 파일 주소를 보낸다
+  - language_pack_zip_upload_sends_signature          # ZIP 탭은 서명 파일을 signature 로 함께 보낸다
+  # 상세·보안 탭
+  - detail_shows_package_signature_badge              # 확장·언어팩 상세가 integrity_status 에 맞는 배지 하나를 그린다
+  - trust_card_shows_empty_builtin_notice             # 내장 키가 비면 안내를 그린다
+  - trust_card_lists_vendor_key_row                   # 제작자 키 행에 key_id·서명자·vendor 범위가 보인다
+  - trust_card_has_block_unsigned_toggle              # 미서명 차단 토글이 있다
+  - trust_card_warns_sodium_missing                   # sodium 이 없으면 경고를 그린다
+  - trust_card_shows_empty_vendor_notice              # 제작자 키가 없으면 빈 안내를 그린다
+  - trust_card_lists_builtin_key                      # 내장 키를 상태 배지와 함께 그린다
+  - trust_key_add_posts_fields_with_password          # 키 추가는 공개키·서명자·vendor 범위·비밀번호를 POST 한다
+  - trust_key_password_cleared_on_success             # 성공하면 비밀번호 칸을 지운다
+  - trust_key_add_shows_field_errors                  # 422 칸별 오류가 해당 칸 아래에 남는다
+  - trust_key_password_kept_on_failure                # 실패하면 비밀번호를 지우지 않는다
+  - trust_key_delete_sends_password_to_key_endpoint   # 키 삭제는 대상 id 주소로 비밀번호를 담아 DELETE 한다
+  # 코어 업데이트 탭·핸들러
+  - core_update_shows_signature_available_badge       # signature_available 참·거짓에 맞는 릴리스 서명 배지
+  - core_update_hides_signature_badge_when_unknown    # signature_available 을 모르면(null) 배지를 그리지 않는다
+  - start_button_becomes_continue_unsigned            # 착수 거절 기록이 있으면 시작 버튼이 「미서명으로 계속」이 된다
+  - core_update_integrity_rejection_published         # 무결성 거절(409 미서명·422)은 거절 내용을 전역 상태에 싣는다
+  - no_failure_toast_for_integrity                    # 무결성 거절에는 실패 토스트를 띄우지 않는다
+  - core_update_retry_sends_allow_unsigned            # 「미서명으로 계속」은 같은 선택에 allow_unsigned 만 더해 착수한다
+  - core_update_integrity_cleared_on_start            # 착수되면 거절 안내를 지운다
+  - core_update_lock_409_still_toasts                 # 작업 잠금 409 는 종전대로 실패 토스트다
+  # 스케줄 창
+  - schedule_form_hints_allow_unsigned_for_artisan    # Artisan 유형일 때만 --allow-unsigned 도움말을 그린다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-package-integrity.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-install-toast-footer.test.tsx
+  # 브라우저 E2E — 실제 서버의 409 → 「미서명으로 계속」 → 201 (시험 패키지는 fixtures/unsigned-plugin-package.ts 가 만든다)
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-plugin-manual-install-unsigned.spec.ts
+  - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/coreUpdateHandler.integrity.test.ts

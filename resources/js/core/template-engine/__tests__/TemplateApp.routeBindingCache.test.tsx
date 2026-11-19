@@ -171,9 +171,11 @@ describe('화면을 옮긴 뒤 반복 밖 props 의 단순 경로가 새 화면 
         await waitLong(() => expect(attr('claim', 'data-order')).toBe('/admin/orders/ORD-1'));
 
         await go({ path: '/admin/claims/2', layout: 'claim_detail', params: { id: '2' } });
-        // 응답 반영·커밋을 넉넉히 기다린 뒤 판정 — 종전엔 이 시간 내내 ORD-1
-        await new Promise((r) => setTimeout(r, 300));
-        expect(attr('claim', 'data-order')).toBe('/admin/orders/ORD-2');
+        // 응답 반영과 커밋을 기다린 뒤 판정한다 — 종전 엔진은 캐시 수명(30초) 내내 ORD-1 이라 이 대기가 끝나지 않는다.
+        // 고정 300ms 는 여러 시험 파일을 함께 돌리는 부하에서 커밋보다 짧아 앞 화면을 읽고 깨졌다
+        await waitLong(() => expect(attr('claim', 'data-order')).toBe('/admin/orders/ORD-2'));
+        await new Promise((r) => setTimeout(r, 60));
+        expect(attr('claim', 'data-order'), '새 대상 값이 다시 앞 값으로 돌아가지 않는다').toBe('/admin/orders/ORD-2');
     });
 
     /**
@@ -198,7 +200,9 @@ describe('화면을 옮긴 뒤 반복 밖 props 의 단순 경로가 새 화면 
         net.hold = false;
         net.pending.splice(0).forEach((release) => release());
         await run;
-        await new Promise((r) => setTimeout(r, 300));
-        expect(attr('claim', 'data-order')).toBe('/admin/orders/ORD-2');
+        // 고정 300ms 대신 새 화면 커밋을 기다린다(부하에서 300ms 안에 커밋되지 않아 앞 화면의 ORD-1 을 읽었다)
+        await waitLong(() => expect(attr('claim', 'data-order')).toBe('/admin/orders/ORD-2'));
+        await new Promise((r) => setTimeout(r, 60));
+        expect(attr('claim', 'data-order'), '새 대상 값이 다시 앞 값으로 돌아가지 않는다').toBe('/admin/orders/ORD-2');
     });
 });

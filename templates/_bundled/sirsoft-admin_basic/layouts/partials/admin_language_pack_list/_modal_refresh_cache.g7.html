@@ -3,7 +3,7 @@
 <partial description="언어팩 캐시 갱신 확인 모달 — registry / translator / template 캐시 무효화" editor_label="$t:admin.modal_label.admin_language_pack_list.language_pack_refresh_cache_modal">
   <modal data-type="composite" data-ref="language_pack_refresh_cache_modal" title="$t:admin.language_packs.modal.refresh_cache.title" size="sm">
     <p class="text-body">$t:admin.language_packs.modal.refresh_cache.body</p>
-    <div class="flex justify-end gap-2 mt-6">
+    <footer>
       <button type="button" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-md">
         <on event="onClick">
           <close-modal target="language_pack_refresh_cache_modal"/>
@@ -26,6 +26,6 @@
         </on>
         $t:admin.language_packs.actions.refresh_cache_now
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

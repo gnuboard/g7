@@ -261,6 +261,7 @@ class RoleService
             $this->roleRepository->detachAllPermissions($role);
             $role->menus()->detach();
             $role->users()->detach();
+            $this->roleRepository->deleteMenuPermissions($role);
 
             // 역할 삭제
             return $this->roleRepository->delete($role);

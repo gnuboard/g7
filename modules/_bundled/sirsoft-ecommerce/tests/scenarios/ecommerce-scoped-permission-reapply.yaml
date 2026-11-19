@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#789 |
 #   gap 축은 「미들웨어가 건너뛰는 출입구」 목록이다. 상세·단건·일괄 출입구(E1~E6·E8·E9)는 차단(target=others)과
 #   과차단 회귀(target=own)를 같은 데이터 프로바이더로 짝지어 세우고, 목록 출입구(E7·E8·E9·N1)는 self 걸러냄과
 #   전체 범위 무회귀를 짝지어 세운다. scope=role 은 판정식이 코어 단일 출처(PermissionHelper)라 self 와 같은

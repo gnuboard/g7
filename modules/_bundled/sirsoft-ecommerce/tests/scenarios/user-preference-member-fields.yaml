@@ -1,0 +1,58 @@
+feature: 회원 결제 통화와 배송국가의 회원 항목 편입
+
+description: |
+  회원의 결제 통화와 배송국가를 회원 항목 집합(core.user)의 항목으로 선언하고 값은 종전 테이블
+  (ecommerce_user_profiles)에 핸들러로 잇는다. 가입, 관리자 수정, 내 정보 수정이 같은 규칙과 같은 저장 경로를 쓴다.
+  관리자 회원 추가는 종전처럼 받지 않고 기본값 지정 리스너가 정한다. 요청 키는 수정 경로의 키
+  (ecommerce_preferred_currency, ecommerce_preferred_shipping_country)로 통일하고 가입 요청의 옛 키
+  (preferred_currency, preferred_shipping_country)는 옛 키로 받는다. 선택지는 사이트 설정에 따라 달라져 요청 시점에 채운다.
+  이커머스 리스너는 검증과 저장 훅을 더는 구독하지 않아 같은 칸을 두 번 검증하거나 두 번 저장하지 않는다.
+  내 정보에서 값을 바꾼 뒤 화면 전역 값을 맞추는 일은 사용자 템플릿이 아니라 이커머스의 구독 핸들러가 한다.
+
+axes:
+  case: [declaration, language_pack_names, subscription_contract, signup_schema, visibility, signup, signup_default, admin_create, update_once, admin_form_schema, saved_country_not_applied, module_inactive, purge, global_sync]
+
+effects:
+  # 선언과 구독 (PHPUnit)
+  - preference_fields_declared_in_core_user_set
+  - declared_field_names_include_active_language_pack_locale
+  - listeners_do_not_subscribe_validation_or_save_hooks
+  # 가입 (PHPUnit)
+  - signup_schema_lists_preference_fields_with_site_options
+  - currency_hidden_on_signup_when_single_option
+  - shipping_country_hidden_when_international_shipping_off
+  - signup_saves_preferences_with_canonical_keys
+  - signup_accepts_legacy_keys
+  - signup_rejects_unselectable_value_on_canonical_key
+  - signup_without_values_assigns_defaults
+  - signup_ignores_values_when_hidden_by_operator
+  # 관리자 추가 (PHPUnit)
+  - admin_create_does_not_accept_preferences
+  - admin_create_assigns_defaults
+  # 수정과 응답 (PHPUnit)
+  - single_write_per_changed_preference
+  - preferences_in_user_response
+  - unchanged_preference_not_rewritten
+  - preference_fields_in_admin_form_schema
+  - preference_fields_readonly_without_permission
+  - stored_unselectable_value_kept_in_options
+  - saved_unshippable_country_notice_in_self_schema
+  - saved_country_notice_absent_when_shippable
+  # 모듈 비활성과 파기 (PHPUnit)
+  - preference_fields_removed_when_module_inactive
+  - profile_row_purged_with_member_values
+  # 전역 표시 값 동기화 (Vitest)
+  - account_preferences_synced_to_global_on_current_user_change
+  - header_choice_not_reverted_by_stale_current_user
+  - invalid_account_preference_ignored
+  - account_preference_watch_subscribes_once
+  - account_preference_watch_contributed_by_module_fragment
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/User/UserPreferenceFieldSetTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/watchAccountPreferences.test.ts
+
+notes: |
+  E2E: 저장 배선과 서버 검증은 PHPUnit(실제 HTTP 요청, 선언 동기화, DB)이, 전역 값 동기화는 Vitest(구독 핸들러)가 잰다.
+  화면에서의 동작(가입 화면의 두 칸, 관리자 회원 폼과 상세의 「확장 항목」 구획, 내 정보에서 통화를 바꾼 직후
+  새로고침 없이 가격 표시가 바뀜)은 코어 템플릿 쪽 변경과 함께 브라우저 실측으로 확인한다.

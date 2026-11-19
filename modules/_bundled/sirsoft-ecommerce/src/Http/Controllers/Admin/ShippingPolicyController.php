@@ -45,7 +45,10 @@ class ShippingPolicyController extends AdminBaseController
      */
     public function index(ShippingPolicyListRequest $request): JsonResponse
     {
-        $shippingPolicies = $this->shippingPolicyService->getList($request->validated());
+        // per_page=all 은 쪽 나눔 없는 전체 조회(상품 등록·수정 화면 선택지)
+        $shippingPolicies = $request->wantsAll()
+            ? $this->shippingPolicyService->getAllList($request->validated())
+            : $this->shippingPolicyService->getList($request->validated());
         $statistics = $this->shippingPolicyService->getStatistics();
 
         $collection = new ShippingPolicyCollection($shippingPolicies);

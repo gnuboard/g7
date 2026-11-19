@@ -91,6 +91,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             src={imageUrl}
             alt={imageAlt || title}
             className="w-full h-64 object-cover"
+            // 칸이 가로 꽉 참 × 높이 256px 이라 sm(160 정사각)은 늘려 그려진다 — 가로 맞춤 md(640)
+            thumbPreset="md"
           />
           {hasDiscount && (
             <Div className="absolute top-2 right-2 bg-red-600 dark:bg-red-600 text-white px-2 py-1 rounded-md">

@@ -10,6 +10,7 @@
  * 같은 탭에서 외부 도메인을 다녀와도 유지된다.
  */
 
+import { routePath } from './apiUrl';
 import { buildGuestOwnershipHeaders, waitForGuestOrderTokenContract } from './guestOrderToken';
 
 const PLUGIN_IDENTIFIER = 'sirsoft-tosspayments';
@@ -165,7 +166,7 @@ export async function reportPaymentFailureOnReturn(): Promise<void> {
     }
 
     // 결제 완료 화면으로 돌아왔으면 보고 대상이 아니다.
-    if (/\/(complete|success)(\/|$|\?)/.test(window.location.pathname)) {
+    if (/\/(complete|success)(\/|$|\?)/.test(routePath(window.location.pathname))) {
         forgetPendingClose();
 
         return;

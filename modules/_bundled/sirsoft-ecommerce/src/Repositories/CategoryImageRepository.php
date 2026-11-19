@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\CategoryImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInterface;
@@ -11,6 +12,9 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInte
  */
 class CategoryImageRepository implements CategoryImageRepositoryInterface
 {
+    /**
+     * @param  CategoryImage  $model  카테고리 이미지 모델
+     */
     public function __construct(
         protected CategoryImage $model
     ) {}
@@ -101,6 +105,32 @@ class CategoryImageRepository implements CategoryImageRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function findStaleTempImages(Carbon $threshold, int $limit): Collection
+    {
+        return $this->model->newQuery()
+            ->withTrashed()
+            ->whereNotNull('temp_key')
+            ->whereNull('category_id')
+            ->where('created_at', '<', $threshold)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get(['id', 'temp_key', 'disk', 'path', 'created_at', 'deleted_at']);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function forceDeleteById(int $id): bool
+    {
+        $image = $this->model->newQuery()->withTrashed()->find($id);
+
+        return $image?->forceDelete() ?? false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function linkTempImages(string $tempKey, int $categoryId): int
     {
         return $this->model
@@ -145,5 +175,30 @@ class CategoryImageRepository implements CategoryImageRepositoryInterface
         }
 
         return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countByMimeTypes(array $mimeTypes): int
+    {
+        return $this->model->newQuery()
+            ->whereNotNull('category_id')
+            ->whereIn('mime_type', $mimeTypes)
+            ->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection
+    {
+        return $this->model->newQuery()
+            ->whereNotNull('category_id')
+            ->whereIn('mime_type', $mimeTypes)
+            ->where('id', '>', $afterId)
+            ->orderBy('id')
+            ->limit($limit)
+            ->get(['id', 'disk', 'path', 'mime_type', 'width', 'height']);
     }
 }

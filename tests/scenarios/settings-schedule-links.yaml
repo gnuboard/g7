@@ -1,0 +1,24 @@
+feature: 환경설정 화면의 스케줄 단일화 — SEO 사이트맵 주기 링크 · 드라이버 처리 기록·보관 기간 (#17 D7·D8·D10)
+
+description: |
+  7.2.0 에서 예약 작업이 DB 등록제가 되면서 설정 화면이 주기를 따로 들고 있지 않는다.
+  - SEO 탭: 사이트맵 생성 주기·시각 입력 칸을 없애고 「스케줄 관리에서 변경」 링크(소유=코어 + 식별자 sitemap-generate 검색)를
+    둔다. 저장값은 업그레이드 7.2.0 이 스케줄 행으로 옮긴다(서버 축은 upgrade-720-schedule-setting-migration 이 덮는다).
+  - 드라이버 탭: 큐 카드 끝에 처리 기록 켜기와 기록·실패 작업 공통 보관 기간(1~90일, 기본 7)을 두고, 처리 기록 하위 탭 링크를 둔다.
+    서버 검증·기본값은 queue-management 가 덮는다.
+  화면 축(링크 이동·뒤로 가기·설정값 유지)은 라이브 매트릭스 M17·M19 가 덮는다.
+
+axes:
+  screen: [seo, drivers]
+
+effects:
+  # SEO 탭의 나머지 계약(메타·분석·검증·봇 UA·캐시·저장 몸통·탭 조건) — 미러 픽스처로 고정해 온 기존 단언
+  - seo_tab_layout_contract
+  # SEO 탭에 주기·시각 입력이 없고 스케줄 관리 링크가 소유·식별자 쿼리를 싣는다(손 복사 픽스처가 실제 레이아웃과 같은 순서인지도 대조)
+  - seo_sitemap_schedule_link_replaces_inputs
+  # 드라이버 탭 큐 카드에 처리 기록 토글·보관 기간(limits 메타 한계)·처리 기록 링크가 있다
+  - drivers_queue_record_settings_inputs
+
+test_files:
+  - resources/js/core/template-engine/__tests__/layouts/adminSettingsSeoTab.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-drivers-queue-records.test.tsx

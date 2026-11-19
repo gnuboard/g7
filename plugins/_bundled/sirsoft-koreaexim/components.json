@@ -1,0 +1,10 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "identifier": "sirsoft-koreaexim",
+    "version": "1.1.0",
+    "components": {
+        "basic": [],
+        "composite": [],
+        "layout": []
+    }
+}

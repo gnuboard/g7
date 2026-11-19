@@ -1,4 +1,4 @@
-<!-- 활동 로그 목록. 조건이 일곱 가지(검색어·검색 대상·로그 종류·행위자·기간)라 **입력은 `_local.filter`
+<!-- 활동 로그 목록. 조건이 여러 가지(검색어·검색 대상·로그 종류·행위자·기간·삭제 직전 기록만)라 **입력은 `_local.filter`
   에 모아 두고 검색 버튼을 눌러야 URL 로 옮겨 간다** — 고를 때마다 조회하면 한 번 거를 때 대여섯 번
   다녀온다. 데이터소스는 URL 만 읽으므로 그 사이에는 목록이 움직이지 않는다.
   화면 이동은 전부 `replace` 다 — 조건을 몇 번 바꿔 가며 좁히는 화면이라 뒤로가기 이력에 다 쌓이면
@@ -9,7 +9,7 @@
   <!-- 활동 로그. 파라미터가 전부 `query.*` 를 읽는다(위 설명 참조). 403 은 목록을 볼 권한이 없다는
        뜻이므로 빈 표 대신 에러 화면으로 갈아끼운다. -->
   <data-source id="activityLogs" label_key="$t:editor.data_source.activityLogs" type="api" endpoint="/api/admin/activity-logs" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
-    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}" log_type[]="{{query['log_type[]']}}" created_by="{{query.created_by}}" date_from="{{query.date_from}}" date_to="{{query.date_to}}" sort_by="{{query.sort_by || 'created_at'}}" sort_order="{{query.sort_order || 'desc'}}"/>
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}" log_type[]="{{query['log_type[]']}}" created_by="{{query.created_by}}" date_from="{{query.date_from}}" date_to="{{query.date_to}}" deletion_snapshot="{{query.deletion_snapshot}}" sort_by="{{query.sort_by || 'created_at'}}" sort_order="{{query.sort_order || 'desc'}}"/>
     <error-handling>
       <on-code code="403">
         <show-error-page target="content"/>
@@ -25,6 +25,7 @@
       <field name="dateQuick" value=""/>
       <field name="dateFrom" value=""/>
       <field name="dateTo" value=""/>
+      <field name="deletionSnapshot" :value="false"/>
     </field>
     <field name="actorSearchResults" :value="[]"/>
   </init-local>
@@ -39,7 +40,7 @@
        페이지는 1로 되돌리고, 대기 표시는 표 본문에만 건다(필터 상자가 가려지면 방금 고른 값이 안 보인다). -->
   <action name="searchActivityLogs">
     <navigate path="/admin/activity-logs" :mergeQuery="true" :replace="true" transition_overlay_target="activity_log_datagrid__body">
-      <query :page="1" search="{{_local.filter.search || undefined}}" search_type="{{_local.filter.searchType !== 'all' ? _local.filter.searchType : undefined}}" log_type[]="{{_local.filter.logTypes?.length > 0 ? _local.filter.logTypes : undefined}}" created_by="{{_local.filter.createdBy || undefined}}" date_from="{{_local.filter.dateFrom || undefined}}" date_to="{{_local.filter.dateTo || undefined}}"/>
+      <query :page="1" search="{{_local.filter.search || undefined}}" search_type="{{_local.filter.searchType !== 'all' ? _local.filter.searchType : undefined}}" log_type[]="{{_local.filter.logTypes?.length > 0 ? _local.filter.logTypes : undefined}}" created_by="{{_local.filter.createdBy || undefined}}" date_from="{{_local.filter.dateFrom || undefined}}" date_to="{{_local.filter.dateTo || undefined}}" deletion_snapshot="{{_local.filter.deletionSnapshot ? 1 : undefined}}"/>
     </navigate>
   </action>
   <init>
@@ -53,6 +54,7 @@
           <field name="dateQuick" value=""/>
           <field name="dateFrom" value="{{query.date_from || ''}}"/>
           <field name="dateTo" value="{{query.date_to || ''}}"/>
+          <field name="deletionSnapshot" value="{{query.deletion_snapshot === '1' || query.deletion_snapshot === 'true'}}"/>
         </field>
       </field>
     </set-state>
@@ -61,7 +63,7 @@
     <div data-ref="activity_log_list_content" class="admin-page-content">
       <div data-ref="page_header" class="flex-between mb-6">
         <div>
-          <h1 class="page-title">$t:admin.activity_log.page_title</h1>
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-white"><responsive on="640-" class="text-2xl font-semibold text-gray-900 dark:text-white"/>$t:admin.activity_log.page_title</h1>
           <p class="text-label-subtle mt-1">$t:admin.activity_log.page_description</p>
         </div>
         <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:common.refresh" title="$t:common.refresh">
@@ -134,7 +136,7 @@
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:admin.activity_log.delete.confirm_message</p>
       </div>
-      <div class="modal-footer-buttons">
+      <footer>
         <button type="button" class="btn btn-secondary" disabled="{{_global.isDeleting}}">
           <on type="click">
             <close-modal/>
@@ -172,7 +174,7 @@
           <icon data-if="{{_global.isDeleting}}" name="spinner" :spin="true" class="text-sm"/>
           <span>$t:common.delete</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -183,7 +185,7 @@
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:admin.activity_log.delete.bulk_confirm_message</p>
       </div>
-      <div class="modal-footer-buttons">
+      <footer>
         <button type="button" class="btn btn-secondary" disabled="{{_global.isDeleting}}">
           <on type="click">
             <close-modal/>
@@ -222,7 +224,7 @@
           <icon data-if="{{_global.isDeleting}}" name="spinner" :spin="true" class="text-sm"/>
           <span>$t:common.delete</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
 </layout>

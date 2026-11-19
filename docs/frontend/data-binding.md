@@ -236,7 +236,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 ### 6. 복합 표현식
 
 ```html
-<div class="{{_global.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}} fixed inset-y-0 left-0 z-50 w-64 transition-transform lg:relative lg:translate-x-0" variant="{{score >= 90 ? 'excellent' : score >= 70 ? 'good' : 'poor'}}">{{user.isOnline &amp;&amp; user.status == 'active' ? 'Online' : 'Offline'}}</div>
+<div class="{{_global.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}} fixed inset-y-0 left-0 z-50 w-64 transition-transform" variant="{{score >= 90 ? 'excellent' : score >= 70 ? 'good' : 'poor'}}">{{user.isOnline &amp;&amp; user.status == 'active' ? 'Online' : 'Offline'}}</div>
 ```
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
@@ -244,7 +244,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 ```json
 {
   // 동적 CSS 클래스 생성
-  "className": "{{_global.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}} fixed inset-y-0 left-0 z-50 w-64 transition-transform lg:relative lg:translate-x-0",
+  "className": "{{_global.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}} fixed inset-y-0 left-0 z-50 w-64 transition-transform",
 
   // 조건부 텍스트
   "text": "{{user.isOnline && user.status == 'active' ? 'Online' : 'Offline'}}",
@@ -376,7 +376,9 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 ### 실제 사용 사례 - 반응형 레이아웃
 
 ```html
-<div data-ref="mobile_sidebar" class="{{_global.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}} fixed inset-y-0 left-0 z-50 w-64 transition-transform duration-300 lg:relative lg:translate-x-0 bg-white"/>
+<div data-ref="mobile_sidebar" class="{{_global.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}} fixed inset-y-0 left-0 z-50 w-64 transition-transform duration-300 bg-white dark:bg-gray-800">
+  <responsive on="desktop" class="relative w-64 translate-x-0 bg-white dark:bg-gray-800"/>
+</div>
 ```
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
@@ -387,10 +389,15 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
   "type": "basic",
   "name": "Div",
   "props": {
-    "className": "{{_global.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}} fixed inset-y-0 left-0 z-50 w-64 transition-transform duration-300 lg:relative lg:translate-x-0 bg-white"
+    "className": "{{_global.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}} fixed inset-y-0 left-0 z-50 w-64 transition-transform duration-300 bg-white dark:bg-gray-800"
+  },
+  "responsive": {
+    "desktop": { "props": { "className": "relative w-64 translate-x-0 bg-white dark:bg-gray-800" } }
   }
 }
 ```
+
+화면 폭에 따른 분기(데스크톱에서 항상 펼침)는 Tailwind 반응형 접두(`lg:` 등) 대신 `responsive` 구간 값으로 하고, 구간 값이 `className` 을 통째로 바꾸므로 배경과 `dark:` 짝도 다시 적는다([반응형 레이아웃](responsive-layout.md)).
 
 ---
 
@@ -433,6 +440,8 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 | `last` | 배열 마지막 요소 | `{{items \| last}}` |
 | `join(separator)` | 배열 문자열 결합 | `{{tags \| join(', ')}}` |
 | `localized` | 다국어 객체 → 렌더 문맥의 언어(`$locale`, 없으면 화면 언어) 값. 비면 사이트 기본 언어 → 영어 → 첫 값(`$localized()` 와 같은 순서, engine-v1.81.0). 인자로 언어를 주면 그 언어가 먼저 | `{{title \| localized}}` · `{{title \| localized('en')}}` |
+| `thumb(preset)` | 이미지 주소에 썸네일 규격을 붙인다(기본 `sm`). 같은 출처 + 등록된 서빙 경로만 바꾸고 외부·정적·`data:` 주소와 비문자열 값은 그대로. 기존 쿼리(서명)는 원문 그대로 두고 `size` 만 덧붙인다. 봇 화면도 같은 파이프로 같은 주소를 낸다(engine-v1.95.0). 인자는 리터럴만 | `{{product.thumbnail_url \| thumb('md')}}` |
+| `thumbSrcset(preset)` | 규격의 1x·2x srcset. 2x 는 같은 맞춤·같은 비율 중 가로 1.5배 이상인 가장 작은 규격(없으면 1x 만). 대상이 아니면 빈 문자열(engine-v1.95.0) | `{{product.thumbnail_url \| thumbSrcset('md')}}` |
 
 ### 파이프 체이닝
 

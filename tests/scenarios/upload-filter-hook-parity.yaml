@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#609 |
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 #   백엔드 전용(훅 발화·필터 반환값 소비) 변경으로 PHPUnit 단위/Feature 테스트가
 #   표면×구독자 축 조합을 직접 커버하고 green 이다. cross product 자동 전개 불필요.
 

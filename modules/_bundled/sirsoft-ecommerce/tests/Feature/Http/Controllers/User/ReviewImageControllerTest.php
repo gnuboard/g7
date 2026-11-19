@@ -106,8 +106,11 @@ class ReviewImageControllerTest extends ModuleTestCase
      */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     // ========================================
@@ -119,7 +122,7 @@ class ReviewImageControllerTest extends ModuleTestCase
      *
      * @scenario operation=upload
      *
-     * @effects user_review_image_upload_saved_for_own_review
+     * @effects user_review_image_upload_saved_for_own_review, review_image_upload_creates_row_with_201
      *
      * @return void 반환값 없음
      */
@@ -150,7 +153,7 @@ class ReviewImageControllerTest extends ModuleTestCase
      *
      * @scenario operation=upload
      *
-     * @effects user_review_image_upload_rejects_invalid_file_with_422
+     * @effects user_review_image_upload_rejects_invalid_file_with_422, review_image_upload_requires_image_field
      *
      * @return void 반환값 없음
      */
@@ -173,7 +176,7 @@ class ReviewImageControllerTest extends ModuleTestCase
      *
      * @scenario operation=upload
      *
-     * @effects user_review_image_upload_rejects_invalid_file_with_422
+     * @effects user_review_image_upload_rejects_invalid_file_with_422, review_image_upload_rejects_non_image_file
      *
      * @return void 반환값 없음
      */
@@ -199,7 +202,7 @@ class ReviewImageControllerTest extends ModuleTestCase
      *
      * @scenario operation=upload
      *
-     * @effects user_review_image_upload_rejects_invalid_file_with_422
+     * @effects user_review_image_upload_rejects_invalid_file_with_422, review_image_upload_rejects_oversized_file
      *
      * @return void 반환값 없음
      */
@@ -225,7 +228,7 @@ class ReviewImageControllerTest extends ModuleTestCase
      *
      * @scenario operation=upload
      *
-     * @effects user_review_image_api_forbids_others_review
+     * @effects user_review_image_api_forbids_others_review, review_image_upload_forbidden_on_other_member_review
      *
      * @return void 반환값 없음
      */
@@ -264,7 +267,7 @@ class ReviewImageControllerTest extends ModuleTestCase
      *
      * @scenario operation=upload
      *
-     * @effects user_review_image_upload_limit_exceeded_returns_422
+     * @effects user_review_image_upload_limit_exceeded_returns_422, review_image_upload_rejected_over_max_count
      *
      * @return void 반환값 없음
      */
@@ -294,7 +297,7 @@ class ReviewImageControllerTest extends ModuleTestCase
      *
      * @scenario operation=upload
      *
-     * @effects user_review_image_api_requires_authentication
+     * @effects user_review_image_api_requires_authentication, review_image_upload_requires_login
      *
      * @return void 반환값 없음
      */
@@ -323,7 +326,7 @@ class ReviewImageControllerTest extends ModuleTestCase
      *
      * @scenario operation=delete
      *
-     * @effects user_review_image_delete_soft_deletes_own_image
+     * @effects user_review_image_delete_soft_deletes_own_image, review_image_delete_soft_deletes_own_image
      *
      * @return void 반환값 없음
      */
@@ -353,7 +356,7 @@ class ReviewImageControllerTest extends ModuleTestCase
      *
      * @scenario operation=delete
      *
-     * @effects user_review_image_api_forbids_others_review
+     * @effects user_review_image_api_forbids_others_review, review_image_delete_forbidden_on_other_member_review
      *
      * @return void 반환값 없음
      */
@@ -392,7 +395,7 @@ class ReviewImageControllerTest extends ModuleTestCase
      *
      * @scenario operation=delete
      *
-     * @effects user_review_image_delete_returns_404_for_foreign_or_missing_image
+     * @effects user_review_image_delete_returns_404_for_foreign_or_missing_image, review_image_delete_not_found_for_image_of_other_review
      *
      * @return void 반환값 없음
      */
@@ -430,7 +433,7 @@ class ReviewImageControllerTest extends ModuleTestCase
      *
      * @scenario operation=delete
      *
-     * @effects user_review_image_delete_returns_404_for_foreign_or_missing_image
+     * @effects user_review_image_delete_returns_404_for_foreign_or_missing_image, review_image_delete_not_found_for_missing_image
      *
      * @return void 반환값 없음
      */
@@ -452,7 +455,7 @@ class ReviewImageControllerTest extends ModuleTestCase
      *
      * @scenario operation=delete
      *
-     * @effects user_review_image_api_requires_authentication
+     * @effects user_review_image_api_requires_authentication, review_image_delete_requires_login
      *
      * @return void 반환값 없음
      */

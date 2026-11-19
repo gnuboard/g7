@@ -7,14 +7,14 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card"
+        "className": "ecommerce-admin-card"
     },
     "children": [
         {
             "type": "basic",
             "name": "H2",
             "props": {
-                "className": "card-title"
+                "className": "ecommerce-card-title"
             },
             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.usage_conditions"
         },
@@ -22,7 +22,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "space-y-5"
+                "className": "ecommerce:space-y-5"
             },
             "children": [
                 {
@@ -128,7 +128,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 mb-4"
+                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4"
                             },
                             "children": [
                                 {
@@ -148,7 +148,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg flex-center gap-2 text-sm"
+                                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:hover:bg-blue-700 ecommerce:dark:bg-blue-600 ecommerce:dark:hover:bg-blue-700 ecommerce:text-white ecommerce:rounded-lg ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
@@ -184,7 +184,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce-text-body ecommerce:hover:bg-gray-100 ecommerce:dark:hover:bg-gray-700"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.delete_selected"
                                 }
@@ -197,7 +197,7 @@
                             "name": "Div",
                             "if": "{{_local.productSearchOpen}}",
                             "props": {
-                                "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4 bg-gray-50 dark:bg-gray-800"
+                                "className": "ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4 ecommerce:mb-4 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800"
                             },
                             "children": [
                                 {
@@ -205,7 +205,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "space-y-3 mb-4"
+                                        "className": "ecommerce:space-y-3 ecommerce:mb-4"
                                     },
                                     "children": [
                                         {
@@ -213,7 +213,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex gap-2"
+                                                "className": "ecommerce:flex ecommerce:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -233,7 +233,7 @@
                                                     "props": {
                                                         "aria-label": "$t:common.search_field",
                                                         "value": "{{_local.productSearchField}}",
-                                                        "className": "input w-32",
+                                                        "className": "ecommerce:h-9 ecommerce:w-32",
                                                         "options": [
                                                             {
                                                                 "value": "all",
@@ -271,7 +271,7 @@
                                                     "props": {
                                                         "value": "{{_local.productSearchKeyword ?? ''}}",
                                                         "placeholder": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.keyword_placeholder",
-                                                        "className": "input flex-1"
+                                                        "className": "ecommerce-input ecommerce:flex-1"
                                                     }
                                                 },
                                                 {
@@ -308,7 +308,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "px-4 py-2 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white rounded-lg text-sm"
+                                                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-gray-600 ecommerce:hover:bg-gray-700 ecommerce:dark:bg-gray-500 ecommerce:dark:hover:bg-gray-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:text-sm"
                                                     },
                                                     "text": "$t:common.search"
                                                 }
@@ -321,14 +321,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-between mb-2"
+                                        "className": "ecommerce-flex-between ecommerce:mb-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-body font-medium"
+                                                "className": "ecommerce-text-body ecommerce:font-medium"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.results ({{_local.productSearchTotal ?? (_local.productSearchResults ?? []).length}})"
                                         },
@@ -349,7 +349,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "px-3 py-1.5 bg-green-700 hover:bg-green-800 dark:bg-green-700 dark:hover:bg-green-800 text-white text-sm rounded"
+                                                "className": "ecommerce:px-3 ecommerce:py-1.5 ecommerce:bg-green-700 ecommerce:hover:bg-green-800 ecommerce:dark:bg-green-700 ecommerce:dark:hover:bg-green-800 ecommerce:text-white ecommerce:text-sm ecommerce:rounded"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.add_selected"
                                         }
@@ -434,7 +434,7 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "overflow-y-auto",
+                                        "className": "ecommerce:overflow-y-auto",
                                         "style": {
                                             "maxHeight": "300px"
                                         }
@@ -499,14 +499,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "mt-4"
+                                "className": "ecommerce:mt-4"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "text-body font-medium mb-2"
+                                        "className": "ecommerce-text-body ecommerce:font-medium ecommerce:mb-2"
                                     },
                                     "children": [
                                         {
@@ -572,7 +572,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 mb-4"
+                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4"
                             },
                             "children": [
                                 {
@@ -592,7 +592,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg flex-center gap-2 text-sm"
+                                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:hover:bg-blue-700 ecommerce:dark:bg-blue-600 ecommerce:dark:hover:bg-blue-700 ecommerce:text-white ecommerce:rounded-lg ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
@@ -628,7 +628,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce-text-body ecommerce:hover:bg-gray-100 ecommerce:dark:hover:bg-gray-700"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.delete_selected"
                                 }
@@ -641,7 +641,7 @@
                             "name": "Div",
                             "if": "{{_local.categorySearchOpen}}",
                             "props": {
-                                "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4 bg-gray-50 dark:bg-gray-800"
+                                "className": "ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4 ecommerce:mb-4 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800"
                             },
                             "children": [
                                 {
@@ -649,7 +649,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex gap-2 mb-4"
+                                        "className": "ecommerce:flex ecommerce:gap-2 ecommerce:mb-4"
                                     },
                                     "children": [
                                         {
@@ -669,7 +669,7 @@
                                             "props": {
                                                 "value": "{{_local.categorySearchKeyword ?? ''}}",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.category_placeholder",
-                                                "className": "input flex-1"
+                                                "className": "ecommerce-input ecommerce:flex-1"
                                             }
                                         },
                                         {
@@ -688,7 +688,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "px-4 py-2 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white rounded-lg text-sm"
+                                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-gray-600 ecommerce:hover:bg-gray-700 ecommerce:dark:bg-gray-500 ecommerce:dark:hover:bg-gray-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:text-sm"
                                             },
                                             "text": "$t:common.search"
                                         }
@@ -699,14 +699,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-between mb-2"
+                                        "className": "ecommerce-flex-between ecommerce:mb-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-body font-medium"
+                                                "className": "ecommerce-text-body ecommerce:font-medium"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.category_tree"
                                         },
@@ -727,7 +727,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "px-3 py-1.5 bg-green-700 hover:bg-green-800 dark:bg-green-700 dark:hover:bg-green-800 text-white text-sm rounded"
+                                                "className": "ecommerce:px-3 ecommerce:py-1.5 ecommerce:bg-green-700 ecommerce:hover:bg-green-800 ecommerce:dark:bg-green-700 ecommerce:dark:hover:bg-green-800 ecommerce:text-white ecommerce:text-sm ecommerce:rounded"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.add_selected"
                                         }
@@ -773,14 +773,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "mt-4"
+                                "className": "ecommerce:mt-4"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "text-body font-medium mb-2"
+                                        "className": "ecommerce-text-body ecommerce:font-medium ecommerce:mb-2"
                                     },
                                     "children": [
                                         {

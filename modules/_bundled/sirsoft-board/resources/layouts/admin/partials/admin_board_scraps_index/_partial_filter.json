@@ -1,5 +1,5 @@
 {
-    "comment": "스크랩 목록 — 검색·필터 영역. 저장소의 관리자 목록 관례를 그대로 따른다(알림 로그·회원 알림함·\n  본인인증 로그·배송 정책 등 17개 화면이 같은 짜임이다).\n\n  ⓐ **층을 나눈다** — 자유 입력인 「검색어」와 값을 고르는 「필터」는 성격이 달라 같은 줄에 두지\n     않는다. 한 줄에 몰면 좁은 화면에서 서로 폭을 빼앗아 입력칸이 사라진다(2026-09-16 실측:\n     반응 관리와 같은 원인으로 검색어 입력이 눌려 있었다).\n  ⓑ 필터 한 줄은 `.filter-row` + 왼쪽 `.filter-label` — 이 자산이 이 용도로 만들어져 있다\n     (`main.css` 의 `.filter-grid`/`.filter-row`/`.filter-label`).\n  ⓒ 초기화·검색은 **자기 줄**에 가운데로 둔다. 좁은 화면에서는 둘이 반씩 나눠 차지한다.\n  ⓓ 상세검색 접힘 상태는 `_local` 에 둔다 — 전역 키로 두면 형제 화면(반응·게시글·신고)과\n     상태가 섞인다.\n\n  검색 조립은 명명 액션 `searchBoardScraps` 한 자리에 있고, 엔터·검색 버튼이 그것을 부른다.",
+    "comment": "스크랩 목록 — 검색·필터 영역. 저장소의 관리자 목록 관례를 그대로 따른다(알림 로그·회원 알림함·\n  본인인증 로그·배송 정책 등 17개 화면이 같은 짜임이다).\n\n  ⓐ **층을 나눈다** — 자유 입력인 「검색어」와 값을 고르는 「필터」는 성격이 달라 같은 줄에 두지\n     않는다. 한 줄에 몰면 좁은 화면에서 서로 폭을 빼앗아 입력칸이 사라진다(2026-09-16 실측:\n     반응 관리와 같은 원인으로 검색어 입력이 눌려 있었다).\n  ⓑ 필터 한 줄은 유틸(세로 쌓기) + `768-` 구간 값(가로 한 줄)으로 쓴다 — 폭 미디어를 품은 의미 클래스\n     (`.filter-row`·`.filter-label`, 폐지 예정)는 쓰지 않는다. 바깥 묶음 `.filter-grid` 는 폭과 무관하다.\n  ⓒ 초기화·검색은 **자기 줄**에 가운데로 둔다. 좁은 화면에서는 둘이 반씩 나눠 차지한다.\n  ⓓ 상세검색 접힘 상태는 `_local` 에 둔다 — 전역 키로 두면 형제 화면(반응·게시글·신고)과\n     상태가 섞인다.\n\n  검색 조립은 명명 액션 `searchBoardScraps` 한 자리에 있고, 엔터·검색 버튼이 그것을 부른다.",
     "meta": {
         "is_partial": true,
         "description": "Board Scraps List - Filter Section"
@@ -8,7 +8,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card"
+        "className": "board-admin-card"
     },
     "children": [
         {
@@ -17,14 +17,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "mb-4"
+                "className": "board:mb-4"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-center gap-2"
+                        "className": "board-flex-center board:gap-2"
                     },
                     "children": [
                         {
@@ -34,7 +34,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "select-composite w-32"
+                                        "className": "board:h-9 board:w-32"
                                     }
                                 }
                             },
@@ -50,7 +50,7 @@
                             "props": {
                                 "aria-label": "$t:common.search_field",
                                 "name": "searchField",
-                                "className": "select-composite w-44",
+                                "className": "board:h-9 board:w-44",
                                 "value": "{{_local.searchField || 'all'}}",
                                 "options": [
                                     {
@@ -84,14 +84,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "relative flex-1"
+                                "className": "board:relative board:flex-1"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                                        "className": "board:absolute board:left-3 board:top-1/2 board:-translate-y-1/2 board:pointer-events-none"
                                     },
                                     "children": [
                                         {
@@ -99,7 +99,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "fa-solid fa-search",
-                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                "className": "board:text-sm board:text-gray-500 board:dark:text-gray-400"
                                             }
                                         }
                                     ]
@@ -126,7 +126,7 @@
                                         "name": "search",
                                         "type": "text",
                                         "placeholder": "$t:sirsoft-board.admin.scraps.search_placeholder",
-                                        "className": "input pl-10",
+                                        "className": "board-input board:pl-10",
                                         "value": "{{_local.searchQuery || ''}}"
                                     }
                                 }
@@ -142,22 +142,36 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "filter-grid"
+                "className": "board-filter-grid"
             },
             "children": [
                 {
                     "id": "board_filter_row",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "board:flex board:flex-row board:gap-2 board:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "filter-row"
+                        "className": "board:flex board:flex-col board:gap-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "board:text-sm board:text-gray-600 board:dark:text-gray-400 board:mb-0 board:shrink-0 board:flex board:items-center board:w-24"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "filter-label w-24"
+                                "className": "board:text-sm board:text-gray-600 board:block board:mb-2 board:dark:text-gray-400 board:w-24"
                             },
                             "text": "$t:sirsoft-board.admin.scraps.filters.board_label"
                         },
@@ -168,7 +182,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "select-composite w-full"
+                                        "className": "board-select-composite board:w-full"
                                     }
                                 }
                             },
@@ -185,7 +199,7 @@
                             ],
                             "props": {
                                 "aria-label": "$t:sirsoft-board.admin.scraps.filters.board_label",
-                                "className": "select-composite w-64",
+                                "className": "board-select-composite board:w-64",
                                 "value": "{{_global.scrapBoardFilter !== undefined ? _global.scrapBoardFilter : (query.board_id || '')}}",
                                 "options": "{{[{ value: '', label: $t('sirsoft-board.admin.scraps.filters.board_all') }].concat((scraps?.data?.boards ?? []).map(b => ({ value: String(b.id), label: b.name })))}}"
                             }
@@ -196,15 +210,29 @@
                     "id": "date_filter_row",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "board:flex board:flex-row board:gap-2 board:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "filter-row"
+                        "className": "board:flex board:flex-col board:gap-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "board:text-sm board:text-gray-600 board:dark:text-gray-400 board:mb-0 board:shrink-0 board:flex board:items-center board:w-24"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "filter-label w-24"
+                                "className": "board:text-sm board:text-gray-600 board:block board:mb-2 board:dark:text-gray-400 board:w-24"
                             },
                             "text": "$t:sirsoft-board.admin.scraps.filters.scrapped_at_label"
                         },
@@ -212,7 +240,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 flex-wrap"
+                                "className": "board-flex-center board:gap-2 board:flex-wrap"
                             },
                             "children": [
                                 {
@@ -234,7 +262,7 @@
                                     "props": {
                                         "type": "date",
                                         "aria-label": "$t:common.range_start|label={{$t('sirsoft-board.admin.scraps.filters.scrapped_at_label')}}",
-                                        "className": "input w-40",
+                                        "className": "board-input board:w-40",
                                         "value": "{{_global.dateFrom !== undefined ? _global.dateFrom : (query.scrapped_at_from || '')}}"
                                     }
                                 },
@@ -242,7 +270,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400"
+                                        "className": "board:text-gray-500 board:dark:text-gray-400"
                                     },
                                     "text": "~"
                                 },
@@ -265,7 +293,7 @@
                                     "props": {
                                         "type": "date",
                                         "aria-label": "$t:common.range_end|label={{$t('sirsoft-board.admin.scraps.filters.scrapped_at_label')}}",
-                                        "className": "input w-40",
+                                        "className": "board-input board:w-40",
                                         "value": "{{_global.dateTo !== undefined ? _global.dateTo : (query.scrapped_at_to || '')}}"
                                     }
                                 },
@@ -274,7 +302,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex flex-wrap gap-1"
+                                        "className": "board:flex board:flex-wrap board:gap-1"
                                     },
                                     "children": [
                                         {
@@ -295,7 +323,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{_global.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "className": "{{_global.dateQuick === 'today' ? 'board-btn-date board-active' : 'board-btn-date board:cursor-pointer'}}"
                                             },
                                             "text": "$t:sirsoft-board.admin.scraps.filters.date_quick_today"
                                         },
@@ -317,7 +345,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{_global.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "className": "{{_global.dateQuick === '3days' ? 'board-btn-date board-active' : 'board-btn-date board:cursor-pointer'}}"
                                             },
                                             "text": "$t:sirsoft-board.admin.scraps.filters.date_quick_3days"
                                         },
@@ -339,7 +367,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{_global.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "className": "{{_global.dateQuick === 'week' ? 'board-btn-date board-active' : 'board-btn-date board:cursor-pointer'}}"
                                             },
                                             "text": "$t:sirsoft-board.admin.scraps.filters.date_quick_week"
                                         },
@@ -361,7 +389,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{_global.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "className": "{{_global.dateQuick === 'month' ? 'board-btn-date board-active' : 'board-btn-date board:cursor-pointer'}}"
                                             },
                                             "text": "$t:sirsoft-board.admin.scraps.filters.date_quick_month"
                                         },
@@ -383,7 +411,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{_global.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "className": "{{_global.dateQuick === '3months' ? 'board-btn-date board-active' : 'board-btn-date board:cursor-pointer'}}"
                                             },
                                             "text": "$t:sirsoft-board.admin.scraps.filters.date_quick_3months"
                                         },
@@ -405,7 +433,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{_global.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "className": "{{_global.dateQuick === 'all' ? 'board-btn-date board-active' : 'board-btn-date board:cursor-pointer'}}"
                                             },
                                             "text": "$t:sirsoft-board.admin.scraps.filters.date_quick_all"
                                         }
@@ -425,12 +453,12 @@
             "responsive": {
                 "portable": {
                     "props": {
-                        "className": "flex gap-3 mt-6"
+                        "className": "board:flex board:gap-3 board:mt-6"
                     }
                 }
             },
             "props": {
-                "className": "flex justify-center gap-3 mt-6"
+                "className": "board:flex board:justify-center board:gap-3 board:mt-6"
             },
             "children": [
                 {
@@ -440,7 +468,7 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "btn btn-primary flex-1"
+                                "className": "board-btn board-btn-primary board:flex-1"
                             }
                         }
                     },
@@ -453,7 +481,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-primary px-6"
+                        "className": "board-btn board-btn-primary board:px-6"
                     },
                     "text": "$t:sirsoft-board.admin.scraps.search"
                 },
@@ -464,7 +492,7 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "btn btn-secondary flex-1"
+                                "className": "board-btn board-btn-secondary board:flex-1"
                             }
                         }
                     },
@@ -503,7 +531,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-secondary px-6"
+                        "className": "board-btn board-btn-secondary board:px-6"
                     },
                     "text": "$t:sirsoft-board.admin.scraps.reset"
                 }

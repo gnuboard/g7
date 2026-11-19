@@ -15,7 +15,7 @@
  * @since engine-v1.50.0
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { ActionDispatcher, ActionDefinition } from '../ActionDispatcher';
 import { Logger } from '../../utils/Logger';
 
@@ -36,7 +36,7 @@ vi.mock('../../api/ApiClient', () => ({
 
 describe('ActionDispatcher - 동적 핸들러 이름 해석', () => {
   let dispatcher: ActionDispatcher;
-  let mockNavigate: ReturnType<typeof vi.fn>;
+  let mockNavigate: Mock;
 
   beforeEach(() => {
     mockNavigate = vi.fn();
@@ -47,6 +47,9 @@ describe('ActionDispatcher - 동적 핸들러 이름 해석', () => {
   const baseContext = () => ({ data: {}, state: {}, setState: vi.fn() });
 
   describe('(a) 응답 바인딩 핸들러명 해석', () => {
+    /**
+     * @effects dynamic_handler_binding_resolved_before_routing, resolved_handler_routed_to_registered_custom_handler, resolved_params_passed_to_dynamic_handler
+     */
     it('handler 가 `{{response.data.pg_payment_handler}}` 면 응답값이 가리키는 등록 핸들러를 호출', async () => {
       const paymentHandler = vi.fn().mockResolvedValue({ ok: true });
       dispatcher.registerHandler('sirsoft-pay_kginicis.requestPayment', paymentHandler);
@@ -69,7 +72,7 @@ describe('ActionDispatcher - 동적 핸들러 이름 해석', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       expect(paymentHandler).toHaveBeenCalledTimes(1);
       // params 의 pgPaymentData 도 응답값으로 해석되어 전달되었는지 (resolveParams)
@@ -77,6 +80,9 @@ describe('ActionDispatcher - 동적 핸들러 이름 해석', () => {
       expect(callArg?.params?.pgPaymentData).toEqual({ order_number: 'ORD-1', amount: 1000 });
     });
 
+    /**
+     * @effects dynamic_handler_binding_resolved_before_routing, resolved_handler_routed_to_registered_custom_handler
+     */
     it('provider 가 다른 핸들러명을 내려주면 그 핸들러로 라우팅 (provider-agnostic)', async () => {
       const handlerA = vi.fn().mockResolvedValue({ ok: 'A' });
       const handlerB = vi.fn().mockResolvedValue({ ok: 'B' });
@@ -88,7 +94,7 @@ describe('ActionDispatcher - 동적 핸들러 이름 해석', () => {
         handler: '{{response.data.pg_payment_handler}}',
       };
 
-      await dispatcher.executeAction(action, {
+      await dispatcher['executeAction'](action, {
         ...baseContext(),
         data: { response: { data: { pg_payment_handler: 'vendor-b.checkout' } } },
       });
@@ -99,6 +105,9 @@ describe('ActionDispatcher - 동적 핸들러 이름 해석', () => {
   });
 
   describe('(b) 리터럴 핸들러는 해석 분기 미진입', () => {
+    /**
+     * @effects literal_builtin_handler_skips_binding_resolution
+     */
     it('빌트인 navigate 는 `{{` 미포함 → 그대로 라우팅', async () => {
       const contextNavigate = vi.fn();
       const action: ActionDefinition = {
@@ -107,10 +116,13 @@ describe('ActionDispatcher - 동적 핸들러 이름 해석', () => {
         target: '/admin/dashboard',
       };
 
-      await dispatcher.executeAction(action, { ...baseContext(), navigate: contextNavigate });
+      await dispatcher['executeAction'](action, { ...baseContext(), navigate: contextNavigate });
       expect(contextNavigate).toHaveBeenCalledWith('/admin/dashboard', { replace: false });
     });
 
+    /**
+     * @effects literal_custom_dotted_handler_skips_binding_resolution
+     */
     it('리터럴 커스텀 핸들러명(dotted)도 그대로 호출 — `{{` 없으면 바인딩 평가 안 함', async () => {
       const handler = vi.fn().mockResolvedValue({ ok: true });
       dispatcher.registerHandler('sirsoft-pay_kginicis.requestPayment', handler);
@@ -120,12 +132,15 @@ describe('ActionDispatcher - 동적 핸들러 이름 해석', () => {
         handler: 'sirsoft-pay_kginicis.requestPayment',
       };
 
-      await dispatcher.executeAction(action, baseContext());
+      await dispatcher['executeAction'](action, baseContext());
       expect(handler).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('(c) nested(conditions/sequence) 컨텍스트 적용', () => {
+    /**
+     * @effects nested_conditions_dynamic_handler_resolved
+     */
     it('conditions then 분기의 동적 핸들러도 해석되어 호출', async () => {
       const paymentHandler = vi.fn().mockResolvedValue({ ok: true });
       dispatcher.registerHandler('sirsoft-pay_kginicis.requestPayment', paymentHandler);
@@ -144,7 +159,7 @@ describe('ActionDispatcher - 동적 핸들러 이름 해석', () => {
         ],
       };
 
-      await dispatcher.executeAction(action, {
+      await dispatcher['executeAction'](action, {
         ...baseContext(),
         data: {
           response: {
@@ -160,6 +175,9 @@ describe('ActionDispatcher - 동적 핸들러 이름 해석', () => {
       expect(paymentHandler).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * @effects nested_sequence_dynamic_handler_resolved
+     */
     it('sequence 의 동적 핸들러도 해석되어 호출', async () => {
       const paymentHandler = vi.fn().mockResolvedValue({ ok: true });
       dispatcher.registerHandler('vendor-x.pay', paymentHandler);
@@ -172,7 +190,7 @@ describe('ActionDispatcher - 동적 핸들러 이름 해석', () => {
         },
       };
 
-      await dispatcher.executeAction(action, {
+      await dispatcher['executeAction'](action, {
         ...baseContext(),
         data: { response: { data: { pg_payment_handler: 'vendor-x.pay' } } },
       });
@@ -182,6 +200,9 @@ describe('ActionDispatcher - 동적 핸들러 이름 해석', () => {
   });
 
   describe('(d) 프리뷰 모드 — 해석 후 억제 판정', () => {
+    /**
+     * @effects preview_suppression_judged_on_resolved_handler_name
+     */
     it('동적 핸들러가 navigate 로 해석되면 프리뷰 모드에서 억제 (해석 후 PREVIEW_SUPPRESSED 판정)', async () => {
       const contextNavigate = vi.fn();
       dispatcher.setPreviewMode(true);
@@ -192,7 +213,7 @@ describe('ActionDispatcher - 동적 핸들러 이름 해석', () => {
         target: '/somewhere',
       };
 
-      await dispatcher.executeAction(action, {
+      await dispatcher['executeAction'](action, {
         ...baseContext(),
         navigate: contextNavigate,
         data: { response: { data: { handler_name: 'navigate' } } },
@@ -204,6 +225,9 @@ describe('ActionDispatcher - 동적 핸들러 이름 해석', () => {
   });
 
   describe('(e) 프리뷰 모드 — 미등록 해석 결과 graceful skip', () => {
+    /**
+     * @effects unregistered_resolved_handler_graceful_skip_in_preview
+     */
     it('해석 결과가 미등록 핸들러면 throw 하지 않고 success 반환', async () => {
       dispatcher.setPreviewMode(true);
 
@@ -212,7 +236,7 @@ describe('ActionDispatcher - 동적 핸들러 이름 해석', () => {
         handler: '{{response.data.pg_payment_handler}}',
       };
 
-      const result = await dispatcher.executeAction(action, {
+      const result = await dispatcher['executeAction'](action, {
         ...baseContext(),
         data: { response: { data: { pg_payment_handler: 'vendor-unregistered.pay' } } },
       });

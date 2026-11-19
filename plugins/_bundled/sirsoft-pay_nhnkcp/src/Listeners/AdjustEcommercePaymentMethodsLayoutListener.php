@@ -46,7 +46,8 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
     /**
      * 기본 핸들러 (미사용).
      *
-     * @param  mixed  ...$args
+     * @param  mixed  ...$args  훅 인자(미사용)
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -243,7 +244,7 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
             'name' => 'Div',
             'if' => '{{'.self::TEST_MODE_CONDITION.'}}',
             'props' => [
-                'className' => 'mb-4 space-y-3 rounded-lg border border-orange-200 bg-orange-50 p-4 dark:border-orange-700 dark:bg-orange-900/20',
+                'className' => 'paynhnkcp:mb-4 paynhnkcp:space-y-3 paynhnkcp:rounded-lg paynhnkcp:border paynhnkcp:border-orange-200 paynhnkcp:bg-orange-50 paynhnkcp:p-4 paynhnkcp:dark:border-orange-700 paynhnkcp:dark:bg-orange-900/20',
             ],
             'children' => [
                 $this->testModeNoticeRowNode(),
@@ -264,21 +265,29 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
             'name' => 'Div',
             'if' => '{{'.self::TEST_MODE_CONDITION.'}}',
             'props' => [
-                'className' => 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between',
+                'className' => 'paynhnkcp:flex paynhnkcp:flex-col paynhnkcp:gap-3',
+            ],
+            // 폭 분기는 엔진 responsive 로 — Tailwind 폭 접두(`paynhnkcp:sm:`)는 편집기 미리보기 기기 폭을 따르지 못한다(#869)
+            'responsive' => [
+                '640-' => [
+                    'props' => [
+                        'className' => 'paynhnkcp:flex paynhnkcp:flex-row paynhnkcp:items-center paynhnkcp:justify-between paynhnkcp:gap-3',
+                    ],
+                ],
             ],
             'children' => [
                 [
                     'type' => 'basic',
                     'name' => 'Div',
                     'props' => [
-                        'className' => 'min-w-0',
+                        'className' => 'paynhnkcp:min-w-0',
                     ],
                     'children' => [
                         [
                             'type' => 'basic',
                             'name' => 'Div',
                             'props' => [
-                                'className' => 'text-sm font-medium text-orange-950 dark:text-orange-50',
+                                'className' => 'paynhnkcp:text-sm paynhnkcp:font-medium paynhnkcp:text-orange-950 paynhnkcp:dark:text-orange-50',
                             ],
                             'text' => '$t:sirsoft-pay_nhnkcp.admin.test_mode_settings_warning_plugin',
                         ],
@@ -286,7 +295,7 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
                             'type' => 'basic',
                             'name' => 'P',
                             'props' => [
-                                'className' => 'mt-0.5 text-sm leading-6 text-orange-800 dark:text-orange-200',
+                                'className' => 'paynhnkcp:mt-0.5 paynhnkcp:text-sm paynhnkcp:leading-6 paynhnkcp:text-orange-800 paynhnkcp:dark:text-orange-200',
                             ],
                             'text' => '$t:sirsoft-pay_nhnkcp.admin.test_mode_settings_warning_body',
                         ],
@@ -297,7 +306,14 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
                     'name' => 'Button',
                     'props' => [
                         'type' => 'button',
-                        'className' => 'btn btn-outline btn-sm w-full flex-shrink-0 border-orange-300 text-orange-900 hover:bg-orange-100 sm:w-auto dark:border-orange-600 dark:text-orange-100 dark:hover:bg-orange-900/40',
+                        'className' => 'pay-nhnkcp-btn pay-nhnkcp-btn-outline pay-nhnkcp-btn-sm paynhnkcp:w-full paynhnkcp:flex-shrink-0 paynhnkcp:border-orange-300 paynhnkcp:text-orange-900 paynhnkcp:hover:bg-orange-100 paynhnkcp:dark:border-orange-600 paynhnkcp:dark:text-orange-100 paynhnkcp:dark:hover:bg-orange-900/40',
+                    ],
+                    'responsive' => [
+                        '640-' => [
+                            'props' => [
+                                'className' => 'pay-nhnkcp-btn pay-nhnkcp-btn-outline pay-nhnkcp-btn-sm paynhnkcp:w-auto paynhnkcp:flex-shrink-0 paynhnkcp:border-orange-300 paynhnkcp:text-orange-900 paynhnkcp:hover:bg-orange-100 paynhnkcp:dark:border-orange-600 paynhnkcp:dark:text-orange-100 paynhnkcp:dark:hover:bg-orange-900/40',
+                            ],
+                        ],
                     ],
                     'actions' => [
                         [

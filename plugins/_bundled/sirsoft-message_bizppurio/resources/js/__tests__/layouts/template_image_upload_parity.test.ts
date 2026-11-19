@@ -151,11 +151,6 @@ describe('알림톡 템플릿 이미지 업로드 — 복제 패리티', () => {
   });
 
   /**
-   * 안내 문구가 숫자를 문장에 박지 않는다 — 박으면 상한이 세 곳이 된다.
-   *
-   * @effects template_image_hint_keeps_numbers_out_of_the_sentence
-   */
-  /**
    * 안내 문구가 파라미터를 **엔진이 받는 형식**으로 넘긴다.
    *
    * `{{$t('key', { … })}}` 는 표현식 헬퍼가 키 하나만 받아(`$t = (key: string)`) 두 번째
@@ -173,6 +168,11 @@ describe('알림톡 템플릿 이미지 업로드 — 복제 패리티', () => {
     }
   });
 
+  /**
+   * 안내 문구가 숫자를 문장에 박지 않는다 — 박으면 상한이 세 곳이 된다.
+   *
+   * @effects template_image_hint_keeps_numbers_out_of_the_sentence
+   */
   it('번역 문장에 숫자가 박혀 있지 않다', () => {
     for (const locale of ['ko', 'en']) {
       const messages = JSON.parse(

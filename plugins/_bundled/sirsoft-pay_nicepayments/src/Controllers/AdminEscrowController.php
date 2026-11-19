@@ -9,12 +9,13 @@ namespace Plugins\Sirsoft\PayNicepayments\Controllers;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentFilters;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentRecord;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Plugins\Sirsoft\PayNicepayments\Concerns\GuardsOrderScope;
+use Plugins\Sirsoft\PayNicepayments\Exceptions\NicePayRejectedException;
 use Plugins\Sirsoft\PayNicepayments\Http\Requests\EscrowDeliveryRegisterRequest;
 use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 
@@ -26,9 +27,11 @@ class AdminEscrowController extends AdminBaseController
      * 의존성을 주입받습니다.
      *
      * @param  NicePaymentsApiService  $apiService  나이스페이먼츠 API 서비스
+     * @param  PaymentGatewayBridge  $paymentGateway  이커머스 공개 결제 계약
      */
     public function __construct(
         private readonly NicePaymentsApiService $apiService,
+        private readonly PaymentGatewayBridge $paymentGateway,
     ) {
         parent::__construct();
     }
@@ -53,21 +56,16 @@ class AdminEscrowController extends AdminBaseController
             return $denied;
         }
 
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        $payments = DB::table((new OrderPayment)->getTable().' as p')
-            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
-            ->where('o.order_number', $orderNumber)
-            ->where('p.pg_provider', 'nicepayments')
-            ->where('p.is_escrow', 1)
-            ->get(['p.id', 'p.transaction_id', 'p.payment_method', 'p.payment_status']);
+        $payments = $this->paymentGateway->listEscrowPayments('nicepayments', $orderNumber);
 
         return ResponseHelper::success('common.success', [
-            'escrow_payments' => $payments->map(fn ($p) => [
+            'escrow_payments' => array_map(fn (PaymentRecord $p) => [
                 'id' => $p->id,
-                'transaction_id' => $p->transaction_id,
-                'payment_method' => $p->payment_method,
-                'payment_status' => $p->payment_status,
-            ])->values()->all(),
+                'transaction_id' => $p->transactionId,
+                'payment_method' => $p->paymentMethod,
+                // 응답은 종전대로 상태 원문 문자열이다
+                'payment_status' => $p->paymentStatus->value,
+            ], $payments),
         ]);
     }
 
@@ -97,7 +95,7 @@ class AdminEscrowController extends AdminBaseController
             $payment = $this->findRegisterableEscrowPayment($validated['tid']);
             if (! $payment) {
                 return ResponseHelper::error('common.failed', 422, [
-                    'message' => ['Escrow payment not found for the requested NicePayments TID.'],
+                    'message' => [__('sirsoft-pay_nicepayments::messages.responses.escrow_payment_not_found')],
                 ]);
             }
 
@@ -120,45 +118,63 @@ class AdminEscrowController extends AdminBaseController
             return ResponseHelper::success('common.success', $result);
         } catch (\Exception $e) {
             // 메시지 키 자리에는 원문 금지 — 키 해석에 실패해 원문이 그대로 나간다.
-            // 단 errors 페이로드는 관리자 전용 면의 진단 통로다(형제 KCP/이니시스
-            // 에스크로와 동형) — 비우면 운영자가 서버 로그 없이는 실패 원인을 모른다.
+            // 원문은 서버 로그에 남기고, 응답 errors 에는 운영자가 봐도 되는 사유만 싣는다(#858).
             Log::error('NicePayments: escrow delivery registration failed', [
                 'tid' => $validated['tid'],
+                'exception_class' => $e::class,
                 'error' => $e->getMessage(),
             ]);
 
             return ResponseHelper::error('common.failed', 502, [
-                'message' => [$e->getMessage()],
+                'message' => [$this->failureReason($e)],
             ]);
         }
+    }
+
+    /**
+     * 배송 등록 실패 응답에 실을 사유를 고릅니다.
+     *
+     * 나이스페이먼츠가 돌려준 거절 사유(ResultMsg)는 운영자가 조치에 쓰는 정보라 그대로 싣는다.
+     * 통신 예외(연결·시간 초과)의 원문에는 결제대행사 API 주소와 cURL 오류 문구가, DB 예외 원문에는
+     * SQL·DB 접속 정보가 담기므로 운영 모드에서는 일반 문구로 바꾼다(원문은 호출 측이 서버 로그에 남긴다).
+     * 디버그 모드는 코어 관례(SafeExceptionMessage)대로 원문을 둔다.
+     *
+     * @param  \Throwable  $e  처리 중 잡은 예외
+     * @return string 응답에 실을 사유
+     */
+    private function failureReason(\Throwable $e): string
+    {
+        if ($e instanceof NicePayRejectedException || config('app.debug')) {
+            return $e->getMessage();
+        }
+
+        return __('sirsoft-pay_nicepayments::messages.errors.escrow_delivery_failed');
     }
 
     /**
      * 배송 등록할 수 있는 에스크로 결제 레코드를 거래번호로 찾습니다.
      *
      * @param  string  $tid  거래번호
-     * @return OrderPayment|null 결제 레코드 (없으면 null)
+     * @return PaymentRecord|null 결제 레코드 (없으면 null)
      */
-    private function findRegisterableEscrowPayment(string $tid): ?OrderPayment
+    private function findRegisterableEscrowPayment(string $tid): ?PaymentRecord
     {
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        return OrderPayment::query()
-            ->where('pg_provider', 'nicepayments')
-            ->where('is_escrow', true)
-            ->where('payment_status', PaymentStatusEnum::PAID)
-            ->where('transaction_id', $tid)
-            ->first();
+        return $this->paymentGateway->findPaymentByTransactionId(
+            'nicepayments',
+            $tid,
+            new PaymentFilters(escrow: true, status: PaymentStatusEnum::PAID),
+        );
     }
 
     /**
      * 결제 당시의 상점 자격으로 API 서비스를 맞춥니다.
      *
-     * @param  OrderPayment  $payment  결제 레코드
+     * @param  PaymentRecord  $payment  결제 레코드
      * @return void 반환값 없음
      */
-    private function useStoredCredentials(OrderPayment $payment): void
+    private function useStoredCredentials(PaymentRecord $payment): void
     {
-        $meta = $payment->payment_meta ?? [];
+        $meta = $payment->paymentMeta;
         $mid = trim((string) ($meta['mid'] ?? ''));
         if ($mid === '' || ! array_key_exists('is_test_mode', $meta)) {
             return;

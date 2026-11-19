@@ -177,4 +177,29 @@ class ProductImageRepository implements ProductImageRepositoryInterface
 
         return true;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countByMimeTypes(array $mimeTypes): int
+    {
+        return $this->model->newQuery()
+            ->whereNotNull('product_id')
+            ->whereIn('mime_type', $mimeTypes)
+            ->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection
+    {
+        return $this->model->newQuery()
+            ->whereNotNull('product_id')
+            ->whereIn('mime_type', $mimeTypes)
+            ->where('id', '>', $afterId)
+            ->orderBy('id')
+            ->limit($limit)
+            ->get(['id', 'disk', 'path', 'mime_type', 'width', 'height']);
+    }
 }

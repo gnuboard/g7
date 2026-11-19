@@ -30,7 +30,7 @@ export interface TagInputProps {
     noOptionsMessage?: string;
     /** 새 항목 추가 라벨 (문자열 또는 생성 함수) */
     formatCreateLabel?: string | ((inputValue: string) => string);
-    /** 새 항목 추가 접미사 (기본값: "추가") */
+    /** 새 항목 추가 접미사 — 넘기면 값 뒤에 붙인다. 생략하면 화면 언어의 문장 `common.tag_input.create_label`(값 자리 `{{value}}`) */
     createLabelSuffix?: string;
     /** 최대 선택 개수 (멀티 모드에서만 유효) */
     maxItems?: number;

@@ -115,6 +115,12 @@ class ValidateP4MigrationsTest extends TestCase
             '조각 식별자 마이그레이션 down() 이 고유 키 존재를 확인하지 않고 지웁니다'
         );
 
+        // `self::INDEX` 가드가 겨누는 키 이름을 함께 잠근다
+        $this->assertStringContainsString(
+            "const INDEX = 'uk_layout_extension_fragment'",
+            (string) file_get_contents(base_path(self::LAYOUT_OVERRIDE_TARGET_KEY))
+        );
+
         [$up, $down] = $this->upAndDown(self::LAYOUT_OVERRIDE_TARGET_KEY);
         $guard = "Schema::hasIndex('template_layout_extensions', self::INDEX)";
 

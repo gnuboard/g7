@@ -20,12 +20,19 @@ description: |
 #   redirect_preserves_query_string effect 로 핸들러 단위테스트가 with/without 양쪽을 실측한다.
 axes:
   entry_point: [board_list_401, board_show_401, secret_post_login_button]   # 진입 지점 3종
+  # 원경로 query 유무. 핸들러 단위테스트가 진입 지점마다 with/without 양쪽을 재는 교차 묶음
+  # (redirectToLoginWithReturn.test.ts 의 「진입 지점 × query 유무」)을 두고 있어 축으로 올린다.
+  has_query: [without_query, with_query]
 
 effects:
   - redirect_preserves_pathname            # /login?redirect=<pathname>
   - redirect_preserves_query_string        # query 포함 경로에서 search 까지 보존
   - login_returns_to_original_path         # 로그인 후 query.redirect 로 복귀(_login_form 기존 규약)
   - secret_button_redirect_not_empty       # 비밀글 버튼 redirect 빈 값 회귀 차단
+  # 2026-11-09 #869 κ2: 효과 짝 없이 조합만 달던 401 갈래 시험이 실제로 재는 명제
+  - guest_entry_not_blocked_by_layout_auth   # 데이터소스가 auth_mode optional 이라(auth_required 아님) 비로그인 진입이 화면 차단 없이 401 처리로 흐른다
+  - unauthorized_toasts_before_login_redirect   # 데이터소스 401 처리가 sequence 로 안내 토스트를 먼저 띄우고 로그인 이동을 잇는다
+  - login_redirect_dispatched_by_registered_key   # 로그인 이동 액션이 등록 키를 handler 에 직접 쓴다(custom + name 형식이면 디스패치가 던진다)
 
 test_files:
   - templates/_bundled/sirsoft-basic/src/handlers/__tests__/redirectToLoginWithReturn.test.ts

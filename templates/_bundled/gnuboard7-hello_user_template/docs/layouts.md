@@ -38,6 +38,11 @@
 `toast`·`openModal` 이 성공으로 기록되지만 화면에는 아무것도 나타나지 않습니다(호스트
 컴포넌트가 마운트되지 않아서).
 
+화면 폭에 따라 모양을 바꿀 때는 Tailwind 반응형 접두(`md:hidden` 등)를 쓰지 않고 엔진
+`responsive` 로 적습니다. `_user_base` 의 모바일 네비가 그 예입니다 — 기본 className 으로 그리고,
+768px 이상 구간(`<responsive on="768-" class="… hidden"/>`)에서 className 을 통째로 바꿔 숨깁니다.
+구간 className 은 기본값에 덧붙는 것이 아니라 대체하므로, 그 폭에서도 남아야 할 클래스를 함께 적습니다.
+
 `401` 레이아웃에서 **로그인 리다이렉트를 직접 구현하지 않습니다** — 코어
 `TemplateApp.showRouteError` 가드가 처리하므로, 여기서 다시 이동시키면 이중 리다이렉트가 되고
 돌아올 위치도 어긋납니다.
@@ -101,4 +106,7 @@ layouts/errors/404.g7.html
 layouts/errors/500.g7.html
 layouts/errors/503.g7.html
 layouts/errors/maintenance.g7.html
+settings/template_settings.g7.html
 ```
+
+`settings/template_settings.g7.html` 은 `layouts/` 밖의 이 템플릿 설정 화면이다 — 코어가 켜진 관리자 템플릿마다 `gnuboard7-hello_user_template.template_settings` 로 교차 등록하고, 화면은 설정 묶음(`dist/settings/*`) 부품 `gnuboard7-hello_user_template.TemplateSettingsScreen` 이 그린다([architecture.md](architecture.md)). 저장은 고른 파일을 올리라는 신호(`upload:template_settings`)를 먼저 보내고, 업로더가 돌려준 실패 수(`{ failedCount, message? }`)가 하나라도 있으면 PUT 을 보내지 않고 실패 문구를 상태 상자에 남긴다 — 제3자 템플릿이 이 화면을 본뜰 때도 업로드 결과를 확인한 뒤 저장한다.

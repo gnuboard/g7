@@ -2,6 +2,7 @@
 
 namespace App\Extension\Helpers;
 
+use App\CoreUpdate\BundledChildMarker;
 use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\ExtensionOperationLockUnavailableException;
 use Illuminate\Contracts\Cache\Lock;
@@ -169,6 +170,13 @@ final class ExtensionOperationLock
 
         self::$held[$key] = ['lock' => $lock, 'depth' => 1];
 
+        // 코어 업데이트의 번들 항목 자식이면 소유자를 표식에 적는다 — 이 프로세스가 결과 없이 죽으면 부모가 그 소유자로만 푼다.
+        try {
+            BundledChildMarker::noteLock($key, (string) $lock->owner());
+        } catch (Throwable) {
+            // 기록 실패는 잠금 동작과 무관하다 — 부모는 소유자 기록 없이 정리한다
+        }
+
         return new self($key, $seconds);
     }
 
@@ -202,6 +210,24 @@ final class ExtensionOperationLock
             }
 
             return null;
+        }
+    }
+
+    /**
+     * 죽은 것을 확인한 프로세스가 남긴 잠금을 **그 소유자일 때만** 풉니다 — 그새 다른 작업이 잡았으면 소유자가 달라 그대로 둔다.
+     *
+     * @param  string  $key  잠금 키
+     * @param  string  $owner  죽은 프로세스가 잡았던 소유자 토큰
+     * @return bool 풀었으면 true (소유자가 다르거나 이미 비었거나 저장소 오류면 false)
+     */
+    public static function releaseAbandonedKey(string $key, string $owner): bool
+    {
+        try {
+            return (bool) Cache::restoreLock($key, $owner)->release();
+        } catch (Throwable $e) {
+            Log::warning('죽은 작업이 남긴 작업 잠금을 풀지 못했습니다 — 유지 시간이 지나면 풀립니다', ['key' => $key, 'error' => $e->getMessage()]);
+
+            return false;
         }
     }
 

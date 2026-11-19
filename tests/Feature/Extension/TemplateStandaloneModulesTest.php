@@ -116,13 +116,14 @@ class TemplateStandaloneModulesTest extends TestCase
 
         $this->assertSame([
             'sirsoft-board' => '>=1.2.1',
-            'sirsoft-ecommerce' => '>=1.3.5',
+            'sirsoft-ecommerce' => '>=1.4.0',
             'sirsoft-page' => '>=1.2.0',
         ], $this->manifest['integrations']['modules'] ?? null);
         $this->assertSame(['sirsoft-daum_postcode' => '>=1.2.0'], $this->manifest['integrations']['plugins'] ?? null);
 
-        // 단독 사용 판정 키가 없는 코어에서도 「모두 켜짐」으로 본다(P5). 최소 코어는 쇼핑몰 공용 기능(#898)이 7.1.5 로 올렸다
-        $this->assertSame('>=7.1.5', $this->manifest['g7_version']);
+        // 7.2.0 계열 sirsoft-basic 의 코어 요구 판(7.1.x 계열 develop 판은 쇼핑몰 공용 기능(#898)이 올린 `>=7.1.5`). 단독 사용 판정 키가
+        // 없는 코어에서 「모두 켜짐」으로 보는 규칙(P5)은 그대로다.
+        $this->assertSame('>=7.2.0', $this->manifest['g7_version']);
     }
 
     /**

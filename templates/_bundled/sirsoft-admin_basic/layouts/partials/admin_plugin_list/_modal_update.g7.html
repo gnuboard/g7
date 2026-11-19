@@ -2,9 +2,12 @@
 
   ⑴ **코어 버전이 맞지 않으면** 위에 경고 띠가 뜨고 「알면서 진행」에 체크하기 전까지 버튼이 잠긴다.
      맞을 때는 그 띠 자체가 안 보인다.
-  ⑵ **화면 정의를 어떻게 할지** — 새 것으로 덮을지, 지금 것을 그대로 둘지. 손댄 화면이 있으면
-     몇 개인지 먼저 알려 주고, 「그대로 두기」를 고르면 어느 화면이 남는지 목록으로 편다.
-  실패해도 창은 열린 채이고 사유가 창 안에 남는다. -->
+  ⑵ **화면 정의를 어떻게 할지** — 공통 미리보기 조각이 화면마다 어떻게 되는지 보여 주고 처리 방식(기본 수정 유지)·
+     화면별 결정을 고르게 한다. 미리보기는 여는 쪽이 창을 연 뒤 부른다 — 그동안 로딩을 보이고 실행 버튼은 잠긴다(#888).
+  실패해도 창은 열린 채이고 사유가 창 안에 남는다.
+  패키지 무결성(#916): 새 판본이 미서명(409)·서명 불일치(422)로 거절되면 오류 상자 대신 공용 안내 조각이 사유를 그린다.
+  정책이 허용하면(`can_continue`) 실행 버튼이 「미서명으로 계속」으로 바뀌어 같은 본문에 `allow_unsigned=1` 만 더해 다시 보낸다.
+  작업 잠금 409(같은 확장의 업데이트가 진행 중)는 종전대로 안내 토스트다 — 둘은 상태 코드가 아니라 응답 표지로 가른다. -->
 <partial description="플러그인 업데이트 확인 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_update_modal">
   <modal data-type="composite" data-ref="plugin_update_modal" title="$t:admin.plugins.modals.update_title" size="medium">
     <div data-if="{{_global.selectedPlugin?.is_compatible === false}}" class="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg" role="alert">
@@ -79,8 +82,10 @@
         <div class="text-error-soft break-all">{{_global.pluginUpdateError}}</div>
       </div>
     </div>
+    <include src="partials/_package_integrity_notice.g7.html"/>
     <div class="py-2">
       <p class="text-gray-700 dark:text-gray-300 flex items-center gap-2"><span data-ref="plugin_update_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden">
+        <!-- thumb-exempt: 확장 아이콘은 업로드 이미지가 아니다(확장 패키지에 든 파일이고 SVG 도 받는다) -->
         <img data-if="{{_global.selectedPlugin?.icon_url}}" src="{{_global.selectedPlugin.icon_url}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/>
         <icon data-if="{{!_global.selectedPlugin?.icon_url}}" name="puzzle-piece" class="text-xs text-gray-600 dark:text-gray-400" aria-hidden="true"/>
       </span><span>$t:admin.plugins.modals.update_confirm|name={{_global.selectedPlugin.name ?? ''}}</span></p>
@@ -123,52 +128,9 @@
           <span>$t:admin.plugins.modals.view_changelog</span>
         </a>
       </div>
-      <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-        <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:admin.plugins.modals.layout_strategy_title</div>
-        <div data-if="{{_global.hasModifiedPluginLayouts}}" class="mb-2 p-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded text-xs text-amber-700 dark:text-amber-400">$t:admin.plugins.modals.modified_layouts_warning|count={{_global.modifiedPluginLayoutsCount ?? 0}}</div>
-        <div data-if="{{_global.modifiedPluginLayoutsCheckFailed}}" class="mb-2 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded text-xs text-red-700 dark:text-red-400" role="alert">$t:admin.plugins.modals.modified_layouts_check_failed</div>
-        <div data-if="{{!_global.hasModifiedPluginLayouts &amp;&amp; !_global.modifiedPluginLayoutsCheckFailed}}" class="mb-2 p-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded text-xs text-green-700 dark:text-green-400">$t:admin.plugins.modals.no_modified_layouts</div>
-        <div class="row-stack">
-          <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
-            <input type="radio" name="plugin_layout_strategy" value="overwrite" checked="{{(_global.pluginLayoutStrategy ?? 'overwrite') === 'overwrite'}}" class="radio mt-0.5">
-              <on type="change">
-                <!-- 기본값이 「덮어쓰기」다 — 값이 아직 없을 때도 이쪽이 골라진 것으로 보이고, 요청 본문에서도 같은 기본값을 쓴다. -->
-                <set-state target="global" pluginLayoutStrategy="overwrite"/>
-              </on>
-            </input>
-            <div>
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.plugins.modals.layout_strategy_overwrite</span>
-              <p class="text-tertiary">$t:admin.plugins.modals.layout_strategy_overwrite_desc</p>
-            </div>
-          </label>
-          <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
-            <input type="radio" name="plugin_layout_strategy" value="keep" checked="{{(_global.pluginLayoutStrategy ?? 'overwrite') === 'keep'}}" class="radio mt-0.5">
-              <on type="change">
-                <!-- 남기기 — 손댄 화면 목록이 아래에 펼쳐진다. 고친 부분은 두고 손대지 않은 조각·설정만 새 판본으로 바꾼다(겹치면 고친 쪽 유지). -->
-                <set-state target="global" pluginLayoutStrategy="keep"/>
-              </on>
-            </input>
-            <div>
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.plugins.modals.layout_strategy_keep</span>
-              <p class="text-tertiary">$t:admin.plugins.modals.layout_strategy_keep_desc</p>
-            </div>
-          </label>
-          <div data-if="{{(_global.pluginLayoutStrategy ?? 'overwrite') === 'keep' &amp;&amp; _global.modifiedPluginLayouts &amp;&amp; _global.modifiedPluginLayouts.length > 0}}" class="ml-6 mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
-            <div class="text-xs font-medium text-warning-soft mb-2">$t:admin.plugins.modals.modified_layouts_list_title|count={{_global.modifiedPluginLayouts?.length ?? 0}}</div>
-            <div class="space-y-1 max-h-40 overflow-y-auto">
-              <div data-each="modLayout in _global.modifiedPluginLayouts" class="flex-center gap-3 text-xs px-2 py-1.5 bg-white dark:bg-gray-800 rounded">
-                <icon name="file-alt" class="text-amber-600 dark:text-amber-400 shrink-0"/>
-                <span class="font-mono flex-1 text-gray-700 dark:text-gray-300">{{modLayout.name}}</span>
-                <span class="text-gray-500 dark:text-gray-400 shrink-0">{{modLayout.updated_at}}</span>
-              </div>
-            </div>
-            <div class="flex-center mt-2 text-xs text-amber-700 dark:text-amber-400 gap-1">
-              <icon name="info-circle" size="xs"/>
-              <span>$t:admin.plugins.modals.modified_layouts_keep_notice</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- 레이아웃 처리 — 새 판으로 바꾸면 화면마다 어떻게 되는지 미리 보고(DB 는 바뀌지 않는다) 처리 방식·화면별 결정을 고른다.
+           기본은 수정 유지(keep). 이 업데이트로 지워질 선언 항목(운영자 수정본 표시)도 함께 보여 준다(#888). -->
+      <include src="partials/_shared/_layout_sync_preview.g7.html"/>
       <!-- 고급 설정 — 레이아웃 설치 소스(#144). 평소에는 자동(.g7.html 우선)이고, 새 형식 처리에 문제가 있을 때만
            원본 JSON 우선을 고른다. 값은 요청 본문 layout_source 로 보내고 서버는 그 요청 동안만 적용한다.
            창을 열 때마다 자동·접힘으로 되돌린다(여는 쪽이 전역값을 초기화한다). -->
@@ -229,14 +191,14 @@
         </label>
       </div>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button class="btn btn-secondary" disabled="{{_global.isPluginUpdating}}" type="button">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button class="flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPluginUpdating || (_global.selectedPlugin?.is_compatible === false &amp;&amp; _global.pluginForceUpdate !== true)}}" type="button">
+      <button class="flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPluginUpdating || _global.layoutPreviewState !== 'ready' || (_global.selectedPlugin?.is_compatible === false &amp;&amp; _global.pluginForceUpdate !== true)}}" type="button">
         <on type="click">
           <!-- 화면 정의 처리 방식과 강행 여부 둘을 실어 보낸다. 성공하면 고른 플러그인과 화면 정의 관련 값들을 처음으로 되돌린다 — 전역이라 다음에 다른 플러그인을 열 때 지난 선택이 따라붙는다. -->
           <sequence>
@@ -246,11 +208,14 @@
                 <set-state target="global" :isPluginUpdating="false"/>
                 <!-- 서버 문구를 그대로 띄운다 — 업데이트할 것이 없었으면 「업데이트할 내용이 없습니다」가 온다 -->
                 <toast type="success" message="{{response?.message ?? '$t:admin.plugins.update_success'}}"/>
+                <!-- 새 판본의 서명 결과(응답 integrity_status, #916) — 확인됐으면 서명자를, 서명 없이 올렸으면 그 사실을 알린다 -->
+                <toast if="{{response?.data?.integrity_status === 'verified'}}" type="success" message="$t:admin.package_integrity.result_verified|signer={{(response?.data?.integrity_key_id ?? '').split(':')[0]}}"/>
+                <toast if="{{response?.data?.integrity_status === 'unsigned' || response?.data?.integrity_status === 'unverifiable'}}" type="warning" message="$t:admin.package_integrity.result_unsigned"/>
                 <!-- 멈춘 업데이트를 정리하고 다시 업데이트했으면 확장은 비활성으로 남는다(정리 규칙) — 다시 켜라고 알린다 -->
                 <toast if="{{_global.selectedPlugin?.stuck_update === true}}" type="info" message="$t:admin.plugins.stuck_update_reactivate_hint"/>
                 <refetch-data-source dataSourceId="plugins"/>
                 <close-modal/>
-                <set-state target="global" :selectedPlugin="null" pluginLayoutSource="auto" :pluginLayoutSourceOpen="false" pluginLayoutStrategy="overwrite" :hasModifiedPluginLayouts="false" :modifiedPluginLayoutsCount="0" :modifiedPluginLayouts="[]" :pluginRebuildSearchIndex="false"/>
+                <set-state target="global" :selectedPlugin="null" pluginLayoutSource="auto" :pluginLayoutSourceOpen="false" layoutSyncStrategy="keep" :layoutDecisions="{}" :layoutPreview="null" :layoutUpdatePreview="null" layoutPreviewState="idle" :pluginRebuildSearchIndex="false"/>
                 <!-- 일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다. -->
                 <set-state target="global" lifecycleWarnings="{{response?.data?.warnings ?? []}}" :lifecycleWarningsOpen="false"/>
                 <open-modal if="{{(response?.data?.warnings?.length ?? 0) &gt; 0}}" target="lifecycle_warnings_modal"/>
@@ -258,18 +223,20 @@
               <fail>
                 <!-- 409 = 같은 플러그인의 업데이트가 이미 진행 중(더블클릭·CLI 동시 실행). 실패가 아니므로 오류 상자를 띄우지 않고
                      안내만 한다. 버튼은 풀어 둔다 — CLI 가 돌리는 중이면 이 창의 요청은 끝나지 않으므로 잠가 두면 창을 닫을 수 없다. -->
-                <set-state if="{{error.status === 409}}" target="global" :isPluginUpdating="false"/>
-                <toast if="{{error.status === 409}}" type="info" message="{{error.message}}"/>
-                <set-state if="{{error.status !== 409}}" target="global" :isPluginUpdating="false" pluginUpdateError="{{error.message}}"/>
-                <toast if="{{error.status !== 409}}" type="error" message="{{error.message}}"/>
+                <set-state if="{{error.status === 409 &amp;&amp; !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}" target="global" :isPluginUpdating="false"/>
+                <toast if="{{error.status === 409 &amp;&amp; !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}" type="info" message="{{error.message}}"/>
+                <set-state if="{{error.status !== 409 &amp;&amp; !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}" target="global" :isPluginUpdating="false" pluginUpdateError="{{error.message}}" :packageIntegrity="null" :packageIntegrityMessage="null"/>
+                <toast if="{{error.status !== 409 &amp;&amp; !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}" type="error" message="{{error.message}}"/>
+                <!-- 패키지 무결성 거절(#916, 응답 표지로 가른다) — 오류 상자·토스트 대신 위쪽 공용 안내 조각이 사유를 그린다 -->
+                <set-state if="{{!!(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}" target="global" :isPluginUpdating="false" :pluginUpdateError="null" packageIntegrity="{{error.errors?.integrity ?? null}}" packageIntegrityMessage="{{error.message}}"/>
               </fail>
-              <body layout_strategy="{{_global.pluginLayoutStrategy ?? 'overwrite'}}" force="{{_global.pluginForceUpdate === true}}" rebuild_search_index="{{_global.pluginRebuildSearchIndex === true}}" layout_source="{{_global.pluginLayoutSource ?? 'auto'}}"/>
+              <body layout_strategy="{{_global.layoutSyncStrategy ?? 'keep'}}" decisions="{{_global.layoutDecisions ?? {} }}" pending_token="{{_global.layoutUpdatePreview?.pending_token ?? null}}" force="{{_global.pluginForceUpdate === true}}" rebuild_search_index="{{_global.pluginRebuildSearchIndex === true}}" layout_source="{{_global.pluginLayoutSource ?? 'auto'}}" allow_unsigned="{{_global.packageIntegrity?.can_continue === true ? 1 : null}}" integrity_aware="1"/>
             </api-call>
           </sequence>
         </on>
         <icon data-if="{{_global.isPluginUpdating}}" name="spinner" class="spinner-sm"/>
-        <span>{{_global.isPluginUpdating ? '$t:admin.plugins.updating' : '$t:admin.plugins.actions.update'}}</span>
+        <span>{{_global.isPluginUpdating ? '$t:admin.plugins.updating' : (_global.packageIntegrity?.can_continue === true ? '$t:admin.package_integrity.continue_unsigned' : '$t:admin.plugins.actions.update')}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

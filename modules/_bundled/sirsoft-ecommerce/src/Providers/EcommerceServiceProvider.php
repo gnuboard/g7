@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Providers;
 
+use App\Extension\AbstractModule;
 use App\Extension\BaseModuleServiceProvider;
 use App\Helpers\ResponseHelper;
 use App\Seo\SitemapGenerator;
@@ -26,11 +27,25 @@ use Modules\Sirsoft\Ecommerce\Console\Commands\PlaywrightSeedOrderRetention;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PlaywrightSeedSiteDayOrders;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredCartsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredTempOrdersCommand;
+use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExportsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PrunePendingClaimImagesCommand;
+use Modules\Sirsoft\Ecommerce\Console\Commands\PruneTempCategoryImagesCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneTempProductImagesCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\ReconcileMileageBalanceCommand;
+use Modules\Sirsoft\Ecommerce\Contracts\Catalog\CategoryDirectory;
+use Modules\Sirsoft\Ecommerce\Contracts\Catalog\ProductDirectory;
+use Modules\Sirsoft\Ecommerce\Contracts\Catalog\ProductProvisioner;
+use Modules\Sirsoft\Ecommerce\Contracts\Currency\ExchangeRateGateway;
+use Modules\Sirsoft\Ecommerce\Contracts\Currency\PriceFormatter;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\ClaimPaymentLookup;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\OrderAccess;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentLifecycle;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentLookup;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentSampleProvisioner;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
-use Modules\Sirsoft\Ecommerce\Http\Middleware\DetectDevice;
+use Modules\Sirsoft\Ecommerce\Exports\ExportFormatRegistry;
+use Modules\Sirsoft\Ecommerce\Exports\ExportTypeRegistry;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
@@ -58,6 +73,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterf
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceStatRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceUserProfileRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExportDownloadRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExportRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExtraFeeTemplateRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageBalanceRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
@@ -75,12 +92,12 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\PaymentGatewayRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductAdditionalOptionValueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductCommonInfoRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductInquiryRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductLabelRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductLogRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductNoticeTemplateRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
@@ -99,6 +116,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\CouponIssueRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\CouponRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\EcommerceStatRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\EcommerceUserProfileRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\ExportDownloadRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\ExportRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ExtraFeeTemplateRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\MileageBalanceRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\MileageTransactionRepository;
@@ -116,12 +135,12 @@ use Modules\Sirsoft\Ecommerce\Repositories\OrderRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderReturnOptionRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderReturnRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderShippingRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\PaymentGatewayRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ProductAdditionalOptionValueRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ProductCommonInfoRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ProductImageRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ProductInquiryRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ProductLabelRepository;
-use Modules\Sirsoft\Ecommerce\Repositories\ProductLogRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ProductNoticeTemplateRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ProductOptionRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ProductRepository;
@@ -137,12 +156,20 @@ use Modules\Sirsoft\Ecommerce\Repositories\ShippingTypeRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\TempOrderRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\UserAddressRepository;
 use Modules\Sirsoft\Ecommerce\Seo\EcommerceSitemapContributor;
+use Modules\Sirsoft\Ecommerce\Services\Bridge\EcommerceCategoryDirectory;
+use Modules\Sirsoft\Ecommerce\Services\Bridge\EcommerceExchangeRateGateway;
+use Modules\Sirsoft\Ecommerce\Services\Bridge\EcommercePaymentGatewayBridge;
+use Modules\Sirsoft\Ecommerce\Services\Bridge\EcommercePaymentSampleProvisioner;
+use Modules\Sirsoft\Ecommerce\Services\Bridge\EcommercePriceFormatter;
+use Modules\Sirsoft\Ecommerce\Services\Bridge\EcommerceProductDirectory;
+use Modules\Sirsoft\Ecommerce\Services\Bridge\EcommerceProductProvisioner;
 use Modules\Sirsoft\Ecommerce\Services\CategoryImageService;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
 use Modules\Sirsoft\Ecommerce\Services\ContentMedia\EcommerceContentMediaService;
 use Modules\Sirsoft\Ecommerce\Services\ContentMedia\EcommerceContentMediaStore;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\ExportService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Services\ProductImageService;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewImageService;
@@ -169,15 +196,6 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
      */
     protected array $storageServices = [
         ProductReviewService::class,
-        // 클레임 첨부는 신청자 본인과 운영자만 볼 수 있는 권한 게이트 대상이라 공개 자산
-        // 디스크(CDN)에 올리지 않는다 — 직접 URL 은 서버 서빙 경로의 권한 검사를 우회한다
-        // (`storage-driver.md` "보안 전제": 완전 공개 자산 카테고리에만 공개 디스크 적용).
-        // 그래서 카테고리 배선이 아니라 기본 디스크를 주입한다. 저장 경로 접두사는 종전대로
-        // 서비스가 `put('images', …)` 로 넘기는 값이 정하므로 기존 행의 경로는 바뀌지 않는다.
-        ClaimAttachmentService::class,
-        // 본문 미디어는 미공개 상품이면 서명·관리자 게이트가 걸려 공개 자산 디스크에 올리지 않는다 (#883).
-        // 업로드·서빙·복제·정리·소유자 삭제가 모두 이 골격 서비스를 지나므로 기본 디스크는 여기 한 곳에서 받는다 (#887)
-        EcommerceContentMediaService::class,
     ];
 
     /**
@@ -194,6 +212,27 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         CategoryImageService::class => 'images',
         ProductImageService::class => 'images',
         ProductReviewImageService::class => 'images',
+        // 아래 셋은 권한 게이트 뒤 서버가 내려주는 비공개 원본이라 공개 자산 디스크(CDN)에 올리지 않는다 — 직접 URL 은
+        // 서버 서빙 경로의 권한 검사를 우회한다(`storage-driver.md` "보안 전제"). 관리자가 고른 「비공개 첨부 저장소」 디스크
+        // (「기본」이면 `modules`)를 따른다(#916). 저장 경로 카테고리는 서비스가 넘기는 값(`images`·`exports`)이 그대로 정하므로
+        // 기존 행의 경로는 바뀌지 않고, 기존 행은 행 disk 로 서빙·삭제한다.
+        // 클레임 첨부 — 신청자 본인과 운영자만 볼 수 있다
+        ClaimAttachmentService::class => AbstractModule::PRIVATE_ATTACHMENT_BINDING,
+        // 내보내기 파일 — 개인정보가 담길 수 있어 권한을 다시 보는 일회용 주소로만 내보낸다
+        ExportService::class => AbstractModule::PRIVATE_ATTACHMENT_BINDING,
+        // 본문 미디어 — 미공개 상품이면 서명·관리자 게이트가 걸린다(#883). 업로드·서빙·복제·정리·소유자 삭제가 모두 이 골격 서비스를 지난다(#887)
+        EcommerceContentMediaService::class => AbstractModule::PRIVATE_ATTACHMENT_BINDING,
+    ];
+
+    /**
+     * 모듈 캐시(CacheInterface)가 필요한 서비스 목록
+     *
+     * 내보내기 일회용 다운로드 토큰을 모듈 캐시 영역에 둔다 — 코어 도메인 캐시와 키가 섞이지 않는다.
+     *
+     * @var array<int, class-string>
+     */
+    protected array $cacheServices = [
+        ExportService::class,
     ];
 
     /**
@@ -227,8 +266,9 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         OrderReturnRepositoryInterface::class => OrderReturnRepository::class,
         OrderReturnOptionRepositoryInterface::class => OrderReturnOptionRepository::class,
         OrderShippingRepositoryInterface::class => OrderShippingRepository::class,
+        // 결제사 플러그인 계약(PaymentGatewayBridge) 구현 전용 — 조회·잠금·갱신 (#916)
+        PaymentGatewayRepositoryInterface::class => PaymentGatewayRepository::class,
         ProductInquiryRepositoryInterface::class => ProductInquiryRepository::class,
-        ProductLogRepositoryInterface::class => ProductLogRepository::class,
         ProductRepositoryInterface::class => ProductRepository::class,
         ProductImageRepositoryInterface::class => ProductImageRepository::class,
         ContentMediaRepositoryInterface::class => ContentMediaRepository::class,
@@ -252,6 +292,8 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         EcommerceUserProfileRepositoryInterface::class => EcommerceUserProfileRepository::class,
         MileageTransactionRepositoryInterface::class => MileageTransactionRepository::class,
         MileageBalanceRepositoryInterface::class => MileageBalanceRepository::class,
+        ExportRepositoryInterface::class => ExportRepository::class,
+        ExportDownloadRepositoryInterface::class => ExportDownloadRepository::class,
     ];
 
     /**
@@ -276,6 +318,8 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         PruneExpiredTempOrdersCommand::class,
         PrunePendingClaimImagesCommand::class,
         PruneTempProductImagesCommand::class,
+        PruneTempCategoryImagesCommand::class,
+        PruneExportsCommand::class,
         ReconcileMileageBalanceCommand::class,
     ];
 
@@ -306,6 +350,27 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         // 비대칭도 함께 생긴다. 같은 요청(작업) 안에서만 공유한다 — 쓰기 메서드가 모두 자기 캐시를
         // 무효화하므로 요청 안 공유는 안전하고, 작업 경계에서는 새로 만들어 저장된 설정을 다시 읽는다.
         $this->app->scoped(EcommerceSettingsService::class);
+
+        // 내보내기 유형·형식 레지스트리 — 확장 필터 훅을 요청(작업)당 한 번만 해석한다
+        $this->app->scoped(ExportTypeRegistry::class);
+        $this->app->scoped(ExportFormatRegistry::class);
+
+        // 다른 확장에 공개하는 계약(module.json public_api) — 구현은 내부 서비스·저장소에 위임만 한다 (#916)
+        $this->app->bind(ProductDirectory::class, EcommerceProductDirectory::class);
+        $this->app->bind(CategoryDirectory::class, EcommerceCategoryDirectory::class);
+        $this->app->bind(ExchangeRateGateway::class, EcommerceExchangeRateGateway::class);
+        $this->app->bind(PriceFormatter::class, EcommercePriceFormatter::class);
+        $this->app->bind(ProductProvisioner::class, EcommerceProductProvisioner::class);
+        $this->app->bind(PaymentSampleProvisioner::class, EcommercePaymentSampleProvisioner::class);
+
+        // 결제사 플러그인 계약 — 전용 저장소(조회·잠금·갱신, $repositories 에 바인딩)를 거친다.
+        // 묶음 하나를 singleton 으로 두고 하위 인터페이스는 같은 인스턴스를 가리킨다.
+        // 구현은 상태 없는 저장소만 붙잡고 서비스는 호출 때마다 해석하므로 singleton 이어도 설정 캐시를 붙잡지 않는다.
+        $this->app->singleton(PaymentGatewayBridge::class, EcommercePaymentGatewayBridge::class);
+        $this->app->alias(PaymentGatewayBridge::class, PaymentLookup::class);
+        $this->app->alias(PaymentGatewayBridge::class, OrderAccess::class);
+        $this->app->alias(PaymentGatewayBridge::class, ClaimPaymentLookup::class);
+        $this->app->alias(PaymentGatewayBridge::class, PaymentLifecycle::class);
     }
 
     /**
@@ -403,6 +468,20 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         foreach ($limits as $name => $perMinute) {
             RateLimiter::for($name, fn (Request $request) => Limit::perMinute($perMinute)
                 ->by((string) $request->ip())
+                ->response($this->tooManyRequestsResponse()));
+        }
+
+        // 내보내기 — 로그인한 운영자 단위로 센다(사무실 하나가 IP 를 공유해도 서로 막지 않게).
+        $userLimits = [
+            'sirsoft-ecommerce.export-estimate' => 60,
+            'sirsoft-ecommerce.export-request' => 5,
+            // 일회용 다운로드 주소 — 토큰을 추측하는 시도를 막는다(정상 사용은 파일당 1회)
+            'sirsoft-ecommerce.export-file' => 30,
+        ];
+
+        foreach ($userLimits as $name => $perMinute) {
+            RateLimiter::for($name, fn (Request $request) => Limit::perMinute($perMinute)
+                ->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip()))
                 ->response($this->tooManyRequestsResponse()));
         }
 

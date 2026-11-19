@@ -1,0 +1,17 @@
+feature: sso_provisioning_deferred_fields
+
+description: |
+  사람이 화면을 보지 않는 회원 생성(SCIM, 관리자 사전 등록과 CSV 가져오기, 로그인 시 자동 생성)은
+  운영자가 필수로 둔 회원 항목 때문에 실패하지 않고, 만든 회원에 「필수 항목 나중 입력」 표시를 남긴다.
+
+coverage_strategy: full
+
+axes:
+  path: [scim, preregister, jit]
+
+effects:
+  - provisioned_member_is_created_despite_required_fields
+  - provisioned_member_is_marked_deferred
+
+test_files:
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Provisioning/ProvisioningDeferredFieldsTest.php

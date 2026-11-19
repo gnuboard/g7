@@ -9,8 +9,8 @@
  * 되돌아가도록 fixture 가 원복을 담당한다. 되돌리지 못하면 이후 모든 로그인이 막히므로
  * 반드시 `mode: 'serial'` 로 한 워커에서만 실행한다.
  *
- * // @scenario controller=user,admin | two_factor=on | code=valid,invalid | resend=active
- * // @effects challenge_response_has_no_token, code_step_rendered_on_challenge, no_raw_typeerror_text, resend_cancels_previous_challenge, non_admin_two_factor_revokes_token
+ * 범위 요약: controller=user·admin, two_factor=on, code=valid·invalid, resend=active —
+ * 조합과 효과 귀속은 각 test 의 docblock 이 적는다 (파일 머리말 마킹은 메서드 단위 규율 밖).
  */
 import { test, expect, issueToken } from '../../fixtures/auth';
 import {
@@ -78,7 +78,8 @@ async function submitAndReadChallenge(
   submit: () => Promise<void>
 ): Promise<string> {
   const [response] = await Promise.all([
-    page.waitForResponse((r) => r.url().includes(urlPart) && r.request().method() === 'POST'),
+    // 경로 정확 비교 — 이메일 칸 onBlur 의 `POST /api/auth/login/discover` 응답이 먼저 오면 포함 판정이 그것을 잡는다.
+    page.waitForResponse((r) => new URL(r.url()).pathname === urlPart && r.request().method() === 'POST'),
     submit(),
   ]);
 
@@ -192,7 +193,7 @@ test('사용자 로그인 — 인증번호 다시 받기는 새 challenge 를 �
  * 새로고침 축은 잘못 저장된 토큰(`"undefined"`) 회귀도 함께 잡는다 — 그 값이 남으면 이후 요청이
  * 전부 401 이 되어 `/login?reason=session_expired` 로 튕겼다(공개 #133 의 두 번째 증상).
  *
- * // @scenario controller=user | two_factor=on | action=restart
+ * // @scenario controller=user, two_factor=on, action=restart
  * // @effects restart_resets_to_credential_step, init_actions_reset_two_factor_state
  */
 test('인증번호 단계 — 처음부터·새로고침·재진입 모두 1단계로 돌아온다', async ({ page }) => {
@@ -264,31 +265,29 @@ test('관리자 로그인 — 챌린지 응답이 서버 오류가 아니고 코
 });
 
 /**
- * @scenario controller=admin, two_factor=on, delivery=sent, code=valid, actor=non_admin
+ * 관리자 로그인은 관리자가 아닌 계정을 인증번호 발급 전에 거절한다(#40 R12 — 인증번호 메일도 보내지 않는다).
+ * 코드 확인 단계까지 가서 거절하던 이전 순서에서는 그 사이 발급된 토큰을 회수해야 했다 — 지금은 토큰도 challenge 도 없다.
+ *
+ * @scenario controller=admin, two_factor=on, actor=non_admin
  * @effects non_admin_admin_login_revokes_token
  */
-test('관리자 로그인 — 관리자가 아닌 계정은 코드 확인에 성공해도 거부되고 토큰이 남지 않는다', async ({ page }) => {
+test('관리자 로그인 — 관리자가 아닌 계정은 인증번호 단계 전에 거부되고 토큰이 남지 않는다', async ({ page }) => {
   await page.goto('/admin/login');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
 
-  const challengeId = await submitAndReadChallenge(page, '/api/auth/admin/login', async () => {
-    await page.fill('input[name="email"]', nonAdminEmail);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.click('#login_submit_button');
-  });
-
-  const codeInput = page.locator('#two_factor_code');
-  await expect(codeInput).toBeVisible({ timeout: 10_000 });
-  await codeInput.fill(plantTwoFactorCode(challengeId));
-
-  const [verifyResponse] = await Promise.all([
-    page.waitForResponse((r) => r.url().includes('/admin/login/two-factor') && r.request().method() === 'POST'),
-    page.locator('#login_two_factor_submit').click(),
+  await page.fill('input[name="email"]', nonAdminEmail);
+  await page.fill('input[name="password"]', PASSWORD);
+  const [response] = await Promise.all([
+    page.waitForResponse((r) => new URL(r.url()).pathname === '/api/auth/admin/login' && r.request().method() === 'POST'),
+    page.click('#login_submit_button'),
   ]);
 
-  expect(verifyResponse.status()).toBe(403);
+  expect(response.status()).toBe(403);
+  const body = await response.json();
+  expect(body?.data?.challenge_id, '거부된 관리자 로그인이 인증 요청을 발급했습니다').toBeFalsy();
+  expect(body?.data?.token, '거부된 관리자 로그인이 토큰을 발급했습니다').toBeFalsy();
 
-  // 코드 확인 시점에 발급된 토큰이 회수되지 않으면 유효한 세션이 남는다.
+  await expect(page.locator('#two_factor_code')).toHaveCount(0);
   const token = await page.evaluate(() => localStorage.getItem('auth_token'));
   expect(token, '거부된 로그인이 토큰을 남겼습니다').toBeFalsy();
   expect(page.url()).toContain('/admin/login');
@@ -416,7 +415,7 @@ test('공개 본인인증 화면으로는 로그인 challenge 를 소진할 수 
  * 입력을 남기는 것이 확정된 동작이다(레이아웃의 `loginTwoFactor` onError 는 code 를
  * 건드리지 않는다). 비우도록 바뀌면 아래 `toHaveValue` 가 red 가 된다.
  *
- * // @scenario controller=user | two_factor=on | code=invalid,valid
+ * // @scenario controller=user, two_factor=on, code=invalid, code=valid
  * // @effects invalid_code_retries_until_success
  */
 test('인증번호 단계 — 세 번 틀려도 입력이 남고 네 번째 정답으로 로그인된다', async ({ page }) => {
@@ -466,7 +465,7 @@ test('인증번호 단계 — 세 번 틀려도 입력이 남고 네 번째 정�
  * 로그인이 끝난 직후의 상태 — 2단계 흔적이 남으면 다음에 로그인 화면을 열었을 때
  * 비밀번호 단계가 아니라 코드 단계가 뜬다.
  *
- * // @scenario controller=user | two_factor=on | code=valid
+ * // @scenario controller=user, two_factor=on, code=valid
  * // @effects session_state_cleared_after_two_factor_success
  */
 test('인증 완료 직후 — 2단계 상태가 지워지고 사용자·토큰이 자리 잡는다', async ({ page }) => {
@@ -512,7 +511,7 @@ test('인증 완료 직후 — 2단계 상태가 지워지고 사용자·토큰�
  * 두 번 나가면 두 번째가 이미 소진된 challenge 를 확인하려다 실패해, 로그인은 됐는데
  * 오류 문구가 함께 뜨는 상태가 된다.
  *
- * // @scenario controller=user | two_factor=on | code=valid
+ * // @scenario controller=user, two_factor=on, code=valid
  * // @effects double_submit_sends_single_verify_request
  */
 test('인증번호 단계 — 확인 버튼을 두 번 눌러도 확인 요청은 한 번만 나간다', async ({ page }) => {

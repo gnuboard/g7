@@ -340,11 +340,12 @@ plugins/_bundled/<id>/
 ├── LICENSE                      # MIT
 ├── assets/icon.svg              # 확장 아이콘(관례, 선택) — 정사각·100KB 이하
 ├── config/settings/defaults.json      # 설정 기본값 + frontend_schema
+├── lang/{ko,en}/*.php           # 서버 문구(선택) — __('<id>::messages.x')
 ├── resources/
 │   ├── extensions/              # layout_extensions JSON
-│   ├── lang/{ko,en}.json        # 프론트엔드 다국어 (JSON 만 — 백엔드 PHP 다국어 없음)
+│   ├── lang/{ko,en}.json        # 화면 문구 — $t:<id>.x
 │   ├── layouts/admin/plugin_settings.g7.html  # 설정 UI 소스 SSoT (유일한 완전 레이아웃) — 필수
-│   └── layouts/admin/plugin_settings.json     # 위 소스의 굽기 산출(layout:decompile --sync) — 필수
+│   └── layouts/admin/plugin_settings.json     # 굽기 산출(layout:decompile --sync) — 권장
 ├── src/
 │   ├── Listeners/[Name]Listener.php  # 훅 리스너 — 필수, plugin.php getHookListeners() 에 등록
 │   └── Services/
@@ -366,7 +367,7 @@ plugins/_bundled/<id>/
   "version": "0.1.0",
   "license": "MIT",
   "description": { "ko": "[플러그인 설명]", "en": "[Plugin description]" },
-  "g7_version": ">=7.0.0-alpha.1",
+  "g7_version": ">=[현재 코어 버전]",
   "dependencies": { "modules": {}, "plugins": {} },
   "integrations": { "modules": {}, "plugins": {} },
   "github_url": null,
@@ -637,8 +638,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 다른 확장과는 훅(코어 계약 훅·상대 확장이 문서화한 훅 키)으로 협력하고, 이름으로 참조(식별자·네임스페이스·API 경로·번역 키)하는 확장은 `plugin.json` `dependencies`·`integrations` 에 선언한다 — 책임 경계.
 - 완전한 레이아웃은 등록하지 않는다 — `layout_extensions` 만 사용(예외: `plugin_settings`).
 - 설정 UI 와 훅 리스너는 골격의 필수 산출물이다 — 빈 `getHookListeners()` 와 설정 화면 없는 플러그인을 완료로 보고하지 않는다.
-- 설정 UI 소스 SSoT 는 `plugin_settings.g7.html` 이다. `AbstractPlugin::getSettingsLayout()` 은 `.g7.html` → 짝 `.json` 순으로 실재하는 첫 파일을 읽지만(`layoutSourceCandidates`), 편집기·검증 소비처는 짝 `.json` 을 읽으므로 굽기(`layout:decompile --sync`)를 생략하지 않는다.
-- 다국어는 `resources/lang/*.json` 만 있다(백엔드 PHP 다국어 없음).
+- 설정 UI 소스 SSoT 는 `plugin_settings.g7.html` 이다. `AbstractPlugin::getSettingsLayout()` 은 `.g7.html` → 짝 `.json` 순으로 첫 파일을 읽지만(`layoutSourceCandidates`), 편집기·검증은 짝 `.json` 을 읽으므로 굽기를 생략하지 않는다.
+- 다국어: 화면은 `resources/lang/*.json`, 서버 문구는 `lang/{ko,en}/*.php`.
 - `Storage::disk()` 직접 호출 금지 → `StorageInterface`.
 - Filter 훅 리스너는 `getSubscribedHooks()` 옵션에 `'type' => 'filter'` 를 명시한다(미지정 시 반환값 무시). `Plugin::getHooks()` 는 발행 훅 선언이지 구독이 아니다.
 - 설정 저장 `apiCall` 에는 `onError` 를 둔다 — 저장 실패가 화면에 보이지 않으면 사용자는 성공한 줄 안다. 오류 바인딩은 `{{error.message}}`·`{{error.errors}}`(`$error` 접두사는 엔진이 채우지 않는다).
@@ -711,7 +712,8 @@ templates/_bundled/<id>/
     "composite": ["admin-header", "admin-sidebar", "admin-footer", "data-grid", "modal", "toast", "pagination", "page-header", "loading-spinner", "empty-state", "breadcrumb", "card", "dropdown"],
     "layout": ["container", "flex", "grid", "section"]
   },
-  // 아이콘은 assets/icon.svg 관례로 자동 감지된다. 다른 경로를 쓸 때만 "icon": "assets/brand/mark.svg" 를 적는다.
+  // 아이콘: assets/icon.svg 자동 감지(아니면 "icon" 필드)
+  "expose": ["scroll_restoration","errorHandling","error_config"],
   "error_config": {
     "layouts": { "401": "401", "403": "403", "404": "404", "500": "500", "503": "503", "maintenance": "maintenance" }
   },
@@ -1016,4 +1018,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 베이스 레이아웃에 전역 호스트(`toast`)를 둔다. 독립 레이아웃도 같은 블록을 직접 둔다.
 - Font Awesome 6.x 는 `fa-solid` 접두사(`fas` 금지). `icon` 등록 시 `externals` Font Awesome style 항목 필수.
 - `CHANGELOG.md` 필수. 작업은 `_bundled` 에서만 하고 활성 디렉토리는 직접 수정하지 않는다.
+- (선택, 코어 7.2.0+) 템플릿 환경설정 — 운영자가 바꿀 테마 옵션이 있으면 `config/settings/defaults.json` 하나를 둔다 — 모듈 설정과 같은 섹션 구조(`_meta.categories`·`sections`·`defaults.{섹션}`·`schema.{섹션}.{키}`·`frontend_schema.{섹션}` 2단 노출). 설정 화면은 템플릿이 공급한다(`templates/{id}/settings/template_settings.g7.html` — `layouts/` 밖 — + 묶음 `dist/settings/*` + `components.settings.json`, `layout:decompile --sync` 짝 `.json`). 칸 종류 13가지(글자·긴 글·숫자·켜기·선택·색·url·link·이메일·언어별·목록·첨부·이미지), 표준 키 `branding.favicon`·`branding.accent`·`branding.color_scheme_default` 는 코어가 읽는다. 레이아웃은 `{{_global.templateSettings?.섹션?.키 ?? 기본값}}`, `templates/{id}/editor-spec/sampleGlobal.json` 에 `templateSettings` 기본값. 사이트 이름·로고·사업자 정보처럼 코어·모듈이 가진 값은 두지 않는다. 라벨은 `$t:settings.*`. 형식·규칙은 `docs/extension/template-settings.md`, 최소 예는 hello 템플릿 2종, 전체 예는 sirsoft-basic.
 - 샘플 `templates/_bundled/gnuboard7-hello_admin_template/`(Basic 8 + 에러 6종), `gnuboard7-hello_user_template/`(홈 + Memo 리스트). 페이지가 N 개면 `layouts/` 를 N 배로 확장한다.

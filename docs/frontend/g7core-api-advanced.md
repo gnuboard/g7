@@ -86,7 +86,7 @@ const message = G7Core.t('admin.users.pagination_info', {
 
 ### 컴포넌트에서 t 함수 선언 패턴
 
-> 상세 내용: [components.md](components.md#6-다국어-번역-g7coret)
+> 상세 내용: [components.md](components.md#다국어-처리-g7coret)
 
 ```tsx
 // 컴포넌트 파일 상단에 선언
@@ -186,8 +186,11 @@ await G7Core.dispatch({
 |--------|------|--------|
 | `on(eventName, callback)` | 이벤트 구독 | 구독 해제 함수 |
 | `emit(eventName, data?)` | 이벤트 발생 | `Promise<any[]>` |
-| `off(eventName)` | 특정 이벤트 리스너 제거 | `void` |
-| `clear()` | 모든 리스너 제거 | `void` |
+| `off(eventName, callback)` | 그 콜백의 구독만 해제 (engine-v1.94.0) | `void` |
+| `off(eventName)` | 그 이벤트의 구독 **전부** 제거 — 폐지 예정, 구독이 있으면 경고 | `void` |
+| `clear()` | 모든 이벤트의 구독 제거 — 구독이 있으면 경고 | `void` |
+
+> **콜백 없는 `off(eventName)`·`clear()` 는 폐지 예정입니다 (engine-v1.94.0).** 같은 이벤트를 다른 컴포넌트·확장도 구독하고 있으면 그 구독까지 끊깁니다. 지금은 구독이 1개 이상일 때 콘솔에 `[G7] componentEvent.off("…") 가 콜백 없이 호출되어 구독 N개를 모두 지웠습니다` 경고를 내고 종전대로 모두 지웁니다. 자기 구독은 `on()` 이 돌려준 해제 함수나 `off(eventName, callback)` 으로 지우세요. `off(eventName, callback)` 의 `callback` 은 `on()` 에 넘긴 것과 같은 함수 참조여야 합니다.
 
 ### 사용 예시
 
@@ -204,14 +207,17 @@ await G7Core.componentEvent.emit('fileSelected', { file: selectedFile });
 const results = await G7Core.componentEvent.emit('triggerUpload:logo_uploader');
 // results: 모든 리스너의 반환값 배열
 
-// 구독 해제
+// 구독 해제 (권장)
 unsubscribe();
 
-// 특정 이벤트의 모든 리스너 제거
-G7Core.componentEvent.off('fileSelected');
+// 콜백 참조로 해제 — 같은 이벤트의 다른 구독자는 그대로 받는다 (engine-v1.94.0)
+const onSelected = (data) => console.log(data.file);
+G7Core.componentEvent.on('fileSelected', onSelected);
+G7Core.componentEvent.off('fileSelected', onSelected);
 
-// 모든 리스너 제거
-G7Core.componentEvent.clear();
+// ⚠️ 폐지 예정 — 다른 컴포넌트·확장의 구독까지 모두 지우고 경고를 낸다
+// G7Core.componentEvent.off('fileSelected');
+// G7Core.componentEvent.clear();
 ```
 
 ### 이벤트 네이밍 규칙
@@ -578,6 +584,22 @@ const token = G7Core.api.isSameOriginUrl(endpoint) ? G7Core.api.getToken() : nul
 
 확장이 `fetch` 로 직접 요청하며 `getToken()` 을 실을 때도 같은 원칙을 따른다. 대상 주소가 레이아웃 prop 이나 응답 본문처럼 바깥에서 정해지는 값이면 먼저 `isSameOriginUrl(url)` 로 확인한다. 이 판정은 `apiCall` 이 토큰을 실을지 정할 때와 같은 기준이다(engine-v1.73.0).
 
+**비회원 401 — 화면에 머문다 (engine-v1.88.2, 코어 7.1.5)**: 토큰 없이 보낸 요청이 401 로 거부되면 세션 만료가 아니라 비회원이 권한 없는 기능을 누른 것이다. `G7Core.api` 는 이 경우 토큰 갱신·로그인 화면 이동을 하지 않고 오류를 그대로 reject 한다. 확장 핸들러는 `G7Core.api.isAnonymousUnauthorized(error)`(상태 401 이고 요청에 토큰을 싣지 않았으면 `true`)로 이 경우를 가려 안내만 띄우고 입력을 그대로 둔다. 공용 안내 문구 키는 `core.errors.login_required_for_action` 이다.
+
+```typescript
+try {
+  await G7Core.api.post('/api/modules/vendor-module/uploads', formData);
+} catch (error) {
+  if (G7Core.api.isAnonymousUnauthorized(error)) {
+    G7Core.toast.warning(G7Core.t('core.errors.login_required_for_action'));
+    return; // 쓰던 내용은 그대로 둔다
+  }
+  throw error;
+}
+```
+
+토큰을 실은 요청의 401(로그인한 사람의 세션 만료)은 종전처럼 토큰 갱신을 시도하고, 실패하면 로그인 화면으로 옮긴다.
+
 ---
 
 ## WebSocket (G7Core.websocket)
@@ -588,12 +610,20 @@ const token = G7Core.api.isSameOriginUrl(endpoint) ? G7Core.api.getToken() : nul
 
 | 메서드 | 설명 | 반환값 |
 |--------|------|--------|
-| `subscribe(channel, event, callback, options?)` | 채널/이벤트 구독 | 구독 키 (string) |
-| `unsubscribe(subscriptionKey)` | 구독 해제 | `void` |
-| `leaveChannel(channel)` | 채널 떠나기 | `void` |
+| `subscribe(channel, event, callback, options?)` | 채널/이벤트 구독 | 이 구독의 고유 키 `channel:event#n` (string) |
+| `unsubscribe(subscriptionKey)` | 그 키의 구독만 해제 | `void` |
+| `leaveChannel(channel)` | 채널 떠나기 — 채널명이 정확히 같은 구독 전부 해제 | `void` |
 | `disconnect()` | 연결 종료 | `void` |
 | `isInitialized()` | 초기화 상태 확인 | `boolean` |
-| `getSubscriptionCount()` | 현재 구독 수 | `number` |
+| `getSubscriptionCount()` | 현재 구독(콜백) 수 | `number` |
+
+### 구독 키와 같은 채널·이벤트 다중 구독 (engine-v1.94.0)
+
+- 같은 `channel`·`event` 를 여러 화면·확장이 구독해도 각자 수신합니다. 브로드캐스트 리스너는 채널·이벤트당 하나만 걸리고, 이벤트가 오면 등록된 콜백을 모두 부릅니다. 한 콜백이 예외를 던져도 다른 구독자는 받습니다.
+- `subscribe()` 는 구독마다 다른 키(`admin.dashboard:stats.updated#3` 형태)를 돌려줍니다. 키는 형식에 기대지 말고 받은 그대로 보관했다가 `unsubscribe()` 에 넘기세요. 같은 채널·이벤트의 마지막 구독이 해제될 때만 브로드캐스트 리스너가 해제됩니다.
+- `getSubscriptionCount()` 는 구독(콜백) 단위로 셉니다. 같은 채널·이벤트를 둘이 구독하면 2입니다.
+- `leaveChannel(channel)` 은 채널명이 **정확히 같은** 구독만 정리합니다(종전에는 `channel:` 로 시작하는 키를 모두 지워 `a` 를 떠나면 `a:b` 채널 구독도 지워졌습니다). 같은 채널을 다른 화면·확장도 듣고 있으면 그 구독도 함께 끊기므로, 자기 구독만 정리할 때는 `unsubscribe(key)` 를 쓰세요.
+- **폐지 예정**: `unsubscribe('channel:event')` 처럼 `#번호` 없는 키를 직접 만들어 넘기면 그 채널·이벤트의 구독을 **모두** 지우고 콘솔에 `[G7] WebSocket 구독 해제에 채널·이벤트 키(…)를 넘겨 …` 경고를 냅니다. engine-v1.94.0 이전에는 `subscribe()` 가 이 형식을 돌려줬으므로, 키를 직접 조립하던 코드는 `subscribe()` 의 반환값을 쓰도록 바꾸세요.
 
 ### 사용 예시
 
@@ -615,10 +645,10 @@ const key = G7Core.websocket.subscribe(
   { presence: true }
 );
 
-// 구독 해제
+// 구독 해제 — subscribe 가 돌려준 키를 그대로 넘긴다 (같은 채널·이벤트의 다른 구독은 유지)
 G7Core.websocket.unsubscribe(subscriptionKey);
 
-// 채널 떠나기 (해당 채널의 모든 구독 해제)
+// 채널 떠나기 (채널명이 정확히 같은 모든 구독 해제 — 다른 화면·확장의 구독 포함)
 G7Core.websocket.leaveChannel('admin.dashboard');
 
 // 연결 종료
@@ -699,8 +729,18 @@ const unsubscribe = G7Core.TransitionManager.subscribe((isPending) => {
 ### G7Core.useTransitionState (React Hook)
 
 ```tsx
-const { isPending } = G7Core.useTransitionState();
+const { isTransitioning, refreshingSources } = G7Core.useTransitionState();
+
+// 값을 둔 채 다시 받는 중인 데이터 소스만 흐리게
+const isRefreshing = refreshingSources?.has('products') === true;
 ```
+
+| 값 | 타입 | 뜻 |
+|---|---|---|
+| `isTransitioning` | `boolean` | 페이지 전환 중(데이터 로딩 중)인지 |
+| `refreshingSources` | `ReadonlySet<string>` | 이미 받은 값을 그대로 둔 채 다시 받는 중인 데이터 소스 id(같은 화면 쿼리 갱신 등). 없으면 빈 집합 (engine-v1.82.0, 코어 7.1.1) |
+
+데이터 소스 오류 처리에서는 `{{error.refetch}}` 로 처음 불러오기 실패와 다시 받기 실패를 가른다([data-sources-advanced.md](data-sources-advanced.md)).
 
 ### G7Core.updateQueryParams
 
@@ -1054,8 +1094,8 @@ declare global {
       componentEvent: {
         on: (eventName: string, callback: (data?: any) => void | Promise<any>) => () => void;
         emit: (eventName: string, data?: any) => Promise<any[]>;
-        off: (eventName: string) => void;
-        clear: () => void;
+        off: (eventName: string, callback?: (data?: any) => void | Promise<any>) => void; // callback 없는 호출은 폐지 예정
+        clear: () => void; // 폐지 예정
       };
 
       // 이벤트 헬퍼
@@ -1093,8 +1133,8 @@ declare global {
 
       // WebSocket
       websocket: {
-        subscribe: (channel: string, event: string, callback: (data: any) => void, options?: any) => string;
-        unsubscribe: (subscriptionKey: string) => void;
+        subscribe: (channel: string, event: string, callback: (data: any) => void, options?: any) => string; // 'channel:event#n'
+        unsubscribe: (subscriptionKey: string) => void; // subscribe 반환 키. '#n' 없는 키는 폐지 예정
         leaveChannel: (channel: string) => void;
         disconnect: () => void;
         isInitialized: () => boolean;
@@ -1111,7 +1151,7 @@ declare global {
       shallowArrayEqual: <T>(a: T[], b: T[]) => boolean;
       shallowObjectEqual: <T extends Record<string, any>>(a: T, b: T) => boolean;
       useResponsive: () => { width: number; isMobile: boolean; isTablet: boolean; isDesktop: boolean; matchedPreset: 'mobile' | 'tablet' | 'desktop' };
-      useTransitionState: () => TransitionState;
+      useTransitionState: () => { isTransitioning: boolean; refreshingSources?: ReadonlySet<string> };
       useTranslation: () => { t: TranslationFunction };
 
       // 방문자 동의 (engine-v1.78.0+) — 사용자 템플릿에서만 런타임이 있다

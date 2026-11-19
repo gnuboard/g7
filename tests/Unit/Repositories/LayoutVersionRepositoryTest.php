@@ -824,7 +824,7 @@ class LayoutVersionRepositoryTest extends TestCase
      * restoreVersion 은 레이아웃 lock_version 을 올린다 — 복원 직전 화면을 열어 둔 다른 편집기가
      * 복원 결과를 409 없이 덮지 못하게 한다.
      *
-     * @effects layout_version_repository_behavior_unchanged_after_trait_extraction
+     * @effects restore_version_increments_lock_version_for_layout_and_extension, layout_version_repository_behavior_unchanged_after_trait_extraction
      *
      * @return void 반환값 없음
      */

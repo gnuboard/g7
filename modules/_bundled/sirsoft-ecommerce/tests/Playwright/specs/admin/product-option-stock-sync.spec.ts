@@ -2,12 +2,9 @@
  * 옵션 생성/추가/삭제 시 원 상품 재고 자동 동기화 (skeleton, placeholder).
  *
  * @scenario mp-option-stock-sync
- * @effects product_stock_synced_on_generate,
- *          product_stock_synced_on_add_row,
- *          product_stock_synced_on_delete,
- *          product_stock_synced_on_field_update,
- *          has_options_set_on_generate,
- *          has_options_cleared_on_delete_all
+ * 효과 요약(마커 아님 — 평문): 일괄 생성과 삭제 직후 원 상품 재고가 옵션 합계로 갱신된다. 효과 마킹은
+ *   각 테스트 주석에 있다. 행 추가, 재고 필드 갱신, has_options 설정과 해제는 아래 e2e:allow 의 핸들러
+ *   단위 테스트가 잰다.
  *
  * 배경: 옵션 생성(generateOptions)·행 추가(addOptionRow)·삭제(deleteOption) 시 원 상품
  *   재고(form.stock_quantity)가 활성 옵션 재고 합계로 즉시 갱신되지 않아, 사용자가 옵션 재고를
@@ -43,6 +40,8 @@ import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 const CREATE_URL = '/admin/ecommerce/products/create';
 
 test.describe.skip('옵션 목록 변경 시 상품 재고 자동 동기화 (placeholder — data-testid 보강 후 활성화)', () => {
+  // @scenario option_change=generate
+  // @effects product_stock_synced_on_generate
   test('옵션 2개 일괄 생성 시 원 상품 재고가 옵션 재고 합계(2)로 즉시 표시된다', async ({
     page,
     productManageToken,
@@ -59,6 +58,8 @@ test.describe.skip('옵션 목록 변경 시 상품 재고 자동 동기화 (pla
     await expect(page.getByTestId('product-total-stock')).toHaveValue('2', { timeout: 10_000 });
   });
 
+  // @scenario option_change=delete
+  // @effects product_stock_synced_on_delete
   test('옵션 삭제 시 원 상품 재고가 남은 활성 옵션 합계로 재계산된다', async ({
     page,
     productManageToken,

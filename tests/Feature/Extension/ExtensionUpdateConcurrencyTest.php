@@ -413,7 +413,7 @@ class ExtensionUpdateConcurrencyTest extends TestCase
 
         try {
             $file = new \Illuminate\Http\UploadedFile($zipPath, $identifier.'.zip', 'application/zip', null, true);
-            app(ModuleService::class)->installFromZipFile($file);
+            app(ModuleService::class)->installFromZipFile($file, new \App\Extension\Integrity\PackageIntegrityOptions(true));
             $this->fail('같은 확장 작업이 진행 중인데 ZIP 설치가 진행됐다');
         } catch (ExtensionOperationInProgressException $e) {
             $this->assertSame('install', $e->operation);

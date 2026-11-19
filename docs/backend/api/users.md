@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Users 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -29,7 +29,7 @@
 | --- | --- | --- | --- | --- | --- |
 | page | query | integer | 아니오 | min 1 | 조회할 페이지 번호 (1부터 시작) |
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
-| filters | query | array | 아니오 | max 10 | 검색어 조건 목록 — `filters[N][field]`(`all`·`name`·`nickname`·`email`·`contact`·`identifier`·`admin_memo`) / `filters[N][value]`(max 255) / `filters[N][operator]`(`like`·`eq`·`starts_with`·`ends_with`) |
+| filters | query | array | 아니오 | max 10 | 검색어 조건 목록 — `filters[N][field]`(`all`·`name`·`nickname`·`email`·`contact`·`identifier`·`admin_memo`, 그리고 운영자가 「회원 검색」을 켠 추가 항목은 `custom:{키}`. 고를 수 있는 값은 응답 `member_fields.search_fields` 가 준다. 켜지 않은 항목의 키를 보내면 422) / `filters[N][value]`(max 255) / `filters[N][operator]`(`like`·`eq`·`starts_with`·`ends_with`) |
 | status[] | query | array | 아니오 | `active`, `inactive`, `blocked`, `withdrawn`, `pending_verification`, `dormant` | 계정 상태 (여럿이면 OR, 여섯 전부는 조건 없음) |
 | role_ids[] | query | array\<integer\> | 아니오 | 존재하는 역할 id | 권한 그룹 — 고른 역할 중 하나라도 가진 회원 |
 | admin_scope | query | string | 아니오 | `all`, `admin`, `member` | 관리자 여부 (admin = 슈퍼관리자 또는 관리자 권한이 든 역할 보유) |
@@ -49,6 +49,8 @@
 | country | query | string | 아니오 | 영문 2자리 | 국가 코드 (대소문자 무관) |
 | email_verified | query | string | 아니오 | `all`, `verified`, `unverified` | 이메일 인증 여부 |
 | identity_verified | query | string | 아니오 | `all`, `verified`, `unverified` | 본인인증 완료 여부 |
+| nickname_duplicate | query | boolean | 아니오 | `true`, `false`, `1`, `0` | 닉네임이 다른 회원과 겹치는 회원만 (전각과 반각, 대문자와 소문자, 공백 차이는 같은 닉네임으로 본다) |
+| required_missing | query | boolean | 아니오 | `true`, `false`, `1`, `0` | 필수 항목이 비어 있는 회원만. 요구하는 필수 항목이 없으면 결과는 0건이다 |
 | ext_filters[] | query | array\<string\> | 아니오 | max 20, 원소 `{확장id}.{키}={값}` | 모듈·플러그인이 더한 필터 값 채널 — 서버가 `ext.{확장id}.{키}` 로 펴고 확장이 규칙·조건을 건다 |
 | sort_by | query | string | 아니오 | `created_at`, `name`, `email`, `last_login_at`, `status`, `language`, `country` | 정렬 기준 필드명 |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (asc 오름차순 / desc 내림차순) |
@@ -67,6 +69,8 @@ Authorization: Bearer {YOUR_TOKEN}
 **응답 필드** (`data` 내부)
 
 _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
+
+`data.member_fields` 는 목록 화면이 운영자 추가 항목으로 그릴 열과 검색 대상이다: `columns[]`(`key`, `field` 는 행에서 값을 읽는 경로 `custom_fields.{키}`, `header` 는 항목 이름)와 `search_fields[]`(`value` 는 검색 대상 값 `custom:{키}`, `label` 은 항목 이름).
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
@@ -87,6 +91,9 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | roles | array | `[{"id":1,"identifier":"admin","name":"관리자"},{"id":892,"id…` | 사용자에게 부여된 역할 목록 (원소: id/identifier/name — 역할 관계 파생) |
 | email_verified_at | string | `2026-08-04 16:57:08` | email verified 일시 |
 | identity_verified_at | null | `null` | 최종 본인인증 성공 일시 (열 선택기의 「본인인증일」) |
+| custom_fields | object | `{"job":"직장인"}` | 운영자가 「회원 목록 열」로 켠 추가 항목의 보기용 글자 (`항목 키: 글자`). 켠 항목이 없으면 이 키가 없다 |
+| pending_required_fields | array | `[{"key":"job","label":"직업"}]` | 비어 있는 필수 항목 (`key`, `label`). 없으면 빈 배열. 「기존 회원에게도 입력 요구」를 켠 필수 항목이 대상이고, 필수 항목을 건너뛰고 만들어진 회원은 필수 항목 전부가 대상이다 |
+| display_name | string\|null | `길동이` | 사이트 기본 영역에서 보이는 이름 (「보이는 이름」 열) |
 | last_login_at | null | `null` | last login 일시 |
 | created_at | string | `2026-08-04` | 생성 일시 |
 | is_owner | boolean | `false` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
@@ -220,6 +227,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 관리자 사용자 관리 화면(`admin_user_list.g7.html`)의 목록을 제공합니다. `filters` 로 검색어 다중 검색(대상 7종, operator: like, eq, starts_with, ends_with — `contact` 는 휴대폰·전화 OR, `identifier` 는 숫자면 회원번호·UUID 면 고유ID 정확 일치, `admin_memo` 는 연산자와 무관하게 포함 검색, 「전체」는 이름·닉네임·이메일·휴대폰·전화 + 회원번호/고유ID 정확 일치이며 관리자 메모는 제외; LIKE 검색어의 `%`·`_` 는 글자 그대로 찾는다), 필터 12축(위 표), `date_filter`(all/week/month/custom)와 `start_date`/`end_date` 로 가입 기간 필터, `sort_by`/`sort_order` 로 정렬한다. 필터끼리는 AND, 다중선택 값끼리는 OR 이다. 날짜 경계는 시작일 0시 ~ 종료일 하루 끝까지다. 확장 필터(`ext_filters[]`)는 코어 조건을 다 건 뒤에 적용되어 결과를 더 좁히기만 한다. 응답은 `data.data[]`(항목별 순번 `number` + 요약 필드)와 `data.pagination`(페이지 정보)에 더해 `data.statistics`(통계)와 `data.abilities`(컬렉션 레벨 권한)를 함께 반환한다. 기본값은 `per_page=15`, `page=1`, `sort_by=created_at`, `sort_order=desc`, `date_filter=all` 이다.
@@ -235,10 +244,12 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| name | body | string | 예 | max 255 | 대상의 이름/명칭 |
-| nickname | body | string | 아니오 | max 50 | 닉네임 |
-| email | body | email | 예 | max 255 | 이메일 주소 |
-| password | body | string | 예 | 보안 설정의 작성 규칙 | 비밀번호 — 관리자가 정해 준 비밀번호라 재사용 검사를 하지 않고, 회원은 다음 로그인 때 바꿔야 한다(#736) |
+| name | body | string | 항목 설정에 따름 (기본값 예) | max 255 | 이름. 회원 항목이라 운영자가 환경설정 > 회원에서 사용과 필수를 정한다. 기본 설정은 사용, 필수다 |
+| nickname | body | string | 항목 설정에 따름 (기본값 아니오) | max 50 | 닉네임. 닉네임 정책(중복 금지, 금지어)에 걸리면 422. 관리자 저장은 변경 주기의 제한을 받지 않는다 |
+| custom_fields.{키} | body | 항목 유형에 따름 | 항목 설정에 따름 | 항목 설정에 따름 | 운영자가 추가한 회원 항목의 값. 범위가 관리자만 수정, 관리자만 열람인 항목도 받는다. 파일, 이미지 항목은 이 본문이 아니라 항목 파일 API 로 올린다. 폼 경로와 오류 키는 폼 항목 API 의 `fields[].name` 이다 |
+| email | body | email | 예 | max 255 | 이메일 주소. 항목이 아닌 고정 칸이라 늘 필수다 |
+| create_without_password | body | boolean | 아니오 | — | 비밀번호 없이 만들기(7.2.0 — 외부 인증 전용 회원). 참이면 `password` 를 보내면 422(`prohibited`), 회원은 `has_password=false` 로 만들어진다 |
+| password | body | string | `create_without_password` 가 거짓이면 예 | 보안 설정의 작성 규칙 | 비밀번호 — 관리자가 정해 준 비밀번호라 재사용 검사를 하지 않고, 회원은 다음 로그인 때 바꿔야 한다(#736) |
 | password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 개별 설정 (따름·적용·제외, 미지정 시 따름 — #736) |
 | language | body | string | 아니오 | `ko`, `en` | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
@@ -264,6 +275,8 @@ HTTP/1.1 200
 | third_party_consent | body | boolean | 아니오 | — | 제3자 정보 제공 동의 여부 (marketing 플러그인 법적 동의 항목) |
 | info_disclosure | body | boolean | 아니오 | — | 개인정보 이용 안내 동의 여부 (marketing 플러그인 법적 동의 항목) |
 
+> 이름, 닉네임, 언어, 국가, 시간대, 연락처, 주소, 서명, 자기소개와 운영자 추가 항목은 회원 항목입니다. 받는 키와 필수 여부는 운영자의 회원 항목 설정에서 오고, 이 표의 필수 칸은 기본 설정 기준입니다. 지금 사이트가 받는 항목은 `GET /api/admin/users/form-fields` 가 알려 줍니다. 회원 항목을 그리는 관리자 화면은 항목 응답의 `fields_version` 을 이 요청에 싣습니다(회원 항목을 아는 화면이라는 표식이고, 버전을 대조하지 않아 409 를 내지 않습니다). 싣지 않은 요청은 회원 항목을 모르는 옛 관리자 화면(7.1.x 템플릿)으로 보고, 운영자 추가 항목과 확장이 선언한 항목의 필수 규칙을 값을 보냈을 때만 겁니다. 그렇게 필수 항목을 건너뛰고 만든 회원에게도 추가 정보 입력 대기 표시를 남기지 않습니다(빈 항목은 템플릿을 7.2.0 으로 올린 뒤 운영자가 채웁니다). 형식 규칙과 기본 항목 규칙은 그대로입니다(7.1.x 관리자 폼은 기본 항목을 모두 그렸습니다).
+>
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.user.create_validation_rules`).
 
 **요청 예시**
@@ -338,6 +351,9 @@ _단건 응답: `data` 객체의 필드 (생성된 사용자 — `UserResource::
 | bio | string\|null | `null` | 자기소개 |
 | last_login_at | string\|null | `null` | 마지막 로그인 일시 (신규 생성 시 null) |
 | email_verified_at | string\|null | `null` | 이메일 인증 일시 (미인증 시 null) |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| locked_fields | array | `[]` | 외부 인증 확장이 관리하는 칸 이름(7.2.0 — `core.user.locked_fields`, 허용 이름 `name`·`nickname`·`mobile`·`phone`·`language`·`email`). 이 칸을 다른 값으로 보내면 422 `user.field_locked` |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string\|null | `Asia/Seoul` | 사용자 시간대 |
 | created_at | string | `2026-07-08 10:41:24` | 생성 일시 |
 | updated_at | string | `2026-07-08 10:41:24` | 최종 수정 일시 |
@@ -403,9 +419,11 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
-관리자가 새 사용자를 생성합니다. `name`, `email`, `password`(보안 설정의 작성 규칙, `password_confirmation` 확인 필수), 그리고 역할이 필수이다 — 역할은 `roles`(객체 배열 `[{id}]`) 또는 `role_ids`(id 배열) 중 하나로 지정하며 둘 다 보내면 `role_ids` 가 우선한다. `language`(미지정 시 `ko`), `status`(미지정 시 `active`), 연락처/주소/자기소개 등은 선택 항목이다. 성공 시 201 과 함께 생성된 사용자를 `UserResource` 형태로 반환한다. `notify_*`/`marketing_consent`/`third_party_consent`/`info_disclosure`/`email_subscription` 파라미터는 확장(sirsoft-marketing)이 검증 규칙을 주입한 필드로, 상세는 해당 확장 문서를 참조한다.
+관리자가 새 사용자를 생성합니다. 고정 필수는 `email` 과 `password`(보안 설정의 작성 규칙, `password_confirmation` 확인 필수. `create_without_password` 를 켜면 받지 않는다)다. `name` 은 회원 항목이라 운영자의 항목 설정을 따르고 기본 설정이 필수다. 운영자가 이름의 필수를 풀거나 사용을 끄면 이름 없이 만들 수 있다. 역할은 `roles`(객체 배열 `[{id}]`) 또는 `role_ids`(id 배열) 중 하나로 지정하며 둘 다 보내면 `role_ids` 가 우선하고, 생략하거나 비워 보내면 기본 역할(`user`)이 배정된다. `language`(미지정 시 `ko`), `status`(미지정 시 `active`)와 연락처, 주소, 자기소개 같은 그 밖의 회원 항목도 항목 설정의 사용 여부와 필수 여부를 따른다. 운영자 추가 항목은 `custom_fields.{키}` 로 보내고, 파일 항목은 회원을 만든 뒤 항목 파일 API 로 올린다. 성공 시 201 과 함께 생성된 사용자를 `UserResource` 형태로 반환한다. `notify_*`/`marketing_consent`/`third_party_consent`/`info_disclosure`/`email_subscription` 파라미터는 확장(sirsoft-marketing)이 검증 규칙을 주입한 필드로, 상세는 해당 확장 문서를 참조한다.
 
 
 ### PATCH /api/admin/users/bulk-status
@@ -480,6 +498,8 @@ HTTP/1.1 200
 | 500 | Internal Server Error | 일괄 변경 중 예외 발생 (`user.bulk_update_status_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -636,6 +656,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 이메일 주소의 사용 가능 여부(중복 아님)를 확인합니다. `email` 은 필수, `exclude_user_id`(UUID)를 주면 해당 사용자를 중복 검사에서 제외한다 — 사용자 수정 화면에서 자기 자신의 이메일을 유지할 때 사용한다. 응답 `data.available` 이 true 면 사용 가능, false 면 이미 사용 중이다. 사용자 생성/수정 폼의 이메일 실시간 중복 확인에 쓰인다.
@@ -651,7 +673,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| language | body | string | 예 | `ko`, `en` | 언어 코드 |
+| language | body | string | 예 | `ko`, `en`, `ja` | 언어 코드 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.user.update_language_validation_rules`).
 
@@ -687,7 +709,7 @@ _단건 응답: `data` 객체의 필드._
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin() — 역할 관계 기반 파생) |
-| homepage | null | `null` | 홈페이지 URL |
+| homepage | string | `https://example.com` | 홈페이지 URL |
 | mobile | null | `null` | 휴대폰 번호 |
 | phone | null | `null` | 전화번호 |
 | zipcode | null | `null` | 우편번호 |
@@ -697,6 +719,9 @@ _단건 응답: `data` 객체의 필드._
 | bio | null | `null` | 자기소개 |
 | last_login_at | string | `2026-08-04 19:00:10` | last login 일시 |
 | email_verified_at | string | `2026-07-30 23:37:44` | email verified 일시 |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| locked_fields | array | `[]` | 외부 인증 확장이 관리하는 칸 이름(7.2.0 — `core.user.locked_fields`, 허용 이름 `name`·`nickname`·`mobile`·`phone`·`language`·`email`). 이 칸을 다른 값으로 보내면 422 `user.field_locked` |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | created_at | string | `2026-07-30 23:37:44` | 생성 일시 |
 | updated_at | string | `2026-08-04 19:00:10` | 최종 수정 일시 |
@@ -761,6 +786,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 현재 로그인한 사용자 본인의 언어 설정을 변경합니다. 별도 권한 없이 `auth:sanctum` 인증만 요구하며(다른 사용자를 대상으로 하지 않음), `language` 는 `config('app.supported_locales')`(예: ko, en, fr, ja) 중 하나여야 한다. 성공 시 갱신된 사용자를 `UserResource` 로 반환하며, 관리자 UI 의 언어 전환에 사용한다.
@@ -811,6 +838,9 @@ Authorization: Bearer {YOUR_TOKEN}
 | bio | null | `null` | 자기소개 |
 | last_login_at | null | `null` | last login 일시 |
 | email_verified_at | string | `2026-08-04 16:57:08` | email verified 일시 |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| locked_fields | array | `[]` | 외부 인증 확장이 관리하는 칸 이름(7.2.0 — `core.user.locked_fields`, 허용 이름 `name`·`nickname`·`mobile`·`phone`·`language`·`email`). 이 칸을 다른 값으로 보내면 422 `user.field_locked` |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | created_at | string | `2026-08-04 16:57:09` | 생성 일시 |
 | updated_at | string | `2026-08-04 16:57:09` | 최종 수정 일시 |
@@ -882,6 +912,7 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
 
 **설명**
 
@@ -963,6 +994,9 @@ _목록 응답: `data[]` 배열 항목의 필드 (페이지네이션 없는 단�
 | bio | string\|null | `null` | 자기소개 |
 | last_login_at | string\|null | `2026-07-07 10:41:24` | 마지막 로그인 일시 (미로그인 시 null) |
 | email_verified_at | string\|null | `2026-07-08 10:41:24` | 이메일 인증 일시 (미인증 시 null) |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| locked_fields | array | `[]` | 외부 인증 확장이 관리하는 칸 이름(7.2.0 — `core.user.locked_fields`, 허용 이름 `name`·`nickname`·`mobile`·`phone`·`language`·`email`). 이 칸을 다른 값으로 보내면 422 `user.field_locked` |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string\|null | `Asia/Seoul` | 사용자 시간대 |
 | created_at | string | `2026-07-08 10:41:24` | 생성 일시 |
 | updated_at | string | `2026-07-08 10:41:24` | 최종 수정 일시 |
@@ -1029,6 +1063,8 @@ HTTP/1.1 200
 | 500 | Internal Server Error | 검색 중 예외 발생 (`user.search_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -1100,6 +1136,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 관리자 대시보드의 사용자 통계 위젯이 소비하는 집계 API. 캐시 없이 실시간 집계.
 
 
@@ -1157,6 +1195,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 지정한 사용자(경로 파라미터는 UUID 로 바인딩)를 삭제합니다. 슈퍼관리자 계정은 삭제할 수 없으며 시도 시 422(`exceptions.cannot_delete_super_admin`)를 반환한다. 그 외 삭제 실패 시에는 실패 상세 사유가 담긴 422 를, 나머지 오류는 500 을 반환한다. 삭제는 Service 계층에서 관련 데이터 정리와 훅을 거쳐 처리된다.
@@ -1195,6 +1235,9 @@ _단건 응답: `data` 객체의 필드._
 | uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `최고관리자` | 사용자 이름 |
 | nickname | string | `최고관리자` | 닉네임 |
+| display_name | string\|null | `길동이` | 다른 회원에게 보이는 이름(사이트 기본 영역). `name`, `nickname` 은 원본 그대로이고 이 값이 더해진다 |
+| display_name_kind | string\|null | `nickname` | 회원이 고른 표시 이름 종류. 고르지 않았으면 null (회원 기본 종류로 보인다) |
+| can_choose_display_name | boolean | `true` | 표시 이름 종류를 직접 고를 수 있는지 (권한 `core.profile.display_name.choose` 가 있고 운영자가 허용한 종류가 둘 이상) |
 | email | string | `admin@example.com` | 이메일 주소 |
 | avatar | null | `null` | 프로필 아바타 이미지 URL (미설정 시 null) |
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
@@ -1205,7 +1248,7 @@ _단건 응답: `data` 객체의 필드._
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin() — 역할 관계 기반 파생) |
-| homepage | null | `null` | 홈페이지 URL |
+| homepage | string | `https://example.com` | 홈페이지 URL |
 | mobile | null | `null` | 휴대폰 번호 |
 | phone | null | `null` | 전화번호 |
 | zipcode | null | `null` | 우편번호 |
@@ -1215,6 +1258,9 @@ _단건 응답: `data` 객체의 필드._
 | bio | null | `null` | 자기소개 |
 | last_login_at | string | `2026-08-04 19:00:10` | last login 일시 |
 | email_verified_at | string | `2026-07-30 23:37:44` | email verified 일시 |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| locked_fields | array | `[]` | 외부 인증 확장이 관리하는 칸 이름(7.2.0 — `core.user.locked_fields`, 허용 이름 `name`·`nickname`·`mobile`·`phone`·`language`·`email`). 이 칸을 다른 값으로 보내면 422 `user.field_locked`. 상세 응답에만 싣는다 — 관리자 회원 목록 행에는 없다(행마다 필터를 부르지 않게) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | modules_count | integer | `0` | modules 개수 (집계) |
 | plugins_count | integer | `0` | plugins 개수 (집계) |
@@ -1242,6 +1288,9 @@ _단건 응답: `data` 객체의 필드._
 | is_locked | boolean | `false` | locked 여부 |
 | password_expiry_policy | string | `inherit` | 비밀번호 만료 개별 설정 (`inherit` 따름 · `apply` 적용 · `exempt` 제외 — #736) |
 | password_status | object | `{"applies":true, …}` | 비밀번호 상태 — 상세 응답에만 실린다(목록은 회원마다 역할 판정이 들어 제외) |
+| password_status.has_password | boolean | `true` | 비밀번호가 있는지 — false 면 만료 정책 대상이 아니고 나머지 만료 값은 비어 있다 |
+| password_status.can_set | boolean | `true` | 이 화면을 보는 관리자가 이 회원의 비밀번호를 정할 수 있는지 — 비밀번호 인증 정책(남의 회원은 `admin_set_password`, 자기 계정은 `set_password`)이 막으면 false. 저장 403 `auth.password_auth_disabled` 와 같은 판정 (7.2.0) |
+| password_status.set_blocked_message | string\|null | `null` | `can_set` 이 false 일 때 보일 안내 문구 — 저장 403 의 문구와 같다 (7.2.0) |
 | password_status.changed_at | string\|null | `2026-07-01 10:20:00` | 마지막 변경 일시 (사용자 시간대) |
 | password_status.expires_at | string\|null | `2026-09-29 10:20:00` | 만료 예정 일시 (적용되지 않으면 null) |
 | password_status.expired | boolean | `false` | 만료됐는지 |
@@ -1412,6 +1461,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 특정 사용자의 상세 정보를 조회합니다(경로 파라미터는 UUID 로 바인딩). `withAdminInfo()` 를 통해 기본 필드에 더해 관리자 전용 필드(admin_memo, ip_address, withdrawn_at, blocked_at)와 관계형 데이터(modules, plugins, menus, roles, permissions, consents 및 개수 필드)를 함께 반환한다. `core.user.filter_resource_data` 필터로 확장이 자신의 필드(sirsoft-marketing 의 알림/동의 설정, sirsoft-ecommerce 의 마일리지/선호 통화·배송국 등)를 병합한다. 관리자 사용자 상세/수정 화면(`admin_user_detail.g7.html`/`admin_user_form.g7.html`)이 소비한다.
@@ -1428,11 +1479,13 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | user | path | string | 예 | — | 대상 user의 식별자 |
-| name | body | string | 예 | max 255 | 대상의 이름/명칭 |
-| nickname | body | string | 아니오 | max 50 | 닉네임 |
-| email | body | email | 예 | max 255 | 이메일 주소 |
+| name | body | string | 항목 설정에 따름 (기본값 예) | max 255 | 이름. 회원 항목이라 운영자가 환경설정 > 회원에서 사용과 필수를 정한다. 기본 설정은 사용, 필수다 |
+| nickname | body | string | 항목 설정에 따름 (기본값 아니오) | max 50 | 닉네임. 닉네임 정책(중복 금지, 금지어)에 걸리면 422. 관리자 저장은 변경 주기의 제한을 받지 않는다 |
+| custom_fields.{키} | body | 항목 유형에 따름 | 항목 설정에 따름 | 항목 설정에 따름 | 운영자가 추가한 회원 항목의 값. 범위가 관리자만 수정, 관리자만 열람인 항목도 받는다. 파일, 이미지 항목은 이 본문이 아니라 항목 파일 API 로 올린다. 폼 경로와 오류 키는 폼 항목 API 의 `fields[].name` 이다 |
+| email | body | email | 예 | max 255 | 이메일 주소. 항목이 아닌 고정 칸이라 늘 필수다 |
 | password | body | string | 아니오 | 보안 설정의 작성 규칙 | 비밀번호 — **다른 회원**이면 재사용 검사 없이 정하고 그 회원은 다음 로그인 때 바꿔야 하며 모든 기기가 로그아웃된다. **본인**이면 재사용 금지가 걸리고 현재 기기만 남는다(#736) |
-| current_password | body | string | 본인 계정에 password 를 보낼 때 | — | 현재 비밀번호 — 수정 대상이 요청자 본인일 때만 요구한다(#736 D19) |
+| current_password | body | string | 본인 계정에 password 를 보낼 때 | — | 현재 비밀번호 — 수정 대상이 요청자 본인일 때만 요구한다(#736 D19). 본인에게 비밀번호가 없으면(외부 인증 전용) 대조할 값이 없어 버린다. 이때 값을 채워 보내고(옛 화면) `verification_token` 이 없으면 422 대신 **428** 본인인증 요구(목적 `sensitive_action`, `return_request` = 이 요청)로 답한다(7.2.0) |
+| verification_token | body | string | 비밀번호 없는 본인 계정에 password 를 보낼 때 | 최대 128자 | 비밀번호가 없는 관리자가 자기 비밀번호를 처음 정할 때의 본인 확인 — 코어 본인인증(`purpose: sensitive_action`)으로 확인해 받은 토큰(본인 것·1회, 검증을 모두 통과하면 소비) (7.2.0) |
 | password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 개별 설정 (따름·적용·제외, 미지정 시 따름 — #736) |
 | language | body | string | 아니오 | `ko`, `en` | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
@@ -1458,6 +1511,8 @@ HTTP/1.1 200
 | third_party_consent | body | boolean | 아니오 | — | 제3자 정보 제공 동의 여부 (marketing 플러그인 법적 동의 항목) |
 | info_disclosure | body | boolean | 아니오 | — | 개인정보 이용 안내 동의 여부 (marketing 플러그인 법적 동의 항목) |
 
+> 이름, 닉네임, 언어, 국가, 시간대, 연락처, 주소, 서명, 자기소개와 운영자 추가 항목은 회원 항목입니다. 받는 키와 필수 여부는 운영자의 회원 항목 설정에서 오고, 이 표의 필수 칸은 기본 설정 기준입니다. 지금 사이트가 받는 항목은 `GET /api/admin/users/{user}/form-fields` 가 알려 줍니다. 그 회원에게 지금 비어 있는 필수 항목은 이 요청에서 필수로 보지 않습니다. 이 요청은 `display_name_kind` 를 받지 않고 409 를 내지 않습니다. 회원 항목을 그리는 관리자 화면은 항목 응답의 `fields_version` 을 싣습니다(표식일 뿐 버전을 대조하지 않습니다). 싣지 않은 요청은 옛 관리자 화면(7.1.x 템플릿)으로 보고, 운영자 추가 항목과 확장이 선언한 항목의 필수 규칙을 값을 보냈을 때만 겁니다. 보내지 않은 항목은 저장된 값이 그대로 남습니다.
+>
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.user.update_validation_rules`).
 
 **요청 예시**
@@ -1532,6 +1587,9 @@ _단건 응답: `data` 객체의 필드 (수정된 사용자 — `UserResource::
 | bio | string\|null | `null` | 자기소개 |
 | last_login_at | string\|null | `2026-07-07 10:41:24` | 마지막 로그인 일시 (미로그인 시 null) |
 | email_verified_at | string\|null | `2026-07-08 10:41:24` | 이메일 인증 일시 (미인증 시 null) |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| locked_fields | array | `[]` | 외부 인증 확장이 관리하는 칸 이름(7.2.0 — `core.user.locked_fields`, 허용 이름 `name`·`nickname`·`mobile`·`phone`·`language`·`email`). 이 칸을 다른 값으로 보내면 422 `user.field_locked` |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string\|null | `Asia/Seoul` | 사용자 시간대 |
 | created_at | string | `2026-07-08 10:41:24` | 생성 일시 |
 | updated_at | string | `2026-07-08 11:02:07` | 최종 수정 일시 |
@@ -1594,14 +1652,62 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.users.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지 — 마지막 관리자 본인의 admin 역할 제거 시도 시 `user.last_admin_role_cannot_remove` 포함) |
+| 428 | Precondition Required | 비밀번호가 없는 관리자가 본인 계정에 `password` 와 채운 `current_password` 를 보내고 `verification_token` 이 없는 경우(옛 화면) — 다른 검증을 모두 통과한 뒤에만. 확인 뒤 `?verification_token=` 을 붙여 같은 요청을 다시 보낸다 (7.2.0) |
 | 500 | Internal Server Error | 수정 중 예외 발생 (`user.update_failed`, `errors.error` 에 예외 메시지) |
+
+<!-- @generated:end -->
+
+
+
+**설명**
+
+기존 사용자 정보를 수정합니다(경로 파라미터는 UUID 로 바인딩). `email` 은 고정 필수이며 해당 사용자를 제외한 고유성 검사를 거친다. `name` 은 회원 항목이라 운영자의 항목 설정을 따른다(기본 설정이 필수). 필수 항목이라도 그 회원의 현재 값이 비어 있으면 이 요청에서는 요구하지 않는다(새로 필수가 된 항목 때문에 다른 칸을 못 고치는 일을 막는다). 운영자 추가 항목은 `custom_fields.{키}` 로 보낸다. 외부(회사 계정 연동 등)가 관리하는 칸은 현재 값과 다른 값을 보내면 422 다. `password` 는 선택이며 값을 주면 보안 설정의 작성 규칙·`password_confirmation` 확인을 요구한다(미전송 시 기존 비밀번호 유지). 역할은 `roles` 또는 `role_ids` 중 하나로 지정하고 둘 다 오면 `role_ids` 가 우선한다. 성공 시 갱신된 사용자를 `UserResource` 로 반환한다. `notify_*`/`marketing_consent`/`third_party_consent`/`info_disclosure`/`email_subscription` 파라미터는 확장(sirsoft-marketing)이 검증 규칙을 주입한 필드로, 상세는 해당 확장 문서를 참조한다. `ecommerce_preferred_currency`(결제 통화)·`ecommerce_preferred_shipping_country`(배송국가)는 sirsoft-ecommerce 가 같은 방식으로 주입한 필드로, 관리자 회원 수정 화면이 이 요청 한 번에 함께 보낸다 — 이커머스가 검증(등록 통화·활성 국가, 값이 바뀔 때만 이커머스 관리 권한)과 저장을 같은 요청 안에서 처리하고, 오류는 그 필드 이름 키로 돌아온다.
+
+
+### POST /api/admin/users/{user}/sessions/revoke
+<!-- @generated:start:api.admin.users.sessions.revoke -->
+- **라우트명**: `api.admin.users.sessions.revoke`
+- **컨트롤러**: `AppHttpControllersApiAdminUserController@revokeSessions`
+- **인증/권한**: `auth:sanctum` + `permission:core.users.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| user | path | string | 예 | — | 대상 user 의 UUID |
+
+**요청 예시**
+
+```http
+POST /api/admin/users/a26219fc-94a0-4f63-9404-04c2a6ac99e4/sessions/revoke HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "그 회원을 모든 기기에서 로그아웃시켰습니다.",
+    "data": null
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthorized | 인증 토큰 없음·무효 |
+| 403 | Forbidden | 권한 없음, 또는 하위 관리자가 최고관리자를 대상으로 함(등급 검사) |
+| 404 | Not Found | 회원 없음 |
 
 <!-- @generated:end -->
 
 **설명**
 
-기존 사용자 정보를 수정합니다(경로 파라미터는 UUID 로 바인딩). `name`, `email` 은 필수이며 `email` 은 해당 사용자를 제외한 고유성 검사를 거친다. `password` 는 선택이며 값을 주면 보안 설정의 작성 규칙·`password_confirmation` 확인을 요구한다(미전송 시 기존 비밀번호 유지). 역할은 `roles` 또는 `role_ids` 중 하나로 지정하고 둘 다 오면 `role_ids` 가 우선한다. 성공 시 갱신된 사용자를 `UserResource` 로 반환한다. `notify_*`/`marketing_consent`/`third_party_consent`/`info_disclosure`/`email_subscription` 파라미터는 확장(sirsoft-marketing)이 검증 규칙을 주입한 필드로, 상세는 해당 확장 문서를 참조한다. `ecommerce_preferred_currency`(결제 통화)·`ecommerce_preferred_shipping_country`(배송국가)는 sirsoft-ecommerce 가 같은 방식으로 주입한 필드로, 관리자 회원 수정 화면이 이 요청 한 번에 함께 보낸다 — 이커머스가 검증(등록 통화·활성 국가, 값이 바뀔 때만 이커머스 관리 권한)과 저장을 같은 요청 안에서 처리하고, 오류는 그 필드 이름 키로 돌아온다.
-
+회원 상세 「모든 기기에서 로그아웃」(7.2.0). 그 회원의 토큰을 전부 지운다 — 대상의 다음 API 요청은 401 이고, 같은 서버 개발자 화면의 웹 세션도 짝 토큰이 사라져 다음 요청에서 무효가 된다. 액션 `core.user.after_sessions_revoked`, 활동 로그 `user.sessions_revoked`.
 
 ### POST /api/admin/users/{user}/unlock
 <!-- @generated:start:api.admin.users.unlock -->
@@ -1618,7 +1724,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-POST /api/admin/users/a26219fc-94a0-4f63-9404-04c2a6ac99e4/unlock HTTP/1.1
+POST /api/admin/users/{user}/unlock HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1642,7 +1748,7 @@ _단건 응답: `data` 객체의 필드._
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin() — 역할 관계 기반 파생) |
-| homepage | null | `null` | 홈페이지 URL |
+| homepage | string | `https://example.com` | 홈페이지 URL |
 | mobile | null | `null` | 휴대폰 번호 |
 | phone | null | `null` | 전화번호 |
 | zipcode | null | `null` | 우편번호 |
@@ -1652,6 +1758,9 @@ _단건 응답: `data` 객체의 필드._
 | bio | null | `null` | 자기소개 |
 | last_login_at | string | `2026-08-04 19:00:10` | last login 일시 |
 | email_verified_at | string | `2026-07-30 23:37:44` | email verified 일시 |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| locked_fields | array | `[]` | 외부 인증 확장이 관리하는 칸 이름(7.2.0 — `core.user.locked_fields`, 허용 이름 `name`·`nickname`·`mobile`·`phone`·`language`·`email`). 이 칸을 다른 값으로 보내면 422 `user.field_locked` |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | created_at | string | `2026-07-30 23:37:44` | 생성 일시 |
 | updated_at | string | `2026-08-04 19:00:10` | 최종 수정 일시 |
@@ -1716,6 +1825,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 로그인 실패 누적으로 잠긴 계정의 잠금을 관리자가 수동으로 해제합니다. 로그인 시도 추적 값
@@ -1753,7 +1864,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
-| name | string | `최고관리자` | 사용자 이름 |
+| name | string\|null | `최고관리자` | 다른 회원에게 보이는 이름(사이트 기본 영역의 표시 이름). 실명은 이 응답에 실리지 않는다. 탈퇴 회원은 「탈퇴한 사용자」 문구 |
 | status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴, dormant: 휴면) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | avatar | null | `null` | 프로필 아바타 이미지 URL (미설정 시 null) |
@@ -1795,8 +1906,333 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 타인의 공개 프로필을 인증 없이 조회합니다(경로 파라미터는 UUID 로 바인딩, `users/show.g7.html` 이 소비). 사용자 상태에 따라 노출 필드가 달라진다 — active 는 name/avatar/bio/created_at 전체, inactive 는 bio 를 제외, blocked 는 avatar/bio/created_at 를 모두 제외한다. withdrawn 사용자는 이름을 익명 표기로 대체하고 `is_withdrawn=true` 로 반환하며, 미존재 사용자는 404(`user.not_found`)를 반환한다. 게시글 통계는 게시판 모듈 API 로 별도 조회한다.
 
 
+### POST /api/admin/users/{user}/fields/{key}/file
+<!-- @generated:start:api.admin.users.fields.file.store -->
+- **라우트명**: `api.admin.users.fields.file.store`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\UserFieldFileController@store`
+- **인증/권한**: `auth:sanctum`, `admin`, `permission:admin,core.users.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| user | path | string | 예 | 회원 UUID | 대상 회원 |
+| key | path | string | 예 | 항목 키 | 파일·이미지 항목의 키 |
+| file | body (multipart) | file | 예 | 항목이 정한 확장자와 크기 | 올릴 파일 1개 |
+
+**요청 예시**
+
+```http
+POST /api/admin/users/9f1c2d3e-0000-4000-8000-000000000001/fields/t490_doc/file HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: multipart/form-data; boundary=----g7
+
+------g7
+Content-Disposition: form-data; name="file"; filename="biz.pdf"
+Content-Type: application/pdf
+
+(파일 내용)
+------g7--
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| file.id | integer | `812` | 첨부파일 ID (삭제 요청의 `attachment_id`) |
+| file.hash | string | `a1b2c3d4e5f6` | 내려받기 주소에 쓰는 해시 |
+| file.name | string | `biz.pdf` | 올린 파일 이름 |
+| file.size | integer | `122880` | 크기(바이트) |
+| file.mime_type | string | `application/pdf` | MIME 유형 |
+| file.url | string | `/api/attachment/a1b2c3d4e5f6` | 내려받기 주소 |
+| files[] | array | — | 그 항목에 지금 올라가 있는 파일 전체(같은 모양) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "파일을 올렸습니다.",
+    "data": {
+        "file": {
+            "id": 812,
+            "hash": "a1b2c3d4e5f6",
+            "name": "biz.pdf",
+            "size": 122880,
+            "mime_type": "application/pdf",
+            "url": "/api/attachment/a1b2c3d4e5f6"
+        },
+        "files": [
+            {
+                "id": 812,
+                "hash": "a1b2c3d4e5f6",
+                "name": "biz.pdf",
+                "size": 122880,
+                "mime_type": "application/pdf",
+                "url": "/api/attachment/a1b2c3d4e5f6"
+            }
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 회원 수정 권한이 없는 경우 |
+| 404 | Not Found | 회원이 없거나, 그 키의 항목이 없거나, 파일 항목이 아니거나, 꺼져 있는 경우 |
+| 422 | Unprocessable Entity | 확장자나 크기가 항목의 제한에 맞지 않거나, 이미 최대 개수만큼 올라가 있는 경우(`errors.file`) |
+
+<!-- @generated:end -->
+
+**설명** 관리자 회원 폼이 회원의 파일 항목에 파일을 올릴 때 부릅니다. 사용 중인 파일 항목이면 범위(본인 수정, 관리자만 수정, 관리자만 열람)와 무관하게 올릴 수 있습니다. 제한과 응답은 본인용 API 와 같습니다.
+
+
+### DELETE /api/admin/users/{user}/fields/{key}/file
+<!-- @generated:start:api.admin.users.fields.file.destroy -->
+- **라우트명**: `api.admin.users.fields.file.destroy`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\UserFieldFileController@destroy`
+- **인증/권한**: `auth:sanctum`, `admin`, `permission:admin,core.users.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| user | path | string | 예 | 회원 UUID | 대상 회원 |
+| key | path | string | 예 | 항목 키 | 파일·이미지 항목의 키 |
+| attachment_id | body | integer | 예 | 1 이상 | 지울 첨부파일 ID |
+
+**요청 예시**
+
+```http
+DELETE /api/admin/users/9f1c2d3e-0000-4000-8000-000000000001/fields/t490_doc/file HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{ "attachment_id": 812 }
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| files[] | array | `[]` | 지운 뒤 그 항목에 남은 파일 |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "파일을 삭제했습니다.",
+    "data": {
+        "files": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 회원 수정 권한이 없는 경우 |
+| 404 | Not Found | 회원이나 항목이 없거나, 그 첨부파일이 그 회원의 그 항목에 올린 파일이 아닌 경우 |
+| 422 | Unprocessable Entity | `attachment_id` 가 없거나 숫자가 아닌 경우 |
+
+<!-- @generated:end -->
+
+**설명** 그 회원의 그 항목에 올라가 있는 파일만 지울 수 있습니다.
+
+
+### GET /api/admin/users/form-fields
+<!-- @generated:start:api.admin.users.form-fields -->
+- **라우트명**: `api.admin.users.form-fields`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\UserController@formFields`
+- **인증/권한**: `auth:sanctum`, `admin`, `permission:admin,core.users.create`
+
+**요청 파라미터**
+
+없음.
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 — 검증 규칙 `core.user.admin_form_fields_validation_rules`.
+
+**요청 예시**
+
+```http
+GET /api/admin/users/form-fields HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| fields[] | array | 아래 표 | 사용 중인 회원 항목 전부(관리자만 수정, 관리자만 열람 항목 포함)의 항목 계약. 표시 순서대로 |
+| fields_version | string | `8a94cf438e2c` | 항목 정의 버전 |
+| member | null | `null` | 회원 추가 화면용이라 null |
+
+`fields[]` 원소:
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| key | string | `nickname` | 항목 키 |
+| name | string | `nickname` | 폼 경로이자 검증 오류 키. 운영자 추가 항목은 `custom_fields.{키}` |
+| type | string | `text` | 입력 유형 |
+| renderer | string | `builtin` | 그리는 방식 (`builtin`, `address`, `file`, `extension`) |
+| owner | string | `core` | 소유자 (`core`, `custom`, 확장 식별자) |
+| owner_type | string | `core` | 출처 (`core`, `module`, `plugin`, `custom`) |
+| source_label | string\|null | `null` | 항목을 선언한 확장의 이름. 화면이 「확장 항목」 구획의 묶음 제목으로 쓴다. 코어 항목과 운영자 추가 항목은 null |
+| label | string | `닉네임` | 항목 이름 |
+| placeholder | string\|null | `닉네임을 입력하세요` | 예시 글 |
+| help | string\|null | `null` | 안내 문구 |
+| required | boolean | `false` | 필수 여부. 수정 화면에서는 지금 비어 있는 필수 항목을 false 로 준다(관리자 수정은 다른 칸을 고칠 때 그 항목을 요구하지 않는다) |
+| readonly | boolean | `false` | 이 요청자가 바꿀 수 없는 칸 (외부가 관리하는 칸, 확장이 자기 권한이 없는 관리자에게 잠근 칸) |
+| locked_reason | string\|null | `null` | 잠근 사유. `sso` 등 외부가 관리하는 칸의 사유, `permission`(확장이 선언한 항목을 바꿀 확장 권한이 요청자에게 없음. sirsoft-ecommerce 의 결제 통화와 배송국가) |
+| deferred | boolean | `false` | 지금 화면에서 받지 않는 항목. 회원 추가 화면의 파일 항목이 true 다(저장한 뒤 올린다) |
+| options[] | array | `[]` | 선택지 (`value`, `label`) |
+| constraints | object | `{"max_length":50}` | 입력 제한과 표시 옵션 |
+| default | mixed | `null` | 기본값 |
+| ui | object | `{"group":"basic"}` | 화면 배치 |
+| parts | object\|null | `null` | 주소 항목의 부분 폼 경로 (`zipcode`, `address`, `address_detail`) |
+| display_value | string\|null | `null` | 현재 값의 보기용 글자 (회원이 있을 때) |
+| files[] | array\|null | `null` | 파일 항목에 올라가 있는 파일 (`id`, `name`, `url`) |
+| file_rules | object\|null | `null` | 파일 항목의 업로드 제한 (`extensions`, `max_count`, `max_size_mb`) |
+| edit_scope | string | `self` | 범위 (`self` 본인 수정, `admin_edit` 관리자만 수정, `admin_only` 관리자만 열람) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "fields": [
+            {
+                "key": "nickname",
+                "name": "nickname",
+                "type": "text",
+                "renderer": "builtin",
+                "owner": "core",
+                "owner_type": "core",
+                "label": "닉네임",
+                "placeholder": "닉네임을 입력하세요",
+                "help": null,
+                "required": false,
+                "readonly": false,
+                "locked_reason": null,
+                "deferred": false,
+                "options": [],
+                "constraints": { "max_length": 50 },
+                "default": null,
+                "ui": { "group": "basic" },
+                "parts": null,
+                "display_value": null,
+                "files": null,
+                "file_rules": null,
+                "edit_scope": "self"
+            }
+        ],
+        "fields_version": "8a94cf438e2c",
+        "member": null
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 회원 조회 권한이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** 관리자 회원 추가 화면이 그릴 회원 항목을 줍니다. 어떤 항목을 받고 무엇이 필수인지는 환경설정 > 회원이 정합니다.
+
+
+### GET /api/admin/users/{user}/form-fields
+<!-- @generated:start:api.admin.users.form-fields.show -->
+- **라우트명**: `api.admin.users.form-fields.show`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\UserController@formFields`
+- **인증/권한**: `auth:sanctum`, `admin`, `permission:admin,core.users.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| user | path | string | 예 | 회원 UUID | 대상 회원 |
+
+**요청 예시**
+
+```http
+GET /api/admin/users/9f1c2d3e-0000-4000-8000-000000000001/form-fields HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| fields[] | array | 위 엔드포인트의 `fields[]` 와 같은 모양 | 그 회원의 현재 값(`display_value`, `files`)과 잠금(`readonly`, `locked_reason`)이 실린 항목 계약 |
+| fields_version | string | `8a94cf438e2c` | 항목 정의 버전 |
+| member.nickname_changed_at | string\|null | `2026-11-11 22:38` | 닉네임을 마지막으로 바꾼 시각 |
+| member.nickname_next_changeable_at | string\|null | `2026-12-11 22:38` | 회원 본인이 닉네임을 다시 바꿀 수 있는 시각 (변경 주기가 없거나 지났으면 null). 관리자 수정은 주기의 제한을 받지 않는다 |
+| member.required_fields_deferred_at | string\|null | `null` | 필수 항목을 건너뛰고 만들어진 시각 |
+| member.pending_required_fields[] | array | `[{"key":"job","label":"직업"}]` | 비어 있는 필수 항목 (`key`, `label`) |
+| member.display_name_kind | string\|null | `nickname` | 회원이 고른 표시 이름 종류 (읽기 전용. 관리자는 바꾸지 못한다) |
+| member.display_name_kind_label | string\|null | `닉네임` | 고른 종류의 이름 |
+| member.display_name_kind_unavailable | boolean | `false` | 고른 종류가 지금 허용에서 빠져 있는지 |
+| member.display_name_effective_kind | string | `nickname` | 지금 이 회원에게 적용되는 종류 |
+| member.display_name_effective_kind_label | string | `닉네임` | 적용되는 종류의 이름 |
+| member.display_name | string\|null | `길동이` | 사이트 기본 영역에서 보이는 이름 |
+| member.display_name_admin | string\|null | `홍길동` | 관리자 화면 영역에서 보이는 이름 |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "fields": [],
+        "fields_version": "8a94cf438e2c",
+        "member": {
+            "nickname_changed_at": "2026-11-11 22:38",
+            "nickname_next_changeable_at": "2026-12-11 22:38",
+            "required_fields_deferred_at": null,
+            "pending_required_fields": [
+                { "key": "job", "label": "직업" }
+            ]
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 회원 조회 권한이 없는 경우 |
+| 404 | Not Found | 회원이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** 관리자 회원 수정 화면과 회원 상세 화면이 그릴 회원 항목을 줍니다. 값 자체는 회원 상세 응답(`GET /api/admin/users/{user}`)이 주고, 이 응답은 항목 계약과 보기용 글자, 파일, 회원의 항목 상태를 줍니다.

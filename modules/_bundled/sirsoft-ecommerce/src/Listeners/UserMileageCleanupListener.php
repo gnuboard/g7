@@ -4,25 +4,30 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Models\User;
+use Modules\Sirsoft\Ecommerce\Services\UserDataPurgeService;
 use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
 
 /**
- * 회원 탈퇴/삭제 시 마일리지 데이터 정리 리스너 (정책 확정 #8)
+ * 회원 탈퇴/삭제 시 마일리지·회원 소유 데이터 정리 리스너 (정책 확정 #8)
  *
  * 코어 UserService 의 탈퇴(before_withdraw)·삭제(before_delete) 훅을 구독합니다 (E3).
  *
  * - 탈퇴: 남은 마일리지를 「탈퇴로 소멸」 거래로 원장에 기록해 0 으로 만들고, 거래 행은 지우지 않는다.
  *   지급·사용·소멸 경위는 탈퇴 뒤에도 장부로 남아야 한다(회원 행 자체는 코어 보유기간 핸들러가 익명화한다).
  * - 삭제(회원 행 하드 삭제): 남은 마일리지를 소멸 기록한 뒤 거래 행에서 회원 연결만 끊는다(user_id NULL).
- *   잔액 캐시는 파생값이라 지운다. DB 의 nullOnDelete 는 안전망으로만 둔다(코어 규정: CASCADE 의존 금지).
+ *   잔액 캐시는 파생값이라 지운다. 이어서 회원에게 묶인 이커머스 데이터(검색 프리셋·찜·장바구니·임시 주문·쿠폰 발급·
+ *   배송지·리뷰와 이미지 파일·회원 프로필)를 명시적으로 지운다(#888). DB 외래키(nullOnDelete·연쇄 삭제)는
+ *   안전망으로만 둔다(코어 규정: CASCADE 의존 금지).
  */
 class UserMileageCleanupListener implements HookListenerInterface
 {
     /**
      * @param  UserMileageService  $mileageService  마일리지 서비스
+     * @param  UserDataPurgeService  $userDataPurgeService  회원 소유 데이터 정리 서비스
      */
     public function __construct(
         private UserMileageService $mileageService,
+        private UserDataPurgeService $userDataPurgeService,
     ) {}
 
     /**
@@ -34,6 +39,7 @@ class UserMileageCleanupListener implements HookListenerInterface
     {
         // 금전 훅 — 탈퇴·삭제 트랜잭션 안에서 회원 행이 지워지기 전에 돌아야 한다. 큐 기본값(afterCommit)이면
         // 하드 삭제의 FK(nullOnDelete)가 먼저 거래 행의 user_id 를 비워 소멸 기록을 남길 lot 을 찾지 못한다.
+        // 회원 소유 데이터 정리도 같은 이유로 회원 행보다 먼저여야 한다(쿠폰 발급 수량 보정·리뷰 이미지 파일).
         return [
             'core.user.before_withdraw' => ['method' => 'handleUserWithdraw', 'priority' => 10, 'sync' => true],
             'core.user.before_delete' => ['method' => 'handleUserDelete', 'priority' => 10, 'sync' => true],
@@ -63,7 +69,7 @@ class UserMileageCleanupListener implements HookListenerInterface
     }
 
     /**
-     * 회원 삭제 직전에 남은 마일리지를 소멸 기록하고 거래 행의 회원 연결을 끊습니다.
+     * 회원 삭제 직전에 남은 마일리지를 소멸 기록하고 거래 행의 회원 연결을 끊은 뒤, 회원 소유 데이터를 명시적으로 지웁니다.
      *
      * @param  User  $user  삭제 대상 회원
      * @return void 반환값 없음
@@ -71,5 +77,6 @@ class UserMileageCleanupListener implements HookListenerInterface
     public function handleUserDelete(User $user): void
     {
         $this->mileageService->detachForUserDeletion((int) $user->id);
+        $this->userDataPurgeService->purgeForDeletedUser((int) $user->id);
     }
 }

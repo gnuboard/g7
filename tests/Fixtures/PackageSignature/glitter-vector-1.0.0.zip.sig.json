@@ -1,0 +1,21 @@
+{
+  "format": "g7-package-signature",
+  "version": 1,
+  "algorithm": "ed25519",
+  "package": {
+    "type": "module",
+    "identifier": "glitter-vector",
+    "version": "1.0.0"
+  },
+  "artifact": {
+    "filename": "glitter-vector-1.0.0.zip",
+    "size": 387,
+    "sha256": "3f3aa3594dc72c4e490e7f067e2165512df73467655a7d6105f9eb1cda9f5479"
+  },
+  "signer": {
+    "key_id": "glitter:93a4eed863537167",
+    "label": "glitter"
+  },
+  "signed_at": "2026-11-20T00:00:00Z",
+  "signature": "dzq0kDah3rL2XkXaxH9Nd7nB3yah8tPvJB6YR4lGmExY7cVtP/4jS0kHoXS/4M9SnD9wYWYSJzJ4klLKUmRUDA=="
+}

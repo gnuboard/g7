@@ -1,0 +1,18 @@
+feature: 모듈 sirsoft-ecommerce 국기 상자 높이
+
+description: |
+  배송 국가·통화·수령 국가 국기(ecommerce-flag)는 빈 요소에 배경 그림을 깔고 ::before 가 넣는 글자 하나로
+  줄 상자(줄 높이 1em)를 만든다. 그 글자가 일반 공백이면 줄 안에서 접혀 높이 0 상자가 되어 국기가 보이지 않는다.
+  원본 CSS 와 실제로 내려가는 산출 CSS 모두에서 접히지 않는 공백(U+00A0)과 인라인 블록·줄 높이 1em 을 단언한다.
+
+axes:
+  artifact:
+    - source   # resources/css/main.css
+    - dist     # dist/css/module.css (서버가 내려보내는 산출물)
+
+effects:
+  - flag_pseudo_content_is_non_collapsible_space   # ::before content 가 U+00A0 하나
+  - flag_box_keeps_line_height                     # 국기 상자 display inline-block + line-height 1em
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/styles/flagLineBox.test.ts

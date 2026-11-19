@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Exceptions\CategoryOperationException;
 use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
 
 /**
  * 카테고리 서비스
@@ -22,12 +23,24 @@ class CategoryService
      * @param  CategoryRepositoryInterface  $repository  카테고리 저장소
      * @param  CategoryImageRepositoryInterface  $imageRepository  카테고리 이미지 저장소
      * @param  CategoryImageService  $categoryImageService  카테고리 이미지 서비스
+     * @param  CouponRepositoryInterface|null  $couponRepository  쿠폰 저장소 (적용 카테고리 연결 정리, null 이면 늦게 해석)
      */
     public function __construct(
         protected CategoryRepositoryInterface $repository,
         protected CategoryImageRepositoryInterface $imageRepository,
-        protected CategoryImageService $categoryImageService
+        protected CategoryImageService $categoryImageService,
+        protected ?CouponRepositoryInterface $couponRepository = null,
     ) {}
+
+    /**
+     * 쿠폰 저장소를 늦게 해석합니다. (기존 3인수 생성 호출부 호환)
+     *
+     * @return CouponRepositoryInterface 쿠폰 저장소
+     */
+    private function coupons(): CouponRepositoryInterface
+    {
+        return $this->couponRepository ??= app(CouponRepositoryInterface::class);
+    }
 
     /**
      * 계층형 카테고리 목록 조회
@@ -282,6 +295,9 @@ class CategoryService
             // 물리 파일 → 행 순으로 정리한다. 행만 지우면 파일이 디스크에 영구 잔존한다
             // (상품 삭제와 동일한 순서 — ProductService::delete 선례).
             $this->categoryImageService->deleteByCategoryId($category->id);
+
+            // 쿠폰 적용·제외 카테고리 목록에서 이 카테고리 연결 삭제 (명시적 삭제 - CASCADE 의존 금지)
+            $this->coupons()->detachCategoryFromAll($category->id);
 
             // 카테고리 삭제
             $this->repository->delete($category->id);

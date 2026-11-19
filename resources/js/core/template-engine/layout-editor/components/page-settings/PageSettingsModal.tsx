@@ -96,7 +96,7 @@ const TAB_ORDER: PageSettingsTabKey[] = [
 
 /**
  * [에러 처리] 탭에 항상 노출하는 표준 HTTP 에러 코드(D-N). ErrorHandlingForm.buildRowCodes 가
- * 여기에 `default` 행을 덧붙인다. 레이아웃이 추가로 선언한 코드는 templateCodes 로 합쳐진다.
+ * 여기에 `default` 행을 덧붙인다. 레이아웃이 추가로 선언한 코드와 템플릿 설정 코드도 폼이 행으로 합친다.
  */
 const STANDARD_ERROR_CODES = ['401', '403', '404', '500', '503'];
 
@@ -117,6 +117,8 @@ export interface PageSettingsModalProps {
   initialTab?: PageSettingsTabKey;
   /** SEO extensions fetch 주입(테스트). 미전달 시 내부 Bearer fetch */
   extensionsFetcher?: (templateIdentifier: string) => Promise<SeoExtensionRef[]>;
+  /** 템플릿 설정 errorHandling 코드 fetch 주입(테스트). 미전달 시 내부 fetch */
+  templateErrorCodesFetcher?: (templateIdentifier: string) => Promise<string[]>;
   /** template.json `scroll_restoration` fetch 주입(테스트). 미전달 시 공개 config 엔드포인트 */
   templateConfigFetcher?: (templateIdentifier: string) => Promise<ScrollRestorationValue | undefined>;
 }
@@ -133,6 +135,31 @@ const TAB_LABEL_KEY: Record<PageSettingsTabKey, string> = {
   error: 'layout_editor.page_settings.tab.error',
   data: 'layout_editor.page_settings.tab.data',
 };
+
+/**
+ * 템플릿 전체 수준 errorHandling 코드 — 템플릿 설정(`/api/templates/{id}/config`)의 errorHandling 키.
+ *
+ * 런타임에서 TemplateApp 이 ErrorHandlingResolver.setTemplateConfig 로 등록하는 그 값이다. [에러 처리] 탭은 이 코드를
+ * 〔템플릿〕 출처로 보이고, 이 페이지에 동작이 없으면 [덮기] 를 낸다(#869 — 종전엔 병합본 키를 넘겨 나올 수 없었다).
+ *
+ * @param templateIdentifier 편집 대상 템플릿 식별자
+ * @return 템플릿 수준 오류 코드 목록(없거나 실패하면 빈 배열)
+ */
+async function fetchTemplateErrorCodes(templateIdentifier: string): Promise<string[]> {
+  if (typeof fetch !== 'function' || !templateIdentifier) return [];
+  try {
+    const response = await fetch(
+      suffixed(`/api/templates/${encodeURIComponent(templateIdentifier)}/config`, 'json'),
+      { credentials: 'same-origin', headers: { Accept: 'application/json' } },
+    );
+    if (!response.ok) return [];
+    const body = await response.json().catch(() => null);
+    const map = body?.data?.errorHandling ?? body?.errorHandling;
+    return map && typeof map === 'object' && !Array.isArray(map) ? Object.keys(map) : [];
+  } catch {
+    return [];
+  }
+}
 
 /** 활성 모듈/플러그인 extensions 후보를 seo-candidates.json 에서 fetch(내부 Bearer) */
 async function fetchSeoExtensions(templateIdentifier: string): Promise<SeoExtensionRef[]> {
@@ -279,6 +306,7 @@ export function PageSettingsModal({
   onClose,
   initialTab = 'meta',
   extensionsFetcher,
+  templateErrorCodesFetcher,
   templateConfigFetcher,
 }: PageSettingsModalProps): React.ReactElement {
   const { state } = useLayoutEditor();
@@ -471,6 +499,20 @@ export function PageSettingsModal({
       cancelled = true;
     };
   }, [templateIdentifier, extensionsFetcher]);
+
+  // 템플릿 수준 errorHandling 코드(〔템플릿〕 출처, [덮기]).
+  const [templateErrorCodes, setTemplateErrorCodes] = useState<string[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    const fetcher = templateErrorCodesFetcher ?? fetchTemplateErrorCodes;
+    (async () => {
+      const codes = await fetcher(templateIdentifier);
+      if (!cancelled) setTemplateErrorCodes(codes);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [templateIdentifier, templateErrorCodesFetcher]);
 
   const pageType =
     ((getValue<Record<string, unknown>>('meta', {}) ?? {}).seo as Record<string, unknown> | undefined)
@@ -669,8 +711,8 @@ export function PageSettingsModal({
             // 표준 HTTP 에러 코드 행을 항상 노출(D-N). 종전엔 errorConfigCodes 미전달로
             // buildRowCodes 가 ['default'] 만 만들어 401/403/404/500/503 행이 없었다.
             errorConfigCodes={STANDARD_ERROR_CODES}
-            // 이미 errorHandling 에 선언된 코드도 행으로 노출(병합본 키 합집합).
-            templateCodes={Object.keys(errorHandling)}
+            // 템플릿 설정의 errorHandling 코드(〔템플릿〕 출처). 레이아웃이 선언한 코드의 행은 폼이 value 키로 만든다.
+            templateCodes={templateErrorCodes}
             ownCodes={Object.keys((editorOriginal?.errorHandling as Record<string, unknown>) ?? {})}
             recipes={errorRecipes}
             pageCandidates={pageCandidates}

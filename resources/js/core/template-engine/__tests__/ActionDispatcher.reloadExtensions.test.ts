@@ -88,7 +88,7 @@ describe('ActionDispatcher.reloadExtensions (engine-v1.19.0)', () => {
     dispatcher.registerHandler(handlerName, failing);
     const toast = vi.spyOn(dispatcher as any, 'handleToast');
 
-    const result = await dispatcher.executeAction(
+    const result = await dispatcher['executeAction'](
       { handler: 'reloadExtensions', params: { [infoKey]: { identifier: 'acme-x' }, action: 'add' } } as ActionDefinition,
       context
     );

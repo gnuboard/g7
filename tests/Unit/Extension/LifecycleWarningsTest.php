@@ -642,6 +642,17 @@ class LifecycleWarningsTest extends TestCase
         }
         $this->assertContains('App\\Console\\Commands\\Core\\CoreUpdateCommand', $population, '모집단이 비거나 core:update 를 놓치면 안 된다');
 
+        // 코어 갱신이 아니라 선언만 다시 맞추는 단독 명령 — 경고를 직접 출력하고, 그 경고가 곧 이 명령의 실패라 종료 1 이다
+        // (stage 배포 스크립트가 종료코드로 실패를 안다). 「경고를 보이되 종료코드 유지」 계약의 대상이 아니다.
+        $selfReporting = ['App\\Console\\Commands\\Core\\CoreResyncDeclarationsCommand'];
+        foreach ($selfReporting as $class) {
+            $this->assertContains($class, $population, "{$class} 가 모집단에서 사라졌다 — 예외 목록을 정리할 것");
+            $source = (string) file_get_contents(app_path('Console/Commands/Core/'.class_basename($class).'.php'));
+            $this->assertStringContainsString('$this->warn(', $source, "{$class} 는 경고를 직접 출력해야 한다");
+            $this->assertStringContainsString('return self::FAILURE;', $source, "{$class} 는 경고가 있으면 실패로 끝나야 한다");
+        }
+        $population = array_values(array_diff($population, $selfReporting));
+
         foreach ($population as $class) {
             $this->assertContains(ReportsLifecycleWarnings::class, class_uses_recursive($class), "{$class} 가 경고를 출력해야 한다");
             $method = new \ReflectionMethod($class, 'lifecycleWarningsChangeExitCode');
@@ -701,7 +712,7 @@ class LifecycleWarningsTest extends TestCase
     {
         $level = 'warning';
         $service = Mockery::mock(TemplateService::class);
-        $service->shouldReceive('refreshTemplateLayouts')->with('zz-tpl')->andReturnUsing(function () use (&$level) {
+        $service->shouldReceive('refreshTemplateLayouts')->with('zz-tpl', Mockery::any(), Mockery::any())->andReturnUsing(function () use (&$level) {
             $level === 'warning'
                 ? LifecycleWarnings::current()->add('layout_refresh', 'broken.json', 'bad')
                 : LifecycleWarnings::current()->notice('extract', 'my.zip', 'normalized');

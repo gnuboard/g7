@@ -26,6 +26,11 @@ class CategoryServiceTest extends ModuleTestCase
 
     protected $mockImageService;
 
+    /**
+     * 모의 저장소와 모의 이미지 서비스로 CategoryService 를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,10 +45,18 @@ class CategoryServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * Mockery 기대를 검증하고 닫은 뒤 부모 정리를 실행합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     // ========================================
@@ -55,6 +68,12 @@ class CategoryServiceTest extends ModuleTestCase
      *
      * 행만 지우면 물리 파일이 디스크에 영구 잔존하므로, 삭제는 파일 삭제를 포함하는
      * CategoryImageService 경로를 거쳐야 한다.
+     *
+     * @scenario case=delete_with_images
+     *
+     * @effects category_delete_removes_images_through_image_service
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_category_deletes_images(): void
     {
@@ -106,6 +125,12 @@ class CategoryServiceTest extends ModuleTestCase
 
     /**
      * 하위 카테고리가 있는 경우 삭제 시 예외 발생
+     *
+     * @scenario case=blocked_by_children
+     *
+     * @effects category_delete_blocked_when_children_exist
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_category_with_children_throws_exception(): void
     {
@@ -136,6 +161,12 @@ class CategoryServiceTest extends ModuleTestCase
 
     /**
      * 연결된 상품이 있는 경우 삭제 시 예외 발생
+     *
+     * @scenario case=blocked_by_products
+     *
+     * @effects category_delete_blocked_when_products_linked
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_category_with_products_throws_exception(): void
     {

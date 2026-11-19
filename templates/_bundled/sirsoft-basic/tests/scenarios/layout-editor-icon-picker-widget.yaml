@@ -1,0 +1,20 @@
+feature: 레이아웃 편집기 아이콘 고르기 위젯 (sirsoft-basic 소유)
+
+description: |
+  레이아웃 편집기의 아이콘 속성 입력은 템플릿이 소유한 IconPickerWidget 이 맡는다. 템플릿이 아이콘 목록(icons)을 주면
+  검색칸과 격자를 보이고, 목록이 비면 자유 입력칸으로 물러난다. 칸을 누르면 그 아이콘 값을, 「없음」 칸을 누르면
+  undefined 를 넘겨 속성을 지운다. 칸에는 Font Awesome 글리프(`fas fa-{value}`)를 미리 보인다.
+
+axes:
+  catalog: [supplied, empty]
+
+effects:
+  - catalog_renders_search_and_grid         # 목록이 있으면 검색칸과 격자를 보이고 자유 입력칸은 없다
+  - search_filters_by_value_and_keywords    # 검색어가 값이나 keywords 에 맞는 칸만 남긴다
+  - cell_click_emits_icon_value             # 칸을 누르면 onChange 에 그 아이콘 값을 넘긴다
+  - none_cell_clears_icon_prop              # 「없음」 칸은 onChange(undefined) 로 속성을 지운다
+  - empty_catalog_falls_back_to_free_input  # 목록이 비면 자유 입력칸으로 물러난다
+  - cell_previews_font_awesome_glyph        # 칸에 fas fa-{value} 글리프를 그린다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/layout-editor/__tests__/IconPickerWidget.test.tsx

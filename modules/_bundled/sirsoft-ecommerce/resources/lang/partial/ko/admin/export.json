@@ -1,0 +1,203 @@
+{
+  "title": "내보내기 관리",
+  "description": "상품·주문·마일리지 내역에서 요청한 내보내기 파일의 진행 상황을 보고 내려받습니다.",
+  "button": "내보내기",
+  "warnings": {
+    "queue_sync": {
+      "title": "동기 처리 중",
+      "message": "큐 연결이 sync 라 내보내기가 요청 안에서 바로 처리됩니다. 건수가 많으면 화면이 오래 멈추거나 시간 초과로 실패할 수 있습니다. 운영 환경에서는 큐 워커를 설정하세요."
+    },
+    "storage_public": {
+      "title": "공개 저장소 사용 중",
+      "message": "내보내기 파일이 공개 디스크에 저장됩니다. 파일 주소를 아는 사람은 누구나 받을 수 있으므로 운영자 책임 아래 사용하세요. 비공개 디스크를 권장합니다."
+    },
+    "pending_stalled": {
+      "title": "대기 지연",
+      "message": "10분 넘게 「대기」인 작업이 있습니다. 큐 워커가 실행 중인지 확인하세요."
+    }
+  },
+  "modal": {
+    "title": "{type} 내보내기",
+    "loading": "내보내기 설정을 불러오는 중입니다…",
+    "format": "파일 형식",
+    "data": "내보낼 데이터",
+    "data_current": "현재 화면 컬럼",
+    "data_current_hint": "목록에 보이는 컬럼을 그대로 내보냅니다. 여러 값이 한 칸에 모인 컬럼은 항목별 열로 나눕니다.",
+    "data_custom": "데이터 선택",
+    "data_custom_hint": "내보낼 항목을 직접 고릅니다.",
+    "select_all": "전체 선택",
+    "clear_all": "전체 해제",
+    "group_extra": "그 밖의 항목",
+    "personal_badge": "개인정보",
+    "parent_level_badge": "주문 단위",
+    "personal_locked": "개인정보 항목은 「개인정보 내보내기」 권한이 있는 운영자만 고를 수 있습니다.",
+    "row_unit": "행 단위",
+    "scope": "범위",
+    "scope_filter": "현재 검색 조건 ({count}건)",
+    "scope_selected": "선택한 항목 ({count}건)",
+    "scope_all": "조건 없이 전체",
+    "scope_selected_hint": "선택한 항목은 한 번에 최대 {max}건까지 내보낼 수 있습니다.",
+    "period": "기간",
+    "period_current": "목록의 조회 기간",
+    "period_custom": "직접 지정",
+    "period_hint": "기간은 최대 1년까지 선택할 수 있습니다.",
+    "period_required_hint": "이 내역은 기간을 정해야 내보낼 수 있습니다.",
+    "period_defaulted": "목록에 쓸 수 있는 조회 기간이 없어(없거나 1년을 넘음) 오늘까지 최근 1개월로 채웠습니다. 날짜는 바꿀 수 있습니다.",
+    "period_selected_hint": "선택한 항목은 기간과 관계없이 내보냅니다.",
+    "date_type": "기간 기준",
+    "start_date": "시작일",
+    "end_date": "종료일",
+    "locale": "다국어 데이터",
+    "locale_language": "한 언어로",
+    "locale_per_column": "언어별로 열 나누기",
+    "locale_single_column": "한 열에 모든 언어",
+    "locale_select": "언어",
+    "options": "옵션",
+    "include_totals": "마지막 줄에 합계 행 넣기",
+    "totals_none_hint": "고른 항목에 더할 수 있는 열(금액·수량)이 없어 합계 행이 생기지 않습니다. 판매가처럼 개당 가격인 열은 더하지 않습니다.",
+    "reason": "다운로드 사유",
+    "reason_placeholder": "예: 월말 정산 자료 제출",
+    "reason_hint": "개인정보가 담긴 항목을 골랐습니다. 사유는 활동 로그와 내보내기 관리에 남습니다.",
+    "estimate": "예상 {count}행",
+    "estimate_unknown": "조건을 바꿨습니다. 예상 행 수를 다시 계산하세요.",
+    "estimate_recalc": "다시 계산",
+    "estimating": "계산 중…",
+    "estimate_large": "행이 많아 처리에 시간이 걸릴 수 있습니다.",
+    "submit": "내보내기",
+    "submitting": "요청 중…",
+    "close": "닫기",
+    "requested": "내보내기를 요청했습니다. 「내보내기 관리」에서 진행 상황을 보고 내려받을 수 있습니다.",
+    "requested_notice": "내보내기를 요청했습니다. 파일이 준비되면 알림(종 모양)으로 알려 드리며, 목록 위 진행 표시나 「내보내기 관리」에서 내려받을 수 있습니다.",
+    "scope_filter_list": "현재 검색 조건 (목록 {count}건)",
+    "period_current_range": "목록 조회 기간: {start} ~ {end}",
+    "period_current_unavailable": "목록에 쓸 수 있는 조회 기간이 없어(없거나 1년을 넘음) 「목록의 조회 기간」은 고를 수 없습니다.",
+    "estimate_empty": "내보낼 행이 없습니다. 기간이나 검색 조건을 바꿔 보세요.",
+    "estimate_failed": "입력한 조건으로는 계산할 수 없습니다. 표시된 칸을 고치면 예상 행 수를 다시 계산합니다."
+  },
+  "tracking": {
+    "processing": "파일을 만드는 중…",
+    "ready": "파일 준비됨",
+    "download": "받기",
+    "failed": "파일을 만들지 못했습니다",
+    "open_manage": "내보내기 관리에서 보기",
+    "dismiss": "진행 표시 닫기"
+  },
+  "filter": {
+    "search_field": {
+      "all": "전체",
+      "file_name": "파일명",
+      "requester": "요청자"
+    },
+    "search_placeholder": "파일명 또는 요청자 이름·이메일",
+    "status": "진행 상황",
+    "type": "작업 유형",
+    "personal": "개인정보",
+    "personal_with": "포함",
+    "personal_without": "미포함",
+    "requested_at": "요청일",
+    "mine": "내가 요청한 것만",
+    "all": "전체",
+    "search": "검색",
+    "reset": "초기화"
+  },
+  "table": {
+    "column": {
+      "requested_at": "요청 시각",
+      "requester": "요청자",
+      "file_name": "파일명",
+      "type": "작업 유형",
+      "status": "진행 상황"
+    },
+    "empty": "내보내기 요청이 없습니다.",
+    "download_count": "{count}회",
+    "rows": "{count}행",
+    "file_waiting": "파일 생성 전",
+    "personal_badge": "개인정보",
+    "requester_menu": {
+      "view_member": "회원 정보 보기",
+      "search_member": "이 요청자의 내보내기만 보기"
+    }
+  },
+  "sub_row": {
+    "scope": "범위",
+    "period": "기간",
+    "row_unit": "행 단위",
+    "locale_mode": "다국어",
+    "fields": "항목 수",
+    "field_count": "{count}개",
+    "selected_count": "선택 {count}건",
+    "totals": "합계 행",
+    "yes": "포함",
+    "no": "없음",
+    "reason": "사유",
+    "warnings": "요청 당시 경고",
+    "cutoff_at": "기준 시각",
+    "completed_at": "완료 시각",
+    "expires_at": "파일 만료",
+    "file_size": "파일 크기",
+    "error": "실패 사유"
+  },
+  "action": {
+    "download": "내려받기",
+    "view_downloads": "다운로드 이력",
+    "retry": "다시 요청",
+    "delete": "삭제",
+    "bulk_delete": "선택 삭제"
+  },
+  "bulk": {
+    "selected_count": "{count}개 선택됨"
+  },
+  "pagination": {
+    "total": "총 {count}건"
+  },
+  "sort": {
+    "requested_at_desc": "최근 요청순",
+    "requested_at_asc": "오래된 요청순",
+    "completed_at_desc": "최근 완료순",
+    "file_size_desc": "파일 큰 순",
+    "download_count_desc": "다운로드 많은 순"
+  },
+  "modal_delete": {
+    "title": "내보내기 삭제",
+    "message": "이 내보내기 작업과 파일을 삭제합니다.",
+    "warning": "삭제한 파일은 되돌릴 수 없습니다. 다운로드 이력과 활동 로그는 남습니다."
+  },
+  "modal_bulk_delete": {
+    "title": "선택 삭제",
+    "message": "선택한 {count}건의 내보내기 작업과 파일을 삭제합니다.",
+    "warning": "진행중인 작업과 삭제 권한 범위 밖의 작업은 건너뜁니다. 삭제한 파일은 되돌릴 수 없습니다."
+  },
+  "modal_retry": {
+    "title": "다시 요청",
+    "message": "실패한 작업과 같은 조건으로 새 내보내기를 요청합니다.",
+    "hint": "기준 시각은 지금으로 바뀝니다 — 그사이 바뀐 데이터가 반영됩니다.",
+    "reason_hint": "다른 운영자가 요청한 개인정보 작업입니다. 다시 요청하는 사유를 적어 주세요 — 활동 로그와 내보내기 관리에 남습니다."
+  },
+  "modal_downloads": {
+    "title": "다운로드 이력",
+    "file": "파일",
+    "requested": "요청",
+    "conditions": "조건",
+    "reason": "사유",
+    "warnings": "요청 당시 경고",
+    "column": {
+      "sequence": "순번",
+      "user": "내려받은 사람",
+      "downloaded_at": "다운로드 시각",
+      "ip": "IP"
+    },
+    "empty": "아직 내려받은 기록이 없습니다."
+  },
+  "messages": {
+    "deleted": "내보내기를 삭제했습니다.",
+    "retried": "다시 요청했습니다.",
+    "download_failed": "파일을 내려받지 못했습니다. 목록을 새로고침한 뒤 다시 시도하세요."
+  },
+  "common": {
+    "cancel": "취소",
+    "delete": "삭제",
+    "deleting": "삭제 중…",
+    "confirm": "확인",
+    "processing": "처리 중…"
+  }
+}

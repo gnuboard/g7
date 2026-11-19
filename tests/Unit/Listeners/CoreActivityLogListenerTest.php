@@ -3,10 +3,12 @@
 namespace Tests\Unit\Listeners;
 
 use App\Enums\ActivityLogType;
+use App\Enums\ScheduleTriggerType;
 use App\Http\Resources\ActivityLogResource;
 use App\Listeners\CoreActivityLogListener;
 use App\Models\ActivityLog;
 use App\Models\Attachment;
+use App\Models\ExtensionTrustKey;
 use App\Models\Schedule;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -69,8 +71,11 @@ class CoreActivityLogListenerTest extends TestCase
         if ($container = Mockery::getContainer()) {
             $this->addToAssertionCount($container->mockery_getExpectationCount());
         }
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     // ═══════════════════════════════════════════
@@ -171,11 +176,42 @@ class CoreActivityLogListenerTest extends TestCase
         // #736 비밀번호 정책 — after_password_changed 구독을 password_change_recorded 로 옮기고(±0)
         // password_change_postponed·password_expired 를 더함 +2 → 84.
         // #736 D23 회원 등록·수정의 역할 변경(core.user.after_update_roles) +1 → 85.
-        $this->assertCount(85, $hooks);
+        // #798 외부 인증 — 회원 차단·차단 해제·모든 기기 로그아웃(core.user.after_block·after_unblock·
+        // after_sessions_revoked) +3 → 88.
+        // #609 코어 업데이트 웹 단계 실행(core.core_update.started·completed·failed) +3 → 91.
+        // #434 템플릿 환경설정 저장·기본값 되돌리기(core.template_settings.after_save·after_reset) +2 → 93.
+        // #490 회원 추가 항목 값 변경(core.user.fields.after_update) +1 → 94.
+        // #916 확장 신뢰 키 등록·삭제(core.extension_trust_keys.after_create·after_delete) +2 → 96.
+        $this->assertCount(96, $hooks);
+        foreach ([
+            'core.extension_trust_keys.after_create' => 'handleExtensionTrustKeyAfterCreate',
+            'core.extension_trust_keys.after_delete' => 'handleExtensionTrustKeyAfterDelete',
+        ] as $hook => $method) {
+            $this->assertSame(['method' => $method, 'priority' => 20], $hooks[$hook] ?? null, $hook);
+        }
         $this->assertSame(
             ['method' => 'handleUserAfterUpdateRoles', 'priority' => 20],
             $hooks['core.user.after_update_roles'] ?? null,
         );
+        foreach ([
+            'core.user.after_block' => 'handleUserAfterBlock',
+            'core.user.after_unblock' => 'handleUserAfterUnblock',
+            'core.user.after_sessions_revoked' => 'handleUserAfterSessionsRevoked',
+        ] as $hook => $method) {
+            $this->assertSame(['method' => $method, 'priority' => 20, 'sync' => true], $hooks[$hook] ?? null, $hook);
+        }
+
+        // 숫자만 세면 「구독은 했는데 핸들러가 없다」가 통과한다 — 등록된 훅 전부가
+        // 실제 메서드를 가리키는지 함께 본다.
+        foreach ($hooks as $hook => $handler) {
+            $method = is_array($handler) ? ($handler['method'] ?? null) : $handler;
+
+            $this->assertIsString($method, "훅 {$hook} 의 핸들러 이름을 읽지 못했다.");
+            $this->assertTrue(
+                method_exists(CoreActivityLogListener::class, $method),
+                "훅 {$hook} 가 존재하지 않는 메서드 {$method} 를 가리킨다.",
+            );
+        }
     }
 
     /**
@@ -847,6 +883,68 @@ class CoreActivityLogListenerTest extends TestCase
     }
 
     /**
+     * 확장 신뢰 키 등록 훅이 key_id·서명자 이름·vendor 범위와 모델 참조를 담아 기록하는지 확인합니다 (#916).
+     *
+     * @scenario request_area=admin
+     *
+     * @effects create_hook_logs_target_id_and_label
+     *
+     * @return void 없음
+     */
+    // @scenario case=settings_handlers
+    // @effects extension_trust_key_create_and_delete_are_logged
+    public function test_handle_extension_trust_key_after_create_logs_activity(): void
+    {
+        $key = new ExtensionTrustKey(['key_id' => 'glitter:0123456789abcdef', 'label' => 'glitter', 'vendor_scope' => ['glitter', 'glitterlab']]);
+        $key->id = 7;
+
+        $this->logChannel->shouldReceive('info')
+            ->once()
+            ->withArgs(function (string $action, array $context) {
+                return $action === 'extension_trust_key.create'
+                    && $context['log_type'] === ActivityLogType::Admin
+                    && $context['description_key'] === 'activity_log.description.extension_trust_key_create'
+                    && $context['description_params'] === ['key_id' => 'glitter:0123456789abcdef', 'vendors' => 'glitter, glitterlab']
+                    && $context['properties'] === ['key_id' => 'glitter:0123456789abcdef', 'label' => 'glitter', 'vendor_scope' => ['glitter', 'glitterlab']]
+                    && isset($context['loggable']);
+            });
+
+        $this->listener->handleExtensionTrustKeyAfterCreate($key);
+    }
+
+    /**
+     * 확장 신뢰 키 삭제 훅이 지운 키의 key_id·서명자 이름·vendor 범위를 기록하는지 확인합니다 (#916).
+     *
+     * 지운 행이라 모델 참조(loggable)는 싣지 않는다 — 역할·스케줄 삭제와 같다.
+     *
+     * @scenario request_area=admin
+     *
+     * @effects delete_hook_logs_removed_id
+     *
+     * @return void 없음
+     */
+    // @scenario case=settings_handlers
+    // @effects extension_trust_key_create_and_delete_are_logged
+    public function test_handle_extension_trust_key_after_delete_logs_activity(): void
+    {
+        $key = new ExtensionTrustKey(['key_id' => 'glitter:0123456789abcdef', 'label' => 'glitter', 'vendor_scope' => ['glitter']]);
+        $key->id = 7;
+
+        $this->logChannel->shouldReceive('info')
+            ->once()
+            ->withArgs(function (string $action, array $context) {
+                return $action === 'extension_trust_key.delete'
+                    && $context['log_type'] === ActivityLogType::Admin
+                    && $context['description_key'] === 'activity_log.description.extension_trust_key_delete'
+                    && $context['description_params'] === ['key_id' => 'glitter:0123456789abcdef', 'vendors' => 'glitter']
+                    && $context['properties'] === ['id' => 7, 'key_id' => 'glitter:0123456789abcdef', 'label' => 'glitter', 'vendor_scope' => ['glitter']]
+                    && ! isset($context['loggable']);
+            });
+
+        $this->listener->handleExtensionTrustKeyAfterDelete($key);
+    }
+
+    /**
      * 역할 권한 동기화 훅이 추가·제거된 권한만 추려 기록하는지 확인합니다.
      *
      * @scenario request_area=admin
@@ -1270,7 +1368,7 @@ class CoreActivityLogListenerTest extends TestCase
     public function test_handle_schedule_after_run_logs_activity(): void
     {
         $schedule = $this->createModelMock(7);
-        $history = $this->createModelMock(100);
+        $history = $this->createModelMock(100, ['trigger_type' => ScheduleTriggerType::Manual]);
 
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1281,6 +1379,26 @@ class CoreActivityLogListenerTest extends TestCase
                     && $context['description_params']['schedule_id'] === 7
                     && isset($context['loggable']);
             });
+
+        $this->listener->handleScheduleAfterRun($schedule, $history);
+    }
+
+    /**
+     * 예약 실행(틱·큐)은 활동 로그에 남기지 않는지 확인합니다 — 30초 주기 작업만으로 하루 수천 건이
+     * 쌓이면 활동 로그가 운영자 행위 기록으로 쓸모를 잃는다(실행 결과는 실행 이력에 있다).
+     *
+     * @scenario request_area=admin
+     *
+     * @effects schedule_run_logged_against_schedule
+     *
+     * @return void 없음
+     */
+    public function test_handle_schedule_after_run_skips_scheduled_runs(): void
+    {
+        $schedule = $this->createModelMock(7);
+        $history = $this->createModelMock(101, ['trigger_type' => ScheduleTriggerType::Scheduled]);
+
+        $this->logChannel->shouldReceive('info')->never();
 
         $this->listener->handleScheduleAfterRun($schedule, $history);
     }

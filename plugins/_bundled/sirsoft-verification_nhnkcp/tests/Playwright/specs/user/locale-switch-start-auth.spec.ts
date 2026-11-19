@@ -9,7 +9,7 @@
  * 실제로 언어를 바꾼 뒤 가입을 제출해 인증창(팝업)이 열리는 데까지 확인한다.
  * KCP 표준창 내부는 자동화 대상이 아니다 — 통신사 인증 완주는 실 휴대폰이 필요하다.
  *
- * @scenario locale=switched,environment=desktop
+ * @scenario locale=switched,e2e_environment=desktop
  * @effects locale_switch_preserves_start_auth_handler
  */
 import { test, expect } from '@playwright/test';
@@ -23,7 +23,7 @@ function uniqueEmail(): string {
 }
 
 test.describe('언어 전환 후 본인확인 시작', () => {
-  // @scenario locale=switched,environment=desktop
+  // @scenario locale=switched,e2e_environment=desktop
   // @effects locale_switch_preserves_start_auth_handler
   test('언어를 바꾼 뒤에도 시작 버튼이 인증창을 연다', async ({ page, context }) => {
     await page.goto(REGISTER_PATH);

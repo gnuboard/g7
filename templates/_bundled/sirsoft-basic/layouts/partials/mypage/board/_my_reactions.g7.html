@@ -12,7 +12,8 @@
 <partial description="마이페이지 내 게시판 활동 - 내 반응 탭">
   <div>
     <!-- 필터 영역 -->
-    <div class="flex flex-col sm:flex-row gap-3 mb-4">
+    <div class="flex flex-col gap-3 mb-4">
+      <responsive on="640-" class="flex flex-row gap-3 mb-4"/>
       <!-- 게시판 필터 -->
       <select aria-label="$t:mypage.board_activities.reactions.table.board" value="{{_global.myReactionsBoard ?? ''}}" class="w-full min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" options="{{[{ value: '', label: '$t:mypage.board_activities.filter.all_boards' }].concat((boards?.data ?? []).map(board => ({ value: String(board?.slug ?? ''), label: board?.name })))}}">
         <on type="change">
@@ -116,7 +117,8 @@
     <!-- 선택 바 — 고른 것이 있을 때만 선다. 좁은 화면에는 표가 없어 전체선택을 여기에 둔다 -->
     <div data-if="{{(_global.myReactionsSelectedIds ?? []).length > 0}}" class="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-between gap-3">
       <div class="flex items-center gap-2">
-        <label class="flex items-center gap-2 cursor-pointer sm:hidden">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <responsive on="640-" class="items-center gap-2 cursor-pointer hidden"/>
           <input data-testid="my-reactions-select-all-m" type="checkbox" aria-label="$t:common.select_all" class="rounded border-gray-300 dark:border-gray-600" checked="{{(myReactions?.data?.data ?? []).length > 0 &amp;&amp; (myReactions?.data?.data ?? []).every(r => (_global.myReactionsSelectedIds ?? []).includes(r.id))}}">
             <on type="change">
               <!-- 지금 쪽의 전부를 고르거나 전부 푼다 — 다른 쪽의 선택까지 건드리지는 않는다 -->
@@ -155,7 +157,8 @@
       </button>
     </div>
     <!-- 넓은 화면 — 표 -->
-    <div data-if="{{(myReactions?.data?.data ?? []).length > 0}}" class="hidden sm:block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto">
+    <div data-if="{{(myReactions?.data?.data ?? []).length > 0}}" class="hidden bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto">
+      <responsive on="640-" class="block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto"/>
       <table class="w-full">
         <thead class="border-b border-gray-200 dark:border-gray-700">
           <tr>
@@ -188,7 +191,8 @@
             </td>
             <td class="px-4 py-3">
               <div class="flex items-center gap-1.5">
-                <img data-if="{{!!reaction.reaction_type?.icon_url}}" src="{{reaction.reaction_type?.icon_url}}" alt="" class="w-4 h-4 object-contain"/>
+                <!-- thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다 -->
+                <img data-if="{{!!reaction.reaction_type?.icon_url}}" src="{{reaction.reaction_type?.icon_url}}" loading="lazy" decoding="async" alt="" class="w-4 h-4 object-contain"/>
                 <icon data-if="{{!reaction.reaction_type?.icon_url}}" name="{{reaction.reaction_type?.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
                 <span class="text-sm text-gray-700 dark:text-gray-200">{{reaction.reaction_type?.name ?? ''}}</span>
               </div>
@@ -245,7 +249,8 @@
             </td>
             <td class="px-4 py-3">
               <div class="flex items-center gap-1.5">
-                <img data-if="{{!!reaction.reaction_type?.icon_url}}" src="{{reaction.reaction_type?.icon_url}}" alt="" class="w-4 h-4 object-contain"/>
+                <!-- thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다 -->
+                <img data-if="{{!!reaction.reaction_type?.icon_url}}" src="{{reaction.reaction_type?.icon_url}}" loading="lazy" decoding="async" alt="" class="w-4 h-4 object-contain"/>
                 <icon data-if="{{!reaction.reaction_type?.icon_url}}" name="{{reaction.reaction_type?.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
                 <span class="text-sm text-gray-700 dark:text-gray-200">{{reaction.reaction_type?.name ?? ''}}</span>
               </div>
@@ -297,7 +302,8 @@
             </td>
             <td class="px-4 py-3">
               <div class="flex items-center gap-1.5">
-                <img data-if="{{!!reaction.reaction_type?.icon_url}}" src="{{reaction.reaction_type?.icon_url}}" alt="" class="w-4 h-4 object-contain"/>
+                <!-- thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다 -->
+                <img data-if="{{!!reaction.reaction_type?.icon_url}}" src="{{reaction.reaction_type?.icon_url}}" loading="lazy" decoding="async" alt="" class="w-4 h-4 object-contain"/>
                 <icon data-if="{{!reaction.reaction_type?.icon_url}}" name="{{reaction.reaction_type?.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
                 <span class="text-sm text-gray-700 dark:text-gray-200">{{reaction.reaction_type?.name ?? ''}}</span>
               </div>
@@ -340,7 +346,8 @@
       </table>
     </div>
     <!-- 좁은 화면 — 카드. 표와 같은 배열을 보고 같은 선택 상태를 공유한다 -->
-    <div data-if="{{(myReactions?.data?.data ?? []).length > 0}}" class="sm:hidden space-y-3">
+    <div data-if="{{(myReactions?.data?.data ?? []).length > 0}}" class="space-y-3">
+      <responsive on="640-" class="hidden space-y-3"/>
       <div data-testid="my-reaction-row-m-{{reaction.id}}" data-each="reaction in {{myReactions?.data?.data ?? []}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 {{reaction.target_deleted || !reaction.reaction_enabled || reaction.board_deleted ? 'opacity-75' : ''}}">
         <div class="flex items-start gap-3">
           <input data-testid="my-reaction-check-m-{{reaction.id}}" type="checkbox" aria-label="$t:common.select_item|name={{reaction.title ? reaction.title : (reaction.target_type === 'comment' ? $t('mypage.board_activities.reactions.deleted_comment') : $t('mypage.board_activities.reactions.deleted_post'))}}" class="mt-1 rounded border-gray-300 dark:border-gray-600" checked="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}">
@@ -353,7 +360,8 @@
             <div class="flex items-center gap-2 flex-wrap mb-1">
               <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{reaction.target_type === 'comment' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-900 dark:bg-blue-900/40 dark:text-blue-300'}}">{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.target.comment' : '$t:mypage.board_activities.target.post'}}</span>
               <span class="inline-flex items-center gap-1 text-xs text-gray-700 dark:text-gray-300">
-                <img data-if="{{!!reaction.reaction_type?.icon_url}}" src="{{reaction.reaction_type?.icon_url}}" alt="" class="w-4 h-4 object-contain"/>
+                <!-- thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다 -->
+                <img data-if="{{!!reaction.reaction_type?.icon_url}}" src="{{reaction.reaction_type?.icon_url}}" loading="lazy" decoding="async" alt="" class="w-4 h-4 object-contain"/>
                 <icon data-if="{{!reaction.reaction_type?.icon_url}}" name="{{reaction.reaction_type?.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
                 <span>{{reaction.reaction_type?.name ?? ''}}</span>
               </span>

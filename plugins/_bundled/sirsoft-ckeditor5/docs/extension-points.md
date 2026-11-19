@@ -9,10 +9,10 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-ckeditor5.image.after_upload` | action | 에디터 이미지 업로드 기록 생성 후 발화 | `src/Services/ImageUploadService.php:80` |
-| `sirsoft-ckeditor5.image.before_upload` | action | 에디터 이미지 업로드 직전 발화 (본인인증·쿼터 등 확장 지점) | `src/Services/ImageUploadService.php:43` |
+| `sirsoft-ckeditor5.image.after_upload` | action | 에디터 이미지 업로드 기록 생성 후 발화 | `src/Services/ImageUploadService.php:92` |
+| `sirsoft-ckeditor5.image.before_upload` | action | 에디터 이미지 업로드 직전 발화 (본인인증·쿼터 등 확장 지점) | `src/Services/ImageUploadService.php:47` |
 | `sirsoft-ckeditor5.image.filter_reference_sources` | filter | 에디터 이미지 참조 스캔 대상 테이블/컬럼 목록에 확장 콘텐츠를 추가 | 선언 (호출 위치 미확인) |
-| `sirsoft-ckeditor5.image.filter_upload_file` | filter | 업로드 파일 변형 지점 (압축·리사이즈 등) | `src/Services/ImageUploadService.php:48` |
+| `sirsoft-ckeditor5.image.filter_upload_file` | filter | 업로드 파일 변형 지점 (압축·리사이즈 등) | `src/Services/ImageUploadService.php:52` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -37,12 +37,30 @@
 ## 구독 훅
 
 <!-- @generated:hooks-subscribed START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_이 확장은 훅을 구독하지 않습니다._
+| 훅 이름 | 유형 | 리스너 | 메서드 | 우선순위 |
+|---|---|---|---|---|
+| `core.thumbnail.filter_source_providers` | filter | `ThumbnailRegistrationListener` | `addSourceProvider` | 10 |
+| `core.thumbnail.filter_url_patterns` | filter | `ThumbnailRegistrationListener` | `addUrlPattern` | 10 |
 <!-- @generated:hooks-subscribed END -->
 
 <!-- @intent START -->
-하나도 구독하지 않습니다. 이 플러그인은 다른 확장의 흐름에 개입하지 않고, 자기 확장점 안에서만
-동작합니다.
+코어 이미지 썸네일 필터 2개만 구독합니다. 그 밖에는 다른 확장의 흐름에 개입하지 않고, 자기
+확장점 안에서만 동작합니다.
+
+| 훅 | 더하는 것 | 빠지면 |
+|---|---|---|
+| `core.thumbnail.filter_url_patterns` | 본문 이미지 서빙 경로 `/api/plugins/sirsoft-ckeditor5/images/*` | 화면·SEO 가 본문 이미지 주소에 `?size=` 를 붙이지 않아, 본문 이미지 규격과 srcset 이 이 주소를 건너뛰고 원본이 나간다 |
+| `core.thumbnail.filter_source_providers` | 본문 이미지 원본 제공자(`ImageThumbnailSourceProvider`, 공개) | 환경설정 > 업로드 탭의 썸네일 캐시 집계·비우기와 「기존 이미지 썸네일 만들기」가 본문 이미지를 모른다 |
+
+서빙 라우트(`images/{hash}`)를 바꾸면 경로 패턴도 같이 바꿉니다. 어긋나도 오류는 나지 않고 원본만
+나갑니다.
+
+공개 자산 디스크(CDN)에 저장되는 본문 이미지는 `<img src>` 에 직접 주소가 박혀 이 패턴을 지나지 않습니다.
+그 이미지는 업로드 응답의 반응형 후보 `urls`(`default`·원본 가로 후보 = 직접 주소, 원본 가로 이하 숫자 규격 = 사이트 절대 API 서빙 주소
++ `?size=`)를 편집기가 본문 `<img srcset sizes width>` 로 저장해 썸네일을 받습니다(`ImageUploadService::responsiveUrls()`).
+직접 주소가 없는 이미지는 본문 렌더가 API 주소에 srcset 을 붙이므로 `urls` 를 싣지 않습니다. 이 동작 전에 저장된
+본문의 직접 주소 이미지는 원본 그대로입니다. 관리 목록 응답도 `download_url`(원본)과 `preview_url`(항상 API
+서빙 주소)을 함께 내고, 목록 그림 칸은 `preview_url` 에 규격을 겁니다.
 
 관계는 반대 방향으로 흐릅니다 — 다른 확장이 **이 플러그인의 훅을 구독**합니다. 게시판·페이지·
 이커머스가 `image.filter_reference_sources` 에 자기 콘텐츠 테이블을 등록하는 것이 그
@@ -53,11 +71,20 @@ _이 확장은 훅을 구독하지 않습니다._
 ## 훅 리스너
 
 <!-- @generated:listeners START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_훅 리스너가 없습니다._
+| 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
+|---|---|---|---|---|
+| `ThumbnailRegistrationListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/ThumbnailRegistrationListener.php` |
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->
-없습니다. 구독하는 훅이 없으므로 리스너도 필요하지 않습니다.
+`ThumbnailRegistrationListener` 하나입니다. 위의 썸네일 필터 2개를 등록하며, 플러그인이 꺼지면
+리스너도 등록되지 않아 두 목록에서 함께 빠집니다. 제공자(`ImageThumbnailSourceProvider`)는 필터를 부를
+때마다 새로 만들지 않고 컨테이너에 공유 바인딩으로 묶어 다시 씁니다.
+
+제공자는 `sirsoft-ckeditor5/images/…` 경로(업로드 서비스가 쓰는 `images` 카테고리)만 본문 이미지 원본으로
+분류합니다. 다른 카테고리를 더하면 공개 원본으로 저절로 분류되지 않으므로, 공개로 낼 카테고리면 제공자의
+`matches()` 도 함께 고칩니다. 서빙 컨트롤러는 `?size=`·`?w=` 요청에서 원본 파일이 저장소에 있는지를 썸네일
+판정보다 먼저 확인합니다 — 원본만 지워진 행은 남은 파생본이 있어도 무파라미터 요청과 같은 404 입니다.
 
 이미지 정리는 훅이 아니라 **스케줄 커맨드**가 수행합니다. 콘텐츠 변경마다 반응하는 것이 아니라
 주기적으로 전체를 훑는 방식인데, 본문에서 이미지 주소가 빠지는 사건을 훅으로 잡으려면 본문을
@@ -179,7 +206,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 <!-- @generated:schedules START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 스케줄 | 주기 | 설명 |
 |---|---|---|
-| `sirsoft-ckeditor5:prune-unused-images --scheduled` | `daily` | 미참조 에디터 업로드 이미지 정리 |
+| `prune-unused-images` | `0 0 * * *` | 미참조 에디터 이미지 정리 |
 <!-- @generated:schedules END -->
 
 <!-- @intent START -->

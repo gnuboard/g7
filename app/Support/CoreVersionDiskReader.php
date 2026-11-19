@@ -31,6 +31,19 @@ final class CoreVersionDiskReader
             return null;
         }
 
+        return self::fromContent($content);
+    }
+
+    /**
+     * `config/app.php` 내용 문자열에서 version 기본값을 읽습니다.
+     *
+     * 파일이 디스크에 없는 경우(서명할 ZIP 안의 `config/app.php`)에 쓴다. 판정 규칙은 `shippedVersion()` 과 같다.
+     *
+     * @param  string  $content  `config/app.php` 내용
+     * @return string|null 버전 문자열, 읽지 못하면 null
+     */
+    public static function fromContent(string $content): ?string
+    {
         // 'version' => env('APP_VERSION', '7.1.1'),
         if (preg_match("/'version'\s*=>\s*env\(\s*'APP_VERSION'\s*,\s*'([^']+)'\s*\)/", $content, $m)) {
             return $m[1];

@@ -246,5 +246,68 @@
     "show_in_admin_menu_desc": "この掲示板を管理者メニューに表示します。保存時に反映され、[掲示板管理]メニューの下に追加されます。",
     "menu_added_success": "管理者メニューに追加されました。",
     "menu_add_failed": "メニュー追加に失敗しました。"
+  },
+  "display_name": {
+    "label": "投稿者の表示名",
+    "description": "この掲示板の投稿とコメントで、会員の投稿者をどの名前で表示するかを決めます。",
+    "mode_label": "投稿者の表示名の方式",
+    "kind_label": "固定する表示名の種類",
+    "kind_placeholder": "種類を選択",
+    "modes": {
+      "inherit": "サイト既定値に従う",
+      "fixed": "特定の種類に固定",
+      "member": "会員が選んだ値"
+    },
+    "inherited_hint": "現在適用されている値: {{value}}",
+    "member_hint": "会員がmy情報で選んだ表示名で表示されます。",
+    "requires_nickname_notice": "この種類に固定すると、会員項目のニックネームが使用、必須にロックされます。"
+  },
+  "guest_author_fields": {
+    "label": "非会員投稿者項目",
+    "description": "非会員が投稿やコメントを書くときに入力してもらう項目です。名前とパスワードは常に入力してもらいます。",
+    "columns": {
+      "field": "項目",
+      "source": "提供元",
+      "post_enabled": "投稿で使用",
+      "post_required": "投稿で必須",
+      "comment_enabled": "コメントで使用",
+      "comment_required": "コメントで必須",
+      "actions": "管理"
+    },
+    "source": {
+      "board": "掲示板",
+      "custom": "追加"
+    },
+    "fixed_hint": "常に使用する必須項目です。",
+    "unavailable": "使用不可",
+    "unavailable_hint": "この項目を提供した拡張がオフになっています。",
+    "add": {
+      "button": "項目を追加",
+      "title": "非会員投稿者項目の追加",
+      "notice": "項目はすべての掲示板にオフの状態で作成されます。この掲示板で使うには、表で「使用」をオンにして掲示板を保存してください。",
+      "key": "キー",
+      "key_hint": "英小文字で始め、英小文字、数字、アンダースコアのみ使用できます。作成後は変更できません。",
+      "type": "タイプ",
+      "name": "名前",
+      "options": "選択肢",
+      "options_placeholder": "tokyo=東京\nosaka=大阪",
+      "options_hint": "1行に1つずつ「値=名前」の形式で入力してください。値には英小文字、数字、アンダースコア、ハイフンのみ使用できます。",
+      "success": "項目を追加しました。"
+    },
+    "types": {
+      "text": "1行テキスト",
+      "textarea": "複数行テキスト",
+      "number": "数値",
+      "boolean": "はい/いいえ",
+      "date": "日付",
+      "phone": "電話番号",
+      "email": "メール",
+      "url": "URL",
+      "choice": "単一選択",
+      "multi_choice": "複数選択"
+    },
+    "delete": "{{label}} 項目を削除",
+    "delete_confirm": "「{{label}}」項目を削除すると、すべての掲示板から消え、非会員がこの項目に入力した値も削除されます。削除しますか?",
+    "delete_success": "項目を削除しました。"
   }
 }

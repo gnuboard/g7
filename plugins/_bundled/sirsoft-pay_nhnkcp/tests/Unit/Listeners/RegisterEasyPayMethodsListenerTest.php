@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Tests\Unit\Listeners;
 
+use Illuminate\Support\Arr;
 use Plugins\Sirsoft\PayNhnkcp\Listeners\AdjustEcommercePaymentMethodsLayoutListener;
 use Plugins\Sirsoft\PayNhnkcp\Listeners\RegisterEasyPayMethodsListener;
 use Plugins\Sirsoft\PayNhnkcp\Plugin;
@@ -160,6 +161,47 @@ class RegisterEasyPayMethodsListenerTest extends PluginTestCase
     }
 
     /**
+     * 간편결제 이름·설명이 ko·en 두 언어로 고정되지 않고 지원 언어(활성 언어팩) 전부로 채워지는지 확인합니다.
+     *
+     * 종전에는 두 언어만 실려 일본어 언어팩을 켠 사이트의 일본어 화면(쇼핑몰 환경설정 결제수단 목록·주문서)에
+     * 언어팩 번역이 있는데도 한국어 이름이 보였다.
+     *
+     * @scenario contract=display_labels
+     *
+     * @effects easy_pay_labels_cover_supported_locales
+     *
+     * @return void 반환값 없음
+     */
+    public function test_easy_pay_method_labels_cover_every_supported_locale(): void
+    {
+        config(['app.supported_locales' => ['ko', 'en', 'ja']]);
+        $this->app['translator']->addLines(
+            Arr::dot(['payment_methods' => require base_path('lang-packs/_bundled/g7-plugin-sirsoft-pay_nhnkcp-ja/backend/ja/payment_methods.php')]),
+            'ja',
+            'sirsoft-pay_nhnkcp',
+        );
+
+        $localeBefore = app()->getLocale();
+
+        $methods = collect((new RegisterEasyPayMethodsListener)->injectEasyPayMethods([
+            ['id' => 'phone'],
+            ['id' => 'point'],
+        ]))->filter(fn (array $method): bool => str_starts_with((string) $method['id'], 'nhnkcp_'));
+
+        $this->assertCount(5, $methods);
+        foreach ($methods as $method) {
+            $this->assertSame(['ko', 'en', 'ja'], array_keys($method['name']), $method['id']);
+            $this->assertSame(['ko', 'en', 'ja'], array_keys($method['description']), $method['id']);
+        }
+
+        $kakaopay = $methods->firstWhere('id', 'nhnkcp_kakaopay');
+        $this->assertSame('カカオペイ', $kakaopay['name']['ja']);
+        $this->assertSame('カカオペイで決済（NHN KCP）', $kakaopay['description']['ja']);
+        $this->assertSame('카카오페이', $kakaopay['name']['ko']);
+        $this->assertSame($localeBefore, app()->getLocale(), '번역하는 동안 바꾼 앱 언어는 되돌려야 한다');
+    }
+
+    /**
      * 네이버페이·카카오페이가 색 배지 형태의 브랜드 마크(text·class)를 등록 데이터로 싣는지 확인합니다.
      *
      * @scenario mark_form=badge, requires_ios=false, device=ios
@@ -182,8 +224,8 @@ class RegisterEasyPayMethodsListenerTest extends PluginTestCase
         $naverpay = collect($methods)->firstWhere('id', 'nhnkcp_naverpay');
         $kakaopay = collect($methods)->firstWhere('id', 'nhnkcp_kakaopay');
 
-        $this->assertSame(['text' => 'N', 'class' => 'bg-green-700 text-white'], $naverpay['brand_mark'] ?? null);
-        $this->assertSame(['text' => 'K', 'class' => 'bg-yellow-400 text-gray-950'], $kakaopay['brand_mark'] ?? null);
+        $this->assertSame(['text' => 'N', 'class' => 'paynhnkcp:bg-green-700 paynhnkcp:text-white'], $naverpay['brand_mark'] ?? null);
+        $this->assertSame(['text' => 'K', 'class' => 'paynhnkcp:bg-yellow-400 paynhnkcp:text-gray-950'], $kakaopay['brand_mark'] ?? null);
     }
 
     /**

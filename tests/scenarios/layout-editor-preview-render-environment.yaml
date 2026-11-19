@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 렌더 경로(5)×미리보기 기기(4)×창 폭(3)×스타일 방식(4)×값 종류(4) 조합(960)은 전개가 무의미하다. 결함은 축 조합이 아니라 「호스트 전역값을 읽는 지점」 단위로 생기므로, 지점마다 effects 로 잠그고 브라우저 spec 이 기기 3종×창 폭 2종을 실측한다. effects·test_files 축은 계속 검사한다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#714 렌더 경로(5)×미리보기 기기(4)×창 폭(3)×스타일 방식(4)×값 종류(4) 조합(960)은 전개가 무의미하다. 결함은 축 조합이 아니라 「호스트 전역값을 읽는 지점」 단위로 생기므로, 지점마다 effects 로 잠그고 브라우저 spec 이 기기 3종×창 폭 2종을 실측한다. effects·test_files 축은 계속 검사한다.
 feature: 레이아웃 편집기 미리보기 렌더 환경 격리 (공개 이슈 #141)
 
 description: |
@@ -24,6 +24,44 @@ axes:
   window_width: [wider_than_preview, narrower_than_preview, equal]
   style_source: [json_responsive, css_media, css_vw, js_width_branch]
   env_value: [width, translation, action_dispatcher, component_registry]
+  # 아래 축은 시험별 입력 변종이다 — test_files 의 @scenario 가 쓰는 축이며 조합 곱 대상이 아니다
+  render_env: [explicit_env_fallback, explicit_undefined, null_env, edit_mode_false_explicit, absent, present, options.renderEnv, component_context_ref, 4th_arg]
+  env_source: [component_context_ref]
+  explicit_width: [1280]
+  env_width: [390, 500, 700]
+  responsive_key: [custom_range]
+  content_locale: [en]
+  host_locale: [ko]
+  explicit_locale: [ko]
+  dispatcher: [preview_isolated]
+  edit_mode: ["false", "true"]
+  options: [getRemountKey, componentContext]
+  component_context: [absent]
+  layout: [bundled_product_list]
+  wrapper: [renderItemChildren, renderComponentLayout, renderExpandContent, all]
+  explicit: [actionDispatcher]
+  slot_registration: [enabled]
+  cell_option: [renderEnv, componentContext]
+  custom_width: [absent, 767]
+  selector_list: [plain, escaped, nested, attribute, multiple, contains_host]
+  selector_shape: [descendant, pseudo_class, pseudo_element, nested, escaped, host, slotted]
+  apply_count: [2]
+  media_condition: [min_width_px, rem, width_and_non_width, tailwind_v3_max, list_with_print, list_two_width, no_width, or, calc, vw, nested_mix]
+  root_font_px: [20]
+  unit: [vw, svw, dvw, vh, vmin, string, url]
+  sign: [positive, negative, fraction]
+  sheet_shape: [single_width_media, layer_media_supports]
+  media_children: [keyframes]
+  media_parent: [style_rule]
+  children: [nested_declarations]
+  selector_write: [rejected]
+  insert_rule: [throws]
+  sheet: [cross_origin, media_attribute, opt_out]
+  lifecycle: [unmount, mount]
+  declaration_unit: [vw]
+  context: [outside_width_media, inside_width_media]
+  owner: [style_without_vw, style_empty]
+  css_api: [absent, present]
 
 axis_notes:
   render_path: >-

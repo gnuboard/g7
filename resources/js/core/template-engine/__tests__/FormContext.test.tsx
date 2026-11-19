@@ -9,7 +9,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import React from 'react';
 import {
-  FormContext,
   FormProvider,
   useFormContext,
   isAutoBindingEnabled,
@@ -21,12 +20,16 @@ import {
 } from '../FormContext';
 
 describe('FormContext - 기본 기능', () => {
+  // @scenario area=basic
+  // @effects form_context_provides_value
   it('기본 컨텍스트 값은 빈 객체여야 함', () => {
     const { result } = renderHook(() => useFormContext());
 
     expect(result.current).toEqual({});
   });
 
+  // @scenario area=basic
+  // @effects form_context_provides_value
   it('Provider를 통해 값이 전달되어야 함', () => {
     const mockSetState = vi.fn();
     const mockState = { form: { email: 'test@test.com' } };
@@ -65,6 +68,8 @@ describe('FormContext - isAutoBindingEnabled 회귀 테스트', () => {
    * 해결: dataKey + trackChanges + name 세 가지가 모두 필요함을 명시
    */
   describe('[TS-FORM-1] 자동 바인딩 필수 조건 검증', () => {
+    // @scenario area=auto_binding
+    // @effects form_auto_binding_requires_all_conditions
     it('dataKey + name + setState 모두 있어야 자동 바인딩이 활성화됨', () => {
       const context: FormContextValue = {
         dataKey: 'form',
@@ -75,6 +80,8 @@ describe('FormContext - isAutoBindingEnabled 회귀 테스트', () => {
       expect(isAutoBindingEnabled(context, 'email')).toBe(true);
     });
 
+    // @scenario area=auto_binding
+    // @effects form_auto_binding_requires_all_conditions
     it('name이 없으면 자동 바인딩이 비활성화됨', () => {
       const context: FormContextValue = {
         dataKey: 'form',
@@ -88,6 +95,8 @@ describe('FormContext - isAutoBindingEnabled 회귀 테스트', () => {
       expect(isAutoBindingEnabled(context, '')).toBe(false);
     });
 
+    // @scenario area=auto_binding
+    // @effects form_auto_binding_requires_all_conditions
     it('dataKey가 없으면 자동 바인딩이 비활성화됨', () => {
       const context: FormContextValue = {
         // dataKey 없음
@@ -98,6 +107,8 @@ describe('FormContext - isAutoBindingEnabled 회귀 테스트', () => {
       expect(isAutoBindingEnabled(context, 'email')).toBe(false);
     });
 
+    // @scenario area=auto_binding
+    // @effects form_auto_binding_requires_all_conditions
     it('setState가 없으면 자동 바인딩이 비활성화됨', () => {
       const context: FormContextValue = {
         dataKey: 'form',
@@ -108,6 +119,8 @@ describe('FormContext - isAutoBindingEnabled 회귀 테스트', () => {
       expect(isAutoBindingEnabled(context, 'email')).toBe(false);
     });
 
+    // @scenario area=auto_binding
+    // @effects form_auto_binding_requires_all_conditions
     it('trackChanges 없어도 자동 바인딩은 가능함 (trackChanges는 hasChanges 기능만 제어)', () => {
       const context: FormContextValue = {
         dataKey: 'form',
@@ -129,12 +142,16 @@ describe('FormContext - isAutoBindingEnabled 회귀 테스트', () => {
    * 해결: 둘 중 하나만 사용해야 함 (테스트에서는 조건 검증)
    */
   describe('[TS-FORM-3] 자동 바인딩 경로 생성', () => {
+    // @scenario area=auto_binding
+    // @effects form_auto_binding_requires_all_conditions
     it('dataKey와 name을 결합하여 올바른 경로를 생성해야 함', () => {
       expect(getAutoBindingPath('form', 'email')).toBe('form.email');
       expect(getAutoBindingPath('settings', 'popup_width')).toBe('settings.popup_width');
       expect(getAutoBindingPath('filter', 'minPrice')).toBe('filter.minPrice');
     });
 
+    // @scenario area=auto_binding
+    // @effects form_auto_binding_requires_all_conditions
     it('중첩된 name도 지원해야 함', () => {
       expect(getAutoBindingPath('form', 'address.city')).toBe('form.address.city');
     });
@@ -146,11 +163,15 @@ describe('FormContext - isAutoBindingEnabled 회귀 테스트', () => {
 // =============================================================================
 
 describe('FormContext - getNestedValue 헬퍼', () => {
+  // @scenario area=nested_get
+  // @effects form_nested_value_read
   it('단일 경로에서 값을 가져와야 함', () => {
     const obj = { email: 'test@test.com' };
     expect(getNestedValue(obj, 'email')).toBe('test@test.com');
   });
 
+  // @scenario area=nested_get
+  // @effects form_nested_value_read
   it('중첩 경로에서 값을 가져와야 함', () => {
     const obj = {
       form: {
@@ -162,16 +183,22 @@ describe('FormContext - getNestedValue 헬퍼', () => {
     expect(getNestedValue(obj, 'form.user.email')).toBe('test@test.com');
   });
 
+  // @scenario area=nested_get
+  // @effects form_nested_value_read
   it('존재하지 않는 경로는 undefined를 반환해야 함', () => {
     const obj = { form: {} };
     expect(getNestedValue(obj, 'form.nonexistent')).toBeUndefined();
     expect(getNestedValue(obj, 'nonexistent.path')).toBeUndefined();
   });
 
+  // @scenario area=nested_get
+  // @effects form_nested_value_read
   it('obj가 undefined이면 undefined를 반환해야 함', () => {
     expect(getNestedValue(undefined, 'any.path')).toBeUndefined();
   });
 
+  // @scenario area=nested_get
+  // @effects form_nested_value_read
   it('중간 경로가 null/undefined면 undefined를 반환해야 함', () => {
     const obj = { form: null };
     expect(getNestedValue(obj, 'form.email')).toBeUndefined();
@@ -179,6 +206,8 @@ describe('FormContext - getNestedValue 헬퍼', () => {
 });
 
 describe('FormContext - setNestedValue 헬퍼', () => {
+  // @scenario area=nested_set
+  // @effects form_nested_value_written
   it('단일 경로에 값을 설정해야 함', () => {
     const obj = { email: '' };
     const result = setNestedValue(obj, 'email', 'test@test.com');
@@ -188,6 +217,8 @@ describe('FormContext - setNestedValue 헬퍼', () => {
     expect(result).not.toBe(obj);
   });
 
+  // @scenario area=nested_set
+  // @effects form_nested_value_written
   it('중첩 경로에 값을 설정해야 함', () => {
     const obj = {
       form: {
@@ -205,6 +236,8 @@ describe('FormContext - setNestedValue 헬퍼', () => {
     expect(result.form.user).not.toBe(obj.form.user);
   });
 
+  // @scenario area=nested_set
+  // @effects form_nested_value_written
   it('존재하지 않는 중간 경로를 자동 생성해야 함', () => {
     const obj = {};
     const result = setNestedValue(obj, 'form.user.email', 'test@test.com');
@@ -217,6 +250,8 @@ describe('FormContext - setNestedValue 헬퍼', () => {
    *
    * 폼에서 배열 필드 (예: tags[0], options[1].value) 처리 시 필요
    */
+  // @scenario area=nested_set
+  // @effects form_nested_value_written
   it('배열 인덱스 경로를 올바르게 처리해야 함', () => {
     const obj = {
       form: {
@@ -231,6 +266,8 @@ describe('FormContext - setNestedValue 헬퍼', () => {
     expect(result.form.tags).not.toBe(obj.form.tags);
   });
 
+  // @scenario area=nested_set
+  // @effects form_nested_value_written
   it('새 배열 인덱스에 값을 설정해야 함', () => {
     const obj = { items: [] };
     const result = setNestedValue(obj, 'items.0', { name: 'item1' });
@@ -241,6 +278,8 @@ describe('FormContext - setNestedValue 헬퍼', () => {
   // 사례 26: PHP {} → [] 변환으로 배열에 문자열 키 접근 시 객체로 변환
   // =========================================================================
 
+  // @scenario area=nested_set
+  // @effects form_nested_value_written
   it('빈 배열에 문자열 키로 접근 시 객체로 변환해야 함 (PHP {} → [] 변환 대응)', () => {
     // PHP json_decode(assoc=true)가 {} → []로 변환하는 경우
     const obj = { editingAddress: [] as any };
@@ -253,6 +292,8 @@ describe('FormContext - setNestedValue 헬퍼', () => {
     expect(JSON.parse(JSON.stringify(result.editingAddress))).toEqual({ name: '집' });
   });
 
+  // @scenario area=nested_set
+  // @effects form_nested_value_written
   it('데이터가 있는 배열에 문자열 키로 접근 시 객체로 변환하되 기존 데이터 보존', () => {
     const obj = { items: ['a', 'b'] as any };
     const result = setNestedValue(obj, 'items.label', 'test');
@@ -265,6 +306,8 @@ describe('FormContext - setNestedValue 헬퍼', () => {
     expect(result.items[1]).toBe('b');
   });
 
+  // @scenario area=nested_set
+  // @effects form_nested_value_written
   it('배열에 숫자 키로 접근 시 배열을 유지해야 함 (기존 동작 회귀 방지)', () => {
     const obj = { tags: ['tag1', 'tag2'] };
     const result = setNestedValue(obj, 'tags.0', 'updated');
@@ -275,6 +318,8 @@ describe('FormContext - setNestedValue 헬퍼', () => {
     expect(result.tags[1]).toBe('tag2');
   });
 
+  // @scenario area=nested_set
+  // @effects form_nested_value_written
   it('중첩 경로에서 배열+숫자키 접근은 배열을 유지해야 함 (사례 5 회귀 방지)', () => {
     const obj = {
       form: {
@@ -307,6 +352,8 @@ describe('FormContext - trackChanges와 hasChanges 연동 회귀 테스트', () 
    * - 이 테스트는 DynamicRenderer의 실제 동작을 시뮬레이션
    */
   describe('[TS-FORM-TRACKCHANGES-1] hasChanges 자동 업데이트 시나리오', () => {
+    // @scenario area=track_changes
+    // @effects form_track_changes_controls_has_changes
     it('trackChanges: true + name prop이 있으면 hasChanges 업데이트가 가능해야 함', () => {
       const setStateMock = vi.fn();
       const context: FormContextValue = {
@@ -333,6 +380,8 @@ describe('FormContext - trackChanges와 hasChanges 연동 회귀 테스트', () 
       });
     });
 
+    // @scenario area=track_changes
+    // @effects form_track_changes_controls_has_changes
     it('trackChanges가 없으면 hasChanges를 업데이트하지 않아야 함', () => {
       const setStateMock = vi.fn();
       const context: FormContextValue = {
@@ -366,6 +415,8 @@ describe('FormContext - trackChanges와 hasChanges 연동 회귀 테스트', () 
    * - 이 경우 onChange에서 직접 hasChanges: true 설정 필요
    */
   describe('[TS-FORM-MANUAL-BINDING] 수동 바인딩 시나리오', () => {
+    // @scenario area=track_changes
+    // @effects form_track_changes_controls_has_changes
     it('name prop 없이 수동 바인딩 시 자동 바인딩이 비활성화됨', () => {
       const context: FormContextValue = {
         dataKey: 'form',
@@ -378,6 +429,8 @@ describe('FormContext - trackChanges와 hasChanges 연동 회귀 테스트', () 
       expect(isAutoBindingEnabled(context, undefined)).toBe(false);
     });
 
+    // @scenario area=track_changes
+    // @effects form_track_changes_controls_has_changes
     it('수동 바인딩 시 hasChanges를 직접 설정해야 함', () => {
       const setStateMock = vi.fn();
 
@@ -419,6 +472,8 @@ describe('FormContext - hasExplicitSetStateForField 헬퍼', () => {
    * 해결: change 이벤트의 setState가 해당 필드를 대상으로 하면 자동 바인딩 스킵
    */
   describe('[TS-FORM-4] change + setState + 동일 필드 경로 탐지', () => {
+    // @scenario area=explicit_set_state
+    // @effects form_explicit_set_state_detected
     it('change 이벤트에서 setState가 동일 필드를 대상으로 하면 true', () => {
       const actions = [
         {
@@ -434,6 +489,8 @@ describe('FormContext - hasExplicitSetStateForField 헬퍼', () => {
       expect(hasExplicitSetStateForField(actions, 'form', 'purchase_restriction')).toBe(true);
     });
 
+    // @scenario area=explicit_set_state
+    // @effects form_explicit_set_state_detected
     it('change 이벤트에서 setState가 다른 필드만 대상이면 false', () => {
       const actions = [
         {
@@ -449,6 +506,8 @@ describe('FormContext - hasExplicitSetStateForField 헬퍼', () => {
       expect(hasExplicitSetStateForField(actions, 'form', 'purchase_restriction')).toBe(false);
     });
 
+    // @scenario area=explicit_set_state
+    // @effects form_explicit_set_state_detected
     it('change + sequence 내부 setState가 동일 필드를 대상으로 하면 true', () => {
       const actions = [
         {
@@ -470,6 +529,8 @@ describe('FormContext - hasExplicitSetStateForField 헬퍼', () => {
       expect(hasExplicitSetStateForField(actions, 'form', 'purchase_restriction')).toBe(true);
     });
 
+    // @scenario area=explicit_set_state
+    // @effects form_explicit_set_state_detected
     it('click 이벤트의 setState는 무시 (change가 아님)', () => {
       const actions = [
         {
@@ -485,14 +546,20 @@ describe('FormContext - hasExplicitSetStateForField 헬퍼', () => {
       expect(hasExplicitSetStateForField(actions, 'form', 'purchase_restriction')).toBe(false);
     });
 
+    // @scenario area=explicit_set_state
+    // @effects form_explicit_set_state_detected
     it('actions가 undefined이면 false', () => {
       expect(hasExplicitSetStateForField(undefined, 'form', 'name')).toBe(false);
     });
 
+    // @scenario area=explicit_set_state
+    // @effects form_explicit_set_state_detected
     it('actions가 빈 배열이면 false', () => {
       expect(hasExplicitSetStateForField([], 'form', 'name')).toBe(false);
     });
 
+    // @scenario area=explicit_set_state
+    // @effects form_explicit_set_state_detected
     it('change + apiCall (setState가 아닌 핸들러)이면 false', () => {
       const actions = [
         {

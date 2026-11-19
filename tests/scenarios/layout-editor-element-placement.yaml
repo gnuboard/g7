@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage[cross_product,effects,test_files] reason: 미작성 테스트를 매니페스트가 거짓 선언하지 않도록 명시.
+# audit:allow test-scenario-coverage[cross_product,effects,test_files] reason: issue:#609 미작성 테스트를 매니페스트가 거짓 선언하지 않도록 명시.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 #   test-files 면제 사유: link-edit-affordance.test.tsx 미작성 (#383 이월)
 feature: 레이아웃 편집기 요소 배치 (팔레트 / 컨텍스트 + 버튼 / 드래그앤드롭 / 오버레이 / 저장)
 phase: 3
@@ -167,6 +168,37 @@ effects:
   - global_palette_locked_node_inserts_at_anchor_sibling_after
   - added_node_in_locked_area_preserved_as_route_content_on_save
   - none_node_insertion_unchanged_anchor_equals_self
+  # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
+  - route_edit_source_lock_takes_precedence_over_data_bound_classification
+  - route_owned_or_untagged_bound_nodes_stay_data_bound_editable
+  - source_lock_is_judged_on_the_node_itself_not_its_ancestors
+  - lock_kind_editability_and_dnd_denial_share_one_predicate
+  - locked_source_nodes_are_denied_at_drag_start_move_and_end
+  - route_edit_source_lock_blocks_inline_edit_delete_cut_and_duplicate_entry_points
+  - structural_edit_callbacks_guard_locked_nodes_without_trusting_the_caller
+  - route_owned_nodes_keep_inline_edit_delete_cut_and_duplicate
+  - save_conflict_reads_versions_from_response_helper_errors_payload
+  - serving_cache_key_uses_server_current_version_not_client_query_version
+  # 2026-10-31 issue609 테스트 매핑 부채 정리: 레이아웃 편집기 단위 테스트가 실제로 재는 효과 (메서드 단위 마킹)
+  - drag_handle_double_click_forwards_inline_edit_request             # 드래그 핸들 더블클릭이 인라인 편집 진입 요청으로 그 경로를 넘긴다
+  - drag_handle_absent_for_nodes_clipped_outside_frame                # frame 밖으로 밀려 가려진 노드(닫힌 드로어 등)에는 핸들을 그리지 않는다
+  - drag_handle_click_delegates_selection_to_select_path              # 핸들 클릭이 onSelectPath 로 선택을 위임한다
+  - dnd_layer_renders_nothing_without_frame                           # frame 요소가 없으면 드래그 레이어를 렌더하지 않는다
+  - sibling_reorder_within_filled_parent_commits_inside_that_parent   # 채워진 부모 안 형제 재배치가 조부모로 새지 않고 그 부모 안에 커밋된다
+  - drop_at_original_position_is_noop_without_patch_or_history        # 원래 자리로 드롭하면 트리 변경과 이력 적재를 모두 생략한다
+  - drag_start_of_non_draggable_component_is_tracked_as_denied        # draggable 목록 밖 컴포넌트의 드래그 시작은 denied_no_draggable 로 적재된다
+  - drop_without_valid_slot_is_cancelled_without_commit               # 유효 슬롯 없이 끝난 드래그는 cancelled 로 적재되고 커밋하지 않는다
+  - modal_edit_confines_drag_and_drop_to_editable_root                # 모달 편집 모드의 드래그 시작과 드롭이 편집 루트 서브트리 안으로 한정된다
+  - save_conflict_409_returns_concurrent_modification_with_versions   # 저장 409 응답이 concurrent_modification 과 최신/내 버전을 돌려준다
+  - save_network_failure_returns_network_error_with_message           # 저장 요청 실패가 network_error 와 메시지로 돌아온다
+  - save_put_url_preserves_nested_layout_name_slashes                 # 중첩 레이아웃 이름의 슬래시를 저장 PUT 주소에서 인코딩하지 않는다
+  - editor_path_parses_children_indexes_into_source_path              # 편집기 DOM 경로의 children 인덱스를 소스 경로 배열로 바꾼다
+  - editor_path_strips_virtual_iteration_and_sortable_row_indexes     # iteration/sortable 뒤 데이터 행 인덱스는 소스 경로에서 뺀다
+  - lock_kind_is_none_when_nothing_is_selected                        # 선택 노드가 없으면 잠금 종류는 none 이다
+  - extension_point_and_slot_nodes_classify_as_extension_point_lock   # extension_point 와 슬롯 노드는 모드와 무관하게 extension_point 잠금이다
+  - route_edit_locks_base_originated_nodes                            # route 편집에서 base 출처 노드는 base 잠금으로 분류된다
+  - context_menu_allowed_only_for_unlocked_and_data_bound_nodes       # 속성 메뉴는 none 과 data_bound 만 허용하고 출처 잠금은 막는다
+  - dom_path_slices_to_entry_depth_skipping_virtual_row_indexes       # DOM 경로를 진입점 깊이로 자르되 가상 행 인덱스 토큰은 깊이에서 뺀다
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/dnd/nestingRules.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/dnd/dropSlots.test.ts
@@ -183,7 +215,6 @@ test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/components/ComponentContextMenu.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/components/DndCanvasLayer.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/layouts/canvas-click-action-intercept.test.tsx
-  - resources/js/core/template-engine/layout-editor/__tests__/layouts/link-edit-affordance.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/layouts/drag-drop-matrix.test.tsx
   - tests/Feature/Api/Admin/LayoutControllerEditorSaveTest.php
   # S5a-3 후속 — defaultNode 공통 디자인 className 복제 검증
@@ -197,6 +228,9 @@ test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/utils/overlayZIndex.test.ts
   # 잠긴 영역 요소 추가(+) 복원 (anchor 박스 + 묶음 바깥 삽입) E2E
   - tests/Playwright/specs/layout-editor/locked-area-insertion.spec.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/EditorCanvasOverlay.entryPointGuard.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/EditorCanvasOverlay.sourceLockGuard.test.tsx
+  - tests/Feature/Api/Public/LayoutServingStaleClientVersionKeyTest.php
 notes: |
   - dropZoneResolver/useCanvasDnd/DndCanvasLayer/drag-drop-matrix 등 dnd 본격 동작은 S5b (PR #4b) 에서 추가.
   - link-edit-affordance.test.tsx 는 useElementSelection.test.ts 가 classifyNavAffordance 단위 분기를 커버하며,

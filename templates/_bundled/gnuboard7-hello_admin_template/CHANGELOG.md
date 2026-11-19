@@ -4,6 +4,25 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [0.2.4] - 2026-11-20
+
+### Added
+
+- 템플릿이 자기 설정 화면을 공급하는 가장 작은 예제를 추가했습니다 — 화면 레이아웃(`settings/template_settings.g7.html`), 화면 부품(`src/settings/TemplateSettingsScreen.tsx`, 파비콘 1칸·업로더·저장 결과·확인 창), 묶음 빌드(`vite.settings.config.ts`), 부품 매니페스트(`components.settings.json`). 어느 관리자 템플릿이 켜져 있든 이 화면이 뜹니다. 업로더는 저장 신호의 결과로 실패 수(`{ failedCount, message }`)를 돌려주고, 화면 레이아웃은 올리기가 하나라도 실패하면 저장을 보내지 않고 실패 문구를 남깁니다.
+- 템플릿 환경설정 예제(브랜딩 섹션의 파비콘 1칸)를 추가했습니다 — `config/settings/defaults.json` 선언의 최소 예입니다.
+- 다크 모드 방식 선언(`features.color_scheme`)을 넣었습니다. 이 템플릿은 다크 모드가 없다고 코어에 알리므로, 확장 화면은 이 템플릿에서 늘 밝은 색으로 그려집니다(코어 7.2.0 이상).
+- 이미지(`Img`)에 `thumbPreset`(코어 이미지 썸네일 규격)과 기본 지연 로딩·비동기 디코딩을 추가했습니다.
+
+### Changed
+
+- 첫 화면에 필요한 템플릿 설정을 페이지에 함께 실어 보내도록 template.json 에 expose 선언 예시를 더했습니다.
+- 사이트를 문서 루트 하위 폴더(예: `https://example.com/g7/`)에 설치하는 배치를 지원합니다 — 화면의 링크와 이미지 주소가 설치 폴더 안을 가리킵니다.
+- 코어 7.2.0 이상이 필요합니다(`g7_version >=7.2.0`).
+
+### Fixed
+
+- 화면 편집기로 지정한 이미지가 깨져 보이던 문제를 수정했습니다. 이미지 주소 자리에 알 수 없는 값이 저장된 사이트에서도 이제 그림이 정상 표시되며, 주소를 해석할 수 없으면 이미지 속성을 붙이지 않습니다.
+
 ## [0.2.3] - 2026-10-23
 
 ### Added

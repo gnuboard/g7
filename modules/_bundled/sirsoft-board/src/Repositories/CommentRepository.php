@@ -648,6 +648,20 @@ class CommentRepository implements CommentRepositoryInterface
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public function eachGuestIdChunkByBoardId(int $boardId, int $size, callable $callback): void
+    {
+        Comment::withTrashed()
+            ->where('board_id', $boardId)
+            ->whereNull('user_id')
+            ->select('id')
+            ->chunkById($size, function ($comments) use ($callback) {
+                $callback($comments->pluck('id')->all());
+            });
+    }
+
+    /**
      * 게시판 ID 기준으로 댓글을 일괄 소프트 삭제합니다.
      *
      * @param  int  $boardId  게시판 ID

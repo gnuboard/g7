@@ -11,6 +11,7 @@ use App\Support\ContentMedia\ContentMediaPolicyRules;
 use App\Support\GuestRoleResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface;
 use Modules\Sirsoft\Board\Services\PostContentMediaService;
@@ -408,12 +409,23 @@ class BoardResource extends BaseApiResource
             "{$rolePrefix}.step",
         ])->with('users')->get();
 
+        // 이름은 이 화면의 표시 이름이다 — 사용자 화면은 그 게시판의 설정, 관리자 화면은 관리자 영역.
+        // 실명은 관리자 화면 요청이고 회원 조회 권한이 있을 때만 `real_name` 으로 더한다.
+        $displayNames = app(BoardDisplayNames::class);
+        $area = $displayNames->areaFor();
+        $boardSlug = str_starts_with($rolePrefix, 'sirsoft-board.') ? substr($rolePrefix, strlen('sirsoft-board.')) : null;
+
         foreach ($roles as $role) {
-            $users = $role->users->map(fn ($user) => [
-                'uuid' => $user->uuid,
-                'name' => $user->name,
-                ...($includeEmail ? ['email' => $user->email] : []),
-            ])->values()->toArray();
+            $displayNames->preload($role->users, $area, $boardSlug);
+            $users = $role->users->map(function ($user) use ($displayNames, $area, $boardSlug, $includeEmail) {
+                $displayName = $displayNames->name($user, null, $area, $boardSlug);
+
+                return $displayNames->withRealName([
+                    'uuid' => $user->uuid,
+                    'name' => $displayName,
+                    ...($includeEmail ? ['email' => $user->email] : []),
+                ], $user, $displayName);
+            })->values()->toArray();
 
             $ids = $role->users->pluck('uuid')->toArray();
 

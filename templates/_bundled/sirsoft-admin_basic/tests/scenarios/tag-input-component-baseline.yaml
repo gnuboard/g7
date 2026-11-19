@@ -1,0 +1,35 @@
+feature: TagInput 기본 계약 — 렌더, 선택, 만들기, 구분자, 그룹, 입력 콜백, 편집기 속성
+
+description: |
+  관리자 화면 전반이 쓰는 태그 입력(TagInput)의 컴포넌트 단위 기본 계약. 화면 읽기 안내문과 기본 문구의 다국어는
+  `list-filter-accessibility.yaml`, 붙여넣기와 다국어 태그 이름은 `multilingual-tag-input-paste-names.yaml`,
+  만든 뒤 메뉴 유지는 `TagInput.menuAfterCreate.test.tsx` 의 매니페스트가 소유한다. 엔진 밖(단위 테스트)에서는 번역 함수가
+  없어 기본 문구가 영어 대체 문구(「add」 등)로 나온다.
+
+axes:
+  area: [render, disabled, on_change, menu_portal, before_remove, creatable, select_only, max_items, filter, a11y_role, delimiter, no_options_prop, grouping, input_change, editor_attrs, style_csp]
+
+effects:
+  - tag_input_renders_values_and_counts
+  - tag_input_disabled_blocks_input
+  - tag_input_selection_calls_on_change
+  - tag_input_menu_portal_above_sticky
+  - tag_input_before_remove_guards_removal
+  - tag_input_creates_new_option
+  - tag_input_select_only_blocks_creation
+  - tag_input_max_items_enforced
+  - tag_input_filters_options_by_input
+  - tag_input_has_combobox_role
+  - tag_input_delimiter_splits_tags
+  - tag_input_creatable_without_options
+  - tag_input_groups_options
+  - tag_input_input_change_callback
+  - tag_input_editor_attrs_reach_root
+  # 스타일 정책 강제 — emotion 규칙을 생성형 시트로 싣는다(utils/adoptedEmotionCache.ts)
+  - tag_input_emotion_rules_in_adopted_sheet
+  - tag_input_creates_no_style_element
+  - tag_input_emotion_fallback_without_adopted
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TagInput.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TagInput.styleCsp.test.tsx

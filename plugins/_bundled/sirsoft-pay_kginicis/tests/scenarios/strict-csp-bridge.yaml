@@ -13,7 +13,8 @@ description: |
     - CBT 결제확인서 팝업: 인쇄 버튼은 data-print + 쓰기 뒤 click 리스너
 
 axes:
-  page: [payment_close, escrow_return, escrow_confirm]
+  # 서버가 내는 독립 HTML 셋과 브라우저가 쓰는 결제확인서 팝업은 같은 축의 서로 다른 값이다 — 서로 곱하지 않는다
+  page: [payment_close, escrow_return, escrow_confirm, receipt_popup]
 
 effects:
   - bridge_page_has_no_inline_executable
@@ -26,5 +27,5 @@ test_files:
   - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/receiptPopup.print.test.ts
 
 notes: |
-  팝업 인쇄 시험은 표면 축(`surface=receipt_popup`)으로 따로 표시한다 — 서버 페이지 축(page)과 교차하지 않는다.
+  팝업 인쇄 시험은 page 축의 별도 값(`page=receipt_popup`)으로 표시한다 — 서버 페이지와 교차하지 않는다.
   실제 PG 결제창·에스크로 창의 브라우저 동작은 코어 이력 문서의 브라우저 실측(T8 브리지 행)이 덮는다.

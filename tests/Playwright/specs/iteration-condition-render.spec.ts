@@ -14,8 +14,11 @@
  * 두 렌더러를 동시에 바꾼 수정이라 한쪽만 되돌아가면 브라우저에서는 목록이 보이는데
  * 봇 화면에서만 비는 비대칭이 생긴다.
  *
- * @scenario iteration_item_condition, iteration_item_index_variable
- * @effects iteration_renders_matching_items, iteration_injects_item_index
+ * 케이스는 매니페스트 `tests/scenarios/iteration-condition-render.yaml` 의 `case` 축이다
+ * (종전 케이스 이름 iteration_item_condition 은 항목 변수·외곽 변수·실사용 혼합 세 갈래로 나뉘었다).
+ *
+ * @scenario iteration-condition-render
+ * 효과 요약(마커 아님 — 평문): iteration_renders_matching_items, outer_only_condition_gates_whole_list, iteration_injects_item_index.
  */
 import { test, expect } from '../fixtures/auth';
 
@@ -99,7 +102,7 @@ test.describe('iteration + if 항목별 조건 평가', () => {
     );
   });
 
-  // @scenario iteration_item_condition
+  // @scenario case=item_variable_condition
   // @effects iteration_renders_matching_items
   test('항목 변수를 참조하는 if 가 목록 전체를 지우지 않는다', async ({ page }) => {
     const result: any = await page.evaluate(
@@ -131,8 +134,8 @@ test.describe('iteration + if 항목별 조건 평가', () => {
     expect(result.texts, '항목 조건이 항목별로 평가되지 않았습니다').toEqual(['가', '다']);
   });
 
-  // @scenario iteration_item_condition
-  // @effects iteration_renders_matching_items
+  // @scenario case=outer_variable_only_condition
+  // @effects outer_only_condition_gates_whole_list
   test('외곽 변수만 참조하는 if 는 종전대로 목록 전체를 차단한다', async ({ page }) => {
     const blocked: any = await page.evaluate(
       ([source, componentDef, dataContext]) =>
@@ -176,7 +179,7 @@ test.describe('iteration + if 항목별 조건 평가', () => {
     expect(shown.texts).toEqual(['가', '나']);
   });
 
-  // @scenario iteration_item_index_variable
+  // @scenario case=item_index_variable
   // @effects iteration_injects_item_index
   test('{item_var}_index 자동 변수가 단발 렌더 경로에도 주입된다', async ({ page }) => {
     const result: any = await page.evaluate(
@@ -201,7 +204,7 @@ test.describe('iteration + if 항목별 조건 평가', () => {
     expect(result.texts).toEqual(['0', '1', '2']);
   });
 
-  // @scenario iteration_item_condition
+  // @scenario case=repository_mixed_condition
   // @effects iteration_renders_matching_items
   test('저장소 실사용 형태(게시판 댓글 접기 조건)가 항목별로 평가된다', async ({ page }) => {
     // 아래 조건식은 합성 예시가 아니라 저장소에 실제로 쓰인 작성 그대로다.

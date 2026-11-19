@@ -22,6 +22,8 @@
  * @since engine-v1.64.0
  */
 
+import { normalizeForOriginCheck } from './assetUrl';
+
 /**
  * origin 판정 전에 스크립트 src 를 브라우저 URL 파서와 동일하게 정규화합니다.
  *
@@ -38,14 +40,12 @@
  * @returns 정규화된 src
  */
 export function normalizeScriptSrcForOriginCheck(src: string): string {
-    // ASCII tab / LF / CR 제거 (브라우저 파서가 파싱 전에 제거하는 문자)
-    // → 백슬래시를 슬래시로 (special scheme 에서 등가)
-    const slashed = src.replace(/[\t\n\r]/g, '').replace(/\\/g, '/');
-
-    // 선행 슬래시가 3개 이상이어도 브라우저는 authority 시작으로 접는다
-    // (`///host/x` ≡ `//host/x`, `https:///host/x` ≡ `https://host/x`).
-    // 경로 중간의 연속 슬래시(`/js//a.js`)는 브라우저도 경로로 두므로 건드리지 않는다.
-    return slashed.replace(/^([a-z][a-z0-9+.\-]*:)?\/{2,}/i, '$1//');
+    // 규칙 본체는 `support/assetUrl` 가 소유한다 — 같은 정규화를 쓰는 런타임 소비처가
+    // 둘(이 스크립트 src 판정 · 브라우저 이동 판정 `navPolicy.sanitizeNavPath`)이라, 사본을
+    // 두면 한쪽만 강화됐을 때 다른 쪽이 조용한 우회로가 된다. 이 모듈은 「스크립트 주입
+    // 허용 판정」의 SSoT 로 남고, 그 판정이 쓰는 「URL 정규화」 프리미티브만 위임한다.
+    // @since engine-v1.93.0 (본체 이관)
+    return normalizeForOriginCheck(src);
 }
 
 /**

@@ -9,7 +9,6 @@
  *  ④ 고급 보존 항목(recipe=null) 도 코드 열람
  */
 
-import React from 'react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ActionPreview } from '../../../components/page-settings/ActionPreview';
@@ -24,6 +23,10 @@ const toastRecipe = {
 beforeEach(() => cleanup());
 
 describe('ActionPreview', () => {
+  /**
+   * @scenario subject=action_preview
+   * @effects action_preview_friendly_summary
+   */
   it('친화 요약을 합성해 표시한다', () => {
     render(
       <ActionPreview
@@ -38,6 +41,10 @@ describe('ActionPreview', () => {
     expect(summary.textContent).toContain('안녕');
   });
 
+  /**
+   * @scenario subject=action_preview
+   * @effects action_preview_missing_required_notice
+   */
   it('필수 누락 시 같은 자리에 안내로 전환한다', () => {
     render(
       <ActionPreview action={{ handler: 'toast' }} recipe={toastRecipe} values={{}} t={t} missingRequired />,
@@ -46,6 +53,10 @@ describe('ActionPreview', () => {
     expect(screen.queryByTestId('g7le-action-preview-summary')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=action_preview
+   * @effects action_preview_code_toggle_read_only_json
+   */
   it('코드 보기 토글은 실제 JSON 을 읽기전용으로 펼친다', () => {
     render(
       <ActionPreview action={{ handler: 'toast', params: { message: 'hi' } }} recipe={toastRecipe} values={{}} t={t} />,
@@ -57,6 +68,10 @@ describe('ActionPreview', () => {
     expect(code.textContent).toContain('"handler": "toast"');
   });
 
+  /**
+   * @scenario subject=action_preview
+   * @effects action_preview_advanced_item_summary_and_code
+   */
   it('고급 보존 항목(recipe=null)도 핸들러명 요약 + 코드 열람', () => {
     render(<ActionPreview action={{ handler: 'apiCall', onSuccess: [] }} recipe={null} t={t} />);
     expect(screen.getByTestId('g7le-action-preview-summary').textContent).toContain('apiCall');

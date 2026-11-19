@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 return [
+    // 미입금 가상계좌 채번 취소 사유 — 이커머스 번역 키에서 이 플러그인 키로 옮김(#916)
+    'vbank_close_reason' => '입금 전 주문 취소',
     'errors' => [
         'cash_receipt_issue_failed' => '현금영수증 발행에 실패했습니다.',
         'order_not_found' => '주문을 찾을 수 없습니다.',
@@ -15,6 +17,8 @@ return [
     'cash_receipt' => [
         'provider_name' => 'KG이니시스',
         'cancel_reason' => '현금영수증 발행취소',
+        'cancel_rejected' => 'KG이니시스가 현금영수증 취소를 거절했습니다.',
+        'pg_failed' => '결제대행사와 통신하는 중 오류가 발생해 현금영수증을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.',
     ],
     'escrow' => [
         'invoice_required' => '운송장번호를 입력해주세요.',
@@ -24,6 +28,10 @@ return [
         'confirm_page_title' => '에스크로 구매결정',
         'confirm_preparing' => '에스크로 구매결정 창을 준비 중입니다...',
         'confirm_redirecting' => '에스크로 구매결정 페이지로 이동 중입니다...',
+        'delivery_rejected' => '배송등록에 실패했습니다.',
+        'delivery_failed' => '에스크로 배송 등록 중 오류가 발생해 등록을 마치지 못했습니다. 잠시 후 다시 시도하고, 계속 실패하면 서버 로그를 확인해 주세요.',
+        'deny_confirm_rejected' => '구매거절확인에 실패했습니다.',
+        'deny_confirm_failed' => '구매거절확인 중 오류가 발생해 처리를 마치지 못했습니다. 잠시 후 다시 시도하고, 계속 실패하면 서버 로그를 확인해 주세요.',
     ],
     'claim' => [
         'invalid_callback' => '클레임 결제 승인에 필요한 콜백 파라미터가 없습니다.',
@@ -37,7 +45,12 @@ return [
     'refund' => [
         'missing_tid' => '거래 ID(TID)가 없어 환불을 진행할 수 없습니다.',
         'default_reason' => '구매자 환불 요청',
+        'pg_rejected' => 'KG이니시스가 결제 취소를 거절했습니다.',
+        'pg_failed' => '결제대행사와 통신하는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
         'admin_cancel_reason' => '관리자 취소',
+    ],
+    'cbt_test_product' => [
+        'jpy_required' => '시험 상품을 100엔으로 만들려면 쇼핑몰 통화 설정에 엔화(JPY)와 환율이 있어야 합니다. 이커머스 설정 > 언어·통화에서 엔화를 추가한 뒤 다시 시도하세요.',
     ],
     'cbt_connectivity' => [
         'checked' => '연결 진단이 완료되었습니다.',
@@ -143,5 +156,25 @@ return [
     ],
     'settings' => [
         'redirect_url_format' => '결제 후 이동 주소는 {shopBase}, / 또는 http(s):// 로 시작해야 하며 공백을 넣을 수 없습니다. 다른 사이트로 보내는 //주소 와 javascript: 는 쓸 수 없습니다.',
+    ],
+    // 결제 화면·결제대행사 연동 API 의 오류 응답 문구
+    'responses' => [
+        'amount_mismatch' => '결제 금액이 주문 금액과 일치하지 않습니다.',
+        'buyer_verification_failed' => '주문자 확인에 실패했습니다.',
+        'cbt_disabled' => '일본 해외결제(CBT)가 꺼져 있습니다.',
+        'cbt_jpy_only' => '해외결제(CBT)는 엔화 결제만 지원합니다.',
+        'cbt_not_configured' => '일본 해외결제(CBT) 설정이 완료되지 않았습니다.',
+        'cbt_token_invalid' => '해외결제 요청을 확인하지 못했습니다. 결제를 다시 시작해 주세요.',
+        'claim_amount_mismatch' => '결제 금액이 청구 결제 금액과 일치하지 않습니다.',
+        'claim_payment_not_found' => '청구 결제를 찾을 수 없습니다.',
+        'claim_payment_not_payable' => '결제할 수 없는 청구 결제입니다.',
+        'credentials_not_configured' => 'KG이니시스 결제 설정이 완료되지 않았습니다.',
+        'currency_not_chargeable' => '결제 통화로 청구액을 계산할 수 없습니다.',
+        'krw_only' => 'KG이니시스 표준결제는 원화 결제만 지원합니다.',
+        'order_not_found' => '주문을 찾을 수 없습니다.',
+        'order_not_payable' => '결제할 수 없는 주문입니다.',
+        'ownership_verification_failed' => '주문 소유자 확인에 실패했습니다.',
+        'timestamp_stale' => '요청 시각이 만료되었거나 올바르지 않습니다. 결제를 다시 시작해 주세요.',
+        'too_many_requests' => '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.',
     ],
 ];

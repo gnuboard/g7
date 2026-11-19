@@ -21,9 +21,11 @@ class UpdateProductRequest extends StoreProductRequest
     {
         $rules = parent::rules();
 
-        // product_code unique 검증에서 현재 상품 제외
+        // product_code unique 검증에서 현재 상품 제외 — {product} 경로(모델·id)와 by-code 경로({code}) 모두.
+        // 종전에는 {product} 인자에서만 구해 by-code 경로에서는 null 이 되어 자기 코드를 중복으로 봤다.
         $product = $this->route('product');
-        $productId = $product?->id ?? $product;
+        $currentProduct = $this->resolveProduct($product);
+        $productId = $currentProduct?->id ?? ($product instanceof Product ? $product->id : $product);
         $rules['product_code'] = ['required', 'string', 'max:50'];
 
         // 허용 문자 규칙은 코드를 바꿀 때만 적용한다 — 수정 화면은 코드 입력칸이 비활성인 채 폼 전체를 보내므로,
@@ -64,7 +66,7 @@ class UpdateProductRequest extends StoreProductRequest
             }
         }
 
-        $rules = $this->exemptUnchangedTranslatableNames($rules, $this->resolveProduct($product));
+        $rules = $this->exemptUnchangedTranslatableNames($rules, $currentProduct);
 
         // 훅을 통한 validation rules 확장
         return HookManager::applyFilters('sirsoft-ecommerce.product.update_validation_rules', $rules, $this);

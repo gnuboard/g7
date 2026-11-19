@@ -22,13 +22,22 @@
 
 <!-- @intent START -->
 ```text
-Controller (PaymentCallbackController / WebhookController)
+Controller (PaymentCallbackController / PaymentCloseReportController / WebhookController)
   → TossPaymentsApiService (승인 확인 · 취소 API 호출)
-  → sirsoft-ecommerce 의 Order/OrderPayment 모델 (직접 참조 — 이 플러그인 소유 모델 없음)
+  → sirsoft-ecommerce 공개 결제 계약 PaymentGatewayBridge (주문 조회 · 결제완료 · 실패 · 창 닫힘 · 가상계좌 발급 · 취소 후 입금 기록)
+
+Listener (PaymentRefundListener / ClaimPaymentApproveListener / ClaimPaymentRefundListener)
+  → 훅이 넘긴 sirsoft-ecommerce Model 은 속성 읽기만, 계산·판정·쓰기는 PaymentGatewayBridge
 
 Listener (RegisterPgProviderListener / RegisterTossPaymentMethodsListener / ValidateTossSettingsListener 등)
   → sirsoft-ecommerce 의 필터 훅 + 코어 설정 저장 훅에 등록 (컴파일 타임 결합 없음)
 ```
+
+이 플러그인은 이커머스의 Service·Repository·테이블을 쓰지 않습니다. 이커머스가 공개한 것은
+`Contracts\Payment\PaymentGatewayBridge`(하위 계약 `PaymentLookup`·`OrderAccess`·`ClaimPaymentLookup`·`PaymentLifecycle`),
+그 결과 객체(`Contracts\Payment\Data\*`), 공개 예외, Enum, 공개 Support 클래스와 훅이 넘기는 읽기 전용 Model 뿐이고,
+컨트롤러와 리스너는 계약을 생성자로 주입받습니다. 결제 행 조회는 이 플러그인(`tosspayments`) 결제 행만 돌려주며,
+결제 전 행이면 다른 결제사 id 로 만들어진 행도 넘겨받습니다(가상계좌 발급·실패 기록은 결제사 id 를 `tosspayments` 로 기록).
 
 `ValidateTossSettingsListener`가 `core.plugin_settings.before_save`(코어 설정 저장 훅)를
 구독하는 것은 이 플러그인만의 계층 특징입니다 — 결제 도메인 훅(`sirsoft-ecommerce.payment.*`)

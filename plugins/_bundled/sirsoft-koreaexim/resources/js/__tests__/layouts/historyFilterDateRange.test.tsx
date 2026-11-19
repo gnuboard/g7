@@ -132,7 +132,7 @@ describe('실행 이력 — 「조회 중」은 받는 동안에만', () => {
     const visit = (n: any): void => {
       if (!n || typeof n !== 'object') return;
       if (Array.isArray(n)) { n.forEach(visit); return; }
-      if (typeof n.if === 'string' && (n.children ?? []).some((c: any) => c?.props?.className === 'spinner-sm')) found.push(n.if);
+      if (typeof n.if === 'string' && (n.children ?? []).some((c: any) => c?.props?.className === 'koreaexim-spinner-sm')) found.push(n.if);
       Object.values(n).forEach(visit);
     };
     visit(tabHistory);

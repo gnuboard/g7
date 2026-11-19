@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Repositories;
 use App\Contracts\Extension\CacheInterface;
 use App\Helpers\PermissionHelper;
 use App\Models\ActivityLog;
+use App\Models\User;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Repositories\Concerns\ResolvesSortSpec;
@@ -71,13 +72,13 @@ class ProductRepository implements ProductRepositoryInterface
      * 결과셋 전체가 메모리(및 DB 드라이버 버퍼)에 적재되지 않습니다.
      *
      * @param  int  $chunkSize  청크 크기
-     * @return iterable<Product> 전시 중인 상품 순회자 (id, updated_at 만 조회)
+     * @return iterable<Product> 전시 중인 상품 순회자 (id, product_code, updated_at 만 조회)
      */
     public function streamVisibleForSitemap(int $chunkSize = 500): iterable
     {
         return $this->model->newQuery()
             ->visible()
-            ->select(['id', 'updated_at'])
+            ->select(['id', 'product_code', 'updated_at'])
             ->orderBy('id')
             ->lazyById($chunkSize);
     }
@@ -135,6 +136,51 @@ class ProductRepository implements ProductRepositoryInterface
             'stock_quantity'
         );
 
+        // 검색어·필터 — 내보내기와 같은 한 경로(applyListFilters)를 지난다
+        $this->applyListFilters($query, $filters);
+
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ['*'],
+            sort: $this->resolveAdminSortSpec($filters),
+            perPage: $perPage,
+            relations: $listRelations,
+            withCount: $listWithCount,
+            outerUsing: $listOuterUsing,
+            resultCap: PaginationLimits::resultCap('admin.products'),
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function newExportQuery(array $filters, ?array $ids, User $requester): Builder
+    {
+        $query = $this->model->newQuery();
+        PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.products.read', $requester);
+
+        if ($ids !== null) {
+            // 「선택한 행」은 그 선택이 대상이다 — 목록 필터를 덧씌우지 않는다
+            return $query->whereIn('id', $ids);
+        }
+
+        $this->applyListFilters($query, $filters);
+
+        return $query;
+    }
+
+    /**
+     * 목록 필터 조건을 쿼리에 겁니다 — 목록 조회와 내보내기 원천 쿼리(`newExportQuery`)가 같은 이 한 경로를 지난다.
+     *
+     * 축을 두 곳에 복제하면 한쪽에만 필터가 늘어나는 순간 화면 건수와 파일 행 수가 조용히 어긋난다. 권한 범위는 걸지
+     * 않는다 — 필터가 아니라 호출자의 열람 범위이므로 호출부가 각자 건다.
+     *
+     * @param  Builder  $query  쿼리
+     * @param  array  $filters  검증된 목록 필터
+     * @return void 반환값 없음 (쿼리에 직접 조건을 건다)
+     */
+    protected function applyListFilters(Builder $query, array $filters): void
+    {
         // 문자열 검색
         if (! empty($filters['search_keyword'])) {
             $keyword = $filters['search_keyword'];
@@ -149,49 +195,23 @@ class ProductRepository implements ProductRepositoryInterface
             // total 계산 경로와 결과 조회 경로가 같은 술어를 공유한다는 성질도 유지된다.
             if (in_array($field, ['all', 'name', 'description'])) {
                 $this->applyKeywordMatch($query, $keyword, includeAuxFields: $field === 'all');
-
-                // 필터 적용
-                $this->applyAdminFilters($query, $filters);
-
-                return $this->paginateWithDeferredJoin(
-                    query: $query,
-                    columns: ['*'],
-                    sort: $this->resolveAdminSortSpec($filters),
-                    perPage: $perPage,
-                    relations: $listRelations,
-                    withCount: $listWithCount,
-                    outerUsing: $listOuterUsing,
-                    resultCap: PaginationLimits::resultCap('admin.products'),
-                );
+            } else {
+                // FULLTEXT 미대상 필드 (product_code, sku, barcode) → LIKE 직접
+                $query->where(function ($q) use ($keyword, $field) {
+                    if ($field === 'product_code') {
+                        $q->where('product_code', 'like', "%{$keyword}%");
+                    }
+                    if ($field === 'sku') {
+                        $q->where('sku', 'like', "%{$keyword}%");
+                    }
+                    if ($field === 'barcode') {
+                        $q->where('barcode', 'like', "%{$keyword}%");
+                    }
+                });
             }
-
-            // FULLTEXT 미대상 필드 (product_code, sku, barcode) → LIKE 직접
-            $query->where(function ($q) use ($keyword, $field) {
-                if ($field === 'product_code') {
-                    $q->where('product_code', 'like', "%{$keyword}%");
-                }
-                if ($field === 'sku') {
-                    $q->where('sku', 'like', "%{$keyword}%");
-                }
-                if ($field === 'barcode') {
-                    $q->where('barcode', 'like', "%{$keyword}%");
-                }
-            });
         }
 
-        // 필터 적용
         $this->applyAdminFilters($query, $filters);
-
-        return $this->paginateWithDeferredJoin(
-            query: $query,
-            columns: ['*'],
-            sort: $this->resolveAdminSortSpec($filters),
-            perPage: $perPage,
-            relations: $listRelations,
-            withCount: $listWithCount,
-            outerUsing: $listOuterUsing,
-            resultCap: PaginationLimits::resultCap('admin.products'),
-        );
     }
 
     /**
@@ -531,6 +551,22 @@ class ProductRepository implements ProductRepositoryInterface
             ->with(['activeOptions', 'categories', 'images'])
             ->where('product_code', $productCode)
             ->first();
+    }
+
+    /**
+     * 상품 코드 목록으로 상품을 한 번에 조회하고 상품 코드 키 맵으로 반환합니다(관계 적재 없음).
+     *
+     * @param  array<int, string>  $productCodes  상품 코드 목록
+     * @return Collection<string, Product> 상품 코드 => 상품
+     */
+    public function findByProductCodesKeyed(array $productCodes): Collection
+    {
+        $productCodes = array_values(array_unique(array_filter($productCodes, fn ($code) => is_string($code) && $code !== '')));
+        if ($productCodes === []) {
+            return new Collection;
+        }
+
+        return $this->model->newQuery()->whereIn('product_code', $productCodes)->get()->keyBy('product_code');
     }
 
     /**

@@ -11,11 +11,11 @@
  * 그 칸만 표시용 대기 값으로 바로 다시 그리고(상태가 그 값이 되면 확정, 그사이 상태가 다른 값으로 바뀌면 버림) 상태 쓰기는
  * 그대로 둔다.
  *
- * @effects global_autobinding_fast_typing_keeps_every_char, external_reset_beats_pending_display_value
+ * 빠른 입력에서 글자가 빠지지 않는지와 외부 초기화가 대기 값을 이기는지를 각 시험이 재고, 효과 표식은 그 시험 앞에 있다.
  */
 
 import React from 'react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, fireEvent, act, screen } from '@testing-library/react';
 import DynamicRenderer, { type ComponentDefinition } from '../DynamicRenderer';
 import { DataBindingEngine } from '../DataBindingEngine';
@@ -28,7 +28,17 @@ const KEY_INTERVAL_MS = 12;
 /** TemplateApp.setGlobalState 의 미뤄진 다시 그리기 — 키 간격보다 늦게 끝나는 무거운 화면을 결정적으로 만든다 */
 const DEFERRED_RENDER_MS = 30;
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+/**
+ * 시간을 ms 만큼 진행한다 — 가짜 타이머(setTimeout·clearTimeout)를 그만큼 돌린다.
+ *
+ * 이 파일이 재는 것은 키 간격(12ms)·미뤄진 다시 그리기(30ms)·디바운스(80ms)·표시 대기 값 시한(1초)의 엇갈림이다. 종전에는 실제 시간으로
+ * 기다려, 여러 시험 파일을 함께 돌리는 부하에서는 한 사례가 5초 기본 제한을 넘겼고(5255ms) 남은 예약이 다음 사례를 깨뜨렸다. 네 시간원이
+ * 모두 setTimeout 이므로 가짜 타이머로 같은 순서(키는 12ms 마다, 다시 그리기는 쓰기 30ms 뒤)를 결정적으로 만든다. 렌더 일정(React)은
+ * 실제 그대로다.
+ *
+ * @param ms 진행할 시간
+ */
+const sleep = (ms: number) => vi.advanceTimersByTimeAsync(ms);
 
 /**
  * sirsoft-basic 기본 Input 과 같은 값 처리 — 입력은 로컬 값으로 바로 보이고, value prop 이 바뀌면 로컬 값을 그 값으로 맞춘다.
@@ -68,15 +78,13 @@ function mountForm(
   let globalState: Record<string, any> = { editingAddress: { recipient_name: '' } };
   let localState: Record<string, any> = { editingAddress: { recipient_name: '' } };
   let rerender: ((snapshot?: Record<string, any>) => void) | null = null;
-  let pendingTimer: ReturnType<typeof setTimeout> | null = null;
 
   const scheduleRender = () => {
     // TemplateApp: import('./template-engine').then(updateTemplateData({ _global: {...this.globalState} }) → startTransition(root.render))
     // — 데이터는 then 시점에 떠 두고, 커밋은 그보다 늦다(무거운 화면). 렌더마다 따로 예약한다.
     void Promise.resolve().then(() => {
       const snapshot = globalState;
-      pendingTimer = setTimeout(() => {
-        pendingTimer = null;
+      setTimeout(() => {
         rerender?.(snapshot);
       }, DEFERRED_RENDER_MS);
     });
@@ -206,10 +214,12 @@ async function typeFast(input: () => HTMLInputElement, text: string) {
 
 describe('[case:state-setstate-48] `_global` 자동바인딩 칸의 빠른 연속 입력', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     (window as any).__g7PendingLocalState = undefined;
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     delete (window as any).G7Core;
     delete (window as any).__templateApp;
     (window as any).__g7PendingLocalState = undefined;

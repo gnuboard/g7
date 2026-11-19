@@ -16,6 +16,7 @@
  */
 
 import { createLogger } from '../utils/Logger';
+import { stripBasePrefix } from '../support/assetUrl';
 import { extractSingleBinding, resolveSingleBindingValue } from '../template-engine/BindingShape';
 import type { DataBindingEngine } from '../template-engine/DataBindingEngine';
 
@@ -68,14 +69,18 @@ export function configureLeaveGuard(env: LeaveGuardEnvironment | null): void {
 }
 
 /**
- * 경로 문자열을 비교용 pathname 으로 바꿉니다 (쿼리·해시 제거, 끝 슬래시 정규화).
+ * 경로 문자열을 비교용 pathname 으로 바꿉니다 (쿼리·해시 제거, 마운트 접두사 제거, 끝 슬래시 정규화).
+ *
+ * 이동 목적지는 앱 기준 경로(`/board/free?page=2`, 접두사 없음)로, 떠나는 쪽은 브라우저 주소(`location.href`, 하위
+ * 폴더 배치면 `/g7/board/free`)로 들어온다. 접두사를 벗겨 맞추지 않으면 하위 폴더 배치에서 같은 화면의 쿼리만 바꾸는
+ * 이동도 「다른 화면」으로 읽혀 확인 창이 뜬다.
  *
  * @param path 경로 또는 같은 출처 주소
  * @returns 정규화된 pathname, 해석 불가면 null
  */
 function toComparablePathname(path: string): string | null {
   try {
-    const pathname = new URL(path, window.location.href).pathname;
+    const pathname = stripBasePrefix(new URL(path, window.location.href).pathname);
 
     return pathname.length > 1 ? pathname.replace(/\/+$/, '') || '/' : pathname;
   } catch {

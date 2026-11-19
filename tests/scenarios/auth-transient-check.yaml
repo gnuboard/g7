@@ -1,0 +1,31 @@
+feature: 인증 확인이 서버 일시 오류(5xx)나 네트워크 오류를 받으면 로그인 안 됨으로 보지 않는다 (engine-v1.95.0)
+
+description: |
+  개발 서버에서 라우트 캐시를 다시 만드는 순간(`bootstrap/cache/routes-v7.php` 가 잠깐 없음) `GET /api/admin/auth/user` 가
+  500 을 두 번 받았고(부팅 preloadAuth 한 번, 라우터 인증 가드 한 번), 종전 `AuthManager.checkAuth` 가 모든 오류를 미인증으로
+  처리해 유효한 토큰을 가진 관리자를 로그인 화면으로 보냈다. 이제 5xx·응답 없는 오류는 짧게 세 번 더 묻고, 그래도 안 되면
+  이미 인증된 세션은 유지하고 아니면 「확인 불가」로 남긴다. 라우터는 확인 불가면 로그인 대신 authUnavailable 을 내고
+  TemplateApp 이 로그인 상태를 단정하지 않는 중립 오류 화면(코어 기본 오류 표시)을 그린다. 401·419 같은 인증 실패는 종전처럼 미인증이다. 축 failure 는 서버 응답의 모양이다.
+
+axes:
+  failure: [server_5xx_then_ok, network_then_ok, server_5xx_persistent, server_5xx_persistent_with_session, rate_limited_429, unauthorized_401, csrf_419, non_http_exception, listener_throws, no_token]
+
+effects:
+  - transient_auth_failure_retried                # 5xx·429·네트워크 오류 뒤 성공하면 다시 물어 인증 상태가 된다(429 는 Retry-After 를 5초까지 따른다, #869 λ 4부 16 관찰 4)
+  - transient_auth_failure_reported_unavailable   # 일시 오류가 이어지면 몇 번만 묻고 확인 불가로 남기며 토큰을 지우지 않는다
+  - transient_auth_failure_keeps_session          # 이미 인증된 세션은 일시 오류가 이어져도 유지한다(상태 변경 이벤트 없음)
+  - real_auth_failure_still_unauthenticated       # 401·419·HTTP 아닌 예외·토큰 없음은 다시 묻지 않고 미인증이다
+  - recent_unavailable_reused                     # 확인 불가 결론은 UNAVAILABLE_REUSE_MS 동안만 최근 결론이고 라우터는 그동안 다시 묻지 않는다
+  - auth_check_progress_announced                 # 다시 묻는 동안 확인 중 표시(시작, 끝 이벤트), 화면 언어 ko/en/ja
+  - auth_unavailable_keeps_scroll_record          # 새로고침으로 확인 불가 화면이 떠도 복원 표를 버리고 그 항목에 기억한 스크롤 위치를 오류 화면 위치로 덮지 않는다
+  - auth_unavailable_renders_503_page             # 확인 불가면 템플릿 레이아웃(base 머리글) 없이 중립 안내와 새로고침 단추만 그린다, 문서 이탈 중이면 그리지 않는다
+
+test_files:
+  - resources/js/core/auth/__tests__/AuthManager.transientCheck.test.ts
+  - resources/js/core/__tests__/TemplateApp.authUnavailable.test.ts
+
+validation:
+  browser_check: 관리자 화면을 연 상태에서 라우트 캐시를 지우는 동안(php artisan route:cache 반복) 새로고침해 로그인 화면으로 가지 않고 화면 또는 중립 오류 화면(머리글 없음)이 뜨는지, 캐시가 돌아온 뒤 새로고침으로 같은 화면이 이어지는지
+  note: |
+    fail-first: 수정 전 코드에서 AuthManager 7건(getLastCheckStatus 없음·재시도 없음), Router 1건(로그인으로 보냄), TemplateApp 2건(handleAuthUnavailable 없음) red.
+    Router 시험은 client-router-routing.yaml 의 auth=auth_check_unavailable 축에 있다. TemplateApp 시험은 failure=server_5xx_persistent 의 화면 쪽 결과다.

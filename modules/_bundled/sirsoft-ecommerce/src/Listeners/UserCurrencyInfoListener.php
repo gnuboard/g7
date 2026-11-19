@@ -63,7 +63,7 @@ class UserCurrencyInfoListener implements HookListenerInterface
     public function injectPreferredCurrency(array $data, User $user): array
     {
         $data['ecommerce_preferred_currency'] = $this->profileRepository->getPreferredCurrency($user->id);
-        // 관리자 회원 상세의 결제 통화 칸을 잠그는 키 — 저장 검증(`UserPreferenceCoreSaveListener`)과 같은 권한이다.
+        // 관리자 회원 상세의 결제 통화 칸을 잠그는 키 — 저장 검증(`UserPreferenceFieldHandler::extraRules()`)과 같은 권한이다.
         $data['ecommerce_currency_can_manage'] = PermissionHelper::check('sirsoft-ecommerce.user-currency.manage');
 
         return $data;

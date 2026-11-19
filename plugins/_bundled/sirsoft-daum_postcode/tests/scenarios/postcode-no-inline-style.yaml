@@ -23,7 +23,7 @@ effects:
   - layer_size_via_css_variables     # 레이어 설정 크기 = CSS 변수
   - layer_gutter_constants_match_css # 여백 상수 = CSS 파일의 값
   - css_declared_as_plugin_asset     # 엔트리 import + plugin.json assets.css
-  - dark_rules_in_css_file           # 펼치기 영역·다크 모드 규칙이 CSS 파일에 있다
+  - dark_rules_in_css_file           # 펼치기 영역(daumpostcode-inline*)·다크 모드 짝(중립 표식 data-g7-color-scheme, .dark 미전제) 규칙이 CSS 파일에 있다
 
 test_files:
   - plugins/_bundled/sirsoft-daum_postcode/resources/js/__tests__/postcode-no-inline-style.test.ts

@@ -13,14 +13,13 @@
  *   - 통화 locales 에러 Span 에 data-testid="currency-locales-error-{code}"
  * 그리고 test.describe.skip → test.describe 변경.
  *
- * @scenario currency_locale_save
- * @effects settings_persist
+ * @scenario currency-locale-save
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 
 test.describe.skip('통화별 사용 언어 저장', () => {
-  // @scenario currency_locale_save=supported_locale
-  // @effects settings_persist
+  // @scenario locale_input=supported_locale
+  // @effects supported_locales_save_without_error
   test('지원 언어로 지정 시 저장 성공', async ({ page, settingsToken }) => {
     await authenticatePage(page, settingsToken);
     await page.goto('/admin/ecommerce/settings');
@@ -34,8 +33,8 @@ test.describe.skip('통화별 사용 언어 저장', () => {
     await expect(page.getByTestId('currency-locales-error-CNY')).not.toBeVisible();
   });
 
-  // @scenario currency_locale_save=unsupported_locale
-  // @effects settings_persist
+  // @scenario locale_input=unsupported_locale
+  // @effects unsupported_locale_error_shown_on_currency_field, unsupported_locale_error_uses_friendly_field_name
   test('지원하지 않는 언어 선택 시 해당 입력칸 강조 + 친화 필드명 메시지', async ({ page, settingsToken }) => {
     await authenticatePage(page, settingsToken);
     await page.goto('/admin/ecommerce/settings');

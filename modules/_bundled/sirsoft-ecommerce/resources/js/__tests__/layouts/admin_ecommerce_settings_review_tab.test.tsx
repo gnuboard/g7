@@ -166,8 +166,9 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
          * @scenario setting=tab_structure
          * @effects review_tab_structure_and_card_locked
          */
-        it('review_settings_card 카드가 1개 있다', () => {
-            expect((tabReviewSettings as any).children).toHaveLength(1);
+        it('review_settings_card 카드가 맨 앞에 1개 있고, 그 뒤에 작성자 표시 이름 카드가 온다', () => {
+            // 작성자 표시 이름(#490)은 별도 카드다 — 리뷰 설정 카드는 그대로 하나다
+            expect((tabReviewSettings as any).children.map((c: any) => c.id)).toEqual(['review_settings_card', 'review_display_name_card']);
             expect((tabReviewSettings as any).children[0].id).toBe('review_settings_card');
         });
 
@@ -268,7 +269,7 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
             const { container } = await testUtils.render();
             // i18n 키 치환 결과가 자식 노드로 분리될 수 있어 단순 getByText 매칭이
             // 실패할 수 있음. card-title 클래스 H3 의 textContent 로 직접 검증한다
-            const titleNode = container.querySelector('h3.card-title');
+            const titleNode = container.querySelector('h3.ecommerce-card-title');
             expect(titleNode).not.toBeNull();
             expect(titleNode?.textContent ?? '').toContain('리뷰 설정');
         });

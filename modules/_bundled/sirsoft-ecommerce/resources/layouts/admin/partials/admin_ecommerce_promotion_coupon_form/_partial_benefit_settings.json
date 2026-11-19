@@ -7,14 +7,14 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card"
+        "className": "ecommerce-admin-card"
     },
     "children": [
         {
             "type": "basic",
             "name": "H2",
             "props": {
-                "className": "card-title"
+                "className": "ecommerce-card-title"
             },
             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.benefit_settings"
         },
@@ -22,7 +22,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "space-y-5"
+                "className": "ecommerce:space-y-5"
             },
             "children": [
                 {
@@ -40,7 +40,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2"
+                                "className": "ecommerce-flex-center ecommerce:gap-2"
                             },
                             "children": [
                                 {
@@ -50,7 +50,7 @@
                                         "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.benefit_amount",
                                         "type": "number",
                                         "name": "discount_value",
-                                        "className": "input w-40",
+                                        "className": "ecommerce-input ecommerce:w-40",
                                         "min": 1,
                                         "max": "{{_local.form?.discount_type === 'rate' ? 100 : undefined}}"
                                     }
@@ -72,7 +72,7 @@
                                     "props": {
                                         "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.discount_unit",
                                         "name": "discount_type",
-                                        "className": "input w-24",
+                                        "className": "ecommerce:h-9 ecommerce:w-24",
                                         "options": [
                                             {
                                                 "value": "fixed",
@@ -104,14 +104,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2"
+                                "className": "ecommerce-flex-center ecommerce:gap-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-label"
+                                        "className": "ecommerce-text-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.max_prefix"
                                 },
@@ -122,7 +122,7 @@
                                         "type": "number",
                                         "name": "discount_max_amount",
                                         "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.max_discount",
-                                        "className": "input w-32",
+                                        "className": "ecommerce-input ecommerce:w-32",
                                         "min": 0
                                     }
                                 },
@@ -130,7 +130,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-label"
+                                        "className": "ecommerce-text-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.currency_won_discount"
                                 }
@@ -152,7 +152,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2"
+                                "className": "ecommerce-flex-center ecommerce:gap-2"
                             },
                             "children": [
                                 {
@@ -162,7 +162,7 @@
                                         "type": "number",
                                         "name": "min_order_amount",
                                         "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.min_order_amount",
-                                        "className": "input w-40",
+                                        "className": "ecommerce-input ecommerce:w-40",
                                         "min": 0
                                     }
                                 },
@@ -170,7 +170,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-label"
+                                        "className": "ecommerce-text-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.min_order_suffix"
                                 }
@@ -231,7 +231,7 @@
                                     "name": "Div",
                                     "if": "{{_local.form?.valid_type === 'period'}}",
                                     "props": {
-                                        "className": "flex-center gap-2"
+                                        "className": "ecommerce-flex-center ecommerce:gap-2"
                                     },
                                     "children": [
                                         {
@@ -241,14 +241,14 @@
                                                 "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.validity_period')}}",
                                                 "type": "date",
                                                 "name": "valid_from",
-                                                "className": "input w-40"
+                                                "className": "ecommerce-input ecommerce:w-40"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label-subtle"
+                                                "className": "ecommerce-text-label-subtle"
                                             },
                                             "text": "~"
                                         },
@@ -259,7 +259,7 @@
                                                 "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.validity_period')}}",
                                                 "type": "date",
                                                 "name": "valid_to",
-                                                "className": "input w-40"
+                                                "className": "ecommerce-input ecommerce:w-40"
                                             }
                                         }
                                     ]
@@ -271,14 +271,14 @@
                                     "name": "Div",
                                     "if": "{{_local.form?.valid_type === 'days_from_issue'}}",
                                     "props": {
-                                        "className": "flex-center gap-2"
+                                        "className": "ecommerce-flex-center ecommerce:gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.from_issue_date"
                                         },
@@ -289,7 +289,7 @@
                                                 "type": "number",
                                                 "name": "valid_days",
                                                 "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.validity_period",
-                                                "className": "input w-24",
+                                                "className": "ecommerce-input ecommerce:w-24",
                                                 "min": 1
                                             }
                                         },
@@ -297,7 +297,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label"
+                                                "className": "ecommerce-text-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.unit_days"
                                         }

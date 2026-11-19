@@ -10,7 +10,147 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.settings.privacy.manual_run.modal_title|target={{_global.privacyRun?.label ?? ''}}",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "취소 — 접수 없이 닫고 `_global.privacyRun` 을 비운다. 대기기간 생략 선택도 그 안에 있어 함께 사라진다 —\n               다음에 열면 늘 생략하지 않는 쪽(대상이 더 좁은 쪽)에서 시작한다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "privacyRun": null
+                                }
+                            },
+                            {
+                                "handler": "closeModal",
+                                "target": "privacy_run_modal"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary",
+                    "disabled": "{{_global.privacyRun?.submitting}}"
+                },
+                "text": "$t:admin.settings.privacy.manual_run.cancel"
+            },
+            {
+                "id": "privacy_run_execute",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "더블클릭: disabled 의 submitting 은 다시 그려진 뒤에야 걸려 두 번째 클릭이 한 번 더 접수될 수 있다 — 버튼이 첫 클릭\n               즉시 스스로 잠근다(lockRepeatClick, #736 S2 P10).\n               접수만 하고 닫는다. 상태를 다시 받아 카드에 「처리 대기」를 띄우고, 진행 중이면 상태 소스가 스스로\n               주기 조회를 시작한다. 건수도 한 번 다시 받는다 — 큐가 동기 드라이버면 응답이 오기 전에 이미 처리가\n               끝나 있어 상태 소스가 「진행 중」을 한 번도 보지 못한다. 이미 접수된 작업이 있으면(409) 그 사실을\n               알리고 상태를 다시 받는다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "privacyRun.submitting": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/privacy/manual-runs/{{_global.privacyRun?.key}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "POST",
+                                    "body": {
+                                        "skip_waiting": "{{!!_global.privacyRun?.skipWaiting}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "privacyRun": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "privacy_run_modal"
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:admin.settings.privacy.manual_run.queued_toast"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "privacyManualRuns"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "privacyPreview"
+                                        }
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "privacyRun.submitting": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message ?? '$t:admin.settings.privacy.manual_run.queue_failed'}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "privacyManualRuns"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "lockRepeatClick": true,
+                    "className": "btn btn-danger flex-center gap-2",
+                    "disabled": "{{!_global.privacyRun?.preview || _global.privacyRun?.loading || _global.privacyRun?.submitting}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.privacyRun?.submitting}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.privacyRun?.submitting ? '$t:admin.settings.privacy.manual_run.executing' : '$t:admin.settings.privacy.manual_run.execute'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -285,153 +425,6 @@
                         "className": "text-hint"
                     },
                     "text": "$t:admin.settings.privacy.manual_run.queue_hint"
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "취소 — 접수 없이 닫고 `_global.privacyRun` 을 비운다. 대기기간 생략 선택도 그 안에 있어 함께 사라진다 —\n               다음에 열면 늘 생략하지 않는 쪽(대상이 더 좁은 쪽)에서 시작한다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "privacyRun": null
-                                    }
-                                },
-                                {
-                                    "handler": "closeModal",
-                                    "target": "privacy_run_modal"
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary",
-                        "disabled": "{{_global.privacyRun?.submitting}}"
-                    },
-                    "text": "$t:admin.settings.privacy.manual_run.cancel"
-                },
-                {
-                    "id": "privacy_run_execute",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "더블클릭: disabled 의 submitting 은 다시 그려진 뒤에야 걸려 두 번째 클릭이 한 번 더 접수될 수 있다 — 버튼이 첫 클릭\n               즉시 스스로 잠근다(lockRepeatClick, #736 S2 P10).\n               접수만 하고 닫는다. 상태를 다시 받아 카드에 「처리 대기」를 띄우고, 진행 중이면 상태 소스가 스스로\n               주기 조회를 시작한다. 건수도 한 번 다시 받는다 — 큐가 동기 드라이버면 응답이 오기 전에 이미 처리가\n               끝나 있어 상태 소스가 「진행 중」을 한 번도 보지 못한다. 이미 접수된 작업이 있으면(409) 그 사실을\n               알리고 상태를 다시 받는다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "privacyRun.submitting": true
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/admin/privacy/manual-runs/{{_global.privacyRun?.key}}",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "POST",
-                                        "body": {
-                                            "skip_waiting": "{{!!_global.privacyRun?.skipWaiting}}"
-                                        }
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "privacyRun": null
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal",
-                                            "target": "privacy_run_modal"
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:admin.settings.privacy.manual_run.queued_toast"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "privacyManualRuns"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "privacyPreview"
-                                            }
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "privacyRun.submitting": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message ?? '$t:admin.settings.privacy.manual_run.queue_failed'}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "privacyManualRuns"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "lockRepeatClick": true,
-                        "className": "btn btn-danger flex-center gap-2",
-                        "disabled": "{{!_global.privacyRun?.preview || _global.privacyRun?.loading || _global.privacyRun?.submitting}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.privacyRun?.submitting}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.privacyRun?.submitting ? '$t:admin.settings.privacy.manual_run.executing' : '$t:admin.settings.privacy.manual_run.execute'}}"
-                        }
-                    ]
                 }
             ]
         }

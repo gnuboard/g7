@@ -11,13 +11,14 @@ use App\Helpers\TimezoneHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\MetaEncoding;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentFilters;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentRecord;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\SanitizesPgResponse;
+use Plugins\Sirsoft\PayNhnkcp\Exceptions\NhnKcpRejectedException;
 use Plugins\Sirsoft\PayNhnkcp\Http\Requests\EscrowDeliveryRegisterRequest;
 use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
 
@@ -60,9 +61,11 @@ class AdminEscrowDeliveryController extends AdminBaseController
      * 의존성을 주입받습니다.
      *
      * @param  NhnKcpApiService  $apiService  NHN KCP API 서비스
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 계약 (결제 행·배송지 조회, 결제 meta 기록)
      */
     public function __construct(
         private readonly NhnKcpApiService $apiService,
+        private readonly PaymentGatewayBridge $bridge,
     ) {
         parent::__construct();
     }
@@ -90,22 +93,9 @@ class AdminEscrowDeliveryController extends AdminBaseController
             return ResponseHelper::success('common.success', null);
         }
 
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        $address = DB::table((new OrderAddress)->getTable().' as a')
-            ->join((new Order)->getTable().' as o', 'o.id', '=', 'a.order_id')
-            ->where('o.order_number', $orderNumber)
-            ->where('a.address_type', 'shipping')
-            ->select([
-                'a.recipient_name',
-                'a.recipient_phone',
-                'a.zipcode',
-                'a.address',
-                'a.address_detail',
-            ])
-            ->first();
+        $address = $this->bridge->getShippingAddress($orderNumber);
 
-        $meta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
-        $escrowDelivery = $meta['escrow_delivery'] ?? null;
+        $escrowDelivery = $payment->paymentMeta['escrow_delivery'] ?? null;
         // 등록 시각은 UTC 로 저장돼 있다 — 결제조회 화면에는 보는 사람 시간대로 바꿔 내보낸다(저장값은 그대로)
         if (is_array($escrowDelivery) && is_string($escrowDelivery['registered_at'] ?? null) && $escrowDelivery['registered_at'] !== '') {
             try {
@@ -117,13 +107,13 @@ class AdminEscrowDeliveryController extends AdminBaseController
 
         return ResponseHelper::success('common.success', [
             'has_escrow_payment' => true,
-            'tno' => $payment->transaction_id,
+            'tno' => $payment->transactionId,
             'courier_codes' => self::COURIER_CODES,
             'prefill' => [
-                'recv_name' => $address?->recipient_name ?? '',
-                'recv_tel' => $address?->recipient_phone ?? '',
+                'recv_name' => $address?->recipientName ?? '',
+                'recv_tel' => $address?->recipientPhone ?? '',
                 'recv_post' => $address?->zipcode ?? '',
-                'recv_addr' => trim(($address?->address ?? '').' '.($address?->address_detail ?? '')),
+                'recv_addr' => trim(($address?->address ?? '').' '.($address?->addressDetail ?? '')),
             ],
             'registered_delivery' => $escrowDelivery,
         ]);
@@ -161,42 +151,37 @@ class AdminEscrowDeliveryController extends AdminBaseController
 
         Log::info('KCP: escrow delivery register requested', [
             'order_number' => $orderNumber,
-            'tno' => $payment->transaction_id,
+            'tno' => $payment->transactionId,
             'deli_numb' => $deliNumb,
             'deli_corp' => $deliCorp,
         ]);
 
         try {
             $pgResponse = $this->apiService->registerEscrowDelivery(
-                tno: $payment->transaction_id,
+                tno: (string) $payment->transactionId,
                 ordrIdxx: $orderNumber,
                 deliNumb: $deliNumb,
                 deliCorp: $deliCorp,
             );
 
             $courierName = self::COURIER_CODES[$deliCorp];
-            $meta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
-            $meta['escrow_delivery'] = [
-                // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
-                'registered_at' => now()->toDateTimeString(),
-                'deli_numb' => $deliNumb,
-                'deli_corp' => $deliCorp,
-                'courier_name' => $courierName,
-                'pg_response_sanitized' => true,
-                'pg_response' => $this->sanitizePgResponse($pgResponse, self::ESCROW_DELIVERY_RESPONSE_KEYS),
-            ];
 
-            // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-            DB::table((new OrderPayment)->getTable())
-                ->where('id', $payment->id)
-                ->update([
-                    'payment_meta' => json_encode($meta, JSON_UNESCAPED_UNICODE),
-                    'updated_at' => now(),
-                ]);
+            // 결제 meta 의 escrow_delivery 만 바꾼다. 원문 바이트(한글 비이스케이프)와 수정 시각 갱신은 종전 저장과 같다.
+            $this->bridge->mergePaymentMeta($orderNumber, 'nhnkcp', [
+                'escrow_delivery' => [
+                    // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
+                    'registered_at' => now()->toDateTimeString(),
+                    'deli_numb' => $deliNumb,
+                    'deli_corp' => $deliCorp,
+                    'courier_name' => $courierName,
+                    'pg_response_sanitized' => true,
+                    'pg_response' => $this->sanitizePgResponse($pgResponse, self::ESCROW_DELIVERY_RESPONSE_KEYS),
+                ],
+            ], MetaEncoding::UnescapedUnicode);
 
             Log::info('KCP: escrow delivery registered', [
                 'order_number' => $orderNumber,
-                'tno' => $payment->transaction_id,
+                'tno' => $payment->transactionId,
                 'deli_numb' => $deliNumb,
                 'courier_name' => $courierName,
             ]);
@@ -208,38 +193,48 @@ class AdminEscrowDeliveryController extends AdminBaseController
             ]);
 
         } catch (\Exception $e) {
+            // 원문은 서버 로그에 남기고, 응답 errors 에는 운영자가 봐도 되는 사유만 싣는다(#858).
             Log::error('KCP: escrow delivery register exception', [
                 'order_number' => $orderNumber,
+                'exception_class' => $e::class,
                 'error' => $e->getMessage(),
             ]);
 
             return ResponseHelper::error('common.failed', 500, [
-                'message' => [$e->getMessage()],
+                'message' => [$this->failureReason($e)],
             ]);
         }
     }
 
     /**
+     * 배송 등록 실패 응답에 실을 사유를 고릅니다.
+     *
+     * KCP 가 돌려준 거절 사유(res_msg)는 운영자가 조치에 쓰는 정보라 그대로 싣는다. CLI 실행 실패 문구에는
+     * 서버 절대 경로가, DB 예외 원문에는 SQL·DB 접속 정보가 담기므로 운영 모드에서는 일반 문구로 바꾼다
+     * (원문은 호출 측이 서버 로그에 남긴다). 디버그 모드는 코어 관례(SafeExceptionMessage)대로 원문을 둔다.
+     *
+     * @param  \Throwable  $e  처리 중 잡은 예외
+     * @return string 응답에 실을 사유
+     */
+    private function failureReason(\Throwable $e): string
+    {
+        if ($e instanceof NhnKcpRejectedException || config('app.debug')) {
+            return $e->getMessage();
+        }
+
+        return __('sirsoft-pay_nhnkcp::messages.errors.escrow_delivery_failed');
+    }
+
+    /**
      * 주문번호의 NHN KCP 에스크로 결제 레코드를 찾습니다.
      *
+     * 거래번호는 null 만 거른다(빈 문자열 행은 종전처럼 남긴다).
+     *
      * @param  string  $orderNumber  주문번호
-     * @return object|null 결제 레코드 (없으면 null)
+     * @return PaymentRecord|null 결제 레코드 (없으면 null)
      */
-    private function findEscrowPayment(string $orderNumber): ?object
+    private function findEscrowPayment(string $orderNumber): ?PaymentRecord
     {
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        return DB::table((new OrderPayment)->getTable().' as p')
-            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
-            ->where('o.order_number', $orderNumber)
-            ->where('p.pg_provider', 'nhnkcp')
-            ->where('p.is_escrow', true)
-            ->whereNotNull('p.transaction_id')
-            ->select([
-                'p.id',
-                'p.transaction_id',
-                'p.paid_amount_local',
-                'p.payment_meta',
-            ])
-            ->first();
+        return $this->bridge->findPaymentByOrderNumber('nhnkcp', $orderNumber, new PaymentFilters(escrow: true, hasTransactionId: true));
     }
 }

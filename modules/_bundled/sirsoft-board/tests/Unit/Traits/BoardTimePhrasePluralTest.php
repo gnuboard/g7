@@ -5,8 +5,15 @@ namespace Modules\Sirsoft\Board\Tests\Unit\Traits;
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../../ModuleTestCase.php';
 // 활성 디렉토리 사본보다 _bundled 원본을 먼저 선언해 원본을 시험한다 (CooldownRuleTest 와 같은 방식)
-require_once __DIR__.'/../../../src/Traits/FormatsBoardDate.php';
-require_once __DIR__.'/../../../src/Rules/CooldownRule.php';
+// 앱을 먼저 부팅한 개발 환경 프로세스(VS Code 시험 탐색)는 활성 디렉토리 사본으로 이 심볼을 이미 선언해 두므로,
+// 경로가 다른 원본을 다시 읽으면 재선언 Fatal 이 난다 — 아직 없을 때만 _bundled 원본을 읽는다.
+// 이름은 문자열로 적는다 — 아래 use 선언보다 앞이라 `X::class` 짧은 이름은 이 시험 네임스페이스로 풀려 가드가 늘 거짓이 된다.
+if (! trait_exists('Modules\\Sirsoft\\Board\\Traits\\FormatsBoardDate', false)) {
+    require_once __DIR__.'/../../../src/Traits/FormatsBoardDate.php';
+}
+if (! class_exists('Modules\\Sirsoft\\Board\\Rules\\CooldownRule', false)) {
+    require_once __DIR__.'/../../../src/Rules/CooldownRule.php';
+}
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\App;

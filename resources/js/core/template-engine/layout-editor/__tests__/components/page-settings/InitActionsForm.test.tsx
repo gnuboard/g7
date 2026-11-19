@@ -18,15 +18,15 @@
  *  ⑧ 상속 — base/route 그룹 분리, 부모 항목 🔒 잠금, 실행 순서 안내
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { InitActionsForm } from '../../../components/page-settings/InitActionsForm';
 import { clearWidgetRegistry, registerWidget } from '../../../spec/widgetRegistry';
+import type { ActionRecipeSpec } from '../../../spec/specTypes';
 
 const t = (k: string) => k;
 
-const RECIPES = {
+const RECIPES: Record<string, ActionRecipeSpec> = {
   setState: { label: '$t:화면 상태', build: { handler: 'setState' }, __source: { kind: 'core' } },
   toast: {
     label: '$t:안내 메시지',
@@ -42,7 +42,7 @@ const RECIPES = {
     build: { handler: 'filterLoad' },
     __source: { kind: 'module', id: 'sirsoft-ecommerce' },
   },
-} as const;
+};
 
 beforeEach(() => {
   cleanup();
@@ -63,6 +63,10 @@ beforeEach(() => {
 });
 
 describe('InitActionsForm — 기본 (공통화 위임)', () => {
+  /**
+   * @scenario subject=init_actions_form
+   * @effects init_actions_cards_with_source_badges
+   */
   it('인스턴스 카드 + 모든 항목 출처 배지를 렌더한다', () => {
     const actions = [
       { handler: 'setState', __source: { kind: 'core' } },
@@ -74,6 +78,10 @@ describe('InitActionsForm — 기본 (공통화 위임)', () => {
     expect(screen.getByTestId('g7le-init-action-source-1').textContent).toContain('sirsoft-ecommerce');
   });
 
+  /**
+   * @scenario subject=init_actions_form
+   * @effects init_actions_no_up_down_buttons
+   */
   it('순서 변경 ▲▼ 버튼은 노출되지 않는다(드래그 전용)', () => {
     const actions = [{ handler: 'setState' }, { handler: 'toast', params: { message: 'hi' } }];
     render(<InitActionsForm actions={actions} onChange={vi.fn()} recipes={RECIPES} t={t} />);
@@ -81,6 +89,10 @@ describe('InitActionsForm — 기본 (공통화 위임)', () => {
     expect(screen.queryByTestId('g7le-init-action-down-0')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=init_actions_form
+   * @effects init_actions_drag_reorders
+   */
   it('⠿ 핸들 HTML5 드래그로 임의 위치 재배치', () => {
     const onChange = vi.fn();
     const actions = [
@@ -98,6 +110,10 @@ describe('InitActionsForm — 기본 (공통화 위임)', () => {
     expect(onChange).toHaveBeenLastCalledWith([actions[1], actions[2], actions[0]]);
   });
 
+  /**
+   * @scenario subject=init_actions_form
+   * @effects init_actions_dropline_marks_drop_target
+   */
   it('드래그 중 드롭 예정 지점의 삽입선이 활성화된다(드롭 위치 표시)', () => {
     const actions = [
       { handler: 'setState' },
@@ -113,6 +129,10 @@ describe('InitActionsForm — 기본 (공통화 위임)', () => {
     expect(screen.getByTestId('g7le-init-action-dropline-end').getAttribute('data-active')).toBe('false');
   });
 
+  /**
+   * @scenario subject=init_actions_form
+   * @effects init_actions_remove_drops_item
+   */
   it('삭제 시 배열에서 제거한다', () => {
     const onChange = vi.fn();
     const actions = [{ handler: 'setState' }, { handler: 'toast', params: { message: 'hi' } }];
@@ -121,12 +141,20 @@ describe('InitActionsForm — 기본 (공통화 위임)', () => {
     expect(onChange).toHaveBeenLastCalledWith([actions[0]]);
   });
 
+  /**
+   * @scenario subject=init_actions_form
+   * @effects init_actions_if_condition_badge
+   */
   it('if 동반 항목은 〔조건〕 배지를 표시한다', () => {
     const actions = [{ handler: 'toast', params: { message: 'hi' }, if: '{{query.error}}' }];
     render(<InitActionsForm actions={actions} onChange={vi.fn()} recipes={RECIPES} t={t} />);
     expect(screen.getByTestId('g7le-init-action-cond-badge-0')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=init_actions_form
+   * @effects init_actions_edit_dispatches_param_widgets
+   */
   it('[편집] 펼치면 스펙 params 위젯을 디스패치하고 값 변경이 buildAction 재생성', () => {
     const onChange = vi.fn();
     const actions = [{ handler: 'toast', params: { message: 'hi' } }];
@@ -143,6 +171,10 @@ describe('InitActionsForm — 기본 (공통화 위임)', () => {
     expect(next.params.message).toBe('새 안내');
   });
 
+  /**
+   * @scenario subject=init_actions_form
+   * @effects init_actions_advanced_item_code_and_drag_only
+   */
   it('고급 보존 항목은 [편집] 부재 + 코드 열람 + 드래그 순서이동 가능', () => {
     const actions = [
       { handler: 'apiCall', onSuccess: [{ handler: 'toast' }] },
@@ -157,6 +189,10 @@ describe('InitActionsForm — 기본 (공통화 위임)', () => {
     expect(screen.getByTestId('g7le-init-action-drag-0')).toHaveAttribute('draggable', 'true');
   });
 
+  /**
+   * @scenario subject=init_actions_form
+   * @effects init_actions_add_picker_pushes
+   */
   it('추가(ActionAddPicker) 로 배열에 push 한다', () => {
     const onChange = vi.fn();
     render(<InitActionsForm actions={[]} onChange={onChange} recipes={RECIPES} t={t} />);
@@ -172,6 +208,10 @@ describe('InitActionsForm — 상속', () => {
     { handler: 'toast', params: { message: 'hi' }, __source: { kind: 'route', layout: 'home' } },
   ];
 
+  /**
+   * @scenario subject=init_actions_form
+   * @effects init_actions_inherit_groups_and_order_hint
+   */
   it('base/route 그룹을 분리하고 실행 순서를 안내한다', () => {
     render(<InitActionsForm actions={inherited} onChange={vi.fn()} recipes={RECIPES} t={t} />);
     expect(screen.getByTestId('g7le-init-action-group-base')).toBeInTheDocument();
@@ -179,6 +219,10 @@ describe('InitActionsForm — 상속', () => {
     expect(screen.getByTestId('g7le-init-action-merge-order')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=init_actions_form
+   * @effects init_actions_inherit_base_locked_self_editable
+   */
   it('부모(base) 항목은 🔒 잠금 — [편집]/[✕]/드래그 핸들 부재, 자식만 편집 가능', () => {
     render(<InitActionsForm actions={inherited} onChange={vi.fn()} recipes={RECIPES} t={t} />);
     // base 그룹 항목(인덱스 0) — 잠금(편집/삭제/드래그 핸들 부재).
@@ -191,6 +235,10 @@ describe('InitActionsForm — 상속', () => {
     expect(screen.getByTestId('g7le-init-action-self-drag-0')).toHaveAttribute('draggable', 'true');
   });
 
+  /**
+   * @scenario subject=init_actions_form
+   * @effects init_actions_inherit_base_group_read_only
+   */
   it('base 그룹은 읽기전용 — "[공통에서 수정]" 버튼 부재 + 안내문 표시 + 추가 picker 부재', () => {
     render(<InitActionsForm actions={inherited} onChange={vi.fn()} recipes={RECIPES} t={t} />);
     // "[공통에서 수정]" 버튼 제거.
@@ -202,6 +250,10 @@ describe('InitActionsForm — 상속', () => {
     expect(screen.getByTestId('g7le-init-action-self-add-picker-toggle')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=init_actions_form
+   * @effects init_actions_inherit_self_remove_keeps_base
+   */
   it('자식(self) 삭제 시 base 보존하고 self 만 제거한 병합 배열로 onChange', () => {
     const onChange = vi.fn();
     render(<InitActionsForm actions={inherited} onChange={onChange} recipes={RECIPES} t={t} />);

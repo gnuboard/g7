@@ -1,0 +1,24 @@
+feature: core_update_maintenance_access
+
+description: |
+  관리자 화면 코어 업데이트가 사이트를 점검 모드로 둔 동안(진행·되돌리기·복구 중) 우회 쿠키가 없는 관리자가 이어 가는 통로.
+  점검 화면에 관리자 확인 칸을 그리고, 코어 업데이트 권한(`core.system.update`) 관리자로 확인되면 점검 우회 쿠키만 발급해
+  업데이트 탭으로 보낸다(로그인 세션은 만들지 않는다 — 탭에서 평소처럼 로그인). 실패 사유는 가르지 않고, IP 마다 10분에 5회로
+  제한하고, 틀린 비밀번호는 일반 로그인 실패와 같은 계수기에 세어 잠긴 계정은 통과하지 못한다. 진행 중인 웹 업데이트가 없는 점검에서는 칸·통로가 닫혀 일반 점검의 우회 수단이 되지 않는다.
+
+coverage_strategy: full
+
+axes:
+  case: [rolling_back_admin, wrong_or_unprivileged, lockout_shared, no_active_web_update]
+
+effects:
+  - resume_form_shown_while_web_update_active        # 진행·되돌리기·복구 중이면 점검 화면에 관리자 확인 칸을 그린다
+  - update_admin_gets_bypass_cookie                  # 코어 업데이트 권한 관리자는 우회 쿠키를 받는다(로그인 세션 없음)
+  - failed_attempt_gets_no_cookie                    # 틀린 비밀번호·권한 없는 계정은 쿠키 없이 같은 실패 안내
+  - attempts_are_throttled                           # 시도 제한
+  - failures_share_login_lockout_counter             # 틀린 비밀번호는 일반 로그인 실패와 같은 계수기·잠금 기준
+  - locked_account_refused_even_with_right_password  # 잠긴 계정은 비밀번호가 맞아도 거절(같은 실패 문장), 잠긴 동안 계수 불변
+  - resume_access_closed_without_active_web_update   # 진행 중인 웹 업데이트가 없으면 칸·통로가 닫힌다
+
+test_files:
+  - tests/Feature/Middleware/CoreUpdateMaintenanceAccessTest.php

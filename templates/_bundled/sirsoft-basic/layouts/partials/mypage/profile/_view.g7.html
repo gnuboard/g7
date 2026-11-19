@@ -1,4 +1,6 @@
-<!-- 내 정보 보기 본체 — 읽기 전용이다. 고치기·비밀번호 변경·탈퇴로 나가는 입구가 여기 모여 있다. -->
+<!-- 내 정보 보기 본체 — 읽기 전용이다. 고치기·비밀번호 변경·탈퇴로 나가는 입구가 여기 모여 있다.
+     연락처, 위치, 서명·자기소개와 운영자가 추가한 항목은 서버가 준 항목 계약(데이터소스 profileFields)대로 보기 조각(partials/member/_member_fields_view)이 카드마다 그린다 —
+     수정 화면과 같은 소스, 같은 묶음이라 수정 화면에 있는 항목은 여기에도 있다. 맨 위 프로필 카드(아바타, 이름, 닉네임, 이메일, 가입일)는 이 조각이 직접 그리고, 모듈과 플러그인이 선언한 항목은 확장별 카드(computed profileExtensionGroups)로 보인다. -->
 <partial _e2e_allow="e2e:allow S4-D15 — 배송국가 칸에 미적용 안내 문장 하나를 조건부로 더했다. 대체 검증: Vitest 조건 평가 + 전용 Chrome 실측(배송 가능 국가를 바꾸는 배타 창에서만 재현되어 공용 E2E 환경 설정을 바꿀 수 없다)" description="마이페이지 프로필 - View 모드 (시안 기반 레이아웃)">
   <div class="space-y-6">
     <blur-until-loaded sources="user"/>
@@ -127,142 +129,47 @@
         </div>
       </div>
     </div>
-    <!-- 2컬럼 카드 - 연락처 정보 / 위치 정보 -->
-    <div class="grid grid-cols-2 gap-6">
+    <!-- 연락처 카드와 위치 카드 — 둘 다 있으면 넓은 화면에서 나란히, 하나만 있으면 한 줄을 다 쓴다. 묶음에 항목이 없는 카드는 그리지 않는다. -->
+    <div data-if="{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'contact' || g.key === 'location'; })}}" class="{{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'contact' || g.key === 'location'; }).length === 2 ? 'grid grid-cols-2 gap-6' : 'grid grid-cols-1 gap-6'}}">
       <responsive on="portable" class="grid grid-cols-1 gap-4"/>
-      <!-- 연락처 정보 카드 -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <!-- 연락처 정보 카드 (휴대폰, 전화, 홈페이지) -->
+      <div data-if="{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'contact'; })}}" data-ref="profile_view_contact_card" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
         <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.profile.contact_info</h3>
-        <div class="space-y-3">
-          <!-- 휴대폰 번호 -->
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600 dark:text-gray-400">$t:mypage.profile.mobile</span>
-            <span class="text-sm text-gray-900 dark:text-white">{{user.data?.mobile ?? '-'}}</span>
-          </div>
-          <!-- 전화번호 -->
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600 dark:text-gray-400">$t:mypage.profile.phone</span>
-            <span class="text-sm text-gray-900 dark:text-white">{{user.data?.phone ?? '-'}}</span>
-          </div>
-          <!-- 홈페이지 -->
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600 dark:text-gray-400">$t:mypage.profile.homepage</span>
-            <span class="text-sm text-gray-900 dark:text-white">{{user.data?.homepage ?? '-'}}</span>
-          </div>
+        <div data-each="memberFieldGroup in {{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'contact'; })}}">
+          <include src="partials/member/_member_fields_view.g7.html"/>
         </div>
       </div>
-      <!-- 위치 정보 카드 -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <!-- 위치 정보 카드 (언어, 국가, 시간대, 주소) -->
+      <div data-if="{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'location'; })}}" data-ref="profile_view_location_card" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
         <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.profile.location_info</h3>
-        <div class="space-y-3">
-          <!-- 국가 -->
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600 dark:text-gray-400">$t:mypage.profile.country</span>
-            <span class="text-sm text-gray-900 dark:text-white">{{user.data?.country_name ?? user.data?.country ?? '-'}}</span>
-          </div>
-          <!-- 언어 -->
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600 dark:text-gray-400">$t:mypage.profile.language</span>
-            <span class="text-sm text-gray-900 dark:text-white">{{user.data?.language_label ?? user.data?.language ?? '-'}}</span>
-          </div>
-          <!-- 시간대 -->
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600 dark:text-gray-400">$t:mypage.profile.timezone</span>
-            <span class="text-sm text-gray-900 dark:text-white">{{user.data?.timezone ?? '-'}}</span>
-          </div>
-          <!-- 주소 -->
-          <div class="flex justify-between items-start">
-            <span class="text-sm text-gray-600 dark:text-gray-400 flex-shrink-0">$t:mypage.profile.address</span>
-            <span class="text-sm text-gray-900 dark:text-white text-right max-w-[60%] break-words">{{user.data?.zipcode || user.data?.address || user.data?.address_detail ? ((user.data?.zipcode ? '(' + user.data.zipcode + ') ' : '') + (user.data?.address ?? '') + (user.data?.address_detail ? ' ' + user.data.address_detail : '')) : '-'}}</span>
-          </div>
+        <div data-each="memberFieldGroup in {{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'location'; })}}">
+          <include src="partials/member/_member_fields_view.g7.html"/>
         </div>
       </div>
     </div>
-    <!-- 결제 통화 표시 (A3 — 이커머스 모듈 설치 시에만. 읽기 전용. 변경은 회원정보 수정에서 통화도 함께 저장 — D9) -->
-    <div data-if="{{user.data?.ecommerce_preferred_currency !== undefined}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <!-- 추가 정보 카드 — 운영자가 환경설정에서 추가한 항목(파일 항목 포함). 항목이 없으면 그리지 않는다. -->
+    <div data-if="{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'extra'; })}}" data-ref="profile_view_extra_card" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
-      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
-        <icon name="coins" size="md" class="text-gray-600 dark:text-gray-400"/>
-        <h3 class="text-base font-semibold text-gray-900 dark:text-white">$t:mypage.currency_settings.title</h3>
+      <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:member.fields.section_extra</h3>
+      <div data-each="memberFieldGroup in {{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'extra'; })}}">
+        <include src="partials/member/_member_fields_view.g7.html"/>
       </div>
-      <p class="text-base text-gray-900 dark:text-white font-medium">{{user.data?.ecommerce_preferred_currency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}</p>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">$t:mypage.currency_settings.edit_hint</p>
     </div>
-    <!-- 배송국가 표시 (MP08 후속 — 이커머스 설치 + 해외배송 활성 시에만. 읽기 전용. 변경은 회원정보 수정에서 함께 저장). -->
-    <div data-if="{{user.data?.ecommerce_preferred_shipping_country !== undefined &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-      <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
-      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
-        <icon name="earth-asia" size="md" class="text-gray-600 dark:text-gray-400"/>
-        <h3 class="text-base font-semibold text-gray-900 dark:text-white">$t:mypage.shipping_country_settings.title</h3>
-      </div>
-      <p class="text-base text-gray-900 dark:text-white font-medium">{{$localized((_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).find(c => c.code === (user.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'))?.name) || (user.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR')}}</p>
-      <!-- 저장해 둔 국가를 운영자가 배송 가능 목록에서 내리면 화면·서버는 기본 국가로 계산한다 — 그 사실과 지금 적용 중인 국가를 함께 보인다. -->
-      <p data-if="{{user.data?.ecommerce_preferred_shipping_country !== undefined &amp;&amp; user.data?.ecommerce_preferred_shipping_country !== null &amp;&amp; !(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === user.data?.ecommerce_preferred_shipping_country)}}" class="mt-2 text-sm text-amber-700 dark:text-amber-300">$t:mypage.shipping_country_settings.saved_not_applied|saved={{$localized((_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).find(c => c.code === user.data?.ecommerce_preferred_shipping_country)?.name, 'sirsoft-ecommerce::settings.countries.' + (user.data?.ecommerce_preferred_shipping_country ?? '') + '.name') || user.data?.ecommerce_preferred_shipping_country}}|applied={{(_global.availableShippingCountries ?? []).find(c => c.code === _global.preferredShippingCountry)?.name ?? _global.preferredShippingCountry ?? ''}}</p>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">$t:mypage.shipping_country_settings.edit_hint</p>
-    </div>
-    <!-- 서명 및 자기소개 카드 -->
-    <div data-ref="profile_view_bio_card" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <!-- 서명 및 자기소개 카드 — 두 항목이 모두 꺼져 있으면 그리지 않는다. 확장이 이 카드 뒤에 자기 카드를 붙이므로 노드와 이름은 그대로 둔다. -->
+    <div data-if="{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'profile'; })}}" data-ref="profile_view_bio_card" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
       <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.profile.section_signature_bio</h3>
-      <div class="space-y-5">
-        <!-- 서명 -->
-        <div class="space-y-2">
-          <span class="block text-sm font-medium text-gray-600 dark:text-gray-400">$t:mypage.profile.signature</span>
-          <p class="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{{user.data?.signature ?? '-'}}</p>
-        </div>
-        <!-- 자기소개 -->
-        <div class="space-y-2">
-          <span class="block text-sm font-medium text-gray-600 dark:text-gray-400">$t:mypage.profile.bio</span>
-          <p class="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{{user.data?.bio ?? '-'}}</p>
-        </div>
+      <div data-each="memberFieldGroup in {{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'profile'; })}}">
+        <include src="partials/member/_member_fields_view.g7.html"/>
       </div>
     </div>
-    <!-- 게시판 알림 설정 (sirsoft-board 모듈 설치 시 표시) -->
-    <div data-if="{{user.data?.notify_comment !== undefined}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <!-- 확장별 카드 — 모듈과 플러그인이 회원 항목으로 선언한 값(게시판 알림, 결제 통화, 배송 국가, 마케팅 동의 등)을 확장마다 한 카드로 보인다. 카드 제목은 그 확장의 이름이다. -->
+    <div data-each="memberFieldGroup in {{$computed.profileExtensionGroups ?? []}}" data-ref="profile_view_extension_card_{{memberFieldGroup.key}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
-      <div class="flex items-center justify-between mb-4">
-        <responsive on="portable" class="flex items-center justify-between mb-3"/>
-        <div class="flex items-center gap-2">
-          <icon name="bell" size="md" class="text-gray-600 dark:text-gray-400"/>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-            <responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white"/>
-            $t:mypage.notification_settings.title
-          </h3>
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-4">
-        <responsive on="portable" class="grid grid-cols-1 gap-3"/>
-        <div class="flex items-start gap-3 p-3 rounded-lg">
-          <checkbox name="notify_post_complete" aria-label="$t:mypage.notification_settings.post_complete" checked="{{!!user.data?.notify_post_complete}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
-          <div>
-            <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.post_complete</span>
-            <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.post_complete_desc</span>
-          </div>
-        </div>
-        <div class="flex items-start gap-3 p-3 rounded-lg">
-          <checkbox name="notify_post_reply" aria-label="$t:mypage.notification_settings.post_reply" checked="{{!!user.data?.notify_post_reply}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
-          <div>
-            <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.post_reply</span>
-            <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.post_reply_desc</span>
-          </div>
-        </div>
-        <div class="flex items-start gap-3 p-3 rounded-lg">
-          <checkbox name="notify_comment" aria-label="$t:mypage.notification_settings.comment" checked="{{!!user.data?.notify_comment}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
-          <div>
-            <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.comment</span>
-            <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.comment_desc</span>
-          </div>
-        </div>
-        <div class="flex items-start gap-3 p-3 rounded-lg">
-          <checkbox name="notify_reply_comment" aria-label="$t:mypage.notification_settings.reply_comment" checked="{{!!user.data?.notify_reply_comment}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
-          <div>
-            <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.reply_comment</span>
-            <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.reply_comment_desc</span>
-          </div>
-        </div>
-      </div>
+      <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700 break-words">{{memberFieldGroup.title}}</h3>
+      <include src="partials/member/_member_fields_view.g7.html"/>
     </div>
     <!-- 회원 탈퇴 섹션 - 탈퇴 상태가 아닌 경우만 표시 -->
     <div data-if="{{user.data?.status !== 'withdrawn'}}" class="bg-red-50 dark:bg-gray-800 rounded-lg shadow-sm border border-red-200 dark:border-red-900/50 p-6">

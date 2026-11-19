@@ -9,6 +9,10 @@
  * 창 상태는 창 고유 전역 이름 공간 `_global.quickOptionModal` 에 둔다. 창은 계속 마운트돼 있어
  * 화면 상태에 쓰면 다시 열 때 앞 값이 남는다(7.1.1). 여는 쪽이 이 키를 null 로 비운 뒤 채운다.
  */
+/** 추가 정보 미입력 거부의 오류 코드 (서버 403 응답의 error_code) */
+export declare const REQUIRED_FIELDS_PENDING = "required_fields_pending";
+/** 「추가 정보가 필요합니다」 안내 창 이름 (사용자 화면 상속원 `_user_base` 의 창) */
+export declare const REQUIRED_INFO_PENDING_MODAL_ID = "required_info_pending_modal";
 /** 옵션 선택 창 이름 (레이아웃 `partials/shop/_modal_quick_option` 의 창) */
 export declare const QUICK_OPTION_MODAL_ID = "quick_option_modal";
 /** 카드가 넘기는 상품 (목록 응답의 한 항목) */

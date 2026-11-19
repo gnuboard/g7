@@ -172,7 +172,7 @@ class PaymentRetryControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('errors.message.0', 'Payment currency is not chargeable.');
+            ->assertJsonPath('errors.message.0', __('sirsoft-pay_nhnkcp::messages.responses.currency_not_chargeable'));
 
         $order->refresh();
         $this->assertEquals(OrderStatusEnum::PENDING_ORDER, $order->order_status);
@@ -262,7 +262,7 @@ class PaymentRetryControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(409)
-            ->assertJsonPath('errors.message.0', 'Order is not retryable for NHN KCP payment.');
+            ->assertJsonPath('errors.message.0', __('sirsoft-pay_nhnkcp::messages.responses.order_not_retryable'));
 
         $order->refresh();
         $this->assertEquals(OrderStatusEnum::CANCELLED, $order->order_status);
@@ -320,7 +320,7 @@ class PaymentRetryControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(403)
-            ->assertJsonPath('errors.message.0', 'Order ownership verification failed.');
+            ->assertJsonPath('errors.message.0', __('sirsoft-pay_nhnkcp::messages.responses.ownership_verification_failed'));
 
         $order->refresh();
         $this->assertEquals(OrderStatusEnum::CANCELLED, $order->order_status);

@@ -106,6 +106,24 @@ interface ContentMediaRepositoryInterface
     public function findStaleRemoved(Carbon $threshold, int $limit): Collection;
 
     /**
+     * 소유자에 이어진 본문 미디어 중 그 MIME 인 행 수 (썸네일 원본 제공자용 — 임시 행과 소프트 삭제 행 제외).
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @return int 행 수
+     */
+    public function countLinkedByMimeTypes(array $mimeTypes): int;
+
+    /**
+     * 소유자에 이어진 본문 미디어 중 그 MIME 인 행을 ID 순으로 나눠 읽습니다 (썸네일 원본 제공자용).
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @param  int  $afterId  이 ID 다음부터 (처음이면 0)
+     * @param  int  $limit  최대 건수
+     * @return Collection<int, ContentMedia> 행
+     */
+    public function chunkLinkedByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection;
+
+    /**
      * 행을 영구 삭제합니다.
      *
      * @param  ContentMedia  $media  본문 미디어

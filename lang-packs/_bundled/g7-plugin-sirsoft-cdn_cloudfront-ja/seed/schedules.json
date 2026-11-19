@@ -1,0 +1,6 @@
+{
+  "retry-purges": {
+    "label": "CDN キャッシュ無効化の再試行",
+    "description": "失敗した CloudFront キャッシュ無効化を再送します(キャッシュの自動無効化を有効にした場合のみ)。"
+  }
+}

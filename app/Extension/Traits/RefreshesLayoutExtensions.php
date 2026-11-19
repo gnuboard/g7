@@ -5,6 +5,8 @@ namespace App\Extension\Traits;
 use App\Contracts\Extension\ModuleInterface;
 use App\Contracts\Extension\PluginInterface;
 use App\Enums\LayoutSourceType;
+use App\Extension\ExtensionManager;
+use App\Extension\Layout\LayoutSyncOptions;
 use App\Extension\Layout\LayoutSyncReport;
 use App\Services\LayoutExtensionService;
 use Illuminate\Support\Collection;
@@ -53,8 +55,14 @@ trait RefreshesLayoutExtensions
             return $stats;
         }
 
-        $extensionsPath = $extension->getExtensionsPath();
-        $jsonFiles = $extension->getLayoutExtensions();
+        // 업데이트 미리보기는 새 판 디렉토리의 조각을 읽는다(그 밖엔 활성 디렉토리).
+        if (LayoutSyncOptions::current()->sourceRoot !== null) {
+            $extensionsPath = $this->layoutSourceRoot($extensionType.'s', $identifier).'/resources/extensions';
+            $jsonFiles = is_dir($extensionsPath) ? ExtensionManager::listDirectoryFiles($extensionsPath, '.json') : [];
+        } else {
+            $extensionsPath = $extension->getExtensionsPath();
+            $jsonFiles = $extension->getLayoutExtensions();
+        }
 
         // 소스 디렉토리에 실재하는 조각 키 집합 — 컴파일 성공 여부와 무관하다. 고아 정리는 이 집합으로 판정해,
         // 컴파일에 실패한 조각의 행을 지우지 않는다(실패는 로그, 행은 보존).

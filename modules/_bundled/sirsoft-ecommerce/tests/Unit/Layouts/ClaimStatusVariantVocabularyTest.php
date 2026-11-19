@@ -31,7 +31,7 @@ use Tests\PureTestCase;
  *
  * @scenario reason_type=exchange
  *
- * @effects claim_status_variant_vocabulary_covered_by_both_screens
+ * 효과 요약(마커 아님 — 평문): claim_status_variant_vocabulary_covered_by_both_screens
  */
 class ClaimStatusVariantVocabularyTest extends PureTestCase
 {

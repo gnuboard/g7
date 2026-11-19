@@ -26,7 +26,6 @@ import { useLayoutEditor } from '../../LayoutEditorContext';
 import {
   treeToGrid,
   cellRefAt,
-  resolveParams,
   canMoveRow,
   canMoveColumn,
   type GridCellRef,
@@ -146,7 +145,6 @@ export function TableEditor({
     () => (params && typeof params === 'object' ? (params as Record<string, unknown>) : null),
     [params],
   );
-  const p = useMemo(() => resolveParams(tableParams as never), [tableParams]);
   const grid = useMemo(() => treeToGrid(node, tableParams as never), [node, tableParams]);
   // 셀 테두리 시각 피커 카탈로그(템플릿 editor-spec params.cellBorder — 라이브러리 중립).
   const cellBorderCatalog = useMemo<CellBorderCatalog | null>(() => {

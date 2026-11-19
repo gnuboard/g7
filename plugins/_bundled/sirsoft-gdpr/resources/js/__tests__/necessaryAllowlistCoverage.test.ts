@@ -32,23 +32,32 @@
  *  10. 와일드카드 매칭 규칙이 PHP·TS 에서 동형이다 (발견 ②)
  *  11. 확장 제공 키가 저장 검증 규칙을 통과하고 출하 카탈로그와 겹치지 않는다
  *  12. 제공 리스너가 이 플러그인의 클래스를 참조하지 않는다 (훅 이름·배열 모양만이 계약)
+ *  13. 출하 카탈로그 **전량**이 미동의 상태에서 저장되고 회수(다음 방문 부팅)까지 남는다 —
+ *      항목을 손으로 열거하지 않고 카탈로그에서 기계 파생한다. 쓰기 면제(user-initiated)와
+ *      회수 면제는 다른 경로라 쓰기만 재면 「저장은 되는데 다음 방문에 사라지는」 원래 증상을
+ *      그대로 통과시킨다. (#609 — 리베이스에서 사라졌던 축을 운영자 설정 구조 위에 복원)
  *
  * @module sirsoft-gdpr/__tests__/necessaryAllowlistCoverage
  *
- * @scenario scope=cookie, notation=wildcard, locked=locked_item, settings_state=unreachable, request=valid_item
- * @effects ts_fallback_matches_php_locked_set, ts_fallback_is_not_a_catalog_copy, wildcard_rule_is_isomorphic_across_php_and_ts, scope_vocabulary_matches_across_php_and_ts, server_cookie_gate_reads_settings_not_hardcoded_list, locked_set_absent_from_shipped_catalog, shipped_catalog_items_pass_save_validation
+ * 각 축이 재는 효과와 조합은 그 축의 시험 바로 앞에 적었다(잠금 폴백, 카탈로그 사본 금지, 와일드카드 동형,
+ * 스코프 어휘, 서버 쿠키 게이트, 카탈로그의 잠금 항목 배제, 저장 검증 통과, 미동의 쓰기와 회수).
  */
 
-import { describe, it, expect } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { cleanupFunctionalArtifacts } from '../functionalCleaner';
 import {
     ALLOWLIST_SCOPES,
     LOCKED_FALLBACK,
     matchesAllowlistPattern,
+    mergeAllowlists,
+    normalizeAllowlist,
     type AllowlistScope,
 } from '../necessaryAllowlist';
+import { installStorageInterceptor, uninstallStorageInterceptor } from '../storageInterceptor';
+import { installUserInitiatedTracker, uninstallUserInitiatedTracker } from '../userInitiatedTracker';
 
 /**
  * 저장소 루트를 탐색합니다. (artisan + composer.json 동시 보유 디렉토리)
@@ -482,31 +491,43 @@ function discoverProviderListeners(): ProviderListener[] {
 const SHIPPED_CATALOG = parsePhpScopeMap(
     sliceBracketBlock(PLUGIN_PHP, 'DEFAULT_NECESSARY_ALLOWLIST_CATALOG ='),
 );
+// 잠금 집합의 정의처는 `plugin.php` 다 — `NecessaryAllowlist::locked()` 는 그 정의에
+// 위임만 한다(신규 설치 흐름에서 이 클래스의 오토로드 등록보다 먼저 호출되기 때문,
+// dev-g7 205284904). 위임 함수의 본문을 파싱하면 `[` 가 없어 빈 목록이 되고, 그 상태로는
+// 「잠금 집합과 일치하는가」가 아무것도 재지 않는다.
 const PHP_LOCKED = parsePhpScopeMap(
     sliceBracketBlock(PLUGIN_PHP, 'public static function lockedNecessaryStorage(): array'),
 );
 const PROVIDER_LISTENERS = discoverProviderListeners();
 
 /**
- * 코어가 선언한 필수 저장 키(`App\Support\CoreNecessaryStorage::keys()`, 코어 7.1.5) — 플러그인은 실행 시점에
- * 이 목록을 확장 제공 목록에 합친다(plugin.php `providedNecessaryStorage` 의 CoreNecessaryStorage 갈래, 1.1.4).
- * 이 출처를 빼고 판정하면 코어가 새 키를 선언하는 순간 「덮이지 않은 키」로 붉어진다.
+ * 코어가 선언한 필수 저장 키(`App\Support\CoreNecessaryStorage::keys()`)를 읽습니다.
  *
- * @return 코어가 선언한 키 집합(클래스가 없는 옛 코어면 빈 집합)
+ * 코어 엔진은 동의 플러그인을 모르므로 자기 키를 그 클래스에 선언하고, 이 플러그인의 `plugin.php` 가
+ * 제공 목록에 합쳐 읽는다. 시험이 이 선언을 모르면 코어 엔진이 쓰는 키(`g7_search_history`)가
+ * 「어디에도 등재되지 않은 키」로 붉어진다. 선언은 클래스 상수(`self::NAME`)를 쓰므로 상수 값을 풀어 읽는다.
+ * 코어 7.1.5 미만처럼 파일이 없으면 빈 목록이다(`plugin.php` 의 `class_exists` 분기와 같은 뜻).
+ *
+ * @return 저장소 종류 → 키 목록
  */
-function discoverCoreNecessaryKeys(): Set<string> {
+function readCoreNecessaryKeys(): Record<string, string[]> {
     const file = path.join(REPO_ROOT, 'app', 'Support', 'CoreNecessaryStorage.php');
-    if (!fs.existsSync(file)) return new Set();
+    if (!fs.existsSync(file)) {
+        return {};
+    }
     const source = fs.readFileSync(file, 'utf-8');
-    const consts = new Map([...source.matchAll(/const\s+(\w+)\s*=\s*'([^']+)'/g)].map((m) => [m[1], m[2]]));
-    const body = sliceBracketBlock(source, 'public static function keys(): array');
-    const keys = new Set<string>();
-    for (const m of body.matchAll(/self::(\w+)/g)) if (consts.has(m[1])) keys.add(consts.get(m[1]) as string);
-    for (const m of body.matchAll(/=>\s*\[([^\]]*)\]/g)) for (const s of m[1].matchAll(/'([^']+)'/g)) keys.add(s[1]);
-    return keys;
+    const constants = new Map(
+        [...source.matchAll(/const\s+([A-Z_]+)\s*=\s*'((?:[^'\\]|\\.)*)'\s*;/g)].map((m) => [m[1], m[2]]),
+    );
+    const block = sliceBracketBlock(source, 'public static function keys(): array')
+        .replace(/self::([A-Z_]+)/g, (whole, name: string) => (
+            constants.has(name) ? `'${constants.get(name)}'` : whole
+        ));
+
+    return parsePhpScopeMap(block);
 }
 
-const CORE_NECESSARY_KEYS = discoverCoreNecessaryKeys();
+const CORE_NECESSARY_KEYS = readCoreNecessaryKeys();
 
 /**
  * 키가 실행 시점에 정해져 **정적으로 해석할 수 없는** 쓰기 지점.
@@ -521,6 +542,10 @@ const DECLARED_DYNAMIC_CALL_SITES: ReadonlyArray<{ site: string; reason: string 
     // functional 미동의 파기(`cleanupFunctionalArtifacts`)의 대상이 아니다 — 즉 여기 등재는
     // 「파기돼도 된다」는 판단이 아니라 **스캐너가 못 읽는 지점의 기록**이다.
     // 정렬된 문자열로 비교하므로 순서는 도출 결과(사전순)를 따른다.
+    {
+        site: 'MEMORY_KEY + slot ← plugins/_bundled/sirsoft-hero_section/resources/js/components/composite/HeroSlider.tsx',
+        reason: '히어로섹션 자리별 직전 모양(`sirsoft-hero_section:slot:<위치>`, 동적 위치는 `<위치>:<대상>` = 배너 유무·표시 폭) — 받는 동안의 스켈레톤 폭을 맞추는 보조 기억이다. functional 미동의 파기로 지워져도 다음 방문에 스켈레톤이 기본 폭으로 잡힐 뿐이라 허용목록에 넣지 않는다.',
+    },
     {
         site: '`${namespace}${FONT_SIZE_SUFFIX}` ← templates/_bundled/sirsoft-admin_basic/src/components/composite/CodeWorkspace.tsx',
         reason: '편집기 글꼴 크기 — `g7le.codeEditor.<레이아웃>.fontSize`. 접두사 `g7le.*` 로 파기 면제.',
@@ -546,6 +571,10 @@ const DECLARED_DYNAMIC_CALL_SITES: ReadonlyArray<{ site: string; reason: string 
         reason: '`setLocalStorage` 핸들러 — 위와 같은 이유 (레이아웃이 키를 정한다).',
     },
     {
+        site: 'knownDynamicStorageKey ← templates/_bundled/sirsoft-admin_basic/src/components/composite/ColumnSelector.tsx',
+        reason: '표 열 선택기가 「이미 본 동적 열」을 `<열 저장 키>::dynamic` 에 기억한다(7.2.0 — 운영자가 추가 항목을 목록 열로 켜면 처음 한 번만 자동으로 켠다). 열 저장 키와 같은 성격의 보조 기억이라, functional 미동의 파기로 지워져도 새 동적 열이 한 번 더 켜질 뿐이다.',
+    },
+    {
         site: 'storageKey ← templates/_bundled/sirsoft-admin_basic/src/components/composite/FileTree.tsx',
         reason: '폴더 접힘 상태 — FileTreePicker 가 `${storageKey}.expanded` 로 넘긴다. 같은 `g7le.*` 계열.',
     },
@@ -560,13 +589,14 @@ const DECLARED_DYNAMIC_CALL_SITES: ReadonlyArray<{ site: string; reason: string 
  *
  * 여기 적힌 키는 functional 동의가 없으면 파기되는 것이 설계 의도다.
  * 새 키를 여기 넣을 때는 사용자에게 그 상실이 수용 가능한지 근거를 함께 남긴다.
+ *
+ * 표시 통화(`g7_preferred_currency`)는 종전에 여기 있었다 — 「미동의 시 기본 통화로
+ * 돌아가는 것이 의도」라는 선언이었다. 설계 결정(2026-10-31): 언어·테마와 같은 「사용자가
+ * 화면에서 직접 고른 표시 설정」(WP29 §3.6)으로 보아 **보관 대상**으로 한다. 그 키는 이커머스가
+ * 소유하므로 출하 카탈로그가 아니라 이커머스가 계약 훅으로 제공한다(배송 국가도 같다). 그래서
+ * 이 목록은 비어 있고, 비어 있는 것이 정상이다 — 자리는 남겨 둔다.
  */
-const INTENTIONALLY_NON_NECESSARY: ReadonlyArray<{ key: string; reason: string }> = [
-    {
-        key: 'g7_preferred_currency',
-        reason: '표시 통화 — functional 카테고리 설명에 명시된 선호도. 미동의 시 기본 통화로 표시되는 것이 의도된 동작이다.',
-    },
-];
+const INTENTIONALLY_NON_NECESSARY: ReadonlyArray<{ key: string; reason: string }> = [];
 
 /**
  * 출하 카탈로그(전 스코프 합집합)가 도출된 키를 덮는지 검사합니다.
@@ -593,6 +623,13 @@ function isInShippedCatalog(discovered: DiscoveredKey): boolean {
  * @return 제공 여부
  */
 function isProvidedByExtension(discovered: DiscoveredKey): boolean {
+    const coreDeclared = Object.values(CORE_NECESSARY_KEYS).some((patterns) =>
+        patterns.some((pattern) => matchesAllowlistPattern(discovered.key, pattern)),
+    );
+    if (coreDeclared) {
+        return true;
+    }
+
     return PROVIDER_LISTENERS.some((listener) => Object.values(listener.keys).some((patterns) =>
         patterns.some((pattern) => (
             matchesAllowlistPattern(discovered.key, pattern)
@@ -638,7 +675,6 @@ describe('strictly necessary 허용목록 모집단 커버리지', () => {
             .filter((d) => !lockedKeys.has(d.key))
             .filter((d) => !isInShippedCatalog(d))
             .filter((d) => !isProvidedByExtension(d))
-            .filter((d) => !CORE_NECESSARY_KEYS.has(d.key))
             .map((d) => `${d.key} (${d.matchType}) ← ${d.origin}`);
 
         expect(uncovered).toEqual([]);
@@ -647,7 +683,7 @@ describe('strictly necessary 허용목록 모집단 커버리지', () => {
     /** @effects storage_keys_population_covered_by_allowlist */
 
     it('코어 선언 필수 키 파싱이 비어 있지 않다 (파서가 죽으면 위 축이 코어 키를 놓친다)', () => {
-        expect(CORE_NECESSARY_KEYS.has('g7_search_history')).toBe(true);
+        expect(Object.values(CORE_NECESSARY_KEYS).flat()).toContain('g7_search_history');
     });
 
     /** @effects storage_keys_population_covered_by_allowlist */
@@ -685,6 +721,8 @@ describe('서버·클라이언트 허용목록 출처 정합성', () => {
     /** @effects middleware_session_cookie_name_resolved_at_runtime */
 
     it('세션 쿠키 이름은 런타임 해석 값이다 (하드코딩 금지)', () => {
+        // 정의처는 plugin.php 다 (PHP_LOCKED 와 같은 앵커) — 위임 함수 쪽을 읽으면 빈 문자열이라
+        // `toContain` 이 언제나 실패하고, 반대로 앵커만 바꾸면 이 축이 무엇을 재는지 남지 않는다.
         const locked = sliceBracketBlock(PLUGIN_PHP, 'public static function lockedNecessaryStorage(): array');
 
         expect(locked).toContain("config('session.cookie'");
@@ -692,7 +730,12 @@ describe('서버·클라이언트 허용목록 출처 정합성', () => {
         expect(locked.match(/'laravel_session'/g)?.length ?? 0).toBe(1);
     });
 
-    /** @effects ts_fallback_matches_php_locked_set */
+    /**
+     * 설정이 도달하지 못한 상태(settings_state=unreachable)에서 판정은 TS 잠금 폴백에 기댄다.
+     *
+     * @scenario scope=cookie, notation=wildcard, locked=locked_item, settings_state=unreachable, request=valid_item
+     * @effects ts_fallback_matches_php_locked_set
+     */
 
     it('TS 폴백이 PHP 잠금 집합과 정확히 일치한다 (런타임 세션 쿠키 제외)', () => {
         // 세션 쿠키 이름은 파서가 이미 걷어냈다 — TS 폴백에 담을 수 없는 런타임 값이라
@@ -861,5 +904,83 @@ describe('확장 제공 키 계약', () => {
 
     it('계약 훅 이름이 plugin.php 상수와 같다', () => {
         expect(PLUGIN_PHP).toContain(`PROVIDED_NECESSARY_STORAGE_HOOK = '${PROVIDED_HOOK}';`);
+    });
+});
+
+/**
+ * 출하 카탈로그 전량 — 미동의 저장·회수 생존 (검사 축 13).
+ *
+ * 운영자 설정 구조에서는 판정 목록이 「운영자 설정 ∪ 잠금 집합」이다. 신규 설치는 출하
+ * 카탈로그를 그 설정으로 시드하므로, 신규 사이트의 판정 목록은 곧 `카탈로그 ∪ 잠금 집합`이다.
+ * 그 목록을 그대로 주입해 카탈로그의 **모든** 항목이 두 경로를 다 통과하는지 잰다:
+ *   ① 쓰기 — 사용자 인터랙션 없이(= user-initiated 면제 없이) 통과해야 한다
+ *   ② 회수 — 미동의 재방문 부팅이 도는 경로. 여기서 지워지면 화면에는 「저장했는데 다시 오면
+ *      사라져 있다」로만 나타나고 오류는 남지 않는다.
+ * 항목을 손으로 열거하지 않는다 — 열거하면 카탈로그에 키가 하나 늘어도 그 키를 재는 케이스가
+ * 없어 검사에서 빠지고, 반대로 키가 실수로 빠져도 초록이 된다. 실제로 그 사각에서 화면 테마·
+ * 표시 통화·비회원 주문 조회 값이 매 방문 회수되고 있었다.
+ */
+describe('출하 카탈로그 전량 — 미동의 저장·회수 생존', () => {
+    const STORAGE_KINDS = ['localStorage', 'sessionStorage'] as const;
+
+    /** 신규 설치 사이트의 판정 목록 (카탈로그 ∪ 잠금 집합) */
+    const seededAllowlist = mergeAllowlists(normalizeAllowlist(SHIPPED_CATALOG), LOCKED_FALLBACK);
+
+    /** 카탈로그 항목 → 실제로 저장해 볼 (키, 저장소) 조합. 접두 항목은 대표 접미사를 붙인다. */
+    const samples = STORAGE_KINDS.flatMap((storage) =>
+        (SHIPPED_CATALOG[storage] ?? []).map((pattern) => {
+            const key = pattern.endsWith('*') ? `${pattern.slice(0, -1)}probe` : pattern;
+            return { label: `${key} (${storage})`, key, storage };
+        }));
+
+    beforeEach(() => {
+        installUserInitiatedTracker();
+        window.localStorage.clear();
+        window.sessionStorage.clear();
+    });
+
+    afterEach(() => {
+        uninstallStorageInterceptor();
+        uninstallUserInitiatedTracker();
+        window.localStorage.clear();
+        window.sessionStorage.clear();
+    });
+
+    /** @effects shipped_catalog_items_survive_unconsented_write_and_cleanup */
+    it('모집단이 비어 있지 않다 — 파생이 죽으면 아래 케이스가 통째로 사라진다', () => {
+        expect(samples.length).toBeGreaterThanOrEqual(20);
+        expect(samples.some((s) => s.storage === 'sessionStorage')).toBe(true);
+    });
+
+    /** @effects shipped_catalog_items_survive_unconsented_write_and_cleanup */
+    it.each(samples)('$label — 미동의 상태에서 저장되고 다음 방문까지 남는다', ({ key, storage }) => {
+        installStorageInterceptor({
+            functionalConsented: false,
+            necessaryAllowlist: seededAllowlist,
+        });
+
+        const target = storage === 'localStorage' ? window.localStorage : window.sessionStorage;
+
+        target.setItem(key, 'v');
+        expect(target.getItem(key)).toBe('v');
+
+        cleanupFunctionalArtifacts({ allowlist: seededAllowlist });
+        expect(target.getItem(key)).toBe('v');
+    });
+
+    /** @effects shipped_catalog_items_survive_unconsented_write_and_cleanup */
+    it('카탈로그 밖의 키는 같은 경로에서 회수된다 — 위 단언이 무조건 참이 아님을 고정', () => {
+        installStorageInterceptor({
+            functionalConsented: true,
+            necessaryAllowlist: seededAllowlist,
+        });
+
+        window.localStorage.setItem('not_allowlisted_key', 'v');
+        window.sessionStorage.setItem('not_allowlisted_key', 'v');
+
+        cleanupFunctionalArtifacts({ allowlist: seededAllowlist });
+
+        expect(window.localStorage.getItem('not_allowlisted_key')).toBeNull();
+        expect(window.sessionStorage.getItem('not_allowlisted_key')).toBeNull();
     });
 });

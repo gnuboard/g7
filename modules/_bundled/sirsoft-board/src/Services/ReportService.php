@@ -12,6 +12,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReportStatus;
 use Modules\Sirsoft\Board\Enums\TriggerType;
@@ -949,7 +950,8 @@ class ReportService
                 $user = $this->userRepository->findById($reportableData->user_id);
                 if ($user) {
                     $data['author_id'] = $user->id;
-                    $snapshot['author_name'] = $user->name;
+                    // 스냅샷은 기록물이다. 신고한 시점의 관리자 화면 표시 이름을 남기고, 그 뒤 설정이나 이름이 바뀌어도 고치지 않는다.
+                    $snapshot['author_name'] = (string) app(BoardDisplayNames::class)->name($user, null, BoardDisplayNames::AREA_ADMIN);
                 } else {
                     $data['author_id'] = null;
                 }
@@ -1136,6 +1138,7 @@ class ReportService
         $authorId = null;
         $authorEmail = null;
         $authorName = '';
+        $authorRealName = null;
 
         $authorUuid = null;
         if ($target->user_id) {
@@ -1144,7 +1147,10 @@ class ReportService
                 $authorId = $user->id;
                 $authorUuid = $user->uuid;
                 $authorEmail = $user->email;
-                $authorName = $user->name;
+                // 신고 관리 화면이 쓰는 값이다 — 관리자 화면의 표시 이름. 실명은 회원 조회 권한이 있고 표시 이름과 다를 때만 싣는다.
+                $displayNames = app(BoardDisplayNames::class);
+                $authorName = (string) $displayNames->name($user, null, BoardDisplayNames::AREA_ADMIN);
+                $authorRealName = $displayNames->realName($user, $authorName);
             }
         } else {
             $authorName = $target->author_name ?? '';
@@ -1162,6 +1168,7 @@ class ReportService
             'content' => $target->content ?? '',
             'content_mode' => $target->content_mode ?? 'text',
             'author_name' => $authorName,
+            'author_real_name' => $authorRealName,
             'author_id' => $authorId,
             // 대상에 회원 번호가 남아 있으면 회원 글이다 — 계정이 지워졌어도(authorId null) 비회원이 아니다
             'author_is_member' => $target->user_id !== null,
@@ -1223,7 +1230,7 @@ class ReportService
             if ($postUser) {
                 $postAuthorId = $postUser->id;
                 $postAuthorUuid = $postUser->uuid;
-                $postAuthorName = $postUser->name;
+                $postAuthorName = (string) app(BoardDisplayNames::class)->name($postUser, null, BoardDisplayNames::AREA_ADMIN);
                 $postAuthorEmail = $postUser->email;
             }
         } else {

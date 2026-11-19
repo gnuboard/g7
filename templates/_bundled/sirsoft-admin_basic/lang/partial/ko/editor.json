@@ -167,6 +167,9 @@
     "img_alt": {
       "label": "대체 텍스트"
     },
+    "img_thumb_preset": {
+      "label": "썸네일 규격"
+    },
     "link_href": {
       "label": "링크 주소"
     },
@@ -1181,6 +1184,7 @@
     "tab_navigation": "탭 내비게이션",
     "tab_navigation_scroll": "스크롤 탭 내비",
     "toggle": "토글 스위치",
+    "member_field_input": "회원 항목 입력칸",
     "input": "입력",
     "textarea": "여러 줄 입력",
     "label": "레이블",
@@ -1498,7 +1502,8 @@
       "connection": "연결 탭",
       "alimtalk_templates": "알림톡 템플릿 탭",
       "settings": "설정 탭",
-      "history": "실행 이력 탭"
+      "history": "실행 이력 탭",
+      "schedules": "스케줄"
     },
     "extensions_list_view_gallery": "확장 목록 — 갤러리 보기",
     "extensions_list_view_list": "확장 목록 — 목록 보기",
@@ -1680,6 +1685,7 @@
     "admin_menu": "관리자 메뉴",
     "appKey": "앱 키",
     "auto_deactivated_banner": "자동 비활성 알림",
+    "thumbnailStats": "썸네일 저장 위치별 사용량",
     "unplaced_bundled_notice": "미배치 공식 번들 안내",
     "availableChannels": "사용 가능 채널",
     "clone_source": "복제 원본",
@@ -1745,6 +1751,8 @@
     "trustedProxy": "신뢰 프록시 진단",
     "user": "사용자",
     "users": "사용자 목록",
+    "system_status": "실행 방식·예약 작업 상태",
+    "core_update_status": "코어 업데이트 상태",
     "analytics_overview": "방문자 통계 개요",
     "analytics_realtime": "현재 접속자",
     "analytics_realtime_ws": "현재 접속자 방송",
@@ -1772,6 +1780,18 @@
     "analytics_row_trend": "방문자 통계 한 항목 추이",
     "passwordExpiryPreview": "비밀번호 만료 대상 건수",
     "passwordExpiryManualRuns": "비밀번호 만료 직권 실행 상태",
-    "user_check": "회원 등록 권한 확인"
+    "user_check": "회원 등록 권한 확인",
+    "schedule_owners": "스케줄 소유자 목록",
+    "schedule_status": "스케줄러 상태",
+    "queue_status": "큐 등록 현황",
+    "queue_pending": "큐 대기 Job",
+    "queue_failed": "큐 실패 Job",
+    "queue_logs": "큐 처리 기록",
+    "coreSchedules": "코어 예약 작업 목록",
+    "template_settings": "템플릿 설정",
+    "memberFieldDefs": "회원 항목 정의",
+    "memberFields": "회원 항목",
+    "memberNicknameRecompute": "닉네임 중복 검사 준비 상태",
+    "extensionTrustKeys": "확장 신뢰 키"
   }
 }

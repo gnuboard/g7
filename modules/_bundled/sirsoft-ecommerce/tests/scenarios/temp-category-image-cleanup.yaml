@@ -1,0 +1,67 @@
+feature: 임시 카테고리 이미지 정리 (Temp Category Image Cleanup, #876)
+
+description: |
+  새 카테고리 폼에서 이미지를 올리고 저장하지 않고 닫으면 `temp_key` 만 남고 `category_id` 가 빈
+  행과 그 파일(「등록 시 미리 생성」을 켠 사이트는 썸네일까지)이 영구히 남았다. 카테고리를 저장하면
+  `temp_key` 가 비워지므로 보존기간이 지나도록 `temp_key` 가 남은 행은 끝내 저장되지 않은 것이다.
+  `sirsoft-ecommerce:prune-temp-category-images` 가 그 행을 파일째(저장소 드라이버 경유 — 썸네일 동반)
+  영구 삭제하고, 모듈은 매일 자정 스케줄로 선언한다. 선례는 상품 임시 이미지 정리(temp-image-cleanup.yaml).
+
+axes:
+  image_state: [temp_unlinked, linked_to_category]
+  age: [within_retention, past_retention]
+
+exclusions:
+  - { image_state: linked_to_category, age: within_retention, reason: "저장된 카테고리 이미지는 나이와 무관하게 대상이 아니다 — 경과분 1건으로 충분" }
+
+sub_flows:
+  - id: thumbnails
+    description: 파일을 저장소 드라이버로 지워 그 원본의 썸네일 파생본도 함께 사라지는지
+    effects:
+      - category_temp_prune_deletes_thumbnails
+  - id: removed_in_form
+    description: |
+      폼에서 뺀 임시 이미지는 소프트 삭제 행(파일은 이미 지워짐)으로 남는다. 그 행도 걷고, 저장된
+      카테고리 이미지의 소프트 삭제 행은 건드리지 않는다.
+    effects:
+      - category_temp_prune_removes_soft_deleted_temp_rows
+  - id: dry_run
+    description: 판정만 수행하고 파일·기록을 건드리지 않는 미리보기 경로
+    effects:
+      - category_temp_prune_dry_run
+  - id: retention_guard
+    description: 보존기간 1일 미만 자기 차단 (지금 올리는 중인 업로드까지 지우는 사고 방지)
+    effects:
+      - category_temp_prune_days_guard
+  - id: batch_limit
+    description: 한 회차 처리 건수 상한과 오래된 순 처리 (이미 쌓인 행은 다음 회차가 이어 처리)
+    effects:
+      - category_temp_prune_respects_limit_oldest_first
+  - id: delete_failure
+    description: 파일 삭제에 실패한 행은 남겨 다음 회차에 다시 시도 (행을 먼저 지우면 고아 파일)
+    effects:
+      - category_temp_prune_keeps_record_when_file_delete_fails
+  - id: target_conditions
+    description: |
+      대상 판정의 두 조건(`temp_key` 있음, `category_id` 없음)을 하나씩 고정한다. 한쪽만 채워진 행은
+      어느 쪽이든 남아야 하며, 한 조건이 빠져도 다른 조건이 대신 막아 시험이 못 잡는 일을 막는다.
+    effects:
+      - category_temp_prune_requires_both_conditions
+  - id: console_messages
+    description: 미리보기·완료·차단 세 콘솔 문구가 ko·en 모두 번역 문구로 출력되는지 (ja 는 언어팩 동기 검사)
+    effects:
+      - category_temp_prune_console_messages_localized
+  - id: shared_date_directory
+    description: 날짜 디렉토리는 저장된 카테고리 이미지와 함께 쓰므로 지우지 않는다
+    effects:
+      - category_temp_prune_keeps_shared_date_directory
+
+effects:
+  - category_temp_prune_deletes_file_and_record
+  - category_temp_prune_keeps_within_retention
+  - category_temp_prune_skips_linked
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Console/PruneTempCategoryImagesCommandTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CategoryImagePruneTempUploadsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/ScheduleDeclarationTest.php

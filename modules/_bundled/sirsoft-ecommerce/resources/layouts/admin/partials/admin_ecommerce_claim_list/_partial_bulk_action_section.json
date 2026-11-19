@@ -9,7 +9,7 @@
     "name": "Div",
     "if": "{{(query.type ?? 'exchange') !== 'cancel'}}",
     "props": {
-        "className": "flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mt-6 mb-4 flex-wrap gap-3"
+        "className": "ecommerce-flex-center ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700/50 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:p-3 ecommerce:mt-6 ecommerce:mb-4 ecommerce:flex-wrap ecommerce:gap-3"
     },
     "children": [
         {
@@ -17,7 +17,7 @@
             "type": "basic",
             "name": "Span",
             "props": {
-                "className": "text-body font-medium whitespace-nowrap"
+                "className": "ecommerce-text-body ecommerce:font-medium ecommerce:whitespace-nowrap"
             },
             "text": "$t:sirsoft-ecommerce.admin.claim.bulk.selected_count|count={{(_local.selectedItems ?? []).length}}"
         },
@@ -25,7 +25,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-center flex-wrap gap-2"
+                "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2"
             },
             "children": [
                 {
@@ -47,7 +47,7 @@
                     "props": {
                         "aria-label": "$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder",
                         "name": "bulkClaimStatus",
-                        "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "ecommerce:w-48 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                         "value": "{{_local.bulkClaimStatus ?? ''}}",
                         "disabled": "{{claims?.data?.abilities?.can_update_status !== true}}",
                         "options": [
@@ -122,7 +122,7 @@
                     "props": {
                         "aria-label": "$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder",
                         "name": "bulkClaimStatus",
-                        "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "ecommerce:w-48 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                         "value": "{{_local.bulkClaimStatus ?? ''}}",
                         "disabled": "{{claims?.data?.abilities?.can_update_status !== true}}",
                         "options": [
@@ -185,7 +185,7 @@
                     "props": {
                         "aria-label": "$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder",
                         "name": "bulkClaimStatus",
-                        "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "ecommerce:w-48 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                         "value": "{{_local.bulkClaimStatus ?? ''}}",
                         "disabled": "{{claims?.data?.abilities?.can_update_status !== true}}",
                         "options": [
@@ -230,7 +230,7 @@
             "props": {
                 "type": "text",
                 "name": "bulkRejectReason",
-                "className": "flex-1 min-w-[16rem] px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                "className": "ecommerce:flex-1 ecommerce:min-w-[16rem] ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg",
                 "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.transition.reject_reason_placeholder",
                 "value": "{{_local.bulkRejectReason ?? ''}}"
             }
@@ -239,7 +239,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-1"
+                "className": "ecommerce:flex-1"
             }
         },
         {
@@ -249,7 +249,7 @@
             "responsive": {
                 "portable": {
                     "props": {
-                        "className": "w-full px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        "className": "ecommerce:w-full ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.claim.bulk.apply_full"
                 }
@@ -272,7 +272,7 @@
             ],
             "props": {
                 "type": "button",
-                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                 "disabled": "{{(_local.selectedItems ?? []).length === 0 || claims?.data?.abilities?.can_update_status !== true}}"
             },
             "text": "$t:sirsoft-ecommerce.admin.claim.bulk.apply"

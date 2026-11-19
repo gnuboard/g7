@@ -16,6 +16,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Plugins\Sirsoft\PayNhnkcp\Listeners\ClaimPaymentApproveListener;
 use Plugins\Sirsoft\PayNhnkcp\Services\KcpSoapService;
 use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
@@ -239,8 +240,7 @@ class ClaimPaymentCallbackTest extends PluginTestCase
      * 주문이 사라진 결제 건의 승인키 요청은 통과가 아니라 차단이다. (K9)
      *
      * 부모를 못 읽었을 때 `?->user_id ?? 0` 으로 접으면 열람자 판정이 0 == 0 이 되어
-     * 통과한다 — 지금은 라우트의 `auth:sanctum` 이 오른쪽을 0 이 되지 못하게 막고 있어
-     * 실질은 닫혀 있지만, 그 방어가 이 판정 밖의 조건에 얹혀 있는 형태였다.
+     * 통과한다 — 라우트가 `optional.sanctum` 이라(#883) 그 방어는 게이트 안에 있어야 한다.
      *
      * @return void 반환값 없음
      *
@@ -287,6 +287,131 @@ class ClaimPaymentCallbackTest extends PluginTestCase
         ]);
 
         $response->assertStatus(403);
+    }
+
+    /**
+     * 비회원 주문의 결제 건은 그 주문의 조회 토큰으로 승인키를 받는다. (#855)
+     *
+     * 비회원이 휴대폰으로 비회원 주문 조회 → 교환/반품 신청서 상세 → 추가결제 [결제하기] 를 누르면 결제 핸들러가
+     * 조회 토큰(`X-Guest-Order-Token`)을 실어 승인키를 요청한다. 종전에는 로그인 회원만 통과해 403 이었다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario concern=approval_key
+     *
+     * @effects kcp_guest_claim_mobile_approval_key_with_order_token
+     */
+    public function test_mobile_approval_key_is_issued_for_a_guest_claim_payment_with_the_order_token(): void
+    {
+        ['payment' => $payment, 'order' => $order] = $this->makePendingClaimPayment(withUser: false);
+        $this->fakeSoap(expectCall: true);
+        $token = app(GuestOrderAuthService::class)->issueForOrder($order)['token'];
+
+        $this->withHeader('X-Guest-Order-Token', $token)
+            ->postJson('/api/plugins/sirsoft-pay_nhnkcp/mobile/approval-key', $this->claimApprovalPayload($payment))
+            ->assertOk()
+            ->assertJsonPath('data.fields.ordr_idxx', $payment->payment_number)
+            ->assertJsonPath('data.fields.approval_key', 'APPROVAL-KEY-GUEST');
+    }
+
+    /**
+     * 비회원 주문의 결제 건을 조회 토큰 없이 요청하면 401 이고 KCP 를 부르지 않는다. (#855)
+     *
+     * 결제번호만 아는 제3자가 남의 추가결제 창을 열 수 없어야 한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario concern=approval_key
+     *
+     * @effects kcp_guest_claim_mobile_approval_key_with_order_token
+     */
+    public function test_mobile_approval_key_rejects_a_guest_claim_payment_without_a_token(): void
+    {
+        ['payment' => $payment] = $this->makePendingClaimPayment(withUser: false);
+        $this->fakeSoap(expectCall: false);
+
+        $this->postJson('/api/plugins/sirsoft-pay_nhnkcp/mobile/approval-key', $this->claimApprovalPayload($payment))
+            ->assertUnauthorized()
+            ->assertJsonPath('success', false);
+    }
+
+    /**
+     * 다른 비회원 주문의 조회 토큰으로는 승인키를 받을 수 없다 (401). (#855)
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario concern=approval_key
+     *
+     * @effects kcp_guest_claim_mobile_approval_key_with_order_token
+     */
+    public function test_mobile_approval_key_rejects_a_guest_claim_payment_with_another_orders_token(): void
+    {
+        ['payment' => $payment] = $this->makePendingClaimPayment(withUser: false);
+        ['order' => $otherOrder] = $this->makePendingClaimPayment(withUser: false);
+        $this->fakeSoap(expectCall: false);
+        $foreignToken = app(GuestOrderAuthService::class)->issueForOrder($otherOrder)['token'];
+
+        $this->withHeader('X-Guest-Order-Token', $foreignToken)
+            ->postJson('/api/plugins/sirsoft-pay_nhnkcp/mobile/approval-key', $this->claimApprovalPayload($payment))
+            ->assertUnauthorized();
+    }
+
+    /**
+     * 회원 주문의 결제 건은 비로그인 요청이면 비회원 토큰을 붙여도 403 이다. (#855 대조군)
+     *
+     * 회원 주문은 회원 판정만 한다 — 비회원 토큰으로 회원 주문의 추가결제 창이 열리지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario concern=approval_key
+     *
+     * @effects kcp_claim_mobile_approval_key_is_gated_by_the_claim_payment
+     */
+    public function test_mobile_approval_key_rejects_an_anonymous_request_for_a_member_claim_payment(): void
+    {
+        ['payment' => $payment, 'order' => $order] = $this->makePendingClaimPayment();
+        $this->fakeSoap(expectCall: false);
+        $token = app(GuestOrderAuthService::class)->issueForOrder($order)['token'];
+
+        $this->withHeader('X-Guest-Order-Token', $token)
+            ->postJson('/api/plugins/sirsoft-pay_nhnkcp/mobile/approval-key', $this->claimApprovalPayload($payment))
+            ->assertForbidden();
+    }
+
+    /**
+     * KCP SOAP 승인키 발급을 대역으로 바꿉니다.
+     *
+     * @param  bool  $expectCall  SOAP 승인키 요청이 일어나야 하는지
+     * @return void 반환값 없음
+     */
+    private function fakeSoap(bool $expectCall): void
+    {
+        $soap = $this->createMock(KcpSoapService::class);
+        $soap->expects($expectCall ? $this->once() : $this->never())
+            ->method('getApprovalKey')
+            ->willReturn([
+                'approval_key' => 'APPROVAL-KEY-GUEST',
+                'pay_url' => 'https://smpay.kcp.co.kr/pay/mobile',
+            ]);
+        $soap->method('getSiteCd')->willReturn('T0000');
+        $this->app->instance(KcpSoapService::class, $soap);
+    }
+
+    /**
+     * 클레임 결제 건의 승인키 요청 본문을 만듭니다.
+     *
+     * @param  ClaimPayment  $payment  결제 대기 건
+     * @return array<string, mixed> 요청 본문
+     */
+    private function claimApprovalPayload(ClaimPayment $payment): array
+    {
+        return [
+            'order_number' => $payment->payment_number,
+            'amount' => 3000,
+            'good_name' => '반품 배송비',
+            'pay_method' => 'card',
+            'currency' => 'KRW',
+        ];
     }
 
     /**

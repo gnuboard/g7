@@ -7,7 +7,9 @@ import { Span } from '../basic/Span';
 import { Select } from '../basic/Select';
 import { scrollToSectionHandler } from '../../handlers/scrollToSectionHandler';
 import type { EditorAttrs } from '../../types';
+import { sitePath } from '../../support/apiUrl';
 import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
+import { useRenderWidth } from '../../hooks/useRenderWidth';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖이면 대체 문구를 쓴다
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
@@ -48,7 +50,20 @@ export interface Tab {
    * 보통 클릭은 지금처럼 탭 전환(onTabChange — 저장 안 한 변경 확인 흐름 유지)(#757).
    */
   href?: string;
+  /**
+   * 탭 이름 옆에 빨간 점을 붙일지 — 그 탭이 가리키는 구획에 확인할 것(검증 오류가 난 칸 등)이 있음을 알린다.
+   * 레이아웃의 `errorDot="{{...}}"` 가 평가된 값이다. 점의 읽기 이름은 컴포넌트의 `errorDotLabel` 이 준다.
+   */
+  errorDot?: boolean | string;
 }
+
+/**
+ * 탭에 빨간 점을 붙일지 판정합니다 (레이아웃 식이 글자로 풀려 와도 받는다).
+ *
+ * @param tab 탭
+ * @returns 붙이면 true
+ */
+const hasErrorDot = (tab: Tab): boolean => tab.errorDot === true || tab.errorDot === 'true';
 
 /**
  * 항목 조건(if)을 통과한 탭만 남깁니다.
@@ -100,7 +115,12 @@ export interface TabNavigationScrollProps {
    * 없으면 공용 문구 「섹션 이동」 — 종전에는 이름이 없어 현재 탭 글자(「기본정보」)만 읽혔다(#757)
    */
   'aria-label'?: string;
+  /** 탭의 빨간 점(`errorDot`)을 보조기기가 읽을 이름 (예: 「오류가 있는 칸이 있습니다」). 없으면 공용 문구 */
+  errorDotLabel?: string;
 }
+
+/** 탭 이름 옆 빨간 점 — 그 구획에 확인할 것이 있음을 알린다 */
+const ERROR_DOT_CLASS = 'inline-block w-2 h-2 ml-1.5 shrink-0 rounded-full bg-red-500 dark:bg-red-400';
 
 /**
  * 탭 네비게이션 컴포넌트 (자동 스크롤 기능 내장)
@@ -109,8 +129,9 @@ export interface TabNavigationScrollProps {
  * - 내부 상태로 활성 탭 관리 (React useState)
  * - scrollToSectionHandler를 사용하여 자동 스크롤
  * - 탭 클릭 시 즉시 UI 업데이트 + 스크롤 이동
- * - 반응형: G7Core.useResponsive() hook으로 화면 너비를 구독하여 768px 미만 시
- *   Select 드롭다운으로 자동 전환 (Tailwind hidden md:flex 분기 미사용 — 위지윅 미리보기 호환)
+ * - 반응형: 렌더 폭(useRenderWidth — G7Core.useResponsive Provider 폭 우선)이 768px 미만이면
+ *   Select 드롭다운으로 자동 전환 (Tailwind 반응형 접두 분기 미사용 — 위지윅 미리보기 호환).
+ *   두 모양 모두 감싸개 여백은 레이아웃이 준 className 을 따른다
  *
  * @example
  * ```json
@@ -126,6 +147,9 @@ export interface TabNavigationScrollProps {
  * }
  * ```
  */
+/** 이 폭(px)부터 탭 버튼을 그린다 — 미만이면 선택 상자 하나로 바꾼다 */
+const MOBILE_MIN_DESKTOP_WIDTH = 768;
+
 export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
   tabs: rawTabs,
   activeTabId,
@@ -143,7 +167,9 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
   id,
   editorAttrs,
   'aria-label': ariaLabel,
+  errorDotLabel,
 }) => {
+  const dotLabel = errorDotLabel || tOr('common.error_occurred', 'Error');
   // 항목 조건(if)이 거짓인 탭은 버튼·모바일 선택지·화살표 이동·Scroll Spy 모두에서 뺀다.
   const tabs = useMemo(() => filterVisibleTabs(rawTabs), [rawTabs]);
 
@@ -151,17 +177,13 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
     activeTabId ?? (tabs.length > 0 ? tabs[0].id : '')
   );
 
-  // G7Core.useResponsive를 통해 반응형 상태 구독 (G7 표준)
-  const G7Core = (window as any).G7Core;
-  const useResponsive = G7Core?.useResponsive;
-  const responsiveValue = useResponsive?.();
-  const isMobile = responsiveValue
-    ? responsiveValue.width < 768
-    : typeof window !== 'undefined' && window.innerWidth < 768;
+  // 모바일 판정은 렌더 폭으로 한다 — `G7Core.useResponsive()` 의 Provider 폭(편집기 미리보기에서는 기기 폭)이 우선이고,
+  // 훅이 없을 때만 창 폭을 따라간다(창 크기를 바꾸면 다시 고른다).
+  const isMobile = useRenderWidth() < MOBILE_MIN_DESKTOP_WIDTH;
 
   // Scroll Spy 일시 중지를 위한 ref
   const isScrollingRef = useRef(false);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /**
    * 사용자가 누른 탭 — 사용자가 직접 스크롤(휠·터치·스크롤 키)할 때까지 Scroll Spy 가 활성 탭을 바꾸지 않는다.
    *
@@ -464,13 +486,16 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
   // 모바일: Select 드롭다운 단일 렌더
   if (isMobile) {
     return (
-      <Div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3" id={id} {...editorAttrs}>
+      // 감싸개는 레이아웃이 준 className 을 그대로 쓰고 선택 상자 둘레 위아래 여백만 더한다 — 종전에는 자기 클래스(px-4)로
+      // 갈아 끼워 레이아웃이 준 좌우 여백(게시판 설정 하위 탭 막대 24px)이 640 이하에서 16px 로 줄었다(#869 P2).
+      <Div className={`${className} py-3`} style={style} id={id} {...editorAttrs}>
         <Select
           value={String(activeTab)}
           onChange={handleSelectChange}
           options={tabs.map((tab) => ({
             value: String(tab.id),
-            label: tab.label,
+            // 선택 상자에는 점을 그릴 수 없어 이름 뒤에 표식을 붙인다
+            label: hasErrorDot(tab) ? `${tab.label} ●` : tab.label,
             disabled: tab.disabled,
           }))}
           className="w-full"
@@ -503,7 +528,7 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
               ref={(el) => {
                 tabRefs.current[tabIndex] = el;
               }}
-              href={link.href}
+              href={sitePath(link.href)}
               role="tab"
               aria-selected={activeTab === tab.id}
               tabIndex={tabIndex === focusableIndex ? 0 : -1}
@@ -515,6 +540,7 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
                 <Icon name={tab.iconName} size="sm" />
               )}
               <Span>{tab.label}</Span>
+              {hasErrorDot(tab) && <Span className={ERROR_DOT_CLASS} role="img" aria-label={dotLabel} data-tab-error-dot="true" />}
             </a>
           );
         }
@@ -537,6 +563,7 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
             <Icon name={tab.iconName} size="sm" />
           )}
           <Span>{tab.label}</Span>
+          {hasErrorDot(tab) && <Span className={ERROR_DOT_CLASS} role="img" aria-label={dotLabel} data-tab-error-dot="true" />}
         </Button>
         );
       })}

@@ -108,7 +108,7 @@ _단건 응답: FileUploader 컴포넌트 규약에 맞춰 `data.data` 객체에
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.create`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.create\|sirsoft-page.pages.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 파일 누락/파일 아님/10MB 초과/허용되지 않은 확장자(`jpg,jpeg,png,gif,webp,pdf,zip,doc,docx,xls,xlsx,ppt,pptx,hwp,txt` 외) |
 | 500 | Internal Server Error | 저장 중 예외 발생 시 `첨부파일 업로드에 실패했습니다.` (`error` 에 예외 메시지) |
 
@@ -122,40 +122,75 @@ _단건 응답: FileUploader 컴포넌트 규약에 맞춰 `data.data` 객체에
 
 
 ### GET /api/modules/sirsoft-page/admin/attachments/settings
-
+<!-- @generated:start:api.modules.sirsoft-page.admin.attachments.settings -->
 - **라우트명**: `api.modules.sirsoft-page.admin.attachments.settings`
 - **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\Admin\PageAttachmentController@settings`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-page.pages.read`
 
-첨부 상한·허용 형식을 반환합니다. **신규 작성 화면에는 읽을 페이지 상세가 없어** 상한을
-실어 줄 봉투가 없으므로, 그 화면이 이 조회를 씁니다. 화면이 상한을 리터럴로 적으면 운영자가
-설정을 바꿔도 화면만 옛 값으로 남고, 서버가 거절할 때까지 아무 안내가 없습니다.
+**요청 파라미터**
 
-요청 파라미터는 없습니다.
+_요청 파라미터 없음._
 
-**응답 필드**
+**요청 예시**
 
-| 이름 | 타입 | 예시값 | 용도 |
+```http
+GET /api/modules/sirsoft-page/admin/attachments/settings HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| data.max_count | integer\|null | `5` | 첨부 개수 상한. `null` 이면 제한하지 않습니다(`attachment.max_count` 가 0 이하) |
-| data.max_size_mb | integer | `10` | 파일 1개 크기 상한 (MB) |
-| data.allowed_types | string[] | `["image/jpeg", "application/pdf"]` | 허용 MIME 목록. 서버 검증이 쓰는 값 그대로입니다 |
-| data.accept | string | `.jpg,.jpeg,.png,.gif,.webp,.pdf,.zip` | 파일 선택창 필터 문자열. MIME → 확장자 변환은 **서버에서 한 번만** 합니다 |
+| max_count | integer\|null | `5` | 첨부 개수 상한. `null` 이면 제한하지 않습니다(`attachment.max_count` 가 0 이하) |
+| max_size_mb | integer | `10` | 파일 1개 크기 상한 (MB) |
+| allowed_types | array | `["image\/jpeg","image\/png","image\/gif","image\/webp","a…` | 허용 MIME 목록. 서버 검증이 쓰는 값 그대로입니다 |
+| accept | string | `.jpg,.jpeg,.png,.gif,.webp,.pdf,.zip` | 파일 선택창 필터 문자열. MIME → 확장자 변환은 **서버에서 한 번만** 합니다 |
 
-**응답 예시 (200)**
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
 
 ```json
 {
-  "success": true,
-  "message": "첨부 설정을 조회했습니다.",
-  "data": {
-    "max_count": 5,
-    "max_size_mb": 10,
-    "allowed_types": ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf", "application/zip"],
-    "accept": ".jpg,.jpeg,.png,.gif,.webp,.pdf,.zip"
-  }
+    "success": true,
+    "message": "첨부 설정을 조회했습니다.",
+    "data": {
+        "max_count": 5,
+        "max_size_mb": 10,
+        "allowed_types": [
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+            "application/pdf",
+            "application/zip"
+        ],
+        "accept": ".jpg,.jpeg,.png,.gif,.webp,.pdf,.zip"
+    }
 }
 ```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.read`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** 첨부 상한·허용 형식을 반환합니다. **신규 작성 화면에는 읽을 페이지 상세가 없어** 상한을
+실어 줄 봉투가 없으므로, 그 화면이 이 조회를 씁니다. 화면이 상한을 리터럴로 적으면 운영자가
+설정을 바꿔도 화면만 옛 값으로 남고, 서버가 거절할 때까지 아무 안내가 없습니다.
 
 ### POST /api/modules/sirsoft-page/admin/content-media
 <!-- @generated:start:api.modules.sirsoft-page.admin.content-media.upload -->
@@ -251,6 +286,17 @@ _단건 응답: FileUploader 컴포넌트 규약에 맞춰 `data.data` 객체에
 - 상태: `200`·`206` · `403` · `404` · `416`
 <!-- @generated:end -->
 
+**썸네일 (코어 7.2.0+)**: 래스터 이미지 주소에 아래 쿼리를 붙이면 위 게이트를 지난 뒤 환경설정 > 업로드 「썸네일 규격」 크기로 줄인 이미지를 냅니다. 둘 다 없으면 원본입니다. 동영상, 오디오와 `Range` 요청은 썸네일로 바꾸지 않습니다. 본문 미디어는 페이지 발행이 취소될 수 있어 썸네일을 발행 페이지에서도 항상 `Cache-Control: private` 로 내고, 게이트에 막히는 요청은 규격을 붙여도 원본과 같은 403 입니다.
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| size | query | string | 아니오 | 사용 중인 썸네일 규격 이름 | 그 규격으로 줄인 이미지. `w` 보다 우선 |
+| w | query | integer | 아니오 | 1~10000 | 「숫자 요청 대상」 규격 중 가로가 이 값 이상인 가장 작은 규격(없으면 가장 큰 규격) |
+
+서명은 `size` 와 `w` 를 빼고 검증하므로 서명 주소 뒤에 이 둘을 덧붙여도 서명이 유효합니다. 그 밖의 쿼리를 덧붙이면 서명이 무효가 되어, 서명으로만 열리는 요청(임시 업로드, 열람권이 없는 미발행 페이지)은 403 입니다.
+
+`size` 나 `w` 를 보낸 요청에는 응답 헤더 `X-G7-Thumbnail` 이 붙습니다. `hit` 는 이미 있던 썸네일, `miss` 는 이번 요청에 만든 썸네일, `bypass:{사유}` 는 썸네일을 낼 수 없어 원본을 낸 경우입니다. 사유 목록과 규격 규약은 [이미지 썸네일](../../../../../docs/backend/image-thumbnails.md) 문서를 봅니다.
+
 ---
 
 ### PATCH /api/modules/sirsoft-page/admin/attachments/reorder
@@ -320,7 +366,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 
@@ -350,7 +396,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.create\|sirsoft-page.pages.update`)이 없는 경우 |
 | 404 | Not Found | `{id}` 에 해당하는 첨부파일이 없는 경우 (`첨부파일을 찾을 수 없습니다.`) |
 | 500 | Internal Server Error | 삭제 실패 또는 삭제 중 예외 발생 시 `첨부파일 삭제에 실패했습니다.` |
 

@@ -6,6 +6,7 @@ use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\LanguagePackRepositoryInterface;
 use App\Contracts\Repositories\LanguagePackTranslationRepositoryInterface;
 use App\Enums\LanguagePackScope;
+use App\Extension\ExtensionManager;
 use App\Extension\HookManager;
 use App\Listeners\LanguagePack\MergeCustomTranslations;
 use App\Listeners\LanguagePack\MergeFrontendLanguage;
@@ -153,6 +154,14 @@ class LanguagePackServiceProvider extends ServiceProvider
             return $injector->injectNotifications(is_array($definitions) ? $definitions : []);
         });
 
+        HookManager::addFilter('core.schedules.config', function ($schedules) use ($injector) {
+            return $injector->injectCoreSchedules(is_array($schedules) ? $schedules : []);
+        });
+
+        HookManager::addFilter('core.fields.config', function ($fields) use ($injector) {
+            return $injector->injectCoreFields(is_array($fields) ? $fields : []);
+        });
+
         $this->registerExtensionSeedFilters($injector);
 
         // 프론트엔드 다국어 데이터 병합 (TemplateService::getLanguageDataWithModules 의 마지막 단계)
@@ -196,7 +205,7 @@ class LanguagePackServiceProvider extends ServiceProvider
             if ($target === '') {
                 continue;
             }
-            foreach (glob($seedDir.DIRECTORY_SEPARATOR.'*.json') as $seedFile) {
+            foreach (ExtensionManager::listDirectoryFiles($seedDir, '.json') as $seedFile) {
                 $entity = pathinfo($seedFile, PATHINFO_FILENAME);
                 if ($entity === 'notifications') {
                     HookManager::addFilter("seed.{$target}.notifications.translations", function ($definitions) use ($injector, $target) {
@@ -238,6 +247,19 @@ class LanguagePackServiceProvider extends ServiceProvider
                     $scopeStr = $pack->scope;
                     HookManager::addFilter("{$scopeStr}.{$target}.manifest.translations", function ($manifest) use ($injector, $target, $scopeStr) {
                         return $injector->injectExtensionManifest(is_array($manifest) ? $manifest : [], $target, $scopeStr);
+                    });
+
+                    continue;
+                }
+                if ($entity === 'schedules') {
+                    // 확장 스케줄 선언(getSchedules)은 name 으로 식별한다 — 자동 감지 후보(code/slug/key…)에 없으므로
+                    // 매칭 키를 고정한다. Module/PluginManager 가 옛 형식을 새 형식(name 포함)으로 바꾼 뒤 이 필터를 부른다.
+                    HookManager::addFilter("seed.{$target}.schedules.translations", function ($entries) use ($injector, $target) {
+                        if (! is_array($entries) || empty($entries)) {
+                            return $entries;
+                        }
+
+                        return $injector->injectExtensionEntity(array_values($entries), $target, 'schedules', 'name');
                     });
 
                     continue;

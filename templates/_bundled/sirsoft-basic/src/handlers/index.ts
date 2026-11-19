@@ -35,6 +35,7 @@ import {
 // 스토리지 관련 핸들러
 import {
   initCartKeyHandler,
+  ensureCartKeyHandler,
   getCartKeyHandler,
   clearCartKeyHandler,
   regenerateCartKeyHandler,
@@ -76,17 +77,11 @@ import { rememberIdentityClaimHandler, restoreIdentityTargetHandler } from './id
 /**
  * sirsoft-basic 템플릿의 모든 커스텀 핸들러
  *
- * 네이밍 규칙: 'sirsoft-basic.[핸들러명]'
+ * 네이밍 규칙: 'sirsoft-basic.[핸들러명]'. 접두어 없는 이름(setTheme 등)은 기존 레이아웃 호환으로 남아 있다.
+ * 엔진 이름(navigate·setState·toast·refresh 등)과 같은 이름은 쓰지 않는다 — 정적 검사가 막고 엔진이 경고한다.
  *
  * @example
- * // 레이아웃 JSON에서 사용
- * {
- *   "handler": "custom",
- *   "name": "addSelectedItemIfComplete",
- *   "params": { ... }
- * }
- *
- * // 또는 풀네임으로
+ * // 레이아웃 JSON에서 사용 — 등록한 이름 그대로 handler 에 적는다
  * {
  *   "handler": "sirsoft-basic.addSelectedItemIfComplete",
  *   "params": { ... }
@@ -146,6 +141,7 @@ export const handlers = {
 
   // 스토리지
   initCartKey: initCartKeyHandler,
+  ensureCartKey: ensureCartKeyHandler,
   getCartKey: getCartKeyHandler,
   clearCartKey: clearCartKeyHandler,
   regenerateCartKey: regenerateCartKeyHandler,
@@ -209,6 +205,7 @@ export {
   initCartOptionSelectionHandler,
   // 스토리지
   initCartKeyHandler,
+  ensureCartKeyHandler,
   getCartKeyHandler,
   clearCartKeyHandler,
   regenerateCartKeyHandler,

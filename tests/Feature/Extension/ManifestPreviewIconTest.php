@@ -21,9 +21,9 @@ use ZipArchive;
  * 아이콘 규격 위반은 **설치를 막지 않는다** — `validation.is_valid` 는 매니페스트
  * 기준 그대로이고 아이콘은 경고로만 알린다.
  *
- * @scenario surface=manifest_preview
+ * 축 요약(마커 아님 — 평문): surface=manifest_preview
  *
- * @effects preview_reports_icon_warnings_without_blocking_install
+ * 효과 요약(마커 아님 — 평문): preview_reports_icon_warnings_without_blocking_install
  */
 class ManifestPreviewIconTest extends TestCase
 {

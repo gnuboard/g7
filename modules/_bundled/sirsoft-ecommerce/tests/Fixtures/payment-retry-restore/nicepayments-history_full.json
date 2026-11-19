@@ -1,0 +1,23 @@
+{
+    "source": "Plugins\\Sirsoft\\PayNicepayments\\Controllers\\PaymentCallbackController::restoreRetryableNicepayOrder",
+    "pg": "nicepayments",
+    "scenario": "history_full",
+    "restored_at": "2026-11-15 12:01:00",
+    "snapshot": {
+        "order_status": "pending_order",
+        "order_meta": "{\"temp_order_id\":9001,\"nicepayments_retry_failures\":[{\"code\":\"OLD_2\",\"message\":\"\\uc774\\uc804 \\uc2e4\\ud328 2\",\"failed_at\":\"2026-11-02T00:00:00+09:00\"},{\"code\":\"OLD_3\",\"message\":\"\\uc774\\uc804 \\uc2e4\\ud328 3\",\"failed_at\":\"2026-11-03T00:00:00+09:00\"},{\"code\":\"OLD_4\",\"message\":\"\\uc774\\uc804 \\uc2e4\\ud328 4\",\"failed_at\":\"2026-11-04T00:00:00+09:00\"},{\"code\":\"OLD_5\",\"message\":\"\\uc774\\uc804 \\uc2e4\\ud328 5\",\"failed_at\":\"2026-11-05T00:00:00+09:00\"},{\"code\":\"USER_CANCEL\",\"message\":\"\\uc0ac\\uc6a9\\uc790\\uac00 \\uacb0\\uc81c\\ucc3d\\uc744 \\ub2eb\\uc558\\uc2b5\\ub2c8\\ub2e4.\",\"failed_at\":\"2026-11-15T12:00:00+00:00\"}],\"nicepayments_retry_count\":6,\"keep_after\":\"\\uc720\\uc9c0\",\"nicepayments_retry_started_at\":\"2026-11-15T12:01:00+00:00\"}",
+        "is_mileage_deducted": 0,
+        "payment_status": "ready",
+        "payment_meta": "{\"mid\":\"testmid\",\"retry_count\":3,\"retry_started_at\":\"2026-11-15T12:01:00+00:00\",\"is_test_mode\":true}",
+        "pg_provider": "nicepayments",
+        "paid_at": null,
+        "cancelled_at": null,
+        "transaction_id": null,
+        "card_approval_number": null,
+        "cancel_history": "[{\"cancel_code\":\"USER_CANCEL\",\"cancel_message\":\"\\ub2eb\\ud798 \\uc0ac\\uc720\",\"cancelled_at\":\"2026-11-15T12:00:00+00:00\"}]",
+        "option_statuses": [
+            "cancelled",
+            "cancelled"
+        ]
+    }
+}

@@ -167,7 +167,7 @@ describe('관리자 상품 문의 관리 목록 (#524 WP-E)', () => {
         expect(modals['modal_inquiries_error']).toBeTruthy();
     });
 
-    // @scenario list=inquiry, is_answered=set
+    // @scenario list=inquiry, extra_filter=is_answered
     // @effects ecommerce_admin_list_is_answered_filter_reaches_server
     it('is_answered 전용 필터가 서버까지 닿는다', () => {
         expect(dataSource.params).toHaveProperty('is_answered');

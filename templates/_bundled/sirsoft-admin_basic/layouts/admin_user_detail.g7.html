@@ -17,6 +17,26 @@
       </on-code>
     </error-handling>
   </data-source>
+  <!-- 회원 항목 — 운영자가 환경설정 > 회원에서 정한 항목 계약(순서, 유형)에 이 회원의 보기용 값(display_value), 올라간 파일(files), 범위(edit_scope)가 붙어 온다. 관리자만 수정, 관리자만 열람 항목도 모두 온다.
+       회원의 항목 상태(member: 닉네임 마지막 변경 시각, 본인이 다시 바꿀 수 있는 시각, 비어 있는 필수 항목)도 함께 온다. 수정 화면과 같은 API, 같은 소스 이름이다.
+       computed memberFieldGroups 가 이 응답을 구획별 묶음 목록으로 가른다(항목이 있는 묶음만. basic, contact, location, profile 은 항목의 ui.group,
+       extra 는 묶음이 없는 운영자 추가 항목, extension 은 모듈과 플러그인이 선언한 항목). 받지 못해도 화면을 접지 않고 알리기만 한다 — 회원의 나머지 정보는 볼 수 있다.
+       단 403, 404 는 알리지 않는다 — 같은 주소의 회원 조회(user)가 같은 응답으로 화면을 오류 페이지로 바꾸므로, 알림을 띄우면 오류 페이지 위에 겹친다. -->
+  <data-source id="memberFields" label_key="$t:editor.data_source.memberFields" type="api" endpoint="/api/admin/users/{{route?.id}}/form-fields" method="GET" :auto_fetch="true" :auth_required="true">
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+      <on-code code="404">
+        <suppress/>
+      </on-code>
+      <default>
+        <toast type="error" message="{{error.message ?? '$t:common.error_occurred'}}"/>
+      </default>
+    </error-handling>
+    <fallback :data="null"/>
+  </data-source>
+  <computed name="memberFieldGroups">{{['basic', 'contact', 'location', 'profile', 'extra', 'extension'].map(function(g) { return { key: g, fields: (memberFields?.data?.fields ?? []).filter(function(f) { return g === 'extension' ? (f.owner_type === 'module' || f.owner_type === 'plugin') : (!(f.owner_type === 'module' || f.owner_type === 'plugin') &amp;&amp; (g === 'extra' ? (!f.ui?.group &amp;&amp; f.owner === 'custom') : f.ui?.group === g)); }) }; }).filter(function(g) { return g.fields.length > 0; })}}</computed>
   <init-local>
     <field name="activeTab" value="basic_info"/>
   </init-local>
@@ -25,12 +45,14 @@
   </permissions>
   <transition-overlay>
     <wait-for>user</wait-for>
+    <wait-for>memberFields</wait-for>
   </transition-overlay>
   <slot name="content">
     <div data-ref="user_detail_content" class="admin-page-content">
-      <div data-ref="page_header" class="page-header-fullbleed">
+      <div data-ref="page_header" class="flex justify-between mb-6 -mx-6 px-6 bg-gray-50 dark:bg-gray-900 flex-col items-start gap-4">
+        <responsive on="641-" class="flex items-center justify-between mb-6 -mx-6 px-6 bg-gray-50 dark:bg-gray-900"/>
         <div>
-          <h1 class="page-title">$t:admin.users.detail.page_title</h1>
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-white"><responsive on="640-" class="text-2xl font-semibold text-gray-900 dark:text-white"/>$t:admin.users.detail.page_title</h1>
           <p class="page-description">$t:admin.users.detail.page_description_with_info|name={{user?.data?.name ?? ''}}|email={{user?.data?.email ?? ''}}</p>
         </div>
         <div class="flex-center gap-2">
@@ -65,16 +87,27 @@
             <icon name="unlock" class="text-base"/>
             <span>$t:admin.users.detail.unlock</span>
           </button>
+          <!-- 모든 기기에서 로그아웃(7.2.0) — 그 회원의 로그인 토큰을 전부 지운다. 확인 창을 거친다. 회원 수정 권한이 있어야 누를 수 있다. -->
+          <button type="button" data-ref="header_revoke_sessions_button" disabled="{{user?.data?.abilities?.can_update !== true}}" class="flex-center gap-2 btn btn-secondary">
+            <on type="click">
+              <open-modal target="revoke_sessions_confirm_modal"/>
+            </on>
+            <icon name="arrow-right-from-bracket" class="text-base"/>
+            <span>$t:admin.users.detail.revoke_sessions.button</span>
+          </button>
         </div>
       </div>
-      <!-- 탭이 많다(코어 8 + 확장 탭) — 탭은 줄어들거나 글자 단위로 줄바꿈되지 않고, 넘치면 막대가 가로로 스크롤된다.
+      <!-- 「위치정보」「추가 항목」「확장 항목」 탭은 그 묶음에 회원 항목이 있을 때만 보인다(수정 화면과 같은 조건).
+           탭이 많다(코어 10 + 확장 탭) — 탭은 줄어들거나 글자 단위로 줄바꿈되지 않고, 넘치면 막대가 가로로 스크롤된다.
            줄어들게 두면 확장을 여럿 켠 사이트에서 탭 하나가 44px 까지 눌려 이름이 세로로 쪼개지고 막대가 158px 로 높아졌다(실측). -->
       <tab-navigation-scroll data-type="composite" data-ref="user_detail_tabs" class="sticky-tab-nav tab-nav-default overflow-x-auto" activeClassName="tab-btn-base tab-btn-default-active shrink-0 whitespace-nowrap" inactiveClassName="tab-btn-base tab-btn-default shrink-0 whitespace-nowrap" activeTabId="{{_local.activeTab ?? 'basic_info'}}" :enableScrollSpy="true" :scrollSpyOffset="56" sectionIdPrefix="">
         <prop name="tabs">
           <item id="basic_info" label="$t:admin.users.detail.tabs.basic_info"/>
           <item id="contact_info" label="$t:admin.users.detail.tabs.contact_info"/>
-          <item id="location_info" label="$t:admin.users.detail.tabs.location_info"/>
+          <item id="location_info" label="$t:admin.users.detail.tabs.location_info" if="{{(_computed.memberFieldGroups ?? []).some(function(g) { return g.key === 'location'; })}}"/>
           <item id="profile_memo" label="$t:admin.users.detail.tabs.profile_memo"/>
+          <item id="extra_fields" label="$t:admin.users.member_fields.extra_title" if="{{(_computed.memberFieldGroups ?? []).some(function(g) { return g.key === 'extra'; })}}"/>
+          <item id="extension_fields" label="$t:admin.users.member_fields.extension_title" if="{{(_computed.memberFieldGroups ?? []).some(function(g) { return g.key === 'extension'; })}}"/>
           <item id="activity_info" label="$t:admin.users.detail.tabs.activity_info"/>
           <item id="consent_info" label="$t:admin.users.detail.tabs.consent_info"/>
           <item id="notifications_info" label="$t:admin.users.detail.tabs.notifications_info"/>
@@ -101,21 +134,54 @@
         </div>
         <div>
           <div class="row-stack">
-            <div class="grid-2col-responsive">
-              <div data-ref="field_uuid">
-                <label class="text-label-subtle block font-medium mb-1">UUID</label>
-                <div class="text-primary text-sm font-mono">{{user?.data?.uuid ?? '-'}}</div>
+            <div data-ref="field_uuid">
+              <label class="text-label-subtle block font-medium mb-1">UUID</label>
+              <div class="text-primary text-sm font-mono">{{user?.data?.uuid ?? '-'}}</div>
+            </div>
+            <!-- 기본 묶음(이름, 닉네임) — 환경설정 > 회원이 정한 항목 계약대로 보기 조각이 그린다. 관리자 화면의 이름, 닉네임은 가리지 않은 원본 값이다. 운영자가 두 항목을 모두 끄면 아무것도 그리지 않는다. -->
+            <div data-each="memberFieldGroup in {{(_computed.memberFieldGroups ?? []).filter(function(g) { return g.key === 'basic'; }).map(function(g) { return Object.assign({}, g, { className: 'grid grid-cols-1 gap-4', wideClassName: 'grid grid-cols-2 gap-4' }); })}}">
+              <include src="partials/member/_member_fields_view.g7.html"/>
+            </div>
+            <!-- 회원의 항목 상태 — 닉네임을 마지막으로 바꾼 때, 회원 본인이 다시 바꿀 수 있는 때, 비어 있는 필수 항목. 값이 없는 줄은 그리지 않고 셋 다 없으면 구획째 그리지 않는다(수정 화면과 같은 자리). -->
+            <div data-ref="member_status_info" data-if="{{!!memberFields?.data?.member?.nickname_changed_at || !!memberFields?.data?.member?.nickname_next_changeable_at || (memberFields?.data?.member?.pending_required_fields ?? []).length > 0 || (memberFields?.data?.member?.display_name ?? null) !== null || (memberFields?.data?.member?.display_name_admin ?? null) !== null || !!memberFields?.data?.member?.display_name_kind || !!memberFields?.data?.member?.display_name_effective_kind_label}}" class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
+              <!-- 표시 이름(U17, 읽기 전용) — 회원이 고른 종류와 지금 보이는 이름(사이트 기본 자리, 관리자 화면 자리). 종류는 회원 본인만 바꿀 수 있어 관리자 화면에는 입력 칸이 없다.
+                   고르지 않았으면 회원 기본 종류로, 고른 종류가 지금 허용에서 빠졌으면 그 사실과 함께 회원 기본 종류로 보인다고 알린다. -->
+              <div data-ref="member_status_display_name_kind" data-if="{{(!!memberFields?.data?.member?.display_name_kind || !!memberFields?.data?.member?.display_name_effective_kind_label)}}">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.member_fields.status.display_name_kind</label>
+                <div data-testid="member-status-display-name-kind" class="text-primary text-sm break-words">{{!!memberFields?.data?.member?.display_name_kind ? (memberFields?.data?.member?.display_name_kind_label ?? memberFields?.data?.member?.display_name_kind) : $t('admin.users.member_fields.status.display_name_kind_none', { kind: memberFields?.data?.member?.display_name_effective_kind_label ?? '' })}}</div>
+                <p data-if="{{memberFields?.data?.member?.display_name_kind_unavailable === true}}" data-testid="member-status-display-name-kind-unavailable" class="text-xs text-yellow-700 dark:text-yellow-400 mt-1 break-words">{{$t('admin.users.member_fields.status.display_name_kind_unavailable', { kind: memberFields?.data?.member?.display_name_effective_kind_label ?? '' })}}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:admin.users.member_fields.status.display_name_kind_hint</p>
               </div>
-              <div data-ref="field_name">
-                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.name</label>
-                <div class="text-primary text-sm">{{user?.data?.name ?? '-'}}</div>
+              <div data-ref="member_status_display_name" data-if="{{((memberFields?.data?.member?.display_name ?? null) !== null || (memberFields?.data?.member?.display_name_admin ?? null) !== null)}}">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.member_fields.status.display_name_current</label>
+                <div class="text-primary text-sm break-words">
+                  <span class="text-label-subtle mr-1">$t:admin.users.member_fields.status.display_name_site</span>
+                  <span data-testid="member-status-display-name-site">{{memberFields?.data?.member?.display_name ?? '-'}}</span>
+                </div>
+                <div class="text-primary text-sm break-words">
+                  <span class="text-label-subtle mr-1">$t:admin.users.member_fields.status.display_name_admin</span>
+                  <span data-testid="member-status-display-name-admin">{{memberFields?.data?.member?.display_name_admin ?? '-'}}</span>
+                </div>
+              </div>
+              <div data-ref="member_status_nickname_changed_at" data-if="{{!!memberFields?.data?.member?.nickname_changed_at}}">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.member_fields.status.nickname_changed_at</label>
+                <div class="text-primary text-sm">{{memberFields?.data?.member?.nickname_changed_at ?? ''}}</div>
+              </div>
+              <div data-ref="member_status_nickname_next_changeable_at" data-if="{{!!memberFields?.data?.member?.nickname_next_changeable_at}}">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.member_fields.status.nickname_next_changeable_at</label>
+                <div class="text-primary text-sm">{{memberFields?.data?.member?.nickname_next_changeable_at ?? ''}}</div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:admin.users.member_fields.status.nickname_next_changeable_hint</p>
+              </div>
+              <div data-ref="member_status_pending_required" data-if="{{(memberFields?.data?.member?.pending_required_fields ?? []).length > 0}}" class="col-span-full">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.member_fields.status.pending_required</label>
+                <div class="flex flex-wrap gap-1">
+                  <span data-each="pendingField in {{memberFields?.data?.member?.pending_required_fields ?? []}}" class="badge badge-yellow">{{pendingField.label}}</span>
+                </div>
               </div>
             </div>
-            <div class="grid-2col-responsive">
-              <div data-ref="field_nickname">
-                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.nickname</label>
-                <div class="text-primary text-sm">{{user?.data?.nickname ?? '-'}}</div>
-              </div>
+            <div class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_roles">
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.role</label>
                 <div class="flex flex-wrap gap-1">
@@ -123,10 +189,17 @@
                 </div>
               </div>
             </div>
-            <div class="grid-2col-responsive">
+            <div class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_status">
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.status</label>
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', secondary: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200', danger: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', info: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'})[user?.data?.status_variant] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}">{{user?.data?.status_label ?? '-'}}</span>
+              </div>
+              <!-- 비밀번호 설정 여부 — 외부 인증(소셜 로그인 등)으로만 가입한 회원은 비밀번호가 없다. 값(해시)은 싣지 않고 여부만 본다. -->
+              <div data-ref="field_has_password">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.password.state</label>
+                <span data-if="{{user?.data?.has_password === false}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">$t:admin.users.detail.password.not_set</span>
+                <span data-if="{{user !== undefined &amp;&amp; (user?.data?.has_password !== false)}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">$t:admin.users.detail.password.set</span>
               </div>
               <div data-ref="field_email_verified">
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.email_verification</label>
@@ -146,57 +219,29 @@
         </div>
         <div>
           <div class="row-stack">
-            <div class="grid-2col-responsive">
+            <div class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_email">
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.email</label>
                 <div class="text-primary text-sm">{{user?.data?.email ?? '-'}}</div>
               </div>
-              <div data-ref="field_homepage">
-                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.homepage</label>
-                <div class="text-primary text-sm">{{user?.data?.homepage ?? '-'}}</div>
-              </div>
             </div>
-            <div class="grid-2col-responsive">
-              <div data-ref="field_mobile">
-                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.mobile</label>
-                <div class="text-primary text-sm">{{user?.data?.mobile ?? '-'}}</div>
-              </div>
-              <div data-ref="field_phone">
-                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.phone</label>
-                <div class="text-primary text-sm">{{user?.data?.phone ?? '-'}}</div>
-              </div>
+            <!-- 연락처 묶음(휴대폰, 전화번호, 홈페이지) — 항목 계약대로 보기 조각이 그린다. -->
+            <div data-each="memberFieldGroup in {{(_computed.memberFieldGroups ?? []).filter(function(g) { return g.key === 'contact'; }).map(function(g) { return Object.assign({}, g, { className: 'grid grid-cols-1 gap-4', wideClassName: 'grid grid-cols-2 gap-4' }); })}}">
+              <include src="partials/member/_member_fields_view.g7.html"/>
             </div>
           </div>
         </div>
       </div>
-      <div data-ref="section_location_info" id="location_info" class="admin-card">
+      <!-- 위치정보 — 언어, 국가, 시간대, 주소. 모두 운영자가 끌 수 있는 항목이라 하나도 없으면 구획과 탭을 그리지 않는다. -->
+      <div data-ref="section_location_info" data-if="{{(_computed.memberFieldGroups ?? []).some(function(g) { return g.key === 'location'; })}}" id="location_info" class="admin-card">
         <div class="flex-center gap-2 mb-4">
           <icon name="map-pin" class="text-secondary text-xl"/>
           <h3 class="section-heading">$t:admin.users.form.sections.location_info</h3>
         </div>
         <div class="row-stack">
-          <div>
-            <div>
-              <div class="grid-2col-responsive">
-                <div data-ref="field_country">
-                  <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.country</label>
-                  <div class="text-primary text-sm">{{user?.data?.country_name ?? user?.data?.country ?? '-'}}</div>
-                </div>
-                <div data-ref="field_language">
-                  <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.language</label>
-                  <span data-if="{{user?.data?.language}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">{{user?.data?.language_label ?? user?.data?.language ?? '-'}}</span>
-                  <span data-if="{{user !== undefined &amp;&amp; (!user?.data?.language)}}" class="text-primary text-sm">-</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div data-ref="field_timezone">
-            <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.timezone</label>
-            <div class="text-primary text-sm">{{user?.data?.timezone ?? '-'}}</div>
-          </div>
-          <div data-ref="field_address">
-            <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.address</label>
-            <div class="text-primary text-sm">{{user?.data?.zipcode || user?.data?.address || user?.data?.address_detail ? ((user?.data?.zipcode ? '(' + user.data.zipcode + ') ' : '') + (user?.data?.address ?? '') + (user?.data?.address_detail ? ' ' + user.data.address_detail : '')) : '-'}}</div>
+          <div data-each="memberFieldGroup in {{(_computed.memberFieldGroups ?? []).filter(function(g) { return g.key === 'location'; }).map(function(g) { return Object.assign({}, g, { className: 'grid grid-cols-1 gap-4', wideClassName: 'grid grid-cols-2 gap-4' }); })}}">
+            <include src="partials/member/_member_fields_view.g7.html"/>
           </div>
         </div>
       </div>
@@ -206,24 +251,34 @@
           <h3 class="section-heading">$t:admin.users.form.sections.profile_memo</h3>
         </div>
         <div class="row-stack">
-          <div>
-            <div>
-              <div class="grid-2col-responsive">
-                <div data-ref="field_signature">
-                  <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.signature</label>
-                  <div class="text-primary text-sm">{{user?.data?.signature ?? '-'}}</div>
-                </div>
-                <div data-ref="field_bio">
-                  <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.bio</label>
-                  <div class="text-primary text-sm whitespace-pre-line">{{user?.data?.bio ?? '-'}}</div>
-                </div>
-              </div>
-            </div>
+          <!-- 프로필 묶음(서명, 자기소개) — 항목 계약대로 보기 조각이 한 줄에 하나씩 그린다. 관리자 메모는 항목이 아니라 이 화면의 고정 칸이다. -->
+          <div data-each="memberFieldGroup in {{(_computed.memberFieldGroups ?? []).filter(function(g) { return g.key === 'profile'; })}}">
+            <include src="partials/member/_member_fields_view.g7.html"/>
           </div>
           <div data-ref="field_admin_memo">
             <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.admin_memo</label>
             <div class="text-primary text-sm whitespace-pre-line">{{user?.data?.admin_memo ?? '-'}}</div>
           </div>
+        </div>
+      </div>
+      <!-- 추가 항목 — 운영자가 환경설정 > 회원에서 추가한 항목(묶음 없음)의 값. 관리자만 수정, 관리자만 열람 항목도 보인다. 파일 항목은 이름을 누르면 내려받는다. 항목이 없으면 구획과 탭을 그리지 않는다. -->
+      <div data-ref="section_extra_fields" data-if="{{(_computed.memberFieldGroups ?? []).some(function(g) { return g.key === 'extra'; })}}" id="extra_fields" class="admin-card">
+        <div class="flex-center gap-2 mb-4">
+          <icon name="list-check" class="text-secondary text-xl"/>
+          <h3 class="section-heading">$t:admin.users.member_fields.extra_title</h3>
+        </div>
+        <div data-each="memberFieldGroup in {{(_computed.memberFieldGroups ?? []).filter(function(g) { return g.key === 'extra'; })}}">
+          <include src="partials/member/_member_fields_view.g7.html"/>
+        </div>
+      </div>
+      <!-- 확장 항목 — 모듈과 플러그인이 선언한 회원 항목의 값. 그런 항목이 없으면 구획과 탭을 그리지 않는다. -->
+      <div data-ref="section_extension_fields" data-if="{{(_computed.memberFieldGroups ?? []).some(function(g) { return g.key === 'extension'; })}}" id="extension_fields" class="admin-card">
+        <div class="flex-center gap-2 mb-4">
+          <icon name="puzzle-piece" class="text-secondary text-xl"/>
+          <h3 class="section-heading">$t:admin.users.member_fields.extension_title</h3>
+        </div>
+        <div data-each="memberFieldGroup in {{(_computed.memberFieldGroups ?? []).filter(function(g) { return g.key === 'extension'; })}}">
+          <include src="partials/member/_member_fields_view.g7.html"/>
         </div>
       </div>
       <div data-ref="section_activity_info" id="activity_info" class="admin-card">
@@ -233,7 +288,8 @@
         </div>
         <div>
           <div class="row-stack">
-            <div class="grid-2col-responsive">
+            <div class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_created_at">
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.created_at</label>
                 <div class="text-primary text-sm">{{user?.data?.created_at ?? '-'}}</div>
@@ -249,7 +305,8 @@
                 <div data-if="{{user !== undefined &amp;&amp; (user?.data?.is_locked !== true)}}" class="text-primary text-sm">$t:admin.users.detail.not_locked_value</div>
               </div>
             </div>
-            <div class="grid-2col-responsive">
+            <div class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_ip_address">
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.ip_address</label>
                 <div class="text-primary text-sm">{{user?.data?.ip_address ?? '-'}}</div>
@@ -279,7 +336,10 @@
           <icon name="key" class="text-secondary text-xl"/>
           <h3 class="section-heading">$t:admin.users.detail.password.title</h3>
         </div>
-        <div class="grid-2col-responsive">
+        <!-- 비밀번호가 없는 회원은 만료 정책 대상이 아니다 — 변경일·만료·변경 요구 대신 안내 한 줄만 보인다. -->
+        <p data-ref="password_not_set_notice" data-if="{{user?.data?.has_password === false}}" class="text-sm text-secondary">$t:admin.users.detail.password.not_set_hint</p>
+        <div data-if="{{user !== undefined &amp;&amp; (user?.data?.has_password !== false)}}" class="grid grid-cols-1 gap-4">
+          <responsive on="768-" class="grid grid-cols-2 gap-4"/>
           <div data-ref="field_password_changed_at">
             <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.password.changed_at</label>
             <div class="text-primary text-sm">{{user?.data?.password_status?.changed_at ?? '-'}}</div>
@@ -310,7 +370,8 @@
           <h3 class="section-heading">$t:admin.users.detail.consent_history</h3>
         </div>
         <div>
-          <div class="grid-2col-responsive">
+          <div class="grid grid-cols-1 gap-4">
+            <responsive on="768-" class="grid grid-cols-2 gap-4"/>
             <div data-ref="field_terms_consent">
               <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.consent_type.terms</label>
               <span class="text-primary text-sm">{{user?.data?.terms_consent?.agreed_at ?? '-'}}</span>
@@ -331,7 +392,8 @@
           <h3 class="section-heading">$t:admin.users.detail.tabs.notifications_info</h3>
         </div>
         <div>
-          <div class="grid-2col-responsive">
+          <div class="grid grid-cols-1 gap-4">
+            <responsive on="768-" class="grid grid-cols-2 gap-4"/>
             <div data-ref="field_notifications_total">
               <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.notifications.total</label>
               <span class="text-primary text-sm"><blur-until-loaded sources="user"/>{{user?.data?.notifications_summary?.total ?? 0}}</span>
@@ -357,13 +419,14 @@
       <!-- 최근 검색어 — 회원이 사이트 통합검색(코어 범위 `core.site`)에 남긴 검색어. 상품·게시글 검색처럼 확장이 선언한 범위는
            그 확장이 자기 탭에 그린다(모듈이 소유하는 회원 데이터는 모듈 탭 — 설계 결정 2026-09-21). 값은 상세 응답에만 실리는
            `search_history`(범위 id 가 키). 회원이 자동 저장을 끄거나 사이트가 기능을 꺼도 저장돼 있던 검색어는 그대로 보인다 —
-           끄기는 기록만 멈춘다. -->
+           끄기는 기록만 멈춘다. 받기 전에는 목록 줄을 흐린다 — 「검색어 · 0건」·「자동 저장 켬」 이 실제 값처럼 먼저 보이지 않게(#915 받는 중 계약). -->
       <div data-ref="section_search_history_info" id="search_history_info" class="admin-card">
         <div class="flex-center gap-2 mb-4">
           <icon name="search" class="text-secondary text-xl"/>
           <h3 class="section-heading">$t:admin.users.detail.tabs.search_history_info</h3>
         </div>
         <div class="row-stack">
+          <blur-until-loaded sources="user"/>
           <div data-ref="search_history_feature_off" data-if="{{user?.data?.search_history?.enabled === false}}" class="alert-info">
             <span class="text-sm">$t:admin.users.detail.search_history.feature_off</span>
           </div>
@@ -388,4 +451,42 @@
       <div data-ref="extension_tab_content" class="tab-content mt-6"/>
     </div>
   </slot>
+  <modal>
+    <!-- 모든 기기에서 로그아웃 확인 창(7.2.0). 성공하면 그 회원의 다음 요청부터 로그인이 풀린다. -->
+    <modal data-type="composite" data-ref="revoke_sessions_confirm_modal" title="$t:admin.users.detail.revoke_sessions.confirm_title" size="sm">
+      <meta editor_label="$t:admin.users.detail.revoke_sessions.confirm_title"/>
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">$t:admin.users.detail.revoke_sessions.confirm_message</p>
+      </div>
+      <footer>
+        <button type="button" class="btn btn-secondary" disabled="{{_global.isRevokingSessions}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button type="button" data-ref="revoke_sessions_confirm_button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRevokingSessions}}">
+          <on type="click">
+            <!-- 모든 세션을 끊고 모달을 닫는다 — 진행 표시는 성공·실패 양쪽에서 끈다 -->
+            <sequence>
+              <set-state target="global" :isRevokingSessions="true"/>
+              <api-call :auth_required="true" target="/api/admin/users/{{route?.id}}/sessions/revoke" method="POST">
+                <success>
+                  <set-state target="global" :isRevokingSessions="false"/>
+                  <toast type="success" message="$t:admin.users.detail.revoke_sessions.success"/>
+                  <close-modal/>
+                </success>
+                <fail>
+                  <set-state target="global" :isRevokingSessions="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.isRevokingSessions}}" name="spinner" :spin="true" class="text-sm"/>
+          <span>$t:admin.users.detail.revoke_sessions.confirm</span>
+        </button>
+      </footer>
+    </modal>
+  </modal>
 </layout>

@@ -17,6 +17,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   createLayoutTest,
   screen,
+  type LayoutFixtureComponent,
 } from '@/core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@/core/template-engine/ComponentRegistry';
 
@@ -109,17 +110,34 @@ const PARTIAL_MAP: Record<string, unknown> = {
 };
 
 /**
+ * 값이 레이아웃 컴포넌트 모양(type 과 name 이 문자열)인지 가립니다.
+ *
+ * @param value 가릴 값
+ * @returns 컴포넌트 모양이면 true
+ */
+function isFixtureComponent(value: unknown): value is LayoutFixtureComponent {
+  if (!value || typeof value !== 'object') return false;
+  const node = value as { type?: unknown; name?: unknown };
+  return typeof node.type === 'string' && typeof node.name === 'string';
+}
+
+/**
  * 실제 partial JSON 을 렌더 가능한 레이아웃으로 감쌉니다.
  *
  * @param partial 레이아웃 partial JSON
  * @returns 레이아웃 정의
  */
 function wrapLayout(partial: unknown) {
+  const root = resolvePartials(JSON.parse(JSON.stringify(partial)), PARTIAL_MAP);
+  // partial 최상위가 컴포넌트가 아니면 렌더가 헛돌아 단언이 엉뚱하게 실패하므로 여기서 바로 알린다
+  if (!isFixtureComponent(root)) {
+    throw new Error('partial 최상위가 레이아웃 컴포넌트(type, name)가 아닙니다');
+  }
   return {
     version: '1.0.0',
     layout_name: 'search_failed_probe',
     state: {},
-    components: [resolvePartials(JSON.parse(JSON.stringify(partial)), PARTIAL_MAP)],
+    components: [root],
   };
 }
 
@@ -174,6 +192,11 @@ describe('통합검색 실패 표면화 렌더링 (#103)', () => {
       ['pages', 'pages', (koSearch as any).empty.pages],
     ];
 
+    /**
+     * 실패 키가 모두 false 인 카테고리 탭은 종전 빈 문구를 그리고 오류 안내를 그리지 않는다.
+     *
+     * @effects no_failure_keeps_empty_notice
+     */
     it.each(tabCases)(
       '%s 탭: 실패가 아니면 기존 "결과 없음" 문구가 렌더된다 (baseline)',
       async (_label, type, emptyText) => {
@@ -302,6 +325,11 @@ describe('통합검색 실패 표면화 렌더링 (#103)', () => {
       }
     );
 
+    /**
+     * 전체 탭 posts 섹션도 실패가 없으면 종전 in_all 빈 문구를 그린다.
+     *
+     * @effects no_failure_keeps_empty_notice
+     */
     it('실패가 없으면 posts 섹션은 종전대로 빈 문구를 그린다 (baseline)', async () => {
       const testUtils = createLayoutTest(wrapLayout(searchResultsPartial), RENDER_OPTIONS(
         { q: '문의', type: 'all' },
@@ -318,6 +346,11 @@ describe('통합검색 실패 표면화 렌더링 (#103)', () => {
   });
 
   describe('_search_states.json 전체 탭', () => {
+    /**
+     * 전체 탭 0건에 실패가 없으면 "검색 결과가 없습니다" 를 그리고 오류 안내는 없다.
+     *
+     * @effects no_failure_keeps_empty_notice
+     */
     it('전체 탭 0건 + 실패 없음이면 "검색 결과가 없습니다" 를 그린다 (baseline)', async () => {
       const testUtils = createLayoutTest(wrapLayout(searchStatesPartial), RENDER_OPTIONS(
         { q: '문의', type: 'all' },
@@ -401,6 +434,11 @@ describe('통합검색 실패 표면화 렌더링 (#103)', () => {
       failed.cleanup();
     });
 
+    /**
+     * categories_failed / search_failed 키가 없는 구버전 코어 응답에서도 종전 빈 문구가 그대로 그려진다.
+     *
+     * @effects legacy_response_keeps_empty_notice
+     */
     it('실패 키가 없는 구버전 응답에서는 종전 렌더가 유지된다 (하위호환)', async () => {
       const data = searchData();
       delete (data.searchResults as any).data.categories_failed;

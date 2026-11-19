@@ -4,6 +4,154 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.2.0] - 2026-11-20
+
+### Added
+
+#### 환경설정·서버 실행 환경
+
+- 환경설정 > 일반 「레이아웃 편집 단추」 저장 검증 항목 이름(`validation.attributes.layout_edit_button_enabled`)의 일본어 번역을 추가했습니다.
+- 환경설정 > 드라이버 「비공개 첨부 저장소」의 선택지 이름(`settings.drivers.private_attachment.*`), 저장 경고(`settings.warnings.*`), 저장 검증 문구와 항목 이름(`validation.settings.private_attachment_disk_invalid`·`validation.attributes.private_attachment_disk`)의 일본어 번역을 추가했습니다.
+- 환경설정 > 드라이버 「웹서버 파일 위임」의 선택지 이름(`settings.drivers.file_delegation.*`), 설정 점검 결과 문구(`settings.driver_test.file_delegation.*`), 저장 검증 문구와 항목 이름(`validation.settings.file_delegation_*`·`validation.attributes.file_delegation*`)의 일본어 번역을 추가했습니다.
+- 환경설정 「사용자 화면 URL」 검증 문구(`validation.settings.user_screen_url_*`·속성 이름)의 일본어 번역을 추가했습니다.
+- PHP 실행 파일 확인 결과에서 서버 명령과 사이트가 서로 다른 PHP 계열로 도는 경우를 알리는 문구의 일본어 번역을 추가했습니다 (`settings.php_probe_ok_web_version_differs`).
+- 신뢰 프록시(리버스 프록시) 설정을 화면에서 고를 때의 사전 검사 결과 안내 문구와 신뢰 프록시 목록 검증 문구의 일본어 번역을 추가했습니다 (`settings.trusted_proxy_probe_*` 3건, `validation.settings.trusted_prox*`). 용어는 패키지 글로서리를 따릅니다.
+- 실행 모드(자동 판단·항상 CLI 사용·항상 CLI 없이) 라벨과 외부 프로세스 실행 불가 안내의 일본어 번역을 추가했습니다 (`settings.execution_mode.*`, `exceptions.execution.*`).
+- 관리자 「시스템」 화면의 실행 방식 조회·재감지 응답 문구 일본어 번역을 추가했습니다 (`settings.execution.*` 4건).
+- PHP 실행 파일 확인 결과 안내 문구의 일본어 번역을 추가했습니다 (`settings.php_probe_*` 10건). 외부 명령 실행이 막힌 호스팅에서 확인을 건너뛴 사유도 함께 안내합니다.
+
+#### 코어 업데이트
+
+- 코어 업데이트가 실패해 되돌린 뒤 「파일 적용 단계에서 알린 루트 진입·보호 파일과 서버 설정 조각 안내는 더는 해당하지 않는다」고 알리는 문구(`settings.core_update.rollback_apply_warnings_withdrawn`)의 일본어 번역을 추가했습니다.
+- 관리자 화면 코어 업데이트가 사이트를 점검 모드로 둔 동안 다른 브라우저·기기의 관리자가 점검 화면에서 이어 가는 확인 칸 문구(`maintenance.admin_access.*`)의 일본어 번역을 추가했습니다.
+- 관리자 화면 코어 업데이트가 끊긴 번들 확장 업데이트 작업을 기다릴 때의 진행 기록(`settings.core_update.web.log_bundled_child_waiting`·`log_bundled_child_finished`·`log_bundled_child_orphaned`·`log_bundled_child_orphan_recovered`)과 기다림 상한 경고(`web.bundled_child_wait_timeout`)의 일본어 번역을 추가했습니다.
+- 코어 업데이트가 새 판에서 빠진 번들 파일을 정리했다는 안내와 운영자가 고쳐 남긴 파일 경고, 출하 목록 기록 결과 문구(`settings.core_update.console.bundled_pruned`·`bundled_prune_kept_modified`·`bundled_manifest_seeded`·`bundled_manifest_seed_failed`)의 일본어 번역을 추가했습니다.
+- 관리자 화면 코어 업데이트의 번들 항목이 요청 시간 제한으로 끊겼을 때의 문구(완료 여부 확인 안내 `settings.core_update.web.bundled_interrupted_unconfirmed`, 반영 확인 기록 `web.log_bundled_item_interrupted_applied`, 끊김 기록 `web.log_bundled_item_interrupted` 문장 수정)와, 번들 일부 실패 뒤 코어를 되돌린 경우의 경고(`web.bundled_partial_failure_rolled_back`)의 일본어 번역을 추가했습니다.
+- 관리자 화면 코어 업데이트가 긴 단계를 여러 요청으로 나눠 이어 갈 때와 요청 시간 제한으로 끊겨 되돌릴 때의 진행 기록 문구(`settings.core_update.web.*` 19개, 끊김 사유 문구는 결과 안내와 분리)의 일본어 번역을 추가했습니다.
+- 코어 업데이트가 개발자 custom 패키지 충돌이나 배포본의 예약 자리 파일 때문에 시작 전에 멈출 때의 안내(`settings.core_update.reserved_paths_in_release`·`custom_preflight_blocked`·`custom_conflict_*`)와 `custom:check`·`custom:example`·`custom:vendor-*` 명령 출력, 내부 API 도구 오류(`settings.custom_reserved.*`)의 일본어 번역을 추가했습니다.
+- 관리자 화면 코어 업데이트 진행 기록의 공식 번들 배치 판정과 배치 기록 복원 안내(`settings.core_update.web.log_bundled_placement`, `log_bundled_record_restored`)의 일본어 번역을 추가했습니다.
+- 코어 업데이트 명령이 공개 파일 사본과 루트 진입 보호 파일 확인 목록 앞에 내는 머리말(`settings.core_update.console.docroot_exposure_header`, `root_files_header`)의 일본어 번역을 추가했습니다.
+- 관리자 화면 코어 업데이트 착수 요청의 검증 오류 문구에 쓰는 항목 이름(`settings.core_update.web.attributes.*` 4건)의 일본어 번역을 추가했습니다.
+- 코어 업데이트가 문서 루트의 진입·보호 파일을 교체하거나 갱신하지 못했을 때 안내하는 문구의 일본어 번역을 추가했습니다 (`settings.core_update.root_*`, `settings.core_update.rollback_*`).
+- 점검 모드 해제 실패·쓰기 권한 부족 안내의 일본어 문구를 FTP 기준 절차로 다시 썼습니다 (`settings.core_update.maintenance_off_failed`, `preflight_not_writable`). 서버 명령을 쓸 수 없는 호스팅이 이 안내를 받는 대상이라 명령어 절차는 조건을 달아 병기합니다.
+- 손상된 공개 스토리지 백업이 쌓였을 때의 안내 문구 일본어 번역을 추가했습니다 (`settings.core_update.storage_link_backup_accumulated`).
+- 코어 업데이트가 운영자가 수정한 서버 설정 조각(`deploy/`)을 보존하고 새 판본을 `.dist` 로 옆에 두었을 때의 안내 문구 일본어 번역을 추가했습니다 (`settings.core_update.deploy_fragment_preserved`, `deploy_fragment_dist_write_failed`).
+- 코어 업데이트가 IIS 루트 보호 파일(`web.config`)을 마커 블록 단위로 갱신할 때의 안내 문구와, 서버 설정 조각의 `.dist.new` 충돌·갱신 기록 쓰기 실패 안내 문구의 일본어 번역을 추가했습니다 (`settings.core_update.root_web_config_*`, `deploy_fragment_dist_conflict`, `deploy_fragment_ledger_write_failed`).
+- 관리 블록을 교체한 결과가 온전하지 않아(`web.config` 는 적형 XML 이 아니어서) 갱신을 건너뛰었을 때의 안내 문구 일본어 번역을 추가했습니다 (`settings.core_update.root_htaccess_splice_invalid`, `root_web_config_splice_invalid`).
+- 관리자 화면에서 코어를 업데이트하는 웹 동선의 일본어 번역을 추가했습니다 (`settings.core_update.web.*` 65건) — 단계 이름 12개, 진행 기록, 사전 점검 실패 사유, 되돌리기 결과(소유권 복원 실패 안내 포함), 수동 ZIP 안내를 포함합니다.
+- 서버 명령이 차단된 환경에서 Composer 실행이 불가능함을 알리는 문구의 일본어 번역을 추가했습니다 (`settings.core_update.composer_unavailable`, `vendor.composer_unavailable`).
+- 코어 업데이트 실행·성공·실패 활동 기록 문구의 일본어 번역을 추가했습니다 (`activity_log.description.core_update_*` 3건과 동작 라벨 3건).
+
+#### 확장 설치·업데이트·검수 서버
+
+- 옛 확장 선언을 쥔 프로세스가 훅 캐시 쓰기를 건너뛸 때의 로그 문구(`hooks.cache_write_skipped_stale_declaration`)를 일본어로 추가했습니다.
+- 업데이트 잔존물 정리 명령의 「확장 교체가 남긴 옛 클래스 파일」 대상군 이름(`common.console.storage_prune_leftovers.groups.carried_class_files`)을 일본어로 추가했습니다.
+- 번들 일괄 업데이트에서 처리하지 못한 항목 목록과 다시 실행 안내(`extensions.commands.bundled_update.item_process_aborted`·`failed_items_header`·`failed_item_labels.*`·`child_aborted`)의 일본어 번역을 추가했습니다.
+- 자산 경로에 점(.)으로 시작하는 파일·디렉토리가 포함됐을 때의 거부 안내 문구 일본어 번역을 추가했습니다 (템플릿·모듈·플러그인 경로 3종).
+- `template:deactivate` 가 유형의 마지막 활성 템플릿을 끄지 않을 때 `--force` 로 다시 실행하라는 안내(`templates.commands.deactivate.last_active_force_hint`)의 일본어 번역을 추가했습니다.
+- 레이아웃 갱신·확장 업데이트 미리보기와 화면별 결정, 덮어쓰기·영구 삭제 직전 기록(활동 로그 `layout.force_deleted`·삭제 사유 등) 문구의 일본어 번역을 추가했습니다.
+- 새 명령(`extension:reset-files-from-bundled`·`g7:migrate-plan`·`extension:list`·`storage:paths`·`extension:apply-deferred-cleanup`·`stage-layouts:reset-from-live`)의 설명·출력과 `--yes` 안내, 실행 전 방향·대상 건수 안내(`sync_files.direction`·`targets`·`legacy_name`, `stage_layouts.direction`·`discard_summary`, `apply_deferred_cleanup.about_to_apply`), 업데이트 확인 명령 설명(결과를 업데이트 표시로 저장), 업그레이드 스텝 실행 대장·단독 실행 잠금, 업데이트 확인 실패 사유·종료 코드 75 안내, 다른 서버가 이미 실행한 스텝의 「건너뜀」 안내(`core_execute_upgrade_steps.step_already_run`·`spawn.steps_already_run`), 재개 명령의 PowerShell 형식 안내(`resume_command_powershell`)의 일본어 번역을 추가했습니다.
+- 검수 서버(실행 역할 stage) 거절 안내(`errors.stage_role_locked`·사이트맵 전용 `errors.stage_role_locked_sitemap`), 레이아웃 편집기 버전 기록의 저장자 「시스템」(`layout_editor.version_history.system_author`), 알림 받는 사람 「사이트 관리자 이메일」, 레이아웃 갱신 요청 항목 이름(`validation.attributes.layout_strategy`·`decisions`·`pending_token`)의 일본어 번역을 추가했습니다.
+- 확장 목록·미뤄 둔 정리 명령의 표 머리글과 상태 이름, 검수 서버 레이아웃 테이블의 DB 드라이버 안내, 업데이트 미리보기의 「활성 파일 없음」 안내, 예외 문구(검수 서버 테이블 쓰기·실행 중인 업그레이드 스텝·허용되지 않은 정리 메서드)의 일본어 번역을 추가했습니다.
+- 이 서버에서 끝나지 않은 확장 업데이트를 `--force` 로 이어받으라는 안내(`extensions.commands.update.unfinished_update_needs_force`)의 일본어 번역을 추가했습니다.
+- 운영 서버 마무리 명령 `stage:apply-to-live` 의 설명·방향·단계·확인·결과 문구(`common.console.stage_apply.*`, `commands.descriptions.stage:apply-to-live`), 검수 서버의 확장 수명주기 명령 거절 안내(`common.console.runtime_role.lifecycle_stage`), 미뤄 둔 정리의 「기다림」 상태·안내와 정리 종류 이름(`apply_deferred_cleanup.status_labels.waiting`·`waiting_hint`·`waiting_reasons`·`kind_labels`), 코어 선언 재동기화 명령(`commands.descriptions.core:resync-declarations`, `common.console.core_resync_declarations.*`)과 「파일 내용이 다름」 기다림 사유(`waiting_reasons.code_differs`), 정리 실패 예외(`exceptions.deferred_cleanup_target_not_allowed`·`deferred_cleanup_core_resync_failed`·`deferred_cleanup_seeder_failed`)의 일본어 번역을 추가했습니다. 미뤄 둔 정리 명령의 설명·실행 전 안내·결과 요약(「기다림」 건수)·표 머리글은 지울 대상을 운영 서버의 지금 선언으로 다시 정하는 동작에, 파일 맞추기 명령의 설명·종류 안내는 언어팩까지 다루는 동작에 맞춘 번역입니다 (`commands.descriptions.extension:apply-deferred-cleanup`·`extension:reset-files-from-bundled`, `apply_deferred_cleanup.description`·`about_to_apply`·`summary`·`columns`, `sync_files.description`·`invalid_type`).
+
+#### 확장 패키지 서명
+
+- 확장 신뢰 키를 등록하거나 삭제했을 때 활동 로그에 남는 문구(`activity_log.description.extension_trust_key_create`·`extension_trust_key_delete`)의 일본어 번역을 추가했습니다.
+- 설치와 업데이트 요청의 「패키지 서명 확인 화면 표식」 검증 문구와 항목 이름(`extension_integrity.validation.integrity_aware_boolean`·`extension_integrity.attributes.integrity_aware`)의 일본어 번역을 추가했습니다.
+- 확장 패키지 서명 검증 문구(확장 설치와 업데이트의 서명 상태, 거절 사유, 신뢰 키 관리, `extension_integrity.*`), 서명 명령 설명(`commands.descriptions.extension:keygen`, `extension:sign`, `extension:trust-key`), GitHub 저장소에 태그 릴리스가 없을 때의 오류(`common.errors.github_release_not_found`)의 일본어 번역을 추가했습니다.
+
+#### 예약 작업·큐
+
+- 스케줄 실행이 꺼진 서버·검수 서버의 웹 크론 주소 응답 문구(`schedule.cron.disabled_on_server`·`schedule.cron.disabled_stage`)를 일본어로 추가했습니다.
+- 스케줄 실행 이력의 「거절됨」 상태와 거절 사유 3종(`schedule.result.rejected`, `schedule.reject_reason.*`)의 일본어 번역을 추가했습니다.
+- 코어 7.2.0 의 예약 작업(스케줄) 관리 문구 — 소유자·상태 조회, 큐로 보내기, 실행 방식·실행 이력·30초 주기, 직접 등록, 검증 오류 문구와 항목 이름 — 의 일본어 번역을 추가했습니다.
+- 큐 처리 기록 사용 여부·보관 기간 설정의 검증 문구와 항목 이름, 큐 작업 관리 권한 4종(조회·재시도·삭제), 알림 정의 「예약 작업 실패」와 그 변수 설명(작업 표시 명칭·작업 식별자·소유자·실패 시각·스케줄 관리 화면 URL)의 일본어 번역을 추가했습니다.
+- 큐 관리 화면의 응답·검증 문구(대기·실패 작업 조회, 재시도·삭제 결과, 처리 기록 정리)의 일본어 번역을 추가했습니다.
+- 코어 예약 작업 32종의 이름과 설명 일본어 번역을 추가했습니다. 스케줄 관리 화면에서 일본어로 표시됩니다.
+- 스케줄 보안 정책 조회 응답 문구와 서버 관리자 덮어쓰기 파일(`storage/app/schedule_security.json`) 형식 오류 안내 9종, 큐 대기·실패·처리 기록 목록 정렬 검증 문구와 항목 이름의 일본어 번역을 추가했습니다.
+- 코어 스케줄 시딩(`common.console.seeders.core_schedule.*` — 시작·카탈로그 없음·건너뜀·정리·완료)과 개발자 패키지 명령(`custom:vendor-bundle`·`custom:vendor-verify`)의 「custom/composer.json 없음」「custom/vendor-bundle.zip 없음」 안내(`settings.custom_reserved.vendor.no_composer_json`·`no_bundle_zip`) 콘솔 출력의 일본어 번역을 추가했습니다. 없으면 일본어 사이트에서 이 출력이 키 그대로 보입니다.
+- 예약 작업을 주소 호출로 실행하는 웹 크론의 안내 문구 일본어 번역을 추가했습니다 (`schedule.cron.*` 12건) — 호출 번호 불일치·허용 주소 밖·최소 간격 미도달·실행 요약을 포함합니다.
+- 예약 작업이 며칠째 실행되지 않았을 때의 대시보드 경고와 조치 안내 문구의 일본어 번역을 추가했습니다 (`schedule.alerts.*` 3건). 조치 문구는 서버 환경에 따라 갈립니다.
+- 대시보드 예약 미실행 경고에서 조치 화면으로 이동하는 링크 문구의 일본어 번역을 추가했습니다 (`schedule.alerts.not_running_action`).
+- 예약 작업 허용 주소 입력의 형식 오류 안내와 시스템 설정 항목명의 일본어 번역을 추가했습니다 (`validation.ip_allow_list.invalid`, `validation.attributes.system.*` 5건).
+
+#### 템플릿 설정
+
+- 템플릿 설치·업데이트 결과의 「첫 화면에 미리 실을 설정(`expose`) 선언」 경고 문구(`extensions.warnings.expose_not_array`·`expose_missing_engine_keys`)의 일본어 번역을 추가했습니다.
+- 템플릿 설정 화면 「저장 중」 문구를 일본어로 추가했습니다.
+- 템플릿 설정 화면에서 파일을 올리지 못해 저장을 멈췄다는 안내(`template_settings.upload_failed_save_stopped`)를 일본어로 추가했습니다.
+- 템플릿 설정 메뉴 칸의 저장 검증 문구(자동 항목 중복·하위 메뉴 깊이·항목 수·주소·역할 선택 등)를 일본어로 추가했습니다.
+- 템플릿 설정 메뉴·목록 칸 항목의 검증 오류 표시 이름(「〇〇の2番目の項目(名前)のリンク先」 — `templates.settings.item_attributes`)을 일본어로 추가했습니다.
+- 레이아웃 편집기의 「템플릿 설정에 연결된 값」 안내 옆 「설정 열기」 링크와, 템플릿 설정 칸이 파일을 받지 않을 때의 업로드 거부 문구를 일본어로 추가했습니다.
+- 템플릿 환경설정 화면(저장하지 않은 변경의 탭 이동 확인 창 포함)·기본값 되돌리기·링크 검증·칸 크기 제한·설치 경고·레이아웃 편집기 「템플릿 설정에 연결된 값」 안내 문구의 일본어 번역을 추가했습니다
+- 템플릿 환경설정·파비콘 문구(설정 화면 공통 문구·「템플릿 설정」 권한·검증 항목명·업로드 오류·명령줄 안내·활동 로그)를 일본어로 추가했습니다.
+- 템플릿 `template.json` 의 확장 CSS 계약 검증 문구(`templates.color_scheme_*` — 다크 방식 선언, `templates.extension_css_override*` — 확장 CSS 덮기 선언 6종)의 일본어 번역을 추가했습니다.
+
+#### 레이아웃 편집기·마크업 검사
+
+- 검수 서버에서 시각 레이아웃 편집기 머리에 보이는 「검수용 저장」 안내 문구(`layout_editor.chrome.stage_banner`)를 일본어로 추가했습니다.
+- 레이아웃 굽기 경고 「한 부품의 반응형 구간에서 열린 구간이 다른 열린 구간이나 프리셋과 같은 폭에 함께 맞음」(`exceptions.layout_markup_lint.responsive_open_range_overlap`)의 일본어 번역을 추가했습니다.
+- 레이아웃 편집기 미리보기 줌의 「実際のサイズ」 토글 이름과 안내 문구 2건(`layout_editor.zoom.actual_size`, `actual_size_hint`)의 일본어 번역을 추가했습니다.
+- 레이아웃 편집기가 편집기 정보(컴포넌트 목록, 스타일 설정, 상태 전환)를 받지 못했을 때 띄우는 알림과 다시 시도 단추 문구(`layout_editor.chrome.spec_load_error.*` 4건)의 일본어 번역을 추가했습니다.
+
+#### 로그인·외부 인증·비밀번호
+
+- 터미널 비밀번호 재설정(`user:reset-password`)을 이메일 없이 실행해 최고관리자를 고를 때의 안내·확인·취소 문구와, 재설정 뒤에도 회원 상태 때문에 로그인할 수 없다는 경고(`user.commands.reset_password.*` 8개)의 일본어 번역을 추가하고, 명령 설명에 「이메일을 생략하면 최고관리자」를 덧붙였습니다.
+- 7.1.x 화면으로 만든 옛 템플릿에서 비밀번호 없는 회원이 정보 수정 진입 확인과 비밀번호 첫 설정을 마칠 때 보이는 안내(`core.compat.*`)의 일본어 번역을 추가했습니다.
+- 본인 확인 시작 요청의 「시작한 화면 범위」 항목 이름 일본어 번역을 추가했습니다(`validation.attributes.scope`).
+- 소셜 로그인 같은 외부 인증과 비밀번호 없는 회원 문구의 일본어 번역을 추가했습니다 — 로그인 인계 실패 안내(`auth.login_handoff_invalid`·`validation.auth.login_handoff.code_required`), 비밀번호 미설정·본인 재확인 안내(`user.password_not_set`·`user.reauthentication_invalid`·`user.validation.current_password_not_set`), 메일을 받을 수 없는 주소로 알림을 건너뛴 기록(`notification.recipient_email_undeliverable`), 항목 이름(`validation.attributes.verification_token`·`login_handoff_code`), 레이아웃 편집기 「로그인 인계 코드로 로그인」 액션 이름(`layout_editor.action_recipe.login_handoff.*`), 외부 인증이 로그인 수단 이름을 빠뜨렸을 때의 오류(`exceptions.login_method_required`), 최고관리자만 할 수 있는 작업을 다른 관리자가 요청했을 때의 안내(`auth.super_admin_required`).
+- 코어 7.2.0 의 외부 인증 확장점 문구 일본어 번역을 추가했습니다 — 로그인 수단 확인·비밀번호 로그인 차단·다음 단계 필요·2단계 인증 수단 없음·로그인 유지 시간 종료 안내(`auth.login_discovery_success`·`password_auth_disabled*`·`external_step_required`·`two_factor_means_required`·`session_cap_reached`), 회원가입 닫힘(`auth.registration_disabled`)과 「일반 회원가입 받기」·「돌아갈 화면 경로」 항목 이름(`validation.attributes.registration_enabled`·`return_path`), 로그인 인계 실측 명령 출력(`auth.handoff_issue_command.*`), 회사 계정이 관리하는 항목·모든 기기 로그아웃·최고관리자 차단 거절·비밀번호 없이 만들기 검증(`user.field_locked`·`sessions_revoked`·`block_super_admin_refused`·`validation.password_prohibited_without_password`), 활동 로그(회원 차단·해제, 모든 기기 로그아웃, 본인인증 정책을 건너뛴 가입), 외부 자격 증명 검증자의 다음 단계 경로 오류(`exceptions.external_step_redirect_not_same_origin`).
+- 서버가 안내 문구 없이 요청을 거절했을 때 화면에 띄우는 기본 안내(`core.errors.api_request_failed`)의 일본어 번역을 추가했습니다. 없으면 일본어 사이트에서 이 자리에 일본어가 아닌 문구가 보입니다.
+- 서버가 잠깐 답하지 않아 로그인 상태를 다시 확인하는 동안 화면 위쪽에 띄우는 안내(`core.errors.auth_checking`)의 일본어 번역을 추가했습니다.
+
+#### 회원 항목과 표시 이름
+
+- 회원 항목 설정과 닉네임 정책에 쓰는 문구의 일본어 번역을 추가했습니다 — 닉네임 금지어, 중복, 변경 주기 안내(`user.validation.nickname_*`, `validation.forbidden_word`), 회원 설정 항목 이름(`validation.attributes.settings_tab_member`, `member_nickname_*`, `member_display_name_*`), 회원 추가 항목 수정 활동 로그, 코어 회원 항목 시딩 명령 출력, 항목 유형 이름과 항목 검증 문구와 파일 항목 안내(`fields.*`), 회원 목록 필터 항목 이름 2건(`user.list_filter_attributes.nickname_duplicate`, `required_missing`)
+- 표시 이름 설정 문구의 일본어 번역을 추가했습니다 — 표시 이름 종류, 영역, 방식 이름과 미리보기 표본, 닉네임 항목 잠금 사유, 항목이 표시 이름으로 쓰이는 곳, 검증 문구(`display_name.*`), 본인인증으로 확인한 항목 잠금 안내와 본인인증 목적 항목 이름(`fields.validation.locked_identity`, `fields.attributes.purpose`), 알림 템플릿의 회원 공통 변수 설명과 없는 변수 경고(`notification.member_variables.*`, `notification.warnings.unknown_variable`), 추가 정보 입력 안내 3건(`user.required_fields_*`), 검증 항목 이름 2건(`validation.attributes.member_nickname_require_existing_members`, `display_name_kind`)
+- 코어 회원 항목(이름, 닉네임, 휴대폰, 전화번호, 언어, 국가, 시간대, 홈페이지, 주소, 서명, 자기소개)의 이름과 예시 글의 일본어 번역을 추가했습니다. 가입 화면, 내 정보, 관리자 회원 폼, 환경설정의 가입 항목 표에서 일본어로 보입니다
+- 「표시 이름 직접 선택」 권한(`core.profile.display_name.choose`)의 이름과 설명 일본어 번역을 추가했습니다.
+
+#### 알림
+
+- 운영자가 발송 수단을 켜서 만든 빈 알림 템플릿을 내용 없이 켤 때의 거절 안내(받는 사람 먼저, 본문 먼저) 일본어 번역을 추가했습니다.
+- 알림 발송 로그 조회 조건(검색 대상·상태·확장 유형 등)의 검증 오류 문구에 쓰는 항목 이름의 일본어 번역을 추가했습니다.
+
+#### 이미지 썸네일
+
+- 이미지 처리 엔진(GD·Imagick) 선택과 썸네일 설정 검증 문구(움직이는 이미지 원본 사용 포함), 썸네일 저장 디스크 이름, 레이아웃 편집기 썸네일 규격 위젯의 일본어 번역을 추가했습니다.
+- 썸네일 서버 보호 값 여섯(1분에 새로 만드는 썸네일 수, 생성 대기 시간, 원본 최대 픽셀 수, 한 번에 처리하는 원본 수, 한 번 호출의 시간 예산, 비우기 한 번 호출의 시간 예산)의 검증 항목 이름 일본어 번역을 추가했습니다.
+- 이미지 썸네일 관리 API 응답과 명령 출력, 썸네일 명령 설명 2건, 썸네일 정리 스케줄 이름, 단건 저장 거부 문구의 일본어 번역을 추가했습니다.
+- 이미지 썸네일 실측 샘플 시더의 콘솔 출력(표 제목, 머리글, 정리 건수 이름)과 실행 거부 사유의 일본어 번역을 추가했습니다 (`common.console.seeders.thumbnail_measure.*`).
+
+#### 명령 출력
+
+- `settings:migrate-to-json` 이 기존 설정 파일을 그대로 둘 때의 안내, 기본값으로 되돌리기 확인·거절·사본 문구(`settings.console.migrate_to_json.existing_kept`·`confirm_reset`·`reset_unavailable`·`reset_unavailable_hint`·`copy_created`·`copy_failed`)와, 명령줄 미서명 거절 문장(`extension_integrity.errors.package_unsigned_cli`·`package_unverifiable_cli` — 화면 단추 안내 없음)의 일본어 번역을 추가했습니다.
+- vendor 묶음 명령(`custom:vendor-bundle`, `custom:vendor-verify`, `core:`, `module:`, `plugin:` 의 `vendor-bundle`, `vendor-verify`, `vendor-bundle:build-all`, `vendor-bundle:verify-all`)의 머리말, 결과 줄, 요약 콘솔 출력(`extensions.commands.vendor_bundle_action.title_*`, `built`, `skipped_up_to_date`, `up_to_date`, `verify_ok`, `verify_failed_target`, `summary`)의 일본어 번역을 추가했습니다.
+- 코어 명령 9개(`auth:handoff-issue`, `core:deploy-ledger-seed`, `custom:check`, `custom:example`, `custom:vendor-bundle`, `custom:vendor-verify`, `g7:schedule-run`, `playwright:issue-handoff`, `queue:prune-records`)의 설명(`commands.descriptions.*`)의 일본어 번역을 추가했습니다. 없으면 일본어 사이트의 `php artisan list`·`--help` 에서 영어 원문 설명이 보입니다.
+- `g7:asset-url-mode` 조회가 큐·콘솔이 쓰는 마운트 접두사와 `APP_URL` 의 경로를 나란히 보여 주고 불일치를 경고하는 문구의 일본어 번역을 추가했습니다 (`asset_url_mode.base_path.*`).
+- 명령줄 코어 업데이트(`php artisan core:update`), 확장 업데이트, 제거 명령(`module:`, `plugin:`, `template:` 의 `update`, `uninstall`, `language-pack:uninstall`), 되돌릴 수 없는 운영 명령(`analytics:anonymize`, `analytics:purge`, `analytics:purge-extension`, `hotfix:rollback-stale-files --prune`, `settings:migrate-to-json`)이 확인 질문에 답할 수 없는 실행에서 작업을 시작하지 않을 때 내는 사유와 다시 실행 안내(`settings.core_update.console.confirm_unavailable`, `confirm_unavailable_hint`, `modules`, `plugins`, `templates` 의 `commands.update.*`, `commands.uninstall.*`, `language_packs.commands.uninstall.*`, `analytics.console.anonymize.*`, `purge.*`, `purge_extension.*`, `common.console.hotfix_rollback_stale_files.*`, `settings.console.migrate_to_json.*` 의 같은 이름 키)의 일본어 번역을 추가했습니다.
+- 검색 인덱스를 다시 만든 뒤에도 색인 누락이 남은 표의 재구축 안내(`search.index.persistent_stale.*`)의 일본어 번역을 추가했습니다.
+
+### Changed
+
+- 권한이 걸린 이미지 썸네일 저장 위치 검증 문구(`validation.settings.thumbnail_disk_gated_invalid`)를 새 허용 범위(서버 비공개 저장소, Amazon S3, 비공개 첨부 저장소 목록의 디스크, 공개 자산 디스크 불가)에 맞춰 고쳤습니다.
+- `g7:asset-url-mode` 의 마운트 접두사 안내 문구 3건(두 값의 출처, 오류 로그로 남는다는 안내)을 갱신했습니다.
+- 스케줄 관리의 검증 문구·항목 이름을 화면 용어에 맞췄습니다 — 「識別子」「タスク名」「制限時間」「有効状態」「最近の実行結果」, 작업 유형 표기 「Artisan」「Shell」「URL」「Job」, 복제 → 「コピー」.
+- 루트 보호 규칙 파일 쓰기 실패 안내를 「임시 파일은 대상 파일의 디렉토리에 만들며, 심볼릭 링크면 링크 대상의 권한」으로 원인 범위를 넓힌 코어 문구에 맞춰 일본어 번역을 갱신했습니다 (`settings.core_update.root_htaccess_write_failed`).
+- 코어 업데이트가 루트 보호 파일의 관리 블록 마커를 찾지 못했을 때의 안내를 「마커를 찾지 못했다(지워졌거나 형태가 바뀌었다)」로 정정한 코어 문구에 맞춰 일본어 번역을 갱신했습니다 (`settings.core_update.root_htaccess_preserved`).
+- 코어 업데이트의 압축 해제 실패 안내에서 명령줄 옵션 언급을 걷어낸 코어 문구에 맞춰 일본어 번역을 갱신했습니다 (`settings.core_update.all_extract_methods_failed`) — 이 안내는 관리자 화면에도 그대로 나가므로 명령줄을 쓸 수 없는 호스팅에서는 따를 수 없는 지시였습니다.
+- 코어 업데이트의 zip 확장 없음 안내(`settings.core_update.no_extract_method_available`) 일본어 문구에 공유 호스팅(호스팅 업체에 활성화 요청) 안내를 더했습니다.
+- 답할 수 없는 실행에서 미서명 패키지로 멈췄을 때의 안내(`extension_integrity.commands.unsigned_noninteractive_hint`)에 「`--yes` 도 미서명 확인을 대신하지 않는다」를 더한 코어 문구에 맞춰 일본어 번역을 갱신했습니다.
+- 방문자 통계 삭제·잔존 파일 정리 명령의 답할 수 없는 실행 안내(`analytics.console.purge.confirm_unavailable_hint`, `analytics.console.purge_extension.confirm_unavailable_hint`, `common.console.hotfix_rollback_stale_files.confirm_unavailable_hint`)가 「확인 없이 진행하는 방법 없음」에서 「`--yes` 를 함께 붙여 다시 실행」으로 바뀐 코어 문구에 맞춰 일본어 번역을 갱신했습니다.
+- 코어 최소 요구 버전을 7.2.0 으로 상향
+
+### Removed
+
+- 스케줄 관리로 옮겨져 쓰이지 않게 된 사이트맵 생성 주기·시각 설정의 검증 문구 4건을 정리했습니다.
+- 코어에서 없앤 점검 모드 저장값의 문구(`settings.core_update.maintenance_mode_active`·`validation.settings.maintenance_mode_boolean`·`validation.attributes.maintenance_mode`)를 뺐습니다.
+
 ## [1.1.5] - 2026-11-15
 
 ### Added

@@ -150,6 +150,37 @@
 연동 대상이 꺼진 사이트에서 이 모듈의 화면·응답이 그 대상으로 가는 링크·데이터를 내지 않게 하는 것은 이 모듈의 몫입니다 —
 서버는 활성 여부를 확인하고, 레이아웃은 `_global.activeModules` 로 가립니다([선택 연동](plugin-development.md#선택-연동-integrations)).
 
+반대 방향 — 어떤 확장을 연동으로 선언한 **활성** 확장을 찾을 때는 저장소 계약의 `findActiveByIntegration(string $type, string $identifier): Collection` 을 씁니다(코어 7.1.4+). `ModuleRepositoryInterface`·`PluginRepositoryInterface`·`TemplateRepositoryInterface` 에 같은 이름으로 있고, `$type` 은 연동 대상 유형(`module`·`plugin`·`template`), `$identifier` 는 대상 식별자입니다. 유형이 틀리면 빈 컬렉션입니다. 예: `app(PluginRepositoryInterface::class)->findActiveByIntegration('module', 'sirsoft-board')` — 게시판을 연동으로 선언한 활성 플러그인.
+
+### public_api 필드 (선택)
+
+다른 확장이 PHP 로 이 모듈을 부를 때 써도 되는 표면을 선언합니다(코어 7.2.0+, `getPublicApi()` 로 자동 파싱, 플러그인 `plugin.json` 도 같은 모양).
+선언하지 않은 클래스(Model·Service·Repository 등)와 소유 테이블은 내부 구현이라 다른 확장이 import·생성·정적 호출·직접 조회하면
+번들 확장 검수에서 위반으로 막습니다. 관리자 확장 상세 화면 「공개 API」 칸에 이 목록이 보입니다.
+
+```json
+"public_api": {
+    "version": 1,
+    "namespaces": ["Modules\\Vendor\\Shop\\Contracts", "Modules\\Vendor\\Shop\\Enums"],
+    "classes": ["Modules\\Vendor\\Shop\\Support\\ShopPathResolver"],
+    "readonly_models": ["Modules\\Vendor\\Shop\\Models\\Order"]
+}
+```
+
+| 키 | 뜻 | 다른 확장이 할 수 있는 것 |
+| --- | --- | --- |
+| `version` | 선언 판. 지금은 `1` 만(생략하면 1) | — |
+| `namespaces` | 그 네임스페이스와 하위 전체를 공개 | import·생성·정적 호출·주입 |
+| `classes` | 하나씩 공개하는 클래스 | 위와 같음 |
+| `readonly_models` | 훅이 인자로 넘기는 Model | 타입힌트·`instanceof`·`::class`·속성 읽기·읽기 메서드(`getKey()` 등)만. 그 Model 로 `save`·`update`·`query`·관계 호출·속성 대입은 금지 — 바꾸려면 공개 계약 메서드를 id·번호로 부른다 |
+
+- 모든 항목은 이 모듈의 네임스페이스(`Modules\{Vendor}\{Name}`) 하위여야 합니다. 형식이 틀리거나 다른 네임스페이스를 가리키는 항목은 버립니다.
+- 계약은 인터페이스 + 읽기 전용 DTO(`final readonly class`)로 만들고 `ServiceProvider` 에서 구현을 바인딩합니다. 다른 확장은 인터페이스를
+  생성자 주입(`app(ShopDirectory::class)`)으로 받습니다. 인터페이스 상수 `VERSION` 으로 판을 밝히고, 메서드 추가는 마이너 호환입니다(구현은 소유 모듈만).
+- 계약을 새 판에서 처음 내놓으면, 그 계약을 쓰는 확장은 `dependencies`(또는 버전 제약이 있는 `integrations`)에 그 판 이상을 적고,
+  `integrations` 로만 연동할 때는 실행 중에 `app()->bound(계약::class)` 로 계약이 있는지 확인한 뒤 씁니다.
+- 선언이 없으면 다른 확장에 공개한 PHP 표면이 없다는 뜻입니다 — 그때는 공개 훅·API 로만 협력합니다.
+
 ### search_scopes 필드 (선택)
 
 자기 검색창을 가진 모듈은 `module.json` 의 `search_scopes` 로 최근 검색어 범위를 선언합니다(코어 7.1.5+, `getSearchScopes()` 로 자동 파싱).
@@ -253,7 +284,7 @@ public function activate(): bool
 
 #### 설치 시더 규칙 (7.1.3+)
 
-설치·활성화·언어팩 시더 재실행 직전에 코어가 **확장의 서비스 프로바이더를 부팅 때와 같은 규칙으로 먼저 등록**한다. 그래서 설치 시더에서 확장 자신의 저장소 인터페이스·서비스를 해석할 수 있다(예전에는 같은 요청에서 새로 복사된 확장의 프로바이더가 등록되지 않아 `BindingResolutionException` 이 났다). 반대로 업데이트의 업그레이드 단계에는 옛 버전 프로바이더만 있으므로 새 바인딩을 해석하지 않는다 — [업그레이드 스텝 작성 가이드](upgrade-step-guide.md) 원칙 5.
+설치·활성화·언어팩 시더 재실행 직전에 코어가 **확장의 서비스 프로바이더를 부팅 때와 같은 규칙으로 먼저 등록**한다. 그래서 설치 시더에서 확장 자신의 저장소 인터페이스·서비스를 해석할 수 있다(예전에는 같은 요청에서 새로 복사된 확장의 프로바이더가 등록되지 않아 `BindingResolutionException` 이 났다). 설치 전부터 `modules/` 나 `plugins/` 에 활성 폴더가 남아 있던 확장(앞 설치가 남긴 폴더 위에 다시 설치하는 경우)도 같다 — 설치가 등록하는 확장 PSR-4 매핑은 부팅 때 찾지 못한 클래스도 다시 찾는다. 반대로 업데이트의 업그레이드 단계에는 옛 버전 프로바이더만 있으므로 새 바인딩을 해석하지 않는다 — [업그레이드 스텝 작성 가이드](upgrade-step-guide.md) 원칙 5.
 
 | 상황 | 결과 |
 |------|------|
@@ -884,7 +915,7 @@ protected function registerBundledModuleInstance(): void
 | 기존 데이터 변환 | ✅ | 데이터 형식 변환, 기본값 |
 | 권한/역할/메뉴 추가·수정 | ❌ (자동 동기화) | Module.php에서 정의 |
 | 정적 권한/메뉴 제거 | ✅ (cleanup 명시 호출) | 동적 메뉴/권한 보존 |
-| 레이아웃 JSON 변경 | ❌ (자동 갱신) | refresh-layout에서 처리 |
+| 레이아웃 JSON 변경 | ❌ (자동 갱신) | 업데이트·refresh-layout에서 처리. `module:refresh-layout` 은 7.2.0 부터 운영자가 고친 화면을 유지(keep)하는 것이 기본 — 덮으려면 `--layout-strategy=overwrite`, 미리보기는 `--dry-run`, 화면별 결정은 `--decisions=<파일>` |
 | PHP 코드만 변경 | ❌ | 버전만 올리면 됨 |
 
 > 상세: [extension-update-system.md](./extension-update-system.md) "개발자 버전 업데이트 가이드" 참조

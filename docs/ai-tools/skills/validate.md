@@ -188,15 +188,15 @@ class ProductService implements ProductServiceInterface
 
 dto.md 는 두 패턴을 정의한다 — 한 패턴을 강제하지 않는다. VO 인지 Carrier 인지의 선택은 도메인 본질 판단이라 자동 판정 대상이 아니고, 아래 공통 규칙 위반만 적발한다.
 
-- **Value Object**: `final readonly class` + constructor promotion + `toArray()`.
+- **Value Object**: `final readonly class` + constructor promotion (+ 직렬화에 실리면 `toArray()`).
 - **Data Carrier**: 일반 `class` + public mutable 속성 + 헬퍼 메서드 + `static fromArray()`.
 
 | # | 항목 | 금지 | 올바름 |
 | --- | --- | --- | --- |
 | 1 | 외부 라이브러리 | `Spatie\LaravelData`, `Spatie\DataTransferObject` | 순수 readonly class + constructor promotion |
 | 2 | 네이밍 | `XxxDto`·`XxxData`·`XxxObject` | 의미 단어만(`VerificationChallenge`, `OrderCalculationResult`) |
-| 3 | 위치 | `app/Models/Dto/`, 도메인 분류 없는 임의 경로 | `app/{도메인}/DTO/`, `app/Extension/{영역}/DTO/`, `app/DTO/`, `{확장 루트}/src/DTO/` |
-| 4 | 직렬화 | `toArray()` 누락 | 모든 DTO 가 `toArray(): array` 정의 |
+| 3 | 위치 | `app/Models/Dto/`, 도메인 분류 없는 임의 경로 | `app/{도메인}/DTO/`, `app/Extension/{영역}/DTO/`, `app/DTO/`, `{확장 루트}/src/DTO/`. 예외: 공개 계약 값은 `src/Contracts/{영역}/Data/`, 영역 전용 값은 그 영역 폴더(dto.md 「위치」 예외 표) |
+| 4 | 직렬화 | 응답·로그·저장 직렬화에 통째로 실리는데 `toArray()` 누락 | 실리는 DTO 만 `toArray(): array` 정의. 칸만 읽히는 DTO 에 쓰이지 않는 `toArray()` 를 요구하지 않는다(dto.md 「직렬화」) |
 | 5 | 검증 혼입 | 생성자 본문의 비즈니스 검증 | 검증은 FormRequest — DTO 는 타입힌트만 |
 | 6 | ApiResource 중첩 | DTO 를 ApiResource 로 감싸거나 그 반대 | 모델 → ApiResource, 값 묶음 → DTO |
 
@@ -259,9 +259,9 @@ SKILL.md 자동 선택 표의 카테고리 처리 방법이다. engine·plan·ha
 
 ## frontend
 
-`validate frontend` 의 0·3단계에서 쓴다. 대상: `resources/layouts/**/*.{json,g7.html}`, `templates/**/layouts/**/*.{json,g7.html}`, `{modules,plugins}/**/resources/layouts/**/*.{json,g7.html}`, `(templates|modules|plugins)/**/extensions/**/*.{json,g7.html}`(확장 주입 fragment), `templates/**/src/components/**/*.tsx`, 커스텀 핸들러, 엔진 범위(`resources/js/core/{template-engine,auth,identity,support,contentPolicy,contentMedia}/**` · `resources/js/core/{TemplateApp,template-engine}.ts`). 작성 SSoT 는 `.g7.html`, 짝 `.json` 은 그 굽기(`layout:decompile` = `.g7.html` → `.json`) 산출인 런타임·편집기 계약이라 동일 취급한다 — `.g7.html` 을 볼 때는 layout-markup.md(태그·속성 3분할·구조 태그·액션 top-level)가 1차 기준이고 `layout-json.md` 는 산출 JSON 키 계약이다. 마크업이 규정 위반인지 애매하면 `php artisan layout:decompile {path}` 로 짝 `.json` 을 구운 뒤 같은 규정으로 본다(역방향 `layout:compile` 은 `.json` → `.g7.html`). 계획서 안 JSON·TSX 코드 블록은 plan-code-blocks.md.
+`validate frontend` 의 0·3단계에서 쓴다. 대상: 코어·템플릿·모듈·플러그인의 레이아웃과 확장 주입 fragment(`**/{layouts,extensions}/**/*.{json,g7.html}`), `templates/**/src/components/**/*.tsx`, 커스텀 핸들러, 엔진 범위(`resources/js/core/{template-engine,auth,identity,support,contentPolicy,contentMedia}/**` · `resources/js/core/{TemplateApp,template-engine}.ts`). 작성 SSoT 는 `.g7.html`, 짝 `.json` 은 그 굽기(`layout:decompile` = `.g7.html` → `.json`) 산출인 런타임·편집기 계약이라 동일 취급한다 — `.g7.html` 을 볼 때는 layout-markup.md가 1차 기준이고 `layout-json.md` 는 산출 JSON 키 계약이다. 마크업이 규정 위반인지 애매하면 `php artisan layout:decompile {path}` 로 짝 `.json` 을 구운 뒤 같은 규정으로 본다. 계획서 안 JSON·TSX 코드 블록은 plan-code-blocks.md.
 
-규정: layout-json.md · layout-json-features.md · layout-json-components.md · layout-json-inheritance.md · data-binding.md · data-binding-i18n.md · data-sources.md · actions.md · actions-handlers.md · state-management.md · components.md(인덱스: types/patterns/advanced) · component-props-composite.md · dark-mode.md · responsive-layout.md · modal-usage.md · layout-json-features-error.md · security.md · editors.md.
+규정: layout-json.md · layout-json-features.md · layout-json-components.md · layout-json-inheritance.md · data-binding.md · data-binding-i18n.md · data-sources.md · actions.md · actions-handlers.md · state-management.md · components.md · component-props-composite.md · dark-mode.md · responsive-layout.md · modal-usage.md · layout-json-features-error.md · security.md · editors.md.
 
 ### 자동 검출 룰 (`--tag frontend`)
 
@@ -279,7 +279,7 @@ SKILL.md 자동 선택 표의 카테고리 처리 방법이다. engine·plan·ha
 | 상태 경로 | `_local` 은 저장소 A(React `localDynamicState`)와 B(`_global._local`)에 이중 저장되고 B 가 정본이다. 한쪽만 갱신하는 경로는 예외도 콘솔 에러도 없이 화면과 요청이 다른 값을 보게 만든다 — 아래 절 참조. `await` 뒤에는 `G7Core.state.getLocal()` 로 재조회한다(stale) |
 | 레이아웃 상속 | 부모·자식 `data_sources` ID 중복 금지, Partial 은 컴포넌트 치환만. 대상 레이아웃은 partial 을 따라가지 않는다(partial) · 서빙 경로가 DB 확장과 파일 플러그인 둘이다(두 경로) |
 | 다국어 | 하드코딩 라벨·placeholder, 모듈 접두사 누락은 i18n.md(아래 「i18n」 절) |
-| 다크모드·반응형 | 색상 클래스에 `dark:` 동반(warn 룰). show/hide·그리드 전환은 Tailwind 반응형 클래스보다 `responsive` 속성. iteration 노드의 responsive override 는 내부 wrapper 로 간다(override) |
+| 다크모드·반응형 | 색상 클래스에 `dark:` 동반(warn 룰). 화면 폭 분기는 `responsive` 로만 한다(Tailwind 접두는 error 룰이 레이아웃, PHP 노드, 부품까지 막는다 — 규정). 사람이 볼 것: 구간 값에 `dark:` 짝을 다시 적었는가(구간 값은 `className` 을 통째로 바꾼다), 한 노드에 열린 구간(`768-` 등)과 프리셋을 섞거나 열린 구간을 둘 이상 두지 않았는가(닫힌 구간으로 나눈다, 함정). 반복(iteration) 노드 자신에 `responsive` 를 둬도 된다(engine-v1.95.0, 내부 wrapper 는 선택 — override) |
 | 화면 패리티 | 같은 도메인의 목록↔상세↔폼, 유저↔관리자, 모바일↔PC 가 함께 고쳐졌는가(목록 패리티 · 모바일) |
 | Font Awesome | 아래 절 |
 | TSX 등록 | 새 컴포넌트는 `index.ts` export · `components.json` 등록 · 테스트 파일 존재(매니페스트) |
@@ -449,6 +449,16 @@ ko/en 키를 바꿨으면 대응 번들 팩(`lang-packs/_bundled/g7-*-{locale}/`
 - 이 게이트는 ko↔대상 로케일 키 파리티를 보지 않는다 — 신규 키는 직접 대조(파리티). 기존 번역을 `--force` 로 날리지 않는다(증분).
 - 매칭 4 scope: 코어 `lang/{ko,en}/*.php` ⇔ `g7-core-{locale}/backend/{locale}/*.php` · 모듈 backend `modules/_bundled/{mod}/{src,resources}/lang/{ko,en}/*.php`(union) ⇔ `g7-module-{mod}-{locale}/backend/{locale}/*.php` · 모듈 frontend `resources/lang/partial/{ko,en}/*.json` ⇔ `frontend/partial/*.json` · 플러그인 `plugins/_bundled/{pl}/lang/{ko,en}/*.php` ⇔ `g7-plugin-{pl}-{locale}/backend/{locale}/*.php` · 템플릿 `templates/_bundled/{tpl}/lang/{ko,en}.json` + `lang/partial/{ko,en}/*.json` ⇔ `g7-template-{tpl}-{locale}/frontend/{locale}.json` + `frontend/partial/*.json`.
 - 미출시 언어팩은 키 추가가 있어도 CHANGELOG 항목을 만들지 않는다(미출시).
+
+### 스코프 밖 — 인스톨러 다국어
+
+`public/install/lang/{ko,en}.php` 는 위 글롭(`**/lang/**`)에는 걸리지만 **이 영역의 대상이 아니다.** Laravel 부팅 전에 도는 전용 사전이고, 번들 ja 언어팩의 소스도 아니다. 그 경로를 인자로 받았거나 변경셋에 들어 있다면 "검증했다" 고 보고하지 말고 아래를 실행한 뒤 그 결과로 보고한다:
+
+```bash
+php vendor/bin/phpunit tests/Unit/Installer/InstallerLanguageParityTest.php
+```
+
+이 게이트가 키 집합·자리표시자·중괄호 표기·점 경로 해석·지원 로케일 상수 대조를 본다. 이 사실을 적어 두지 않으면 이 영역이 인스톨러 lang 변경에 대해 **공허한 초록**을 낸다 (대상 파일이 하나도 매칭되지 않아 위반 0 이 나온다).
 
 ### 부수의무 (i18n)
 

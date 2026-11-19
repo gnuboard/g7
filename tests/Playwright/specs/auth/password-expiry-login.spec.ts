@@ -8,8 +8,8 @@
  *
  * 사이트 보안 설정을 **가역적으로** 바꾼다 — fixture 가 스냅샷을 떠 두고 afterAll 에서 되돌린다. 한 워커에서만(serial).
  *
- * // @scenario guard=user,admin | reason=expired,admin_assigned | action=force,remind | two_factor=on,off
- * // @effects expired_login_returns_challenge_without_token, completion_issues_token_and_records_change, remind_mode_allows_postpone_until_deadline, admin_assigned_requires_change_even_when_expiry_off, two_factor_precedes_password_change
+ * 축 요약(마커 아님 — 평문): guard=user,admin | reason=expired,admin_assigned | action=force,remind | two_factor=on,off
+ * 효과 요약(마커 아님 — 평문): expired_login_returns_challenge_without_token, completion_issues_token_and_records_change, remind_mode_allows_postpone_until_deadline, admin_assigned_requires_change_even_when_expiry_off, two_factor_precedes_password_change
  */
 import { test, expect, issueToken } from '../../fixtures/auth';
 import { enablePasswordExpiryFixture, restorePasswordExpiryFixture, seedAccount } from '../../fixtures/password-expiry';
@@ -198,7 +198,7 @@ test('관리자가 정해 준 비밀번호는 연기 없이 변경 단계를 요
  * @effects two_factor_precedes_password_change
  */
 test('2단계 인증이 켜져 있으면 인증번호를 먼저 확인한 뒤 변경 단계가 온다', async ({ page }) => {
-  const twoFactorState = await enableTwoFactorFixture(request!, adminToken);
+  const twoFactorState = await enableTwoFactorFixture(request!, adminToken, { two_factor_scope: 'all' });
   try {
     const account = seedAccount('expired');
     await page.goto('/login');

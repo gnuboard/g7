@@ -12,7 +12,7 @@
  * jsdom 기하 모킹 — frame 요소 + getBoundingClientRect + elementsFromPoint.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useCanvasDnd } from '../../hooks/useCanvasDnd';
 import type { EditorNode } from '../../utils/layoutTreeUtils';
@@ -114,8 +114,8 @@ function collectIds(nodes: EditorNode[]): string[] {
 }
 
 describe('useCanvasDnd — block flow 재배치', () => {
-  let patchSpy: ReturnType<typeof vi.fn>;
-  let pushSpy: ReturnType<typeof vi.fn>;
+  let patchSpy: Mock<(patcher: (current: EditorNode[]) => EditorNode[]) => void>;
+  let pushSpy: Mock<(snapshot: EditorNode[], label: string) => void>;
   let components: EditorNode[];
 
   beforeEach(() => {
@@ -136,6 +136,8 @@ describe('useCanvasDnd — block flow 재배치', () => {
     document.body.innerHTML = '';
   });
 
+  // @scenario insertion_path=drag_drop, container_layout=block, dragged_kind=div, nesting_decision=allowed
+  // @effects drag_move_commits_single_node_without_dragging_siblings, drop_slot_index_uses_original_tree_index_consistent_with_moveNode
   it('첫 노드를 끝으로 드래그하면 순서가 [b, c, a] 로 변경', () => {
     const frame = buildFrame([
       { path: '0', rect: { left: 0, top: 0, width: 400, height: 100 } },
@@ -163,6 +165,8 @@ describe('useCanvasDnd — block flow 재배치', () => {
     expect(pushSpy.mock.calls[0]![1]).toContain('move');
   });
 
+  // @scenario insertion_path=drag_drop, target_kind=container_div, dragged_kind=div, nesting_decision=allowed
+  // @effects drop_slot_index_uses_original_tree_index_consistent_with_moveNode
   it('스냅샷 경로 — 앞쪽 형제 노드를 뒤쪽 컨테이너 안으로 이동해도 유실되지 않음', () => {
     // 위젯 사라짐 결함의 정확한 형태: 드래그 노드(A, path 0)가 대상 컨테이너(G, path 1)의
     // **앞쪽 형제**. A 제거 시 G 의 path 가 1→0 으로 밀려, 원본 좌표 toParentPath=[1] 이
@@ -210,6 +214,8 @@ describe('useCanvasDnd — block flow 재배치', () => {
     expect(ids).toContain('A');
   });
 
+  // @scenario insertion_path=drag_drop, target_kind=container_div, dragged_kind=div, nesting_decision=allowed
+  // @effects sibling_reorder_within_filled_parent_commits_inside_that_parent
   it('채워진 Div 부모(contents 래퍼 모사) 안에서 형제 재배치 허용', () => {
     // 위젯 카드들이 채워진 일반 Div(W) 안에 있음. 같은 부모 내 카드 재배치는 nest 가
     // 아니라 형제 순서 변경이므로, allowsNestingInContainer 의 빈/레이아웃 제한과 무관하게
@@ -266,6 +272,8 @@ describe('useCanvasDnd — block flow 재배치', () => {
     expect(wrapped.length).toBe(1);
   });
 
+  // @scenario insertion_path=drag_drop, container_layout=block, dragged_kind=div
+  // @effects drop_at_original_position_is_noop_without_patch_or_history
   it('같은 위치로 드롭하면(no-op) 변형/이력 생략', () => {
     const frame = buildFrame([
       { path: '0', rect: { left: 0, top: 0, width: 400, height: 100 } },
@@ -297,6 +305,8 @@ describe('useCanvasDnd — 거부 케이스', () => {
     document.body.innerHTML = '';
   });
 
+  // @scenario insertion_path=drag_drop, nesting_decision=denied_no_draggable
+  // @effects drag_start_of_non_draggable_component_is_tracked_as_denied
   it('draggable 목록에 없는 컴포넌트는 onDragStart 에서 denied 적재 + 이동 안 함', () => {
     const trackSpy = vi.spyOn(trackers, 'trackEditorDnd');
     let components: EditorNode[] = [{ name: 'Form', id: 'f' }, { name: 'Div', id: 'd' }];
@@ -321,6 +331,8 @@ describe('useCanvasDnd — 거부 케이스', () => {
     expect(startCall?.[0].source).toBe('drag');
   });
 
+  // @scenario insertion_path=drag_drop, selected_node_state=data_bound_selected, nesting_decision=allowed
+  // @effects data_bound_node_draggable_and_selectable
   it('자신 바인딩(data_bound) 노드는 드래그 허용 — denied_data_bound 아님', () => {
     // data_bound 는 인라인 텍스트 편집만 불가, 드래그/구조 편집 허용.
     // 자신이 `{{}}` 바인딩인 노드(상품 이미지 갤러리 등)도 onDragStart 가 거부하지 않아야.
@@ -350,6 +362,8 @@ describe('useCanvasDnd — 거부 케이스', () => {
     expect(result.current.activeDragPath, '드래그가 정상 시작되어야 함').toBe('0');
   });
 
+  // @scenario insertion_path=drag_drop, nesting_decision=denied_no_accepts
+  // @effects drop_without_valid_slot_is_cancelled_without_commit
   it('드롭 존이 없으면(드래그 대상이 비draggable) cancelled 적재 + 이동 안 함', () => {
     const trackSpy = vi.spyOn(trackers, 'trackEditorDnd');
     // Form 은 draggable 아님 → onDragEnd 에서 makeCanDropInContainer 가 어디서도
@@ -391,6 +405,8 @@ describe('useCanvasDnd — 이동 후 선택 재복원', () => {
     document.body.innerHTML = '';
   });
 
+  // @scenario insertion_path=drag_drop, container_layout=block, dragged_kind=div, nesting_decision=allowed
+  // @effects selection_follows_moved_node_to_new_path_after_drop
   it('루트 형제 이동 시 onMovePath 가 이동 노드의 새 path 로 호출됨', () => {
     let comps: EditorNode[] = [
       { name: 'Div', id: 'a' },
@@ -425,6 +441,8 @@ describe('useCanvasDnd — 이동 후 선택 재복원', () => {
     expect(onMovePath).toHaveBeenCalledWith('2');
   });
 
+  // @scenario insertion_path=drag_drop, target_kind=container_div, dragged_kind=div, nesting_decision=allowed
+  // @effects selection_follows_moved_node_to_new_path_after_drop
   it('다른 컨테이너로 이동 시 onMovePath 가 목적지 path 로 호출됨', () => {
     let nested: EditorNode[] = [
       { name: 'Div', id: 'A' },
@@ -469,6 +487,8 @@ describe('useCanvasDnd — includeContainer 관련 레벨 (결함 1: 바깥→�
     document.body.innerHTML = '';
   });
 
+  // @scenario insertion_path=drag_drop, target_kind=container_div, dragged_kind=div
+  // @effects drop_slots_span_all_accepting_containers
   it('루트로 빠져나온 노드 재드래그 시 다른 accepting 컨테이너가 includeContainer=true', () => {
     // 트리: [A(루트 직속, 드래그), G(컨테이너)=[w0]]. A 는 이미 루트로 빠져나온 상태.
     // A 를 다시 G 안으로 넣으려면 includeContainer('1') 이 true 여야 슬롯이 깔린다.
@@ -503,6 +523,8 @@ describe('useCanvasDnd — includeContainer 관련 레벨 (결함 1: 바깥→�
     expect(includeContainer('1'), 'A 를 G 안으로 넣을 수 있어야 함').toBe(true);
   });
 
+  // @scenario insertion_path=drag_drop, target_kind=container_div, dragged_kind=div
+  // @effects drop_slots_span_all_accepting_containers, drop_slots_scoped_to_dragged_ancestor_chain_and_sibling_nest_targets
   it('깊은 다른 컨테이너(조부모의 형제의 자식)도 includeContainer=true', () => {
     // 트리: [A(드래그), Outer=[Inner=[w0]]]. A 를 Outer.Inner 깊숙이 nest 가능해야.
     // 결함 1: relevant 가 조상 체인의 직접 형제만 봐서 Inner(2단계 깊이)가 빠짐.
@@ -545,6 +567,8 @@ describe('useCanvasDnd — includeContainer 관련 레벨 (결함 1: 바깥→�
     expect(includeContainer('1.children.0'), '깊은 Inner 컨테이너도 nest 타깃으로 포함').toBe(true);
   });
 
+  // @scenario insertion_path=drag_drop, target_kind=container_div, dragged_kind=div
+  // @effects drop_slots_scoped_to_relevant_levels
   it('드래그 노드 자신/자손은 includeContainer=false (자기 안에 드롭 불가)', () => {
     // 트리: [A(드래그, 컨테이너)=[a0], B]. A 자신/A.a0 은 relevant 제외.
     const nested: EditorNode[] = [
@@ -585,6 +609,8 @@ describe('useCanvasDnd — 선택 기준 드래그 치환 (결함 2: 자손 잡�
     document.body.innerHTML = '';
   });
 
+  // @scenario insertion_path=drag_drop, selected_node_state=basic_selected
+  // @effects selection_based_drag_substitution
   it('selectedPath 의 자손을 드래그 시작하면 선택 부모가 이동 commit 된다', () => {
     // 트리: [P(=선택, children=[c0]), B]. 사용자가 P 를 선택한 뒤 자손 c0(P.children.0)이
     // 덮은 영역을 잡고 끌면, 드래그 path 가 P 로 치환되어 P 가 이동해야 한다.
@@ -625,6 +651,8 @@ describe('useCanvasDnd — 선택 기준 드래그 치환 (결함 2: 자손 잡�
     expect((comps[1]!.children as EditorNode[])[0]!.id).toBe('c0');
   });
 
+  // @scenario insertion_path=drag_drop, selected_node_state=empty_selection
+  // @effects selection_based_drag_substitution
   it('selectedPath 가 없으면 치환 없음 — 잡은 자손 그대로 드래그', () => {
     let comps: EditorNode[] = [
       { name: 'Div', id: 'P', children: [{ name: 'Div', id: 'c0' }, { name: 'Div', id: 'c1' }] },
@@ -654,6 +682,8 @@ describe('useCanvasDnd — 선택 기준 드래그 치환 (결함 2: 자손 잡�
     expect(result.current.activeDragPath).toBe('0.children.0');
   });
 
+  // @scenario insertion_path=drag_drop, selected_node_state=basic_selected
+  // @effects selection_based_drag_substitution
   it('selectedPath 자신을 드래그하면 치환 없음(자손이 아니라 자기 자신)', () => {
     let comps: EditorNode[] = [{ name: 'Div', id: 'P', children: [{ name: 'Div', id: 'c0' }] }, { name: 'Div', id: 'B' }];
     const frame = buildFrame([
@@ -682,6 +712,8 @@ describe('useCanvasDnd — 단순 형제 재배치 commit', () => {
     document.body.innerHTML = '';
   });
 
+  // @scenario insertion_path=drag_drop, container_layout=block, dragged_kind=div, nesting_decision=allowed
+  // @effects drag_move_commits_single_node_without_dragging_siblings
   it('루트 형제 재배치 commit — [a,b] 에서 a 를 끝 슬롯으로 → [b,a]', () => {
     let components: EditorNode[] = [
       { name: 'Div', id: 'a' },
@@ -738,6 +770,8 @@ describe('useCanvasDnd — 모달 편집 편집루트 confine', () => {
     return { get components() { return components; }, patchSpy, frame };
   }
 
+  // @scenario insertion_path=drag_drop, dragged_kind=button
+  // @effects modal_edit_confines_drag_and_drop_to_editable_root
   it('모달 내부 노드를 딤(호스트) 컨테이너로 드롭 → 거부(commit 안 함)', () => {
     const trackSpy = vi.spyOn(trackers, 'trackEditorDnd');
     const scene = buildModalScene();
@@ -762,6 +796,8 @@ describe('useCanvasDnd — 모달 편집 편집루트 confine', () => {
     expect(denied).toBeTruthy();
   });
 
+  // @scenario insertion_path=drag_drop, dragged_kind=button
+  // @effects modal_edit_confines_drag_and_drop_to_editable_root
   it('모달 내부 노드의 드래그 시작은 거부되지 않음 (편집 루트 내부)', () => {
     const trackSpy = vi.spyOn(trackers, 'trackEditorDnd');
     const scene = buildModalScene();
@@ -787,6 +823,8 @@ describe('useCanvasDnd — 모달 편집 편집루트 confine', () => {
     );
   });
 
+  // @scenario insertion_path=drag_drop, dragged_kind=span
+  // @effects modal_edit_confines_drag_and_drop_to_editable_root
   it('딤(호스트) 노드의 드래그 시작 → 거부(편집 루트 밖)', () => {
     const trackSpy = vi.spyOn(trackers, 'trackEditorDnd');
     const scene = buildModalScene();
@@ -877,6 +915,7 @@ describe('useCanvasDnd — 상속·주입 노드 드래그 차단 (A3)', () => {
     props: { src: '{{product.image}}' },
   };
 
+  /** @effects locked_source_nodes_are_denied_at_drag_start_move_and_end */
   it('N16 base 출처 → onDragStart 가 denied_base_locked + activeDragPath 미보관', () => {
     const trackSpy = vi.spyOn(trackers, 'trackEditorDnd');
     const { result } = scene([BASE_BOUND, ROUTE_BOUND]);
@@ -887,6 +926,7 @@ describe('useCanvasDnd — 상속·주입 노드 드래그 차단 (A3)', () => {
     expect(result.current.activeDragPath).toBeNull();
   });
 
+  /** @effects locked_source_nodes_are_denied_at_drag_start_move_and_end, drop_into_extension_locked_denied */
   it('N17 extension 출처 → denied_extension_locked', () => {
     const trackSpy = vi.spyOn(trackers, 'trackEditorDnd');
     const { result } = scene([EXT_BOUND, ROUTE_BOUND]);
@@ -896,6 +936,7 @@ describe('useCanvasDnd — 상속·주입 노드 드래그 차단 (A3)', () => {
     expect(result.current.activeDragPath).toBeNull();
   });
 
+  /** @effects locked_source_nodes_are_denied_at_drag_start_move_and_end */
   it('N18 onDragMove — 잠긴 노드는 드롭존을 계산하지 않는다', () => {
     const { result } = scene([BASE_BOUND, ROUTE_BOUND]);
     act(() => result.current.onDragStart(startEvent('0')));
@@ -910,6 +951,7 @@ describe('useCanvasDnd — 상속·주입 노드 드래그 차단 (A3)', () => {
     expect(result.current.activeDropZone).toBeNull();
   });
 
+  /** @effects locked_source_nodes_are_denied_at_drag_start_move_and_end */
   it('N19 onDragEnd 최종 가드 — 유효 zone 을 강제 주입해도 commit 되지 않는다', () => {
     const trackSpy = vi.spyOn(trackers, 'trackEditorDnd');
     const { result, patchSpy, pushSpy } = scene([BASE_BOUND, ROUTE_BOUND]);
@@ -924,6 +966,7 @@ describe('useCanvasDnd — 상속·주입 노드 드래그 차단 (A3)', () => {
     expect(denied).toBeTruthy();
   });
 
+  /** @effects data_bound_node_draggable_and_selectable, route_owned_or_untagged_bound_nodes_stay_data_bound_editable */
   it('N20 회귀 가드 — route 출처 data_bound 노드는 드래그·이동 모두 허용', () => {
     const trackSpy = vi.spyOn(trackers, 'trackEditorDnd');
     const { result, patchSpy } = scene([ROUTE_BOUND, { name: 'Div', id: 'c' }]);

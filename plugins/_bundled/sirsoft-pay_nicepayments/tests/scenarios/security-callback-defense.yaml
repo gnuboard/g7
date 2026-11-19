@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: Phase 2 SSoT — 본 매니페스트는 나이스페이먼츠 콜백 보안 매트릭스의 명세 문서. AuthToken Cache 기반 dedupe 와 replay/net-cancel 의 cross product 전체 자동 검증은 Phase 3 (침투 PoC) 에서 처리.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#609 Phase 2 SSoT — 본 매니페스트는 나이스페이먼츠 콜백 보안 매트릭스의 명세 문서. AuthToken Cache 기반 dedupe 와 replay/net-cancel 의 cross product 전체 자동 검증은 Phase 3 (침투 PoC) 에서 처리.
 
 feature: 콜백 보안 방어 (replay attack / authToken dedupe / post-approve net cancel / 승인 URL 호스트 정규화)
 
@@ -45,19 +45,19 @@ effects:
   - vbank_issue_clears_ordered_cart_items   # 가상계좌 계좌 발급 시 주문한 장바구니 항목 정리(입금 전)
   # DB 영구 replay defense — PreventsReplayCallback trait
   - replay_detected_on_second_arrival_db
-  - replay_response_is_idempotent_ok
-  - replay_no_double_completion
-  - replay_logged_with_context
   - replay_first_arrival_proceeds_normally
-  - replay_db_unique_blocks_concurrent_insert
+  - replay_response_is_idempotent_ok             # 같은 거래번호 재전송은 완료 화면으로 멱등 응답
+  - replay_no_double_completion                  # 결제완료를 다시 처리하지 않음(완료 훅 0회, 망취소 없음)
+  - replay_logged_with_context                   # 재생 감지 로그에 tid·moid·콜백 종류
+  - replay_db_unique_blocks_concurrent_insert    # 같은 거래번호의 두 번째 결제 행은 DB 유일 제약이 막음
 
   # 단기 AuthToken dedupe — CacheInterface 60s TTL
   - auth_token_first_arrival_writes_cache
   - auth_token_within_60s_blocked
   - auth_token_outside_60s_proceeds
   - auth_token_cache_key_uses_sha256_of_mid_token_txtid
-  - auth_token_blocked_returns_4xx_or_idempotent
-  - auth_token_logged_when_dedupe_hit
+  - auth_token_blocked_returns_4xx_or_idempotent  # 60초 안 재전송은 승인 API 재호출 없이 완료 화면으로 멱등 응답
+  - auth_token_logged_when_dedupe_hit             # 재전송 의심을 moid·txTid 와 함께 warning 으로 남김
 
   # 승인 URL 호스트 정규화 (KVE-2026-2010 형제 — 검증기 미경유 독립 경로)
   - approval_url_host_check_reuses_core_normalize_host_not_a_copy
@@ -70,9 +70,8 @@ effects:
   # Post-approve net cancel
   - post_approve_failure_triggers_send_net_cancel
   - net_cancel_sends_pg_cancel_api_call
-  - net_cancel_uses_browser_fetch_to_bypass_interceptor
-  - net_cancel_passes_approved_tid
-  - net_cancel_passes_full_amount
+  - net_cancel_passes_approved_tid    # 망취소는 이번 인증의 거래번호(TxTid)를 싣는다
+  - net_cancel_passes_full_amount     # 망취소는 인증 금액 전액(Amt)을 싣는다
   # KVE-2026-2434 — 결제창 닫힘 보고·재결제 준비·결제 인증 콜백의 주문 소유자 확인과 승인-주문 결속
   - auth_callback_does_not_complete_again_when_order_is_paid_with_another_tid_after_authorize
   - auth_callback_rolls_back_and_net_cancels_when_payment_complete_hook_throws_inside_locked_callback
@@ -84,6 +83,7 @@ effects:
   - vbank_notify_returns_ok_on_cancelled_deposit
   - vbank_notify_stores_only_whitelisted_pg_response_fields
   - vbank_notify_returns_ok_on_successful_deposit
+  - vbank_notify_completes_deposit_for_legacy_provider_id
   - auth_callback_ignores_non_payable_order_without_authorize_request
   - auth_callback_detects_mobile_device
   - auth_callback_redirects_to_custom_success_url
@@ -164,8 +164,10 @@ effects:
   - nice_transaction_query_throws_on_http_error
 
 test_files:
-  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Services/NicePaymentsApiServiceTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Concerns/PreventsReplayCallbackTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Controllers/AuthTokenDedupeKeyTest.php
   - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Controllers/PaymentCallbackControllerTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Services/NicePaymentsApiServiceTest.php
   - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Controllers/PaymentCloseReportControllerTest.php
   - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Controllers/PaymentCloseReportOwnershipTest.php
 
@@ -187,7 +189,7 @@ manual_verification:
       - "정상 카드 콜백으로 authorize 진입"
       - "PG 승인 성공 (resultCode=0000), TxTid 발급됨"
       - "이후 OrderProcessingService 가 PaymentAmountMismatchException throw 시뮬"
-      - "sendNetCancel 가 browserFetch(__sirsoftPgOriginalFetch) 로 PG 취소 API 호출"
+      - "서버의 NicePaymentsApiService::sendNetCancel 이 NetCancelURL 로 PG 취소 API 를 직접 호출(브라우저 경유 없음)"
       - "PG 측 거래 상태: 승인 후 취소 (정산 영향 없음)"
       - "G7 주문: 미생성 상태 유지"
 
@@ -202,3 +204,11 @@ notes: |
    - modules/_bundled/sirsoft-ecommerce/database/migrations/2026_05_16_000001_add_unique_index_to_transaction_id_on_ecommerce_order_payments_table.php
 
   Phase 3 침투 PoC 에서 본 manual_verification 항목을 자동화 PoC 스크립트로 변환 예정.
+
+  원장(pending_effects) 정리 (#916):
+   - 8건은 테스트로 재서 effects 로 옮겼다 — PaymentCallbackControllerTest(같은 거래번호 재전송 멱등·재생 로그,
+     60초 안 재전송 멱등·로그, 망취소 TxTid·전액), PreventsReplayCallbackTest(거래번호 유일 제약).
+   - net_cancel_uses_browser_fetch_to_bypass_interceptor 는 뺐다 — 망취소는 서버가 직접 보낸다
+     (src/Services/NicePaymentsApiService.php:396-421 `Http::asForm()->post($netCancelUrl, …)`, 호출처
+     src/Controllers/PaymentCallbackController.php 8곳과 src/Listeners/ClaimPaymentApproveListener.php:334). resources/js 에는 망취소 경로가 없어
+     (`netCancel`·`__sirsoftPgOriginalFetch` 검색 0건) 브라우저 fetch 우회라는 동작 자체가 없다.

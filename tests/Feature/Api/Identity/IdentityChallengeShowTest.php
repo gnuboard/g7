@@ -56,7 +56,7 @@ class IdentityChallengeShowTest extends TestCase
     /**
      * 발급한 challenge 의 상태 조회가 200 과 공개 안전 필드(id·status·render_hint·expires_at·public_payload)를 돌려준다.
      *
-     * @scenario source=identity-challenge-status-field-exposure, field=id, field=status, field=public_payload
+     * @scenario field=id, field=status, field=public_payload
      *
      * @effects public_safe_fields_present_in_response
      *
@@ -84,7 +84,7 @@ class IdentityChallengeShowTest extends TestCase
     /**
      * 상태 조회 응답에 attempts·target_hash·verification_token·metadata 가 없고 max_attempts 는 정수로 노출된다.
      *
-     * @scenario source=identity-challenge-status-field-exposure, field=attempts, field=max_attempts, field=target_hash
+     * @scenario field=attempts, field=max_attempts, field=target_hash
      *
      * @effects attempts_absent_from_response, max_attempts_absent_from_response, target_hash_absent_from_response, verification_token_absent_from_response, metadata_absent_from_response
      *

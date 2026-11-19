@@ -12,6 +12,8 @@ import { downloadAttachmentHandler } from './downloadAttachment';
 import { downloadMarkupFileHandler } from './downloadMarkupFile';
 import { copyMarkupToClipboardHandler } from './copyMarkupToClipboard';
 import { checkAssetUrlModeDriftHandler, detectAssetUrlModeHandler } from './detectAssetUrlModeHandler';
+import { copyToClipboardHandler } from './copyToClipboardHandler';
+import { startCoreUpdateHandler, resumeCoreUpdateHandler, autoResumeCoreUpdateHandler, dismissCoreUpdateHandler, refreshCoreUpdateStatusHandler } from './coreUpdateHandler';
 import { rememberIdentityClaimHandler } from './identityLauncher';
 /**
  * 핸들러 맵
@@ -25,6 +27,11 @@ export declare const handlerMap: {
     readonly rememberIdentityClaim: typeof rememberIdentityClaimHandler;
     readonly detectAssetUrlMode: typeof detectAssetUrlModeHandler;
     readonly checkAssetUrlModeDrift: typeof checkAssetUrlModeDriftHandler;
+    readonly startCoreUpdate: typeof startCoreUpdateHandler;
+    readonly resumeCoreUpdate: typeof resumeCoreUpdateHandler;
+    readonly autoResumeCoreUpdate: typeof autoResumeCoreUpdateHandler;
+    readonly dismissCoreUpdate: typeof dismissCoreUpdateHandler;
+    readonly refreshCoreUpdateStatus: typeof refreshCoreUpdateStatusHandler;
     readonly setTheme: typeof setThemeHandler;
     readonly initTheme: typeof initThemeHandler;
     readonly scrollToSection: typeof scrollToSectionHandler;
@@ -43,6 +50,7 @@ export declare const handlerMap: {
     readonly toggleSidebar: typeof toggleSidebarHandler;
     readonly initSidebar: typeof initSidebarHandler;
     readonly downloadAttachment: typeof downloadAttachmentHandler;
+    readonly copyToClipboard: typeof copyToClipboardHandler;
     readonly downloadMarkupFile: typeof downloadMarkupFileHandler;
     readonly copyMarkupToClipboard: typeof copyMarkupToClipboardHandler;
 };

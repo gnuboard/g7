@@ -8,11 +8,9 @@
 
   형식 검사(IP·CIDR·패턴 문자)는 저장할 때 서버가 한다 — 여기서는 빈 칸만 막는다.
 
-  취소·적용 단추는 모달 고정 하단(`<footer>`)이 아니라 **본문 맨 아래 줄**에 둔다 — 형제 창
-  `_modal_identity_policy_form` 과 같은 자리다. 고정 하단은 모달 컴포넌트가 자기 렌더러로 그리는데
-  그쪽 데이터 컨텍스트에는 창을 연 시점의 전역 상태가 실린 채라, 방금 친 패턴·IP 를 읽지 못하고
-  늘 「패턴을 입력하세요」로 되돌아간다(브라우저 실측 확인). 이 창은 단추가 방금 친 값을 읽어야
-  하므로 본문에 둔다 — 확인/닫기만 하는 창이라면 고정 하단이 맞다. -->
+  취소·적용 단추는 모달 고정 하단(`<footer>`)에 둔다. 고정 하단은 Modal 이 본문 자식과 같은 데이터
+  컨텍스트·상태 범위로 그리므로 방금 친 패턴·IP 를 읽는다(종전에는 빈 컨텍스트로 그려 본문 맨 아래 줄에
+  두었다, #869 P1). 640px 이하에서는 Modal 이 단추를 세로로 쌓는다. -->
 <partial description="환경설정 > 보안 탭 IP 접근 제한 규칙 추가·편집 모달. _global.ip_restriction_rule_form_modal 단일 진실 — 목록이 여는 순간 통째 set, 적용 시 $parent._local 폼 배열로 1회 커밋" editor_label="$t:admin.modal_label.admin_settings.ip_restriction_rule_form_modal">
   <modal data-type="composite" data-ref="ip_restriction_rule_form_modal" title="{{(_global.ip_restriction_rule_form_modal?.row_index ?? null) === null ? '$t:admin.settings.security.ip_restriction.modal.create_title' : '$t:admin.settings.security.ip_restriction.modal.edit_title'}}" size="md" :closeOnOverlayClick="false">
     <div class="row-stack">
@@ -58,7 +56,7 @@
       </div>
       <p class="form-hint">$t:admin.settings.security.ip_restriction.modal.apply_hint</p>
     </div>
-    <div data-ref="ip_rule_form_footer" class="flex-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
+    <footer>
       <button type="button" class="px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
         <on type="click">
           <close-modal target="ip_restriction_rule_form_modal"/>
@@ -89,6 +87,6 @@
         </on>
         <span>$t:admin.settings.security.ip_restriction.modal.apply</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

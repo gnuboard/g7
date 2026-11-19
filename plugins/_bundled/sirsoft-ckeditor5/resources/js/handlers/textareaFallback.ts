@@ -199,7 +199,7 @@ export function renderTextareaFallback(options: TextareaFallbackOptions): void {
 
     if (multilingual) {
         const tabsEl = document.createElement('div');
-        tabsEl.className = 'ckeditor5-locale-tabs';
+        tabsEl.className = 'ckeditor-locale-tabs';
 
         /**
          * 탭 버튼의 활성/체크 표시를 갱신합니다.
@@ -210,7 +210,7 @@ export function renderTextareaFallback(options: TextareaFallbackOptions): void {
             tabsEl.querySelectorAll('button').forEach(button => {
                 const locale = (button as HTMLButtonElement).dataset.locale ?? '';
                 const isActive = locale === currentLocale;
-                button.classList.toggle('is-active', isActive);
+                button.classList.toggle('ckeditor-locale-tab--active', isActive);
                 const hasValue = (values[locale] ?? '').trim() !== '';
                 const check = button.querySelector('[data-check]');
                 if (check) {
@@ -223,8 +223,9 @@ export function renderTextareaFallback(options: TextareaFallbackOptions): void {
             const button = document.createElement('button');
             button.type = 'button';
             button.dataset.locale = locale;
+            button.classList.add('ckeditor-locale-tab');
             if (index === 0) {
-                button.classList.add('is-default');
+                button.classList.add('ckeditor-locale-tab--default');
             }
             // 언어팩 이름 → 내장 표 → 코드 (#148)
             button.textContent = getLocaleLabel(locale);

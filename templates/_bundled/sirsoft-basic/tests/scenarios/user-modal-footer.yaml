@@ -1,0 +1,24 @@
+feature: 사용자 템플릿 Modal 고정 하단(footer) — 관리자 Modal 과 같은 계약
+
+description: |
+  사용자 Modal 은 `footer` 를 구조분해하지 않아 `<footer>` 로 적은 단추가 조용히 사라졌고, 그래서 사용자 확인 창은 단추를
+  본문 안 `justify-end` 줄로 그려 640px 이하에서 세로로 쌓이지 않았다(#869, 설계 확정 2026-11-08). 지금은 관리자 Modal 과
+  같은 방식으로 고정 하단을 그린다 — 본문 스크롤 밖 `modal-footer-bar`, 본문 자식과 같은 데이터 컨텍스트·상태 범위
+  (`__componentContext.parentDataContext`·`__componentContext`), 렌더 환경(renderEnvRef) 우선, 렌더 폭 640px 이하 세로 쌓기.
+  사용자 확인 창 20곳의 단추를 고정 하단으로 옮겼다.
+
+# axis 의미:
+#   area — 시험이 보는 표면(고정 하단). width — 렌더 폭. desktop 은 641px 이상, narrow 는 640px 이하.
+axes:
+  area: [footer]
+  width: [desktop, narrow]
+
+effects:
+  - user_modal_footer_hidden_when_all_buttons_filtered   # 고정 하단 단추가 조건으로 모두 빠지면 바닥 줄도 숨긴다(#869 C1)
+  - user_modal_footer_rendered_outside_scroll_area   # footer 단추를 본문 스크롤 밖 고정 하단에 그리고, 없거나 비면 그리지 않는다
+  - user_modal_footer_reads_modal_node_context       # 고정 하단은 Modal 노드의 데이터 컨텍스트·컴포넌트 컨텍스트와 렌더 환경으로 그린다
+  - user_modal_footer_stacks_at_narrow_width         # 렌더 폭 640px 이하에서 단추를 세로로 쌓고 폭을 채운다
+  - user_modal_footer_items_carry_editor_path        # 편집기 미리보기에서 footer 단추가 `{노드 경로}.props.footer.{i}` 편집 경로를 받는다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/Modal.footer.test.tsx

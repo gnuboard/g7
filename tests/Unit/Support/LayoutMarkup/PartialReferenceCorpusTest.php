@@ -59,8 +59,9 @@ class PartialReferenceCorpusTest extends LayoutMarkupTestCase
         $unresolved = [];
         $jsonDespiteMarkup = [];
         $referencesPerRoot = [];
+        $filesPerRoot = $this->corpusMarkupFilesByRoot();
 
-        foreach ($this->corpusMarkupFilesByRoot() as $rootGlob => $rootFiles) {
+        foreach ($filesPerRoot as $rootGlob => $rootFiles) {
             $referencesPerRoot[$rootGlob] = 0;
 
             foreach ($rootFiles as $file) {
@@ -92,9 +93,17 @@ class PartialReferenceCorpusTest extends LayoutMarkupTestCase
             }
         }
 
-        // 하한은 **루트별**이다 (31차). 전역 하나면 한 루트가 통째로 관측 밖이 되어도 나머지가 채워
-        // 침묵한다 — `FragmentSourceCopyGuardTest` 가 29차에 템플릿 축을 그렇게 잃었던 형태다.
+        // 하한은 **루트별**이다. 전역 하나면 한 루트가 통째로 관측 밖이 되어도 나머지가 채워
+        // 침묵한다 — `FragmentSourceCopyGuardTest` 가 앞서 템플릿 축을 그렇게 잃었던 형태다.
+        // 템플릿 설정 화면 루트(`settings/`, #434)는 조각을 쓰지 않는 단일 화면이라 참조 하한 대신 파일 도달 하한을 건다.
         foreach ($referencesPerRoot as $rootGlob => $count) {
+            if ($this->isPartialFreeRoot($rootGlob)) {
+                $this->assertNotEmpty($filesPerRoot[$rootGlob],
+                    "이 루트에서 `.g7.html` 이 0건 도출됐다: {$rootGlob} — 순회가 그 축에 도달하지 못하는 상태다");
+
+                continue;
+            }
+
             $this->assertGreaterThan(0, $count,
                 "이 레이아웃 루트에서 조각 참조가 0건 도출됐다: {$rootGlob} — 순회가 그 축에 도달하지 "
                 .'못하는 상태인지, 참조 표기가 바뀌었는지 확인해야 한다');
@@ -108,6 +117,17 @@ class PartialReferenceCorpusTest extends LayoutMarkupTestCase
 
         $this->assertSame([], $jsonDespiteMarkup,
             '소스가 실재하는데 `.json` 이 선택된 참조가 있습니다 — 소스 SSoT 가 두 벌로 갈라진 상태입니다.');
+    }
+
+    /**
+     * 조각 참조가 없는 것이 정상인 레이아웃 루트인지 판정합니다 — 템플릿 설정 화면 루트(`settings/`, #434).
+     *
+     * @param  string  $rootGlob  루트 글롭
+     * @return bool 참조 하한을 걸지 않을 루트면 true
+     */
+    private function isPartialFreeRoot(string $rootGlob): bool
+    {
+        return str_ends_with(str_replace('\\', '/', $rootGlob), 'templates/_bundled/*/settings');
     }
 
     /**

@@ -58,6 +58,7 @@
 @source not "../../dist/css";
 @source not "../../dist/src";
 @source not "../../dist/index.d.ts";
+@source not "../../dist/settings";
 
 /*
  * Icon 크기 임의값.
@@ -74,6 +75,17 @@
  * 2rem(32px) · 4rem(64px) · 10px 는 S18.5 축 C 가 `w-8`·`w-16`·`w-2.5` 를 픽셀 그대로 옮기며 합류했다.
  */
 @source inline("text-[2rem] text-[2.5rem] text-[4rem] text-[10px]");
+
+/* DEPRECATED-RESPONSIVE-START — 폐지 예정(Deprecated): 다음 출시 이후 이 블록을 지운다.
+ * 번들 레이아웃·부품은 화면 폭 분기를 엔진 `responsive` 로 하고 Tailwind 반응형 접두를 쓰지 않는다. 이미 설치한 사이트가
+ * 편집기로 고쳐 저장한 레이아웃과 사이트 자체 확장이 그대로 보이도록, 출시본 빌드 CSS 에 있던 반응형 접두 클래스를 남긴다.
+ * 출시본 빌드 CSS 에 있던 일반 유틸리티 중 번들 레이아웃이 더 쓰지 않아 지금 빌드에서 빠진 34개도 같은 이유로 남긴다
+ *   (사이트가 직접 쓴 레이아웃과 CSS 의 호환, `utilities` 명령으로 뽑는다).
+ * 기준: 커밋 e6fff3e5b3(공개 출시본)의 빌드 CSS, 727개. 손으로 고치지 않는다 — 다시 만들 때:
+ *   node scripts/extension-css/deprecated-responsive-classes.mjs inject
+ */
+@source inline("2xl:block 2xl:col-span-1 2xl:col-span-12 2xl:col-span-2 2xl:col-span-3 2xl:col-span-4 2xl:col-span-6 2xl:flex 2xl:gap-0 2xl:gap-12 2xl:gap-16 2xl:gap-4 2xl:gap-6 2xl:gap-8 2xl:grid-cols-1 2xl:grid-cols-12 2xl:grid-cols-2 2xl:grid-cols-3 2xl:grid-cols-4 2xl:grid-cols-5 2xl:grid-cols-6 2xl:hidden 2xl:max-w-2xl 2xl:max-w-3xl 2xl:max-w-4xl 2xl:max-w-5xl 2xl:max-w-6xl 2xl:max-w-7xl 2xl:max-w-full 2xl:max-w-lg 2xl:max-w-md 2xl:max-w-sm 2xl:max-w-xl 2xl:max-w-xs 2xl:p-0 2xl:p-12 2xl:p-16 2xl:p-4 2xl:p-6 2xl:p-8 2xl:px-0 2xl:px-12 2xl:px-16 2xl:px-4 2xl:px-6 2xl:px-8 2xl:py-0 2xl:py-12 2xl:py-16 2xl:py-4 2xl:py-6 2xl:py-8 2xl:text-2xl 2xl:text-3xl 2xl:text-4xl 2xl:text-5xl 2xl:text-base 2xl:text-lg 2xl:text-sm 2xl:text-xl 2xl:text-xs 2xl:w-1/2 2xl:w-1/3 2xl:w-1/4 2xl:w-2/3 2xl:w-3/4 2xl:w-auto 2xl:w-full lg:absolute lg:auto-cols-[calc(25%_-_12px)] lg:block lg:bottom-0 lg:col-span-1 lg:col-span-12 lg:col-span-2 lg:col-span-3 lg:col-span-4 lg:col-span-5 lg:col-span-6 lg:col-span-7 lg:col-span-8 lg:col-span-full lg:fixed lg:flex lg:flex-col lg:flex-row lg:gap-0 lg:gap-1 lg:gap-10 lg:gap-12 lg:gap-16 lg:gap-2 lg:gap-3 lg:gap-4 lg:gap-5 lg:gap-6 lg:gap-8 lg:grid lg:grid-cols-1 lg:grid-cols-12 lg:grid-cols-2 lg:grid-cols-3 lg:grid-cols-4 lg:grid-cols-5 lg:grid-cols-6 lg:grid-cols-7 lg:grid-cols-8 lg:grid-rows-1 lg:grid-rows-2 lg:grid-rows-3 lg:grid-rows-4 lg:grid-rows-5 lg:grid-rows-6 lg:hidden lg:inline lg:inline-block lg:inline-flex lg:inset-0 lg:items-baseline lg:items-center lg:items-end lg:items-start lg:items-stretch lg:justify-around lg:justify-between lg:justify-center lg:justify-end lg:justify-evenly lg:justify-start lg:left-0 lg:m-0 lg:m-1 lg:m-2 lg:m-3 lg:m-4 lg:m-auto lg:max-w-2xl lg:max-w-3xl lg:max-w-4xl lg:max-w-5xl lg:max-w-6xl lg:max-w-7xl lg:max-w-full lg:max-w-lg lg:max-w-md lg:max-w-none lg:max-w-sm lg:max-w-xl lg:max-w-xs lg:mb-0 lg:mb-1 lg:mb-10 lg:mb-12 lg:mb-2 lg:mb-3 lg:mb-4 lg:mb-6 lg:mb-8 lg:ml-0 lg:ml-1 lg:ml-2 lg:ml-3 lg:ml-4 lg:ml-6 lg:ml-8 lg:ml-auto lg:mr-0 lg:mr-1 lg:mr-2 lg:mr-3 lg:mr-4 lg:mr-6 lg:mr-8 lg:mr-auto lg:mt-0 lg:mt-1 lg:mt-10 lg:mt-12 lg:mt-2 lg:mt-3 lg:mt-4 lg:mt-6 lg:mt-8 lg:mx-auto lg:my-auto lg:order-1 lg:order-2 lg:order-3 lg:order-4 lg:order-first lg:order-last lg:order-none lg:p-0 lg:p-1 lg:p-10 lg:p-12 lg:p-16 lg:p-2 lg:p-3 lg:p-4 lg:p-5 lg:p-6 lg:p-8 lg:px-0 lg:px-1 lg:px-10 lg:px-12 lg:px-16 lg:px-2 lg:px-3 lg:px-4 lg:px-5 lg:px-6 lg:px-8 lg:py-0 lg:py-1 lg:py-10 lg:py-12 lg:py-16 lg:py-2 lg:py-3 lg:py-4 lg:py-5 lg:py-6 lg:py-8 lg:relative lg:right-0 lg:row-span-1 lg:row-span-2 lg:row-span-3 lg:row-span-4 lg:row-span-full lg:space-x-0 lg:space-x-1 lg:space-x-10 lg:space-x-2 lg:space-x-3 lg:space-x-4 lg:space-x-6 lg:space-x-8 lg:space-y-0 lg:space-y-1 lg:space-y-10 lg:space-y-2 lg:space-y-3 lg:space-y-4 lg:space-y-6 lg:space-y-8 lg:static lg:sticky lg:text-2xl lg:text-3xl lg:text-4xl lg:text-5xl lg:text-base lg:text-lg lg:text-sm lg:text-xl lg:text-xs lg:top-0 lg:w-1/2 lg:w-1/3 lg:w-1/4 lg:w-1/5 lg:w-1/6 lg:w-2/3 lg:w-2/5 lg:w-3/4 lg:w-3/5 lg:w-4/5 lg:w-5/6 lg:w-auto lg:w-full md:absolute md:block md:bottom-0 md:col-span-1 md:col-span-12 md:col-span-2 md:col-span-3 md:col-span-4 md:col-span-5 md:col-span-6 md:col-span-full md:fixed md:flex md:flex-col md:flex-row md:gap-0 md:gap-1 md:gap-10 md:gap-12 md:gap-2 md:gap-3 md:gap-4 md:gap-5 md:gap-6 md:gap-8 md:grid md:grid-cols-1 md:grid-cols-12 md:grid-cols-2 md:grid-cols-3 md:grid-cols-4 md:grid-cols-5 md:grid-cols-6 md:grid-rows-1 md:grid-rows-2 md:grid-rows-3 md:grid-rows-4 md:grid-rows-5 md:grid-rows-6 md:h-20 md:hidden md:inline md:inline-block md:inline-flex md:inset-0 md:items-baseline md:items-center md:items-end md:items-start md:items-stretch md:justify-around md:justify-between md:justify-center md:justify-end md:justify-start md:left-0 md:m-0 md:m-1 md:m-2 md:m-3 md:m-4 md:m-auto md:max-w-2xl md:max-w-3xl md:max-w-4xl md:max-w-5xl md:max-w-6xl md:max-w-7xl md:max-w-full md:max-w-lg md:max-w-md md:max-w-none md:max-w-sm md:max-w-xl md:max-w-xs md:mb-0 md:mb-1 md:mb-2 md:mb-3 md:mb-4 md:mb-6 md:mb-8 md:ml-0 md:ml-1 md:ml-2 md:ml-3 md:ml-4 md:ml-6 md:ml-8 md:ml-auto md:mr-0 md:mr-1 md:mr-2 md:mr-3 md:mr-4 md:mr-6 md:mr-8 md:mr-auto md:mt-0 md:mt-1 md:mt-2 md:mt-3 md:mt-4 md:mt-6 md:mt-8 md:mx-auto md:my-auto md:order-1 md:order-2 md:order-3 md:order-first md:order-last md:order-none md:p-0 md:p-1 md:p-10 md:p-12 md:p-2 md:p-3 md:p-4 md:p-5 md:p-6 md:p-8 md:px-0 md:px-1 md:px-10 md:px-12 md:px-2 md:px-3 md:px-4 md:px-5 md:px-6 md:px-8 md:py-0 md:py-1 md:py-10 md:py-12 md:py-2 md:py-3 md:py-4 md:py-5 md:py-6 md:py-8 md:relative md:right-0 md:rounded-2xl md:row-span-1 md:row-span-2 md:row-span-3 md:row-span-4 md:row-span-full md:space-x-0 md:space-x-1 md:space-x-2 md:space-x-3 md:space-x-4 md:space-x-6 md:space-x-8 md:space-y-0 md:space-y-1 md:space-y-2 md:space-y-3 md:space-y-4 md:space-y-6 md:space-y-8 md:static md:sticky md:text-2xl md:text-3xl md:text-4xl md:text-base md:text-lg md:text-sm md:text-xl md:text-xs md:top-0 md:w-1/2 md:w-1/3 md:w-1/4 md:w-1/5 md:w-2/3 md:w-2/5 md:w-20 md:w-3/4 md:w-3/5 md:w-4/5 md:w-auto md:w-full sm:auto-cols-[calc(33.333%_-_11px)] sm:block sm:col-span-1 sm:col-span-12 sm:col-span-2 sm:col-span-3 sm:col-span-4 sm:col-span-6 sm:col-span-full sm:flex sm:flex-col sm:flex-row sm:flex-shrink-0 sm:gap-0 sm:gap-1 sm:gap-2 sm:gap-3 sm:gap-4 sm:gap-5 sm:gap-6 sm:gap-8 sm:grid-cols-1 sm:grid-cols-12 sm:grid-cols-2 sm:grid-cols-3 sm:grid-cols-4 sm:grid-cols-6 sm:hidden sm:inline sm:inline-block sm:inline-flex sm:items-center sm:items-end sm:items-start sm:justify-between sm:justify-center sm:justify-end sm:justify-start sm:line-clamp-1 sm:m-0 sm:m-1 sm:m-2 sm:m-3 sm:m-4 sm:m-auto sm:min-w-48 sm:ml-auto sm:mx-auto sm:my-auto sm:p-0 sm:p-1 sm:p-2 sm:p-3 sm:p-4 sm:p-5 sm:p-6 sm:p-8 sm:px-0 sm:px-1 sm:px-2 sm:px-3 sm:px-4 sm:px-5 sm:px-6 sm:px-8 sm:py-0 sm:py-1 sm:py-2 sm:py-3 sm:py-4 sm:py-5 sm:py-6 sm:py-8 sm:space-x-0 sm:space-x-1 sm:space-x-2 sm:space-x-3 sm:space-x-4 sm:space-y-0 sm:space-y-1 sm:space-y-2 sm:space-y-3 sm:space-y-4 sm:text-2xl sm:text-3xl sm:text-base sm:text-lg sm:text-sm sm:text-xl sm:text-xs sm:w-1/2 sm:w-1/3 sm:w-1/4 sm:w-2/3 sm:w-3/4 sm:w-64 sm:w-auto sm:w-full xl:block xl:col-span-1 xl:col-span-12 xl:col-span-2 xl:col-span-3 xl:col-span-4 xl:col-span-5 xl:col-span-6 xl:col-span-full xl:flex xl:flex-col xl:flex-row xl:gap-0 xl:gap-1 xl:gap-10 xl:gap-12 xl:gap-16 xl:gap-2 xl:gap-3 xl:gap-4 xl:gap-5 xl:gap-6 xl:gap-8 xl:grid-cols-1 xl:grid-cols-12 xl:grid-cols-2 xl:grid-cols-3 xl:grid-cols-4 xl:grid-cols-5 xl:grid-cols-6 xl:grid-rows-1 xl:grid-rows-2 xl:grid-rows-3 xl:grid-rows-4 xl:hidden xl:inline xl:inline-block xl:inline-flex xl:items-center xl:items-end xl:items-start xl:justify-between xl:justify-center xl:justify-end xl:justify-start xl:m-0 xl:m-auto xl:max-w-2xl xl:max-w-3xl xl:max-w-4xl xl:max-w-5xl xl:max-w-6xl xl:max-w-7xl xl:max-w-full xl:max-w-lg xl:max-w-md xl:max-w-none xl:max-w-sm xl:max-w-xl xl:max-w-xs xl:mx-auto xl:my-auto xl:p-0 xl:p-1 xl:p-10 xl:p-12 xl:p-16 xl:p-2 xl:p-3 xl:p-4 xl:p-5 xl:p-6 xl:p-8 xl:px-0 xl:px-1 xl:px-10 xl:px-12 xl:px-16 xl:px-2 xl:px-3 xl:px-4 xl:px-5 xl:px-6 xl:px-8 xl:py-0 xl:py-1 xl:py-10 xl:py-12 xl:py-16 xl:py-2 xl:py-3 xl:py-4 xl:py-5 xl:py-6 xl:py-8 xl:row-span-1 xl:row-span-2 xl:row-span-3 xl:row-span-full xl:space-x-0 xl:space-x-1 xl:space-x-2 xl:space-x-3 xl:space-x-4 xl:space-x-6 xl:space-x-8 xl:space-y-0 xl:space-y-1 xl:space-y-2 xl:space-y-3 xl:space-y-4 xl:space-y-6 xl:space-y-8 xl:text-2xl xl:text-3xl xl:text-4xl xl:text-5xl xl:text-6xl xl:text-base xl:text-lg xl:text-sm xl:text-xl xl:text-xs xl:w-1/2 xl:w-1/3 xl:w-1/4 xl:w-1/5 xl:w-2/3 xl:w-2/5 xl:w-3/4 xl:w-3/5 xl:w-4/5 xl:w-auto xl:w-full bg-[#03C75A] bg-[#1877F2] bg-[#FEE500] dark:bg-amber-500 dark:bg-amber-700 dark:bg-amber-800 dark:bg-amber-900 dark:bg-orange-900/40 dark:bg-teal-500 dark:bg-teal-900/40 dark:bg-teal-950 dark:border-amber-600 dark:border-orange-700 dark:border-teal-400 dark:divide-slate-700 dark:focus:ring-slate-500 dark:hover:bg-amber-600 dark:hover:bg-amber-800 dark:hover:bg-orange-900/50 dark:hover:bg-teal-600 dark:hover:text-slate-300 dark:hover:text-slate-800 dark:text-amber-100 dark:text-teal-300 dark:text-teal-400 focus:ring-slate-400 hover:-translate-y-0.5 hover:bg-amber-50 hover:bg-amber-700 hover:bg-amber-800 hover:bg-teal-700 hover:border-teal-400 min-h-12 text-[#000000]/85");
+/* DEPRECATED-RESPONSIVE-END */
 
 /*
  * 분류 칩 줄(ChipRows)의 칩 클래스 — 칩이 두 줄로도 넘칠 때 ChipRows 가 거는 변수를 읽어 여백·글자를 줄인다.
@@ -128,6 +140,17 @@
  * 다크 모드 지원
  */
 @layer base {
+  /* 화면 위에 붙은 사이트 헤더(sticky top-0)만큼 스크롤 기준선을 내린다 — 키보드 초점 이동·앵커 이동이 대상을 헤더 밑에 두지 않게
+     (WCAG 2.4.11, #855). 높이는 support/headerOverlay.ts 가 보이는 헤더를 재서 알린다(헤더가 없는 화면은 0). */
+  html {
+    scroll-padding-top: var(--g7-sticky-header-height, 0px);
+  }
+
+  /* 본문 HtmlContent 가 확대 가능으로 표시한 이미지(`data-g7-zoom`, role="button")는 확대 커서를 준다(#869 κ) */
+  [data-g7-zoom] {
+    cursor: zoom-in;
+  }
+
   /* 기본 다크 모드 전환 */
   :root {
     --background: 255 255 255;
@@ -235,6 +258,15 @@
     @apply flex items-center justify-between;
   }
 
+  /*
+   * Modal Footer Bar — Modal 의 `footer` prop 이 렌더되는 고정 하단 영역(관리자 템플릿과 같은 이름·모양).
+   * 폭과 무관한 바탕만 둔다 — 640px 이하 세로 쌓기는 Modal 이 렌더 폭(편집기 미리보기에서는 기기 폭)으로 더한다.
+   */
+  .modal-footer-bar {
+    @apply flex justify-end gap-3 px-6 py-4 border-t border-gray-200;
+    @apply dark:border-gray-700;
+  }
+
   /* 버튼 기본 스타일 */
   .btn {
     @apply inline-flex items-center justify-center font-medium rounded-lg transition-colors;
@@ -303,6 +335,151 @@
   }
 }
 
+/*
+ * 메뉴 겹침 — 화면 맨 위 배너(히어로섹션 등)가 `<html data-header-overlay="dark|light">` 로 알리면 본문 앞 전폭 자리를 헤더 높이만큼
+ * 당겨 배너를 메뉴 밑으로 넣고, 화면 맨 위에서만(`data-header-overlay-active`) 메뉴를 투명하게 해 글자를 배너 바탕에 맞춘다
+ * (어두운 바탕 → 흰 글자, 밝은 바탕 → 검은 글자). 높이와 맨 위 판정은 support/headerOverlay.ts 가 맡는다.
+ * 글자색을 바꾸지 않는 것: 자기 배경색이 있는 요소와 그 안(드롭다운·알림 목록·숫자 배지·현재 메뉴 알약·가입 단추), 검색 폼.
+ * 유틸리티 클래스가 아니라 레이아웃 정적 클래스(g7-site-header·g7-page-top)라 safelist 없이 여기 둔다.
+ */
+html[data-header-overlay] .g7-page-top {
+  margin-top: calc(-1 * var(--g7-header-height, 0px));
+}
+
+.g7-site-header {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+html[data-header-overlay-active] .g7-site-header,
+html[data-header-overlay-active] .g7-site-header nav {
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+
+html[data-header-overlay-active="dark"] .g7-site-header {
+  --g7-header-ink: #ffffff;
+  --g7-header-hover: rgba(255, 255, 255, 0.16);
+}
+
+html[data-header-overlay-active="light"] .g7-site-header {
+  --g7-header-ink: #111827;
+  --g7-header-hover: rgba(17, 24, 39, 0.08);
+}
+
+html[data-header-overlay-active] .g7-site-header :is(a, button, span, svg, i):not([class^="bg-"], [class*=" bg-"]):not(.g7-site-header :is([class^="bg-"], [class*=" bg-"]) *):not(form *) {
+  color: var(--g7-header-ink) !important;
+}
+
+html[data-header-overlay-active] .g7-site-header :is(a, button):not([class^="bg-"], [class*=" bg-"]):not(.g7-site-header :is([class^="bg-"], [class*=" bg-"]) *):not(form *):hover {
+  background-color: var(--g7-header-hover) !important;
+}
+
+html[data-header-overlay-active="dark"] .g7-site-header :is(a, button):not([class^="bg-"], [class*=" bg-"]):not(.g7-site-header :is([class^="bg-"], [class*=" bg-"]) *):not(form *) {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+/* 포인트 색 (#434) — 템플릿 설정 표준 키 `branding.accent` 를 코어가 `<html data-g7-accent>` 로 싣는다.
+ * 이 템플릿은 강조색으로 파랑(blue) 한 벌을 쓰므로(버튼·링크·안내 상자) 파랑 변수 묶음만 고른 색으로 바꾼다 —
+ * 레이아웃·컴포넌트의 `*-blue-*` 클래스는 그대로다(Tailwind v4 는 `bg-blue-600` 을 `var(--color-blue-600)` 로 굽는다).
+ * 층 없는 규칙이라 테마 층(`@layer theme`)의 기본값보다 우선한다. 파랑(기본)은 덮지 않는다. */
+[data-g7-accent="indigo"] {
+  --color-blue-50: var(--color-indigo-50);
+  --color-blue-100: var(--color-indigo-100);
+  --color-blue-200: var(--color-indigo-200);
+  --color-blue-300: var(--color-indigo-300);
+  --color-blue-400: var(--color-indigo-400);
+  --color-blue-500: var(--color-indigo-500);
+  --color-blue-600: var(--color-indigo-600);
+  --color-blue-700: var(--color-indigo-700);
+  --color-blue-800: var(--color-indigo-800);
+  --color-blue-900: var(--color-indigo-900);
+  --color-blue-950: var(--color-indigo-950);
+}
+
+[data-g7-accent="violet"] {
+  --color-blue-50: var(--color-violet-50);
+  --color-blue-100: var(--color-violet-100);
+  --color-blue-200: var(--color-violet-200);
+  --color-blue-300: var(--color-violet-300);
+  --color-blue-400: var(--color-violet-400);
+  --color-blue-500: var(--color-violet-500);
+  --color-blue-600: var(--color-violet-600);
+  --color-blue-700: var(--color-violet-700);
+  --color-blue-800: var(--color-violet-800);
+  --color-blue-900: var(--color-violet-900);
+  --color-blue-950: var(--color-violet-950);
+}
+
+[data-g7-accent="green"] {
+  --color-blue-50: var(--color-green-50);
+  --color-blue-100: var(--color-green-100);
+  --color-blue-200: var(--color-green-200);
+  --color-blue-300: var(--color-green-300);
+  --color-blue-400: var(--color-green-400);
+  --color-blue-500: var(--color-green-500);
+  --color-blue-600: var(--color-green-600);
+  --color-blue-700: var(--color-green-700);
+  --color-blue-800: var(--color-green-800);
+  --color-blue-900: var(--color-green-900);
+  --color-blue-950: var(--color-green-950);
+}
+
+[data-g7-accent="teal"] {
+  --color-blue-50: var(--color-teal-50);
+  --color-blue-100: var(--color-teal-100);
+  --color-blue-200: var(--color-teal-200);
+  --color-blue-300: var(--color-teal-300);
+  --color-blue-400: var(--color-teal-400);
+  --color-blue-500: var(--color-teal-500);
+  --color-blue-600: var(--color-teal-600);
+  --color-blue-700: var(--color-teal-700);
+  --color-blue-800: var(--color-teal-800);
+  --color-blue-900: var(--color-teal-900);
+  --color-blue-950: var(--color-teal-950);
+}
+
+[data-g7-accent="orange"] {
+  --color-blue-50: var(--color-orange-50);
+  --color-blue-100: var(--color-orange-100);
+  --color-blue-200: var(--color-orange-200);
+  --color-blue-300: var(--color-orange-300);
+  --color-blue-400: var(--color-orange-400);
+  --color-blue-500: var(--color-orange-500);
+  --color-blue-600: var(--color-orange-600);
+  --color-blue-700: var(--color-orange-700);
+  --color-blue-800: var(--color-orange-800);
+  --color-blue-900: var(--color-orange-900);
+  --color-blue-950: var(--color-orange-950);
+}
+
+[data-g7-accent="rose"] {
+  --color-blue-50: var(--color-rose-50);
+  --color-blue-100: var(--color-rose-100);
+  --color-blue-200: var(--color-rose-200);
+  --color-blue-300: var(--color-rose-300);
+  --color-blue-400: var(--color-rose-400);
+  --color-blue-500: var(--color-rose-500);
+  --color-blue-600: var(--color-rose-600);
+  --color-blue-700: var(--color-rose-700);
+  --color-blue-800: var(--color-rose-800);
+  --color-blue-900: var(--color-rose-900);
+  --color-blue-950: var(--color-rose-950);
+}
+
+[data-g7-accent="slate"] {
+  --color-blue-50: var(--color-slate-50);
+  --color-blue-100: var(--color-slate-100);
+  --color-blue-200: var(--color-slate-200);
+  --color-blue-300: var(--color-slate-300);
+  --color-blue-400: var(--color-slate-400);
+  --color-blue-500: var(--color-slate-500);
+  --color-blue-600: var(--color-slate-600);
+  --color-blue-700: var(--color-slate-700);
+  --color-blue-800: var(--color-slate-800);
+  --color-blue-900: var(--color-slate-900);
+  --color-blue-950: var(--color-slate-950);
+}
+
 /* 페이지 전환 로딩 막대(`PageTransitionIndicator`)의 띠 움직임. 종전에는 컴포넌트가 `<style>` 요소로 실었는데,
    엄격한 스타일 정책(`style-src 'self'`)에서 그 요소가 막혀 띠가 멈췄다. 컴포넌트의 `animate-[loading_…]`·
    `animation: loading …` 이 이 이름에 의존하므로 `@layer` 밖 최상위에 둔다(이름을 바꾸면 띠가 멈춘다). */
@@ -323,23 +500,23 @@
 /* 좁은 화면 하단 구매바(`MobileBuyBar`)·바텀시트(`BottomSheet`).
    바가 있는 동안 본문 끝(푸터 마지막 줄)이 바에 가리지 않게 본문 아래 여백을 바 높이만큼 더하고, 화면 아래 가운데에
    뜨는 알림은 바 위로 올린다. 시트가 열려 있는 동안에는 본문 스크롤을 잠그고 바를 숨긴다(시트 바닥의 단추가 대신한다).
-   두 컴포넌트가 `body` 에 남기는 표시(`g7-has-mobile-buybar`·`g7-bottom-sheet-open`)에 의존한다 — 이름을 바꾸면 함께 바꾼다. */
-@media (max-width: 767.98px) {
-  body.g7-has-mobile-buybar {
-    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
-  }
+   두 컴포넌트가 `body` 에 남기는 표시(`g7-has-mobile-buybar`·`g7-bottom-sheet-open`)에 의존한다 — 이름을 바꾸면 함께 바꾼다.
+   폭 미디어로 감싸지 않는다 — 두 컴포넌트가 엔진 폭(편집기 미리보기에서는 기기 폭)으로 좁은 화면(768px 미만)일 때만
+   표시를 남기므로, 표시가 있다는 것이 곧 좁은 화면에서 보인다는 뜻이다(css-no-width-media-semantic-class). */
+body.g7-has-mobile-buybar {
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+}
 
-  body.g7-has-mobile-buybar [data-toast-position='bottom-center'] {
-    bottom: calc(5rem + env(safe-area-inset-bottom));
-  }
+body.g7-has-mobile-buybar [data-toast-position='bottom-center'] {
+  bottom: calc(5rem + env(safe-area-inset-bottom));
+}
 
-  body.g7-bottom-sheet-open {
-    overflow: hidden;
-  }
+body.g7-bottom-sheet-open {
+  overflow: hidden;
+}
 
-  body.g7-bottom-sheet-open [data-mobile-buy-bar] {
-    display: none;
-  }
+body.g7-bottom-sheet-open [data-mobile-buy-bar] {
+  display: none;
 }
 
 /* 바텀시트가 아래에서 올라오는 움직임 — 컴포넌트의 `animate-[g7-sheet-up_…]` 이 이 이름에 의존한다. */

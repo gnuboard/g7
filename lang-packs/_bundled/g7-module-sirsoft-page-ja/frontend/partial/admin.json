@@ -138,6 +138,7 @@
       "view_page": "ページ表示",
       "publish_changed": "公開ステータスが変更されました。",
       "attachments": "添付ファイル ({{count}})",
+      "real_name_sub": "実名 {{name}}",
       "info": {
         "published_at": "公開日時",
         "created_at": "作成日",

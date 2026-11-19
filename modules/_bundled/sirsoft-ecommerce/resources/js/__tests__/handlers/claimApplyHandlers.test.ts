@@ -1,3 +1,4 @@
+// e2e:allow #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
 /**
  * claimApplyHandlers 테스트 (#599 S11)
  *
@@ -12,8 +13,8 @@
  *  - 재발송지는 주문 배송지와 필드 이름이 다르다 — 이름이 어긋나면 서버가 빈 값으로 받는다.
  *  - 제출 페이로드는 선택된 행만, 동일상품 교환에는 new_product_option_id 를 싣지 않는다.
  *
- * @scenario exchange_mode=change, preview_result=ok
- * @effects claim_apply_change_product_updates_only_target_row,
+ * 축 요약(마커 아님 — 평문): exchange_mode=change, preview_result=ok
+ * 효과 요약(마커 아님 — 평문): claim_apply_change_product_updates_only_target_row,
  *   claim_apply_estimate_applies_latest_generation_only,
  *   claim_apply_quantity_clamped_to_available,
  *   claim_apply_redelivery_maps_order_address_fields,
@@ -346,6 +347,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_reason_and_exchange_selection_is_scoped_to_its_row
      */
+    // @scenario exchange_mode=change, preview_result=ok
+    // @effects claim_apply_change_product_updates_only_target_row
     it('교환상품 변경 — 지정한 index 의 줄만 바뀐다 (D29)', () => {
         seedApplyState();
 
@@ -371,6 +374,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_reason_and_exchange_selection_is_scoped_to_its_row
      */
+    // @scenario exchange_mode=change, preview_result=ok
+    // @effects claim_apply_change_product_modal_clears_previous_row_selection
     it('교환상품 변경 — 다른 행의 모달을 열면 앞 행의 선택이 남지 않는다', async () => {
         // 회귀(2026-08-31 브라우저 실측): 초기화를 `{}` 로 쓰면 setLocal 의 깊은 병합에 먹혀
         // 무동작이 된다. 두 상품이 같은 옵션 값을 가지면 구매자가 **이 행에서 고르지 않은** 값이
@@ -478,6 +483,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_quantity_input_clamps_to_available
      */
+    // @scenario exchange_mode=same, preview_result=ok
+    // @effects claim_apply_quantity_clamped_to_available
     it('수량 — 잔여 수량을 넘겨 입력하면 잔여 수량으로 잘린다', () => {
         seedApplyState();
 
@@ -635,6 +642,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_preview_amounts_come_from_the_server
      */
+    // @scenario exchange_mode=same, preview_result=ok
+    // @effects claim_apply_estimate_applies_latest_generation_only
     it('미리보기 — 늦게 도착한 옛 응답은 반영하지 않는다 (세대 번호)', async () => {
         seedApplyState();
 
@@ -691,6 +700,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_submit_uses_the_type_specific_endpoint_and_payload
      */
+    // @scenario exchange_mode=same, preview_result=ok
+    // @effects claim_apply_items_payload_omits_option_for_same_exchange
     it('제출 페이로드 — 선택된 줄만 싣고 동일상품 교환에는 new_product_option_id 를 싣지 않는다', () => {
         const payload = buildClaimItemsPayload([
             { order_option_id: 310, quantity: 1, selected: true, exchange_mode: 'same', new_product_option_id: null, custom_options: null } as any,
@@ -709,6 +720,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_submit_uses_the_type_specific_endpoint_and_payload
      */
+    // @scenario exchange_mode=same, preview_result=ok
+    // @effects claim_apply_submit_dispatches_server_named_pg_handler
     it('제출 — 유형별 엔드포인트로 보내고 결제가 필요하면 응답이 지목한 PG 핸들러를 그대로 dispatch 한다', async () => {
         seedApplyState();
         mockLocalState.claimEstimate = { total_charge_amount: 9000, requires_payment: true };
@@ -736,7 +749,47 @@ describe('claimApplyHandlers', () => {
         expect(mockG7Core.dispatch).toHaveBeenCalledWith({
             handler: 'example-pg.requestPayment',
             params: { pgPaymentData: { order_number: 'CP20260823000002', amount: 9000 } },
+            // 실패 안내는 신청서가 플러그인 문구로 직접 한다 — 디스패처의 내부 문구 토스트는 막는다(#855).
+            errorHandling: { default: { handler: 'suppress' } },
         });
+    });
+
+    /**
+     * 접수 뒤 결제 플러그인이 결제창을 열기 전에 실패하면 문구를 토스트로 알리고 신청서 상세로 보낸다 (#855).
+     *
+     * @scenario apply_handler=submit
+     *
+     * @effects claim_pay_pg_entry_failure_releases_the_button
+     */
+    it('제출 — 결제창을 열기 전 PG 실패는 토스트로 알리고 신청서 상세로 이동한다', async () => {
+        seedApplyState();
+        mockLocalState.claimEstimate = { total_charge_amount: 9000, requires_payment: true };
+        mockG7Core.api.post.mockResolvedValue({
+            success: true,
+            message: '신청이 접수되었습니다.',
+            data: {
+                claim: { claim_number: 'EX20260823000003', claim_type: 'exchange' },
+                requires_pg_payment: true,
+                pg_payment_handler: 'example-pg.requestPayment',
+                pg_payment_data: { order_number: 'CP20260823000002', amount: 9000, claim_cancel_return_url: '/mypage/claims/EX20260823000003' },
+            },
+        });
+        mockG7Core.dispatch.mockImplementation(async (action: any) => (
+            action.handler === 'example-pg.requestPayment'
+                ? { success: false, error: { message: 'Failed to execute action', originalError: { message: '승인키를 받지 못했습니다.' } } }
+                : { success: true }
+        ));
+
+        // 화면은 신청서 상세 앞부분(detailPathBase)을 함께 넘긴다 — 성공 이동과 같은 주소 규칙을 쓴다.
+        await submitClaimHandler(
+            { handler: 'submitClaim', params: { claimApiBase: API_BASE, isGuest: false, successPath: '/mypage/claims', detailPathBase: '/mypage/claims' } },
+            {} as any
+        );
+
+        expect(mockG7Core.toast.error).toHaveBeenCalledWith('승인키를 받지 못했습니다.');
+        const navigateCall = mockG7Core.dispatch.mock.calls.find(([action]: any[]) => action.handler === 'navigate');
+        expect(navigateCall).toBeDefined();
+        expect(navigateCall![0].params.path).toBe('/mypage/claims/EX20260823000003');
     });
 
     /**
@@ -961,6 +1014,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_reason_and_exchange_selection_is_scoped_to_its_row
      */
+    // @scenario exchange_mode=same, preview_result=ok
+    // @effects claim_apply_redelivery_maps_order_address_fields
     it('재발송지 — 주문 배송지의 필드 이름을 재발송지 페이로드 이름으로 옮긴다', () => {
         mockDataSources = {
             order: {
@@ -1050,6 +1105,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_shows_base_and_secondary_currency_together
      */
+    // @scenario exchange_mode=same, preview_result=ok
+    // @effects claim_apply_shipping_fee_basis_shown_for_policy_mode
     it('금액 표기 — 배송비 산출 근거는 서버 그룹을 그대로 옮긴다 (화면이 곱셈하지 않는다)', () => {
         // §6-3: 합계만 보이면 구매자는 청구액이 어떻게 나왔는지 확인할 수 없다. 화면이 스스로
         // base_fee × multiplier 를 계산하면 훅이 금액을 덮어쓴 상점에서 합계와 근거가 갈린다.
@@ -1080,6 +1137,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_shows_base_and_secondary_currency_together
      */
+    // @scenario exchange_mode=same, preview_result=ok
+    // @effects claim_apply_shipping_fee_basis_hidden_for_fixed_mode
     it('금액 표기 — 고정액 모드는 근거로 분해하지 않는다 (D11)', () => {
         // 회귀(2026-08-31 브라우저 실측): 고정액은 운영자가 정책 화면에서 유형별 **총액**을
         // 선언한 값이라 서버도 배수를 곱하지 않는다. 그 값을 "편도 × N" 으로 적으면 선언액을
@@ -1107,6 +1166,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_preview_amounts_come_from_the_server
      */
+    // @scenario exchange_mode=same, preview_result=ok
+    // @effects claim_apply_secondary_currency_absorbs_all_server_shapes
     it('보조통화 — 미리보기가 주는 숫자 맵을 그 통화로 포맷한다 (기준통화 제외)', () => {
         // 회귀(2026-08-31 3차 계획 검증): 미리보기 응답의 다통화 값은 `{통화코드: 숫자}` 인데
         // (`toMultiCurrency` · `mc_fee`) 화면이 주문 리소스의 `{amount, formatted}` 를 가정하고
@@ -1149,6 +1210,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_shows_base_and_secondary_currency_together
      */
+    // @scenario exchange_mode=same, preview_result=ok
+    // @effects claim_apply_secondary_currency_absorbs_all_server_shapes
     it('보조통화 — 이미 포맷된 정산 문자열은 다시 포맷하지 않는다', () => {
         // 환불 예정액의 보조통화는 서버 정산(`refund_formatted.mc`)이 이미 포맷해 내려준다.
         // 같은 헬퍼가 세 형태(숫자 · 포맷 문자열 · {amount, formatted})를 모두 흡수해야
@@ -1169,6 +1232,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_shows_base_and_secondary_currency_together
      */
+    // @scenario exchange_mode=same, preview_result=ok
+    // @effects claim_apply_secondary_currency_absorbs_all_server_shapes
     it('보조통화 — `{amount, formatted}` 형태(주문 리소스)도 같은 헬퍼가 흡수한다', () => {
         expect(toSecondaryCurrencyList({ KRW: { amount: 9000, formatted: '9,000원' }, USD: { amount: 6.75, formatted: '$6.75' } }, 'KRW'))
             .toEqual([{ code: 'USD', formatted: '$6.75' }]);
@@ -1179,6 +1244,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_submit_uses_the_type_specific_endpoint_and_payload
      */
+    // @scenario exchange_mode=same, preview_result=ok
+    // @effects claim_apply_item_validation_error_maps_to_its_row
     it('제출 거절 — 항목별 오류를 제출 순번이 아니라 그 상품 줄에 붙인다 (P13)', () => {
         // 회귀(2026-08-31 3차 계획 검증): 서버 키 `items.{순번}.{필드}` 의 순번은 제출
         // 페이로드 순번(선택된 행만 실린다)이라 화면의 행 번호와 다르다. 이 대응을 풀지 않으면
@@ -1468,8 +1535,8 @@ describe('claimApplyHandlers', () => {
      * 잰다. 서버가 신청 전체를 거절하므로 화면이 만들 수 있게 두면 구매자는 사유까지 다 채운
      * 뒤에야 막힌다.
      *
-     * @scenario claim_type=refund, charge_method=none, refund_branch=mixed
-     * @effects claim_apply_refund_branch_cannot_be_mixed,
+     * 축 요약(마커 아님 — 평문): claim_type=refund, charge_method=none, refund_branch=mixed
+     * 효과 요약(마커 아님 — 평문): claim_apply_refund_branch_cannot_be_mixed,
      *   claim_apply_refund_branch_follows_selection,
      *   claim_apply_refund_branch_select_all_picks_one_branch,
      *   claim_apply_refund_bank_sent_only_when_filled,
@@ -1528,6 +1595,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_shows_base_and_secondary_currency_together
      */
+    // @scenario claim_type=refund, charge_method=none, refund_branch=mixed
+    // @effects claim_apply_refund_branch_cannot_be_mixed, claim_apply_refund_branch_follows_selection
     it('취소·환불 — 분기가 다른 상품은 함께 고를 수 없다 (서버가 신청 전체를 거절하는 조합)', () => {
         seedMixedRefundState();
 
@@ -1558,6 +1627,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_shows_base_and_secondary_currency_together
      */
+    // @scenario claim_type=refund, charge_method=none, refund_branch=mixed
+    // @effects claim_apply_refund_branch_follows_selection
     it('취소·환불 — 이미 고른 상품은 언제나 해제할 수 있다 (잘못 고른 조합에서 빠져나올 길)', () => {
         seedMixedRefundState();
 
@@ -1577,6 +1648,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_shows_base_and_secondary_currency_together
      */
+    // @scenario claim_type=refund, charge_method=none, refund_branch=mixed
+    // @effects claim_apply_refund_branch_select_all_picks_one_branch
     it('취소·환불 — 전체 선택은 먼저 만나는 분기만 고른다 (전건을 고른 척한 뒤 제출에서 거절하지 않는다)', () => {
         seedMixedRefundState();
 
@@ -1658,6 +1731,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_refund_account_is_validated_and_preserved
      */
+    // @scenario claim_type=refund, charge_method=none, refund_branch=auto
+    // @effects claim_apply_refund_bank_sent_only_when_filled
     it('환불계좌 — 세 필드가 채워졌을 때만 페이로드에 싣는다', async () => {
         seedMixedRefundState();
         toggleClaimItemHandler({ handler: 'toggleClaimItem', params: { index: 0, claimApiBase: API_BASE } }, {} as any);
@@ -1683,6 +1758,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_refund_account_is_validated_and_preserved
      */
+    // @scenario claim_type=refund, charge_method=none, refund_branch=auto
+    // @effects claim_apply_refund_bank_sent_only_when_filled
     it('환불계좌 — 아무것도 입력하지 않으면 키 자체를 보내지 않는다 (미입력과 일부 입력이 구분된다)', async () => {
         seedMixedRefundState();
         toggleClaimItemHandler({ handler: 'toggleClaimItem', params: { index: 0, claimApiBase: API_BASE } }, {} as any);
@@ -1797,6 +1874,8 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_refund_account_is_validated_and_preserved
      */
+    // @scenario claim_type=return, charge_method=pay_on_request, refund_branch=none
+    // @effects claim_apply_refund_account_never_prefills_masked_values
     it('환불계좌 — 주문 시 등록해 둔 계좌가 있으면 채워서 연다 (서버가 실어 준 원문)', () => {
         mockDataSources = {
             claimable: {
@@ -1954,9 +2033,9 @@ describe('claimApplyHandlers', () => {
  * 어긋나 "접수는 됐는데 간 화면에는 아무것도 없다" 가 나왔다. 목록으로 보내는 것도 같은 문제의
  * 절반만 푼다 — 구매자가 방금 낸 신청서를 스스로 찾아야 한다.
  *
- * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+ * 축 요약(마커 아님 — 평문): claim_type=refund, charge_method=none, refund_branch=auto
  *
- * @effects claim_apply_navigates_to_the_created_claim_detail
+ * 효과 요약(마커 아님 — 평문): claim_apply_navigates_to_the_created_claim_detail
  */
 describe('resolveClaimSuccessPath — 접수 후 이동 (F8)', () => {
     /**

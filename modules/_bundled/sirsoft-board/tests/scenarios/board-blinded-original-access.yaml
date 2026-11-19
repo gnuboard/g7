@@ -34,6 +34,8 @@ effects:
   - blinded_guest_authored_content_null_for_guest
   - blinded_post_preview_empty_in_list
   - blinded_comment_content_matrix
+  # #609 docblock 정리 때 사후 등재 — 블라인드 안내 박스는 status 만 보고 content 에 기대지 않는다(레이아웃 테스트 단언)
+  - blinded_notice_shown_regardless_of_content
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/PostBlindedAccessControlTest.php

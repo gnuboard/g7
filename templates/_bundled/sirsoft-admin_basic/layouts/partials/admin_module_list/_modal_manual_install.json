@@ -1,5 +1,5 @@
 {
-    "comment": "목록에 없는 모듈을 들이는 창 — 압축 파일 업로드와 GitHub 주소 두 갈래를 탭으로 가른다.\n  **탭 하나가 주소·전송 형식·요청 본문 셋을 함께 정한다**(아래 설치 버튼) — 갈래마다 API 가 다르다.\n  오류를 두 단으로 보여 준다. 위쪽 붉은 상자는 전체 메시지, 각 입력칸 아래는 그 필드 오류다.\n  탭을 옮기거나 값을 고치면 오류를 지운다 — 다른 갈래의 실패가 남아 있으면 이번 입력의 문제로 읽힌다.\n  설치 창(`_modal_install`)과 달리 의존·언어팩을 고르는 자리가 없다(무엇이 들었는지 아직 모른다).",
+    "comment": "목록에 없는 모듈을 들이는 창 — 압축 파일 업로드와 GitHub 주소 두 갈래를 탭으로 가른다.\n  **탭 하나가 주소·전송 형식·요청 본문 셋을 함께 정한다**(아래 설치 버튼) — 갈래마다 API 가 다르다.\n  오류를 두 단으로 보여 준다. 위쪽 붉은 상자는 전체 메시지, 각 입력칸 아래는 그 필드 오류다.\n  탭을 옮기거나 값을 고치면 오류를 지운다 — 다른 갈래의 실패가 남아 있으면 이번 입력의 문제로 읽힌다.\n  설치 창(`_modal_install`)과 달리 의존·언어팩을 고르는 자리가 없다(무엇이 들었는지 아직 모른다).\n  패키지 무결성(#916): 파일 탭에 서명 파일(.sig.json, 선택) 칸이 있다. 서버가 미서명(409)·서명 불일치(422)로 거절하면 공용 안내 조각이\n  위쪽에 사유를 그리고, 정책이 허용하면(`can_continue`) 설치 버튼이 「미서명으로 계속」으로 바뀌어 **같은 요청에 `allow_unsigned=1`**\n  만 더해 다시 보낸다(서버는 받은 파일을 보관하지 않는다). 입력을 바꾸면 거절 기록도 지워 다음 클릭은 처음 요청이 된다.",
     "meta": {
         "is_partial": true,
         "description": "모듈 수동 설치 모달",
@@ -10,7 +10,231 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.modules.modals.manual_install_title",
-        "size": "medium"
+        "size": "medium",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "취소 — 입력·오류·탭을 처음 상태로 되돌린다. 창을 다시 열었을 때 지난번 파일이\n               남아 있으면 실수로 그것을 설치하게 된다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "moduleUploadFile": null,
+                                    "moduleUploadFileName": null,
+                                    "moduleUploadSignature": null,
+                                    "moduleUploadSignatureName": null,
+                                    "moduleGithubUrl": null,
+                                    "moduleInstallError": null,
+                                    "moduleInstallErrors": null,
+                                    "moduleInstallTab": "file_upload",
+                                    "packageIntegrity": null,
+                                    "packageIntegrityMessage": null
+                                }
+                            },
+                            {
+                                "handler": "closeModal"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary",
+                    "disabled": "{{_global.isModuleManualInstalling}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "설치 실행 — 갈래에 따라 주소·전송 형식·본문이 함께 갈린다(파일은 multipart, 주소는 JSON).\n               성공 시 입력을 전부 비우고 목록·메뉴·확장 번들을 갱신한다.\n               실패는 토스트가 아니라 **창 안에 남긴다** — 입력을 고쳐 바로 다시 시도하는 자리라\n               창을 닫아 버리면 처음부터 다시 채워야 한다.\n               미서명 거절(409)을 정책이 허용한 뒤의 클릭은 「미서명으로 계속」이다 — 본문은 그대로 두고 `allow_unsigned=1` 만 더한다.\n               거절 기록은 여기서 미리 지우지 않는다(같은 클릭의 본문이 그 기록으로 `allow_unsigned` 를 정한다).",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isModuleManualInstalling": true,
+                                    "moduleInstallError": null,
+                                    "moduleInstallErrors": null
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "{{(!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? '/api/admin/modules/install-from-file' : '/api/admin/modules/install-from-github'}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "POST",
+                                    "contentType": "{{(!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? 'multipart/form-data' : 'application/json'}}",
+                                    "body": "{{(!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? { file: _global.moduleUploadFile, signature: _global.moduleUploadSignature ?? null, allow_unsigned: _global.packageIntegrity?.can_continue === true ? 1 : null, integrity_aware: 1 } : { github_url: _global.moduleGithubUrl, allow_unsigned: _global.packageIntegrity?.can_continue === true ? 1 : null, integrity_aware: 1 }}}"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isModuleManualInstalling": false,
+                                            "moduleUploadFile": null,
+                                            "moduleUploadFileName": null,
+                                            "moduleUploadSignature": null,
+                                            "moduleUploadSignatureName": null,
+                                            "moduleGithubUrl": null,
+                                            "moduleInstallError": null,
+                                            "moduleInstallErrors": null,
+                                            "moduleInstallTab": "file_upload",
+                                            "packageIntegrity": null,
+                                            "packageIntegrityMessage": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:admin.modules.install_success"
+                                        }
+                                    },
+                                    {
+                                        "comment": "설치된 패키지의 서명 결과(응답 integrity_status, #916) — 확인됐으면 서명자를, 서명 없이 들였으면 그 사실을 알린다",
+                                        "handler": "toast",
+                                        "if": "{{response?.data?.integrity_status === 'verified'}}",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:admin.package_integrity.result_verified|signer={{(response?.data?.integrity_key_id ?? '').split(':')[0]}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "if": "{{response?.data?.integrity_status === 'unsigned' || response?.data?.integrity_status === 'unverifiable'}}",
+                                        "params": {
+                                            "type": "warning",
+                                            "message": "$t:admin.package_integrity.result_unsigned"
+                                        }
+                                    },
+                                    {
+                                        "comment": "함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4 · #822). 함께 설치하다 실패한 항목은 상태 뒤에 사유(failure_reason)를 붙인다. 막지 않는 안내라 창을 열지 않는다.",
+                                        "handler": "toast",
+                                        "if": "{{(response?.data?.integration_notices ?? []).length !== 0}}",
+                                        "params": {
+                                            "type": "info",
+                                            "message": "$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + (n.failure_reason ? ': ' + n.failure_reason : '') + ')').join(', ')}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "modules"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "admin_menu"
+                                        }
+                                    },
+                                    {
+                                        "handler": "reloadExtensions"
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    },
+                                    {
+                                        "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
+                                            "lifecycleWarningsOpen": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "openModal",
+                                        "target": "lifecycle_warnings_modal",
+                                        "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
+                                    }
+                                ],
+                                "onError": {
+                                    "comment": "무결성 거절(표지로 가른다 — 같은 409 를 작업 잠금도 쓴다)은 위쪽 공용 안내 조각이 그리게 거절 내용을 담고, 붉은 띠는 비운다",
+                                    "handler": "conditions",
+                                    "conditions": [
+                                        {
+                                            "if": "{{!!(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}",
+                                            "then": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isModuleManualInstalling": false,
+                                                    "packageIntegrity": "{{error.errors?.integrity ?? null}}",
+                                                    "packageIntegrityMessage": "{{error.message}}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "then": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isModuleManualInstalling": false,
+                                                    "moduleInstallError": "{{error.message}}",
+                                                    "moduleInstallErrors": "{{error.errors}}",
+                                                    "packageIntegrity": null,
+                                                    "packageIntegrityMessage": null
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "{{_global.packageIntegrity?.can_continue === true ? 'flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed' : 'flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed'}}",
+                    "disabled": "{{_global.isModuleManualInstalling || ((!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? !_global.moduleUploadFile : !_global.moduleGithubUrl)}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{!_global.isModuleManualInstalling}}",
+                        "props": {
+                            "name": "download",
+                            "size": "sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isModuleManualInstalling}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "animate-spin",
+                            "size": "sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isModuleManualInstalling ? '$t:admin.modules.installing' : (_global.packageIntegrity?.can_continue === true ? '$t:admin.package_integrity.continue_unsigned' : '$t:admin.modules.actions.install')}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -112,6 +336,9 @@
             ]
         },
         {
+            "partial": "partials/_package_integrity_notice.json"
+        },
+        {
             "id": "module_install_tabs",
             "type": "composite",
             "name": "TabNavigation",
@@ -125,7 +352,9 @@
                         "target": "global",
                         "moduleInstallTab": "{{$args[0]}}",
                         "moduleInstallError": null,
-                        "moduleInstallErrors": null
+                        "moduleInstallErrors": null,
+                        "packageIntegrity": null,
+                        "packageIntegrityMessage": null
                     }
                 }
             ],
@@ -180,7 +409,9 @@
                                         "moduleUploadFile": "{{$event.target.value}}",
                                         "moduleUploadFileName": "{{$event.target.value?.name}}",
                                         "moduleInstallError": null,
-                                        "moduleInstallErrors": null
+                                        "moduleInstallErrors": null,
+                                        "packageIntegrity": null,
+                                        "packageIntegrityMessage": null
                                     }
                                 }
                             ],
@@ -199,6 +430,64 @@
                                 "className": "form-error-xs mt-1"
                             },
                             "text": "{{Array.isArray(_global.moduleInstallErrors?.file) ? _global.moduleInstallErrors.file[0] : _global.moduleInstallErrors?.file}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "module_signature_file_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:admin.package_integrity.signature_file_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "FileInput",
+                            "actions": [
+                                {
+                                    "comment": "서명 파일 선택(선택 사항) — 고르면 설치 요청에 `signature` 로 함께 실린다. 다시 고르는 것도 지난 거절을 지우는 신호다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "moduleUploadSignature": "{{$event.target.value}}",
+                                        "moduleUploadSignatureName": "{{$event.target.value?.name}}",
+                                        "moduleInstallError": null,
+                                        "moduleInstallErrors": null,
+                                        "packageIntegrity": null,
+                                        "packageIntegrityMessage": null
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "accept": ".json",
+                                "className": "{{_global.moduleInstallErrors?.signature ? 'w-full border-red-500 dark:border-red-500' : 'w-full'}}",
+                                "buttonText": "$t:common.browse",
+                                "placeholder": "$t:admin.package_integrity.no_signature_selected"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.moduleInstallErrors?.signature}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{Array.isArray(_global.moduleInstallErrors?.signature) ? _global.moduleInstallErrors.signature[0] : _global.moduleInstallErrors?.signature}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-tertiary"
+                            },
+                            "text": "$t:admin.package_integrity.signature_file_hint"
                         }
                     ]
                 },
@@ -294,7 +583,9 @@
                                         "target": "global",
                                         "moduleGithubUrl": "{{$event.target.value}}",
                                         "moduleInstallError": null,
-                                        "moduleInstallErrors": null
+                                        "moduleInstallErrors": null,
+                                        "packageIntegrity": null,
+                                        "packageIntegrityMessage": null
                                     }
                                 }
                             ],
@@ -378,190 +669,6 @@
                                     ]
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "취소 — 입력·오류·탭을 처음 상태로 되돌린다. 창을 다시 열었을 때 지난번 파일이\n               남아 있으면 실수로 그것을 설치하게 된다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "moduleUploadFile": null,
-                                        "moduleUploadFileName": null,
-                                        "moduleGithubUrl": null,
-                                        "moduleInstallError": null,
-                                        "moduleInstallErrors": null,
-                                        "moduleInstallTab": "file_upload"
-                                    }
-                                },
-                                {
-                                    "handler": "closeModal"
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary",
-                        "disabled": "{{_global.isModuleManualInstalling}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.cancel"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "설치 실행 — 갈래에 따라 주소·전송 형식·본문이 함께 갈린다(파일은 multipart, 주소는 JSON).\n               성공 시 입력을 전부 비우고 목록·메뉴·확장 번들을 갱신한다.\n               실패는 토스트가 아니라 **창 안에 남긴다** — 입력을 고쳐 바로 다시 시도하는 자리라\n               창을 닫아 버리면 처음부터 다시 채워야 한다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "isModuleManualInstalling": true,
-                                        "moduleInstallError": null,
-                                        "moduleInstallErrors": null
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "{{(!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? '/api/admin/modules/install-from-file' : '/api/admin/modules/install-from-github'}}",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "POST",
-                                        "contentType": "{{(!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? 'multipart/form-data' : 'application/json'}}",
-                                        "body": "{{(!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? { file: _global.moduleUploadFile } : { github_url: _global.moduleGithubUrl }}}"
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isModuleManualInstalling": false,
-                                                "moduleUploadFile": null,
-                                                "moduleUploadFileName": null,
-                                                "moduleGithubUrl": null,
-                                                "moduleInstallError": null,
-                                                "moduleInstallErrors": null,
-                                                "moduleInstallTab": "file_upload"
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:admin.modules.install_success"
-                                            }
-                                        },
-                                        {
-                                            "comment": "함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4 · #822). 함께 설치하다 실패한 항목은 상태 뒤에 사유(failure_reason)를 붙인다. 막지 않는 안내라 창을 열지 않는다.",
-                                            "handler": "toast",
-                                            "if": "{{(response?.data?.integration_notices ?? []).length !== 0}}",
-                                            "params": {
-                                                "type": "info",
-                                                "message": "$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + (n.failure_reason ? ': ' + n.failure_reason : '') + ')').join(', ')}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "modules"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "admin_menu"
-                                            }
-                                        },
-                                        {
-                                            "handler": "reloadExtensions"
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        },
-                                        {
-                                            "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
-                                                "lifecycleWarningsOpen": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "openModal",
-                                            "target": "lifecycle_warnings_modal",
-                                            "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
-                                        }
-                                    ],
-                                    "onError": {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "isModuleManualInstalling": false,
-                                            "moduleInstallError": "{{error.message}}",
-                                            "moduleInstallErrors": "{{error.errors}}"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{_global.isModuleManualInstalling || ((!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? !_global.moduleUploadFile : !_global.moduleGithubUrl)}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{!_global.isModuleManualInstalling}}",
-                            "props": {
-                                "name": "download",
-                                "size": "sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.isModuleManualInstalling}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "animate-spin",
-                                "size": "sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.isModuleManualInstalling ? '$t:admin.modules.installing' : '$t:admin.modules.actions.install'}}"
                         }
                     ]
                 }

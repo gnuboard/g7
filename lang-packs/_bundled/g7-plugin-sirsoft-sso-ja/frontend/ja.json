@@ -1,0 +1,574 @@
+{
+  "common": {
+    "company_account": "会社アカウント",
+    "retry": "再ログイン"
+  },
+  "errors": {
+    "generic": "会社アカウントでログインできませんでした。もう一度お試しください。",
+    "access_denied": "会社アカウントのログインがキャンセルされたか、IdP に拒否されました。",
+    "state_expired": "ログインリクエストの有効期限が切れました。もう一度お試しください。",
+    "bind_mismatch": "ログインを開始したブラウザーとは別のブラウザーから戻りました。最初からもう一度お試しください。",
+    "code_reused": "すでに使用されたログインリクエストです。もう一度お試しください。",
+    "token_error": "会社アカウントサーバーと通信できませんでした。しばらくしてからもう一度お試しください。",
+    "id_token_invalid": "会社アカウントサーバーの応答を確認できませんでした。管理者にお問い合わせください。",
+    "saml_invalid": "会社アカウントサーバーの応答を確認できませんでした。管理者にお問い合わせください。",
+    "saml_unsolicited": "このサイトが開始していないログイン応答です。",
+    "response_replayed": "すでに処理されたログイン応答です。",
+    "ldap_invalid_credentials": "ID またはパスワードが正しくありません。",
+    "ldap_unavailable": "社内アカウントサーバーに接続できません。しばらくしてからもう一度お試しください。",
+    "not_registered": "このサイトに登録されていないアカウントです。管理者にお問い合わせください。",
+    "email_in_use": "同じメールアドレスを使用している会員がすでに存在します。管理者にお問い合わせください。",
+    "already_linked": "この会社アカウントはすでに別の会員と連携されています。",
+    "deprovisioned": "会社によって無効化されたアカウントです。管理者にお問い合わせください。",
+    "idp_disabled": "現在、この会社アカウントではログインできません。",
+    "driver_unavailable": "サーバーでこのログイン方式を使用できません。管理者にお問い合わせください。",
+    "admin_required": "管理者アカウントのみログインできます。",
+    "pending_expired": "登録確認の時間が過ぎました。会社アカウントでもう一度ログインしてください。",
+    "link_expired": "アカウント連携の確認時間が過ぎたか、試行回数を超えました。会社アカウントでもう一度ログインしてください。",
+    "ticket_required": "ログインした状態でもう一度開始してください。",
+    "ticket_invalid": "リクエストの有効期限が切れているか、正しくありません。もう一度お試しください。",
+    "admin_target_manual_only": "管理者アカウントは最高管理者が直接連携します。",
+    "directory_unavailable": "社内アカウントサーバーに接続できません。"
+  },
+  "consent": {
+    "title": "{{idp}} で初めてログインします",
+    "intro": "このサイトを初めてご利用です。規約に同意すると、会社アカウントの情報で会員が作成され、すぐにログインします。",
+    "expired": "登録確認の時間が過ぎました。会社アカウントでもう一度ログインしてください。",
+    "name": "名前",
+    "email": "メールアドレス",
+    "agree_terms": "利用規約に同意します (必須)",
+    "agree_privacy": "プライバシーポリシーに同意します (必須)",
+    "submit": "同意して開始"
+  },
+  "link": {
+    "title": "既存アカウントと連携",
+    "intro": "{{email}} のアカウントがすでに存在します。ご本人のアカウントであることを確認すると、{{idp}} アカウントと連携してログインします。",
+    "expired": "アカウント連携の確認時間が過ぎたか、試行回数を超えました。会社アカウントでもう一度ログインしてください。",
+    "method_password": "パスワードで確認",
+    "method_email": "メールの認証番号で確認",
+    "password": "既存アカウントのパスワード",
+    "request_code": "認証番号を受け取る",
+    "resend_code": "認証番号を再度受け取る",
+    "code": "認証番号",
+    "code_sent": "認証番号をメールで送信しました。",
+    "submit": "連携してログイン"
+  },
+  "buttons": {
+    "company_account": "会社アカウントでログイン",
+    "login_with": "{{idp}} でログイン"
+  },
+  "editor": {
+    "data_source": {
+      "public_idps": "ログイン画面の会社アカウント一覧",
+      "my_accounts": "自分の会社アカウント連携",
+      "admin_idps": "SSO IdP 一覧",
+      "admin_idp": "SSO IdP 詳細",
+      "admin_policy": "SSO ポリシー",
+      "admin_accounts": "SSO 会員連携",
+      "admin_attempts": "SSO ログイン試行履歴",
+      "admin_scim_events": "SCIM 受信履歴"
+    },
+    "state": {
+      "consent_pending": "登録の同意 — 入力前",
+      "consent_expired": "登録の同意 — 期限切れ",
+      "link_password": "アカウント連携 — パスワード確認",
+      "link_email_code": "アカウント連携 — メールコード",
+      "link_expired": "アカウント連携 — 期限切れ",
+      "unlink_confirm": "連携解除 — 確認"
+    }
+  },
+  "mypage": {
+    "title": "連携済みの会社アカウント",
+    "empty": "連携済みの会社アカウントはありません。",
+    "enforced": "このアカウントは会社アカウントでのみログインします。連携を解除できません。",
+    "inactive": "会社によって無効化された連携です。",
+    "linked_at": "連携日",
+    "last_login_at": "最終ログイン",
+    "linkable": "別の会社アカウントを連携できます。",
+    "link_with": "{{idp}} と連携する",
+    "linked_toast": "会社アカウントを連携しました。",
+    "unlink": "連携解除",
+    "unlink_named": "{{idp}} の連携解除",
+    "unlink_title": "会社アカウント連携解除",
+    "unlink_confirm": "{{idp}} アカウントの連携を解除しますか?解除すると、その会社アカウントでこのサイトにログインできなくなります。",
+    "unlinked_toast": "会社アカウントの連携を解除しました。",
+    "unlink_block": {
+      "last_method": "パスワードがないため、この連携が唯一のログイン手段です。先にパスワードを設定してください。",
+      "unlink_enforced": "会社アカウントでのみログインするアカウントのため、解除できません。"
+    }
+  },
+  "admin": {
+    "common": {
+      "copy": "コピー",
+      "copy_named": "{{name}} をコピー",
+      "copied": "コピーしました。",
+      "copy_failed": "コピーできませんでした。直接選択してコピーしてください。",
+      "remove_row": "行を削除",
+      "search": "検索",
+      "real_name_sub": "実名 {{name}}"
+    },
+    "protocols": {
+      "oidc": "OpenID Connect",
+      "saml": "SAML 2.0",
+      "ldap": "LDAP/AD"
+    },
+    "attribute_keys": {
+      "department": "部署",
+      "title": "職級",
+      "employee_number": "社員番号"
+    },
+    "settings": {
+      "title": "SSO 連携設定",
+      "description": "会社の IdP(SAML 2.0、OpenID Connect、LDAP/AD)と、会社アカウントログインの強制、緊急アカウント、履歴の保存期間を設定します。",
+      "read_only": "設定を変更する権限がないため、読み取り専用で表示されています。",
+      "save_failed": "保存できませんでした。",
+      "tabs": {
+        "idps": "IdP",
+        "policy": "ポリシー",
+        "retention": "保存期間"
+      },
+      "idp": {
+        "list_hint": "登録済み IdP {{count}}個 (最大 {{max}}個)",
+        "add": "IdP 追加",
+        "add_title": "IdP 追加",
+        "create": "追加して設定を開く",
+        "created": "IdP を追加しました。接続情報を入力して接続テストを行ってから、使用に切り替えてください。",
+        "protocol_unavailable": "このサーバーでは使用できません",
+        "empty": "登録済みの IdP はありません。",
+        "col": {
+          "label": "名前",
+          "protocol": "プロトコル",
+          "status": "状態",
+          "domains": "所有ドメイン",
+          "last": "最終結果",
+          "accounts": "連携会員"
+        },
+        "enabled": "使用",
+        "disabled": "未使用",
+        "unavailable": "サーバーで使用不可",
+        "enforced": "パスワードログインをブロック",
+        "last_success": "最終成功",
+        "last_error": "最終エラー",
+        "edit": "編集",
+        "edit_named": "{{idp}} を編集",
+        "back": "IdP 一覧へ",
+        "saved": "IdP 設定を保存しました。",
+        "deleted": "IdP を削除しました。",
+        "delete_hint": "連携された会員がいない IdP のみ削除できます。",
+        "delete_confirm": "この IdP を削除しますか?元に戻せません。",
+        "unavailable_notice": "このサーバーではこのプロトコルを使用できないため、使用に切り替えられません(例: PHP LDAP 拡張がない)。設定は保存できます。",
+        "tabs": {
+          "basic": "基本",
+          "connection": "接続情報",
+          "accounts": "アカウントと連携",
+          "attributes": "属性",
+          "roles": "ロールマッピング",
+          "security": "セキュリティ",
+          "provisioning": "プロビジョニング",
+          "diagnostics": "診断"
+        },
+        "fields": {
+          "protocol": "プロトコル",
+          "key": "キー",
+          "label": "表示名",
+          "enabled": "使用",
+          "sort_order": "順序",
+          "button_visible": "ログイン画面にボタンを表示",
+          "button_bg": "ボタン背景色",
+          "button_fg": "ボタン文字色",
+          "button_border": "ボタン枠線色",
+          "provisioning_mode": "初めて訪れた人",
+          "owned_domains": "所有ドメイン",
+          "enforce_owned_domains": "このドメインのパスワードログインをブロック",
+          "link_methods": "既存会員の連携方式",
+          "link_domain_auto": "所有ドメインで自動連携",
+          "link_verify": "本人確認後に連携",
+          "link_admin": "管理者による連携",
+          "require_consent": "初回ログイン時に規約への同意を得る",
+          "identity_policy": "本人認証の登録ポリシー",
+          "allow_local_password": "このサイトのパスワード作成を許可",
+          "attribute_field": "会員項目",
+          "attribute_source": "IdP 属性名",
+          "attribute_mode": "同期方式",
+          "role_sync_mode": "ロール同期方式",
+          "group_source": "グループの取得元",
+          "role_group": "IdP グループ",
+          "role_role": "ロール識別子",
+          "two_factor_mode": "G7 2段階認証",
+          "logout_mode": "ログアウト範囲",
+          "idp_initiated": "IdP から開始するログインを受け付ける",
+          "max_session_minutes": "セッション有効期間の上限(分)",
+          "scim": "SCIM を使用",
+          "scim_match": "SCIM 照合キー",
+          "periodic": "定期点検",
+          "periodic_minutes": "点検間隔(分)",
+          "on_login": "次回ログイン時に無効なアカウントをブロック",
+          "withdraw_after_days": "退職処理後の退会まで(日)",
+          "group_case_sensitive": "グループ名の大文字・小文字を区別",
+          "group_dn_cn": "DN の場合は CN のみ比較"
+        },
+        "hints": {
+          "key": "英小文字で始まる英小文字、数字、アンダースコア。ログインアドレスに使用され、後から変更できません。",
+          "enabled": "有効にすると、ログイン画面にボタンが表示され、この IdP でログインできます。接続情報が正しい場合のみ有効にできます。",
+          "button_visible": "無効にすると、ボタンなしでメールアドレスの先行入力と自動遷移でのみアクセスします。",
+          "provisioning_mode": "自動作成は、IdP が確認した初めて訪れた人を会員として作成します。事前登録は、管理者があらかじめ登録した会員のみアクセスできます。",
+          "owned_domains": "この会社が所有するメールドメイン。メールアドレスの先行入力、強制、自動連携はこのドメインで判定します。",
+          "enforce_owned_domains": "有効にすると、このドメインのメールアドレスはパスワードでログインできず、この IdP へ案内されます。有効にした時点で、その会員のパスワードログインのセッションは終了します。",
+          "link_domain_auto": "IdP から通知されたメールアドレスのドメインが所有ドメインで、そのメールアドレスの会員が1名のとき、すぐに連携します。管理者アカウントは自動連携しません。",
+          "link_verify": "同じメールアドレスの会員がいる場合、その会員のパスワードまたはメールの認証番号で確認してから連携します。",
+          "link_admin": "管理者が会員連携画面で直接連携するか、CSV でインポートします。",
+          "require_consent": "自動作成された会員から利用規約とプライバシーポリシーへの同意を得ます。無効にすると、会社が同意を得たものとみなし、記録のみ残します。",
+          "identity_policy": "適用しない場合、サイトの本人認証の登録ポリシーをこの IdP の自動作成には適用しません。",
+          "allow_local_password": "無効(既定)にすると、この IdP で連携された会員はこのサイトのパスワードを作成できません。強制対象の会員は、有効にしても作成できません。",
+          "attribute_map": "会員項目は name、nickname、mobile、phone、language、email または attr:キー(部署などの追加属性)。毎回ログイン時に上書きしてロック、上書き、初回のみ、取り込まない、のいずれかを選択します。",
+          "email_sync": "メールアドレスは、その IdP の所有ドメインのアドレスである場合のみ変更し、別の会員が使用しているアドレスの場合は変更せずに管理者へ通知します。",
+          "two_factor_mode": "IdP が多要素認証を通知した場合のみ省略(既定)、常に省略、常に G7 2段階認証、のいずれかを選択します。",
+          "logout_mode": "G7 のみログアウト、G7 の後に IdP もログアウト、IdP でログアウトすると G7 もログアウト(双方向)、のいずれかを選択します。",
+          "logout_unsupported": "このプロトコルは IdP ログアウトに対応していません。",
+          "max_session_minutes": "空欄にするとサイトの既定値に従います。この時間が過ぎると再ログインが必要です(推奨480分)。",
+          "scim": "有効にすると、IdP が SCIM 2.0 で会員を作成、変更、退職処理します。以下のアドレスとトークンを IdP に入力してください。",
+          "scim_match": "ログインの固有識別子と同じ値を選択してください。例: Entra ID は OIDC の oid と SCIM の externalId が同じです。",
+          "periodic_oidc": "保存したリフレッシュトークンで IdP に問い合わせ、無効であれば退職処理します。IdP で offline_access スコープを許可する必要があります。",
+          "periodic_saml": "同じ会社の LDAP/AD IdP を在籍照会ディレクトリに指定すると、そのディレクトリで点検します。",
+          "periodic_ldap": "ディレクトリでアカウントを検索し、無効または存在しない場合は退職処理します。",
+          "periodic_saml_no_directory": "接続情報で在籍照会ディレクトリを選択するまでは、SAML の定期点検を有効にできません。SCIM またはセッション有効期間の上限を使用してください。",
+          "on_login": "常にオンです — 退職処理(SCIM、定期チェック、管理者)で無効になった連携は、この IdP での次回ログイン時に常に拒否されます。",
+          "withdraw_after_days": "空欄にすると退会させません。管理者アカウントは退会させずに通知します。"
+        },
+        "options": {
+          "provisioning_mode": {
+            "preregistered": "事前登録された会員のみ",
+            "jit": "自動作成"
+          },
+          "identity_policy": {
+            "skip": "適用しない(既定)",
+            "apply": "サイトのポリシーを適用"
+          },
+          "attribute_mode": {
+            "sync_lock": "毎回ログイン時に上書き + 編集をロック",
+            "sync": "毎回ログイン時に上書き",
+            "first_only": "初回のみ",
+            "ignore": "取り込まない"
+          },
+          "role_sync_mode": {
+            "managed_only": "マッピングで付与したロールのみ回収",
+            "authoritative": "IdP グループがすべてのロールを決定",
+            "first_only": "初回のみ"
+          },
+          "group_source": {
+            "assertion": "ログイン応答",
+            "scim": "SCIM グループ",
+            "ldap": "ディレクトリの所属(memberOf)"
+          },
+          "two_factor_mode": {
+            "skip_if_mfa": "IdP が多要素認証を通知した場合のみ省略",
+            "always_skip": "常に省略",
+            "always": "常に G7 2段階認証"
+          },
+          "logout_mode": {
+            "local": "G7 のみ",
+            "rp": "G7 の後に IdP",
+            "both": "双方向"
+          }
+        },
+        "placeholders": {
+          "group": "例: 人事部"
+        },
+        "warnings": {
+          "domain_auto": "IdP がそのメールアドレスを実際に確認している場合のみ有効にしてください。誤って有効にすると、他人のアカウントと連携される可能性があります。",
+          "authoritative": "IdP グループにないロールは、管理者が直接付与したロールも回収されます(基本ロールは残ります)。"
+        },
+        "role_rules_locked": "この IdP には管理者アカウントが連携されているため、ロール同期方式とグループの取得元は最高管理者のみ変更できます。",
+        "super_only": "最高管理者のみ変更できます",
+        "add_attribute": "属性ルールを追加",
+        "add_role_rule": "ロールルールを追加",
+        "sp_info_title": "IdP コンソールに入力する値",
+        "sp_info_hint": "IdP 管理コンソールにこの値をそのまま貼り付けてください。",
+        "sp_keys": "SP キーを作成",
+        "sp_keys_confirm": "SP キーを新しく作成しますか?新しい SP メタデータを IdP に再登録する必要があります。",
+        "sp_keys_done": "SP キーを作成しました。新しい SP メタデータを IdP に再登録してください。",
+        "scim_token_issue": "SCIM トークン発行",
+        "scim_token_reissue": "SCIM トークンを再発行",
+        "scim_token_reissue_confirm": "再発行すると、現在のトークンはすぐに使用できなくなります。続行しますか?",
+        "scim_token_issued_at": "トークン発行",
+        "scim_token_none": "発行済みのトークンはありません。",
+        "scim_token_once": "このトークンは今回一度だけ表示されます。コピーして IdP に入力してください。",
+        "test": "接続テスト",
+        "browser_test": "ブラウザーでログインテスト",
+        "test_ok": "すべての点検に合格しました。",
+        "test_not_ok": "合格しなかった点検があります。",
+        "test_failed": "接続テストを実行できませんでした。",
+        "periodic_checked_at": "最終の定期点検",
+        "cert_expires_at": "IdP 証明書の有効期限",
+        "recent_attempts": "直近の試行10件",
+        "response_summary": {
+          "signed": "応答に署名あり",
+          "unsigned": "応答に署名なし",
+          "not_on_or_after": "有効期限",
+          "audiences": "対象"
+        },
+        "no_lookup_directory": "在籍照会ディレクトリなし"
+      },
+      "policy": {
+        "super_only_notice": "サイト全体の強制、ロール強制、緊急アカウントは最高管理者のみ変更できます。",
+        "deactivate_notice": "このプラグインを無効化または削除すると、ここで有効にした強制はすべて解除され、全会員のパスワードログインが再び可能になります。無効化する前に会員へお知らせください。",
+        "enforcement": "会社アカウントログインの強制",
+        "fields": {
+          "enforce_site": "サイト全体の強制",
+          "enforce_roles": "強制するロール",
+          "enforce_linked": "SSO 連携会員全員に強制",
+          "auto_redirect_idp": "自動遷移 IdP",
+          "session_max_minutes": "サイトセッション有効期間の上限(分)",
+          "discovery_enabled": "メールアドレスを先に入力"
+        },
+        "hints": {
+          "enforce_site": "有効にすると、緊急アカウント以外は誰もパスワードでログインできなくなり、セルフ会員登録も停止されます。使用中の IdP と緊急アカウントがある場合のみ有効にできます。",
+          "enforce_roles": "このロールを持つ会員はパスワードでログインできません。ロール識別子を入力してください。",
+          "enforce_linked": "会社アカウントと連携している会員はパスワードでログインできません。",
+          "auto_redirect_idp": "サイト全体の強制時に、ログイン画面からすぐにこの IdP へ送ります。アドレスに ?local=1 を付けると緊急アカウントのログイン画面が開きます。",
+          "session_max_minutes": "0 の場合は無効。IdP ごとに値がある場合は、どちらか小さい値を使用します(推奨480分)。",
+          "discovery_enabled": "ログイン画面でメールアドレスを入力すると、会社のドメインかどうかを判定して会社アカウントログインへ案内します。",
+          "emergency": "IdP の障害時に強制が有効でも、パスワードと2段階認証でアクセスできるアカウントです。1名以上必要です。"
+        },
+        "warnings": {
+          "enforce_site": "緊急アカウントがパスワードと2段階認証でログインできるか、先に確認してください。サーバーで sirsoft-sso:enforcement --disable により強制を解除できます。"
+        },
+        "no_auto_redirect": "自動遷移なし",
+        "emergency": "緊急アカウント",
+        "emergency_no_password": "パスワードがないため、緊急アカウントとして使用できません。",
+        "emergency_search_placeholder": "名前またはメールアドレスで会員を検索",
+        "add_emergency": "緊急アカウントに追加",
+        "remove_emergency": "{{name}} を緊急アカウントから外す",
+        "session": "セッションとアクセス",
+        "preview_impact": "影響のプレビュー",
+        "impact_users": "この設定を有効にすると、パスワードのみでログインしていた会員 {{count}}名がパスワードでログインできなくなります。",
+        "impact_sessions": "現在パスワードでログインしている {{count}}名がログアウトされます。",
+        "saved": "SSO ポリシーを保存しました。ログアウトされたパスワードセッション {{revoked}}個。",
+        "errors": {
+          "enforce_roles": "存在しないロールがあります。ロール識別子を確認してください。",
+          "super_only": "最高管理者のみ変更できる項目があります。",
+          "emergency_required": "緊急アカウントを1名以上指定する必要があります。",
+          "site_enforce_requires_idp": "サイト全体の強制を有効にするには、使用中の IdP が1つ以上必要です。"
+        }
+      },
+      "retention": {
+        "title": "履歴の保存期間",
+        "fields": {
+          "attempts_retention_days": "ログイン試行の保存期間(日)",
+          "scim_retention_days": "SCIM 受信履歴の保存期間(日)",
+          "session_retention_days": "終了したセッション記録の保存期間(日)",
+          "failure_alert": "IdP 連続失敗通知",
+          "failure_alert_count": "失敗回数",
+          "failure_alert_window_minutes": "基準時間(分)",
+          "cert_expiry_notice_days": "証明書の有効期限通知(何日前)",
+          "ttl": "待機時間",
+          "state_ttl_minutes": "ログインリクエスト(分)",
+          "pending_ttl_minutes": "同意・連携確認(分)"
+        },
+        "alerts": "通知基準",
+        "hints": {
+          "failure_alert": "1つの IdP のログイン失敗が基準時間内にこの回数に達すると、管理者に1日1回通知します。",
+          "cert_expiry_notice_days": "例: 30, 7",
+          "ttl": "IdP へ移動して戻ってくるまでの時間と、初回ログインの同意、既存アカウントの連携確認を待つ時間です。"
+        }
+      }
+    },
+    "accounts": {
+      "title": "会員連携",
+      "description": "会員と会社アカウントの連携を確認、追加、解除します。",
+      "add": "連携を追加",
+      "add_title": "連携を追加",
+      "add_hint": "管理者、最高管理者のアカウントには最高管理者のみ連携できます。",
+      "add_submit": "連携",
+      "created": "連携を追加しました。",
+      "fields": {
+        "idp": "IdP",
+        "subject": "IdP 固有識別子",
+        "new_name": "名前",
+        "new_email": "メールアドレス"
+      },
+      "hints": {
+        "subject": "IdP がその従業員に付与する変わらない値(OIDC sub、SAML NameID、LDAP entryUUID など)。大文字・小文字を区別します。",
+        "new_user": "パスワードなしで作成して連携します。会社アカウントでログインします。"
+      },
+      "mode_existing": "既存会員に連携",
+      "mode_new": "新規会員として事前登録",
+      "user_search_placeholder": "名前またはメールアドレスで会員を検索",
+      "selected_user": "選択した会員: {{name}}",
+      "choose": "選択",
+      "select_idp": "IdP を選択",
+      "empty": "連携はありません。",
+      "col": {
+        "user": "会員",
+        "idp": "IdP",
+        "subject": "固有識別子",
+        "via": "連携方式",
+        "status": "状態",
+        "linked_at": "連携日",
+        "last_login_at": "最終ログイン",
+        "deprovisioned_at": "退職処理"
+      },
+      "status": {
+        "active": "有効",
+        "deprovisioned": "退職処理済み"
+      },
+      "via": {
+        "jit": "自動登録",
+        "domain": "所有ドメイン自動",
+        "verify": "本人確認",
+        "admin": "管理者",
+        "csv": "CSV",
+        "scim": "SCIM"
+      },
+      "deprovision_reason": {
+        "scim": "SCIM",
+        "periodic": "定期点検",
+        "login": "ログイン時に確認",
+        "admin": "管理者"
+      },
+      "filters": {
+        "all_idps": "すべての IdP",
+        "all_status": "すべての状態",
+        "all_via": "すべての方式",
+        "search": "会員名、ニックネーム、メールアドレス"
+      },
+      "unlink": "連携解除",
+      "unlink_named": "{{name}} の連携解除",
+      "unlink_confirm": "この連携を解除しますか?",
+      "unlinked": "連携を解除しました。",
+      "last_method_warning": "{{name}} 会員はパスワードがないため、この連携が最後のログイン手段です。解除するとその会員はログインできなくなります。",
+      "unlink_anyway": "それでも解除",
+      "csv": {
+        "open": "CSV インポート",
+        "title": "CSV インポート",
+        "hint": "1行目は email,name,idp_key,subject。会員がいない場合はパスワードなしで作成して連携します。管理者アカウントの行はスキップします。一度に1000行まで。",
+        "file": "CSV ファイル",
+        "text": "CSV の内容",
+        "preview": "プレビュー",
+        "execute": "インポート",
+        "execute_confirm": "プレビューの作成・連携の行を処理します。続行しますか?",
+        "done": "CSV インポートが完了しました。",
+        "failed": "CSV を処理できませんでした。",
+        "download": "結果をダウンロード",
+        "read_failed": "ファイルを読み込めませんでした。",
+        "too_large": "ファイルが大きすぎます(最大 1MB)。",
+        "col": {
+          "line": "行",
+          "email": "メールアドレス",
+          "idp": "IdP",
+          "outcome": "結果",
+          "reason": "理由"
+        },
+        "outcomes": {
+          "create": "作成",
+          "link": "連携",
+          "exists": "連携済み",
+          "conflict": "競合",
+          "admin_target_manual_only": "管理者アカウント(スキップ)",
+          "error": "エラー"
+        },
+        "reasons": {
+          "email_invalid": "メールアドレスの形式ではありません。",
+          "subject_invalid": "固有識別子が空か、長すぎます。",
+          "idp_not_found": "存在しない IdP キーです。",
+          "duplicate_in_file": "ファイル内で重複しています。",
+          "subject_linked_to_other": "この識別子は別の会員と連携されています。",
+          "user_linked_other_subject": "この会員はこの IdP の別の識別子と連携されています。",
+          "admin_target_manual_only": "管理者アカウントは最高管理者が直接連携します。",
+          "user_not_found": "会員が見つかりません。",
+          "already_linked": "すでに連携されています。",
+          "email_in_use": "同じメールアドレスの会員がいます。",
+          "email_required": "メールアドレスが必要です。"
+        }
+      }
+    },
+    "logs": {
+      "title": "SSO 履歴",
+      "description": "会社アカウントのログイン試行と SCIM 受信を確認します。",
+      "tabs": {
+        "attempts": "ログイン試行",
+        "scim": "SCIM 受信"
+      },
+      "empty": "記録はありません。",
+      "filters": {
+        "idp": "IdP",
+        "outcome": "結果",
+        "all_outcomes": "すべての結果",
+        "status": "応答",
+        "all_status": "すべての応答",
+        "from": "開始日",
+        "to": "終了日"
+      },
+      "status": {
+        "success": "成功",
+        "error": "エラー"
+      },
+      "col": {
+        "created_at": "日時",
+        "idp": "IdP",
+        "intent": "意図",
+        "guard": "経路",
+        "outcome": "結果",
+        "reason": "理由",
+        "ip": "IP",
+        "request": "リクエスト",
+        "target": "対象",
+        "status": "応答"
+      },
+      "intents": {
+        "login": "ログイン",
+        "link": "連携",
+        "reauth": "再確認",
+        "test": "テスト"
+      },
+      "guards": {
+        "user": "ユーザー",
+        "admin": "管理者"
+      },
+      "outcomes": {
+        "handoff": "ログイン引き継ぎ",
+        "pending": "同意待ち",
+        "link_pending": "連携確認待ち",
+        "linked": "連携",
+        "reauth": "再確認",
+        "test": "テスト",
+        "failed": "失敗",
+        "denied": "拒否"
+      }
+    },
+    "user_tab": {
+      "tab_label": "SSO",
+      "title": "会社アカウント",
+      "forbidden": "会員連携の閲覧権限がある場合のみ表示できます。",
+      "empty": "連携済みの会社アカウントはありません。",
+      "email_differs": "IdP のメールアドレスと異なります — IdP は {{email}} を通知しました。",
+      "attributes": "追加属性",
+      "attribute_key": "項目",
+      "attribute_value": "値",
+      "attribute_idp": "IdP",
+      "role_sources": "ロールの取得元",
+      "role_mapped": "マッピング",
+      "role_manual": "手動",
+      "manage_links": "会員連携画面で管理"
+    },
+    "user_list": {
+      "filter_label": "SSO IdP",
+      "filter_all": "すべて",
+      "filter_unlinked": "SSO 連携なし",
+      "department": "部署",
+      "title": "職級"
+    },
+    "idp": {
+      "ldap_extension_missing": "サーバーに PHP LDAP 拡張がありません。この IdP を有効にできません。",
+      "ldap_plaintext_warning": "暗号化なしの接続では、パスワードが平文で送受信されます。本番環境では保存できません。",
+      "ldap_test_account": "アカウントでテスト",
+      "ldap_test_account_hint": "入力したパスワードは保存しません。受け取った情報は一部のみ表示されます。",
+      "ldap_test_identifier": "テストするメールアドレスまたは社内 ID",
+      "ldap_test_password": "テストするアカウントのパスワード",
+      "saml_generate_sp_keys_confirm": "新しい SP キーを作成すると、IdP コンソールに新しい証明書を登録する必要があります。以前のキーは30日間併用されます。",
+      "saml_idp_initiated_warning": "リクエストを G7 が開始していないため、偽造のリスクがより高くなります。応答は一度だけ受け付け、有効時刻を厳密に確認します。",
+      "saml_lookup_directory_none": "在籍照会用ディレクトリを選択しない場合、SAML の定期点検は無効です。SCIM またはセッション有効期間の上限を使用してください。",
+      "saml_site_url_invalid": "サイトアドレスのホストにアンダースコア(_)などが含まれているため、SAML を使用できません。アンダースコアのないホストにサイトアドレスを変更してください。"
+    }
+  }
+}

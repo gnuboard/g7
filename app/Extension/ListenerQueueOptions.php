@@ -90,7 +90,7 @@ final class ListenerQueueOptions
      * 정규화된 옵션을 디스패치할 잡에 적용합니다.
      *
      * 순서: ① 연결·큐 해석(미등록이면 폴백 + 경고·카운트) ② delay ③ after_commit ④ tries·backoff·
-     * max_exceptions·fail_on_timeout ⑤ retry_until(디스패치 시점 기준) ⑥ timeout 클램프.
+     * max_exceptions·fail_on_timeout ⑤ retry_until(디스패치 시점 기준) ⑥ timeout 클램프(QueueWorkerRegistry::clampTimeout).
      *
      * @param  DispatchHookListenerJob  $job  디스패치할 잡
      * @param  array<string, mixed>  $options  normalize() 결과
@@ -158,51 +158,17 @@ final class ListenerQueueOptions
         }
 
         if (isset($options['timeout'])) {
-            $job->timeout = self::clampTimeout((int) $options['timeout'], $job, $registry, $listener, $hook);
+            // 클램프 규칙은 DB 스케줄 큐 실행과 공유한다 — QueueWorkerRegistry::clampTimeout()
+            $job->timeout = $registry->clampTimeout(
+                (int) $options['timeout'],
+                $job->connection,
+                $job->queue,
+                ['listener' => $listener, 'hook' => $hook],
+                '훅 리스너 timeout 이 큐 연결의 retry_after 이상이라 줄여서 보냅니다 — 실행 중인 잡을 다른 워커가 다시 집지 않게 하려면 긴 작업 연결(*-long)을 쓰세요',
+            );
         }
 
         return $job;
-    }
-
-    /**
-     * timeout 이 해석된 연결의 retry_after 이상이면 그 아래로 줄입니다.
-     *
-     * retry_after 개념이 없는 드라이버(sync 등)는 검사하지 않는다.
-     *
-     * @param  int  $timeout  선언한 timeout(초)
-     * @param  DispatchHookListenerJob  $job  잡 (해석된 연결·큐)
-     * @param  QueueWorkerRegistry  $registry  레지스트리
-     * @param  string  $listener  리스너 FQCN
-     * @param  string  $hook  훅 이름
-     * @return int 적용할 timeout(초)
-     */
-    private static function clampTimeout(int $timeout, DispatchHookListenerJob $job, QueueWorkerRegistry $registry, string $listener, string $hook): int
-    {
-        $retryAfter = $registry->retryAfter($job->connection);
-
-        if ($retryAfter === null || $timeout < $retryAfter) {
-            return $timeout;
-        }
-
-        $applied = max(1, $retryAfter - (int) config('queue.worker_registry.timeout_margin_seconds', 10));
-        $info = [
-            'listener' => $listener,
-            'hook' => $hook,
-            'connection' => $job->connection ?? $registry->defaultConnection(),
-            'queue' => $job->queue ?? 'default',
-            'requested' => $timeout,
-            'applied' => $applied,
-            'retry_after' => $retryAfter,
-        ];
-
-        $registry->recordTimeoutClamp($info);
-        ThrottledQueueWarning::warn(
-            "clamp|{$listener}|{$hook}|{$info['connection']}",
-            '훅 리스너 timeout 이 큐 연결의 retry_after 이상이라 줄여서 보냅니다 — 실행 중인 잡을 다른 워커가 다시 집지 않게 하려면 긴 작업 연결(*-long)을 쓰세요',
-            $info,
-        );
-
-        return $applied;
     }
 
     /**

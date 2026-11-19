@@ -4,6 +4,9 @@ return [
     'image' => [
         'not_found' => '이미지를 찾을 수 없습니다.',
     ],
+    'thumbnail' => [
+        'source_label' => '에디터 본문 이미지',
+    ],
     'upload' => [
         'required' => '업로드할 이미지 파일이 필요합니다.',
         'invalid_file' => '유효하지 않은 파일입니다.',

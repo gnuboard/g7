@@ -7,6 +7,7 @@ use App\Extension\ExtensionManager;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionUpdateJournal;
 use App\Extension\Helpers\FilePermissionHelper;
+use App\Extension\Integrity\PackageVerification;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\Vendor\VendorMode;
@@ -124,11 +125,12 @@ class UpdateReloadClassMissingFailsTest extends TestCase
         $this->app->instance(ExtensionManager::class, Mockery::mock(ExtensionManager::class, function (MockInterface $m) {
             $m->shouldIgnoreMissing();
             $m->shouldReceive('hasComposerDependenciesAt')->andReturn(false);
-            $m->shouldReceive('prepareZipSource')->andReturnUsing(function (string $zipPath, string $identifier): array {
+            // 7.2.0 부터 ZIP 업데이트는 서명 검증을 거치는 prepareVerifiedZipSource 로 들어간다
+            $m->shouldReceive('prepareVerifiedZipSource')->andReturnUsing(function (string $type, string $zipPath, string $identifier): array {
                 $temp = $this->tempDir('zip');
                 File::copyDirectory($this->newVersionSources[$identifier], $temp.'/extracted');
 
-                return ['temp_dir' => $temp, 'extracted_dir' => $temp.'/extracted', 'to_version' => '1.0.1', 'manifest' => []];
+                return ['temp_dir' => $temp, 'extracted_dir' => $temp.'/extracted', 'to_version' => '1.0.1', 'manifest' => [], 'verification' => PackageVerification::unsigned()];
             });
         }));
         $this->app->forgetInstance(ModuleManager::class);

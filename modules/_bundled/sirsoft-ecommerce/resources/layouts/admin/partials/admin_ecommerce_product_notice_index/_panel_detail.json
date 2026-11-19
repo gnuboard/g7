@@ -7,15 +7,22 @@
     "id": "detail_panel",
     "type": "basic",
     "name": "Div",
+    "responsive": {
+        "1024-": {
+            "props": {
+                "className": "ecommerce-admin-card ecommerce:col-span-2"
+            }
+        }
+    },
     "props": {
-        "className": "admin-card col-span-2-lg"
+        "className": "ecommerce-admin-card ecommerce:col-span-1"
     },
     "children": [
         {
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "row-stack"
+                "className": "ecommerce-row-stack"
             },
             "children": [
                 {
@@ -27,7 +34,7 @@
                         "icon": "file-alt",
                         "title": "$t:sirsoft-ecommerce.admin.product_notice_template.empty.title",
                         "description": "$t:sirsoft-ecommerce.admin.product_notice_template.empty.description",
-                        "className": "py-16"
+                        "className": "ecommerce:py-16"
                     }
                 },
                 {

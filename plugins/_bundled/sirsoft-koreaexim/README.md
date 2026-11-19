@@ -5,9 +5,9 @@
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.3-0066FF?style=flat-square" alt="version 1.0.3">
+  <img src="https://img.shields.io/badge/version-1.1.0-0066FF?style=flat-square" alt="version 1.1.0">
   <img src="https://img.shields.io/badge/type-%ED%94%8C%EB%9F%AC%EA%B7%B8%EC%9D%B8-555555?style=flat-square" alt="type 플러그인">
-  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.1-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.1">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.2.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.2.0">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
   <img src="https://img.shields.io/badge/requires-sirsoft--ecommerce-BF8700?style=flat-square" alt="requires sirsoft-ecommerce">
 </p>
@@ -56,9 +56,9 @@ flowchart LR
 <!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 항목 | 값 |
 |---|---|
-| 그누보드7 코어 | `>=7.1.1` |
+| 그누보드7 코어 | `>=7.2.0` |
 | PHP | `^8.2` |
-| 의존 모듈 | `sirsoft-ecommerce` `>=1.3.0` |
+| 의존 모듈 | `sirsoft-ecommerce` `>=1.4.0` |
 <!-- @generated:requirements END -->
 
 ## 설치
@@ -85,20 +85,19 @@ php artisan plugin:update sirsoft-koreaexim --force
 |---|---|---|
 | `auth_key` | 인증키 | - |
 | `auto_manage` | 환율 자동 관리 사용 | `false` |
-| `update_time` | 갱신 시각 (한국시간) | `11:30` |
 | `run_days` | 실행 요일 | `[1,2,3,4,5]` |
 | `retry_max` | 최대 재시도 | `3` |
 | `rate_type` | 환율 종류 | `deal_bas_r` |
 | `rate_decimal_places` | 환율 소수 자릿수 | `6` |
 | `lookback_days` | 직전 영업일 탐색 일수 | `7` |
-| `history_retention_days` | 이력 보존 일수 | `365` |
+| `history_retention_days` | 이력 보관 기간 (일) | `365` |
 | `notify_on_failure` | 실패 알림 | `true` |
 
 개발자용 상세(타입·검증·저장 위치)는 [설정 스키마](docs/settings.md#설정-스키마) 를 보세요.
 <!-- @generated:settings-summary END -->
 
 <!-- @intent START -->
-인증키를 먼저 저장하고 연결 테스트로 수신 여부를 확인합니다. 자동 관리를 켠 뒤 이커머스의 언어/통화 탭에서 제공자를 선택합니다. 갱신 시각은 한국시간이며 11:00 이후를 권장합니다. 재시도는 정기 실행 이후에만, 지정 요일과 최대 횟수 안에서 이루어집니다. 빈 응답이 11시 이후에 오면 비영업일로 보고 그날 재시도를 종료합니다.
+인증키를 먼저 저장하고 연결 테스트로 수신 여부를 확인합니다. 자동 관리를 켠 뒤 이커머스의 언어/통화 탭에서 제공자를 선택합니다. 갱신 시각(기본 한국시간 11:30)은 관리자 > 스케줄 관리의 「환율 정기 갱신」에서 바꾸며 11:00 이후를 권장합니다. 재시도는 정기 실행 이후에만, 지정 요일과 최대 횟수 안에서 이루어집니다. 빈 응답이 11시 이후에 오면 비영업일로 보고 그날 재시도를 종료합니다.
 <!-- @intent END -->
 
 ## 사용 방법
@@ -123,7 +122,7 @@ php artisan plugin:update sirsoft-koreaexim --force
 
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
-| `sirsoft-ecommerce` | 모듈 | `>=1.3.0` | ✅ |
+| `sirsoft-ecommerce` | 모듈 | `>=1.4.0` | ✅ |
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 

@@ -289,6 +289,7 @@
                         ],
                         "props": {
                             "position": "right",
+                            "className": "block max-w-full",
                             "items": [
                                 {
                                     "id": "view_member",
@@ -334,6 +335,18 @@
                                                     "className": "font-medium text-gray-900 dark:text-gray-100 truncate block text-sm"
                                                 },
                                                 "text": "{{row.recipient.name}}"
+                                            },
+                                            {
+                                                "comment": "실명 보조 줄. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 real_name 을 싣는다.",
+                                                "id": "notification_log_recipient_real_name_{{$rowNumber}}",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{!!row.recipient?.real_name}}",
+                                                "props": {
+                                                    "title": "$t:admin.common.real_name.label",
+                                                    "className": "text-tertiary truncate block"
+                                                },
+                                                "text": "{{row.recipient.real_name}}"
                                             },
                                             {
                                                 "type": "basic",
@@ -394,6 +407,7 @@
                         ],
                         "props": {
                             "position": "right",
+                            "className": "block max-w-full",
                             "items": [
                                 {
                                     "id": "view_member",
@@ -439,6 +453,17 @@
                                                     "className": "font-medium text-gray-900 dark:text-gray-100 truncate block text-sm"
                                                 },
                                                 "text": "{{row.sender.name}}"
+                                            },
+                                            {
+                                                "id": "notification_log_sender_real_name_{{$rowNumber}}",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{!!row.sender?.real_name}}",
+                                                "props": {
+                                                    "title": "$t:admin.common.real_name.label",
+                                                    "className": "text-tertiary truncate block"
+                                                },
+                                                "text": "{{row.sender.real_name}}"
                                             },
                                             {
                                                 "type": "basic",

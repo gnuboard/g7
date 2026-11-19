@@ -5,12 +5,11 @@
  * 검증: 카탈로그 기반 두께/변/색 버튼 렌더 + className 합성(border 토큰만 교체, 나머지 보존)
  * + 역해석(현재 className → 활성 두께/변/색) + 카탈로그 미공급 시 null(중립 폴백).
  *
- * @scenario cell_border_visual_picker
- * @effects cell_border_visual_picker_replaces_raw_classname_input, cell_border_compose_preserves_non_border_classes, cell_border_reverse_resolves_active_state, cell_border_library_neutral_catalog_supplied
+ * 소속 슬러그(마커 아님 — 평문): cell_border_visual_picker
+ * 효과 요약(마커 아님 — 평문, 시험별 표식으로 옮김): cell_border_visual_picker_replaces_raw_classname_input, cell_border_compose_preserves_non_border_classes, cell_border_reverse_resolves_active_state, cell_border_library_neutral_catalog_supplied
  * @since engine-v1.50.0
  */
 
-import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { CellBorderControl, type CellBorderCatalog } from '../../components/property-controls/CellBorderControl';
@@ -40,11 +39,19 @@ const catalog: CellBorderCatalog = {
 afterEach(() => cleanup());
 
 describe('CellBorderControl — 렌더/디그레이드', () => {
+  /**
+   * @scenario subject=cell_border_control
+   * @effects cell_border_no_catalog_renders_null, cell_border_library_neutral_catalog_supplied
+   */
   it('카탈로그 미공급 → null(중립 폴백)', () => {
     const { container } = render(<CellBorderControl className="" catalog={null} t={t} onChange={vi.fn()} />);
     expect(container.firstChild).toBeNull();
   });
 
+  /**
+   * @scenario subject=cell_border_control
+   * @effects cell_border_width_buttons_hide_side_color_on_none, cell_border_visual_picker_replaces_raw_classname_input, cell_border_library_neutral_catalog_supplied
+   */
   it('카탈로그 공급 → 두께 버튼 렌더, 두께 none 이면 변/색 미표시', () => {
     render(<CellBorderControl className="" catalog={catalog} t={t} onChange={vi.fn()} />);
     expect(screen.getByTestId('g7le-cell-border-width-thin')).toBeTruthy();
@@ -54,6 +61,10 @@ describe('CellBorderControl — 렌더/디그레이드', () => {
     expect(screen.queryByTestId('g7le-cell-border-colors')).toBeNull();
   });
 
+  /**
+   * @scenario subject=cell_border_control
+   * @effects cell_border_width_selected_shows_side_color
+   */
   it('두께 선택 시 변/색 노출', () => {
     render(<CellBorderControl className="border border-gray-300" catalog={catalog} t={t} onChange={vi.fn()} />);
     expect(screen.getByTestId('g7le-cell-border-sides')).toBeTruthy();
@@ -62,6 +73,10 @@ describe('CellBorderControl — 렌더/디그레이드', () => {
 });
 
 describe('CellBorderControl — className 합성(border 토큰만 교체)', () => {
+  /**
+   * @scenario subject=cell_border_control
+   * @effects cell_border_thin_adds_border_all_sides, cell_border_compose_preserves_non_border_classes
+   */
   it('두께 thin 선택 → 비어있으면 all 변 + border 추가', () => {
     const onChange = vi.fn();
     render(<CellBorderControl className="px-4 py-2" catalog={catalog} t={t} onChange={onChange} />);
@@ -72,6 +87,10 @@ describe('CellBorderControl — className 합성(border 토큰만 교체)', () =
     expect(next.split(/\s+/)).toContain('border');
   });
 
+  /**
+   * @scenario subject=cell_border_control
+   * @effects cell_border_medium_replaces_width_token, cell_border_compose_preserves_non_border_classes
+   */
   it('두께 medium → border-2, 기존 border 두께 토큰 교체', () => {
     const onChange = vi.fn();
     // 색은 인라인 SSoT 라 className 에서 제외 — 두께 변경은 width/side 토큰만, 색 토큰 미포함.
@@ -84,6 +103,10 @@ describe('CellBorderControl — className 합성(border 토큰만 교체)', () =
     expect(next.some((tk) => /gray|blue|red/.test(tk))).toBe(false); // 색 토큰은 className 에 없음
   });
 
+  /**
+   * @scenario subject=cell_border_control
+   * @effects cell_border_preset_color_calls_on_preset_token
+   */
   it('프리셋 색 클릭 → onPresetToken(토큰) 호출(부모가 활성 스킴 토큰으로 적용)', () => {
     const onPresetToken = vi.fn();
     const onChange = vi.fn();
@@ -92,6 +115,10 @@ describe('CellBorderControl — className 합성(border 토큰만 교체)', () =
     expect(onPresetToken).toHaveBeenCalledWith('border-blue-500');
   });
 
+  /**
+   * @scenario subject=cell_border_control
+   * @effects cell_border_none_removes_width_keeps_color, cell_border_compose_preserves_non_border_classes
+   */
   it('두께 none → 두께 토큰만 제거(색 토큰은 보존 — 4차: 색=토큰 SSoT 독립), 나머지 보존', () => {
     // 4차: 색은 className 토큰 SSoT(스킴별)라 두께 변경과 독립 — 두께 none 은 width/side 토큰만
     // 제거하고 색 토큰(border-gray-300)은 보존(두께 0이라 시각상 안 보이나 색 설정은 유지).
@@ -105,6 +132,10 @@ describe('CellBorderControl — className 합성(border 토큰만 교체)', () =
     expect(next).toContain('px-2');
   });
 
+  /**
+   * @scenario subject=cell_border_control
+   * @effects cell_border_free_color_calls_on_color_style
+   */
   it('자유 색 컬러 피커 → onColorStyle(HEX) 호출', () => {
     const onColorStyle = vi.fn();
     render(<CellBorderControl className="border border-gray-300" catalog={catalog} t={t} onChange={vi.fn()} colorStyle="" onColorStyle={onColorStyle} />);
@@ -113,6 +144,10 @@ describe('CellBorderControl — className 합성(border 토큰만 교체)', () =
     expect(onColorStyle).toHaveBeenCalledWith('#ff8800');
   });
 
+  /**
+   * @scenario subject=cell_border_control
+   * @effects cell_border_light_preset_and_free_color_active_apart
+   */
   it('라이트 탭: 프리셋 색 토큰(border-gray-300) 활성 + 자유 색(인라인)은 별도 활성', () => {
     // 4차: 프리셋=className 토큰, 자유=인라인 — 두 SSoT 가 분리되어 공존 가능.
     render(<CellBorderControl className="border border-gray-300" catalog={catalog} t={t} onChange={vi.fn()} colorStyle="#123456" onColorStyle={vi.fn()} />);
@@ -121,11 +156,19 @@ describe('CellBorderControl — className 합성(border 토큰만 교체)', () =
   });
 
   // ── colorScheme prop (단일 공용 탭은 부모 ColorSchemeTabs — 컨트롤은 표시만) ──
+  /**
+   * @scenario subject=cell_border_control
+   * @effects cell_border_no_internal_scheme_tabs, cell_color_scheme_tab_shared_across_border_and_fill
+   */
   it('스킴 탭은 컨트롤 내부에 없음(부모 단일 탭으로 이동)', () => {
     render(<CellBorderControl className="border border-gray-300" catalog={catalog} t={t} onChange={vi.fn()} colorScheme="light" onPresetToken={vi.fn()} onColorStyle={vi.fn()} />);
     expect(screen.queryByTestId('g7le-cell-border-scheme-tabs')).toBeNull();
   });
 
+  /**
+   * @scenario subject=cell_border_control
+   * @effects cell_border_dark_activates_dark_token_disables_picker
+   */
   it('colorScheme=dark: dark:border-* 토큰 활성, 자유 색 컬러피커 비활성', () => {
     render(<CellBorderControl className="border dark:border-blue-500" catalog={catalog} t={t} onChange={vi.fn()} colorScheme="dark" onPresetToken={vi.fn()} colorStyle="#123456" onColorStyle={vi.fn()} />);
     // 다크 색 토큰(blue-500) 활성.
@@ -134,11 +177,19 @@ describe('CellBorderControl — className 합성(border 토큰만 교체)', () =
     expect((screen.getByTestId('g7le-cell-border-color-picker') as HTMLInputElement).disabled).toBe(true);
   });
 
+  /**
+   * @scenario subject=cell_border_control
+   * @effects cell_border_dark_ignores_light_color_token
+   */
   it('colorScheme=dark: 라이트 색 토큰(border-gray-300)은 비활성(스킴 분리)', () => {
     render(<CellBorderControl className="border border-gray-300" catalog={catalog} t={t} onChange={vi.fn()} colorScheme="dark" onPresetToken={vi.fn()} onColorStyle={vi.fn()} />);
     expect((screen.getByTestId('g7le-cell-border-color-gray-300') as HTMLButtonElement).getAttribute('aria-pressed')).toBe('false');
   });
 
+  /**
+   * @scenario subject=cell_border_control
+   * @effects cell_border_side_top_sets_border_t
+   */
   it('변 토글 → 개별 변(top) 선택 시 border-t, all 해제', () => {
     const onChange = vi.fn();
     render(<CellBorderControl className="border border-gray-300" catalog={catalog} t={t} onChange={onChange} />);
@@ -150,6 +201,10 @@ describe('CellBorderControl — className 합성(border 토큰만 교체)', () =
 });
 
 describe('CellBorderControl — 역해석(현재 className → 활성 상태)', () => {
+  /**
+   * @scenario subject=cell_border_control
+   * @effects cell_border_reads_thin_all_blue_from_class, cell_border_reverse_resolves_active_state
+   */
   it('border border-blue-500 → 두께 thin·변 all·색 blue 활성', () => {
     render(<CellBorderControl className="border border-blue-500" catalog={catalog} t={t} onChange={vi.fn()} />);
     expect((screen.getByTestId('g7le-cell-border-width-thin') as HTMLButtonElement).getAttribute('aria-pressed')).toBe('true');
@@ -157,6 +212,10 @@ describe('CellBorderControl — 역해석(현재 className → 활성 상태)', 
     expect((screen.getByTestId('g7le-cell-border-color-blue-500') as HTMLButtonElement).getAttribute('aria-pressed')).toBe('true');
   });
 
+  /**
+   * @scenario subject=cell_border_control
+   * @effects cell_border_reads_medium_top_from_class, cell_border_reverse_resolves_active_state
+   */
   it('border-t-2 → 두께 medium·변 top 활성', () => {
     render(<CellBorderControl className="border-t-2 border-gray-300" catalog={catalog} t={t} onChange={vi.fn()} />);
     expect((screen.getByTestId('g7le-cell-border-width-medium') as HTMLButtonElement).getAttribute('aria-pressed')).toBe('true');

@@ -24,6 +24,18 @@ class ShippingPolicyListRequest extends FormRequest
     }
 
     /**
+     * 쪽 나눔 없는 전체 조회(`per_page=all`)를 요청했는지 반환합니다.
+     *
+     * 상품 등록·수정 화면의 배송정책 선택지가 쓴다. `all` 은 검증에서 빠지므로(exclude_if) 이 판정이 단일 기준이다.
+     *
+     * @return bool `per_page=all` 이면 true
+     */
+    public function wantsAll(): bool
+    {
+        return $this->input('per_page') === 'all';
+    }
+
+    /**
      * 검증 전 쿼리 파라미터를 정규화합니다.
      *
      * 쿼리스트링 값은 항상 문자열로 도착한다. `boolean` 규칙은 `"true"`/`"false"` 를 받지 않으므로
@@ -88,7 +100,8 @@ class ShippingPolicyListRequest extends FormRequest
             // 정렬 및 페이지네이션
             'sort_by' => ['nullable', 'in:id,name,is_active,sort_order,created_at,updated_at'],
             'sort_order' => ['nullable', 'in:asc,desc'],
-            'per_page' => ['nullable', 'integer', 'min:10', 'max:100'],
+            // 'all' 은 쪽 나눔 없는 전체 조회(상품 등록·수정 화면 선택지). 숫자는 종전 범위 그대로.
+            'per_page' => ['nullable', 'exclude_if:per_page,all', 'integer', 'min:10', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1'],
         ];
 

@@ -10,7 +10,38 @@
     "name": "Modal",
     "props": {
         "title": "$t:claim.detail.image_viewer_title",
-        "size": "lg"
+        "size": "lg",
+        "footer": [
+            {
+                "comment": "닫으면서 대상도 지운다 — 남기면 다음에 다른 사진으로 열었을 때 잠깐 앞 사진이 보인다.",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "closeModal",
+                                "target": "modal_claim_image_viewer"
+                            },
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "claimImageViewer": null
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                },
+                "text": "$t:claim.detail.image_viewer_close"
+            }
+        ]
     },
     "children": [
         {
@@ -50,44 +81,6 @@
                         "className": "mt-2 text-xs text-gray-500 dark:text-gray-400 text-center break-all"
                     },
                     "text": "{{_global.claimImageViewer?.name}}"
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "flex justify-end px-4 pb-4"
-            },
-            "children": [
-                {
-                    "comment": "닫으면서 대상도 지운다 — 남기면 다음에 다른 사진으로 열었을 때 잠깐 앞 사진이 보인다.",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "closeModal",
-                                    "target": "modal_claim_image_viewer"
-                                },
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "claimImageViewer": null
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                    },
-                    "text": "$t:claim.detail.image_viewer_close"
                 }
             ]
         }

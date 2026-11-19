@@ -9,12 +9,15 @@ description: |
   - 응답 서명은 이 문서 소유 해시만(관리자 증거 열람만 signAll), 공개 문서·봇 렌더는 정식 주소. 캐시는 아무나 볼 수 있을 때만 public.
   - 모든 파일 접근은 행에 기록된 디스크(`RowDiskStorage`), 설정에 없는 디스크는 기본 저장소로 물러난다.
   - 재생 가능 MIME 은 `ContentMediaKind` 한 곳에서 만들고(값 불변), 내용 판정은 `FileContentSniffer` 한 입구(첨부 판정 결과 불변).
+  - 이미지에 `?size=`·`?w=` 가 붙으면 게이트를 지난 뒤 업로드 이미지 썸네일 헬퍼로 낸다(늘 권한 원본 — private). 동영상·오디오·Range 는
+    원본 통로 그대로이고, 서명은 `size`·`w` 를 빼고 검증한다 (#869 와의 접합).
 
 axes:
-  case: [upload, filter_rejudge, sync, removal, present, serve, prune, target, register, context, row_disk, sniffer, playable_mime_parity]
+  case: [upload, filter_rejudge, sync, removal, present, serve, prune, target, register, context, row_disk, sniffer, playable_mime_parity, quoted_filename, thumbnail]
   extension: [module, plugin]
 
 exclusions:
+  - { case: quoted_filename, extension: module, reason: "원래 파일 이름 복원은 골격 업로드 한 경로 — 확장 종류와 무관해 플러그인으로 대표" }
   - { case: removal, extension: plugin, reason: "제거 실행은 어댑터 정책(handleRemoved)과 골격 영구 삭제 한 경로 — 확장 종류와 무관해 모듈로 대표" }
   - { case: prune, extension: plugin, reason: "정리 흐름은 어댑터 staleRows 와 골격 한 경로 — 확장 종류와 무관해 모듈로 대표" }
   - { case: target, extension: module, reason: "표준 계약 응답 도우미는 같은 코드 — 플러그인 주소(api/plugins)로 대표" }
@@ -22,6 +25,7 @@ exclusions:
   - { case: row_disk, extension: plugin, reason: "행 디스크 도우미는 StorageInterface 만 받는다 — 확장 종류 무관" }
   - { case: sniffer, extension: plugin, reason: "내용 판정 입구는 파일만 받는다 — 확장 종류 무관" }
   - { case: playable_mime_parity, extension: plugin, reason: "MIME 단일 출처는 코어 상수 대조 — 확장 종류 무관" }
+  - { case: thumbnail, extension: plugin, reason: "썸네일 분기는 골격 응답 한 경로(저장소 드라이버의 원본 정보만 다르다) — 확장 종류와 무관해 모듈로 대표" }
 
 effects:
   - hooks_fire_in_order
@@ -32,6 +36,7 @@ effects:
   - guest_owner_hash_kept
   - temp_key_required
   - upload_headroom_enforced
+  - content_media_original_filename_restored
   - filtered_file_rejudged
   - rejected_filter_stores_nothing
   - filtered_file_stored
@@ -82,6 +87,15 @@ effects:
   - playable_list_unchanged
   - playable_list_derived_from_kinds
   - image_kind_subset_of_raster
+  - image_size_serves_thumbnail
+  - thumbnail_is_gated_private
+  - thumbnail_bypass_marks_original
+  - no_thumbnail_param_unchanged
+  - non_image_ignores_thumbnail_param
+  - range_request_keeps_original
+  - thumbnail_denied_without_view_access
+  - signed_url_accepts_thumbnail_param
+  - signed_url_rejects_other_param
 
 test_files:
   - tests/Unit/Support/ContentMedia/AbstractContentMediaServiceTest.php

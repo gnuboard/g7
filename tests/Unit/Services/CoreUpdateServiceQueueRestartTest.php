@@ -38,7 +38,7 @@ class CoreUpdateServiceQueueRestartTest extends TestCase
     /**
      * 신호 전송 실패는 업데이트를 되돌리지 않는다 — 예외를 삼키고 계속한다.
      *
-     * @effects core_update_queue_restart_failure_does_not_abort_update
+     * @effects core_update_step11_signals_queue_restart, core_update_queue_restart_failure_does_not_abort_update
      *
      * @return void 반환값 없음
      */

@@ -1,8 +1,7 @@
 # Reaction Types API 레퍼런스 (sirsoft-board · 반응 유형·아이콘)
 
-> **소유**: sirsoft-board 모듈 · 이 문서는 **손으로 작성**했습니다. `api:docgen` 의 파괴적 재생성
-> 가드(`docs/backend/api-documentation.md`)를 따라 스캐폴딩 덮어쓰기를 하지 않았습니다.
-> 값은 개발 환경에서 실제 호출해 관측한 것입니다.
+> **소유**: sirsoft-board 모듈, **생성**: `php artisan api:docgen` (실측 기반). @generated 블록은 재생성 시 갱신되며,
+> 블록 밖에 사람이 쓴 설명(상태 표, 설계 이유, 보충 표)은 보존됩니다.
 
 ---
 
@@ -40,6 +39,78 @@
 ## 조회
 
 ### GET /api/modules/sirsoft-board/admin/reaction-types
+<!-- @generated:start:api.modules.sirsoft-board.admin.reaction-types.index -->
+- **라우트명**: `api.modules.sirsoft-board.admin.reaction-types.index`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\ReactionTypeController@index`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.settings.read|sirsoft-board.boards.read`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-board/admin/reaction-types HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| reaction_types | array | `[{"id":1,"code":"like","name":"추천","icon":"fas fa-thumbs-…` | 활성 반응 유형 목록 (`display_order` 순). 항목마다 `id`, `code`, `name`(현재 로케일 문자열), `icon`(원본 Font Awesome 클래스), `icon_name`(Icon 컴포넌트용 토큰), `icon_url`(업로드 아이콘 URL, 없으면 null) |
+
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "반응 유형 목록을 조회했습니다.",
+    "data": {
+        "reaction_types": [
+            {
+                "id": 1,
+                "code": "like",
+                "name": "추천",
+                "icon": "fas fa-thumbs-up",
+                "icon_name": "fa-thumbs-up",
+                "icon_url": null
+            },
+            {
+                "id": 2,
+                "code": "dislike",
+                "name": "비추천1",
+                "icon": "fas fa-thumbs-down",
+                "icon_name": "fa-thumbs-down",
+                "icon_url": null
+            }
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-board.settings.read\|sirsoft-board.boards.read`)이 하나도 없는 경우 (둘 중 하나면 됩니다) |
+| 500 | Internal Server Error | 조회 실패 (`반응 처리에 실패했습니다.`) |
+
+<!-- @generated:end -->
+
+**설명**
 
 - **인증**: `auth:sanctum` + `admin` · **권한**: `sirsoft-board.settings.read` 또는 `sirsoft-board.boards.read` (OR — 게시판 폼의 「사용 반응 유형」 선택지로도 쓰인다, 7.1.0)
 - **활성 유형만** `display_order` 순으로 돌려줍니다 (게시판 폼 체크박스 옵션 소스)
@@ -54,6 +125,8 @@
 | icon | string\|null | 원본 FA 클래스 (`fas fa-thumbs-up`) |
 | icon_name | string\|null | Icon 컴포넌트용 토큰 (`fa-thumbs-up`) |
 | icon_url | string\|null | 업로드 아이콘 URL. 없으면 null → 화면은 `icon_name` 으로 폴백 |
+
+`icon_name` 은 저장된 Font Awesome 클래스에서 스타일 접두사(`fas` 등)를 뗀 토큰입니다. Icon 컴포넌트가 접두사를 스스로 붙이므로 `icon` 을 그대로 넘기면 접두사가 겹칩니다. `name` 은 그 언어 값이 비어 있으면 사이트 기본 언어 값으로 대신합니다. 이 목록은 게시판 설정 화면의 「사용할 반응 유형」 체크박스 옵션 소스입니다.
 
 > 편집기가 쓰는 **전 유형(비활성 포함)** 행은 이 API 가 아니라 설정 응답
 > (`data.basic_defaults.reaction_types`)에 실립니다 — 아래를 보세요.
@@ -106,6 +179,94 @@
 ## 아이콘 업로드·삭제
 
 ### POST /api/modules/sirsoft-board/admin/reaction-types/icons
+<!-- @generated:start:api.modules.sirsoft-board.admin.reaction-types.icons.upload -->
+- **라우트명**: `api.modules.sirsoft-board.admin.reaction-types.icons.upload`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\ReactionTypeController@uploadIcon`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.settings.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| file | body | file | 예 | 이미지 `jpg`, `jpeg`, `png`, `gif`, `webp`, max 1024 (KB) | 업로드할 아이콘 이미지 (multipart). SVG 는 받지 않습니다 |
+| reaction_type_id | body | integer | 아니오 | 존재하는 유형 ID | 아이콘을 연결할 반응 유형 ID. 편집기에서 막 추가해 아직 저장하지 않은 행이면 비워 두고, 환경설정 저장 때 연결됩니다 |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-board/admin/reaction-types/icons HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: multipart/form-data; boundary=----G7ExampleBoundary
+
+------G7ExampleBoundary
+Content-Disposition: form-data; name="file"; filename="example.pdf"
+Content-Type: application/octet-stream
+
+(바이너리 파일 내용)
+------G7ExampleBoundary
+Content-Disposition: form-data; name="reaction_type_id"
+
+1
+------G7ExampleBoundary--
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드. 코어 FileUploader 컴포넌트 계약에 맞춰 파일 메타는 `data.data` 로 한 번 더 감싸집니다._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| data | object | `{"id":12,"hash":"ab12cd34ef56", ...}` | 업로드된 아이콘 첨부 메타 객체 (아래 하위 필드) |
+| data.id | integer | `12` | 첨부 ID. 환경설정 저장의 `reaction_types[].icon_attachment_id` 와 아이콘 삭제가 받는 값 |
+| data.hash | string | `ab12cd34ef56` | 첨부 해시 식별자 |
+| data.original_filename | string | `wow.png` | 업로드한 원본 파일명 |
+| data.mime_type | string | `image/png` | MIME 타입 |
+| data.size | integer | `2048` | 파일 크기 (바이트) |
+| data.url | string | `/api/attachment/ab12cd34ef56` | 표시용 URL (`/api/attachment/{hash}`, 사이트가 하위 폴더에 설치됐으면 그 접두사가 붙습니다) |
+| data.download_url | string | `/api/attachment/ab12cd34ef56` | `url` 과 같은 값 |
+| data.is_image | boolean | `true` | 언제나 `true` (이미지만 받습니다) |
+| data.order | integer | `1` | 언제나 `1` (아이콘은 유형당 1개) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 201
+```
+
+```json
+{
+    "success": true,
+    "message": "아이콘을 업로드했습니다.",
+    "data": {
+        "data": {
+            "id": 12,
+            "hash": "ab12cd34ef56",
+            "original_filename": "wow.png",
+            "mime_type": "image/png",
+            "size": 2048,
+            "url": "/api/attachment/ab12cd34ef56",
+            "download_url": "/api/attachment/ab12cd34ef56",
+            "is_image": true,
+            "order": 1
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-board.settings.update`)이 없는 경우 |
+| 422 | Unprocessable Entity | `file` 이 없거나 이미지가 아니거나 허용 확장자가 아니거나 1MB 를 넘는 경우, `reaction_type_id` 가 없는 유형인 경우 (`error.errors` 에 필드별 메시지) |
+| 500 | Internal Server Error | 업로드 실패 (`아이콘 업로드에 실패했습니다.`) |
+
+<!-- @generated:end -->
+
+**설명**
 
 - **권한**: `sirsoft-board.settings.update`
 
@@ -132,6 +293,56 @@
 ```
 
 ### DELETE /api/modules/sirsoft-board/admin/reaction-types/icons/{attachmentId}
+<!-- @generated:start:api.modules.sirsoft-board.admin.reaction-types.icons.destroy -->
+- **라우트명**: `api.modules.sirsoft-board.admin.reaction-types.icons.destroy`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\ReactionTypeController@destroyIcon`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.settings.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| attachmentId | path | integer | 예 | 숫자 | 삭제할 아이콘 첨부 ID (업로드 응답의 `data.data.id`) |
+
+**요청 예시**
+
+```http
+DELETE /api/modules/sirsoft-board/admin/reaction-types/icons/{attachmentId} HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만 — `data` 는 `null`)._
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "아이콘을 삭제했습니다.",
+    "data": null
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-board.settings.update`)이 없는 경우 |
+| 404 | Not Found | 첨부가 없거나, 이 모듈이 만든 아이콘 첨부(`reaction_type_icon` 컬렉션, `sirsoft-board` 소스)가 아닌 경우 (`아이콘을 찾을 수 없습니다.`) |
+| 500 | Internal Server Error | 삭제 실패 (`아이콘 삭제에 실패했습니다.`) |
+
+<!-- @generated:end -->
+
+**설명**
 
 - **권한**: `sirsoft-board.settings.update`
 - 이 모듈이 만든 아이콘 첨부(`collection = reaction_type_icon` + 모듈 소스)만 지웁니다.

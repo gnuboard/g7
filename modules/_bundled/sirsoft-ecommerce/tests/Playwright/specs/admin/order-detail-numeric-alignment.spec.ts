@@ -12,7 +12,9 @@
  *  - 절대 좌표/임계값(`toBeGreaterThan(N)`)은 레이아웃이 바뀌면 거짓 통과한다.
  *    같은 행 안에서 **열끼리 서로 같은가**(집합 크기 1)를 단언한다.
  *
- * @scenario order_detail_numeric_alignment, viewport=1280|390
+ * 축 요약(마커 아님 — 평문): order_detail_numeric_alignment 를 표(폭 1280)와 카드(폭 390)
+ * 두 폭에서 잰다. 조합 매핑은 테스트마다 단다.
+ *
  * @effects numeric_columns_right_aligned_consistently
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
@@ -40,7 +42,7 @@ async function firstOrderDetailUrl(page: Page): Promise<string> {
   await page.goto('/admin/ecommerce/orders');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
 
-  const orderNumber = page.locator('table tbody tr span.cursor-pointer').first();
+  const orderNumber = page.locator('table tbody tr a[href^="/admin/ecommerce/orders/"]').first();
   await orderNumber.waitFor({ state: 'visible', timeout: 30_000 });
   await orderNumber.click();
 

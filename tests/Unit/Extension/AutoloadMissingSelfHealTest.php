@@ -260,13 +260,11 @@ class AutoloadMissingSelfHealTest extends TestCase
 ', (string) file_get_contents(app_path('Providers/CoreServiceProvider.php')));
 
         // 코어 공급자의 등록 단계가 복구를 부른다
-        $this->assertSame(1, preg_match('/public function register\(\): void\s*\{(.*?)
-    \}/s', $provider, $register));
+        $this->assertSame(1, preg_match('/public function register\(\): void\s*\{(.*?)\n    \}/s', $provider, $register));
         $this->assertStringContainsString('$this->healMissingExtensionAutoloadBeforeExtensionProviders();', $register[1]);
 
         // 복구는 파일이 없을 때만, 시험 환경·설치 전에는 하지 않고, 모델의 DB 연결 해석기를 먼저 건다
-        $this->assertSame(1, preg_match('/private function healMissingExtensionAutoloadBeforeExtensionProviders\(\): void\s*\{(.*?)
-    \}/s', $provider, $method));
+        $this->assertSame(1, preg_match('/private function healMissingExtensionAutoloadBeforeExtensionProviders\(\): void\s*\{(.*?)\n    \}/s', $provider, $method));
         $this->assertStringContainsString("environment('testing')", $method[1]);
         $this->assertStringContainsString("file_exists(base_path('bootstrap/cache/autoload-extensions.php'))", $method[1]);
         $this->assertStringContainsString('isInstallCompleted(base_path())', $method[1]);

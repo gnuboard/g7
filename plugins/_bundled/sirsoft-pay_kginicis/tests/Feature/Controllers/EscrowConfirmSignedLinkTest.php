@@ -68,14 +68,15 @@ class EscrowConfirmSignedLinkTest extends PluginTestCase
      *
      * @param  User  $user  회원
      * @param  string  $orderNumber  주문번호
+     * @param  string  $mount  하위 폴더 마운트 접두사 (루트 설치면 빈 문자열)
      * @return string|null 구매결정 주소
      */
-    private function confirmUrlFromReceiptApi(User $user, string $orderNumber): ?string
+    private function confirmUrlFromReceiptApi(User $user, string $orderNumber, string $mount = ''): ?string
     {
         // 화면과 같이 API 토큰을 요청 헤더로만 싣는다 — 세션 로그인이 다음 요청(새 창)으로 이어지지 않게.
         $token = $user->createToken('s4-d19')->plainTextToken;
         $url = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/plugins/sirsoft-pay_kginicis/user/orders/'.$orderNumber.'/receipt')
+            ->getJson($mount.'/api/plugins/sirsoft-pay_kginicis/user/orders/'.$orderNumber.'/receipt')
             ->assertOk()
             ->json('data.escrow_confirm_url');
         // 테스트 앱은 요청 사이에 공유된다 — API 요청이 바꾼 기본 가드(sanctum)를 되돌려, 다음 요청을 새 창처럼 비로그인으로 만든다.
@@ -195,5 +196,44 @@ class EscrowConfirmSignedLinkTest extends PluginTestCase
         ['user' => $user, 'order_number' => $no] = $this->makeOrder(false);
 
         $this->assertNull($this->confirmUrlFromReceiptApi($user, $no));
+    }
+
+    /**
+     * 하위 폴더 설치에서 구매결정 주소가 마운트 접두사를 갖고, 그 주소 그대로 새 창이 열린다.
+     *
+     * 상대 서명 주소(`temporarySignedRoute(..., absolute: false)`)는 요청의 base URL 을 벗긴 경로에
+     * 서명되고, 검증(`hasValidSignature(absolute: false)`)도 base 를 뺀 `Request::path()` 로 다시
+     * 조립한다. 그래서 접두사는 서명된 값 밖에 붙이고, 붙여도 서명은 성립한다. 붙이지 않으면 [구매결정]
+     * 새 창이 사이트 밖(`/plugins/…`)을 연다. 요청 형태는 진입점 위임 정규화 뒤의 `SCRIPT_NAME` 과 같다.
+     *
+     * @scenario case=signed_link_opens
+     *
+     * @effects confirm_link_carries_the_mount_prefix_in_a_subfolder_install
+     *
+     * @return void 없음
+     */
+    public function test_signed_link_carries_the_mount_prefix_and_opens_in_a_subfolder_install(): void
+    {
+        ['user' => $user, 'order_number' => $no] = $this->makeOrder();
+
+        $this->withServerVariables([
+            'SCRIPT_FILENAME' => base_path('public/index.php'),
+            'SCRIPT_NAME' => '/g7/index.php',
+            'PHP_SELF' => '/g7/index.php',
+        ]);
+
+        $url = $this->confirmUrlFromReceiptApi($user, $no, '/g7');
+
+        $this->assertIsString($url);
+        $this->assertStringStartsWith('/g7'.self::BASE.'/'.$no.'?', $url);
+
+        // 완전한 주소로 연다 — 시험 하네스는 상대 주소를 직전 요청(base `/g7`)의 루트에 붙여
+        // `/g7/g7/…` 로 만든다. 브라우저는 받은 주소를 그대로 연다.
+        $html = (string) $this->withHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0)')
+            ->get('http://localhost'.$url)
+            ->assertOk()
+            ->getContent();
+
+        $this->assertMatchesRegularExpression('#/escrow-confirm/pc/return/[A-Za-z0-9]+#', $html);
     }
 }

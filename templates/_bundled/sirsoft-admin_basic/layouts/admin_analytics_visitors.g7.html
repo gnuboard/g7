@@ -72,10 +72,12 @@
     </action>
   </init>
   <slot name="content">
-    <div data-ref="analytics_visitors_content" class="admin-page-content-responsive-fluid">
+    <div data-ref="analytics_visitors_content" class="p-4 bg-gray-50 dark:bg-gray-900">
+      <responsive on="640-1023" class="p-6 bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="1024-" class="p-8 bg-gray-50 dark:bg-gray-900"/>
       <div data-ref="page_header" class="flex-between mb-4">
         <div>
-          <h1 class="page-title">$t:admin.analytics.visitors.title</h1>
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-white"><responsive on="640-" class="text-2xl font-semibold text-gray-900 dark:text-white"/>$t:admin.analytics.visitors.title</h1>
           <p class="text-label-subtle mt-1">$t:admin.analytics.visitors.description</p>
         </div>
       </div>
@@ -164,7 +166,7 @@
                 <!-- 「회원 정보 보기」의 목적지(/admin/users/{uuid})는 core.users.read 를 요구한다.
                   가드 없이 그리면 개인정보 권한만 가진 담당자가 눌러 「권한 없음」 새 창을 받는다 —
                   막다른 안내다(#682 S3 라운드 5). 나머지 안내 버튼 네 자리는 목적지 권한을 먼저 본다.
-                  표 셀은 `_computed` 를 받지 못한다(빈 객체) — 데이터소스 `current_user` 를 직접 읽는다(7.1.0 실측 E-D4). -->
+                  데이터소스 `current_user` 를 직접 읽는다 — 7.1.0 실측(E-D4) 때 표 셀이 `_computed` 를 받지 못해 이렇게 썼다(engine-v1.93.0 에서 셀도 부모 `_computed` 를 받게 고쳐졌고, 이 직접 읽기도 그대로 맞다). -->
                 <action-menu data-type="composite" data-if="{{!!row.user}}" position="right">
                   <prop name="items">
                     <item id="view_member" label="$t:admin.analytics.visitors.action.view_member" iconName="user" href="/admin/users/{{row.user.uuid}}" target="_blank" if="{{(current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.users.read')}}"/>
@@ -189,6 +191,8 @@
                     <icon name="fa-regular fa-user" class="text-gray-500 dark:text-gray-400 flex-shrink-0" aria-hidden="true"/>
                     <div class="min-w-0 flex-1">
                       <span class="font-medium text-gray-900 dark:text-gray-100 truncate block">{{row.user.name}}</span>
+                      <!-- 실명 보조 줄. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 real_name 을 싣는다. -->
+                      <span data-ref="visitors_member_real_name_{{$rowNumber}}" data-if="{{!!row.user?.real_name}}" title="$t:admin.common.real_name.label" class="text-tertiary truncate block">{{row.user.real_name}}</span>
                       <span data-if="{{!!row.user.email}}" class="text-tertiary truncate block">({{row.user.email}})</span>
                     </div>
                   </div>

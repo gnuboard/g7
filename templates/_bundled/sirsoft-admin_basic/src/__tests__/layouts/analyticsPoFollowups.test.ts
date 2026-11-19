@@ -114,7 +114,7 @@ describe('② 아이콘 유틸은 상자와 글리프를 함께 키운다', () =
   // @scenario screen=overview, state=normal, viewport=1440, locale=ko
   // @effects icon_size_utilities_set_the_glyph_size_not_just_the_box
   it('icon-* 여섯 단계가 모두 글자 크기를 정한다', () => {
-    const css = fs.readFileSync(path.join(TEMPLATE_DIR, 'src/styles/main.css'), 'utf8');
+    const css = fs.readFileSync(path.join(TEMPLATE_DIR, 'src/styles/semantic.css'), 'utf8');
 
     // 모집단을 CSS 에서 파생한다 — 단계를 더 만들면 그 단계도 자동으로 검사 대상이 된다.
     const blocks = [...css.matchAll(/\.(icon-(?:xs|sm|md|lg|xl|2xl))\s*\{([^}]*)\}/g)];

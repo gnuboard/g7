@@ -9,6 +9,7 @@ use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\View\Composers\TemplateComposer;
 use App\Support\AssetCssUrlRewriter;
 use App\Support\AssetUrl;
+use App\Support\CssLayerFlattener;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -45,13 +46,6 @@ class ExtensionBundleService
     private const BUNDLE_DISK = 'ext-bundles';
 
     /**
-     * 원자적 쓰기 임시 파일(`*.tmp.{pid}`)을 잔존물로 보는 나이 (초).
-     *
-     * pid 는 재사용되므로 "그 pid 가 살아 있는가" 로는 진행 중 여부를 판정할 수 없다.
-     */
-    private const TEMP_BUNDLE_STALE_SECONDS = 600;
-
-    /**
      * 캐시 미스 빌드를 (type, kind, version) 단위로 수렴시키는 잠금 키 접두사.
      */
     private const BUILD_LOCK_PREFIX = 'ext-bundles.build.';
@@ -65,6 +59,24 @@ class ExtensionBundleService
      * 다른 프로세스의 빌드를 기다리는 상한 (초). 초과하면 잠금 없이 각자 빌드한다.
      */
     private const BUILD_LOCK_WAIT_SECONDS = 5;
+
+    /**
+     * 서비스 주입
+     *
+     * @param  ModuleManager  $moduleManager  모듈 매니저
+     * @param  PluginManager  $pluginManager  플러그인 매니저
+     */
+    /** 원자 게시 임시 파일 이름의 중간 조각 (`{type}.{version}.{kind}.tmp.<hex>`). */
+    private const TEMP_INFIX = '.tmp.';
+
+    /**
+     * 임시 파일 접미사의 판정 패턴 — `writeAtomically` 의 생성 규칙(`bin2hex(random_bytes(8))`
+     * = 16진 16자, 폴백은 더 길다)과 같은 형태. 형제 `RootHtaccessUpdater::TEMP_SUFFIX_PATTERN` 과 같다.
+     */
+    private const TEMP_SUFFIX_PATTERN = '/^[0-9a-f]{16,}$/';
+
+    /** 게시 임시 파일을 잔해로 판정하기까지 요구하는 나이(초) — 진행 중인 게시 보호. */
+    private const TEMP_MIN_AGE_SECONDS = 300;
 
     /**
      * 서비스 주입
@@ -130,6 +142,8 @@ class ExtensionBundleService
                 'cssAbsPath' => $cssAbsPath,
                 'cssRelPath' => $cssRelPath,
                 'priority' => (int) ($loadingConfig['priority'] ?? 100),
+                // 확장 CSS 앞글자 선언 — 선언한(자기 CSS 를 자기 앞글자로 공급하는) 확장만 층 평탄화 대상이다
+                'cssNamespace' => CssLayerFlattener::declaredNamespace($extension->getAssets()),
             ];
         }
 
@@ -469,6 +483,14 @@ class ExtensionBundleService
                     )
                 );
 
+                // 확장 CSS 는 세 칸으로 실린다 — 의미 클래스 층(`g7-extension`)과 Tailwind 폴백 층(`properties`)만
+                // 남기고 나머지 층 래퍼·순서 선언을 벗겨 유틸리티가 층 없이 템플릿 뒤에 오게 한다.
+                // 앞글자(`assets.css.namespace`)를 선언한 확장만 대상이다 — 선언 전 확장 CSS 는 템플릿과 같은
+                // 이름의 유틸리티를 `@layer utilities` 로 재정의하기도 해서, 벗기면 템플릿 화면 전체를 이긴다.
+                if ($paths['cssNamespace'] ?? null) {
+                    $content = CssLayerFlattener::forExtension($content);
+                }
+
                 $segments[] = $this->processCssSourceMap($content, $isProduction);
             } catch (\Throwable $e) {
                 Log::warning('확장 CSS 번들 병합 중 오류, 해당 확장 skip', [
@@ -481,6 +503,27 @@ class ExtensionBundleService
         }
 
         return ['segments' => $segments, 'skipped' => $skipped];
+    }
+
+    /**
+     * 번들 종류(`js`|`css`)의 `Content-Type` 을 돌려줍니다 — 이 값의 SSoT.
+     *
+     * 종전에는 서빙 컨트롤러 둘이 네 자리에 리터럴로 들고 있었다. 파일이 있는 응답과
+     * 빈 응답이 서로 다른 자리에서 값을 읽으면 한쪽만 고쳤을 때 같은 주소가 응답에 따라
+     * 다른 유형을 공표한다.
+     *
+     * 확장 **개별 자산** 표(`ResolvesExtensionAssetType`)는 같은 `.js` 를
+     * `application/javascript` 로 준다. 두 철자는 브라우저에게 동등하지만
+     * (RFC 9239 는 `text/javascript` 를 권장 표기로 정하고 `application/javascript` 를
+     * 폐기 표기로 돌렸다), 어느 쪽으로 통일할지는 **공개 응답의 계약 변경**이라 이
+     * 라운드가 정하지 않는다. 여기서는 사본을 하나로 접는 것까지만 한다.
+     *
+     * @param  string  $kind  'js' | 'css'
+     * @return string MIME 타입
+     */
+    public function bundleMimeType(string $kind): string
+    {
+        return $kind === 'css' ? 'text/css' : 'text/javascript';
     }
 
     /**
@@ -619,6 +662,18 @@ class ExtensionBundleService
         foreach ($storage->files('', '') as $file) {
             $name = basename($file);
 
+            // 원자 게시 임시 파일 — `writeAtomically` 는 rename 실패 시에만 지우므로 put 과
+            // rename 사이에서 프로세스가 죽으면 남는다. 번들 이름 패턴만 보던 종전 정리기는 이
+            // 파일을 영원히 거르지 않았다. 진행 중인 게시를 지우지 않도록
+            // 나이 하한을 두고, mtime 을 읽지 못하면 보존한다(fail-closed).
+            if ($this->isStaleTempBundleFile($name, $storage)) {
+                if ($storage->delete('', $name)) {
+                    $deleted++;
+                }
+
+                continue;
+            }
+
             // 현재 version 파일과 .gitignore 는 보존
             if ($name === '.gitignore' || $this->matchesVersion($name, $currentVersion)) {
                 continue;
@@ -644,25 +699,39 @@ class ExtensionBundleService
     }
 
     /**
-     * 파일명이 **오래된** 원자적 쓰기 임시 파일인지 판정합니다.
+     * 게시 임시 파일(`{type}.{version}.{kind}.tmp.<hex>`)이 나이 하한을 지났는지 판정합니다.
      *
-     * 진행 중인 쓰기를 파괴하지 않도록 나이 가드를 둔다 — pid 는 재사용되므로 "그 pid 가
-     * 살아 있는가" 로는 판정할 수 없다.
+     * 이름 형태는 **생성 규칙과 같은 상수**(`TEMP_INFIX` + `TEMP_SUFFIX_PATTERN`)로 판정한다 —
+     * 생산자와 정리자가 각자 리터럴을 들면 한쪽만 바뀌었을 때 정리자의 모집단이 조용히 빈다.
+     * 실제로 생산자는 16진 접미사를 쓰는데 종전 판정식은 `\d+`(십진) 이라, 이 GC 는 자기가
+     * 만든 잔해를 하나도 걷지 못하고 있었다.
+     *
+     * 나이 하한은 진행 중인 쓰기를 파괴하지 않기 위한 것이다 — pid 는 재사용되므로
+     * 「그 pid 가 살아 있는가」로는 판정할 수 없다. 나이를 읽지 못하면 남긴다.
      *
      * @param  string  $name  파일명
      * @param  CoreStorageDriver  $storage  번들 디스크 스토리지
-     * @return bool 삭제 대상 여부
+     * @return bool 걷어도 되는 오래된 임시 파일이면 true
      */
     private function isStaleTempBundleFile(string $name, CoreStorageDriver $storage): bool
     {
-        if (! preg_match('/^(module|plugin)\.\d+\.(js|css)\.tmp\.\d+$/', $name)) {
+        $infixPos = strrpos($name, self::TEMP_INFIX);
+
+        if ($infixPos === false) {
+            return false;
+        }
+
+        if (! $this->isBundleFile(substr($name, 0, $infixPos))) {
+            return false;
+        }
+
+        if (preg_match(self::TEMP_SUFFIX_PATTERN, substr($name, $infixPos + strlen(self::TEMP_INFIX))) !== 1) {
             return false;
         }
 
         $mtime = @filemtime($storage->getBasePath('').'/'.$name);
 
-        // 나이를 읽지 못하면 남긴다 — 진행 중인 쓰기를 지우는 쪽이 더 나쁘다.
-        return $mtime !== false && (time() - $mtime) > self::TEMP_BUNDLE_STALE_SECONDS;
+        return $mtime !== false && $mtime < time() - self::TEMP_MIN_AGE_SECONDS;
     }
 
     /**
@@ -770,7 +839,23 @@ class ExtensionBundleService
         }
 
         // 프로덕션: 임시 파일에 쓴 뒤 rename 으로 원자적 게시(부분 파일 서빙 방지)
-        $tmpName = $relativeName.'.tmp.'.getmypid();
+        //
+        // 임시 이름은 고유하기만 하면 된다. 종전의 `getmypid()` 는 하드닝 프로필의 차단
+        // 대상이라 막힌 호스팅에서 Error(치명)가 되고, 그러면 번들 게시 경로가 무너져
+        // 확장 자산이 통째로 서빙되지 않는다.
+        // 폴백은 **차단 가능한 함수를 쓰지 않는다** — 종전 폴백 `uniqid()` 가 막히면 catch
+        // 블록 안에서 다시 `Error` 가 나 받을 곳이 없다. 고유한 이름이면 충분한 자리다.
+        try {
+            $tmpSuffix = bin2hex(random_bytes(8));
+        } catch (\Throwable) {
+            $seed = '';
+            for ($i = 0; $i < 8; $i++) {
+                $seed .= chr(mt_rand(0, 255));
+            }
+            $tmpSuffix = bin2hex($seed).dechex((int) (microtime(true) * 1000));
+        }
+
+        $tmpName = $relativeName.self::TEMP_INFIX.$tmpSuffix;
         $storage->put('', $tmpName, $content);
 
         $tmpPath = $basePath.'/'.$tmpName;

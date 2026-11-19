@@ -91,7 +91,7 @@ describe('VersionList', () => {
     it('selectedId와 일치하는 항목을 하이라이트해야 함', () => {
       render(<VersionList versions={mockVersions} selectedId={2} />);
 
-      const items = screen.getAllByRole('listitem');
+      const items = screen.getAllByRole('option');
       expect(items[1]).toHaveAttribute('aria-selected', 'true');
       expect(items[0]).toHaveAttribute('aria-selected', 'false');
       expect(items[2]).toHaveAttribute('aria-selected', 'false');
@@ -102,7 +102,7 @@ describe('VersionList', () => {
     it('selectedId와 일치하는 항목에 선택 스타일이 적용되어야 함', () => {
       render(<VersionList versions={mockVersions} selectedId={1} />);
 
-      const items = screen.getAllByRole('listitem');
+      const items = screen.getAllByRole('option');
       expect(items[0]).toHaveClass('border-blue-500');
       expect(items[0]).toHaveClass('bg-blue-50');
     });
@@ -120,7 +120,7 @@ describe('VersionList', () => {
         />
       );
 
-      const items = screen.getAllByRole('listitem');
+      const items = screen.getAllByRole('option');
       await user.click(items[0]);
       expect(onSelect).toHaveBeenCalledWith(1);
 
@@ -138,7 +138,7 @@ describe('VersionList', () => {
 
       render(<VersionList versions={mockVersions} />);
 
-      const items = screen.getAllByRole('listitem');
+      const items = screen.getAllByRole('option');
       await expect(user.click(items[0])).resolves.not.toThrow();
     });
   });
@@ -146,18 +146,18 @@ describe('VersionList', () => {
   describe('접근성', () => {
     // @scenario selection=none
     // @effects list_has_list_semantics
-    it('list 역할을 가진 ul 요소를 렌더링해야 함', () => {
+    it('listbox 역할을 가진 ul 요소를 렌더링해야 함(고르는 목록, #869 키보드 접근)', () => {
       render(<VersionList versions={mockVersions} />);
 
-      expect(screen.getByRole('list')).toBeInTheDocument();
+      expect(screen.getByRole('listbox')).toBeInTheDocument();
     });
 
     // @scenario selection=none
     // @effects list_has_list_semantics
-    it('각 항목이 listitem 역할을 가져야 함', () => {
+    it('각 항목이 option 역할을 가져야 함(Tab 으로 닿는 선택 항목)', () => {
       render(<VersionList versions={mockVersions} />);
 
-      const items = screen.getAllByRole('listitem');
+      const items = screen.getAllByRole('option');
       expect(items).toHaveLength(3);
     });
 
@@ -166,7 +166,7 @@ describe('VersionList', () => {
     it('각 항목이 aria-selected 속성을 가져야 함', () => {
       render(<VersionList versions={mockVersions} selectedId={1} />);
 
-      const items = screen.getAllByRole('listitem');
+      const items = screen.getAllByRole('option');
       items.forEach((item) => {
         expect(item).toHaveAttribute('aria-selected');
       });
@@ -191,7 +191,7 @@ describe('VersionList', () => {
     it('선택되지 않은 항목은 기본 테두리 색상을 가져야 함', () => {
       render(<VersionList versions={mockVersions} selectedId={1} />);
 
-      const items = screen.getAllByRole('listitem');
+      const items = screen.getAllByRole('option');
       expect(items[1]).toHaveClass('border-gray-300');
       expect(items[2]).toHaveClass('border-gray-300');
     });

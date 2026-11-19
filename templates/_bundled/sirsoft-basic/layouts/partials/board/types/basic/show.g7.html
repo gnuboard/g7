@@ -7,11 +7,11 @@
     <div data-if="{{post?.data?.abilities?.can_access_admin}}" class="flex items-center justify-end gap-2 mb-4">
       <a href="/admin/board/{{route.slug}}/post/{{post?.data?.id ?? route.id}}" target="_blank" rel="noopener noreferrer" title="$t:board.admin_links.posts" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
         <icon name="external-link" size="sm"/>
-        <span class="hidden sm:inline">$t:board.admin_links.posts</span>
+        <span class="hidden"><responsive on="640-" class="inline"/>$t:board.admin_links.posts</span>
       </a>
       <a href="/admin/boards/{{route.slug}}/edit" target="_blank" rel="noopener noreferrer" title="$t:board.admin_links.manage" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
         <icon name="settings" size="sm"/>
-        <span class="hidden sm:inline">$t:board.admin_links.manage</span>
+        <span class="hidden"><responsive on="640-" class="inline"/>$t:board.admin_links.manage</span>
       </a>
     </div>
     <!-- 게시글 본문 카드 -->
@@ -78,7 +78,7 @@
           </div>
           <!-- 오른쪽: 작성자 + 날짜 -->
           <div class="flex items-center gap-2">
-            <span class="text-gray-500 dark:text-gray-400">{{post?.data?.parent?.author?.name ?? ''}}</span>
+            <span class="text-gray-500 dark:text-gray-400">{{post?.data?.parent?.author?.name || $t('board.unknown_author')}}</span>
             <span class="text-gray-500 dark:text-gray-400" title="{{post?.data?.parent?.created_at ?? ''}}">{{post?.data?.parent?.created_at_formatted ?? ''}}</span>
           </div>
         </div>
@@ -99,10 +99,10 @@
           <span data-if="{{post?.data?.parent?.status === 'blinded'}}" class="italic text-orange-700 dark:text-orange-400">$t:board.blinded_post</span>
           <!-- 비밀글인 경우 -->
           <span data-if="{{post?.data?.parent?.status !== 'blinded' &amp;&amp; post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null}}" class="text-gray-500 dark:text-gray-400 italic">$t:board.posts.detail.reply_secret_content</span>
-          <!-- 일반 글인 경우 - 내용 -->
-          <extension-point name="html_content" data-ref="parent_post_html_content" data-if="{{post?.data?.parent?.status !== 'blinded' &amp;&amp; !(post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null)}}" content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentContentExpanded ? 'prose dark:prose-invert max-w-none' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}">
+          <!-- 일반 글인 경우 - 내용 (접힘 상태의 이미지·표 숨김은 !hidden — _reply_section 과 같은 이유) -->
+          <extension-point name="html_content" data-ref="parent_post_html_content" data-if="{{post?.data?.parent?.status !== 'blinded' &amp;&amp; !(post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null)}}" content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentContentExpanded ? 'prose dark:prose-invert max-w-none' : '[&amp;_img]:!hidden [&amp;_table]:!hidden'}}">
             <default>
-              <html-content data-type="composite" content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentContentExpanded ? 'prose dark:prose-invert max-w-none' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}"/>
+              <html-content data-type="composite" content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentContentExpanded ? 'prose dark:prose-invert max-w-none' : '[&amp;_img]:!hidden [&amp;_table]:!hidden'}}"/>
             </default>
           </extension-point>
         </div>
@@ -243,7 +243,8 @@
                 </fail>
               </api-call>
             </on>
-            <div class="flex flex-col sm:flex-row gap-2">
+            <div class="flex flex-col gap-2">
+              <responsive on="640-" class="flex flex-row gap-2"/>
               <input type="password" name="password" placeholder="$t:board.secret_thread_password_placeholder" aria-label="$t:board.secret_thread_password_placeholder" class="flex-1 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="{{_local.threadPasswordForm?.password ?? ''}}">
                 <on type="change">
                   <!-- 원글 비밀번호 입력 — 폼 자동바인딩과 같은 이름(threadPasswordForm)에 담아 제출이 그대로 실어 보내게 한다. -->
@@ -291,9 +292,11 @@
                         <set-state target="local" :reactingTypeId="null" :reactionApplied="true" myReactionTypeId="{{response.data.my_reaction_type_id ?? null}}" reactionCounts="{{response.data.reaction_counts ?? {}}}"/>
                       </success>
                       <fail>
+                        <!-- 추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다 -->
+                        <open-modal if="{{error.error_code === 'required_fields_pending'}}" target="required_info_pending_modal"/>
                         <!-- 실패 롤백 — override 를 서버 초기값(post.data)으로 되돌리고 로딩 해제 -->
                         <set-state target="local" :reactingTypeId="null" :reactionApplied="false" :myReactionTypeId="null" :reactionCounts="null"/>
-                        <toast type="error" message="$t:board.reaction.failed"/>
+                        <toast if="{{error.error_code !== 'required_fields_pending'}}" type="error" message="$t:board.reaction.failed"/>
                       </fail>
                       <body reaction_type_id="{{reactionType.id}}"/>
                     </api-call>
@@ -306,8 +309,8 @@
                   </case>
                 </switch>
               </on>
-              <!-- 올려 둔 아이콘 이미지가 있으면 그것을 쓴다. 처리 중에는 이 자리를 아래 스피너에 내준다 -->
-              <img data-testid="post-react-icon-{{reactionType.id}}" data-if="{{!!reactionType.icon_url &amp;&amp; (_local?.reactingTypeId ?? null) !== reactionType.id}}" src="{{reactionType.icon_url}}" alt="" class="w-5 h-5 object-contain"/>
+              <!-- thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다. 올려 둔 아이콘 이미지가 있으면 그것을 쓴다. 처리 중에는 이 자리를 아래 스피너에 내준다 -->
+              <img data-testid="post-react-icon-{{reactionType.id}}" data-if="{{!!reactionType.icon_url &amp;&amp; (_local?.reactingTypeId ?? null) !== reactionType.id}}" src="{{reactionType.icon_url}}" loading="lazy" decoding="async" alt="" class="w-5 h-5 object-contain"/>
               <!-- 처리 중인 유형은 스피너, 그 외엔 유형 아이콘(이미지가 없을 때의 폴백) -->
               <icon data-if="{{!reactionType.icon_url || (_local?.reactingTypeId ?? null) === reactionType.id}}" name="{{(_local?.reactingTypeId ?? null) === reactionType.id ? 'fa-spinner' : (reactionType.icon_name ?? 'fa-thumbs-up')}}" spin="{{(_local?.reactingTypeId ?? null) === reactionType.id}}" size="sm"/>
               <span>{{reactionType.name ?? ''}}</span>
@@ -376,9 +379,11 @@
                       <toast type="success" message="{{response.data.added ? '$t:board.post.scrap_added' : '$t:board.post.scrap_removed'}}"/>
                     </success>
                     <fail>
+                      <!-- 추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다 -->
+                      <open-modal if="{{error.error_code === 'required_fields_pending'}}" target="required_info_pending_modal"/>
                       <!-- 실패 시 원래 상태로 복원 -->
                       <set-state target="local" :scrapLoading="false" isScraped="{{post?.data?.is_scraped}}"/>
-                      <toast type="error" message="{{error.message}}"/>
+                      <toast if="{{error.error_code !== 'required_fields_pending'}}" type="error" message="{{error.message}}"/>
                     </fail>
                   </api-call>
                 </else>

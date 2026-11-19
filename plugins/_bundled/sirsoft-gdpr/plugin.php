@@ -12,6 +12,7 @@ use App\Extension\TemplateManager;
 use App\Models\Menu;
 use App\Support\CoreNecessaryStorage;
 use Plugins\Sirsoft\Gdpr\Http\Middleware\CookieConsentMiddleware;
+use Plugins\Sirsoft\Gdpr\Listeners\ExemptRequiredFieldsRoutesListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAnnualNoticeListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthConsentListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthLogoutListener;
@@ -71,7 +72,7 @@ class Plugin extends AbstractPlugin
      *
      * 표기 규칙: 끝의 `*` 는 앞부분 매칭, 없으면 정확 일치.
      *
-     * 잠금 항목(`auth_token` / `XSRF-TOKEN` / 세션 쿠키 / `gdpr_session`)은 여기 넣지
+     * 잠금 항목(`auth_token` / `XSRF-TOKEN` / 세션 쿠키 / `gdpr_session` / `g7_login_bind`)은 여기 넣지
      * 않습니다 — 설정에 담기면 API 로 지울 수 있어 잠금이 아니게 됩니다
      * (self::lockedNecessaryStorage()).
      *
@@ -355,12 +356,7 @@ class Plugin extends AbstractPlugin
      */
     public function uninstall(): bool
     {
-        app(ExtensionMenuSyncHelper::class)->cleanupStaleMenus(
-            ExtensionOwnerType::Plugin,
-            $this->getIdentifier(),
-            currentSlugs: [],
-        );
-
+        // 메뉴는 「데이터도 함께 삭제」를 고른 제거에서 코어가 지운다(코어 7.2.0) — 데이터 보존 제거는 메뉴를 남긴다.
         return true;
     }
 
@@ -534,6 +530,9 @@ class Plugin extends AbstractPlugin
      * 세션 쿠키 이름은 `session.cookie` 가 정하는 런타임 값이라 상수로 둘 수 없다 —
      * 이름을 하드코딩하면 `SESSION_COOKIE` 를 지정한 사이트에서 그 항목이 죽는다.
      *
+     * `g7_login_bind` 는 코어(7.2.0)가 외부 인증 로그인 인계 코드를 발급 브라우저에 묶는 쿠키다. 지워지면
+     * 쿠키 동의를 하지 않은 방문자는 소셜·회사 계정 로그인이 늘 실패하므로 로그인 토큰·세션과 같은 자리에 둔다.
+     *
      * 이 정의는 `src/` 가 아니라 진입 파일에 둔다. `getConfigValues()` 는 신규 설치 흐름에서
      * 이 플러그인의 PSR-4 오토로드가 등록되기 전에 호출되므로, `src/` 클래스를 부르면
      * "Class not found" 로 설치가 중단된다 (업그레이드 경로는 기설치본 매핑이 있어 재현되지
@@ -546,7 +545,7 @@ class Plugin extends AbstractPlugin
         return [
             'localStorage' => ['auth_token'],
             'sessionStorage' => [],
-            'cookie' => ['XSRF-TOKEN', (string) config('session.cookie', 'laravel_session'), 'gdpr_session'],
+            'cookie' => ['XSRF-TOKEN', (string) config('session.cookie', 'laravel_session'), 'gdpr_session', 'g7_login_bind'],
         ];
     }
 
@@ -612,15 +611,25 @@ class Plugin extends AbstractPlugin
     /**
      * 개인정보 통지는 정책 버전 발행과 별개인 정기 작업입니다.
      *
-     * @return array 정기 실행 선언
+     * 실행 조건 `annual_notice.enabled` 는 설정 조회 실패 시 true 로 폴백한다(옛 등록 의미 보존) —
+     * 통지 서비스가 같은 설정을 false 폴백으로 다시 확인하므로 꺼진 사이트에는 보내지 않는다.
+     * 운영자는 관리자 > 스케줄 관리에서 주기·활성을 바꿀 수 있고, 시각은 사이트 시간대 기준이다.
+     *
+     * @return array<int, array<string, mixed>> 스케줄 선언 목록 (형식: AbstractPlugin::getSchedules() 참고)
      */
     public function getSchedules(): array
     {
         return [[
+            'name' => 'send-annual-notices',
+            'type' => 'artisan',
+            'label' => ['ko' => '개인정보 연간 통지', 'en' => 'Send annual privacy notices'],
+            'description' => ['ko' => '활성 회원에게 개인정보 이용내역을 연 1회 안내합니다(설정에서 켠 경우만).', 'en' => 'Sends the annual privacy notice to active members (only when enabled in settings).'],
             'command' => 'sirsoft-gdpr:send-annual-notices --scheduled',
-            'schedule' => 'daily',
-            'description' => '개인정보 연간 통지',
-            'enabled_config' => 'annual_notice.enabled',
+            'frequency' => 'daily',
+            'expression' => '0 0 * * *',
+            'enabled_condition' => [
+                ['source' => 'plugin_setting', 'key' => 'annual_notice.enabled', 'operator' => 'truthy', 'default' => true],
+            ],
         ]];
     }
 
@@ -932,6 +941,8 @@ class Plugin extends AbstractPlugin
             GdprAuthConsentListener::class,
             RegisterGdprConsentProviderListener::class,
             GdprConsentChangeRelayListener::class,
+            // 추가 정보 미입력 회원에게도 열어 둘 동의 기록 라우트 (core.required_fields.filter_exempt_routes 필터)
+            ExemptRequiredFieldsRoutesListener::class,
         ];
     }
 }

@@ -91,8 +91,10 @@ Route::prefix('admin')->name('admin.')->middleware('auth:sanctum')->group(functi
         ->middleware(['permission:admin,sirsoft-gdpr.privacy.update', 'throttle:6,1,gdpr-annual-notice:'])->name('annual-notice.test');
 
     // 설정 조회 (view) / 저장 (update)
+    // 조회는 플러그인 설정 화면 계약대로 「플러그인 보기」(core.plugins.read)로도 연다(OR) — 그 운영자는 읽기 전용(abilities.can_update=false)으로 본다.
+    // 응답은 플러그인 설정값뿐(개인정보 없음). 저장은 계속 privacy.update 만.
     Route::get('/settings', [GdprAdminSettingsController::class, 'show'])
-        ->middleware('permission:admin,sirsoft-gdpr.privacy.view')
+        ->middleware('permission:admin,sirsoft-gdpr.privacy.view|core.plugins.read,false')
         ->name('settings.show');
 
     Route::put('/settings', [GdprAdminSettingsController::class, 'update'])

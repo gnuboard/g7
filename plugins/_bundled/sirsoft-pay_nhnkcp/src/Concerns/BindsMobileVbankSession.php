@@ -3,7 +3,7 @@
 namespace Plugins\Sirsoft\PayNhnkcp\Concerns;
 
 use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\OrderRecord;
 
 /**
  * 모바일 가상계좌 콜백을 인증된 결제 세션에 묶는 일회성 state.
@@ -19,6 +19,8 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
  *
  * 발급 지점은 `auth:sanctum` 이라 nonce 는 주문 소유자의 세션에 완전히 묶인다.
  * 공격자는 피해자의 nonce 를 알 수 없다.
+ *
+ * 호스트 요건: 이커머스 결제 계약 `PaymentGatewayBridge` 를 `$bridge` 로 주입받는다(저장은 계약의 결제 meta 병합).
  */
 trait BindsMobileVbankSession
 {
@@ -28,37 +30,33 @@ trait BindsMobileVbankSession
     private const MOBILE_VBANK_STATE_KEY = 'mobile_vbank_state';
 
     /**
-     * 모바일 가상계좌 세션 nonce 를 발급해 주문에 저장합니다.
+     * 모바일 가상계좌 세션 nonce 를 발급해 주문 결제 meta 에 저장합니다.
      *
      * 저장에 실패하면 null 을 반환한다 — 호출부는 nonce 없이 결제창을 열지 않는다
      * (검증 불가능한 콜백을 만들지 않기 위해서다).
      *
-     * @param  Order  $order  대상 주문
+     * @param  OrderRecord  $order  대상 주문
      * @return string|null 발급된 nonce, 저장 실패 시 null
      */
-    protected function issueMobileVbankState(Order $order): ?string
+    protected function issueMobileVbankState(OrderRecord $order): ?string
     {
-        $payment = $order->payment;
-        if (! $payment || ! $payment->exists) {
+        if ($order->payment === null) {
             return null;
         }
 
         $nonce = bin2hex(random_bytes(16));
 
         try {
-            $meta = $payment->payment_meta ?? [];
-            $meta = is_array($meta) ? $meta : [];
-            $meta[self::MOBILE_VBANK_STATE_KEY] = [
-                'nonce' => $nonce,
-                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
-                'issued_at' => now()->toIso8601String(),
-            ];
-
-            $payment->payment_meta = $meta;
-            $payment->save();
+            $this->bridge->mergePaymentMeta($order->orderNumber, 'nhnkcp', [
+                self::MOBILE_VBANK_STATE_KEY => [
+                    'nonce' => $nonce,
+                    // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
+                    'issued_at' => now()->toIso8601String(),
+                ],
+            ]);
         } catch (\Exception $e) {
             Log::error('KCP: failed to persist mobile vbank session state', [
-                'order_number' => $order->order_number,
+                'order_number' => $order->orderNumber,
                 'error' => $e->getMessage(),
             ]);
 
@@ -74,24 +72,21 @@ trait BindsMobileVbankSession
      * 저장된 state 가 없거나 값이 다르면 false 다. 일치 여부는 timing-safe 비교로
      * 판정한다.
      *
-     * @param  Order  $order  대상 주문
+     * @param  OrderRecord  $order  대상 주문
      * @param  string|null  $echoedState  콜백이 되돌려준 param_opt_2
      * @return bool 일치 여부
      */
-    protected function mobileVbankStateMatches(Order $order, ?string $echoedState): bool
+    protected function mobileVbankStateMatches(OrderRecord $order, ?string $echoedState): bool
     {
         if (! is_string($echoedState) || $echoedState === '') {
             return false;
         }
 
-        $payment = $order->payment;
-        if (! $payment || ! $payment->exists) {
+        if ($order->payment === null) {
             return false;
         }
 
-        $meta = $payment->payment_meta ?? [];
-        $meta = is_array($meta) ? $meta : [];
-        $stored = $meta[self::MOBILE_VBANK_STATE_KEY]['nonce'] ?? null;
+        $stored = $order->payment->paymentMeta[self::MOBILE_VBANK_STATE_KEY]['nonce'] ?? null;
 
         if (! is_string($stored) || $stored === '') {
             return false;

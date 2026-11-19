@@ -28,10 +28,13 @@ return [
 
     // 액션 라벨 (마지막 세그먼트 기준)
     'action' => [
+        'force_deleted' => '영구 삭제 (직전 기록)',
+        'sync_deleted' => '선언 정리로 삭제 (직전 기록)',
         'created' => '생성',
         'create' => '생성',
         'updated' => '수정',
         'update' => '수정',
+        'fields_update' => '추가 항목 수정',
         'rename' => '이름변경',
         'deleted' => '삭제',
         'delete' => '삭제',
@@ -80,6 +83,10 @@ return [
         'version_update' => '버전 업데이트',
         'version_restore' => '버전 복원',
         'reset' => '초기화',
+        // 코어 업데이트 — 실행·성공·실패를 각각 남긴다
+        'started' => '시작',
+        'completed' => '완료',
+        'failed' => '실패',
 
         // IP 접근 제한 (security.*) — 기존 세그먼트와 겹치지 않는 복합어로 둔다
         // (4단계 "마지막 세그먼트" 조회가 무관한 라벨을 붙이지 않게)
@@ -92,6 +99,11 @@ return [
         'dormant_restored' => '휴면 해제',
         'dormant_converted' => '휴면 전환',
         'dormant_withdrawn' => '휴면 계정 탈퇴 처리',
+        // 외부 인증 확장점 (7.2.0)
+        'register_identity_policy_skipped' => '본인인증 정책 생략 가입',
+        'block' => '회원 차단',
+        'unblock' => '회원 차단 해제',
+        'sessions_revoked' => '모든 기기에서 로그아웃',
 
         // 비밀번호 정책 (auth.password_*) — 기존 세그먼트와 겹치지 않는 복합어
         'password_change' => '비밀번호 변경',
@@ -123,11 +135,23 @@ return [
 
     // 설명 템플릿 (description_key로 사용)
     'description' => [
+        'layout_force_deleted' => '레이아웃 영구 삭제 직전 기록: :name (:template, :reason)',
+        'layout_extension_force_deleted' => '레이아웃 확장 조각 영구 삭제 직전 기록: :name (:template, :reason)',
+        'template_custom_translation_deleted' => '템플릿 커스텀 번역 삭제 직전 기록: :key',
+        'notification_definition_sync_deleted' => '알림 정의 선언 정리 직전 기록: :key (:extension)',
+        'notification_template_sync_deleted' => '알림 템플릿 선언 정리 직전 기록: :key (:channel)',
+        'menu_sync_deleted' => '관리자 메뉴 선언 정리 직전 기록: :key (:extension)',
+        'permission_sync_deleted' => '권한 선언 정리 직전 기록: :key (:extension)',
+        'role_sync_deleted' => '역할 선언 정리 직전 기록: :key (:extension)',
+        'identity_policy_sync_deleted' => '본인확인 정책 선언 정리 직전 기록: :key (:extension)',
+        'entity_sync_deleted' => ':entity 기본 데이터 선언 정리 직전 기록: :key (:extension)',
+        'schedule_sync_deleted' => '스케줄 선언 정리 직전 기록: :key (:extension)',
         // 사용자 관리
         'user_index' => '사용자 목록 조회',
         'user_create' => '사용자 생성 (ID: :user_id)',
         'user_show' => '사용자 상세 조회 (ID: :user_id)',
         'user_update' => '사용자 수정 (ID: :user_id)',
+        'user_fields_update' => '회원 추가 항목 수정 (ID: :user_id)',
         'user_delete' => '사용자 삭제 (ID: :user_id)',
         'user_withdraw' => '사용자 탈퇴 (ID: :user_id)',
         'user_statistics' => '사용자 통계 조회',
@@ -168,9 +192,16 @@ return [
         'menu_sync_roles' => '메뉴 역할 동기화 (ID: :menu_id)',
         'menu_get_by_extension' => '확장별 메뉴 조회 (:extension_type: :extension_identifier)',
 
+        // 코어 업데이트
+        'core_update_started' => '코어 업데이트 시작 (:from → :to)',
+        'core_update_completed' => '코어 업데이트 완료 (:from → :to)',
+        'core_update_failed' => '코어 업데이트 실패 (:from → :to) — 단계: :step / 되돌리기: :rollback',
+
         // 설정 관리
         'settings_index' => '설정 목록 조회',
         'settings_save' => '설정 저장',
+        'extension_trust_key_create' => '확장 신뢰 키 등록 (:key_id, vendor: :vendors)',
+        'extension_trust_key_delete' => '확장 신뢰 키 삭제 (:key_id, vendor: :vendors)',
         'settings_show' => '설정 조회',
         'settings_update' => '설정 수정',
         'settings_system_info' => '시스템 정보 조회',
@@ -212,6 +243,10 @@ return [
         'user_dormant_restored' => '로그인으로 휴면 해제 (ID: :user_id)',
         'user_dormant_converted' => '장기 미접속으로 휴면 전환 (ID: :user_id)',
         'user_dormant_withdrawn' => '휴면 기간 경과로 탈퇴 처리 (ID: :user_id)',
+        'user_register_identity_policy_skipped' => '본인인증 정책을 생략한 가입 (ID: :user_id, 사유: :reason)',
+        'user_block' => '회원 차단 (ID: :user_id, 사유: :reason)',
+        'user_unblock' => '회원 차단 해제 (ID: :user_id, 사유: :reason)',
+        'user_sessions_revoked' => '회원을 모든 기기에서 로그아웃 (ID: :user_id, 토큰 :count개)',
         'privacy_manual_run_queued' => '개인정보 조치 직권 실행 접수 (:target)',
         'privacy_manual_run_queued_skip_waiting' => '개인정보 조치 직권 실행 접수 — 대기기간 생략 (:target)',
         'privacy_manual_run_completed' => '개인정보 조치 직권 실행 완료 (:target, :count건)',
@@ -298,6 +333,8 @@ return [
         // 플러그인 설정
         'plugin_settings_save' => '플러그인 설정 저장 (:plugin_name)',
         'plugin_settings_reset' => '플러그인 설정 초기화 (:plugin_name)',
+        'template_settings_save' => '템플릿 설정 저장 (:template_name)',
+        'template_settings_reset' => '템플릿 설정 기본값 되돌리기 (:template_name)',
 
         // 템플릿 관리
         'template_index' => '템플릿 목록 조회',
@@ -386,5 +423,13 @@ return [
     // 확장 업데이트 레이아웃 병합 결과의 변경 내역 라벨 (#727)
     'layout_sync' => [
         'operator_modified' => '운영자 수정본',
+    ],
+    'deletion_reason' => [
+        'uninstall' => '확장 제거',
+        'refresh_overwrite_removed' => '덮어쓰기 갱신에서 새 판에 없음',
+        'orphan_override' => '고아 오버라이드 정리',
+        'settings_layout_removed' => '설정 화면 파일이 빠짐',
+        'template_uninstall' => '템플릿 제거',
+        'declaration_removed' => '새 판 선언에서 빠짐',
     ],
 ];

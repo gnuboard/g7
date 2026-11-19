@@ -23,6 +23,7 @@ import {
   loadExtensionPaletteManifestEntries,
 } from '../../spec/extensionPaletteComponents';
 import { loadEditorSpecBundle } from '../../spec/editorSpecLoader';
+import { makeBundleFetcher } from './editorSpecBundleFetcher';
 import { ComponentPalette, type ComponentManifest } from '../../components/ComponentPalette';
 import { TranslationProvider } from '../../../TranslationContext';
 import { TranslationEngine } from '../../../TranslationEngine';
@@ -267,12 +268,8 @@ describe('[case:wysiwyg-5] 확장 팔레트 컴포넌트 — 스펙 로더와 �
    * @effects extension_components_placed_where_template_accepts_block
    */
   it('스펙 로더가 병합 뒤 확장 컴포넌트에 Div 자리를 준다', async () => {
-    const fetcher = vi.fn(async (url: string | URL | Request) => {
-      const u = String(url);
-      if (u.includes('/templates/tpl/')) return jsonResponse({ success: true, data: { identifier: 'tpl', spec: { nesting: templateNesting } } });
-      if (u.includes('/modules/gnuboard7-hello_module/')) return jsonResponse({ success: true, data: { identifier: 'gnuboard7-hello_module', spec: moduleSpec } });
-      return jsonResponse({}, false);
-    });
+    // 편집기는 스펙을 묶음 엔드포인트 한 요청으로 받는다(engine-v1.95.0).
+    const fetcher = makeBundleFetcher({ tpl: { nesting: templateNesting }, 'gnuboard7-hello_module': moduleSpec });
 
     const { spec } = await loadEditorSpecBundle({
       templateIdentifier: 'tpl',

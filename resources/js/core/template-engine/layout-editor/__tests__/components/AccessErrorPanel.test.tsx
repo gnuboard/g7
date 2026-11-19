@@ -8,8 +8,7 @@
  * - 에러 메시지 details 영역에 원본 메시지 노출 (디버깅)
  */
 
-import React from 'react';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import type { EditorAccessError } from '../../types/editorErrors';
 import { AuthManager } from '../../../../auth/AuthManager';
@@ -41,6 +40,10 @@ describe('AccessErrorPanel — kind 별 분기 렌더', () => {
     vi.restoreAllMocks();
   });
 
+  /**
+   * @scenario subject=access_error_panel
+   * @effects access_error_401_shows_title_and_login_button
+   */
   it('401 unauthorized — 제목 + 로그인 버튼', async () => {
     await renderPanel({
       kind: 'unauthorized',
@@ -55,6 +58,10 @@ describe('AccessErrorPanel — kind 별 분기 렌더', () => {
     expect(screen.getByTestId('g7le-access-error-action-signin')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=access_error_panel
+   * @effects access_error_403_shows_permission_chip_and_home
+   */
   it('403 forbidden — 권한 칩 + 홈으로 버튼', async () => {
     await renderPanel({
       kind: 'forbidden',
@@ -69,6 +76,10 @@ describe('AccessErrorPanel — kind 별 분기 렌더', () => {
     expect(screen.getByTestId('g7le-access-error-action-home')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=access_error_panel
+   * @effects access_error_404_retry_and_home_without_chip
+   */
   it('404 not_found — 권한 칩 없음, 다시 시도 + 홈 버튼', async () => {
     await renderPanel({
       kind: 'not_found',
@@ -81,17 +92,29 @@ describe('AccessErrorPanel — kind 별 분기 렌더', () => {
     expect(screen.getByTestId('g7le-access-error-action-home-secondary')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=access_error_panel
+   * @effects access_error_5xx_allows_retry
+   */
   it('5xx server_error — 다시 시도 가능', async () => {
     await renderPanel({ kind: 'server_error', status: 500, message: 'Internal Server Error' });
     expect(screen.getByTestId('g7le-access-error-action-retry')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=access_error_panel
+   * @effects access_error_network_retry_and_debug_message
+   */
   it('network — 다시 시도 가능 + 디버그 메시지 노출', async () => {
     await renderPanel({ kind: 'network', status: 0, message: 'fetch failed' });
     expect(screen.getByTestId('g7le-access-error-action-retry')).toBeInTheDocument();
     expect(screen.getByTestId('g7le-access-error-detail')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=access_error_panel
+   * @effects access_error_unknown_kind_fallback
+   */
   it('unknown — fallback 분기', async () => {
     await renderPanel({ kind: 'unknown', status: 418, message: "I'm a teapot" });
     expect(screen.getByTestId('g7le-access-error')).toHaveAttribute('data-error-kind', 'unknown');
@@ -99,12 +122,10 @@ describe('AccessErrorPanel — kind 별 분기 렌더', () => {
 });
 
 describe('AccessErrorPanel — 401 자동 redirect (AccessRedirectGate)', () => {
-  let originalHref: string;
-  let hrefSetter: ReturnType<typeof vi.fn>;
+  let hrefSetter: Mock<(href: unknown) => void>;
 
   beforeEach(() => {
     vi.useFakeTimers();
-    originalHref = window.location.href;
     hrefSetter = vi.fn();
     // window.location.href setter 가로채기 — jsdom 은 기본적으로 navigation 미지원이라
     // defineProperty 로 setter 만 spy 한다.
@@ -130,6 +151,10 @@ describe('AccessErrorPanel — 401 자동 redirect (AccessRedirectGate)', () => 
     // location 복원은 jsdom 환경 한정이라 무시 — 다음 테스트는 새로 defineProperty.
   });
 
+  /**
+   * @scenario subject=access_error_panel
+   * @effects access_redirect_401_moves_to_login_url
+   */
   it('401 마운트 → setTimeout 후 AuthManager.getLoginRedirectUrl 결과로 location 이동', async () => {
     const getLoginRedirectUrlSpy = vi
       .spyOn(AuthManager.getInstance(), 'getLoginRedirectUrl')
@@ -153,6 +178,10 @@ describe('AccessErrorPanel — 401 자동 redirect (AccessRedirectGate)', () => 
     );
   });
 
+  /**
+   * @scenario subject=access_error_panel
+   * @effects access_redirect_skipped_when_not_401
+   */
   it('401 가 아닌 경우 redirect 발화하지 않음', async () => {
     await renderPanel({ kind: 'forbidden', status: 403, message: '권한 없음' });
     vi.advanceTimersByTime(1000);

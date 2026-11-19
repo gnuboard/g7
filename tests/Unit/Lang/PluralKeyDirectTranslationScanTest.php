@@ -34,6 +34,11 @@ class PluralKeyDirectTranslationScanTest extends TestCase
         'language_packs.commands.update.invalid_source' => '--source 선택지 목록 — 수 자리표시자 없음',
         'layouts.console.audit_expressions.invalid_source' => '--source 선택지 목록 — 수 자리표시자 없음',
         'settings.bundled_sources.place_summary' => '`|` 는 명령 패턴 {module|plugin|template} 안의 글자다 — trans_choice 로 부르면 오히려 문장이 갈린다',
+        'common.console.migrate_plan.invalid_scope' => '--scope 선택지 목록(all|core|extensions) — 수 자리표시자 없음',
+        'common.console.runtime_role.invalid' => 'G7_RUNTIME_ROLE 선택지 목록(live|stage) — 수 자리표시자 없음',
+        'extensions.commands.list.invalid_type' => '--type 선택지 목록 — 수 자리표시자 없음',
+        'extensions.commands.sync_files.invalid_type' => '--type 선택지 목록 — 수 자리표시자 없음',
+        'extensions.layout_sync.errors.invalid_decisions_file' => '결정 파일 JSON 모양 예시 안의 값 선택지(take-theirs|keep-ours) — 수 자리표시자 없음',
     ];
 
     /**

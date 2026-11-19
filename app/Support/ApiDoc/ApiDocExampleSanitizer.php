@@ -97,7 +97,9 @@ class ApiDocExampleSanitizer
 
         $result = [];
         foreach ($value as $k => $v) {
-            if (is_string($k) && ! is_array($v) && $v !== null && $this->isSensitiveKey($k)) {
+            // 참/거짓은 비밀을 담을 수 없다 — `token_issued` 처럼 '발급되어 있는가' 를
+            // 알리는 값까지 가리면 문서가 그 필드의 실제 형태를 잘못 말하게 된다.
+            if (is_string($k) && ! is_array($v) && ! is_bool($v) && $v !== null && $this->isSensitiveKey($k)) {
                 // 타입 표기용(token_type) 은 값이 아니라 종류이므로 그대로 둔다.
                 $result[$k] = strtolower($k) === 'token_type' ? $v : self::MASKED;
 
@@ -139,6 +141,8 @@ class ApiDocExampleSanitizer
      */
     private function scrubString(string $text, array $prefixes, array $hosts): string
     {
+        $text = $this->maskSecretQueryParams($text);
+
         foreach ($prefixes as $prefix => $replacement) {
             $text = (string) preg_replace_callback(
                 $this->pathPattern($prefix),
@@ -177,6 +181,38 @@ class ApiDocExampleSanitizer
         }
 
         return $text;
+    }
+
+    /**
+     * 문자열 값 안의 쿼리스트링 자격증명을 자리표시자로 바꿉니다.
+     *
+     * 키 이름 대조만으로는 이 형태를 잡지 못한다 — 비밀이 값 **안**에 있고 그 값을 담은
+     * 키는 `url` 처럼 무해한 이름이기 때문이다. 실제로 웹 크론 호출 주소가 그 형태이며,
+     * 이 처리가 없으면 실측 응답의 살아 있는 호출 번호가 공개 문서에 그대로 실린다
+     * (그 번호는 인증 없이 예약 작업을 실행할 수 있는 자격증명이다).
+     *
+     * 값 전체를 지우지 않고 **비밀 자리만** 가린다 — 주소의 형태가 문서의 설명이다.
+     *
+     * @param  string  $text  응답 문자열 값
+     * @return string 비밀 쿼리 파라미터가 가려진 문자열
+     */
+    private function maskSecretQueryParams(string $text): string
+    {
+        if (! str_contains($text, '=')) {
+            return $text;
+        }
+
+        $names = implode('|', array_map(
+            static fn (string $key): string => preg_quote($key, '#'),
+            self::SENSITIVE_KEYS,
+        ));
+
+        // `?token=…` · `&secret=…` 형태를 값의 끝(다음 구분자 직전)까지 가린다.
+        return (string) preg_replace(
+            '#(?<=[?&])('.$names.')=[^&\#\s"\']+#i',
+            '$1='.self::MASKED,
+            $text,
+        );
     }
 
     /**

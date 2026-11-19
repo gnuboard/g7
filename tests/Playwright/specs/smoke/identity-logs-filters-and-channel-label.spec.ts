@@ -17,6 +17,8 @@
  *
  * 단위 테스트(엔진 회귀 + 레이아웃 렌더) green 상태에서도 실제 브라우저 렌더 결함을
  * 놓칠 수 있어(위지윅 발행 회귀 #238 교훈) 실제 페이지에서 검증한다.
+ *
+ * @scenario identity-logs-filters-and-channel-label
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -63,6 +65,8 @@ async function collectFilterCheckboxLabels(page: import('@playwright/test').Page
   });
 }
 
+// @scenario interaction=initial_load
+// @effects status_and_purpose_filter_checkboxes_render
 test('@smoke 본인인증 이력 — 상태/목적 필터 체크박스가 다수 렌더된다 (결함 #1)', async ({ page }) => {
   const token = issueToken(IDENTITY_LOGS_PERMISSION);
   await authenticatePage(page, token);
@@ -81,6 +85,8 @@ test('@smoke 본인인증 이력 — 상태/목적 필터 체크박스가 다수
   expect(count, '필터 체크박스가 거의 렌더되지 않음 — 배열 리터럴 source 미렌더 결함 #1 회귀').toBeGreaterThanOrEqual(10);
 });
 
+// @scenario interaction=advanced_filters_toggle
+// @effects origin_type_filter_checkboxes_render_on_advanced_toggle
 test('@smoke 본인인증 이력 — 발생 유형(고급 검색) 필터 체크박스가 렌더된다 (결함 #2)', async ({ page }) => {
   const token = issueToken(IDENTITY_LOGS_PERMISSION);
   await authenticatePage(page, token);
@@ -108,6 +114,8 @@ test('@smoke 본인인증 이력 — 발생 유형(고급 검색) 필터 체크�
   expect(after - before, '고급 검색 펼침 후 발생 유형 체크박스가 추가되지 않음 — 결함 #2 회귀').toBeGreaterThanOrEqual(7);
 });
 
+// @scenario interaction=initial_load
+// @effects channel_filter_shows_labels_not_identifiers, channel_filter_checkboxes_render
 test('@smoke 본인인증 이력 — 채널 필터가 식별자가 아닌 라벨로 표시된다 (결함 #3 + 채널명 버그)', async ({ page }) => {
   const token = issueToken(IDENTITY_LOGS_PERMISSION);
   await authenticatePage(page, token);
@@ -139,10 +147,10 @@ test('@smoke 본인인증 이력 — 채널 필터가 식별자가 아닌 라벨
   expect(hasEmailChannel, '채널 필터에 이메일 채널 라벨이 렌더되지 않음 — 결함 #3 회귀').toBe(true);
 });
 
+// @scenario tab-switch-filter-reset
+// @scenario interaction=provider_tab_switch
+// @effects local_filter_reset, query_cleared
 test('@smoke 본인인증 이력 — 인증수단 탭 전환 시 상태 필터가 초기화된다 (#420-4)', async ({ page }) => {
-  // @scenario tab-switch-filter-reset
-  // @effects local-filter-reset, query-cleared, datagrid-refetch
-  //
   // 배경(라이브 증거): 상태 필터(예: '요청됨') 체크 후 인증수단 탭을 전환하면
   // 체크박스는 체크된 채로 남는데 목록은 필터 없는 전체가 나오던 불일치 결함.
   // 수정: onTabChange 가 sequence[ setState(filter 리셋) → navigate ] 로 동작 →
@@ -225,6 +233,8 @@ test('@smoke 본인인증 이력 — 인증수단 탭 전환 시 상태 필터�
     .not.toContain('statuses');
 });
 
+// @scenario interaction=initial_load
+// @effects datagrid_channel_column_shows_labels_not_identifiers
 test('@smoke 본인인증 이력 — DataGrid 채널 컬럼이 식별자가 아닌 라벨로 표시된다 (채널명 버그)', async ({ page }) => {
   const token = issueToken(IDENTITY_LOGS_PERMISSION);
   await authenticatePage(page, token);

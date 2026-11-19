@@ -7,9 +7,11 @@ use App\Helpers\PermissionHelper;
 use App\Search\SearchCategoryPayload;
 use App\Search\SearchHighlighter;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Support\BoardReadScope;
+use Modules\Sirsoft\Board\Support\BoardScreenUrl;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 
 /**
@@ -358,12 +360,14 @@ class SearchPostsListener implements HookListenerInterface
             'board_slug' => $boardSlug,
             // 모듈 번역 키는 네임스페이스를 붙여야 해석된다. 붙이지 않으면 해석에 실패해도
             // 예외 없이 키 문자열이 그대로 화면에 나간다 (실측: 작성자에 "board.anonymous").
-            'author_name' => $post->author_name ?? $post->user?->name ?? __('sirsoft-board::messages.common.guest'),
+            // 회원 글은 그 글이 속한 게시판의 표시 이름, 비회원 글은 입력한 이름
+            'author_name' => app(BoardDisplayNames::class)->authorOf($post, BoardDisplayNames::AREA_POSTS)
+                ?? __('sirsoft-board::messages.common.guest'),
             'created_at' => $this->formatCreatedAt($post->created_at),
             'created_at_formatted' => $this->formatCreatedAtFormat($post->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
             'view_count' => $post->view_count ?? 0,
             'comment_count' => $post->comments_count ?? 0,
-            'url' => "/board/{$boardSlug}/{$post->id}",
+            'url' => BoardScreenUrl::post($boardSlug, $post->id),
         ];
     }
 

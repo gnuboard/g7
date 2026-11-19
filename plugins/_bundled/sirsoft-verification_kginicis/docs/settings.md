@@ -56,10 +56,15 @@ _등록하는 메뉴가 없습니다._
 설정 화면(`plugin_settings.g7.html`)은 코어의 "플러그인 관리 > 설정" 공통 진입점을 통해
 접근합니다 — IDV provider 마다 전용 사이드바 메뉴를 만들면 provider 를 여러 개 설치했을
 때 메뉴가 난립합니다.
-화면의 입력 줄은 관리자 템플릿 의미 클래스 `grid-3col-responsive`(넓은 화면에서 라벨·설명 1칸, 입력 2칸), 섹션 제목은
+화면의 입력 줄은 3열 그리드(접두 유틸 + `responsive` 의 `1024-` 구간 — 넓은 화면에서 라벨·설명 1칸, 입력 2칸), 섹션 제목은
 `section-heading-md`, 저장 오류 상자는 제목 `text-error-strong`·목록 줄 `text-error-soft` 를 씁니다(테스트
 `resources/js/__tests__/layouts/pluginSettingsSemanticClasses.test.ts` 가 위치를 고정합니다).
 <!-- @intent END -->
+
+## 설정 화면 권한
+
+- 들어가기: 「플러그인 보기」(`core.plugins.read`). 「플러그인 수정」 권한이 없으면 읽기 전용 안내와 함께 보이고 입력·저장·변경 단추가 잠깁니다 — 화면 계산값 `isPluginReadOnly` 는 조회 응답 `abilities.can_update !== true` 입니다.
+- 저장·변경: 서버가 수정 권한으로 막습니다(아래 「라우트」 표의 권한). 화면 진입 권한을 「수정」으로 올리지 마세요 — 보기 권한만 있는 운영자가 「레이아웃 접근 권한이 없습니다」 오류 화면만 보게 됩니다(#434, 잠금 시험 `tests/Unit/Plugins/PluginSettingsLayoutPermissionTest.php`).
 
 ## 라우트
 

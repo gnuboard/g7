@@ -31,6 +31,9 @@ import { createLogger } from './utils/Logger';
 import { webSocketManager } from './websocket/WebSocketManager';
 import { initializeG7CoreGlobals, initDevToolsAPI } from './template-engine/G7CoreGlobals';
 import { checkLayoutEditorMode } from './template-engine/layout-editor/hooks/useEditorMode';
+// 운영 화면 편집 진입 단추 — 편집기 lazy 번들이 아니라 메인 번들에 둔다(일반 렌더 화면에 붙는다, #869)
+import { EditEntryFabHost } from './template-engine/layout-editor/components/EditEntryFabHost';
+import { isEditEntryButtonEnabled } from './template-engine/layout-editor/hooks/useEditEntryFab';
 import { documentTitle } from './routing/DocumentTitle';
 import { loadScriptWithRetry } from './template-engine/networkResilience';
 // LayoutEditorChrome 은 정적 import 하지 않는다 — 편집기는 별도 lazy 번들
@@ -606,8 +609,7 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
         {
           translationEngine: state.translationEngine!,
           translationContext: state.translationContext,
-        },
-        React.createElement(
+          children: React.createElement(
           TransitionProvider,
           null,
           React.createElement(
@@ -711,10 +713,18 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
                 return modalRenderer;
               })
               ),  // ParentContextProvider 종료
+              // 운영 화면 편집 진입 단추 — 모달 묶음 뒤 고정 키 형제라 앞 형제의 키·순서를 바꾸지 않는다 (engine-v1.95.0, #869)
+              React.createElement(EditEntryFabHost, {
+                key: '__g7_edit_entry_fab',
+                templateIdentifier: state.templateId || '',
+                // 환경설정 「레이아웃 편집 단추」 — 설정 저장이 _global.settings 를 바꾸면 이 재렌더로 바로 따라간다 (7.2.0)
+                enabled: isEditEntryButtonEnabled(state.currentDataContext?._global),
+              }),
               ]
             )  // SlotProvider 종료
           )  // ResponsiveProvider 종료
-        )  // TransitionProvider 종료
+          ),  // TransitionProvider 종료
+        },
       )  // TranslationProvider 종료
     );
 
@@ -838,8 +848,7 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
           {
             translationEngine: state.translationEngine!,
             translationContext: state.translationContext,
-          },
-          React.createElement(
+            children: React.createElement(
             TransitionProvider,
             null,
             React.createElement(
@@ -941,10 +950,18 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
                     return modalRenderer;
                   })
                 ),  // ParentContextProvider 종료
+                // 운영 화면 편집 진입 단추 — renderTemplate 과 같은 키·자리여야 재렌더 때 내려갔다 붙지 않는다 (engine-v1.95.0, #869)
+                React.createElement(EditEntryFabHost, {
+                  key: '__g7_edit_entry_fab',
+                  templateIdentifier: state.templateId || '',
+                  // 환경설정 「레이아웃 편집 단추」 — 설정 저장이 _global.settings 를 바꾸면 이 재렌더로 바로 따라간다 (7.2.0)
+                  enabled: isEditEntryButtonEnabled(state.currentDataContext?._global),
+                }),
               ]
             )  // SlotProvider 종료
           )  // ResponsiveProvider 종료
-        )  // TransitionProvider 종료
+          ),  // TransitionProvider 종료
+          },
       )  // TranslationProvider 종료
       );
     };

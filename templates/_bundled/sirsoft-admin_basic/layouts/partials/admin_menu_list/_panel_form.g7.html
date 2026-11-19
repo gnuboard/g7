@@ -76,8 +76,7 @@
               <span>$t:admin.menus.form.name</span>
               <span class="text-red-600 dark:text-red-400 ml-1">*</span>
             </label>
-            <multilingual-input data-type="composite" data-ref="form_name_input" name="name" placeholder="$t:admin.menus.form.name_placeholder" :maxLength="100" :required="true" layout="tabs"/>
-            <span data-if="{{_global.formErrors?.name}}" class="text-red-600 dark:text-red-400 text-xs">{{_global.formErrors?.name?.[0] ?? ''}}</span>
+            <multilingual-input data-type="composite" data-ref="form_name_input" name="name" placeholder="$t:admin.menus.form.name_placeholder" :maxLength="100" :required="true" layout="tabs" error="{{_global.formErrors?.name?.[0] ?? ''}}"/>
           </div>
         </div>
         <div data-ref="form_slug_field">
@@ -173,6 +172,8 @@
               <span class="text-gray-500 dark:text-gray-400 w-20">$t:admin.menus.info.creator</span>
               <div>
                 <span class="text-primary font-medium">{{_global.selectedMenu?.creator?.name ?? 'System'}}</span>
+                <!-- 실명 보조 줄. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 real_name 을 싣는다. -->
+                <span data-ref="menu_form_creator_real_name" data-if="{{!!_global.selectedMenu?.creator?.real_name}}" title="$t:admin.common.real_name.label" class="block text-tertiary">{{_global.selectedMenu?.creator?.real_name}}</span>
                 <span data-if="{{_global.selectedMenu?.creator?.email}}" class="block text-tertiary">{{_global.selectedMenu?.creator?.email}}</span>
               </div>
             </div>

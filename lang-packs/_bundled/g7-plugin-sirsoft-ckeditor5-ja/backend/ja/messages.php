@@ -4,6 +4,9 @@ return [
     'image' => [
         'not_found' => '画像が見つかりません。',
     ],
+    'thumbnail' => [
+        'source_label' => 'エディター本文の画像',
+    ],
     'upload' => [
         'required' => 'アップロードする画像ファイルが必要です。',
         'invalid_file' => '無効なファイルです。',

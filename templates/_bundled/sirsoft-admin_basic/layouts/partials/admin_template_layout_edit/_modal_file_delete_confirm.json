@@ -10,7 +10,199 @@
     "name": "Modal",
     "props": {
         "size": "small",
-        "title": "$t:admin.templates.layout_edit.file.delete_title"
+        "title": "$t:admin.templates.layout_edit.file.delete_title",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "comment": "1단계: `confirm` 없이 보낸다. 라우트가 없는 파일은 여기서 곧바로 지워지고, 라우트가 걸린 파일은 서버가\n           422 로 되돌려 위 경고와 2단계 버튼이 선다. 참조 차단(모듈 원본·부모·조각)은 단계와 무관하게 그대로 막힌다.",
+                "type": "basic",
+                "name": "Button",
+                "if": "{{!_global.fileDeleteRouteRequired}}",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "apiCall",
+                        "target": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.fileDeleteTarget}}",
+                        "auth_required": true,
+                        "params": {
+                            "method": "DELETE"
+                        },
+                        "onSuccess": [
+                            {
+                                "handler": "closeModal"
+                            },
+                            {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "success",
+                                    "message": "$t:admin.templates.layout_edit.file.deleted"
+                                }
+                            },
+                            {
+                                "comment": "지운 파일이 열려 있었으면 목록 첫 파일로 옮겨 간다 — 빈 편집기를 남기지 않는다.",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "selectedNodeKind": "layout",
+                                    "selectedLayoutName": "{{(layout_files?.data ?? []).filter(f => f.name !== _global.fileDeleteTarget)?.[0]?.name}}",
+                                    "selectedExtensionId": null,
+                                    "markupCompileError": null,
+                                    "jsonViewStale": true,
+                                    "fileDeleteError": null,
+                                    "fileDeleteReferences": [],
+                                    "fileDeleteRouteRequired": false
+                                }
+                            },
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "layout_files"
+                                }
+                            },
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "current_layout"
+                                }
+                            }
+                        ],
+                        "onError": {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "fileDeleteError": "{{error.message}}",
+                                "fileDeleteReferences": "{{error.errors?.references ?? []}}",
+                                "fileDeleteRouteRequired": "{{error.errors?.reason === 'layouts.errors.delete_requires_confirmation'}}"
+                            }
+                        }
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "flex items-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 text-sm font-medium transition-colors disabled:opacity-50",
+                    "data-testid": "file-delete-confirm"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "props": {
+                            "name": "fa-solid fa-trash",
+                            "size": "sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:admin.templates.layout_edit.file.delete"
+                    }
+                ]
+            },
+            {
+                "comment": "2단계: 라우트 경고를 본 뒤의 확인 — 이때만 `confirm=1` 을 실어 보낸다.",
+                "type": "basic",
+                "name": "Button",
+                "if": "{{!!_global.fileDeleteRouteRequired}}",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "apiCall",
+                        "target": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.fileDeleteTarget}}?confirm=1",
+                        "auth_required": true,
+                        "params": {
+                            "method": "DELETE"
+                        },
+                        "onSuccess": [
+                            {
+                                "handler": "closeModal"
+                            },
+                            {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "success",
+                                    "message": "$t:admin.templates.layout_edit.file.deleted"
+                                }
+                            },
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "selectedNodeKind": "layout",
+                                    "selectedLayoutName": "{{(layout_files?.data ?? []).filter(f => f.name !== _global.fileDeleteTarget)?.[0]?.name}}",
+                                    "selectedExtensionId": null,
+                                    "markupCompileError": null,
+                                    "jsonViewStale": true,
+                                    "fileDeleteError": null,
+                                    "fileDeleteReferences": [],
+                                    "fileDeleteRouteRequired": false
+                                }
+                            },
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "layout_files"
+                                }
+                            },
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "current_layout"
+                                }
+                            }
+                        ],
+                        "onError": {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "fileDeleteError": "{{error.message}}",
+                                "fileDeleteReferences": "{{error.errors?.references ?? []}}",
+                                "fileDeleteRouteRequired": false
+                            }
+                        }
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "flex items-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 text-sm font-medium transition-colors disabled:opacity-50",
+                    "data-testid": "file-delete-confirm-route"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "props": {
+                            "name": "fa-solid fa-trash",
+                            "size": "sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:admin.templates.layout_edit.file.delete_anyway"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -153,205 +345,6 @@
                                 "className": "text-amber-700 dark:text-amber-400"
                             },
                             "text": " · {{reference.kind_label ?? reference.kind}}"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "mt-6 flex items-center justify-end gap-2"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.cancel"
-                        }
-                    ]
-                },
-                {
-                    "comment": "1단계: `confirm` 없이 보낸다. 라우트가 없는 파일은 여기서 곧바로 지워지고, 라우트가 걸린 파일은 서버가\n           422 로 되돌려 위 경고와 2단계 버튼이 선다. 참조 차단(모듈 원본·부모·조각)은 단계와 무관하게 그대로 막힌다.",
-                    "type": "basic",
-                    "name": "Button",
-                    "if": "{{!_global.fileDeleteRouteRequired}}",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "apiCall",
-                            "target": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.fileDeleteTarget}}",
-                            "auth_required": true,
-                            "params": {
-                                "method": "DELETE"
-                            },
-                            "onSuccess": [
-                                {
-                                    "handler": "closeModal"
-                                },
-                                {
-                                    "handler": "toast",
-                                    "params": {
-                                        "type": "success",
-                                        "message": "$t:admin.templates.layout_edit.file.deleted"
-                                    }
-                                },
-                                {
-                                    "comment": "지운 파일이 열려 있었으면 목록 첫 파일로 옮겨 간다 — 빈 편집기를 남기지 않는다.",
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "selectedNodeKind": "layout",
-                                        "selectedLayoutName": "{{(layout_files?.data ?? []).filter(f => f.name !== _global.fileDeleteTarget)?.[0]?.name}}",
-                                        "selectedExtensionId": null,
-                                        "markupCompileError": null,
-                                        "jsonViewStale": true,
-                                        "fileDeleteError": null,
-                                        "fileDeleteReferences": [],
-                                        "fileDeleteRouteRequired": false
-                                    }
-                                },
-                                {
-                                    "handler": "refetchDataSource",
-                                    "params": {
-                                        "dataSourceId": "layout_files"
-                                    }
-                                },
-                                {
-                                    "handler": "refetchDataSource",
-                                    "params": {
-                                        "dataSourceId": "current_layout"
-                                    }
-                                }
-                            ],
-                            "onError": {
-                                "handler": "setState",
-                                "params": {
-                                    "target": "global",
-                                    "fileDeleteError": "{{error.message}}",
-                                    "fileDeleteReferences": "{{error.errors?.references ?? []}}",
-                                    "fileDeleteRouteRequired": "{{error.errors?.reason === 'layouts.errors.delete_requires_confirmation'}}"
-                                }
-                            }
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "flex items-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 text-sm font-medium transition-colors disabled:opacity-50",
-                        "data-testid": "file-delete-confirm"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                                "name": "fa-solid fa-trash",
-                                "size": "sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:admin.templates.layout_edit.file.delete"
-                        }
-                    ]
-                },
-                {
-                    "comment": "2단계: 라우트 경고를 본 뒤의 확인 — 이때만 `confirm=1` 을 실어 보낸다.",
-                    "type": "basic",
-                    "name": "Button",
-                    "if": "{{!!_global.fileDeleteRouteRequired}}",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "apiCall",
-                            "target": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.fileDeleteTarget}}?confirm=1",
-                            "auth_required": true,
-                            "params": {
-                                "method": "DELETE"
-                            },
-                            "onSuccess": [
-                                {
-                                    "handler": "closeModal"
-                                },
-                                {
-                                    "handler": "toast",
-                                    "params": {
-                                        "type": "success",
-                                        "message": "$t:admin.templates.layout_edit.file.deleted"
-                                    }
-                                },
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "selectedNodeKind": "layout",
-                                        "selectedLayoutName": "{{(layout_files?.data ?? []).filter(f => f.name !== _global.fileDeleteTarget)?.[0]?.name}}",
-                                        "selectedExtensionId": null,
-                                        "markupCompileError": null,
-                                        "jsonViewStale": true,
-                                        "fileDeleteError": null,
-                                        "fileDeleteReferences": [],
-                                        "fileDeleteRouteRequired": false
-                                    }
-                                },
-                                {
-                                    "handler": "refetchDataSource",
-                                    "params": {
-                                        "dataSourceId": "layout_files"
-                                    }
-                                },
-                                {
-                                    "handler": "refetchDataSource",
-                                    "params": {
-                                        "dataSourceId": "current_layout"
-                                    }
-                                }
-                            ],
-                            "onError": {
-                                "handler": "setState",
-                                "params": {
-                                    "target": "global",
-                                    "fileDeleteError": "{{error.message}}",
-                                    "fileDeleteReferences": "{{error.errors?.references ?? []}}",
-                                    "fileDeleteRouteRequired": false
-                                }
-                            }
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "flex items-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 text-sm font-medium transition-colors disabled:opacity-50",
-                        "data-testid": "file-delete-confirm-route"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                                "name": "fa-solid fa-trash",
-                                "size": "sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:admin.templates.layout_edit.file.delete_anyway"
                         }
                     ]
                 }

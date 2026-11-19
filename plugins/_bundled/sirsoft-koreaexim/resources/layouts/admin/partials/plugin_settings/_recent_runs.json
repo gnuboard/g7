@@ -7,21 +7,21 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card mb-4"
+        "className": "koreaexim-admin-card koreaexim:mb-4"
     },
     "children": [
         {
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-between"
+                "className": "koreaexim-flex-between"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "H3",
                     "props": {
-                        "className": "card-title"
+                        "className": "koreaexim-card-title"
                     },
                     "text": "$t:sirsoft-koreaexim.recent"
                 },
@@ -44,7 +44,7 @@
                     "props": {
                         "href": "/admin/plugins/sirsoft-koreaexim/settings?tab=history",
                         "mergeQuery": true,
-                        "className": "button btn btn-secondary"
+                        "className": "koreaexim-button koreaexim-btn koreaexim-btn-secondary"
                     },
                     "children": [
                         {
@@ -86,7 +86,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "{{['success','partial','dry_run'].includes(row.status) ? 'text-green-700 dark:text-green-300' : ['no_data','skipped'].includes(row.status) ? 'text-gray-600 dark:text-gray-300' : 'text-red-700 dark:text-red-300'}}",
+                                    "className": "{{(row.status === 'success' || row.status === 'partial' || row.status === 'dry_run') ? 'koreaexim:text-green-700 koreaexim:dark:text-green-300' : (row.status === 'no_data' || row.status === 'skipped') ? 'koreaexim:text-gray-600 koreaexim:dark:text-gray-300' : 'koreaexim:text-red-700 koreaexim:dark:text-red-300'}}",
                                     "title": "{{row.message}}"
                                 },
                                 "text": "{{row.status_label}}"

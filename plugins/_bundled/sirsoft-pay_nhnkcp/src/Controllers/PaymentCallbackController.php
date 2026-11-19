@@ -6,22 +6,21 @@ namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
 
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
-use App\Support\SiteUrl;
+use App\Support\ScreenUrl;
 use Carbon\Carbon;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\OrderRecord;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentCompletion;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\VbankIssuance;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Exceptions\ProviderMismatch;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
 use Modules\Sirsoft\Ecommerce\Helpers\DeviceDetector;
-use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\DepositAfterCancelRecorder;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\BindsMobileVbankSession;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\IssuesReceiptCookie;
@@ -123,16 +122,14 @@ class PaymentCallbackController
     ];
 
     /**
-     * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 계약 (주문·결제 조회와 결제완료·실패·발급 기록)
      * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 조회 서비스
      * @param  NhnKcpApiService  $apiService  NHN KCP API 서비스
-     * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
      */
     public function __construct(
-        private readonly OrderProcessingService $orderService,
+        private readonly PaymentGatewayBridge $bridge,
         private readonly PluginSettingsService $pluginSettingsService,
         private readonly NhnKcpApiService $apiService,
-        private readonly ClaimPaymentRepositoryInterface $claimPaymentRepository,
     ) {}
 
     /**
@@ -188,7 +185,7 @@ class PaymentCallbackController
             // authenticated close-report path records real window closures.
 
             // 클레임 추가결제(CP 채번)는 체크아웃이 아니라 신청서 상세로 돌려보낸다.
-            if (ClaimPayment::isClaimPaymentNumber($ordrIdxx)) {
+            if ($this->bridge->isClaimPaymentNumber($ordrIdxx)) {
                 $claimRedirect = $this->redirectClaimWindowFailure($ordrIdxx, $isCancelled ? null : $resCd);
 
                 if ($claimRedirect !== null) {
@@ -205,7 +202,7 @@ class PaymentCallbackController
                 'error' => $resCd,
                 // 결제 건을 못 찾은 CP 콜백이 여기까지 떨어질 수 있다. PG 원문은 상점 사이트코드·내부
                 // 상태를 담고 이 경로는 비인증 브라우저 리다이렉트이므로, CP 번호일 때는 코드만 싣는다.
-                'message' => ClaimPayment::isClaimPaymentNumber($ordrIdxx) ? null : $resMsg,
+                'message' => $this->bridge->isClaimPaymentNumber($ordrIdxx) ? null : $resMsg,
                 'orderId' => $ordrIdxx,
             ]));
         }
@@ -221,7 +218,7 @@ class PaymentCallbackController
         // 클레임 추가결제(CP 채번)는 주문이 아니다 — 주문 분기를 태우면 order_not_found 로 끝난다.
         // 승인은 모듈 위임(필터 발화 → 이 플러그인의 승인 리스너)이고, 승인 금액 불일치는 KCP
         // 승인이 확정된 뒤의 거절이므로 취소 API 로 보상한다.
-        if (ClaimPayment::isClaimPaymentNumber($ordrIdxx)) {
+        if ($this->bridge->isClaimPaymentNumber($ordrIdxx)) {
             $claimPayment = $this->findClaimPayment($ordrIdxx);
 
             if (! $claimPayment) {
@@ -240,7 +237,7 @@ class PaymentCallbackController
 
         try {
             // 2단계: 주문 조회
-            $order = $this->orderService->findByOrderNumber($ordrIdxx);
+            $order = $this->bridge->findOrderByNumber($ordrIdxx, self::KCP_PROVIDER);
 
             if (! $order) {
                 Log::error('KCP: order not found', ['ordr_idxx' => $ordrIdxx]);
@@ -249,13 +246,13 @@ class PaymentCallbackController
             }
 
             $callbackLock = $this->acquireOrderCallbackLock('authCallback', $ordrIdxx);
-            $order = $order->fresh('payment') ?? $order;
+            $order = $this->bridge->findOrderByNumber($ordrIdxx, self::KCP_PROVIDER) ?? $order;
 
             // 취소 주문 재결제 — 여기서는 되살리지 않고 "되살릴 수 있는가" 만 읽는다.
             // 되살리기는 상태 변경이고 이 시점의 입력은 전부 비인증 브라우저 값이라,
             // 여기서 수행하면 주문번호만 아는 제3자가 남의 취소 주문을 결제대기로
             // 되돌릴 수 있다. 실제 되살리기는 승인·발급이 확정된 뒤에 수행한다.
-            if ($order->order_status === OrderStatusEnum::CANCELLED
+            if ($order->orderStatus === OrderStatusEnum::CANCELLED
                 && ! $this->isRetryableKcpFailure($order, $order->payment)) {
                 Log::warning('KCP: cancelled order is not retryable', ['ordr_idxx' => $ordrIdxx]);
 
@@ -265,10 +262,10 @@ class PaymentCallbackController
                 ]));
             }
 
-            if (($order->payment?->isPaid() ?? false) || $order->order_status === OrderStatusEnum::PAYMENT_COMPLETE) {
+            if (($order->payment?->isPaid ?? false) || $order->orderStatus === OrderStatusEnum::PAYMENT_COMPLETE) {
                 Log::info('KCP: authCallback already paid order, skipping CLI approval', [
                     'ordr_idxx' => $ordrIdxx,
-                    'transaction_id' => $order->payment?->transaction_id,
+                    'transaction_id' => $order->payment?->transactionId,
                 ]);
 
                 $this->queueReceiptCookie($ordrIdxx);
@@ -316,18 +313,21 @@ class PaymentCallbackController
             // 비인증 브라우저가 use_pay_method=VCNT 한 줄로 카드 주문을 가상계좌 분기로 몰아
             // 승인 검증이 없는 경로를 고를 수 있다.
             // 결제창은 결제수단을 확정한 뒤 열리므로 정상 흐름은 주문 값만으로 판정된다.
-            $isVbank = (bool) $order->payment?->isVirtualAccount();
+            $isVbank = (bool) $order->payment?->isVirtualAccount;
             if ($isVbank) {
                 return $this->handleVbankIssued($validated, $order, $encData, $encInfo, $ordrIdxx, $custIp, $request, $expectedAmount);
             }
 
-            HookManager::doAction('sirsoft-pay_nhnkcp.payment.before_confirm', $order, $validated);
+            // 공개 훅은 종전처럼 주문 Model 을 넘긴다(구독자 호환) — 계약의 읽기 전용 Model 조회로 얻는다.
+            $hookOrder = $this->bridge->findOrderModel($ordrIdxx, self::KCP_PROVIDER);
+
+            HookManager::doAction('sirsoft-pay_nhnkcp.payment.before_confirm', $hookOrder, $validated);
 
             // 3단계: KCP CLI로 최종 승인 확인. 청구액(ordr_mony)은 주문 저장값에서 산정한 금액을 싣는다 —
             // KCP 가 결제창에서 인증된 금액과 대조해 다르면 승인 자체를 거절한다.
             $pgResponse = $this->apiService->approvePayment($encData, $encInfo, $ordrIdxx, $custIp, $expectedAmount);
 
-            HookManager::doAction('sirsoft-pay_nhnkcp.payment.after_confirm', $order, $pgResponse);
+            HookManager::doAction('sirsoft-pay_nhnkcp.payment.after_confirm', $hookOrder, $pgResponse);
 
             $pgResCd = $pgResponse['res_cd'] ?? '';
 
@@ -405,28 +405,30 @@ class PaymentCallbackController
 
             // 승인이 확정된 뒤에만 취소 주문을 되살린다. 실패하면 예외로 아래 catch 에 넘겨
             // PG 잔존 승인을 자동 취소한다(사용자 환불 보장).
-            if ($order->order_status === OrderStatusEnum::CANCELLED) {
-                if (! $this->restoreRetryableKcpOrder($order, $approvedAmt)) {
+            if ($order->orderStatus === OrderStatusEnum::CANCELLED) {
+                $restoredOrder = $this->restoreKcpOrderForRetry($order, $approvedAmt);
+                if ($restoredOrder === null) {
                     throw new \RuntimeException('cancelled order is not retryable after approval');
                 }
 
-                $order = $order->fresh('payment') ?? $order;
+                $order = $restoredOrder;
             }
 
             $isEscrow = ($pgResponse['escw_yn'] ?? '') === 'Y';
             $easyPayMeta = $this->resolveEasyPayMeta($validated);
 
-            // 4단계: 주문 완료 처리
-            $this->orderService->completePayment($order, [
-                'transaction_id' => $tno,
-                'card_approval_number' => $pgResponse['app_no'] ?? null,
-                'card_number_masked' => $pgResponse['card_no'] ?? $pgResponse['account'] ?? null,
-                'card_name' => $pgResponse['card_name'] ?? $pgResponse['bank_name'] ?? null,
-                'card_installment_months' => (int) ($pgResponse['quota'] ?? 0),
-                'is_interest_free' => false,
-                'embedded_pg_provider' => $easyPayMeta['provider'] ?? null,
-                'receipt_url' => null,
-                'payment_meta' => [
+            // 4단계: 주문 완료 처리 — 에스크로 여부와 PG 식별자(nhnkcp) 기록을 결제완료와 같은 트랜잭션에서 쓴다
+            // (기본 PG 가 타 PG 일 때 주문이 그 PG 식별자로 생성되는 경우 대비 — 결제 전 행이라 인수 가능).
+            $this->bridge->completePayment($ordrIdxx, self::KCP_PROVIDER, new PaymentCompletion(
+                transactionId: $tno,
+                cardApprovalNumber: $this->stringOrNullValue($pgResponse['app_no'] ?? null),
+                cardNumberMasked: $this->stringOrNullValue($pgResponse['card_no'] ?? $pgResponse['account'] ?? null),
+                cardName: $this->stringOrNullValue($pgResponse['card_name'] ?? $pgResponse['bank_name'] ?? null),
+                cardInstallmentMonths: (int) ($pgResponse['quota'] ?? 0),
+                isInterestFree: false,
+                embeddedPgProvider: $easyPayMeta['provider'] ?? null,
+                receiptUrl: null,
+                paymentMeta: [
                     'res_cd' => $pgResCd,
                     ...$this->currentCredentialMeta(),
                     ...($easyPayMeta === [] ? [] : [
@@ -442,17 +444,11 @@ class PaymentCallbackController
                     'pg_response_sanitized' => true,
                     'pg_raw_response' => $this->sanitizePgResponse($pgResponse, self::AUTH_RESPONSE_KEYS),
                 ],
-                'payment_device' => DeviceDetector::detect($request),
-            ], $approvedAmt);
-
-            // 에스크로 결제인 경우 is_escrow 플래그 저장
-            if ($isEscrow) {
-                $order->payment()->update(['is_escrow' => true]);
-            }
-
-            // KCP가 실제로 결제를 처리했으므로 pg_provider를 nhnkcp로 보정
-            // (기본 PG가 타 PG일 때 주문이 해당 PG provider로 생성되는 경우 대비)
-            $order->payment()->update(['pg_provider' => 'nhnkcp']);
+                paymentDevice: DeviceDetector::detect($request),
+                // 에스크로 결제인 경우만 is_escrow 플래그 저장(아니면 건드리지 않는다)
+                isEscrow: $isEscrow ? true : null,
+                takeOverProvider: true,
+            ), $approvedAmt);
 
             $this->queueReceiptCookie($ordrIdxx);
 
@@ -463,9 +459,9 @@ class PaymentCallbackController
                 'ordr_idxx' => $ordrIdxx,
             ]);
 
-            $latestOrder = $this->orderService->findByOrderNumber($ordrIdxx);
-            if (($latestOrder?->payment?->isPaid() ?? false)
-                || $latestOrder?->order_status === OrderStatusEnum::PAYMENT_COMPLETE) {
+            $latestOrder = $this->bridge->findOrderByNumber($ordrIdxx, self::KCP_PROVIDER);
+            if (($latestOrder?->payment?->isPaid ?? false)
+                || $latestOrder?->orderStatus === OrderStatusEnum::PAYMENT_COMPLETE) {
                 $this->queueReceiptCookie($ordrIdxx);
 
                 return redirect($this->resolveSuccessUrl($ordrIdxx));
@@ -489,14 +485,8 @@ class PaymentCallbackController
             // 주문 상태를 바꾸는 것은 KCP 승인이 실제로 일어난 뒤의 실패뿐이다. tno 가 비어 있으면
             // 승인 전에 터진 예외이고, 그 시점의 입력은 전부 비인증 브라우저가 보낸 값이라
             // 남의 주문을 취소시키는 통로가 된다.
-            if ($order instanceof Order && $this->hasApproval($approvedTno)) {
-                $failedOrder = $this->orderService->failPayment($order, 'AMOUNT_MISMATCH', $e->getMessage());
-                $this->markKcpPaymentFailureRecord(
-                    $failedOrder,
-                    'AMOUNT_MISMATCH',
-                    $e->getMessage(),
-                    'amount_mismatch',
-                );
+            if ($order instanceof OrderRecord && $this->hasApproval($approvedTno)) {
+                $this->recordKcpOrderFailure($ordrIdxx, 'AMOUNT_MISMATCH', $e->getMessage(), 'amount_mismatch');
             }
 
             return redirect($this->resolveFailUrl(['error' => 'amount_mismatch', 'orderId' => $ordrIdxx]));
@@ -510,14 +500,8 @@ class PaymentCallbackController
             $this->autoCancelIfApproved($approvedTno, $ordrIdxx, $approvedAmtForCancel, 'confirm_failed');
 
             // 승인 이후의 후속 처리 실패만 주문에 반영한다 (위 amount_mismatch catch 와 동일 기준).
-            if ($order instanceof Order && $this->hasApproval($approvedTno)) {
-                $failedOrder = $this->orderService->failPayment($order, 'CONFIRM_FAILED', $e->getMessage());
-                $this->markKcpPaymentFailureRecord(
-                    $failedOrder,
-                    'CONFIRM_FAILED',
-                    $e->getMessage(),
-                    'confirm_failed',
-                );
+            if ($order instanceof OrderRecord && $this->hasApproval($approvedTno)) {
+                $this->recordKcpOrderFailure($ordrIdxx, 'CONFIRM_FAILED', $e->getMessage(), 'confirm_failed');
             }
 
             return redirect($this->resolveFailUrl([
@@ -527,6 +511,33 @@ class PaymentCallbackController
             ]));
         } finally {
             $this->releaseOrderCallbackLock($callbackLock);
+        }
+    }
+
+    /**
+     * 승인(발급) 뒤 후속 처리가 실패한 주문을 결제 실패로 기록하고 KCP 실패 이력을 남깁니다.
+     *
+     * 결제 행이 다른 결제사가 이미 결제(발급)한 행이면 이커머스 계약이 쓰기를 `ProviderMismatch` 로 거부한다.
+     * 그 행은 이 결제사가 바꿀 행이 아니므로 기록을 건너뛴다 — 호출하는 catch 블록이 실패 화면으로 보내야 하므로
+     * 거부가 밖으로 새지 않게 한다(새면 고객은 500 을 본다).
+     *
+     * @param  string  $ordrIdxx  주문번호
+     * @param  string  $failureCode  실패 코드
+     * @param  string  $failureMessage  실패 메시지
+     * @param  string  $failureStage  실패 단계
+     * @return void 반환값 없음
+     */
+    private function recordKcpOrderFailure(string $ordrIdxx, string $failureCode, string $failureMessage, string $failureStage): void
+    {
+        try {
+            $failedOrder = $this->bridge->failPayment($ordrIdxx, self::KCP_PROVIDER, $failureCode, $failureMessage);
+            $this->markKcpPaymentFailureRecord($failedOrder, $failureCode, $failureMessage, $failureStage);
+        } catch (ProviderMismatch $e) {
+            Log::warning('KCP: order failure not recorded — payment belongs to another provider', [
+                'ordr_idxx' => $ordrIdxx,
+                'failure_code' => $failureCode,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -581,7 +592,7 @@ class PaymentCallbackController
         }
 
         try {
-            $order = $this->orderService->findByOrderNumber($orderNo);
+            $order = $this->bridge->findOrderByNumber($orderNo, self::KCP_PROVIDER);
 
             if (! $order) {
                 Log::error('KCP: vbank notify - order not found', [
@@ -593,7 +604,7 @@ class PaymentCallbackController
             }
 
             $callbackLock = $this->acquireOrderCallbackLock('vbankNotify', $orderNo);
-            $order = $order->fresh('payment') ?? $order;
+            $order = $this->bridge->findOrderByNumber($orderNo, self::KCP_PROVIDER) ?? $order;
 
             $contextError = $this->validateVbankNotifyContext($order, $validated, $tno, $ipgmMny);
 
@@ -602,8 +613,8 @@ class PaymentCallbackController
             // 맞는 통보만 기록한다(통보 출처는 KCP IP 로 이미 걸렀다).
             if ($contextError === 'order_cancelled'
                 && $order->payment !== null
-                && hash_equals((string) $order->payment->transaction_id, $tno)) {
-                app(DepositAfterCancelRecorder::class)->record($order, (float) $ipgmMny, 'nhnkcp', $tno);
+                && hash_equals((string) $order->payment->transactionId, $tno)) {
+                $this->bridge->recordDepositAfterCancel($orderNo, self::KCP_PROVIDER, (float) $ipgmMny, $tno);
 
                 return $this->kcpNotifyResponse();
             }
@@ -620,7 +631,7 @@ class PaymentCallbackController
             }
 
             // 멱등성 — 이미 결제완료 상태면 재처리 없이 0000 응답 (op_cd=01 재전송 대응)
-            if ($order->payment?->isPaid() ?? false) {
+            if ($order->payment?->isPaid ?? false) {
                 Log::info('KCP: vbank-notify already paid (idempotent)', [
                     'tno' => $tno, 'order_no' => $orderNo, 'noti_id' => $notiId, 'op_cd' => $opCd,
                 ]);
@@ -628,9 +639,10 @@ class PaymentCallbackController
                 return $this->kcpNotifyResponse();
             }
 
-            $this->orderService->completePayment($order, [
-                'transaction_id' => $tno,
-                'payment_meta' => [
+            // 입금완료 — PG 식별자(nhnkcp) 기록을 결제완료와 같은 트랜잭션에서 쓴다. 결제 meta 는 통째 교체(종전과 같음).
+            $this->bridge->completePayment($orderNo, self::KCP_PROVIDER, new PaymentCompletion(
+                transactionId: $tno,
+                paymentMeta: [
                     'tx_cd' => $txCd,
                     'op_cd' => $opCd,
                     'noti_id' => $notiId,
@@ -640,9 +652,8 @@ class PaymentCallbackController
                     'pg_response_sanitized' => true,
                     'pg_raw_response' => $this->sanitizePgResponse($validated, self::VBANK_NOTIFY_RESPONSE_KEYS),
                 ],
-            ], $ipgmMny);
-
-            $order->payment()->update(['pg_provider' => 'nhnkcp']);
+                takeOverProvider: true,
+            ), $ipgmMny);
 
             Log::info('KCP: vbank deposit confirmed', [
                 'tno' => $tno, 'order_no' => $orderNo, 'ipgm_mnyx' => $ipgmMny,
@@ -692,7 +703,7 @@ class PaymentCallbackController
      * 기록한다. 금액이 다르거나 비어 있으면 발급된 계좌를 취소하고 아무것도 기록하지 않는다.
      *
      * @param  array  $validated  검증된 콜백·통보 파라미터
-     * @param  Order  $order  대상 주문
+     * @param  OrderRecord  $order  대상 주문
      * @param  string  $encData  KCP 암호화 결제 데이터
      * @param  string  $encInfo  KCP 암호화 결제 정보
      * @param  string  $ordrIdxx  주문번호
@@ -703,7 +714,7 @@ class PaymentCallbackController
      */
     private function handleVbankIssued(
         array $validated,
-        Order $order,
+        OrderRecord $order,
         string $encData,
         string $encInfo,
         string $ordrIdxx,
@@ -864,8 +875,9 @@ class PaymentCallbackController
         // 취소 주문 재결제 — 되살리기는 상태 변경이므로 PG 서버가 발급을 확인해 준 PC 분기에서만
         // 수행한다. 모바일 분기는 서버 호출이 없어 발급 증거가 콜백 평문뿐이라, 되살리면
         // 주문번호만 아는 제3자가 남의 취소 주문을 되돌릴 수 있다.
-        if ($order->order_status === OrderStatusEnum::CANCELLED) {
-            if ($isMobile || ! $this->restoreRetryableKcpOrder($order, null)) {
+        if ($order->orderStatus === OrderStatusEnum::CANCELLED) {
+            $restoredOrder = $isMobile ? null : $this->restoreKcpOrderForRetry($order, null);
+            if ($restoredOrder === null) {
                 Log::warning('KCP: cancelled vbank order not restored (no server-side issuance proof)', [
                     'ordr_idxx' => $ordrIdxx,
                     'is_mobile' => $isMobile,
@@ -877,7 +889,7 @@ class PaymentCallbackController
                 ]));
             }
 
-            $order = $order->fresh('payment') ?? $order;
+            $order = $restoredOrder;
         }
 
         // 가상계좌 발급 정보를 OrderPayment vbank 전용 컬럼에 저장한다. 주문은 PENDING_PAYMENT 를 유지하고
@@ -900,17 +912,18 @@ class PaymentCallbackController
                 }
             }
 
-            $order->payment()->update(array_filter([
-                'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
-                'pg_provider' => self::KCP_PROVIDER,
-                'transaction_id' => $tno ?: null,
-                'vbank_name' => $bankname,
-                'vbank_number' => $account,
-                'vbank_holder' => $pgResponse['depositor'] ?? null,
-                'vbank_due_at' => $vbankDueAt,
-                'vbank_issued_at' => now(),
-                'payment_device' => $isMobile ? 'mobile' : 'pc',
-                'payment_meta' => [
+            // 발급 저장(입금대기 전이·PG 식별자 nhnkcp·계좌 컬럼·결제 meta 통째 교체, null 값은 건드리지 않음) 뒤
+            // 커밋이 끝나면 계약이 주문한 장바구니 항목을 정리한다 — 계좌를 받은 순간 고객의 주문은 끝났다
+            // (입금 전이라도 정리하고 재고는 입금 때 차감).
+            $this->bridge->onVbankAccountIssued($ordrIdxx, self::KCP_PROVIDER, new VbankIssuance(
+                vbankIssuedAt: now(),
+                transactionId: $tno ?: null,
+                vbankName: $this->stringOrNullValue($bankname),
+                vbankNumber: $this->stringOrNullValue($account),
+                vbankHolder: $this->stringOrNullValue($pgResponse['depositor'] ?? null),
+                vbankDueAt: $vbankDueAt,
+                paymentDevice: $isMobile ? 'mobile' : 'pc',
+                paymentMeta: [
                     'result_code' => $pgResponse['res_cd'] ?? null,
                     'tno' => $tno ?: null,
                     ...$this->currentCredentialMeta(),
@@ -921,8 +934,16 @@ class PaymentCallbackController
                     'pg_response_sanitized' => true,
                     'pg_raw_response' => $this->sanitizePgResponse($pgResponse, self::VBANK_ISSUE_RESPONSE_KEYS),
                 ],
-            ], fn ($v) => $v !== null));
+                clearCart: true,
+                takeOverProvider: true,
+            ));
         } catch (\Exception $e) {
+            if ($this->isVbankIssuanceSaved($ordrIdxx, $tno ?: null, $this->stringOrNullValue($account))) {
+                // 발급 저장은 끝났고 그 뒤 장바구니 정리가 실패했다 — 종전처럼 바깥(authCallback) catch 로 넘긴다.
+                // 저장된 계좌가 있는 주문을 실패로 바꾸지 않는다.
+                throw $e;
+            }
+
             Log::error('KCP: failed to save vbank info to OrderPayment', [
                 'ordr_idxx' => $ordrIdxx,
                 'error' => $e->getMessage(),
@@ -931,13 +952,7 @@ class PaymentCallbackController
             // PG 서버가 발급을 확인해 준 PC 분기에서만 주문에 반영한다. 모바일 분기의 발급 데이터는
             // 콜백 평문이라 위조할 수 있어, 저장 실패를 근거로 주문을 취소시키는 통로가 된다.
             if (! $isMobile) {
-                $failedOrder = $this->orderService->failPayment($order, 'vbank_save_failed', $e->getMessage());
-                $this->markKcpPaymentFailureRecord(
-                    $failedOrder,
-                    'vbank_save_failed',
-                    $e->getMessage(),
-                    'vbank_save_failed',
-                );
+                $this->recordKcpOrderFailure($ordrIdxx, 'vbank_save_failed', $e->getMessage(), 'vbank_save_failed');
             }
 
             return redirect($this->resolveFailUrl([
@@ -947,12 +962,45 @@ class PaymentCallbackController
             ]));
         }
 
-        // 계좌를 받은 순간 고객의 주문은 끝났다 — 입금 전이라도 주문한 장바구니 항목을 정리한다(재고는 입금 때 차감).
-        $this->orderService->onVbankAccountIssued($order);
-
         $this->queueReceiptCookie($ordrIdxx);
 
         return redirect($this->resolveSuccessUrl($ordrIdxx));
+    }
+
+    /**
+     * 이번 가상계좌 발급 정보가 이미 저장됐는지 확인합니다.
+     *
+     * 발급 저장이 커밋된 뒤의 실패(장바구니 정리)와 저장 자체의 실패를 가른다.
+     *
+     * @param  string  $ordrIdxx  주문번호
+     * @param  string|null  $tno  발급 거래번호
+     * @param  string|null  $account  발급 계좌번호
+     * @return bool 이 PG 결제 행이 이번 계좌로 입금대기면 true
+     */
+    private function isVbankIssuanceSaved(string $ordrIdxx, ?string $tno, ?string $account): bool
+    {
+        try {
+            $payment = $this->bridge->findPaymentByOrderNumber(self::KCP_PROVIDER, $ordrIdxx);
+        } catch (\Throwable) {
+            return false;
+        }
+
+        return $payment !== null
+            && $payment->isWaitingDeposit
+            && $payment->vbankIssuedAt !== null
+            && $payment->vbankNumber === $account
+            && ($tno === null || $payment->transactionId === $tno);
+    }
+
+    /**
+     * PG 응답 값을 문자열로 맞춥니다. (null 은 그대로 — 결제 행 갱신에서 걸러진다)
+     *
+     * @param  mixed  $value  PG 응답 값
+     * @return string|null 문자열 또는 null
+     */
+    private function stringOrNullValue(mixed $value): ?string
+    {
+        return $value === null ? null : (string) $value;
     }
 
     /**
@@ -961,13 +1009,13 @@ class PaymentCallbackController
      * KCP 입금통보에는 별도 서명 필드가 없으므로, 주문번호만 믿지 않고 저장된
      * tno/site_cd/가상계좌/금액을 모두 대조해 위조 통보를 차단한다.
      *
-     * @param  Order  $order  대상 주문
+     * @param  OrderRecord  $order  대상 주문
      * @param  array  $validated  검증된 콜백·통보 파라미터
      * @param  string  $tno  KCP 거래번호
      * @param  int  $amount  통보 금액
      * @return string|null 거절 사유 코드 (통과 시 null)
      */
-    private function validateVbankNotifyContext(Order $order, array $validated, string $tno, int $amount): ?string
+    private function validateVbankNotifyContext(OrderRecord $order, array $validated, string $tno, int $amount): ?string
     {
         $payment = $order->payment;
         if (! $payment) {
@@ -980,16 +1028,16 @@ class PaymentCallbackController
         // 결제완료로 되살아나 재고·마일리지가 재차감된다. 아래 결제상태 가드만으로는
         // 부족하다 — 미입금 취소가 결제행을 `waiting_deposit` 그대로 두던 시절의 행이
         // 그 가드를 통과하기 때문이다. 입금된 돈은 환불 절차로 돌려주어야 하는 별개 사건이다.
-        if ($order->order_status === OrderStatusEnum::CANCELLED) {
+        if ($order->orderStatus === OrderStatusEnum::CANCELLED) {
             return 'order_cancelled';
         }
 
-        if (! $payment->isVirtualAccount()) {
+        if (! $payment->isVirtualAccount) {
             return 'payment_method_not_vbank';
         }
 
-        $meta = $payment->payment_meta ?? [];
-        $storedTno = trim((string) ($payment->transaction_id ?: ($meta['tno'] ?? '')));
+        $meta = $payment->paymentMeta;
+        $storedTno = trim((string) ($payment->transactionId ?: ($meta['tno'] ?? '')));
         if ($storedTno === '' || ! hash_equals($storedTno, $tno)) {
             return 'tno_mismatch';
         }
@@ -1001,7 +1049,7 @@ class PaymentCallbackController
             return 'site_cd_mismatch';
         }
 
-        $storedAccount = trim((string) ($payment->vbank_number ?? ''));
+        $storedAccount = trim((string) ($payment->vbankNumber ?? ''));
         $receivedAccount = trim((string) ($validated['account'] ?? ''));
         if ($storedAccount === '' || $receivedAccount === '' || ! hash_equals($storedAccount, $receivedAccount)) {
             return 'account_mismatch';
@@ -1022,20 +1070,20 @@ class PaymentCallbackController
     /**
      * 입금통보에서 기대하는 금액을 구합니다. (결제완료면 실결제액, 아니면 결제 예정액)
      *
-     * @param  Order  $order  대상 주문
+     * @param  OrderRecord  $order  대상 주문
      * @return int|null 기대 금액 (산정 불가 시 null)
      */
-    private function expectedVbankNotifyAmount(Order $order): ?int
+    private function expectedVbankNotifyAmount(OrderRecord $order): ?int
     {
         $payment = $order->payment;
-        $paidAmount = (int) round((float) ($payment?->paid_amount_local ?? 0));
+        $paidAmount = (int) round($payment?->paidAmountLocal ?? 0.0);
 
-        if (($payment?->isPaid() ?? false) && $paidAmount > 0) {
+        if (($payment?->isPaid ?? false) && $paidAmount > 0) {
             return $paidAmount;
         }
 
         return $this->resolveExpectedPaymentPriceOrNull($order, 'vbank_notify', [
-            'transaction_id' => $payment?->transaction_id,
+            'transaction_id' => $payment?->transactionId,
         ]);
     }
 
@@ -1066,7 +1114,7 @@ class PaymentCallbackController
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
         $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
 
-        return SiteUrl::absolute(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
+        return ScreenUrl::toAbsolute(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
     }
 
     /**
@@ -1148,7 +1196,7 @@ class PaymentCallbackController
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $baseUrl = SiteUrl::absolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
+        $baseUrl = ScreenUrl::toAbsolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
 
         if (empty($queryParams)) {
             return $baseUrl;
@@ -1170,10 +1218,10 @@ class PaymentCallbackController
     /**
      * 주문 통화가 KRW 인지 판정합니다. (KCP 는 KRW 전용)
      *
-     * @param  Order  $order  대상 주문
+     * @param  OrderRecord  $order  대상 주문
      * @return bool KRW 이면 true
      */
-    private function isKrwOrder(Order $order): bool
+    private function isKrwOrder(OrderRecord $order): bool
     {
         return $this->orderCurrency($order) === 'KRW';
     }
@@ -1181,12 +1229,12 @@ class PaymentCallbackController
     /**
      * 주문 통화를 대문자로 정규화해 돌려줍니다. (빈 값이면 KRW)
      *
-     * @param  Order  $order  대상 주문
+     * @param  OrderRecord  $order  대상 주문
      * @return string 통화 코드
      */
-    private function orderCurrency(Order $order): string
+    private function orderCurrency(OrderRecord $order): string
     {
-        $currency = strtoupper(trim((string) ($order->currency ?? 'KRW')));
+        $currency = strtoupper(trim($order->currency));
 
         return $currency !== '' ? $currency : 'KRW';
     }

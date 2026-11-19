@@ -44,7 +44,8 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
     }
 
     /**
-     * @param  mixed  ...$args
+     * @param  mixed  ...$args  훅 인자(미사용)
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -241,7 +242,7 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
             'name' => 'Div',
             'if' => '{{'.self::TEST_MODE_CONDITION.'}}',
             'props' => [
-                'className' => 'mb-4 space-y-3 rounded-lg border border-orange-200 bg-orange-50 p-4 dark:border-orange-700 dark:bg-orange-900/20',
+                'className' => 'paynicepayments:mb-4 paynicepayments:space-y-3 paynicepayments:rounded-lg paynicepayments:border paynicepayments:border-orange-200 paynicepayments:bg-orange-50 paynicepayments:p-4 paynicepayments:dark:border-orange-700 paynicepayments:dark:bg-orange-900/20',
             ],
             'children' => [
                 $this->testModeNoticeRowNode(),
@@ -262,21 +263,29 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
             'name' => 'Div',
             'if' => '{{'.self::TEST_MODE_CONDITION.'}}',
             'props' => [
-                'className' => 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between',
+                'className' => 'paynicepayments:flex paynicepayments:flex-col paynicepayments:gap-3',
+            ],
+            // 폭 분기는 엔진 responsive 로 — Tailwind 폭 접두(`paynicepayments:sm:`)는 편집기 미리보기 기기 폭을 따르지 못한다(#869)
+            'responsive' => [
+                '640-' => [
+                    'props' => [
+                        'className' => 'paynicepayments:flex paynicepayments:flex-row paynicepayments:items-center paynicepayments:justify-between paynicepayments:gap-3',
+                    ],
+                ],
             ],
             'children' => [
                 [
                     'type' => 'basic',
                     'name' => 'Div',
                     'props' => [
-                        'className' => 'min-w-0',
+                        'className' => 'paynicepayments:min-w-0',
                     ],
                     'children' => [
                         [
                             'type' => 'basic',
                             'name' => 'Div',
                             'props' => [
-                                'className' => 'text-sm font-medium text-orange-950 dark:text-orange-50',
+                                'className' => 'paynicepayments:text-sm paynicepayments:font-medium paynicepayments:text-orange-950 paynicepayments:dark:text-orange-50',
                             ],
                             'text' => '$t:sirsoft-pay_nicepayments.admin.test_mode_settings_warning_plugin',
                         ],
@@ -284,7 +293,7 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
                             'type' => 'basic',
                             'name' => 'P',
                             'props' => [
-                                'className' => 'mt-0.5 text-sm leading-6 text-orange-800 dark:text-orange-200',
+                                'className' => 'paynicepayments:mt-0.5 paynicepayments:text-sm paynicepayments:leading-6 paynicepayments:text-orange-800 paynicepayments:dark:text-orange-200',
                             ],
                             'text' => '$t:sirsoft-pay_nicepayments.admin.test_mode_settings_warning_body',
                         ],
@@ -295,7 +304,14 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
                     'name' => 'Button',
                     'props' => [
                         'type' => 'button',
-                        'className' => 'btn btn-outline btn-sm w-full flex-shrink-0 border-orange-300 text-orange-900 hover:bg-orange-100 sm:w-auto dark:border-orange-600 dark:text-orange-100 dark:hover:bg-orange-900/40',
+                        'className' => 'pay-nicepayments-btn pay-nicepayments-btn-outline pay-nicepayments-btn-sm paynicepayments:w-full paynicepayments:flex-shrink-0 paynicepayments:border-orange-300 paynicepayments:text-orange-900 paynicepayments:hover:bg-orange-100 paynicepayments:dark:border-orange-600 paynicepayments:dark:text-orange-100 paynicepayments:dark:hover:bg-orange-900/40',
+                    ],
+                    'responsive' => [
+                        '640-' => [
+                            'props' => [
+                                'className' => 'pay-nicepayments-btn pay-nicepayments-btn-outline pay-nicepayments-btn-sm paynicepayments:w-auto paynicepayments:flex-shrink-0 paynicepayments:border-orange-300 paynicepayments:text-orange-900 paynicepayments:hover:bg-orange-100 paynicepayments:dark:border-orange-600 paynicepayments:dark:text-orange-100 paynicepayments:dark:hover:bg-orange-900/40',
+                            ],
+                        ],
                     ],
                     'actions' => [
                         [

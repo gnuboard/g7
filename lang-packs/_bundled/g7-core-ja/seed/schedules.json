@@ -1,0 +1,134 @@
+{
+  "layout-previews-cleanup": {
+    "label": "レイアウトプレビューの整理",
+    "description": "期限切れのレイアウトプレビューを削除します。"
+  },
+  "sanctum-prune": {
+    "label": "期限切れAPIトークンの整理",
+    "description": "期限切れから24時間が経過したAPIトークンを削除します。"
+  },
+  "auth-clear-resets": {
+    "label": "パスワード再設定トークンの整理",
+    "description": "期限切れのパスワード再設定トークンを削除します。"
+  },
+  "queue-prune-records": {
+    "label": "キュー処理記録・失敗タスクの整理",
+    "description": "保管期間を過ぎたキューの処理記録と失敗したタスクを削除します。"
+  },
+  "queue-prune-batches": {
+    "label": "キューバッチ記録の整理",
+    "description": "古いキューバッチ記録を削除します。"
+  },
+  "notification-cleanup": {
+    "label": "通知の整理",
+    "description": "保管期間を過ぎたサイト通知を削除します。"
+  },
+  "ext-bundles-cleanup": {
+    "label": "拡張バンドルの整理",
+    "description": "使われていない拡張フロントエンドのバンドルファイルを削除します。"
+  },
+  "ext-static-cleanup": {
+    "label": "拡張の静的公開の整理",
+    "description": "古いブートストラップリソースの静的公開ディレクトリを削除します(現在と直前のバージョンは保持)。"
+  },
+  "seo-prune-stats": {
+    "label": "SEOキャッシュ統計の整理",
+    "description": "古いSEOキャッシュ統計を削除します。"
+  },
+  "schedules-prune-history": {
+    "label": "スケジュール実行履歴の整理",
+    "description": "保管期間を過ぎたスケジュール実行履歴を削除します。"
+  },
+  "identity-prune-logs": {
+    "label": "本人認証ログの整理",
+    "description": "保管期間を過ぎた本人認証ログを破棄します。"
+  },
+  "activity-log-prune": {
+    "label": "アクティビティログの整理",
+    "description": "保管期間を過ぎたアクティビティログを削除します。"
+  },
+  "notification-log-prune": {
+    "label": "通知送信ログの整理",
+    "description": "保管期間を過ぎた通知送信ログを削除します。"
+  },
+  "notification-delivery-prune": {
+    "label": "受信者別送信記録の整理",
+    "description": "再試行期間を過ぎた受信者別の送信記録を削除します。"
+  },
+  "thumbnails-prune": {
+    "label": "サムネイルの整理",
+    "description": "規格が変わったか元画像がなくなった画像サムネイルファイルを削除します(設定でオフにした場合はスキップ)。"
+  },
+  "attachments-prune-orphans": {
+    "label": "孤立した添付ファイルの整理",
+    "description": "どこにも紐付いていない添付ファイルを破棄します(設定で有効にした場合のみ)。"
+  },
+  "storage-prune-leftovers": {
+    "label": "アップデート残存物の整理",
+    "description": "中断されたアップデート・インストールの一時ファイルと古いバックアップを削除します(最新のバックアップ1件は保持)。"
+  },
+  "privacy-process-retention": {
+    "label": "個人情報保有期間の処理",
+    "description": "保有期間を過ぎた個人情報を破棄します(設定で有効にしたドメインのみ)。"
+  },
+  "privacy-process-dormant": {
+    "label": "休眠会員の処理",
+    "description": "長期間ログインしていない会員を休眠に切り替えて案内します(設定で有効にした場合のみ)。"
+  },
+  "auth-process-password-expiry": {
+    "label": "パスワード有効期限の処理",
+    "description": "パスワード有効期限の事前案内と期限切れの処理を行います(設定で有効にした場合のみ)。"
+  },
+  "identity-expire-challenges": {
+    "label": "本人認証リクエストの期限切れ処理",
+    "description": "有効期限を過ぎた本人認証リクエストを期限切れの状態に変更します。"
+  },
+  "analytics-prune": {
+    "label": "訪問者統計元帳の整理",
+    "description": "保存期間を過ぎた訪問・アクション元帳を削除します(集計値は保持)。"
+  },
+  "dashboard-broadcast-resources": {
+    "label": "ダッシュボードリソースのブロードキャスト",
+    "description": "管理者ダッシュボードのシステムリソース情報をリアルタイムで送信します。"
+  },
+  "analytics-archive-hour": {
+    "label": "訪問者統計の時間集計",
+    "description": "本日の訪問者統計を再計算します。"
+  },
+  "analytics-archive-day": {
+    "label": "訪問者統計の日次集計",
+    "description": "昨日の訪問者統計を確定します。"
+  },
+  "analytics-check-volume": {
+    "label": "訪問者統計元帳のサイズ点検",
+    "description": "訪問・アクション元帳が警告しきい値を超えていないか点検します。"
+  },
+  "analytics-report-weekly": {
+    "label": "訪問者統計の週次レポート",
+    "description": "週次の訪問者統計レポートを送信します(設定で有効にした場合のみ)。"
+  },
+  "analytics-report-monthly": {
+    "label": "訪問者統計の月次レポート",
+    "description": "月次の訪問者統計レポートを送信します(設定で有効にした場合のみ)。"
+  },
+  "analytics-update-cloud-ranges": {
+    "label": "クラウドIP帯域の更新",
+    "description": "クラウド事業者のIP帯域一覧を更新します(クラウドIPブロックを有効にした場合のみ)。"
+  },
+  "analytics-broadcast-realtime": {
+    "label": "現在の接続者のブロードキャスト",
+    "description": "現在の接続者情報をリアルタイムで送信します(ブロードキャストを設定した場合のみ)。"
+  },
+  "language-pack-check-updates": {
+    "label": "言語パックのアップデート確認",
+    "description": "インストール済みの言語パックに新しいバージョンがあるか確認します。"
+  },
+  "sitemap-generate": {
+    "label": "サイトマップの生成",
+    "description": "サイトマップファイルを再生成します(SEO設定でサイトマップを有効にした場合のみ)。"
+  },
+  "geoip-update": {
+    "label": "GeoIPデータベースの更新",
+    "description": "MaxMind GeoIPデータベースをダウンロードして更新します(GeoIPと自動アップデートを有効にし、ライセンスキーを入力した場合のみ)。"
+  }
+}

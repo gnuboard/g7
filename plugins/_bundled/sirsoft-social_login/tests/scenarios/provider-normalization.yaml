@@ -1,0 +1,70 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#40 제공자마다 응답 모양과 오류 형식이 달라 제공자 × 변종을 곱하면 대부분이 존재하지 않는 조합이다.
+# 변종은 계획 부록 B 행(카카오 6, 네이버 5, 구글 4, 페이스북 3, OIDC 4)을 그대로 데이터 제공자로 둔다.
+feature: social_login_provider_normalization
+description: |
+  제공자 드라이버 5종이 인가 주소(state, PKCE, nonce), 토큰 응답(문자열 expires_in, 갱신 토큰 유무), 프로필 변종, 오류 코드,
+  연결 해제 요청을 제공자 문서대로 다루는지와 id_token 서명 검증(RS256 고정, kid 재조회 1회, 클레임 검사), state 1회성,
+  복귀 주소 제한을 잰다. 외부 HTTP 는 전부 가짜 응답이다.
+axes:
+  provider: [kakao, naver, google, facebook, oidc]
+  variant: [appendix_b]
+  jwt: [jwk_to_pem, signature, claims]
+  attack: [tampered_payload, alg_none, alg_hs256]
+  state: [one_time, redirect_whitelist]
+  profile: [normalize_helpers, email_trust]
+  reconsent: ['on', 'off', population]
+  scopes: [configured]
+  # 제공자 오류 응답 (제공자마다 형식이 다르다)
+  error: [KOE320, KOE006, '-401', invalid_request, http_401_resultcode, http_403_error_code, http_500_empty, invalid_grant, '190']
+  # id_token 클레임 검사 갈래
+  id_token: [sub_mismatch, nonce_mismatch, issuer_without_scheme, issuer_other]
+  # OIDC discovery 문서 상태
+  discovery: [incomplete]
+  # 서명 검증기의 JWKS 처리 갈래
+  verifier: [jwks_cache, kid_rotation, kid_unknown, jwks_unreachable]
+effects:
+  - authorize_url_has_pkce_and_state
+  - authorize_url_without_pkce
+  - authorize_url_has_nonce_and_scope
+  - token_normalized
+  - naver_token_request_carries_state
+  - token_exchange_is_get
+  - graph_version_from_settings
+  - profile_variants_normalized
+  - provider_error_code_mapped
+  - naver_profile_error_code_kept
+  - id_token_sub_must_match_userinfo
+  - id_token_nonce_checked
+  - google_issuer_both_forms_accepted
+  - id_token_issuer_checked
+  - revoke_uses_admin_key
+  - revoke_judged_by_http_status
+  - revoke_posts_token
+  - revoke_deletes_permissions
+  - discovery_cached
+  - discovery_required_keys_checked
+  - jwk_converts_to_same_public_key
+  - non_rsa_jwk_rejected
+  - valid_signature_accepted
+  - forged_tokens_rejected
+  - claim_failures_reported
+  - jwks_cached_one_fetch
+  - unknown_kid_refetched_once
+  - unknown_kid_rejected_after_one_refetch
+  - jwks_connection_failure_becomes_provider_error
+  - state_pulled_once
+  - redirect_limited_to_same_origin_path
+  - masked_email_and_string_bool_handled
+  - email_trust_matrix_resolved
+  - reconsent_expectation_covers_every_driver
+  - reconsent_params_only_on_reconsent
+  - kakao_reconsent_keeps_configured_scopes
+test_files:
+  - plugins/_bundled/sirsoft-social_login/tests/Unit/Drivers/KakaoDriverTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Unit/Drivers/NaverDriverTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Unit/Drivers/GoogleDriverTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Unit/Drivers/FacebookDriverTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Unit/Drivers/OidcDriverTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Unit/Drivers/ReconsentParamsTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Unit/Support/Jwt/JwtSupportTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Unit/Services/VerifierAndStateTest.php

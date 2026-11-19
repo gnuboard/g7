@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayNhnkcp\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Support\LocalizedValue;
 
 /**
  * NHN KCP 간편결제를 이커머스 결제수단 목록에 등록한다.
@@ -26,35 +27,35 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
             'name_key' => 'sirsoft-pay_nhnkcp::payment_methods.payco.name',
             'description_key' => 'sirsoft-pay_nhnkcp::payment_methods.payco.description',
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'P', 'class' => 'bg-red-600 text-white'],
+            'brand_mark' => ['text' => 'P', 'class' => 'paynhnkcp:bg-red-600 paynhnkcp:text-white'],
         ],
         [
             'id' => 'nhnkcp_naverpay',
             'name_key' => 'sirsoft-pay_nhnkcp::payment_methods.naverpay.name',
             'description_key' => 'sirsoft-pay_nhnkcp::payment_methods.naverpay.description',
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'N', 'class' => 'bg-green-700 text-white'],
+            'brand_mark' => ['text' => 'N', 'class' => 'paynhnkcp:bg-green-700 paynhnkcp:text-white'],
         ],
         [
             'id' => 'nhnkcp_naverpay_point',
             'name_key' => 'sirsoft-pay_nhnkcp::payment_methods.naverpay_point.name',
             'description_key' => 'sirsoft-pay_nhnkcp::payment_methods.naverpay_point.description',
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'NP', 'class' => 'bg-green-800 text-white'],
+            'brand_mark' => ['text' => 'NP', 'class' => 'paynhnkcp:bg-green-800 paynhnkcp:text-white'],
         ],
         [
             'id' => 'nhnkcp_kakaopay',
             'name_key' => 'sirsoft-pay_nhnkcp::payment_methods.kakaopay.name',
             'description_key' => 'sirsoft-pay_nhnkcp::payment_methods.kakaopay.description',
             'icon' => 'comment',
-            'brand_mark' => ['text' => 'K', 'class' => 'bg-yellow-400 text-gray-950'],
+            'brand_mark' => ['text' => 'K', 'class' => 'paynhnkcp:bg-yellow-400 paynhnkcp:text-gray-950'],
         ],
         [
             'id' => 'nhnkcp_applepay',
             'name_key' => 'sirsoft-pay_nhnkcp::payment_methods.applepay.name',
             'description_key' => 'sirsoft-pay_nhnkcp::payment_methods.applepay.description',
             'icon' => 'mobile-screen',
-            'brand_mark' => ['text' => 'A', 'class' => 'bg-gray-900 text-white'],
+            'brand_mark' => ['text' => 'A', 'class' => 'paynhnkcp:bg-gray-900 paynhnkcp:text-white'],
             // 애플페이는 iOS 기기에서만 결제 가능 — 비-iOS 기기에서는 체크아웃 레이아웃이
             // 이 수단을 렌더하지 않는다(과거 checkoutEasyPayInjector 의 iOS 게이팅 이관).
             'requires_ios' => true,
@@ -173,14 +174,10 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
     ): array {
         $entry = [
             'id' => $id,
-            'name' => [
-                'ko' => __($nameKey, [], 'ko'),
-                'en' => __($nameKey, [], 'en'),
-            ],
-            'description' => [
-                'ko' => __($descriptionKey, [], 'ko'),
-                'en' => __($descriptionKey, [], 'en'),
-            ],
+            // 이름·설명은 지원 언어(활성 언어팩) 전부로 채운다 — ko·en 만 실으면 일본어 등 언어팩을 켠 사이트의
+            // 그 언어 화면에 번역이 있는데도 사이트 기본 언어 이름이 보인다.
+            'name' => LocalizedValue::translateAll(fn () => __($nameKey)),
+            'description' => LocalizedValue::translateAll(fn () => __($descriptionKey)),
             'icon' => $icon,
             'source' => 'plugin:'.self::PLUGIN_IDENTIFIER,
             'defaults' => [

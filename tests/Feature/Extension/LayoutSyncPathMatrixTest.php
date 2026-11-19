@@ -3,6 +3,7 @@
 namespace Tests\Feature\Extension;
 
 use App\Enums\ExtensionStatus;
+use App\Enums\LayoutSyncMode;
 use App\Extension\Layout\LayoutContentComparator;
 use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\Layout\LayoutSyncSummary;
@@ -411,8 +412,8 @@ class LayoutSyncPathMatrixTest extends TestCase
     // @scenario source=plugin, path=manual_refresh, unit=extension_fragment
 
     /**
-     * 수동 「레이아웃 갱신」(식별자만 넘기는 호출 — 서비스·커맨드가 쓰는 모양)은 파일이 그대로여도 운영자 수정을 파일 판으로
-     * 되돌린다 — keep 도입 뒤에도 덮어쓰기 의미를 유지한다 (L12).
+     * 덮어쓰기 전략을 명시한 「레이아웃 갱신」(`--layout-strategy=overwrite`·모달 「모두 교체」)은 파일이 그대로여도 운영자
+     * 수정을 파일 판으로 되돌린다 (L12). 전략을 생략한 갱신은 keep 이 기본이다(#888 — RefreshLayoutStrategyTest).
      *
      * @scenario source=template, path=manual_refresh, unit=partial
      *
@@ -430,9 +431,9 @@ class LayoutSyncPathMatrixTest extends TestCase
         $lock = (int) $row->lock_version;
 
         match ($source) {
-            'template' => app(TemplateManager::class)->refreshTemplateLayouts($this->fixtureTemplate),
-            'module' => app(ModuleManager::class)->refreshModuleLayouts($this->fixtureModule),
-            'plugin' => app(PluginManager::class)->refreshPluginLayouts($this->fixturePlugin),
+            'template' => app(TemplateManager::class)->refreshTemplateLayouts($this->fixtureTemplate, LayoutSyncMode::Overwrite),
+            'module' => app(ModuleManager::class)->refreshModuleLayouts($this->fixtureModule, LayoutSyncMode::Overwrite),
+            'plugin' => app(PluginManager::class)->refreshPluginLayouts($this->fixturePlugin, LayoutSyncMode::Overwrite),
         };
 
         $this->assertOverwritten($row, $lock, $this->theirs($source, $unit));
@@ -645,8 +646,8 @@ class LayoutSyncPathMatrixTest extends TestCase
     // ──────────────────────────────────────────────────────────────────────
 
     /**
-     * 모듈 keep 업데이트가 운영자와 같은 조각을 새 버전도 고쳐 충돌로 끝나도, 운영자 판은 남기고 원본·해시는 새 판으로 옮기며
-     * 버전 이력에 충돌 기록을 남긴다 — 겹친 새 판 변경을 다음 업데이트가 다시 제안하지 않게 (W17).
+     * 모듈 keep 업데이트가 운영자와 같은 조각을 새 버전도 고쳐 충돌로 끝나도, 운영자 판은 남기고 원본·해시는 새 판으로 옮긴다
+     * — 겹친 새 판 변경을 다음 업데이트가 다시 제안하지 않게. 본문이 그대로라 버전 이력은 늘지 않는다.
      *
      * @effects conflicting_change_keeps_operator_version_and_is_reported, conflict_moves_base_to_new_version
      *
@@ -672,7 +673,11 @@ class LayoutSyncPathMatrixTest extends TestCase
         $this->assertTrue(LayoutContentComparator::sameDocument($fresh->getRawOriginal('content'), $edited), '충돌이면 운영자 판을 남긴다');
         $this->assertSame($this->computeContentHash($theirs), $fresh->original_content_hash, '충돌 뒤 원본 해시는 새 판');
         $this->assertStringContainsString('A-new', (string) $fresh->getRawOriginal('original_content'), '충돌 뒤 원본 본문은 새 판');
-        $this->assertSame('extension_update', TemplateLayoutVersion::where('layout_id', $row->id)->orderByDesc('version')->first()?->changes_summary['source'] ?? null);
+        // 본문이 그대로인 충돌은 되돌릴 판이 없어 버전을 남기지 않는다 — 충돌은 위 결과(업데이트 보고·활동 로그)로 알린다 (#888)
+        $this->assertFalse(
+            TemplateLayoutVersion::where('layout_id', $row->id)->get()->contains(fn ($v) => ($v->changes_summary['source'] ?? null) === 'extension_update'),
+            '본문이 그대로인 충돌은 같은 내용 버전을 남기지 않는다'
+        );
     }
 
     // ──────────────────────────────────────────────────────────────────────

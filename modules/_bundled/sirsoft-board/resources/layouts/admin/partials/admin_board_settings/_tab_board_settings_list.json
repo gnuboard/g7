@@ -14,14 +14,14 @@
             "type": "layout",
             "name": "SectionLayout",
             "props": {
-                "className": "admin-card"
+                "className": "board-admin-card"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "H3",
                     "props": {
-                        "className": "card-title"
+                        "className": "board-card-title"
                     },
                     "text": "$t:sirsoft-board.admin.settings.sections.list"
                 },
@@ -29,7 +29,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "board-row-stack"
                     },
                     "children": [
                         {
@@ -44,14 +44,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-4"
+                                        "className": "board-flex-center board:gap-4"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "flex-start gap-2 text-body font-medium flex-1 cursor-pointer"
+                                                "className": "board-flex-start board:gap-2 board-text-body board:font-medium board:flex-1 board:cursor-pointer"
                                             },
                                             "children": [
                                                 {
@@ -70,7 +70,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "checkbox",
-                                                        "className": "checkbox-aligned",
+                                                        "className": "board-checkbox-aligned",
                                                         "checked": "{{(_local.bulkApplyFields ?? []).includes('order_by')}}",
                                                         "disabled": "{{!_computed.canBulkApply}}"
                                                     }
@@ -88,7 +88,7 @@
                                                             "type": "basic",
                                                             "name": "P",
                                                             "props": {
-                                                                "className": "text-field-hint"
+                                                                "className": "board-text-field-hint"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.fields.descriptions.order_by"
                                                         }
@@ -102,7 +102,7 @@
                                             "props": {
                                                 "aria-label": "$t:sirsoft-board.admin.settings.fields.order_by",
                                                 "name": "basic_defaults.order_by",
-                                                "className": "w-48 flex-shrink-0 text-sm",
+                                                "className": "board:w-48 board:flex-shrink-0 board:text-sm",
                                                 "disabled": "{{_computed.isReadOnly}}",
                                                 "options": [
                                                     {
@@ -140,14 +140,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-4"
+                                        "className": "board-flex-center board:gap-4"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "flex-start gap-2 text-body font-medium flex-1 cursor-pointer"
+                                                "className": "board-flex-start board:gap-2 board-text-body board:font-medium board:flex-1 board:cursor-pointer"
                                             },
                                             "children": [
                                                 {
@@ -166,7 +166,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "checkbox",
-                                                        "className": "checkbox-aligned",
+                                                        "className": "board-checkbox-aligned",
                                                         "checked": "{{(_local.bulkApplyFields ?? []).includes('order_direction')}}",
                                                         "disabled": "{{!_computed.canBulkApply}}"
                                                     }
@@ -184,7 +184,7 @@
                                                             "type": "basic",
                                                             "name": "P",
                                                             "props": {
-                                                                "className": "text-field-hint"
+                                                                "className": "board-text-field-hint"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.fields.descriptions.order_direction"
                                                         }
@@ -198,7 +198,7 @@
                                             "props": {
                                                 "aria-label": "$t:sirsoft-board.admin.settings.fields.order_direction",
                                                 "name": "basic_defaults.order_direction",
-                                                "className": "w-48 flex-shrink-0 text-sm",
+                                                "className": "board:w-48 board:flex-shrink-0 board:text-sm",
                                                 "disabled": "{{_computed.isReadOnly}}",
                                                 "options": [
                                                     {
@@ -228,14 +228,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-4"
+                                        "className": "board-flex-center board:gap-4"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "flex-start gap-2 text-body font-medium flex-1 cursor-pointer"
+                                                "className": "board-flex-start board:gap-2 board-text-body board:font-medium board:flex-1 board:cursor-pointer"
                                             },
                                             "children": [
                                                 {
@@ -254,7 +254,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "checkbox",
-                                                        "className": "checkbox-aligned",
+                                                        "className": "board-checkbox-aligned",
                                                         "checked": "{{(_local.bulkApplyFields ?? []).includes('per_page')}}",
                                                         "disabled": "{{!_computed.canBulkApply}}"
                                                     }
@@ -272,7 +272,7 @@
                                                             "type": "basic",
                                                             "name": "P",
                                                             "props": {
-                                                                "className": "text-field-hint"
+                                                                "className": "board-text-field-hint"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.fields.descriptions.per_page|min={{_local?.form?._meta?.limits?.per_page_min ?? 5}}|max={{_local?.form?._meta?.limits?.per_page_max ?? 100}}"
                                                         }
@@ -284,7 +284,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-shrink-0"
+                                                "className": "board:flex-shrink-0"
                                             },
                                             "children": [
                                                 {
@@ -296,7 +296,7 @@
                                                         "name": "basic_defaults.per_page",
                                                         "min": "{{_local?.form?._meta?.limits?.per_page_min ?? 5}}",
                                                         "max": "{{_local?.form?._meta?.limits?.per_page_max ?? 100}}",
-                                                        "className": "{{(_local.errors?.['basic_defaults.per_page']) ? 'w-32 input-error' : 'w-32'}}",
+                                                        "className": "{{(_local.errors?.['basic_defaults.per_page']) ? 'board:w-32 board-input-error' : 'board:w-32'}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
@@ -305,7 +305,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.errors?.['basic_defaults.per_page']}}",
                                                     "props": {
-                                                        "className": "text-xs text-red-600 dark:text-red-400 block mt-1"
+                                                        "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
                                                     },
                                                     "text": "{{(Array.isArray(_local.errors?.['basic_defaults.per_page']) ? _local.errors['basic_defaults.per_page'][0] : _local.errors?.['basic_defaults.per_page']) ?? ''}}"
                                                 }
@@ -327,14 +327,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-4"
+                                        "className": "board-flex-center board:gap-4"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "flex-start gap-2 text-body font-medium flex-1 cursor-pointer"
+                                                "className": "board-flex-start board:gap-2 board-text-body board:font-medium board:flex-1 board:cursor-pointer"
                                             },
                                             "children": [
                                                 {
@@ -353,7 +353,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "checkbox",
-                                                        "className": "checkbox-aligned",
+                                                        "className": "board-checkbox-aligned",
                                                         "checked": "{{(_local.bulkApplyFields ?? []).includes('per_page_mobile')}}",
                                                         "disabled": "{{!_computed.canBulkApply}}"
                                                     }
@@ -371,7 +371,7 @@
                                                             "type": "basic",
                                                             "name": "P",
                                                             "props": {
-                                                                "className": "text-field-hint"
+                                                                "className": "board-text-field-hint"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.fields.descriptions.per_page_mobile|min={{_local?.form?._meta?.limits?.per_page_min ?? 5}}|max={{_local?.form?._meta?.limits?.per_page_max ?? 100}}"
                                                         }
@@ -383,7 +383,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-shrink-0"
+                                                "className": "board:flex-shrink-0"
                                             },
                                             "children": [
                                                 {
@@ -395,7 +395,7 @@
                                                         "name": "basic_defaults.per_page_mobile",
                                                         "min": "{{_local?.form?._meta?.limits?.per_page_min ?? 5}}",
                                                         "max": "{{_local?.form?._meta?.limits?.per_page_max ?? 100}}",
-                                                        "className": "{{(_local.errors?.['basic_defaults.per_page_mobile']) ? 'w-32 input-error' : 'w-32'}}",
+                                                        "className": "{{(_local.errors?.['basic_defaults.per_page_mobile']) ? 'board:w-32 board-input-error' : 'board:w-32'}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
@@ -404,7 +404,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.errors?.['basic_defaults.per_page_mobile']}}",
                                                     "props": {
-                                                        "className": "text-xs text-red-600 dark:text-red-400 block mt-1"
+                                                        "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
                                                     },
                                                     "text": "{{(Array.isArray(_local.errors?.['basic_defaults.per_page_mobile']) ? _local.errors['basic_defaults.per_page_mobile'][0] : _local.errors?.['basic_defaults.per_page_mobile']) ?? ''}}"
                                                 }

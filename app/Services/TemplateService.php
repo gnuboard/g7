@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
@@ -11,18 +12,32 @@ use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
+use App\Enums\LayoutSyncMode;
 use App\Exceptions\ExtensionOperationLockException;
+use App\Exceptions\PackageIntegrityException;
 use App\Exceptions\TemplateNotFoundException;
 use App\Exceptions\TemplateOperationException;
 use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\GithubHelper;
+use App\Extension\Helpers\TemplateLastActiveGuard;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
+use App\Extension\Integrity\ExtensionIntegrityRecorder;
+use App\Extension\Integrity\PackageAcquirer;
+use App\Extension\Integrity\PackageExpectation;
+use App\Extension\Integrity\PackageIntegrityOptions;
+use App\Extension\Layout\LayoutSyncOptions;
+use App\Extension\Template\TemplateSettingsSchema;
 use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ResolvesLanguageFragments;
 use App\Models\Template;
+use App\Rules\AllowedTemplateFileType;
+use App\Services\Concerns\ResolvesExtensionAssetType;
+use App\Services\Concerns\SecuresExtensionAssetPath;
 use App\Services\Extension\ExtensionIconResolver;
+use App\Services\Layout\LayoutDeletionService;
+use App\Services\Layout\TemplateChildrenDeleter;
 use App\Support\CustomAssets;
 use App\Support\ExtensionDependencies;
 use App\Support\Filesystem\PathGuard;
@@ -30,6 +45,7 @@ use App\Support\LayoutMarkup\EmptyMap;
 use App\Support\LocaleTag;
 use App\Support\LocalizedValue;
 use App\Support\SafeExceptionMessage;
+use App\Support\UploadedFileName;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -40,7 +56,9 @@ class TemplateService
     // 편집기 표면의 레이아웃/조각 읽기는 소스 SSoT 규약에 위임한다 (S19 ⑦ · R16).
     // 사본을 두면 `.g7.html` 을 못 보고, 그 결과가 "마크업 전용 레이아웃이 트리에서 사라짐" 이었다.
     use CollectsFragmentSources;
+    use ResolvesExtensionAssetType;
     use ResolvesLanguageFragments;
+    use SecuresExtensionAssetPath;
 
     /**
      * 직전 라우트 병합에서 활성 모듈 디렉토리가 비어 라우트가 누락됐는지 여부
@@ -436,6 +454,81 @@ class TemplateService
     }
 
     /**
+     * template.json 최상위 `expose` 에서 무시하는 예약 이름 — 선언 자체와 서버가 붙이는 캐시 버전
+     */
+    public const TEMPLATE_EXPOSE_RESERVED = ['expose', 'cache_version'];
+
+    /**
+     * 활성 템플릿의 template.json 을 읽습니다 — config API(`GET /api/templates/{id}/config`)와 셸 인라인이 같은 캐시를 쓴다.
+     *
+     * 캐시 키는 `template.config.{identifier}`(1시간)이고 템플릿 생명주기 캐시 무효화(`TemplateManager`)가 지운다.
+     * 결과는 `['success' => true, 'data' => template.json]` 또는 `['error' => 'template_not_found'|'config_not_found'|'invalid_json']`
+     * 이다. 오류는 캐시하지 않는다(일시적 상태 회복). 빈 맵(`dependencies.modules: {}` 등)은 `{}` 로 응답하도록 보존해 읽는다 (#758).
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @return array{success?: true, data?: array<string, mixed>, error?: string} 읽은 결과
+     */
+    public function getTemplateConfigData(string $identifier): array
+    {
+        $cache = app(CacheInterface::class);
+        $key = "template.config.{$identifier}";
+        $cached = $cache->get($key);
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $template = $this->findByIdentifier($identifier);
+        if (! $template || $template->status !== ExtensionStatus::Active->value) {
+            return ['error' => 'template_not_found'];
+        }
+
+        $configPath = base_path("templates/{$identifier}/template.json");
+        if (! file_exists($configPath)) {
+            return ['error' => 'config_not_found'];
+        }
+
+        $data = EmptyMap::decodePreserving((string) file_get_contents($configPath));
+        if (json_last_error() !== JSON_ERROR_NONE || ! is_array($data)) {
+            return ['error' => 'invalid_json'];
+        }
+
+        $result = ['success' => true, 'data' => $data];
+        $cache->put($key, $result, 3600);
+
+        return $result;
+    }
+
+    /**
+     * 셸 HTML(`G7Config.templateConfig`)에 미리 실을 템플릿 설정 — template.json `expose` 에 제작자가 선언한 키만 (#879).
+     *
+     * 설정값의 `expose`(설정 주인이 선언한 키만 G7Config 에 싣는다)와 같은 방식이다. 선언했는데 template.json 에 없는 키는
+     * null(「선언했고 값 없음」), 문자열이 아닌 항목·최상위 키 이름 모양이 아닌 항목(`a.b` 등)·예약 이름은 무시하고 중복은 하나로 둔다.
+     * `expose` 가 없거나 배열이 아니면 null — 엔진이 종전처럼 config API 를 부른다(제3자 템플릿 하위 호환).
+     * 이 값들은 config API 로도 토큰 없이 공개된다. 그래도 HTML 에는 선언한 것만 싣는다.
+     *
+     * @param  string  $identifier  템플릿 식별자 (활성 템플릿)
+     * @return array<string, mixed>|null 키 → 값 (싣지 않으면 null)
+     */
+    public function getExposedTemplateConfig(string $identifier): ?array
+    {
+        $config = $this->getTemplateConfigData($identifier);
+        $data = $config['data'] ?? null;
+        if (! is_array($data) || ! array_key_exists('expose', $data) || ! is_array($data['expose'])) {
+            return null;
+        }
+
+        $exposed = [];
+        foreach ($data['expose'] as $key) {
+            if (! is_string($key) || preg_match('/^[A-Za-z0-9_-]+$/', $key) !== 1 || in_array($key, self::TEMPLATE_EXPOSE_RESERVED, true)) {
+                continue;
+            }
+            $exposed[$key] = $data[$key] ?? null;
+        }
+
+        return $exposed;
+    }
+
+    /**
      * 템플릿을 설치합니다.
      *
      * @param  string  $identifier  설치할 템플릿 식별자
@@ -606,8 +699,9 @@ class TemplateService
      * 것으로만 바꾸게 한다 — API 도 같은 조건으로 받아야 화면과 서버의 판정이 어긋나지 않는다.
      * 비활성 템플릿이나, 같은 유형에 다른 활성 템플릿이 남는 경우는 통과한다.
      *
-     * 관리자 API 경로에만 적용한다. 코어 비호환 자동 비활성화(`CoreServiceProvider`)와 Artisan
-     * 커맨드는 매니저를 직접 호출하므로 이 가드를 거치지 않는다.
+     * 판정은 `TemplateLastActiveGuard` 한 곳이고 `template:uninstall` 명령도 같은 판정으로 거절한다. 코어 비호환 자동
+     * 비활성화는 매니저를 직접 호출하므로 거치지 않는다. `template:deactivate` 명령도 매니저를 직접 부르며, 끈 뒤 「활성
+     * 템플릿 없음」 경고를 낸다.
      *
      * @param  Template  $template  대상 템플릿 레코드
      * @param  string  $messageKey  거절 메시지 번역 키 (`:type` 치환)
@@ -617,19 +711,12 @@ class TemplateService
      */
     private function assertNotLastActiveOfType(Template $template, string $messageKey): void
     {
-        if ($template->status !== ExtensionStatus::Active->value) {
-            return;
-        }
-
-        $othersActive = $this->templateRepository->getActiveByType($template->type)
-            ->contains(fn (Template $active) => $active->identifier !== $template->identifier);
-
-        if ($othersActive) {
+        if (! TemplateLastActiveGuard::isLastActiveOfType($template, $this->templateRepository)) {
             return;
         }
 
         throw ValidationException::withMessages([
-            'template_name' => [__($messageKey, ['type' => __('templates.types.'.$template->type)])],
+            'template_name' => [TemplateLastActiveGuard::message($template, $messageKey)],
         ]);
     }
 
@@ -723,6 +810,12 @@ class TemplateService
     /**
      * 템플릿 DB 레코드를 삭제합니다 (before/after_delete 훅 발화).
      *
+     * 템플릿 행만 지우던 탓에 자식(조각·커스텀 번역·첨부 파일·미리보기·레이아웃과 그 버전)이 DB CASCADE 로 기록 없이
+     * 사라졌다. 이제 템플릿 제거와 같은 순서로 자식을 명시적으로 지우고(운영자 데이터는 활동 로그 스냅샷) 행을 지운다.
+     *
+     * @deprecated 7.2.0 코어 안에 호출처가 없다 — 템플릿 제거는 `TemplateManager::uninstallTemplate()` 를 쓴다. 공개 훅
+     *             `core.templates.before_delete`·`after_delete` 와 함께 다음 메이저에서 지운다.
+     *
      * @param  int  $id  템플릿 DB 레코드 ID
      * @return bool 삭제 성공 여부
      *
@@ -737,6 +830,9 @@ class TemplateService
         if (! $template) {
             throw new TemplateOperationException('templates.not_found');
         }
+
+        app(TemplateChildrenDeleter::class)->deleteChildrenBeforeLayouts($template->id);
+        app(LayoutDeletionService::class)->forceDeleteLayoutsByTemplate($template->id, 'template_uninstall');
 
         $result = $this->templateRepository->delete($id);
 
@@ -754,10 +850,15 @@ class TemplateService
      */
     public function getAssetFilePath(string $identifier, string $path): array
     {
-        // 1. 활성화된 템플릿 확인
+        // 1. 활성화된 템플릿 확인 — 설정 화면 부품 묶음(규약 경로 두 파일)만은 꺼진 템플릿도 내준다.
+        //    관리자 화면이 설치된 템플릿 설정 화면을 그 템플릿 부품으로 그리기 때문이다 (#434 D30)
         $template = $this->templateRepository->findByIdentifier($identifier);
+        $servable = $template && (
+            $template->status === ExtensionStatus::Active->value
+            || ($template->status === ExtensionStatus::Inactive->value && TemplateSettingsSchema::isSettingsAssetPath($path))
+        );
 
-        if (! $template || $template->status !== ExtensionStatus::Active->value) {
+        if (! $servable) {
             return [
                 'success' => false,
                 'filePath' => null,
@@ -767,16 +868,25 @@ class TemplateService
         }
 
         // 2. Path Traversal 방지
-        $safePath = $this->sanitizePath($path);
+        $safePath = $this->sanitizeExtensionAssetPath($path);
 
         // 3. 파일 경로 구성
         //
         // 템플릿 자산은 `dist/` 이하가 기본이지만, 운영자 소유 디렉토리(`custom/`)만은
         // 그 밖에 있다 — 빌드 산출물이 아니라 사람이 넣은 파일이고, 확장 교체가
-        // 보존하는 대상이라 빌드 디렉토리에 둘 수 없다.
-        $filePath = str_starts_with($safePath, CustomAssets::DIRECTORY.'/')
-            ? base_path("templates/{$identifier}/{$safePath}")
-            : base_path("templates/{$identifier}/dist/{$safePath}");
+        // 보존하는 대상이라 빌드 디렉토리에 둘 수 없다. **봉쇄 기준도 그에 맞춰 갈린다** —
+        // `dist` 로 고정하면 운영자 자산이 언제나 기준 밖이라 통째로 404 가 된다.
+        // 확장 루트를 기준으로 삼는 것은 형제 둘(모듈·플러그인)과 같은 형태다.
+        //
+        // 구분자는 `/` 로 잇는다 — Windows 에서 `DIRECTORY_SEPARATOR` 로 이으면
+        // `base_path()` 가 돌려준 `/` 구간과 섞여 `templates/x\dist/js/a.js` 같은 혼합
+        // 경로가 되고, 그 값을 그대로 돌려받는 소비처·계약 테스트가 어긋난다.
+        // 봉쇄 판정(`extensionAssetPathIsContained`)은 `realpath()` 로 정규화한 뒤
+        // 비교하므로 이 자리의 구분자에 영향받지 않는다.
+        $basePath = str_starts_with($safePath, CustomAssets::DIRECTORY.'/')
+            ? base_path("templates/{$identifier}")
+            : base_path("templates/{$identifier}/dist");
+        $filePath = $basePath.'/'.$safePath;
 
         // 4. 파일 존재 확인
         if (! file_exists($filePath) || ! is_file($filePath)) {
@@ -788,8 +898,26 @@ class TemplateService
             ];
         }
 
+        // 정제만으로는 심볼릭 링크 경유 탈출을 걸러내지 못한다 — 해석된 절대 경로가
+        // 기준 안인지 재확인한다. 형제 둘(모듈·플러그인)은 이 계층을 갖는데 이 통로만
+        // 문자열 정제 하나로 서빙하고 있었다. trait 독블록은 그 반대로 적혀 있었고,
+        // 이 파일의 옛 주석이 근거로 삼던 「FormRequest 의 realpath 검사」는 요청 규칙
+        // 축이라 서비스를 직접 부르는 호출부에는 걸리지 않는다.
+        if (! $this->extensionAssetPathIsContained($filePath, $basePath)) {
+            return [
+                'success' => false,
+                'filePath' => null,
+                'mimeType' => null,
+                'error' => 'file_not_found',
+            ];
+        }
+
         // 5. 보안 검증 (허용된 확장자만)
-        if (! $this->isAllowedExtension($filePath)) {
+        //    목록을 여기 다시 적으면 검증 계층과 서비스 계층이 갈린다 — 실제로 갈려 있었다:
+        //    검증은 local 환경에서 `map` 을 허용하는데(dev 빌드의 `sourceMappingURL` 이 404 를
+        //    남기지 않도록) 서비스 목록에는 없어 그 완화가 **사문**이었고, 결과는 404 가 아니라
+        //    403 이었다. `ico` 도 형제 두 규칙에만 있었다. 규칙 클래스가 SSoT 다.
+        if (! $this->extensionAssetExtensionIsAllowed($filePath, AllowedTemplateFileType::getAllowedExtensions())) {
             return [
                 'success' => false,
                 'filePath' => null,
@@ -799,7 +927,7 @@ class TemplateService
         }
 
         // 6. MIME 타입 감지
-        $mimeType = $this->getMimeType($filePath);
+        $mimeType = $this->extensionAssetMimeType($filePath);
 
         return [
             'success' => true,
@@ -852,9 +980,10 @@ class TemplateService
      *
      * @param  string  $identifier  템플릿 식별자
      * @param  string  $locale  로케일 (ko, en 등)
+     * @param  bool  $includeInactive  설치된 꺼진 템플릿도 허용할지 (관리자 화면이 그 템플릿 문구를 읽을 때 — 공개 응답은 켜진 템플릿만)
      * @return array{success: bool, langPath: string|null, error: string|null}
      */
-    public function getLanguageFilePath(string $identifier, string $locale): array
+    public function getLanguageFilePath(string $identifier, string $locale, bool $includeInactive = false): array
     {
         // 1. 로케일 형식 검증 — 언어팩 설치 규칙(BCP 47, 20자 이하)과 같은 기준
         if (! LocaleTag::isValid($locale)) {
@@ -867,7 +996,7 @@ class TemplateService
 
         // 2. 템플릿 DB 조회 및 활성화 여부 확인
         $template = $this->templateRepository->findByIdentifier($identifier);
-        if (! $template || $template->status !== ExtensionStatus::Active->value) {
+        if (! $template || (! $includeInactive && $template->status !== ExtensionStatus::Active->value)) {
             return [
                 'success' => false,
                 'langPath' => null,
@@ -946,12 +1075,13 @@ class TemplateService
      *
      * @param  string  $identifier  템플릿 식별자
      * @param  string  $locale  로케일 (ko, en 등)
+     * @param  bool  $includeInactive  설치된 꺼진 템플릿도 허용할지 (getLanguageFilePath 와 같다)
      * @return array{success: bool, data: array|null, error: string|null}
      */
-    public function getLanguageDataWithModules(string $identifier, string $locale): array
+    public function getLanguageDataWithModules(string $identifier, string $locale, bool $includeInactive = false): array
     {
         // 1. 템플릿 다국어 파일 경로 조회
-        $result = $this->getLanguageFilePath($identifier, $locale);
+        $result = $this->getLanguageFilePath($identifier, $locale, $includeInactive);
 
         if (! $result['success']) {
             return [
@@ -1012,11 +1142,58 @@ class TemplateService
             $locale
         );
 
+        // 8. 관리자 화면 응답이면 설치된 템플릿(꺼진 것 포함)이 공급한 설정 화면 문구를 `{템플릿id}.{묶음}` 으로 감싸 싣는다 (#434 D28).
+        //    설정 화면 부품은 그 템플릿 것이고 어느 관리자 템플릿이 켜져 있든 떠야 하므로, 문구도 모듈·플러그인처럼
+        //    식별자로 감싸 관리자 응답에 합친다(그 템플릿 언어팩 오버레이 포함). 꺼진 템플릿 문구 조회
+        //    (`$includeInactive`)는 이 단계를 건너뛴다 — 설정 라벨 조회가 다시 이 단계를 부르지 않게.
+        if (! $includeInactive && $this->templateRepository->findByIdentifier($identifier)?->type === 'admin') {
+            $mergedData = $this->deepMergeLanguageData($mergedData, $this->loadTemplateSettingsLanguageData($locale));
+        }
+
         return [
             'success' => true,
             'data' => $mergedData,
             'error' => null,
         ];
+    }
+
+    /**
+     * 설치된 템플릿이 공급한 설정 화면 문구를 모읍니다 — 설정 화면(`settings/template_settings.*`)이 있는 템플릿의
+     * 프론트 언어 중 부품 매니페스트가 밝힌 묶음(기본 `settings`)을 `{템플릿id}.{묶음}` 으로 감싼다 (#434).
+     *
+     * @param  string  $locale  로케일
+     * @return array<string, array<string, mixed>> 템플릿 식별자 => 감싼 문구
+     */
+    private function loadTemplateSettingsLanguageData(string $locale): array
+    {
+        $wrapped = [];
+
+        foreach ($this->templateRepository->getAllKeyedByIdentifier() as $identifier => $template) {
+            $identifier = (string) $identifier;
+
+            if (! in_array($template->status, [ExtensionStatus::Active->value, ExtensionStatus::Inactive->value], true)
+                || TemplateSettingsSchema::layoutPath($identifier) === null) {
+                continue;
+            }
+
+            try {
+                $result = $this->getLanguageDataWithModules($identifier, $locale, includeInactive: true);
+            } catch (\Throwable $e) {
+                Log::warning('템플릿 설정 화면 문구 로딩 실패 — 그 템플릿만 건너뜀', ['template' => $identifier, 'error' => $e->getMessage()]);
+
+                continue;
+            }
+
+            foreach (TemplateSettingsSchema::settingsLangGroups($identifier) as $group) {
+                $data = $result['data'][$group] ?? null;
+
+                if (is_array($data) && $data !== []) {
+                    $wrapped[$identifier][$group] = $data;
+                }
+            }
+        }
+
+        return $wrapped;
     }
 
     /**
@@ -1286,10 +1463,16 @@ class TemplateService
             return $route;
         }, $templateRoutesData['routes'] ?? []);
 
+        // 8.5. 템플릿 설정 화면 라우트도 admin 템플릿에만 (#434) — 설치된 모든 템플릿(꺼진 것 포함)
+        $templateSettingsRoutes = ($templateType === 'admin')
+            ? $this->loadTemplateSettingsRoutesData()
+            : [];
+
         $mergedRoutes = array_merge(
             $templateRoutes,
             $moduleRoutes,
-            $pluginRoutes
+            $pluginRoutes,
+            $templateSettingsRoutes
         );
 
         // 9.5. `requires` — 필요한 모듈·플러그인이 모두 켜져 있지 않은 라우트는 내지 않는다.
@@ -1581,8 +1764,11 @@ class TemplateService
         $pluginRoutes = ($templateType === 'admin')
             ? $this->loadActivePluginsRoutesData(true)
             : [];
+        $templateSettingsRoutes = ($templateType === 'admin')
+            ? $this->loadTemplateSettingsRoutesData()
+            : [];
 
-        $mergedRoutes = array_merge($templateRoutes, $moduleRoutes, $pluginRoutes);
+        $mergedRoutes = array_merge($templateRoutes, $moduleRoutes, $pluginRoutes, $templateSettingsRoutes);
 
         // 5. 시스템 라우트 주입 필터 (getRoutesDataWithModules 와 동일 확장점).
         $mergedRoutes = HookManager::applyFilters(
@@ -2144,6 +2330,46 @@ class TemplateService
     }
 
     /**
+     * 템플릿 설정 화면 라우트를 만듭니다 (#434) — 플러그인 설정 라우트 자동 생성과 같은 모양.
+     *
+     * 설치된 템플릿 중 설정 칸을 선언한 것마다 `(*)/admin/templates/{id}/settings` 꼴(앞의 별표는 마운트 와일드카드) →
+     * 템플릿이 공급한 화면 `{id}.template_settings`(활성 관리자 템플릿에 교차 등록된 행). 공용 화면은 없다 — 화면을 공급하지
+     * 않은 템플릿은 라우트를 만들지 않는다(#434 D32). 보기 권한은 템플릿 조회다.
+     *
+     * @return array<int, array<string, mixed>> 라우트 목록
+     */
+    private function loadTemplateSettingsRoutesData(): array
+    {
+        $routes = [];
+        $settingsService = app(TemplateSettingsService::class);
+
+        foreach ($this->templateRepository->getAllKeyedByIdentifier() as $identifier => $record) {
+            $identifier = (string) $identifier;
+            $layout = $settingsService->screenLayoutName($identifier);
+
+            if ($layout === null) {
+                continue;
+            }
+
+            $routes[] = [
+                'path' => '*/admin/templates/'.$identifier.'/settings',
+                'layout' => $layout,
+                'auth_required' => true,
+                'params' => [
+                    'identifier' => $identifier,
+                ],
+                'meta' => [
+                    'title' => '$t:core.template_settings.page_title_short',
+                    'permission' => 'core.templates.read',
+                ],
+                'source' => ['kind' => 'template', 'identifier' => $identifier],
+            ];
+        }
+
+        return $routes;
+    }
+
+    /**
      * routes JSON 원문을 디코드합니다 — 응답용이면 빈 맵 `{}` 를 보존합니다 (#758).
      *
      * @param  string  $content  routes JSON 원문
@@ -2153,79 +2379,6 @@ class TemplateService
     private function decodeRoutesJson(string $content, bool $preserveEmptyMaps): mixed
     {
         return $preserveEmptyMaps ? EmptyMap::decodePreserving($content) : json_decode($content, true);
-    }
-
-    /**
-     * Path Traversal 방지를 위한 경로 정제
-     *
-     * @param  string  $path  파일 경로
-     * @return string 문자열 결과
-     */
-    private function sanitizePath(string $path): string
-    {
-        // ../ 및 ..\ 패턴 제거 — 결과가 안정될 때까지 반복한다.
-        //
-        // 1회성 치환이면 제거 자체가 새 패턴을 만들어낸다:
-        //   '....//' → 가운데 '../' 제거 → '../'  (탈출 시퀀스 복원)
-        // 현재는 FormRequest 의 realpath 검사가 앞단에서 막고 있으나,
-        // 방어 계층이 하나 무력한 상태로 두지 않는다.
-        do {
-            $previous = $path;
-            $path = str_replace(['../', '..\\'], '', $path);
-        } while ($path !== $previous);
-
-        // 절대 경로 방지
-        return ltrim($path, '/\\');
-    }
-
-    /**
-     * 허용된 파일 확장자 확인
-     *
-     * @param  string  $filePath  filePath
-     * @return bool 판정 결과
-     */
-    private function isAllowedExtension(string $filePath): bool
-    {
-        $allowedExtensions = [
-            'js', 'mjs', 'css', 'json',
-            'png', 'jpg', 'jpeg', 'svg', 'webp', 'gif',
-            'woff', 'woff2', 'ttf', 'otf', 'eot',
-        ];
-
-        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-
-        return in_array($extension, $allowedExtensions);
-    }
-
-    /**
-     * MIME 타입 감지
-     *
-     * @param  string  $filePath  filePath
-     * @return string 문자열 결과
-     */
-    private function getMimeType(string $filePath): string
-    {
-        $mimeTypes = [
-            'js' => 'application/javascript',
-            'mjs' => 'application/javascript',
-            'css' => 'text/css',
-            'json' => 'application/json',
-            'png' => 'image/png',
-            'jpg' => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'svg' => 'image/svg+xml',
-            'webp' => 'image/webp',
-            'gif' => 'image/gif',
-            'woff' => 'font/woff',
-            'woff2' => 'font/woff2',
-            'ttf' => 'font/ttf',
-            'otf' => 'font/otf',
-            'eot' => 'application/vnd.ms-fontobject',
-        ];
-
-        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-
-        return $mimeTypes[$extension] ?? 'application/octet-stream';
     }
 
     /**
@@ -2256,7 +2409,7 @@ class TemplateService
             File::ensureDirectoryExists($tempPath);
 
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'template.json', 'templates', $file->getClientOriginalName()
+                $file->getRealPath(), $extractPath, 'template.json', 'templates', UploadedFileName::original($file)
             );
 
             $manifest = $result['config'];
@@ -2295,19 +2448,28 @@ class TemplateService
      * `template.json` 검증 → identifier 충돌 검사 → _pending 이동 → 설치 파이프라인 진입.
      *
      * @param  UploadedFile  $file  사용자가 업로드한 템플릿 ZIP 파일
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일 경로, 7.2.0) — null 이면 미서명은 409
      * @return array 설치 결과 (identifier/version/installed_at 포함)
      */
-    public function installFromZipFile(UploadedFile $file): array
+    public function installFromZipFile(UploadedFile $file, ?PackageIntegrityOptions $integrity = null): array
     {
+        $integrity ??= PackageIntegrityOptions::none();
         $tempPath = storage_path('app/temp/templates');
         $extractPath = $tempPath.'/'.uniqid('template_');
 
         try {
             File::ensureDirectoryExists($tempPath);
 
+            // 서명 검증(해제 전 바이트) — 업로드 임시 파일은 옆 서명 파일을 자동으로 찾지 않는다(서명 파일 칸으로만, 7.2.0)
+            $acquirer = app(PackageAcquirer::class);
+            $verification = $acquirer->verifyLocalZip($file->getRealPath(), PackageExpectation::forExtension('template'), $integrity, autoSidecar: false);
+
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'template.json', 'templates', $file->getClientOriginalName()
+                $file->getRealPath(), $extractPath, 'template.json', 'templates', UploadedFileName::original($file)
             );
+
+            // 해제 뒤·복사 전 manifest 대조 — 서명된 식별자·버전과 실제 manifest 가 같아야 한다
+            $verification = $acquirer->confirmManifest($verification, $result['config'], $integrity);
 
             // _pending 이동부터 설치까지 같은 확장의 다른 작업과 겹치지 않게 잠근다 — 동시 업로드가 `_pending/{id}` 를 덮거나,
             // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(#161).
@@ -2320,7 +2482,11 @@ class TemplateService
             );
 
             try {
-                return $this->executeTemplateInstall($result['identifier']);
+                $info = $this->executeTemplateInstall($result['identifier']);
+                // 검증 결과를 설치 행에 남긴다 — 확장 상세의 서명 배지
+                app(ExtensionIntegrityRecorder::class)->record('template', $result['identifier'], $verification);
+
+                return array_merge($info, $verification->toInstallColumns());
             } catch (\Throwable $e) {
                 $pendingPath = base_path('templates/_pending/'.$result['identifier']);
                 if (File::exists($pendingPath)) {
@@ -2331,6 +2497,9 @@ class TemplateService
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
             // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            throw $e;
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 표지와 페이로드를 그대로 올려 컨트롤러가 싣는다(7.2.0)
             throw $e;
         } catch (TemplateOperationException $e) {
             throw $e;
@@ -2350,15 +2519,18 @@ class TemplateService
      * GitHub 저장소에서 템플릿을 설치합니다.
      *
      * @param  string  $githubUrl  GitHub 저장소 URL
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일 경로, 7.2.0) — null 이면 미서명은 409
      * @return array 설치된 템플릿 정보
      *
      * @throws \RuntimeException 설치 실패 시
      */
-    public function installFromGithub(string $githubUrl): array
+    public function installFromGithub(string $githubUrl, ?PackageIntegrityOptions $integrity = null): array
     {
+        $integrity ??= PackageIntegrityOptions::none();
         $tempPath = storage_path('app/temp/templates');
         $extractPath = $tempPath.'/'.uniqid('template_');
         $zipPath = null;
+        $downloadDir = $tempPath.'/'.uniqid('download_');
 
         try {
             File::ensureDirectoryExists($tempPath);
@@ -2371,11 +2543,19 @@ class TemplateService
                 throw new TemplateOperationException('templates.errors.github_repo_not_found');
             }
 
-            $zipPath = GithubHelper::downloadZip($owner, $repo, $tempPath, $token);
+            // 태그 릴리스만 받는다(브랜치 폴백 없음) — 서명 자산이 있으면 검증하고, 없으면 미서명 정책(운영자 확인)을 거친다 (7.2.0)
+            $acquirer = app(PackageAcquirer::class);
+            $acquired = $acquirer->fromGithubRelease(
+                $owner, $repo, null, $token, PackageExpectation::forExtension('template'), $integrity, $downloadDir
+            );
+            $zipPath = $acquired->zipPath;
 
             $result = ZipInstallHelper::extractAndValidate(
                 $zipPath, $extractPath, 'template.json', 'templates'
             );
+
+            // 해제 뒤·복사 전 manifest 대조 — 서명된 식별자·버전과 실제 manifest 가 같아야 한다
+            $verification = $acquirer->confirmManifest($acquired->verification, $result['config'], $integrity);
 
             // _pending 이동부터 설치까지 같은 확장의 다른 작업과 겹치지 않게 잠근다 — 동시 업로드가 `_pending/{id}` 를 덮거나,
             // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(#161).
@@ -2388,7 +2568,11 @@ class TemplateService
             );
 
             try {
-                return $this->executeTemplateInstall($result['identifier']);
+                $info = $this->executeTemplateInstall($result['identifier']);
+                // 검증 결과를 설치 행에 남긴다 — 확장 상세의 서명 배지
+                app(ExtensionIntegrityRecorder::class)->record('template', $result['identifier'], $verification);
+
+                return array_merge($info, $verification->toInstallColumns());
             } catch (\Throwable $e) {
                 $pendingPath = base_path('templates/_pending/'.$result['identifier']);
                 if (File::exists($pendingPath)) {
@@ -2399,6 +2583,9 @@ class TemplateService
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
             // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            throw $e;
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 표지와 페이로드를 그대로 올려 컨트롤러가 싣는다(7.2.0)
             throw $e;
         } catch (TemplateOperationException $e) {
             throw $e;
@@ -2412,6 +2599,9 @@ class TemplateService
             }
             if ($zipPath && File::exists($zipPath)) {
                 File::delete($zipPath);
+            }
+            if (File::isDirectory($downloadDir)) {
+                File::deleteDirectory($downloadDir);
             }
         }
     }
@@ -2526,18 +2716,68 @@ class TemplateService
     /**
      * 템플릿의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
+     * 기본은 keep — 운영자가 편집기로 고친 화면은 고친 부분을 지키고 손대지 않은 부분만 새 판으로 바꾼다. 덮어쓰기는
+     * `$mode = Overwrite` 로 명시할 때만이다. `$decisions` 로 충돌 화면마다 운영자 판/새 판을 고른다.
+     *
      * @param  string  $identifier  템플릿 식별자
+     * @param  LayoutSyncMode  $mode  갱신 전략 (기본 keep)
+     * @param  array<string, string>  $decisions  화면별 결정 ({@see LayoutSyncOptions})
+     * @return array|null 갱신 결과 또는 null (템플릿 정보 + `layout_sync`·`layout_preview`·`layout_warnings`)
+     *
+     * @throws ValidationException 레이아웃 갱신 실패 시
+     */
+    public function refreshTemplateLayouts(string $identifier, LayoutSyncMode $mode = LayoutSyncMode::Keep, array $decisions = []): ?array
+    {
+        return $this->refreshTemplateLayoutsWith($identifier, $mode, $decisions);
+    }
+
+    /**
+     * 레이아웃 갱신을 미리 봅니다 — 실제 갱신과 같은 코드로 판정만 계산하고 DB·캐시는 그대로 둡니다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @param  LayoutSyncMode  $mode  갱신 전략
+     * @param  array<string, string>  $decisions  화면별 결정
+     * @return array{strategy: string, entries: list<array<string, mixed>>, summary: array<string, int>, has_conflicts: bool, conflict_screens: list<string>} 미리보기
+     *
+     * @throws ValidationException 템플릿을 찾을 수 없거나 레이아웃을 읽지 못할 때
+     */
+    public function previewTemplateLayoutRefresh(string $identifier, LayoutSyncMode $mode = LayoutSyncMode::Keep, array $decisions = []): array
+    {
+        try {
+            $this->templateManager->loadTemplates();
+            $result = LayoutSyncOptions::run(
+                new LayoutSyncOptions(true, $decisions, null, 'refresh'),
+                fn () => $this->templateManager->refreshTemplateLayouts($identifier, $mode)
+            );
+
+            return $result['layout_preview'];
+        } catch (\Exception $e) {
+            throw ValidationException::withMessages([
+                'identifier' => [__('templates.errors.refresh_layouts_failed', ['error' => SafeExceptionMessage::for($e)])],
+            ]);
+        }
+    }
+
+    /**
+     * 레이아웃 갱신 본체 — 전략·결정을 실행 범위로 걸고 매니저를 부릅니다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @param  LayoutSyncMode  $mode  갱신 전략
+     * @param  array<string, string>  $decisions  화면별 결정
      * @return array|null 갱신 결과 또는 null
      *
      * @throws ValidationException 레이아웃 갱신 실패 시
      */
-    public function refreshTemplateLayouts(string $identifier): ?array
+    private function refreshTemplateLayoutsWith(string $identifier, LayoutSyncMode $mode, array $decisions): ?array
     {
         HookManager::doAction('core.templates.before_refresh_layouts', $identifier);
 
         try {
             $this->templateManager->loadTemplates();
-            $result = $this->templateManager->refreshTemplateLayouts($identifier);
+            $result = LayoutSyncOptions::run(
+                new LayoutSyncOptions(false, $decisions, null, 'refresh'),
+                fn () => $this->templateManager->refreshTemplateLayouts($identifier, $mode)
+            );
 
             if ($result['success']) {
                 $templateInfo = $this->templateManager->getTemplateInfo($identifier);
@@ -2547,6 +2787,8 @@ class TemplateService
                 // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
                 if (is_array($templateInfo)) {
                     $templateInfo['layout_warnings'] = $result['layout_warnings'] ?? [];
+                    $templateInfo['layout_sync'] = $result['layout_sync'] ?? null;
+                    $templateInfo['layout_preview'] = $result['layout_preview'] ?? null;
                 }
 
                 return $templateInfo;
@@ -2659,17 +2901,19 @@ class TemplateService
      * @param  string  $templateName  업데이트할 템플릿 identifier
      * @param  string  $layoutStrategy  레이아웃 전략 ('overwrite' 또는 'keep')
      * @param  bool  $force  코어 버전 비호환 강제 우회 (위험 — 사용자 명시 필요)
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일 경로, 7.2.0) — null 이면 미서명은 409
      * @return array 업데이트 결과 (identifier, from_version, to_version 등)
      *
      * @throws ValidationException 업데이트 실패 시
+     * @throws PackageIntegrityException 받은 패키지의 서명 검증이 업데이트를 멈췄을 때
      */
-    public function performVersionUpdate(string $templateName, string $layoutStrategy = 'overwrite', bool $force = false): array
+    public function performVersionUpdate(string $templateName, string $layoutStrategy = 'overwrite', bool $force = false, ?PackageIntegrityOptions $integrity = null): array
     {
         // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             $this->templateManager->loadTemplates();
-            $result = $this->templateManager->updateTemplate($templateName, $force, null, $layoutStrategy);
+            $result = $this->templateManager->updateTemplate($templateName, $force, null, $layoutStrategy, integrity: $integrity);
 
             $templateInfo = $this->templateManager->getTemplateInfo($templateName);
 
@@ -2682,6 +2926,9 @@ class TemplateService
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
             // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            throw $e;
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 422 로 감싸지 않고 그대로 올린다(7.2.0)
             throw $e;
         } catch (\Exception $e) {
             // Manager의 RuntimeException은 이미 번역된 메시지를 포함하므로

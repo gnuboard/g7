@@ -16,7 +16,9 @@ class ReportLog extends Model
     use HasFactory;
 
     /**
-     * Create a new factory instance for the model.
+     * 모델의 팩토리 인스턴스를 생성합니다.
+     *
+     * @return Factory 신고 로그 모델 팩토리 (ReportLogFactory)
      */
     protected static function newFactory(): Factory
     {

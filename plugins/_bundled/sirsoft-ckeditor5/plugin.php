@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\Ckeditor5;
 use App\Enums\ExtensionOwnerType;
 use App\Extension\AbstractPlugin;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
+use Plugins\Sirsoft\Ckeditor5\Listeners\ThumbnailRegistrationListener;
 
 /**
  * CKEditor 5 WYSIWYG 에디터 플러그인
@@ -183,6 +184,20 @@ class Plugin extends AbstractPlugin
     }
 
     /**
+     * 훅 리스너 목록 반환
+     *
+     * 본문 이미지를 코어 이미지 썸네일(서빙 경로 패턴·원본 제공자)에 등록한다.
+     *
+     * @return array<int, class-string> 리스너 클래스 목록
+     */
+    public function getHookListeners(): array
+    {
+        return [
+            ThumbnailRegistrationListener::class,
+        ];
+    }
+
+    /**
      * 플러그인 권한 목록 반환 (계층 구조)
      *
      * 업로드 이미지 관리 화면(조회/삭제)의 접근을 분리한다 — 조회는 감사·현황 파악,
@@ -301,12 +316,7 @@ class Plugin extends AbstractPlugin
      */
     public function uninstall(): bool
     {
-        app(ExtensionMenuSyncHelper::class)->cleanupStaleMenus(
-            ExtensionOwnerType::Plugin,
-            $this->getIdentifier(),
-            currentSlugs: [],
-        );
-
+        // 메뉴는 「데이터도 함께 삭제」를 고른 제거에서 코어가 지운다(코어 7.2.0) — 데이터 보존 제거는 메뉴를 남긴다.
         return true;
     }
 
@@ -314,19 +324,26 @@ class Plugin extends AbstractPlugin
      * 플러그인 스케줄 목록 반환
      *
      * 미참조 이미지 정리는 사용자 파일을 지우므로 기본 꺼짐(옵트인)이다.
-     * enabled_config 게이트는 설정 조회 실패 시 true 로 폴백하므로, 커맨드가
+     * 실행 조건은 설정 조회 실패 시 true 로 폴백하므로(옛 등록 의미 보존), 커맨드가
      * `--scheduled` 에서 같은 설정을 false 폴백으로 재확인해 자동 삭제를 차단한다.
+     * 운영자는 관리자 > 스케줄 관리에서 주기·활성을 바꿀 수 있고, 시각은 사이트 시간대 기준이다.
      *
-     * @return array<int, array<string, string>> 스케줄 정의 목록
+     * @return array<int, array<string, mixed>> 스케줄 선언 목록 (형식: AbstractPlugin::getSchedules() 참고)
      */
     public function getSchedules(): array
     {
         return [
             [
+                'name' => 'prune-unused-images',
+                'type' => 'artisan',
+                'label' => ['ko' => '미참조 에디터 이미지 정리', 'en' => 'Prune unused editor images'],
+                'description' => ['ko' => '어느 글에서도 쓰지 않는 에디터 업로드 이미지를 지웁니다(설정에서 켠 경우만).', 'en' => 'Deletes editor-uploaded images no longer used by any content (only when enabled in settings).'],
                 'command' => 'sirsoft-ckeditor5:prune-unused-images --scheduled',
-                'schedule' => 'daily',
-                'description' => '미참조 에디터 업로드 이미지 정리',
-                'enabled_config' => 'sirsoft-ckeditor5.unusedImageCleanup',
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
+                'enabled_condition' => [
+                    ['source' => 'plugin_setting', 'key' => 'unusedImageCleanup', 'operator' => 'truthy', 'default' => true],
+                ],
             ],
         ];
     }
@@ -359,7 +376,8 @@ class Plugin extends AbstractPlugin
     public function getStorageDiskFor(string $category): string
     {
         if (! in_array($category, self::PUBLIC_ASSET_CATEGORIES, true)) {
-            return $this->getStorageDisk();
+            // 공개 자산이 아닌 키는 부모 규칙(비공개 첨부 저장소 바인딩 등, #916)을 거친다
+            return parent::getStorageDiskFor($category);
         }
 
         $override = plugin_setting('sirsoft-ckeditor5', 'public_asset_disk', '');

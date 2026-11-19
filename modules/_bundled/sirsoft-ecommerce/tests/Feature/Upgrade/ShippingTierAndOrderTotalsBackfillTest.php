@@ -21,13 +21,13 @@ use Modules\Sirsoft\Ecommerce\Upgrades\Upgrade_1_1_1;
  * 값을 다시 움직이면 운영자가 보정한 값이 조용히 덮어써집니다.
  *
  * @scenario charge_policy=range_weight, boundary=at_max, unit_source=g
- *
- * @effects continuous_tier_min_normalized, order_totals_backfilled, upgrade_is_idempotent
  */
 class ShippingTierAndOrderTotalsBackfillTest extends ModuleTestCase
 {
     /**
      * 1.1.1 업그레이드 스텝을 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     private function runUpgrade(): void
     {
@@ -76,6 +76,15 @@ class ShippingTierAndOrderTotalsBackfillTest extends ModuleTestCase
         return json_decode((string) $row->ranges, true)['tiers'] ?? [];
     }
 
+    /**
+     * 구 규칙(max + 1)으로 저장된 연속형 무게 구간의 시작값이 직전 종료값으로 바뀌고 종료값과 배송비는 그대로인지 확인한다.
+     *
+     * @effects continuous_tier_min_normalized
+     *
+     * @scenario charge_policy=range_weight, boundary=at_max
+     *
+     * @return void 반환값 없음
+     */
     public function test_it_normalizes_continuous_tier_min_to_previous_max(): void
     {
         // 구 규칙(max + 1)으로 저장된 무게 구간
@@ -98,6 +107,15 @@ class ShippingTierAndOrderTotalsBackfillTest extends ModuleTestCase
         $this->assertEquals(8000, $tiers[2]['fee']);
     }
 
+    /**
+     * 이산형인 수량 구간은 max + 1 시작값이 정상이므로 업그레이드가 그 형태를 그대로 두는지 확인한다.
+     *
+     * @scenario charge_policy=range_quantity, boundary=at_max
+     *
+     * @effects continuous_tier_min_normalized
+     *
+     * @return void 반환값 없음
+     */
     public function test_it_keeps_max_plus_one_for_quantity_tiers(): void
     {
         // 수량은 이산형이라 max + 1 이 정상 — 그 형태는 그대로 유지된다
@@ -113,6 +131,15 @@ class ShippingTierAndOrderTotalsBackfillTest extends ModuleTestCase
         $this->assertEquals(6, $tiers[1]['min']);
     }
 
+    /**
+     * 1부터 시작하는 수량 구간의 첫 시작값이 0 으로 정규화되고 종료값과 배송비는 바뀌지 않는지 확인한다.
+     *
+     * @effects continuous_tier_min_normalized
+     *
+     * @scenario charge_policy=range_quantity, boundary=below
+     *
+     * @return void 반환값 없음
+     */
     public function test_it_normalizes_first_quantity_tier_min_to_zero(): void
     {
         // 샘플 데이터는 "1~5개 / 6개~" 로 저장돼 있다. 시작값이 읽기전용이 된 이상
@@ -132,6 +159,15 @@ class ShippingTierAndOrderTotalsBackfillTest extends ModuleTestCase
         $this->assertEquals(3000, $tiers[0]['fee']);
     }
 
+    /**
+     * 총 무게와 총 부피가 0 으로 기록된 주문이 옵션 소계(g, cm3) 합으로 백필되는지 확인한다.
+     *
+     * @effects order_totals_backfilled
+     *
+     * @scenario unit_source=g
+     *
+     * @return void 반환값 없음
+     */
     public function test_it_backfills_order_totals_from_option_subtotals(): void
     {
         $order = OrderFactory::new()->create();
@@ -155,6 +191,15 @@ class ShippingTierAndOrderTotalsBackfillTest extends ModuleTestCase
         $this->assertEquals(1400.0, (float) $row->total_volume);
     }
 
+    /**
+     * 이미 총 무게와 총 부피가 기록된 주문은 옵션 소계와 달라도 백필이 덮어쓰지 않는지 확인한다.
+     *
+     * @scenario unit_source=g
+     *
+     * @effects order_totals_backfilled
+     *
+     * @return void 반환값 없음
+     */
     public function test_it_preserves_orders_that_already_have_totals(): void
     {
         $order = OrderFactory::new()->create();
@@ -176,6 +221,15 @@ class ShippingTierAndOrderTotalsBackfillTest extends ModuleTestCase
         $this->assertEquals(888.0, (float) $row->total_volume);
     }
 
+    /**
+     * 업그레이드를 두 번 돌려도 부피 구간과 주문 총계가 첫 실행 결과와 같은지 확인한다.
+     *
+     * @effects upgrade_is_idempotent
+     *
+     * @scenario charge_policy=range_volume, unit_source=cm3
+     *
+     * @return void 반환값 없음
+     */
     public function test_it_is_idempotent(): void
     {
         $settingId = $this->makeCountrySetting(ChargePolicyEnum::RANGE_VOLUME, [

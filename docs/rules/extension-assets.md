@@ -30,6 +30,9 @@
 필수: 확장 라우트는 활성 상태인 확장의 것만 등록한다 — 모듈·플러그인 두 라우트 프로바이더가 같은 기준을 쓴다. 게이트가 한쪽에만 있으면 그 비대칭은 오류가 아니라 "조용히 열린 경로" 로만 나타난다: 비활성화해도 화면·메뉴·에셋만 사라지고 API 는 계속 호출 가능하며, 컨트롤러가 정상 처리하므로 오류도 로그도 남지 않는다
 필수: 그 rebuild() 는 확장 상태 캐시 무효화(invalidate*StatusCache()) 뒤에 온다 — route:cache 는 새 앱을 부팅해 라우트를 수집하는데 그 부팅의 확장 라우트 프로바이더는 DB 가 아니라 캐시된 활성 확장 목록(TTL 기본 1일)을 읽으므로, 먼저 구우면 방금 바뀐 상태가 빠진 채 박제되고 자가 회복되지 않는다 (활성화 → 그 확장 API 전량 404 / 비활성화 → 끈 확장 API 가 계속 호출 가능 / 업데이트 → 404 + 훅 리스너 누락). 무효화는 굽기 직전이 아니라 DB 상태 쓰기 직후에 둔다 — 같은 목록을 읽는 굽기가 라우트 캐시 말고도 있다 (오토로드 갱신 안의 훅 매핑 캐시). update 경로만 예외: Updating 전이 직후에는 비우지 않고 (비우면 그 창의 오토로드 갱신이 그 확장을 비활성으로 판정해 훅 리스너를 떨군다) 상태 복원 직후에 비운 뒤 ExtensionManager::regenerateHookCache() 로 훅 캐시를 다시 굽는다. 훅 캐시 폴백은 파일 부재·손상에만 작동해 내용이 stale 한 경우는 조용히 통과한다
 필수: 코어 레이아웃에 모듈 UI 주입은 layout_extensions만 사용
+필수: 확장 화면 스타일은 확장 자기 CSS 로 싣는다 — manifest assets.css 를 선언하면 assets.css.namespace 도 선언하고(다른 확장과 겹치지 않게), 클래스는 손 CSS `{namespace}-…`·접두 빌드 `{letters}:…` 로만 쓴다. 템플릿 CSS 의 Tailwind 유틸리티·의미 클래스(`input` 등)에 기대지 않는다 (상세: docs/extension/module-assets.md "확장 CSS 자기 공급 규약")
+필수: 액션 핸들러는 `{자기 식별자}.{이름}` 으로 등록하고 registerHandler(name, fn, { source: 자기 식별자 }) 로 등록자를 밝힌다 — 엔진 이름·다른 주인의 접두어 금지 (상세: docs/extension/module-assets.md "핸들러 이름 규칙과 소유권")
+필수: 다른 확장은 그 확장이 manifest public_api 로 공개한 계약과 공개 훅만 쓴다 — 의존을 선언했더라도 내부 클래스(Model·Service·Repository)·소유 테이블 직접 사용 금지 (상세: docs/extension/module-basics.md "public_api 필드")
 필수: 모든 확장 작업은 Artisan 커맨드로 수행
 ```
 
@@ -62,13 +65,23 @@
 | 동의 | `app/Extension/Consent/**`(`ConsentManager`·`ConsentSnapshot`·`ConsentSubject`) | gdpr |
 | 알림 | `app/Services/NotificationRecipientCapability.php`, `app/Services/NotificationTemplateService.php`, `app/Notifications/DeliveryReport.php`, `app/Notifications/GuestNotifiable.php`, `app/Notifications/Identity/IdentityNotificationType.php`, `app/Contracts/Notifications/ChannelReadinessCheckerInterface.php` | 게시판, 이커머스, gdpr |
 | 회원 연락처 노출 | `app/Http/Resources/Traits/ExposesMemberContact.php` | 게시판, 이커머스 |
-| 사이트 주소·외부 출처 | `app/Support/SiteUrl.php`, `app/Support/TrustedScriptHosts.php` | 게시판, 이커머스, gdpr, koreaexim, 결제 4종, 본인인증 2종 |
+| 표시 이름 (7.2.0) | `app/DisplayName/**`(계산기 `DisplayNameResolver`, 검색과 정렬 `DisplayNameQuery`, 응답 이름 묶음 `MemberNamePresenter`, 영역 `DisplayNameArea`, 등록소 `DisplayNameAreaRegistry`와 `DisplayNameKindRegistry`, 설정 `DisplayNameSettings`, 닉네임 요구 `NicknameRequirement`), `app/Models/User.php` 의 `User::displayColumns()` 와 `User::DISPLAY_COLUMNS`, `app/Support/NameMasker.php` | 게시판, 이커머스 |
+| 항목 엔진 (7.2.0) | `app/Fields/**`(핸들러 계약 `Contracts\FieldValueHandlerInterface`, 문맥 `FieldContext`, 집합 `FieldSet`, 등록소 `FieldRegistry`, 규칙 `FieldRuleFactory`, 값 `FieldValueService`, 화면 계약 `FieldFormSchema`), `app/Models/FieldDefinition.php`, `app/Contracts/Repositories/FieldValueRepositoryInterface.php`, `app/Rules/NicknamePolicy.php`, `app/Extension/Helpers/FieldDefinitionSyncHelper.php`(위 트리거 디렉터리 안이지만 확장이 설정 저장 뒤 선언을 다시 동기화할 때 직접 부르는 도구라 함께 적는다) | 게시판, 이커머스, 마케팅, 소셜 로그인, sso |
+| 본인인증 값 연결 (7.2.0) | `app/Contracts/Extension/ProvidesVerifiedClaimsInterface.php`(위 트리거 디렉터리 안), `app/Extension/IdentityVerification/DTO/VerifiedClaims.php` | 본인인증 2종 |
+| 사이트 주소·외부 출처 | `app/Support/SiteUrl.php`(7.2.0 바깥으로 나가는 링크 주소 `forOutboundLinks()` 포함), `app/Support/TrustedScriptHosts.php` | 게시판, 이커머스, gdpr, bizppurio, 결제 4종, 본인인증 2종 |
 | 권한 | `app/Support/PermissionEscalationGuard.php`, `app/Exceptions/PermissionEscalationException.php`, `app/Support/GuestRoleResolver.php`, `app/Contracts/Repositories/PermissionRepositoryInterface.php` | 게시판 |
 | 첨부·본문 미디어 | `app/Helpers/InlineMediaPolicy.php`, `app/Rules/AttachmentFileContent.php`, `app/Services/AttachmentService.php`, `app/Contracts/Repositories/AttachmentRepositoryInterface.php`, `app/Enums/AttachmentSourceType.php`, `app/Exceptions/UnsafeStoragePathException.php`, `app/Support/ContentMedia/**`(7.1.5 골격 `AbstractContentMediaService`·문맥 `ContentMediaContext`·훅 이름 `ContentMediaHooks`·등록 `ContentMediaRegistrar` 포함), `app/Contracts/ContentMedia/**`(어댑터 계약 `ContentMediaStore`), `app/Http/Controllers/Concerns/RespondsWithContentMediaTarget.php`(표준 계약 엔드포인트), `app/Enums/ContentMediaKind.php`, `app/Rules/ContentMediaFile.php`, `app/Exceptions/ContentMediaLimitExceededException.php` (본문 미디어 계약, 7.1.5), `app/Support/Content/**`(`ContentHtmlPolicy`·`EmbedProviderRegistry` — 「본문 콘텐츠」 규칙, 7.1.5) | 게시판, 이커머스, 페이지, ckeditor5 |
+| 업로드 파일 이름 | `app/Support/UploadedFileName.php`(브라우저가 바꿔 보낸 `%22`, `%0D`, `%0A` 복원) | 게시판, 이커머스, 페이지, ckeditor5, 히어로섹션, 팝업 |
 | 파일 보상·스트림 저장소 | `app/Extension/Helpers/StorageTransaction.php`, `app/Contracts/Extension/StreamingStorageInterface.php`, `app/Extension/Storage/RowDiskStorage.php`(행 디스크 저장소 고르기) (7.1.5 — 위 트리거 디렉터리 안이지만 확장이 저장 트랜잭션에서 직접 쓰는 도구라 함께 적는다) | 게시판, 이커머스, 페이지 |
+| 외부 인증 로그인 (7.2.0) | `app/Services/AuthService.php`(`loginVerifiedUser()` — 본인이 확인된 회원을 비밀번호 로그인과 같은 관문으로 로그인), `app/Services/Auth/LoginHandoffService.php`(`issue()`·`issueTicket()` 로그인 인계 코드), `app/Support/Auth/SystemOperation.php`(`run()` — 행위자 없는 시스템 작업) | 소셜 로그인, sso |
+| 큐 요청 문맥 (7.2.0) | `app/Extension/HookContextCapture.php`(`capture()`·`restore()`·`snapshot()`·`revert()`·`within()`) | 이커머스 |
+| 확장 캐시 드라이버 (7.2.0) | `app/Extension/Cache/CacheDriverFactory.php`(`extension()`·`core()`) | 게시판 |
+| 금지어 검증 (7.2.0) | `app/Rules/ForbiddenWords.php`(규칙 객체와 `firstMatch()`) | 게시판 |
 | 본인인증 | `app/Enums/IdentityVerificationChannel.php`, `app/Enums/IdentityVerificationPurpose.php` | totp |
 | SEO | `app/Seo/SeoRenderRequest.php` | 게시판, 이커머스, 페이지 |
 | 설정 응답 | `app/Traits/FiltersFrontendSchema.php` | 페이지 |
+| 화면 주소 | `app/Support/ScreenUrl.php` (필터 `core.screen_url.filter_path`) | 게시판, 페이지, 이커머스, gdpr, koreaexim, bizppurio, 결제 4종, 본인인증 2종 |
+| 개발자 화면(custom) | `app/Services/Screen/ScreenAuth.php`, `app/Services/Screen/InternalApiClient.php`, `app/Services/Screen/InternalApiResponse.php`, `app/Http/Middleware/Custom/RequireScreenUser.php`(`custom.auth`), `app/Http/Middleware/Custom/RequireScreenAdmin.php`(`custom.admin`) | 번들 확장 없음 — routes/custom.php 와 app/Custom 의 개발자 코드, custom:example 견본이 쓴다 |
 | 언어 코드·다국어 값 | `app/Support/LocaleTag.php`(BCP 47 판정·정규화·협상), `app/Support/LocalizedValue.php`(다국어 값 대체 순서, 7.1.5 `translateAll()` 알림 변수 번역 묶음) | 게시판, 이커머스, 페이지, 마케팅, gdpr, 결제 2종, 비즈뿌리오, koreaexim |
 
 ### ② 확장 → 확장 동기화 (`dependencies.{modules|plugins}`)

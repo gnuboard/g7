@@ -179,12 +179,12 @@ const commentToggleLayoutJson = {
 // ============================================================
 
 describe('게시판 삭제 글 포함 토글 UI 렌더링', () => {
-  let registry: ComponentRegistry;
-
   beforeEach(() => {
-    registry = setupTestRegistry();
+    setupTestRegistry();
   });
 
+  // @scenario target=post, permission=granted
+  // @effects deleted_post_toggle_shown_when_permitted
   it('can_view_deleted = true → 게시글 토글 버튼 렌더링', async () => {
     const testUtils = createLayoutTest(postToggleLayoutJson);
     testUtils.mockApi('posts', {
@@ -201,6 +201,8 @@ describe('게시판 삭제 글 포함 토글 UI 렌더링', () => {
     testUtils.cleanup();
   });
 
+  // @scenario target=post, permission=denied
+  // @effects deleted_post_toggle_hidden_without_permission
   it('can_view_deleted = false → 게시글 토글 버튼 미렌더링', async () => {
     const testUtils = createLayoutTest(postToggleLayoutJson);
     testUtils.mockApi('posts', {
@@ -217,6 +219,8 @@ describe('게시판 삭제 글 포함 토글 UI 렌더링', () => {
     testUtils.cleanup();
   });
 
+  // @scenario target=post, permission=missing
+  // @effects deleted_post_toggle_hidden_without_permission
   it('can_view_deleted 없음 → 게시글 토글 미렌더링', async () => {
     const testUtils = createLayoutTest(postToggleLayoutJson);
     testUtils.mockApi('posts', {
@@ -235,12 +239,12 @@ describe('게시판 삭제 글 포함 토글 UI 렌더링', () => {
 });
 
 describe('게시판 삭제 댓글 포함 토글 UI 렌더링', () => {
-  let registry: ComponentRegistry;
-
   beforeEach(() => {
-    registry = setupTestRegistry();
+    setupTestRegistry();
   });
 
+  // @scenario target=comment, permission=granted
+  // @effects deleted_comment_toggle_shown_when_manageable
   it('can_manage = true → 댓글 토글 버튼이 헤더 오른쪽에 렌더링', async () => {
     const testUtils = createLayoutTest(commentToggleLayoutJson);
     testUtils.mockApi('post', {
@@ -262,6 +266,8 @@ describe('게시판 삭제 댓글 포함 토글 UI 렌더링', () => {
     testUtils.cleanup();
   });
 
+  // @scenario target=comment, permission=denied
+  // @effects deleted_comment_toggle_hidden_without_permission
   it('can_manage = false → 댓글 토글 미렌더링', async () => {
     const testUtils = createLayoutTest(commentToggleLayoutJson);
     testUtils.mockApi('post', {
@@ -279,6 +285,8 @@ describe('게시판 삭제 댓글 포함 토글 UI 렌더링', () => {
     testUtils.cleanup();
   });
 
+  // @scenario target=comment, permission=missing
+  // @effects deleted_comment_toggle_hidden_without_permission
   it('can_manage 없음 → 댓글 토글 미렌더링', async () => {
     const testUtils = createLayoutTest(commentToggleLayoutJson);
     testUtils.mockApi('post', {

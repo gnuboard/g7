@@ -1,0 +1,18 @@
+feature: 플러그인 sirsoft-daum_postcode 읽기 전용 주소 칸 표시 (#816)
+
+description: |
+  주소 검색으로만 채우는 우편번호·주소 칸(setFieldReadOnly 가 daumpostcode-readonly 를 단다)이
+  일반 입력칸과 같아 보이던 것을 옅은 회색 바탕 + 기본 커서로 구분한다. 색은 확장 CSS 의미 칸
+  (@layer g7-extension)에 두어 템플릿 층 규칙은 이기고 템플릿 덮기 파일에는 진다. 다크는 중립 표식 규격.
+
+axes:
+  scheme:
+    - light   # data-g7-color-scheme 없음·light
+    - dark    # data-g7-color-scheme="dark" (다크 안의 라이트 제외)
+
+effects:
+  - readonly_field_has_distinct_background   # 의미 칸 안 바탕색 + cursor default
+  - readonly_field_dark_pair_uses_neutral_marker   # 다크 짝이 중립 표식 규격, .dark 미전제
+
+test_files:
+  - plugins/_bundled/sirsoft-daum_postcode/resources/js/__tests__/readonly-style.test.ts

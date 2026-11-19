@@ -11,7 +11,7 @@
  *  ⑤ 패널 내부 pointerdown → onClose 미발화
  */
 
-import React, { useRef } from 'react';
+import { useRef } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { FloatingDropdown } from '../../../components/shared/FloatingDropdown';
@@ -33,17 +33,23 @@ function Harness({ open, onClose }: { open: boolean; onClose: () => void }) {
 }
 
 describe('FloatingDropdown', () => {
+  // @scenario area=floating_dropdown
+  // @effects floating_dropdown_renders_only_when_open
   it('① open=false → 미렌더', () => {
     render(<Harness open={false} onClose={vi.fn()} />);
     expect(screen.queryByTestId('dropdown')).toBeNull();
   });
 
+  // @scenario area=floating_dropdown
+  // @effects floating_dropdown_renders_only_when_open
   it('① open=true → 패널 + children 렌더', () => {
     render(<Harness open onClose={vi.fn()} />);
     expect(screen.getByTestId('dropdown')).toBeInTheDocument();
     expect(screen.getByTestId('inside-input')).toBeInTheDocument();
   });
 
+  // @scenario area=floating_dropdown
+  // @effects floating_dropdown_closes_on_outside_or_escape
   it('② 외부 pointerdown → onClose', () => {
     const onClose = vi.fn();
     render(<Harness open onClose={onClose} />);
@@ -51,6 +57,8 @@ describe('FloatingDropdown', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  // @scenario area=floating_dropdown
+  // @effects floating_dropdown_closes_on_outside_or_escape
   it('③ ESC → onClose', () => {
     const onClose = vi.fn();
     render(<Harness open onClose={onClose} />);
@@ -58,6 +66,8 @@ describe('FloatingDropdown', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  // @scenario area=floating_dropdown
+  // @effects floating_dropdown_ignores_anchor_and_panel
   it('④ 앵커 내부 pointerdown → onClose 미발화(토글은 소비자 처리)', () => {
     const onClose = vi.fn();
     render(<Harness open onClose={onClose} />);
@@ -65,6 +75,8 @@ describe('FloatingDropdown', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
+  // @scenario area=floating_dropdown
+  // @effects floating_dropdown_ignores_anchor_and_panel
   it('⑤ 패널 내부 pointerdown → onClose 미발화', () => {
     const onClose = vi.fn();
     render(<Harness open onClose={onClose} />);

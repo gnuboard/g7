@@ -479,6 +479,22 @@ HookManager::addFilter(SearchIndexMaintenanceManager::MAINTAINERS_FILTER, functi
 | 재생성 여부만 알리고 잔존 여부는 생략 | `rebuilt` / `stale`·`stale_count` (미수행) 또는 `repaired`·`failed`·`remaining` (수행) |
 | 재생성 성공을 곧 복구로 간주 | **`remaining` 은 재생성 후 재점검 결과** — "재생성했다" 와 "복구됐다" 를 구분 |
 
+### 재생성으로 고쳐지지 않는 잔존 — 표 재구축 안내 (7.2.0)
+
+InnoDB 는 FULLTEXT 색인과 행을 숨은 문서 번호(`FTS_DOC_ID`)로 잇습니다. 이 연결이 어긋난 표는 인덱스를
+DROP/ADD 해도 고쳐지지 않고, 표를 복사해 다시 만들어야(`ALTER TABLE … ENGINE=InnoDB, ALGORITHM=COPY`) 회복됩니다.
+
+- 엔진이 선택 계약 `App\Search\Contracts\ProvidesPersistentStaleAdvice` 를 구현하면, `repairStale()` 은 재생성 뒤
+  재점검에서도 남은 인덱스에 대해 `persistentStaleAdvice()` 를 불러 보고(`SearchIndexRepairReport::$advice`,
+  `[{target, command}]`)에 싣고 `Log::warning` 을 남깁니다. `mysql-fulltext` 유지보수기는 남은 표마다(인덱스가 여럿이어도
+  한 번) ``ALTER TABLE `물리 표 이름` ENGINE=InnoDB, ALGORITHM=COPY;`` 를 냅니다.
+- **실행하지 않습니다.** 큰 표는 오래 걸리고 그동안 쓰기가 막히므로 운영자가 백업 뒤 유지보수 시간에 직접 실행합니다.
+- 노출: `search:index --repair` 출력(경고 + 「표 — 명령」 줄 + 잠금·소요 경고, `--json` 의 `repair.advice`), 확장
+  업데이트(`--rebuild-search-index`)·코어 업데이트의 번들 일괄 재생성 출력, 관리자 확장 업데이트 응답의 `search_index.advice`
+  (관리자 화면은 아직 이 값을 그리지 않음), 개발 도구 「검색 인덱스 점검」(명령 출력을 그대로 보임).
+- 안내를 주지 않는 엔진(외부 검색 서버 등)은 종전대로 잔존만 보고합니다 — 코어는 MySQL 명령을 엔진 중립 계층에 넣지 않습니다.
+- 문구: `search.index.persistent_stale.*`(ko·en, 번들 ja 언어팩). 회귀: `tests/Feature/Search/SearchIndexPersistentStaleAdviceTest.php`.
+
 ### 점검의 비-0 종료는 "실패" 가 아니다
 
 `search:index` 는 색인 누락이 남아 있으면 종료 코드 1 을 돌려줍니다. 점검 자체는 정상 수행된 것이며,

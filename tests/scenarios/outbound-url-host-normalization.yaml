@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 호스트 형태 축은 데이터 프로바이더 행으로 전개되어 메서드 단위 @scenario 마킹으로 표현할 수 없다. 조합 커버는 test_files 의 프로바이더 행이 담당하고, 본 매니페스트는 "무엇을 반드시 담아야 하는가" 의 SSoT 로 둔다.
+# audit:allow test-scenario-coverage reason: issue:#632 호스트 형태 축은 데이터 프로바이더 행으로 전개되어 메서드 단위 @scenario 마킹으로 표현할 수 없다. 조합 커버는 test_files 의 프로바이더 행이 담당하고, 본 매니페스트는 "무엇을 반드시 담아야 하는가" 의 SSoT 로 둔다.
 
 feature: 아웃바운드 URL 호스트 정규화 (검증 시점 ↔ 연결 시점 동형)
 
@@ -25,7 +25,7 @@ description: |
 axes:
   host_form: [ascii, ideographic_dot_u3002, fullwidth_dot_uff0e, halfwidth_dot_uff61, trailing_dot, punycode_a_label, unicode_u_label, ip_literal_v4, ip_literal_v6]
   target: [loopback_or_private, public]
-  entry_point: [validator_unit, form_request_rule, schedule_url, language_pack_url, shipping_api_url, nicepay_approval_url]
+  entry_point: [validator_unit, form_request_rule, schedule_url, language_pack_url, shipping_api_url, nicepay_approval_url, websocket_host]
 
 exclusions:
   - { host_form: ip_literal_v4, entry_point: nicepay_approval_url, reason: "나이스페이먼츠 승인 URL 은 도메인 suffix 비교 — IP 리터럴은 어떤 형태든 거부" }
@@ -81,6 +81,15 @@ effects:
   # 형제 (검증기 미경유 경로)
   - nicepay_approval_url_rejects_host_that_only_looks_like_nicepay
   - nicepay_approval_url_still_accepts_official_hosts
+
+  # 웹소켓 연결 테스트 — 브라우저가 붙는 주소라 사설·로컬 호스트가 정상 구성이다(내부망 차단 대상 아님). 구조 위조만 거부
+  - websocket_test_allows_local_and_private_hosts
+  - websocket_test_rejects_structurally_forged_hosts
+  - whitelisted_host_must_match_exactly
+  - whitelist_check_defaults_to_https_only
+  - whitelist_check_rejects_explicit_ports_by_default
+  - bare_host_judgement_uses_the_same_internal_rules
+  - whitelist_comparison_uses_the_normalized_host
 
 test_files:
   - tests/Unit/Support/OutboundUrlValidatorTest.php

@@ -58,7 +58,7 @@ describe('ActionDispatcher 창 스택 — sequence 안의 closeModal/openModal',
   it('closeModal 직후 openModal 은 최신 창 목록에 쌓아 닫힌 창을 되살리지 않는다', async () => {
     globalState = { modalStack: ['force_modal'], activeModal: 'force_modal' };
 
-    await dispatcher.executeAction({
+    await dispatcher['executeAction']({
       handler: 'sequence',
       actions: [
         { handler: 'closeModal' },
@@ -84,7 +84,7 @@ describe('ActionDispatcher 창 스택 — sequence 안의 closeModal/openModal',
   it('openModal 직후 closeModal 은 방금 연 창을 닫는다', async () => {
     globalState = { modalStack: ['base_modal'], activeModal: 'base_modal' };
 
-    await dispatcher.executeAction({
+    await dispatcher['executeAction']({
       handler: 'sequence',
       actions: [
         { handler: 'openModal', target: 'child_modal' },
@@ -110,7 +110,7 @@ describe('ActionDispatcher 창 스택 — sequence 안의 closeModal/openModal',
   it('전역 사본이 없는 문맥의 openModal 은 종전대로 빈 스택에서 시작한다', async () => {
     globalState = { modalStack: ['parent_modal'], activeModal: 'parent_modal' };
 
-    await dispatcher.executeAction(
+    await dispatcher['executeAction'](
       { handler: 'openModal', target: 'identity-challenge-modal' } as any,
       { state: {}, setState: vi.fn(), data: { sidebarOpen: true } } as any,
     );
@@ -128,14 +128,67 @@ describe('ActionDispatcher 창 스택 — sequence 안의 closeModal/openModal',
     globalState = { modalStack: ['a'], activeModal: 'a' };
     const ctx = () => ({ state: {}, setState: vi.fn(), data: { _global: { ...globalState } } });
 
-    await dispatcher.executeAction({ handler: 'openModal', target: 'b' } as any, ctx() as any);
+    await dispatcher['executeAction']({ handler: 'openModal', target: 'b' } as any, ctx() as any);
     expect(globalState.modalStack).toEqual(['a', 'b']);
 
-    await dispatcher.executeAction({ handler: 'openModal', target: 'b' } as any, ctx() as any);
+    await dispatcher['executeAction']({ handler: 'openModal', target: 'b' } as any, ctx() as any);
     expect(globalState.modalStack).toEqual(['a', 'b']);
 
-    await dispatcher.executeAction({ handler: 'closeModal' } as any, ctx() as any);
+    await dispatcher['executeAction']({ handler: 'closeModal' } as any, ctx() as any);
     expect(globalState.modalStack).toEqual(['a']);
     expect(globalState.activeModal).toBe('a');
+  });
+
+  /**
+   * 창 위에 뜬 안내 창에서 다른 화면으로 보낼 때처럼 `params.all` 을 주면 열린 창을 모두 닫는다 (engine-v1.95.0, #490 D-A3).
+   *
+   * 종전에는 맨 위 창만 닫혀, 장바구니 「옵션 변경」 창 위의 「추가 정보가 필요합니다」 창에서 「입력하러 가기」로 다녀오면
+   * 옵션 변경 창이 전역 창 스택에 남아 다시 열려 있었다. 창마다 쌓인 레이아웃 문맥(`$parent` 용)도 함께 비운다.
+   *
+   * @scenario case=close_all_nested
+   * @effects close_all_empties_stack_and_layout_contexts
+   */
+  it('closeModal 에 all 을 주면 겹쳐 열린 창과 창 문맥을 모두 비운다', async () => {
+    globalState = { modalStack: ['option_modal', 'pending_modal'], activeModal: 'pending_modal' };
+    const pageContext = { state: { page: true }, setState: vi.fn(), dataContext: { page: true } };
+    const optionContext = { state: { option: true }, setState: vi.fn(), dataContext: { option: true } };
+    (window as any).__g7LayoutContextStack = [pageContext, optionContext];
+
+    await dispatcher['executeAction']({
+      handler: 'sequence',
+      actions: [
+        { handler: 'closeModal', target: 'pending_modal', params: { all: true } },
+        { handler: 'navigate', params: { path: '/mypage/required-info' } },
+      ],
+    } as any, {
+      state: {},
+      setState: vi.fn(),
+      data: { _global: { modalStack: ['option_modal', 'pending_modal'], activeModal: 'pending_modal' } },
+    } as any);
+
+    expect(globalState.modalStack).toEqual([]);
+    expect(globalState.activeModal).toBeNull();
+    expect((window as any).__g7LayoutContextStack).toEqual([]);
+    expect(pageContext.dataContext).toBeUndefined();
+    expect(optionContext.dataContext).toBeUndefined();
+  });
+
+  /**
+   * `all` 이 없거나 참이 아니면 종전처럼 맨 위 창 하나만 닫는다 — 문자열 "false" 같은 값으로 전체가 닫히지 않는다.
+   *
+   * @scenario case=close_all_flag_absent
+   * @effects close_without_all_flag_pops_only_top
+   */
+  it('all 이 참이 아니면 맨 위 창 하나만 닫는다', async () => {
+    for (const params of [undefined, { all: false }, { all: 'false' }, { all: 1 }]) {
+      globalState = { modalStack: ['a', 'b'], activeModal: 'b' };
+      await dispatcher['executeAction']({ handler: 'closeModal', ...(params ? { params } : {}) } as any, {
+        state: {},
+        setState: vi.fn(),
+        data: { _global: { ...globalState } },
+      } as any);
+      expect(globalState.modalStack, JSON.stringify(params)).toEqual(['a']);
+      expect(globalState.activeModal).toBe('a');
+    }
   });
 });
