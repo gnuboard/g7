@@ -187,6 +187,7 @@ use App\Support\ExtensionSettingsMirror;
 use App\Support\InstallerResidual;
 use App\Support\PrivateAttachmentDisk;
 use App\Support\PrivilegedDatabaseAccounts;
+use App\Support\RootOwnedEntryReclaimer;
 use App\Support\RuntimeRole;
 use App\Thumbnails\ImageProcessorResolver;
 use App\Thumbnails\ThumbnailPresetRegistry;
@@ -685,6 +686,10 @@ class CoreServiceProvider extends ServiceProvider
         // 운영 전용 명령(스케줄·큐 워커·재시작 신호·확장 수명주기)을 실행 역할·서버별 스케줄 스위치로 막는다
         if ($this->app->runningInConsole()) {
             Event::listen(CommandStarting::class, [RuntimeRoleCommandGuard::class, 'handle']);
+
+            // root 로 돈 업데이트·설치 계열 명령이 끝나면 설치 트리에 새로 생긴 root 소유 폴더·파일을 상위 폴더 소유·그룹
+            // 권한으로 되돌린다 — 업데이트 전 스냅샷에 없던 새 경로가 root 로 남아 웹서버가 못 쓰던 결함(7.2.0 검수)
+            Event::listen(CommandStarting::class, [RootOwnedEntryReclaimer::class, 'handleCommandStarting']);
         }
 
         // 회원 행이 바뀌면 비어 있는 필수 항목 판정 캐시를 버린다 — 회원 서비스를 거치지 않는 저장(외부 인증의 속성 동기화,

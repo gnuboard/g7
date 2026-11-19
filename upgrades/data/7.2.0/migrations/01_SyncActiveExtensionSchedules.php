@@ -25,6 +25,9 @@ use App\Extension\UpgradeContext;
  * 새 판에만 있는 확장 클래스를 가리키는 항목 선언(`field_definitions` — 게시판 `GuestAuthorFields`, 쇼핑몰
  * `OrderContactFields`)은 이 구간에서 「Class … not found」로 실패한다. 그 실패는 경고 표에서 빼고 로그로만 남긴다 —
  * 이어지는 확장 갱신이 같은 선언을 새 클래스로 다시 동기화한다(7.1.6 → 7.2.0 실측: 오경보 2건 뒤 갱신이 정상으로 채움).
+ * 확장 하나의 동기화 전체가 같은 이유로 멈추는 경우(7.1.6 → 7.2.0 실측: 환율 플러그인 선언이 새 클래스
+ * `Services\UpdateScheduleResolver` 를 불러 「sync 실패」 경고)는 매니저가 결과의 `deferred` 로 가르고 안내 로그만 남긴다
+ * (`PendingBundledExtensionClass`).
  *
  * V-1 안전 예외(스텝 00 과 같은 사유): 새 코드의 동기화를 부르는 것이 이 스텝의 목적이라 매니저를 직접 부른다. 메서드가
  * 없는 판에서는 건너뛰고 복구 방법을 경고로 남긴다. 실패도 예외로 올리지 않는다.

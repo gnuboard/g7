@@ -63,6 +63,7 @@ use App\Extension\Layout\LayoutSyncReport;
 use App\Extension\Support\ComputedSettingKeys;
 use App\Extension\Support\ExtensionRemoteStorageCleanup;
 use App\Extension\Support\LifecycleWarnings;
+use App\Extension\Support\PendingBundledExtensionClass;
 use App\Extension\Support\StatusRestore;
 use App\Extension\Support\UnusableUpgradeStep;
 use App\Extension\Testing\ExtensionTestAllowlist;
@@ -2711,7 +2712,7 @@ class PluginManager implements PluginManagerInterface
      *
      * _bundled 에 plugin.php 가 부재한 외부 설치 플러그인(GitHub 직접 설치 등) 은 skip.
      *
-     * @return array{synced: array<int, string>, skipped: array<int, string>, failed: array<string, string>} 동기화 결과 — 성공·건너뜀 식별자와 실패 사유
+     * @return array{synced: array<int, string>, skipped: array<int, string>, failed: array<string, string>, deferred: array<string, string>} 동기화 결과 — 성공·건너뜀 식별자, 실패 사유, 새 판에만 있는 클래스 때문에 확장 갱신으로 미룬 식별자 → 클래스
      *
      * @since 7.0.0-beta.4
      */
@@ -2720,6 +2721,7 @@ class PluginManager implements PluginManagerInterface
         $synced = [];
         $skipped = [];
         $failed = [];
+        $deferred = [];
 
         foreach (self::getActivePluginIdentifiers() as $identifier) {
             $pluginDir = $this->bundledPluginsPath.DIRECTORY_SEPARATOR.$identifier;
@@ -2752,6 +2754,24 @@ class PluginManager implements PluginManagerInterface
                 $this->syncDeclarativeArtifacts($plugin);
                 $synced[] = $identifier;
             } catch (\Throwable $e) {
+                // 새 판에만 있는 확장 클래스 때문이면 실패가 아니다 — 이어지는 플러그인 갱신이 같은 선언을 새 클래스로 다시 동기화한다
+                $pendingClass = PendingBundledExtensionClass::fromMessage(
+                    $e->getMessage(),
+                    'Plugins',
+                    $pluginDir,
+                    dirname($this->bundledPluginsPath).DIRECTORY_SEPARATOR.$identifier,
+                );
+
+                if ($pendingClass !== null) {
+                    $deferred[$identifier] = $pendingClass;
+                    Log::channel('upgrade')->info('[resyncAllActiveDeclarativeArtifacts] 플러그인 갱신이 이어서 동기화 — 새 판 클래스가 아직 활성 폴더에 없음', [
+                        'plugin' => $identifier,
+                        'class' => $pendingClass,
+                    ]);
+
+                    continue;
+                }
+
                 $failed[$identifier] = $e->getMessage();
                 Log::channel('upgrade')->warning('[resyncAllActiveDeclarativeArtifacts] sync 실패', [
                     'plugin' => $identifier,
@@ -2760,7 +2780,7 @@ class PluginManager implements PluginManagerInterface
             }
         }
 
-        return ['synced' => $synced, 'skipped' => $skipped, 'failed' => $failed];
+        return ['synced' => $synced, 'skipped' => $skipped, 'failed' => $failed, 'deferred' => $deferred];
     }
 
     /**

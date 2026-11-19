@@ -63,6 +63,7 @@ use App\Extension\Layout\LayoutSyncReport;
 use App\Extension\Support\ComputedSettingKeys;
 use App\Extension\Support\ExtensionRemoteStorageCleanup;
 use App\Extension\Support\LifecycleWarnings;
+use App\Extension\Support\PendingBundledExtensionClass;
 use App\Extension\Support\StatusRestore;
 use App\Extension\Support\UnusableUpgradeStep;
 use App\Extension\Testing\ExtensionTestAllowlist;
@@ -2906,7 +2907,7 @@ class ModuleManager implements ModuleManagerInterface
      *
      * _bundled 에 module.php 가 부재한 외부 설치 모듈(GitHub 직접 설치 등) 은 skip.
      *
-     * @return array{synced: array<int, string>, skipped: array<int, string>, failed: array<string, string>} 동기화 결과 — 성공·건너뜀 식별자와 실패 사유
+     * @return array{synced: array<int, string>, skipped: array<int, string>, failed: array<string, string>, deferred: array<string, string>} 동기화 결과 — 성공·건너뜀 식별자, 실패 사유, 새 판에만 있는 클래스 때문에 확장 갱신으로 미룬 식별자 → 클래스
      *
      * @since 7.0.0-beta.4
      */
@@ -2915,6 +2916,7 @@ class ModuleManager implements ModuleManagerInterface
         $synced = [];
         $skipped = [];
         $failed = [];
+        $deferred = [];
 
         foreach (self::getActiveModuleIdentifiers() as $identifier) {
             $moduleDir = $this->bundledModulesPath.DIRECTORY_SEPARATOR.$identifier;
@@ -2947,6 +2949,24 @@ class ModuleManager implements ModuleManagerInterface
                 $this->syncDeclarativeArtifacts($module);
                 $synced[] = $identifier;
             } catch (\Throwable $e) {
+                // 새 판에만 있는 확장 클래스 때문이면 실패가 아니다 — 이어지는 모듈 갱신이 같은 선언을 새 클래스로 다시 동기화한다
+                $pendingClass = PendingBundledExtensionClass::fromMessage(
+                    $e->getMessage(),
+                    'Modules',
+                    $moduleDir,
+                    dirname($this->bundledModulesPath).DIRECTORY_SEPARATOR.$identifier,
+                );
+
+                if ($pendingClass !== null) {
+                    $deferred[$identifier] = $pendingClass;
+                    Log::channel('upgrade')->info('[resyncAllActiveDeclarativeArtifacts] 모듈 갱신이 이어서 동기화 — 새 판 클래스가 아직 활성 폴더에 없음', [
+                        'module' => $identifier,
+                        'class' => $pendingClass,
+                    ]);
+
+                    continue;
+                }
+
                 $failed[$identifier] = $e->getMessage();
                 Log::channel('upgrade')->warning('[resyncAllActiveDeclarativeArtifacts] sync 실패', [
                     'module' => $identifier,
@@ -2955,7 +2975,7 @@ class ModuleManager implements ModuleManagerInterface
             }
         }
 
-        return ['synced' => $synced, 'skipped' => $skipped, 'failed' => $failed];
+        return ['synced' => $synced, 'skipped' => $skipped, 'failed' => $failed, 'deferred' => $deferred];
     }
 
     /**

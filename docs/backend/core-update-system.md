@@ -1096,6 +1096,8 @@ php artisan core:check-updates
 
 `restore_ownership` 복원은 흐름 **중간**(Step 11)이므로 그 뒤에 만들어지는 런타임 산출물은 흐름 **마지막**의 런타임 소유권 정상화가 덮는다. 대상은 다섯 곳이다: `storage/framework/cache`(캐시 키 인덱스·락 샤드), `bootstrap/cache`, `storage/app/ext-bundles`(병합 번들), `storage/app/temp`(확장 업데이트 임시 폴더 — 부모가 root 로 최초 생성되면 이후 관리자 화면의 확장 업데이트가 실패한다), `storage/logs`(daily 롤오버·신규 로그 파일). `storage/app/{modules,plugins}` 는 사용자 데이터 영역이라 의도적으로 제외되어 있으므로, 그 아래에 파일·디렉토리를 만드는 코드(설정 시드·업그레이드 마이그레이션)는 스스로 부모 소유권을 상속시킨다.
 
+위 두 장치는 **업데이트 전에 있던 경로**와 정해 둔 경로만 다룬다. 업데이트가 처음 만든 경로(예: 7.2.0 의 템플릿 환경설정 저장소 `storage/app/templates`, 코어 업데이트 기록 `storage/app/core-update`)까지 덮도록, root 로 돈 업데이트·설치 계열 명령(`core:update`·`core:execute-upgrade-steps`·`core:execute-bundled-updates`·`{module|plugin|template|language-pack}:{install|update|…}` 등)은 끝날 때 설치 트리의 **root 소유 항목만** 바로 위 폴더의 소유자·그룹으로 되돌리고, 위 폴더의 그룹·기타 권한을 더한다(빼지 않는다). 설치 루트가 root 소유인 서버, root 가 아닌 프로세스(관리자 화면 업데이트, 서버 명령을 쓸 수 없는 호스팅, 일반 계정 CLI)에서는 아무것도 하지 않는다. `.git`·`node_modules` 는 훑지 않고 링크는 따라가지 않는다. 그래서 업데이트 코드가 새 저장소 폴더를 만들 때 이 목록에 경로를 더할 필요가 없다.
+
 `.env` 에서 `G7_UPDATE_EXCLUDES` · `G7_UPDATE_TARGETS` · `G7_UPDATE_PROTECTED_PATHS` · `G7_UPDATE_RESTORE_OWNERSHIP` · `G7_UPDATE_RESTORE_OWNERSHIP_GROUP_WRITABLE` 로 재정의할 수 있다. 재정의 값은 기본 목록을 **통째로 대체**하므로 전체 목록을 다시 적는다 — 예를 들어 `G7_UPDATE_EXCLUDES` 에서 `build/ext` 가 빠지면 `--prune` 업데이트가 정적 게시본을 지운다. 기본값은 `.env.example` 에 주석으로 실려 있다.
 
 ### 예약 경로 (custom, 7.2.0)
