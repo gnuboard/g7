@@ -4,7 +4,7 @@ All notable changes to this plugin will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [1.0.0] - 2026-10-22
+## [1.0.0] - 2026-11-19
 
 ### Added
 
@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - OpenID Connect 로그인: discovery 주소로 설정을 채우고, id_token 서명(허용 알고리즘 고정, 서명 키 회전 시 1회 다시 받음), 발급자, 수신자, 유효 시각, nonce, PKCE 를 검증한다. 회원 식별 값은 IdP 마다 `sub`, `oid`, 지정 클레임 중에서 고른다
 - SAML 2.0 로그인: IdP 메타데이터 주소나 XML 로 연결하고, 서명, 대상, 유효 시각을 검증한 응답만 받는다(서명 감싸기, 재전송 거절). Keycloak 기본 설정처럼 같은 이름 속성을 여러 번 보내면 값을 합쳐 받고, 응답을 읽지 못하면 SAML 응답 오류로 알린다. 붙여 넣은 메타데이터 XML 은 저장할 때 읽어 보고, 읽지 못하면 그 칸에 알린다. IdP 가 시작한 로그인은 IdP 마다 켤 수 있다(기본 꺼짐)
+- SAML 처리에는 서명 검증 보안 수정이 들어간 라이브러리(php-saml 4.5, xmlseclibs 4)를 쓴다. 암호화한 어설션은 RSA-OAEP 키 전송으로 감싼 것만 받는다 — RSA-1.5 키 전송만 쓰는 IdP 는 IdP 쪽 암호화 설정을 RSA-OAEP 로 바꿔야 로그인된다
 - SAML SP 메타데이터 주소와 SP 키 생성(교체 시 이전 키 30일 병행), IdP 메타데이터 매일 갱신과 서명 인증서 만료 30일, 7일 전 알림
 - LDAP / Active Directory 로그인: 로그인 화면의 이메일 또는 사내 아이디와 비밀번호를 사내 디렉터리로 확인한다(StartTLS, LDAPS). 서버에 PHP LDAP 확장이 없으면 LDAP 만 쓸 수 없다고 표시하고 나머지 프로토콜은 그대로 쓴다
 - 다른 확장은 필터 훅 `sirsoft-sso.protocol.filter_registered` 로 새 프로토콜 드라이버를 더할 수 있다

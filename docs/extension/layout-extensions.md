@@ -414,6 +414,8 @@ overlay 를 슬롯으로 **전환**할 때는 기설치본을 함께 본다. 확
 
 > 아래는 Overlay 주입 문법을 보이는 예시다. 회원 폼(가입, 내 정보, 관리자 회원 폼)에 **입력 칸을 더하는 용도**라면 조각을 붙이지 말고 회원 항목으로 선언한다([field-sets.md](field-sets.md)). 선언한 항목은 조각 없이 네 화면에 그려지고 검증과 저장도 코어가 맡는다. 번들 게시판의 알림 설정도 7.2.0 부터 조각이 아니라 항목 선언이다.
 
+> 예시의 클래스는 게시판 모듈 앞글자(`assets.css.namespace: "board"`)를 붙인 접두 빌드 클래스(`board:…`)다. 확장이 주입하는 조각도 확장 화면이므로 템플릿 CSS 가 아니라 확장 자기 CSS 로 그린다 — [확장 CSS 자기 공급 규약](module-assets.md#확장-css-자기-공급-규약).
+
 ```html
 <extension target-layout="admin_user_form" priority="100">
   <inject target-id="section_marketing_consent" position="append">
@@ -427,8 +429,6 @@ overlay 를 슬롯으로 **전환**할 때는 기설치본을 함께 본다. 확
   </inject>
 </extension>
 ```
-
-> 클래스는 게시판 모듈 앞글자(`assets.css.namespace: "board"`)를 붙인 접두 빌드 클래스(`board:…`)다. 확장이 주입하는 조각도 확장 화면이므로 템플릿 CSS 가 아니라 확장 자기 CSS 로 그린다 — [확장 CSS 자기 공급 규약](module-assets.md#확장-css-자기-공급-규약).
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
