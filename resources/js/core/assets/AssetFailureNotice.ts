@@ -22,6 +22,7 @@
  */
 
 import { createLogger } from '../utils/Logger';
+import { measureViewportWidth } from '../template-engine/viewportMeasure';
 
 const logger = createLogger('AssetFailureNotice');
 
@@ -320,7 +321,10 @@ function applyContainerStyle(container: HTMLElement): void {
 function buildContent(): HTMLElement {
     const dark = isDarkMode();
     const items = Array.from(failures.values());
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    // 엔진과 같은 폭 측정 — 휴대폰 화면 축소로 부푼 innerWidth 대신 레이아웃 기준 폭 (engine-v1.97.1).
+    // responsiveManager 를 import 하지 않는다: 그 모듈을 통째로 모의하는 시험에서도 이 배너는 동작해야 한다.
+    const isMobile =
+        typeof window !== 'undefined' && (measureViewportWidth(window) ?? window.innerWidth) < 768;
 
     const box = document.createElement('div');
     box.style.cssText = [

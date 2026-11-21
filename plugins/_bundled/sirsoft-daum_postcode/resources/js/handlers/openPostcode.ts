@@ -5,8 +5,10 @@
  * - callbackAction 있으면: 커스텀 동작 실행 (Extension Point에서 정의한 onAddressSelect)
  * - callbackAction 없으면: 플러그인 기본 동작 (설정 기반 setState)
  *
- * 표시 방식은 기기별로 고른다(1.2.0). 기기는 **클릭 시점 화면 폭**으로 가른다 — 엔진 반응형
- * `portable` 범위(모바일+태블릿, 상한 1023px) 안이면 모바일, 넘으면 PC 다.
+ * 표시 방식은 기기별로 고른다(1.2.0). 기기는 **클릭 시점 엔진이 정한 화면 폭**(엔진이 없으면 창 폭)으로 가른다 —
+ * 엔진 반응형 `portable` 범위(모바일+태블릿, 상한 1023px) 안이면 모바일, 넘으면 PC 다. 창 폭(`innerWidth`)을 직접 읽지
+ * 않는 이유: 휴대폰에서 화면이 축소되면 `innerWidth` 가 부풀어(390 → 980) 엔진이 모바일 화면을 그리는데도 PC 방식으로
+ * 열렸다(1.2.3).
  * - PC(`displayModePc`, 설정 `display_mode_pc`): popup · layer(기본) · inline
  * - 모바일(`displayModeMobile`, 설정 `display_mode_mobile`): inline(기본) · fullscreen
  *
@@ -203,15 +205,21 @@ function convertToG7AddressEvent(daumData: any): G7AddressEvent {
 }
 
 /**
- * 지금 화면이 모바일(엔진 반응형 portable 범위)인지 판정합니다 — 클릭 시점 화면 폭 기준.
+ * 지금 화면이 모바일(엔진 반응형 portable 범위)인지 판정합니다 — 클릭 시점 엔진이 정한 폭(없으면 창 폭) 기준.
+ *
+ * 엔진 폭을 먼저 읽어야 화면 전체(엔진이 고른 모바일·PC 화면)와 같은 기기로 고른다. 엔진이 옛 판이라
+ * `getWidth()` 가 없거나 값이 이상하면 종전처럼 `innerWidth` 를 쓴다.
  *
  * @return bool 모바일(휴대폰·태블릿)이면 true
  */
 function isPortableViewport(): boolean {
-    const range = (window as any).G7Core?.ResponsiveManager?.parseRange?.('portable');
+    const responsive = (window as any).G7Core?.ResponsiveManager;
+    const range = responsive?.parseRange?.('portable');
     const max = typeof range?.max === 'number' && Number.isFinite(range.max) ? range.max : PORTABLE_MAX_WIDTH;
+    const engineWidth = responsive?.getWidth?.();
+    const width = typeof engineWidth === 'number' && Number.isFinite(engineWidth) ? engineWidth : window.innerWidth;
 
-    return window.innerWidth <= max;
+    return width <= max;
 }
 
 /**
@@ -419,7 +427,7 @@ export async function openPostcodeHandler(
     const G7Core = (window as any).G7Core;
     const pluginSettings = G7Core?.plugin?.getSettings?.('sirsoft-daum_postcode') || {};
 
-    // 기기·방식은 클릭 시점 화면 폭으로 정한다(재시도 뒤 다시 정하지 않는다)
+    // 기기·방식은 클릭 시점 엔진 화면 폭으로 정한다(재시도 뒤 다시 정하지 않는다)
     const { portable, mode: displayMode } = resolveDisplayMode(params, pluginSettings);
 
     // 누른 버튼은 기다리기(SDK 재시도) 전에 잡는다 — 합성 이벤트는 비동기 경계를 넘으면 currentTarget 이 빈다.

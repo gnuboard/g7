@@ -608,6 +608,44 @@ describe('우편번호 검색 창 표시 방식', () => {
         });
 
         /**
+         * 화면 축소로 innerWidth 가 부푼 휴대폰(엔진 engine-v1.97.1 이후) — 엔진이 정한 폭으로 판정해야 화면 전체와
+         * 같은 기기로 고른다. 종전에는 innerWidth(980 등)를 직접 읽어 엔진이 모바일 화면을 그리는데도 PC 방식으로 열렸다.
+         *
+         * @scenario case=engine_width
+         * @effects device_mode_follows_engine_width
+         */
+        it('G7Core.ResponsiveManager.getWidth 가 있으면 그 폭으로 판정 (innerWidth 1280 · 엔진 390 → 화면 안 펼치기)', async () => {
+            (window as any).G7Core.ResponsiveManager = {
+                parseRange: (key: string) => (key === 'portable' ? { min: 0, max: 1023 } : null),
+                getWidth: () => 390,
+            };
+            setViewportWidth(1280);
+            const { row, button } = mountAddressGroup();
+
+            await openPostcodeHandler(both('layer', 'inline'), { event: clickEvent(button) } as any);
+
+            expect((row.nextElementSibling as HTMLElement)?.classList.contains('daumpostcode-inline')).toBe(true);
+            expect(document.getElementById('daum-postcode-overlay')).toBeNull();
+            expect(kakaoInstances[0].open).not.toHaveBeenCalled();
+        });
+
+        /**
+         * @scenario case=engine_width
+         * @effects device_mode_follows_engine_width
+         */
+        it('엔진이 없으면 innerWidth 로 판정한다 (옛 엔진 사이트 호환)', async () => {
+            delete (window as any).G7Core.ResponsiveManager;
+            setViewportWidth(1280);
+            await openPostcodeHandler(both('popup', 'fullscreen'), {} as any);
+            expect(kakaoInstances[0].open).toHaveBeenCalledTimes(1);
+
+            (window as any).G7Core.ResponsiveManager = { getWidth: () => Number.NaN };
+            setViewportWidth(390);
+            await openPostcodeHandler(both('popup', 'fullscreen'), {} as any);
+            expect(document.getElementById('daum-postcode-fullscreen')).not.toBeNull();
+        });
+
+        /**
          * @scenario case=settings_fallback
          * @effects device_modes_fall_back_to_plugin_settings
          */

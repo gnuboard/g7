@@ -74,16 +74,34 @@
 레이아웃이 `responsive` 로 띄우는 안내와 **같은 값을 같은 방법으로** 읽어야 한다.
 
 ```ts
-// ✅ 엔진과 동일 — ResponsiveManager 가 window.innerWidth 로 breakpoint 를 정한다
+// ✅ 엔진과 동일 — 엔진이 정한 폭을 읽는다(엔진이 없는 옛 환경에서만 창 폭으로 폴백)
 const PORTABLE_MAX_WIDTH = 1023;
+const engineWidth = G7Core.ResponsiveManager?.getWidth?.();
+const width = typeof engineWidth === 'number' && Number.isFinite(engineWidth) ? engineWidth : window.innerWidth;
+const isPortable = width <= PORTABLE_MAX_WIDTH;
+
+// ❌ 휴대폰 화면이 축소되면 부푼 값(390 → 980)을 읽어 PC 로 오판한다
 const isPortable = window.innerWidth <= PORTABLE_MAX_WIDTH;
 
 // ❌ 경계에서 어긋난다
 const isPortable = window.matchMedia('(max-width: 1023px)').matches;
 ```
 
-`matchMedia` 는 CSS 픽셀 기준이라 `devicePixelRatio` 가 정수가 아닌 환경에서 `window.innerWidth`
-와 1px 어긋난다. 실측(Chrome, dPR 1.0000000447)에서 `innerWidth === 1023` 인데
+엔진이 폭을 정하는 규칙(7.2.1):
+
+| 상황 | 엔진 폭 |
+| --- | --- |
+| 평소(PC 세로 스크롤 막대·브라우저 확대·소수 배율 경계 포함) | `window.innerWidth` — 종전과 같은 값 |
+| 휴대폰에서 화면이 축소·확대되어 CSS 폭이 `innerWidth` 와 어긋남 | 레이아웃 기준 폭(`document.documentElement.clientWidth`) |
+| 잴 수 없음(아직 그려지지 않은 문서) | 이전 값 유지 |
+
+다시 재는 시점은 창 크기가 바뀔 때(`resize`), 화면이 다시 보일 때(`visibilitychange` — 다른 앱을 다녀와 브라우저가
+앞으로 올 때), 페이지가 보일 때(`pageshow` — 뒤로가기 캐시 복귀 포함)다. 화면이 가려진 동안 불러온 페이지가 잘못된 폭을
+읽었더라도 보이는 순간 바로잡힌다. `G7Core.ResponsiveManager.getWidth()` 는 이 값을 돌려준다. `window.innerWidth` 는
+휴대폰에서 화면이 축소되면 보이는 영역 폭이라 부풀므로, 확장이 직접 읽으면 엔진이 그린 화면과 다른 기기로 판정한다.
+
+`matchMedia` 를 경계 판정에 직접 쓰지 않는 이유: CSS 픽셀 기준이라 `devicePixelRatio` 가 정수가 아닌 환경에서 `window.innerWidth`
+와 1px 어긋난다(엔진은 이 어긋남을 ±2px 로 흡수해 `innerWidth` 를 그대로 쓴다). 실측(Chrome, dPR 1.0000000447)에서 `innerWidth === 1023` 인데
 `matchMedia('(max-width: 1023px)')` 가 `false` 였다. 이 어긋남은 딱 경계 폭에서만 나타나므로
 개발 중에는 드러나지 않고, 화면은 "페이지로 이동합니다" 라고 안내해 놓고 실제로는 팝업이 열리는
 형태로 사용자에게만 보인다.
@@ -97,7 +115,7 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
 ### 레이아웃 편집기 미리보기에서의 화면 폭
 
 레이아웃 편집기의 미리보기는 iframe 이 아니라 관리자 화면 안의 영역이다. 브라우저 창은 하나뿐이라,
-창 폭(`window.innerWidth`)과 미리보기 기기 폭(모바일 390·태블릿 820·데스크톱 1280·사용자 지정)이 다르다.
+창 폭(엔진 폭 `G7Core.ResponsiveManager.getWidth()`·`window.innerWidth`)과 미리보기 기기 폭(모바일 390·태블릿 820·데스크톱 1280·사용자 지정)이 다르다.
 미리보기가 기기 폭대로 보이려면 컴포넌트가 다음을 지킨다.
 
 ```text

@@ -4,8 +4,7 @@
  * 실패를 표면화하지 않으면 사용자에게는 "빈 자리" 로만 나타나고, 자체 서버 로그에도
  * 흔적이 남지 않아 운영자가 원인을 특정할 수 없다.
  *
- * @scenario asset_class=vendored, outcome=failed
- * @effects failed_asset_shows_retry_notice, notice_renders_without_host_component_on_standalone_layout
+ * 재는 조합: 자산 종류 vendored × 결과 failed — 효과 표식은 각 시험 바로 앞에 있다.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -173,6 +172,42 @@ describe('AssetFailureNotice', () => {
         expect(light).not.toBe('');
         expect(dark).not.toBe('');
         expect(light).not.toBe(dark);
+    });
+
+    /**
+     * 화면 축소로 innerWidth 가 부푼 휴대폰(engine-v1.97.1) — 배치 판정은 엔진과 같은 폭 측정을 쓴다.
+     * innerWidth 980 · 레이아웃 폭 390 · CSS 폭 390 이면 휴대폰이므로 세로(column) 배치다.
+     */
+    // @scenario asset_class=vendored, outcome=failed
+    // @effects failed_asset_shows_retry_notice
+    it('innerWidth 가 980 이어도 레이아웃 폭이 390 이면 세로(column) 배치', () => {
+        const originalInnerWidth = Object.getOwnPropertyDescriptor(window, 'innerWidth');
+        const originalMatchMedia = window.matchMedia;
+
+        try {
+            Object.defineProperty(window, 'innerWidth', { configurable: true, get: () => 980 });
+            Object.defineProperty(document.documentElement, 'clientWidth', { configurable: true, get: () => 390 });
+            (window as any).matchMedia = (query: string) => {
+                const min = /min-width:\s*([\d.]+)px/.exec(query);
+                const max = /max-width:\s*([\d.]+)px/.exec(query);
+
+                return { matches: (min ? 390 >= Number(min[1]) : true) && (max ? 390 <= Number(max[1]) : true) };
+            };
+
+            notifyAssetFailure({ id: 'a', label: '편집기', retry: () => Promise.resolve() });
+
+            // 상자의 flex-direction 은 일괄 cssText 라 jsdom 이 통째로 버린다(위 다크 모드 시험 주석) —
+            // 같은 판정(isMobile)을 따르는 버튼 영역 폭(모바일 100%)으로 확인한다.
+            const box = container()?.firstElementChild as HTMLElement;
+            const actions = box.lastElementChild as HTMLElement;
+            expect(actions.style.width).toBe('100%');
+        } finally {
+            if (originalInnerWidth) {
+                Object.defineProperty(window, 'innerWidth', originalInnerWidth);
+            }
+            delete (document.documentElement as any).clientWidth;
+            (window as any).matchMedia = originalMatchMedia;
+        }
     });
 
     // @scenario asset_class=vendored, outcome=failed

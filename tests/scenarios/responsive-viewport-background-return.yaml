@@ -1,0 +1,37 @@
+feature: 엔진 화면 폭 판정 — 가려진 로드·화면 축소 뒤 폭 바로잡기 (engine-v1.97.1)
+
+description: |
+  휴대폰에서 다른 앱(카카오톡 로그인·카드앱 결제·PASS 본인확인)을 다녀와 브라우저로 돌아오면 사이트가 PC 화면으로
+  축소되어 굳고 새로고침해야 모바일 화면이 됐다. 엔진(ResponsiveManager)이 모듈을 불러올 때 `innerWidth` 를 한 번 읽고
+  resize 때만 다시 읽었기 때문이다. 화면이 가려진 채 불러오면 기기 폭이 아닌 값을 읽을 수 있고, PC 화면이 한 번 그려지면
+  모바일 브라우저가 화면을 축소해 `innerWidth`(보이는 영역 폭)가 부풀어 resize 에서도 그 값을 다시 읽었다.
+
+  판정 규칙(viewportMeasure): 평소에는 `innerWidth`(PC 스크롤 막대·브라우저 확대·소수 배율 경계에서 지금과 같은 값),
+  CSS 폭이 `innerWidth` 와 어긋나고 레이아웃 기준 폭(`clientWidth`)과 맞으면 레이아웃 기준 폭, 잴 수 없으면 null(이전 값 유지).
+  재측정 계기: resize(150ms 디바운스) · visibilitychange 가 visible 일 때(즉시 + 250ms 후속) · pageshow(즉시 + 250ms 후속).
+  폭이 같으면 구독자에게 알리지 않는다(`_setWidthForTesting` 은 예외).
+
+axes:
+  case:
+    - viewport_measure   # 순수 측정 함수(iw·cw·CSS 폭 조합)
+    - background_return  # 실제 싱글톤·Provider — 가려진 로드·화면 축소·보임 전환·pageshow·destroy
+
+effects:
+  - engine_width_uses_inner_width_without_layout_width     # cw 0(jsdom 등) → iw
+  - engine_width_null_when_unmeasurable                    # 둘 다 0·NaN → null
+  - engine_width_equal_values_skip_media_query             # iw === cw → matchMedia 미호출
+  - engine_width_keeps_inner_width_on_desktop              # 스크롤 막대·확대·소수 배율 → iw
+  - engine_width_uses_layout_width_when_zoomed_out         # 화면 축소로 부푼 iw·손가락 확대로 줄어든 iw → cw
+  - engine_width_falls_back_to_inner_width                 # matchMedia 없음·예외·늘 false → iw
+  - engine_width_corrects_after_zoomed_out_resize          # 가려진 로드 뒤 축소 상태 resize → 레이아웃 폭(사용자에게 mobile)
+  - engine_width_remeasures_on_visible                     # visibilitychange visible 즉시 + 250ms 후속
+  - engine_width_remeasures_on_pageshow                    # pageshow 재측정
+  - engine_width_skips_hidden_transition                   # hidden 으로 바뀔 때는 재지 않음
+  - engine_width_notifies_only_on_change                   # 같은 폭이면 무알림, _setWidthForTesting 은 알림
+  - engine_width_listeners_released_on_destroy             # destroy 뒤 수신기·타이머 0
+
+test_files:
+  - resources/js/core/template-engine/__tests__/viewportMeasure.test.ts
+  - resources/js/core/template-engine/__tests__/ResponsiveManager.backgroundReturn.test.ts
+  - resources/js/core/template-engine/__tests__/ResponsiveContext.realManager.backgroundReturn.test.tsx
+  - tests/Playwright/specs/responsive-zoomed-out-return.spec.ts
