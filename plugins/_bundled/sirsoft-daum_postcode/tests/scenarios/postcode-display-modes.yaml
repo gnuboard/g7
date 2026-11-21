@@ -25,6 +25,7 @@ axes:
     - mobile_inline              # 모바일 × inline
     - mobile_fullscreen          # 모바일 × fullscreen
     - boundary                   # 1023/1024 경계, 엔진 portable 상한 사용
+    - engine_width               # 엔진이 정한 폭(G7Core.ResponsiveManager.getWidth) 우선, 없으면 innerWidth
     - settings_fallback          # 매개변수 없음 → 플러그인 설정 → 기본값, 옛 displayMode
 
 effects:
@@ -43,6 +44,7 @@ effects:
   - inline_falls_back_without_event                 # 모바일: 이벤트 없으면 전체 화면
   - layer_fits_narrow_viewport                      # 레이어 크기 = min(설정, 화면)
   - device_mode_follows_viewport_at_click           # 클릭 시점 폭으로 PC·모바일 방식 선택
+  - device_mode_follows_engine_width                # 화면 축소로 innerWidth 가 부풀어도 엔진 폭으로 판정, 엔진 없으면 innerWidth
   - fullscreen_covers_viewport_with_title_and_close # 전체 화면 창(제목·닫기), 100% 높이 embed, 스크롤 잠금
   - fullscreen_closes_on_select_and_escape          # 고르면·ESC 로 닫힘
   - device_modes_fall_back_to_plugin_settings       # 매개변수 없으면 설정, 그다음 기본값, 기기에 맞지 않는 값은 버림

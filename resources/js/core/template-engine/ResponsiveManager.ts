@@ -3,7 +3,26 @@
  *
  * 반응형 레이아웃 시스템의 핵심 싱글톤 모듈
  * 화면 너비 감지, 범위 파싱, 매칭 키 찾기 기능을 제공합니다.
+ *
+ * 화면 너비는 한 번 읽고 굳히지 않는다(engine-v1.97.1). 휴대폰에서 다른 앱(카카오톡 로그인·카드앱 결제 등)을
+ * 다녀오면 화면이 가려진 채 페이지를 불러오거나, PC 화면이 한 번 그려져 브라우저가 화면을 축소해
+ * `innerWidth` 가 부푼다. 그래서 폭은 `measureViewportWidth()`(축소로 부푼 값 대신 레이아웃 기준 폭)로 재고,
+ * resize 외에 화면이 다시 보일 때(visibilitychange)·페이지가 보일 때(pageshow)도 다시 잰다.
  */
+
+import { createLogger } from '../utils/Logger';
+import { measureViewportWidth } from './viewportMeasure';
+
+const logger = createLogger('ResponsiveManager');
+
+/** resize 디바운스 지연(ms) */
+const RESIZE_DEBOUNCE_MS = 150;
+
+/**
+ * 화면이 다시 보일 때·pageshow 뒤 한 번 더 재는 지연(ms).
+ * 안드로이드에서 visible 이 복원된 화면 크기보다 먼저 오는 경우를 잡는다.
+ */
+const FOLLOW_UP_REMEASURE_MS = 250;
 
 /**
  * 파싱된 범위 인터페이스
@@ -33,23 +52,38 @@ const BREAKPOINT_PRESETS: Record<string, ParsedRange> = {
 const parsedRangeCache = new Map<string, ParsedRange | null>();
 
 /**
+ * 대기 중인 실행을 취소할 수 있는 debounce 함수
+ */
+type CancelableDebounced<T extends (...args: any[]) => void> = T & { cancel: () => void };
+
+/**
  * debounce 함수
  *
  * @param fn 실행할 함수
  * @param delay 지연 시간 (ms)
- * @returns debounced 함수
+ * @returns debounced 함수 (`cancel()` 로 대기 중인 실행을 취소 — destroy 용, engine-v1.97.1)
  */
-function debounce<T extends (...args: any[]) => void>(fn: T, delay: number): T {
+function debounce<T extends (...args: any[]) => void>(fn: T, delay: number): CancelableDebounced<T> {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-  return ((...args: Parameters<T>) => {
+  const debounced = ((...args: Parameters<T>) => {
     if (timeoutId !== null) {
       clearTimeout(timeoutId);
     }
     timeoutId = setTimeout(() => {
+      timeoutId = null;
       fn(...args);
     }, delay);
-  }) as T;
+  }) as CancelableDebounced<T>;
+
+  debounced.cancel = () => {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+  };
+
+  return debounced;
 }
 
 /**
@@ -61,7 +95,10 @@ function debounce<T extends (...args: any[]) => void>(fn: T, delay: number): T {
 class ResponsiveManager {
   private subscribers: Set<(width: number) => void> = new Set();
   private currentWidth: number = 1024; // 데스크톱 기본값
-  private debouncedHandler: (() => void) | null = null;
+  private debouncedHandler: CancelableDebounced<() => void> | null = null;
+  private visibilityHandler: (() => void) | null = null;
+  private pageShowHandler: (() => void) | null = null;
+  private followUpTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.initialize();
@@ -69,21 +106,88 @@ class ResponsiveManager {
 
   /**
    * 초기화
-   * 브라우저 환경에서만 resize 이벤트를 등록합니다.
+   * 브라우저 환경에서만 폭을 재고 재측정 계기(resize · visibilitychange · pageshow)를 등록합니다.
    */
   private initialize(): void {
     if (typeof window === 'undefined') {
       return;
     }
 
-    this.currentWidth = window.innerWidth;
+    this.currentWidth = measureViewportWidth(window) ?? 1024;
 
     this.debouncedHandler = debounce(() => {
-      this.currentWidth = window.innerWidth;
-      this.notifySubscribers();
-    }, 150);
-
+      this.remeasure();
+    }, RESIZE_DEBOUNCE_MS);
     window.addEventListener('resize', this.debouncedHandler);
+
+    // 다른 앱을 다녀와 화면이 다시 보일 때 — 가려진 동안 읽은 폭을 바로잡는다 (engine-v1.97.1)
+    if (typeof document !== 'undefined') {
+      this.visibilityHandler = () => {
+        if (document.visibilityState !== 'visible') {
+          return;
+        }
+
+        this.remeasure();
+        this.scheduleFollowUp();
+      };
+      document.addEventListener('visibilitychange', this.visibilityHandler);
+    }
+
+    // 뒤로가기 캐시 복귀·첫 로드 완료 직후 (engine-v1.97.1)
+    this.pageShowHandler = () => {
+      this.remeasure();
+      this.scheduleFollowUp();
+    };
+    window.addEventListener('pageshow', this.pageShowHandler);
+  }
+
+  /**
+   * 화면 폭을 다시 재고, 바뀌었으면 구독자에게 알립니다.
+   *
+   * 폭이 같으면 알리지 않는다 — 탭을 오갈 때마다 다시 재도 다시 그리기는 실제 폭이 바뀔 때만 생긴다.
+   *
+   * @returns 폭이 바뀌었으면 true
+   * @since engine-v1.97.1
+   */
+  remeasure(): boolean {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    const width = measureViewportWidth(window);
+
+    if (width === null || width === this.currentWidth) {
+      return false;
+    }
+
+    if (logger.isDebugEnabled?.()) {
+      logger.log('width changed', {
+        iw: window.innerWidth,
+        cw: typeof document !== 'undefined' ? document.documentElement?.clientWidth : undefined,
+        from: this.currentWidth,
+        width,
+        visibility: typeof document !== 'undefined' ? document.visibilityState : undefined,
+      });
+    }
+
+    this.currentWidth = width;
+    this.notifySubscribers();
+
+    return true;
+  }
+
+  /**
+   * 잠시 뒤 한 번 더 잽니다 (타이머 1개 — 다시 부르면 기존 타이머를 지우고 새로 건다).
+   */
+  private scheduleFollowUp(): void {
+    if (this.followUpTimer !== null) {
+      clearTimeout(this.followUpTimer);
+    }
+
+    this.followUpTimer = setTimeout(() => {
+      this.followUpTimer = null;
+      this.remeasure();
+    }, FOLLOW_UP_REMEASURE_MS);
   }
 
   /**
@@ -97,6 +201,8 @@ class ResponsiveManager {
 
   /**
    * 화면 너비 변경을 구독합니다.
+   *
+   * 등록 즉시 현재 값으로 한 번 부르고, 그 뒤로는 폭이 **바뀔 때만** 부른다(같은 폭 resize 에는 부르지 않음 — engine-v1.97.1).
    *
    * @param callback 너비 변경 시 호출될 콜백
    * @returns 구독 해제 함수
@@ -251,15 +357,33 @@ class ResponsiveManager {
    * 테스트 환경에서 사용됩니다.
    */
   destroy(): void {
-    if (this.debouncedHandler && typeof window !== 'undefined') {
-      window.removeEventListener('resize', this.debouncedHandler);
+    if (this.debouncedHandler) {
+      this.debouncedHandler.cancel();
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', this.debouncedHandler);
+      }
     }
+    if (this.visibilityHandler && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+    }
+    if (this.pageShowHandler && typeof window !== 'undefined') {
+      window.removeEventListener('pageshow', this.pageShowHandler);
+    }
+    if (this.followUpTimer !== null) {
+      clearTimeout(this.followUpTimer);
+      this.followUpTimer = null;
+    }
+    this.debouncedHandler = null;
+    this.visibilityHandler = null;
+    this.pageShowHandler = null;
     this.clearSubscribers();
     parsedRangeCache.clear();
   }
 
   /**
    * 테스트용: 현재 너비를 강제로 설정합니다.
+   *
+   * 같은 값이어도 구독자에게 알린다(기존 시험 계약 — 실제 측정 경로의 「같은 폭 무알림」과 다르다).
    *
    * @param width 설정할 너비
    */

@@ -6,10 +6,11 @@ description: |
   효과는 그 사례가 지키는 해결 성질 하나씩이다(같은 사례의 시험 여럿은 같은 칸과 같은 효과를 서로 다른 각도로 잠근다).
 
 axes:
-  case: [responsive_scope_boundary, datagrid_response_path, expand_children_row_context, datagrid_event_handler, expand_context_object_fallback, dynamic_column_uncheck, column_width, form_track_changes, form_input_lag, sortable_form_binding, datakey_radio_checkbox_value, error_data_empty, form_button_submit, parent_click_checkbox_lag, partial_props_binding, route_identifier, select_value_type, select_initial_all, icon_size_class, iteration_item_var, iteration_dynamic_child_key, modals_object_format, handler_as_function_call, isolated_scope_fallback, isolated_scope_id_collision, binding_type_checked, binding_type_checkable, binding_type_unset, board_checkbox_input, non_boolean_saved_value, deep_merge_null_default, auto_binding_boolean_stringify, render_tree_consistency, spa_datagrid_remount_key, extends_base_remount, slot_hook_order, cellchildren_translation_token, file_uploader_blob_stale, cellchildren_pipe_routing]
+  case: [responsive_scope_boundary, zoomed_out_viewport_width, datagrid_response_path, expand_children_row_context, datagrid_event_handler, expand_context_object_fallback, dynamic_column_uncheck, column_width, form_track_changes, form_input_lag, sortable_form_binding, datakey_radio_checkbox_value, error_data_empty, form_button_submit, parent_click_checkbox_lag, partial_props_binding, route_identifier, select_value_type, select_initial_all, icon_size_class, iteration_item_var, iteration_dynamic_child_key, modals_object_format, handler_as_function_call, isolated_scope_fallback, isolated_scope_id_collision, binding_type_checked, binding_type_checkable, binding_type_unset, board_checkbox_input, non_boolean_saved_value, deep_merge_null_default, auto_binding_boolean_stringify, render_tree_consistency, spa_datagrid_remount_key, extends_base_remount, slot_hook_order, cellchildren_translation_token, file_uploader_blob_stale, cellchildren_pipe_routing]
 
 effects:
   - responsive_scope_matches_width_range
+  - responsive_engine_width_ignores_zoomed_out_inner_width
   - datagrid_data_uses_nested_response_path
   - expand_children_reads_row_context
   - datagrid_events_use_actions_array

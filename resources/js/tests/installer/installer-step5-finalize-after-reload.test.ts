@@ -13,6 +13,8 @@ import fs from 'fs';
 import path from 'path';
 
 const root = path.resolve(__dirname, '../../../..');
+// 화면(index.php)은 <head> 에서 installer-boot.js 를 가장 먼저 싣는다 — 보이기·숨기기 도우미(installerShow·installerHide)가 여기 있다
+const BOOT_SOURCE = fs.readFileSync(path.join(root, 'public/install/assets/js/installer-boot.js'), 'utf8');
 const INSTALLER_SOURCE = fs.readFileSync(path.join(root, 'public/install/assets/js/installer.js'), 'utf8');
 
 /**
@@ -32,6 +34,8 @@ function bootReloadedStep5(stateRef: { current: Record<string, unknown> }) {
         <p id="current-task"></p>
         <div id="completion-section" class="result-section hidden"></div>`;
 
+    // 부트 스크립트가 기본 전역을 채운 뒤 시험 값으로 덮는다(화면의 적재 순서와 같다)
+    new Function(BOOT_SOURCE)();
     const w = window as any;
     w.INSTALLER_BASE_URL = '/install';
     w.CURRENT_STEP = '5';

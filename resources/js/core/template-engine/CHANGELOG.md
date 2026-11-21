@@ -5,6 +5,12 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.97.1] - 2026-11-21
+
+### Fixed
+
+- (engine-v1.97.1) 휴대폰에서 다른 앱(카카오톡 로그인·카드앱 결제·본인확인 앱)을 다녀와 브라우저로 돌아오면 사용자 화면이 PC 모양으로 축소되어 굳고 새로고침해야 풀리던 문제를 고쳤습니다. 원인: 반응형 폭 싱글톤(`ResponsiveManager`)이 모듈을 불러올 때 `window.innerWidth` 를 한 번 읽고 `resize` 때만 다시 읽었습니다. 화면이 가려진 채 페이지를 불러오면 기기 폭이 아닌 값을 읽을 수 있고, PC 화면이 한 번 그려지면 모바일 브라우저가 전체가 보이도록 화면을 축소해 `innerWidth`(보이는 영역 폭)가 부풀어(실측 390 → 909) 다음 `resize` 에서도 그 값을 다시 읽어 태블릿·PC 폭에 머물렀습니다. 발생 시점: 반응형 도입(`e2417c7424`) 이후 줄곧, 7.2.0 출시본 포함. 바뀐 판정: 새 순수 함수 `measureViewportWidth()`(`viewportMeasure.ts`)가 평소에는 `innerWidth` 를 쓰고(PC 세로 스크롤 막대·브라우저 확대·소수 배율 경계 1023/1024 — 종전과 같은 값), CSS 폭(미디어 쿼리)이 `innerWidth` 와 어긋나고 레이아웃 기준 폭(`documentElement.clientWidth`)과 맞으면 레이아웃 기준 폭을 씁니다(±2px). 재측정 계기에 `visibilitychange`(보일 때만 — 즉시 + 250ms 후속 1회)·`pageshow`(즉시 + 250ms 후속)를 더했고, 폭이 같으면 구독자에게 알리지 않습니다(`_setWidthForTesting` 은 종전처럼 늘 알림). `remeasure()` 공개, `destroy()` 가 세 수신기·디바운스·후속 타이머를 모두 걷습니다. 자산 실패 배너의 모바일 배치 판정도 같은 측정을 씁니다. 회귀 잠금: `viewportMeasure.test.ts`(V1~V9), `ResponsiveManager.backgroundReturn.test.ts`(M1~M9 — 수정 전 7건 red), `ResponsiveContext.realManager.backgroundReturn.test.tsx`(C1 — 수정 전 red), `troubleshooting-components.test.ts` 「[사례 2] 앱 전환 복귀 후 PC 배율」, `AssetFailureNotice.test.ts` 「innerWidth 980 · 레이아웃 390 → 세로 배치」, E2E `tests/Playwright/specs/responsive-zoomed-out-return.spec.ts` (viewportMeasure.ts, ResponsiveManager.ts, AssetFailureNotice.ts)
+
 ## [engine-v1.97.0] - 2026-11-19
 
 ### Changed

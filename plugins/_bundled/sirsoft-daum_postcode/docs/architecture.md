@@ -38,7 +38,7 @@ UI 는 다른 화면에 끼워 넣는 조각 하나와 관리자 설정 화면 �
             │   SDK 확보 확인 → 확보 시에만 필드 잠금
             ▼
         버튼 클릭 → openPostcode 핸들러
-            │   설정(display_mode_pc / display_mode_mobile — 클릭 시점 화면 폭으로 기기 판정 / popup_* / theme_color) 적용
+            │   설정(display_mode_pc / display_mode_mobile — 클릭 시점 엔진 화면 폭으로 기기 판정 / popup_* / theme_color) 적용
             │   실패 → notifyPostcodeSdkFailure (통지 + 재시도)
             ▼
         주소 선택 → callbackAction 있으면 그 액션 실행, 없으면 targetFields 로 필드 기록
