@@ -1,0 +1,23 @@
+feature: sirsoft-basic Icon — 이름 속 Font Awesome 스타일 토큰을 한 번만 읽는다 (#381)
+
+description: |
+  사용자 템플릿 Icon 은 종전에 이름 속 스타일 토큰을 읽지 않아 `fas fa-x` 를 `fas fa-fas fa-x` 로, `far fa-x` 를
+  `fas fa-far fa-x` 로 그렸다(스타일을 잃었다). 이제 iconNameMap 정확 일치를 먼저 보고(맨 이름 출력 보존) 없을 때만
+  해석기(parseIconName — sirsoft-admin_basic 과 같은 내용)로 스타일·글리프·추가 클래스를 나눈다. 사용자 레이아웃(템플릿·
+  번들 모듈·번들 플러그인)의 스타일 토큰 붙은 아이콘 이름을 전수 스캔해 같은 규칙을 잰다.
+
+axes:
+  component: [icon_parser, icon, layout_scan]
+
+effects:
+  - style_prefix_tokens_resolved_once      # 스타일 클래스 하나·fa-fas 류 겹친 클래스 없음·글리프와 추가 클래스(fa-spin) 보존, 이름 속 스타일이 iconStyle prop 보다 우선
+  - icon_name_map_bare_keys_unchanged      # iconNameMap 맨 이름(home·settings 등)은 표가 주는 글리프 그대로 그린다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/basic/__tests__/iconNameParser.test.ts
+  - templates/_bundled/sirsoft-basic/src/components/basic/__tests__/Icon.prefix.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/components/IconPrefixedLayoutNames.test.ts
+
+notes: |
+  e2e_browser=not_applicable — 이름 해석과 클래스 조합은 컴포넌트 단위(jsdom, Vitest)로, 레이아웃 전수 스캔은 .g7.html 원본을
+  읽어 Icon 으로 그려 보는 정적 대조로 잠근다.

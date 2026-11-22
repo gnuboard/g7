@@ -40,6 +40,8 @@ effects:
   - allowed_extensions_renders_as_taginput_on_post_tab
   - blocked_keywords_absent_from_basic_tab
   - allowed_extensions_absent_from_basic_tab
+  # 수정 폼 재진입 시 칩 복원 — board-form-restriction-fields.spec.ts(2026-11-22 skip 해제, 화면 접근성 이름 선택자로 갱신)
+  - taginput_values_persist_as_array_chips_on_reentry
   # 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재 — 시험별 표지
   - member_can_create_comment
   - guest_can_create_comment
@@ -63,11 +65,6 @@ effects:
   - can_list_comments_for_post
   - deleted_comments_are_not_shown_in_list
 
-# 수정 폼 재진입 시 칩 복원은 board-form-restriction-fields.spec.ts 만 재는데 그 spec 이 test.describe.skip 상태라 실행되지 않는다.
-# 레이아웃 시험(admin-board-form.test.tsx)은 입력 컴포넌트 종류만, PHP 시험은 저장 값만 잰다(#857 후속 대조). skip 을 풀면 effects 로 되돌린다.
-pending_effects:
-  - taginput_values_persist_as_array_chips_on_reentry
-
 test_files:
   # 백엔드 — 댓글 차단 회귀 (24-1)
   - modules/_bundled/sirsoft-board/tests/Feature/User/CommentCrudScenarioTest.php
@@ -86,4 +83,4 @@ validation:
     - 댓글 차단 effects: CommentCrudScenarioTest 의 blocked_keywords 테스트군.
     - form-data 배열 직렬화: BoardManagementTest 의 form-data array 테스트 2건(생성/수정 모드).
     - 브라우저 수준 칩 입력/저장/재진입 복원은 board-form-restriction-fields.spec.ts 가 담당
-      (토큰 발급 환경에서 활성화).
+      (2026-11-22 활성화 — 탭은 scroll-spy 구획이라 「어느 탭 소속」은 #section_* 구획 범위로 잰다).

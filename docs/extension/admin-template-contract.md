@@ -163,6 +163,20 @@
 - 다크 모드가 있는 템플릿은 `features.color_scheme` 도 선언한다. 선언하지 않으면 확장 화면은 늘 라이트로 그려진다.
 - 형식·판정·로드 순서: [module-assets.md 「템플릿 확장 CSS 덮기」](module-assets.md#템플릿-확장-css-덮기), 선언 검증: [template-basics.md](template-basics.md#확장-css-덮기-파일-extension_css_overrides)
 
+### 사이드바 메뉴 데이터 계약
+
+관리자 사이드바(`GET /api/admin/menus/active`)와 메뉴 관리 API 의 메뉴 항목은 아이콘을 두 필드로 내려 준다(코어 7.2.1).
+
+| 필드 | 값 | 그리는 법 |
+| --- | --- | --- |
+| `icon` | Font Awesome 클래스일 때만 문자열(`"fas fa-users"`), 이미지·SVG 아이콘이면 `null` | 클래스 문자열을 그대로 `<i class>` 에 쓴다 — 종전 템플릿은 이 필드만 읽어도 깨지지 않는다(이미지·SVG 메뉴는 아이콘 없이 보인다) |
+| `icon_spec` | `{type:"class",value}` · `{type:"image",source,url,…}` · `{type:"svg",value}` · `null` | `image` 는 `url` 을 `<img>` 로(`url` 이 `null` 이거나 깨지면 대체 글리프 — 저장된 경로가 입력 경로 규칙을 어기면 서버가 `url` 을 비운다), `svg` 는 **반드시 화이트리스트 정제**(스크립트·이벤트 속성·외부 참조·style 제거) 후 인라인으로 그린다(`value` 가 `null` 이면 대체 글리프 — 저장된 코드가 서버 검사를 통과하지 못하면 서버가 `value` 를 비우고, 그 값을 그대로 되돌려 보낸 수정은 아이콘을 바꾸지 않은 것으로 본다). 서버도 저장 전·응답 전에 검사하지만 렌더 방어선은 템플릿 몫이다 |
+
+- 메뉴 저장 요청은 `icon`(클래스 문자열) 또는 `icon_spec` 을 보낸다. 클래스가 아닌 `icon` 문자열은 422 다. 단 수정 요청이 메뉴의 현재 저장값을 그대로 되돌려 보내면(`icon`·`icon_spec` 모두) 형식 검사를 하지 않는다 — 예전에 저장된 비클래스 값이 남은 메뉴도 아이콘을 건드리지 않은 수정은 저장된다.
+- `icon_spec` 없이 온 `icon: null` 은 이미지·SVG 아이콘을 지우지 않는다 — `icon` 만 아는 템플릿이 응답의 `null` 을 그대로 되돌려 보내도 아이콘이 보존된다. 아이콘을 지우려면 `icon_spec: null` 을 보낸다(클래스 아이콘은 `icon: null` 로도 지워진다).
+- 아이콘 파일 업로드는 `POST /api/admin/menus/icon-upload`(권한 `core.menus.create` 또는 `core.menus.update`)이고 응답의 `icon_spec` 을 저장 요청에 싣는다.
+- 기본 템플릿 구현: `sirsoft-admin_basic` 의 `MenuIcon`(렌더)·`MenuIconField`(입력) — 참고용이며 필수 컴포넌트가 아니다.
+
 ## 알려진 제한: 학습용 관리자 템플릿
 
 `gnuboard7-hello_admin_template` 은 관리자 템플릿의 **최소 구성을 보여주는 학습용 샘플**이다([sample-extensions.md](sample-extensions.md)).

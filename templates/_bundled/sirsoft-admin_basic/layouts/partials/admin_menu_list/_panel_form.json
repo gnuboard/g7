@@ -88,7 +88,7 @@
                             "props": {
                                 "type": "submit",
                                 "form": "menu_form",
-                                "disabled": "{{_global.isSaving}}",
+                                "disabled": "{{_global.isSaving || _global.menuIconUploading}}",
                                 "className": "flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "children": [
@@ -233,7 +233,7 @@
                                     "name": "{{_global.formData.name}}",
                                     "slug": "{{_global.formData.slug}}",
                                     "url": "{{_global.formData.url}}",
-                                    "icon": "{{_global.formData.icon}}",
+                                    "icon_spec": "{{_global.formData.icon_spec}}",
                                     "parent_id": "{{_global.formData.parent_id}}",
                                     "extension_type": "{{_global.formData.extension_type}}",
                                     "extension_identifier": "{{_global.formData.extension_identifier}}",
@@ -512,12 +512,13 @@
                                         {
                                             "id": "form_icon_select",
                                             "type": "composite",
-                                            "name": "IconSelect",
+                                            "name": "MenuIconField",
                                             "props": {
-                                                "name": "icon",
+                                                "name": "icon_spec",
                                                 "placeholder": "$t:admin.menus.form.icon_placeholder",
                                                 "searchPlaceholder": "$t:admin.menus.form.icon_search_placeholder",
-                                                "noResultsText": "$t:admin.menus.form.icon_no_results"
+                                                "noResultsText": "$t:admin.menus.form.icon_no_results",
+                                                "error": "{{_global.formErrors?.icon_spec?.[0] ?? _global.formErrors?.icon?.[0] ?? ''}}"
                                             }
                                         }
                                     ]

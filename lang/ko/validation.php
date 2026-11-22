@@ -614,6 +614,7 @@ return [
         // 다국어 칸 표시 이름 — 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름으로 쓴다
         'attributes' => [
             'name' => '메뉴 이름',
+            'icon_file' => '아이콘 파일',
         ],
         'roles' => [
             'array' => '역할 목록은 배열이어야 합니다.',
@@ -634,6 +635,31 @@ return [
         ],
         'icon' => [
             'max' => '아이콘은 :max자를 초과할 수 없습니다.',
+            'format' => '아이콘은 Font Awesome 클래스(예: fas fa-house)만 쓸 수 있습니다. 이미지·SVG 아이콘은 아이콘 칸의 직접 입력·업로드·SVG 코드로 넣으세요.',
+        ],
+        'icon_spec' => [
+            'array' => '아이콘 값의 형식이 올바르지 않습니다.',
+            'invalid_type' => '아이콘 종류는 클래스·이미지·SVG 중 하나여야 합니다.',
+            'class_invalid' => 'Font Awesome 클래스 형식이 아닙니다(예: fas fa-house, fa-solid fa-house).',
+            'class_max' => '아이콘 클래스는 :max자를 넘을 수 없습니다.',
+            'image_source_invalid' => '이미지 아이콘의 출처를 알 수 없습니다.',
+            'site_path_invalid' => '이미지 경로는 / 로 시작하는 사이트 안 경로여야 합니다(.. · 역슬래시 · 물음표 불가).',
+            'external_url' => '외부 주소는 아이콘으로 쓸 수 없습니다. 사이트 안 경로(/로 시작)를 쓰거나 파일을 업로드하세요.',
+            'image_extension_invalid' => '이미지 아이콘은 :extensions 파일만 쓸 수 있습니다. SVG 는 SVG 코드나 업로드로 넣으세요.',
+            'attachment_invalid' => '업로드한 아이콘을 찾을 수 없거나 이 메뉴에서 쓸 수 없습니다. 다시 업로드하세요.',
+            'package_readonly' => '확장이 지정한 아이콘 이미지는 바꿀 수 없습니다. 다른 아이콘을 고르거나 지우세요.',
+            'svg_required' => 'SVG 코드를 입력하세요.',
+            'svg_too_large' => 'SVG 코드는 :maxKB 이하여야 합니다.',
+            'svg_unsafe' => '안전하지 않은 SVG 입니다: :reasons',
+        ],
+        'icon_upload' => [
+            'file_required' => '아이콘 파일을 선택하세요.',
+            'file_invalid' => '올바른 파일이 아닙니다.',
+            'file_max' => '아이콘 파일은 :maxKB 이하여야 합니다.',
+            'file_type' => '아이콘은 PNG·WebP·JPG·GIF·SVG 파일만 올릴 수 있습니다(파일 이름과 내용의 형식이 같아야 합니다).',
+            'svg_too_large' => 'SVG 파일은 :maxKB 이하여야 합니다.',
+            'svg_unsafe' => '안전하지 않은 SVG 파일입니다: :reasons',
+            'raster_unreadable' => '이미지를 읽을 수 없습니다.',
         ],
         'order' => [
             'integer' => '순서는 정수여야 합니다.',

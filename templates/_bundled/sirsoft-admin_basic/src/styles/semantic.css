@@ -3051,6 +3051,22 @@
     @apply w-[18px] h-[18px] flex items-center justify-center shrink-0;
   }
 
+  /*
+   * 메뉴 아이콘 이미지·인라인 SVG (#381, MenuIcon) — 글리프처럼 1em 정사각.
+   * 호출부 크기 클래스(w-5 h-5 등)가 이긴다. SVG fill 은 강제하지 않는다(stroke 아이콘의 fill="none" 보존).
+   */
+  .menu-icon-media {
+    @apply inline-flex items-center justify-center shrink-0 w-[1em] h-[1em] align-[-0.125em];
+  }
+
+  .menu-icon-media > svg {
+    @apply block w-full h-full;
+  }
+
+  img.menu-icon-media {
+    @apply object-contain;
+  }
+
   .admin-sidebar-chevron-trail {
     @apply flex items-center gap-1;
   }

@@ -24,6 +24,9 @@ return [
     'bulk_roles_success' => '메뉴 :count개의 역할을 변경했습니다.',
     'bulk_roles_failed' => '메뉴 역할 일괄 변경에 실패했습니다.',
     'bulk_roles_unmanageable' => '관리할 수 없는 메뉴가 포함되어 있습니다.',
+    'icon_uploaded' => '아이콘을 올렸습니다. 메뉴를 저장해야 반영됩니다.',
+    'icon_upload_failed' => '아이콘을 올리지 못했습니다.',
+    'icon_declaration_invalid' => '메뉴 「:slug」의 아이콘 선언을 무시했습니다(:reason). 아이콘 없이 설치했습니다.',
 
     // 검증 메시지
     'validation' => [

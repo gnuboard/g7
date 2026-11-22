@@ -5,12 +5,12 @@
 ## 제공 컴포넌트
 
 <!-- @generated:components START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-컴포넌트 135개 (루트: `src/components`).
+컴포넌트 137개 (루트: `src/components`).
 
 | 분류 | 개수 |
 |---|---|
 | `basic` | 39개 |
-| `composite` | 89개 |
+| `composite` | 91개 |
 | `layout` | 5개 |
 | `modals` | 1개 |
 | `shared` | 1개 |
@@ -543,6 +543,8 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `DynamicFieldList` | 동적 필드 목록 (드래그 정렬, 추가/삭제) | items, columns, onChange, onAddItem, onRemoveItem, ... |
 | `FileUploader` | 파일 업로드 (드래그앤드롭, 이미지 압축) | attachmentableType, attachmentableId, collection, maxFiles, maxSize, **size**, ... |
 | `IconSelect` | 아이콘 선택 드롭다운 | value, onChange, options, placeholder, searchPlaceholder, ... |
+| `MenuIcon` | 관리자 메뉴 아이콘 렌더러 — FA 클래스·이미지·인라인 SVG(정제) | spec, icon, fallbackIcon, className |
+| `MenuIconField` | 관리자 메뉴 아이콘 입력 — 미리보기(32px) + 선택·직접 입력·업로드·SVG 코드 탭, 값은 `icon_spec`. 바깥에서 값이 바뀌거나(다른 메뉴 편집) 선택·업로드·지우기로 바꾸면 직접 입력·SVG 칸과 오류 문구를 새 값으로 다시 맞추고(한 칸에서 친 값은 다른 칸을 맞춤), 업로드 중에 값이 바뀌면 늦게 온 업로드 결과는 버린다. 업로드 동안 `_global.menuIconUploading` 을 켜므로 폼 저장 단추의 `disabled` 에 함께 묶는다. 직접 입력한 이미지 경로의 미리보기는 입력이 멈춘 뒤 불러온다 | value, onChange, name, options, uploadEndpoint, error, ... |
 
 ##### MultilingualInput 기본 언어 칸과 탭 구조
 
@@ -885,11 +887,14 @@ interface MenuItem {
   name: string | { ko: string; en: string };
   slug: string;
   url?: string | null;
-  icon?: string;           // FontAwesome 클래스 (예: "fas fa-home")
+  icon?: string | null;    // FontAwesome 클래스 (예: "fas fa-home") — 이미지·SVG 아이콘이면 null
+  icon_spec?: MenuIconSpecData | null; // 구조형 아이콘 (class·image·svg, 코어 7.2.1) — 있으면 icon 보다 우선
   children?: MenuItem[];
   is_active?: boolean;
 }
 ```
+
+아이콘은 네 분기(URL+하위 / 하위만 / URL만 / 비활성) 모두 `MenuIcon` 으로 그린다. 그릴 수 없으면(깨진 이미지, 서버가 경로 규칙을 어긴 저장값의 `url` 을 비운 이미지 등) `fas fa-circle` 로 대체해 아이콘 칸이 비지 않는다.
 
 #### AdminSidebarProps
 

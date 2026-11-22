@@ -6,6 +6,8 @@ use App\Extension\HookManager;
 use App\Models\Menu;
 use App\Models\Role;
 use App\Rules\LocaleRequiredTranslatable;
+use App\Rules\MenuIconSpecRule;
+use App\Support\MenuIcon\MenuIconSpec;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -35,7 +37,9 @@ class CreateMenuRequest extends FormRequest
             'name' => ['required', new LocaleRequiredTranslatable(maxLength: 255)],
             'slug' => ['required', 'string', 'max:255', Rule::unique(Menu::class, 'slug')],
             'url' => 'nullable|string|max:500',
-            'icon' => 'nullable|string|max:100',
+            // 레거시 icon 문자열은 FA 클래스만 받는다(#381) — 이미지·SVG 는 icon_spec 으로. 클래스가 아닌 문자열은 원래 빈 칸으로 저장되던 값이다.
+            'icon' => ['nullable', 'string', 'max:100', 'regex:'.MenuIconSpec::CLASS_PATTERN],
+            'icon_spec' => ['nullable', 'array', new MenuIconSpecRule(null)],
             'parent_id' => ['nullable', 'integer', Rule::exists(Menu::class, 'id')],
             'order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
@@ -63,6 +67,9 @@ class CreateMenuRequest extends FormRequest
             'slug.max' => __('validation.menu.slug.max'),
             'url.max' => __('validation.menu.url.max'),
             'icon.max' => __('validation.menu.icon.max'),
+            'icon.regex' => __('validation.menu.icon.format'),
+            'icon.string' => __('validation.menu.icon.format'),
+            'icon_spec.array' => __('validation.menu.icon_spec.array'),
             'order.integer' => __('validation.menu.order.integer'),
             'order.min' => __('validation.menu.order.min'),
             'parent_id.exists' => __('validation.menu.parent_id.exists'),

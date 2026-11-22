@@ -221,7 +221,7 @@ Trait 이 적용되기 **이전에** 사용자가 수정한 row 는 user_overrid
 
 | 모델 | 트랙 필드 |
 |---|---|
-| `Menu` | `name`, `icon`, `order`, `url`, `is_active`, `parent_id` |
+| `Menu` | `name`, `icon`, `order`, `url`, `is_active`, `parent_id` — `icon` 은 `comparableTrackableValue()` 로 정규형 비교(레거시 `'fas fa-users'` ≡ `{type:'class',value:'fas fa-users'}`, 공백 차이 무시, 7.2.1) |
 | `Role` | `name`, `description`, `is_active` |
 | `NotificationDefinition` | `name`, `is_active` |
 | `NotificationTemplate` | `subject`, `body`, `click_url`, `recipients`, `is_active` |

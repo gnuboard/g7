@@ -38,6 +38,8 @@ use ReflectionClass;
  *
  * 참고: 플러그인도 관리자 메뉴(getAdminMenus)를 선언할 수 있습니다. 설치·업데이트·활성화가
  * 공통으로 지나는 선언형 산출물 동기화에서 PluginManager 가 자동으로 반영합니다.
+ * 메뉴 icon 은 FA 클래스 문자열 또는 `['type' => 'class'|'image'|'svg', 'value'|'path' => …]`
+ * (image·svg path 는 플러그인 루트 기준 상대경로 — ModuleInterface::getAdminMenus() 와 같은 규칙).
  */
 abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInterface
 {

@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.4.1] - 2026-11-21
+
+### Fixed
+
+- `fas`·`far`·`fab` 같은 짧은 스타일 이름이나 `fa-regular` 가 붙은 아이콘이 다른 스타일로 그려지던 문제를 고쳤습니다(본인확인 화면 등). 이제 지정한 스타일 그대로 보입니다.
+
 ## [1.4.0] - 2026-11-20
 
 ### Added

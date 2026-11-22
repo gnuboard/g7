@@ -11,6 +11,8 @@ use App\Helpers\PermissionHelper;
 use App\Models\Menu;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\MenuIcon\MenuIconPresenter;
+use App\Support\MenuIcon\MenuIconSpec;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -26,13 +28,57 @@ class MenuService
      * @param  RoleRepositoryInterface  $roleRepository  역할 저장소
      * @param  ModuleService  $moduleService  모듈 서비스
      * @param  PluginService  $pluginService  플러그인 서비스
+     * @param  MenuIconService|null  $menuIconService  메뉴 아이콘 서비스 (없으면 쓸 때 컨테이너에서 꺼낸다)
      */
     public function __construct(
         private MenuRepositoryInterface $menuRepository,
         private RoleRepositoryInterface $roleRepository,
         private ModuleService $moduleService,
-        private PluginService $pluginService
+        private PluginService $pluginService,
+        private ?MenuIconService $menuIconService = null
     ) {}
+
+    /**
+     * 메뉴 아이콘 서비스를 반환합니다 (지연 해석).
+     *
+     * @return MenuIconService 메뉴 아이콘 서비스
+     */
+    private function menuIcons(): MenuIconService
+    {
+        return $this->menuIconService ??= app(MenuIconService::class);
+    }
+
+    /**
+     * 요청의 icon_spec 을 icon 저장값으로 바꿉니다 — icon_spec 이 있으면(null 포함) icon 보다 우선한다 (#381).
+     *
+     * 훅(before_create·before_update) **전에** 부른다 — `MenuUserOverridesListener` 가 before_update 훅에서
+     * `$data` 로 사용자 수정 표식을 계산하므로, 변환이 뒤에 있으면 icon 변경 표식이 누락된다.
+     *
+     * @param  array<string, mixed>  $data  요청 데이터
+     * @param  Menu|null  $menu  수정 대상 메뉴 (생성이면 null)
+     * @return array<string, mixed> 변환된 데이터
+     */
+    private function resolveIconSpec(array $data, ?Menu $menu): array
+    {
+        if (! array_key_exists('icon_spec', $data)) {
+            // 아이콘 칸을 모르는 관리자 템플릿(외부·업데이트 전 기본 템플릿)은 이미지·SVG 메뉴의 응답 `icon: null` 을
+            // 그대로 되돌려 보낸다 — 그 null 로 이미지·SVG 아이콘과 업로드 첨부를 지우지 않는다(지우기는 icon_spec: null)
+            if ($menu !== null && array_key_exists('icon', $data) && ($data['icon'] === null || $data['icon'] === '')) {
+                $current = $menu->iconSpec();
+
+                if ($current !== null && $current->type !== MenuIconSpec::TYPE_CLASS) {
+                    unset($data['icon']);
+                }
+            }
+
+            return $data;
+        }
+
+        $data['icon'] = $this->menuIcons()->toStorage($data['icon_spec'], $menu);
+        unset($data['icon_spec']);
+
+        return $data;
+    }
 
     /**
      * 모든 메뉴 목록을 반환합니다.
@@ -149,6 +195,8 @@ class MenuService
         $roles = $data['roles'] ?? [];
         unset($data['roles']);
 
+        $data = $this->resolveIconSpec($data, null);
+
         // Hook: 메뉴 생성 전
         HookManager::doAction('core.menu.before_create', $data);
 
@@ -161,7 +209,13 @@ class MenuService
             $maxOrder = $this->menuRepository->getMaxOrder($parentId);
             $data['order'] = $maxOrder + 1;
         }
-        $menu = $this->menuRepository->create($data);
+        // 업로드 아이콘 첨부를 이 메뉴에 묶는다 — 같은 첨부를 다른 메뉴가 먼저 묶었으면 422 로 생성까지 되돌린다
+        $menu = DB::transaction(function () use ($data) {
+            $menu = $this->menuRepository->create($data);
+            $this->menuIcons()->syncAttachmentBinding($menu, null);
+
+            return $menu;
+        });
 
         // 관리자 역할 + 생성자 역할 자동 추가
         $roles = $this->ensureAdminAndCreatorRoles($roles);
@@ -196,6 +250,10 @@ class MenuService
             unset($data['roles']);
         }
 
+        $data = $this->resolveIconSpec($data, $menu);
+        $previousIcon = $menu->getRawOriginal('icon');
+        $previousOverrides = $menu->user_overrides;
+
         // Hook: 메뉴 업데이트 전
         HookManager::doAction('core.menu.before_update', $menu, $data);
 
@@ -205,7 +263,24 @@ class MenuService
         // Hook: 업데이트 데이터 필터링
         $data = HookManager::applyFilters('core.menu.filter_update_data', $data, $menu);
 
-        $result = $this->menuRepository->update($menu, $data);
+        // 업로드 아이콘 첨부 바인딩 — 새 첨부는 묶고, 바뀐 이전 첨부는 커밋 뒤 삭제. 같은 첨부를 다른 메뉴가 먼저
+        // 묶었으면 422 로 이 수정까지 되돌린다
+        try {
+            $result = DB::transaction(function () use ($menu, $data, $previousIcon) {
+                $result = $this->menuRepository->update($menu, $data);
+                $this->menuIcons()->syncAttachmentBinding($menu->fresh() ?? $menu, $previousIcon);
+
+                return $result;
+            });
+        } catch (ValidationException $e) {
+            // 수정이 되돌려졌으면 before_update 훅이 먼저 기록한 사용자 수정 표식도 되돌린다 — 남겨 두면 바뀌지 않은
+            // 아이콘이 「운영자가 고친 값」으로 잡혀 이후 확장 업데이트가 그 메뉴 아이콘을 갱신하지 않는다
+            if (($menu->fresh()?->user_overrides) !== $previousOverrides) {
+                $this->menuRepository->update($menu, ['user_overrides' => $previousOverrides]);
+            }
+
+            throw $e;
+        }
 
         // 역할 권한 동기화 (roles 필드가 전달된 경우에만). 관리자 역할은 항상 남긴다 — 역할을
         // 전부 빼고 저장하면 관리자 사이드바에서도 메뉴가 사라져 되돌릴 화면이 없어진다.
@@ -820,7 +895,7 @@ class MenuService
             'name' => $menu->name,
             'slug' => $menu->slug,
             'url' => $menu->url,
-            'icon' => $menu->icon,
+            ...MenuIconPresenter::present($menu->getRawOriginal('icon'), $menu->extension_type, $menu->extension_identifier),
             'order' => $menu->order,
             'is_active' => $menu->is_active,
             'extension_type' => $menu->extension_type?->value,

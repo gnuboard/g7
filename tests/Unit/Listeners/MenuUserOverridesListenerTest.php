@@ -232,4 +232,51 @@ class MenuUserOverridesListenerTest extends PureTestCase
 
         $this->listener->handleAfterSyncRoles($menu, $previous, $current);
     }
+
+    /**
+     * 같은 아이콘을 구조형·공백만 다른 표기로 보내면 icon 을 기록하지 않는다 — 서비스가 icon_spec 을 정규 저장값으로 바꿔 넘긴다 (#381).
+     *
+     * @scenario surface=menu
+     *
+     * @effects menu_override_listener_records_changes, same_value_not_marked
+     *
+     * @return void 반환값 없음
+     */
+    public function test_same_icon_in_structured_form_is_not_recorded(): void
+    {
+        $menu = new Menu;
+        $menu->icon = 'fas fa-users';
+        $menu->forceFill(['user_overrides' => []]);
+
+        $this->menuRepository->shouldNotReceive('update');
+
+        $this->listener->handleBeforeUpdate($menu, ['icon' => ' fas  fa-users ']);
+        $this->listener->handleBeforeUpdate($menu, ['icon' => ['type' => 'class', 'value' => 'fas fa-users']]);
+    }
+
+    /**
+     * 정규 저장값(JSON)으로 바뀐 아이콘(class → svg)은 icon 으로 기록한다 (#381).
+     *
+     * @scenario surface=menu
+     *
+     * @effects menu_override_listener_records_changes, change_marked
+     *
+     * @return void 반환값 없음
+     */
+    public function test_icon_change_to_structured_svg_is_recorded(): void
+    {
+        $menu = new Menu;
+        $menu->icon = 'fas fa-users';
+        $menu->forceFill(['user_overrides' => []]);
+
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2 2 22h20z"/></svg>';
+        $stored = (string) json_encode(['type' => 'svg', 'value' => $svg], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        $this->menuRepository->shouldReceive('update')
+            ->once()
+            ->with($menu, Mockery::on(fn ($arg) => $arg['user_overrides'] === ['icon']))
+            ->andReturn(true);
+
+        $this->listener->handleBeforeUpdate($menu, ['icon' => $stored]);
+    }
 }

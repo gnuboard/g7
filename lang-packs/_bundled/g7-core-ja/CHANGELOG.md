@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.2.1] - 2026-11-21
+
+### Added
+
+- 관리자 메뉴 아이콘(이미지·SVG·업로드) 저장 검증 문구(`validation.menu.icon.format`·`validation.menu.icon_spec.*`·`validation.menu.icon_upload.*`·항목 이름 `validation.menu.attributes.icon_file`)와 업로드 결과·확장 선언 경고 문구(`menu.icon_uploaded`·`menu.icon_upload_failed`·`menu.icon_declaration_invalid`)의 일본어 번역을 추가했습니다.
+
 ## [1.2.0] - 2026-11-20
 
 ### Added

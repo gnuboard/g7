@@ -304,4 +304,136 @@ class FontIconNameTest extends TestCase
         $this->assertGreaterThan(20, $count, '서버 선언 아이콘 모집단이 비었다');
         $this->assertSame([], $violations, "서버가 내려 주는 아이콘 이름이 FA 6.4.0 에 없다:\n".implode("\n", $violations));
     }
+
+    /**
+     * 메뉴 선언 트리(config/core.php menus)에서 class 아이콘 문자열을 재귀로 모읍니다.
+     *
+     * 문자열 선언과 `['type' => 'class', 'value' => …]` 선언만 모은다 — image·svg 선언은 글꼴 이름이 아니다.
+     *
+     * @param  array<int|string, mixed>  $menus  메뉴 선언 배열
+     * @param  string  $where  위치 표시 접두
+     * @return list<array{0: string, 1: string}> [위치, 클래스 문자열]
+     */
+    private function declaredMenuClassIcons(array $menus, string $where): array
+    {
+        $found = [];
+        foreach ($menus as $menu) {
+            if (! is_array($menu)) {
+                continue;
+            }
+            $slug = $where.'/'.($menu['slug'] ?? '?');
+            $icon = $menu['icon'] ?? null;
+            if (is_string($icon) && trim($icon) !== '') {
+                $found[] = [$slug, $icon];
+            } elseif (is_array($icon) && ($icon['type'] ?? null) === 'class' && is_string($icon['value'] ?? null)) {
+                $found[] = [$slug, $icon['value']];
+            }
+            $found = array_merge($found, $this->declaredMenuClassIcons((array) ($menu['children'] ?? []), $slug));
+        }
+
+        return $found;
+    }
+
+    /**
+     * 관리자 메뉴 선언(코어 config·번들 모듈·플러그인 manifest 클래스)의 FA 클래스 아이콘은 풀리는 FA 이름이다 (#381).
+     *
+     * 메뉴 아이콘은 이제 이미지·SVG 도 받지만, class 형은 여전히 FA 6.4.0 글꼴로 그린다 — 없는 이름은 사이드바에 빈칸으로 남는다.
+     * 클래스 문자열의 모든 토큰(스타일 접두 제외)이 FA 이름 또는 보조 클래스여야 한다.
+     *
+     * @scenario source=menu_declaration
+     *
+     * @effects font_icon_names_resolve_to_a_glyph
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function admin_menu_declared_class_icons_are_font_awesome_names(): void
+    {
+        $fa = $this->faNames();
+        $icons = $this->declaredMenuClassIcons((array) config('core.menus'), 'config/core.php');
+
+        $base = strlen(str_replace('\\', '/', base_path())) + 1;
+        $files = array_merge(glob(base_path('modules/_bundled/*/module.php')) ?: [], glob(base_path('plugins/_bundled/*/plugin.php')) ?: []);
+        foreach ($files as $file) {
+            $relative = substr(str_replace('\\', '/', $file), $base);
+            foreach (file($file) ?: [] as $index => $text) {
+                if (preg_match('#^\s*(\*|//)#', $text) === 1) {
+                    continue;
+                }
+                $class = $this->manifestLineClassIcon($text);
+                if ($class !== null) {
+                    $icons[] = [$relative.':'.($index + 1), $class];
+                }
+            }
+        }
+
+        $this->assertGreaterThan(20, count($icons), '메뉴 선언 아이콘 모집단이 비었다 — config·manifest 경로와 정규식을 확인');
+
+        $prefixes = ['fa', 'fas', 'far', 'fab', 'fa-solid', 'fa-regular', 'fa-brands'];
+        $violations = [];
+        foreach ($icons as [$where, $class]) {
+            $tokens = array_values(array_diff(preg_split('/\s+/', trim($class)) ?: [], $prefixes));
+            if ($tokens === []) {
+                $violations[] = "{$where}  \"{$class}\" (아이콘 이름 없음)";
+
+                continue;
+            }
+            foreach ($tokens as $token) {
+                if (! isset($fa[preg_replace('/^fa-/', '', $token)])) {
+                    $violations[] = "{$where}  \"{$class}\"";
+                }
+            }
+        }
+
+        $this->assertSame([], $violations, "메뉴 선언 아이콘이 FA 6.4.0 에 없다:\n".implode("\n", $violations));
+    }
+
+    /**
+     * manifest(module.php·plugin.php) 한 줄에서 class 아이콘 문자열을 읽습니다 — 문자열 선언과 한 줄 class 배열 선언.
+     *
+     * @param  string  $line  소스 한 줄
+     * @return string|null 클래스 문자열, class 선언이 아니면 null
+     */
+    private function manifestLineClassIcon(string $line): ?string
+    {
+        if (preg_match("/'icon'\s*=>\s*'([^']+)'/", $line, $m) === 1
+            || preg_match("/'icon'\s*=>\s*\[\s*'type'\s*=>\s*'class'\s*,\s*'value'\s*=>\s*'([^']+)'/", $line, $m) === 1) {
+            return $m[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * 메뉴 선언 수집기는 문자열·class 배열 선언을(자식까지 재귀로) 모으고 image·svg 선언은 건너뛴다.
+     *
+     * 번들 선언에 class 배열 선언이 아직 없어 위 모집단 검사만으로는 그 분기가 한 번도 재지지 않는다
+     * (#381 validate-plan 5차 2회차) — 픽스처로 수집기·manifest 줄 판독을 직접 잰다.
+     *
+     * @scenario source=menu_declaration
+     *
+     * @effects font_icon_names_resolve_to_a_glyph
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function menu_declaration_collector_reads_class_arrays_and_skips_media(): void
+    {
+        $menus = [
+            ['slug' => 'plain', 'icon' => 'fas fa-users', 'children' => [
+                ['slug' => 'arr', 'icon' => ['type' => 'class', 'value' => 'fa-solid fa-star']],
+                ['slug' => 'img', 'icon' => ['type' => 'image', 'path' => 'assets/menu.png']],
+            ]],
+            ['slug' => 'svg', 'icon' => ['type' => 'svg', 'value' => '<svg/>']],
+        ];
+
+        $this->assertSame(
+            [['x/plain', 'fas fa-users'], ['x/plain/arr', 'fa-solid fa-star']],
+            $this->declaredMenuClassIcons($menus, 'x')
+        );
+
+        $this->assertSame('fas fa-box', $this->manifestLineClassIcon("            'icon' => 'fas fa-box',"));
+        $this->assertSame('fa-solid fa-star', $this->manifestLineClassIcon("            'icon' => ['type' => 'class', 'value' => 'fa-solid fa-star'],"));
+        $this->assertNull($this->manifestLineClassIcon("            'icon' => ['type' => 'image', 'path' => 'assets/menu.png'],"));
+    }
 }

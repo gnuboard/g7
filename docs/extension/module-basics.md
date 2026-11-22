@@ -444,7 +444,7 @@ class Module extends AbstractModule
                 ],
                 'slug' => 'ecommerce',
                 'url' => '/admin/ecommerce',
-                'icon' => 'fa-shopping-cart',
+                'icon' => 'fas fa-shopping-cart',   // 완전한 FA 클래스 — 이미지·SVG 는 메뉴 문서 「메뉴 아이콘 지정」
                 'order' => 20,
                 'children' => [
                     [
@@ -454,7 +454,7 @@ class Module extends AbstractModule
                         ],
                         'slug' => 'sirsoft-ecommerce-products',
                         'url' => '/admin/ecommerce/products',
-                        'icon' => 'fa-box',
+                        'icon' => 'fas fa-box',
                         'order' => 1,
                         'permission' => 'sirsoft-ecommerce.products.view',
                     ],
@@ -465,7 +465,7 @@ class Module extends AbstractModule
                         ],
                         'slug' => 'sirsoft-ecommerce-orders',
                         'url' => '/admin/ecommerce/orders',
-                        'icon' => 'fa-receipt',
+                        'icon' => 'fas fa-receipt',
                         'order' => 2,
                         'permission' => 'sirsoft-ecommerce.orders.view',
                     ],

@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Http\Resources\Traits\HasAbilityCheck;
+use App\Support\MenuIcon\MenuIconPresenter;
 use Illuminate\Http\Request;
 
 class MenuCollection extends BaseApiCollection
@@ -72,7 +73,7 @@ class MenuCollection extends BaseApiCollection
                     'name' => $menu->name,
                     'slug' => $menu->slug,
                     'url' => $menu->url,
-                    'icon' => $menu->icon,
+                    ...MenuIconPresenter::present($menu->getAttributes()['icon'] ?? null, $menu->extension_type, $menu->extension_identifier),
                     'order' => $menu->order,
                     'is_active' => $menu->is_active,
                     'parent_id' => $menu->parent_id,

@@ -24,6 +24,9 @@ return [
     'bulk_roles_success' => 'Updated the roles of :count menu.|Updated the roles of :count menus.',
     'bulk_roles_failed' => 'Failed to update menu roles in bulk.',
     'bulk_roles_unmanageable' => 'The selection includes menus you cannot manage.',
+    'icon_uploaded' => 'Icon uploaded. Save the menu to apply it.',
+    'icon_upload_failed' => 'Failed to upload the icon.',
+    'icon_declaration_invalid' => 'Ignored the icon declaration of menu ":slug" (:reason). It was installed without an icon.',
 
     // Validation messages
     'validation' => [

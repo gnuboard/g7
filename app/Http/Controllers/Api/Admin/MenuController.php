@@ -9,10 +9,12 @@ use App\Http\Requests\Menu\CreateMenuRequest;
 use App\Http\Requests\Menu\MenuListRequest;
 use App\Http\Requests\Menu\UpdateMenuOrderRequest;
 use App\Http\Requests\Menu\UpdateMenuRequest;
+use App\Http\Requests\Menu\UploadMenuIconRequest;
 use App\Http\Resources\MenuCollection;
 use App\Http\Resources\MenuResource;
 use App\Models\Menu;
 use App\Models\User;
+use App\Services\MenuIconService;
 use App\Services\MenuService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
@@ -30,9 +32,11 @@ class MenuController extends AdminBaseController
      * 메뉴 컨트롤러를 생성합니다.
      *
      * @param  MenuService  $menuService  메뉴 서비스
+     * @param  MenuIconService  $menuIconService  메뉴 아이콘 서비스
      */
     public function __construct(
-        private MenuService $menuService
+        private MenuService $menuService,
+        private MenuIconService $menuIconService
     ) {
         parent::__construct();
     }
@@ -137,6 +141,26 @@ class MenuController extends AdminBaseController
             return $this->error('menu.create_failed', 422, $e->errors());
         } catch (\Exception $e) {
             return $this->error('menu.create_error', 500, $e->getMessage());
+        }
+    }
+
+    /**
+     * 메뉴 아이콘 파일을 올리고 icon_spec 을 돌려줍니다 (#381).
+     *
+     * 래스터(png·webp·jpg·gif)는 코어 첨부로 저장해 attachment 이미지 spec 을, SVG 는 파일로 저장하지 않고
+     * 검사한 인라인 svg spec 을 돌려준다. 메뉴 저장 전에는 어느 메뉴에도 묶이지 않는다.
+     *
+     * @param  UploadMenuIconRequest  $request  업로드 요청 (파일 검증 완료)
+     * @return JsonResponse icon_spec 을 담은 JSON 응답
+     */
+    public function uploadIcon(UploadMenuIconRequest $request): JsonResponse
+    {
+        try {
+            $iconSpec = $this->menuIconService->upload($request->file('file'));
+
+            return $this->success('menu.icon_uploaded', ['icon_spec' => $iconSpec]);
+        } catch (\Exception $e) {
+            return $this->error('menu.icon_upload_failed', 500, $e->getMessage());
         }
     }
 

@@ -613,6 +613,7 @@ return [
         // Display names of multilingual fields — used as the field name in the required-locale message
         'attributes' => [
             'name' => 'menu name',
+            'icon_file' => 'icon file',
         ],
         'roles' => [
             'array' => 'The roles must be an array.',
@@ -633,6 +634,31 @@ return [
         ],
         'icon' => [
             'max' => 'The icon may not be greater than :max characters.',
+            'format' => 'The icon must be a Font Awesome class (e.g. fas fa-house). Use the icon field\'s direct input, upload or SVG code for image and SVG icons.',
+        ],
+        'icon_spec' => [
+            'array' => 'The icon value has an invalid format.',
+            'invalid_type' => 'The icon type must be class, image or svg.',
+            'class_invalid' => 'This is not a Font Awesome class (e.g. fas fa-house, fa-solid fa-house).',
+            'class_max' => 'The icon class may not be greater than :max characters.',
+            'image_source_invalid' => 'The image icon source is unknown.',
+            'site_path_invalid' => 'The image path must be a site path starting with / (no .., backslashes or question marks).',
+            'external_url' => 'External addresses cannot be used as icons. Use a site path (starting with /) or upload a file.',
+            'image_extension_invalid' => 'Image icons must be :extensions files. Add SVG icons as SVG code or by upload.',
+            'attachment_invalid' => 'The uploaded icon was not found or cannot be used for this menu. Please upload it again.',
+            'package_readonly' => 'An icon image declared by an extension cannot be changed. Pick another icon or clear it.',
+            'svg_required' => 'Please enter SVG code.',
+            'svg_too_large' => 'The SVG code must be :maxKB or smaller.',
+            'svg_unsafe' => 'Unsafe SVG: :reasons',
+        ],
+        'icon_upload' => [
+            'file_required' => 'Please choose an icon file.',
+            'file_invalid' => 'The file is not valid.',
+            'file_max' => 'The icon file must be :maxKB or smaller.',
+            'file_type' => 'Only PNG, WebP, JPG, GIF and SVG icon files can be uploaded (the file name and content must be the same format).',
+            'svg_too_large' => 'The SVG file must be :maxKB or smaller.',
+            'svg_unsafe' => 'Unsafe SVG file: :reasons',
+            'raster_unreadable' => 'The image could not be read.',
         ],
         'order' => [
             'integer' => 'The order must be an integer.',

@@ -231,11 +231,91 @@ class ChangeDetectorTest extends PureTestCase
         $this->assertEquals('inactive', $changes[0]['old']);
         $this->assertEquals('active', $changes[0]['new']);
     }
+
+    /**
+     * display 콜러블이 선언된 필드는 원값으로 비교한 뒤 old·new 를 요약값으로 기록한다 (#381 메뉴 아이콘 SVG).
+     *
+     * @scenario case=text_field_change
+     *
+     * @effects display_meta_summarizes_values
+     *
+     * @return void 반환값 없음
+     */
+    public function test_display_callable_summarizes_old_and_new(): void
+    {
+        $longNew = str_repeat('b', 5000);
+        $model = new ChangeDetectorDisplayTestModel;
+        $model->body = $longNew;
+        $model->title = '새 제목';
+
+        $changes = ChangeDetector::detect($model, ['body' => 'short', 'title' => '옛 제목']);
+
+        $this->assertNotNull($changes);
+        $body = collect($changes)->firstWhere('field', 'body');
+        $this->assertSame('len:5', $body['old']);
+        $this->assertSame('len:5000', $body['new']);
+        $this->assertSame('model.body', $body['label_key']);
+        $this->assertSame('text', $body['type']);
+
+        // display 가 없는 필드는 원값 그대로
+        $title = collect($changes)->firstWhere('field', 'title');
+        $this->assertSame('옛 제목', $title['old']);
+        $this->assertSame('새 제목', $title['new']);
+    }
+
+    /**
+     * 요약값이 같아도 원값이 같으면 변경이 아니고, 원값이 다르면 요약값이 같더라도 변경으로 남는다(비교는 원값 기준).
+     *
+     * @scenario case=no_change
+     *
+     * @effects display_meta_summarizes_values, unchanged_snapshot_yields_null
+     *
+     * @return void 반환값 없음
+     */
+    public function test_display_field_compares_raw_values(): void
+    {
+        $model = new ChangeDetectorDisplayTestModel;
+        $model->body = 'same';
+        $model->title = '제목';
+
+        $this->assertNull(ChangeDetector::detect($model, ['body' => 'same', 'title' => '제목']));
+
+        // 길이가 같아 요약값이 같은(len:4) 다른 원값 — 변경으로 기록된다
+        $changes = ChangeDetector::detect($model, ['body' => 'diff', 'title' => '제목']);
+        $this->assertCount(1, $changes);
+        $this->assertSame('len:4', $changes[0]['old']);
+        $this->assertSame('len:4', $changes[0]['new']);
+    }
 }
 
 // ============================================================
 // 테스트용 모델 및 Enum 정의
 // ============================================================
+
+/**
+ * 테스트용 모델 (display 요약 콜러블이 있는 text 필드)
+ */
+class ChangeDetectorDisplayTestModel extends Model
+{
+    /** @var array<string, array> */
+    public static array $activityLogFields = [
+        'body' => ['label_key' => 'model.body', 'type' => 'text', 'display' => [self::class, 'summarize']],
+        'title' => ['label_key' => 'model.title', 'type' => 'text'],
+    ];
+
+    protected $guarded = [];
+
+    /**
+     * 값을 길이 요약으로 바꿉니다.
+     *
+     * @param  mixed  $value  원값
+     * @return string|null 요약값 (null 이면 null)
+     */
+    public static function summarize(mixed $value): ?string
+    {
+        return $value === null ? null : 'len:'.strlen((string) $value);
+    }
+}
 
 /**
  * 테스트용 모델 (text 필드만)

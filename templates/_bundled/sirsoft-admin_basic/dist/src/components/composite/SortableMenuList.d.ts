@@ -1,11 +1,14 @@
 import { default as React } from 'react';
 import { EditorAttrs } from '../../types';
+import { MenuIconSpecData } from './MenuIcon';
 export interface MenuItem {
     id: number;
     name: string | Record<string, string>;
     slug: string;
     url: string;
-    icon: string;
+    icon: string | null;
+    /** 구조형 아이콘 (#381, 코어 메뉴만 — 이커머스 브랜드·카테고리 목록은 없음) */
+    icon_spec?: MenuIconSpecData | null;
     order: number;
     is_active: boolean;
     parent_id: number | null;
