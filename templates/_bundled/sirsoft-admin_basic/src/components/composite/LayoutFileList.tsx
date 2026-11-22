@@ -109,7 +109,7 @@ export const LayoutFileList: React.FC<LayoutFileListProps> = ({
   return (
     <Div className={containerClasses}>
       {files.length === 0 ? (
-        <Div className="p-4 text-center text-gray-500 dark:text-gray-400">
+        <Div className="p-4 text-center text-muted">
           파일이 없습니다.
         </Div>
       ) : (
@@ -148,7 +148,7 @@ export const LayoutFileList: React.FC<LayoutFileListProps> = ({
               ${
                 isSelected
                   ? 'text-blue-700 dark:text-blue-300'
-                  : 'text-gray-500 dark:text-gray-400'
+                  : 'text-muted'
               }
             `.trim().replace(/\s+/g, ' ');
 

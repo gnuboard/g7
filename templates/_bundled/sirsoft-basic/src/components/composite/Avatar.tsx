@@ -188,7 +188,7 @@ export const Avatar: React.FC<AvatarProps> = ({
     if (actualIsGuest) {
       return (
         <Div className={`w-full h-full flex items-center justify-center ${initialBgClass}`}>
-          <Icon name="user" className="text-gray-500 dark:text-gray-400" />
+          <Icon name="user" className="text-muted" />
         </Div>
       );
     }

@@ -31,7 +31,7 @@
             "name": "Div",
             "if": "{{presets !== undefined && presets !== null && (!presets.data || presets.data.length === 0)}}",
             "props": {
-                "className": "ecommerce:text-center ecommerce:py-8 ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                "className": "ecommerce:text-center ecommerce:py-8 ecommerce-text-muted"
             },
             "text": "$t:sirsoft-ecommerce.admin.order.modal.preset_manage.empty"
         },
@@ -174,7 +174,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "ecommerce:w-full ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700"
+                        "className": "ecommerce:w-full ecommerce-btn ecommerce-btn-primary"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.order.modal.preset_manage.add_new"
                 }

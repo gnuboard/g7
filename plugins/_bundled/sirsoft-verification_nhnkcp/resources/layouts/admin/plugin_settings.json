@@ -66,7 +66,7 @@
                 "responsive": {
                     "640-1023": {
                         "props": {
-                            "className": "verificationnhnkcp:p-6 verificationnhnkcp:min-h-screen verificationnhnkcp:bg-gray-50 verificationnhnkcp:dark:bg-gray-900"
+                            "className": "verification-nhnkcp-admin-page-content"
                         }
                     },
                     "1024-": {
@@ -714,9 +714,7 @@
                                                 "name": "Div",
                                                 "responsive": {
                                                     "desktop": {
-                                                        "props": {
-                                                            "className": "verificationnhnkcp:col-span-4 verificationnhnkcp:space-y-3"
-                                                        }
+                                                        "classMerge": "verificationnhnkcp:col-span-4"
                                                     }
                                                 },
                                                 "props": {
@@ -864,9 +862,7 @@
                                         "name": "Div",
                                         "responsive": {
                                             "desktop": {
-                                                "props": {
-                                                    "className": "verificationnhnkcp:grid verificationnhnkcp:grid-cols-12 verificationnhnkcp:gap-4 verificationnhnkcp:items-start verificationnhnkcp:pt-6 verificationnhnkcp:border-t verificationnhnkcp:border-gray-200 verificationnhnkcp:dark:border-gray-700"
-                                                }
+                                                "classMerge": "verificationnhnkcp:grid-cols-12"
                                             }
                                         },
                                         "props": {
@@ -915,9 +911,7 @@
                                                 "name": "Div",
                                                 "responsive": {
                                                     "desktop": {
-                                                        "props": {
-                                                            "className": "verification-nhnkcp-flex-center verificationnhnkcp:col-span-4 verificationnhnkcp:justify-end"
-                                                        }
+                                                        "classMerge": "verificationnhnkcp:col-span-4"
                                                     }
                                                 },
                                                 "props": {

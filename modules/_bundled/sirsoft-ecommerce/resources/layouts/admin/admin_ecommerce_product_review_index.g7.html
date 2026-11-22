@@ -134,7 +134,7 @@
                   </set-state>
                 </on>
               </input>
-              <icon name="magnifying-glass" size="sm" class="ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:pointer-events-none"/>
+              <icon name="magnifying-glass" size="sm" class="ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce-text-muted ecommerce:pointer-events-none"/>
             </div>
             <column-selector data-type="composite" data-ref="column_selector" id="admin_review_list_columns" visibleColumns="{{_local.visibleColumns ?? []}}" triggerLabel="$t:sirsoft-ecommerce.admin.product_review.search.column_select" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
               <prop name="columns">
@@ -455,7 +455,7 @@
             <!-- 검색 — 담아 둔 입력값을 주소로 옮긴다. 위 필터 버튼들이 이미 주소에 올려 둔 조건(별점·답글·사진·노출·정렬·쪽크기)은 그대로 들고 가야 하므로 함께 다시 실어 준다
                  초기화 — 입력값을 비우고 조건 없는 주소로 옮긴다(주소를 안 바꾸면 화면만 비고 목록은 그대로다) -->
             <button type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce:text-sm">
-              <responsive on="portable" class="ecommerce-btn ecommerce-btn-primary ecommerce:text-sm ecommerce:flex-1"/>
+              <responsive on="portable" class-merge="ecommerce:flex-1"/>
               <on type="click">
                 <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
                   <query search_field="{{_local.filter.searchField !== 'product_name' ? _local.filter.searchField : ''}}" search_keyword="{{_local.filter.searchKeyword ?? ''}}" start_date="{{_local.filter.startDate ?? ''}}" end_date="{{_local.filter.endDate ?? ''}}" rating="{{query.rating || ''}}" reply_status="{{query.reply_status || ''}}" photo="{{query.photo || ''}}" status="{{query.status || ''}}" sort="{{query.sort || 'created_at_desc'}}" per_page="{{query.per_page || 20}}" :page="1"/>
@@ -465,7 +465,7 @@
             </button>
             <!-- 필터 초기화. 폼 상태와 주소 양쪽을 비운다 — 한쪽만 비우면 입력칸에 남은 값이 다음 검색에 되살아나거나, 주소에 남은 조건이 화면 표시와 어긋난다 -->
             <button type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:text-sm">
-              <responsive on="portable" class="ecommerce-btn ecommerce-btn-outline ecommerce:text-sm ecommerce:flex-1"/>
+              <responsive on="portable" class-merge="ecommerce:flex-1"/>
               <on type="click">
                 <set-state target="local">
                   <field name="filter">
@@ -503,7 +503,7 @@
           </select>
         </div>
         <!-- 일괄 적용. 고른 작업과 대상 id 를 전역에 옮겨 담은 뒤 확인 모달을 연다 — 모달은 별도 컨텍스트라 이 화면의 폼 상태를 그대로 읽지 못한다 -->
-        <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{reviews.data?.abilities?.can_update !== true || !_local.batchAction || (_local.selectedReviews ?? []).length === 0}}">
+        <button type="button" class="ecommerce-btn ecommerce-btn-primary" disabled="{{reviews.data?.abilities?.can_update !== true || !_local.batchAction || (_local.selectedReviews ?? []).length === 0}}">
           <on type="click">
             <set-state target="global" reviewBatchAction="{{_local.batchAction}}" reviewBatchIds="{{_local.selectedReviews ?? []}}"/>
             <open-modal target="modal_status_change"/>
@@ -559,7 +559,7 @@
               <div class="ecommerce-flex-center ecommerce:gap-2">
                 <img data-if="{{row.product?.thumbnail_url}}" src="{{row.product?.thumbnail_url ?? ''}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{row.product?.name ?? ''}}" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:object-cover ecommerce:shrink-0 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700"/>
                 <div data-if="{{!row.product?.thumbnail_url}}" class="ecommerce:w-10 ecommerce:h-10 ecommerce:shrink-0 ecommerce:rounded ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:flex ecommerce:items-center ecommerce:justify-center">
-                  <icon name="image" class="ecommerce:text-lg ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+                  <icon name="image" class="ecommerce:text-lg ecommerce-text-muted"/>
                 </div>
                 <div>
                   <div class="ecommerce-text-primary ecommerce:font-medium">{{row.product?.name ?? ''}}</div>
@@ -594,11 +594,11 @@
                 <!-- 회원이 없는 후기(다른 쇼핑몰에서 이관) — 저장된 작성자 이름 그대로 + 「이관」 표시 -->
                 <span data-if="{{!row.user_id}}" class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:font-medium">
                   <span>{{row.author_name ?? row.user?.name ?? ''}}</span>
-                  <span data-if="{{row.is_imported}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:ml-1">($t:sirsoft-ecommerce.admin.product_review.table.imported)</span>
-                  <span data-if="{{!row.is_imported}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:ml-1">($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)</span>
+                  <span data-if="{{row.is_imported}}" class="ecommerce-text-muted ecommerce:ml-1">($t:sirsoft-ecommerce.admin.product_review.table.imported)</span>
+                  <span data-if="{{!row.is_imported}}" class="ecommerce-text-muted ecommerce:ml-1">($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)</span>
                 </span>
                 <!-- 실명 보조 줄(#490) — 작성자 칸은 관리자 영역 표시 이름이다. 서버가 실명 키를 줄 때만(회원 조회 권한이 있고 표시 이름과 다를 때) 그린다. -->
-                <span data-if="{{!!(row.author_real_name ?? row.user?.real_name)}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.author_real_name ?? row.user?.real_name })}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:block">{{row.author_real_name ?? row.user?.real_name}}</span>
+                <span data-if="{{!!(row.author_real_name ?? row.user?.real_name)}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.author_real_name ?? row.user?.real_name })}}" class="ecommerce:text-xs ecommerce-text-muted ecommerce:block">{{row.author_real_name ?? row.user?.real_name}}</span>
               </div>
             </cell>
           </column>
@@ -606,7 +606,7 @@
             <cell>
               <a data-if="{{!!row.orderOption?.order_number}}" href="{{`/admin/ecommerce/orders/${row.orderOption?.order_number}`}}" class="ecommerce:text-blue-600 ecommerce:hover:underline ecommerce:dark:text-blue-400">{{row.orderOption?.order_number ?? ''}}</a>
               <!-- 주문 없이 등록된 후기 -->
-              <span data-if="{{!row.orderOption?.order_number}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">—</span>
+              <span data-if="{{!row.orderOption?.order_number}}" class="ecommerce-text-muted">—</span>
             </cell>
           </column>
           <column field="created_at" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.created_at" width="120px" :sortable="false">
@@ -643,7 +643,7 @@
                     <div class="ecommerce:flex ecommerce:items-start ecommerce:gap-3 ecommerce:mb-4">
                       <img data-if="{{row.product?.thumbnail_url}}" src="{{row.product?.thumbnail_url ?? ''}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{row.product?.name ?? ''}}" class="ecommerce:w-16 ecommerce:h-16 ecommerce:shrink-0 ecommerce:rounded-md ecommerce:object-cover ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700"/>
                       <div data-if="{{!row.product?.thumbnail_url}}" class="ecommerce:w-16 ecommerce:h-16 ecommerce:shrink-0 ecommerce:rounded-md ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:flex ecommerce:items-center ecommerce:justify-center">
-                        <icon name="image" class="ecommerce:text-2xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+                        <icon name="image" class="ecommerce:text-2xl ecommerce-text-muted"/>
                       </div>
                       <div class="ecommerce-row-stack ecommerce:min-w-0">
                         <a href="{{`/admin/ecommerce/products/${row.product?.product_code ?? row.product?.id}/edit`}}" class="ecommerce:text-blue-600 ecommerce:hover:underline ecommerce:dark:text-blue-400 ecommerce:font-medium ecommerce:text-sm ecommerce:leading-snug">{{row.product?.name ?? ''}}</a>
@@ -657,20 +657,20 @@
                         <span data-if="{{!!row.user_id}}" class="ecommerce-text-primary ecommerce:font-medium">{{`${row.user?.name ?? ''} (${row.user?.email ?? ''})`}}</span>
                         <span data-if="{{!row.user_id}}" class="ecommerce-text-primary ecommerce:font-medium">
                           <span>{{row.author_name ?? row.user?.name ?? ''}}</span>
-                          <span data-if="{{row.is_imported}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:ml-1">($t:sirsoft-ecommerce.admin.product_review.table.imported)</span>
-                          <span data-if="{{!row.is_imported}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:ml-1">($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)</span>
+                          <span data-if="{{row.is_imported}}" class="ecommerce-text-muted ecommerce:ml-1">($t:sirsoft-ecommerce.admin.product_review.table.imported)</span>
+                          <span data-if="{{!row.is_imported}}" class="ecommerce-text-muted ecommerce:ml-1">($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)</span>
                         </span>
                       </div>
                       <!-- 주문 없이 등록된 후기(다른 쇼핑몰에서 이관)는 주문번호·구매수량·구매일시를 「—」 로 -->
                       <div class="ecommerce:flex ecommerce:justify-between">
                         <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.order_number</span>
                         <a data-if="{{!!row.orderOption?.order_number}}" href="{{`/admin/ecommerce/orders/${row.orderOption?.order_number}`}}" class="ecommerce:text-blue-600 ecommerce:hover:underline ecommerce:dark:text-blue-400 ecommerce:font-medium">{{row.orderOption?.order_number ?? ''}}</a>
-                        <span data-if="{{!row.orderOption?.order_number}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">—</span>
+                        <span data-if="{{!row.orderOption?.order_number}}" class="ecommerce-text-muted">—</span>
                       </div>
                       <div class="ecommerce:flex ecommerce:justify-between">
                         <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.quantity</span>
                         <span data-if="{{!!row.orderOption}}" class="ecommerce-text-primary">$t:defer:sirsoft-ecommerce.admin.product_review.table.quantity_value|count={{row.orderOption?.quantity ?? ''}}</span>
-                        <span data-if="{{!row.orderOption}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">—</span>
+                        <span data-if="{{!row.orderOption}}" class="ecommerce-text-muted">—</span>
                       </div>
                       <div class="ecommerce:flex ecommerce:justify-between">
                         <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.purchase_date</span>
@@ -821,13 +821,13 @@
                       <span class="ecommerce-text-secondary ecommerce:text-xs">{{`${row.reply_admin ? (row.reply_admin?.name ?? '') + ' (' + (row.reply_admin?.email ?? '') + ') · ' : ''}${row.replied_at ?? ''}${row.reply_updated_at ? ' · ' + $t('sirsoft-ecommerce.admin.product_review.detail.customer_review.updated_at_label') + row.reply_updated_at : ''}`}}</span>
                       <div class="ecommerce:flex ecommerce:gap-2 ecommerce:shrink-0">
                         <!-- 답글 고치기 — 어느 행이 편집 중인지 id 로 표시하고 지금 답글을 입력칸에 옮겨 담는다(행마다 폼을 따로 두지 않고 한 벌을 돌려 쓴다) -->
-                        <button data-ref="review_reply_edit_button" type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-outline ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{row.abilities?.can_update !== true}}">
+                        <button data-ref="review_reply_edit_button" type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-outline" disabled="{{row.abilities?.can_update !== true}}">
                           <on type="click">
                             <set-state target="local" editingReviewId="{{row.id}}" editReplyContent="{{rowReplyContent}}"/>
                           </on>
                           $t:sirsoft-ecommerce.admin.product_review.detail.seller_reply.edit
                         </button>
-                        <button data-ref="review_reply_delete_button" type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce:text-red-700 ecommerce:bg-red-50 ecommerce:border ecommerce:border-red-300 ecommerce:hover:bg-red-100 ecommerce:dark:bg-red-900/30 ecommerce:dark:border-red-700 ecommerce:dark:text-red-300 ecommerce:dark:hover:bg-red-900/50 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{row.abilities?.can_update !== true}}">
+                        <button data-ref="review_reply_delete_button" type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce:text-red-700 ecommerce:bg-red-50 ecommerce:border ecommerce:border-red-300 ecommerce:hover:bg-red-100 ecommerce:dark:bg-red-900/30 ecommerce:dark:border-red-700 ecommerce:dark:text-red-300 ecommerce:dark:hover:bg-red-900/50" disabled="{{row.abilities?.can_update !== true}}">
                           <on type="click">
                             <!-- 답글 삭제 — 지울 대상을 전역에 옮겨 담고 확인 창을 연다(창은 별도 컨텍스트라 행 데이터를 못 본다) -->
                             <sequence>

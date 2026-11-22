@@ -97,8 +97,7 @@
                                             "portable": {
                                                 "props": {
                                                     "name": "table-cells-large",
-                                                    "size": "lg",
-                                                    "className": "text-gray-900 dark:text-white"
+                                                    "size": "lg"
                                                 }
                                             }
                                         },
@@ -188,7 +187,7 @@
                                 "type": "basic",
                                 "name": "P",
                                 "props": {
-                                    "className": "text-gray-500 dark:text-gray-400"
+                                    "className": "text-muted"
                                 },
                                 "text": "$t:board.all_boards.empty"
                             }

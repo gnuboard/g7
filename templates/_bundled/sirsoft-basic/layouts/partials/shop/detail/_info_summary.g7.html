@@ -7,7 +7,7 @@
       <responsive on="desktop" data-if="{{true}}"/>
       <!-- 할인 전 금액 (취소선, 할인 있을 때) -->
       <div data-if="{{product.data?.discount_rate > 0}}" class="mb-1">
-        <span class="text-sm text-gray-500 dark:text-gray-400 line-through">{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.list_price_formatted}}</span>
+        <span class="text-sm text-muted line-through">{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.list_price_formatted}}</span>
       </div>
       <!-- 할인율 + 판매가 (할인 있을 때) -->
       <div data-if="{{product.data?.discount_rate > 0}}" class="flex items-center gap-2">
@@ -47,7 +47,7 @@
           </button>
         </div>
         <!-- 더보기 버튼 (3개 초과 시) -->
-        <button data-if="{{(productDownloadableCoupons.data?.data ?? []).length > 3}}" type="button" class="flex-shrink-0 inline-flex items-center px-2.5 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+        <button data-if="{{(productDownloadableCoupons.data?.data ?? []).length > 3}}" type="button" class="flex-shrink-0 inline-flex items-center px-2.5 py-1 text-xs text-muted hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
           <on type="click">
             <conditions>
               <when if="{{_global.currentUser?.uuid}}">
@@ -113,7 +113,7 @@
     <div data-if="{{product.data?.option_groups &amp;&amp; product.data?.option_groups.length > 0 &amp;&amp; (product.data?.options?.length ?? 0) > 1}}" class="border-t border-gray-200 dark:border-gray-700 pt-4 px-2 space-y-1">
       <div data-each="group in {{product.data?.option_groups ?? []}}">
         <div class="flex items-center gap-4">
-          <span class="text-sm text-gray-500 dark:text-gray-400 w-16 shrink-0 truncate">{{group.name_localized ?? group.name}}</span>
+          <span class="text-sm text-muted w-16 shrink-0 truncate">{{group.name_localized ?? group.name}}</span>
           <span class="text-sm text-gray-900 dark:text-white">{{(group.values_localized ?? group.values).join(', ')}}</span>
         </div>
       </div>
@@ -121,7 +121,7 @@
     <!-- === 브랜드 === -->
     <div data-if="{{product.data?.brand_name}}" class="border-t border-gray-200 dark:border-gray-700 pt-4 px-2">
       <div class="flex items-center gap-2">
-        <span class="text-sm text-gray-500 dark:text-gray-400 w-20">$t:shop.product.brand</span>
+        <span class="text-sm text-muted w-20">$t:shop.product.brand</span>
         <span class="text-sm text-gray-900 dark:text-white">{{product.data?.brand_name}}</span>
       </div>
     </div>
@@ -130,15 +130,15 @@
       <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-2">$t:shop.product.shipping_info</h3>
       <div class="space-y-1">
         <div class="flex items-center gap-2">
-          <span class="text-sm text-gray-500 dark:text-gray-400 w-20">$t:shop.product.shipping_policy_label</span>
+          <span class="text-sm text-muted w-20">$t:shop.product.shipping_policy_label</span>
           <span class="text-sm text-gray-900 dark:text-white">{{product.data?.shipping_policy?.name}}</span>
         </div>
         <div class="flex items-center gap-2">
-          <span class="text-sm text-gray-500 dark:text-gray-400 w-20">$t:shop.product.shipping_fee</span>
+          <span class="text-sm text-muted w-20">$t:shop.product.shipping_fee</span>
           <span class="text-sm text-gray-900 dark:text-white">{{product.data?.shipping_policy?.fee_summary}}</span>
         </div>
         <div data-if="{{product.data?.shipping_policy?.free_threshold_formatted}}" class="flex items-center gap-2">
-          <span class="text-sm text-gray-500 dark:text-gray-400 w-20">$t:shop.product.free_shipping_threshold</span>
+          <span class="text-sm text-muted w-20">$t:shop.product.free_shipping_threshold</span>
           <span class="text-sm text-green-700 dark:text-green-400">$t:shop.product.free_shipping_over|amount={{product.data?.shipping_policy?.free_threshold_formatted}}</span>
         </div>
       </div>

@@ -37,7 +37,7 @@
                     "props": {
                         "name": "circle-pause",
                         "size": "lg",
-                        "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                        "className": "text-muted flex-shrink-0"
                     }
                 },
                 {
@@ -225,9 +225,7 @@
             "name": "Div",
             "responsive": {
                 "portable": {
-                    "props": {
-                        "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
-                    }
+                    "classMerge": "p-4"
                 }
             },
             "props": {
@@ -317,9 +315,7 @@
                                     "name": "Div",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "flex items-end justify-center gap-2"
-                                            }
+                                            "classMerge": "justify-center"
                                         }
                                     },
                                     "props": {
@@ -331,9 +327,7 @@
                                             "name": "Span",
                                             "responsive": {
                                                 "portable": {
-                                                    "props": {
-                                                        "className": "text-xl font-semibold text-gray-900 dark:text-white leading-none min-w-0 wrap-anywhere"
-                                                    }
+                                                    "classMerge": "text-xl"
                                                 }
                                             },
                                             "props": {
@@ -347,7 +341,7 @@
                                             "name": "Span",
                                             "if": "{{user.data?.nickname}}",
                                             "props": {
-                                                "className": "text-base text-gray-500 dark:text-gray-400 leading-none min-w-0 wrap-anywhere"
+                                                "className": "text-base text-muted leading-none min-w-0 wrap-anywhere"
                                             },
                                             "text": "({{user.data?.nickname}})"
                                         },
@@ -394,12 +388,12 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "flex flex-col gap-1 text-sm text-gray-500 dark:text-gray-400"
+                                                "className": "flex flex-col gap-1 text-sm text-muted"
                                             }
                                         }
                                     },
                                     "props": {
-                                        "className": "flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-500 dark:text-gray-400"
+                                        "className": "flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted"
                                     },
                                     "children": [
                                         {
@@ -410,7 +404,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-muted"
                                                     },
                                                     "text": "$t:mypage.profile.joined_at"
                                                 },
@@ -432,7 +426,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-muted"
                                                     },
                                                     "text": "$t:mypage.profile.last_login"
                                                 },
@@ -457,7 +451,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-muted"
                                                     },
                                                     "text": "$t:mypage.profile.withdrawn_at"
                                                 },
@@ -503,9 +497,7 @@
                     "if": "{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'contact'; })}}",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
-                            }
+                            "classMerge": "p-4"
                         }
                     },
                     "props": {
@@ -543,9 +535,7 @@
                     "if": "{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'location'; })}}",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
-                            }
+                            "classMerge": "p-4"
                         }
                     },
                     "props": {
@@ -585,9 +575,7 @@
             "if": "{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'extra'; })}}",
             "responsive": {
                 "portable": {
-                    "props": {
-                        "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
-                    }
+                    "classMerge": "p-4"
                 }
             },
             "props": {
@@ -625,9 +613,7 @@
             "if": "{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'profile'; })}}",
             "responsive": {
                 "portable": {
-                    "props": {
-                        "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
-                    }
+                    "classMerge": "p-4"
                 }
             },
             "props": {
@@ -668,9 +654,7 @@
             },
             "responsive": {
                 "portable": {
-                    "props": {
-                        "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
-                    }
+                    "classMerge": "p-4"
                 }
             },
             "props": {
@@ -697,9 +681,7 @@
             "if": "{{user.data?.status !== 'withdrawn'}}",
             "responsive": {
                 "portable": {
-                    "props": {
-                        "className": "bg-red-50 dark:bg-gray-800 rounded-lg shadow-sm border border-red-200 dark:border-red-900/50 p-4"
-                    }
+                    "classMerge": "p-4"
                 }
             },
             "props": {

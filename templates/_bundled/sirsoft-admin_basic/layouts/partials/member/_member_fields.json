@@ -90,7 +90,7 @@
                     "name": "P",
                     "if": "{{field.deferred}}",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-sm text-muted"
                     },
                     "text": "$t:admin.users.member_fields.upload_after_save"
                 },
@@ -153,8 +153,7 @@
                                 "aria-label": "$t:admin.users.member_fields.address_label|label={{field.label}}",
                                 "placeholder": "$t:admin.users.form.fields.address",
                                 "readOnly": false,
-                                "disabled": "{{!!field.readonly || !!_computed.memberFieldCtx?.disabled}}",
-                                "className": ""
+                                "disabled": "{{!!field.readonly || !!_computed.memberFieldCtx?.disabled}}"
                             }
                         },
                         {
@@ -165,8 +164,7 @@
                                 "name": "{{field.parts?.address_detail}}",
                                 "aria-label": "$t:admin.users.member_fields.address_detail_label|label={{field.label}}",
                                 "placeholder": "$t:admin.users.form.fields.address_detail",
-                                "disabled": "{{!!field.readonly || !!_computed.memberFieldCtx?.disabled}}",
-                                "className": ""
+                                "disabled": "{{!!field.readonly || !!_computed.memberFieldCtx?.disabled}}"
                             }
                         }
                     ]
@@ -207,7 +205,7 @@
                                             "props": {
                                                 "name": "paperclip",
                                                 "size": "sm",
-                                                "className": "shrink-0 text-gray-500 dark:text-gray-400"
+                                                "className": "shrink-0 text-muted"
                                             }
                                         },
                                         {
@@ -314,7 +312,7 @@
                                                 "type": "button",
                                                 "aria-label": "$t:admin.users.member_fields.file_remove|name={{fieldFile.name}}",
                                                 "disabled": "{{_local.memberFieldFileBusy === field.key}}",
-                                                "className": "shrink-0 p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                                "className": "shrink-0 p-1 text-muted hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                             },
                                             "children": [
                                                 {
@@ -336,7 +334,7 @@
                             "name": "P",
                             "if": "{{!!field.readonly && (field.files ?? []).length === 0}}",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "text-sm text-muted"
                             },
                             "text": "-"
                         },
@@ -418,7 +416,7 @@
                             "name": "P",
                             "if": "{{!field.readonly && !!field.file_rules}}",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400 break-words"
+                                "className": "text-xs text-muted break-words"
                             },
                             "text": "$t:admin.users.member_fields.file_rules|extensions={{(field.file_rules?.extensions ?? []).join(', ')}}|size={{field.file_rules?.max_size_mb ?? ''}}|count={{field.file_rules?.max_count ?? 1}}"
                         }
@@ -457,7 +455,7 @@
                     "name": "P",
                     "if": "{{!!field.readonly && field.locked_reason === 'sso'}}",
                     "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                        "className": "text-xs text-muted mt-1"
                     },
                     "text": "$t:admin.users.form.fields.locked_by_company"
                 },
@@ -467,7 +465,7 @@
                     "name": "P",
                     "if": "{{!!field.readonly && field.locked_reason === 'identity'}}",
                     "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                        "className": "text-xs text-muted mt-1"
                     },
                     "text": "$t:admin.users.member_fields.locked_identity"
                 },
@@ -477,7 +475,7 @@
                     "name": "P",
                     "if": "{{!!field.readonly && ['sso', 'identity'].indexOf(field.locked_reason) === -1}}",
                     "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                        "className": "text-xs text-muted mt-1"
                     },
                     "text": "$t:admin.users.member_fields.locked_generic"
                 },
@@ -487,7 +485,7 @@
                     "name": "P",
                     "if": "{{field.help}}",
                     "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-1 break-words"
+                        "className": "text-xs text-muted mt-1 break-words"
                     },
                     "text": "{{field.help}}"
                 },
@@ -498,7 +496,7 @@
                     "name": "Span",
                     "if": "{{Object.keys(_computed.memberFieldCtx?.errors ?? {}).some(function(k) { return k === field.name || k.indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(k) !== -1; })}}",
                     "props": {
-                        "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
+                        "className": "form-error"
                     },
                     "text": "{{Object.entries(_computed.memberFieldCtx?.errors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(entry[0]) !== -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}"
                 }

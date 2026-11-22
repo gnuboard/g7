@@ -13,6 +13,7 @@
 
 import { describe, it, expect } from 'vitest';
 import checkoutPaymentJson from '../../layouts/partials/shop/_checkout_payment.json';
+import { expandSemanticClassName } from './support/semanticClasses';
 
 /** if 표현식에 해당 결제수단이 걸린 최상위 블록 */
 const blockFor = (method: string) =>
@@ -37,11 +38,17 @@ function flatten(node: any, out: any[] = []): any[] {
 const findById = (root: any, id: string) => flatten(root).find((n) => n.id === id);
 
 describe('체크아웃 현금영수증 확장 슬롯', () => {
+  /**
+   * @effects checkout_payment_has_dbank_and_vbank_method_blocks
+   */
   it('dbank 블록과 vbank 블록이 존재해야 한다', () => {
     expect(dbankBlock, '무통장 블록').toBeDefined();
     expect(vbankBlock, '가상계좌 블록').toBeDefined();
   });
 
+  /**
+   * @effects checkout_slot_renders_only_inside_dbank_block
+   */
   it('슬롯은 dbank 블록의 직계 자식이어야 한다 (결제수단 게이트를 블록이 대신함)', () => {
     const slot = (dbankBlock.children as any[]).find(
       (c) => c.type === 'extension_point' && c.name === 'shop_checkout_cash_receipt_slot'
@@ -50,6 +57,9 @@ describe('체크아웃 현금영수증 확장 슬롯', () => {
     expect(slot.default).toEqual([]);
   });
 
+  /**
+   * @effects checkout_slot_renders_only_inside_dbank_block
+   */
   it('슬롯에 별도 if 게이트가 없어야 한다 (dbank 블록 내부이므로 중복)', () => {
     const slot = (dbankBlock.children as any[]).find(
       (c) => c.type === 'extension_point' && c.name === 'shop_checkout_cash_receipt_slot'
@@ -57,11 +67,17 @@ describe('체크아웃 현금영수증 확장 슬롯', () => {
     expect(slot.if).toBeUndefined();
   });
 
+  /**
+   * @effects checkout_slot_renders_only_inside_dbank_block
+   */
   it('vbank 블록에는 현금영수증 슬롯이 없어야 한다 (D4 — 가상계좌는 PG 가 자동 발급)', () => {
     const slots = flatten(vbankBlock).filter((n) => n.type === 'extension_point');
     expect(slots.map((s) => s.name)).not.toContain('shop_checkout_cash_receipt_slot');
   });
 
+  /**
+   * @effects template_leaves_cash_receipt_fields_to_module
+   */
   it('템플릿은 현금영수증 도메인 필드를 직접 그리지 않는다 (모듈 소유)', () => {
     const raw = JSON.stringify(checkoutPaymentJson);
     expect(raw).not.toContain('cash_receipt_type');
@@ -79,10 +95,16 @@ describe('환불계좌 입력 필드 (템플릿 직접 소유)', () => {
     describe(`${method} 블록`, () => {
       const container = findById(block, containerId);
 
+      /**
+       * @effects checkout_refund_bank_fields_in_dbank_and_vbank_blocks
+       */
       it('환불계좌 컨테이너가 존재해야 한다', () => {
         expect(container, `${containerId}`).toBeDefined();
       });
 
+      /**
+       * @effects checkout_refund_bank_fields_in_dbank_and_vbank_blocks
+       */
       it('은행 Select + 계좌번호 + 예금주 3필드를 가져야 한다', () => {
         const names = flatten(container)
           .map((n) => n.props?.name)
@@ -92,6 +114,9 @@ describe('환불계좌 입력 필드 (템플릿 직접 소유)', () => {
         expect(names).toContain('refund_bank_holder');
       });
 
+      /**
+       * @effects checkout_refund_bank_fields_stored_in_local_refund_bank_keys
+       */
       it('3필드가 각각 _local.refundBank* 에 setState 해야 한다', () => {
         const targets = flatten(container)
           .flatMap((n) => n.actions ?? [])
@@ -103,6 +128,9 @@ describe('환불계좌 입력 필드 (템플릿 직접 소유)', () => {
         );
       });
 
+      /**
+       * @effects checkout_refund_bank_select_maps_settings_banks_to_value_label
+       */
       it('은행 Select 는 paymentSettings 의 banks 를 {value,label} 로 변환해야 한다', () => {
         const select = flatten(container).find((n) => n.name === 'Select');
         expect(select, '은행 Select').toBeDefined();
@@ -114,6 +142,10 @@ describe('환불계좌 입력 필드 (템플릿 직접 소유)', () => {
         expect(select.props.options).toContain('label:');
       });
 
+      /**
+       * @scenario surface=checkout,responsive=portable
+       * @effects new_ui_uses_portable_only, new_ui_has_no_tailwind_breakpoint
+       */
       it('신설 노드는 responsive.portable 만 쓰고 md:/lg: breakpoint 를 쓰지 않는다 (§6-0)', () => {
         const nodes = flatten(container);
 
@@ -127,19 +159,27 @@ describe('환불계좌 입력 필드 (템플릿 직접 소유)', () => {
         ]);
       });
 
+      /**
+       * @scenario surface=checkout,responsive=portable
+       * @effects checkout_refund_bank_grid_collapses_to_one_column_on_portable
+       */
       it('2열 그리드가 portable 에서 1열로 접힌다', () => {
         const grid = flatten(container).find((n) => (n.props?.className ?? '').includes('grid-cols-2'));
         expect(grid, '2열 그리드').toBeDefined();
         expect(grid.responsive.portable.props.className).toContain('grid-cols-1');
       });
 
+      /**
+       * @effects new_ui_pairs_dark_variant_for_color_classes
+       */
       it('다크모드 variant 가 함께 지정되어야 한다', () => {
         const withBg = flatten(container).filter((n) =>
           /(^|\s)(bg-|text-|border-)/.test(n.props?.className ?? '')
         );
         expect(withBg.length).toBeGreaterThan(0);
         for (const n of withBg) {
-          expect(n.props.className, `dark: variant 누락 → ${n.props.className}`).toContain('dark:');
+          // #399 R-1 — 의미 클래스(`text-muted` 등)는 템플릿 CSS 정의에 다크 짝이 들어 있으므로 정의까지 펼쳐 본다
+          expect(expandSemanticClassName(n.props.className), `dark: variant 누락 → ${n.props.className}`).toContain('dark:');
         }
       });
     });

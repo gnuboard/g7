@@ -11,6 +11,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import mainLayout from '../../../layouts/admin/admin_ecommerce_mileage_transaction_index.json';
 import filters from '../../../layouts/admin/partials/admin_ecommerce_mileage_transaction_index/_filters.json';
@@ -19,6 +21,8 @@ import modalManual from '../../../layouts/admin/partials/admin_ecommerce_mileage
 import modalExtend from '../../../layouts/admin/partials/admin_ecommerce_mileage_transaction_index/_modal_extend_expiry.json';
 import modalEdit from '../../../layouts/admin/partials/admin_ecommerce_mileage_transaction_index/_modal_edit_transaction.json';
 import { asArray, callbacksOf, initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
+
+const EXT_CSS = fs.readFileSync(path.resolve(__dirname, '../../../css/g7-extension.generated.css'), 'utf8');
 
 function findFirst(node: any, predicate: (n: any) => boolean): any | null {
   if (!node) return null;
@@ -223,7 +227,9 @@ describe('마일리지 내역 메인 레이아웃', () => {
    */
   it('콘텐츠/헤더가 admin 공통 유틸 클래스(p-6/화면 머리/화면 제목/page-description)를 사용한다', () => {
     const content = mainLayout.slots.content[0];
-    expect(content.props.className).toContain('p-6');
+    // 본문 상자는 확장 자기 의미 클래스를 쓰고, 그 정의가 p-6(24px) 여백을 준다 (#399)
+    expect(content.props.className.split(/\s+/)).toContain('ecommerce-admin-page-content');
+    expect(EXT_CSS).toMatch(/\.ecommerce-admin-page-content\s*\{[^}]*padding:\s*calc\(\.25rem \* 6\)/);
     expect(content.props.className).not.toContain('sm:p-6 lg:p-8');
     const header = findFirst(content, (n) => n.id === 'page_header');
     // 화면 머리는 폭 조건을 품은 의미 클래스(ecommerce-page-header) 대신 유틸리티로 펼쳤다 — 640px 이하에서 세로로 쌓인다

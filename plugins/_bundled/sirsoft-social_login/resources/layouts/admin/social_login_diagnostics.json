@@ -221,7 +221,7 @@
                         "if": "{{diagnostics === undefined}}",
                         "props": {
                             "role": "status",
-                            "className": "sl:text-sm sl:text-gray-500 sl:dark:text-gray-400 sl:mb-3"
+                            "className": "sl:text-sm sl-text-muted sl:mb-3"
                         },
                         "text": "$t:common.loading"
                     },
@@ -282,7 +282,7 @@
                                                 "type": "basic",
                                                 "name": "P",
                                                 "props": {
-                                                    "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                                    "className": "sl:text-xs sl-text-muted"
                                                 },
                                                 "text": "{{$t('sirsoft-social_login.admin.diagnostics.queue.connection') + ': ' + (diagnostics?.data?.queue?.connection ?? '-')}}"
                                             },
@@ -343,7 +343,7 @@
                                                 "type": "basic",
                                                 "name": "P",
                                                 "props": {
-                                                    "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                                    "className": "sl:text-xs sl-text-muted"
                                                 },
                                                 "text": "{{$t('sirsoft-social_login.admin.diagnostics.mail.mailer') + ': ' + (diagnostics?.data?.mail?.mailer ?? '-')}}"
                                             },
@@ -409,7 +409,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:mt-2"
+                                            "className": "sl:text-xs sl-text-muted sl:mt-2"
                                         },
                                         "text": "$t:sirsoft-social_login.admin.diagnostics.mock.hint"
                                     }
@@ -460,7 +460,7 @@
                                                 "type": "basic",
                                                 "name": "P",
                                                 "props": {
-                                                    "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:mt-2"
+                                                    "className": "sl:text-xs sl-text-muted sl:mt-2"
                                                 },
                                                 "text": "$t:sirsoft-social_login.admin.diagnostics.webhooks.summary|days={{diagnostics?.data?.webhooks?.days ?? 7}}|received={{diagnostics?.data?.webhooks?.received ?? 0}}|ignored={{diagnostics?.data?.webhooks?.ignored ?? 0}}|failed={{diagnostics?.data?.webhooks?.failed ?? 0}}"
                                             },
@@ -518,7 +518,7 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "sl:text-left sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:border-b sl:border-gray-200 sl:dark:border-gray-700"
+                                                            "className": "sl:text-left sl:text-xs sl-text-muted sl:border-b sl:border-gray-200 sl:dark:border-gray-700"
                                                         },
                                                         "children": [
                                                             {

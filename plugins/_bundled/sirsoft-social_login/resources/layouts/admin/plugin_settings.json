@@ -224,7 +224,7 @@
                 "responsive": {
                     "640-1023": {
                         "props": {
-                            "className": "sl:p-6 sl:min-h-screen sl:bg-gray-50 sl:dark:bg-gray-900"
+                            "className": "sl-admin-page-content"
                         }
                     },
                     "1024-": {
@@ -329,7 +329,7 @@
                                 "name": "Div",
                                 "if": "{{!providers?.data}}",
                                 "props": {
-                                    "className": "sl:text-sm sl:text-gray-500 sl:dark:text-gray-400"
+                                    "className": "sl:text-sm sl-text-muted"
                                 },
                                 "text": "$t:common.loading"
                             },
@@ -353,9 +353,7 @@
                                         "name": "Div",
                                         "responsive": {
                                             "640-": {
-                                                "props": {
-                                                    "className": "sl:flex sl:flex-wrap sl:items-center sl:gap-3 sl:px-6 sl:pt-5"
-                                                }
+                                                "classMerge": "sl:px-6"
                                             }
                                         },
                                         "props": {
@@ -389,7 +387,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                                            "className": "sl:text-xs sl-text-muted"
                                                         },
                                                         "text": "{{provider.key}} · {{$t('sirsoft-social_login.admin.providers.types.' + provider.type)}}"
                                                     }
@@ -598,13 +596,11 @@
                                                         "name": "Span",
                                                         "responsive": {
                                                             "640-": {
-                                                                "props": {
-                                                                    "className": "sl:text-xs sl:font-medium sl:text-gray-500 sl:dark:text-gray-400 sl:w-40 sl:flex-shrink-0"
-                                                                }
+                                                                "classMerge": "sl:w-40"
                                                             }
                                                         },
                                                         "props": {
-                                                            "className": "sl:text-xs sl:font-medium sl:text-gray-500 sl:dark:text-gray-400 sl:flex-shrink-0"
+                                                            "className": "sl:text-xs sl:font-medium sl-text-muted sl:flex-shrink-0"
                                                         },
                                                         "text": "$t:sirsoft-social_login.admin.providers.redirect_uri"
                                                     },
@@ -689,13 +685,11 @@
                                                         "name": "Span",
                                                         "responsive": {
                                                             "640-": {
-                                                                "props": {
-                                                                    "className": "sl:text-xs sl:font-medium sl:text-gray-500 sl:dark:text-gray-400 sl:w-40 sl:flex-shrink-0"
-                                                                }
+                                                                "classMerge": "sl:w-40"
                                                             }
                                                         },
                                                         "props": {
-                                                            "className": "sl:text-xs sl:font-medium sl:text-gray-500 sl:dark:text-gray-400 sl:flex-shrink-0"
+                                                            "className": "sl:text-xs sl:font-medium sl-text-muted sl:flex-shrink-0"
                                                         },
                                                         "text": "{{$t('sirsoft-social_login.admin.providers.webhook_kinds.' + hook.kind)}}"
                                                     },
@@ -783,7 +777,7 @@
                                                 "name": "P",
                                                 "if": "{{!provider.read_only}}",
                                                 "props": {
-                                                    "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                                    "className": "sl:text-xs sl-text-muted"
                                                 },
                                                 "text": "{{$t('sirsoft-social_login.admin.providers.last_success') + ': ' + (provider.last_success_at ?? '-') + ' · ' + $t('sirsoft-social_login.admin.providers.last_error') + ': ' + (provider.last_error_at ? provider.last_error_at + ' (' + (provider.last_error_code ?? '') + ')' : '-')}}"
                                             },

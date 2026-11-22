@@ -22,7 +22,7 @@
                     "-640": {
                         "comment": "왼쪽 단추는 오른쪽 묶음과 떨어뜨린다. 640px 이하에서는 Modal 이 세로로 쌓으므로 여백을 빼고 폭을 채운다(#869)",
                         "props": {
-                            "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            "className": "btn btn-secondary rounded-md"
                         }
                     }
                 },
@@ -65,7 +65,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors mr-auto",
+                    "className": "btn btn-secondary rounded-md mr-auto",
                     "disabled": "{{_global.notification_template_form_modal?.isSaving ?? false}}"
                 },
                 "text": "$t:admin.settings.notification_definitions.edit_modal.btn_preview"
@@ -96,7 +96,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                    "className": "btn btn-secondary rounded-md",
                     "disabled": "{{_global.notification_template_form_modal?.isSaving ?? false}}"
                 },
                 "children": [
@@ -455,7 +455,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                        "className": "text-sm text-muted"
                                     },
                                     "text": "·"
                                 },
@@ -513,6 +513,7 @@
                                     },
                                     "children": [
                                         {
+                                            "comment": "audit:allow layout-inline-semantic-duplicate reason: 알림 템플릿 편집 창의 수신자 규칙 한 건 상자, 보라 구역 안에서 보라 테두리와 여백 p-3 space-y-2 를 써서 카드와 테두리 색과 여백이 다름",
                                             "type": "basic",
                                             "name": "Div",
                                             "iteration": {
@@ -1061,7 +1062,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{(_global.notification_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"
+                                        "className": "{{(_global.notification_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-muted hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"
                                     },
                                     "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
                                 }
@@ -1118,8 +1119,7 @@
                                             ],
                                             "props": {
                                                 "type": "text",
-                                                "value": "{{_global.notification_template_form_modal?.template?.subject?.[_global.notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
-                                                "className": ""
+                                                "value": "{{_global.notification_template_form_modal?.template?.subject?.[_global.notification_template_form_modal?.editLang ?? $locale] ?? ''}}"
                                             }
                                         }
                                     ]

@@ -296,7 +296,7 @@
                                                         "props": {
                                                             "name": "image",
                                                             "size": "sm",
-                                                            "className": "text-gray-500 dark:text-gray-400"
+                                                            "className": "text-muted"
                                                         }
                                                     }
                                                 ]

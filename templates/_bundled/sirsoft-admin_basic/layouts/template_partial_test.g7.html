@@ -7,12 +7,12 @@
   <meta title="$t:admin.template_partial_test.title" description="$t:admin.template_partial_test.meta_description"/>
   <slot name="content">
     <div data-ref="test_container" class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900">
-      <responsive on="640-1023" class="p-6 min-h-screen bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="640-1023" class="admin-page-content"/>
       <responsive on="1024-" class="p-8 min-h-screen bg-gray-50 dark:bg-gray-900"/>
       <div data-ref="page_header" class="mb-6">
         <div class="flex-center gap-3 mb-2">
           <span class="text-4xl">🧪</span>
-          <h1 class="text-page-heading"><responsive on="640-" class="text-page-heading text-3xl"/>$t:admin.template_partial_test.title</h1>
+          <h1 class="text-page-heading"><responsive on="640-" class-merge="text-3xl"/>$t:admin.template_partial_test.title</h1>
         </div>
         <p class="text-label">$t:admin.template_partial_test.description</p>
       </div>

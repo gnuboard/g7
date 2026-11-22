@@ -291,7 +291,7 @@
                                     }
                                 ],
                                 "props": {
-                                    "className": "flex-center gap-2 px-4 h-10 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "className": "flex-center btn btn-secondary h-10",
                                     "disabled": "{{_global.isCheckingUpdates || plugins?.data?.abilities?.can_install !== true}}",
                                     "type": "button"
                                 },
@@ -342,7 +342,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "flex-center gap-2 px-4 h-10 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "className": "flex-center btn btn-secondary h-10",
                                     "disabled": "{{plugins?.data?.abilities?.can_install !== true || _global.appConfig?.runtime_role === 'stage'}}",
                                     "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}"
                                 },
@@ -376,7 +376,7 @@
                                 },
                                 "props": {
                                     "type": "button",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                                    "className": "flex-center btn btn-primary"
                                 },
                                 "children": [
                                     {
@@ -424,7 +424,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "flex-center flex-1 justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "className": "flex-center flex-1 btn btn-secondary",
                                     "disabled": "{{plugins?.data?.abilities?.can_install !== true || _global.appConfig?.runtime_role === 'stage'}}",
                                     "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}"
                                 },
@@ -451,7 +451,7 @@
                                 "if": "{{false}}",
                                 "props": {
                                     "type": "button",
-                                    "className": "flex-center flex-1 justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                                    "className": "flex-center flex-1 btn btn-primary"
                                 },
                                 "children": [
                                     {

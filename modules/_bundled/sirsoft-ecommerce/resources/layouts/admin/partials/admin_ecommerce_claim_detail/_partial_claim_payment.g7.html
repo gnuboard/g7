@@ -60,20 +60,20 @@
                   <span class="ecommerce:text-red-600 ecommerce:dark:text-red-400">-{{claim?.data?.order?.total_discount_amount_formatted}}</span>
                 </div>
                 <div data-if="{{claim?.data?.order?.total_product_coupon_discount_amount > 0}}" class="ecommerce:flex ecommerce:justify-between ecommerce:text-xs ecommerce:pl-4">
-                  <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.coupon</span>
-                  <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">-{{claim?.data?.order?.total_product_coupon_discount_amount_formatted}}</span>
+                  <span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.payment_info.coupon</span>
+                  <span class="ecommerce-text-muted">-{{claim?.data?.order?.total_product_coupon_discount_amount_formatted}}</span>
                 </div>
                 <div data-if="{{claim?.data?.order?.total_code_discount_amount > 0}}" class="ecommerce:flex ecommerce:justify-between ecommerce:text-xs ecommerce:pl-4">
-                  <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.discount_code</span>
-                  <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">-{{claim?.data?.order?.total_code_discount_amount_formatted}}</span>
+                  <span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.payment_info.discount_code</span>
+                  <span class="ecommerce-text-muted">-{{claim?.data?.order?.total_code_discount_amount_formatted}}</span>
                 </div>
                 <div data-if="{{payment.event_discount_amount > 0}}" class="ecommerce:flex ecommerce:justify-between ecommerce:text-xs ecommerce:pl-4">
-                  <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.event</span>
-                  <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">-{{payment.event_discount_amount_formatted}}</span>
+                  <span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.payment_info.event</span>
+                  <span class="ecommerce-text-muted">-{{payment.event_discount_amount_formatted}}</span>
                 </div>
                 <div data-if="{{payment.referral_discount_amount > 0}}" class="ecommerce:flex ecommerce:justify-between ecommerce:text-xs ecommerce:pl-4">
-                  <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.referral</span>
-                  <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">-{{payment.referral_discount_amount_formatted}}</span>
+                  <span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.payment_info.referral</span>
+                  <span class="ecommerce-text-muted">-{{payment.referral_discount_amount_formatted}}</span>
                 </div>
               </div>
               <div data-if="{{claim?.data?.order?.total_points_used_amount > 0}}" class="ecommerce:flex ecommerce:justify-between ecommerce:text-sm">
@@ -108,17 +108,17 @@
                 </div>
                 <!-- 현금 환불 중 「마일리지로 환불」로 지급한 몫(Q3) — 환불금액 행의 그중 내역이라 부호를 붙이지 않는다. 결제행은 결제완료로 남으므로 이 줄이 없으면 그 돈의 행방이 보이지 않는다. -->
                 <div data-ref="cp_006_refunded_mileage_credit_{{payIdx}}" data-if="{{(claim?.data?.order?.total_refunded_mileage_credit_amount ?? 0) > 0}}" class="ecommerce:flex ecommerce:justify-between ecommerce:text-sm ecommerce:pl-3">
-                  <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.refund_mileage_credit_amount</span>
+                  <span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.payment_info.refund_mileage_credit_amount</span>
                   <span class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{claim?.data?.order?.total_refunded_mileage_credit_amount_formatted}}</span>
                 </div>
               </div>
               <hr class="ecommerce:border-gray-100 ecommerce:dark:border-gray-800"/>
               <div class="ecommerce:flex ecommerce:justify-between ecommerce:text-sm">
-                <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.taxable_amount</span>
+                <span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.payment_info.taxable_amount</span>
                 <span class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{claim?.data?.order?.total_tax_amount_formatted}}</span>
               </div>
               <div class="ecommerce:flex ecommerce:justify-between ecommerce:text-sm">
-                <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.vat</span>
+                <span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.payment_info.vat</span>
                 <span class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{claim?.data?.order?.total_vat_amount_formatted}}</span>
               </div>
               <!-- 적립 예정 포인트 — 표기는 서버가 준 `total_earned_points_amount_formatted`(「1,000P」)를 쓴다. 화면이 숫자에 'P' 를 붙이면 단위·자릿수 규칙이 화면마다 갈린다. 필드가 없는 옛 응답만 종전 표기로 떨어진다. -->
@@ -169,7 +169,7 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
             <span class="ecommerce:text-purple-600 ecommerce:dark:text-purple-400">{{claim?.data?.claim?.refund_product_amount_formatted ?? ""}}</span>
           </div>
           <!-- 배송비가 왜 이 금액인지의 근거 — 서버는 정책을 해석하지 못하면 예외 대신 0원 + 사유로 처리하고 로그만 남긴다. 그 사유가 화면에 없으면 배송정책을 지운 상점에서 청구액이 조용히 0원이 되고 운영자는 '청구 없음' 으로 읽는다. 외부 요금 API 폴백(api_fallback)과 스냅샷 없는 과거 주문(live_policy — 요금표를 바꾸면 이 금액이 움직인다)도 같은 자리에서 알린다. -->
-          <div data-ref="cst_002b_fee_basis_note" data-if="{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') &amp;&amp; ((claim?.data?.claim?.shipping_fee_snapshot?.reason ?? '') === 'no_shipping_policy' || (claim?.data?.claim?.shipping_fee_snapshot?.groups ?? []).some(g => g.api_fallback === true || g.policy_source === 'live_policy'))}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-right">
+          <div data-ref="cst_002b_fee_basis_note" data-if="{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') &amp;&amp; ((claim?.data?.claim?.shipping_fee_snapshot?.reason ?? '') === 'no_shipping_policy' || (claim?.data?.claim?.shipping_fee_snapshot?.groups ?? []).some(g => g.api_fallback === true || g.policy_source === 'live_policy'))}}" class="ecommerce:text-xs ecommerce-text-muted ecommerce:text-right">
             <span>{{(claim?.data?.claim?.shipping_fee_snapshot?.reason ?? '') === 'no_shipping_policy' ? $t('sirsoft-ecommerce.admin.claim.detail.settlement.fee_basis_no_policy') : ((claim?.data?.claim?.shipping_fee_snapshot?.groups ?? []).some(g => g.api_fallback === true) ? $t('sirsoft-ecommerce.admin.claim.detail.settlement.fee_basis_api_fallback') : $t('sirsoft-ecommerce.admin.claim.detail.settlement.fee_basis_live_policy'))}}</span>
           </div>
           <div class="ecommerce:flex ecommerce:justify-between ecommerce:items-center ecommerce:text-sm ecommerce:gap-3">
@@ -274,7 +274,7 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
             </div>
             <div class="ecommerce-flex-center ecommerce:gap-2">
               <span>{{linkedRefund.refund_total_formatted ?? ''}}</span>
-              <span class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{linkedRefund.refunded_at_formatted || linkedRefund.requested_at_formatted || ''}}</span>
+              <span class="ecommerce:text-xs ecommerce-text-muted">{{linkedRefund.refunded_at_formatted || linkedRefund.requested_at_formatted || ''}}</span>
             </div>
           </div>
         </div>
@@ -348,8 +348,8 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
             </div>
             <!-- 수단별 잔여 한도 — PG 가 실제로 받아 주는 한도는 결제 통화 기준이라 그 통화의 원값을 함께 보인다 (D18). -->
             <div data-ref="cre_003_method_{{mIdx}}" data-each="capacity, mIdx in {{claim?.data?.cancellable?.methods ?? []}}" class="ecommerce:flex ecommerce:justify-between ecommerce:text-xs ecommerce:pl-4">
-              <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{capacity.method_label ?? ''}}</span>
-              <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{capacity.currency === (claim?.data?.cancellable?.currency ?? '') ? (capacity.remaining_base_formatted ?? '') : ((capacity.remaining_base_formatted ?? '') + ' (' + (capacity.remaining_local_formatted ?? '') + ')')}}</span>
+              <span class="ecommerce-text-muted">{{capacity.method_label ?? ''}}</span>
+              <span class="ecommerce-text-muted">{{capacity.currency === (claim?.data?.cancellable?.currency ?? '') ? (capacity.remaining_base_formatted ?? '') : ((capacity.remaining_base_formatted ?? '') + ' (' + (capacity.remaining_local_formatted ?? '') + ')')}}</span>
             </div>
             <div data-ref="cre_004_reserved" class="ecommerce:flex ecommerce:justify-between ecommerce:text-sm">
               <span class="ecommerce:text-amber-700 ecommerce:dark:text-amber-400">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.reserved</span>
@@ -357,14 +357,14 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
             </div>
             <!-- 예정액 근거 — 어느 신청서가 얼마를 환불할 예정인지 알린다. 이 값은 한도를 깎지 않는다(참고 축) — 깎으면 승인도 되지 않은 남의 신청서가 이 건의 정당한 환불을 0 원으로 막는다. -->
             <div data-ref="cre_005_reserved_claim_{{rIdx}}" data-each="reservedClaim, rIdx in {{claim?.data?.cancellable?.reserved_claims ?? []}}" class="ecommerce:flex ecommerce:justify-between ecommerce:text-xs ecommerce:pl-4">
-              <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{(reservedClaim.type_label ?? '') + ' ' + (reservedClaim.number ?? '')}}</span>
-              <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{reservedClaim.amount_formatted ?? ''}}</span>
+              <span class="ecommerce-text-muted">{{(reservedClaim.type_label ?? '') + ' ' + (reservedClaim.number ?? '')}}</span>
+              <span class="ecommerce-text-muted">{{reservedClaim.amount_formatted ?? ''}}</span>
             </div>
             <div class="ecommerce:flex ecommerce:justify-between ecommerce:text-sm ecommerce:font-bold ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-2">
               <span class="ecommerce:text-gray-900 ecommerce:dark:text-gray-100">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.amount</span>
               <span data-ref="cre_006_cancellable_amount" class="ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{claim?.data?.cancellable?.amount_formatted ?? ''}}</span>
             </div>
-            <p data-ref="cre_007_binding_label" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:pt-1">{{claim?.data?.cancellable?.binding_label ?? ''}}</p>
+            <p data-ref="cre_007_binding_label" class="ecommerce:text-xs ecommerce-text-muted ecommerce:pt-1">{{claim?.data?.cancellable?.binding_label ?? ''}}</p>
           </div>
         </div>
         <div data-ref="cre_execute_card" class="ecommerce-admin-card">
@@ -384,9 +384,9 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
                   </on>
                 </input>
               </div>
-              <div class="ecommerce:text-xs ecommerce:text-right ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.limit_hint|amount={{claim?.data?.cancellable?.amount_formatted ?? ''}}</div>
+              <div class="ecommerce:text-xs ecommerce:text-right ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.limit_hint|amount={{claim?.data?.cancellable?.amount_formatted ?? ''}}</div>
               <!-- 이 칸에 넣을 수 있는 한도는 전체 취소 가능 금액만이 아니라 그 수단이 실제로 받아 주는 잔여이기도 하다 — 두 값이 다르면 운영자는 왜 거절되는지 입력 옆에서 알 수 없다. 값은 좌측 산정 카드와 **같은 서버 필드**를 읽는다(화면이 다시 더하면 같은 금액의 두 번째 출처가 된다). -->
-              <div data-ref="cre_015_pg_method_limit_{{pgIdx}}" data-each="pgCapacity, pgIdx in {{(claim?.data?.cancellable?.methods ?? []).filter(m => m.type === 'payment')}}" class="ecommerce:text-xs ecommerce:text-right ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method_limit_hint|method={{pgCapacity.method_label ?? ''}}|amount={{pgCapacity.currency === (claim?.data?.cancellable?.currency ?? '') ? (pgCapacity.remaining_base_formatted ?? '') : ((pgCapacity.remaining_base_formatted ?? '') + ' (' + (pgCapacity.remaining_local_formatted ?? '') + ')')}}</div>
+              <div data-ref="cre_015_pg_method_limit_{{pgIdx}}" data-each="pgCapacity, pgIdx in {{(claim?.data?.cancellable?.methods ?? []).filter(m => m.type === 'payment')}}" class="ecommerce:text-xs ecommerce:text-right ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method_limit_hint|method={{pgCapacity.method_label ?? ''}}|amount={{pgCapacity.currency === (claim?.data?.cancellable?.currency ?? '') ? (pgCapacity.remaining_base_formatted ?? '') : ((pgCapacity.remaining_base_formatted ?? '') + ' (' + (pgCapacity.remaining_local_formatted ?? '') + ')')}}</div>
             </div>
             <div class="ecommerce:space-y-1">
               <div class="ecommerce:flex ecommerce:justify-between ecommerce:items-center ecommerce:gap-3">
@@ -401,9 +401,9 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
                   </on>
                 </input>
               </div>
-              <div class="ecommerce:text-xs ecommerce:text-right ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_hint</div>
+              <div class="ecommerce:text-xs ecommerce:text-right ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_hint</div>
               <!-- 마일리지 잔여도 같은 자리에 병기한다. 마일리지는 결제행이 없는 주문 컬럼 원장이라 수단별 잔여 목록에 항목이 없을 수 있고, 그때는 이 줄이 아예 렌더되지 않는다 — 0원과 '항목 없음' 을 뭉뚱그리지 않는다. -->
-              <div data-ref="cre_016_points_method_limit_{{ptIdx}}" data-each="ptCapacity, ptIdx in {{(claim?.data?.cancellable?.methods ?? []).filter(m => m.type === 'mileage')}}" class="ecommerce:text-xs ecommerce:text-right ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method_limit_hint|method={{ptCapacity.method_label ?? ''}}|amount={{ptCapacity.remaining_base_formatted ?? ''}}</div>
+              <div data-ref="cre_016_points_method_limit_{{ptIdx}}" data-each="ptCapacity, ptIdx in {{(claim?.data?.cancellable?.methods ?? []).filter(m => m.type === 'mileage')}}" class="ecommerce:text-xs ecommerce:text-right ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method_limit_hint|method={{ptCapacity.method_label ?? ''}}|amount={{ptCapacity.remaining_base_formatted ?? ''}}</div>
             </div>
             <div role="radiogroup" aria-label="$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method">
               <div class="ecommerce:text-sm ecommerce-text-secondary ecommerce:mb-2">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method</div>

@@ -225,9 +225,6 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_global.deactivateWarningData?.dependent_templates?.length > 0}}",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "type": "basic",
@@ -257,7 +254,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "layer-group",
-                                                "className": "text-base text-gray-500 dark:text-gray-400"
+                                                "className": "text-base text-muted"
                                             }
                                         },
                                         {
@@ -286,9 +283,6 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_global.deactivateWarningData?.dependent_modules?.length > 0}}",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "type": "basic",
@@ -318,7 +312,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "cube",
-                                                "className": "text-base text-gray-500 dark:text-gray-400"
+                                                "className": "text-base text-muted"
                                             }
                                         },
                                         {
@@ -347,9 +341,6 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_global.deactivateWarningData?.dependent_plugins?.length > 0}}",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "type": "basic",
@@ -379,7 +370,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "plug",
-                                                "className": "text-base text-gray-500 dark:text-gray-400"
+                                                "className": "text-base text-muted"
                                             }
                                         },
                                         {

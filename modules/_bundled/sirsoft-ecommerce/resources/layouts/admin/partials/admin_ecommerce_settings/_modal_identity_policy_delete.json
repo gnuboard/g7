@@ -23,7 +23,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "className": "ecommerce-btn ecommerce-btn-secondary",
                     "disabled": "{{_global.ecommerceIdentityPolicyDeleting}}"
                 },
                 "text": "$t:common.cancel"

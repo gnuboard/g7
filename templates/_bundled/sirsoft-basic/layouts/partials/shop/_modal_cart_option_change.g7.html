@@ -21,17 +21,17 @@
         <div class="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
           <img data-if="{{$parent._local.optionModal.targetItem?.thumbnail}}" src="{{$parent._local.optionModal.targetItem?.thumbnail}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{$parent._local.optionModal.targetItem?.product_name}}" class="w-full h-full object-cover"/>
           <div data-if="{{!$parent._local.optionModal.targetItem?.thumbnail}}" class="w-full h-full flex items-center justify-center">
-            <icon name="image" size="lg" class="text-gray-500 dark:text-gray-400"/>
+            <icon name="image" size="lg" class="text-muted"/>
           </div>
         </div>
         <div class="flex-1 min-w-0">
           <h4 class="font-medium text-gray-900 dark:text-white truncate">{{$parent._local.optionModal.targetItem?.product_name}}</h4>
-          <p data-if="{{$parent._local.optionModal.targetItem?.option_name}}" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{$parent._local.optionModal.targetItem?.option_name_localized ?? $localized($parent._local.optionModal.targetItem?.option_name)}}</p>
+          <p data-if="{{$parent._local.optionModal.targetItem?.option_name}}" class="text-sm text-muted mt-1">{{$parent._local.optionModal.targetItem?.option_name_localized ?? $localized($parent._local.optionModal.targetItem?.option_name)}}</p>
           <div class="mt-2">
             <p class="text-sm font-medium text-gray-900 dark:text-white">{{$parent._local.optionModal.targetItem?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? $parent._local.optionModal.targetItem?.unit_price_formatted}}</p>
             <!-- 보조 통화들 -->
             <div data-each="currency in {{Object.entries($parent._local.optionModal.targetItem?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2">
-              <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
+              <span class="text-xs text-muted">{{currency[1]?.formatted}}</span>
             </div>
           </div>
         </div>

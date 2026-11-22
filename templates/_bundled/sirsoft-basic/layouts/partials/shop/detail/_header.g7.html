@@ -6,7 +6,7 @@
       <!-- 상품명 칸은 줄어들 수 있고(min-w-0) 이름은 아무 데서나 줄을 바꾼다 — 공백 없는 긴 상품명이 찜하기 단추를 밀어냈다(#143). -->
       <div class="min-w-0">
         <!-- 분류 경로 — 대표 분류 화면으로 잇는다. 분류 주소(slug)를 주지 않는 옛 응답이면 글자로만 보인다 -->
-        <nav data-if="{{!!product.data?.category_name}}" aria-label="$t:shop.product.category_path" class="block min-w-0 truncate text-sm text-gray-500 dark:text-gray-400">
+        <nav data-if="{{!!product.data?.category_name}}" aria-label="$t:shop.product.category_path" class="block min-w-0 truncate text-sm text-muted">
           <a data-if="{{!!(product.data?.categories ?? []).find(c => c.is_primary)?.slug}}" href="{{_global.shopBase}}/category/{{(product.data?.categories ?? []).find(c => c.is_primary)?.slug}}" class="block truncate hover:text-gray-700 dark:hover:text-gray-200 hover:underline">
             <on type="click">
               <!-- audit:allow layout-list-context-navigate-merge-query 상품 상세에서 분류 화면으로 가는 이동 — 이어 갈 목록 조건이 없다 -->

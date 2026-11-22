@@ -304,7 +304,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
             />
           ))
         ) : (
-          <Div className="col-span-2 flex items-center justify-center py-6 text-sm text-gray-500 dark:text-gray-400">
+          <Div className="col-span-2 flex items-center justify-center py-6 text-sm text-muted">
             <I className="fa-regular fa-images mr-2" />
             {t('editor.component.image_gallery')}
           </Div>

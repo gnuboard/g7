@@ -429,7 +429,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "{{alert.icon ?? 'info-circle'}}",
-                                            "className": "{{alert.type === 'warning' ? 'text-amber-700 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"
+                                            "className": "{{alert.type === 'warning' ? 'text-amber-700 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-muted mt-0.5 shrink-0')}}"
                                         }
                                     },
                                     {
@@ -554,7 +554,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            "className": "btn btn-primary gap-1 px-3 py-1 text-xs rounded",
                                                             "disabled": "{{alert.abilities?.can_recover !== true || _global.appConfig?.runtime_role === 'stage'}}",
                                                             "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}"
                                                         },
@@ -2128,7 +2128,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "{{alert.icon ?? 'info-circle'}}",
-                                                            "className": "{{alert.type === 'warning' ? 'text-amber-700 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"
+                                                            "className": "{{alert.type === 'warning' ? 'text-amber-700 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-muted mt-0.5 shrink-0')}}"
                                                         }
                                                     },
                                                     {
@@ -2253,7 +2253,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "button",
-                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                            "className": "btn btn-primary gap-1 px-3 py-1 text-xs rounded",
                                                                             "disabled": "{{alert.abilities?.can_recover !== true || _global.appConfig?.runtime_role === 'stage'}}",
                                                                             "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}"
                                                                         },

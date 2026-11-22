@@ -289,7 +289,7 @@ export const MenuAccessTree: React.FC<MenuAccessTreeProps> = ({
                 }}
                 aria-expanded={isExpanded}
                 aria-label={t(isExpanded ? 'common.collapse' : 'common.expand')}
-                className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="p-1 text-muted hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <Icon name={isExpanded ? IconName.ChevronDown : IconName.ChevronRight} className="w-4 h-4" />
               </Button>
@@ -306,7 +306,7 @@ export const MenuAccessTree: React.FC<MenuAccessTreeProps> = ({
   // 빈 데이터일 때도 시각적으로 렌더 + 루트에 id/editorAttrs 부착 (편집기 선택 패리티)
   if (data.length === 0) {
     return (
-      <Div className={`text-sm text-gray-500 dark:text-gray-400 py-4 text-center ${className}`} id={id} {...editorAttrs}>
+      <Div className={`text-sm text-muted py-4 text-center ${className}`} id={id} {...editorAttrs}>
         {t('common.no_data')}
       </Div>
     );

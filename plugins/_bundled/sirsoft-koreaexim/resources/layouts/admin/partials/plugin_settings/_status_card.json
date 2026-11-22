@@ -157,7 +157,7 @@
                             "props": {
                                 "type": "button",
                                 "disabled": "{{_local.busy || _computed.isReadOnly}}",
-                                "className": "koreaexim-btn koreaexim-btn-secondary koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed"
+                                "className": "koreaexim-btn koreaexim-btn-secondary"
                             },
                             "children": [
                                 {
@@ -260,7 +260,7 @@
                             "props": {
                                 "type": "button",
                                 "disabled": "{{_local.busy || _computed.isReadOnly || !koreaeximStatus?.data?.auto_manage}}",
-                                "className": "koreaexim-btn koreaexim-btn-secondary koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed"
+                                "className": "koreaexim-btn koreaexim-btn-secondary"
                             },
                             "children": [
                                 {

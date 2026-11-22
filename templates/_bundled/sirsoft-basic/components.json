@@ -13,14 +13,13 @@
           "variant": {
             "type": "string",
             "required": false,
-            "default": "primary",
-            "description": "버튼 변형 (primary | secondary | danger | success | ghost | outline)"
+            "description": "버튼 모양 (primary | secondary | danger | success | ghost | outline | accent) — 적으면 btn btn-{variant} 의미 클래스를 붙인다. 생략하면 className 만 쓴다. accent 는 템플릿 포인트 색을 따른다."
           },
           "size": {
             "type": "string",
             "required": false,
             "default": "md",
-            "description": "버튼 크기 (sm | md | lg)"
+            "description": "버튼 크기 (sm | md | lg) — sm 은 btn-sm, lg 는 btn-lg 를 붙인다. md 는 붙이지 않는다"
           },
           "className": {
             "type": "string",

@@ -104,7 +104,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "image",
-                                                        "className": "text-2xl text-gray-500 dark:text-gray-400"
+                                                        "className": "text-2xl text-muted"
                                                     }
                                                 }
                                             ]
@@ -160,7 +160,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                                "className": "text-xs text-muted mt-0.5"
                                             },
                                             "text": "{{item.product_option_name ?? ''}}"
                                         },
@@ -168,7 +168,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                "className": "text-xs text-muted mt-1"
                                             },
                                             "text": "{{item.unit_price_formatted ?? ''}} × {{item.quantity ?? 0}}$t:shop.count_unit"
                                         },
@@ -196,7 +196,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-muted"
                                                     },
                                                     "text": "{{currency[1]?.formatted ?? ''}}"
                                                 }
@@ -225,7 +225,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-muted"
                                                     },
                                                     "text": "$t:claim.detail.item_collection_tracking"
                                                 },
@@ -264,7 +264,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-muted"
                                                     },
                                                     "text": "$t:claim.detail.item_redelivery_tracking"
                                                 },
@@ -382,7 +382,7 @@
                                     "name": "P",
                                     "if": "{{item.is_option_change !== true}}",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 mt-0.5"
+                                        "className": "text-sm text-muted mt-0.5"
                                     },
                                     "text": "$t:claim.detail.exchange_same_option"
                                 },
@@ -412,7 +412,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             },
                                             "text": "{{currency[1]?.formatted ?? ''}}"
                                         }
@@ -429,7 +429,7 @@
             "name": "P",
             "if": "{{(claim.data?.claim?.items ?? []).length === 0}}",
             "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400"
+                "className": "text-sm text-muted"
             },
             "text": "$t:claim.detail.no_items"
         }

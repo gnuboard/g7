@@ -22,7 +22,7 @@
           </on>
           $t:sirsoft-ecommerce.common.cancel
         </button>
-        <button type="submit" form="category_form" disabled="{{_local?.isSaving || (_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true)}}" class="ecommerce-flex-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
+        <button type="submit" form="category_form" disabled="{{_local?.isSaving || (_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true)}}" class="ecommerce-flex-center ecommerce:gap-1.5 ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm">
           <icon data-if="{{!_local.isSaving}}" name="save" class="ecommerce:text-base"/>
           <icon data-if="{{_local.isSaving}}" name="spinner" class="ecommerce-spinner-sm"/>
           <span data-if="{{!_local.isSaving}}">$t:sirsoft-ecommerce.common.save</span>
@@ -210,13 +210,13 @@
         <div data-ref="form_meta_title_field">
           <div>
             <label data-ref="form_meta_title_label" class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.category.form.meta_title</label>
-            <input data-ref="form_meta_title_input" type="text" name="meta_title" :maxLength="200" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}" class=""/>
+            <input data-ref="form_meta_title_input" type="text" name="meta_title" :maxLength="200" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}"/>
           </div>
         </div>
         <div data-ref="form_meta_description_field">
           <div>
             <label data-ref="form_meta_description_label" class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.category.form.meta_description</label>
-            <textarea data-ref="form_meta_description_input" name="meta_description" :rows="3" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}" class=""/>
+            <textarea data-ref="form_meta_description_input" name="meta_description" :rows="3" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}"/>
           </div>
         </div>
       </div>

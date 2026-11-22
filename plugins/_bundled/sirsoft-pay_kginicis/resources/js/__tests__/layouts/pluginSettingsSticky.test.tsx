@@ -10,7 +10,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 import pluginSettingsLayout from '../../../layouts/admin/plugin_settings.json';
+
+const EXT_CSS = fs.readFileSync(path.resolve(__dirname, '../../../css/g7-extension.generated.css'), 'utf8');
 
 /** 레이아웃 트리에서 주어진 id 의 노드를 찾는다. */
 function findById(node: unknown, id: string): Record<string, unknown> | undefined {
@@ -103,7 +107,9 @@ describe('plugin_settings 하단 버튼 sticky 고정', () => {
     expect(rootClassName).toContain('p-4');
     // 화면 폭 분기는 엔진 responsive 로 쓴다 — 640~1023px 은 p-6, 1024px 이상은 p-8
     const responsive = (root?.responsive ?? {}) as Record<string, Record<string, unknown>>;
-    expect(classNameOf(responsive['640-1023']).split(' ')).toContain('paykginicis:p-6');
+    // 640~1023px 구간은 플러그인 자기 의미 클래스(본문 상자)를 쓰고, 그 정의가 p-6(24px) 여백을 준다 (#399)
+    expect(classNameOf(responsive['640-1023']).split(' ')).toContain('pay-kginicis-admin-page-content');
+    expect(EXT_CSS).toMatch(/\.pay-kginicis-admin-page-content\s*\{[^}]*padding:\s*calc\(\.25rem \* 6\)/);
     // 커스텀 구간(640-1023)과 프리셋을 한 노드에 섞지 않는다 — 1024px 이상도 커스텀 구간 1024- 로 쓴다
     expect(classNameOf(responsive['1024-']).split(' ')).toContain('paykginicis:p-8');
     expect(responsive.desktop).toBeUndefined();

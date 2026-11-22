@@ -20,7 +20,7 @@
     <div data-ref="ext_checkout_cash_receipt_fields" data-if="{{!!_local.cashReceiptRequested &amp;&amp; !!_local.checkoutExtraPayload?.cash_receipt_requested}}" class="ecommerce:mt-3 ecommerce:space-y-3">
       <!-- 용도 — 라디오 2종 (가로 → portable 세로 스택) -->
       <div>
-        <label class="ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mb-1">$t:sirsoft-ecommerce.checkout.cash_receipt.purpose</label>
+        <label class="ecommerce-user-form-label">$t:sirsoft-ecommerce.checkout.cash_receipt.purpose</label>
         <div data-ref="ext_checkout_cash_receipt_purpose" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-4">
           <responsive on="portable" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2"/>
           <!-- 소득공제용 -->
@@ -50,7 +50,7 @@
         <responsive on="portable" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-3"/>
         <!-- 발급수단 options — 소득공제는 2종, 지출증빙은 사업자등록번호 포함 3종 (D10). computed 대신 표현식으로 {value,label} 변환 (valueKey/labelKey prop 금지). -->
         <select data-ref="ext_checkout_cash_receipt_identifier_type" aria-label="$t:sirsoft-ecommerce.order.cash_receipt.identifier_type" name="cash_receipt_identifier_type" value="{{_local.cashReceiptIdentifierType ?? 'phone'}}" options="{{(_local.cashReceiptType === 'expense' ? [{ value: 'business', label: $t('sirsoft-ecommerce.checkout.cash_receipt.identifier_business') }] : []).concat([{ value: 'phone', label: $t('sirsoft-ecommerce.checkout.cash_receipt.identifier_phone') }, { value: 'card', label: $t('sirsoft-ecommerce.checkout.cash_receipt.identifier_card') }])}}" class="ecommerce:w-full ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500">
-          <responsive on="portable" class="ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500 ecommerce:text-sm"/>
+          <responsive on="portable" class-merge="ecommerce:px-3 ecommerce:text-sm"/>
           <on type="change">
             <!-- 발급수단 변경 시 번호를 비운다 — 휴대폰번호를 사업자등록번호 칸에 남겨두면 검증에서 422 가 난다. -->
             <set-state target="local" cashReceiptIdentifierType="{{$event.target.value}}" cashReceiptIdentifier="" checkoutExtraPayload="{{ { cash_receipt_requested: true, cash_receipt_type: (_local.cashReceiptType ?? 'income'), cash_receipt_identifier_type: $event.target.value, cash_receipt_identifier: '' } }}"/>
@@ -66,8 +66,8 @@
       </div>
       <!-- 서버 검증 오류 인라인 노출 (M6 — 사업자번호 체크섬 오류 등) -->
       <span data-if="{{!!_local.errors?.cash_receipt_identifier}}" class="ecommerce:block ecommerce:text-red-600 ecommerce:dark:text-red-300 ecommerce:text-xs">{{_local.errors?.cash_receipt_identifier?.[0] ?? ''}}</span>
-      <p class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.checkout.cash_receipt.purpose_help</p>
-      <p class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.checkout.cash_receipt.immutable_help</p>
+      <p class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.checkout.cash_receipt.purpose_help</p>
+      <p class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.checkout.cash_receipt.immutable_help</p>
     </div>
   </div>
 </extension>

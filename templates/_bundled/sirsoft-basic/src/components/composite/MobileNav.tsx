@@ -163,7 +163,7 @@ const MobileNav: React.FC<MobileNavProps> = ({
           </LinkButton>
           <Button
             onClick={onClose}
-            className="shrink-0 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="shrink-0 p-2 text-muted hover:text-gray-700 dark:hover:text-gray-200"
             aria-label={t('common.close_menu')}
           >
             <Icon name="x" className="w-6 h-6 text-2xl leading-none" />
@@ -266,7 +266,7 @@ const MobileNav: React.FC<MobileNavProps> = ({
             <Li className="my-4 border-t border-gray-200 dark:border-gray-800" />
 
             {/* 게시판 메뉴 */}
-            <Li className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <Li className="px-3 py-2 text-xs font-semibold text-muted uppercase tracking-wider">
               {t('nav.boards')}
             </Li>
             {boards.map((board) => (
@@ -286,7 +286,7 @@ const MobileNav: React.FC<MobileNavProps> = ({
 
         {/* 하단 링크 */}
         <Div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-          <Div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+          <Div className="flex items-center justify-between text-sm text-muted">
             <LinkButton href={'/about'} onNavigate={() => { onClose(); navigate('/about'); }} className="hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer">
               {t('footer.about')}
             </LinkButton>

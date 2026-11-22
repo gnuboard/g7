@@ -19,6 +19,13 @@ effects:
   - unspecified_severity_falls_to_gray_bottom   # 심각도가 없는 알림은 하단 카드에 회색으로 그려진다
   - recovery_button_follows_subtype             # 복구 버튼은 recovery_available subtype 에만 붙는다
   - promoted_alert_keeps_dismiss_action         # 상단으로 올라간 경고도 닫기 버튼을 그대로 갖는다
+  # 복구 버튼 배선 (admin_dashboard.recovery.test.tsx, #399 선행 마킹 정리)
+  - recovery_alert_renders_body_and_recover_button  # 재호환 알림(recovery_available)은 제목과 [다시 활성화] 버튼을 그린다
+  - recover_button_posts_to_alert_recover_endpoint  # 복구 버튼은 recover_endpoint 가 있을 때만 그려지고 그 주소로 인증 POST 를 보낸다
+  - recover_success_toasts_and_refetches_alerts     # 복구 성공 시 알림이 준 문구(없으면 기본 문구)로 성공 토스트를 띄우고 dashboard_alerts 를 다시 읽는다
+  - recover_failure_toasts_error_message            # 복구 실패 시 오류 메시지로 오류 토스트를 띄운다
+  - recovery_alert_keeps_dismiss_button             # 재호환 알림에도 닫기 버튼이 복구 버튼과 함께 있다
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-dashboard-alert-severity.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_dashboard.recovery.test.tsx

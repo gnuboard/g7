@@ -238,7 +238,7 @@
                                             "name": "Span",
                                             "if": "{{!_global.selectedCategory?.description || Object.keys(_global.selectedCategory?.description || {}).length === 0}}",
                                             "props": {
-                                                "className": "ecommerce:block ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                "className": "ecommerce:block ecommerce:text-sm ecommerce-text-muted"
                                             },
                                             "text": "-"
                                         }
@@ -355,7 +355,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                "className": "ecommerce:text-sm ecommerce-text-muted"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.category.info.no_image"
                                         }

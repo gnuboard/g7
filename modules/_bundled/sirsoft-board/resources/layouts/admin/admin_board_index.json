@@ -176,7 +176,7 @@
                                 "props": {
                                     "data-testid": "board-reorder-button",
                                     "type": "button",
-                                    "className": "board-flex-center board:gap-2 board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                                    "className": "board-flex-center board-btn board-btn-secondary",
                                     "disabled": "{{_global.reorderLoading}}"
                                 },
                                 "children": [
@@ -670,7 +670,7 @@
                         ],
                         "props": {
                             "type": "button",
-                            "className": "board:px-4 board:py-2 board:text-sm board:font-medium board:text-white board:bg-blue-600 board:dark:bg-blue-600 board:rounded-lg board:hover:bg-blue-700 board:dark:hover:bg-blue-700 board:focus:outline-none board:focus:ring-2 board:focus:ring-offset-2 board:focus:ring-blue-500 board:dark:focus:ring-blue-400"
+                            "className": "board-btn board-btn-primary board:focus:outline-none board:focus:ring-2 board:focus:ring-offset-2 board:focus:ring-blue-500 board:dark:focus:ring-blue-400"
                         },
                         "text": "$t:sirsoft-board.admin.board.actions.copy"
                     }
@@ -797,7 +797,7 @@
                         ],
                         "props": {
                             "type": "button",
-                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                            "className": "board-btn board-btn-secondary",
                             "disabled": "{{_global.isDeleting}}"
                         },
                         "children": [
@@ -1026,7 +1026,7 @@
                         "props": {
                             "data-testid": "board-reorder-cancel",
                             "type": "button",
-                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                            "className": "board-btn board-btn-secondary",
                             "disabled": "{{_global.reorderSaving}}"
                         },
                         "children": [
@@ -1135,7 +1135,7 @@
                             "data-testid": "board-reorder-save",
                             "type": "button",
                             "lockRepeatClick": true,
-                            "className": "board-flex-center board:gap-2 board:px-4 board:py-2 board:text-sm board:font-medium board:text-white board:bg-blue-600 board:dark:bg-blue-500 board:rounded-lg board:hover:bg-blue-700 board:dark:hover:bg-blue-600 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                            "className": "board-flex-center board-btn board-btn-primary",
                             "disabled": "{{_global.reorderSaving || (_global.reorderItems ?? []).map(i => i.id).join(',') === (_global.reorderOriginal ?? []).map(i => i.id).join(',')}}"
                         },
                         "children": [
@@ -1238,7 +1238,7 @@
                                                 "name": "Span",
                                                 "props": {
                                                     "data-testid": "board-reorder-index-{{row.slug}}",
-                                                    "className": "board:w-6 board:text-right board:text-sm board:tabular-nums board:text-gray-500 board:dark:text-gray-400"
+                                                    "className": "board:w-6 board:text-right board:text-sm board:tabular-nums board-text-muted"
                                                 },
                                                 "text": "{{row._idx + 1}}"
                                             },
@@ -1288,7 +1288,7 @@
                                                                 "if": "{{!row.is_active}}",
                                                                 "props": {
                                                                     "data-testid": "board-reorder-inactive-{{row.slug}}",
-                                                                    "className": "board:px-1.5 board:py-0.5 board:text-xs board:rounded board:bg-gray-100 board:dark:bg-gray-700 board:text-gray-500 board:dark:text-gray-400"
+                                                                    "className": "board:px-1.5 board:py-0.5 board:text-xs board:rounded board:bg-gray-100 board:dark:bg-gray-700 board-text-muted"
                                                                 },
                                                                 "text": "$t:sirsoft-board.admin.board.index.reorder.inactive"
                                                             }
@@ -1315,7 +1315,7 @@
                                                     "data-testid": "board-reorder-up-{{row.slug}}",
                                                     "type": "button",
                                                     "aria-label": "{{$t('sirsoft-board.admin.board.index.reorder.move_up', { name: row.name })}}",
-                                                    "className": "board-flex-center board:w-10 board:h-10 board:shrink-0 board:text-gray-500 board:hover:text-gray-800 board:dark:text-gray-400 board:dark:hover:text-gray-100 board:rounded board:hover:bg-gray-100 board:dark:hover:bg-gray-700 board:transition-colors board-move-button board:disabled:cursor-not-allowed",
+                                                    "className": "board-flex-center board:w-10 board:h-10 board:shrink-0 board-text-muted board:hover:text-gray-800 board:dark:hover:text-gray-100 board:rounded board:hover:bg-gray-100 board:dark:hover:bg-gray-700 board:transition-colors board-move-button board:disabled:cursor-not-allowed",
                                                     "disabled": "{{_global.reorderSaving || row._idx === 0}}"
                                                 },
                                                 "children": [
@@ -1348,7 +1348,7 @@
                                                     "data-testid": "board-reorder-down-{{row.slug}}",
                                                     "type": "button",
                                                     "aria-label": "{{$t('sirsoft-board.admin.board.index.reorder.move_down', { name: row.name })}}",
-                                                    "className": "board-flex-center board:w-10 board:h-10 board:shrink-0 board:text-gray-500 board:hover:text-gray-800 board:dark:text-gray-400 board:dark:hover:text-gray-100 board:rounded board:hover:bg-gray-100 board:dark:hover:bg-gray-700 board:transition-colors board-move-button board:disabled:cursor-not-allowed",
+                                                    "className": "board-flex-center board:w-10 board:h-10 board:shrink-0 board-text-muted board:hover:text-gray-800 board:dark:hover:text-gray-100 board:rounded board:hover:bg-gray-100 board:dark:hover:bg-gray-700 board:transition-colors board-move-button board:disabled:cursor-not-allowed",
                                                     "disabled": "{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}"
                                                 },
                                                 "children": [

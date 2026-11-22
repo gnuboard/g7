@@ -67,7 +67,8 @@ const TestButton: React.FC<any> = ({
     data-testid={
       ariaLabel === '닫기'
         ? 'dismiss-btn'
-        : className?.includes('bg-blue-600')
+        // 복구 단추는 관리자 주 버튼이다 — #399 D2 로 파랑 인라인 묶음(bg-blue-600 …)이 의미 클래스 `btn btn-primary` 로 바뀌었다
+        : String(className ?? '').split(/\s+/).includes('btn-primary')
           ? 'recover-btn'
           : undefined
     }
@@ -204,6 +205,10 @@ describe('어드민 대시보드 - 재호환 알림 (recovery_available)', () =>
     if (testUtils) testUtils.cleanup();
   });
 
+  /**
+   * @scenario severity=info
+   * @effects recovery_alert_renders_body_and_recover_button
+   */
   it('recovery_available 알림이 있을 때 본문이 표시되고 "다시 활성화" 버튼이 렌더된다', async () => {
     testUtils = createLayoutTest(dashboardLayout, {
       translations,
@@ -238,6 +243,9 @@ describe('어드민 대시보드 - 재호환 알림 (recovery_available)', () =>
     expect(screen.getByTestId('recover-btn')).toBeTruthy();
   });
 
+  /**
+   * @effects recover_button_posts_to_alert_recover_endpoint
+   */
   it('recover 버튼 액션이 alert.recover_endpoint 를 POST 로 호출하도록 정의되어 있다', () => {
     const recoverBtn = findByIdPrefix(dashboardLayout, 'alert_recover_button');
     expect(recoverBtn).not.toBeNull();
@@ -253,6 +261,9 @@ describe('어드민 대시보드 - 재호환 알림 (recovery_available)', () =>
     expect(action.params.method).toBe('POST');
   });
 
+  /**
+   * @effects recover_success_toasts_and_refetches_alerts
+   */
   it('recover 호출 성공 시 dashboard_alerts 데이터소스가 재조회되고 toast 가 발화된다', () => {
     const recoverBtn = findByIdPrefix(dashboardLayout, 'alert_recover_button');
     const action = asArray(recoverBtn?.actions)[0];
@@ -271,6 +282,9 @@ describe('어드민 대시보드 - 재호환 알림 (recovery_available)', () =>
     expect(refetch.params.dataSourceId).toBe('dashboard_alerts');
   });
 
+  /**
+   * @effects recover_failure_toasts_error_message
+   */
   it('recover 실패 시 onError 에 toast 가 정의되어 있다', () => {
     const recoverBtn = findByIdPrefix(dashboardLayout, 'alert_recover_button');
     const action = asArray(recoverBtn?.actions)[0];
@@ -282,6 +296,10 @@ describe('어드민 대시보드 - 재호환 알림 (recovery_available)', () =>
     expect(errorToast.params.message).toBe('{{error.message}}');
   });
 
+  /**
+   * @scenario severity=info
+   * @effects recovery_alert_keeps_dismiss_button
+   */
   it('recovery_available 알림에는 dismiss 버튼도 함께 렌더된다 (extension_type, identifier 존재)', async () => {
     testUtils = createLayoutTest(dashboardLayout, {
       translations,

@@ -37,7 +37,7 @@
                 "props": {
                     "type": "button",
                     "disabled": "{{_global.mileageManual?.isSaving ?? false}}",
-                    "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                    "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:text-sm"
                 },
                 "children": [
                     {
@@ -113,7 +113,7 @@
                 "props": {
                     "type": "button",
                     "disabled": "{{_global.mileageManual?.isSaving || !_global.mileageManual?.selectedMember || !(Number(_global.mileageManual?.amount ?? 0) > 0) || !(_global.mileageManual?.reason ?? '').trim() || (_global.mileageManual?.action === 'deduct' && _global.mileageManual?.selectedMember?.balance !== null && Number(_global.mileageManual?.amount ?? 0) > Number(_global.mileageManual?.selectedMember?.balance ?? 0))}}",
-                    "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce-btn ecommerce:text-sm ecommerce:bg-red-600 ecommerce:dark:bg-red-600 ecommerce:text-white ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                    "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce-btn ecommerce:text-sm ecommerce:bg-red-600 ecommerce:dark:bg-red-600 ecommerce:text-white ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-700"
                 },
                 "children": [
                     {
@@ -236,7 +236,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mb-1"
+                                "className": "ecommerce-form-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.member_search"
                         },
@@ -378,7 +378,7 @@
                                     "name": "Div",
                                     "if": "{{(_global.mileageManual?.memberSearchResults ?? []).length === 0}}",
                                     "props": {
-                                        "className": "ecommerce:p-3 ecommerce:text-sm ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce:p-3 ecommerce:text-sm ecommerce:text-center ecommerce-text-muted"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.no_results"
                                 }
@@ -411,7 +411,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.current_balance|balance={{_global.mileageManual?.selectedMember?.balance ?? '-'}}"
                                 }
@@ -570,7 +570,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800"
+                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce-text-muted ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800"
                                     },
                                     "text": "{{_global.mileageManual?.currency ?? 'KRW'}}"
                                 }
@@ -624,7 +624,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                                "className": "ecommerce-form-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.expiry"
                         },
@@ -743,7 +743,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mb-1"
+                                "className": "ecommerce-form-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.reason"
                         },

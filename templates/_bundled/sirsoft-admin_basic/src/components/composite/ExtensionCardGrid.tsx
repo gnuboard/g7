@@ -255,7 +255,7 @@ const ExtensionIcon: React.FC<{
     >
       <Icon
         name={item.fallbackIcon ?? 'puzzle-piece'}
-        className={`${glyphClass} text-gray-500 dark:text-gray-400`}
+        className={`${glyphClass} text-muted`}
         aria-hidden={true}
       />
       {showImage && (
@@ -322,7 +322,7 @@ const MetaBlock: React.FC<{ item: ExtensionCardItem; stacked: boolean }> = ({ it
 
   return (
     <Div
-      className={`text-xs text-gray-500 dark:text-gray-400 min-w-0 ${
+      className={`text-xs text-muted min-w-0 ${
         stacked ? 'flex flex-col gap-1 items-start' : 'flex items-center gap-4'
       }`}
       data-ref="ext_meta"
@@ -393,7 +393,7 @@ const ControlButton: React.FC<{
   const className = `inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-sm whitespace-nowrap transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
     outline
       ? 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
-      : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100'
+      : 'btn-primary'
   }`;
   const link = disabled ? null : resolveLinkHref(href);
   if (link) {

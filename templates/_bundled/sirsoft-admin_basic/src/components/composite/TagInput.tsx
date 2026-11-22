@@ -261,7 +261,7 @@ const STYLES = {
     focused: 'bg-gray-100 dark:bg-gray-700',
     default: 'bg-white dark:bg-gray-800',
   },
-  noOptionsMessage: 'px-3 py-2 text-gray-500 dark:text-gray-400 text-[13px]',
+  noOptionsMessage: 'px-3 py-2 text-muted text-[13px]',
   checkbox: {
     base: 'w-4 h-4 rounded border flex items-center justify-center text-white text-[10px] shrink-0',
     selected: 'bg-blue-500 border-blue-500',
@@ -282,11 +282,11 @@ const CustomOption = (props: any) => {
           <div className="flex items-center gap-1">
             <span className="text-[13px]">{data.label}</span>
             {data.count !== undefined && data.count > 0 && (
-              <span className="text-gray-500 dark:text-gray-400 text-[10px]">({data.count})</span>
+              <span className="text-muted text-[10px]">({data.count})</span>
             )}
           </div>
           {data.description && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{data.description}</p>
+            <p className="text-xs text-muted truncate">{data.description}</p>
           )}
         </div>
       </div>
@@ -298,7 +298,7 @@ const CustomOption = (props: any) => {
 const GroupHeading = (props: any) => {
   return (
     <components.GroupHeading {...props}>
-      <div className="px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+      <div className="px-3 py-1.5 text-xs font-medium text-muted bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
         {props.data.label}
       </div>
     </components.GroupHeading>
@@ -776,8 +776,8 @@ export const TagInput: React.FC<TagInputProps> = ({
             : STYLES.option.default
       }`,
     noOptionsMessage: () => STYLES.noOptionsMessage,
-    clearIndicator: () => 'text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer px-1',
-    dropdownIndicator: () => 'text-gray-500 dark:text-gray-400 px-1',
+    clearIndicator: () => 'text-muted hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer px-1',
+    dropdownIndicator: () => 'text-muted px-1',
   };
 
   // 공통 props

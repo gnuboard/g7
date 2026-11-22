@@ -115,7 +115,7 @@ export const VisitorCounter: React.FC<VisitorCounterProps> = ({
       <dl className={gridClass}>
         {items.map((item) => (
           <div key={item.key} className="flex flex-col items-center text-center" data-visitor-counter-item={item.key}>
-            <dt className="text-xs text-gray-500 dark:text-gray-400">{item.label}</dt>
+            <dt className="text-xs text-muted">{item.label}</dt>
             <dd className={`text-xl font-bold ${item.accent}`} data-visitor-counter-value={item.key}>
               {formatCount(item.value)}
             </dd>

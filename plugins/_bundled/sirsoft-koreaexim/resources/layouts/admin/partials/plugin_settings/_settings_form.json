@@ -113,9 +113,7 @@
                     "name": "Div",
                     "responsive": {
                         "768-": {
-                            "props": {
-                                "className": "koreaexim-form-group koreaexim:col-span-2"
-                            }
+                            "classMerge": "koreaexim:col-span-2"
                         }
                     },
                     "props": {

@@ -176,7 +176,7 @@
       <div class="flex flex-col gap-2">
         <responsive on="640-" class="flex gap-2 flex-row"/>
         <input type="email" name="mail.test_email" placeholder="$t:admin.settings.mail.test_email_placeholder" disabled="{{_computed.isReadOnly}}" class="input flex-1"/>
-        <button type="button" data-ref="test_mail_button" disabled="{{_computed.isReadOnly || _local.isSendingTest}}" class="flex-center justify-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+        <button type="button" data-ref="test_mail_button" disabled="{{_computed.isReadOnly || _local.isSendingTest}}" class="flex-center btn btn-primary whitespace-nowrap">
           <on type="click">
             <!-- 시험 발송 — **저장하지 않은 화면 값으로 보낸다**(저장 전에 접속 정보가 맞는지 보라는 뜻).
                  그래서 요청 본문이 길다: 발송 방식(smtp/mailgun/ses)에 따라 그쪽 칸만 담고 나머지는

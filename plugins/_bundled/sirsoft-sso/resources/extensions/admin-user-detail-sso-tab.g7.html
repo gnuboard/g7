@@ -31,18 +31,18 @@
           <div data-each="account in user?.data?.sso?.accounts ?? []" data-key="{{account.id}}" data-ref="admin_user_sso_account_{{account.id}}" class="sso:rounded-lg sso:border sso:border-gray-200 sso:dark:border-gray-700 sso:p-4 sso:space-y-2">
             <div class="sso:flex sso:flex-wrap sso:items-center sso:gap-2">
               <span class="sso:text-sm sso:font-semibold sso:text-gray-900 sso:dark:text-white">{{account.idp?.label ?? '-'}}</span>
-              <span class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">{{account.idp?.protocol ? $t('sirsoft-sso.admin.protocols.' + account.idp.protocol) : ''}}</span>
+              <span class="sso:text-xs sso-text-muted">{{account.idp?.protocol ? $t('sirsoft-sso.admin.protocols.' + account.idp.protocol) : ''}}</span>
               <span data-if="{{account.active}}" class="sso:inline-flex sso:items-center sso:px-2 sso:py-0.5 sso:rounded-full sso:text-xs sso:font-medium sso:bg-green-100 sso:text-green-800 sso:dark:bg-green-900/30 sso:dark:text-green-300">$t:sirsoft-sso.admin.accounts.status.active</span>
               <span data-if="{{!account.active}}" class="sso:inline-flex sso:items-center sso:px-2 sso:py-0.5 sso:rounded-full sso:text-xs sso:font-medium sso:bg-red-100 sso:text-red-800 sso:dark:bg-red-900/30 sso:dark:text-red-300">$t:sirsoft-sso.admin.accounts.status.deprovisioned</span>
             </div>
             <div class="sso:grid sso:grid-cols-3 sso:gap-x-3 sso:gap-y-1 sso:text-xs">
-              <span class="sso:text-gray-500 sso:dark:text-gray-400">$t:sirsoft-sso.admin.accounts.col.via</span>
+              <span class="sso-text-muted">$t:sirsoft-sso.admin.accounts.col.via</span>
               <span class="sso:col-span-2 sso:text-gray-800 sso:dark:text-gray-200">{{$t('sirsoft-sso.admin.accounts.via.' + account.linked_via)}}</span>
-              <span class="sso:text-gray-500 sso:dark:text-gray-400">$t:sirsoft-sso.admin.accounts.col.linked_at</span>
+              <span class="sso-text-muted">$t:sirsoft-sso.admin.accounts.col.linked_at</span>
               <span class="sso:col-span-2 sso:text-gray-800 sso:dark:text-gray-200">{{account.linked_at | datetime | default('-')}}</span>
-              <span class="sso:text-gray-500 sso:dark:text-gray-400">$t:sirsoft-sso.admin.accounts.col.last_login_at</span>
+              <span class="sso-text-muted">$t:sirsoft-sso.admin.accounts.col.last_login_at</span>
               <span class="sso:col-span-2 sso:text-gray-800 sso:dark:text-gray-200">{{account.last_login_at | datetime | default('-')}}</span>
-              <span data-if="{{!account.active}}" class="sso:text-gray-500 sso:dark:text-gray-400">$t:sirsoft-sso.admin.accounts.col.deprovisioned_at</span>
+              <span data-if="{{!account.active}}" class="sso-text-muted">$t:sirsoft-sso.admin.accounts.col.deprovisioned_at</span>
               <span data-if="{{!account.active}}" class="sso:col-span-2 sso:text-red-700 sso:dark:text-red-300">
                 <span>{{account.deprovisioned_at | datetime | default('-')}}</span>
                 <span data-if="{{!!account.deprovision_reason}}"> ({{$t('sirsoft-sso.admin.accounts.deprovision_reason.' + account.deprovision_reason)}})</span>
@@ -57,7 +57,7 @@
           <div class="sso:overflow-x-auto">
             <table data-ref="admin_user_sso_attributes_table" class="sso:w-full sso:text-sm">
               <thead>
-                <tr class="sso:text-left sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:border-b sso:border-gray-200 sso:dark:border-gray-700">
+                <tr class="sso:text-left sso:text-xs sso-text-muted sso:border-b sso:border-gray-200 sso:dark:border-gray-700">
                   <th class="sso:py-2 sso:pr-3">$t:sirsoft-sso.admin.user_tab.attribute_key</th>
                   <th class="sso:py-2 sso:pr-3">$t:sirsoft-sso.admin.user_tab.attribute_value</th>
                   <th class="sso:py-2 sso:pr-3">$t:sirsoft-sso.admin.user_tab.attribute_idp</th>
@@ -67,7 +67,7 @@
                 <tr data-each="attribute in user?.data?.sso?.attributes ?? []" data-key="{{attribute.idp_id + ':' + attribute.key}}" class="sso:border-b sso:border-gray-100 sso:dark:border-gray-700">
                   <td class="sso:py-2 sso:pr-3 sso:whitespace-nowrap sso:text-gray-700 sso:dark:text-gray-300">{{$t('sirsoft-sso.admin.attribute_keys.' + attribute.key) === 'sirsoft-sso.admin.attribute_keys.' + attribute.key ? attribute.key : $t('sirsoft-sso.admin.attribute_keys.' + attribute.key)}}</td>
                   <td class="sso:py-2 sso:pr-3 sso:text-gray-900 sso:dark:text-white sso:break-all sso-break-all">{{attribute.value ?? '-'}}</td>
-                  <td class="sso:py-2 sso:pr-3 sso:whitespace-nowrap sso:text-gray-500 sso:dark:text-gray-400">{{attribute.idp_label}}</td>
+                  <td class="sso:py-2 sso:pr-3 sso:whitespace-nowrap sso-text-muted">{{attribute.idp_label}}</td>
                 </tr>
               </tbody>
             </table>

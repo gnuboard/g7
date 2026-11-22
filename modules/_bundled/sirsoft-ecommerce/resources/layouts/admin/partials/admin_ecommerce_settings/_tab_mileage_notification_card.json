@@ -42,7 +42,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5"
+                                "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.notification.enabled_hint"
                         }
@@ -168,7 +168,7 @@
                                                     "props": {
                                                         "name": "{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}",
                                                         "size": "sm",
-                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:flex-shrink-0"
+                                                        "className": "ecommerce-text-muted ecommerce:flex-shrink-0"
                                                     }
                                                 },
                                                 {
@@ -182,7 +182,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                "className": "ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted"
                                                             },
                                                             "text": "{{tpl.channel === 'mail' ? $t('sirsoft-ecommerce.admin.mileage_settings.notification.channel_mail') : (tpl.channel === 'database' ? $t('sirsoft-ecommerce.admin.mileage_settings.notification.channel_database') : tpl.channel)}}"
                                                         },
@@ -213,7 +213,7 @@
                                     "name": "Div",
                                     "if": "{{ecommerceNotificationDefinitions !== undefined && ((((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'mileage_expiring_soon')?.templates) ?? []).length === 0)}}",
                                     "props": {
-                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce-text-muted"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.mileage_settings.notification.template_status_empty"
                                 }
@@ -230,7 +230,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce:text-xs ecommerce-text-muted"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.mileage_settings.notification.template_status_hint"
                                 },
@@ -267,7 +267,7 @@
                                     ],
                                     "props": {
                                         "href": "/admin/ecommerce/settings?tab=notification_definitions",
-                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors"
+                                        "className": "ecommerce:flex ecommerce-btn ecommerce-btn-secondary ecommerce:gap-1.5 ecommerce:px-3"
                                     },
                                     "children": [
                                         {

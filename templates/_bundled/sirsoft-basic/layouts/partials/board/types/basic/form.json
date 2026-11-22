@@ -43,7 +43,7 @@
                                 "href": "{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}",
                                 "mergeQuery": true,
                                 "aria-label": "$t:common.back",
-                                "className": "inline-flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer"
+                                "className": "inline-flex items-center justify-center text-muted hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer"
                             },
                             "children": [
                                 {
@@ -81,7 +81,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                "className": "text-sm text-muted"
                                             },
                                             "text": "{{form_meta?.data?.board?.name}}"
                                         }
@@ -113,7 +113,7 @@
                                     "props": {
                                         "name": "user",
                                         "size": "xs",
-                                        "className": "text-gray-500 dark:text-gray-400"
+                                        "className": "text-muted"
                                     }
                                 },
                                 {
@@ -149,7 +149,7 @@
                                     "props": {
                                         "name": "clock",
                                         "size": "xs",
-                                        "className": "text-gray-500 dark:text-gray-400"
+                                        "className": "text-muted"
                                     }
                                 },
                                 {

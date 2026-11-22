@@ -865,9 +865,7 @@
                                     },
                                     "responsive": {
                                         "desktop": {
-                                            "props": {
-                                                "className": "flex flex-row items-center gap-3 py-3 border-b border-gray-100 dark:border-gray-700"
-                                            }
+                                            "classMerge": "flex-row items-center"
                                         }
                                     },
                                     "props": {
@@ -880,9 +878,7 @@
                                             "name": "Div",
                                             "responsive": {
                                                 "desktop": {
-                                                    "props": {
-                                                        "className": "w-1/4 shrink-0 min-w-0"
-                                                    }
+                                                    "classMerge": "w-1/4"
                                                 }
                                             },
                                             "props": {
@@ -2030,7 +2026,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{row.kind !== 'custom'}}",
                                                                     "props": {
-                                                                        "className": "{{$localized(row.label) ? 'block font-mono text-xs text-gray-500 dark:text-gray-400 break-all' : 'font-mono text-gray-800 dark:text-gray-200 break-all'}}",
+                                                                        "className": "{{$localized(row.label) ? 'block font-mono text-xs text-muted break-all' : 'font-mono text-gray-800 dark:text-gray-200 break-all'}}",
                                                                         "data-testid": "{{'thumbnail-preset-ident-' + rowIdx}}"
                                                                     },
                                                                     "text": "{{row.name}}"

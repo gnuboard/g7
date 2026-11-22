@@ -79,7 +79,7 @@
       <div data-ref="field_ranges" data-if="{{_local.showRanges}}">
         <div class="ecommerce-flex-between">
           <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.range_tiers</label>
-          <button type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-secondary ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+          <button type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-secondary" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <!-- 구간 한 줄 추가 — 새 줄의 시작값을 앞 구간에 이어 붙이는 계산이 필요해 핸들러가 맡는다. -->
               <action handler="sirsoft-ecommerce.addRangeTier" index="{{_local.activeCountryTab ?? 0}}"/>
@@ -136,7 +136,7 @@
             </tbody>
           </table>
         </div>
-        <div data-if="{{(_computed.activeCountrySetting?.ranges?.tiers ?? []).length === 0}}" class="ecommerce:text-center ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:border ecommerce:border-dashed ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg">
+        <div data-if="{{(_computed.activeCountrySetting?.ranges?.tiers ?? []).length === 0}}" class="ecommerce:text-center ecommerce:text-sm ecommerce-text-muted ecommerce:border ecommerce:border-dashed ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg">
           <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.no_ranges</span>
           <span data-if="{{!!_local.rangeErrors?.[_computed.activeCountryCode]?.[0]?.max}}" class="ecommerce-form-error-xs ecommerce:block">{{_local.rangeErrors?.[_computed.activeCountryCode]?.[0]?.max ?? ''}}</span>
         </div>

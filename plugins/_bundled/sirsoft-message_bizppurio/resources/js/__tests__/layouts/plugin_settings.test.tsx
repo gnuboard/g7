@@ -28,20 +28,33 @@ import {
     createMockComponentRegistryWithBasics,
 } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
+import { applyResponsiveClassMerge } from '@core/template-engine/helpers/StyleHelpers';
 
 const root = layout as unknown as AnyNode;
 
 /**
  * 노드의 className 토큰 — 기본(props) 또는 responsive 키(on) 갈래. 화면 폭 분기는 엔진 responsive 로 쓴다.
+ * 갈래 값은 실효값이다 — 갈래 class(있으면 통째 교체) 위에 갈래 class-merge 를 엔진 규칙으로 덧붙인다 (engine-v1.98.0).
+ * 접두 토큰(`bizppurio:grid-cols-1`)끼리 충돌 교체가 되도록 서버가 내려 주는 접두 목록을 잠시 세운다.
  *
  * @param node 레이아웃 노드
  * @param on responsive 키(없으면 기본 props)
  * @returns 클래스 토큰 목록
  */
 function classTokens(node: AnyNode | null | undefined, on?: string): string[] {
-    const branch = on ? (node?.responsive as Record<string, AnyNode> | undefined)?.[on] : node;
-    const c = branch?.props?.className;
-    return typeof c === 'string' ? c.split(' ') : [];
+    const split = (c: unknown): string[] => (typeof c === 'string' ? c.split(/\s+/).filter(Boolean) : []);
+    if (!on) return split(node?.props?.className);
+    const branch = (node?.responsive as Record<string, AnyNode & { classMerge?: string }> | undefined)?.[on];
+    if (!branch) return [];
+    const w = window as unknown as { G7Config?: Record<string, unknown> };
+    const prev = w.G7Config;
+    w.G7Config = { ...(prev ?? {}), extensionClassPrefixes: ['bizppurio'] };
+    try {
+        const own = branch.props?.className;
+        return split(applyResponsiveClassMerge(typeof own === 'string' ? own : (node?.props?.className as string | undefined), branch.classMerge));
+    } finally {
+        w.G7Config = prev;
+    }
 }
 
 describe('plugin_settings.json — 레이아웃 메타/권한', () => {

@@ -50,6 +50,14 @@
     color: oklch(87.2% .01 258.338);
   }
 
+  .totp-text-muted {
+    color: oklch(55.1% .027 264.364);
+  }
+
+  .totp-text-muted:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(70.7% .022 261.325);
+  }
+
   .totp-text-label-subtle {
     font-size: .875rem;
     line-height: var(--tw-leading,calc(1.25 / .875));

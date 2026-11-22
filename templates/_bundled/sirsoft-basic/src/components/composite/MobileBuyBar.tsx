@@ -148,12 +148,12 @@ export const MobileBuyBar: React.FC<MobileBuyBarProps> = ({
         {/* 금액 — 글자가 길어도 단추를 밀어내지 않게 줄인다 */}
         <Div className="min-w-0 shrink flex flex-col justify-center">
           <Span className="truncate text-base font-bold text-gray-900 dark:text-white">{priceText}</Span>
-          {captionText && <Span className="truncate text-xs text-gray-500 dark:text-gray-400">{captionText}</Span>}
+          {captionText && <Span className="truncate text-xs text-muted">{captionText}</Span>}
         </Div>
 
         <Div className="flex flex-1 min-w-0 items-center justify-end gap-2">
           {notOnSale && (
-            <Span data-buy-bar-status="" className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            <Span data-buy-bar-status="" className="text-sm font-medium text-muted">
               {soldOutLabel}
             </Span>
           )}

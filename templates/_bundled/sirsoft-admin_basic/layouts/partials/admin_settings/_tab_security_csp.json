@@ -38,9 +38,6 @@
                     "id": "field_csp_mode",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "type": "basic",
@@ -103,9 +100,6 @@
                     "id": "field_csp_extra_script_hosts",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "type": "basic",
@@ -151,9 +145,6 @@
                     "id": "field_csp_auto_hosts",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "type": "basic",
@@ -188,9 +179,6 @@
                     "id": "field_csp_preview",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "type": "basic",
@@ -250,9 +238,6 @@
                     "id": "field_csp_style_mode",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "type": "basic",
@@ -315,9 +300,6 @@
                     "id": "field_csp_style_level",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "type": "basic",
@@ -380,9 +362,6 @@
                     "id": "field_csp_extra_style_hosts",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "type": "basic",
@@ -428,9 +407,6 @@
                     "id": "field_csp_style_auto_hosts",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "type": "basic",
@@ -465,9 +441,6 @@
                     "id": "field_csp_style_preview",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "type": "basic",

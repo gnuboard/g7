@@ -719,7 +719,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "totp:mt-4 totp:px-4 totp:py-2 totp:bg-blue-600 totp:hover:bg-blue-700 totp:dark:bg-blue-600 totp:dark:hover:bg-blue-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer totp:disabled:opacity-50 totp:disabled:cursor-not-allowed",
+                                    "className": "totp:mt-4 totp-btn totp-btn-primary",
                                     "disabled": "{{!_local.currentPassword || _local.busy || _local.startLocked}}"
                                 },
                                 "children": [
@@ -976,7 +976,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "totp:flex-1 totp:px-4 totp:py-3 totp:bg-blue-600 totp:hover:bg-blue-700 totp:dark:bg-blue-600 totp:dark:hover:bg-blue-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer totp:disabled:opacity-50 totp:disabled:cursor-not-allowed",
+                                                            "className": "totp:flex-1 totp-btn totp-btn-primary totp:py-3",
                                                             "disabled": "{{!_local.code || _local.code.length < 6 || _local.busy}}"
                                                         },
                                                         "children": [
@@ -1009,7 +1009,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "totp:flex-1 totp:px-4 totp:py-3 totp:border totp:border-gray-300 totp:dark:border-gray-600 totp:text-gray-700 totp:dark:text-gray-300 totp:rounded-lg totp:font-medium totp:hover:bg-gray-50 totp:dark:hover:bg-gray-700 totp:transition-colors totp:cursor-pointer",
+                                                            "className": "totp:flex-1 totp-btn totp-btn-secondary totp:py-3",
                                                             "disabled": "{{_local.busy}}"
                                                         },
                                                         "children": [
@@ -1176,7 +1176,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "totp:px-4 totp:py-2 totp:bg-blue-600 totp:hover:bg-blue-700 totp:dark:bg-blue-600 totp:dark:hover:bg-blue-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer"
+                                            "className": "totp-btn totp-btn-primary"
                                         },
                                         "children": [
                                             {
@@ -1476,7 +1476,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "totp:px-4 totp:py-2 totp:bg-blue-600 totp:hover:bg-blue-700 totp:dark:bg-blue-600 totp:dark:hover:bg-blue-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer totp:disabled:opacity-50 totp:disabled:cursor-not-allowed",
+                                            "className": "totp-btn totp-btn-primary",
                                             "disabled": "{{_computed.isPluginReadOnly || (!_local.settingsChanged || _local.settingsSaving)}}"
                                         },
                                         "children": [

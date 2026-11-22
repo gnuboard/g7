@@ -82,7 +82,7 @@
                                 "type": "submit",
                                 "form": "category_form",
                                 "disabled": "{{_local?.isSaving || (_global.panelMode === 'edit' && categories?.data?.abilities?.can_update !== true)}}",
-                                "className": "ecommerce-flex-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                                "className": "ecommerce-flex-center ecommerce:gap-1.5 ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm"
                             },
                             "children": [
                                 {
@@ -804,8 +804,7 @@
                                                 "type": "text",
                                                 "name": "meta_title",
                                                 "maxLength": 200,
-                                                "disabled": "{{_global.panelMode === 'edit' && categories?.data?.abilities?.can_update !== true}}",
-                                                "className": ""
+                                                "disabled": "{{_global.panelMode === 'edit' && categories?.data?.abilities?.can_update !== true}}"
                                             }
                                         }
                                     ]
@@ -837,8 +836,7 @@
                                             "props": {
                                                 "name": "meta_description",
                                                 "rows": 3,
-                                                "disabled": "{{_global.panelMode === 'edit' && categories?.data?.abilities?.can_update !== true}}",
-                                                "className": ""
+                                                "disabled": "{{_global.panelMode === 'edit' && categories?.data?.abilities?.can_update !== true}}"
                                             }
                                         }
                                     ]

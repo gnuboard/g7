@@ -32,6 +32,14 @@
     }
   }
 
+  .marketing-text-muted {
+    color: oklch(55.1% .027 264.364);
+  }
+
+  .marketing-text-muted:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(70.7% .022 261.325);
+  }
+
   .marketing-text-tertiary {
     font-size: .75rem;
     line-height: var(--tw-leading,calc(1 / .75));
@@ -74,47 +82,6 @@
 
   .marketing-section-heading:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
     color: #fff;
-  }
-
-  .marketing-card-title {
-    font-size: 1.125rem;
-    line-height: var(--tw-leading,calc(1.75 / 1.125));
-    --tw-font-weight: 600;
-    font-weight: 600;
-    color: oklch(21% .034 264.665);
-  }
-
-  .marketing-card-title:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    color: #fff;
-  }
-
-  .marketing-card-title-aside {
-    justify-content: space-between;
-    align-items: center;
-    gap: calc(.25rem * 2);
-    display: flex;
-  }
-
-  .marketing-card-description {
-    font-size: .875rem;
-    line-height: var(--tw-leading,calc(1.25 / .875));
-    color: oklch(55.1% .027 264.364);
-  }
-
-  .marketing-card-description:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    color: oklch(70.7% .022 261.325);
-  }
-
-  .marketing-admin-card>.marketing-card-title {
-    margin-bottom: calc(.25rem * 4);
-  }
-
-  .marketing-admin-card>.marketing-card-title:has(+.marketing-card-description) {
-    margin-bottom: calc(.25rem * 0);
-  }
-
-  .marketing-admin-card>.marketing-card-description {
-    margin-bottom: calc(.25rem * 4);
   }
 
   .marketing-card-header {
@@ -177,6 +144,11 @@
   .marketing-btn[aria-disabled=true] {
     cursor: not-allowed;
     opacity: .5;
+  }
+
+  .marketing-btn-sm {
+    padding-inline: calc(.25rem * 3);
+    padding-block: calc(.25rem * 1.5);
   }
 
   .marketing-btn-primary {
@@ -286,26 +258,6 @@
     margin-top: calc(.25rem * 6);
     justify-content: flex-end;
     gap: calc(.25rem * 3);
-    display: flex;
-  }
-
-  .marketing-admin-card {
-    margin-bottom: calc(.25rem * 6);
-    border-radius: .5rem;
-    border-style: var(--tw-border-style);
-    border-width: 1px;
-    border-color: oklch(92.8% .006 264.531);
-    background-color: #fff;
-    padding: calc(.25rem * 4);
-  }
-
-  .marketing-admin-card:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    border-color: oklch(37.3% .034 259.733);
-    background-color: oklch(27.8% .033 256.848);
-  }
-
-  .marketing-admin-card {
-    flex-direction: column;
     display: flex;
   }
 
@@ -831,18 +783,22 @@
     background-color: oklch(27.8% .033 256.848);
   }
 
+  .marketing-admin-page-content {
+    background-color: oklch(98.5% .002 247.839);
+    min-height: 100vh;
+    padding: calc(.25rem * 6);
+  }
+
+  .marketing-admin-page-content:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    background-color: oklch(21% .034 264.665);
+  }
+
   .marketing-hidden {
     display: none;
   }
 
   .marketing\:\[\&_\.btn\]\:w-full .marketing-btn {
     width: 100%;
-  }
-
-  .marketing-user-flex-between {
-    justify-content: space-between;
-    align-items: center;
-    display: flex;
   }
 }
 
@@ -959,6 +915,6 @@
 }
 
 /* 아이콘(<icon>)에 단 글자 크기 유틸리티 — 템플릿 아이콘 글꼴 CSS 의 line-height:1 이 이기던 것을 보존한다 */
-i:is(.marketing\:leading-none, .marketing\:text-3xl, .marketing\:text-xl) {
+i:is(.marketing\:leading-none, .marketing\:text-xl) {
   line-height: 1;
 }

@@ -22,7 +22,19 @@ description: |
 axes:
   case: [hint_renders_limits, no_raw_placeholders, no_legacy_fixed_hint]
 
-effects: []
+# 아래 효과는 Vitest(admin-board-post-form-attachments-desc.test.tsx)가 레이아웃 선언과 안내 노드 단독 렌더로 잰다.
+# 실제 폼에서 form_meta 도착 뒤의 치환은 pending_effects 의 브라우저 효과로 따로 남긴다(#399 선행 마킹 정리).
+effects:
+  # 안내 노드가 form_meta.data.board 의 max_file_count, max_file_size 를 번역 파라미터로 넘긴다
+  - admin_attachment_hint_node_passes_board_limit_params
+  # 안내 글자색이 다크 짝을 갖는다(확장 의미 클래스면 확장 생성 CSS 의 다크 규칙으로 확인)
+  - admin_attachment_hint_pairs_dark_color
+  # ko 번역 문구가 {{maxFiles}}, {{maxSize}} 자리를 담는다
+  - admin_attachment_hint_lang_key_has_limit_placeholders
+  # 사장된 고정 숫자 안내 키(attachments_limit, max_10mb)가 lang 에 남아 있지 않다
+  - admin_attachment_legacy_fixed_hint_keys_removed
+  # 안내 노드만 떼어 렌더하면 게시판 설정 숫자로 치환되고 설정이 바뀌면 문구도 따라 바뀐다
+  - admin_attachment_hint_isolated_render_shows_board_limits
 
 # 아래 효과는 아직 실행되는 시험이 재지 않는다 — test_files 의 spec 이 test.describe.skip 상태라 건너뛴 시험의 @effects 는
 # 커버가 아니다(#857 후속). spec 의 skip 을 풀면 effects 로 되돌린다.
@@ -36,3 +48,4 @@ pending_effects:
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-post-form-attachments-desc.spec.ts
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-post-form-attachments-desc.test.tsx

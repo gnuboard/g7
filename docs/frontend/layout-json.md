@@ -789,6 +789,9 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 | `iteration` | object | ❌ | 반복 렌더링 설정 (source, item_var, index_var) |
 | `actions` | array | ❌ | 액션 핸들러 정의 (클릭, 키보드, 폼 제출 등) |
 | `lifecycle` | object | ❌ | 생명주기 핸들러 (onMount, onUnmount) |
+| `classMap` | object | ❌ | 조건부 클래스 (`base`, `variants`, `key`, `default`). className 과 병합된다 |
+| `responsive` | object | ❌ | 화면 폭 구간별 오버라이드. 키는 프리셋(`mobile`/`tablet`/`desktop`/`portable`) 또는 커스텀 구간(`768-1023` 등), 값에는 `props`(얕은 병합, `className` 은 통째 교체), `classMap`(기본 classMap 대신 씀), `classMerge`, `children`, `text`, `if`, `iteration` 을 둔다 |
+| `responsive.{key}.classMerge` | string | ❌ | 그 구간에서 바뀐 클래스만 기본 className 에 덧붙인다. 같은 축, 같은 변형의 기본 토큰만 교체된다(engine-v1.98.0, 코어 7.2.1). 바인딩과 classMap 을 해석한 뒤 적용된다 |
 | ~~`data_binding`~~ | object | — | **사어(死語)** — 렌더러가 타입만 선언하고 읽지 않으며 코퍼스 사용 0건이다. 마크업 태그로 승격되지 않는다([layout-markup.md 명명 3순위](layout-markup.md)). 데이터는 props 표현식(`value="{{data.field}}"`)으로 바인딩한다 |
 | `blur_until_loaded` | boolean \| string | ❌ | 데이터 로딩 중 blur 효과 적용 (boolean 또는 표현식 문자열) |
 | `component_layout` | object | ❌ | 컴포넌트 내부 커스텀 렌더링 레이아웃 정의 (RichSelect 등에서 사용) |
@@ -802,6 +805,9 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 > - `lifecycle`: [layout-json-components.md](layout-json-components.md#컴포넌트-생명주기-lifecycle)
 > - `actions`: [layout-json-features.md](layout-json-features.md#액션-시스템-actions)
 > - `isolatedState`: [아래 섹션](#격리된-상태-isolatedstate)
+> - `classMap`: [layout-json-features-styling.md](layout-json-features-styling.md)
+> - `responsive`, `classMerge`: [responsive-layout.md](responsive-layout.md#바뀐-클래스만-덧붙이기-class-merge)
+> - 검색 봇 화면의 노드 키 지원 범위(`responsive.*.classMerge`, `responsive.*.classMap` 포함): [seo-system.md "SEO 렌더러 지원 노드 키"](../backend/seo-system.md#seo-렌더러-지원-노드-키-ssot)
 
 ### `comment` / `_comment` — 화면 렌더 응답에서 제거
 

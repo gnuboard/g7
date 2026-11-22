@@ -329,7 +329,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce-input-split-separator ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce-input-split-separator ecommerce-text-muted"
                                                     },
                                                     "text": "-"
                                                 },
@@ -356,7 +356,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce-input-split-separator ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce-input-split-separator ecommerce-text-muted"
                                                     },
                                                     "text": "-"
                                                 },
@@ -714,7 +714,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce-input-split-separator ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce-input-split-separator ecommerce-text-muted"
                                                     },
                                                     "text": "-"
                                                 },
@@ -741,7 +741,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce-input-split-separator ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce-input-split-separator ecommerce-text-muted"
                                                     },
                                                     "text": "-"
                                                 },
@@ -830,7 +830,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce-input-split-separator ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce-input-split-separator ecommerce-text-muted"
                                                     },
                                                     "text": "-"
                                                 },
@@ -857,7 +857,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce-input-split-separator ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce-input-split-separator ecommerce-text-muted"
                                                     },
                                                     "text": "-"
                                                 },
@@ -917,9 +917,7 @@
                                     "name": "Div",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2"
-                                            }
+                                            "classMerge": "ecommerce:flex-wrap"
                                         }
                                     },
                                     "props": {
@@ -1368,7 +1366,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-2"
+                                        "className": "ecommerce:text-sm ecommerce-text-muted ecommerce:mt-2"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.help"
                                 }

@@ -10,7 +10,7 @@
     <h3 class="card-title">$t:admin.settings.security.csp.title</h3>
     <div class="card-description">$t:admin.settings.security.csp.desc</div>
     <div class="row-stack">
-      <div data-ref="field_csp_mode" class="">
+      <div data-ref="field_csp_mode">
         <label class="form-label">$t:admin.settings.security.csp.mode</label>
         <select name="security.csp_mode" disabled="{{_computed.isReadOnly || !!_local.form?._meta?.csp?.override}}" class="w-full" error="{{_local.errors?.['security.csp_mode']?.[0] ?? ''}}" options="{{[{value: 'off', label: $t('admin.settings.security.csp.mode_off')}, {value: 'report_only', label: $t('admin.settings.security.csp.mode_report_only')}, {value: 'enforce', label: $t('admin.settings.security.csp.mode_enforce')}]}}">
           <responsive on="640-" class="w-80"/>
@@ -20,18 +20,18 @@
         <p data-ref="csp_enforce_warning" data-if="{{(_local.form?.security?.csp_mode ?? 'off') === 'enforce' &amp;&amp; !_local.form?._meta?.csp?.override}}" class="text-hint mt-1 text-yellow-700 dark:text-yellow-400">$t:admin.settings.security.csp.enforce_warning</p>
         <p data-ref="csp_override_notice" data-if="{{!!_local.form?._meta?.csp?.override}}" class="text-hint mt-1 text-yellow-700 dark:text-yellow-400">$t:admin.settings.security.csp.override_notice|mode={{_local.form?._meta?.csp?.override ?? ''}}</p>
       </div>
-      <div data-ref="field_csp_extra_script_hosts" class="">
+      <div data-ref="field_csp_extra_script_hosts">
         <label class="form-label">$t:admin.settings.security.csp.extra_hosts</label>
         <tag-input data-type="composite" data-ref="csp_extra_script_hosts" name="security.csp_extra_script_hosts" :creatable="true" placeholder="$t:admin.settings.security.csp.extra_hosts_placeholder" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}"/>
         <span data-if="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('security.csp_extra_script_hosts'))}}" class="form-error">{{Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('security.csp_extra_script_hosts'))?.[1]?.[0] ?? ''}}</span>
         <p class="form-hint">$t:admin.settings.security.csp.extra_hosts_hint</p>
       </div>
-      <div data-ref="field_csp_auto_hosts" class="">
+      <div data-ref="field_csp_auto_hosts">
         <label class="form-label">$t:admin.settings.security.csp.auto_hosts</label>
         <p data-ref="csp_auto_hosts" data-if="{{(_local.form?._meta?.csp?.auto_hosts ?? []).length > 0}}" class="text-sm font-mono text-gray-700 dark:text-gray-300 break-all">{{(_local.form?._meta?.csp?.auto_hosts ?? []).join(' · ')}}</p>
         <p data-if="{{settings !== undefined &amp;&amp; ((_local.form?._meta?.csp?.auto_hosts ?? []).length === 0)}}" class="text-hint">$t:admin.settings.security.csp.auto_hosts_empty</p>
       </div>
-      <div data-ref="field_csp_preview" class="">
+      <div data-ref="field_csp_preview">
         <label class="form-label">$t:admin.settings.security.csp.preview</label>
         <pre data-ref="csp_preview" class="text-xs font-mono whitespace-pre-wrap break-all p-3 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">{{_local.form?._meta?.csp?.preview ?? ''}}</pre>
         <p class="text-hint mt-1">$t:admin.settings.security.csp.preview_hint</p>
@@ -43,7 +43,7 @@
         <h4 class="text-heading">$t:admin.settings.security.csp.style.title</h4>
         <p class="text-hint mt-1">$t:admin.settings.security.csp.style.desc</p>
       </div>
-      <div data-ref="field_csp_style_mode" class="">
+      <div data-ref="field_csp_style_mode">
         <label class="form-label">$t:admin.settings.security.csp.style.mode</label>
         <select name="security.csp_style_mode" disabled="{{_computed.isReadOnly || !!_local.form?._meta?.csp?.style_override}}" class="w-full" error="{{_local.errors?.['security.csp_style_mode']?.[0] ?? ''}}" options="{{[{value: 'off', label: $t('admin.settings.security.csp.mode_off')}, {value: 'report_only', label: $t('admin.settings.security.csp.mode_report_only')}, {value: 'enforce', label: $t('admin.settings.security.csp.mode_enforce')}]}}">
           <responsive on="640-" class="w-80"/>
@@ -53,7 +53,7 @@
         <p data-ref="csp_style_enforce_warning" data-if="{{(_local.form?.security?.csp_style_mode ?? 'off') === 'enforce' &amp;&amp; !_local.form?._meta?.csp?.style_override}}" class="text-hint mt-1 text-yellow-700 dark:text-yellow-400">$t:admin.settings.security.csp.style.enforce_warning</p>
         <p data-ref="csp_style_override_notice" data-if="{{!!_local.form?._meta?.csp?.style_override}}" class="text-hint mt-1 text-yellow-700 dark:text-yellow-400">$t:admin.settings.security.csp.style.override_notice|mode={{_local.form?._meta?.csp?.style_override ?? ''}}</p>
       </div>
-      <div data-ref="field_csp_style_level" class="">
+      <div data-ref="field_csp_style_level">
         <label class="form-label">$t:admin.settings.security.csp.style.level</label>
         <select name="security.csp_style_level" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['security.csp_style_level']?.[0] ?? ''}}" options="{{[{value: 'basic', label: $t('admin.settings.security.csp.style.level_basic')}, {value: 'strict', label: $t('admin.settings.security.csp.style.level_strict')}]}}">
           <responsive on="640-" class="w-80"/>
@@ -63,18 +63,18 @@
         <p data-ref="csp_style_known_issues_basic" data-if="{{(_local.form?._meta?.csp?.style_override ?? _local.form?.security?.csp_style_mode ?? 'off') !== 'off' &amp;&amp; (_local.form?.security?.csp_style_level ?? 'basic') !== 'strict'}}" class="text-hint mt-1 text-yellow-700 dark:text-yellow-400">$t:admin.settings.security.csp.style.known_issues_basic</p>
         <p data-ref="csp_style_known_issues_strict" data-if="{{(_local.form?._meta?.csp?.style_override ?? _local.form?.security?.csp_style_mode ?? 'off') !== 'off' &amp;&amp; (_local.form?.security?.csp_style_level ?? 'basic') === 'strict'}}" class="text-hint mt-1 text-yellow-700 dark:text-yellow-400">$t:admin.settings.security.csp.style.known_issues_strict</p>
       </div>
-      <div data-ref="field_csp_extra_style_hosts" class="">
+      <div data-ref="field_csp_extra_style_hosts">
         <label class="form-label">$t:admin.settings.security.csp.style.extra_hosts</label>
         <tag-input data-type="composite" data-ref="csp_extra_style_hosts" name="security.csp_extra_style_hosts" :creatable="true" placeholder="$t:admin.settings.security.csp.style.extra_hosts_placeholder" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}"/>
         <span data-if="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('security.csp_extra_style_hosts'))}}" class="form-error">{{Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('security.csp_extra_style_hosts'))?.[1]?.[0] ?? ''}}</span>
         <p class="form-hint">$t:admin.settings.security.csp.style.extra_hosts_hint</p>
       </div>
-      <div data-ref="field_csp_style_auto_hosts" class="">
+      <div data-ref="field_csp_style_auto_hosts">
         <label class="form-label">$t:admin.settings.security.csp.style.auto_hosts</label>
         <p data-ref="csp_style_auto_hosts" data-if="{{(_local.form?._meta?.csp?.style_auto_hosts ?? []).length > 0}}" class="text-sm font-mono text-gray-700 dark:text-gray-300 break-all">{{(_local.form?._meta?.csp?.style_auto_hosts ?? []).join(' · ')}}</p>
         <p data-if="{{settings !== undefined &amp;&amp; ((_local.form?._meta?.csp?.style_auto_hosts ?? []).length === 0)}}" class="text-hint">$t:admin.settings.security.csp.style.auto_hosts_empty</p>
       </div>
-      <div data-ref="field_csp_style_preview" class="">
+      <div data-ref="field_csp_style_preview">
         <label class="form-label">$t:admin.settings.security.csp.style.preview</label>
         <pre data-ref="csp_style_preview" class="text-xs font-mono whitespace-pre-wrap break-all p-3 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">{{_local.form?._meta?.csp?.style_preview ?? ''}}</pre>
         <p class="text-hint mt-1">$t:admin.settings.security.csp.preview_hint</p>

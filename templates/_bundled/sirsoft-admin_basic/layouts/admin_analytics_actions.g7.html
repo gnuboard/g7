@@ -139,7 +139,7 @@
       </tab-navigation>
       <div data-ref="dimensions_picker" data-if="{{(query.tab || 'search') === 'dimensions'}}" class="admin-card mb-4">
         <div class="flex-center gap-3 flex-wrap">
-          <span class="filter-field-label"><responsive on="768-" class="filter-field-label mb-0 w-14 shrink-0 flex items-center"/>$t:admin.analytics.actions.dimension_label</span>
+          <span class="filter-field-label"><responsive on="768-" class-merge="mb-0 w-14 shrink-0 flex items-center"/>$t:admin.analytics.actions.dimension_label</span>
           <select data-ref="dimension_select" name="analytics_dimension" class="w-64" value="{{query.dimension || ''}}" aria-label="$t:admin.analytics.actions.dimension_label" options="{{[Object.fromEntries([['value', ''], ['label', '$t:admin.analytics.actions.dimension_placeholder']])].concat((analytics_registered?.data?.dimensions ?? []).map(d => Object.fromEntries([['value', d.key], ['label', d.label + (d.pii ? ' (' + $t('admin.analytics.actions.dimension_pii_suffix') + ')' : '') + ' · ' + d.owner_identifier]])))}}">
             <on type="change">
               <!-- audit:allow layout-list-context-navigate-merge-query 차원 전환 — 차원마다 행이 달라 쪽·검색·정렬을 물려받으면 빈 표가 열린다(서브탭과 같은 규칙). 기간과 쪽 크기만 query 로 명시해 잇는다. -->

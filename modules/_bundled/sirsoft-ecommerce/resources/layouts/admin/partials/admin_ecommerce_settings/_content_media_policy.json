@@ -165,8 +165,7 @@
                                                 "min": "1",
                                                 "max": "2048",
                                                 "value": "{{_local.form?.product_display?.content_media?.image?.max_size_mb ?? _local.form?.product_display?.content_media_fallback?.image?.max_size_mb ?? 10}}",
-                                                "disabled": "{{_computed.isReadOnly}}",
-                                                "className": ""
+                                                "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
                                         {
@@ -300,8 +299,7 @@
                                                 "min": "1",
                                                 "max": "2048",
                                                 "value": "{{_local.form?.product_display?.content_media?.video?.max_size_mb ?? _local.form?.product_display?.content_media_fallback?.video?.max_size_mb ?? 10}}",
-                                                "disabled": "{{_computed.isReadOnly}}",
-                                                "className": ""
+                                                "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
                                         {
@@ -423,8 +421,7 @@
                                                 "min": "1",
                                                 "max": "2048",
                                                 "value": "{{_local.form?.product_display?.content_media?.audio?.max_size_mb ?? _local.form?.product_display?.content_media_fallback?.audio?.max_size_mb ?? 10}}",
-                                                "disabled": "{{_computed.isReadOnly}}",
-                                                "className": ""
+                                                "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
                                         {
@@ -512,8 +509,7 @@
                                 "min": "1",
                                 "max": "200",
                                 "value": "{{_local.form?.product_display?.content_media?.max_per_document ?? _local.form?.product_display?.content_media_fallback?.max_per_document ?? 30}}",
-                                "disabled": "{{_computed.isReadOnly}}",
-                                "className": ""
+                                "disabled": "{{_computed.isReadOnly}}"
                             }
                         },
                         {

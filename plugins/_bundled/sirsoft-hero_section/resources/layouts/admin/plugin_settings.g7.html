@@ -28,7 +28,7 @@
   </permissions>
   <slot name="content">
     <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="hs:p-4 hs:min-h-screen hs:bg-gray-50 hs:dark:bg-gray-900">
-      <responsive on="640-1023" class="hs:p-6 hs:min-h-screen hs:bg-gray-50 hs:dark:bg-gray-900"/>
+      <responsive on="640-1023" class="hs-admin-page-content"/>
       <responsive on="1024-" class="hs:p-8 hs:min-h-screen hs:bg-gray-50 hs:dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-hero_section.settings.title" description="$t:sirsoft-hero_section.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="hs-alert-warning hs:mt-6">

@@ -108,14 +108,14 @@
       <!-- 주문 카드 반복 -->
       <div data-if="{{orders.data.data &amp;&amp; orders.data.data.length > 0}}" data-each="order in {{orders.data.data ?? []}}">
         <!-- 주문 카드 -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-          <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"/>
+        <div class="card-plain p-4">
+          <responsive on="portable" class="card-plain p-3"/>
           <!-- 주문 헤더 (날짜/번호 + 상태) -->
           <div class="flex items-start justify-between mb-3">
             <responsive on="portable" class="flex items-start justify-between mb-2"/>
             <div>
-              <p class="text-sm text-gray-500 dark:text-gray-400">
-                <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+              <p class="text-sm text-muted">
+                <responsive on="portable" class="text-xs text-muted"/>
                 {{order.ordered_at_formatted ?? ''}}
               </p>
               <p class="text-sm font-medium text-gray-900 dark:text-white">
@@ -176,34 +176,34 @@
                 <responsive on="portable" class="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0"/>
                 <img data-if="{{item.thumbnail_url}}" src="{{item.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{item.product_name}}" class="w-full h-full object-cover"/>
                 <div data-if="{{!item.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
-                  <icon name="image" size="lg" class="text-gray-500 dark:text-gray-400"/>
+                  <icon name="image" size="lg" class="text-muted"/>
                 </div>
               </div>
               <!-- 상품 정보 -->
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  <responsive on="portable" class="text-xs font-medium text-gray-900 dark:text-white truncate"/>
+                  <responsive on="portable" class-merge="text-xs"/>
                   {{item.product_name}}
                 </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{item.product_option_name}}</p>
+                <p class="text-xs text-muted mt-0.5">{{item.product_option_name}}</p>
                 <!-- 추가옵션 요약 — 첫 1건(직접입력 병기) + 외 N건 (Q-E2) -->
-                <p data-if="{{item.additional_options_summary}}" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                <p data-if="{{item.additional_options_summary}}" class="text-xs text-muted mt-0.5">
                   <span>{{item.additional_options_summary?.label}}</span>
                   <!-- 「외 N건」 은 번역 키로 — 한국어를 이어 붙이면 다른 언어 화면에 한국어가 섞인다. -->
                   <span data-if="{{(item.additional_options_summary?.extra_count ?? 0) > 0}}" class="ml-1">$t:mypage.orders.additional_options_more|count={{item.additional_options_summary?.extra_count ?? 0}}</span>
                 </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5"/>
+                <p class="text-xs text-muted mt-1">
+                  <responsive on="portable" class="text-xs text-muted mt-0.5"/>
                   {{item.unit_price_formatted}} × {{item.quantity}}$t:shop.count_unit
                 </p>
                 <!-- 옵션 소계 -->
                 <p class="text-sm font-medium text-gray-900 dark:text-white mt-0.5">
-                  <responsive on="portable" class="text-xs font-medium text-gray-900 dark:text-white mt-0.5"/>
+                  <responsive on="portable" class-merge="text-xs"/>
                   {{item.subtotal_price_formatted}}
                 </p>
                 <!-- 보조 통화들 (선택된 통화 제외) -->
                 <div data-each="currency in {{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 mt-0.5">
-                  <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
+                  <span class="text-xs text-muted">{{currency[1]?.formatted}}</span>
                 </div>
               </div>
             </div>
@@ -214,18 +214,18 @@
             <div>
               <!-- 배송비 -->
               <div class="flex items-center gap-2 mb-1">
-                <span class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.orders.shipping_fee</span>
+                <span class="text-xs text-muted">$t:mypage.orders.shipping_fee</span>
                 <span data-if="{{order.total_shipping_amount > 0}}" class="text-xs text-gray-600 dark:text-gray-300">+{{order.total_shipping_amount_formatted}}</span>
                 <span data-if="{{!order.total_shipping_amount || order.total_shipping_amount == 0}}" class="text-xs text-green-700 dark:text-green-400">$t:mypage.orders.free_shipping</span>
               </div>
-              <p class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.orders.total_amount</p>
+              <p class="text-xs text-muted">$t:mypage.orders.total_amount</p>
               <p class="text-lg font-bold text-gray-900 dark:text-white">
                 <responsive on="portable" class="text-base font-bold text-gray-900 dark:text-white"/>
                 {{order.total_amount_formatted}}
               </p>
               <!-- 보조 통화들 (선택된 통화 제외) -->
               <div data-each="currency in {{Object.entries(order.mc_total_amount ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2">
-                <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
+                <span class="text-xs text-muted">{{currency[1]?.formatted}}</span>
               </div>
               <!-- 마일리지 사용 (있을 때만) — base_currency 단일 정산 -->
               <p data-if="{{(order.total_points_used_amount ?? 0) > 0}}" class="text-xs text-red-600 dark:text-red-400 mt-0.5">$t:mypage.orders.points_used -{{order.total_points_used_amount_formatted}}</p>
@@ -234,7 +234,7 @@
             </div>
             <!-- 배송 조회 — 송장 조회 주소가 있는 주문만. 택배사 조회 화면을 새 창으로 연다 -->
             <a data-if="{{!!order.shipping?.tracking_url}}" href="{{order.shipping?.tracking_url}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors mr-2">
-              <responsive on="portable" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors mr-2"/>
+              <responsive on="portable" class-merge="gap-1 py-1.5 text-xs"/>
               <icon name="truck" size="sm"/>
               <span>$t:mypage.orders.track_shipping</span>
             </a>
@@ -253,13 +253,13 @@
         </div>
       </div>
       <!-- 주문 없음 -->
-      <div data-if="{{orders !== undefined &amp;&amp; (!orders.data.data || orders.data.data.length === 0)}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
-        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center"/>
+      <div data-if="{{orders !== undefined &amp;&amp; (!orders.data.data || orders.data.data.length === 0)}}" class="card-plain p-8 text-center">
+        <responsive on="portable" class="card-plain p-6 text-center"/>
         <icon name="package" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3">
           <responsive on="portable" name="package" size="2x" class="mx-auto text-gray-500 dark:text-gray-500 mb-2"/>
         </icon>
-        <p class="text-gray-500 dark:text-gray-400">
-          <responsive on="portable" class="text-sm text-gray-500 dark:text-gray-400"/>
+        <p class="text-muted">
+          <responsive on="portable" class-merge="text-sm"/>
           $t:mypage.orders.empty
         </p>
         <a href="{{_global.shopBase}}/products" class="text-center inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer">

@@ -23,7 +23,7 @@
               <span class="ecommerce-flag ecommerce-flag-{{cs.country_code?.toLowerCase()}} ecommerce:rounded-sm ecommerce:flex-shrink-0"/>
               <span class="ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:w-8">{{cs.country_code}}</span>
               <span class="ecommerce-tone-info-soft ecommerce:px-1.5 ecommerce:py-0.5 ecommerce:bg-blue-100 ecommerce:dark:bg-blue-900/30 ecommerce:rounded ecommerce:text-xs">{{cs.shipping_method_label ?? ''}}</span>
-              <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">|</span>
+              <span class="ecommerce-text-muted">|</span>
               <span class="ecommerce:px-1.5 ecommerce:py-0.5 ecommerce:bg-purple-100 ecommerce:dark:bg-purple-900/30 ecommerce:text-purple-700 ecommerce:dark:text-purple-300 ecommerce:rounded ecommerce:text-xs">{{cs.charge_policy_label ?? ''}}</span>
               <span data-if="{{cs.charge_policy === 'fixed' || cs.charge_policy === 'conditional_free' || cs.charge_policy?.startsWith('per_')}}" class="ecommerce-text-secondary">{{(cs.base_fee ?? 0).toLocaleString()}} {{cs.currency_code ?? ''}}</span>
               <span data-if="{{cs.extra_fee_enabled &amp;&amp; cs.country_code === 'KR'}}" class="ecommerce-tone-warning-soft ecommerce:px-1.5 ecommerce:py-0.5 ecommerce:bg-yellow-100 ecommerce:dark:bg-yellow-900/30 ecommerce:rounded ecommerce:text-xs">$t:sirsoft-ecommerce.admin.shipping_policy.table.extra_fee_badge</span>
@@ -35,13 +35,13 @@
       </div>
     </div>
     <footer>
-      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+      <button type="button" class="ecommerce-btn ecommerce-btn-secondary">
         <on type="click">
           <close-modal/>
         </on>
         $t:sirsoft-ecommerce.admin.shipping_policy.common.cancel
       </button>
-      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700">
+      <button type="button" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-primary">
         <on type="click">
           <!-- 복사 진행 — 창을 닫고 등록 화면으로 원본 id 를 실어 보낸다. 이 창은 복제를 만들지 않으므로 그 화면에서 저장을 누르지 않으면 아무것도 남지 않는다. -->
           <sequence>

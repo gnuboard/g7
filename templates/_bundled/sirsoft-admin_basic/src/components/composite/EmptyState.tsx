@@ -103,7 +103,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         <Div className="mb-6 w-20 h-20 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
           <Icon
             name={iconName}
-            className="text-4xl leading-none text-gray-500 dark:text-gray-400"
+            className="text-4xl leading-none text-muted"
           />
         </Div>
       ) : null}

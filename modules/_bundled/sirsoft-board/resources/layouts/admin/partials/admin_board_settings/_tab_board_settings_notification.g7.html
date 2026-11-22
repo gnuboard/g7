@@ -4,7 +4,7 @@
     <section-layout data-type="layout" data-ref="section_notification" class="board-admin-card">
       <h3 class="board-card-title">$t:sirsoft-board.admin.settings.sections.notification</h3>
       <div class="board-row-stack">
-        <div data-ref="field_notify_author" class="">
+        <div data-ref="field_notify_author">
           <div class="board-flex-center board:gap-4">
             <label class="board-flex-start board:gap-2 board-text-heading board:flex-1 board:cursor-pointer">
               <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('notify_author')}}" disabled="{{!_computed.canBulkApply}}">
@@ -21,7 +21,7 @@
             <toggle ariaLabel="$t:sirsoft-board.admin.settings.fields.notify_author" data-type="composite" name="basic_defaults.notify_author" class="board:flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
-        <div data-ref="field_notify_admin_on_post" class="">
+        <div data-ref="field_notify_admin_on_post">
           <div class="board-flex-center board:gap-4">
             <label class="board-flex-start board:gap-2 board-text-heading board:flex-1 board:cursor-pointer">
               <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post')}}" disabled="{{!_computed.canBulkApply}}">

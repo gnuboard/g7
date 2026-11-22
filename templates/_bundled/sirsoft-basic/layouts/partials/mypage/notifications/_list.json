@@ -121,9 +121,7 @@
                             "name": "Div",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "flex items-center justify-end gap-3"
-                                    }
+                                    "classMerge": "justify-end"
                                 }
                             },
                             "props": {
@@ -473,7 +471,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-muted"
                                                     },
                                                     "text": "{{notification.created_at | datetime}}"
                                                 }
@@ -513,7 +511,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:mypage.notifications.empty"
                         }

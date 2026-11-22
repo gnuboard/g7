@@ -10,8 +10,8 @@
       <responsive on="tablet" class="board:grid board:grid-cols-2 board:gap-4"/>
       <responsive on="desktop" class="board:grid board:grid-cols-4 board:gap-5"/>
       <div data-ref="post_graph_today_summary" class="board:flex board:items-center board:flex-wrap board:gap-2">
-        <responsive on="tablet" class="board:flex board:items-center board:flex-wrap board:gap-2 board:col-span-2"/>
-        <responsive on="desktop" class="board:flex board:items-center board:flex-wrap board:gap-2 board:col-span-4"/>
+        <responsive on="tablet" class-merge="board:col-span-2"/>
+        <responsive on="desktop" class-merge="board:col-span-4"/>
         <blur-until-loaded sources="board_overview"/>
         <span data-ref="post_graph_today_label" class="board:text-sm board:font-semibold board:text-slate-500 board:dark:text-slate-400">$t:admin.dashboard.stats.today</span>
         <a href="/admin/boards" data-ref="today_new_posts_badge" class="board:px-2 board:py-1 board:text-xs board:font-medium board:rounded-full board:bg-slate-200 board:text-slate-700 board:dark:bg-slate-700 board:dark:text-slate-200 board:cursor-pointer board:hover:bg-slate-300 board:dark:hover:bg-slate-600 board:transition-colors">

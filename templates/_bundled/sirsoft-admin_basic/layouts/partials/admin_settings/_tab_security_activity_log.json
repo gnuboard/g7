@@ -38,9 +38,6 @@
                     "id": "field_activity_log_retention_days",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "type": "basic",

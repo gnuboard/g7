@@ -63,9 +63,7 @@
                                         "name": "H1",
                                         "responsive": {
                                             "640-": {
-                                                "props": {
-                                                    "className": "ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-1"
-                                                }
+                                                "classMerge": "ecommerce:text-2xl"
                                             }
                                         },
                                         "props": {

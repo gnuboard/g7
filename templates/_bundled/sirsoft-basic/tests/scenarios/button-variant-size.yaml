@@ -1,0 +1,22 @@
+feature: 사용자 템플릿 Button — variant·size 를 적으면 의미 클래스가 붙는다 (#399 F12·F13, 7.2.1)
+
+description: |
+  Button 은 `variant`·`size` prop 을 받기만 하고 클래스를 붙이지 않았다. components.json 설명은 6종인데 타입은 4종이라
+  문서를 믿고 쓰면 타입이 맞지 않았다(F13). 이제 variant 를 **적었을 때만** `btn btn-{variant}` 를 붙인다
+  (primary 검정·secondary·danger·success·ghost·outline·accent 강조색), size 는 sm → btn-sm, lg → btn-lg.
+  variant 를 적지 않은 버튼은 바뀌지 않고, 호출처 className 이 내부 클래스를 이긴다.
+
+# axis 의미:
+#   variant — omitted 생략, named 7종 중 하나
+#   size — omitted·md 생략, sm, lg
+axes:
+  variant: [omitted, named]
+  size: [omitted, sm, lg]
+
+effects:
+  - button_variant_adds_semantic_classes_only_when_given   # variant 를 적었을 때만 btn btn-{variant}
+  - button_size_maps_to_btn_size_classes                   # sm → btn-sm, lg → btn-lg, md·생략 → 없음
+  - caller_class_name_wins_over_internal_classes           # 호출처 className 이 내부 클래스 뒤에 붙는다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/basic/__tests__/Button.variant.test.tsx

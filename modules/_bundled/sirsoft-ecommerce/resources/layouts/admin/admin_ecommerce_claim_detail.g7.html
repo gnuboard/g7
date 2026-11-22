@@ -84,20 +84,20 @@
             <div data-ref="cd_002_header_meta" class="ecommerce-page-description ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-wrap">
               <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.claim_number:</span>
               <span data-ref="cd_003_claim_number" class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{claim?.data?.claim?.claim_number ?? ''}}</span>
-              <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">|</span>
+              <span class="ecommerce-text-muted">|</span>
               <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.claim_type:</span>
               <span data-ref="cd_004_claim_type" class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{claim?.data?.claim?.claim_type_label ?? ''}}</span>
-              <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">|</span>
+              <span class="ecommerce-text-muted">|</span>
               <badge data-type="composite" data-ref="cd_005_status_badge" variant="{{claim?.data?.claim?.status_variant ?? 'default'}}">{{claim?.data?.claim?.status_label ?? ''}}</badge>
               <badge data-type="composite" data-ref="cd_006_guest_badge" data-if="{{claim?.data?.claim?.is_guest_request === true}}" variant="secondary">$t:sirsoft-ecommerce.admin.claim.column.guest_badge</badge>
               <!-- 재활성 뱃지(Q29) — 취소 유형만 값이 온다. 목록 행과 같은 서버 값을 읽는다. -->
               <badge data-type="composite" data-ref="cd_006b_reactivated_badge" data-if="{{!!claim?.data?.claim?.reactivated_at_formatted &amp;&amp; claim?.data?.claim?.is_partially_reactivated !== true}}" variant="info">$t:sirsoft-ecommerce.admin.claim.column.reactivated_badge|at={{claim?.data?.claim?.reactivated_at_formatted}}</badge>
               <!-- 일부만 되살린 취소의 뱃지 -->
               <badge data-type="composite" data-ref="cd_006c_reactivated_partial_badge" data-if="{{!!claim?.data?.claim?.reactivated_at_formatted &amp;&amp; claim?.data?.claim?.is_partially_reactivated === true}}" variant="info">$t:sirsoft-ecommerce.admin.claim.column.reactivated_partial_badge|at={{claim?.data?.claim?.reactivated_at_formatted}}</badge>
-              <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">|</span>
+              <span class="ecommerce-text-muted">|</span>
               <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.requested_at:</span>
               <span data-ref="cd_007_requested_at" class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{claim?.data?.claim?.requested_at_formatted ?? ''}}</span>
-              <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">|</span>
+              <span class="ecommerce-text-muted">|</span>
               <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.requester:</span>
               <!-- e2e:allow 요청자 링크(계획 676) — 운영자가 신청자 이름에서 그 회원 화면으로 바로 간다. 링크 대상은 주문의 주인(`requester_user_uuid`)이다. 관리자 회원 화면은 **uuid** 로 연다 — 숫자 `requester_user_id` 로 만든 링크는 404 였다(주문 상세 `OrderResource.user.uuid` 와 같은 축) — 이 칸이 그리는 이름이 주문자명이므로, `requested_by` 로 걸면 운영자 대리 접수 건에서 화면에 보이는 사람과 다른 회원 상세로 간다. 비회원 주문은 null 이라 아래 Span 이 평문으로 서다 — 누를 곳 없는 링크를 보이면 운영자는 회원이 있다고 오해한다. 선례: `admin_ecommerce_product_review_index.json` 의 작성자 칸(A+if / Span+if 한 쌍). -->
               <a href="/admin/users/{{claim?.data?.claim?.requester_user_uuid}}" data-ref="cd_008_requester" data-if="{{!!claim?.data?.claim?.requester_user_uuid}}" class="ecommerce:font-medium ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline ecommerce:cursor-pointer">
@@ -110,8 +110,8 @@
               <!-- e2e:allow 출처 뱃지는 서버 필드(`request_source`) 하나를 그대로 그리는 표시 전용 노드다 — 판정 로직이 화면에 없다. 그 필드의 3분류(고객·비회원·운영자 접수)는 PHPUnit 이 조합 전건을 덮고(ClaimResourceRequestSourceTest), 렌더는 Vitest 3건이 잠근다(adminClaimDetailRender.test.tsx 「신청자 출처 뱃지·요청자 링크」 — 재검토에서 해소). 2026-09-16 브라우저로 3종 전건도 확인했다(RF20260915-1707536717 운영자 접수 · RT20260916-0302483148 고객 신청 · RT20260915-1425436901 비회원 신청). 출처 뱃지(계획 676) — 고객 신청·비회원 신청·운영자 접수. 운영자는 셋을 다르게 대한다: 고객 건은 연락처가 계정에 있고, 비회원 건은 주문서 연락처뿐이며, 대리 접수 건은 고객이 철회·수정할 수 없다. 라벨은 서버가 로케일로 풀어 내려준다(`request_source_label`) — 화면이 코드를 매핑하면 3로케일 사본이 하나 더 생긴다. -->
               <badge data-type="composite" data-ref="cd_008b_request_source" variant="{{claim?.data?.claim?.request_source === 'admin' ? 'warning' : (claim?.data?.claim?.request_source === 'guest' ? 'secondary' : 'info')}}" size="sm">{{claim?.data?.claim?.request_source_label}}</badge>
               <!-- 판매자 접수·대리 철회를 한 운영자 (계획 §3-11 「머리에 판매자 접수 뱃지와 접수 관리자 이름」) — 관리자 상세 응답에만 실리는 이름이다(고객 응답에는 없다). 누가 고객을 대신했는지 알아야 고객 문의에 답한다. -->
-              <span data-ref="cd_008c_requested_by_admin" data-if="{{claim?.data?.claim?.request_source === 'admin' &amp;&amp; !!claim?.data?.claim?.requested_by_admin_name}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.requested_by_admin|name={{claim?.data?.claim?.requested_by_admin_name}}</span>
-              <span data-ref="cd_008d_withdrawn_by_admin" data-if="{{!!claim?.data?.claim?.withdrawn_by_admin_name}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.withdrawn_by_admin|name={{claim?.data?.claim?.withdrawn_by_admin_name}}</span>
+              <span data-ref="cd_008c_requested_by_admin" data-if="{{claim?.data?.claim?.request_source === 'admin' &amp;&amp; !!claim?.data?.claim?.requested_by_admin_name}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.detail.requested_by_admin|name={{claim?.data?.claim?.requested_by_admin_name}}</span>
+              <span data-ref="cd_008d_withdrawn_by_admin" data-if="{{!!claim?.data?.claim?.withdrawn_by_admin_name}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.detail.withdrawn_by_admin|name={{claim?.data?.claim?.withdrawn_by_admin_name}}</span>
             </div>
           </div>
           <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3 ecommerce:justify-start ecommerce:w-full">
@@ -159,21 +159,21 @@
         <div data-ref="cd_014_exchange_mode_row" data-if="{{(claim?.data?.claim?.claim_type ?? '') === 'exchange' &amp;&amp; !!claim?.data?.exchange_mode_abilities}}" class="ecommerce:mt-4 ecommerce-flex-center ecommerce:gap-3 ecommerce:flex-wrap">
           <span class="ecommerce:text-sm ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.label</span>
           <badge data-type="composite" data-ref="cd_015_exchange_mode_badge" variant="{{claim?.data?.claim?.is_advance_exchange === true ? 'warning' : 'secondary'}}">{{claim?.data?.claim?.exchange_mode_label ?? ''}}</badge>
-          <button data-ref="cd_016_set_advance" data-if="{{claim?.data?.claim?.is_advance_exchange !== true}}" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{claim?.data?.abilities?.can_update_status !== true || claim?.data?.exchange_mode_abilities?.can_set_advance !== true}}">
+          <button data-ref="cd_016_set_advance" data-if="{{claim?.data?.claim?.is_advance_exchange !== true}}" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm" disabled="{{claim?.data?.abilities?.can_update_status !== true || claim?.data?.exchange_mode_abilities?.can_set_advance !== true}}">
             <on type="click">
               <!-- 선교환으로 바꾸기 전에 확인 창을 연다 — 회수 기한(일)을 함께 넘겨 창이 안내 문구에 쓴다 -->
               <action handler="sirsoft-ecommerce.openClaimExchangeModeConfirm" claimId="{{claim?.data?.claim?.id ?? null}}" mode="advance" dueDays="{{claim?.data?.exchange_mode_abilities?.collection_due_days ?? ''}}"/>
             </on>
             $t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.set_advance
           </button>
-          <button data-ref="cd_017_set_standard" data-if="{{claim?.data?.claim?.is_advance_exchange === true}}" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{claim?.data?.abilities?.can_update_status !== true || claim?.data?.exchange_mode_abilities?.can_set_standard !== true}}">
+          <button data-ref="cd_017_set_standard" data-if="{{claim?.data?.claim?.is_advance_exchange === true}}" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm" disabled="{{claim?.data?.abilities?.can_update_status !== true || claim?.data?.exchange_mode_abilities?.can_set_standard !== true}}">
             <on type="click">
               <!-- 일반 교환으로 되돌리기 전에 확인 창을 연다 — 선교환과 같은 창을 mode 만 바꿔 쓴다 -->
               <action handler="sirsoft-ecommerce.openClaimExchangeModeConfirm" claimId="{{claim?.data?.claim?.id ?? null}}" mode="standard" dueDays="{{claim?.data?.exchange_mode_abilities?.collection_due_days ?? ''}}"/>
             </on>
             $t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.set_standard
           </button>
-          <span data-ref="cd_018_mode_blocked" data-if="{{!!claim?.data?.exchange_mode_abilities?.blocked_reason}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{claim?.data?.exchange_mode_abilities?.blocked_reason ?? ''}}</span>
+          <span data-ref="cd_018_mode_blocked" data-if="{{!!claim?.data?.exchange_mode_abilities?.blocked_reason}}" class="ecommerce:text-xs ecommerce-text-muted">{{claim?.data?.exchange_mode_abilities?.blocked_reason ?? ''}}</span>
         </div>
         <!-- 연결 신청서(보완 5) — 이 신청서와 이어진 원 신청서·후속 환불·처리 결과 취소 내역. 판정·번호·상태 라벨은 전부 서버(`linked_claims`)가 준다. 같은 화면(레이아웃)으로의 이동은 `_local` 이 남으므로 새 창으로 연다(cd_009 와 같은 규칙). 연결이 하나도 없으면 줄 전체가 사라진다. -->
         <div data-ref="cd_019_linked_claims_row" data-if="{{!!claim?.data?.linked_claims?.source || (claim?.data?.linked_claims?.refunds ?? []).length > 0 || !!claim?.data?.linked_claims?.result_cancel}}" class="ecommerce:mt-4 ecommerce-flex-center ecommerce:gap-3 ecommerce:flex-wrap">

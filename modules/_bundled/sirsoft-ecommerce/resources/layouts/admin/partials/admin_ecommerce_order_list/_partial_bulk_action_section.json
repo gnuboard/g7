@@ -174,9 +174,7 @@
             "name": "Button",
             "responsive": {
                 "portable": {
-                    "props": {
-                        "className": "ecommerce:w-full ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50"
-                    },
+                    "classMerge": "ecommerce:w-full",
                     "text": "$t:sirsoft-ecommerce.admin.order.bulk.apply_full"
                 }
             },
@@ -203,7 +201,7 @@
             ],
             "props": {
                 "type": "button",
-                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                "className": "ecommerce-btn ecommerce-btn-primary",
                 "disabled": "{{!_local.selectedItems || _local.selectedItems.length === 0 || orders?.data?.abilities?.can_update !== true}}"
             },
             "text": "$t:sirsoft-ecommerce.admin.order.bulk.apply"

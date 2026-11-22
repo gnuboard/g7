@@ -216,9 +216,7 @@
                                 "name": "Span",
                                 "responsive": {
                                     "768-": {
-                                        "props": {
-                                            "className": "filter-field-label mb-0 w-14 shrink-0 flex items-center"
-                                        }
+                                        "classMerge": "mb-0 w-14 shrink-0 flex items-center"
                                     }
                                 },
                                 "props": {

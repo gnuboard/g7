@@ -104,6 +104,31 @@ class PreviewFrameResolverTest extends PluginTestCase
     }
 
     /**
+     * 구간 classMerge(코어 7.2.1)는 엔진과 같은 규칙으로 기본(또는 구간) 클래스에 합친 실효 클래스로 낸다 — 화면은 구간 값을
+     * 그대로 고르므로 미리보기 폭과 실화면 폭이 같아진다. 종전 통째 교체 구간은 그대로다.
+     *
+     * @scenario surface=preview_frame_chain_from_active_user_template
+     *
+     * @return void 반환값 없음
+     */
+    public function test_merges_breakpoint_class_merge_into_effective_class(): void
+    {
+        $layout = $this->layout('home_hero');
+        $layout['components'][0]['children'][1]['children'][0]['responsive'] = [
+            'desktop' => ['classMerge' => 'max-w-7xl mx-auto px-8'],
+            '768-1023' => ['props' => ['className' => 'min-h-fit px-4 gap-2'], 'classMerge' => "px-6 {{_global.x ? 'a' : 'b'}}"],
+            'mobile' => ['props' => ['gap' => 2]],
+        ];
+
+        $frame = $this->resolver(['home_hero' => ['home'], 'shop_hero' => []], ['home' => $layout])->resolve();
+
+        $this->assertSame(
+            ['desktop' => 'min-h-fit max-w-7xl mx-auto px-8', '768-1023' => 'min-h-fit gap-2 px-6'],
+            $frame['positions']['home_hero']['chain'][2]['responsive'],
+        );
+    }
+
+    /**
      * 바인딩 식이 든 클래스 조각은 서버가 풀 수 없으므로 빼고 정적 클래스만 남긴다.
      *
      * @scenario surface=preview_frame_chain_from_active_user_template

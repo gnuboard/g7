@@ -173,7 +173,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "sso:w-full sso:px-4 sso:py-2.5 sso:bg-gray-900 sso:dark:bg-white sso:text-white sso:dark:text-gray-900 sso:rounded-lg sso:font-medium sso:cursor-pointer"
+                                        "className": "sso:w-full sso-btn sso-btn-primary sso:py-2.5"
                                     },
                                     "text": "$t:sirsoft-sso.common.retry"
                                 }
@@ -442,7 +442,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "sso:w-full sso:px-4 sso:py-3 sso:bg-gray-900 sso:dark:bg-white sso:text-white sso:dark:text-gray-900 sso:rounded-lg sso:font-medium sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed",
+                                        "className": "sso:w-full sso-btn sso-btn-primary sso:py-3",
                                         "disabled": "{{_global.ssoBusy || !_global.ssoForm?.agree_terms || !_global.ssoForm?.agree_privacy}}"
                                     },
                                     "text": "$t:sirsoft-sso.consent.submit"
@@ -511,7 +511,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "sso:w-full sso:px-4 sso:py-2.5 sso:bg-gray-900 sso:dark:bg-white sso:text-white sso:dark:text-gray-900 sso:rounded-lg sso:font-medium sso:cursor-pointer"
+                                        "className": "sso:w-full sso-btn sso-btn-primary sso:py-2.5"
                                     },
                                     "text": "$t:sirsoft-sso.common.retry"
                                 }
@@ -608,7 +608,7 @@
                                             "name": "Label",
                                             "props": {
                                                 "htmlFor": "sso_link_password",
-                                                "className": "sso:block sso:text-sm sso:font-medium sso:text-gray-700 sso:dark:text-gray-300"
+                                                "className": "sso-form-label"
                                             },
                                             "text": "$t:sirsoft-sso.link.password"
                                         },
@@ -654,9 +654,7 @@
                                             "name": "Button",
                                             "responsive": {
                                                 "640-": {
-                                                    "props": {
-                                                        "className": "sso:w-full sso:px-3 sso:py-2 sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:text-sm sso:text-gray-700 sso:dark:text-gray-300 sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed"
-                                                    }
+                                                    "classMerge": "sso:py-2"
                                                 }
                                             },
                                             "actions": [
@@ -879,7 +877,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "sso:w-full sso:px-4 sso:py-3 sso:bg-gray-900 sso:dark:bg-white sso:text-white sso:dark:text-gray-900 sso:rounded-lg sso:font-medium sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed",
+                                        "className": "sso:w-full sso-btn sso-btn-primary sso:py-3",
                                         "disabled": "{{_global.ssoBusy || (_global.ssoLinkMethod === 'password' ? !_global.ssoForm?.password : (!_global.ssoLinkChallengeId || !_global.ssoForm?.code))}}"
                                     },
                                     "text": "$t:sirsoft-sso.link.submit"

@@ -468,7 +468,7 @@
                                                 ],
                                                 "props": {
                                                     "href": "{{_global.shopBase}}/reorder/{{order.data.id ?? ''}}",
-                                                    "className": "flex-1 flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                                                    "className": "flex-1 flex btn btn-outline gap-2 px-6 py-3 dark:hover:bg-gray-800 cursor-pointer"
                                                 },
                                                 "children": [
                                                     {

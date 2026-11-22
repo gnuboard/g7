@@ -58,7 +58,9 @@ effects:
   - detail_shows_scrap_count
   - mypage_list_deleted_post_exposes_board_and_author
   - mypage_list_withdrawn_author_anonymized
-  - mypage_list_notice_banner_shown
+  # 상시 안내 배너는 제거 결정으로 걷어냈다 — 검색 영역이 헤더 바로 아래에 온다(종전 이름 mypage_list_notice_banner_shown 은
+  # 배너가 보인다는 뜻이었으나 시험은 제거를 잰다. #399 선행 마킹 정리에서 재는 동작에 맞춰 이름을 바꿨다)
+  - mypage_list_notice_banner_removed
   - mypage_list_search_filters_by_title
   - mypage_list_search_excludes_deleted_post_title
   # 2026-09-14 (#524 WP-A) — 검색 대상 구분

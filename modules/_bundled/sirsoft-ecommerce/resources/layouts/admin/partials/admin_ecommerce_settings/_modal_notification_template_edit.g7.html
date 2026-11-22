@@ -49,7 +49,7 @@
           <span class="ecommerce-text-label-subtle ecommerce:font-medium">$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.type_label</span>
           <span class="ecommerce-text-primary ecommerce:text-sm ecommerce:font-semibold">{{$localized(_global.ecommerce_notification_template_form_modal?.definition?.name) || (_global.ecommerce_notification_template_form_modal?.definition?.type ?? '')}}</span>
           <span class="ecommerce-text-tertiary ecommerce:font-mono ecommerce:px-1.5 ecommerce:py-0.5 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:rounded">{{_global.ecommerce_notification_template_form_modal?.definition?.type ?? ''}}</span>
-          <span class="ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">·</span>
+          <span class="ecommerce:text-sm ecommerce-text-muted">·</span>
           <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.channel_label</span>
           <span class="ecommerce:text-sm ecommerce:font-medium ecommerce:text-indigo-600 ecommerce:dark:text-indigo-400">{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.name ?? _global.ecommerce_notification_template_form_modal?.template?.channel ?? ''}}</span>
         </div>
@@ -58,6 +58,7 @@
         <div data-ref="ecommerce_template_recipients_section" data-if="{{_global.ecommerce_notification_template_form_modal?.definition?.category !== 'identity'}}" class="ecommerce:bg-purple-50 ecommerce:dark:bg-purple-900/20 ecommerce:border ecommerce:border-purple-200 ecommerce:dark:border-purple-700 ecommerce:rounded-lg ecommerce:p-4 ecommerce:space-y-3">
           <h4 class="ecommerce:text-sm ecommerce:font-medium ecommerce:text-purple-800 ecommerce:dark:text-purple-200">$t:admin.settings.notification_definitions.recipients.title</h4>
           <div class="ecommerce-stack-tight">
+            <!-- audit:allow layout-inline-semantic-duplicate reason: 쇼핑몰 알림 템플릿 편집 창의 수신자 규칙 한 건 상자, 보라 테두리와 p-3 space-y-2 여백이라 카드와 다름 -->
             <div data-each="rcpt, rcptIdx in {{_global.ecommerce_notification_template_form_modal?.recipients ?? []}}" class="ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-purple-200 ecommerce:dark:border-purple-600 ecommerce:rounded-lg ecommerce:p-3 ecommerce:space-y-2">
               <div class="ecommerce-flex-between">
                 <span class="ecommerce:text-xs ecommerce:font-medium ecommerce:text-purple-700 ecommerce:dark:text-purple-300">$t:admin.settings.notification_definitions.recipients.rule_label|index={{rcptIdx + 1}}</span>
@@ -181,7 +182,7 @@
                   </div>
                 </div>
                 <!-- 사이트 관리자 이메일(#888) — 값 칸이 없다. 환경설정 > 일반의 관리자 이메일 한 곳으로 메일만 가므로 그 사실과 빈 값의 결과를 밝힌다(코어 편집 창과 같은 규칙). -->
-                <p data-ref="rcpt_site_admin_email_hint_{{rcptIdx}}" data-if="{{rcpt.type === 'site_admin_email'}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:admin.settings.notification_definitions.recipients.site_admin_email_hint</p>
+                <p data-ref="rcpt_site_admin_email_hint_{{rcptIdx}}" data-if="{{rcpt.type === 'site_admin_email'}}" class="ecommerce:text-xs ecommerce-text-muted">$t:admin.settings.notification_definitions.recipients.site_admin_email_hint</p>
                 <div data-if="{{rcpt.type === 'role' || rcpt.type === 'specific_users'}}" class="ecommerce-flex-center ecommerce:gap-2">
                   <!-- 스위치 이름은 label 로 준다 — 옆에 따로 둔 글자(span)는 스위치와 이어지지 않아 화면 읽기 프로그램에
                        이름 없는 스위치로 읽혔다(7.1.0 실측 P-5). label 이 스위치 옆 글자도 함께 그린다. -->
@@ -207,7 +208,7 @@
         <!-- 알림 템플릿 편집 모달 본문 확장 슬롯(범용). 채널을 소유한 확장이 그 채널 전용 편집 UI(예: 외부 발송 채널의 템플릿 작성·발송 설정)를 이 자리에 주입한다. 채널 메타 template_editor='none'(종전 hidden_template_editor=true 와 같은 뜻) 인 채널은 아래 코어 제목/본문 입력이 숨겨지고 이 슬롯이 본문 편집을 대신한다. 특정 확장을 알지 못하며, 미주입 시 빈 자리로 남는다. -->
         <extension-point name="notification_template_form_sections" data-ref="ecommerce_template_form_sections_ext" definition="{{_global.ecommerce_notification_template_form_modal?.definition}}" template="{{_global.ecommerce_notification_template_form_modal?.template}}" channel="{{_global.ecommerce_notification_template_form_modal?.template?.channel ?? ''}}" modalId="modal_ecommerce_notification_template_edit" stateKey="ecommerce_notification_template_form_modal" saveEndpoint="{{'/api/admin/notification-templates/' + _global.ecommerce_notification_template_form_modal?.template?.id}}" refetchDataSourceId="ecommerceNotificationDefinitions"/>
         <div data-ref="ecommerce_template_lang_tabs" data-if="{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" class="ecommerce:flex ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
-          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.ecommerce_notification_template_form_modal?.editLang ?? $locale) === loc ? 'ecommerce:border-b-2 ecommerce:border-indigo-500 ecommerce:dark:border-indigo-400 ecommerce:text-indigo-600 ecommerce:dark:text-indigo-400' : 'ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300'}} ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:focus:outline-none">
+          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.ecommerce_notification_template_form_modal?.editLang ?? $locale) === loc ? 'ecommerce:border-b-2 ecommerce:border-indigo-500 ecommerce:dark:border-indigo-400 ecommerce:text-indigo-600 ecommerce:dark:text-indigo-400' : 'ecommerce-text-muted ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300'}} ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:focus:outline-none">
             <on type="click">
               <!-- 언어 탭. 설치된 언어 수만큼 만들어지므로 언어를 늘리면 탭도 늘어난다 — 보이는 언어만 바꾸고 값은 건드리지 않는다. -->
               <set-state target="global" ecommerce_notification_template_form_modal.editLang="{{loc}}"/>
@@ -221,7 +222,7 @@
               <span>$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.subject</span>
               <span class="ecommerce-text-required">*</span>
             </label>
-            <input type="text" value="{{_global.ecommerce_notification_template_form_modal?.template?.subject?.[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale] ?? ''}}" class="">
+            <input type="text" value="{{_global.ecommerce_notification_template_form_modal?.template?.subject?.[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale] ?? ''}}">
               <on type="change">
                 <!-- 제목(현재 언어). 언어 묶음을 새 객체로 만들어 담는다 — 제자리에서 고치면 변경이 감지되지 않는다. -->
                 <set-state target="global" ecommerce_notification_template_form_modal.template.subject="{{Object.assign({}, _global.ecommerce_notification_template_form_modal?.template?.subject, {[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"/>

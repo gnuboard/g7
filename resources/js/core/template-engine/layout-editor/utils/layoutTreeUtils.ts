@@ -87,6 +87,9 @@ export interface EditorNode {
       text?: unknown;
       if?: unknown;
       iteration?: unknown;
+      /** 구간에서 바뀐 클래스만 기본 className 에 덧붙인다 (engine-v1.98.0) */
+      classMerge?: string;
+      classMap?: unknown;
     }
   >;
   [key: string]: unknown;

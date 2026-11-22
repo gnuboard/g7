@@ -38,7 +38,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "search",
-                                        "className": "ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:text-xl ecommerce-text-muted"
                                     }
                                 },
                                 {

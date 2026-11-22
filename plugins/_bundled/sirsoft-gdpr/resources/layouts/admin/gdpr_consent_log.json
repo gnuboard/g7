@@ -294,7 +294,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "search",
-                                                            "className": "gdpr:absolute gdpr:left-3 gdpr:top-1/2 gdpr:-translate-y-1/2 gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:text-sm gdpr:leading-none gdpr:pointer-events-none"
+                                                            "className": "gdpr:absolute gdpr:left-3 gdpr:top-1/2 gdpr:-translate-y-1/2 gdpr-text-muted gdpr:text-sm gdpr:leading-none gdpr:pointer-events-none"
                                                         }
                                                     },
                                                     {
@@ -337,7 +337,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "gdpr:px-4 gdpr:py-2.5 gdpr:bg-blue-600 gdpr:dark:bg-blue-600 gdpr:hover:bg-blue-700 gdpr:dark:hover:bg-blue-700 gdpr:text-white gdpr:text-sm gdpr:font-medium gdpr:rounded-xl"
+                                                    "className": "gdpr-btn gdpr-btn-primary gdpr:py-2.5 gdpr:rounded-xl"
                                                 },
                                                 "children": [
                                                     {
@@ -1303,7 +1303,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "gdpr:block gdpr:text-xs gdpr:font-semibold gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:uppercase gdpr:tracking-wide"
+                                                                "className": "gdpr:block gdpr:text-xs gdpr:font-semibold gdpr-text-muted gdpr:uppercase gdpr:tracking-wide"
                                                             },
                                                             "text": "$t:sirsoft-gdpr.admin.consent_log.detail.session_id_label"
                                                         },
@@ -1325,7 +1325,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "gdpr:block gdpr:text-xs gdpr:font-semibold gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:uppercase gdpr:tracking-wide"
+                                                                "className": "gdpr:block gdpr:text-xs gdpr:font-semibold gdpr-text-muted gdpr:uppercase gdpr:tracking-wide"
                                                             },
                                                             "text": "$t:sirsoft-gdpr.admin.consent_log.detail.user_agent_label"
                                                         },
@@ -1355,7 +1355,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "gdpr:block gdpr:text-xs gdpr:font-semibold gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:uppercase gdpr:tracking-wide gdpr:mb-1"
+                                                                "className": "gdpr:block gdpr:text-xs gdpr:font-semibold gdpr-text-muted gdpr:uppercase gdpr:tracking-wide gdpr:mb-1"
                                                             },
                                                             "text": "$t:sirsoft-gdpr.admin.consent_log.detail.categories_label"
                                                         },

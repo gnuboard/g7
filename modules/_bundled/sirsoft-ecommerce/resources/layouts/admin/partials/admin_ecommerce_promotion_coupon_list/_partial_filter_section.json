@@ -531,7 +531,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                "className": "ecommerce-text-muted"
                                             },
                                             "text": "~"
                                         },
@@ -864,7 +864,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce-text-muted"
                                     },
                                     "text": "~"
                                 },
@@ -894,7 +894,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce-text-muted"
                                     },
                                     "text": "{{(_local.filter.discountType || 'all') === 'rate' ? '%' : '$t:sirsoft-ecommerce.common.currency.won'}}"
                                 }
@@ -1476,7 +1476,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce-text-muted"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount_suffix"
                                 }
@@ -1578,7 +1578,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce-text-muted"
                                     },
                                     "text": "~"
                                 },
@@ -1702,7 +1702,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce-text-muted"
                                     },
                                     "text": "~"
                                 },
@@ -1865,7 +1865,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "ecommerce:text-gray-500 ecommerce:hover:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-gray-300",
+                                        "className": "ecommerce-text-muted ecommerce:hover:text-gray-600 ecommerce:dark:hover:text-gray-300",
                                         "aria-label": "$t:sirsoft-ecommerce.common.remove"
                                     },
                                     "children": [
@@ -2107,9 +2107,7 @@
                             "name": "Button",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "ecommerce-flex-center ecommerce-btn ecommerce-btn-outline ecommerce:justify-center ecommerce:gap-2 ecommerce:w-full"
-                                    }
+                                    "classMerge": "ecommerce:justify-center ecommerce:w-full"
                                 }
                             },
                             "actions": [
@@ -2274,9 +2272,7 @@
                                     "name": "Button",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "ecommerce-btn ecommerce-btn-primary ecommerce:flex-1"
-                                            }
+                                            "classMerge": "ecommerce:flex-1"
                                         }
                                     },
                                     "actions": [

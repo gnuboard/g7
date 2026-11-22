@@ -12,7 +12,7 @@
     <p class="koreaexim-form-label koreaexim:mt-3">$t:sirsoft-koreaexim.notification_channels</p>
     <div data-each="ch, chIdx in {{koreaeximNotificationChannels?.data?.channels ?? []}}" data-ref="koreaexim_channel_row_{{defIdx}}_{{chIdx}}" class="koreaexim-flex-between koreaexim:p-3 koreaexim:bg-gray-50 koreaexim:dark:bg-gray-900 koreaexim:border koreaexim:border-gray-200 koreaexim:dark:border-gray-700 koreaexim:rounded-lg koreaexim:my-2">
       <div class="koreaexim-flex-center koreaexim:gap-2">
-        <icon name="{{ch.icon ?? 'bell'}}" class="koreaexim:text-gray-500 koreaexim:dark:text-gray-400"/>
+        <icon name="{{ch.icon ?? 'bell'}}" class="koreaexim-text-muted"/>
         <div>
           <span class="koreaexim-text-heading">{{ch.name ?? ch.id}}</span>
           <span data-if="{{ch.source && ch.source !== 'core'}}" class="koreaexim-text-hint koreaexim:block">{{ch.source_label ?? ch.source}}</span>
@@ -32,7 +32,7 @@
     </div>
     <div class="koreaexim-flex-center koreaexim:gap-2 koreaexim:my-2">
       <!-- 채널을 모두 끄면 알림이 사라지므로 코어가 min:1 로 거절한다 — 버튼에서 먼저 막는다. -->
-      <button type="button" data-ref="koreaexim_save_channels_{{defIdx}}" class="koreaexim-btn koreaexim-btn-primary koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed" disabled="{{_computed.isNotificationReadOnly || _local.koreaeximSavingChannels !== null &amp;&amp; _local.koreaeximSavingChannels !== undefined || !(JSON.stringify([...(_local.koreaeximChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())) || (_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).length === 0}}">
+      <button type="button" data-ref="koreaexim_save_channels_{{defIdx}}" class="koreaexim-btn koreaexim-btn-primary" disabled="{{_computed.isNotificationReadOnly || _local.koreaeximSavingChannels !== null &amp;&amp; _local.koreaeximSavingChannels !== undefined || !(JSON.stringify([...(_local.koreaeximChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())) || (_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).length === 0}}">
         <on type="click">
           <sequence>
             <set-state target="local" koreaeximSavingChannels="{{def.id}}"/>
@@ -62,7 +62,7 @@
         <icon data-if="{{_local.koreaeximSavingChannels === def.id}}" name="spinner" class="koreaexim-spinner-sm"/>
         <span>$t:sirsoft-koreaexim.save_channels</span>
       </button>
-      <button type="button" data-ref="koreaexim_cancel_channels_{{defIdx}}" data-if="{{JSON.stringify([...(_local.koreaeximChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())}}" class="koreaexim-btn koreaexim-btn-secondary koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed" disabled="{{_local.koreaeximSavingChannels !== null &amp;&amp; _local.koreaeximSavingChannels !== undefined}}">
+      <button type="button" data-ref="koreaexim_cancel_channels_{{defIdx}}" data-if="{{JSON.stringify([...(_local.koreaeximChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())}}" class="koreaexim-btn koreaexim-btn-secondary" disabled="{{_local.koreaeximSavingChannels !== null &amp;&amp; _local.koreaeximSavingChannels !== undefined}}">
         <on type="click">
           <!-- 취소 — 폼의 임시 채널 값을 전부 버려 저장된 def.channels 로 되돌린다(이 버튼은 저장값과 다를 때만 보인다).
                기본 병합(deep)은 빈 객체 {} 로 기존 키를 지우지 않으므로 먼저 null 로 덮고 다시 {} 로 쓴다(7.1.1 출시 전) -->

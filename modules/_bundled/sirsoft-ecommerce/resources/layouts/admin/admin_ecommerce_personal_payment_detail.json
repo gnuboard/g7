@@ -50,9 +50,7 @@
                                         "name": "H1",
                                         "responsive": {
                                             "640-": {
-                                                "props": {
-                                                    "className": "ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-2"
-                                                }
+                                                "classMerge": "ecommerce:text-2xl"
                                             }
                                         },
                                         "props": {
@@ -84,7 +82,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce-text-muted"
                                                 },
                                                 "text": "|"
                                             },
@@ -105,7 +103,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce-text-muted"
                                                 },
                                                 "text": "|"
                                             },
@@ -451,7 +449,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "user",
-                                                    "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce-text-muted"
                                                 }
                                             },
                                             {
@@ -600,7 +598,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "globe",
-                                                    "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce-text-muted"
                                                 }
                                             },
                                             {
@@ -766,7 +764,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "link",
-                                                    "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce-text-muted"
                                                 }
                                             },
                                             {
@@ -867,7 +865,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "file-text",
-                                                            "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce-text-muted"
                                                         }
                                                     },
                                                     {
@@ -945,7 +943,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "calendar",
-                                                    "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce-text-muted"
                                                 }
                                             },
                                             {
@@ -1421,7 +1419,7 @@
                                                 "name": "Button",
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "ecommerce-flex-center ecommerce:w-8 ecommerce:h-8 ecommerce:justify-center ecommerce:rounded-md ecommerce:text-sm ecommerce:font-medium ecommerce:bg-gray-900 ecommerce:text-white ecommerce:dark:bg-white ecommerce:dark:text-gray-900"
+                                                    "className": "ecommerce-flex-center ecommerce:w-8 ecommerce:h-8 ecommerce-btn ecommerce-btn-primary ecommerce:rounded-md"
                                                 },
                                                 "text": "1"
                                             },

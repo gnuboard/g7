@@ -109,9 +109,7 @@
                                                 "name": "H1",
                                                 "responsive": {
                                                     "640-": {
-                                                        "props": {
-                                                            "className": "ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-1"
-                                                        }
+                                                        "classMerge": "ecommerce:text-2xl"
                                                     }
                                                 },
                                                 "props": {
@@ -851,7 +849,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "calendar",
-                                                            "className": "ecommerce:text-base ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:pointer-events-none"
+                                                            "className": "ecommerce:text-base ecommerce-text-muted ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:pointer-events-none"
                                                         }
                                                     },
                                                     {
@@ -886,7 +884,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "calendar",
-                                                            "className": "ecommerce:text-base ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:pointer-events-none"
+                                                            "className": "ecommerce:text-base ecommerce-text-muted ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:pointer-events-none"
                                                         }
                                                     },
                                                     {
@@ -1350,10 +1348,7 @@
                         "children": [
                             {
                                 "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                    "className": ""
-                                }
+                                "name": "Div"
                             },
                             {
                                 "type": "basic",
@@ -1390,7 +1385,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "ecommerce-flex-center ecommerce:gap-1.5 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:font-medium ecommerce:transition-colors"
+                                            "className": "ecommerce-flex-center ecommerce:gap-1.5 ecommerce-btn ecommerce-btn-primary"
                                         },
                                         "children": [
                                             {

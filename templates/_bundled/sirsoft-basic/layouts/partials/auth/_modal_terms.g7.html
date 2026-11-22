@@ -5,7 +5,7 @@
     <div class="flex flex-col">
       <!-- 발행일 (고정) -->
       <div data-if="{{termsContent?.data?.published_at}}" class="flex-shrink-0 flex items-center gap-2 mb-3">
-        <span class="text-sm text-gray-500 dark:text-gray-400">$t:policy.published_at: {{termsContent?.data?.published_at | date}}</span>
+        <span class="text-sm text-muted">$t:policy.published_at: {{termsContent?.data?.published_at | date}}</span>
       </div>
       <!-- 약관 내용 (스크롤) -->
       <div data-if="{{termsContent?.data}}" class="flex-1 overflow-y-auto min-h-0 max-h-96">
@@ -16,7 +16,7 @@
         </extension-point>
       </div>
       <!-- 내용 없음 — 이 창은 본문을 받은 뒤에 열린다(여는 시퀀스가 refetch 를 기다린다). 열렸는데 값이 없으면 받기 실패다. -->
-      <div data-if="{{!termsContent?.data}}" class="py-8 text-center text-gray-500 dark:text-gray-400">$t:policy.no_content</div>
+      <div data-if="{{!termsContent?.data}}" class="py-8 text-center text-muted">$t:policy.no_content</div>
     </div>
     <footer>
       <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">

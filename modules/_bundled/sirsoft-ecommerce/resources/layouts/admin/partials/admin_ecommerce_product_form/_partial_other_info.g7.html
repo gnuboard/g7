@@ -8,9 +8,9 @@
         <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.otherInfoExpanded="{{!_local.ui.otherInfoExpanded}}"/>
       </on>
-      <icon name="ellipsis-h" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+      <icon name="ellipsis-h" class="ecommerce-text-muted"/>
       <span class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.product.sections.other_info</span>
-      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.otherInfoExpanded !== false ? 'ecommerce:rotate-180' : ''}}"/>
+      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.otherInfoExpanded !== false ? 'ecommerce:rotate-180' : ''}}"/>
     </button>
     <div data-ref="other_info_body" data-if="{{_local.ui.otherInfoExpanded !== false}}" class="ecommerce-row-stack">
       <div data-ref="field_labels" class="ecommerce:space-y-3">
@@ -59,7 +59,7 @@
               <!-- 라벨 칩 — 운영자 색은 바탕에만 쓰고 글자색은 Badge 가 바탕과 4.5 이상이 되도록 계산한다 -->
               <badge data-type="composite" size="md" customColor="{{(product_labels?.data?.data ?? []).find(l => l.id === _local.ui.lastClickedLabelId)?.color ?? '#6B7280'}}">{{$localized((product_labels?.data?.data ?? []).find(l => l.id === _local.ui.lastClickedLabelId)?.name) ?? ''}}</badge>
               <span data-if="{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at}}" class="ecommerce-text-label-subtle">{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at}} ~ {{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.ended_at ?? ''}}</span>
-              <span data-if="{{!(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at}}" class="ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:italic">$t:sirsoft-ecommerce.admin.product.labels.no_period</span>
+              <span data-if="{{!(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at}}" class="ecommerce:text-sm ecommerce-text-muted ecommerce:italic">$t:sirsoft-ecommerce.admin.product.labels.no_period</span>
             </div>
             <div class="ecommerce-flex-center ecommerce:gap-3 ecommerce:text-sm">
               <!-- 라벨 고치기 — 지금 값을 창 입력값으로 옮겨 담아 편집 모드로 연다 -->
@@ -135,7 +135,7 @@
                   <action handler="sirsoft-ecommerce.updateLabelPeriodInline" labelId="{{_local.ui.lastClickedLabelId}}" field="started_at" value="{{$event.target.value}}"/>
                 </on>
               </input>
-              <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">~</span>
+              <span class="ecommerce-text-muted">~</span>
               <input type="date" aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.product.labels.title')}}" class="ecommerce-input" value="{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.ended_at ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.labels.ended_at" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <!-- 노출 종료일 직접 지정 -->
@@ -213,7 +213,7 @@
             <span>$t:sirsoft-ecommerce.admin.product.selector_forbidden.roles</span>
           </div>
           <!-- 허용 역할 검증 에러 (구매대상제한 선택 시 역할 미선택 차단) -->
-          <span data-if="{{_local.errors?.allowed_roles}}" class="ecommerce:block ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:text-xs ecommerce:mt-1">{{_local.errors?.allowed_roles?.[0] ?? ''}}</span>
+          <span data-if="{{_local.errors?.allowed_roles}}" class="ecommerce-form-error">{{_local.errors?.allowed_roles?.[0] ?? ''}}</span>
         </div>
       </div>
     </div>

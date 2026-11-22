@@ -1567,7 +1567,8 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
             expect(next, `${field} 뒤 에러 Span`).not.toBeNull();
             expect(next.name).toBe('Span');
             expect(next.if).toContain(`_local.errors?.['${field}']`);
-            expect(next.props.className).toContain('text-red-600');
+            // 빨간 오류 글자는 확장 사본 의미 클래스 board-form-error(block·mt-1·text-xs·red-700/300) 로 묶였다(#399 R-1 P2, D3)
+            expect(String(next.props.className).split(/\s+/)).toContain('board-form-error');
             expect(next.text).toContain(`_local.errors`);
             expect(next.text).toContain(field);
         }

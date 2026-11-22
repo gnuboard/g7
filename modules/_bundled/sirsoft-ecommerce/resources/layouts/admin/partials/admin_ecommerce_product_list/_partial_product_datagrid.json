@@ -279,7 +279,7 @@
                                         "if": "{{!row.thumbnail_url}}",
                                         "props": {
                                             "name": "image",
-                                            "className": "ecommerce:text-2xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                            "className": "ecommerce:text-2xl ecommerce-text-muted"
                                         }
                                     }
                                 ]
@@ -377,7 +377,7 @@
                                         "name": "Span",
                                         "if": "{{!row.categories_with_path || row.categories_with_path.length === 0}}",
                                         "props": {
-                                            "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                            "className": "ecommerce:text-xs ecommerce-text-muted"
                                         },
                                         "text": "-"
                                     }
@@ -486,7 +486,7 @@
                                                     "item_var": "currencyCol"
                                                 },
                                                 "props": {
-                                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:whitespace-nowrap"
+                                                    "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:whitespace-nowrap"
                                                 },
                                                 "text": "{{row.multi_currency_selling_price?.[currencyCol.currencyCode]?.formatted ?? ''}}"
                                             }
@@ -757,7 +757,7 @@
                                 "name": "Span",
                                 "if": "{{!row.shipping_policy_id}}",
                                 "props": {
-                                    "className": "ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                    "className": "ecommerce:text-sm ecommerce-text-muted"
                                 },
                                 "text": "-"
                             }
@@ -811,7 +811,7 @@
                                 "name": "Div",
                                 "if": "{{(optionsLoadingIds || []).some(id => id + '' === row.id + '')}}",
                                 "props": {
-                                    "className": "ecommerce:text-center ecommerce:py-4 ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                    "className": "ecommerce:text-center ecommerce:py-4 ecommerce-text-muted"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.product.table.options.loading"
                             },
@@ -1646,7 +1646,7 @@
                                                                                             "item_var": "currencyCol"
                                                                                         },
                                                                                         "props": {
-                                                                                            "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:whitespace-nowrap"
+                                                                                            "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:whitespace-nowrap"
                                                                                         },
                                                                                         "text": "{{option.multi_currency_selling_price?.[currencyCol.currencyCode]?.formatted ?? ''}}"
                                                                                     }
@@ -1808,7 +1808,7 @@
                                 "name": "Div",
                                 "if": "{{Array.isArray(row.options) && row.options.length === 0}}",
                                 "props": {
-                                    "className": "ecommerce:text-center ecommerce:py-4 ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                    "className": "ecommerce:text-center ecommerce:py-4 ecommerce-text-muted"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.product.table.options.no_options"
                             }

@@ -22,7 +22,7 @@
       <div data-ref="nicepay_escrow_payments_{{eIdx}}" data-each="payment, eIdx in {{nicepay_escrow.data?.escrow_payments?.filter(p => p.transaction_id) ?? []}}" class="paynicepayments:space-y-4">
         <div class="paynicepayments:rounded-lg paynicepayments:border paynicepayments:border-gray-100 paynicepayments:dark:border-gray-700 paynicepayments:p-4 paynicepayments:bg-gray-50 paynicepayments:dark:bg-gray-800/50 paynicepayments:space-y-4">
           <div class="paynicepayments:flex paynicepayments:items-center paynicepayments:gap-2">
-            <span class="paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400">TID:</span>
+            <span class="paynicepayments:text-xs pay-nicepayments-text-muted">TID:</span>
             <span class="paynicepayments:font-mono paynicepayments:text-xs paynicepayments:text-gray-900 paynicepayments:dark:text-gray-100">{{payment.transaction_id}}</span>
           </div>
           <div class="paynicepayments:grid paynicepayments:grid-cols-1 paynicepayments:gap-3">
@@ -95,21 +95,21 @@
       <div data-ref="nicepay_verify_header" class="paynicepayments:flex paynicepayments:items-center paynicepayments:gap-2 paynicepayments:mb-4">
         <div class="paynicepayments:w-1.5 paynicepayments:h-4 paynicepayments:bg-blue-500 paynicepayments:rounded-full paynicepayments:flex-shrink-0"/>
         <h3 class="paynicepayments:text-sm paynicepayments:font-semibold paynicepayments:text-gray-800 paynicepayments:dark:text-gray-200">$t:sirsoft-pay_nicepayments.admin.order_verify_title</h3>
-        <span class="paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 paynicepayments:hidden pay-nicepayments-hidden"><responsive on="640-" class="paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 pay-nicepayments-hidden paynicepayments:inline"/>$t:sirsoft-pay_nicepayments.admin.order_verify_description</span>
+        <span class="paynicepayments:text-xs pay-nicepayments-text-muted paynicepayments:hidden pay-nicepayments-hidden"><responsive on="640-" class="paynicepayments:text-xs pay-nicepayments-text-muted pay-nicepayments-hidden paynicepayments:inline"/>$t:sirsoft-pay_nicepayments.admin.order_verify_description</span>
       </div>
       <!-- 간편결제 서비스명 — 이커머스 주문 상세의 결제수단 칸은 기본 결제수단(신용카드)만 안다. 이 결제의 원 수단(카카오페이 등)은 거래 조회(nicepay_status)가 주는 원 수단 코드를 번역 키로 풀어 여기서 밝힌다. 종전에는 주입 스크립트가 이커머스 결제수단 칸의 글자를 직접 고쳐 썼다(#639). -->
       <div data-ref="nicepay_easy_pay_row" data-if="{{(['naverpay','kakaopay','samsungpay','applepay','payco','skpay','ssgpay','lpay']).includes(nicepay_status.data?._embedded_pg_provider)}}" class="paynicepayments:flex paynicepayments:items-center paynicepayments:gap-2 paynicepayments:mb-4">
-        <span class="paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.easy_pay_label</span>
+        <span class="paynicepayments:text-xs pay-nicepayments-text-muted">$t:sirsoft-pay_nicepayments.user.easy_pay_label</span>
         <span class="paynicepayments:text-sm paynicepayments:font-semibold paynicepayments:text-gray-900 paynicepayments:dark:text-gray-100">{{$t('sirsoft-pay_nicepayments.user.easy_pay_names.' + String(nicepay_status.data?._embedded_pg_provider ?? '').toUpperCase())}}</span>
       </div>
       <div data-ref="nicepay_payments_list_{{pIdx}}" data-each="payment, pIdx in {{order.data?.payments?.filter(p => p.transaction_id) ?? []}}" class="paynicepayments:space-y-3">
         <div class="paynicepayments:rounded-lg paynicepayments:border paynicepayments:border-gray-100 paynicepayments:dark:border-gray-700 paynicepayments:p-3 paynicepayments:bg-gray-50 paynicepayments:dark:bg-gray-800/50">
           <div class="paynicepayments:flex paynicepayments:items-center paynicepayments:flex-wrap paynicepayments:gap-3">
             <div class="paynicepayments:flex-1 paynicepayments:min-w-0">
-              <span class="paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 paynicepayments:block paynicepayments:mb-0.5">TID</span>
+              <span class="paynicepayments:text-xs pay-nicepayments-text-muted paynicepayments:block paynicepayments:mb-0.5">TID</span>
               <span class="paynicepayments:font-mono paynicepayments:text-xs paynicepayments:text-gray-900 paynicepayments:dark:text-gray-100 paynicepayments:break-all pay-nicepayments-break-all paynicepayments:block">{{payment.transaction_id}}</span>
             </div>
-            <button type="button" disabled="{{_local._nicepayQuerying &amp;&amp; _local._nicepayActiveTid === payment.transaction_id}}" class="paynicepayments:flex paynicepayments:items-center paynicepayments:gap-1.5 paynicepayments:px-3 paynicepayments:py-1.5 paynicepayments:text-xs paynicepayments:font-medium paynicepayments:bg-blue-600 paynicepayments:hover:bg-blue-700 paynicepayments:text-white paynicepayments:rounded-md paynicepayments:transition-colors paynicepayments:disabled:opacity-50 paynicepayments:disabled:cursor-not-allowed paynicepayments:whitespace-nowrap paynicepayments:flex-shrink-0">
+            <button type="button" disabled="{{_local._nicepayQuerying &amp;&amp; _local._nicepayActiveTid === payment.transaction_id}}" class="paynicepayments:flex pay-nicepayments-btn pay-nicepayments-btn-primary pay-nicepayments-btn-sm paynicepayments:gap-1.5 paynicepayments:text-xs paynicepayments:rounded-md paynicepayments:whitespace-nowrap paynicepayments:flex-shrink-0">
               <on type="click">
                 <!-- 거래 조회 — 결제 건이 여러 개일 수 있어 조회 중인 거래번호를 따로 들고 그 버튼만 잠근다 -->
                 <sequence>
@@ -142,13 +142,13 @@
               <span data-if="{{(_local._nicepayResult ?? nicepay_status.data)?._is_test_mode === true}}" class="paynicepayments:inline-flex paynicepayments:items-center paynicepayments:px-2 paynicepayments:py-0.5 paynicepayments:rounded-full paynicepayments:text-xs paynicepayments:font-semibold paynicepayments:bg-orange-100 paynicepayments:text-orange-800 paynicepayments:dark:bg-orange-900/30 paynicepayments:dark:text-orange-300">$t:sirsoft-pay_nicepayments.admin.test_mode_badge</span>
             </div>
             <div class="paynicepayments:grid paynicepayments:grid-cols-2 paynicepayments:gap-x-4 paynicepayments:gap-y-1.5 paynicepayments:text-xs">
-              <span class="paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.result_auth_code</span>
+              <span class="pay-nicepayments-text-muted">$t:sirsoft-pay_nicepayments.admin.result_auth_code</span>
               <span class="paynicepayments:text-gray-900 paynicepayments:dark:text-gray-100 paynicepayments:font-mono">{{(_local._nicepayResult ?? nicepay_status.data).AuthCode ?? '-'}}</span>
-              <span class="paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.result_auth_date</span>
+              <span class="pay-nicepayments-text-muted">$t:sirsoft-pay_nicepayments.admin.result_auth_date</span>
               <span class="paynicepayments:text-gray-900 paynicepayments:dark:text-gray-100 paynicepayments:font-mono">{{(_local._nicepayResult ?? nicepay_status.data).AuthDate ?? '-'}}</span>
-              <span class="paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.result_escrow</span>
+              <span class="pay-nicepayments-text-muted">$t:sirsoft-pay_nicepayments.admin.result_escrow</span>
               <span class="paynicepayments:text-gray-900 paynicepayments:dark:text-gray-100">{{((_local._nicepayResult ?? nicepay_status.data).EscrowYN === 'Y' || (_local._nicepayResult ?? nicepay_status.data)._local_is_escrow) ? '$t:sirsoft-pay_nicepayments.admin.escrow_yes' : '$t:sirsoft-pay_nicepayments.admin.escrow_no'}}</span>
-              <span class="paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.result_result_code</span>
+              <span class="pay-nicepayments-text-muted">$t:sirsoft-pay_nicepayments.admin.result_result_code</span>
               <span class="paynicepayments:font-mono paynicepayments:text-gray-900 paynicepayments:dark:text-gray-100">{{((_local._nicepayResult ?? nicepay_status.data).ResultCode ?? '') + ' ' + ((_local._nicepayResult ?? nicepay_status.data).ResultMsg ?? '')}}</span>
             </div>
           </div>
@@ -159,7 +159,7 @@
       <div class="paynicepayments:flex paynicepayments:items-center paynicepayments:gap-2 paynicepayments:mb-4">
         <div class="paynicepayments:w-1.5 paynicepayments:h-4 paynicepayments:bg-emerald-500 paynicepayments:rounded-full paynicepayments:flex-shrink-0"/>
         <h3 class="paynicepayments:text-sm paynicepayments:font-semibold paynicepayments:text-gray-800 paynicepayments:dark:text-gray-200">$t:sirsoft-pay_nicepayments.admin.vbank_noti_title</h3>
-        <span class="paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 paynicepayments:hidden pay-nicepayments-hidden"><responsive on="640-" class="paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 pay-nicepayments-hidden paynicepayments:inline"/>$t:sirsoft-pay_nicepayments.admin.vbank_noti_description</span>
+        <span class="paynicepayments:text-xs pay-nicepayments-text-muted paynicepayments:hidden pay-nicepayments-hidden"><responsive on="640-" class="paynicepayments:text-xs pay-nicepayments-text-muted pay-nicepayments-hidden paynicepayments:inline"/>$t:sirsoft-pay_nicepayments.admin.vbank_noti_description</span>
         <button type="button" disabled="{{_local._vbankNotiLoading === true}}" class="paynicepayments:flex paynicepayments:items-center paynicepayments:ml-auto paynicepayments:gap-1.5 paynicepayments:px-3 paynicepayments:py-1.5 paynicepayments:text-xs paynicepayments:font-medium paynicepayments:bg-emerald-700 pay-nicepayments-btn-emerald paynicepayments:text-white paynicepayments:rounded paynicepayments:transition-colors paynicepayments:disabled:opacity-50 paynicepayments:disabled:cursor-not-allowed">
           <on type="click">
             <!-- 가상계좌 입금통보 재조회 — PG 에 현재 통보 상태를 다시 물어 화면을 갱신한다 -->
@@ -179,22 +179,22 @@
           <span>$t:sirsoft-pay_nicepayments.admin.vbank_noti_query_button</span>
         </button>
       </div>
-      <p data-if="{{!_local._vbankNotiData &amp;&amp; !_local._vbankNotiLoading &amp;&amp; !_local._vbankNotiError}}" class="paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 paynicepayments:italic">$t:sirsoft-pay_nicepayments.admin.vbank_noti_not_loaded</p>
+      <p data-if="{{!_local._vbankNotiData &amp;&amp; !_local._vbankNotiLoading &amp;&amp; !_local._vbankNotiError}}" class="paynicepayments:text-xs pay-nicepayments-text-muted paynicepayments:italic">$t:sirsoft-pay_nicepayments.admin.vbank_noti_not_loaded</p>
       <p data-if="{{_local._vbankNotiError}}" class="paynicepayments:text-xs paynicepayments:text-rose-600 paynicepayments:dark:text-rose-400">{{_local._vbankNotiError}}</p>
-      <p data-if="{{_local._vbankNotiData &amp;&amp; (_local._vbankNotiData.notifications ?? []).length === 0}}" class="paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 paynicepayments:italic">$t:sirsoft-pay_nicepayments.admin.vbank_noti_empty</p>
+      <p data-if="{{_local._vbankNotiData &amp;&amp; (_local._vbankNotiData.notifications ?? []).length === 0}}" class="paynicepayments:text-xs pay-nicepayments-text-muted paynicepayments:italic">$t:sirsoft-pay_nicepayments.admin.vbank_noti_empty</p>
       <div data-if="{{_local._vbankNotiData &amp;&amp; (_local._vbankNotiData.notifications ?? []).length > 0}}" class="paynicepayments:border paynicepayments:border-gray-200 paynicepayments:dark:border-gray-700 paynicepayments:rounded-lg paynicepayments:p-3">
         <div class="paynicepayments:grid paynicepayments:grid-cols-2 paynicepayments:gap-x-4 paynicepayments:gap-y-1.5 paynicepayments:text-xs paynicepayments:mb-3">
-          <span class="paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.vbank_noti_count</span>
+          <span class="pay-nicepayments-text-muted">$t:sirsoft-pay_nicepayments.admin.vbank_noti_count</span>
           <span class="paynicepayments:text-gray-900 paynicepayments:dark:text-gray-100 paynicepayments:font-semibold">$t:sirsoft-pay_nicepayments.admin.vbank_noti_count_value|count={{_local._vbankNotiData.summary?.count ?? 0}}</span>
-          <span class="paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.vbank_noti_first_at</span>
+          <span class="pay-nicepayments-text-muted">$t:sirsoft-pay_nicepayments.admin.vbank_noti_first_at</span>
           <span class="paynicepayments:text-gray-900 paynicepayments:dark:text-gray-100 paynicepayments:font-mono">{{_local._vbankNotiData.summary?.first_received_at | datetime('YYYY-MM-DD HH:mm:ss') | default('-')}}</span>
-          <span class="paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.vbank_noti_last_at</span>
+          <span class="pay-nicepayments-text-muted">$t:sirsoft-pay_nicepayments.admin.vbank_noti_last_at</span>
           <span class="paynicepayments:text-gray-900 paynicepayments:dark:text-gray-100 paynicepayments:font-mono">{{_local._vbankNotiData.summary?.last_received_at | datetime('YYYY-MM-DD HH:mm:ss') | default('-')}}</span>
-          <span class="paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.vbank_noti_deposited_at</span>
+          <span class="pay-nicepayments-text-muted">$t:sirsoft-pay_nicepayments.admin.vbank_noti_deposited_at</span>
           <span class="paynicepayments:text-emerald-700 paynicepayments:dark:text-emerald-400 paynicepayments:font-mono">{{_local._vbankNotiData.summary?.deposited_at | datetime('YYYY-MM-DD HH:mm:ss') | default('-')}}</span>
-          <span data-if="{{!!_local._vbankNotiData.summary?.cancelled_at}}" class="paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.vbank_noti_cancelled_at</span>
+          <span data-if="{{!!_local._vbankNotiData.summary?.cancelled_at}}" class="pay-nicepayments-text-muted">$t:sirsoft-pay_nicepayments.admin.vbank_noti_cancelled_at</span>
           <span data-if="{{!!_local._vbankNotiData.summary?.cancelled_at}}" class="paynicepayments:text-rose-700 paynicepayments:dark:text-rose-400 paynicepayments:font-mono">{{_local._vbankNotiData.summary?.cancelled_at | datetime('YYYY-MM-DD HH:mm:ss')}}</span>
-          <span class="paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.vbank_noti_depositor</span>
+          <span class="pay-nicepayments-text-muted">$t:sirsoft-pay_nicepayments.admin.vbank_noti_depositor</span>
           <span class="paynicepayments:text-gray-900 paynicepayments:dark:text-gray-100">{{_local._vbankNotiData.summary?.last_depositor ?? '-'}}</span>
         </div>
         <div class="paynicepayments:border-t paynicepayments:border-gray-200 paynicepayments:dark:border-gray-700 paynicepayments:pt-3">
@@ -205,7 +205,7 @@
               <span data-if="{{noti.type === 'cancelled'}}" class="paynicepayments:inline-flex paynicepayments:items-center paynicepayments:px-2 paynicepayments:py-0.5 paynicepayments:rounded paynicepayments:text-[10px] paynicepayments:font-semibold paynicepayments:bg-rose-100 paynicepayments:text-rose-800 paynicepayments:dark:bg-rose-900/30 paynicepayments:dark:text-rose-300 paynicepayments:flex-shrink-0">$t:sirsoft-pay_nicepayments.admin.vbank_noti_type_cancelled</span>
               <span data-if="{{noti.type !== 'deposited' &amp;&amp; noti.type !== 'cancelled'}}" class="paynicepayments:inline-flex paynicepayments:items-center paynicepayments:px-2 paynicepayments:py-0.5 paynicepayments:rounded paynicepayments:text-[10px] paynicepayments:font-semibold paynicepayments:bg-gray-100 paynicepayments:text-gray-700 paynicepayments:dark:bg-gray-700 paynicepayments:dark:text-gray-300 paynicepayments:flex-shrink-0">$t:sirsoft-pay_nicepayments.admin.vbank_noti_type_other</span>
               <span class="paynicepayments:font-mono paynicepayments:text-gray-700 paynicepayments:dark:text-gray-300">{{noti.received_at | datetime('YYYY-MM-DD HH:mm:ss')}}</span>
-              <span class="paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 paynicepayments:font-mono">{{noti.result_code ?? '-'}}</span>
+              <span class="pay-nicepayments-text-muted paynicepayments:font-mono">{{noti.result_code ?? '-'}}</span>
               <span class="paynicepayments:text-gray-700 paynicepayments:dark:text-gray-300">{{noti.result_msg ?? ''}}</span>
               <span data-if="{{noti.depositor}}" class="paynicepayments:text-gray-600 paynicepayments:dark:text-gray-400 paynicepayments:ml-auto">{{noti.depositor + ' / ' + $t('sirsoft-ecommerce.currency.krw_prefix') + (noti.amt ?? 0).toLocaleString() + $t('sirsoft-ecommerce.currency.krw_suffix')}}</span>
             </div>

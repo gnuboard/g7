@@ -9,15 +9,15 @@
     </div>
     <!-- 상태 ② 입금 전 — 발급 불가 안내 + 신청내역(신청했을 때만). 입금 전 상태는 두 가지다: 무통장 주문은 ready 로 생성되고 가상계좌는 waiting_deposit 이다 (PaymentStatusEnum::isAwaitingDeposit() 이 둘 다 true). waiting_deposit 만 검사하면 무통장 주문 전부에서 카드 본문이 사라진다. -->
     <div data-ref="ext_mypage_cash_receipt_awaiting" data-if="{{['ready', 'waiting_deposit'].includes(order.data.payment?.payment_status)}}" class="ecommerce:space-y-1">
-      <p class="ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.order.cash_receipt.awaiting_deposit</p>
+      <p class="ecommerce:text-sm ecommerce-text-muted">$t:sirsoft-ecommerce.order.cash_receipt.awaiting_deposit</p>
       <p data-if="{{!!order.data.payment?.is_cash_receipt_requested}}" class="ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{order.data.payment?.cash_receipt_type_label ?? ''}} · {{order.data.payment?.cash_receipt_identifier ?? ''}}</p>
     </div>
     <!-- 상태 ③ 입금완료 + 미발급 — 발급 버튼. 재발급 실패 이력이 있으면 상태 ⑤(경고)가 담당하므로 여기서 제외한다(두 상태는 배타적이어야 한다). 발급 프로바이더가 해석되지 않으면(제공 확장 제거 등) 버튼을 내리지 않는다 — 눌러도 구독자 없는 훅을 호출해 실패로만 기록된다(A3). -->
     <div data-ref="ext_mypage_cash_receipt_issuable" data-if="{{!!order.data.payment?.cash_receipt_provider &amp;&amp; order.data.payment?.payment_status === 'paid' &amp;&amp; !order.data.cash_receipt &amp;&amp; String((order.data.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() !== 'failed'}}" class="ecommerce:flex ecommerce:flex-row ecommerce:items-center ecommerce:justify-between ecommerce:gap-2">
       <responsive on="portable" class="ecommerce:flex ecommerce:flex-col ecommerce:items-start ecommerce:gap-2 ecommerce:w-full"/>
-      <p class="ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.order.cash_receipt.none</p>
+      <p class="ecommerce:text-sm ecommerce-text-muted">$t:sirsoft-ecommerce.order.cash_receipt.none</p>
       <button data-ref="ext_mypage_cash_receipt_issue_button" type="button" class="ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:rounded-lg ecommerce:bg-blue-600 ecommerce:hover:bg-blue-700 ecommerce:text-white">
-        <responsive on="portable" type="button" class="ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:rounded-lg ecommerce:bg-blue-600 ecommerce:hover:bg-blue-700 ecommerce:text-white"/>
+        <responsive on="portable" type="button" class-merge="ecommerce:w-full ecommerce:py-2"/>
         <on type="click">
           <!-- 모달을 열기 전에 신청내역으로 폼을 시드한다 (미신청이면 기본값) -->
           <sequence>
@@ -31,22 +31,22 @@
     <!-- 상태 ④ 발급완료 — 발급일시/용도/식별번호 + 영수증 링크 -->
     <div data-ref="ext_mypage_cash_receipt_issued" data-if="{{!!order.data.cash_receipt}}" class="ecommerce:space-y-1">
       <div class="ecommerce:flex ecommerce:items-center ecommerce:justify-between">
-        <span class="ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.order.cash_receipt.issued_at</span>
+        <span class="ecommerce:text-sm ecommerce-text-muted">$t:sirsoft-ecommerce.order.cash_receipt.issued_at</span>
         <span class="ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-white">{{order.data.cash_receipt?.issued_at_formatted ?? ''}}</span>
       </div>
       <div class="ecommerce:flex ecommerce:items-center ecommerce:justify-between">
-        <span class="ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.order.cash_receipt.purpose</span>
+        <span class="ecommerce:text-sm ecommerce-text-muted">$t:sirsoft-ecommerce.order.cash_receipt.purpose</span>
         <span class="ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-white">{{order.data.cash_receipt?.receipt_type_label ?? ''}}</span>
       </div>
       <div class="ecommerce:flex ecommerce:items-center ecommerce:justify-between">
-        <span class="ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.order.cash_receipt.identifier</span>
+        <span class="ecommerce:text-sm ecommerce-text-muted">$t:sirsoft-ecommerce.order.cash_receipt.identifier</span>
         <span class="ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-white">{{order.data.cash_receipt?.identifier_masked ?? ''}}</span>
       </div>
       <!-- 영수증 링크 — 이력 테이블 소유(payment.pg_receipt_url 은 카드 매출전표라 별개) -->
       <div data-if="{{!!order.data.cash_receipt?.receipt_url}}" class="ecommerce:flex ecommerce:flex-row ecommerce:justify-end ecommerce:pt-2">
         <responsive on="portable" class="ecommerce:flex ecommerce:flex-col ecommerce:w-full ecommerce:pt-2"/>
         <a data-ref="ext_mypage_cash_receipt_link" href="{{order.data.cash_receipt?.receipt_url}}" target="_blank" rel="noopener noreferrer" class="ecommerce:inline-flex ecommerce:items-center ecommerce:justify-center ecommerce:gap-1 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:rounded-lg ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
-          <responsive on="portable" href="{{order.data.cash_receipt?.receipt_url}}" target="_blank" rel="noopener noreferrer" class="ecommerce:inline-flex ecommerce:w-full ecommerce:items-center ecommerce:justify-center ecommerce:gap-1 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:rounded-lg ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"/>
+          <responsive on="portable" href="{{order.data.cash_receipt?.receipt_url}}" target="_blank" rel="noopener noreferrer" class-merge="ecommerce:w-full ecommerce:py-2"/>
           $t:sirsoft-ecommerce.order.cash_receipt.view_receipt
         </a>
       </div>
@@ -73,7 +73,7 @@
         </on>
         <!-- 용도 -->
         <div>
-          <label class="ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mb-1">$t:sirsoft-ecommerce.order.cash_receipt.purpose</label>
+          <label class="ecommerce-user-form-label">$t:sirsoft-ecommerce.order.cash_receipt.purpose</label>
           <div class="ecommerce:flex ecommerce:flex-row ecommerce:gap-4">
             <responsive on="portable" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2"/>
             <label class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300">
@@ -98,7 +98,7 @@
         </div>
         <!-- 발급수단 — 지출증빙일 때만 사업자등록번호 추가 (D10) -->
         <div>
-          <label class="ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mb-1">$t:sirsoft-ecommerce.order.cash_receipt.identifier_type</label>
+          <label class="ecommerce-user-form-label">$t:sirsoft-ecommerce.order.cash_receipt.identifier_type</label>
           <select name="identifier_type" aria-label="$t:sirsoft-ecommerce.order.cash_receipt.identifier_type" value="{{_global.ecommerceCashReceiptForm?.identifier_type ?? 'phone'}}" options="{{(_global.ecommerceCashReceiptForm?.receipt_type === 'expense' ? [{ value: 'business', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_business') }] : []).concat([{ value: 'phone', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_phone') }, { value: 'card', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_card') }])}}" class="ecommerce:w-full ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500">
             <on type="change">
               <!-- 발급수단 변경 시 번호를 비운다 (형식이 달라 검증 실패를 유발) -->
@@ -108,7 +108,7 @@
         </div>
         <!-- 번호 -->
         <div>
-          <label class="ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mb-1">$t:sirsoft-ecommerce.order.cash_receipt.identifier</label>
+          <label class="ecommerce-user-form-label">$t:sirsoft-ecommerce.order.cash_receipt.identifier</label>
           <input type="text" name="identifier" aria-label="$t:sirsoft-ecommerce.order.cash_receipt.identifier" value="{{_global.ecommerceCashReceiptForm?.identifier ?? ''}}" placeholder="$t:sirsoft-ecommerce.order.cash_receipt.identifier_placeholder" class="ecommerce:w-full ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500">
             <on type="change">
               <!-- 식별번호. 소득공제면 휴대폰번호나 현금영수증카드, 지출증빙이면 사업자등록번호다 -->
@@ -117,7 +117,7 @@
           </input>
           <span data-if="{{!!_global.ecommerceCashReceiptForm?.error}}" class="ecommerce:block ecommerce:text-red-600 ecommerce:dark:text-red-300 ecommerce:text-xs ecommerce:mt-1">{{_global.ecommerceCashReceiptForm?.error ?? ''}}</span>
         </div>
-        <p class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.order.cash_receipt.immutable_help</p>
+        <p class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.order.cash_receipt.immutable_help</p>
         <!-- 액션 — 데스크톱 가로 우측정렬, portable 세로 full-width -->
         <div class="ecommerce:flex ecommerce:flex-row ecommerce:justify-end ecommerce:gap-2 ecommerce:pt-2">
           <responsive on="portable" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:w-full ecommerce:pt-2"/>

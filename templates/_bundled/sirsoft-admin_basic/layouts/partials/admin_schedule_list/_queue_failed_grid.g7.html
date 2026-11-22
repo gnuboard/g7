@@ -29,7 +29,7 @@
         </on>
         $t:admin.schedules.queue.action.delete_selected
       </button>
-      <button data-ref="queue_bulk_retry_button" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.selectedFailedJobUuids?.length || queue_failed?.data?.abilities?.can_retry !== true}}">
+      <button data-ref="queue_bulk_retry_button" type="button" class="btn btn-primary" disabled="{{!_global.selectedFailedJobUuids?.length || queue_failed?.data?.abilities?.can_retry !== true}}">
         <on type="click">
           <!-- 일괄 재시도 — 고른 UUID 를 확인 창에 담아 연다. 지난 결과를 비워야 창이 확인 단계로 열린다. -->
           <sequence>
@@ -92,7 +92,7 @@
         <cell>
           <div class="min-w-0">
             <span class="font-medium text-gray-900 dark:text-white break-all">{{row.display_name}}</span>
-            <span class="block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5 break-all">{{row.job_class}}</span>
+            <span class="block text-xs text-muted font-mono mt-0.5 break-all">{{row.job_class}}</span>
             <span class="block text-xs text-gray-400 dark:text-gray-500 font-mono mt-0.5 break-all">{{row.uuid}}</span>
           </div>
         </cell>
@@ -100,7 +100,7 @@
       <column field="queue" header="$t:admin.schedules.queue.columns.queue" width="140px" :sortable="false">
         <cell>
           <span class="text-sm font-mono text-gray-900 dark:text-white">{{row.queue}}</span>
-          <span data-if="{{row.connection}}" class="block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">{{row.connection}}</span>
+          <span data-if="{{row.connection}}" class="block text-xs text-muted font-mono mt-0.5">{{row.connection}}</span>
         </cell>
       </column>
       <column field="exception_summary" header="$t:admin.schedules.queue.columns.error" :sortable="false">

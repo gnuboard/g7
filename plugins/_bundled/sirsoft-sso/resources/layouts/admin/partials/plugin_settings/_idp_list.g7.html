@@ -69,14 +69,14 @@
         </button>
       </div>
     </div>
-    <p data-ref="idp_list_loading" data-if="{{!ssoIdps?.data}}" class="sso:text-sm sso:text-gray-500 sso:dark:text-gray-400">$t:common.loading</p>
+    <p data-ref="idp_list_loading" data-if="{{!ssoIdps?.data}}" class="sso:text-sm sso-text-muted">$t:common.loading</p>
     <p data-ref="idp_list_empty" data-if="{{!!ssoIdps?.data &amp;&amp; (ssoIdps?.data?.idps ?? []).length === 0}}" class="sso-text-hint">$t:sirsoft-sso.admin.settings.idp.empty</p>
     <data-grid data-type="composite" data-ref="idp_datagrid" data-if="{{(ssoIdps?.data?.idps ?? []).length > 0}}" data="{{ssoIdps?.data?.idps ?? []}}" :pagination="false" idField="id" :selectable="false" emptyMessage="$t:sirsoft-sso.admin.settings.idp.empty">
       <column field="display_label" header="$t:sirsoft-sso.admin.settings.idp.col.label" :sortable="false">
         <cell>
           <div class="sso:flex sso:flex-col">
             <span class="sso:text-sm sso:font-medium sso:text-gray-900 sso:dark:text-white">{{row.display_label}}</span>
-            <span class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">{{row.key}}</span>
+            <span class="sso:text-xs sso-text-muted">{{row.key}}</span>
           </div>
         </cell>
       </column>
@@ -104,7 +104,7 @@
         <cell>
           <div class="sso:flex sso:flex-col sso:text-xs">
             <span class="sso:text-gray-700 sso:dark:text-gray-300">{{$t('sirsoft-sso.admin.settings.idp.last_success')}}: {{row.last_success_at | datetime | default('-')}}</span>
-            <span class="{{row.last_error_at ? 'sso:text-red-700 sso:dark:text-red-300' : 'sso:text-gray-500 sso:dark:text-gray-400'}}">{{$t('sirsoft-sso.admin.settings.idp.last_error')}}: {{row.last_error_at | datetime | default('-')}}{{row.last_error_at &amp;&amp; row.last_error_code ? ' (' + row.last_error_code + ')' : ''}}</span>
+            <span class="{{row.last_error_at ? 'sso:text-red-700 sso:dark:text-red-300' : 'sso-text-muted'}}">{{$t('sirsoft-sso.admin.settings.idp.last_error')}}: {{row.last_error_at | datetime | default('-')}}{{row.last_error_at &amp;&amp; row.last_error_code ? ' (' + row.last_error_code + ')' : ''}}</span>
           </div>
         </cell>
       </column>

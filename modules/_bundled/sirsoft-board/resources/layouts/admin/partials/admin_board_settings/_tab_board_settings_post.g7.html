@@ -5,7 +5,7 @@
       <section-layout data-type="layout" data-ref="section_post" class="board-admin-card">
         <h3 class="board-card-title">$t:sirsoft-board.admin.settings.sections.post</h3>
         <div class="board-row-stack">
-          <div data-ref="field_min_title_length" class="">
+          <div data-ref="field_min_title_length">
             <div class="board-flex-center board:gap-4">
               <label class="board-flex-start board:gap-2 board-text-body board:font-medium board:flex-1 board:cursor-pointer">
                 <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('min_title_length')}}" disabled="{{!_computed.canBulkApply}}">
@@ -21,11 +21,11 @@
               </label>
               <div class="board:flex-shrink-0">
                 <input aria-label="$t:sirsoft-board.admin.settings.fields.min_title_length" type="number" name="basic_defaults.min_title_length" min="{{_local?.form?._meta?.limits?.min_title_length_min ?? 0}}" max="{{_local?.form?._meta?.limits?.min_title_length_max ?? 200}}" class="{{(_local.errors?.['basic_defaults.min_title_length']) ? 'board:w-32 board-input-error' : 'board:w-32'}}" disabled="{{_computed.isReadOnly}}"/>
-                <span data-if="{{_local.errors?.['basic_defaults.min_title_length']}}" class="board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.min_title_length']) ? _local.errors['basic_defaults.min_title_length'][0] : _local.errors?.['basic_defaults.min_title_length']) ?? ''}}</span>
+                <span data-if="{{_local.errors?.['basic_defaults.min_title_length']}}" class="board-form-error">{{(Array.isArray(_local.errors?.['basic_defaults.min_title_length']) ? _local.errors['basic_defaults.min_title_length'][0] : _local.errors?.['basic_defaults.min_title_length']) ?? ''}}</span>
               </div>
             </div>
           </div>
-          <div data-ref="field_max_title_length" class="">
+          <div data-ref="field_max_title_length">
             <div class="board-flex-center board:gap-4">
               <label class="board-flex-start board:gap-2 board-text-body board:font-medium board:flex-1 board:cursor-pointer">
                 <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_title_length')}}" disabled="{{!_computed.canBulkApply}}">
@@ -41,11 +41,11 @@
               </label>
               <div class="board:flex-shrink-0">
                 <input aria-label="$t:sirsoft-board.admin.settings.fields.max_title_length" type="number" name="basic_defaults.max_title_length" min="{{_local?.form?._meta?.limits?.max_title_length_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_title_length_max ?? 1000}}" class="{{(_local.errors?.['basic_defaults.max_title_length']) ? 'board:w-32 board-input-error' : 'board:w-32'}}" disabled="{{_computed.isReadOnly}}"/>
-                <span data-if="{{_local.errors?.['basic_defaults.max_title_length']}}" class="board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.max_title_length']) ? _local.errors['basic_defaults.max_title_length'][0] : _local.errors?.['basic_defaults.max_title_length']) ?? ''}}</span>
+                <span data-if="{{_local.errors?.['basic_defaults.max_title_length']}}" class="board-form-error">{{(Array.isArray(_local.errors?.['basic_defaults.max_title_length']) ? _local.errors['basic_defaults.max_title_length'][0] : _local.errors?.['basic_defaults.max_title_length']) ?? ''}}</span>
               </div>
             </div>
           </div>
-          <div data-ref="field_min_content_length" class="">
+          <div data-ref="field_min_content_length">
             <div class="board-flex-center board:gap-4">
               <label class="board-flex-start board:gap-2 board-text-body board:font-medium board:flex-1 board:cursor-pointer">
                 <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('min_content_length')}}" disabled="{{!_computed.canBulkApply}}">
@@ -61,11 +61,11 @@
               </label>
               <div class="board:flex-shrink-0">
                 <input aria-label="$t:sirsoft-board.admin.settings.fields.min_content_length" type="number" name="basic_defaults.min_content_length" min="{{_local?.form?._meta?.limits?.min_content_length_min ?? 0}}" max="{{_local?.form?._meta?.limits?.min_content_length_max ?? 10000}}" class="{{(_local.errors?.['basic_defaults.min_content_length']) ? 'board:w-32 board-input-error' : 'board:w-32'}}" disabled="{{_computed.isReadOnly}}"/>
-                <span data-if="{{_local.errors?.['basic_defaults.min_content_length']}}" class="board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.min_content_length']) ? _local.errors['basic_defaults.min_content_length'][0] : _local.errors?.['basic_defaults.min_content_length']) ?? ''}}</span>
+                <span data-if="{{_local.errors?.['basic_defaults.min_content_length']}}" class="board-form-error">{{(Array.isArray(_local.errors?.['basic_defaults.min_content_length']) ? _local.errors['basic_defaults.min_content_length'][0] : _local.errors?.['basic_defaults.min_content_length']) ?? ''}}</span>
               </div>
             </div>
           </div>
-          <div data-ref="field_max_content_length" class="">
+          <div data-ref="field_max_content_length">
             <div class="board-flex-center board:gap-4">
               <label class="board-flex-start board:gap-2 board-text-body board:font-medium board:flex-1 board:cursor-pointer">
                 <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_content_length')}}" disabled="{{!_computed.canBulkApply}}">
@@ -81,11 +81,11 @@
               </label>
               <div class="board:flex-shrink-0">
                 <input aria-label="$t:sirsoft-board.admin.settings.fields.max_content_length" type="number" name="basic_defaults.max_content_length" min="{{_local?.form?._meta?.limits?.max_content_length_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_content_length_max ?? 100000}}" class="{{(_local.errors?.['basic_defaults.max_content_length']) ? 'board:w-32 board-input-error' : 'board:w-32'}}" disabled="{{_computed.isReadOnly}}"/>
-                <span data-if="{{_local.errors?.['basic_defaults.max_content_length']}}" class="board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.max_content_length']) ? _local.errors['basic_defaults.max_content_length'][0] : _local.errors?.['basic_defaults.max_content_length']) ?? ''}}</span>
+                <span data-if="{{_local.errors?.['basic_defaults.max_content_length']}}" class="board-form-error">{{(Array.isArray(_local.errors?.['basic_defaults.max_content_length']) ? _local.errors['basic_defaults.max_content_length'][0] : _local.errors?.['basic_defaults.max_content_length']) ?? ''}}</span>
               </div>
             </div>
           </div>
-          <div data-ref="field_blocked_keywords" class="">
+          <div data-ref="field_blocked_keywords">
             <div class="board:px-3 board:py-2">
               <label class="board-flex-start board:gap-2 board-text-heading board:cursor-pointer board:mb-2">
                 <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('blocked_keywords')}}" disabled="{{!_computed.canBulkApply}}">
@@ -102,7 +102,7 @@
               <tag-input aria-label="$t:sirsoft-board.admin.settings.fields.blocked_keywords" data-type="composite" name="basic_defaults.blocked_keywords" placeholder="$t:sirsoft-board.admin.settings.fields.blocked_keywords_placeholder" :creatable="true" class="board:w-full" disabled="{{_computed.isReadOnly}}"/>
             </div>
           </div>
-          <div data-ref="field_new_display_hours" class="">
+          <div data-ref="field_new_display_hours">
             <div class="board-flex-center board:gap-4">
               <label class="board-flex-start board:gap-2 board-text-heading board:flex-1 board:cursor-pointer">
                 <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('new_display_hours')}}" disabled="{{!_computed.canBulkApply}}">
@@ -118,7 +118,7 @@
               </label>
               <div class="board:flex-shrink-0">
                 <input aria-label="$t:sirsoft-board.admin.settings.fields.new_display_hours" type="number" name="basic_defaults.new_display_hours" min="{{_local?.form?._meta?.limits?.new_display_hours_min ?? 1}}" max="{{_local?.form?._meta?.limits?.new_display_hours_max ?? 720}}" class="{{(_local.errors?.['basic_defaults.new_display_hours']) ? 'board:w-32 board-input-error' : 'board:w-32'}}" disabled="{{_computed.isReadOnly}}"/>
-                <span data-if="{{_local.errors?.['basic_defaults.new_display_hours']}}" class="board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.new_display_hours']) ? _local.errors['basic_defaults.new_display_hours'][0] : _local.errors?.['basic_defaults.new_display_hours']) ?? ''}}</span>
+                <span data-if="{{_local.errors?.['basic_defaults.new_display_hours']}}" class="board-form-error">{{(Array.isArray(_local.errors?.['basic_defaults.new_display_hours']) ? _local.errors['basic_defaults.new_display_hours'][0] : _local.errors?.['basic_defaults.new_display_hours']) ?? ''}}</span>
               </div>
             </div>
           </div>
@@ -133,7 +133,7 @@
              행마다 `_v` 에 지금 값(폼 값 우선, 없으면 서버가 준 행 값)을 얹어 네 칸이 같은 값을 읽는다. 「사용」이 꺼지면 「필수」도 꺼진 것으로 본다.
              이 표에서는 항목을 더하거나 지우지 않는다(다른 확장이 기여한 항목은 그 확장이, 추가 항목은 항목 관리 화면이 맡는다).
              넓은 화면은 표, 좁은 화면은 항목별 카드로 같은 값을 그린다 -->
-        <div data-ref="default_guest_author_fields_field" class="">
+        <div data-ref="default_guest_author_fields_field">
           <label data-ref="default_guest_author_fields_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.settings.guest_author_fields.label</span>
           </label>
@@ -185,7 +185,7 @@
                 <tr data-ref="default_guest_field_row_{{row.key}}" data-each="row in (_local.form?.basic_defaults?.guest_author_field_rows ?? []).map(r => ({...r, _v: {post: {enabled: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.post?.enabled ?? r.post?.enabled) === true, required: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.post?.enabled ?? r.post?.enabled) === true &amp;&amp; (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.post?.required ?? r.post?.required) === true}, comment: {enabled: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.comment?.enabled ?? r.comment?.enabled) === true, required: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.comment?.enabled ?? r.comment?.enabled) === true &amp;&amp; (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.comment?.required ?? r.comment?.required) === true}}}))" class="board:border-t board:border-gray-200 board:dark:border-gray-700">
                   <td class="board:px-4 board:py-2">
                     <div class="board-flex-center board:gap-2 board:min-w-0">
-                      <icon data-if="{{row.fixed === true}}" name="lock" class="board:text-xs board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"/>
+                      <icon data-if="{{row.fixed === true}}" name="lock" class="board:text-xs board-text-muted board:flex-shrink-0"/>
                       <span class="board-text-heading board:min-w-0 board:wrap-anywhere">{{row.label}}</span>
                     </div>
                     <p data-if="{{row.fixed === true}}" class="board-form-hint">$t:sirsoft-board.admin.form.guest_author_fields.fixed_hint</p>

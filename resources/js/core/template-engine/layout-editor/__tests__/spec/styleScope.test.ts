@@ -39,11 +39,17 @@ const tabletScope: StyleScope = { colorScheme: 'base', breakpoint: 'tablet' };
 const customScope: StyleScope = { colorScheme: 'base', breakpoint: '600-900' };
 
 describe('getScopedProps', () => {
+  /**
+   * @effects scoped_props_read_from_scope_container
+   */
   it('base scope 는 node.props 를 반환한다', () => {
     const node: EditorNode = { name: 'Div', props: { className: 'bg-white' } };
     expect(getScopedProps(node, BASE_SCOPE)).toEqual({ className: 'bg-white' });
   });
 
+  /**
+   * @effects scoped_props_read_from_scope_container
+   */
   it('preset scope 는 responsive[bp].props 를 반환한다', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -53,12 +59,18 @@ describe('getScopedProps', () => {
     expect(getScopedProps(node, tabletScope)).toEqual({ className: 'bg-slate-100' });
   });
 
+  /**
+   * @effects scoped_props_read_from_scope_container
+   */
   it('오버라이드 없는 scope 는 빈 객체를 반환한다', () => {
     const node: EditorNode = { name: 'Div', props: { className: 'bg-white' } };
     expect(getScopedProps(node, tabletScope)).toEqual({});
     expect(getScopedProps(node, customScope)).toEqual({});
   });
 
+  /**
+   * @effects scoped_props_read_from_scope_container
+   */
   it('커스텀 범위 키 컨테이너를 직접 읽는다', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -69,6 +81,9 @@ describe('getScopedProps', () => {
 });
 
 describe('withScopedProps — base scope', () => {
+  /**
+   * @effects base_scope_writes_node_props_byte_identical_to_pre_scope, scoped_edit_never_mutates_input_node
+   */
   it('node.props 를 변형하고 입력은 불변', () => {
     const node: EditorNode = { name: 'Div', props: { className: 'bg-white' } };
     const next = withScopedProps(node, BASE_SCOPE, (props) => {
@@ -78,6 +93,9 @@ describe('withScopedProps — base scope', () => {
     expect(node.props).toEqual({ className: 'bg-white' }); // 불변
   });
 
+  /**
+   * @effects empty_style_pruned_from_scoped_props
+   */
   it('빈 style 은 prune 된다', () => {
     const node: EditorNode = { name: 'Div', props: { style: { color: 'red' } } };
     const next = withScopedProps(node, BASE_SCOPE, (_props, style) => {
@@ -88,6 +106,9 @@ describe('withScopedProps — base scope', () => {
 });
 
 describe('withScopedProps — responsive scope', () => {
+  /**
+   * @effects device_scope_writes_responsive_breakpoint_props_base_unchanged
+   */
   it('responsive[bp].props 에 쓰고 base 는 불변', () => {
     const node: EditorNode = { name: 'Div', props: { className: 'bg-white' } };
     const next = withScopedProps(node, tabletScope, (props) => {
@@ -97,14 +118,23 @@ describe('withScopedProps — responsive scope', () => {
     expect(next.responsive?.tablet?.props).toEqual({ className: 'bg-slate-100' });
   });
 
-  it('커스텀 범위 키에 쓴다', () => {
+  /**
+   * @scenario color_scheme=light,device=custom_range,apply_type=classToken,edit_target=style,scope_override_state=no_override_inherits_base
+   * @effects custom_range_scope_writes_responsive_range_key, device_scope_class_edit_writes_only_changed_tokens_as_class_merge
+   */
+  it('커스텀 범위 키에 쓴다 — className 은 바뀐 토큰만 classMerge 로 (engine-v1.98.0)', () => {
     const node: EditorNode = { name: 'Div' };
     const next = withScopedProps(node, customScope, (props) => {
       props.className = 'p-4';
+      props.title = 'x';
     });
-    expect(next.responsive?.['600-900']?.props).toEqual({ className: 'p-4' });
+    expect(next.responsive?.['600-900']?.classMerge).toBe('p-4');
+    expect(next.responsive?.['600-900']?.props).toEqual({ title: 'x' });
   });
 
+  /**
+   * @effects empty_override_prunes_responsive_branch_keeping_code_authored_keys
+   */
   it('마지막 오버라이드 제거 시 responsive 까지 prune', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -117,6 +147,9 @@ describe('withScopedProps — responsive scope', () => {
     expect(next.responsive).toBeUndefined();
   });
 
+  /**
+   * @effects empty_override_prunes_responsive_branch_keeping_code_authored_keys
+   */
   it('빈 props 면 브랜치에서 props 만 제거하고 코드 작성 키(if)는 보존', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -129,6 +162,9 @@ describe('withScopedProps — responsive scope', () => {
     expect(next.responsive?.tablet?.if).toBe('{{show}}'); // 보존
   });
 
+  /**
+   * @effects device_scope_edit_leaves_other_breakpoint_branches_untouched
+   */
   it('다른 브랜치(desktop)는 tablet 편집에 영향받지 않는다', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -146,6 +182,9 @@ describe('withScopedProps — responsive scope', () => {
 });
 
 describe('getScopedIf / setScopedIf', () => {
+  /**
+   * @effects base_scope_visibility_if_reads_writes_node_if
+   */
   it('base if 읽기/쓰기', () => {
     const node: EditorNode = { name: 'Div', if: '{{a}}' };
     expect(getScopedIf(node, BASE_SCOPE)).toBe('{{a}}');
@@ -153,12 +192,18 @@ describe('getScopedIf / setScopedIf', () => {
     expect(next.if).toBe('{{b}}');
   });
 
+  /**
+   * @effects cleared_visibility_if_prunes_key_keeping_branch_props
+   */
   it('base if 빈 식 → prune', () => {
     const node: EditorNode = { name: 'Div', if: '{{a}}' };
     const next = setScopedIf(node, BASE_SCOPE, '');
     expect(next.if).toBeUndefined();
   });
 
+  /**
+   * @effects device_visibility_if_writes_responsive_breakpoint_if, scoped_edit_never_mutates_input_node
+   */
   it('responsive if 쓰기 → responsive[bp].if', () => {
     const node: EditorNode = { name: 'Div' };
     const next = setScopedIf(node, tabletScope, '{{mobile}}');
@@ -166,6 +211,9 @@ describe('getScopedIf / setScopedIf', () => {
     expect(node.responsive).toBeUndefined(); // 불변
   });
 
+  /**
+   * @effects cleared_visibility_if_prunes_key_keeping_branch_props
+   */
   it('responsive if clear → 브랜치 prune', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -175,6 +223,9 @@ describe('getScopedIf / setScopedIf', () => {
     expect(next.responsive).toBeUndefined();
   });
 
+  /**
+   * @effects cleared_visibility_if_prunes_key_keeping_branch_props
+   */
   it('responsive if clear 시 같은 브랜치 props 보존', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -189,11 +240,17 @@ describe('getScopedIf / setScopedIf', () => {
 // getEffectiveScopedIf: 디바이스 탭에서 base if 상속 폴백(Bug1 회귀).
 // base 에 정의된 표시조건이 디바이스 세부탭(PC/태블릿/모바일)에서 빈 빌더로 가려지던 결함.
 describe('getEffectiveScopedIf — 디바이스 탭 base 상속 폴백', () => {
+  /**
+   * @effects base_scope_visibility_if_reads_writes_node_if
+   */
   it('base scope → node.if 그대로', () => {
     const node: EditorNode = { name: 'Div', if: '{{_local.success}}' };
     expect(getEffectiveScopedIf(node, BASE_SCOPE)).toBe('{{_local.success}}');
   });
 
+  /**
+   * @effects effective_device_visibility_if_falls_back_to_base_only_when_key_absent
+   */
   it('디바이스 override 없음 → base node.if 로 폴백 (핵심 결함)', () => {
     const node: EditorNode = { name: 'Div', if: '{{(banner?.data?.items?.length ?? 0) > 0}}' };
     // 디바이스 탭(tablet)에 자체 if 가 없으면 base if 가 유효 조건으로 노출돼야 한다.
@@ -202,6 +259,9 @@ describe('getEffectiveScopedIf — 디바이스 탭 base 상속 폴백', () => {
     expect(getScopedIf(node, tabletScope)).toBeUndefined();
   });
 
+  /**
+   * @effects effective_device_visibility_if_falls_back_to_base_only_when_key_absent
+   */
   it('디바이스 override 있음 → 그 값 (base 무시)', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -211,6 +271,9 @@ describe('getEffectiveScopedIf — 디바이스 탭 base 상속 폴백', () => {
     expect(getEffectiveScopedIf(node, tabletScope)).toBe('{{tabletOnly}}');
   });
 
+  /**
+   * @effects effective_device_visibility_if_falls_back_to_base_only_when_key_absent
+   */
   it('디바이스 override 가 빈 문자열(명시적 조건 없음) → 폴백 안 함', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -221,11 +284,17 @@ describe('getEffectiveScopedIf — 디바이스 탭 base 상속 폴백', () => {
     expect(getEffectiveScopedIf(node, tabletScope)).toBe('');
   });
 
+  /**
+   * @effects effective_device_visibility_if_falls_back_to_base_only_when_key_absent
+   */
   it('base 도 디바이스도 if 없음 → undefined', () => {
     const node: EditorNode = { name: 'Div' };
     expect(getEffectiveScopedIf(node, tabletScope)).toBeUndefined();
   });
 
+  /**
+   * @effects effective_device_visibility_if_falls_back_to_base_only_when_key_absent
+   */
   it('responsive 브랜치는 있으나 if 키 부재(props 만) → base 폴백', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -237,27 +306,42 @@ describe('getEffectiveScopedIf — 디바이스 탭 base 상속 폴백', () => {
 });
 
 describe('dark prefix 헬퍼', () => {
+  /**
+   * @effects dark_prefix_helpers_detect_strip_add_idempotently
+   */
   it('hasDarkPrefix', () => {
     expect(hasDarkPrefix('dark:bg-x')).toBe(true);
     expect(hasDarkPrefix('bg-x')).toBe(false);
   });
 
+  /**
+   * @effects dark_prefix_helpers_detect_strip_add_idempotently
+   */
   it('stripDarkPrefix', () => {
     expect(stripDarkPrefix('dark:bg-x')).toBe('bg-x');
     expect(stripDarkPrefix('bg-x')).toBe('bg-x');
   });
 
+  /**
+   * @effects dark_prefix_helpers_detect_strip_add_idempotently
+   */
   it('addDarkPrefix 멱등', () => {
     expect(addDarkPrefix('bg-x')).toBe('dark:bg-x');
     expect(addDarkPrefix('dark:bg-x')).toBe('dark:bg-x');
   });
 
+  /**
+   * @effects dark_prefix_helpers_detect_strip_add_idempotently
+   */
   it('DARK_PREFIX 상수', () => {
     expect(DARK_PREFIX).toBe('dark:');
   });
 });
 
 describe('isDarkEditable', () => {
+  /**
+   * @effects dark_editable_only_for_classToken_apply_type
+   */
   it('classToken 만 true', () => {
     expect(isDarkEditable({ type: 'classToken', tokens: ['bg-x'] })).toBe(true);
     expect(isDarkEditable({ type: 'styleProp', prop: 'color' })).toBe(false);
@@ -268,12 +352,18 @@ describe('isDarkEditable', () => {
 });
 
 describe('isValidScopeBreakpoint / isPresetBreakpoint', () => {
+  /**
+   * @effects scope_breakpoint_validation_accepts_base_preset_and_ordered_range
+   */
   it('base 와 preset 은 유효', () => {
     expect(isValidScopeBreakpoint('base')).toBe(true);
     expect(isValidScopeBreakpoint('tablet')).toBe(true);
     expect(isValidScopeBreakpoint('desktop')).toBe(true);
   });
 
+  /**
+   * @effects scope_breakpoint_validation_accepts_base_preset_and_ordered_range
+   */
   it('유효한 범위 문자열은 통과, min>max 거부', () => {
     expect(isValidScopeBreakpoint('600-900')).toBe(true);
     expect(isValidScopeBreakpoint('-599')).toBe(true);
@@ -282,6 +372,9 @@ describe('isValidScopeBreakpoint / isPresetBreakpoint', () => {
     expect(isValidScopeBreakpoint('abc')).toBe(false);
   });
 
+  /**
+   * @effects scope_breakpoint_validation_accepts_base_preset_and_ordered_range
+   */
   it('isPresetBreakpoint', () => {
     expect(isPresetBreakpoint('mobile')).toBe(true);
     expect(isPresetBreakpoint('600-900')).toBe(false);
@@ -295,35 +388,56 @@ describe('deviceToBreakpoint', () => {
     responsive: { '600-900': { props: { className: 'x' } } },
   };
 
+  /**
+   * @effects device_maps_to_scope_breakpoint_preset_or_matching_custom_range
+   */
   it('preset 디바이스는 동명 키', () => {
     expect(deviceToBreakpoint('desktop', node)).toBe('desktop');
     expect(deviceToBreakpoint('tablet', node)).toBe('tablet');
     expect(deviceToBreakpoint('mobile', node)).toBe('mobile');
   });
 
+  /**
+   * @effects device_maps_to_scope_breakpoint_preset_or_matching_custom_range
+   */
   it('custom 폭이 노드 커스텀 범위에 매칭되면 그 키', () => {
     expect(deviceToBreakpoint('custom', node, 700)).toBe('600-900');
   });
 
+  /**
+   * @effects device_maps_to_scope_breakpoint_preset_or_matching_custom_range
+   */
   it('custom 폭 미매칭이면 base', () => {
     expect(deviceToBreakpoint('custom', node, 1500)).toBe('base');
   });
 
+  /**
+   * @effects device_maps_to_scope_breakpoint_preset_or_matching_custom_range
+   */
   it('custom 폭 없으면 base', () => {
     expect(deviceToBreakpoint('custom', node)).toBe('base');
   });
 
   // portable·동적 커스텀 디바이스 키는 동명 breakpoint 로 그대로 결선.
+  /**
+   * @effects device_maps_to_scope_breakpoint_preset_or_matching_custom_range
+   */
   it('portable 디바이스는 동명 키(portable)', () => {
     expect(deviceToBreakpoint('portable', node)).toBe('portable');
   });
 
+  /**
+   * @effects device_maps_to_scope_breakpoint_preset_or_matching_custom_range
+   */
   it('동적 커스텀 디바이스 키("600-900")는 그대로 반환', () => {
     expect(deviceToBreakpoint('600-900', node)).toBe('600-900');
   });
 });
 
 describe('clearScopeOverride — 기본값으로 초기화', () => {
+  /**
+   * @effects reset_to_base_clears_device_override_restoring_inheritance
+   */
   it('디바이스 scope: responsive[bp].props 제거 → 기본값 상속 복귀', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -335,6 +449,9 @@ describe('clearScopeOverride — 기본값으로 초기화', () => {
     expect(next.props?.className).toBe('bg-white'); // base 불변
   });
 
+  /**
+   * @effects reset_to_base_clears_device_override_restoring_inheritance, empty_override_prunes_responsive_branch_keeping_code_authored_keys
+   */
   it('디바이스 scope: 코드 작성 if 남은 브랜치는 보존(props 만 제거)', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -345,6 +462,9 @@ describe('clearScopeOverride — 기본값으로 초기화', () => {
     expect(next.responsive?.tablet?.if).toBe('{{a}}');
   });
 
+  /**
+   * @effects reset_dark_clears_only_dark_tokens_keeping_light
+   */
   it('다크 base scope: className 의 dark: 토큰만 제거(라이트 보존)', () => {
     const node: EditorNode = { name: 'Div', props: { className: 'bg-white dark:bg-slate-800 text-center' } };
     const next = clearScopeOverride(node, { colorScheme: 'dark', breakpoint: 'base' });
@@ -354,6 +474,9 @@ describe('clearScopeOverride — 기본값으로 초기화', () => {
     expect(tokens).not.toContain('dark:bg-slate-800');
   });
 
+  /**
+   * @effects reset_on_light_base_scope_returns_node_unchanged
+   */
   it('라이트 × 기본값 초기화는 no-op', () => {
     const node: EditorNode = { name: 'Div', props: { className: 'bg-white' } };
     expect(clearScopeOverride(node, BASE_SCOPE)).toBe(node);
@@ -361,11 +484,17 @@ describe('clearScopeOverride — 기본값으로 초기화', () => {
 });
 
 describe('hasScopeOverride — 표시점(●) 판정', () => {
+  /**
+   * @effects override_dot_shown_only_when_scope_differs_from_base_not_for_seed_only
+   */
   it('기본값 탭은 표시점 없음', () => {
     const node: EditorNode = { name: 'Div', props: { className: 'bg-white' } };
     expect(hasScopeOverride(node, BASE_SCOPE)).toBe(false);
   });
 
+  /**
+   * @effects override_dot_shown_only_when_scope_differs_from_base_not_for_seed_only
+   */
   it('시드만 있는 디바이스(base 동일 className)는 표시점 없음', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -375,6 +504,9 @@ describe('hasScopeOverride — 표시점(●) 판정', () => {
     expect(hasScopeOverride(node, tabletScope)).toBe(false);
   });
 
+  /**
+   * @effects override_dot_shown_only_when_scope_differs_from_base_not_for_seed_only
+   */
   it('base 와 다른 토큰이 있는 디바이스는 표시점 있음', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -384,6 +516,9 @@ describe('hasScopeOverride — 표시점(●) 판정', () => {
     expect(hasScopeOverride(node, tabletScope)).toBe(true);
   });
 
+  /**
+   * @effects override_dot_shown_only_when_scope_differs_from_base_not_for_seed_only
+   */
   it('디바이스 if 만 있어도 표시점 있음', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -392,6 +527,9 @@ describe('hasScopeOverride — 표시점(●) 판정', () => {
     expect(hasScopeOverride(node, tabletScope)).toBe(true);
   });
 
+  /**
+   * @effects override_dot_shown_only_when_scope_differs_from_base_not_for_seed_only
+   */
   it('다크 scope: className 에 dark: 토큰 있으면 표시점', () => {
     const node: EditorNode = { name: 'Div', props: { className: 'bg-white dark:bg-slate-800' } };
     expect(hasScopeOverride(node, { colorScheme: 'dark', breakpoint: 'base' })).toBe(true);
@@ -413,6 +551,9 @@ describe('resolveBranchSeparationMode — 디바이스 분리 포함관계 판�
   });
   const plain: EditorNode = { name: 'Div', children: [{ name: 'A' }] };
 
+  /**
+   * @effects branch_separation_creates_current_device_branch_with_covering_source_key
+   */
   it('responsive 미지정 → 어떤 디바이스에서도 separate(현재 디바이스 키)', () => {
     expect(resolveBranchSeparationMode('mobile', plain)).toEqual({ mode: 'separate', key: 'mobile' });
     expect(resolveBranchSeparationMode('tablet', plain)).toEqual({ mode: 'separate', key: 'tablet' });
@@ -421,6 +562,9 @@ describe('resolveBranchSeparationMode — 디바이스 분리 포함관계 판�
 
   // 포괄 분기(portable ⊇ mobile)는 더는 버튼을 숨기지 않고(none 폐지),
   // 현재 디바이스 전용 생성(separate) + sourceKey=포괄 분기(복제 원본)로 노출한다.
+  /**
+   * @effects branch_separation_creates_current_device_branch_with_covering_source_key
+   */
   it('portable(0~1023) 분기를 mobile 보기 → separate(mobile, sourceKey=portable)', () => {
     expect(resolveBranchSeparationMode('mobile', branched({ portable: { children: [] } }))).toEqual({
       mode: 'separate',
@@ -429,6 +573,9 @@ describe('resolveBranchSeparationMode — 디바이스 분리 포함관계 판�
     });
   });
 
+  /**
+   * @effects branch_separation_creates_current_device_branch_with_covering_source_key
+   */
   it('portable 분기를 tablet 보기 → separate(tablet, sourceKey=portable)', () => {
     expect(resolveBranchSeparationMode('tablet', branched({ portable: { children: [] } }))).toEqual({
       mode: 'separate',
@@ -437,6 +584,9 @@ describe('resolveBranchSeparationMode — 디바이스 분리 포함관계 판�
     });
   });
 
+  /**
+   * @effects branch_separation_creates_current_device_branch_with_covering_source_key
+   */
   it('portable 분기를 desktop 보기 → separate(desktop, portable 은 desktop 비포함)', () => {
     expect(resolveBranchSeparationMode('desktop', branched({ portable: { children: [] } }))).toEqual({
       mode: 'separate',
@@ -444,6 +594,9 @@ describe('resolveBranchSeparationMode — 디바이스 분리 포함관계 판�
     });
   });
 
+  /**
+   * @effects branch_separation_merges_only_exact_range_children_branch
+   */
   it('mobile 분기를 mobile 보기 → merge(정확히 같은 범위, 해제)', () => {
     expect(resolveBranchSeparationMode('mobile', branched({ mobile: { children: [] } }))).toEqual({
       mode: 'merge',
@@ -451,6 +604,9 @@ describe('resolveBranchSeparationMode — 디바이스 분리 포함관계 판�
     });
   });
 
+  /**
+   * @effects branch_separation_creates_current_device_branch_with_covering_source_key
+   */
   it('mobile 분기를 tablet 보기 → separate(tablet, mobile 은 tablet 비포함)', () => {
     expect(resolveBranchSeparationMode('tablet', branched({ mobile: { children: [] } }))).toEqual({
       mode: 'separate',
@@ -458,6 +614,9 @@ describe('resolveBranchSeparationMode — 디바이스 분리 포함관계 판�
     });
   });
 
+  /**
+   * @effects branch_separation_merges_only_exact_range_children_branch
+   */
   it('커스텀 "0-767"(=mobile 범위) 분기를 mobile 보기 → merge(정확히 같은 범위)', () => {
     expect(resolveBranchSeparationMode('mobile', branched({ '0-767': { children: [] } }))).toEqual({
       mode: 'merge',
@@ -465,10 +624,16 @@ describe('resolveBranchSeparationMode — 디바이스 분리 포함관계 판�
     });
   });
 
+  /**
+   * @effects branch_separation_creates_current_device_branch_with_covering_source_key
+   */
   it('커스텀 "0-767" 분기를 tablet 보기 → separate(tablet, 비겹침)', () => {
     expect(resolveBranchSeparationMode('tablet', branched({ '0-767': { children: [] } })).mode).toBe('separate');
   });
 
+  /**
+   * @effects branch_separation_merges_only_exact_range_children_branch
+   */
   it('desktop 분기를 desktop 보기 → merge', () => {
     expect(resolveBranchSeparationMode('desktop', branched({ desktop: { children: [] } }))).toEqual({
       mode: 'merge',
@@ -476,6 +641,9 @@ describe('resolveBranchSeparationMode — 디바이스 분리 포함관계 판�
     });
   });
 
+  /**
+   * @effects branch_separation_creates_current_device_branch_with_covering_source_key
+   */
   it('custom 폭(500px) 보기 + portable 분기 → separate(500-500, sourceKey=portable 포괄)', () => {
     expect(resolveBranchSeparationMode('custom', branched({ portable: { children: [] } }), 500)).toEqual({
       mode: 'separate',
@@ -484,6 +652,9 @@ describe('resolveBranchSeparationMode — 디바이스 분리 포함관계 판�
     });
   });
 
+  /**
+   * @effects branch_separation_creates_current_device_branch_with_covering_source_key
+   */
   it('custom 폭(1400px) 보기 + portable 분기 → separate(1400-1400 키)', () => {
     const d = resolveBranchSeparationMode('custom', branched({ portable: { children: [] } }), 1400);
     expect(d.mode).toBe('separate');
@@ -491,6 +662,9 @@ describe('resolveBranchSeparationMode — 디바이스 분리 포함관계 판�
   });
 
   // ──: 판정 기준 = children 유무 (props-only 분기는 분리로 치지 않음) ──────────
+  /**
+   * @effects props_only_branch_not_counted_as_separation
+   */
   it('props-only mobile 분기를 mobile 보기 → separate (children 없으므로 분리 아님)', () => {
     // 결함 회귀: 과거 키 존재만으로 판정 시 merge 오판 → children 기준으로 separate 여야 함.
     expect(
@@ -498,6 +672,9 @@ describe('resolveBranchSeparationMode — 디바이스 분리 포함관계 판�
     ).toEqual({ mode: 'separate', key: 'mobile' });
   });
 
+  /**
+   * @effects props_only_branch_not_counted_as_separation
+   */
   it('props-only portable 분기를 mobile 보기 → separate (포괄이라도 children 없으면 무시)', () => {
     expect(
       resolveBranchSeparationMode(
@@ -507,6 +684,9 @@ describe('resolveBranchSeparationMode — 디바이스 분리 포함관계 판�
     ).toBe('separate');
   });
 
+  /**
+   * @effects branch_separation_merges_only_exact_range_children_branch
+   */
   it('같은 키에 props + children 둘 다 → children 있으므로 merge (props/children 독립)', () => {
     expect(
       resolveBranchSeparationMode(
@@ -516,6 +696,9 @@ describe('resolveBranchSeparationMode — 디바이스 분리 포함관계 판�
     ).toEqual({ mode: 'merge', key: 'mobile' });
   });
 
+  /**
+   * @effects props_only_branch_not_counted_as_separation, branch_separation_creates_current_device_branch_with_covering_source_key
+   */
   it('props-only mobile + children portable 공존 → separate(mobile, sourceKey=portable)', () => {
     // props-only mobile 은 무시되고, children 을 가진 portable 이 mobile 을 포괄 →
     // 현재 디바이스(mobile) 전용 생성 + 복제 원본은 포괄 분기 portable.
@@ -530,16 +713,105 @@ describe('resolveBranchSeparationMode — 디바이스 분리 포함관계 판�
     ).toEqual({ mode: 'separate', key: 'mobile', sourceKey: 'portable' });
   });
 
+  /**
+   * @effects branch_separation_merges_only_exact_range_children_branch
+   */
   it('동적 커스텀 디바이스 키("600-900") 보기 + 동명 children 분기 → merge', () => {
     expect(
       resolveBranchSeparationMode('600-900', branched({ '600-900': { children: [] } })),
     ).toEqual({ mode: 'merge', key: '600-900' });
   });
 
+  /**
+   * @effects branch_separation_creates_current_device_branch_with_covering_source_key
+   */
   it('동적 커스텀 디바이스 키("600-900") 보기 + 분기 없음 → separate(600-900)', () => {
     expect(resolveBranchSeparationMode('600-900', plain)).toEqual({
       mode: 'separate',
       key: '600-900',
     });
+  });
+});
+
+describe('classMerge 구간 — 읽기·초기화·표시점 (engine-v1.98.0)', () => {
+  const node: EditorNode = {
+    name: 'Div',
+    props: { className: 'w-full p-8 bg-white dark:bg-gray-800' },
+    responsive: { tablet: { classMerge: 'p-4 dark:bg-gray-900' } },
+  };
+
+  /**
+   * @scenario color_scheme=light,device=tablet,apply_type=classToken,edit_target=style,scope_override_state=has_scope_override
+   * @effects device_scope_keeps_base_tokens_via_class_merge
+   */
+  it('getScopedProps 는 기본 + classMerge 실효 className 을 보여 준다', () => {
+    expect(getScopedProps(node, tabletScope).className).toBe('w-full bg-white p-4 dark:bg-gray-900');
+  });
+
+  /**
+   * @scenario color_scheme=light,device=tablet,apply_type=classToken,edit_target=style,scope_override_state=has_scope_override
+   * @effects override_dot_shown_only_when_scope_differs_from_base_not_for_seed_only
+   */
+  it('라이트 표시점은 실효값이 base 와 다를 때 켜진다', () => {
+    expect(hasScopeOverride(node, tabletScope)).toBe(true);
+    const sameAsBase: EditorNode = { ...node, responsive: { tablet: { classMerge: 'p-8' } } };
+    expect(hasScopeOverride(sameAsBase, tabletScope)).toBe(false);
+  });
+
+  /**
+   * @scenario color_scheme=dark,device=tablet,apply_type=classToken,edit_target=style,scope_override_state=has_scope_override
+   * @effects override_dot_shown_only_when_scope_differs_from_base_not_for_seed_only
+   */
+  it('다크 표시점은 구간이 직접 가진 dark: 토큰으로 판정한다(기본 className 의 dark: 는 보지 않는다)', () => {
+    expect(hasScopeOverride(node, { colorScheme: 'dark', breakpoint: 'tablet' })).toBe(true);
+    const lightOnly: EditorNode = { ...node, responsive: { tablet: { classMerge: 'p-4' } } };
+    expect(hasScopeOverride(lightOnly, { colorScheme: 'dark', breakpoint: 'tablet' })).toBe(false);
+  });
+
+  /**
+   * @scenario color_scheme=light,device=tablet,apply_type=classToken,edit_target=style,scope_override_state=has_scope_override
+   * @effects reset_to_base_clears_device_override_restoring_inheritance
+   */
+  it('라이트 디바이스 초기화는 classMerge 도 지운다', () => {
+    expect(clearScopeOverride(node, tabletScope).responsive).toBeUndefined();
+  });
+
+  /**
+   * @scenario color_scheme=dark,device=tablet,apply_type=classToken,edit_target=style,scope_override_state=has_scope_override
+   * @effects reset_dark_clears_only_dark_tokens_keeping_light
+   */
+  it('다크 디바이스 초기화는 classMerge 의 dark: 토큰만 지운다', () => {
+    const next = clearScopeOverride(node, { colorScheme: 'dark', breakpoint: 'tablet' });
+    expect(next.responsive?.tablet?.classMerge).toBe('p-4');
+    expect(next.props?.className).toBe('w-full p-8 bg-white dark:bg-gray-800');
+  });
+
+  /**
+   * @scenario color_scheme=light,device=tablet,apply_type=propValue,edit_target=style,scope_override_state=has_scope_override
+   * @effects device_scope_writes_responsive_breakpoint_props_base_unchanged
+   */
+  it('className 을 건드리지 않는 편집은 classMerge 를 그대로 둔다', () => {
+    const next = withScopedProps(node, tabletScope, (props) => {
+      props.title = 'x';
+    });
+    expect(next.responsive?.tablet?.classMerge).toBe('p-4 dark:bg-gray-900');
+    expect(next.responsive?.tablet?.props).toEqual({ title: 'x' });
+  });
+
+  /**
+   * @scenario color_scheme=light,device=tablet,apply_type=classToken,edit_target=style,scope_override_state=no_override_inherits_base
+   * @effects device_class_merge_follows_later_base_changes_full_replace_branch_stays_copy
+   */
+  it('기본 className 에 바인딩이 있으면 통째 교체로 다룬다(className 을 고칠 때만 쓴다)', () => {
+    const bound: EditorNode = { name: 'Div', props: { className: "{{a ? 'p-2' : 'p-4'}} flex" } };
+    const untouched = withScopedProps(bound, tabletScope, (props) => {
+      props.title = 'y';
+    });
+    expect(untouched.responsive?.tablet?.props).toEqual({ title: 'y' });
+    const edited = withScopedProps(bound, tabletScope, (props) => {
+      props.className = `${props.className} gap-2`;
+    });
+    expect(edited.responsive?.tablet?.props?.className).toBe("{{a ? 'p-2' : 'p-4'}} flex gap-2");
+    expect(edited.responsive?.tablet?.classMerge).toBeUndefined();
   });
 });

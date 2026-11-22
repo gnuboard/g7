@@ -18,12 +18,12 @@
     <div class="space-y-3">
       <!-- 상품 금액 -->
       <div class="flex items-center justify-between">
-        <span class="text-gray-500 dark:text-gray-400">
-          <responsive on="portable" class="text-gray-500 dark:text-gray-400 text-sm"/>
+        <span class="text-muted">
+          <responsive on="portable" class-merge="text-sm"/>
           $t:mypage.order_detail.product_amount
         </span>
         <span class="text-gray-900 dark:text-white">
-          <responsive on="portable" class="text-gray-900 dark:text-white text-sm"/>
+          <responsive on="portable" class-merge="text-sm"/>
           {{order.data.subtotal_amount_formatted ?? ''}}
         </span>
       </div>
@@ -31,12 +31,12 @@
       <div data-if="{{(order.data.total_discount_amount ?? 0) > 0}}" class="space-y-2">
         <!-- 총 할인 합계 -->
         <div class="flex items-center justify-between">
-          <span class="text-gray-500 dark:text-gray-400">
-            <responsive on="portable" class="text-gray-500 dark:text-gray-400 text-sm"/>
+          <span class="text-muted">
+            <responsive on="portable" class-merge="text-sm"/>
             $t:mypage.order_detail.discount_amount
           </span>
           <span class="text-red-600 dark:text-red-400 font-medium">
-            <responsive on="portable" class="text-red-600 dark:text-red-400 font-medium text-sm"/>
+            <responsive on="portable" class-merge="text-sm"/>
             -{{order.data.total_discount_amount_formatted ?? ''}}
           </span>
         </div>
@@ -46,7 +46,7 @@
           <div data-if="{{(order.data.total_product_coupon_discount_amount ?? 0) > 0}}" class="flex items-center justify-between">
             <div class="flex items-center gap-1.5">
               <icon name="ticket" class="text-sm text-red-500 dark:text-red-500"/>
-              <span class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.order_detail.product_coupon_discount</span>
+              <span class="text-sm text-muted">$t:mypage.order_detail.product_coupon_discount</span>
             </div>
             <span class="text-sm text-red-600 dark:text-red-400">-{{order.data.total_product_coupon_discount_amount_formatted ?? ''}}</span>
           </div>
@@ -55,7 +55,7 @@
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-1">
                 <icon name="ticket" class="text-xs text-red-500 dark:text-red-500"/>
-                <span class="text-xs text-gray-500 dark:text-gray-400">{{pCoupon.name ?? ''}}</span>
+                <span class="text-xs text-muted">{{pCoupon.name ?? ''}}</span>
               </div>
               <span class="text-xs text-red-600 dark:text-red-400">-{{pCoupon.total_discount_formatted ?? ''}}</span>
             </div>
@@ -64,7 +64,7 @@
           <div data-if="{{(order.data.total_order_coupon_discount_amount ?? 0) > 0}}" class="flex items-center justify-between">
             <div class="flex items-center gap-1.5">
               <icon name="ticket" class="text-sm text-red-500 dark:text-red-500"/>
-              <span class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.order_detail.order_coupon_discount</span>
+              <span class="text-sm text-muted">$t:mypage.order_detail.order_coupon_discount</span>
             </div>
             <span class="text-sm text-red-600 dark:text-red-400">-{{order.data.total_order_coupon_discount_amount_formatted ?? ''}}</span>
           </div>
@@ -73,7 +73,7 @@
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-1">
                 <icon name="ticket" class="text-xs text-red-500 dark:text-red-500"/>
-                <span class="text-xs text-gray-500 dark:text-gray-400">{{oCoupon.name ?? ''}}</span>
+                <span class="text-xs text-muted">{{oCoupon.name ?? ''}}</span>
               </div>
               <span class="text-xs text-red-600 dark:text-red-400">-{{oCoupon.total_discount_formatted ?? ''}}</span>
             </div>
@@ -82,7 +82,7 @@
           <div data-if="{{(order.data.total_code_discount_amount ?? 0) > 0}}" class="flex items-center justify-between">
             <div class="flex items-center gap-1.5">
               <icon name="tag" class="text-sm text-orange-600 dark:text-orange-500"/>
-              <span class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.order_detail.code_discount</span>
+              <span class="text-sm text-muted">$t:mypage.order_detail.code_discount</span>
             </div>
             <span class="text-sm text-red-600 dark:text-red-400">-{{order.data.total_code_discount_amount_formatted ?? ''}}</span>
           </div>
@@ -91,7 +91,7 @@
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-1">
                 <icon name="tag" class="text-xs text-orange-600 dark:text-orange-500"/>
-                <span class="text-xs text-gray-500 dark:text-gray-400">{{dCode.code ?? ''}} ({{dCode.name ?? ''}})</span>
+                <span class="text-xs text-muted">{{dCode.code ?? ''}} ({{dCode.name ?? ''}})</span>
               </div>
               <span class="text-xs text-red-600 dark:text-red-400">-{{dCode.total_discount_formatted ?? ''}}</span>
             </div>
@@ -100,18 +100,18 @@
       </div>
       <!-- === 배송비 섹션 === -->
       <div class="flex items-center justify-between">
-        <span class="text-gray-500 dark:text-gray-400">
-          <responsive on="portable" class="text-gray-500 dark:text-gray-400 text-sm"/>
+        <span class="text-muted">
+          <responsive on="portable" class-merge="text-sm"/>
           $t:mypage.order_detail.shipping_fee
         </span>
         <!-- 무료배송 — Order.total_shipping_amount 는 decimal:2 cast 로 '0.00' 문자열이 응답에 올 수 있어 === 0 비교가 false → Number() 캐스팅으로 안전 비교 (유료 분기도 동일). -->
         <span data-if="{{!!order?.data &amp;&amp; Number(order.data.total_shipping_amount ?? 0) === 0}}" class="text-green-700 dark:text-green-400 font-medium">
-          <responsive on="portable" class="text-green-700 dark:text-green-400 font-medium text-sm"/>
+          <responsive on="portable" class-merge="text-sm"/>
           $t:mypage.order_detail.free_shipping
         </span>
         <!-- 유료배송 -->
         <span data-if="{{Number(order.data.total_shipping_amount ?? 0) > 0}}" class="text-gray-900 dark:text-white">
-          <responsive on="portable" class="text-gray-900 dark:text-white text-sm"/>
+          <responsive on="portable" class-merge="text-sm"/>
           {{order.data.total_shipping_amount_formatted ?? ''}}
         </span>
       </div>
@@ -120,59 +120,59 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-1.5">
             <icon name="ticket" class="text-sm text-red-500 dark:text-red-500"/>
-            <span class="text-xs text-gray-500 dark:text-gray-400">{{sCoupon.name ?? ''}}</span>
+            <span class="text-xs text-muted">{{sCoupon.name ?? ''}}</span>
           </div>
           <span class="text-xs text-red-600 dark:text-red-400">-{{sCoupon.total_discount_formatted ?? ''}}</span>
         </div>
       </div>
       <!-- === 마일리지 사용 (있을 때만) === -->
       <div data-if="{{(order.data.total_points_used_amount ?? 0) > 0}}" class="flex items-center justify-between">
-        <span class="text-gray-500 dark:text-gray-400">
-          <responsive on="portable" class="text-gray-500 dark:text-gray-400 text-sm"/>
+        <span class="text-muted">
+          <responsive on="portable" class-merge="text-sm"/>
           $t:mypage.order_detail.points_used
         </span>
         <span class="text-red-600 dark:text-red-400 font-medium">
-          <responsive on="portable" class="text-red-600 dark:text-red-400 font-medium text-sm"/>
+          <responsive on="portable" class-merge="text-sm"/>
           -{{order.data.total_points_used_amount_formatted ?? ''}}
         </span>
       </div>
       <!-- === 예치금 사용 (있을 때만) === -->
       <div data-if="{{(order.data.total_deposit_used_amount ?? 0) > 0}}" class="flex items-center justify-between">
-        <span class="text-gray-500 dark:text-gray-400">
-          <responsive on="portable" class="text-gray-500 dark:text-gray-400 text-sm"/>
+        <span class="text-muted">
+          <responsive on="portable" class-merge="text-sm"/>
           $t:mypage.order_detail.deposit_used
         </span>
         <span class="text-red-600 dark:text-red-400 font-medium">
-          <responsive on="portable" class="text-red-600 dark:text-red-400 font-medium text-sm"/>
+          <responsive on="portable" class-merge="text-sm"/>
           -{{order.data.total_deposit_used_amount_formatted ?? ''}}
         </span>
       </div>
       <!-- 클레임(교환·반품) 추가결제 실수납 합계 (D20 · §2 해석 확정). 원 주문서 총 결제금액에 합산하지 않고 별도 표기하며, 합계 0원이면 행 자체를 렌더하지 않는다. 표기는 서버가 준 claim_additional_paid_total_formatted 를 그대로 쓴다 — 화면이 통화 기호를 붙이면 기본 통화가 다른 상점에서 단위만 틀린 금액이 나간다. -->
       <div data-if="{{(order.data.claim_additional_paid_total ?? 0) > 0}}" class="flex items-center justify-between">
         <span class="text-blue-600 dark:text-blue-400 font-medium">
-          <responsive on="portable" class="text-blue-600 dark:text-blue-400 font-medium text-sm"/>
+          <responsive on="portable" class-merge="text-sm"/>
           $t:mypage.order_detail.claim_additional_paid
         </span>
         <!-- 기준통화 표기 + 보조통화 병기. 형제 금액 줄과 같은 규약이다 — 이 줄만 기준통화 단독이면 보조통화를 쓰는 구매자가 같은 카드 안에서 한 줄만 자기 통화로 읽지 못한다. -->
         <div class="text-right">
           <span class="text-blue-600 dark:text-blue-400 font-medium">
-            <responsive on="portable" class="text-blue-600 dark:text-blue-400 font-medium text-sm"/>
+            <responsive on="portable" class-merge="text-sm"/>
             +{{order.data.claim_additional_paid_total_formatted ?? ''}}
           </span>
           <!-- 보조 통화들 -->
           <div data-each="claimPaidCurrency in {{Object.entries(order.data.mc_claim_additional_paid_total ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
-            <span class="text-xs text-gray-500 dark:text-gray-400">{{claimPaidCurrency[1]?.formatted ?? ''}}</span>
+            <span class="text-xs text-muted">{{claimPaidCurrency[1]?.formatted ?? ''}}</span>
           </div>
         </div>
       </div>
       <!-- 현금 환불 중 회원 마일리지로 지급한 금액(「마일리지로 환불」 — Q3). 결제 상태는 결제완료로 남으므로 이 줄이 없으면 구매자는 환불이 어디로 갔는지 알 수 없다. 0원이면 렌더하지 않는다. -->
       <div data-if="{{(order.data.total_refunded_mileage_credit_amount ?? 0) > 0}}" class="flex items-center justify-between">
-        <span class="text-gray-500 dark:text-gray-400">
-          <responsive on="portable" class="text-gray-500 dark:text-gray-400 text-sm"/>
+        <span class="text-muted">
+          <responsive on="portable" class-merge="text-sm"/>
           $t:mypage.order_detail.refund_mileage_credit
         </span>
         <span class="text-gray-900 dark:text-white font-medium">
-          <responsive on="portable" class="text-gray-900 dark:text-white font-medium text-sm"/>
+          <responsive on="portable" class-merge="text-sm"/>
           {{order.data.total_refunded_mileage_credit_amount_formatted ?? ''}}
         </span>
       </div>
@@ -181,7 +181,7 @@
       <!-- 총 결제금액 -->
       <div class="flex items-start justify-between">
         <span class="text-gray-900 dark:text-white font-medium">
-          <responsive on="portable" class="text-gray-900 dark:text-white font-medium text-sm"/>
+          <responsive on="portable" class-merge="text-sm"/>
           $t:mypage.order_detail.total_amount
         </span>
         <div class="text-right">
@@ -191,27 +191,27 @@
           </span>
           <!-- 보조 통화들 -->
           <div data-each="currency in {{Object.entries(order.data.mc_total_amount ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
-            <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted ?? ''}}</span>
+            <span class="text-xs text-muted">{{currency[1]?.formatted ?? ''}}</span>
           </div>
           <!-- 결제 통화 실청구액 — base≠결제 통화일 때 유저가 실제 결제한 통화/금액 명시 -->
-          <span data-if="{{order.data.payment?.is_cross_currency}}" class="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:mypage.order_detail.charged_in_payment_currency|currency={{order.data.payment?.payment_currency}}|amount={{order.data.payment?.paid_amount_formatted}}</span>
+          <span data-if="{{order.data.payment?.is_cross_currency}}" class="block text-xs text-muted mt-0.5">$t:mypage.order_detail.charged_in_payment_currency|currency={{order.data.payment?.payment_currency}}|amount={{order.data.payment?.paid_amount_formatted}}</span>
         </div>
       </div>
       <!-- 적립 예정 마일리지 (있을 때만) -->
       <div data-if="{{(order.data.total_earned_points_amount ?? 0) > 0 &amp;&amp; order.data.order_status !== 'cancelled' &amp;&amp; !order.data.is_partially_cancelled}}" class="flex items-center justify-between mt-1">
-        <span class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.order_detail.points_earning</span>
+        <span class="text-sm text-muted">$t:mypage.order_detail.points_earning</span>
         <span class="text-sm font-medium text-blue-600 dark:text-blue-400">+{{order.data.total_earned_points_amount_formatted ?? ''}}</span>
       </div>
       <!-- 구분선 -->
       <div class="border-t border-gray-200 dark:border-gray-700 my-3"/>
       <!-- 결제 방법 — id 는 PG 플러그인과의 약속이다. 간편결제 이름(예: 카카오페이)을 이 행의 값에 덧붙이려고 이 id 로만 찾는다(행 이름 글자는 언어마다 다르다). -->
       <div data-ref="order_payment_method_row" class="flex items-center justify-between">
-        <span class="text-gray-500 dark:text-gray-400">
-          <responsive on="portable" class="text-gray-500 dark:text-gray-400 text-sm"/>
+        <span class="text-muted">
+          <responsive on="portable" class-merge="text-sm"/>
           $t:mypage.order_detail.payment_method
         </span>
         <span class="text-gray-900 dark:text-white">
-          <responsive on="portable" class="text-gray-900 dark:text-white text-sm"/>
+          <responsive on="portable" class-merge="text-sm"/>
           {{order.data.payment?.payment_method_label ?? ''}}
         </span>
       </div>

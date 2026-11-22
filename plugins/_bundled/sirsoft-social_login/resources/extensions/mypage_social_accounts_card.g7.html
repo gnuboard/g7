@@ -4,13 +4,13 @@
 <extension target-layout="mypage/profile" priority="80">
   <inject target-id="profile_view_bio_card" position="append">
     <div data-ref="social_accounts_card" data-if="{{!!socialAccounts?.data}}" class="sl:bg-white sl:dark:bg-gray-800 sl:rounded-lg sl:shadow-sm sl:border sl:border-gray-200 sl:dark:border-gray-700 sl:p-6">
-      <responsive on="portable" class="sl:bg-white sl:dark:bg-gray-800 sl:rounded-lg sl:shadow-sm sl:border sl:border-gray-200 sl:dark:border-gray-700 sl:p-4"/>
+      <responsive on="portable" class-merge="sl:p-4"/>
       <div class="sl:mb-4 sl:pb-3 sl:border-b sl:border-gray-200 sl:dark:border-gray-700">
         <h2 class="sl:text-base sl:font-semibold sl:text-gray-900 sl:dark:text-white">$t:sirsoft-social_login.mypage.title</h2>
       </div>
       <!-- 비밀번호 없는 계정 안내 — 비밀번호를 정하면 이메일로도 로그인할 수 있다 -->
       <div data-if="{{socialAccounts?.data?.has_password === false}}" data-ref="social_accounts_no_password" class="sl:mb-4 sl:p-3 sl:rounded-lg sl:bg-blue-50 sl:dark:bg-blue-900/20 sl:border sl:border-blue-200 sl:dark:border-blue-800 sl:flex sl:flex-col sl:gap-2">
-        <responsive on="640-" class="sl:mb-4 sl:p-3 sl:rounded-lg sl:bg-blue-50 sl:dark:bg-blue-900/20 sl:border sl:border-blue-200 sl:dark:border-blue-800 sl:flex sl:gap-2 sl:flex-row sl:items-center"/>
+        <responsive on="640-" class-merge="sl:flex-row sl:items-center"/>
         <p class="sl:flex-1 sl:text-sm sl:text-blue-700 sl:dark:text-blue-300">$t:sirsoft-social_login.mypage.no_password</p>
         <button type="button" class="sl:shrink-0 sl:px-3 sl:py-1.5 sl:text-xs sl:bg-blue-600 sl:text-white sl:rounded sl:hover:bg-blue-700 sl:cursor-pointer">
           <on type="click">
@@ -20,14 +20,14 @@
         </button>
       </div>
       <!-- 연결된 계정 -->
-      <p data-if="{{(socialAccounts?.data?.accounts ?? []).length === 0}}" class="sl:py-4 sl:text-sm sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.mypage.empty</p>
+      <p data-if="{{(socialAccounts?.data?.accounts ?? []).length === 0}}" class="sl:py-4 sl:text-sm sl-text-muted">$t:sirsoft-social_login.mypage.empty</p>
       <ul data-if="{{(socialAccounts?.data?.accounts ?? []).length > 0}}" data-ref="social_accounts_list" class="sl:divide-y sl:divide-gray-200 sl:dark:divide-gray-700">
         <li data-each="account in socialAccounts?.data?.accounts ?? []" data-key="{{account.provider_key}}" class="sl:py-3 sl:flex sl:items-center sl:gap-3">
           <!-- 제공자 심볼 — 로그인 버튼과 같은 공식 심볼을 버튼 색 원 안에 그린다 -->
           <sirsoft-social_login.provider-mark brand="{{account.brand}}" label="{{account.label}}"/>
           <div class="sl:flex-1 sl:min-w-0">
             <p class="sl:text-sm sl:font-medium sl:text-gray-900 sl:dark:text-white">{{account.label}}</p>
-            <p class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:truncate">{{account.email ?? ''}}</p>
+            <p class="sl:text-xs sl-text-muted sl:truncate">{{account.email ?? ''}}</p>
             <p class="sl:text-xs sl:text-gray-400 sl:dark:text-gray-500">
               <span>$t:sirsoft-social_login.mypage.linked_label</span>
               <span> {{account.linked_at | date}}</span>
@@ -47,7 +47,7 @@
       </ul>
       <!-- 마지막 수단 해제 거절 안내 -->
       <div data-if="{{_global.socialLoginUnlinkLastMethod === true}}" data-ref="social_accounts_last_method" class="sl:mt-3 sl:p-3 sl:rounded-lg sl:bg-yellow-50 sl:dark:bg-yellow-900/20 sl:border sl:border-yellow-200 sl:dark:border-yellow-800 sl:flex sl:flex-col sl:gap-2" role="alert">
-        <responsive on="640-" class="sl:mt-3 sl:p-3 sl:rounded-lg sl:bg-yellow-50 sl:dark:bg-yellow-900/20 sl:border sl:border-yellow-200 sl:dark:border-yellow-800 sl:flex sl:gap-2 sl:flex-row sl:items-center"/>
+        <responsive on="640-" class-merge="sl:flex-row sl:items-center"/>
         <p class="sl:flex-1 sl:text-sm sl:text-yellow-800 sl:dark:text-yellow-300">$t:sirsoft-social_login.mypage.last_method</p>
         <button type="button" data-ref="social_accounts_set_password" class="sl:shrink-0 sl:px-3 sl:py-1.5 sl:text-xs sl:bg-yellow-600 sl:text-white sl:rounded sl:hover:bg-yellow-700 sl:cursor-pointer">
           <on type="click">

@@ -12,7 +12,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "ecommerce:mt-4 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-5"
+                        "className": "ecommerce:mt-4 ecommerce-card-plain ecommerce:p-5"
                     },
                     "children": [
                         {
@@ -81,7 +81,7 @@
                             "name": "Span",
                             "if": "{{user !== undefined && user !== null && (!user?.data?.ecommerce_default_address)}}",
                             "props": {
-                                "className": "ecommerce:block ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                "className": "ecommerce:block ecommerce:text-sm ecommerce-text-muted"
                             },
                             "text": "$t:sirsoft-ecommerce.user_address_card.empty_notice"
                         },
@@ -120,7 +120,7 @@
                                             "name": "Span",
                                             "if": "{{user?.data?.ecommerce_default_address?.label}}",
                                             "props": {
-                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                "className": "ecommerce:text-xs ecommerce-text-muted"
                                             },
                                             "text": "{{user?.data?.ecommerce_default_address?.label}}"
                                         }
@@ -139,7 +139,7 @@
                                     "name": "Span",
                                     "if": "{{user?.data?.ecommerce_default_address?.recipient_phone}}",
                                     "props": {
-                                        "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5"
+                                        "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5"
                                     },
                                     "text": "{{user?.data?.ecommerce_default_address?.recipient_phone}}"
                                 }

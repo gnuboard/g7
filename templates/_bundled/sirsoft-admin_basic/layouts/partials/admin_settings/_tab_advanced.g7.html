@@ -18,7 +18,7 @@
           </div>
           <toggle data-type="composite" name="advanced.cache_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
         </div>
-        <div class="">
+        <div>
           <p class="text-body font-medium mb-1">$t:admin.settings.advanced.cache_detail_settings</p>
           <p class="text-hint mb-3">$t:admin.settings.advanced.cache_ttl_zero_hint</p>
           <div class="row-stack">
@@ -299,11 +299,11 @@
             <div class="flex flex-col gap-2">
               <responsive on="768-" class="flex flex-row items-center gap-2 space-y-0"/>
               <input type="text" :disabled="true" value="{{_local.form?.advanced?.geoip_last_updated_at_formatted || '-'}}" class="dark:bg-gray-900 text-gray-700 dark:text-gray-300">
-                <responsive on="768-" class="flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
+                <responsive on="768-" class-merge="flex-1"/>
               </input>
               <!-- GeoIP 데이터베이스를 내려받아 갱신한다. 파일이 커서 시간이 걸리므로 진행 중에는 버튼을 잠근다 -->
-              <button type="button" disabled="{{_computed.isReadOnly || _local.geoipUpdating === true}}" class="w-full px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
-                <responsive on="768-" class="w-auto px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"/>
+              <button type="button" disabled="{{_computed.isReadOnly || _local.geoipUpdating === true}}" class="w-full btn btn-primary whitespace-nowrap">
+                <responsive on="768-" class-merge="w-auto"/>
                 <on type="click">
                   <set-state target="local" :geoipUpdating="true" :errors="{}">
                     <success>

@@ -4,7 +4,7 @@
     <section-layout data-type="layout" data-ref="section_attachment" class="board-admin-card">
       <h3 class="board-card-title">$t:sirsoft-board.admin.settings.sections.attachment</h3>
       <div class="board-row-stack">
-        <div data-ref="field_use_file_upload" class="">
+        <div data-ref="field_use_file_upload">
           <div class="board-flex-center board:gap-4">
             <label class="board-flex-start board:gap-2 board-text-heading board:flex-1 board:cursor-pointer">
               <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_file_upload')}}" disabled="{{!_computed.canBulkApply}}">
@@ -21,7 +21,7 @@
             <toggle ariaLabel="$t:sirsoft-board.admin.settings.fields.use_file_upload" data-type="composite" name="basic_defaults.use_file_upload" class="board:flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
-        <div data-ref="field_max_file_size" class="">
+        <div data-ref="field_max_file_size">
           <div class="board-flex-center board:gap-4">
             <label class="board-flex-start board:gap-2 board-text-body board:font-medium board:flex-1 board:cursor-pointer">
               <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_file_size')}}" disabled="{{!_computed.canBulkApply}}">
@@ -37,11 +37,11 @@
             </label>
             <div class="board:flex-shrink-0">
               <input aria-label="$t:sirsoft-board.admin.settings.fields.max_file_size" type="number" name="basic_defaults.max_file_size" min="{{_local?.form?._meta?.limits?.max_file_size_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_file_size_max ?? 200}}" class="{{(_local.errors?.['basic_defaults.max_file_size']) ? 'board:w-32 board-input-error' : 'board:w-32'}}" disabled="{{_computed.isReadOnly}}"/>
-              <span data-if="{{_local.errors?.['basic_defaults.max_file_size']}}" class="board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.max_file_size']) ? _local.errors['basic_defaults.max_file_size'][0] : _local.errors?.['basic_defaults.max_file_size']) ?? ''}}</span>
+              <span data-if="{{_local.errors?.['basic_defaults.max_file_size']}}" class="board-form-error">{{(Array.isArray(_local.errors?.['basic_defaults.max_file_size']) ? _local.errors['basic_defaults.max_file_size'][0] : _local.errors?.['basic_defaults.max_file_size']) ?? ''}}</span>
             </div>
           </div>
         </div>
-        <div data-ref="field_max_file_count" class="">
+        <div data-ref="field_max_file_count">
           <div class="board-flex-center board:gap-4">
             <label class="board-flex-start board:gap-2 board-text-body board:font-medium board:flex-1 board:cursor-pointer">
               <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_file_count')}}" disabled="{{!_computed.canBulkApply}}">
@@ -57,11 +57,11 @@
             </label>
             <div class="board:flex-shrink-0">
               <input aria-label="$t:sirsoft-board.admin.settings.fields.max_file_count" type="number" name="basic_defaults.max_file_count" min="{{_local?.form?._meta?.limits?.max_file_count_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_file_count_max ?? 20}}" class="{{(_local.errors?.['basic_defaults.max_file_count']) ? 'board:w-32 board-input-error' : 'board:w-32'}}" disabled="{{_computed.isReadOnly}}"/>
-              <span data-if="{{_local.errors?.['basic_defaults.max_file_count']}}" class="board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.max_file_count']) ? _local.errors['basic_defaults.max_file_count'][0] : _local.errors?.['basic_defaults.max_file_count']) ?? ''}}</span>
+              <span data-if="{{_local.errors?.['basic_defaults.max_file_count']}}" class="board-form-error">{{(Array.isArray(_local.errors?.['basic_defaults.max_file_count']) ? _local.errors['basic_defaults.max_file_count'][0] : _local.errors?.['basic_defaults.max_file_count']) ?? ''}}</span>
             </div>
           </div>
         </div>
-        <div data-ref="field_allowed_extensions" class="">
+        <div data-ref="field_allowed_extensions">
           <div class="board:px-3 board:py-2">
             <label class="board-flex-start board:gap-2 board-text-body board:font-medium board:cursor-pointer board:mb-2">
               <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('allowed_extensions')}}" disabled="{{!_computed.canBulkApply}}">

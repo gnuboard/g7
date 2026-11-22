@@ -27,6 +27,7 @@ export {
   evaluateIfCondition,
   evaluateRenderCondition,
   resolveClassMap,
+  resolveResponsiveClassMergeValue,
   type RenderItemChildrenOptions,
   type BindComponentActionsOptions,
   type EvaluateRenderConditionOptions,
@@ -53,6 +54,7 @@ export {
 
 export {
   mergeClasses,
+  applyResponsiveClassMerge,
   splitExtensionClassPrefix,
   conditionalClass,
   joinClasses,

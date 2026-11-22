@@ -25,17 +25,17 @@
       <responsive on="portable" class="py-6 px-4"/>
       <div class="max-w-3xl mx-auto">
         <div data-ref="page_content_card" data-if="{{page?.data}}" class="bg-white dark:bg-gray-800 rounded-lg shadow p-10">
-          <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow p-5"/>
+          <responsive on="portable" class-merge="p-5"/>
           <div data-ref="page_preview_banner" data-if="{{page?.data?.is_preview}}" class="flex items-center gap-2 mb-4 px-4 py-3 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 text-sm">
             <icon name="eye" class="text-amber-700 dark:text-amber-400 text-sm"/>
             <span>$t:user.page.preview_banner</span>
           </div>
           <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <responsive on="portable" class="flex flex-wrap items-center justify-between gap-2 mb-3"/>
+            <responsive on="portable" class-merge="mb-3"/>
             <!-- 제목은 판 번호 배지와 같은 flex 줄이라 줄어들 수 있게(min-w-0) 하고 아무 데서나 줄을 바꾼다(#143). -->
             <div class="flex flex-wrap items-center gap-2 min-w-0">
               <h1 class="text-2xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere">
-                <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere"/>
+                <responsive on="portable" class-merge="text-xl"/>
                 {{page?.data?.title ?? ''}}
               </h1>
               <span data-if="{{page?.data?.abilities?.can_update === true}}" class="px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">v{{page?.data?.current_version ?? 1}}</span>
@@ -45,8 +45,8 @@
               <span>$t:user.page.admin_edit</span>
             </a>
           </div>
-          <p data-if="{{page?.data?.published_at}}" class="text-sm text-gray-500 dark:text-gray-400 mb-6">
-            <responsive on="portable" class="text-sm text-gray-500 dark:text-gray-400 mb-4"/>
+          <p data-if="{{page?.data?.published_at}}" class="text-sm text-muted mb-6">
+            <responsive on="portable" class="text-sm text-muted mb-4"/>
             $t:user.page.published_at: {{page?.data?.published_at | date}}
           </p>
           <extension-point name="html_content" data-ref="page_html_content" content="{{page?.data?.content ?? ''}}" isHtml="{{(page?.data?.content_mode ?? 'html') === 'html'}}" class="text-gray-700 dark:text-gray-300">
@@ -56,7 +56,7 @@
           </extension-point>
           <div data-ref="page_attachments_section" data-if="{{(page?.data?.attachments ?? []).length > 0}}" class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
             <div class="flex items-center gap-2 mb-3">
-              <icon name="paperclip" class="text-gray-500 dark:text-gray-400 text-sm"/>
+              <icon name="paperclip" class="text-muted text-sm"/>
               <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:user.page.attachments</span>
             </div>
             <div data-each="att_item, att_index in page?.data?.attachments ?? []" class="space-y-2">
@@ -67,7 +67,7 @@
                     <img src="{{att_item.preview_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{att_item.original_filename}}" class="w-full h-full object-cover"/>
                   </div>
                   <!-- 파일 아이콘 (일반 파일인 경우) -->
-                  <icon data-if="{{!att_item.is_image}}" name="file" class="text-gray-500 dark:text-gray-400 text-sm flex-shrink-0"/>
+                  <icon data-if="{{!att_item.is_image}}" name="file" class="text-muted text-sm flex-shrink-0"/>
                   <span class="text-sm text-gray-900 dark:text-white truncate">{{att_item.original_filename}}</span>
                 </div>
                 <button type="button" class="flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0 bg-transparent border-0 cursor-pointer">
@@ -85,7 +85,7 @@
         <div data-ref="page_not_found" data-if="{{!page?.data}}" class="bg-white dark:bg-gray-800 rounded-lg shadow p-10 text-center">
           <icon name="circle-exclamation" class="text-4xl text-gray-500 dark:text-gray-500 mb-4"/>
           <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">$t:user.page.not_found_title</h2>
-          <p class="text-gray-500 dark:text-gray-400 mb-6">$t:user.page.not_found_description</p>
+          <p class="text-muted mb-6">$t:user.page.not_found_description</p>
           <div class="flex items-center justify-center gap-3">
             <a href="/" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
               <on type="click">

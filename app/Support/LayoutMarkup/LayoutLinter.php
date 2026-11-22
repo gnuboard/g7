@@ -32,6 +32,8 @@ use App\Enums\LayoutMarkupLintCode;
  *     debounce 는 엔진이 적용하지 않는다.
  *  ⑬ **debounce 혼재** — 같은 부품·같은 이벤트에 debounce 동작과 바로 실행하는 동작이 섞임.
  *  ⑭ **진입점 전용 키** — `key`·`stopPropagation` 을 진입점이 아닌 액션에 적음(#753).
+ *  ⑮ **열린 구간 겹침** — 한 노드의 열린 커스텀 구간이 다른 구간과 같은 폭에 함께 맞음.
+ *  ⑯ **class-merge 폭 변형** — responsive 구간 `class-merge` 에 `md:` 등 폭 변형 클래스(engine-v1.98.0).
  *
  * lint 은 산출 JSON 을 대상으로 하므로 소스 좌표를 모른다. 위치 없는 경고가 나오면
  * `LayoutMarkupCompiler` 가 노드·액션에 소스 위치 표식({@see SOURCE_POSITION_KEY})을 붙여 한 번 더
@@ -158,8 +160,69 @@ final class LayoutLinter
         $this->lintNestedActionDebounce($json, $path, $warnings);
         $this->lintMixedDebounce($json, $path, $warnings);
         $this->lintEntryOnlyKeys($json, $path, $warnings);
+        $this->lintClassMergeBreakpointVariants($json, $path, $warnings);
 
         return $warnings;
+    }
+
+    /**
+     * ⑯ responsive 구간 `class-merge` 의 폭 변형 클래스를 경고합니다 (engine-v1.98.0).
+     *
+     * 판정식은 감사 `layout-no-tailwind-breakpoint-variant` 와 같다 — 확장 접두·상태 변형이 앞에 몇 개 오든
+     * (`ecommerce:dark:md:`) 폭 변형(`sm:`…`2xl:`·`max-*:`·`min-[..]:`·`max-[..]:`)이 있으면 낸다.
+     *
+     * @param  array<string, mixed>  $json  산출 JSON
+     * @param  string|null  $path  소스 파일 경로
+     * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     * @return void 반환값 없음
+     */
+    private function lintClassMergeBreakpointVariants(array $json, ?string $path, array &$warnings): void
+    {
+        foreach ($this->collectNodes($json) as $node) {
+            $responsive = $node['responsive'] ?? null;
+
+            if (! is_array($responsive)) {
+                continue;
+            }
+
+            foreach ($responsive as $key => $override) {
+                $value = is_array($override) ? ($override['classMerge'] ?? null) : null;
+
+                if (! is_string($value) || $value === '') {
+                    continue;
+                }
+
+                $tokens = self::breakpointVariantTokens($value);
+
+                if ($tokens === []) {
+                    continue;
+                }
+
+                $warnings[] = new LintWarning(LayoutMarkupLintCode::ClassMergeBreakpointVariant, self::line($node), self::column($node), [
+                    'name' => (string) ($node['name'] ?? ''),
+                    'key' => (string) $key,
+                    'tokens' => implode(', ', $tokens),
+                ], $path);
+            }
+        }
+    }
+
+    /**
+     * 클래스 값에서 Tailwind 폭 변형 토큰을 찾습니다 (감사 layout-no-tailwind-breakpoint-variant 의 TOKEN_RE 와 같은 식).
+     *
+     * @param  string  $value  클래스 값
+     * @return list<string> 찾은 토큰
+     */
+    private static function breakpointVariantTokens(string $value): array
+    {
+        $breakpoint = '(?:sm|md|lg|xl|2xl|max-(?:sm|md|lg|xl|2xl)|min-\[[^\]\s]+\]|max-\[[^\]\s]+\])';
+        $pattern = '/(?:^|[\s\'"`(\[{,?:+])(!?(?:[a-z0-9_-]+:)*!?'.$breakpoint.':[!a-z0-9\[-][^\s\'"`)},]*)/';
+
+        if (preg_match_all($pattern, $value, $matches) === false) {
+            return [];
+        }
+
+        return array_values(array_unique($matches[1]));
     }
 
     /**

@@ -18,6 +18,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import pluginSettingsLayout from '../../../layouts/admin/plugin_settings.json';
+import { applyResponsiveClassMerge } from '@core/template-engine/helpers/StyleHelpers';
 
 const EXT_ROOT = path.resolve(__dirname, '../../../..');
 const PREFIX = 'pay-kginicis-';
@@ -56,10 +57,26 @@ function flatten(node: unknown): LayoutNode[] {
 const nodes = flatten(pluginSettingsLayout);
 const cls = (n: LayoutNode | undefined) => (typeof n?.props?.className === 'string' ? n.props.className : '');
 const tokens = (n: LayoutNode | undefined) => cls(n).replace(/[{}'?:]/g, ' ').split(/\s+/).filter(Boolean);
-/** 기본 className 과 엔진 responsive 구간 값 className 의 토큰 전부 — 폭에 따라 붙는 클래스는 구간 값에만 있다 */
+type ResponsiveRange = { props?: { className?: string }; classMerge?: string };
+/**
+ * 폭 구간의 실효 className — 구간 class(있으면 통째 교체, 없으면 기본 class) 위에 구간 class-merge 를 엔진 규칙으로 덧붙인 값 (#399, engine-v1.98.0).
+ * 접두 토큰(`paykginicis:…`)끼리 충돌 교체가 되도록 서버가 내려 주는 확장 접두 목록을 계산하는 동안만 세운다.
+ */
+const rangeClassName = (n: LayoutNode | undefined, range: ResponsiveRange): string => {
+    const w = window as unknown as { G7Config?: Record<string, unknown> };
+    const prev = w.G7Config;
+    w.G7Config = { ...(prev ?? {}), extensionClassPrefixes: ['paykginicis'] };
+    try {
+        return applyResponsiveClassMerge(range.props?.className ?? n?.props?.className, range.classMerge);
+    } finally {
+        w.G7Config = prev;
+    }
+};
+/** 기본 className 과 엔진 responsive 구간 실효 className 의 토큰 전부 — 폭에 따라 붙는 클래스는 구간 값에만 있다 */
 const tokensAtAnyWidth = (n: LayoutNode | undefined) => [
     ...tokens(n),
-    ...Object.values(((n as { responsive?: Record<string, LayoutNode> } | undefined)?.responsive) ?? {}).flatMap((r) => tokens(r)),
+    ...Object.values(((n as { responsive?: Record<string, ResponsiveRange> } | undefined)?.responsive) ?? {})
+        .flatMap((r) => tokens({ props: { className: rangeClassName(n, r) } })),
 ];
 
 /**

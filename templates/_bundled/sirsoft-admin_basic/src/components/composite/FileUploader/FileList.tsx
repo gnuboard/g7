@@ -156,7 +156,7 @@ export const FileList: React.FC<FileListProps> = ({
                 onClick={onAddClick}
               >
                 <I className="fa-solid fa-plus text-2xl text-gray-500 dark:text-gray-500 mb-1" aria-hidden="true" />
-                <Span className="text-xs text-gray-500 dark:text-gray-400">{t('common.add')}</Span>
+                <Span className="text-xs text-muted">{t('common.add')}</Span>
               </Button>
             )}
           </Div>
@@ -167,8 +167,8 @@ export const FileList: React.FC<FileListProps> = ({
       <Div
         className={
           isCompact
-            ? 'mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 flex flex-col items-start gap-0.5 text-xs text-gray-500 dark:text-gray-400'
-            : 'mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-wrap justify-between items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400'
+            ? 'mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 flex flex-col items-start gap-0.5 text-xs text-muted'
+            : 'mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-wrap justify-between items-center gap-x-3 gap-y-1 text-xs text-muted'
         }
       >
         <Span>{t('attachment.attached_count', { count: totalCount, max: maxFiles })}</Span>

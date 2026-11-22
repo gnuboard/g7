@@ -7,7 +7,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "p-4 mb-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+        "className": "p-4 mb-4 card-plain"
     },
     "children": [
         {
@@ -55,7 +55,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                        "className": "text-xs text-muted"
                                     },
                                     "text": "{{review.created_at}}"
                                 }
@@ -466,7 +466,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "text-xs text-muted"
                             },
                             "text": "{{review.replied_at}}"
                         }

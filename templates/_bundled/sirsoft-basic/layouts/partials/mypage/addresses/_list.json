@@ -34,9 +34,7 @@
                     "name": "Button",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "inline-flex items-center gap-1.5 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
-                            }
+                            "classMerge": "gap-1.5 px-3"
                         }
                     },
                     "actions": [
@@ -119,12 +117,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800"
+                                "className": "card-plain p-3"
                             }
                         }
                     },
                     "props": {
-                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800",
+                        "className": "card-plain p-4",
                         "data-testid": "address-card"
                     },
                     "children": [
@@ -313,9 +311,7 @@
             "if": "{{!(addresses?.data?.addresses?.data ?? []).length}}",
             "responsive": {
                 "portable": {
-                    "props": {
-                        "className": "bg-white dark:bg-gray-800 rounded-lg p-8 text-center"
-                    }
+                    "classMerge": "p-8"
                 }
             },
             "props": {
@@ -342,7 +338,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-gray-500 dark:text-gray-400 mb-4"
+                        "className": "text-muted mb-4"
                     },
                     "text": "$t:mypage.addresses.empty"
                 },

@@ -166,7 +166,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "search",
-                                "className": "ecommerce:text-base ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:pointer-events-none"
+                                "className": "ecommerce:text-base ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce-text-muted ecommerce:pointer-events-none"
                             }
                         }
                     ]

@@ -28,14 +28,14 @@
               <td data-ref="bt_td_name_{{btIdx}}" class="board:px-3 board:py-2 board:text-sm board:text-gray-900 board:dark:text-gray-100">{{$localized(btItem.name) || btItem.slug}}</td>
               <td data-ref="bt_td_actions_{{btIdx}}" class="board:px-3 board:py-2 board:text-center">
                 <div data-ref="bt_action_btns_{{btIdx}}" class="board-flex-center board:justify-center board:gap-1">
-                  <button data-ref="bt_edit_btn_{{btIdx}}" type="button" class="board:p-1 board:text-gray-500 board:dark:text-gray-400 board:hover:text-blue-600 board:dark:text-blue-400 board:dark:hover:text-blue-400" title="$t:common.edit" disabled="{{$parent._computed.canManageBoardTypes !== true || _global.btSaving}}">
+                  <button data-ref="bt_edit_btn_{{btIdx}}" type="button" class="board:p-1 board-text-muted board:hover:text-blue-600 board:dark:text-blue-400 board:dark:hover:text-blue-400" title="$t:common.edit" disabled="{{$parent._computed.canManageBoardTypes !== true || _global.btSaving}}">
                     <on type="click">
                       <!-- 이 줄을 아래 폼으로 끌어와 「수정」 모드로 바꾼다. 이름은 예전 판본이 문자열일 수 있어 객체가 아니면 한국어 자리에 넣어 다국어 모양으로 맞춘다 -->
                       <set-state target="global" btEditingItem="{{btItem}}" btFormMode="edit" btFormSlug="{{btItem.slug}}" btFormName="{{typeof btItem.name === 'object' ? btItem.name : {ko: btItem.name ?? '', en: ''} }}" :btFormErrors="null"/>
                     </on>
                     <icon data-ref="bt_edit_icon_{{btIdx}}" name="pencil" size="sm"/>
                   </button>
-                  <button data-ref="bt_delete_btn_{{btIdx}}" data-if="{{$parent._computed.canManageBoardTypes === true}}" type="button" class="board:p-1 board:text-gray-500 board:dark:text-gray-400 board:hover:text-red-600 board:dark:text-red-400 board:dark:hover:text-red-400 board:disabled:opacity-50 board:disabled:cursor-not-allowed" title="$t:common.delete" disabled="{{_global.btDeletingId != null || _global.btSaving}}">
+                  <button data-ref="bt_delete_btn_{{btIdx}}" data-if="{{$parent._computed.canManageBoardTypes === true}}" type="button" class="board:p-1 board-text-muted board:hover:text-red-600 board:dark:text-red-400 board:dark:hover:text-red-400 board:disabled:opacity-50 board:disabled:cursor-not-allowed" title="$t:common.delete" disabled="{{_global.btDeletingId != null || _global.btSaving}}">
                     <on type="click">
                       <!-- confirm 은 진입점 액션에서만 읽힌다 — 중첩된 apiCall 에 달면 handleSequence 가 executeAction 을 부르는 경로에 검사가 없어 확인창 없이 즉시 삭제된다. -->
                       <sequence confirm="$t:sirsoft-board.admin.board_types.delete_confirm">
@@ -115,7 +115,7 @@
           </div>
         </div>
         <div data-ref="bt_form_submit" class="board:flex board:justify-end board:mt-3">
-          <button data-ref="bt_submit_btn" type="button" class="board-flex-center board:gap-2 board:px-4 board:py-2 board:bg-blue-600 board:text-white board:text-sm board:rounded-lg board:hover:bg-blue-700 board:dark:bg-blue-600 board:dark:hover:bg-blue-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed" disabled="{{$parent._computed.canManageBoardTypes !== true || _global.btSaving || !_global.btFormSlug || !_global.btFormName?.[_global.appConfig?.siteLocale ?? $locale ?? 'ko']}}">
+          <button data-ref="bt_submit_btn" type="button" class="board-flex-center board-btn board-btn-primary" disabled="{{$parent._computed.canManageBoardTypes !== true || _global.btSaving || !_global.btFormSlug || !_global.btFormName?.[_global.appConfig?.siteLocale ?? $locale ?? 'ko']}}">
             <on type="click">
               <!-- 저장 — 모드에 따라 새로 만들거나(POST) 고친다(PUT). 성공하면 폼을 빈 「추가」 상태로 되돌리고 목록을 다시 읽어, 창을 닫지 않고 연달아 여러 개를 만들 수 있게 한다 -->
               <sequence>
@@ -152,7 +152,7 @@
       </div>
     </div>
     <footer>
-      <button data-ref="bt_modal_close_btn" type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
+      <button data-ref="bt_modal_close_btn" type="button" class="board-btn board-btn-secondary">
         <on type="click">
           <!-- 닫으면서 폼을 비운다 — 남겨 두면 다음에 열었을 때 지난번 입력이 「수정 중」인 것처럼 되살아난다 -->
           <sequence>

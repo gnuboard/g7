@@ -9,7 +9,7 @@
     <h3 class="card-title">$t:admin.settings.security.activity_log_retention.title</h3>
     <div class="card-description">$t:admin.settings.security.activity_log_retention.desc</div>
     <div class="row-stack">
-      <div data-ref="field_activity_log_retention_days" class="">
+      <div data-ref="field_activity_log_retention_days">
         <label class="form-label">$t:admin.settings.security.activity_log_retention.days</label>
         <div class="flex-center gap-2">
           <input type="number" name="security.activity_log_retention_days" placeholder="365" min="{{_local?.form?._meta?.limits?.security_activity_log_retention_days_min ?? 365}}" max="{{_local?.form?._meta?.limits?.security_activity_log_retention_days_max ?? 3650}}" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['security.activity_log_retention_days'] ? 'input-error' : ''}}"/>

@@ -66,7 +66,7 @@
                     "name": "P",
                     "if": "{{!claim.data?.claim?.calculation_comparison?.original}}",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400",
+                        "className": "text-sm text-muted",
                         "data-testid": "claim-detail-comparison-empty"
                     },
                     "text": "$t:claim.detail.comparison.empty"
@@ -100,7 +100,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400"
+                                        "className": "text-xs font-medium text-muted"
                                     },
                                     "text": "$t:claim.detail.comparison.col_item"
                                 },
@@ -108,7 +108,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400 text-right"
+                                        "className": "text-xs font-medium text-muted text-right"
                                     },
                                     "text": "{{claim.data?.claim?.claim_type === 'exchange' ? $t('claim.detail.comparison.col_before_exchange') : (claim.data?.claim?.claim_type === 'return' ? $t('claim.detail.comparison.col_before_return') : (claim.data?.claim?.claim_type === 'cancel' ? $t('claim.detail.comparison.col_before_cancel') : $t('claim.detail.comparison.col_before_refund')))}}"
                                 },
@@ -116,7 +116,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400 text-right"
+                                        "className": "text-xs font-medium text-muted text-right"
                                     },
                                     "text": "{{claim.data?.claim?.claim_type === 'exchange' ? $t('claim.detail.comparison.col_after_exchange') : (claim.data?.claim?.claim_type === 'return' ? $t('claim.detail.comparison.col_after_return') : (claim.data?.claim?.claim_type === 'cancel' ? $t('claim.detail.comparison.col_after_cancel') : $t('claim.detail.comparison.col_after_refund')))}}"
                                 }
@@ -143,7 +143,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 break-keep"
+                                        "className": "text-sm text-muted break-keep"
                                     },
                                     "text": "$t:claim.detail.comparison.row_item_count"
                                 },
@@ -170,7 +170,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             }
                                         }
                                     },
@@ -219,7 +219,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 break-keep"
+                                        "className": "text-sm text-muted break-keep"
                                     },
                                     "text": "$t:claim.detail.comparison.row_list_price"
                                 },
@@ -254,7 +254,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400 block"
+                                                        "className": "text-xs text-muted block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -268,7 +268,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             }
                                         }
                                     },
@@ -308,7 +308,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400 block"
+                                                        "className": "text-xs text-muted block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -339,7 +339,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 break-keep"
+                                        "className": "text-sm text-muted break-keep"
                                     },
                                     "text": "$t:claim.detail.comparison.row_subtotal"
                                 },
@@ -374,7 +374,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400 block"
+                                                        "className": "text-xs text-muted block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -388,7 +388,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             }
                                         }
                                     },
@@ -428,7 +428,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400 block"
+                                                        "className": "text-xs text-muted block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -459,7 +459,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 break-keep"
+                                        "className": "text-sm text-muted break-keep"
                                     },
                                     "text": "$t:claim.detail.comparison.row_product_coupon"
                                 },
@@ -486,7 +486,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             }
                                         }
                                     },
@@ -535,7 +535,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 break-keep"
+                                        "className": "text-sm text-muted break-keep"
                                     },
                                     "text": "$t:claim.detail.comparison.row_order_coupon"
                                 },
@@ -562,7 +562,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             }
                                         }
                                     },
@@ -611,7 +611,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 break-keep"
+                                        "className": "text-sm text-muted break-keep"
                                     },
                                     "text": "$t:claim.detail.comparison.row_code_discount"
                                 },
@@ -638,7 +638,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             }
                                         }
                                     },
@@ -687,7 +687,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 break-keep"
+                                        "className": "text-sm text-muted break-keep"
                                     },
                                     "text": "$t:claim.detail.comparison.row_shipping_coupon"
                                 },
@@ -714,7 +714,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             }
                                         }
                                     },
@@ -763,7 +763,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 break-keep"
+                                        "className": "text-sm text-muted break-keep"
                                     },
                                     "text": "$t:claim.detail.comparison.row_base_shipping"
                                 },
@@ -790,7 +790,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             }
                                         }
                                     },
@@ -839,7 +839,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 break-keep"
+                                        "className": "text-sm text-muted break-keep"
                                     },
                                     "text": "$t:claim.detail.comparison.row_extra_shipping"
                                 },
@@ -866,7 +866,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             }
                                         }
                                     },
@@ -915,7 +915,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 break-keep"
+                                        "className": "text-sm text-muted break-keep"
                                     },
                                     "text": "$t:claim.detail.comparison.row_points_used"
                                 },
@@ -942,7 +942,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             }
                                         }
                                     },
@@ -991,7 +991,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 break-keep"
+                                        "className": "text-sm text-muted break-keep"
                                     },
                                     "text": "$t:claim.detail.comparison.row_taxable"
                                 },
@@ -1018,7 +1018,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             }
                                         }
                                     },
@@ -1067,7 +1067,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 break-keep"
+                                        "className": "text-sm text-muted break-keep"
                                     },
                                     "text": "$t:claim.detail.comparison.row_vat"
                                 },
@@ -1094,7 +1094,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             }
                                         }
                                     },
@@ -1143,7 +1143,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 break-keep font-semibold"
+                                        "className": "text-sm text-muted break-keep font-semibold"
                                     },
                                     "text": "$t:claim.detail.comparison.row_total_paid"
                                 },
@@ -1178,7 +1178,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400 block"
+                                                        "className": "text-xs text-muted block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -1192,7 +1192,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             }
                                         }
                                     },
@@ -1232,7 +1232,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400 block"
+                                                        "className": "text-xs text-muted block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -1263,7 +1263,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 break-keep"
+                                        "className": "text-sm text-muted break-keep"
                                     },
                                     "text": "$t:claim.detail.comparison.row_earned_points"
                                 },
@@ -1290,7 +1290,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             }
                                         }
                                     },
@@ -1332,7 +1332,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 break-keep block mb-0.5"
+                                        "className": "text-sm text-muted break-keep block mb-0.5"
                                     },
                                     "text": "$t:claim.detail.comparison.row_substituted"
                                 },
@@ -1391,7 +1391,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400"
+                        "className": "text-xs font-medium text-muted"
                     },
                     "text": "$t:claim.detail.compare_item"
                 },
@@ -1399,7 +1399,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400 text-right"
+                        "className": "text-xs font-medium text-muted text-right"
                     },
                     "text": "$t:claim.detail.compare_original"
                 },
@@ -1407,7 +1407,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400 text-right"
+                        "className": "text-xs font-medium text-muted text-right"
                     },
                     "text": "$t:claim.detail.compare_claim"
                 }
@@ -1432,7 +1432,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-sm text-muted"
                     },
                     "text": "$t:claim.detail.compare_shipping"
                 },
@@ -1447,13 +1447,6 @@
                 {
                     "type": "basic",
                     "name": "Span",
-                    "responsive": {
-                        "portable": {
-                            "props": {
-                                "className": "text-sm font-medium text-gray-900 dark:text-white text-right"
-                            }
-                        }
-                    },
                     "props": {
                         "className": "text-sm font-medium text-gray-900 dark:text-white text-right"
                     },
@@ -1477,7 +1470,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                        "className": "text-xs text-muted"
                     },
                     "text": "{{currency[1]?.formatted ?? ''}}"
                 }
@@ -1502,7 +1495,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-sm text-muted"
                     },
                     "text": "{{(claim.data?.claim?.claim_type === 'exchange' || claim.data?.claim?.claim_type === 'return') ? $t('claim.detail.compare_charge') : $t('claim.detail.compare_refund')}}"
                 },
@@ -1517,13 +1510,6 @@
                 {
                     "type": "basic",
                     "name": "Span",
-                    "responsive": {
-                        "portable": {
-                            "props": {
-                                "className": "text-sm font-bold text-gray-900 dark:text-white text-right"
-                            }
-                        }
-                    },
                     "props": {
                         "className": "text-sm font-bold text-gray-900 dark:text-white text-right"
                     },
@@ -1547,7 +1533,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                        "className": "text-xs text-muted"
                     },
                     "text": "{{currency[1]?.formatted ?? ''}}"
                 }
@@ -1582,7 +1568,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "text-sm text-muted"
                             },
                             "text": "$t:claim.detail.charge_method"
                         },
@@ -1627,7 +1613,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                        "className": "text-xs text-muted"
                                     },
                                     "text": "{{payment.payment_number ?? ''}}{{payment.paid_at_formatted ? ' · ' + payment.paid_at_formatted : ''}}"
                                 }
@@ -1664,7 +1650,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             },
                                             "text": "{{currency[1]?.formatted ?? ''}}"
                                         }
@@ -1749,7 +1735,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                        "className": "text-sm text-muted"
                                     },
                                     "text": "$t:claim.detail.pay_method"
                                 },
@@ -1776,7 +1762,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                        "className": "text-sm text-muted"
                                     },
                                     "text": "$t:claim.detail.pay_method"
                                 },
@@ -1914,7 +1900,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "text-sm text-muted"
                             },
                             "text": "$t:claim.detail.refund_method"
                         },
@@ -1940,7 +1926,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "text-sm text-muted"
                             },
                             "text": "$t:claim.detail.refund_points_amount"
                         },
@@ -1968,7 +1954,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "text-sm text-muted"
                             },
                             "text": "$t:claim.detail.exchange_difference_refund"
                         },
@@ -2003,7 +1989,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                        "className": "text-sm text-muted"
                                     },
                                     "text": "$t:claim.detail.refund_mileage_credit_amount"
                                 },
@@ -2021,7 +2007,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "text-xs text-muted"
                             },
                             "text": "$t:claim.detail.refund_mileage_credit_hint"
                         }
@@ -2040,7 +2026,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                "className": "text-sm text-muted flex-shrink-0"
                             },
                             "text": "$t:claim.detail.refund_account"
                         },
@@ -2066,7 +2052,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "text-sm text-muted"
                             },
                             "text": "$t:claim.detail.refunded_at"
                         },
@@ -2113,7 +2099,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "text-sm text-muted"
                             },
                             "text": "$t:claim.detail.linked_source"
                         },
@@ -2195,7 +2181,7 @@
                     "name": "P",
                     "if": "{{['exchange', 'return'].includes(claim.data?.claim?.claim_type ?? '') && (claim.data?.linked_claims?.refunds ?? []).length === 0}}",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-sm text-muted"
                     },
                     "text": "$t:claim.detail.linked_empty"
                 },

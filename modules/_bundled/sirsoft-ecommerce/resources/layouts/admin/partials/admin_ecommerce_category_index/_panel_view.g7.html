@@ -47,7 +47,7 @@
                 <span class="ecommerce:inline ecommerce-text-body ecommerce:whitespace-pre-wrap">{{descEntry[1]}}</span>
               </div>
             </div>
-            <span data-if="{{!_global.selectedCategory?.description || Object.keys(_global.selectedCategory?.description || {}).length === 0}}" class="ecommerce:block ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">-</span>
+            <span data-if="{{!_global.selectedCategory?.description || Object.keys(_global.selectedCategory?.description || {}).length === 0}}" class="ecommerce:block ecommerce:text-sm ecommerce-text-muted">-</span>
           </div>
         </div>
         <div class="ecommerce:mt-4">
@@ -80,7 +80,7 @@
             </div>
           </div>
           <div data-if="{{!_global.selectedCategory?.images || _global.selectedCategory?.images?.length === 0}}" class="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4 ecommerce:text-center">
-            <span class="ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.category.info.no_image</span>
+            <span class="ecommerce:text-sm ecommerce-text-muted">$t:sirsoft-ecommerce.admin.category.info.no_image</span>
           </div>
         </div>
       </div>

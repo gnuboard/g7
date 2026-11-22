@@ -23,7 +23,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "sl:px-4 sl:py-2 sl:bg-white sl:dark:bg-gray-800 sl:text-gray-700 sl:dark:text-gray-300 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:hover:bg-gray-50 sl:dark:hover:bg-gray-700 sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
+                    "className": "sl-btn sl-btn-secondary",
                     "disabled": "{{_global.isResettingNotification}}"
                 },
                 "text": "$t:common.cancel"

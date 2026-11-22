@@ -30,7 +30,7 @@
     <container data-type="layout" class="py-12">
       <!-- 처리 중 — 로딩 스피너 -->
       <div data-if="{{_local.status === 'pending'}}" class="flex flex-col items-center justify-center py-16 gap-4">
-        <icon name="spinner" class="text-4xl animate-spin text-gray-500 dark:text-gray-400"/>
+        <icon name="spinner" class="text-4xl animate-spin text-muted"/>
         <p class="text-gray-600 dark:text-gray-300">$t:shop.reorder.processing</p>
       </div>
       <!-- 성공 + skipped 항목 존재 — 사용자에게 알린 후 장바구니로 이동 -->
@@ -44,7 +44,7 @@
         <ul data-each="item, idx in {{_local.skipped ?? []}}" class="space-y-2 mb-6 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
           <li class="text-sm text-gray-700 dark:text-gray-300">
             <span class="font-medium">{{item.product_name ?? ''}}</span>
-            <span class="text-gray-500 dark:text-gray-400 ml-2">— {{item.reason ?? ''}}</span>
+            <span class="text-muted ml-2">— {{item.reason ?? ''}}</span>
           </li>
         </ul>
         <div class="flex gap-3">
@@ -54,7 +54,7 @@
             </on>
             $t:shop.reorder.go_cart
           </a>
-          <a href="/mypage/orders" class="inline-flex items-center justify-center flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+          <a href="/mypage/orders" class="btn btn-outline flex-1 py-2.5 dark:hover:bg-gray-800 cursor-pointer">
             <on type="click">
               <navigate/>
             </on>
@@ -69,7 +69,7 @@
           <span>$t:shop.reorder.error_title</span>
         </h1>
         <p class="text-gray-600 dark:text-gray-300 mb-6">{{_local.message !== '' ? _local.message : '$t:shop.reorder.failed'}}</p>
-        <a href="/mypage/orders" class="inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+        <a href="/mypage/orders" class="btn btn-outline py-2.5 dark:hover:bg-gray-800 cursor-pointer">
           <on type="click">
             <navigate/>
           </on>

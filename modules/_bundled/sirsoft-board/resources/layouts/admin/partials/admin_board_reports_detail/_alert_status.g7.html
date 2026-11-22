@@ -33,12 +33,12 @@
             <open-modal target="status_action_modal"/>
           </on>
           <icon name="chevron-left" class="board:text-base">
-            <responsive on="portable" name="chevron-left" class="board:w-3.5 board:h-3.5"/>
+            <responsive on="portable" name="chevron-left" class="board:text-sm"/>
           </icon>
           <span>$t:sirsoft-board.admin.reports.detail.actions.back_to_pending</span>
         </button>
-        <button type="button" data-if="{{report_detail?.data?.available_actions?.includes('review')}}" disabled="{{report_detail?.data?.abilities?.can_manage !== true}}" class="board-flex-center board:gap-2 board:px-3 board:py-2 board:bg-blue-600 board:dark:bg-blue-600 board:text-white board:rounded-lg board:hover:bg-blue-700 board:dark:hover:bg-blue-700 board:text-sm board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed">
-          <responsive on="portable" class="board-flex-center board:gap-2 board:px-3 board:py-2 board:bg-blue-600 board:dark:bg-blue-600 board:text-white board:rounded-lg board:hover:bg-blue-700 board:dark:hover:bg-blue-700 board:text-xs board:font-medium board:transition-colors"/>
+        <button type="button" data-if="{{report_detail?.data?.available_actions?.includes('review')}}" disabled="{{report_detail?.data?.abilities?.can_manage !== true}}" class="board-flex-center board-btn board-btn-primary board:px-3">
+          <responsive on="portable" class-merge="board:text-xs"/>
           <on type="click">
             <!-- 「검토 시작」 또는 「재검토」 — 같은 전환이지만 지금이 대기 상태인지에 따라 아이콘과 글자가 갈린다 -->
             <set-state target="global" actionType="review" actionReason=""/>
@@ -47,7 +47,7 @@
             <open-modal target="status_action_modal"/>
           </on>
           <icon name="{{report_detail?.data?.status === 'pending' ? 'check-circle' : 'clock'}}" class="board:text-base">
-            <responsive on="portable" name="{{report_detail?.data?.status === 'pending' ? 'check-circle' : 'clock'}}" class="board:w-3.5 board:h-3.5"/>
+            <responsive on="portable" name="{{report_detail?.data?.status === 'pending' ? 'check-circle' : 'clock'}}" class="board:text-sm"/>
           </icon>
           <span>{{report_detail?.data?.status === 'pending' ? '$t:sirsoft-board.admin.reports.detail.actions.start_review' : '$t:sirsoft-board.admin.reports.detail.actions.re_review'}}</span>
         </button>
@@ -61,7 +61,7 @@
             <open-modal target="status_action_modal"/>
           </on>
           <icon name="times-circle" class="board:text-base">
-            <responsive on="portable" name="times-circle" class="board:w-3.5 board:h-3.5"/>
+            <responsive on="portable" name="times-circle" class="board:text-sm"/>
           </icon>
           <span>$t:sirsoft-board.admin.reports.detail.actions.reject</span>
         </button>
@@ -75,7 +75,7 @@
             <open-modal target="status_action_modal"/>
           </on>
           <icon name="exclamation-triangle" class="board:text-base">
-            <responsive on="portable" name="exclamation-triangle" class="board:w-3.5 board:h-3.5"/>
+            <responsive on="portable" name="exclamation-triangle" class="board:text-sm"/>
           </icon>
           <span>$t:sirsoft-board.admin.reports.detail.actions.suspend</span>
         </button>
@@ -89,7 +89,7 @@
             <open-modal target="status_action_modal"/>
           </on>
           <icon name="trash" class="board:text-base">
-            <responsive on="portable" name="trash" class="board:w-3.5 board:h-3.5"/>
+            <responsive on="portable" name="trash" class="board:text-sm"/>
           </icon>
           <span>$t:sirsoft-board.admin.reports.detail.actions.delete</span>
         </button>

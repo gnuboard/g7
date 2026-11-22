@@ -10,7 +10,7 @@
     <responsive on="portable" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-3"/>
     <div data-each="field in {{checkoutFieldGroup?.fields ?? []}}" data-ref="checkout_extra_field_{{field.key}}">
       <!-- 라벨과 필수 별표 — 예/아니오 칸은 체크박스 옆 문구가 라벨 노릇을 하므로 옆 문구를 따로 정한 경우에만 위 라벨을 둔다. -->
-      <label data-if="{{field.type !== 'boolean' || !!field.constraints?.inline_label}}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">
+      <label data-if="{{field.type !== 'boolean' || !!field.constraints?.inline_label}}" class="form-label break-words">
         <span>{{field.label}}</span>
         <span data-if="{{field.required}}" class="text-red-600 dark:text-red-400 ml-1">*</span>
       </label>
@@ -38,9 +38,9 @@
       <!-- 그 밖의 유형 — 항목 1개짜리 입력 컴포넌트가 유형과 제한 값을 보고 입력칸을 고른다. 필수 표시(aria-required)와 오류 연결(aria-describedby)은 컴포넌트가 붙인다. -->
       <member-field-input data-type="composite" data-if="{{field.renderer !== 'address' &amp;&amp; field.renderer !== 'extension'}}" field="{{field}}" name="{{field.name}}" disabled="{{!!_local.isSubmittingOrder}}" error="{{Object.entries(_local.errors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}" errorId="checkout_extra_field_error_{{field.key}}"/>
       <!-- 운영자가 적은 안내 문구 -->
-      <p data-if="{{field.help}}" class="mt-1 text-xs text-gray-500 dark:text-gray-400 break-words">{{field.help}}</p>
+      <p data-if="{{field.help}}" class="mt-1 text-xs text-muted break-words">{{field.help}}</p>
       <!-- 이 칸의 검증 오류 — 묶음 유형(주소, 기간, 여러 개 선택)은 하위 경로의 오류도 이 줄에 모은다. -->
-      <span data-if="{{Object.keys(_local.errors ?? {}).some(function(k) { return k === field.name || k.indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(k) !== -1; })}}" data-ref="checkout_extra_field_error_{{field.key}}" class="block text-red-600 dark:text-red-400 text-xs mt-1">{{Object.entries(_local.errors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(entry[0]) !== -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}</span>
+      <span data-if="{{Object.keys(_local.errors ?? {}).some(function(k) { return k === field.name || k.indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(k) !== -1; })}}" data-ref="checkout_extra_field_error_{{field.key}}" class="form-error">{{Object.entries(_local.errors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(entry[0]) !== -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}</span>
     </div>
   </div>
 </partial>

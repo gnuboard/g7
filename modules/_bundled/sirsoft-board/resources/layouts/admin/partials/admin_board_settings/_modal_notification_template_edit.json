@@ -453,7 +453,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "board:text-sm board:text-gray-500 board:dark:text-gray-400"
+                                        "className": "board:text-sm board-text-muted"
                                     },
                                     "text": "·"
                                 },
@@ -499,6 +499,7 @@
                                     },
                                     "children": [
                                         {
+                                            "comment": "audit:allow layout-inline-semantic-duplicate reason: 게시판 알림 템플릿 편집 창의 수신자 규칙 한 건 상자, 보라 테두리에 여백 p-3 space-y-2 라 카드 여백(p-4 mb-6)과 다름",
                                             "type": "basic",
                                             "name": "Div",
                                             "iteration": {
@@ -937,7 +938,7 @@
                                                             "name": "P",
                                                             "if": "{{rcpt.type === 'site_admin_email'}}",
                                                             "props": {
-                                                                "className": "board:text-xs board:text-gray-500 board:dark:text-gray-400"
+                                                                "className": "board:text-xs board-text-muted"
                                                             },
                                                             "text": "$t:admin.settings.notification_definitions.recipients.site_admin_email_hint"
                                                         },
@@ -1044,7 +1045,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{(_global.board_notification_template_form_modal?.editLang ?? $locale) === loc ? 'board:border-b-2 board:border-indigo-500 board:dark:border-indigo-400 board:text-indigo-600 board:dark:text-indigo-400' : 'board:text-gray-500 board:dark:text-gray-400 board:hover:text-gray-700 board:dark:hover:text-gray-300'}} board:px-4 board:py-2 board:text-sm board:font-medium board:focus:outline-none"
+                                        "className": "{{(_global.board_notification_template_form_modal?.editLang ?? $locale) === loc ? 'board:border-b-2 board:border-indigo-500 board:dark:border-indigo-400 board:text-indigo-600 board:dark:text-indigo-400' : 'board-text-muted board:hover:text-gray-700 board:dark:hover:text-gray-300'}} board:px-4 board:py-2 board:text-sm board:font-medium board:focus:outline-none"
                                     },
                                     "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
                                 }
@@ -1098,8 +1099,7 @@
                                             ],
                                             "props": {
                                                 "type": "text",
-                                                "value": "{{_global.board_notification_template_form_modal?.template?.subject?.[_global.board_notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
-                                                "className": ""
+                                                "value": "{{_global.board_notification_template_form_modal?.template?.subject?.[_global.board_notification_template_form_modal?.editLang ?? $locale] ?? ''}}"
                                             }
                                         }
                                     ]

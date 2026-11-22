@@ -65,7 +65,7 @@
                     "name": "P",
                     "if": "{{(searchResults?.data?.total_is_exact ?? true) === false && !(searchResults?.data?.search_failed ?? false)}}",
                     "props": {
-                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                        "className": "mt-1 text-xs text-muted"
                     },
                     "text": "$t:search.refine_query_hint"
                 }
@@ -109,7 +109,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+                        "className": "text-sm text-muted mb-6"
                     },
                     "text": "$t:search.initial.description"
                 },
@@ -240,7 +240,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-sm text-muted"
                     },
                     "text": "$t:search.failed.suggestion"
                 }
@@ -284,7 +284,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-sm text-muted"
                     },
                     "text": "$t:search.empty.suggestion"
                 }

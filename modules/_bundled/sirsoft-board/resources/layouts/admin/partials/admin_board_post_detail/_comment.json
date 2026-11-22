@@ -30,7 +30,7 @@
                             "name": "Span",
                             "if": "{{comment.depth > 0}}",
                             "props": {
-                                "className": "board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0 board:text-sm"
+                                "className": "board-text-muted board:flex-shrink-0 board:text-sm"
                             },
                             "text": "↳"
                         },
@@ -494,7 +494,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "eye-slash",
-                                                "className": "board:text-sm board:text-gray-500 board:dark:text-gray-400"
+                                                "className": "board:text-sm board-text-muted"
                                             }
                                         },
                                         {
@@ -562,7 +562,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "lock",
-                                "className": "board:text-sm board:text-gray-500 board:dark:text-gray-400"
+                                "className": "board:text-sm board-text-muted"
                             }
                         },
                         {
@@ -781,7 +781,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "board:px-3 board:py-1.5 board:text-sm board:bg-blue-600 board:dark:bg-blue-600 board:text-white board:rounded-lg board:hover:bg-blue-700 board:dark:hover:bg-blue-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                                "className": "board-btn board-btn-primary board-btn-sm",
                                 "disabled": "{{_local.editSubmitting === true || !(comment?.abilities?.can_write === true && (comment?.is_author || comment?.abilities?.can_manage === true))}}"
                             },
                             "children": [

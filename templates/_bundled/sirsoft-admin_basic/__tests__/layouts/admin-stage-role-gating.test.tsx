@@ -18,6 +18,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createLayoutTest } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
 import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
+import { expandSemanticTokens } from './support/semanticClasses';
 import adminBase from '../../layouts/_admin_base.json';
 import layoutEdit from '../../layouts/admin_template_layout_edit.json';
 import moduleList from '../../layouts/admin_module_list.json';
@@ -293,7 +294,9 @@ describe('검수 서버(stage) 관리자 화면 잠금 (#888)', () => {
       const button = buttons[0] as HTMLButtonElement;
       expect(button.disabled).toBe(role === 'stage');
       expect(Boolean(button.getAttribute('title'))).toBe(role === 'stage');
-      expect(button.className).toContain('disabled:opacity-50');
+      // #399 R-1 — 꺼짐 모양은 `btn` 의미 클래스 정의(semantic.css)가 갖는다. 정의를 펼쳐 같은 유틸을 확인한다
+      expect(button.className.split(/\s+/)).toContain('btn');
+      expect(expandSemanticTokens(button.className)).toContain('disabled:opacity-50');
 
       testUtils.cleanup();
     }

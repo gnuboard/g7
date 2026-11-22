@@ -96,7 +96,7 @@ $t:sirsoft-ecommerce.admin.product.filter.date</span>
                 <set-state target="_local" filter.startDate="{{$event.target.value}}" filter.dateQuick=""/>
               </on>
             </input>
-            <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">~</span>
+            <span class="ecommerce-text-muted">~</span>
             <input type="date" name="endDate" aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.product.filter.date')}}" value="{{_local.filter.endDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.filter.end_date" class="ecommerce-input ecommerce:w-36">
               <on type="change">
                 <!-- 시작일과 같은 이유로 빠른 기간 표시를 지운다. 시작·종료 중 하나만 넣어도 서버는 열린 구간으로 받는다. -->
@@ -378,7 +378,7 @@ $t:sirsoft-ecommerce.admin.product.filter.price</span>
                 <set-state :debounce="300" target="_local" filter.minPrice="{{$event.target.value}}"/>
               </on>
             </input>
-            <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:shrink-0">~</span>
+            <span class="ecommerce-text-muted ecommerce:shrink-0">~</span>
             <input type="number" value="{{_local.filter?.maxPrice ?? ''}}" min="0" step="1" placeholder="$t:sirsoft-ecommerce.admin.product.filter.max_price" class="ecommerce:w-32">
               <on type="change">
                 <!-- 최소값과 같은 이유로 묶는다. 한쪽만 넣어도 서버는 열린 구간으로 받는다. -->
@@ -401,21 +401,21 @@ $t:sirsoft-ecommerce.admin.product.filter.price</span>
 $t:sirsoft-ecommerce.admin.product.filter.stock</span>
         <div class="ecommerce-flex-center ecommerce:gap-2">
           <input type="text" value="{{_local.filter?.minStock ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.filter.min" class="ecommerce-input">
-            <responsive on="768-" class="ecommerce-input ecommerce:w-28"/>
+            <responsive on="768-" class-merge="ecommerce:w-28"/>
             <on type="change">
               <!-- 재고는 옵션 단위로 잡히므로 이 범위는 상품 기준 합계에 걸린다. 가격 칸과 달리 `type="text"` 라 숫자 아닌 입력도 들어올 수 있고 판정은 서버가 한다. -->
               <set-state :debounce="300" target="_local" filter.minStock="{{$event.target.value}}"/>
             </on>
           </input>
-          <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:shrink-0">~</span>
+          <span class="ecommerce-text-muted ecommerce:shrink-0">~</span>
           <input type="text" value="{{_local.filter?.maxStock ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.filter.max" class="ecommerce-input">
-            <responsive on="768-" class="ecommerce-input ecommerce:w-28"/>
+            <responsive on="768-" class-merge="ecommerce:w-28"/>
             <on type="change">
               <!-- 최소 재고와 같은 이유로 묶는다. 0 을 넣으면 품절만 보는 것과 비슷하지만 품절 상태와 재고 0 이 항상 같지는 않다. -->
               <set-state :debounce="300" target="_local" filter.maxStock="{{$event.target.value}}"/>
             </on>
           </input>
-          <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:shrink-0">$t:sirsoft-ecommerce.admin.product.filter.stock_unit</span>
+          <span class="ecommerce-text-muted ecommerce:shrink-0">$t:sirsoft-ecommerce.admin.product.filter.stock_unit</span>
         </div>
       </div>
       <div data-ref="shipping_policy_filter_row" data-slot="{{(_local.visibleFilters || []).includes('shippingPolicy') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
@@ -440,7 +440,7 @@ $t:sirsoft-ecommerce.admin.product.filter.shipping_policy</span>
       </div>
     </div>
     <div data-ref="preset_row" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4">
-      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:cursor-pointer ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-200">
+      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce-text-muted ecommerce:cursor-pointer ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-200">
         <on type="click">
           <open-modal target="modal_preset_manage"/>
         </on>
@@ -508,7 +508,7 @@ $t:sirsoft-ecommerce.admin.product.filter.shipping_policy</span>
         </select>
         <div class="ecommerce:flex-1 ecommerce:min-w-64 ecommerce:relative">
           <responsive on="portable" class="ecommerce:flex-1 ecommerce:min-w-0 ecommerce:relative"/>
-          <icon name="search" class="ecommerce:text-base ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+          <icon name="search" class="ecommerce:text-base ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-text-muted"/>
           <input type="text" placeholder="$t:sirsoft-ecommerce.admin.product.search.placeholder" class="ecommerce-input ecommerce:pl-10" value="{{_local.filter.searchKeyword}}">
             <on type="change">
               <!-- 타이핑은 300ms 묶어 담기만 한다 — 글자마다 조회하면 목록 API 를 계속 친다. 실제 조회는 Enter 나 검색 버튼이다. -->
@@ -599,7 +599,7 @@ $t:sirsoft-ecommerce.admin.product.filter.shipping_policy</span>
         <div class="ecommerce-flex-center ecommerce:justify-center ecommerce:gap-2 ecommerce:flex-1">
           <responsive on="portable" class="ecommerce:contents"/>
           <button type="button" class="ecommerce-btn ecommerce-btn-primary">
-            <responsive on="portable" class="ecommerce-btn ecommerce-btn-primary ecommerce:flex-1"/>
+            <responsive on="portable" class-merge="ecommerce:flex-1"/>
             <on type="click">
               <action-ref name="searchProducts"/>
             </on>
@@ -607,7 +607,7 @@ $t:sirsoft-ecommerce.admin.product.filter.shipping_policy</span>
           </button>
           <!-- 필터 초기화. 폼 상태·펼침 상태·주소를 모두 비운다 — 한 곳만 비우면 남은 값이 다음 검색에 되살아난다 -->
           <button type="button" class="ecommerce-btn ecommerce-btn-outline">
-            <responsive on="portable" class="ecommerce-btn ecommerce-btn-outline ecommerce:flex-1"/>
+            <responsive on="portable" class-merge="ecommerce:flex-1"/>
             <on type="click">
               <set-state target="_local" merge="shallow">
                 <field name="filter">
@@ -643,7 +643,7 @@ $t:sirsoft-ecommerce.admin.product.filter.shipping_policy</span>
             $t:sirsoft-ecommerce.admin.product.action.reset
           </button>
           <!-- 지금 조건을 프리셋으로 저장. 조건을 전역으로 옮겨 담은 뒤 이름 입력 창을 연다 — 창은 별도 컨텍스트라 이 화면의 필터를 읽지 못한다 -->
-          <button data-ref="preset_save_button_desktop" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_update !== true}}">
+          <button data-ref="preset_save_button_desktop" type="button" class="ecommerce-btn ecommerce-btn-outline" disabled="{{products?.data?.abilities?.can_update !== true}}">
             <responsive on="portable" class="ecommerce:hidden ecommerce-hidden"/>
             <on type="click">
               <set-state target="global" savingPresetConditions="{{_local.filter}}"/>
@@ -668,7 +668,7 @@ $t:sirsoft-ecommerce.admin.product.filter.shipping_policy</span>
           <icon name="sliders" class="ecommerce:text-base"/>
           <span>$t:sirsoft-ecommerce.admin.product.action.edit_search</span>
         </button>
-        <button data-ref="preset_save_button_mobile" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:flex-1 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_update !== true}}">
+        <button data-ref="preset_save_button_mobile" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:flex-1" disabled="{{products?.data?.abilities?.can_update !== true}}">
           <on type="click">
             <!-- 좁은 화면용 짝 버튼(위 넓은 화면 버튼은 여기서 숨는다). 담는 값과 여는 창은 같다. -->
             <sequence>

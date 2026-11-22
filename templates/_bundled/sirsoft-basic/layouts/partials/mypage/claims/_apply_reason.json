@@ -66,7 +66,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "form-label"
                             },
                             "children": [
                                 {
@@ -111,7 +111,7 @@
                             "name": "Span",
                             "if": "{{_local.claimValidationErrors?.reason_code}}",
                             "props": {
-                                "className": "text-xs text-red-600 dark:text-red-400 mt-1 block"
+                                "className": "form-error"
                             },
                             "text": "{{Array.isArray(_local.claimValidationErrors?.reason_code) ? _local.claimValidationErrors.reason_code[0] : _local.claimValidationErrors?.reason_code}}"
                         },
@@ -128,7 +128,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                        "className": "text-xs text-muted"
                                     },
                                     "text": "$t:claim.apply.fault_type_label"
                                 },
@@ -152,7 +152,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "form-label"
                             },
                             "text": "$t:claim.apply.reason_detail_label"
                         },
@@ -185,7 +185,7 @@
                             "name": "Span",
                             "if": "{{_local.claimValidationErrors?.reason_detail}}",
                             "props": {
-                                "className": "text-xs text-red-600 dark:text-red-400 mt-1 block"
+                                "className": "form-error"
                             },
                             "text": "{{Array.isArray(_local.claimValidationErrors?.reason_detail) ? _local.claimValidationErrors.reason_detail[0] : _local.claimValidationErrors?.reason_detail}}"
                         }
@@ -200,7 +200,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "form-label"
                             },
                             "text": "$t:claim.apply.images_title"
                         },
@@ -212,7 +212,7 @@
                                 "data_sources": "claimable"
                             },
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400 mb-2"
+                                "className": "text-xs text-muted mb-2"
                             },
                             "text": "$t:claim.apply.images_hint|count={{(_local.claimableSnapshot ?? claimable?.data)?.settings?.max_images ?? 0}}|max={{(_local.claimableSnapshot ?? claimable?.data)?.settings?.max_images ?? 0}}|size={{(_local.claimableSnapshot ?? claimable?.data)?.settings?.image_max_size_kb ?? 0}}"
                         },
@@ -307,7 +307,7 @@
                             "name": "Span",
                             "if": "{{!!_local.claimFieldErrors?.images}}",
                             "props": {
-                                "className": "text-xs text-red-600 dark:text-red-400 mt-1 block"
+                                "className": "form-error"
                             },
                             "text": "{{_local.claimFieldErrors?.images ?? ''}}"
                         },
@@ -366,7 +366,7 @@
                                             "name": "Span",
                                             "if": "{{claimImage.removable === false}}",
                                             "props": {
-                                                "className": "flex-shrink-0 text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "flex-shrink-0 text-xs text-muted"
                                             },
                                             "text": "{{claimImage.uploader_type_label ?? ''}}"
                                         },

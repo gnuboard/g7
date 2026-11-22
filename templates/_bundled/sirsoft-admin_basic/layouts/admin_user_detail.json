@@ -559,7 +559,7 @@
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                                    "className": "text-xs text-muted mt-1"
                                                                 },
                                                                 "text": "$t:admin.users.member_fields.status.display_name_kind_hint"
                                                             }
@@ -681,7 +681,7 @@
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                                    "className": "text-xs text-muted mt-1"
                                                                 },
                                                                 "text": "$t:admin.users.member_fields.status.nickname_next_changeable_hint"
                                                             }
@@ -2108,7 +2108,7 @@
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                                                                    "className": "text-xs text-muted whitespace-nowrap"
                                                                 },
                                                                 "text": "{{history.searched_at ?? '-'}}"
                                                             }

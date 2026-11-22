@@ -22,9 +22,9 @@
       <p class="mt-3 text-body font-medium">$t:admin.extension_integrations.integrated_by_label</p>
       <div class="mt-2 row-stack">
         <div data-each="item in _global.selectedPlugin?.integrated_by ?? []" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-          <icon data-if="{{item.type === 'module'}}" name="cube" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
-          <icon data-if="{{item.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
-          <icon data-if="{{item.type === 'template'}}" name="palette" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+          <icon data-if="{{item.type === 'module'}}" name="cube" class="text-base text-muted" aria-hidden="true"/>
+          <icon data-if="{{item.type === 'plugin'}}" name="puzzle-piece" class="text-base text-muted" aria-hidden="true"/>
+          <icon data-if="{{item.type === 'template'}}" name="palette" class="text-base text-muted" aria-hidden="true"/>
           <span class="text-body break-words">{{item.name || item.identifier}} ({{item.identifier}})</span>
         </div>
       </div>
@@ -66,6 +66,7 @@
           <span class="text-body font-medium">$t:admin.plugins.modals.extension_directory_section</span>
           <span class="text-tertiary">($t:admin.plugins.modals.tables_total|size={{_global.pluginUninstallInfo.extension_directory.size_formatted}})</span>
         </div>
+        <!-- audit:allow layout-inline-semantic-duplicate reason: 플러그인 삭제 창에서 지워질 확장 디렉토리 경로 한 줄 상자, ml-6 들여쓰기에 줄 여백 px-3 py-1.5 라 카드 여백(p-4 mb-6)을 쓰지 않음 -->
         <div class="ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
           <div class="flex-between px-3 py-1.5">
             <span class="text-xs font-mono text-gray-700 dark:text-gray-300">{{_global.pluginUninstallInfo.extension_directory.path}}</span>
@@ -89,6 +90,7 @@
             <span data-if="{{_global.pluginUninstallInfo.tables &amp;&amp; _global.pluginUninstallInfo.tables.length > 0}}" class="text-tertiary">($t:admin.plugins.modals.tables_total|size={{_global.pluginUninstallInfo.total_table_size_formatted}})</span>
           </div>
           <p data-if="{{!_global.pluginUninstallInfo.tables || _global.pluginUninstallInfo.tables.length === 0}}" class="text-tertiary ml-6">$t:admin.plugins.modals.no_tables</p>
+          <!-- audit:allow layout-inline-semantic-duplicate reason: 플러그인 삭제 창의 삭제될 DB 테이블 목록 상자, 구분선으로 나눈 줄 목록이어서 상자 여백을 두지 않고 ml-6 만 줌 -->
           <div data-if="{{_global.pluginUninstallInfo.tables &amp;&amp; _global.pluginUninstallInfo.tables.length > 0}}" class="ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
             <div data-each="table in _global.pluginUninstallInfo.tables" class="flex-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
               <span class="text-xs font-mono text-gray-700 dark:text-gray-300">{{table.name}}</span>
@@ -101,6 +103,7 @@
             <icon name="share-nodes" class="text-base text-gray-500"/>
             <span class="text-body font-medium">$t:admin.plugins.modals.shared_records_section</span>
           </div>
+          <!-- audit:allow layout-inline-semantic-duplicate reason: 플러그인 삭제 창의 공유 테이블 레코드 건수 목록 상자, 줄 목록 테두리 용도라 여백 없이 ml-6 들여쓰기 -->
           <div class="ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
             <div data-each="rec in _global.pluginUninstallInfo.shared_records" class="flex-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
               <span class="text-xs font-medium text-gray-700 dark:text-gray-300">$t:admin.plugins.modals.shared.{{rec.label_key}}</span>
@@ -115,6 +118,7 @@
             <span data-if="{{_global.pluginUninstallInfo.storage_directories &amp;&amp; _global.pluginUninstallInfo.storage_directories.length > 0}}" class="text-tertiary">($t:admin.plugins.modals.storage_total|size={{_global.pluginUninstallInfo.total_storage_size_formatted}})</span>
           </div>
           <p data-if="{{!_global.pluginUninstallInfo.storage_directories || _global.pluginUninstallInfo.storage_directories.length === 0}}" class="text-tertiary ml-6">$t:admin.plugins.modals.no_storage</p>
+          <!-- audit:allow layout-inline-semantic-duplicate reason: 플러그인 삭제 창의 스토리지 디렉토리 목록 상자, 이름과 크기 줄을 감싸는 테두리일 뿐 여백은 줄에 있고 상자는 ml-6 -->
           <div data-if="{{_global.pluginUninstallInfo.storage_directories &amp;&amp; _global.pluginUninstallInfo.storage_directories.length > 0}}" class="ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
             <div data-each="dir in _global.pluginUninstallInfo.storage_directories" class="flex-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
               <span class="text-xs font-mono text-gray-700 dark:text-gray-300">{{dir.name}}</span>
@@ -128,6 +132,7 @@
             <span class="text-body font-medium">$t:admin.plugins.modals.vendor_section</span>
             <span class="text-tertiary">({{_global.pluginUninstallInfo.vendor_directory.total_size_formatted}})</span>
           </div>
+          <!-- audit:allow layout-inline-semantic-duplicate reason: 플러그인 삭제 창의 vendor 디렉토리 항목 목록 상자, 여백 없는 줄 목록 테두리에 ml-6 들여쓰기라 카드 여백과 다름 -->
           <div class="ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
             <div data-each="vendorItem in _global.pluginUninstallInfo.vendor_directory.items" class="flex-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
               <span class="text-xs font-mono text-gray-700 dark:text-gray-300">{{vendorItem.name}}</span>
@@ -139,10 +144,11 @@
     </div>
     <div data-ref="preserved_backups_section" data-if="{{_global.pluginUninstallBackups?.length}}" class="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
       <div class="flex-center gap-2">
-        <icon name="folder-open" class="text-base text-gray-500 dark:text-gray-400"/>
+        <icon name="folder-open" class="text-base text-muted"/>
         <span class="text-body font-medium">$t:admin.plugins.modals.preserved_title</span>
       </div>
       <p class="mt-2 text-label-subtle">$t:admin.plugins.modals.preserved_desc</p>
+      <!-- audit:allow layout-inline-semantic-duplicate reason: 플러그인 삭제 창의 남겨 둔 백업 파일 이름 목록 상자, 안내 상자 안쪽이라 위 간격 mt-3 만 있고 여백은 줄이 가짐 -->
       <div class="mt-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
         <div data-each="backup in _global.pluginUninstallBackups" class="px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
           <span class="text-xs font-mono text-gray-700 dark:text-gray-300 select-all break-all">{{backup.archive}}</span>

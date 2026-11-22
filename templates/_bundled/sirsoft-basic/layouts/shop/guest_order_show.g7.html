@@ -112,7 +112,7 @@
           <!-- 비회원 액션 영역 — 쇼핑 계속하기만 노출. 리뷰 작성 / 재주문은 회원 전용이라 제외. -->
           <div class="flex flex-row gap-4">
             <responsive on="portable" class="flex flex-col gap-3"/>
-            <button type="button" class="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer">
+            <button type="button" class="flex-1 flex btn btn-primary gap-2 px-6 py-3 cursor-pointer">
               <on type="click">
                 <!-- audit:allow layout-list-context-navigate-merge-query 쇼핑 계속하기 — 이 주문의 클레임 목록 밖(상품 목록)으로 나가는 이동이다. 유형 서브탭·페이지를 물려주면 상품 목록이 알지 못하는 파라미터가 실린다. -->
                 <navigate path="{{_global.shopBase}}/products"/>

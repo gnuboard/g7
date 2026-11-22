@@ -162,7 +162,7 @@ export const Accordion: React.FC<AccordionProps> = ({
         {/* 화살표 아이콘 (기본 제공, trigger에서 오버라이드 가능) */}
         {!slots.trigger && (
           <svg
-            className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${
+            className={`w-5 h-5 text-muted transition-transform duration-200 ${
               isOpen ? 'rotate-180' : ''
             }`}
             fill="none"

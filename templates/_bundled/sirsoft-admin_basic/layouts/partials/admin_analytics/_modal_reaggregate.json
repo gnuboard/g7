@@ -124,7 +124,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "btn btn-primary flex-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
+                    "className": "btn btn-primary flex-center gap-2",
                     "disabled": "{{!_global.analyticsReagg?.from || !_global.analyticsReagg?.to || _global.analyticsReaggRunning}}"
                 },
                 "children": [

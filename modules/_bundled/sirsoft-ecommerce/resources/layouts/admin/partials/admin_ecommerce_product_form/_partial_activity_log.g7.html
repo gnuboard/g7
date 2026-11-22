@@ -8,10 +8,10 @@
         <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.activityLogExpanded="{{!_local.ui.activityLogExpanded}}"/>
       </on>
-      <icon name="history" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+      <icon name="history" class="ecommerce-text-muted"/>
       <span class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.product.sections.activity_log</span>
       <span data-if="{{activity_logs.data?.meta?.total}}" class="ecommerce:ml-2 ecommerce:px-2 ecommerce:py-0.5 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:text-gray-600 ecommerce:dark:text-gray-300 ecommerce:text-xs ecommerce:rounded-full">{{activity_logs.data?.meta?.total}}</span>
-      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.activityLogExpanded !== false ? 'ecommerce:rotate-180' : ''}}"/>
+      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.activityLogExpanded !== false ? 'ecommerce:rotate-180' : ''}}"/>
     </button>
     <div data-ref="activity_log_body" data-if="{{_local.ui.activityLogExpanded !== false}}" class="ecommerce-row-stack">
       <div data-ref="activity_log_filters" class="ecommerce-flex-between ecommerce:flex-wrap ecommerce:gap-4 ecommerce:p-4 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
@@ -20,7 +20,7 @@
         <div class="ecommerce-flex-center ecommerce:gap-4">
           <responsive on="portable" class="ecommerce-row-stack ecommerce:w-full"/>
           <div class="ecommerce-flex-center ecommerce:gap-2">
-            <responsive on="portable" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:w-full"/>
+            <responsive on="portable" class-merge="ecommerce:w-full"/>
             <label class="ecommerce-text-label ecommerce:whitespace-nowrap">$t:sirsoft-ecommerce.admin.product.activity_log.sort_order</label>
             <select name="activity_log_sort" value="{{_local.ui.activityLogSort ?? 'desc'}}" class="ecommerce:w-32">
               <responsive on="portable" class="ecommerce:flex-1"/>
@@ -38,7 +38,7 @@
             </select>
           </div>
           <div class="ecommerce-flex-center ecommerce:gap-2">
-            <responsive on="portable" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:w-full"/>
+            <responsive on="portable" class-merge="ecommerce:w-full"/>
             <label class="ecommerce-text-label ecommerce:whitespace-nowrap">$t:sirsoft-ecommerce.admin.product.activity_log.per_page</label>
             <select name="activity_log_per_page" value="{{_local.ui.activityLogPerPage ?? 10}}" class="ecommerce:w-20">
               <responsive on="portable" class="ecommerce:flex-1"/>
@@ -128,7 +128,7 @@
             </tr>
             <!-- 빈 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다 -->
             <tr data-ref="activity_log_empty" data-if="{{activity_logs !== undefined &amp;&amp; activity_logs !== null &amp;&amp; (activity_logs.data?.data ?? []).length === 0}}">
-              <td :colSpan="3" class="ecommerce:px-4 ecommerce:py-12 ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400">
+              <td :colSpan="3" class="ecommerce:px-4 ecommerce:py-12 ecommerce:text-center ecommerce-text-muted">
                 <icon name="clipboard-list" class="ecommerce:text-3xl ecommerce:mx-auto ecommerce:mb-2 ecommerce:text-gray-500 ecommerce:dark:text-gray-500"/>
                 <p>$t:sirsoft-ecommerce.admin.product.activity_log.empty</p>
               </td>
@@ -192,7 +192,7 @@
         <!-- 좁은 화면 카드 쪽 받기 실패 안내 — 위 표와 같은 조건 -->
         <p data-ref="activity_log_load_failed_mobile" data-if="{{activity_logs === null}}" role="alert" class="ecommerce:p-8 ecommerce:text-center ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</p>
         <!-- 빈 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다 -->
-        <div data-ref="activity_log_empty_mobile" data-if="{{activity_logs !== undefined &amp;&amp; activity_logs !== null &amp;&amp; (activity_logs.data?.data ?? []).length === 0}}" class="ecommerce:p-8 ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400">
+        <div data-ref="activity_log_empty_mobile" data-if="{{activity_logs !== undefined &amp;&amp; activity_logs !== null &amp;&amp; (activity_logs.data?.data ?? []).length === 0}}" class="ecommerce:p-8 ecommerce:text-center ecommerce-text-muted">
           <icon name="clipboard-list" class="ecommerce:text-3xl ecommerce:mx-auto ecommerce:mb-2 ecommerce:text-gray-500 ecommerce:dark:text-gray-500"/>
           <p>$t:sirsoft-ecommerce.admin.product.activity_log.empty</p>
         </div>

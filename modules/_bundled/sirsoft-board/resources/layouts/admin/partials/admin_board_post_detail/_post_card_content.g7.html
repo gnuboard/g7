@@ -12,7 +12,7 @@
             <!-- 카테고리 배지 -->
             <span data-ref="category_badge_prefix" data-if="{{post?.data?.category}}" class="board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-gray-100 board:text-gray-800 board:dark:bg-gray-700 board:dark:text-gray-200">{{post?.data?.category}}</span>
             <!-- 비밀글 아이콘 -->
-            <icon data-ref="secret_icon" data-if="{{post?.data?.is_secret}}" name="lock" class="board:text-xl board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"/>
+            <icon data-ref="secret_icon" data-if="{{post?.data?.is_secret}}" name="lock" class="board:text-xl board-text-muted board:flex-shrink-0"/>
             <!-- 블라인드 배지 -->
             <span data-ref="status_badge_blinded" data-if="{{post?.data?.status === 'blinded'}}" class="board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-orange-100 board:text-orange-800 board:dark:bg-orange-900 board:dark:text-orange-200">$t:sirsoft-board.admin.posts.detail.status_blinded</span>
             <!-- 제목 -->
@@ -24,7 +24,7 @@
           </h2>
         </div>
         <div data-ref="card_actions" class="board-flex-center board:gap-2">
-          <responsive on="portable" class="board-flex-center board:gap-2 board:ml-auto"/>
+          <responsive on="portable" class-merge="board:ml-auto"/>
           <a href="/admin/board/{{route.slug}}/create?parent_id={{post?.data?.id}}" :mergeQuery="true" data-ref="reply_button" data-if="{{post?.data?.board?.use_reply &amp;&amp; !post?.data?.is_notice &amp;&amp; (post?.data?.depth ?? 0) < (post?.data?.board?.max_reply_depth ?? 1) &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="board-button board-text-body board:inline-flex board:items-center board:gap-1 board:px-3 board:py-1.5 board:text-xs board:font-medium board:bg-gray-100 board:dark:bg-gray-700 board:hover:bg-gray-200 board:dark:hover:bg-gray-600 board:rounded board:transition-colors board:aria-disabled:opacity-50 board:aria-disabled:cursor-not-allowed" disabled="{{post?.data?.abilities?.can_write !== true}}">
             <on type="click">
               <!-- 답변 작성 폼으로 이동 — parent_id 는 query 로 넘긴다. mergeQuery 는 path 의 인라인 쿼리스트링을 버리므로 path 에 붙여두면 사라진다 (#75). -->
@@ -155,7 +155,7 @@
           <icon name="paperclip" class="board:text-base"/>
           <span>$t:sirsoft-board.admin.posts.detail.attachments|count={{post?.data?.attachment_count ?? 0}}</span>
         </span>
-        <icon name="{{_local.showAttachments ? 'chevron-up' : 'chevron-down'}}" class="board:text-base board:text-gray-500 board:dark:text-gray-400"/>
+        <icon name="{{_local.showAttachments ? 'chevron-up' : 'chevron-down'}}" class="board:text-base board-text-muted"/>
       </button>
       <!-- 펼침 토글의 aria-controls 가 가리키는 목록 묶음 — 접혀 있어도 자리는 남아 가리키는 대상이 사라지지 않는다 -->
       <div data-ref="post_attachments_list">
@@ -175,7 +175,7 @@
             </span>
             <!-- 파일 아이콘 (일반 파일인 경우) -->
             <span data-if="{{!attachment?.is_image}}" class="board-flex-center board:flex-shrink-0 board:w-8 board:h-8 board:rounded board:bg-white board:dark:bg-gray-700 board:justify-center">
-              <icon name="file" class="board:text-lg board:text-gray-500 board:dark:text-gray-400"/>
+              <icon name="file" class="board:text-lg board-text-muted"/>
             </span>
             <!-- 파일 정보 -->
             <span class="board:flex-1 board:min-w-0">
@@ -196,7 +196,7 @@
       <div class="board-flex-between board:mb-2 board:text-sm">
         <!-- 왼쪽: 아이콘 + 라벨 -->
         <div class="board-flex-center board:gap-2">
-          <icon name="comment" size="sm" class="board:text-gray-500 board:dark:text-gray-400"/>
+          <icon name="comment" size="sm" class="board-text-muted"/>
           <span class="board:font-semibold board:text-gray-700 board:dark:text-gray-300">$t:sirsoft-board.board.parent_post</span>
         </div>
         <!-- 오른쪽: 작성자 (ActionMenu) + 날짜 -->
@@ -216,13 +216,13 @@
           </action-menu>
           <span data-if="{{post?.data?.parent?.author?.is_guest || !post?.data?.parent?.author?.uuid}}" class="board-text-label-subtle">{{post?.data?.parent?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}</span>
           <span data-if="{{post?.data?.parent?.author?.is_guest}}" class="board:inline-flex board:items-center board:px-1.5 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-gray-100 board:text-gray-600 board:dark:bg-gray-700 board:dark:text-gray-300">$t:sirsoft-board.admin.posts.guest</span>
-          <span class="board:text-gray-500 board:dark:text-gray-400">{{post?.data?.parent?.created_at ?? ''}}</span>
+          <span class="board-text-muted">{{post?.data?.parent?.created_at ?? ''}}</span>
         </div>
       </div>
       <!-- 2줄: 제목 (클릭 시 원글로 이동) -->
       <div class="board-flex-center board:gap-2 board:mb-2">
         <!-- 비밀글 아이콘 -->
-        <icon data-if="{{post?.data?.parent?.is_secret}}" name="lock" size="sm" class="board:text-gray-500 board:dark:text-gray-400"/>
+        <icon data-if="{{post?.data?.parent?.is_secret}}" name="lock" size="sm" class="board-text-muted"/>
         <!-- 카테고리 배지 -->
         <span data-if="{{post?.data?.parent?.category}}" class="board:px-2 board:py-0.5 board:text-xs board:rounded board:bg-gray-100 board:text-gray-700 board:dark:bg-gray-700 board:dark:text-gray-300">{{post?.data?.parent?.category ?? ''}}</span>
         <!-- 공지 배지 -->
@@ -240,7 +240,7 @@
       <!-- 3줄: 내용 (토글로 접기/펼치기) -->
       <div class="board-text-label board:mb-3 {{_local?.parentPostExpanded ? '' : 'board:line-clamp-2'}}">
         <!-- 비밀글인 경우 -->
-        <span data-if="{{post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null}}" class="board:text-gray-500 board:dark:text-gray-400 board:italic">$t:sirsoft-board.admin.posts.detail.reply_secret_content</span>
+        <span data-if="{{post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null}}" class="board-text-muted board:italic">$t:sirsoft-board.admin.posts.detail.reply_secret_content</span>
         <!-- 일반 글인 경우 - 내용 -->
         <extension-point name="html_content" data-if="{{!(post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null)}}" content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentPostExpanded ? (post?.data?.parent?.content_mode === 'html' ? 'board:prose board:dark:prose-invert board:prose-p:my-2 board:prose-headings:font-bold board:prose-headings:mt-6 board:prose-headings:mb-4 board:prose-h1:text-2xl board:prose-h2:text-xl board:prose-h3:text-lg board:prose-a:text-blue-600 board:dark:prose-a:text-blue-400 board:prose-a:no-underline board:hover:prose-a:underline board:prose-blockquote:border-l-4 board:prose-blockquote:border-gray-300 board:dark:prose-blockquote:border-gray-600 board:prose-blockquote:pl-4 board:prose-blockquote:italic board:prose-code:bg-gray-100 board:dark:prose-code:bg-gray-800 board:prose-code:px-1 board:prose-code:py-0.5 board:prose-code:rounded board:prose-pre:bg-gray-100 board:dark:prose-pre:bg-gray-800 board:prose-pre:p-4 board:prose-pre:rounded-lg board:prose-pre:overflow-x-auto board:max-w-none' : 'board:prose board:dark:prose-invert board:max-w-none') : 'board-collapsed-content'}}">
           <default>
@@ -264,7 +264,7 @@
       <div data-ref="blinded_content_admin" data-if="{{post?.data?.status === 'blinded'}}">
         <div class="board-flex-center board:flex-col board:justify-center board:py-8 board:p-6 board:bg-gray-50 board:dark:bg-gray-900 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-md">
           <div class="board-flex-center board:gap-3 board:mb-2">
-            <icon name="eye-slash" class="board:text-xl board:text-gray-500 board:dark:text-gray-400"/>
+            <icon name="eye-slash" class="board:text-xl board-text-muted"/>
             <span class="board-text-primary board:text-lg board:font-medium">$t:sirsoft-board.admin.posts.detail.blinded_notice</span>
           </div>
           <p class="board-text-label-subtle board:mb-2">$t:sirsoft-board.admin.posts.detail.blinded_description</p>
@@ -310,7 +310,7 @@
             </navigate>
           </on>
           <div class="board-flex-center board:gap-2">
-            <icon name="chevron-left" class="board:text-base board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"/>
+            <icon name="chevron-left" class="board:text-base board-text-muted board:flex-shrink-0"/>
             <span class="board-text-tertiary board:font-medium board:mr-2">$t:sirsoft-board.admin.posts.detail.prev</span>
             <span data-if="{{post?.data?.navigation?.prev?.is_notice}}" class="board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-blue-100 board:text-blue-800 board:dark:bg-blue-900 board:dark:text-blue-200 board:mr-2">$t:sirsoft-board.admin.posts.list.notice</span>
             <span class="board-text-primary board:text-sm board:truncate">{{post?.data?.navigation?.prev?.title}}</span>
@@ -327,7 +327,7 @@
             <span data-if="{{post?.data?.navigation?.next?.is_notice}}" class="board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-blue-100 board:text-blue-800 board:dark:bg-blue-900 board:dark:text-blue-200 board:mr-2">$t:sirsoft-board.admin.posts.list.notice</span>
             <span class="board-text-primary board:text-sm board:truncate">{{post?.data?.navigation?.next?.title}}</span>
             <span class="board-text-tertiary board:font-medium board:ml-2">$t:sirsoft-board.admin.posts.detail.next</span>
-            <icon name="chevron-right" class="board:text-base board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"/>
+            <icon name="chevron-right" class="board:text-base board-text-muted board:flex-shrink-0"/>
           </div>
         </a>
       </div>

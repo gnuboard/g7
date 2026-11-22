@@ -58,7 +58,7 @@
       </div>
       <!-- 다시 받기에 실패하면 엔진이 값을 null 로 둔다 — 「대상이 없습니다」 대신 불러오기 실패를 알린다 -->
       <p data-ref="privacy_targets_load_failed" data-if="{{privacyTargets === null}}" role="alert" class="gdpr:py-6 gdpr:text-center gdpr:text-sm gdpr:text-red-600 gdpr:dark:text-red-400">$t:sirsoft-gdpr.common.list_load_failed</p>
-      <div data-ref="privacy_targets_empty" data-if="{{privacyTargets !== undefined &amp;&amp; privacyTargets !== null &amp;&amp; ((privacyTargets?.data?.data ?? []).length === 0)}}" class="gdpr:flex gdpr:flex-col gdpr:items-center gdpr:gap-3 gdpr:text-center gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:py-6">
+      <div data-ref="privacy_targets_empty" data-if="{{privacyTargets !== undefined &amp;&amp; privacyTargets !== null &amp;&amp; ((privacyTargets?.data?.data ?? []).length === 0)}}" class="gdpr:flex gdpr:flex-col gdpr:items-center gdpr:gap-3 gdpr:text-center gdpr-text-muted gdpr:py-6">
         <icon name="inbox" class="gdpr:text-4xl gdpr:leading-none"/>
         <span class="gdpr:text-sm">$t:sirsoft-gdpr.annual_notice.targets.empty</span>
       </div>

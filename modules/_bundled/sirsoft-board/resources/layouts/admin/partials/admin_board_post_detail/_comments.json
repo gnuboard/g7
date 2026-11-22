@@ -48,9 +48,6 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{(post?.data?.comment_count ?? 0) > 0}}",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "id": "comment_wrapper_{{idx}}",
@@ -115,7 +112,7 @@
                                                                     "name": "Icon",
                                                                     "props": {
                                                                         "name": "turn-up",
-                                                                        "className": "board:text-sm board:rotate-90 board:mt-1 board:text-gray-500 board:dark:text-gray-400"
+                                                                        "className": "board:text-sm board:rotate-90 board:mt-1 board-text-muted"
                                                                     }
                                                                 },
                                                                 {
@@ -261,7 +258,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "type": "button",
-                                                                        "className": "board:px-3 board:py-1.5 board:text-sm board:bg-blue-600 board:text-white board:rounded-lg board:hover:bg-blue-700 board:dark:bg-blue-600 board:dark:hover:bg-blue-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                                                                        "className": "board-btn board-btn-primary board-btn-sm",
                                                                         "disabled": "{{post?.data?.abilities?.can_write_comments !== true || _local.replySubmitting === true}}"
                                                                     },
                                                                     "children": [

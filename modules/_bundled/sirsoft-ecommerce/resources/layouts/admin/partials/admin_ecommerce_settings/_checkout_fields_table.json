@@ -485,7 +485,7 @@
                                                                         "role": "img",
                                                                         "aria-label": "{{row.locks?.enabled ?? ''}}",
                                                                         "title": "{{row.locks?.enabled ?? ''}}",
-                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                        "className": "ecommerce-text-muted"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -605,7 +605,7 @@
                                                                         "role": "img",
                                                                         "aria-label": "{{row.locks?.required ?? ''}}",
                                                                         "title": "{{row.locks?.required ?? ''}}",
-                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                        "className": "ecommerce-text-muted"
                                                                     },
                                                                     "children": [
                                                                         {

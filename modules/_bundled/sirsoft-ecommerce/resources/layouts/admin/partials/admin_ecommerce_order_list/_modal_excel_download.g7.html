@@ -48,7 +48,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isDownloading}}">
+      <button type="button" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-primary" disabled="{{_global.isDownloading}}">
         <on type="click">
           <!-- 내려받기. 응답이 JSON 이 아니라 파일(blob)이라 코어 apiCall 로는 받지 못한다(apiCall 은 응답을
             JSON 으로만 읽는다) — 요청과 저장을 이 모듈의 `sirsoft-ecommerce.downloadFile` 이 한 번에 한다. 서버는

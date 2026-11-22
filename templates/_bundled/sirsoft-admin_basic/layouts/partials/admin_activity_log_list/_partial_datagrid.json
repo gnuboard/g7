@@ -426,6 +426,7 @@
                                 ]
                             },
                             {
+                                "comment": "audit:allow layout-inline-semantic-duplicate reason: 활동 로그 줄에서 펼쳐 보는 삭제 전 본문 미리보기 상자, 고정폭 글자에 여백 p-3 과 최대 높이 스크롤을 써서 카드 여백(p-4 mb-6)과 다름",
                                 "type": "basic",
                                 "name": "Div",
                                 "if": "{{(_local.openSnapshots ?? {})[row.id] === true}}",
@@ -535,7 +536,7 @@
                         "name": "Span",
                         "if": "{{!row.user?.uuid}}",
                         "props": {
-                            "className": "text-gray-500 dark:text-gray-400"
+                            "className": "text-muted"
                         },
                         "text": "{{row.actor_name ?? row.user?.name ?? '-'}}"
                     },
@@ -609,7 +610,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "fa-regular fa-user",
-                                            "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                            "className": "text-muted flex-shrink-0"
                                         }
                                     },
                                     {

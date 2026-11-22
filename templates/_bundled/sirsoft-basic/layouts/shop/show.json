@@ -768,9 +768,7 @@
                         "name": "A",
                         "responsive": {
                             "desktop": {
-                                "props": {
-                                    "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6 cursor-pointer"
-                                }
+                                "classMerge": "mb-6"
                             }
                         },
                         "actions": [
@@ -922,7 +920,7 @@
                                                 "props": {
                                                     "name": "{{product.data?.sales_status === 'sold_out' ? 'box-open' : product.data?.sales_status === 'suspended' ? 'ban' : 'clock'}}",
                                                     "size": "lg",
-                                                    "className": "{{product.data?.sales_status === 'sold_out' ? 'text-red-500 dark:text-red-400' : product.data?.sales_status === 'suspended' ? 'text-gray-500 dark:text-gray-400' : 'text-blue-500 dark:text-blue-400'}} shrink-0"
+                                                    "className": "{{product.data?.sales_status === 'sold_out' ? 'text-red-500 dark:text-red-400' : product.data?.sales_status === 'suspended' ? 'text-muted' : 'text-blue-500 dark:text-blue-400'}} shrink-0"
                                                 }
                                             },
                                             {

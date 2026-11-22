@@ -101,7 +101,7 @@
                                             "if": "{{post.is_secret}}",
                                             "props": {
                                                 "name": "lock",
-                                                "className": "text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                                                "className": "text-sm text-muted shrink-0"
                                             }
                                         },
                                         {
@@ -180,7 +180,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400 shrink-0",
+                                        "className": "text-xs text-muted shrink-0",
                                         "title": "{{post.created_at ?? ''}}"
                                     },
                                     "text": "{{post.created_at_formatted ?? ''}}"
@@ -194,7 +194,7 @@
                     "name": "Div",
                     "if": "{{!item.recent_posts || item.recent_posts.length === 0}}",
                     "props": {
-                        "className": "py-10 my-1 text-center text-sm text-gray-500 dark:text-gray-400"
+                        "className": "py-10 my-1 text-center text-sm text-muted"
                     },
                     "children": [
                         {

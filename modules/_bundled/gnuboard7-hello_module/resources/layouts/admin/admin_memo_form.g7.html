@@ -45,11 +45,11 @@
         <h1 data-ref="memo_form_title" class="hellomodule-page__title">{{route?.id ? '$t:gnuboard7-hello_module.admin.memos.form.title_edit' : '$t:gnuboard7-hello_module.admin.memos.form.title_create'}}</h1>
         <div data-ref="memo_field_title" class="hellomodule-field">
           <label class="hellomodule-label">$t:gnuboard7-hello_module.admin.memos.form.fields.title</label>
-          <input type="text" name="title" class="" disabled="{{_computed.isReadOnly}}"/>
+          <input type="text" name="title" disabled="{{_computed.isReadOnly}}"/>
         </div>
         <div data-ref="memo_field_content" class="hellomodule-field">
           <label class="hellomodule-label">$t:gnuboard7-hello_module.admin.memos.form.fields.content</label>
-          <textarea name="content" :rows="6" class="" disabled="{{_computed.isReadOnly}}"/>
+          <textarea name="content" :rows="6" disabled="{{_computed.isReadOnly}}"/>
         </div>
         <div data-ref="memo_form_actions" class="hellomodule-actions">
           <a href="/admin/memos" :mergeQuery="true" data-ref="memo_cancel_button" class="hellomodule-button hellomodule-button--secondary">

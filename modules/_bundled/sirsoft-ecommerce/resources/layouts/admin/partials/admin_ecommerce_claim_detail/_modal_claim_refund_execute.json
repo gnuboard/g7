@@ -217,7 +217,7 @@
                             "name": "P",
                             "if": "{{_global.claimRefundExecuteContext?.pointsNotDeducted === true}}",
                             "props": {
-                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                "className": "ecommerce:text-xs ecommerce-text-muted"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_not_deducted"
                         },

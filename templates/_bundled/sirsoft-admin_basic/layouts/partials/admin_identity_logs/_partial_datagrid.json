@@ -73,7 +73,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+                                            "className": "block text-xs font-semibold text-muted uppercase tracking-wide"
                                         },
                                         "text": "$t:admin.identity.logs.detail.expanded.target_hash_label"
                                     },
@@ -95,7 +95,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+                                            "className": "block text-xs font-semibold text-muted uppercase tracking-wide"
                                         },
                                         "text": "$t:admin.identity.logs.detail.expanded.origin_label"
                                     },
@@ -125,7 +125,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+                                            "className": "block text-xs font-semibold text-muted uppercase tracking-wide"
                                         },
                                         "text": "$t:admin.identity.logs.detail.expanded.origin_policy_key_label"
                                     },
@@ -150,7 +150,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1"
+                                    "className": "block text-xs font-semibold text-muted uppercase tracking-wide mb-1"
                                 },
                                 "text": "$t:admin.identity.logs.detail.expanded.properties_label"
                             },
@@ -173,7 +173,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1"
+                                    "className": "block text-xs font-semibold text-muted uppercase tracking-wide mb-1"
                                 },
                                 "text": "$t:admin.identity.logs.detail.expanded.metadata_label"
                             },

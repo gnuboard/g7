@@ -234,7 +234,7 @@
   </init>
   <slot name="content">
     <div data-ref="settings_content" data-key="form" data-track-changes class="board:p-4 board:min-h-screen board:bg-gray-50 board:dark:bg-gray-900">
-      <responsive on="640-1023" class="board:p-6 board:min-h-screen board:bg-gray-50 board:dark:bg-gray-900"/>
+      <responsive on="640-1023" class="board-admin-page-content"/>
       <responsive on="1024-" class="board:p-8 board:min-h-screen board:bg-gray-50 board:dark:bg-gray-900"/>
       <div data-ref="page_header_wrapper">
         <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-board.admin.settings.title" description="$t:sirsoft-board.admin.settings.description"/>
@@ -281,8 +281,8 @@
           </tab-navigation>
         </div>
         <tab-navigation-scroll data-type="composite" data-ref="sub_tab_navigation" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}" class="board:bg-white board:dark:bg-gray-800 board:flex board:gap-1 board:px-6" sectionIdPrefix="" :enableScrollSpy="true" scrollContainerId="right_content_area" :scrollSpyOffset="180" :scrollOffset="180">
-          <responsive on="640-1023" class="board:bg-white board:dark:bg-gray-800 board:flex board:gap-1 board:px-8"/>
-          <responsive on="1024-" class="board:bg-white board:dark:bg-gray-800 board:flex board:gap-1 board:px-10"/>
+          <responsive on="640-1023" class-merge="board:px-8"/>
+          <responsive on="1024-" class-merge="board:px-10"/>
           <prop name="tabs">
             <item id="basic" label="$t:sirsoft-board.admin.settings.board_settings_tabs.basic"/>
             <item id="permissions" label="$t:sirsoft-board.admin.settings.board_settings_tabs.permissions"/>

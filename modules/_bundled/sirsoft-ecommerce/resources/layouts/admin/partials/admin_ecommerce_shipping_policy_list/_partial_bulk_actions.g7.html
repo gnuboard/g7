@@ -27,7 +27,7 @@
       </on>
       $t:sirsoft-ecommerce.admin.shipping_policy.action.bulk_delete
     </button>
-    <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || !_local.bulkToggleValue || shipping_policies?.data?.abilities?.can_update !== true}}">
+    <button type="button" class="ecommerce-btn ecommerce-btn-primary" disabled="{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || !_local.bulkToggleValue || shipping_policies?.data?.abilities?.can_update !== true}}">
       <on type="click">
         <!-- [적용] — 고른 상태를 전역으로 옮긴 뒤 확인 창을 연다. 창은 지역 상태를 볼 수 없으므로 이 옮겨 담기가 빠지면 창의 미리보기 배지가 늘 '중지' 로 보인다. -->
         <sequence>

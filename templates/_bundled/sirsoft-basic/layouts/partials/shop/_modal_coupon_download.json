@@ -33,7 +33,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-sm text-muted"
                     },
                     "text": "$t:shop.coupon_download.loading"
                 }
@@ -60,7 +60,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-gray-500 dark:text-gray-400 text-sm"
+                        "className": "text-muted text-sm"
                     },
                     "text": "$t:shop.coupon_download.empty"
                 }
@@ -241,9 +241,7 @@
                     "name": "Div",
                     "responsive": {
                         "640-": {
-                            "props": {
-                                "className": "relative grid grid-cols-2 gap-3 max-h-96 overflow-y-auto"
-                            }
+                            "classMerge": "grid-cols-2"
                         }
                     },
                     "actions": [
@@ -386,7 +384,7 @@
                                     "name": "P",
                                     "if": "{{coupon.min_order_amount > 0 && coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                        "className": "text-xs text-muted mb-1"
                                     },
                                     "text": "$t:shop.coupon_download.min_order_amount {{coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}"
                                 },
@@ -396,7 +394,7 @@
                                     "name": "P",
                                     "if": "{{coupon.min_order_amount > 0 && !coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                        "className": "text-xs text-muted mb-1"
                                     },
                                     "text": "$t:shop.coupon_download.min_order_amount {{Number(coupon.min_order_amount).toLocaleString()}}$t:shop.coupon_download.currency_unit"
                                 },
@@ -405,7 +403,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400 mb-3"
+                                        "className": "text-xs text-muted mb-3"
                                     },
                                     "text": "{{coupon.valid_to ? '$t:shop.coupon_download.valid_until ' + coupon.valid_to.split('T')[0] : (coupon.valid_period_formatted && coupon.valid_period_formatted !== '-' ? coupon.valid_period_formatted : '$t:shop.coupon_download.no_expiry')}}"
                                 },
@@ -581,7 +579,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "text-xs text-muted"
                             },
                             "text": "$t:shop.coupon_download.loading"
                         }

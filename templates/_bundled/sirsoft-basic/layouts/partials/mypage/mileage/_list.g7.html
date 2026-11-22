@@ -6,49 +6,49 @@
     <blur-until-loaded sources="mileage_history"/>
     <responsive on="portable" class="mt-4"/>
     <!-- 비활성화 안내 (mileage.enabled=false) -->
-    <div data-if="{{mileage_balance !== undefined &amp;&amp; !mileage_balance?.data?.mileage?.enabled}}" class="flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
-      <responsive on="portable" class="flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center"/>
+    <div data-if="{{mileage_balance !== undefined &amp;&amp; !mileage_balance?.data?.mileage?.enabled}}" class="flex flex-col items-center justify-center card-plain p-8 text-center">
+      <responsive on="portable" class-merge="p-6"/>
       <icon name="coins" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
-      <p class="text-gray-500 dark:text-gray-400">$t:mypage.mileage.disabled_notice</p>
+      <p class="text-muted">$t:mypage.mileage.disabled_notice</p>
     </div>
     <!-- 요약 카드 4종 (사용가능/소멸예정/누적적립/누적사용) -->
     <div data-if="{{mileage_balance?.data?.mileage?.enabled}}" class="grid grid-cols-4 gap-4 mb-6">
       <responsive on="portable" class="grid grid-cols-2 gap-3 mb-4"/>
       <!-- 사용 가능 -->
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm"/>
-        <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:mypage.mileage.summary.available</span>
+        <responsive on="portable" class-merge="p-4"/>
+        <span class="block text-xs text-muted mb-1">$t:mypage.mileage.summary.available</span>
         <span class="block text-xl font-bold text-gray-900 dark:text-white">
-          <responsive on="portable" class="block text-lg font-bold text-gray-900 dark:text-white"/>
+          <responsive on="portable" class-merge="text-lg"/>
           {{(mileage_balance?.data?.mileage?.available ?? 0).toLocaleString()}} P
         </span>
       </div>
       <!-- 소멸 예정 -->
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm"/>
-        <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:mypage.mileage.summary.expiring_soon</span>
+        <responsive on="portable" class-merge="p-4"/>
+        <span class="block text-xs text-muted mb-1">$t:mypage.mileage.summary.expiring_soon</span>
         <span class="block text-xl font-bold text-amber-600 dark:text-amber-400">
-          <responsive on="portable" class="block text-lg font-bold text-amber-600 dark:text-amber-400"/>
+          <responsive on="portable" class-merge="text-lg"/>
           {{(mileage_balance?.data?.mileage?.expiring_soon ?? 0).toLocaleString()}} P
         </span>
         <!-- 소멸 예정일은 서버가 보는 사람 날짜로 만든 값(expiring_date_formatted)을 쓴다 — ISO 원문(expiring_date)을 그대로 넣으면 시각·오프셋이 그대로 보인다 -->
-        <span data-if="{{mileage_balance?.data?.mileage?.expiring_date_formatted}}" class="block text-xs text-gray-500 dark:text-gray-400 mt-1">$t:mypage.mileage.summary.expiring_until|date={{mileage_balance?.data?.mileage?.expiring_date_formatted}}</span>
+        <span data-if="{{mileage_balance?.data?.mileage?.expiring_date_formatted}}" class="block text-xs text-muted mt-1">$t:mypage.mileage.summary.expiring_until|date={{mileage_balance?.data?.mileage?.expiring_date_formatted}}</span>
       </div>
       <!-- 누적 적립 -->
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm"/>
-        <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:mypage.mileage.summary.total_earned</span>
+        <responsive on="portable" class-merge="p-4"/>
+        <span class="block text-xs text-muted mb-1">$t:mypage.mileage.summary.total_earned</span>
         <span class="block text-xl font-bold text-gray-900 dark:text-white">
-          <responsive on="portable" class="block text-lg font-bold text-gray-900 dark:text-white"/>
+          <responsive on="portable" class-merge="text-lg"/>
           {{(mileage_balance?.data?.mileage?.total_earned ?? 0).toLocaleString()}} P
         </span>
       </div>
       <!-- 누적 사용 -->
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm"/>
-        <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:mypage.mileage.summary.total_used</span>
+        <responsive on="portable" class-merge="p-4"/>
+        <span class="block text-xs text-muted mb-1">$t:mypage.mileage.summary.total_used</span>
         <span class="block text-xl font-bold text-gray-900 dark:text-white">
-          <responsive on="portable" class="block text-lg font-bold text-gray-900 dark:text-white"/>
+          <responsive on="portable" class-merge="text-lg"/>
           {{(mileage_balance?.data?.mileage?.total_used ?? 0).toLocaleString()}} P
         </span>
       </div>
@@ -127,16 +127,16 @@
       <table class="w-full text-sm">
         <thead class="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
           <tr>
-            <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">$t:mypage.mileage.table.date</th>
-            <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">$t:mypage.mileage.table.category</th>
-            <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">$t:mypage.mileage.table.description</th>
-            <th class="px-4 py-3 text-right font-medium text-gray-500 dark:text-gray-400">$t:mypage.mileage.table.amount</th>
-            <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">$t:mypage.mileage.table.expires_at</th>
+            <th class="px-4 py-3 text-left font-medium text-muted">$t:mypage.mileage.table.date</th>
+            <th class="px-4 py-3 text-left font-medium text-muted">$t:mypage.mileage.table.category</th>
+            <th class="px-4 py-3 text-left font-medium text-muted">$t:mypage.mileage.table.description</th>
+            <th class="px-4 py-3 text-right font-medium text-muted">$t:mypage.mileage.table.amount</th>
+            <th class="px-4 py-3 text-left font-medium text-muted">$t:mypage.mileage.table.expires_at</th>
           </tr>
         </thead>
         <tbody data-each="tx in {{mileage_history.data.transactions.data ?? []}}">
           <tr class="border-b border-gray-100 dark:border-gray-700/50">
-            <td class="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{{tx.created_at_formatted ?? ''}}</td>
+            <td class="px-4 py-3 text-muted whitespace-nowrap">{{tx.created_at_formatted ?? ''}}</td>
             <td class="px-4 py-3">
               <span>
                 <class-map base="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" key="{{tx.user_display_category}}" default="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
@@ -159,7 +159,7 @@
                 {{tx.amount >= 0 ? '+' : ''}}{{Number(tx.amount ?? 0).toLocaleString()}} P
               </span>
             </td>
-            <td class="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{{tx.expires_at_formatted ?? '-'}}</td>
+            <td class="px-4 py-3 text-muted whitespace-nowrap">{{tx.expires_at_formatted ?? '-'}}</td>
           </tr>
         </tbody>
       </table>
@@ -168,7 +168,7 @@
     <div data-if="{{mileage_history.data.transactions.data &amp;&amp; mileage_history.data.transactions.data.length > 0}}" class="hidden">
       <responsive on="portable" class="space-y-3"/>
       <div data-each="tx in {{mileage_history.data.transactions.data ?? []}}">
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+        <div class="card-plain p-3">
           <div class="flex items-center justify-between mb-1">
             <span>
               <class-map base="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" key="{{tx.user_display_category}}" default="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
@@ -189,20 +189,20 @@
           </div>
           <p class="text-sm text-gray-700 dark:text-gray-300">{{tx.description ?? ''}}</p>
           <div class="flex items-center justify-between mt-1">
-            <span class="text-xs text-gray-500 dark:text-gray-400">{{tx.created_at_formatted ?? ''}}</span>
-            <span data-if="{{tx.expires_at_formatted}}" class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.mileage.expires_label|date={{tx.expires_at_formatted}}</span>
+            <span class="text-xs text-muted">{{tx.created_at_formatted ?? ''}}</span>
+            <span data-if="{{tx.expires_at_formatted}}" class="text-xs text-muted">$t:mypage.mileage.expires_label|date={{tx.expires_at_formatted}}</span>
           </div>
         </div>
       </div>
     </div>
     <!-- 내역 없음 -->
-    <div data-if="{{mileage_balance?.data?.mileage?.enabled &amp;&amp; mileage_history !== undefined &amp;&amp; (!mileage_history.data.transactions.data || mileage_history.data.transactions.data.length === 0)}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
-      <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center"/>
+    <div data-if="{{mileage_balance?.data?.mileage?.enabled &amp;&amp; mileage_history !== undefined &amp;&amp; (!mileage_history.data.transactions.data || mileage_history.data.transactions.data.length === 0)}}" class="card-plain p-8 text-center">
+      <responsive on="portable" class="card-plain p-6 text-center"/>
       <icon name="coins" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3">
         <responsive on="portable" name="coins" size="2x" class="mx-auto text-gray-500 dark:text-gray-500 mb-2"/>
       </icon>
-      <p class="text-gray-500 dark:text-gray-400">
-        <responsive on="portable" class="text-sm text-gray-500 dark:text-gray-400"/>
+      <p class="text-muted">
+        <responsive on="portable" class-merge="text-sm"/>
         $t:mypage.mileage.empty
       </p>
     </div>

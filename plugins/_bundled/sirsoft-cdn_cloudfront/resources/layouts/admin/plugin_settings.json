@@ -93,14 +93,10 @@
                 "trackChanges": true,
                 "responsive": {
                     "640-1023": {
-                        "props": {
-                            "className": "cdncf-settings cdncf-settings--md"
-                        }
+                        "classMerge": "cdncf-settings--md"
                     },
                     "1024-": {
-                        "props": {
-                            "className": "cdncf-settings cdncf-settings--lg"
-                        }
+                        "classMerge": "cdncf-settings--lg"
                     }
                 },
                 "props": {
@@ -269,9 +265,7 @@
                                         "name": "Div",
                                         "responsive": {
                                             "1024-": {
-                                                "props": {
-                                                    "className": "cdncf-field-row cdncf-field-row--wide"
-                                                }
+                                                "classMerge": "cdncf-field-row--wide"
                                             }
                                         },
                                         "props": {
@@ -341,9 +335,7 @@
                                         "name": "Div",
                                         "responsive": {
                                             "1024-": {
-                                                "props": {
-                                                    "className": "cdncf-field-row cdncf-field-row--wide"
-                                                }
+                                                "classMerge": "cdncf-field-row--wide"
                                             }
                                         },
                                         "props": {
@@ -452,9 +444,7 @@
                                         "name": "Div",
                                         "responsive": {
                                             "1024-": {
-                                                "props": {
-                                                    "className": "cdncf-field-row cdncf-field-row--wide"
-                                                }
+                                                "classMerge": "cdncf-field-row--wide"
                                             }
                                         },
                                         "props": {
@@ -513,9 +503,7 @@
                                         "name": "Div",
                                         "responsive": {
                                             "1024-": {
-                                                "props": {
-                                                    "className": "cdncf-field-row cdncf-field-row--wide"
-                                                }
+                                                "classMerge": "cdncf-field-row--wide"
                                             }
                                         },
                                         "props": {
@@ -585,9 +573,7 @@
                                         "name": "Div",
                                         "responsive": {
                                             "1024-": {
-                                                "props": {
-                                                    "className": "cdncf-field-row cdncf-field-row--wide"
-                                                }
+                                                "classMerge": "cdncf-field-row--wide"
                                             }
                                         },
                                         "props": {
@@ -805,9 +791,7 @@
                                         "if": "{{!!_local.connectionResult}}",
                                         "responsive": {
                                             "1024-": {
-                                                "props": {
-                                                    "className": "cdncf-stat-grid cdncf-stat-grid--wide"
-                                                }
+                                                "classMerge": "cdncf-stat-grid--wide"
                                             }
                                         },
                                         "props": {
@@ -1006,9 +990,7 @@
                                         "if": "{{_local.purgeStatusForbidden !== true}}",
                                         "responsive": {
                                             "1024-": {
-                                                "props": {
-                                                    "className": "cdncf-stat-grid cdncf-stat-grid--wide"
-                                                }
+                                                "classMerge": "cdncf-stat-grid--wide"
                                             }
                                         },
                                         "props": {

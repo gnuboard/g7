@@ -180,7 +180,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "ecommerce-flex-center ecommerce-btn ecommerce-btn-sm ecommerce-btn-primary ecommerce:gap-1 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "className": "ecommerce-flex-center ecommerce-btn ecommerce-btn-sm ecommerce-btn-primary ecommerce:gap-1",
                                         "disabled": "{{$parent._local.isAddingTemplate === true || $parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_create !== true}}"
                                     },
                                     "children": [
@@ -287,7 +287,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "ecommerce-flex-center ecommerce-btn ecommerce-btn-sm ecommerce-btn-danger ecommerce:gap-1 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "className": "ecommerce-flex-center ecommerce-btn ecommerce-btn-sm ecommerce-btn-danger ecommerce:gap-1",
                                         "disabled": "{{_global.isTemplateDeleting || $parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_delete !== true}}"
                                     },
                                     "children": [
@@ -360,7 +360,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "ecommerce-btn ecommerce-btn-sm ecommerce-btn-outline ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "className": "ecommerce-btn ecommerce-btn-sm ecommerce-btn-outline",
                                         "disabled": "{{$parent._computed?.isReadOnly !== false}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.apply_all"
@@ -391,7 +391,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "ecommerce-btn ecommerce-btn-sm ecommerce-btn-primary ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "className": "ecommerce-btn ecommerce-btn-sm ecommerce-btn-primary",
                                         "disabled": "{{$parent._computed?.isReadOnly !== false}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.apply_selected"
@@ -886,7 +886,7 @@
                                                                             ],
                                                                             "props": {
                                                                                 "type": "button",
-                                                                                "className": "ecommerce-btn-icon ecommerce:text-gray-500 ecommerce:hover:text-gray-700 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-gray-300",
+                                                                                "className": "ecommerce-btn-icon ecommerce-text-muted ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300",
                                                                                 "aria-label": "$t:common.cancel"
                                                                             },
                                                                             "children": [
@@ -1452,7 +1452,7 @@
                                                                             ],
                                                                             "props": {
                                                                                 "type": "button",
-                                                                                "className": "ecommerce-btn-icon ecommerce:text-gray-500 ecommerce:hover:text-gray-700 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-gray-300",
+                                                                                "className": "ecommerce-btn-icon ecommerce-text-muted ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300",
                                                                                 "aria-label": "$t:common.cancel"
                                                                             },
                                                                             "children": [
@@ -1511,7 +1511,7 @@
                     "name": "Div",
                     "if": "{{extra_fee_templates !== undefined && extra_fee_templates !== null && _global.extraFeeTemplatesLoadFailed !== true && (extra_fee_templates?.data?.data ?? []).length === 0 && $parent._local.isAddingTemplate !== true}}",
                     "props": {
-                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:items-center ecommerce:gap-3 ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:items-center ecommerce:gap-3 ecommerce:text-center ecommerce-text-muted"
                     },
                     "children": [
                         {

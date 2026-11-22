@@ -34,7 +34,7 @@
         <icon name="circle-exclamation" class="ecommerce:text-base"/>
         <span>$t:sirsoft-ecommerce.admin.order.detail.claim_history.unavailable</span>
       </div>
-      <div data-ref="claim_history_empty" data-if="{{orderClaims !== undefined &amp;&amp; (orderClaims?.data?.unavailable !== true &amp;&amp; (_computed.claimHistoryRows ?? []).length === 0)}}" class="ecommerce:py-10 ecommerce:text-center ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.empty</div>
+      <div data-ref="claim_history_empty" data-if="{{orderClaims !== undefined &amp;&amp; (orderClaims?.data?.unavailable !== true &amp;&amp; (_computed.claimHistoryRows ?? []).length === 0)}}" class="ecommerce:py-10 ecommerce:text-center ecommerce:text-sm ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.claim_history.empty</div>
       <!-- PC 는 표, 모바일(<768)은 신청서 단위 카드다 (D20) — 같은 응답의 다른 표현이며 데이터소스를 따로 두지 않는다. 표의 1열은 신청서 단위 병합이라 카드에서는 그 셀이 곧 카드 헤더가 된다. -->
       <div data-ref="claim_history_body" data-if="{{orderClaims?.data?.unavailable !== true &amp;&amp; (_computed.claimHistoryRows ?? []).length > 0}}" class="ecommerce:overflow-x-auto">
         <responsive on="mobile" class="ecommerce:space-y-4">
@@ -56,8 +56,8 @@
                 </div>
               </div>
               <!-- 환불 행의 원 신청서 번호(보완 5) — 반품·교환에서 생긴 환불이면 그 번호를 함께 적는다(서버가 같은 주문의 신청서에서 찾아 준다). -->
-              <div data-if="{{!!claim.source_claim_number}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.source_claim|number={{claim.source_claim_number ?? ''}}</div>
-              <div class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{claim.requested_at_formatted ?? ''}} · {{claim.requester_name ?? ''}}</div>
+              <div data-if="{{!!claim.source_claim_number}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.claim_history.source_claim|number={{claim.source_claim_number ?? ''}}</div>
+              <div class="ecommerce:text-xs ecommerce-text-muted">{{claim.requested_at_formatted ?? ''}} · {{claim.requester_name ?? ''}}</div>
               <div data-if="{{!!claim.reason_label}}" class="ecommerce:text-xs ecommerce:text-gray-600 ecommerce:dark:text-gray-300">{{claim.reason_label ?? ''}}{{claim.fault_type_label ? ' · ' + claim.fault_type_label : ''}}</div>
               <div data-if="{{!!claim.reject_reason}}" class="ecommerce:text-xs ecommerce:text-red-600 ecommerce:dark:text-red-300">$t:sirsoft-ecommerce.admin.order.detail.claim_history.reject_reason: {{claim.reject_reason ?? ''}}</div>
               <!-- 배송비·총 청구액은 신청서 단위 축이라 상품 행에 안분하지 않는다 (S6c 판정 ②) — 카드에서는 헤더가, 표에서는 병합셀이 그 자리다. -->
@@ -71,16 +71,16 @@
                 <!-- PC 표의 썸네일 자리와 같은 규칙 — 이미지가 없어도 자리는 남는다. -->
                 <div data-ref="claim_history_card_item_thumb_{{claim.claim_number}}_{{cardItemIndex}}" class="ecommerce:w-12 ecommerce:h-12 ecommerce:rounded ecommerce:overflow-hidden ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:justify-center">
                   <img data-if="{{!!item.thumbnail_url}}" src="{{item.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{item.product_name ?? ''}}" class="ecommerce:w-full ecommerce:h-full ecommerce:object-cover"/>
-                  <icon data-if="{{!item.thumbnail_url}}" name="image" class="ecommerce:text-base ecommerce:text-gray-500 ecommerce:dark:text-gray-400" data-thumb-placeholder="true"/>
+                  <icon data-if="{{!item.thumbnail_url}}" name="image" class="ecommerce:text-base ecommerce-text-muted" data-thumb-placeholder="true"/>
                 </div>
                 <div class="ecommerce:min-w-0 ecommerce:flex-1 ecommerce:space-y-0.5">
                   <div class="ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{item.product_name ?? ''}}</div>
-                  <div data-if="{{!!item.product_option_name}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.original_product: {{item.product_option_name ?? ''}} {{item.unit_price_formatted ?? ''}}</div>
+                  <div data-if="{{!!item.product_option_name}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.claim_history.original_product: {{item.product_option_name ?? ''}} {{item.unit_price_formatted ?? ''}}</div>
                   <div data-if="{{!!item.new_option_label}}" class="ecommerce:text-xs ecommerce:text-blue-600 ecommerce:dark:text-blue-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.exchange_product: {{item.new_option_label ?? ''}} {{item.new_unit_price_formatted ?? ''}}</div>
                 </div>
               </div>
               <div class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:gap-2 ecommerce:flex-wrap ecommerce:pt-1">
-                <span class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{item.quantity ?? 0}}{{item.original_quantity ? '/' + item.original_quantity : ''}}</span>
+                <span class="ecommerce:text-xs ecommerce-text-muted">{{item.quantity ?? 0}}{{item.original_quantity ? '/' + item.original_quantity : ''}}</span>
                 <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-2">
                   <div class="ecommerce:text-right">
                     <div>
@@ -92,7 +92,7 @@
                       {{item.amount_formatted ?? ''}}
                     </div>
                     <!-- 방향은 amount_type 이 단독으로 나른다 — amount 는 크기만 싣는다. 화면이 유형으로 분기해 부호를 다시 붙이면 저가 교환에서 이중 부호가 된다. -->
-                    <div data-if="{{(item.amount_type ?? 'none') !== 'none'}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount_type.{{item.amount_type ?? 'none'}}</div>
+                    <div data-if="{{(item.amount_type ?? 'none') !== 'none'}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount_type.{{item.amount_type ?? 'none'}}</div>
                   </div>
                   <badge data-type="composite" variant="{{item.status_variant ?? 'default'}}">{{item.status_label ?? ''}}</badge>
                 </div>
@@ -103,11 +103,11 @@
         <table data-ref="claim_history_table" class="ecommerce:w-full ecommerce:text-sm ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
           <thead>
             <tr class="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700/40">
-              <th class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:whitespace-nowrap ecommerce:w-56">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.claim_number</th>
-              <th class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.product</th>
-              <th class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-center ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:whitespace-nowrap ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.quantity</th>
-              <th class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-right ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:whitespace-nowrap ecommerce:w-32">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.amount</th>
-              <th class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-center ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:whitespace-nowrap ecommerce:w-28">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.status</th>
+              <th class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted ecommerce:whitespace-nowrap ecommerce:w-56">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.claim_number</th>
+              <th class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.product</th>
+              <th class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-center ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted ecommerce:whitespace-nowrap ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.quantity</th>
+              <th class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-right ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted ecommerce:whitespace-nowrap ecommerce:w-32">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.amount</th>
+              <th class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-center ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted ecommerce:whitespace-nowrap ecommerce:w-28">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.status</th>
             </tr>
           </thead>
           <!-- 신청서 하나가 tbody 하나다 — 그래야 1열을 rowSpan 으로 병합하면서도 행 수가 상품 수와 같아진다. 바깥 반복은 신청서, 안쪽은 상품이며 1열은 첫 행에만 렌더한다 (§5-1 결정 11). -->
@@ -125,8 +125,8 @@
                 <!-- 환불 미접수(D9) — 완료됐는데 환불신청서가 연결되지 않은 신청서. 번호를 눌러 신청서 상단의 [환불신청서 접수] 로 간다. -->
                 <badge data-type="composite" data-if="{{claim.has_pending_refund === true}}" variant="warning" size="sm">$t:sirsoft-ecommerce.admin.order.detail.claim_history.pending_refund_badge</badge>
                 <!-- 환불 행의 원 신청서 번호(보완 5) -->
-                <div data-if="{{!!claim.source_claim_number}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.source_claim|number={{claim.source_claim_number ?? ''}}</div>
-                <div class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{claim.requested_at_formatted ?? ''}} · {{claim.requester_name ?? ''}}</div>
+                <div data-if="{{!!claim.source_claim_number}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.claim_history.source_claim|number={{claim.source_claim_number ?? ''}}</div>
+                <div class="ecommerce:text-xs ecommerce-text-muted">{{claim.requested_at_formatted ?? ''}} · {{claim.requester_name ?? ''}}</div>
                 <div data-if="{{!!claim.reason_label}}" class="ecommerce:text-xs ecommerce:text-gray-600 ecommerce:dark:text-gray-300">{{claim.reason_label ?? ''}}{{claim.fault_type_label ? ' · ' + claim.fault_type_label : ''}}</div>
                 <div data-if="{{!!claim.reject_reason}}" class="ecommerce:text-xs ecommerce:text-red-600 ecommerce:dark:text-red-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.reject_reason: {{claim.reject_reason ?? ''}}</div>
                 <!-- 배송비·총 청구액은 신청서 단위 축이라 상품 행에 안분하지 않는다 (S6c 판정 ②). -->
@@ -140,11 +140,11 @@
                   <!-- 이미지가 없는 상품도 같은 크기의 자리를 차지한다 — 자리표시 없이 Img 만 조건부로 두면 이미지 유무에 따라 줄의 시작점이 흔들린다(구매자 신청내역 카드와 같은 규칙). -->
                   <div data-ref="claim_history_item_thumb_{{claim.claim_number}}_{{itemIndex}}" class="ecommerce:w-12 ecommerce:h-12 ecommerce:rounded ecommerce:overflow-hidden ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:justify-center">
                     <img data-if="{{!!item.thumbnail_url}}" src="{{item.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{item.product_name ?? ''}}" class="ecommerce:w-full ecommerce:h-full ecommerce:object-cover"/>
-                    <icon data-if="{{!item.thumbnail_url}}" name="image" class="ecommerce:text-base ecommerce:text-gray-500 ecommerce:dark:text-gray-400" data-thumb-placeholder="true"/>
+                    <icon data-if="{{!item.thumbnail_url}}" name="image" class="ecommerce:text-base ecommerce-text-muted" data-thumb-placeholder="true"/>
                   </div>
                   <div class="ecommerce:min-w-0 ecommerce:space-y-0.5">
                     <div class="ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{item.product_name ?? ''}}</div>
-                    <div data-if="{{!!item.product_option_name}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.original_product: {{item.product_option_name ?? ''}} {{item.unit_price_formatted ?? ''}}</div>
+                    <div data-if="{{!!item.product_option_name}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.claim_history.original_product: {{item.product_option_name ?? ''}} {{item.unit_price_formatted ?? ''}}</div>
                     <div data-if="{{!!item.new_option_label}}" class="ecommerce:text-xs ecommerce:text-blue-600 ecommerce:dark:text-blue-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.exchange_product: {{item.new_option_label ?? ''}} {{item.new_unit_price_formatted ?? ''}}</div>
     </div>
       </div>
@@ -161,7 +161,7 @@
                   {{item.amount_formatted ?? ''}}
       </div>
                 <!-- 방향은 amount_type 이 단독으로 나른다 — amount 는 크기만 싣는다. -->
-                <div data-if="{{(item.amount_type ?? 'none') !== 'none'}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount_type.{{item.amount_type ?? 'none'}}</div>
+                <div data-if="{{(item.amount_type ?? 'none') !== 'none'}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount_type.{{item.amount_type ?? 'none'}}</div>
               </td>
               <td class="ecommerce:px-3 ecommerce:py-3 ecommerce:align-top ecommerce:text-center">
                 <badge data-type="composite" variant="{{item.status_variant ?? 'default'}}">{{item.status_label ?? ''}}</badge>

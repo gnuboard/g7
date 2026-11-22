@@ -132,13 +132,13 @@
             <div class="ecommerce:flex ecommerce:items-start ecommerce:gap-2">
               <img data-if="{{row.first_option?.thumbnail_url}}" src="{{row.first_option?.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{row.first_option?.product_name}}" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:object-cover ecommerce:flex-shrink-0 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700"/>
               <div data-if="{{!row.first_option?.thumbnail_url}}" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:flex-shrink-0 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:flex ecommerce:items-center ecommerce:justify-center">
-                <icon name="image" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+                <icon name="image" class="ecommerce-text-muted"/>
               </div>
               <div class="ecommerce:space-y-0.5 ecommerce:min-w-0">
                 <div class="ecommerce:font-medium">
                   <a data-if="{{row.first_option?.product_code}}" class="ecommerce:hover:underline ecommerce:hover:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:dark:hover:text-blue-400 ecommerce:cursor-pointer" href="{{'/admin/ecommerce/products/' + row.first_option?.product_code + '/edit'}}" target="_blank">{{row.first_option?.product_name}}</a>
                   <span data-if="{{!row.first_option?.product_code}}">{{row.first_option?.product_name}}</span>
-                  <span data-if="{{row.options_count > 1}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:font-normal ecommerce:ml-1">$t:defer:sirsoft-ecommerce.admin.order.product.more|count={{row.options_count - 1}}</span>
+                  <span data-if="{{row.options_count > 1}}" class="ecommerce-text-muted ecommerce:font-normal ecommerce:ml-1">$t:defer:sirsoft-ecommerce.admin.order.product.more|count={{row.options_count - 1}}</span>
                 </div>
                 <div data-if="{{row.first_option?.product_option_name}}" class="ecommerce-text-tertiary">{{row.first_option?.product_option_name}}</div>
                 <!-- 추가옵션 요약 — 첫 1건(직접입력 병기) + 외 N건 (Q-E2) -->
@@ -154,7 +154,7 @@
           <cell>
             <div class="ecommerce-stack-flush ecommerce:gap-0.5">
               <span class="ecommerce:font-medium">{{row.total_amount_formatted}}</span>
-              <span data-if="{{row.total_shipping_amount > 0}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:defer:sirsoft-ecommerce.admin.order.column.shipping_fee_short|amount={{row.total_shipping_amount_formatted}}</span>
+              <span data-if="{{row.total_shipping_amount > 0}}" class="ecommerce:text-xs ecommerce-text-muted">$t:defer:sirsoft-ecommerce.admin.order.column.shipping_fee_short|amount={{row.total_shipping_amount_formatted}}</span>
               <span data-if="{{row.total_paid_amount > 0}}" class="ecommerce:text-xs ecommerce:text-green-700 ecommerce:dark:text-green-400">$t:defer:sirsoft-ecommerce.admin.order.column.paid_short|amount={{row.total_paid_amount_formatted}}</span>
               <span data-if="{{row.total_unpaid_amount > 0}}" class="ecommerce:text-xs ecommerce:text-red-600 ecommerce:dark:text-red-400">$t:defer:sirsoft-ecommerce.admin.order.column.unpaid_short|amount={{row.total_unpaid_amount_formatted}}</span>
               <span data-if="{{row.total_points_used_amount > 0}}" class="ecommerce:text-xs ecommerce:text-purple-600 ecommerce:dark:text-purple-400">$t:defer:sirsoft-ecommerce.admin.order.column.mileage_used_short|amount={{row.total_points_used_amount_formatted}}</span>
@@ -174,7 +174,7 @@
         </column>
         <column field="orderer" header="$t:sirsoft-ecommerce.admin.order.column.orderer" width="140px" :sortable="false" :required="false">
           <cell>
-            <span data-if="{{!row.address?.orderer_name &amp;&amp; !row.user?.name}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">-</span>
+            <span data-if="{{!row.address?.orderer_name &amp;&amp; !row.user?.name}}" class="ecommerce-text-muted">-</span>
             <action-menu data-type="composite" data-if="{{!!row.address?.orderer_name || !!row.user?.name}}" position="right">
               <prop name="items">
                 <item id="view_member" href="/admin/users/{{row.user?.uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.order.action.view_member" iconName="user" if="{{!!row.user?.uuid}}"/>
@@ -207,12 +207,12 @@
                 </switch>
               </on>
               <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:rounded-lg ecommerce:px-1 ecommerce:py-0.5 ecommerce:transition-colors">
-                <icon data-if="{{!!row.user?.uuid}}" name="fa-regular fa-user" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:flex-shrink-0"/>
+                <icon data-if="{{!!row.user?.uuid}}" name="fa-regular fa-user" class="ecommerce-text-muted ecommerce:flex-shrink-0"/>
                 <div class="ecommerce:min-w-0 ecommerce:flex-1">
                   <span data-if="{{!!row.user?.uuid}}" class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:truncate ecommerce:block">{{row.address?.orderer_name || row.user?.name}}</span>
                   <span data-if="{{!row.user?.uuid}}" class="ecommerce:text-gray-600 ecommerce:dark:text-gray-300 ecommerce:truncate ecommerce:block">{{row.address?.orderer_name || row.user?.name}}</span>
                   <!-- 실명 보조 줄(#490) — 서버가 회원의 실명 키를 줄 때만(회원 조회 권한이 있고 표시 이름과 다를 때) 그린다. 이 칸은 주문서에 적힌 주문자 이름을 먼저 보이므로, 그 이름이 실명과 같으면 같은 글자를 두 번 적지 않는다. -->
-                  <span data-if="{{!!row.user?.real_name &amp;&amp; row.user?.real_name !== (row.address?.orderer_name || row.user?.name)}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.user?.real_name })}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:truncate ecommerce:block">{{row.user?.real_name}}</span>
+                  <span data-if="{{!!row.user?.real_name &amp;&amp; row.user?.real_name !== (row.address?.orderer_name || row.user?.name)}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.user?.real_name })}}" class="ecommerce:text-xs ecommerce-text-muted ecommerce:truncate ecommerce:block">{{row.user?.real_name}}</span>
                   <!-- 첫구매 표시 -->
                   <span data-if="{{row.is_first_order}}" class="ecommerce:text-xs ecommerce:text-emerald-700 ecommerce:dark:text-emerald-400">$t:sirsoft-ecommerce.admin.order.column.first_order</span>
                 </div>
@@ -252,12 +252,12 @@
         </column>
         <column comment="클레임 컬럼 (D22) — 유형별 최신 상태 배지. 서버는 claim_summary 를 항상 싣는다(접수 건이 있는 유형만 항목으로 실리므로, 클레임이 없는 주문은 빈 배열이다). 표시 여부는 표시 컬럼 선택 하나가 정한다." field="claim" header="$t:sirsoft-ecommerce.admin.order.column.claim" width="150px" :sortable="false" :required="false">
           <cell>
-            <span data-if="{{(row.claim_summary || []).length === 0}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">-</span>
+            <span data-if="{{(row.claim_summary || []).length === 0}}" class="ecommerce-text-muted">-</span>
             <div data-if="{{(row.claim_summary || []).length > 0}}" class="ecommerce:flex ecommerce:flex-col ecommerce:items-start ecommerce:gap-1">
               <div data-each="claimEntry, claimIdx in row.claim_summary || []" class="ecommerce-flex-center ecommerce:gap-1">
                 <status-badge data-type="composite" status="{{claimEntry.status_variant || 'default'}}" label="{{claimEntry.status_label || claimEntry.status || ''}}" :showIcon="false"/>
                 <!-- 같은 유형이 2건 이상이면 최신 1건만 배지로 보이므로 건수를 병기한다. -->
-                <span data-if="{{(claimEntry.count ?? 0) > 1}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{'(' + claimEntry.count + ')'}}</span>
+                <span data-if="{{(claimEntry.count ?? 0) > 1}}" class="ecommerce:text-xs ecommerce-text-muted">{{'(' + claimEntry.count + ')'}}</span>
               </div>
             </div>
           </cell>

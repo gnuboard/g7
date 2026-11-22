@@ -63,7 +63,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100"
+                    "className": "ecommerce-btn ecommerce-btn-primary"
                 },
                 "text": "$t:sirsoft-ecommerce.admin.common_info.modal.copy.confirm"
             }

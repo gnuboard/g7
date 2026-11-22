@@ -21,7 +21,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('owner') ? (_local.visibleFilters || []).filter(f => f !== 'owner') : [...(_local.visibleFilters || []), 'owner']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.filter.owner</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.schedules.filter.owner</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="ownerType" value="all" checked="{{(_local.filter.ownerType || 'all') === 'all'}}" class="radio">
@@ -96,7 +96,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('type') ? (_local.visibleFilters || []).filter(f => f !== 'type') : [...(_local.visibleFilters || []), 'type']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.filter.type</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.schedules.filter.type</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="type" value="all" checked="{{(_local.filter.type || 'all') === 'all'}}" class="radio">
@@ -153,7 +153,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('status') ? (_local.visibleFilters || []).filter(f => f !== 'status') : [...(_local.visibleFilters || []), 'status']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.filter.status</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.schedules.filter.status</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="status" value="all" checked="{{(_local.filter.status || 'all') === 'all'}}" class="radio">
@@ -192,7 +192,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('lastResult') ? (_local.visibleFilters || []).filter(f => f !== 'lastResult') : [...(_local.visibleFilters || []), 'lastResult']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.filter.last_result</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.schedules.filter.last_result</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="lastResult" value="all" checked="{{(_local.filter.lastResult || 'all') === 'all'}}" class="radio">
@@ -249,7 +249,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('frequency') ? (_local.visibleFilters || []).filter(f => f !== 'frequency') : [...(_local.visibleFilters || []), 'frequency']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.filter.frequency</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.schedules.filter.frequency</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="frequency" value="all" checked="{{(_local.filter.frequency || 'all') === 'all'}}" class="radio">
@@ -333,7 +333,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('dispatchMode') ? (_local.visibleFilters || []).filter(f => f !== 'dispatchMode') : [...(_local.visibleFilters || []), 'dispatchMode']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.filter.dispatch_mode</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.schedules.filter.dispatch_mode</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="dispatchMode" value="all" checked="{{(_local.filter.dispatchMode || 'all') === 'all'}}" class="radio">
@@ -372,7 +372,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('overlap') ? (_local.visibleFilters || []).filter(f => f !== 'overlap') : [...(_local.visibleFilters || []), 'overlap']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.filter.without_overlapping</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.schedules.filter.without_overlapping</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="overlap" value="all" checked="{{(_local.filter.overlap || 'all') === 'all'}}" class="radio">
@@ -411,7 +411,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('historyMode') ? (_local.visibleFilters || []).filter(f => f !== 'historyMode') : [...(_local.visibleFilters || []), 'historyMode']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.filter.history_mode</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.schedules.filter.history_mode</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="historyMode" value="" checked="{{(_local.filter.historyMode || '') === ''}}" class="radio">
@@ -450,7 +450,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('createdAt') ? (_local.visibleFilters || []).filter(f => f !== 'createdAt') : [...(_local.visibleFilters || []), 'createdAt']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.filter.created_at</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.schedules.filter.created_at</span>
         <div class="flex-center flex-wrap gap-2">
           <div class="flex-center gap-2">
             <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
@@ -593,7 +593,7 @@
           </on>
         </column-selector>
         <button data-ref="detail_search_toggle" type="button" class="btn btn-outline flex-center gap-2">
-          <responsive on="portable" class="flex-center btn btn-outline justify-center gap-2 w-full"/>
+          <responsive on="portable" class-merge="justify-center w-full"/>
           <on type="click">
             <!-- 상세 필터 펼침/접힘. 편집모드를 켜면 아래 검색편집 버튼이 이 값을 강제로 참으로 만든다. -->
             <set-state target="_local" showDetailFilter="{{!_local.showDetailFilter}}"/>
@@ -624,7 +624,7 @@
         <div class="flex-center justify-center gap-2 flex-1">
           <responsive on="portable" class="contents"/>
           <button data-ref="search_button" type="button" class="btn btn-primary">
-            <responsive on="portable" class="btn btn-primary flex-1"/>
+            <responsive on="portable" class-merge="flex-1"/>
             <on type="click">
               <action-ref name="searchSchedules"/>
             </on>

@@ -45,7 +45,7 @@
           </div>
         </div>
         <div data-ref="identity_notification_add_lang_tabs" class="flex border-b border-gray-200 dark:border-gray-700">
-          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.identity_notification_add_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none">
+          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.identity_notification_add_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-muted hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none">
             <on type="click">
               <!-- 편집 언어 전환 — 아래 세 칸(이름·제목·본문)이 함께 이 로케일을 바라본다.
                    입력값은 언어별 객체에 남으므로 탭을 옮겨도 쓰던 것이 사라지지 않는다. -->
@@ -99,7 +99,7 @@
       </div>
     </div>
     <footer>
-      <button type="button" class="text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.identity_notification_add_modal?.isSaving ?? false}}">
+      <button type="button" class="btn btn-secondary rounded-md" disabled="{{_global.identity_notification_add_modal?.isSaving ?? false}}">
         <on type="click">
           <close-modal target="modal_notification_identity_definition_add"/>
         </on>

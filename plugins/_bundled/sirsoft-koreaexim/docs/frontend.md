@@ -51,7 +51,7 @@ plugin_settings 하나에 상태·설정·알림·최근 이력과 전체 이력
 
 알림 템플릿 편집 창(`resources/layouts/admin/partials/plugin_settings/_modal_notification_template_edit.g7.html`)의 회원 검색은 코어 `GET /api/admin/users/search` 를 부르는데, 코어가 빈(공백뿐 포함) `keyword` 를 422 로 거절하므로 검색칸을 비울 때는 `if="{{String($args[0] ?? '').trim() !== ''}}"` 로 요청하지 않습니다. 회원 검색은 `exclude_withdrawn=1` 을 실어 탈퇴 회원을 결과에서 뺍니다(7.1.1) — 탈퇴 회원은 연락처가 익명화되고 바깥 채널 발송이 막혀 수신자로 골라도 받지 못합니다.
 
-화면 폭에 따라 달라지는 배치는 Tailwind 반응형 접두(`sm:`·`md:`·`lg:`)를 쓰지 않고 엔진 `responsive` 로 씁니다(예: `<responsive on="desktop" class="…"/>`, `on="640-"`). 갈래의 `class` 는 기본 `class` 를 통째로 바꾸므로 그 폭에서 필요한 토큰을 모두 적습니다.
+화면 폭에 따라 달라지는 배치는 Tailwind 반응형 접두(`sm:`·`md:`·`lg:`)를 쓰지 않고 엔진 `responsive` 로 씁니다(예: `<responsive on="desktop" class="…"/>`, `on="640-"`). 갈래의 `class` 는 기본 `class` 를 통째로 바꾸므로 `class` 를 쓰는 갈래에는 그 폭에서 필요한 토큰을 모두 적습니다. 기본 클래스 일부만 바뀌는 갈래는 `class-merge` 로 바뀐 토큰만 적습니다(코어 7.2.1 이상, 예: `<responsive on="desktop" class-merge="…"/>`, 코어 `docs/frontend/responsive-layout.md` 「바뀐 클래스만 덧붙이기」).
 
 폭 미디어를 품은 의미 클래스 사본(`koreaexim-grid-3col-responsive`·`koreaexim-grid-2col-responsive`·`koreaexim-page-title`·`koreaexim-admin-page-content-responsive` 등)도 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="koreaexim:grid koreaexim:grid-cols-1 koreaexim:gap-4 koreaexim:items-start"` 에 `<responsive on="1024-" class="koreaexim:grid koreaexim:grid-cols-3 koreaexim:gap-4 koreaexim:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`koreaexim:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->

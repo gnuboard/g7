@@ -49,8 +49,8 @@
           <div data-ref="module_update_requirements_dependencies" data-if="{{(_global.selectedModule?.update_dependency_warnings ?? []).length &gt; 0}}" class="mt-2">
             <p class="text-warning-soft">$t:extensions.update_modal.requirements_dependencies_hint</p>
             <div data-each="depItem in _global.selectedModule.update_dependency_warnings" class="flex-center flex-wrap gap-2 p-2 mt-1 bg-white dark:bg-gray-800 rounded border border-amber-200 dark:border-amber-700">
-              <icon data-if="{{depItem.type === 'module'}}" name="cube" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
-              <icon data-if="{{depItem.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+              <icon data-if="{{depItem.type === 'module'}}" name="cube" class="text-base text-muted" aria-hidden="true"/>
+              <icon data-if="{{depItem.type === 'plugin'}}" name="puzzle-piece" class="text-base text-muted" aria-hidden="true"/>
               <span class="text-primary text-sm">{{depItem.name || depItem.identifier}} ({{depItem.identifier}})</span>
               <span data-if="{{depItem.required_version &amp;&amp; depItem.required_version !== '*'}}" class="text-tertiary font-mono">$t:admin.extension_integrations.required_version|version={{depItem.required_version}}</span>
               <span data-if="{{depItem.installed_version}}" class="text-tertiary font-mono">$t:admin.extension_integrations.installed_version|version={{depItem.installed_version}}</span>
@@ -63,9 +63,9 @@
           <div data-ref="module_update_requirements_integrations" data-if="{{(_global.selectedModule?.update_integration_notices ?? []).length &gt; 0}}" class="mt-2">
             <p class="text-warning-soft">$t:extensions.update_modal.requirements_integrations_hint</p>
             <div data-each="intItem in _global.selectedModule.update_integration_notices" class="flex-center flex-wrap gap-2 p-2 mt-1 bg-white dark:bg-gray-800 rounded border border-amber-200 dark:border-amber-700">
-              <icon data-if="{{intItem.type === 'module'}}" name="cube" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
-              <icon data-if="{{intItem.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
-              <icon data-if="{{intItem.type === 'template'}}" name="palette" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+              <icon data-if="{{intItem.type === 'module'}}" name="cube" class="text-base text-muted" aria-hidden="true"/>
+              <icon data-if="{{intItem.type === 'plugin'}}" name="puzzle-piece" class="text-base text-muted" aria-hidden="true"/>
+              <icon data-if="{{intItem.type === 'template'}}" name="palette" class="text-base text-muted" aria-hidden="true"/>
               <span class="text-primary text-sm">{{intItem.name || intItem.identifier}} ({{intItem.identifier}})</span>
               <span data-if="{{intItem.required_version &amp;&amp; intItem.required_version !== '*'}}" class="text-tertiary font-mono">$t:admin.extension_integrations.required_version|version={{intItem.required_version}}</span>
               <span data-if="{{intItem.installed_version}}" class="text-tertiary font-mono">$t:admin.extension_integrations.installed_version|version={{intItem.installed_version}}</span>
@@ -92,15 +92,15 @@
       </span><span>$t:admin.modules.modals.update_confirm|name={{_global.selectedModule.name ?? ''}}</span></p>
       <div class="kv-list gap-y-2 text-sm mt-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
         <div class="kv-row">
-          <span class="text-gray-500 dark:text-gray-400">$t:admin.modules.modals.field_version</span>
+          <span class="text-muted">$t:admin.modules.modals.field_version</span>
           <span class="text-primary font-medium">$t:admin.modules.modals.update_version_info|from={{_global.selectedModule.version ?? ''}}|to={{_global.selectedModule.latest_version ?? ''}}</span>
         </div>
         <div class="kv-row">
-          <span class="text-gray-500 dark:text-gray-400">$t:admin.modules.modals.field_vendor</span>
+          <span class="text-muted">$t:admin.modules.modals.field_vendor</span>
           <span class="text-gray-700 dark:text-gray-300">{{_global.selectedModule.vendor ?? ''}}</span>
         </div>
         <div class="kv-row">
-          <span class="text-gray-500 dark:text-gray-400">$t:admin.modules.modals.field_update_source</span>
+          <span class="text-muted">$t:admin.modules.modals.field_update_source</span>
           <span class="text-gray-700 dark:text-gray-300">{{_global.selectedModule.update_source === 'github' ? '$t:admin.modules.modals.update_source_github' : (_global.selectedModule.update_source === 'pending' ? '$t:admin.modules.modals.update_source_pending' : '$t:admin.modules.modals.update_source_bundled')}}</span>
         </div>
       </div>
@@ -187,7 +187,7 @@
           </input>
           <div>
             <div class="text-sm text-gray-700 dark:text-gray-300">$t:extensions.update_modal.rebuild_search_index_label</div>
-            <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:extensions.update_modal.rebuild_search_index_desc</div>
+            <div class="text-xs text-muted mt-0.5">$t:extensions.update_modal.rebuild_search_index_desc</div>
           </div>
         </label>
       </div>

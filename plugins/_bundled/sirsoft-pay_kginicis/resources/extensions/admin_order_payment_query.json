@@ -155,9 +155,7 @@
                             "name": "Div",
                             "responsive": {
                                 "640-": {
-                                    "props": {
-                                        "className": "paykginicis:grid paykginicis:grid-cols-[120px_1fr_120px_1fr] paykginicis:gap-x-3 paykginicis:gap-y-1 paykginicis:text-xs"
-                                    }
+                                    "classMerge": "paykginicis:grid-cols-[120px_1fr_120px_1fr]"
                                 }
                             },
                             "props": {
@@ -209,9 +207,7 @@
                                     "name": "Span",
                                     "responsive": {
                                         "640-": {
-                                            "props": {
-                                                "className": "paykginicis:text-red-950 paykginicis:dark:text-red-100 paykginicis:col-span-3 paykginicis:break-all pay-kginicis-break-all"
-                                            }
+                                            "classMerge": "paykginicis:col-span-3"
                                         }
                                     },
                                     "props": {
@@ -234,9 +230,7 @@
                                     "if": "{{kginicis_cbt_reconciliation.data?.refund_error}}",
                                     "responsive": {
                                         "640-": {
-                                            "props": {
-                                                "className": "paykginicis:text-red-950 paykginicis:dark:text-red-100 paykginicis:col-span-3 paykginicis:break-all pay-kginicis-break-all"
-                                            }
+                                            "classMerge": "paykginicis:col-span-3"
                                         }
                                     },
                                     "props": {
@@ -467,9 +461,7 @@
                             "name": "Div",
                             "responsive": {
                                 "640-": {
-                                    "props": {
-                                        "className": "paykginicis:grid paykginicis:grid-cols-[130px_1fr_130px_1fr] paykginicis:gap-x-3 paykginicis:gap-y-1 paykginicis:text-xs"
-                                    }
+                                    "classMerge": "paykginicis:grid-cols-[130px_1fr_130px_1fr]"
                                 }
                             },
                             "props": {
@@ -585,9 +577,7 @@
                                     "name": "Span",
                                     "responsive": {
                                         "640-": {
-                                            "props": {
-                                                "className": "paykginicis:font-mono paykginicis:text-blue-950 paykginicis:dark:text-blue-100 paykginicis:col-span-3 paykginicis:break-all pay-kginicis-break-all"
-                                            }
+                                            "classMerge": "paykginicis:col-span-3"
                                         }
                                     },
                                     "props": {
@@ -639,9 +629,7 @@
                                             "name": "Div",
                                             "responsive": {
                                                 "640-": {
-                                                    "props": {
-                                                        "className": "paykginicis:grid paykginicis:grid-cols-[150px_90px_1fr_80px] paykginicis:gap-x-2 paykginicis:gap-y-1 paykginicis:rounded-md paykginicis:bg-white/70 paykginicis:dark:bg-gray-900/30 paykginicis:px-2 paykginicis:py-1.5 paykginicis:text-[11px]"
-                                                    }
+                                                    "classMerge": "paykginicis:grid-cols-[150px_90px_1fr_80px]"
                                                 }
                                             },
                                             "props": {
@@ -768,7 +756,7 @@
                                     "props": {
                                         "type": "button",
                                         "disabled": "{{order?.data?.abilities?.can_update !== true || (_local._kginicisCvsRechecking)}}",
-                                        "className": "paykginicis:inline-flex paykginicis:items-center paykginicis:gap-1.5 paykginicis:px-3 paykginicis:py-1.5 paykginicis:text-xs paykginicis:font-medium paykginicis:bg-blue-600 paykginicis:hover:bg-blue-700 paykginicis:text-white paykginicis:rounded-md paykginicis:transition-colors paykginicis:disabled:opacity-50 paykginicis:disabled:cursor-not-allowed"
+                                        "className": "pay-kginicis-btn pay-kginicis-btn-primary pay-kginicis-btn-sm paykginicis:gap-1.5 paykginicis:text-xs paykginicis:rounded-md"
                                     },
                                     "children": [
                                         {
@@ -1091,12 +1079,12 @@
                                     "responsive": {
                                         "640-": {
                                             "props": {
-                                                "className": "paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 pay-kginicis-hidden paykginicis:inline"
+                                                "className": "paykginicis:text-xs pay-kginicis-text-muted pay-kginicis-hidden paykginicis:inline"
                                             }
                                         }
                                     },
                                     "props": {
-                                        "className": "paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hidden pay-kginicis-hidden"
+                                        "className": "paykginicis:text-xs pay-kginicis-text-muted paykginicis:hidden pay-kginicis-hidden"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.order_verify_description"
                                 }
@@ -1140,7 +1128,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:block paykginicis:mb-0.5"
+                                                                "className": "paykginicis:text-xs pay-kginicis-text-muted paykginicis:block paykginicis:mb-0.5"
                                                             },
                                                             "text": "TID"
                                                         },
@@ -1206,7 +1194,7 @@
                                                     "props": {
                                                         "type": "button",
                                                         "disabled": "{{_local._kginicisQuerying && _local._kginicisActiveTid === payment.transaction_id}}",
-                                                        "className": "paykginicis:flex paykginicis:items-center paykginicis:gap-1.5 paykginicis:px-3 paykginicis:py-1.5 paykginicis:text-xs paykginicis:font-medium paykginicis:bg-blue-600 paykginicis:hover:bg-blue-700 paykginicis:text-white paykginicis:rounded-md paykginicis:transition-colors paykginicis:disabled:opacity-50 paykginicis:disabled:cursor-not-allowed paykginicis:whitespace-nowrap paykginicis:flex-shrink-0"
+                                                        "className": "paykginicis:flex pay-kginicis-btn pay-kginicis-btn-primary pay-kginicis-btn-sm paykginicis:gap-1.5 paykginicis:text-xs paykginicis:rounded-md paykginicis:whitespace-nowrap paykginicis:flex-shrink-0"
                                                     },
                                                     "children": [
                                                         {
@@ -1318,9 +1306,7 @@
                                                     "name": "Div",
                                                     "responsive": {
                                                         "640-": {
-                                                            "props": {
-                                                                "className": "paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
-                                                            }
+                                                            "classMerge": "paykginicis:grid-cols-[140px_1fr_140px_1fr]"
                                                         }
                                                     },
                                                     "props": {
@@ -1331,7 +1317,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                "className": "pay-kginicis-text-muted"
                                                             },
                                                             "text": "$t:sirsoft-pay_kginicis.admin.result_pay_method"
                                                         },
@@ -1347,7 +1333,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                "className": "pay-kginicis-text-muted"
                                                             },
                                                             "text": "$t:sirsoft-pay_kginicis.admin.result_total_price"
                                                         },
@@ -1363,7 +1349,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                "className": "pay-kginicis-text-muted"
                                                             },
                                                             "text": "$t:sirsoft-pay_kginicis.admin.result_auth_code"
                                                         },
@@ -1379,7 +1365,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                "className": "pay-kginicis-text-muted"
                                                             },
                                                             "text": "$t:sirsoft-pay_kginicis.admin.result_auth_date"
                                                         },
@@ -1395,7 +1381,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                "className": "pay-kginicis-text-muted"
                                                             },
                                                             "text": "$t:sirsoft-pay_kginicis.admin.result_moid"
                                                         },
@@ -1411,7 +1397,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                "className": "pay-kginicis-text-muted"
                                                             },
                                                             "text": "$t:sirsoft-pay_kginicis.admin.result_inquiry_at"
                                                         },
@@ -1427,7 +1413,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                "className": "pay-kginicis-text-muted"
                                                             },
                                                             "text": "$t:sirsoft-pay_kginicis.admin.result_result_code"
                                                         },
@@ -1469,9 +1455,7 @@
                                                             "name": "Div",
                                                             "responsive": {
                                                                 "640-": {
-                                                                    "props": {
-                                                                        "className": "paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
-                                                                    }
+                                                                    "classMerge": "paykginicis:grid-cols-[140px_1fr_140px_1fr]"
                                                                 }
                                                             },
                                                             "props": {
@@ -1482,7 +1466,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                        "className": "pay-kginicis-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.result_card_name"
                                                                 },
@@ -1498,7 +1482,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                        "className": "pay-kginicis-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.result_card_num"
                                                                 },
@@ -1514,7 +1498,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                        "className": "pay-kginicis-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.result_card_quota"
                                                                 },
@@ -1530,7 +1514,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                        "className": "pay-kginicis-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.result_card_interest"
                                                                 },
@@ -1594,9 +1578,7 @@
                                                             "name": "Div",
                                                             "responsive": {
                                                                 "640-": {
-                                                                    "props": {
-                                                                        "className": "paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
-                                                                    }
+                                                                    "classMerge": "paykginicis:grid-cols-[140px_1fr_140px_1fr]"
                                                                 }
                                                             },
                                                             "props": {
@@ -1607,7 +1589,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                        "className": "pay-kginicis-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.result_vbank_bank_name"
                                                                 },
@@ -1623,7 +1605,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                        "className": "pay-kginicis-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.result_vbank_num"
                                                                 },
@@ -1639,7 +1621,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                        "className": "pay-kginicis-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.result_vbank_holder"
                                                                 },
@@ -1655,7 +1637,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                        "className": "pay-kginicis-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.result_vbank_expire_date"
                                                                 },
@@ -1672,7 +1654,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{(_local._kginicisResult ?? kginicis_status.data)?._vbank_paid_at}}",
                                                                     "props": {
-                                                                        "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                        "className": "pay-kginicis-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.result_vbank_paid_at"
                                                                 },
@@ -1710,9 +1692,7 @@
                                                             "name": "Div",
                                                             "responsive": {
                                                                 "640-": {
-                                                                    "props": {
-                                                                        "className": "paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
-                                                                    }
+                                                                    "classMerge": "paykginicis:grid-cols-[140px_1fr_140px_1fr]"
                                                                 }
                                                             },
                                                             "props": {
@@ -1723,7 +1703,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                        "className": "pay-kginicis-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.result_bank_name"
                                                                 },
@@ -1739,7 +1719,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                        "className": "pay-kginicis-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.result_bank_acnt_num"
                                                                 },
@@ -1776,9 +1756,7 @@
                                                             "name": "Div",
                                                             "responsive": {
                                                                 "640-": {
-                                                                    "props": {
-                                                                        "className": "paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
-                                                                    }
+                                                                    "classMerge": "paykginicis:grid-cols-[140px_1fr_140px_1fr]"
                                                                 }
                                                             },
                                                             "props": {
@@ -1789,7 +1767,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                        "className": "pay-kginicis-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.result_hpp_num"
                                                                 },
@@ -1805,7 +1783,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                        "className": "pay-kginicis-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.result_hpp_corp"
                                                                 },
@@ -1842,9 +1820,7 @@
                                                             "name": "Div",
                                                             "responsive": {
                                                                 "640-": {
-                                                                    "props": {
-                                                                        "className": "paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
-                                                                    }
+                                                                    "classMerge": "paykginicis:grid-cols-[140px_1fr_140px_1fr]"
                                                                 }
                                                             },
                                                             "props": {
@@ -1855,7 +1831,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                        "className": "pay-kginicis-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.result_buyer_name"
                                                                 },
@@ -1871,7 +1847,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                        "className": "pay-kginicis-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.result_buyer_email"
                                                                 },
@@ -1887,7 +1863,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                        "className": "pay-kginicis-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.result_buyer_tel"
                                                                 },
@@ -1924,9 +1900,7 @@
                                                             "name": "Div",
                                                             "responsive": {
                                                                 "640-": {
-                                                                    "props": {
-                                                                        "className": "paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
-                                                                    }
+                                                                    "classMerge": "paykginicis:grid-cols-[140px_1fr_140px_1fr]"
                                                                 }
                                                             },
                                                             "props": {
@@ -1937,7 +1911,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                        "className": "pay-kginicis-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.result_cancel_price"
                                                                 },
@@ -1953,7 +1927,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                                        "className": "pay-kginicis-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.result_cancel_date"
                                                                 },
@@ -2066,7 +2040,7 @@
                                                                                             "type": "basic",
                                                                                             "name": "Td",
                                                                                             "props": {
-                                                                                                "className": "paykginicis:px-2 paykginicis:py-1.5 paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:font-mono"
+                                                                                                "className": "paykginicis:px-2 paykginicis:py-1.5 pay-kginicis-text-muted paykginicis:font-mono"
                                                                                             },
                                                                                             "text": "{{pcIdx + 1}}"
                                                                                         },
@@ -2211,12 +2185,12 @@
                                     "responsive": {
                                         "640-": {
                                             "props": {
-                                                "className": "paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 pay-kginicis-hidden paykginicis:inline"
+                                                "className": "paykginicis:text-xs pay-kginicis-text-muted pay-kginicis-hidden paykginicis:inline"
                                             }
                                         }
                                     },
                                     "props": {
-                                        "className": "paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hidden pay-kginicis-hidden"
+                                        "className": "paykginicis:text-xs pay-kginicis-text-muted paykginicis:hidden pay-kginicis-hidden"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_description"
                                 }
@@ -2266,7 +2240,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                "className": "pay-kginicis-text-muted"
                                             },
                                             "text": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_registered_at"
                                         },
@@ -2282,7 +2256,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                "className": "pay-kginicis-text-muted"
                                             },
                                             "text": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_invoice_info"
                                         },
@@ -2298,7 +2272,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                "className": "pay-kginicis-text-muted"
                                             },
                                             "text": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_courier_info"
                                         },
@@ -2314,7 +2288,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                                                "className": "pay-kginicis-text-muted"
                                             },
                                             "text": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_recv_addr"
                                         },
@@ -2348,7 +2322,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:w-16 paykginicis:flex-shrink-0"
+                                                "className": "paykginicis:text-xs pay-kginicis-text-muted paykginicis:w-16 paykginicis:flex-shrink-0"
                                             },
                                             "text": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_invoice_label"
                                         },
@@ -2386,7 +2360,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:w-16 paykginicis:flex-shrink-0"
+                                                "className": "paykginicis:text-xs pay-kginicis-text-muted paykginicis:w-16 paykginicis:flex-shrink-0"
                                             },
                                             "text": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_courier_label"
                                         },
@@ -2632,12 +2606,12 @@
                                     "responsive": {
                                         "640-": {
                                             "props": {
-                                                "className": "paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 pay-kginicis-hidden paykginicis:inline"
+                                                "className": "paykginicis:text-xs pay-kginicis-text-muted pay-kginicis-hidden paykginicis:inline"
                                             }
                                         }
                                     },
                                     "props": {
-                                        "className": "paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hidden pay-kginicis-hidden"
+                                        "className": "paykginicis:text-xs pay-kginicis-text-muted paykginicis:hidden pay-kginicis-hidden"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_description"
                                 }
@@ -2715,7 +2689,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "check-circle",
-                                        "className": "paykginicis:text-sm paykginicis:leading-none paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:flex-shrink-0"
+                                        "className": "paykginicis:text-sm paykginicis:leading-none pay-kginicis-text-muted paykginicis:flex-shrink-0"
                                     }
                                 },
                                 {

@@ -102,7 +102,7 @@
           </on>
         </input>
         <!-- 고른 상태로 신청서 전체를 옮긴다(상품 하나하나는 아래 목록의 일괄 바가 맡는다). 선택지는 심사(결제 요청·승인·보류·반려)뿐이고 눌러도 거절될 값은 서버가 애초에 싣지 않는다 — 회수·발송 단계는 상품 칸, 완료는 아래 [완료 처리] 가 입구다. 반려는 사유가 비면 보내지 않는다. -->
-        <button data-ref="cts_003_apply" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{claim?.data?.abilities?.can_update_status !== true || (_local.claimBulkStatus ?? '') === '' || _local.isTransitioningClaim === true}}">
+        <button data-ref="cts_003_apply" type="button" class="ecommerce-btn ecommerce-btn-primary" disabled="{{claim?.data?.abilities?.can_update_status !== true || (_local.claimBulkStatus ?? '') === '' || _local.isTransitioningClaim === true}}">
           <on type="click">
             <action handler="sirsoft-ecommerce.executeClaimStatusTransition" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" status="{{_local.claimBulkStatus ?? ''}}" rejectReason="{{_local.claimRejectReason ?? ''}}">
               <fail>
@@ -162,7 +162,7 @@
         </div>
         <div class="ecommerce:flex-1"/>
         <!-- 「송장만 저장」(R7) — 고른 행에 송장만 적고 상태는 옮기지 않는다. 처음 누르면 방향·택배사·운송장 칸을 열고(공통 송장 미리 채움), 칸이 열린 뒤 누르면 수량 확인 모달로 간다 — 수량을 줄이면 그 행이 쪼개져 지정 수량에만 송장이 붙는다(R4). 교환·반품만이다(환불에는 물건이 오가지 않는다). -->
-        <button data-ref="ci_009_tracking_only" data-if="{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '')}}" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_local.isUpdatingClaimItems === true || (_local.selectedClaimItems ?? []).length === 0 || claim?.data?.abilities?.can_update_status !== true}}">
+        <button data-ref="ci_009_tracking_only" data-if="{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '')}}" type="button" class="ecommerce-btn ecommerce-btn-outline" disabled="{{_local.isUpdatingClaimItems === true || (_local.selectedClaimItems ?? []).length === 0 || claim?.data?.abilities?.can_update_status !== true}}">
           <on type="click">
             <action handler="sirsoft-ecommerce.openClaimItemTrackingOnly" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" itemIds="{{_local.selectedClaimItems ?? []}}" trackingMode="{{_local.itemTrackingMode === true}}" direction="{{(claim?.data?.claim?.claim_type ?? '') === 'exchange' ? (_local.itemTrackingDirection ?? 'collection') : 'collection'}}" carrierId="{{_local.itemCarrierId ?? ''}}" trackingNumber="{{_local.itemTrackingNumber ?? ''}}" carriers="{{claim?.data?.carriers ?? []}}" rows="{{claim?.data?.claim?.items ?? []}}">
               <fail>
@@ -175,8 +175,8 @@
           <icon data-if="{{_local.claimItemsUpdateKind === 'tracking'}}" name="spinner" class="ecommerce-spinner-sm ecommerce:mr-1"/>
           <span>$t:sirsoft-ecommerce.admin.claim.detail.items.tracking_only</span>
         </button>
-        <button data-ref="ci_004_item_bulk_apply" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_local.isUpdatingClaimItems === true || (_local.selectedClaimItems ?? []).length === 0 || claim?.data?.abilities?.can_update_status !== true}}">
-          <responsive on="portable" class="ecommerce:w-full ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"/>
+        <button data-ref="ci_004_item_bulk_apply" type="button" class="ecommerce-btn ecommerce-btn-primary" disabled="{{_local.isUpdatingClaimItems === true || (_local.selectedClaimItems ?? []).length === 0 || claim?.data?.abilities?.can_update_status !== true}}">
+          <responsive on="portable" class-merge="ecommerce:w-full"/>
           <on type="click">
             <!-- 수량 확인 모달을 연다 (§4-6) — 수량 입력을 이 바에 두면 행이 여럿일 때 수량이 하나뿐이라 '3 중 2, 5 중 1' 을 표현할 수 없다. 완료 전이는 그 모달을 건너뛰고 완료 처리 모달로 간다 (D26) — 분기는 핸들러가 한다. 경로 세그먼트는 서버가 준 값을 그대로 쓴다: 화면이 `claim_type + 's'` 로 조립하면 그 조립이 세그먼트 규칙의 두 번째 출처가 된다. -->
             <action handler="sirsoft-ecommerce.openClaimItemQuantityConfirm" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" claimNumber="{{claim?.data?.claim?.claim_number ?? ''}}" requesterName="{{claim?.data?.claim?.requester_name ?? ''}}" itemIds="{{_local.selectedClaimItems ?? []}}" status="{{_local.itemBulkStatus ?? ''}}" rejectReason="{{_local.itemRejectReason ?? ''}}" carrierId="{{_local.itemCarrierId ?? ''}}" trackingNumber="{{_local.itemTrackingNumber ?? ''}}" carriers="{{claim?.data?.carriers ?? []}}" rows="{{claim?.data?.claim?.items ?? []}}" completeDefaults="{{claim?.data?.complete_defaults ?? {} }}">
@@ -200,7 +200,7 @@
             <div class="ecommerce:flex ecommerce:items-start ecommerce:gap-3">
               <img data-if="{{!!row.thumbnail_url}}" src="{{row.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{row.product_name ?? ''}}" class="ecommerce:w-12 ecommerce:h-12 ecommerce:rounded ecommerce:object-cover ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700"/>
               <div data-if="{{!row.thumbnail_url}}" class="ecommerce:w-12 ecommerce:h-12 ecommerce:rounded ecommerce:flex-shrink-0 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:flex ecommerce:items-center ecommerce:justify-center">
-                <icon name="image" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+                <icon name="image" class="ecommerce-text-muted"/>
               </div>
               <div class="ecommerce:min-w-0">
                 <div class="ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{row.product_name ?? '-'}}</div>
@@ -234,17 +234,17 @@
           <cell>
             <div class="ecommerce:space-y-1 ecommerce:text-xs">
               <div data-if="{{row.collection_tracking_number !== undefined}}" class="ecommerce-flex-center ecommerce:gap-1 ecommerce:flex-wrap">
-                <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:defer:sirsoft-ecommerce.admin.claim.detail.items.collection_short</span>
+                <span class="ecommerce-text-muted">$t:defer:sirsoft-ecommerce.admin.claim.detail.items.collection_short</span>
                 <span data-if="{{!!row.collection_tracking_number}}" class="ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{(row.collection_carrier_name ?? '') + ' ' + row.collection_tracking_number}}</span>
                 <a data-if="{{!!row.collection_tracking_url}}" href="{{row.collection_tracking_url}}" target="_blank" rel="noopener noreferrer" class="ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline">$t:defer:sirsoft-ecommerce.admin.claim.detail.shipping.track</a>
-                <span data-if="{{!row.collection_tracking_number}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">-</span>
+                <span data-if="{{!row.collection_tracking_number}}" class="ecommerce-text-muted">-</span>
                 <span data-if="{{!!row.collected_at_formatted}}" class="ecommerce:text-green-700 ecommerce:dark:text-green-400">$t:defer:sirsoft-ecommerce.admin.claim.detail.items.arrived_at|at={{row.collected_at_formatted}}</span>
               </div>
               <div data-if="{{row.redelivery_tracking_number !== undefined}}" class="ecommerce-flex-center ecommerce:gap-1 ecommerce:flex-wrap">
-                <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:defer:sirsoft-ecommerce.admin.claim.detail.items.redelivery_short</span>
+                <span class="ecommerce-text-muted">$t:defer:sirsoft-ecommerce.admin.claim.detail.items.redelivery_short</span>
                 <span data-if="{{!!row.redelivery_tracking_number}}" class="ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{(row.redelivery_carrier_name ?? '') + ' ' + row.redelivery_tracking_number}}</span>
                 <a data-if="{{!!row.redelivery_tracking_url}}" href="{{row.redelivery_tracking_url}}" target="_blank" rel="noopener noreferrer" class="ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline">$t:defer:sirsoft-ecommerce.admin.claim.detail.shipping.track</a>
-                <span data-if="{{!row.redelivery_tracking_number}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">-</span>
+                <span data-if="{{!row.redelivery_tracking_number}}" class="ecommerce-text-muted">-</span>
                 <span data-if="{{!!row.redelivered_at_formatted}}" class="ecommerce:text-green-700 ecommerce:dark:text-green-400">$t:defer:sirsoft-ecommerce.admin.claim.detail.items.arrived_at|at={{row.redelivered_at_formatted}}</span>
               </div>
               <badge data-type="composite" data-if="{{claim?.data?.claim?.is_advance_exchange === true &amp;&amp; !!row.collection_state_label}}" variant="{{row.collection_state_variant ?? 'secondary'}}" size="sm">{{row.collection_state_label}}</badge>
@@ -306,7 +306,7 @@
             </on>
             $t:sirsoft-ecommerce.admin.claim.detail.completion.restore_stock
           </button>
-        <button data-ref="cmpl_002_button" data-if="{{claim?.data?.claim?.is_final !== true}}" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{claim?.data?.abilities?.can_update_status !== true || ((claim?.data?.completable_item_count ?? 0) === 0 &amp;&amp; (claim?.data?.unreturned_eligible_count ?? 0) === 0)}}">
+        <button data-ref="cmpl_002_button" data-if="{{claim?.data?.claim?.is_final !== true}}" type="button" class="ecommerce-btn ecommerce-btn-primary" disabled="{{claim?.data?.abilities?.can_update_status !== true || ((claim?.data?.completable_item_count ?? 0) === 0 &amp;&amp; (claim?.data?.unreturned_eligible_count ?? 0) === 0)}}">
           <on type="click">
             <!-- 목록·상품 단위와 같은 모달 파일을 연다 (D26). 신청서 단위 진입점이므로 `item_ids` 를 싣지 않는다 — 생략하면 서버가 그 신청서의 완료 가능 상품 전체를 대상으로 본다. 초기 선택값은 상세 응답(`complete_defaults`)이 나른다: 설정 엔드포인트는 `settings.read` 게이트라 클레임 권한만 가진 운영자에게는 403 이 되고, 상점이 꺼 둔 기본값이 조용히 계약 기본값으로 되돌아간다. -->
             <action handler="sirsoft-ecommerce.openClaimDetailComplete" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" claimNumber="{{claim?.data?.claim?.claim_number ?? ''}}" requesterName="{{claim?.data?.claim?.requester_name ?? ''}}" rows="{{claim?.data?.claim?.items ?? []}}" completeDefaults="{{claim?.data?.complete_defaults ?? {} }}"/>

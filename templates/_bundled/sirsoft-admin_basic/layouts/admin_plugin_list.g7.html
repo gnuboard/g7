@@ -103,7 +103,7 @@
             <refetch-data-source dataSourceId="plugins"/>
           </on>
         </icon-button>
-        <button data-ref="check_updates_button" class="flex-center gap-2 px-4 h-10 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isCheckingUpdates || plugins?.data?.abilities?.can_install !== true}}" type="button">
+        <button data-ref="check_updates_button" class="flex-center btn btn-secondary h-10" disabled="{{_global.isCheckingUpdates || plugins?.data?.abilities?.can_install !== true}}" type="button">
           <responsive on="portable" class="hidden"/>
           <on type="click">
             <!-- 업데이트 확인 — 서버가 저장소를 훑어 최신 버전을 갱신하므로 끝나면 목록을 다시 받는다.
@@ -130,7 +130,7 @@
           <icon data-if="{{_global.isCheckingUpdates}}" name="spinner" size="sm" class="animate-spin"/>
           <span>$t:admin.plugins.actions.check_updates</span>
         </button>
-        <button type="button" data-ref="manual_install_button" class="flex-center gap-2 px-4 h-10 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{plugins?.data?.abilities?.can_install !== true || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
+        <button type="button" data-ref="manual_install_button" class="flex-center btn btn-secondary h-10" disabled="{{plugins?.data?.abilities?.can_install !== true || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
           <responsive on="portable" class="hidden"/>
           <on type="click">
             <open-modal target="plugin_manual_install_modal"/>
@@ -138,7 +138,7 @@
           <icon name="upload" class="text-xl"/>
           <span>$t:admin.plugins.manual_install</span>
         </button>
-        <button type="button" data-ref="marketplace_button" data-if="{{false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+        <button type="button" data-ref="marketplace_button" data-if="{{false}}" class="flex-center btn btn-primary">
           <responsive on="portable" class="hidden"/>
           <icon name="globe" class="text-xl"/>
           <span>$t:admin.plugins.marketplace</span>
@@ -146,14 +146,14 @@
       </page-header>
       <div data-ref="mobile_action_buttons" class="hidden">
         <responsive on="portable" class="flex-center gap-2 -mt-4 mb-4"/>
-        <button type="button" data-ref="mobile_manual_install_button" class="flex-center flex-1 justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{plugins?.data?.abilities?.can_install !== true || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
+        <button type="button" data-ref="mobile_manual_install_button" class="flex-center flex-1 btn btn-secondary" disabled="{{plugins?.data?.abilities?.can_install !== true || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
           <on type="click">
             <open-modal target="plugin_manual_install_modal"/>
           </on>
           <icon name="upload" class="text-xl"/>
           <span>$t:admin.plugins.manual_install</span>
         </button>
-        <button type="button" data-ref="mobile_marketplace_button" data-if="{{false}}" class="flex-center flex-1 justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+        <button type="button" data-ref="mobile_marketplace_button" data-if="{{false}}" class="flex-center flex-1 btn btn-primary">
           <icon name="globe" class="text-xl"/>
           <span>$t:admin.plugins.marketplace</span>
         </button>

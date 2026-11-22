@@ -732,7 +732,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
                             : 'fa-regular fa-folder'
                     }
                     className={`text-xs w-4 shrink-0 ${
-                      item.groupKind ? 'text-gray-500 dark:text-gray-400' : 'text-amber-600 dark:text-amber-400'
+                      item.groupKind ? 'text-muted' : 'text-amber-600 dark:text-amber-400'
                     }`}
                   />
                   <Span className={`flex-1 min-w-0 truncate ${rowText} text-gray-700 dark:text-gray-200`}>
@@ -755,7 +755,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
                     </Span>
                   )}
                   {dirtyCount === 0 && fileCount > 0 && (
-                    <Span className="text-[10px] text-gray-500 dark:text-gray-400 shrink-0">{fileCount}</Span>
+                    <Span className="text-[10px] text-muted shrink-0">{fileCount}</Span>
                   )}
                 </>
               ),
@@ -845,7 +845,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
                       tabIndex={-1}
                       aria-label={t('admin.templates.layout_edit.file.rename')}
                       title={t('admin.templates.layout_edit.file.rename')}
-                      className="px-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer"
+                      className="px-1 text-muted hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer"
                       onClick={(event: React.MouseEvent) => {
                         event.stopPropagation();
                         onRename?.(node.key);
@@ -858,7 +858,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
                       tabIndex={-1}
                       aria-label={t('admin.templates.layout_edit.file.delete')}
                       title={t('admin.templates.layout_edit.file.delete')}
-                      className="px-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer"
+                      className="px-1 text-muted hover:text-red-600 dark:hover:text-red-400 cursor-pointer"
                       onClick={(event: React.MouseEvent) => {
                         event.stopPropagation();
                         onDelete?.(node.key);
@@ -886,10 +886,10 @@ export const FileTree: React.FC<FileTreeProps> = ({
                   ariaLabel: t('admin.templates.layout_edit.search.goto_line', { line: line.line }),
                   children: (
                     <>
-                      <Span className="font-mono text-[11px] text-gray-500 dark:text-gray-400 w-9 text-right shrink-0">
+                      <Span className="font-mono text-[11px] text-muted w-9 text-right shrink-0">
                         {line.line}
                       </Span>
-                      <Span className="font-mono text-[11px] text-gray-500 dark:text-gray-400 flex-1 min-w-0 truncate">
+                      <Span className="font-mono text-[11px] text-muted flex-1 min-w-0 truncate">
                         <HighlightText text={line.preview ?? ''} keyword={searchKeyword} />
                       </Span>
                     </>
@@ -950,10 +950,10 @@ export const FileTree: React.FC<FileTreeProps> = ({
                     name={open ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-right'}
                     className="text-[10px] w-3 text-gray-500 dark:text-gray-500 shrink-0"
                   />
-                  <Span className="flex-1 min-w-0 truncate text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+                  <Span className="flex-1 min-w-0 truncate text-[11px] font-semibold text-muted">
                     {t(section.labelKey)}
                   </Span>
-                  <Span className="text-[10px] text-gray-500 dark:text-gray-400 shrink-0">{section.fileCount}</Span>
+                  <Span className="text-[10px] text-muted shrink-0">{section.fileCount}</Span>
                 </>
               ),
             })}
@@ -964,7 +964,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
 
       {!hasVisibleFiles && keyword && (
         <Div className="p-6 text-center">
-          <Span className="block text-sm text-gray-500 dark:text-gray-400">
+          <Span className="block text-sm text-muted">
             {t('admin.templates.layout_edit.search.empty', { keyword: searchKeyword })}
           </Span>
           {onClearSearch && (
@@ -982,7 +982,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
 
       {!hasVisibleFiles && !keyword && (
         <Div className="p-6 text-center">
-          <Span className="block text-sm text-gray-500 dark:text-gray-400">
+          <Span className="block text-sm text-muted">
             {t('admin.templates.layout_edit.tree.empty')}
           </Span>
           {canManage && onCreateFile && (

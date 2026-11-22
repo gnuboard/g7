@@ -150,9 +150,9 @@
             <p class="text-sm">$t:admin.settings.upload.thumbnail.storage.load_failed</p>
           </div>
           <div data-each="loc in {{_computed.thumbnailLocations ?? []}}" data-testid="{{'thumbnail-location-' + loc.kind}}" class="flex flex-col gap-3 py-3 border-b border-gray-100 dark:border-gray-700">
-            <responsive on="desktop" class="flex flex-row items-center gap-3 py-3 border-b border-gray-100 dark:border-gray-700"/>
+            <responsive on="desktop" class-merge="flex-row items-center"/>
             <div class="shrink-0 min-w-0">
-              <responsive on="desktop" class="w-1/4 shrink-0 min-w-0"/>
+              <responsive on="desktop" class-merge="w-1/4"/>
               <div class="text-sm font-medium text-gray-800 dark:text-gray-200">{{$t('admin.settings.upload.thumbnail.storage.kinds.' + loc.kind)}}</div>
               <p class="text-hint break-words">{{$t('admin.settings.upload.thumbnail.storage.kind_hints.' + loc.kind)}}</p>
             </div>
@@ -384,7 +384,7 @@
               <tr data-each="row, rowIdx in {{_local.form?.upload?.thumbnail_presets_rows ?? []}}" data-testid="{{'thumbnail-preset-row-' + (row.name || rowIdx)}}" class="border-t border-gray-200 dark:border-gray-700 align-top">
                 <td class="px-2 py-2 min-w-[120px]">
                   <span data-if="{{row.kind !== 'custom' &amp;&amp; !!$localized(row.label)}}" class="block text-gray-800 dark:text-gray-200 break-words" data-testid="{{'thumbnail-preset-label-' + rowIdx}}">{{$localized(row.label)}}</span>
-                  <span data-if="{{row.kind !== 'custom'}}" class="{{$localized(row.label) ? 'block font-mono text-xs text-gray-500 dark:text-gray-400 break-all' : 'font-mono text-gray-800 dark:text-gray-200 break-all'}}" data-testid="{{'thumbnail-preset-ident-' + rowIdx}}">{{row.name}}</span>
+                  <span data-if="{{row.kind !== 'custom'}}" class="{{$localized(row.label) ? 'block font-mono text-xs text-muted break-all' : 'font-mono text-gray-800 dark:text-gray-200 break-all'}}" data-testid="{{'thumbnail-preset-ident-' + rowIdx}}">{{row.name}}</span>
                   <input data-if="{{row.kind === 'custom'}}" type="text" value="{{row.name ?? ''}}" placeholder="$t:admin.settings.upload.thumbnail.presets.placeholder.name" aria-label="$t:common.row_cell|row={{row.name || $t('common.row_n', {n: rowIdx + 1})}}|column={{$t('admin.settings.upload.thumbnail.presets.col.name')}}" disabled="{{_computed.isReadOnly}}" class="input font-mono {{_computed.thumbnailPresetErrors?.rows?.[rowIdx]?.name ? 'input-error' : ''}}" data-testid="{{'thumbnail-preset-name-' + rowIdx}}">
                     <on type="change">
                       <!-- 이름 칸 — 앞뒤 공백을 걷어 넣는다. 형식(영소문자 시작·32자 이하·예약어 금지) 검사는 저장 때 서버가 하고 오류는 이 칸 아래에 단다. -->

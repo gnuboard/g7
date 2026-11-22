@@ -51,7 +51,7 @@
   <slot name="content">
     <div class="min-h-[60vh] flex items-center justify-center py-12 px-4">
       <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
-        <responsive on="portable" class="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"/>
+        <responsive on="portable" class-merge="p-6"/>
         <!-- S4 — render_hint = text_code (OTP 코드 입력) -->
         <div data-if="{{(_local.render_hint ?? 'text_code') === 'text_code'}}">
           <div class="text-center mb-6">
@@ -141,7 +141,7 @@
               <span data-if="{{(_local.resendCooldown ?? 0) > 0}}">$t:user.identity.challenge.resend_cooldown|seconds={{_local.resendCooldown ?? 0}}</span>
               <span data-if="{{(_local.resendCooldown ?? 0) <= 0}}">$t:user.identity.challenge.resend_link</span>
             </button>
-            <p class="text-xs text-gray-500 dark:text-gray-400 text-center">$t:user.identity.challenge.check_spam</p>
+            <p class="text-xs text-muted text-center">$t:user.identity.challenge.check_spam</p>
           </div>
         </div>
         <!-- S6 — render_hint = external_redirect (외부 리다이렉트 로딩). redirect 발화는 root init_actions 의 apiCall onSuccess + apiCall 우회 경로 보강에서 처리 (init_actions 는 레이아웃 root 전용). -->

@@ -34,8 +34,8 @@
   </permissions>
   <slot name="content">
     <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="cdncf-settings">
-      <responsive on="640-1023" class="cdncf-settings cdncf-settings--md"/>
-      <responsive on="1024-" class="cdncf-settings cdncf-settings--lg"/>
+      <responsive on="640-1023" class-merge="cdncf-settings--md"/>
+      <responsive on="1024-" class-merge="cdncf-settings--lg"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-cdn_cloudfront.settings.title" description="$t:sirsoft-cdn_cloudfront.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="cdncf-alert">
         <icon name="lock" class="cdncf-alert__icon"/>
@@ -61,7 +61,7 @@
         </div>
         <div data-ref="section_basic_fields" class="cdncf-card__body">
           <div data-ref="field_cdn_base_url" class="cdncf-field-row">
-            <responsive on="1024-" class="cdncf-field-row cdncf-field-row--wide"/>
+            <responsive on="1024-" class-merge="cdncf-field-row--wide"/>
             <div class="cdncf-field__meta">
               <label class="cdncf-label" htmlFor="cdncf_cdn_base_url">$t:sirsoft-cdn_cloudfront.settings.fields.cdn_base_url.label</label>
               <p class="cdncf-hint">$t:sirsoft-cdn_cloudfront.settings.fields.cdn_base_url.hint</p>
@@ -72,7 +72,7 @@
             </div>
           </div>
           <div data-ref="field_distribution_id" class="cdncf-field-row">
-            <responsive on="1024-" class="cdncf-field-row cdncf-field-row--wide"/>
+            <responsive on="1024-" class-merge="cdncf-field-row--wide"/>
             <div class="cdncf-field__meta">
               <label class="cdncf-label" htmlFor="cdncf_distribution_id">$t:sirsoft-cdn_cloudfront.settings.fields.distribution_id.label</label>
               <p class="cdncf-hint">$t:sirsoft-cdn_cloudfront.settings.fields.distribution_id.hint</p>
@@ -91,7 +91,7 @@
         </div>
         <div data-ref="section_purge_fields" class="cdncf-card__body">
           <div data-ref="field_purge_enabled" class="cdncf-field-row">
-            <responsive on="1024-" class="cdncf-field-row cdncf-field-row--wide"/>
+            <responsive on="1024-" class-merge="cdncf-field-row--wide"/>
             <div class="cdncf-field__meta">
               <label class="cdncf-label" htmlFor="cdncf_purge_enabled">$t:sirsoft-cdn_cloudfront.settings.fields.purge_enabled.label</label>
               <p class="cdncf-hint">$t:sirsoft-cdn_cloudfront.settings.fields.purge_enabled.hint</p>
@@ -101,7 +101,7 @@
             </div>
           </div>
           <div data-ref="field_access_key" class="cdncf-field-row">
-            <responsive on="1024-" class="cdncf-field-row cdncf-field-row--wide"/>
+            <responsive on="1024-" class-merge="cdncf-field-row--wide"/>
             <div class="cdncf-field__meta">
               <label class="cdncf-label" htmlFor="cdncf_access_key">$t:sirsoft-cdn_cloudfront.settings.fields.access_key.label</label>
               <p class="cdncf-hint">$t:sirsoft-cdn_cloudfront.settings.fields.access_key.hint</p>
@@ -112,7 +112,7 @@
             </div>
           </div>
           <div data-ref="field_secret_key" class="cdncf-field-row">
-            <responsive on="1024-" class="cdncf-field-row cdncf-field-row--wide"/>
+            <responsive on="1024-" class-merge="cdncf-field-row--wide"/>
             <div class="cdncf-field__meta">
               <label class="cdncf-label" htmlFor="cdncf_secret_key">$t:sirsoft-cdn_cloudfront.settings.fields.secret_key.label</label>
               <p class="cdncf-hint">$t:sirsoft-cdn_cloudfront.settings.fields.secret_key.hint</p>
@@ -155,7 +155,7 @@
             </button>
           </div>
           <div data-ref="connection_result" data-if="{{!!_local.connectionResult}}" role="status" class="cdncf-stat-grid">
-            <responsive on="1024-" class="cdncf-stat-grid cdncf-stat-grid--wide"/>
+            <responsive on="1024-" class-merge="cdncf-stat-grid--wide"/>
             <div class="cdncf-stat">
               <span class="cdncf-stat__label">$t:sirsoft-cdn_cloudfront.settings.connection.status</span>
               <span data-ref="connection_status" class="cdncf-stat__value">{{_local.connectionResult?.status === 'Deployed' ? '$t:sirsoft-cdn_cloudfront.settings.connection.status_deployed' : (_local.connectionResult?.status === 'InProgress' ? '$t:sirsoft-cdn_cloudfront.settings.connection.status_in_progress' : (_local.connectionResult?.status ?? '-'))}}</span>
@@ -189,7 +189,7 @@
           <p data-ref="purge_status_forbidden" data-if="{{_local.purgeStatusForbidden === true}}" role="status" class="cdncf-hint">$t:sirsoft-cdn_cloudfront.settings.purge_status.forbidden</p>
           <p data-ref="purge_status_not_ready" data-if="{{cdncfPurgeStatus?.data?.purge_ready === false}}" role="status" class="cdncf-alert cdncf-alert--warning-inline">$t:sirsoft-cdn_cloudfront.settings.purge_status.not_ready</p>
           <div data-ref="purge_status_stats" data-if="{{_local.purgeStatusForbidden !== true}}" class="cdncf-stat-grid">
-            <responsive on="1024-" class="cdncf-stat-grid cdncf-stat-grid--wide"/>
+            <responsive on="1024-" class-merge="cdncf-stat-grid--wide"/>
             <div class="cdncf-stat">
               <span class="cdncf-stat__label">$t:sirsoft-cdn_cloudfront.settings.purge_status.pending</span>
               <span data-ref="purge_status_pending" class="cdncf-stat__value">{{cdncfPurgeStatus?.data?.pending ?? 0}}</span>

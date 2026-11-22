@@ -104,7 +104,7 @@ $t:sirsoft-ecommerce.admin.user_addresses.filter.member</span>
           <div data-ref="member_filter_chips" data-if="{{(_local.filter?.memberOptions ?? []).length > 0}}" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-1">
             <div data-each="member, memberIndex in {{_local.filter?.memberOptions ?? []}}" class="ecommerce-flex-center ecommerce:gap-1 ecommerce:px-2 ecommerce:py-0.5 ecommerce:text-xs ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-full">
               <span>{{member.label}}</span>
-              <button type="button" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:hover:text-gray-600 ecommerce:dark:hover:text-gray-200" aria-label="$t:sirsoft-ecommerce.common.remove">
+              <button type="button" class="ecommerce-text-muted ecommerce:hover:text-gray-600 ecommerce:dark:hover:text-gray-200" aria-label="$t:sirsoft-ecommerce.common.remove">
                 <on type="click">
                   <!-- 칩 하나만 뗀다 — 두 칸(uuid·이름표)을 같은 손짓으로 함께 줄여야 어긋나지 않는다 -->
                   <set-state target="_local" filter.memberUuids="{{(_local.filter?.memberUuids ?? []).filter(v => v !== member.value)}}" filter.memberOptions="{{(_local.filter?.memberOptions ?? []).filter(o => o.value !== member.value)}}"/>
@@ -129,7 +129,7 @@ $t:sirsoft-ecommerce.admin.user_addresses.filter.created_at</span>
                 <set-state target="_local" filter.startDate="{{$event.target.value}}" filter.dateQuick=""/>
               </on>
             </input>
-            <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">~</span>
+            <span class="ecommerce-text-muted">~</span>
             <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.user_addresses.filter.created_at')}}" type="date" name="endDate" value="{{_local.filter.endDate || ''}}" class="ecommerce-input ecommerce:w-36">
               <on type="change">
                 <!-- 등록일 종료. 시작일과 같은 이유로 빠른 기간 표시를 지운다. -->
@@ -220,14 +220,14 @@ $t:sirsoft-ecommerce.admin.user_addresses.filter.is_default</span>
     <div data-ref="filter_actions" class="ecommerce-flex-center ecommerce:justify-center ecommerce:gap-2 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-4 ecommerce:mt-4">
       <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:w-full ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-4 ecommerce:mt-4"/>
       <button data-ref="search_button" type="button" class="ecommerce-btn ecommerce-btn-primary">
-        <responsive on="portable" class="ecommerce-btn ecommerce-btn-primary ecommerce:flex-1"/>
+        <responsive on="portable" class-merge="ecommerce:flex-1"/>
         <on type="click">
           <action-ref name="searchUserAddresses"/>
         </on>
         $t:sirsoft-ecommerce.admin.user_addresses.filter.search
       </button>
       <button data-ref="reset_button" type="button" class="ecommerce-btn ecommerce-btn-outline">
-        <responsive on="portable" class="ecommerce-btn ecommerce-btn-outline ecommerce:flex-1"/>
+        <responsive on="portable" class-merge="ecommerce:flex-1"/>
         <on type="click">
           <action-ref name="resetUserAddressFilters"/>
         </on>

@@ -92,8 +92,8 @@
   </init>
   <toast data-type="composite" data-ref="global_toast" toasts="{{_global.toasts}}" position="bottom-center" :duration="5000"/>
   <div data-ref="login_page_wrapper" class="flex-center min-h-screen justify-center bg-gray-50 dark:bg-gray-900 px-4">
-    <responsive on="640-1023" class="flex-center min-h-screen justify-center bg-gray-50 dark:bg-gray-900 px-6"/>
-    <responsive on="desktop" class="flex-center min-h-screen justify-center bg-gray-50 dark:bg-gray-900 px-8"/>
+    <responsive on="640-1023" class-merge="px-6"/>
+    <responsive on="desktop" class-merge="px-8"/>
     <on event="mount">
       <!-- 세션 만료로 튕겨 온 경우에만 안내를 띄운다. 직접 로그인 화면에 온 사람에게는 아무 말도 하지
            않는다 — 사유는 코어가 리다이렉트할 때 쿼리로 실어 준다. -->
@@ -232,7 +232,7 @@
             <span data-if="{{!!_global.adminLoginDiscovery?.label &amp;&amp; !!$localized(_global.adminLoginDiscovery.label)}}">$t:auth.login.external.discovered_notice|method={{$localized(_global.adminLoginDiscovery?.label)}}</span>
             <span data-if="{{!_global.adminLoginDiscovery?.label || !$localized(_global.adminLoginDiscovery.label)}}">$t:auth.login.external.discovered_notice_company</span>
           </p>
-          <button data-ref="login_discovery_continue" type="button" class="flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white transition-colors duration-200 justify-center gap-2 cursor-pointer">
+          <button data-ref="login_discovery_continue" type="button" class="flex-center w-full btn btn-primary py-3">
             <on type="click">
               <!-- 판정이 준 외부 수단 주소로 보낸다 — 돌아올 곳(redirect)이 있으면 이어 붙인다 -->
               <action handler="redirect" url="{{_global.adminLoginDiscovery.redirect_url + (query.redirect ? (_global.adminLoginDiscovery.redirect_url.includes('?') ? '&amp;' : '?') + 'redirect=' + encodeURIComponent(query.redirect) : '')}}"/>
@@ -240,7 +240,7 @@
             <span data-if="{{!!_global.adminLoginDiscovery?.label &amp;&amp; !!$localized(_global.adminLoginDiscovery.label)}}">$t:auth.login.external.continue_with|method={{$localized(_global.adminLoginDiscovery?.label)}}</span>
             <span data-if="{{!_global.adminLoginDiscovery?.label || !$localized(_global.adminLoginDiscovery.label)}}">$t:auth.login.external.continue_with_company</span>
           </button>
-          <button data-ref="login_discovery_reset" type="button" class="w-full text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer">
+          <button data-ref="login_discovery_reset" type="button" class="w-full text-sm text-muted hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer">
             <on type="click">
               <!-- 다른 이메일로 — 판정을 지워 비밀번호 칸으로 돌아간다 -->
               <set-state target="global" :adminLoginDiscovery="null" :adminLoginDiscoveryFor="null"/>
@@ -265,7 +265,7 @@
           </a>
         </div>
         <!-- 로그인 버튼 -->
-        <button data-ref="login_submit_button" data-if="{{!_local.twoFactor?.required &amp;&amp; !_local.passwordChange?.required &amp;&amp; _global.adminLoginDiscovery?.method !== 'external'}}" type="submit" class="flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2" disabled="{{_local.isLoggingIn}}">
+        <button data-ref="login_submit_button" data-if="{{!_local.twoFactor?.required &amp;&amp; !_local.passwordChange?.required &amp;&amp; _global.adminLoginDiscovery?.method !== 'external'}}" type="submit" class="flex-center w-full btn btn-primary py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900" disabled="{{_local.isLoggingIn}}">
           <div data-ref="login_submit_spinner" data-if="{{_local.isLoggingIn}}" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
           <span data-ref="login_submit_text" data-if="{{!_local.isLoggingIn}}">$t:auth.login.submit</span>
           <span data-ref="login_submit_processing" data-if="{{_local.isLoggingIn}}">$t:auth.login.processing</span>
@@ -293,11 +293,11 @@
               </on>
             </input>
             <!-- 유효시각 정적 표기 — 카운트다운은 SPA 이탈 후에도 타이머가 남아 쓰지 않는다 -->
-            <p data-ref="login_two_factor_valid_until" data-if="{{_local.twoFactor?.expires_at}}" class="mt-2 text-sm text-gray-500 dark:text-gray-400">$t:auth.login.two_factor.valid_until|until={{_local.twoFactor?.expires_at | datetime}}</p>
-            <p data-ref="login_two_factor_backup_hint" data-if="{{_local.twoFactor?.provider_id === 'totp'}}" class="mt-2 text-sm text-gray-500 dark:text-gray-400">$t:auth.login.two_factor.backup_hint</p>
+            <p data-ref="login_two_factor_valid_until" data-if="{{_local.twoFactor?.expires_at}}" class="mt-2 text-sm text-muted">$t:auth.login.two_factor.valid_until|until={{_local.twoFactor?.expires_at | datetime}}</p>
+            <p data-ref="login_two_factor_backup_hint" data-if="{{_local.twoFactor?.provider_id === 'totp'}}" class="mt-2 text-sm text-muted">$t:auth.login.two_factor.backup_hint</p>
           </div>
           <!-- 인증번호 확인 — submit 이라 Enter 키로도 제출된다 -->
-          <button data-ref="login_two_factor_submit" type="submit" class="flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2" disabled="{{!_local.twoFactor?.code || _local.twoFactor.code.length < 4 || _local.isLoggingIn}}">
+          <button data-ref="login_two_factor_submit" type="submit" class="flex-center w-full btn btn-primary py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900" disabled="{{!_local.twoFactor?.code || _local.twoFactor.code.length < 4 || _local.isLoggingIn}}">
             <div data-ref="login_two_factor_spinner" data-if="{{_local.isLoggingIn}}" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
             <span data-ref="login_two_factor_submit_text" data-if="{{!_local.isLoggingIn}}">$t:auth.login.two_factor.verify</span>
             <span data-ref="login_two_factor_submit_processing" data-if="{{_local.isLoggingIn}}">$t:auth.login.two_factor.verifying</span>
@@ -306,7 +306,7 @@
             <responsive on="640-" class="flex flex-row gap-2"/>
             <!-- 인증 앱 경로에서는 숨긴다 — 서버가 보내는 것이 없으므로 「다시 받기」가 새 challenge 발급
                  이상의 의미가 없고, 누르면 아무 일도 일어나지 않은 것처럼 보인다. -->
-            <button data-ref="login_two_factor_resend" type="button" data-if="{{_local.twoFactor?.provider_id !== 'totp'}}" class="flex-1 px-4 py-3 rounded-lg font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer" disabled="{{_local.twoFactor?.resending || _local.isLoggingIn}}">
+            <button data-ref="login_two_factor_resend" type="button" data-if="{{_local.twoFactor?.provider_id !== 'totp'}}" class="flex-1 btn btn-secondary py-3" disabled="{{_local.twoFactor?.resending || _local.isLoggingIn}}">
               <on type="click">
                 <!-- 인증번호 다시 받기 — 진행 표시를 켜고 새 challenge 를 발급받는다. 성공하면 응답 값으로 2단계 상태를 통째로 교체해
                      입력값을 비우고 「다시 보냈다」 안내로 바꾼다(같은 시퀀스 안에서는 상태가 아직 갱신 전이라 응답 값만 읽는다). 실패 문구는 2단계 오류 자리에 싣는다. -->
@@ -338,7 +338,7 @@
               </on>
               $t:auth.login.two_factor.resend
             </button>
-            <button data-ref="login_two_factor_restart" type="button" class="flex-1 px-4 py-3 rounded-lg font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer" disabled="{{_local.isLoggingIn}}">
+            <button data-ref="login_two_factor_restart" type="button" class="flex-1 btn btn-secondary py-3" disabled="{{_local.isLoggingIn}}">
               <on type="click">
                 <!-- 처음부터 — 2단계 상태와 지난 오류를 함께 지워 1단계(이메일·비밀번호)로 되돌린다. -->
                 <set-state target="local" :twoFactor="null" :loginError="null" :loginErrors="null"/>
@@ -370,7 +370,7 @@
                 <set-state target="local" passwordChange.password="{{$event.target.value}}"/>
               </on>
             </input>
-            <p data-ref="login_password_change_rules" class="mt-2 flex flex-wrap gap-x-1 text-sm text-gray-500 dark:text-gray-400">
+            <p data-ref="login_password_change_rules" class="mt-2 flex flex-wrap gap-x-1 text-sm text-muted">
               <span>$t:auth.password_rules.min_length|count={{_global.settings?.security?.password_min_length ?? 8}}</span>
               <span data-if="{{!!_global.settings?.security?.require_password_special_char}}">$t:auth.password_rules.special</span>
               <span data-if="{{!!_global.settings?.security?.password_require_char_types}}">$t:auth.password_rules.char_types</span>
@@ -393,14 +393,14 @@
             <p data-ref="login_password_change_confirm_error" data-if="{{_local.passwordChange?.errors?.password_confirmation}}" class="mt-2 text-sm text-red-600 dark:text-red-400">{{Array.isArray(_local.passwordChange?.errors?.password_confirmation) ? _local.passwordChange.errors.password_confirmation[0] : _local.passwordChange?.errors?.password_confirmation}}</p>
           </div>
           <!-- 변경하고 로그인 — submit 이라 Enter 키로도 제출된다 -->
-          <button data-ref="login_password_change_submit" type="submit" class="flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2" disabled="{{_local.isLoggingIn}}">
+          <button data-ref="login_password_change_submit" type="submit" class="flex-center w-full btn btn-primary py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900" disabled="{{_local.isLoggingIn}}">
             <div data-ref="login_password_change_spinner" data-if="{{_local.isLoggingIn}}" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
             <span data-if="{{!_local.isLoggingIn}}">$t:auth.login.password_change.submit</span>
             <span data-if="{{_local.isLoggingIn}}">$t:auth.login.processing</span>
           </button>
           <div data-ref="login_password_change_actions" class="flex flex-col gap-2">
             <responsive on="640-" class="flex flex-row gap-2"/>
-            <button data-ref="login_password_change_postpone" type="button" data-if="{{_local.passwordChange?.can_postpone}}" class="flex-1 px-4 py-3 rounded-lg font-medium whitespace-nowrap border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer" disabled="{{_local.isLoggingIn}}">
+            <button data-ref="login_password_change_postpone" type="button" data-if="{{_local.passwordChange?.can_postpone}}" class="flex-1 btn btn-secondary py-3 whitespace-nowrap" disabled="{{_local.isLoggingIn}}">
               <on type="click">
                 <!-- 다음에 변경 — 만료 시 동작이 「다음에 변경 허용」일 때만 보인다. 연기 종료일을 알려 주고 원래 가려던 곳으로 보낸다.
                      식별자가 만료·무효면 처음부터 다시 로그인하게 한다. -->
@@ -423,7 +423,7 @@
               </on>
               $t:auth.login.password_change.postpone
             </button>
-            <button data-ref="login_password_change_restart" type="button" class="flex-1 px-4 py-3 rounded-lg font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer" disabled="{{_local.isLoggingIn}}">
+            <button data-ref="login_password_change_restart" type="button" class="flex-1 btn btn-secondary py-3" disabled="{{_local.isLoggingIn}}">
               <on type="click">
                 <!-- 처음부터 — 두 단계 상태와 지난 오류를 함께 지워 자격증명 단계로 되돌린다. -->
                 <set-state target="local" :twoFactor="null" :passwordChange="null" :loginError="null" :loginErrors="null"/>
@@ -437,7 +437,7 @@
       <extension-point name="admin_login_extensions" data-ref="admin_login_extensions_slot"/>
       <!-- 자동 이동이 켜진 사이트에서도 이 화면(비밀번호 로그인)에 닿는 길 — 비상 계정용(7.2.0) -->
       <div data-ref="login_local_link_container" data-if="{{!!_global.appConfig?.auth?.auto_redirect?.admin}}" class="text-center text-sm">
-        <a data-ref="login_local_link" href="/admin/login?local=1" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer">
+        <a data-ref="login_local_link" href="/admin/login?local=1" class="text-muted hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer">
           <on type="click">
             <navigate/>
           </on>
@@ -453,7 +453,7 @@
       </div>
       <div data-ref="theme_selector_container" class="mt-4 flex justify-center">
         <div data-ref="theme_segmented_control" class="inline-flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 gap-1">
-          <button data-ref="theme_light_button" type="button" class="{{_global.theme === 'light' ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}" title="$t:admin.theme.light">
+          <button data-ref="theme_light_button" type="button" class="{{_global.theme === 'light' ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-muted hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}" title="$t:admin.theme.light">
             <on type="click">
               <!-- 밝은 테마 고정. 이 화면은 베이스의 테마 토글 컴포넌트를 못 쓰므로 3버튼을 직접 두었고,
                    핸들러는 관리자 화면 전체와 같은 저장 키를 공유한다. -->
@@ -461,14 +461,14 @@
             </on>
             <icon data-ref="theme_light_icon" name="sun" size="sm"/>
           </button>
-          <button data-ref="theme_dark_button" type="button" class="{{_global.theme === 'dark' ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}" title="$t:admin.theme.dark">
+          <button data-ref="theme_dark_button" type="button" class="{{_global.theme === 'dark' ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-muted hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}" title="$t:admin.theme.dark">
             <on type="click">
               <!-- 어두운 테마 고정. -->
               <action handler="setTheme" target="dark"/>
             </on>
             <icon data-ref="theme_dark_icon" name="moon" size="sm"/>
           </button>
-          <button data-ref="theme_auto_button" type="button" class="{{_global.theme === 'auto' || !_global.theme ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}" title="$t:admin.theme.auto">
+          <button data-ref="theme_auto_button" type="button" class="{{_global.theme === 'auto' || !_global.theme ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-muted hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}" title="$t:admin.theme.auto">
             <on type="click">
               <!-- 시스템 설정 따라가기 — 저장값이 아예 없을 때의 기본 상태이기도 하다(선택 표시가
                    `theme === 'auto'` 뿐 아니라 미설정도 함께 보는 이유). -->

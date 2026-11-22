@@ -22,7 +22,7 @@
               <action handler="sirsoft-ecommerce.toggleSelectAllItems" claimableOptions="{{claimable?.data?.options ?? null}}"/>
             </on>
           </input>
-          <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.apply.select_all</span>
+          <span class="text-sm text-muted">$t:claim.apply.select_all</span>
         </label>
       </div>
     </div>
@@ -49,14 +49,14 @@
           </label>
           <!-- 상품 이미지 -->
           <a data-if="{{!_local.isGuest}}" href="{{_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id}}" class="inline-flex items-center justify-center w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 cursor-pointer">
-            <responsive on="portable" class="inline-flex items-center justify-center w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 cursor-pointer"/>
+            <responsive on="portable" class-merge="w-16 h-16"/>
             <on type="click">
               <!-- audit:allow layout-list-context-navigate-merge-query 주문 항목 → 상품 상세 이동 — 주문 목록과 다른 클러스터(상품)로 나가는 이동이다. -->
               <navigate/>
             </on>
             <img data-if="{{item.thumbnail_url}}" src="{{item.thumbnail_url ?? ''}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{$localized(item.product_name)}}" class="w-full h-full object-cover"/>
             <div data-if="{{!item.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
-              <icon name="image" size="lg" class="text-gray-500 dark:text-gray-400"/>
+              <icon name="image" size="lg" class="text-muted"/>
             </div>
           </a>
           <!-- 비회원 갈래는 단추로 둔다 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않는다 -->
@@ -68,7 +68,7 @@
             </on>
             <img data-if="{{item.thumbnail_url}}" src="{{item.thumbnail_url ?? ''}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{$localized(item.product_name)}}" class="w-full h-full object-cover"/>
             <div data-if="{{!item.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
-              <icon name="image" size="lg" class="text-gray-500 dark:text-gray-400"/>
+              <icon name="image" size="lg" class="text-muted"/>
             </div>
           </button>
           <!-- 상품 정보 -->
@@ -90,14 +90,14 @@
               </on>
               {{$localized(item.product_name)}}
             </button>
-            <p data-if="{{item.option_snapshot?.option_name}}" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{$localized(item.option_snapshot?.option_name)}}</p>
+            <p data-if="{{item.option_snapshot?.option_name}}" class="text-sm text-muted mt-1">{{$localized(item.option_snapshot?.option_name)}}</p>
             <!-- 품목 과세 종류 — 면세·영세만 표시하고 과세는 표시하지 않는다(주문 시점 확정값, #612) -->
             <span data-if="{{item.tax_status === 'tax_free' || item.tax_status === 'zero_rated'}}" class="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium {{item.tax_status === 'zero_rated' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}}">{{item.tax_status_label}}</span>
             <!-- 선택된 추가옵션 (스냅샷 — 옵션 라인 바로 아래) -->
             <div data-if="{{item.additional_options?.length > 0}}" class="mt-0.5 space-y-0.5">
-              <p data-each="addOpt in {{item.additional_options ?? []}}" class="text-xs text-gray-500 dark:text-gray-400">{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}</p>
+              <p data-each="addOpt in {{item.additional_options ?? []}}" class="text-xs text-muted">{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}</p>
             </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{item.unit_price_formatted ?? ''}} × {{item.quantity ?? 0}}$t:common.count_suffix</p>
+            <p class="text-sm text-muted mt-0.5">{{item.unit_price_formatted ?? ''}} × {{item.quantity ?? 0}}$t:common.count_suffix</p>
             <!-- 모바일: 상태 뱃지 + 배송정보 (인라인) -->
             <div data-if="{{true}}" class="flex flex-wrap items-center gap-2 mt-2">
               <responsive on="desktop" data-if="{{false}}"/>
@@ -108,7 +108,7 @@
               </span>
               <!-- 배송사 + 운송장 (모바일) -->
               <a data-if="{{!!item.carrier_name &amp;&amp; !!item.tracking_url}}" href="{{item.tracking_url}}" target="_blank" rel="noopener noreferrer" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline break-all">{{item.carrier_name}} {{item.tracking_number ?? ''}}</a>
-              <span data-if="{{!!item.carrier_name &amp;&amp; !item.tracking_url}}" class="text-xs text-gray-500 dark:text-gray-400">{{item.carrier_name}} {{item.tracking_number ?? ''}}</span>
+              <span data-if="{{!!item.carrier_name &amp;&amp; !item.tracking_url}}" class="text-xs text-muted">{{item.carrier_name}} {{item.tracking_number ?? ''}}</span>
             </div>
             <!-- 모바일: 구매확정/리뷰 버튼 -->
             <div data-if="{{true}}" class="flex gap-2 mt-2">
@@ -158,7 +158,7 @@
                 <span>$t:mypage.order_detail.review_written</span>
               </span>
               <!-- 리뷰 작성 기간 만료 안내 (모바일) — 버튼이 사라진 이유 안내 -->
-              <span data-if="{{item.review_deadline_passed === true}}" class="inline-flex items-center gap-1 px-2.5 py-1 text-gray-500 dark:text-gray-400 text-xs font-medium">
+              <span data-if="{{item.review_deadline_passed === true}}" class="inline-flex items-center gap-1 px-2.5 py-1 text-muted text-xs font-medium">
                 <icon name="clock" size="xs"/>
                 <span>$t:mypage.order_detail.review_deadline_passed</span>
               </span>
@@ -184,25 +184,25 @@
             <!-- 적용 배송정책 — 「그 상품만 샀을 때 배송비」는 부분취소·재활성 재계산 때 남은 수량 기준으로 갱신된다. 취소된 행은 남은 행과 같은 상품 옵션을 공유해 그 갱신된 배송비가 붙으므로(이미 취소한 상품에 「2,500원」), 취소 행에서는 줄을 세우지 않는다. -->
             <div data-if="{{item.option_status !== 'cancelled' &amp;&amp; (order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)}}" class="mt-1.5 flex items-center gap-1.5">
               <icon name="truck" class="text-gray-500 dark:text-gray-500" size="xs"/>
-              <span class="text-xs text-gray-500 dark:text-gray-400">{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.policy_name ?? ''}}</span>
-              <span class="text-xs text-gray-500 dark:text-gray-400">/</span>
+              <span class="text-xs text-muted">{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.policy_name ?? ''}}</span>
+              <span class="text-xs text-muted">/</span>
               <!-- 배송비가 있을 때 -->
-              <span data-if="{{((order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) > 0}}" class="text-xs text-gray-500 dark:text-gray-400">{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount_formatted ?? ''}}</span>
+              <span data-if="{{((order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) > 0}}" class="text-xs text-muted">{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount_formatted ?? ''}}</span>
               <!-- 무료배송일 때 -->
               <span data-if="{{((order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) === 0}}" class="text-xs text-green-700 dark:text-green-400 font-medium">$t:mypage.order_detail.free_shipping</span>
             </div>
           </div>
           <!-- 우측: 금액 + 상태뱃지 + 배송정보 (PC) -->
           <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
-            <responsive on="portable" class="flex flex-col items-end gap-1 flex-shrink-0"/>
+            <responsive on="portable" class-merge="gap-1"/>
             <!-- 금액 (할인 있을 때) -->
             <div data-if="{{(item.subtotal_discount_amount_value ?? 0) > 0}}" class="text-right">
-              <span class="text-sm text-gray-500 dark:text-gray-400 line-through">
-                <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400 line-through"/>
+              <span class="text-sm text-muted line-through">
+                <responsive on="portable" class="text-xs text-muted line-through"/>
                 {{item.subtotal_price_formatted ?? ''}}
               </span>
               <span class="text-base font-bold text-gray-900 dark:text-white ml-1">
-                <responsive on="portable" class="text-sm font-bold text-gray-900 dark:text-white ml-1"/>
+                <responsive on="portable" class-merge="text-sm"/>
                 {{item.mc_final_amount?.[order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_price_formatted ?? ''}}
               </span>
             </div>
@@ -213,7 +213,7 @@
             </span>
             <!-- 보조 통화 -->
             <div data-each="currency in {{Object.entries(item.mc_final_amount ?? item.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
-              <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted ?? ''}}</span>
+              <span class="text-xs text-muted">{{currency[1]?.formatted ?? ''}}</span>
             </div>
             <!-- 상태 뱃지 (PC만 표시) -->
             <span data-if="{{false}}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium {{item.option_status_variant === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : item.option_status_variant === 'danger' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : item.option_status_variant === 'warning' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : item.option_status_variant === 'secondary' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}}">
@@ -222,7 +222,7 @@
               <span>{{item.option_status_label ?? ''}}</span>
             </span>
             <!-- 배송사 + 운송장번호 (PC만 표시) -->
-            <div data-if="{{false}}" class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <div data-if="{{false}}" class="flex items-center gap-1 text-xs text-muted">
               <responsive on="desktop" data-if="{{!!item.carrier_name}}"/>
               <icon name="truck" size="xs"/>
               <span>{{item.carrier_name}}</span>
@@ -277,7 +277,7 @@
               <span>$t:mypage.order_detail.review_written</span>
             </span>
             <!-- 리뷰 작성 기간 만료 안내 (PC) — 버튼이 사라진 이유 안내 -->
-            <span data-if="{{false}}" class="inline-flex items-center gap-1 px-2.5 py-1 text-gray-500 dark:text-gray-400 text-xs font-medium">
+            <span data-if="{{false}}" class="inline-flex items-center gap-1 px-2.5 py-1 text-muted text-xs font-medium">
               <responsive on="desktop" data-if="{{item.review_deadline_passed === true}}"/>
               <icon name="clock" size="xs"/>
               <span>$t:mypage.order_detail.review_deadline_passed</span>

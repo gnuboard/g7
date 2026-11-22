@@ -41,8 +41,8 @@
           <cell>
             <div class="board:min-w-0">
               <span class="board:font-medium board:text-gray-900 board:dark:text-white">{{row.label_localized}}</span>
-              <span class="board:block board:text-xs board:text-gray-500 board:dark:text-gray-400 board:font-mono board:mt-0.5">{{row.name}}</span>
-              <span data-if="{{row.description_localized}}" class="board:block board:text-xs board:text-gray-500 board:dark:text-gray-400 board:mt-0.5">{{row.description_localized}}</span>
+              <span class="board:block board:text-xs board-text-muted board:font-mono board:mt-0.5">{{row.name}}</span>
+              <span data-if="{{row.description_localized}}" class="board:block board:text-xs board-text-muted board:mt-0.5">{{row.description_localized}}</span>
               <!-- 실행 조건 미충족 — 그 설정이 꺼져 있어 예약 실행이 건너뛰어진다. 마우스를 올리면 조건 키가 보인다. -->
               <span data-if="{{(row.unmet_conditions ?? []).length &gt; 0}}" title="{{(row.unmet_conditions ?? []).map(c => c.key).join(', ')}}" class="board:block board:mt-1">
                 <badge data-type="composite" color="yellow" icon="triangle-exclamation" text="$t:sirsoft-board.admin.settings.schedules.condition_unmet" size="sm"/>
@@ -53,7 +53,7 @@
         <column field="frequency" header="$t:sirsoft-board.admin.settings.schedules.columns.frequency" :sortable="false">
           <cell>
             <span class="board:text-sm board:text-gray-900 board:dark:text-white">{{row.frequency_label}}</span>
-            <span data-if="{{row.frequency !== 'everyThirtySeconds'}}" class="board:block board:text-xs board:text-gray-500 board:dark:text-gray-400 board:font-mono board:mt-0.5">{{row.expression}}</span>
+            <span data-if="{{row.frequency !== 'everyThirtySeconds'}}" class="board:block board:text-xs board-text-muted board:font-mono board:mt-0.5">{{row.expression}}</span>
           </cell>
         </column>
         <column field="next_run_at" header="$t:sirsoft-board.admin.settings.schedules.columns.next_run" :sortable="false">

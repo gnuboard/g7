@@ -79,7 +79,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "chevron-down",
-                                                        "className": "{{_local.showCurrencyDropdown ? 'ecommerce:rotate-180' : ''}} ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200"
+                                                        "className": "{{_local.showCurrencyDropdown ? 'ecommerce:rotate-180' : ''}} ecommerce:text-xs ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200"
                                                     }
                                                 }
                                             ]
@@ -186,7 +186,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "ecommerce:static ecommerce:w-full ecommerce:mt-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:py-1",
+                                        "className": "ecommerce:static ecommerce:w-full ecommerce:mt-2 ecommerce-card-plain ecommerce:py-1",
                                         "role": "listbox"
                                     }
                                 }
@@ -237,7 +237,7 @@
                                                 }
                                             },
                                             "props": {
-                                                "className": "ecommerce:px-4 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:uppercase ecommerce:tracking-wide"
+                                                "className": "ecommerce:px-4 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-semibold ecommerce-text-muted ecommerce:uppercase ecommerce:tracking-wide"
                                             },
                                             "text": "$t:sirsoft-ecommerce.common.currency_label"
                                         },
@@ -422,12 +422,12 @@
                                             "responsive": {
                                                 "portable": {
                                                     "props": {
-                                                        "className": "ecommerce:px-3 ecommerce:py-1 ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:uppercase"
+                                                        "className": "ecommerce:px-3 ecommerce:py-1 ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted ecommerce:uppercase"
                                                     }
                                                 }
                                             },
                                             "props": {
-                                                "className": "ecommerce:px-4 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:uppercase ecommerce:tracking-wide"
+                                                "className": "ecommerce:px-4 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-semibold ecommerce-text-muted ecommerce:uppercase ecommerce:tracking-wide"
                                             },
                                             "text": "$t:sirsoft-ecommerce.common.shipping_country_label"
                                         },

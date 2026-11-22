@@ -79,13 +79,11 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:mypage.order_detail.ordered_at"
                         },
@@ -94,9 +92,7 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-900 dark:text-white text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
@@ -120,13 +116,11 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:mypage.order_detail.paid_at"
                         },
@@ -135,9 +129,7 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-900 dark:text-white text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
@@ -161,13 +153,11 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:mypage.order_detail.delivered_at"
                         },
@@ -176,9 +166,7 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-900 dark:text-white text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
@@ -202,13 +190,11 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:mypage.order_detail.confirmed_at"
                         },
@@ -217,9 +203,7 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-900 dark:text-white text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
@@ -243,13 +227,11 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:mypage.order_detail.cancelled_at"
                         },
@@ -258,9 +240,7 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-900 dark:text-white text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {

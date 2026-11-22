@@ -26,7 +26,7 @@
             </label>
             <input type="url" name="general.site_url" placeholder="https://example.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['general.site_url'] === true}}" class="input {{_local.errors?.['general.site_url'] ? 'input-error' : ''}}"/>
             <span data-if="{{_local.errors?.['general.site_url']}}" class="form-error">{{_local.errors?.['general.site_url']?.[0] ?? ''}}</span>
-            <p class="form-help text-gray-500 dark:text-gray-400">$t:admin.settings.general.site_url_help</p>
+            <p class="form-hint">$t:admin.settings.general.site_url_help</p>
           </div>
         </div>
         <!-- 사용자 화면 URL — 외부 화면(Next.js 등)을 다른 주소에서 운영할 때만. 비밀번호 재설정·알림 메일 링크와
@@ -320,7 +320,7 @@
             <span>$t:admin.settings.general.asset_url_mode_detect</span>
           </button>
         </div>
-        <p data-ref="asset_url_mode_msg_detecting" data-if="{{_local.asset_url_mode_detect_status === 'detecting'}}" class="mt-2 text-sm text-gray-500 dark:text-gray-400">$t:admin.settings.general.asset_url_mode_detecting</p>
+        <p data-ref="asset_url_mode_msg_detecting" data-if="{{_local.asset_url_mode_detect_status === 'detecting'}}" class="mt-2 text-sm text-muted">$t:admin.settings.general.asset_url_mode_detecting</p>
         <p data-ref="asset_url_mode_msg_extension" data-if="{{_local.asset_url_mode_detect_status === 'extension'}}" class="mt-2 text-sm text-green-700 dark:text-green-400">$t:admin.settings.general.asset_url_mode_detect_extension</p>
         <p data-ref="asset_url_mode_msg_extensionless" data-if="{{_local.asset_url_mode_detect_status === 'extensionless'}}" class="mt-2 text-sm text-amber-700 dark:text-amber-400">$t:admin.settings.general.asset_url_mode_detect_extensionless</p>
         <p data-ref="asset_url_mode_msg_unavailable" data-if="{{_local.asset_url_mode_detect_status === 'unavailable'}}" class="mt-2 text-sm text-red-600 dark:text-red-400">$t:admin.settings.general.asset_url_mode_detect_unavailable</p>
@@ -388,7 +388,7 @@
             <span class="text-heading">{{staticCacheStatus?.data?.process_user ?? '-'}}</span>
           </div>
           <div data-ref="static_cache_actions" class="ml-auto">
-            <button data-ref="static_cache_republish_button" type="button" disabled="{{_computed.isReadOnly || !(staticCacheStatus?.data?.publishable ?? false)}}" aria-disabled="{{_computed.isReadOnly || !(staticCacheStatus?.data?.publishable ?? false)}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+            <button data-ref="static_cache_republish_button" type="button" disabled="{{_computed.isReadOnly || !(staticCacheStatus?.data?.publishable ?? false)}}" aria-disabled="{{_computed.isReadOnly || !(staticCacheStatus?.data?.publishable ?? false)}}" class="btn btn-primary whitespace-nowrap">
               <on type="click">
                 <open-modal target="settings_static_cache_republish_modal"/>
               </on>

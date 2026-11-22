@@ -26,9 +26,7 @@
                     "if": "{{inicisRecord?.data}}",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "verificationkginicis:bg-white verificationkginicis:dark:bg-gray-800 verificationkginicis:rounded-lg verificationkginicis:shadow-sm verificationkginicis:border verificationkginicis:border-gray-200 verificationkginicis:dark:border-gray-700 verificationkginicis:p-4"
-                            }
+                            "classMerge": "verificationkginicis:p-4"
                         }
                     },
                     "props": {
@@ -48,9 +46,7 @@
                             "name": "Div",
                             "responsive": {
                                 "640-": {
-                                    "props": {
-                                        "className": "verificationkginicis:grid verificationkginicis:grid-cols-2 verificationkginicis:gap-y-3 verificationkginicis:gap-x-6 verificationkginicis:text-sm"
-                                    }
+                                    "classMerge": "verificationkginicis:grid-cols-2"
                                 }
                             },
                             "props": {
@@ -68,7 +64,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "verificationkginicis:text-gray-500 verificationkginicis:dark:text-gray-400"
+                                                "className": "verification-kginicis-text-muted"
                                             },
                                             "text": "$t:sirsoft-verification_kginicis.card.method"
                                         },
@@ -93,7 +89,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "verificationkginicis:text-gray-500 verificationkginicis:dark:text-gray-400"
+                                                "className": "verification-kginicis-text-muted"
                                             },
                                             "text": "$t:sirsoft-verification_kginicis.card.verified_at"
                                         },
@@ -118,7 +114,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "verificationkginicis:text-gray-500 verificationkginicis:dark:text-gray-400"
+                                                "className": "verification-kginicis-text-muted"
                                             },
                                             "text": "$t:sirsoft-verification_kginicis.card.name"
                                         },
@@ -143,7 +139,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "verificationkginicis:text-gray-500 verificationkginicis:dark:text-gray-400"
+                                                "className": "verification-kginicis-text-muted"
                                             },
                                             "text": "$t:sirsoft-verification_kginicis.card.birthday"
                                         },
@@ -168,7 +164,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "verificationkginicis:text-gray-500 verificationkginicis:dark:text-gray-400"
+                                                "className": "verification-kginicis-text-muted"
                                             },
                                             "text": "$t:sirsoft-verification_kginicis.card.phone"
                                         },
@@ -193,7 +189,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "verificationkginicis:text-gray-500 verificationkginicis:dark:text-gray-400"
+                                                "className": "verification-kginicis-text-muted"
                                             },
                                             "text": "$t:sirsoft-verification_kginicis.card.is_adult.label"
                                         },
@@ -218,9 +214,7 @@
                     "if": "{{inicisRecord !== undefined && inicisRecord !== null && (!inicisRecord?.data)}}",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "verificationkginicis:bg-white verificationkginicis:dark:bg-gray-800 verificationkginicis:rounded-lg verificationkginicis:shadow-sm verificationkginicis:border verificationkginicis:border-gray-200 verificationkginicis:dark:border-gray-700 verificationkginicis:p-4"
-                            }
+                            "classMerge": "verificationkginicis:p-4"
                         }
                     },
                     "props": {
@@ -269,7 +263,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "verificationkginicis:text-xs verificationkginicis:text-gray-500 verificationkginicis:dark:text-gray-400"
+                                                "className": "verificationkginicis:text-xs verification-kginicis-text-muted"
                                             },
                                             "text": "$t:sirsoft-verification_kginicis.card.pending.hint"
                                         }
@@ -287,9 +281,7 @@
                     "if": "{{inicisRecord === null}}",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "verificationkginicis:bg-white verificationkginicis:dark:bg-gray-800 verificationkginicis:rounded-lg verificationkginicis:shadow-sm verificationkginicis:border verificationkginicis:border-gray-200 verificationkginicis:dark:border-gray-700 verificationkginicis:p-4"
-                            }
+                            "classMerge": "verificationkginicis:p-4"
                         }
                     },
                     "props": {

@@ -1069,7 +1069,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+                                                        "className": "text-xs font-medium text-muted uppercase"
                                                     },
                                                     "text": "$t:common.language"
                                                 },
@@ -1760,7 +1760,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-2 mb-2 px-3"
+                                                        "className": "text-xs font-semibold text-muted uppercase tracking-wider mt-2 mb-2 px-3"
                                                     },
                                                     "text": "{{$localized(item.label) || $t('user.nav.boards')}}"
                                                 },
@@ -2474,7 +2474,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2"
+                                                        "className": "text-xs font-semibold text-muted uppercase tracking-wider mb-2"
                                                     },
                                                     "text": "$t:user.footer.info"
                                                 },
@@ -2581,7 +2581,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2"
+                                                        "className": "text-xs font-semibold text-muted uppercase tracking-wider mb-2"
                                                     },
                                                     "text": "$t:user.footer.policy"
                                                 },

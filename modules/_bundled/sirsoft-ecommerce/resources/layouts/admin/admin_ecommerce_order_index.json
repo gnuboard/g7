@@ -346,7 +346,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "list",
-                                                    "className": "ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce:text-base ecommerce-icon-muted ecommerce-text-muted"
                                                 }
                                             },
                                             {
@@ -467,7 +467,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "search",
-                                                    "className": "ecommerce:text-base ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:pointer-events-none"
+                                                    "className": "ecommerce:text-base ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce-text-muted ecommerce:pointer-events-none"
                                                 }
                                             }
                                         ]
@@ -2519,7 +2519,7 @@
                                 "name": "Button",
                                 "props": {
                                     "type": "button",
-                                    "className": "ecommerce-btn ecommerce-btn-info ecommerce:font-bold ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                    "className": "ecommerce-btn ecommerce-btn-info ecommerce:font-bold",
                                     "disabled": true
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.order.batch.batch_change"

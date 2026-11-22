@@ -73,7 +73,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "fa-solid fa-search",
-                                        "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"
+                                        "className": "absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm pointer-events-none"
                                     }
                                 },
                                 {
@@ -137,9 +137,7 @@
                             "name": "Span",
                             "responsive": {
                                 "768-": {
-                                    "props": {
-                                        "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
-                                    }
+                                    "classMerge": "mb-0 shrink-0 flex items-center"
                                 }
                             },
                             "props": {
@@ -326,9 +324,7 @@
                             "name": "Span",
                             "responsive": {
                                 "768-": {
-                                    "props": {
-                                        "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
-                                    }
+                                    "classMerge": "mb-0 shrink-0 flex items-center"
                                 }
                             },
                             "props": {

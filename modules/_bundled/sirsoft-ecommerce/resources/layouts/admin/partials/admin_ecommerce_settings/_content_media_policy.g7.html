@@ -25,7 +25,7 @@
           <div>
             <label class="ecommerce-form-label">$t:core.content_media.policy.max_size_mb</label>
             <!-- audit:allow layout-input-boundary-hardcoded 코어 ContentMediaPolicy 고정 한계(파일당 1~2048MB·문서당 1~200개) — 서버 규칙 ContentMediaPolicyRules 가 같은 상수를 쓴다 -->
-            <input type="number" name="product_display.content_media.image.max_size_mb" min="1" max="2048" value="{{_local.form?.product_display?.content_media?.image?.max_size_mb ?? _local.form?.product_display?.content_media_fallback?.image?.max_size_mb ?? 10}}" disabled="{{_computed.isReadOnly}}" class=""/>
+            <input type="number" name="product_display.content_media.image.max_size_mb" min="1" max="2048" value="{{_local.form?.product_display?.content_media?.image?.max_size_mb ?? _local.form?.product_display?.content_media_fallback?.image?.max_size_mb ?? 10}}" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['product_display.content_media.image.max_size_mb']}}" class="ecommerce-form-error-xs ecommerce:mt-1">{{_local.errors?.['product_display.content_media.image.max_size_mb']?.[0] ?? ''}}</span>
           </div>
           <div>
@@ -52,7 +52,7 @@
           <div>
             <label class="ecommerce-form-label">$t:core.content_media.policy.max_size_mb</label>
             <!-- audit:allow layout-input-boundary-hardcoded 코어 ContentMediaPolicy 고정 한계(파일당 1~2048MB·문서당 1~200개) — 서버 규칙 ContentMediaPolicyRules 가 같은 상수를 쓴다 -->
-            <input type="number" name="product_display.content_media.video.max_size_mb" min="1" max="2048" value="{{_local.form?.product_display?.content_media?.video?.max_size_mb ?? _local.form?.product_display?.content_media_fallback?.video?.max_size_mb ?? 10}}" disabled="{{_computed.isReadOnly}}" class=""/>
+            <input type="number" name="product_display.content_media.video.max_size_mb" min="1" max="2048" value="{{_local.form?.product_display?.content_media?.video?.max_size_mb ?? _local.form?.product_display?.content_media_fallback?.video?.max_size_mb ?? 10}}" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['product_display.content_media.video.max_size_mb']}}" class="ecommerce-form-error-xs ecommerce:mt-1">{{_local.errors?.['product_display.content_media.video.max_size_mb']?.[0] ?? ''}}</span>
           </div>
           <div>
@@ -76,7 +76,7 @@
           <div>
             <label class="ecommerce-form-label">$t:core.content_media.policy.max_size_mb</label>
             <!-- audit:allow layout-input-boundary-hardcoded 코어 ContentMediaPolicy 고정 한계(파일당 1~2048MB·문서당 1~200개) — 서버 규칙 ContentMediaPolicyRules 가 같은 상수를 쓴다 -->
-            <input type="number" name="product_display.content_media.audio.max_size_mb" min="1" max="2048" value="{{_local.form?.product_display?.content_media?.audio?.max_size_mb ?? _local.form?.product_display?.content_media_fallback?.audio?.max_size_mb ?? 10}}" disabled="{{_computed.isReadOnly}}" class=""/>
+            <input type="number" name="product_display.content_media.audio.max_size_mb" min="1" max="2048" value="{{_local.form?.product_display?.content_media?.audio?.max_size_mb ?? _local.form?.product_display?.content_media_fallback?.audio?.max_size_mb ?? 10}}" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['product_display.content_media.audio.max_size_mb']}}" class="ecommerce-form-error-xs ecommerce:mt-1">{{_local.errors?.['product_display.content_media.audio.max_size_mb']?.[0] ?? ''}}</span>
           </div>
           <div>
@@ -96,7 +96,7 @@
       <div data-ref="content_media_policy_max_per_document">
         <label class="ecommerce-form-label">$t:core.content_media.policy.max_per_document</label>
         <!-- audit:allow layout-input-boundary-hardcoded 코어 ContentMediaPolicy 고정 한계(파일당 1~2048MB·문서당 1~200개) — 서버 규칙 ContentMediaPolicyRules 가 같은 상수를 쓴다 -->
-        <input type="number" name="product_display.content_media.max_per_document" min="1" max="200" value="{{_local.form?.product_display?.content_media?.max_per_document ?? _local.form?.product_display?.content_media_fallback?.max_per_document ?? 30}}" disabled="{{_computed.isReadOnly}}" class=""/>
+        <input type="number" name="product_display.content_media.max_per_document" min="1" max="200" value="{{_local.form?.product_display?.content_media?.max_per_document ?? _local.form?.product_display?.content_media_fallback?.max_per_document ?? 30}}" disabled="{{_computed.isReadOnly}}"/>
         <span data-if="{{_local.errors?.['product_display.content_media.max_per_document']}}" class="ecommerce-form-error-xs ecommerce:mt-1">{{_local.errors?.['product_display.content_media.max_per_document']?.[0] ?? ''}}</span>
       </div>
       <p data-ref="content_media_policy_core_hint" class="ecommerce-form-hint">$t:core.content_media.policy.core_disabled_hint</p>

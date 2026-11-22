@@ -23,7 +23,7 @@
     <div data-ref="excel_download_content" class="ecommerce-admin-page-content">
       <div data-ref="page_header" class="ecommerce:mb-6">
         <div class="ecommerce-flex-center ecommerce:gap-3 ecommerce:mb-1">
-          <icon name="file-excel" class="ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+          <icon name="file-excel" class="ecommerce:text-xl ecommerce-icon-muted ecommerce-text-muted"/>
           <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"/>$t:sirsoft-ecommerce.admin.excel_download.title</h1>
         </div>
         <p class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.excel_download.description</p>
@@ -33,7 +33,7 @@
           <div data-ref="search_field_select" class="ecommerce-select-custom ecommerce:w-32">
             <button type="button" class="ecommerce-select-trigger">
               <span>$t:sirsoft-ecommerce.admin.excel_download.search.file_content</span>
-              <icon name="chevron-down" class="ecommerce-select-trigger-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+              <icon name="chevron-down" class="ecommerce-select-trigger-icon ecommerce-text-muted"/>
             </button>
           </div>
           <input data-ref="search_input" type="text" placeholder="$t:sirsoft-ecommerce.admin.excel_download.search.placeholder" class="ecommerce-input ecommerce:flex-1 ecommerce:min-w-64" value="{{_local.searchKeyword}}">
@@ -119,7 +119,7 @@
           <!-- 부모(date_filter_row)는 flex-wrap 이지만 이 행 자신은 nowrap 이라, 시작일~종료일(각 input w-36 = 144px)이 좁은 뷰포트에서 콘텐츠 영역을 11px 넘긴다. 자식에도 flex-wrap 을 준다. -->
           <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
             <div class="ecommerce-flex-center ecommerce:gap-2">
-              <icon name="calendar" class="ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+              <icon name="calendar" class="ecommerce:text-base ecommerce-icon-muted ecommerce-text-muted"/>
               <input type="date" aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.excel_download.filter.date_search')}}" placeholder="$t:sirsoft-ecommerce.admin.excel_download.filter.start_date" class="ecommerce-input ecommerce:w-36" value="{{_local.startDate}}">
                 <on type="change">
                   <!-- 기간 시작일 — 무엇을 기준으로 한 날짜인지는 왼쪽 선택칸(요청일)이 정한다 -->
@@ -129,7 +129,7 @@
             </div>
             <span class="ecommerce-text-muted">~</span>
             <div class="ecommerce-flex-center ecommerce:gap-2">
-              <icon name="calendar" class="ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+              <icon name="calendar" class="ecommerce:text-base ecommerce-icon-muted ecommerce-text-muted"/>
               <input type="date" aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.excel_download.filter.date_search')}}" placeholder="$t:sirsoft-ecommerce.admin.excel_download.filter.end_date" class="ecommerce-input ecommerce:w-36" value="{{_local.endDate}}">
                 <on type="change">
                   <!-- 기간 종료일 -->

@@ -97,7 +97,7 @@
         <extension-point name="auth_login_extensions" data-ref="auth_login_extensions_slot"/>
         <!-- 자동 이동이 켜진 사이트에서도 이 화면(비밀번호 로그인)에 닿는 길 — 비상 계정용(7.2.0) -->
         <div data-if="{{!!_global.appConfig?.auth?.auto_redirect?.user}}" class="mt-4 text-center text-sm">
-          <a href="/login?local=1" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer">
+          <a href="/login?local=1" class="text-muted hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer">
             <on type="click">
               <navigate/>
             </on>
@@ -106,7 +106,7 @@
         </div>
         <!-- 하단 링크 영역 -->
         <div class="mt-4 flex items-center justify-between text-sm">
-          <a href="/forgot-password" class="inline-flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer">
+          <a href="/forgot-password" class="inline-flex items-center justify-center text-muted hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer">
             <on type="click">
               <navigate/>
             </on>
@@ -128,7 +128,7 @@
               <div class="w-full border-t border-gray-200 dark:border-gray-700"/>
             </div>
             <div class="relative flex justify-center">
-              <span class="px-3 bg-white dark:bg-gray-800 text-sm text-gray-500 dark:text-gray-400">$t:auth.guest_checkout.divider</span>
+              <span class="px-3 bg-white dark:bg-gray-800 text-sm text-muted">$t:auth.guest_checkout.divider</span>
             </div>
           </div>
           <a href="{{query.redirect}}" class="inline-flex items-center justify-center w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed cursor-pointer" disabled="{{_global.isLoggingIn}}">
@@ -137,11 +137,11 @@
             </on>
             $t:auth.guest_checkout.continue
           </a>
-          <p class="mt-2 text-center text-xs text-gray-500 dark:text-gray-400">$t:auth.guest_checkout.hint</p>
+          <p class="mt-2 text-center text-xs text-muted">$t:auth.guest_checkout.hint</p>
         </div>
         <!-- 비회원 주문 조회 진입 — redirect=checkout 일 때는 비노출 (결제 진입 흐름이라 조회 안내가 무관). 일반 로그인 화면에서만 노출해 재방문 조회 사용자 동선 제공. 안내문구와 링크를 한 줄(inline)로 표시. 쇼핑몰 모듈이 꺼져 있으면 숨긴다. -->
         <div data-ref="login_guest_order_lookup" data-if="{{(!query.redirect || !query.redirect.includes('checkout')) &amp;&amp; (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}" class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-center text-xs">
-          <span class="text-gray-500 dark:text-gray-400 mr-1">$t:shop.guest_order_form.login_screen_hint</span>
+          <span class="text-muted mr-1">$t:shop.guest_order_form.login_screen_hint</span>
           <a href="{{_global.shopBase}}/guest/orders" class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">$t:shop.guest_order_form.login_screen_link</a>
         </div>
       </div>

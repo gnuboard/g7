@@ -90,10 +90,10 @@
           <item-template>
             <fragment>
               <td class="px-2 py-2 text-center border-t border-gray-200 dark:border-gray-700">
-                <div data-if="{{!_computed.memberFieldsReadOnly &amp;&amp; !_global.memberFieldBusy}}" data-testid="{{'member-field-table-handle-' + row.key}}" :data-drag-handle="true" role="button" aria-label="$t:admin.settings.member.fields.drag_handle|name={{row.label ?? row.key}}" title="$t:admin.settings.member.fields.drag_hint" class="inline-flex items-center justify-center cursor-grab text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <div data-if="{{!_computed.memberFieldsReadOnly &amp;&amp; !_global.memberFieldBusy}}" data-testid="{{'member-field-table-handle-' + row.key}}" :data-drag-handle="true" role="button" aria-label="$t:admin.settings.member.fields.drag_handle|name={{row.label ?? row.key}}" title="$t:admin.settings.member.fields.drag_hint" class="inline-flex items-center justify-center cursor-grab text-muted hover:text-gray-700 dark:hover:text-gray-200">
                   <icon name="grip-vertical" class="text-sm"/>
                 </div>
-                <button data-if="{{memberFieldDefs !== undefined &amp;&amp; (_computed.memberFieldsReadOnly || !!_global.memberFieldBusy)}}" data-testid="{{'member-field-table-handle-disabled-' + row.key}}" type="button" :disabled="true" aria-label="$t:admin.settings.member.fields.drag_handle|name={{row.label ?? row.key}}" class="inline-flex items-center justify-center text-gray-500 dark:text-gray-400 opacity-50 cursor-not-allowed disabled:opacity-50 disabled:cursor-not-allowed">
+                <button data-if="{{memberFieldDefs !== undefined &amp;&amp; (_computed.memberFieldsReadOnly || !!_global.memberFieldBusy)}}" data-testid="{{'member-field-table-handle-disabled-' + row.key}}" type="button" :disabled="true" aria-label="$t:admin.settings.member.fields.drag_handle|name={{row.label ?? row.key}}" class="inline-flex items-center justify-center text-muted opacity-50 cursor-not-allowed disabled:opacity-50 disabled:cursor-not-allowed">
                   <icon name="grip-vertical" class="text-sm"/>
                 </button>
               </td>
@@ -144,7 +144,7 @@
                       </sequence>
                     </on>
                   </toggle>
-                  <span data-if="{{!!row.locks?.enabled}}" role="img" aria-label="{{row.locks?.enabled ?? ''}}" title="{{row.locks?.enabled ?? ''}}" class="text-gray-500 dark:text-gray-400">
+                  <span data-if="{{!!row.locks?.enabled}}" role="img" aria-label="{{row.locks?.enabled ?? ''}}" title="{{row.locks?.enabled ?? ''}}" class="text-muted">
                     <icon name="lock" class="text-xs"/>
                   </span>
                 </div>
@@ -218,7 +218,7 @@
                       </conditions>
                     </on>
                   </toggle>
-                  <span data-if="{{!!row.locks?.required}}" role="img" aria-label="{{row.locks?.required ?? ''}}" title="{{row.locks?.required ?? ''}}" class="text-gray-500 dark:text-gray-400">
+                  <span data-if="{{!!row.locks?.required}}" role="img" aria-label="{{row.locks?.required ?? ''}}" title="{{row.locks?.required ?? ''}}" class="text-muted">
                     <icon name="lock" class="text-xs"/>
                   </span>
                 </div>
@@ -245,7 +245,7 @@
                       </sequence>
                     </on>
                   </toggle>
-                  <span data-if="{{!!row.locks?.show_on_signup}}" role="img" aria-label="{{row.locks?.show_on_signup ?? ''}}" title="{{row.locks?.show_on_signup ?? ''}}" class="text-gray-500 dark:text-gray-400">
+                  <span data-if="{{!!row.locks?.show_on_signup}}" role="img" aria-label="{{row.locks?.show_on_signup ?? ''}}" title="{{row.locks?.show_on_signup ?? ''}}" class="text-muted">
                     <icon name="lock" class="text-xs"/>
                   </span>
                 </div>

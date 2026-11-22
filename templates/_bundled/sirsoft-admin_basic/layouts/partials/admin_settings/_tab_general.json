@@ -176,7 +176,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "form-help text-gray-500 dark:text-gray-400"
+                                                "className": "form-hint"
                                             },
                                             "text": "$t:admin.settings.general.site_url_help"
                                         }
@@ -1127,7 +1127,7 @@
                             "name": "P",
                             "if": "{{_local.asset_url_mode_detect_status === 'detecting'}}",
                             "props": {
-                                "className": "mt-2 text-sm text-gray-500 dark:text-gray-400"
+                                "className": "mt-2 text-sm text-muted"
                             },
                             "text": "$t:admin.settings.general.asset_url_mode_detecting"
                         },
@@ -1494,7 +1494,7 @@
                                                 "type": "button",
                                                 "disabled": "{{_computed.isReadOnly || !(staticCacheStatus?.data?.publishable ?? false)}}",
                                                 "aria-disabled": "{{_computed.isReadOnly || !(staticCacheStatus?.data?.publishable ?? false)}}",
-                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                                                "className": "btn btn-primary whitespace-nowrap"
                                             },
                                             "text": "$t:admin.settings.general.static_cache_republish_now"
                                         }

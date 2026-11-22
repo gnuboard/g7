@@ -66,7 +66,7 @@
                             "props": {
                                 "data-testid": "reaction-type-add-btn",
                                 "type": "button",
-                                "className": "board-flex-center board:gap-1.5 board:px-3 board:py-1.5 board:text-sm board:bg-gray-900 board:dark:bg-white board:text-white board:dark:text-gray-900 board:rounded-lg board:hover:bg-gray-800 board:dark:hover:bg-gray-100 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                                "className": "board-flex-center board:gap-1.5 board-btn board-btn-primary board-btn-sm",
                                 "disabled": "{{_computed.isReadOnly}}"
                             },
                             "children": [
@@ -95,7 +95,7 @@
             "if": "{{(_local.form?.basic_defaults?.reaction_types ?? []).length === 0 && !_local.isAddingReactionType}}",
             "props": {
                 "data-testid": "reaction-type-empty",
-                "className": "board:p-8 board:text-center board:text-gray-500 board:dark:text-gray-400"
+                "className": "board:p-8 board:text-center board-text-muted"
             },
             "text": "$t:sirsoft-board.admin.settings.reaction_types.empty"
         },
@@ -1057,7 +1057,7 @@
                                                             "props": {
                                                                 "data-testid": "reaction-type-form-cancel",
                                                                 "type": "button",
-                                                                "className": "board:p-1.5 board:text-gray-500 board:hover:text-gray-700 board:dark:text-gray-400 board:dark:hover:text-gray-200 board:hover:bg-gray-100 board:dark:hover:bg-gray-700 board:rounded board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                                                                "className": "board:p-1.5 board-text-muted board:hover:text-gray-700 board:dark:hover:text-gray-200 board:hover:bg-gray-100 board:dark:hover:bg-gray-700 board:rounded board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
                                                                 "title": "$t:common.cancel",
                                                                 "disabled": "{{_computed.isReadOnly}}"
                                                             },

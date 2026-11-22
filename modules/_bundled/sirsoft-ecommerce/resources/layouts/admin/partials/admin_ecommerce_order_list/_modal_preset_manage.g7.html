@@ -6,7 +6,7 @@
     <!-- 받기 실패 안내 — 실패하면 엔진은 이 데이터소스를 null 로 둔다. 실패한 채 「저장된 프리셋이 없습니다」를 보이면 프리셋이 지워진 줄 안다 -->
     <p data-ref="preset_load_failed" data-if="{{presets === null}}" role="alert" class="ecommerce:py-8 ecommerce:text-center ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</p>
     <!-- 빈 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다 -->
-    <div data-ref="preset_empty_message" data-if="{{presets !== undefined &amp;&amp; presets !== null &amp;&amp; (!presets.data || presets.data.length === 0)}}" class="ecommerce:text-center ecommerce:py-8 ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.modal.preset_manage.empty</div>
+    <div data-ref="preset_empty_message" data-if="{{presets !== undefined &amp;&amp; presets !== null &amp;&amp; (!presets.data || presets.data.length === 0)}}" class="ecommerce:text-center ecommerce:py-8 ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.modal.preset_manage.empty</div>
     <div data-if="{{presets.data &amp;&amp; presets.data.length > 0}}" class="ecommerce-stack-tight">
       <div data-each="presetItem in presets.data" class="ecommerce-flex-between ecommerce:p-3 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg">
         <span class="ecommerce-text-heading">{{presetItem.name}}</span>
@@ -35,7 +35,7 @@
       </div>
     </div>
     <div class="ecommerce:mt-6">
-      <button type="button" class="ecommerce:w-full ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700">
+      <button type="button" class="ecommerce:w-full ecommerce-btn ecommerce-btn-primary">
         <on type="click">
           <open-modal target="modal_preset_save"/>
         </on>

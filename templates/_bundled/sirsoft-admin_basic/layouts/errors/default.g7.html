@@ -9,7 +9,7 @@
       <icon data-ref="error_icon" name="circle-exclamation" class="text-8xl text-gray-500 dark:text-gray-500 mb-6"/>
       <h1 data-ref="error_code" data-if="{{errorCode}}" class="text-primary text-6xl font-bold mb-4">{{errorCode}}</h1>
       <h2 data-ref="error_title" class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2">$t:errors.default.title</h2>
-      <p data-ref="error_message" class="text-gray-500 dark:text-gray-400 mb-8 max-w-md">$t:errors.default.message</p>
+      <p data-ref="error_message" class="text-muted mb-8 max-w-md">$t:errors.default.message</p>
       <div data-ref="error_actions" class="flex flex-wrap items-center justify-center gap-3">
         <button data-ref="refresh_button" type="button" class="button px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium rounded-lg transition-colors">
           <on type="click">

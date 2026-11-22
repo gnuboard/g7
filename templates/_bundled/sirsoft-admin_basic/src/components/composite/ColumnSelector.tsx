@@ -515,7 +515,7 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
                 </Span>
               )}
               {menuDescription && (
-                <Span className="block text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <Span className="block text-xs text-muted mt-1">
                   {menuDescription}
                 </Span>
               )}

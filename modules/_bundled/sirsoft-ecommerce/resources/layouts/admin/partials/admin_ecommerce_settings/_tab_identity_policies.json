@@ -269,9 +269,7 @@
                     "name": "Div",
                     "responsive": {
                         "768-": {
-                            "props": {
-                                "className": "ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4 ecommerce:mb-6 ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-center"
-                            }
+                            "classMerge": "ecommerce:flex-row ecommerce:items-center"
                         }
                     },
                     "props": {
@@ -284,9 +282,7 @@
                             "name": "Select",
                             "responsive": {
                                 "768-": {
-                                    "props": {
-                                        "className": "ecommerce:w-40 ecommerce:px-3 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-sm"
-                                    }
+                                    "classMerge": "ecommerce:w-40"
                                 }
                             },
                             "actions": [
@@ -346,9 +342,7 @@
                             "name": "Input",
                             "responsive": {
                                 "768-": {
-                                    "props": {
-                                        "className": "ecommerce-input ecommerce:flex-1 ecommerce:min-w-[200px]"
-                                    }
+                                    "classMerge": "ecommerce:flex-1 ecommerce:min-w-[200px]"
                                 }
                             },
                             "actions": [
@@ -425,7 +419,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100"
+                                "className": "ecommerce-btn ecommerce-btn-primary"
                             },
                             "children": [
                                 {
@@ -473,7 +467,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
+                                "className": "ecommerce-btn ecommerce-btn-secondary"
                             },
                             "children": [
                                 {
@@ -926,7 +920,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "ecommerce:mx-1.5 ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                        "className": "ecommerce:mx-1.5 ecommerce-text-muted"
                                                                     },
                                                                     "text": "·"
                                                                 },
@@ -975,7 +969,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "ecommerce:mx-1.5 ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                "className": "ecommerce:mx-1.5 ecommerce-text-muted"
                                                             },
                                                             "text": "·"
                                                         },
@@ -996,7 +990,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "ecommerce:mx-1.5 ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                "className": "ecommerce:mx-1.5 ecommerce-text-muted"
                                                             },
                                                             "text": "·"
                                                         },
@@ -1254,7 +1248,7 @@
                                                 "href": "/admin/ecommerce/settings?tab=identity_policies&page={{Math.max(1, (ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) - 1)}}",
                                                 "mergeQuery": true,
                                                 "disabled": "{{(ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) <= 1}}",
-                                                "className": "ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-medium ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:aria-disabled:opacity-50 ecommerce:aria-disabled:cursor-not-allowed"
+                                                "className": "ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm ecommerce:text-xs"
                                             },
                                             "children": [
                                                 {
@@ -1303,7 +1297,7 @@
                                                 "href": "/admin/ecommerce/settings?tab=identity_policies&page={{ecommerceIdentityPolicies?.data?.meta?.last_page ? Math.min(ecommerceIdentityPolicies?.data?.meta?.last_page, (ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) + 1) : ((ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) + 1)}}",
                                                 "mergeQuery": true,
                                                 "disabled": "{{ecommerceIdentityPolicies?.data?.meta?.last_page ? ((ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) >= ecommerceIdentityPolicies?.data?.meta?.last_page) : (ecommerceIdentityPolicies?.data?.meta?.has_more_pages !== true)}}",
-                                                "className": "ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-medium ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:aria-disabled:opacity-50 ecommerce:aria-disabled:cursor-not-allowed"
+                                                "className": "ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm ecommerce:text-xs"
                                             },
                                             "children": [
                                                 {

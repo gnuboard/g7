@@ -24,6 +24,7 @@ import {
 } from '../BindingShape';
 import type { G7DevToolsInterface } from '../G7CoreGlobals';
 import { resolveRenderEnvironment } from './RenderEnvironment';
+import { applyResponsiveClassMerge } from './StyleHelpers';
 import type { RenderEnvironment } from './RenderEnvironment';
 import {
   evaluateConditionExpression,
@@ -619,7 +620,86 @@ function applyResponsiveOverrides(componentDef: ComponentDefinition, width: numb
     text: override.text ?? componentDef.text,
     if: override.if ?? componentDef.if,
     iteration: override.iteration ?? componentDef.iteration,
-  };
+    // 구간 classMap 은 기본 classMap 을 대신하고, classMerge 는 해석이 끝난 className 에 덧붙인다 (engine-v1.98.0)
+    classMap: override.classMap ?? componentDef.classMap,
+    __responsiveClassMerge: typeof override.classMerge === 'string' ? override.classMerge : undefined,
+  } as ComponentDefinition;
+}
+
+/**
+ * responsive 구간 `classMerge` 값의 바인딩을 해석합니다.
+ *
+ * DynamicRenderer 와 셀 렌더(`renderItemChildren`)가 같은 해석을 쓴다. 해석 결과가 문자열이 아니면(배열·객체·null)
+ * 덧붙일 클래스가 없는 것으로 본다.
+ *
+ * @param value - 구간 classMerge 원문 (`{{ }}` 포함 가능)
+ * @param context - 데이터 컨텍스트
+ * @param engine - 바인딩 엔진
+ * @returns 해석된 클래스 문자열 (없으면 빈 문자열)
+ * @since engine-v1.98.0
+ */
+export function resolveResponsiveClassMergeValue(
+  value: string | undefined,
+  context: Record<string, any>,
+  engine: DataBindingEngine
+): string {
+  if (typeof value !== 'string' || value.trim() === '') {
+    return '';
+  }
+  if (!value.includes('{{')) {
+    return value;
+  }
+  try {
+    const resolved = stripRawDeep(engine.resolveBindings(value, context, { skipCache: true }));
+    if (typeof resolved !== 'string') {
+      return '';
+    }
+    // 평가에 실패한 식은 원문(`{{…}}`)으로 돌아온다 — 그 조각이 클래스 토큰으로 붙지 않게 뺀다
+    return resolved
+      .split(/\s+/)
+      .filter((token) => token !== '' && !token.includes('{{') && !token.includes('}}'))
+      .join(' ');
+  } catch (error) {
+    logger.warn('resolveResponsiveClassMergeValue: 해석 실패:', value, error);
+    return '';
+  }
+}
+
+/**
+ * 셀·반복 항목 렌더에서 해석된 props 에 classMap 과 구간 classMerge 를 적용합니다.
+ *
+ * DynamicRenderer props 메모의 4단계(classMap)·4-1단계(classMerge)와 같은 순서다. 종전 셀 렌더는 classMap 을
+ * 적용하지 않았다 — 번들 레이아웃의 셀 정의에 classMap 사용이 0건이라 기존 화면은 바뀌지 않는다.
+ *
+ * @param props - 바인딩이 해석된 props (그대로 고쳐 쓴다)
+ * @param childDef - responsive 오버라이드가 적용된 정의
+ * @param context - 데이터 컨텍스트
+ * @param engine - 바인딩 엔진
+ * @returns 같은 props 객체
+ * @since engine-v1.98.0
+ */
+function applyCellClassOverlays(
+  props: Record<string, any>,
+  childDef: ComponentDefinition,
+  context: Record<string, any>,
+  engine: DataBindingEngine
+): Record<string, any> {
+  if (childDef.classMap) {
+    const classMapResult = resolveClassMap(childDef.classMap as ClassMapDefinition, context, engine, { skipCache: true });
+    if (classMapResult) {
+      const existing = typeof props.className === 'string' ? props.className : '';
+      props.className = existing ? `${existing} ${classMapResult}` : classMapResult;
+    }
+  }
+  const classMerge = (childDef as any).__responsiveClassMerge as string | undefined;
+  // className 이 문자열이 아닌 값이면 건드리지 않는다(DynamicRenderer 와 같은 판정)
+  if (classMerge && (props.className === undefined || typeof props.className === 'string')) {
+    props.className = applyResponsiveClassMerge(
+      typeof props.className === 'string' ? props.className : '',
+      resolveResponsiveClassMergeValue(classMerge, context, engine)
+    );
+  }
+  return props;
 }
 
 /**
@@ -1066,8 +1146,8 @@ export function renderItemChildren(
         ? options.getRemountKey(resolvedIterationId, iterationFallbackKey)
         : iterationFallbackKey;
 
-      // props 해석
-      const resolvedProps = resolveProps(childDef.props, iterationContext);
+      // props 해석 → classMap·구간 classMerge (DynamicRenderer 와 같은 순서, engine-v1.98.0)
+      const resolvedProps = applyCellClassOverlays(resolveProps(childDef.props, iterationContext), childDef, iterationContext, bindingEngine);
 
       // actions 바인딩 (DynamicRenderer와 동일한 패턴)
       const finalProps = bindComponentActions(resolvedProps, actionsToBind(childDef.actions), iterationContext, {
@@ -1179,8 +1259,8 @@ export function renderItemChildren(
       return [];
     }
 
-    // props 해석
-    const resolvedProps = resolveProps(childDef.props, effectiveContext);
+    // props 해석 → classMap·구간 classMerge (DynamicRenderer 와 같은 순서, engine-v1.98.0)
+    const resolvedProps = applyCellClassOverlays(resolveProps(childDef.props, effectiveContext), childDef, effectiveContext, bindingEngine);
 
     // actions 바인딩 (DynamicRenderer와 동일한 패턴)
     const finalProps = bindComponentActions(resolvedProps, actionsToBind(childDef.actions), effectiveContext, {

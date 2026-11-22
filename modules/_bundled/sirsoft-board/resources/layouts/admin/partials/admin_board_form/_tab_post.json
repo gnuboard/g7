@@ -40,9 +40,6 @@
                             "id": "min_title_length_field",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "id": "min_title_length_label",
@@ -68,8 +65,7 @@
                                         "name": "min_title_length",
                                         "min": "{{_local?.form?._meta?.limits?.min_title_length_min ?? 0}}",
                                         "max": "{{_local?.form?._meta?.limits?.min_title_length_max ?? 200}}",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "className": ""
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -96,9 +92,6 @@
                             "id": "max_title_length_field",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "id": "max_title_length_label",
@@ -124,8 +117,7 @@
                                         "name": "max_title_length",
                                         "min": "{{_local?.form?._meta?.limits?.max_title_length_min ?? 1}}",
                                         "max": "{{_local?.form?._meta?.limits?.max_title_length_max ?? 1000}}",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "className": ""
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -162,9 +154,6 @@
                             "id": "min_content_length_field",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "id": "min_content_length_label",
@@ -190,8 +179,7 @@
                                         "name": "min_content_length",
                                         "min": "{{_local?.form?._meta?.limits?.min_content_length_min ?? 0}}",
                                         "max": "{{_local?.form?._meta?.limits?.min_content_length_max ?? 10000}}",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "className": ""
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -218,9 +206,6 @@
                             "id": "max_content_length_field",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "id": "max_content_length_label",
@@ -246,8 +231,7 @@
                                         "name": "max_content_length",
                                         "min": "{{_local?.form?._meta?.limits?.max_content_length_min ?? 1}}",
                                         "max": "{{_local?.form?._meta?.limits?.max_content_length_max ?? 100000}}",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "className": ""
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -276,9 +260,6 @@
                     "id": "blocked_keywords_field",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "id": "blocked_keywords_label",
@@ -330,9 +311,6 @@
                     "id": "new_display_hours_field",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "id": "new_display_hours_label",
@@ -358,8 +336,7 @@
                                 "name": "new_display_hours",
                                 "min": "{{_local?.form?._meta?.limits?.new_display_hours_min ?? 0}}",
                                 "max": "{{_local?.form?._meta?.limits?.new_display_hours_max ?? 720}}",
-                                "disabled": "{{_computed.isReadOnly}}",
-                                "className": ""
+                                "disabled": "{{_computed.isReadOnly}}"
                             }
                         },
                         {
@@ -431,9 +408,6 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_local.form.use_reply}}",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "id": "max_reply_depth_label",
@@ -459,8 +433,7 @@
                                 "name": "max_reply_depth",
                                 "min": "{{_local?.form?._meta?.limits?.max_reply_depth_min ?? 1}}",
                                 "max": "{{_local?.form?._meta?.limits?.max_reply_depth_max ?? 10}}",
-                                "disabled": "{{_computed.isReadOnly}}",
-                                "className": ""
+                                "disabled": "{{_computed.isReadOnly}}"
                             }
                         },
                         {
@@ -488,9 +461,6 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_local.form.use_reply}}",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "id": "reply_delete_policy_label",
@@ -514,7 +484,6 @@
                             "props": {
                                 "name": "reply_delete_policy",
                                 "disabled": "{{_computed.isReadOnly}}",
-                                "className": "",
                                 "options": [
                                     {
                                         "value": "cascade",
@@ -552,9 +521,6 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_local.form.use_reply && _local.form.secret_mode !== 'disabled'}}",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "id": "secret_reply_visibility_label",
@@ -578,7 +544,6 @@
                             "props": {
                                 "name": "secret_reply_visibility",
                                 "disabled": "{{_computed.isReadOnly}}",
-                                "className": "",
                                 "options": [
                                     {
                                         "value": "thread_path",
@@ -696,9 +661,6 @@
                             "id": "min_comment_length_field",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "id": "min_comment_length_label",
@@ -724,8 +686,7 @@
                                         "name": "min_comment_length",
                                         "min": "{{_local?.form?._meta?.limits?.min_comment_length_min ?? 0}}",
                                         "max": "{{_local?.form?._meta?.limits?.min_comment_length_max ?? 1000}}",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "className": ""
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -752,9 +713,6 @@
                             "id": "max_comment_length_field",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "id": "max_comment_length_label",
@@ -780,8 +738,7 @@
                                         "name": "max_comment_length",
                                         "min": "{{_local?.form?._meta?.limits?.max_comment_length_min ?? 1}}",
                                         "max": "{{_local?.form?._meta?.limits?.max_comment_length_max ?? 10000}}",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "className": ""
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -811,9 +768,6 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_local.form.use_comment}}",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "id": "max_comment_depth_label",
@@ -839,8 +793,7 @@
                                 "name": "max_comment_depth",
                                 "min": "{{_local?.form?._meta?.limits?.max_comment_depth_min ?? 0}}",
                                 "max": "{{_local?.form?._meta?.limits?.max_comment_depth_max ?? 10}}",
-                                "disabled": "{{_computed.isReadOnly}}",
-                                "className": ""
+                                "disabled": "{{_computed.isReadOnly}}"
                             }
                         },
                         {
@@ -868,9 +821,6 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_local.form.use_comment}}",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "id": "comment_order_label",
@@ -966,9 +916,6 @@
                             "id": "max_file_count_field",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "id": "max_file_count_label",
@@ -994,8 +941,7 @@
                                         "name": "max_file_count",
                                         "min": "{{_local?.form?._meta?.limits?.max_file_count_min ?? 1}}",
                                         "max": "{{_local?.form?._meta?.limits?.max_file_count_max ?? 20}}",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "className": ""
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -1022,9 +968,6 @@
                             "id": "max_file_size_field",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "id": "max_file_size_label",
@@ -1051,8 +994,7 @@
                                         "min": "{{_local?.form?._meta?.limits?.max_file_size_min ?? 1}}",
                                         "max": "{{_local?.form?._meta?.limits?.max_file_size_max ?? 200}}",
                                         "placeholder": "$t:sirsoft-board.admin.form.fields.max_file_size.placeholder",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "className": ""
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -1082,9 +1024,6 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_local.form.use_file_upload}}",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "id": "allowed_extensions_label",
@@ -1138,9 +1077,6 @@
                     "id": "display_name_field",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "id": "display_name_label",
@@ -1340,9 +1276,6 @@
                             }
                         }
                     ],
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "id": "guest_author_fields_label",
@@ -1550,7 +1483,7 @@
                                                                     "props": {
                                                                         "type": "button",
                                                                         "aria-label": "$t:sirsoft-board.admin.form.guest_author_fields.delete|label={{row.label}}",
-                                                                        "className": "board:p-1 board:shrink-0 board:text-gray-500 board:dark:text-gray-400 board:hover:text-red-600 board:dark:hover:text-red-400"
+                                                                        "className": "board:p-1 board:shrink-0 board-text-muted board:hover:text-red-600 board:dark:hover:text-red-400"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -1776,7 +1709,7 @@
                                                                             "if": "{{row.fixed === true}}",
                                                                             "props": {
                                                                                 "name": "lock",
-                                                                                "className": "board:text-xs board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"
+                                                                                "className": "board:text-xs board-text-muted board:flex-shrink-0"
                                                                             }
                                                                         },
                                                                         {
@@ -1960,7 +1893,7 @@
                                                                     "props": {
                                                                         "type": "button",
                                                                         "aria-label": "$t:sirsoft-board.admin.form.guest_author_fields.delete|label={{row.label}}",
-                                                                        "className": "board:p-1 board:text-gray-500 board:dark:text-gray-400 board:hover:text-red-600 board:dark:hover:text-red-400"
+                                                                        "className": "board:p-1 board-text-muted board:hover:text-red-600 board:dark:hover:text-red-400"
                                                                     },
                                                                     "children": [
                                                                         {

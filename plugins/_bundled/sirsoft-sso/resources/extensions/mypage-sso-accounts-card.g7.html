@@ -6,22 +6,22 @@
 <extension target-layout="mypage/profile" priority="95">
   <inject target-id="profile_view_bio_card" position="append">
     <div data-ref="sso_accounts_card" data-if="{{!!ssoMyAccounts?.data &amp;&amp; ((ssoMyAccounts?.data?.accounts ?? []).length > 0 || (ssoMyAccounts?.data?.linkable ?? []).length > 0)}}" class="sso:bg-white sso:dark:bg-gray-800 sso:rounded-lg sso:shadow-sm sso:border sso:border-gray-200 sso:dark:border-gray-700 sso:p-6">
-      <responsive on="portable" class="sso:bg-white sso:dark:bg-gray-800 sso:rounded-lg sso:shadow-sm sso:border sso:border-gray-200 sso:dark:border-gray-700 sso:p-4"/>
+      <responsive on="portable" class-merge="sso:p-4"/>
       <div class="sso:mb-4 sso:pb-3 sso:border-b sso:border-gray-200 sso:dark:border-gray-700">
         <h2 class="sso:text-base sso:font-semibold sso:text-gray-900 sso:dark:text-white">$t:sirsoft-sso.mypage.title</h2>
       </div>
       <p data-if="{{ssoMyAccounts?.data?.enforced === true}}" data-ref="sso_accounts_enforced" class="sso:mb-4 sso:p-3 sso:rounded-lg sso:bg-blue-50 sso:dark:bg-blue-900/20 sso:border sso:border-blue-200 sso:dark:border-blue-800 sso:text-sm sso:text-blue-700 sso:dark:text-blue-300">$t:sirsoft-sso.mypage.enforced</p>
-      <p data-if="{{(ssoMyAccounts?.data?.accounts ?? []).length === 0}}" class="sso:py-2 sso:text-sm sso:text-gray-500 sso:dark:text-gray-400">$t:sirsoft-sso.mypage.empty</p>
+      <p data-if="{{(ssoMyAccounts?.data?.accounts ?? []).length === 0}}" class="sso:py-2 sso:text-sm sso-text-muted">$t:sirsoft-sso.mypage.empty</p>
       <ul data-if="{{(ssoMyAccounts?.data?.accounts ?? []).length > 0}}" data-ref="sso_accounts_list" class="sso:divide-y sso:divide-gray-200 sso:dark:divide-gray-700">
         <li data-each="account in ssoMyAccounts?.data?.accounts ?? []" data-key="{{account.id}}" class="sso:py-3 sso:flex sso:flex-col sso:gap-2">
           <responsive on="640-" class="sso:py-3 sso:flex sso:flex-row sso:items-center sso:gap-3"/>
           <div class="sso:flex-1 sso:min-w-0">
             <p class="sso:text-sm sso:font-medium sso:text-gray-900 sso:dark:text-white">{{account.idp_label}}</p>
-            <p class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">
+            <p class="sso:text-xs sso-text-muted">
               <span>$t:sirsoft-sso.mypage.linked_at</span>
               <span> {{account.linked_at | date}}</span>
             </p>
-            <p class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">
+            <p class="sso:text-xs sso-text-muted">
               <span>$t:sirsoft-sso.mypage.last_login_at</span>
               <span data-if="{{!!account.last_login_at}}"> {{account.last_login_at | datetime}}</span>
               <span data-if="{{!account.last_login_at}}"> -</span>
@@ -38,7 +38,7 @@
             </on>
             $t:sirsoft-sso.mypage.unlink
           </button>
-          <p data-if="{{!!account.unlink_block}}" class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"><responsive on="768-" class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:max-w-xs"/>{{$t('sirsoft-sso.mypage.unlink_block.' + account.unlink_block)}}</p>
+          <p data-if="{{!!account.unlink_block}}" class="sso:text-xs sso-text-muted"><responsive on="768-" class-merge="sso:max-w-xs"/>{{$t('sirsoft-sso.mypage.unlink_block.' + account.unlink_block)}}</p>
         </li>
       </ul>
       <p data-if="{{!!_global.ssoUnlinkError}}" class="sso:mt-3 sso:text-sm sso:text-red-600 sso:dark:text-red-400" role="alert">{{_global.ssoUnlinkError ?? ''}}</p>

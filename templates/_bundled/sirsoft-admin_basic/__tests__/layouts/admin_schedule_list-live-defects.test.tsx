@@ -18,6 +18,7 @@
 import { describe, it, expect } from 'vitest';
 import { DataSourceManager } from '@core/template-engine/DataSourceManager';
 import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
+import { applyResponsiveClassMerge } from '@core/template-engine/helpers/StyleHelpers';
 
 const mainLayout = require('../../layouts/admin_schedule_list.json');
 const filterSection = require('../../layouts/partials/admin_schedule_list/_partial_filter_section.json');
@@ -242,8 +243,11 @@ describe('D10 — 좁은 화면에서 탭 바가 본문 안쪽 여백과 같은 
             });
             keys.sort((a, b) => Number(a in presets) - Number(b in presets)
                 || (rangeOf(a)[1] - rangeOf(a)[0]) - (rangeOf(b)[1] - rangeOf(b)[0]));
-            const value = keys.length ? node.responsive[keys[0]]?.props?.className : undefined;
-            return String(value ?? node.props?.className ?? '').split(/\s+/);
+            // 고른 구간의 실효값 — 구간 class(통째 교체, 없으면 기본 class) 위에 구간 class-merge 를 엔진 규칙으로 덧붙인다 (#399)
+            const value = keys.length
+                ? applyResponsiveClassMerge(node.responsive[keys[0]]?.props?.className ?? node.props?.className, node.responsive[keys[0]]?.classMerge)
+                : node.props?.className;
+            return String(value ?? '').split(/\s+/);
         };
         const step = (tokens: string[], re: RegExp) => tokens.map((t) => re.exec(t)?.[1]).find(Boolean);
         const root = collect(mainLayout, (n) => n.id === 'schedule_list_content')[0];

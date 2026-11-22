@@ -12,14 +12,14 @@
       </on>
       <!-- 탭: 저장된 배송지 / 직접 입력 — 회원만. 비회원은 주소록이 없어 탭 없이 직접입력 폼만 노출. -->
       <div data-if="{{_global.currentUser?.uuid}}" class="flex border-b border-gray-200 dark:border-gray-700">
-        <button type="button" class="{{(_global.changeAddressMode ?? 'saved') === 'saved' ? 'px-4 py-2 text-sm font-medium border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}">
+        <button type="button" class="{{(_global.changeAddressMode ?? 'saved') === 'saved' ? 'px-4 py-2 text-sm font-medium border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'px-4 py-2 text-sm font-medium text-muted hover:text-gray-700 dark:hover:text-gray-300'}}">
           <on type="click">
             <!-- 저장된 배송지 탭 -->
             <set-state target="global" changeAddressMode="saved"/>
           </on>
           $t:mypage.order_detail.saved_addresses
         </button>
-        <button type="button" class="{{(_global.changeAddressMode ?? 'saved') === 'manual' ? 'px-4 py-2 text-sm font-medium border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}">
+        <button type="button" class="{{(_global.changeAddressMode ?? 'saved') === 'manual' ? 'px-4 py-2 text-sm font-medium border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'px-4 py-2 text-sm font-medium text-muted hover:text-gray-700 dark:hover:text-gray-300'}}">
           <on type="click">
             <!-- 직접 입력 탭 — 비회원에게는 이 모드만 있고 탭 줄 자체가 보이지 않는다 -->
             <set-state target="global" changeAddressMode="manual"/>
@@ -51,7 +51,7 @@
         <!-- 배송지 없을 때 -->
         <div data-if="{{!(userAddresses?.data?.addresses?.data ?? []).length}}" class="text-center py-8">
           <icon name="map-pin" class="text-[2.5rem] mx-auto text-gray-500 dark:text-gray-500 mb-2"/>
-          <p class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.addresses.empty</p>
+          <p class="text-sm text-muted">$t:mypage.addresses.empty</p>
         </div>
       </div>
       <!-- 직접 입력 폼 — 비회원은 항상 노출(탭 없음), 회원은 manual 탭 선택 시 노출. 모달은 부모 _local 미접근이므로 값은 _global.editingShippingAddress 에 산다(트리거가 현재 배송지로 채움). 칸마다 value 를 상태에서 읽고 change 로 전역 점 경로에 쓴다 — 폼 자동바인딩(data-key)은 «마지막 렌더 때의 전역 스냅샷»에 이번 칸만 얹어 통째로 쓰므로, 다음 칸 입력이 미뤄진 다시 그리기보다 먼저 오면 앞 칸 값을 지웠다(7.1.1 무거운 주문서에서 20ms 간격 입력 1/4). -->
@@ -60,7 +60,7 @@
         <div class="grid grid-cols-2 gap-3">
           <responsive on="portable" class="grid grid-cols-1 gap-3"/>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label class="form-label">
               <span>$t:mypage.addresses.form.recipient</span>
               <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
             </label>
@@ -72,7 +72,7 @@
             </input>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label class="form-label">
               <span>$t:mypage.addresses.form.phone</span>
               <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
             </label>
@@ -86,7 +86,7 @@
         </div>
         <!-- 주소 검색 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label class="form-label">
             <span>$t:mypage.addresses.form.address</span>
             <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
           </label>
@@ -118,7 +118,7 @@
         </div>
         <!-- 상세 주소 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:mypage.addresses.form.detail_address</label>
+          <label class="form-label">$t:mypage.addresses.form.detail_address</label>
           <input aria-label="$t:mypage.addresses.form.detail_address" type="text" name="address_detail" value="{{_global.editingShippingAddress?.address_detail ?? ''}}" placeholder="$t:mypage.addresses.form.detail_placeholder" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-sm">
             <on type="change">
               <!-- 칸 값을 편집 중인 배송지의 상세 주소(`_global.editingShippingAddress.address_detail`)에 옮긴다 -->
@@ -130,14 +130,14 @@
     </div>
     <footer>
       <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-        <responsive on="portable" type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"/>
+        <responsive on="portable" type="button" class-merge="flex-1 py-2.5"/>
         <on type="click">
           <close-modal/>
         </on>
         $t:common.cancel
       </button>
-      <button type="button" class="flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isSubmittingAddress === true || (_global.currentUser?.uuid &amp;&amp; (_global.changeAddressMode ?? 'saved') === 'saved' &amp;&amp; !_global.selectedAddressId)}}">
-        <responsive on="portable" type="button" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isSubmittingAddress === true || (_global.currentUser?.uuid &amp;&amp; (_global.changeAddressMode ?? 'saved') === 'saved' &amp;&amp; !_global.selectedAddressId)}}"/>
+      <button type="button" class="flex btn btn-primary gap-2" disabled="{{_local.isSubmittingAddress === true || (_global.currentUser?.uuid &amp;&amp; (_global.changeAddressMode ?? 'saved') === 'saved' &amp;&amp; !_global.selectedAddressId)}}">
+        <responsive on="portable" type="button" class-merge="flex-1 py-2.5" disabled="{{_local.isSubmittingAddress === true || (_global.currentUser?.uuid &amp;&amp; (_global.changeAddressMode ?? 'saved') === 'saved' &amp;&amp; !_global.selectedAddressId)}}"/>
         <on type="click">
           <!-- 적용 — 저장된 배송지 탭에서 아무것도 고르지 않았으면 잠겨 있다(address_id 없이 나가면 서버가 직접 입력 칸을 요구해 422, #703).
                회원/비회원 단일 커스텀 핸들러. 핸들러가 _global(changeAddressMode/selectedAddressId/editingShippingAddress/guestOrderToken) 을 읽어 endpoint(user vs guest)+body(address_id vs 직접입력)+토큰 헤더를 분기하고, isSubmittingAddress 처리중 상태·모달 닫기·order 리패치·토스트까지 모두 처리한다 (cancel/confirm-option 과 동일 패턴). confirm 1회는 핸들러 호출 액션에 둔다. -->

@@ -194,7 +194,7 @@
           <p data-ref="totp_security_intro_password_error" data-if="{{_local.passwordError}}" class="totp:text-sm totp:text-red-600 totp:dark:text-red-400 totp:mt-1" role="alert">{{_local.passwordError ?? ''}}</p>
           <p data-ref="totp_security_intro_password_hint" class="totp-text-hint totp:mt-1">$t:sirsoft-totp.admin.security.intro.password_hint</p>
         </div>
-        <button data-ref="totp_security_start" type="button" class="totp:mt-4 totp:px-4 totp:py-2 totp:bg-blue-600 totp:hover:bg-blue-700 totp:dark:bg-blue-600 totp:dark:hover:bg-blue-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer totp:disabled:opacity-50 totp:disabled:cursor-not-allowed" disabled="{{!_local.currentPassword || _local.busy || _local.startLocked}}">
+        <button data-ref="totp_security_start" type="button" class="totp:mt-4 totp-btn totp-btn-primary" disabled="{{!_local.currentPassword || _local.busy || _local.startLocked}}">
           <on type="click">
             <!-- 시크릿 발급 — 응답의 평문은 이 시점에만 받는다. 현재 비밀번호를 함께 보내고, 성공하면 화면 상태에서 곧바로 비운다. -->
             <sequence>
@@ -251,7 +251,7 @@
             </div>
             <div data-ref="totp_security_enroll_actions" class="totp:flex totp:flex-col totp:gap-2 totp:mt-4">
               <responsive on="640-" class="totp:flex totp:flex-row totp:gap-2 totp:mt-4"/>
-              <button data-ref="totp_security_confirm" type="button" class="totp:flex-1 totp:px-4 totp:py-3 totp:bg-blue-600 totp:hover:bg-blue-700 totp:dark:bg-blue-600 totp:dark:hover:bg-blue-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer totp:disabled:opacity-50 totp:disabled:cursor-not-allowed" disabled="{{!_local.code || _local.code.length < 6 || _local.busy}}">
+              <button data-ref="totp_security_confirm" type="button" class="totp:flex-1 totp-btn totp-btn-primary totp:py-3" disabled="{{!_local.code || _local.code.length < 6 || _local.busy}}">
                 <on type="click">
                   <!-- 확정 — 성공하면 백업 코드 10개를 1회 노출 화면으로 넘긴다. -->
                   <sequence>
@@ -270,7 +270,7 @@
                 </on>
                 <span data-ref="totp_security_confirm_text">$t:sirsoft-totp.admin.security.enroll.confirm</span>
               </button>
-              <button data-ref="totp_security_cancel" type="button" class="totp:flex-1 totp:px-4 totp:py-3 totp:border totp:border-gray-300 totp:dark:border-gray-600 totp:text-gray-700 totp:dark:text-gray-300 totp:rounded-lg totp:font-medium totp:hover:bg-gray-50 totp:dark:hover:bg-gray-700 totp:transition-colors totp:cursor-pointer" disabled="{{_local.busy}}">
+              <button data-ref="totp_security_cancel" type="button" class="totp:flex-1 totp-btn totp-btn-secondary totp:py-3" disabled="{{_local.busy}}">
                 <on type="click">
                   <!-- 등록 취소 — 받아 둔 시크릿·QR 주소를 화면 상태에서 버려 시작 전 카드로 돌아간다. 서버에는 요청하지 않는다 -->
                   <set-state target="local" :secret="null" :otpauthUri="null" code="" currentPassword="" :error="null"/>
@@ -306,7 +306,7 @@
             </on>
             <span data-ref="totp_security_backup_copy_text">$t:sirsoft-totp.admin.security.backup.copy</span>
           </button>
-          <button data-ref="totp_security_backup_done" type="button" class="totp:px-4 totp:py-2 totp:bg-blue-600 totp:hover:bg-blue-700 totp:dark:bg-blue-600 totp:dark:hover:bg-blue-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer">
+          <button data-ref="totp_security_backup_done" type="button" class="totp-btn totp-btn-primary">
             <on type="click">
               <!-- 「보관했습니다」 — 백업 코드 평문을 화면 상태에서 지워 등록됨 카드로 돌아간다. 다시 볼 방법은 재발급뿐이다 -->
               <set-state target="local" :backupCodes="null"/>
@@ -355,7 +355,7 @@
           <p data-ref="totp_settings_fallback_off_warning_text" class="totp:text-xs totp-tone-warning">$t:sirsoft-totp.admin.settings.fallback_off_warning</p>
         </div>
         <div data-ref="totp_settings_actions" class="totp:flex totp:justify-end totp:mt-4">
-          <button data-ref="totp_settings_save" type="button" class="totp:px-4 totp:py-2 totp:bg-blue-600 totp:hover:bg-blue-700 totp:dark:bg-blue-600 totp:dark:hover:bg-blue-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer totp:disabled:opacity-50 totp:disabled:cursor-not-allowed" disabled="{{_computed.isPluginReadOnly || (!_local.settingsChanged || _local.settingsSaving)}}">
+          <button data-ref="totp_settings_save" type="button" class="totp-btn totp-btn-primary" disabled="{{_computed.isPluginReadOnly || (!_local.settingsChanged || _local.settingsSaving)}}">
             <on type="click">
               <!-- 운영 설정 저장 — 응답(정규화된 저장값)을 폼에 되돌려 화면과 저장 상태를 맞춘다. 실패하면 칸별 사유를 카드 안에 보인다 -->
               <sequence>

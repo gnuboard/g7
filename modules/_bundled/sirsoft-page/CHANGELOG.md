@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.3.1] - 2026-11-21
+
+### Changed
+
+- 화면마다 따로 적던 흐린 글자 모양을 이 확장 CSS 의 공통 클래스로 모으고, 저장 버튼에 겹쳐 적혀 있던 비활성 모양 클래스를 정리했습니다. 화면 모양은 같습니다.
+- 화면 폭별로 바뀐 클래스만 적는 방식(class-merge)으로 레이아웃을 정리했습니다. 코어 7.2.1 이상이 필요합니다.
+
 ## [1.3.0] - 2026-11-20
 
 ### Added

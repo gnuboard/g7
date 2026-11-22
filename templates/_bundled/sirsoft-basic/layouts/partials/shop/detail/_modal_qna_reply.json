@@ -67,7 +67,7 @@
                             "name": "Span",
                             "if": "{{_global.qnaErrors?.content}}",
                             "props": {
-                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
+                                "className": "form-error"
                             },
                             "text": "{{(_global.qnaErrors?.content ?? [])[0] ?? ''}}"
                         }

@@ -848,7 +848,7 @@
                                                     "props": {
                                                         "href": "/page/{{row.slug ?? ''}}",
                                                         "target": "_blank",
-                                                        "className": "page:text-xs page:text-gray-500 page:dark:text-gray-400 page:hover:text-blue-600 page:dark:hover:text-blue-400 page:hover:underline"
+                                                        "className": "page:text-xs page-text-muted page:hover:text-blue-600 page:dark:hover:text-blue-400 page:hover:underline"
                                                     },
                                                     "text": "/page/{{row.slug ?? ''}}"
                                                 }

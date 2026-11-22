@@ -36,7 +36,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "search",
-                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                        "className": "ecommerce-text-muted"
                     }
                 },
                 {
@@ -52,7 +52,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.seoExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
+                        "className": "ecommerce-admin-card-accordion-icon ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.seoExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
                     }
                 }
             ]
@@ -132,7 +132,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                "className": "ecommerce-text-muted"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.seo.title_hint"
                                         },
@@ -140,7 +140,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                "className": "ecommerce-text-muted"
                                             },
                                             "text": "{{_local.form.seo_sync_title ? ($localized(_local.form.name) || '').length : ($localized(_local.form.meta_title) || '').length}}/70"
                                         }

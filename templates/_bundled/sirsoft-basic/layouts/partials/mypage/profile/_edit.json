@@ -38,7 +38,7 @@
                     "props": {
                         "name": "circle-pause",
                         "size": "lg",
-                        "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                        "className": "text-muted flex-shrink-0"
                     }
                 },
                 {
@@ -159,9 +159,7 @@
                     "name": "Div",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "flex items-center gap-2 w-full"
-                            }
+                            "classMerge": "w-full"
                         }
                     },
                     "props": {
@@ -174,9 +172,7 @@
                             "name": "A",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "inline-flex items-center justify-center gap-2 flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                                    }
+                                    "classMerge": "flex-1"
                                 }
                             },
                             "actions": [
@@ -187,7 +183,7 @@
                             ],
                             "props": {
                                 "href": "/mypage/profile",
-                                "className": "inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                "className": "btn btn-outline gap-2 text-sm"
                             },
                             "children": [
                                 {
@@ -211,16 +207,14 @@
                             "name": "Button",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "inline-flex items-center justify-center gap-2 flex-1 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                    }
+                                    "classMerge": "flex-1"
                                 }
                             },
                             "props": {
                                 "type": "submit",
                                 "form": "profileEditForm",
                                 "disabled": "{{_local.isSavingProfile}}",
-                                "className": "inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                "className": "btn btn-primary gap-2 text-sm"
                             },
                             "children": [
                                 {
@@ -424,9 +418,7 @@
                     "name": "Div",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
-                            }
+                            "classMerge": "p-4"
                         }
                     },
                     "props": {
@@ -455,9 +447,7 @@
                                     "name": "Div",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "flex flex-col items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700"
-                                            }
+                                            "classMerge": "flex-col gap-3"
                                         }
                                     },
                                     "props": {
@@ -540,12 +530,12 @@
                                                     "responsive": {
                                                         "portable": {
                                                             "props": {
-                                                                "className": "flex flex-col gap-1 text-sm text-gray-500 dark:text-gray-400"
+                                                                "className": "flex flex-col gap-1 text-sm text-muted"
                                                             }
                                                         }
                                                     },
                                                     "props": {
-                                                        "className": "flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-500 dark:text-gray-400"
+                                                        "className": "flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted"
                                                     },
                                                     "children": [
                                                         {
@@ -556,7 +546,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                        "className": "text-muted"
                                                                     },
                                                                     "text": "$t:mypage.profile.joined_at"
                                                                 },
@@ -578,7 +568,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                        "className": "text-muted"
                                                                     },
                                                                     "text": "$t:mypage.profile.last_login"
                                                                 },
@@ -602,7 +592,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                        "className": "text-muted"
                                                                     },
                                                                     "text": "$t:mypage.profile.withdrawn_at"
                                                                 },
@@ -653,7 +643,7 @@
                                                         "aria-label": "$t:mypage.profile.email",
                                                         "value": "{{user.data?.email}}",
                                                         "readOnly": true,
-                                                        "className": "w-full px-4 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                                                        "className": "w-full px-4 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-muted cursor-not-allowed"
                                                     }
                                                 },
                                                 {
@@ -680,7 +670,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             },
                                             "text": "$t:mypage.profile.email_readonly_hint"
                                         }
@@ -780,7 +770,7 @@
                                             "name": "P",
                                             "if": "{{((_local.displayNamePreviews ?? {})[$computed.displayNameSelected?.value] ?? $computed.displayNameSelected?.preview ?? '') !== ''}}",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400 break-words"
+                                                "className": "text-xs text-muted break-words"
                                             },
                                             "text": "{{$t('member.display_name.preview', { name: ((_local.displayNamePreviews ?? {})[$computed.displayNameSelected?.value] ?? $computed.displayNameSelected?.preview ?? '') })}}"
                                         },
@@ -790,7 +780,7 @@
                                             "name": "P",
                                             "if": "{{$computed.displayNameSelected?.requires_nickname === true}}",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400 break-words"
+                                                "className": "text-xs text-muted break-words"
                                             },
                                             "text": "$t:member.display_name.requires_nickname"
                                         },
@@ -834,9 +824,7 @@
                             "if": "{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'contact'; })}}",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
-                                    }
+                                    "classMerge": "p-4"
                                 }
                             },
                             "props": {
@@ -874,9 +862,7 @@
                             "if": "{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'location'; })}}",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
-                                    }
+                                    "classMerge": "p-4"
                                 }
                             },
                             "props": {
@@ -916,9 +902,7 @@
                     "if": "{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'extra'; })}}",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
-                            }
+                            "classMerge": "p-4"
                         }
                     },
                     "props": {
@@ -956,9 +940,7 @@
                     "if": "{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'profile'; })}}",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
-                            }
+                            "classMerge": "p-4"
                         }
                     },
                     "props": {
@@ -999,9 +981,7 @@
                     },
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
-                            }
+                            "classMerge": "p-4"
                         }
                     },
                     "props": {
@@ -1043,7 +1023,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "w-full inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-base font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                        "className": "w-full btn btn-outline gap-2 px-6 py-3 text-base"
                                     }
                                 }
                             },
@@ -1055,7 +1035,7 @@
                             ],
                             "props": {
                                 "href": "/mypage/profile",
-                                "className": "inline-flex items-center justify-center gap-2 px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                "className": "btn btn-outline gap-2 px-6 py-2.5 text-sm"
                             },
                             "children": [
                                 {
@@ -1082,14 +1062,14 @@
                                     "props": {
                                         "type": "submit",
                                         "disabled": "{{_local.isSavingProfile}}",
-                                        "className": "w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-base font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        "className": "w-full btn btn-primary gap-2 px-6 py-3 text-base"
                                     }
                                 }
                             },
                             "props": {
                                 "type": "submit",
                                 "disabled": "{{_local.isSavingProfile}}",
-                                "className": "inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                "className": "btn btn-primary gap-2 px-6 py-2.5 text-sm"
                             },
                             "children": [
                                 {

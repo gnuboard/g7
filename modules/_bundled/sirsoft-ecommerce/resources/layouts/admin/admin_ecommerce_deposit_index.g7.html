@@ -50,7 +50,7 @@
                 <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
               </on>
             </input>
-            <icon name="search" class="ecommerce:text-base ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:pointer-events-none"/>
+            <icon name="search" class="ecommerce:text-base ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce-text-muted ecommerce:pointer-events-none"/>
           </div>
           <button aria-label="$t:common.refresh" title="$t:common.refresh" type="button" class="ecommerce-btn ecommerce-btn-icon">
             <icon name="arrows-rotate" class="ecommerce:text-base"/>
@@ -121,7 +121,7 @@
         <div data-ref="date_filter" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3">
           <span class="ecommerce-text-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.deposit.filter.deposit_date</span>
           <div class="ecommerce-flex-center ecommerce:gap-2">
-            <icon name="calendar" class="ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+            <icon name="calendar" class="ecommerce:text-base ecommerce-icon-muted ecommerce-text-muted"/>
             <input type="date" aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.deposit.filter.deposit_date')}}" placeholder="$t:sirsoft-ecommerce.admin.deposit.filter.start_date" class="ecommerce-input ecommerce:w-36" value="{{_local.startDate}}">
               <on type="change">
                 <!-- 기간 시작일. 옆의 1일·1주일 같은 빠른 선택 버튼도 결국 이 값을 채우는 자리다 -->
@@ -130,7 +130,7 @@
             </input>
           </div>
           <div class="ecommerce-flex-center ecommerce:gap-2">
-            <icon name="calendar" class="ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+            <icon name="calendar" class="ecommerce:text-base ecommerce-icon-muted ecommerce-text-muted"/>
             <input type="date" aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.deposit.filter.deposit_date')}}" placeholder="$t:sirsoft-ecommerce.admin.deposit.filter.end_date" class="ecommerce-input ecommerce:w-36" value="{{_local.endDate}}">
               <on type="change">
                 <!-- 기간 종료일 — 시작일과 짝을 이루며, 비워 두면 그 끝을 열어 둔 것으로 다룬다 -->

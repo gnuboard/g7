@@ -66,7 +66,7 @@
                 "responsive": {
                     "640-1023": {
                         "props": {
-                            "className": "daumpostcode:p-6 daumpostcode:min-h-screen daumpostcode:bg-gray-50 daumpostcode:dark:bg-gray-900"
+                            "className": "daumpostcode-admin-page-content"
                         }
                     },
                     "1024-": {

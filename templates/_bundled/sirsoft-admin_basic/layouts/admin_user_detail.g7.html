@@ -151,7 +151,7 @@
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.member_fields.status.display_name_kind</label>
                 <div data-testid="member-status-display-name-kind" class="text-primary text-sm break-words">{{!!memberFields?.data?.member?.display_name_kind ? (memberFields?.data?.member?.display_name_kind_label ?? memberFields?.data?.member?.display_name_kind) : $t('admin.users.member_fields.status.display_name_kind_none', { kind: memberFields?.data?.member?.display_name_effective_kind_label ?? '' })}}</div>
                 <p data-if="{{memberFields?.data?.member?.display_name_kind_unavailable === true}}" data-testid="member-status-display-name-kind-unavailable" class="text-xs text-yellow-700 dark:text-yellow-400 mt-1 break-words">{{$t('admin.users.member_fields.status.display_name_kind_unavailable', { kind: memberFields?.data?.member?.display_name_effective_kind_label ?? '' })}}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:admin.users.member_fields.status.display_name_kind_hint</p>
+                <p class="text-xs text-muted mt-1">$t:admin.users.member_fields.status.display_name_kind_hint</p>
               </div>
               <div data-ref="member_status_display_name" data-if="{{((memberFields?.data?.member?.display_name ?? null) !== null || (memberFields?.data?.member?.display_name_admin ?? null) !== null)}}">
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.member_fields.status.display_name_current</label>
@@ -171,7 +171,7 @@
               <div data-ref="member_status_nickname_next_changeable_at" data-if="{{!!memberFields?.data?.member?.nickname_next_changeable_at}}">
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.member_fields.status.nickname_next_changeable_at</label>
                 <div class="text-primary text-sm">{{memberFields?.data?.member?.nickname_next_changeable_at ?? ''}}</div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:admin.users.member_fields.status.nickname_next_changeable_hint</p>
+                <p class="text-xs text-muted mt-1">$t:admin.users.member_fields.status.nickname_next_changeable_hint</p>
               </div>
               <div data-ref="member_status_pending_required" data-if="{{(memberFields?.data?.member?.pending_required_fields ?? []).length > 0}}" class="col-span-full">
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.member_fields.status.pending_required</label>
@@ -441,7 +441,7 @@
             <ul data-ref="search_history_site_list" data-if="{{((user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []).length > 0}}" class="divide-y divide-gray-200 dark:divide-gray-700">
               <li data-each="history in (user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []" class="flex items-center justify-between gap-3 py-2">
                 <span class="text-primary text-sm break-all">{{history.keyword}}</span>
-                <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{history.searched_at ?? '-'}}</span>
+                <span class="text-xs text-muted whitespace-nowrap">{{history.searched_at ?? '-'}}</span>
               </li>
             </ul>
           </div>

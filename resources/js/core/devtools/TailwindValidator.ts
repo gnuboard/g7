@@ -190,7 +190,7 @@ function breakpointSuggestion(variant: string): string {
   // Tailwind 의 max-[N] 은 N 미만이다
   if (!key && max) key = `-${Number(max[1]) - 1}`;
   const on = key ?? '시작-끝';
-  return `Tailwind 폭 접두 '${variant}:' 는 쓰지 않습니다 — 엔진 responsive(<responsive on="${on}" class="…"/>)로 그 구간의 className 을 통째로 바꾸세요(docs/frontend/responsive-layout.md)`;
+  return `Tailwind 폭 접두 '${variant}:' 는 쓰지 않습니다 — 엔진 responsive(<responsive on="${on}" class-merge="…"/>)로 그 구간에서 바뀐 클래스만 덧붙이세요(docs/frontend/responsive-layout.md)`;
 }
 
 /**

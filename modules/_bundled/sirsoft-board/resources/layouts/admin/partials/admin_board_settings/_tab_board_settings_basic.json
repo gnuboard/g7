@@ -74,9 +74,6 @@
                             "id": "field_type",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -183,8 +180,6 @@
                                                             ],
                                                             "props": {
                                                                 "type": "button",
-                                                                "variant": "ghost",
-                                                                "size": "sm",
                                                                 "className": "board:inline-flex board:items-center board:gap-1 board:text-xs board:rounded-full board:px-2.5 board:py-0.5 board:bg-gray-100 board:dark:bg-gray-700 board:text-gray-600 board:dark:text-gray-300 board:hover:bg-gray-200 board:dark:hover:bg-gray-600 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
                                                                 "title": "{{_computed.canManageBoardTypes ? '' : '$t:sirsoft-board.admin.settings.board_types_no_permission'}}",
                                                                 "disabled": "{{!_computed.canManageBoardTypes}}"
@@ -236,9 +231,6 @@
                             "id": "field_secret_mode",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -328,9 +320,6 @@
                             "id": "field_show_view_count",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -406,9 +395,6 @@
                             "id": "field_use_report",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -484,9 +470,6 @@
                             "id": "field_use_scrap",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -562,9 +545,6 @@
                             "id": "field_use_reaction",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -773,9 +753,6 @@
                             "id": "field_use_comment_reaction",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",

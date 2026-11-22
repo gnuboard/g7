@@ -49,7 +49,7 @@
           </on>
           $t:sirsoft-ecommerce.admin.common_info.button.cancel
         </button>
-        <button type="button" class="ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_local.isSaving || (_global.panelMode === 'edit' &amp;&amp; _global.selectedItem?.abilities?.can_update !== true)}}">
+        <button type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm" disabled="{{_local.isSaving || (_global.panelMode === 'edit' &amp;&amp; _global.selectedItem?.abilities?.can_update !== true)}}">
           <on type="click">
             <!-- 저장 — 편집이면 갱신, 등록·복사면 새로 만들기. 성공하면 응답으로 선택을 갈아끼우고 보기 모드로 돌아간 뒤 폼을 빈 초깃값으로 다시 세운다(복사·등록 직후 남은 값이 다음 등록에 새지 않게). -->
             <sequence>

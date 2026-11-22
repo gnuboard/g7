@@ -8,9 +8,9 @@
         <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.shippingExpanded="{{!_local.ui.shippingExpanded}}"/>
       </on>
-      <icon name="truck" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+      <icon name="truck" class="ecommerce-text-muted"/>
       <span class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.product.sections.shipping</span>
-      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.shippingExpanded !== false ? 'ecommerce:rotate-180' : ''}}"/>
+      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.shippingExpanded !== false ? 'ecommerce:rotate-180' : ''}}"/>
     </button>
     <div data-ref="shipping_body" data-if="{{_local.ui.shippingExpanded !== false}}" class="ecommerce-row-stack">
       <div data-ref="shipping_policy_header" class="ecommerce-flex-between">
@@ -78,7 +78,7 @@
             <span class="ecommerce-text-heading">{{(_computed.shippingPolicyOptions ?? []).find(p => p.id === _local.form.shipping_policy_id)?.fee_summary ?? '-'}}</span>
           </div>
           <div class="ecommerce-stack-flush">
-            <div data-if="{{((_computed.shippingPolicyOptions ?? []).find(p => p.id === _local.form.shipping_policy_id)?.country_settings ?? []).length === 0}}" class="ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.shipping_policy.table.no_country_settings</div>
+            <div data-if="{{((_computed.shippingPolicyOptions ?? []).find(p => p.id === _local.form.shipping_policy_id)?.country_settings ?? []).length === 0}}" class="ecommerce:text-sm ecommerce-text-muted">$t:sirsoft-ecommerce.admin.shipping_policy.table.no_country_settings</div>
             <div data-each="cs, csIdx in (_computed.shippingPolicyOptions ?? []).find(p => p.id === _local.form.shipping_policy_id)?.country_settings ?? []" class="ecommerce:flex ecommerce:items-center ecommerce:gap-3 ecommerce:py-2 {{csIdx > 0 ? 'ecommerce:border-t ecommerce:border-gray-100 ecommerce:dark:border-gray-700' : ''}}">
               <div class="ecommerce-flex-center ecommerce:gap-1.5 ecommerce:w-14 ecommerce:shrink-0">
                 <span class="ecommerce-flag ecommerce-flag-{{cs.country_code?.toLowerCase()}} ecommerce-flag--square ecommerce:rounded"/>
@@ -86,7 +86,7 @@
               </div>
               <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-wrap">
                 <span class="ecommerce:inline-flex ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-blue-100 ecommerce:text-blue-800 ecommerce:dark:bg-blue-900/30 ecommerce:dark:text-blue-300">{{cs.shipping_method_label ?? cs.shipping_method}}</span>
-                <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">|</span>
+                <span class="ecommerce-text-muted">|</span>
                 <span class="{{cs.charge_policy === 'free' ? 'ecommerce:inline-flex ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-green-100 ecommerce:text-green-800 ecommerce:dark:bg-green-900/30 ecommerce:dark:text-green-300' : cs.charge_policy === 'api' ? 'ecommerce:inline-flex ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-orange-100 ecommerce:text-orange-800 ecommerce:dark:bg-orange-900/30 ecommerce:dark:text-orange-300' : 'ecommerce:inline-flex ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-indigo-100 ecommerce:text-indigo-800 ecommerce:dark:bg-indigo-900/30 ecommerce:dark:text-indigo-300'}}">{{cs.charge_policy_label ?? cs.charge_policy}}</span>
                 <span data-if="{{cs.charge_policy !== 'free' &amp;&amp; cs.charge_policy !== 'api'}}" class="ecommerce-text-secondary ecommerce:text-xs">{{(cs.base_fee ?? 0).toLocaleString()}} {{cs.currency_code ?? ''}}</span>
                 <span data-if="{{cs.free_threshold > 0}}" class="ecommerce:text-xs ecommerce:text-green-700 ecommerce:dark:text-green-400">($t:sirsoft-ecommerce.admin.shipping_policy.table.free_above {{(cs.free_threshold ?? 0).toLocaleString()}})</span>

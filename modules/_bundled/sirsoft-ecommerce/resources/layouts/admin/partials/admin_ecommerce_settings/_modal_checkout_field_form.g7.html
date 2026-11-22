@@ -97,7 +97,7 @@
         <div data-ref="checkout_field_form_options" data-if="{{['choice', 'multi_choice'].includes(_global.checkout_field_form_modal?.form?.type ?? '')}}" class="ecommerce:space-y-2">
           <div class="ecommerce-flex-between ecommerce:gap-3">
             <span class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.options.title</span>
-            <button data-ref="checkout_field_form_option_add" type="button" class="ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.checkout_field_form_modal?.isSaving === true || (_global.checkout_field_form_modal?.form?.options ?? []).length >= 50}}">
+            <button data-ref="checkout_field_form_option_add" type="button" class="ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm" disabled="{{_global.checkout_field_form_modal?.isSaving === true || (_global.checkout_field_form_modal?.form?.options ?? []).length >= 50}}">
               <on type="click">
                 <!-- 선택지 한 줄 더하기. 새 줄에는 표식(`_new`)을 달아 값(영문) 칸을 열어 둔다. 저장 본문에는 표식을 싣지 않는다. -->
                 <set-state target="global" checkout_field_form_modal.form.options="{{[...(_global.checkout_field_form_modal?.form?.options ?? []), { value: '', label: {}, _new: true }]}}"/>
@@ -142,7 +142,7 @@
       </div>
     </div>
     <footer>
-      <button data-ref="checkout_field_form_cancel" type="button" disabled="{{_global.checkout_field_form_modal?.isSaving === true}}" class="ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
+      <button data-ref="checkout_field_form_cancel" type="button" disabled="{{_global.checkout_field_form_modal?.isSaving === true}}" class="ecommerce-btn ecommerce-btn-secondary">
         <on type="click">
           <!-- 취소. 창을 닫고 창 상태를 통째로 비운다(적은 내용은 버린다). -->
           <sequence>

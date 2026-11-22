@@ -2302,7 +2302,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:cursor-pointer ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-200"
+                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce-text-muted ecommerce:cursor-pointer ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-200"
                     },
                     "children": [
                         {
@@ -2549,7 +2549,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "search",
-                                        "className": "ecommerce:text-base ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:pointer-events-none"
+                                        "className": "ecommerce:text-base ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce-text-muted ecommerce:pointer-events-none"
                                     }
                                 }
                             ]
@@ -2860,9 +2860,7 @@
                                     "name": "Button",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "ecommerce-btn ecommerce-btn-primary ecommerce:flex-1"
-                                            }
+                                            "classMerge": "ecommerce:flex-1"
                                         }
                                     },
                                     "actions": [
@@ -2884,9 +2882,7 @@
                                     "name": "Button",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "ecommerce-btn ecommerce-btn-outline ecommerce:flex-1"
-                                            }
+                                            "classMerge": "ecommerce:flex-1"
                                         }
                                     },
                                     "actions": [

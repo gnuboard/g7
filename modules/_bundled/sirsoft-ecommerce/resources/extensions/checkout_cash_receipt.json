@@ -85,7 +85,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mb-1"
+                                        "className": "ecommerce-user-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.checkout.cash_receipt.purpose"
                                 },
@@ -209,9 +209,7 @@
                                     "name": "Select",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500 ecommerce:text-sm"
-                                            }
+                                            "classMerge": "ecommerce:px-3 ecommerce:text-sm"
                                         }
                                     },
                                     "actions": [
@@ -283,7 +281,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                "className": "ecommerce:text-xs ecommerce-text-muted"
                             },
                             "text": "$t:sirsoft-ecommerce.checkout.cash_receipt.purpose_help"
                         },
@@ -291,7 +289,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                "className": "ecommerce:text-xs ecommerce-text-muted"
                             },
                             "text": "$t:sirsoft-ecommerce.checkout.cash_receipt.immutable_help"
                         }

@@ -311,7 +311,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
           </Span>
           <Icon
             name={IconName.ChevronDown}
-            className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${showMenu ? 'rotate-180' : ''}`}
+            className={`w-4 h-4 text-muted transition-transform ${showMenu ? 'rotate-180' : ''}`}
           />
         </Button>
         {showMenu && (

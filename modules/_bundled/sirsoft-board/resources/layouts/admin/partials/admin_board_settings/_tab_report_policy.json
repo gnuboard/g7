@@ -81,7 +81,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['report_policy.auto_hide_threshold']}}",
                                             "props": {
-                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block"
+                                                "className": "board-form-error"
                                             },
                                             "text": "{{(Array.isArray(_local.errors?.['report_policy.auto_hide_threshold']) ? _local.errors['report_policy.auto_hide_threshold'][0] : _local.errors?.['report_policy.auto_hide_threshold']) ?? ''}}"
                                         },
@@ -219,7 +219,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['report_policy.daily_report_limit']}}",
                                             "props": {
-                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block"
+                                                "className": "board-form-error"
                                             },
                                             "text": "{{(Array.isArray(_local.errors?.['report_policy.daily_report_limit']) ? _local.errors['report_policy.daily_report_limit'][0] : _local.errors?.['report_policy.daily_report_limit']) ?? ''}}"
                                         },
@@ -293,7 +293,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{_local.errors?.['report_policy.rejection_limit_count']}}",
                                                                     "props": {
-                                                                        "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block"
+                                                                        "className": "board-form-error"
                                                                     },
                                                                     "text": "{{(Array.isArray(_local.errors?.['report_policy.rejection_limit_count']) ? _local.errors['report_policy.rejection_limit_count'][0] : _local.errors?.['report_policy.rejection_limit_count']) ?? ''}}"
                                                                 }
@@ -335,7 +335,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{_local.errors?.['report_policy.rejection_limit_days']}}",
                                                                     "props": {
-                                                                        "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block"
+                                                                        "className": "board-form-error"
                                                                     },
                                                                     "text": "{{(Array.isArray(_local.errors?.['report_policy.rejection_limit_days']) ? _local.errors['report_policy.rejection_limit_days'][0] : _local.errors?.['report_policy.rejection_limit_days']) ?? ''}}"
                                                                 }
@@ -359,9 +359,6 @@
                                     "id": "field_report_cooldown_seconds",
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": ""
-                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -398,7 +395,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.errors?.['spam_security.report_cooldown_seconds']}}",
                                                     "props": {
-                                                        "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block"
+                                                        "className": "board-form-error"
                                                     },
                                                     "text": "{{(Array.isArray(_local.errors?.['spam_security.report_cooldown_seconds']) ? _local.errors['spam_security.report_cooldown_seconds'][0] : _local.errors?.['spam_security.report_cooldown_seconds']) ?? ''}}"
                                                 },
@@ -486,7 +483,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['report_permissions.view_roles']}}",
                                             "props": {
-                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block"
+                                                "className": "board-form-error"
                                             },
                                             "text": "{{(Array.isArray(_local.errors?.['report_permissions.view_roles']) ? _local.errors['report_permissions.view_roles'][0] : _local.errors?.['report_permissions.view_roles']) ?? ''}}"
                                         }
@@ -496,9 +493,6 @@
                                     "id": "field_report_manage_roles",
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": ""
-                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -535,7 +529,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.errors?.['report_permissions.manage_roles']}}",
                                                     "props": {
-                                                        "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block"
+                                                        "className": "board-form-error"
                                                     },
                                                     "text": "{{(Array.isArray(_local.errors?.['report_permissions.manage_roles']) ? _local.errors['report_permissions.manage_roles'][0] : _local.errors?.['report_permissions.manage_roles']) ?? ''}}"
                                                 }
@@ -718,7 +712,7 @@
                                                                                     "props": {
                                                                                         "name": "{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}",
                                                                                         "size": "sm",
-                                                                                        "className": "board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"
+                                                                                        "className": "board-text-muted board:flex-shrink-0"
                                                                                     }
                                                                                 },
                                                                                 {
@@ -763,7 +757,7 @@
                                                                     "name": "Div",
                                                                     "if": "{{boardNotificationDefinitions !== undefined && ((((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_received_admin')?.templates) ?? []).length === 0)}}",
                                                                     "props": {
-                                                                        "className": "board:px-3 board:py-2 board:text-sm board:text-gray-500 board:dark:text-gray-400"
+                                                                        "className": "board:px-3 board:py-2 board:text-sm board-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_empty"
                                                                 }
@@ -780,7 +774,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "board:block board:text-xs board:text-gray-500 board:dark:text-gray-400"
+                                                                        "className": "board:block board:text-xs board-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_hint"
                                                                 },
@@ -815,7 +809,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "type": "button",
-                                                                        "className": "board:flex board:items-center board:gap-1.5 board:px-3 board:py-2 board:text-sm board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors"
+                                                                        "className": "board:flex board-btn board-btn-secondary board:gap-1.5 board:px-3"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -942,7 +936,7 @@
                                                                                     "props": {
                                                                                         "name": "{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}",
                                                                                         "size": "sm",
-                                                                                        "className": "board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"
+                                                                                        "className": "board-text-muted board:flex-shrink-0"
                                                                                     }
                                                                                 },
                                                                                 {
@@ -987,7 +981,7 @@
                                                                     "name": "Div",
                                                                     "if": "{{boardNotificationDefinitions !== undefined && ((((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_action')?.templates) ?? []).length === 0)}}",
                                                                     "props": {
-                                                                        "className": "board:px-3 board:py-2 board:text-sm board:text-gray-500 board:dark:text-gray-400"
+                                                                        "className": "board:px-3 board:py-2 board:text-sm board-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_empty"
                                                                 }
@@ -1004,7 +998,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "board:block board:text-xs board:text-gray-500 board:dark:text-gray-400"
+                                                                        "className": "board:block board:text-xs board-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_hint"
                                                                 },
@@ -1039,7 +1033,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "type": "button",
-                                                                        "className": "board:flex board:items-center board:gap-1.5 board:px-3 board:py-2 board:text-sm board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors"
+                                                                        "className": "board:flex board-btn board-btn-secondary board:gap-1.5 board:px-3"
                                                                     },
                                                                     "children": [
                                                                         {

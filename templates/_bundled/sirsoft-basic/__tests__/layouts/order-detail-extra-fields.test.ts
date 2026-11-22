@@ -15,6 +15,8 @@ import { DataBindingEngine } from '@core/template-engine/DataBindingEngine';
 
 import ordererPartial from '../../layouts/partials/mypage/orders/_orderer.json';
 import shippingPartial from '../../layouts/partials/mypage/orders/_shipping.json';
+import { expandSemanticClassName } from './support/semanticClasses';
+import { rangeClassName } from './support/responsiveClass';
 
 type Node = Record<string, any>;
 
@@ -93,15 +95,19 @@ describe('주문 상세의 주문서 추가 항목', () => {
       it('줄은 카드의 다른 줄과 같은 칸 너비를 쓰고, 긴 글이 넘치지 않으며, 다크 짝과 좁은 화면 글자 크기를 갖는다', () => {
         const [label, value] = line.children as Node[];
         // 카드의 기존 줄(라벨 칸 w-28, 좁은 화면 w-20)과 같은 너비
+        // #399 — 좁은 화면 값은 구간 class-merge 를 기본 className 위에 엔진 규칙으로 덧붙인 실효값으로 보고,
+        // 보조 글자색 묶음이 바뀐 의미 클래스(`text-muted`)는 템플릿 CSS 정의(다크 짝 포함)까지 펼쳐 본다.
+        const portable = (part: Node) => rangeClassName(part, 'portable');
         expect(label.props.className).toContain('w-28');
-        expect(label.responsive.portable.props.className).toContain('w-20');
+        expect(portable(label).split(/\s+/)).toContain('w-20');
+        expect(portable(label).split(/\s+/)).not.toContain('w-28');
         expect(value.props.className).toContain('min-w-0');
         for (const part of [label, value]) {
-          expect(part.props.className).toMatch(/dark:text-/);
+          expect(expandSemanticClassName(part.props.className)).toMatch(/dark:text-/);
           expect(part.props.className).toContain('break-words');
-          expect(part.responsive.portable.props.className).toContain('text-sm');
-          expect(part.responsive.portable.props.className).toMatch(/dark:text-/);
-          expect(part.responsive.portable.props.className).toContain('break-words');
+          expect(portable(part).split(/\s+/)).toContain('text-sm');
+          expect(expandSemanticClassName(portable(part))).toMatch(/dark:text-/);
+          expect(portable(part)).toContain('break-words');
         }
       });
 

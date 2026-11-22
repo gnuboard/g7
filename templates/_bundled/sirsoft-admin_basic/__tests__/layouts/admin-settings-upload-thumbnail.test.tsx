@@ -28,6 +28,7 @@ import adminEn from '../../lang/partial/en/admin.json';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { expandSemanticClassName } from './support/semanticClasses';
 
 /** 번들 ja 언어팩은 템플릿 밖에 있어 파일로 읽는다 */
 const adminJa = JSON.parse(
@@ -446,7 +447,9 @@ describe('업로드 탭 — 썸네일 카드 (#869)', () => {
     expect(within(hero).getByTestId('thumbnail-preset-label-7')).toHaveTextContent('배너 목록');
     expect(within(hero).getByTestId('thumbnail-preset-ident-7')).toHaveTextContent('sirsoft-hero_section.list');
     // 식별자 줄은 보조 표기라 작고 흐린 고정폭 글꼴이다(다크모드 짝 포함)
-    expect(within(hero).getByTestId('thumbnail-preset-ident-7').className).toContain('dark:text-gray-400');
+    const identClass = within(hero).getByTestId('thumbnail-preset-ident-7').className;
+    expect(identClass.split(/\s+/)).toContain('text-muted');
+    expect(expandSemanticClassName(identClass)).toContain('dark:text-gray-400');
 
     const bare = screen.getByTestId('thumbnail-preset-row-gnuboard7-hello_module.sample');
     expect(within(bare).queryByTestId('thumbnail-preset-label-8')).not.toBeInTheDocument();

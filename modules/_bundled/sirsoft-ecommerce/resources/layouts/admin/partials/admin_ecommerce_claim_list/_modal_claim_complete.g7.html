@@ -6,7 +6,7 @@
       <p data-ref="cc_002_no_target" data-if="{{(_global.claimCompleteRows ?? []).length === 0 &amp;&amp; _global.claimCompletePreviewLoading !== true}}" class="ecommerce:p-3 ecommerce:rounded-lg ecommerce:bg-yellow-50 ecommerce:dark:bg-yellow-900/20 ecommerce:text-sm ecommerce:text-yellow-700 ecommerce:dark:text-yellow-400">$t:sirsoft-ecommerce.admin.claim.complete.no_target</p>
       <div data-ref="cc_003_target_table" data-if="{{(_global.claimCompleteRows ?? []).length > 0}}" class="ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:overflow-x-auto">
         <!-- 표 머리 — 마지막 칸은 헤더 일괄 체크 -->
-        <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-3 ecommerce:px-3 ecommerce:py-2 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400">
+        <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-3 ecommerce:px-3 ecommerce:py-2 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted">
           <span class="ecommerce:w-40 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.claim.complete.col_claim_number</span>
           <span class="ecommerce:flex-1 ecommerce:min-w-0">$t:sirsoft-ecommerce.admin.claim.complete.col_item</span>
           <span class="ecommerce:w-28 ecommerce:flex-shrink-0 ecommerce:text-right">$t:sirsoft-ecommerce.admin.claim.complete.col_refund</span>
@@ -28,19 +28,19 @@
         <div data-ref="cc_005_target_rows_{{claimRowIndex}}" data-each="claimRow, claimRowIndex in _global.claimCompleteRows || []" class="ecommerce:flex ecommerce:items-center ecommerce:gap-3 ecommerce:px-3 ecommerce:py-2 ecommerce:border-t ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:text-sm">
           <div class="ecommerce:w-40 ecommerce:flex-shrink-0 ecommerce-stack-flush ecommerce:gap-1">
             <span class="ecommerce:font-medium ecommerce:truncate ecommerce:block">{{claimRow.claim_number}}</span>
-            <span data-if="{{!!claimRow.requester_name}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:truncate ecommerce:block">{{claimRow.requester_name}}</span>
+            <span data-if="{{!!claimRow.requester_name}}" class="ecommerce:text-xs ecommerce-text-muted ecommerce:truncate ecommerce:block">{{claimRow.requester_name}}</span>
           </div>
           <div class="ecommerce:flex-1 ecommerce:min-w-0 ecommerce-stack-flush ecommerce:gap-1">
             <span class="ecommerce:truncate ecommerce:block">{{claimRow.item_label ?? '-'}}</span>
-            <span class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.complete.item_count|count={{claimRow.completable_item_count ?? 0}}</span>
+            <span class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.complete.item_count|count={{claimRow.completable_item_count ?? 0}}</span>
           </div>
           <div class="ecommerce:w-28 ecommerce:flex-shrink-0 ecommerce:text-right ecommerce-stack-flush ecommerce:gap-1">
             <span data-if="{{claimRow.refund_applicable}}" class="ecommerce:font-medium">{{claimRow.refund_amount_formatted}}</span>
             <!-- 사용 마일리지 반환액 — 환불신청서가 현금과 함께 싣는 금액이다(EC-694). 없으면 줄을 그리지 않는다. -->
-            <span data-if="{{claimRow.refund_applicable &amp;&amp; (claimRow.refund_points_amount ?? 0) > 0}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.complete.row_points|amount={{claimRow.refund_points_amount_formatted}}</span>
-            <span data-if="{{!claimRow.refund_applicable &amp;&amp; claimRow.blocked_reason === 'claim_refund_request_exists'}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.complete.blocked_exists</span>
-            <span data-if="{{!claimRow.refund_applicable &amp;&amp; claimRow.blocked_reason === 'claim_refund_not_applicable'}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.complete.blocked_not_applicable</span>
-            <span data-if="{{!claimRow.refund_applicable &amp;&amp; !claimRow.blocked_reason}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">-</span>
+            <span data-if="{{claimRow.refund_applicable &amp;&amp; (claimRow.refund_points_amount ?? 0) > 0}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.complete.row_points|amount={{claimRow.refund_points_amount_formatted}}</span>
+            <span data-if="{{!claimRow.refund_applicable &amp;&amp; claimRow.blocked_reason === 'claim_refund_request_exists'}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.complete.blocked_exists</span>
+            <span data-if="{{!claimRow.refund_applicable &amp;&amp; claimRow.blocked_reason === 'claim_refund_not_applicable'}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.complete.blocked_not_applicable</span>
+            <span data-if="{{!claimRow.refund_applicable &amp;&amp; !claimRow.blocked_reason}}" class="ecommerce:text-xs ecommerce-text-muted">-</span>
           </div>
           <label class="ecommerce:w-28 ecommerce:flex-shrink-0 ecommerce:flex ecommerce:items-center ecommerce:justify-end ecommerce:cursor-pointer">
             <!-- 신청서 한 건의 재고 복구 여부. 체크는 신청서 단위지만 서버에는 그 신청서의 완료 대상 상품 행 전체에 같은 값으로 펴서 보내고, 바꿀 때마다 요약의 복구·폐기 수량을 미리보기로 다시 받는다(연달아 누르면 한 번으로 묶인다). -->
@@ -52,12 +52,12 @@
           </label>
         </div>
       </div>
-      <p data-ref="cc_007_discard_note" data-if="{{(_global.claimCompleteRows ?? []).length > 0}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.complete.discard_note</p>
+      <p data-ref="cc_007_discard_note" data-if="{{(_global.claimCompleteRows ?? []).length > 0}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.complete.discard_note</p>
       <p data-ref="cc_008_skipped_notice" data-if="{{(_global.claimCompletePreview?.skipped ?? []).length > 0}}" class="ecommerce:p-3 ecommerce:rounded-lg ecommerce:bg-yellow-50 ecommerce:dark:bg-yellow-900/20 ecommerce:text-sm ecommerce:text-yellow-700 ecommerce:dark:text-yellow-400">$t:sirsoft-ecommerce.admin.claim.complete.skipped_notice|count={{(_global.claimCompletePreview?.skipped ?? []).length}}</p>
       <!-- 선교환 「미회수로 완료」(D3) — 새 물건은 보냈는데 헌 물건이 끝내 오지 않은 행. 체크하면 사유가 필수이고, 그 행은 재고를 복구하지 않으며 신청서·구매자 화면에 「미회수」 로 남는다. 후보는 미리보기(`unreturned_eligible_items`)가 준다. -->
       <div data-ref="cc_023_unreturned_section" data-if="{{(_global.claimCompletePreview?.claims ?? []).some(c => (c.unreturned_eligible_items ?? []).length > 0)}}" class="ecommerce:border ecommerce:border-orange-200 ecommerce:dark:border-orange-800 ecommerce:rounded-lg ecommerce:p-3 ecommerce:space-y-2">
         <div class="ecommerce:text-sm ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100">$t:sirsoft-ecommerce.admin.claim.complete.unreturned_title</div>
-        <p class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.complete.unreturned_desc</p>
+        <p class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.complete.unreturned_desc</p>
         <!-- 미회수 완료는 상품 대금·보증금을 청구하지 않는다(S8 · Q10 — 현행 유지). 운영자가 모른 채 완료하면 매출이 새므로 그 사실을 체크 영역에서 말한다. -->
         <p data-ref="cc_023b_unreturned_no_charge_notice" class="ecommerce:p-2 ecommerce:rounded ecommerce:bg-orange-50 ecommerce:dark:bg-orange-900/20 ecommerce:text-xs ecommerce:text-orange-700 ecommerce:dark:text-orange-300">$t:sirsoft-ecommerce.admin.claim.complete.unreturned_no_charge_notice</p>
         <div data-each="unretItem, unretIdx in {{(_global.claimCompletePreview?.claims ?? []).flatMap(c => c.unreturned_eligible_items ?? [])}}" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3">
@@ -90,14 +90,14 @@
             <action handler="sirsoft-ecommerce.setClaimCompleteRefundRequest" value="{{$event.target.value === 'true'}}"/>
           </on>
         </radio-group>
-        <p data-ref="cc_011_refund_now_desc" data-if="{{_global.claimCompleteCreateRefundRequest !== false &amp;&amp; (_global.claimCompletePreview?.totals?.refund_amount_total_formatted ?? null) != null}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.complete.refund_now_desc_amount|count={{(_global.claimCompleteRows ?? []).filter(r => r.refund_applicable).length}}|amount={{_global.claimCompletePreview?.totals?.refund_amount_total_formatted}}</p>
+        <p data-ref="cc_011_refund_now_desc" data-if="{{_global.claimCompleteCreateRefundRequest !== false &amp;&amp; (_global.claimCompletePreview?.totals?.refund_amount_total_formatted ?? null) != null}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.complete.refund_now_desc_amount|count={{(_global.claimCompleteRows ?? []).filter(r => r.refund_applicable).length}}|amount={{_global.claimCompletePreview?.totals?.refund_amount_total_formatted}}</p>
         <!-- 함께 만들 환불신청서가 돌려줄 사용 마일리지 합계(EC-694) — 현금 합계만 말하면 운영자는 마일리지 반환을 모른 채 완료한다. 통화가 섞여 합계 표기가 없으면 그리지 않는다. -->
-        <p data-ref="cc_011b_refund_now_desc_points" data-if="{{_global.claimCompleteCreateRefundRequest !== false &amp;&amp; (_global.claimCompletePreview?.totals?.refund_points_amount_total ?? 0) > 0 &amp;&amp; (_global.claimCompletePreview?.totals?.refund_points_amount_total_formatted ?? null) != null}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.complete.refund_now_desc_points|amount={{_global.claimCompletePreview?.totals?.refund_points_amount_total_formatted}}</p>
+        <p data-ref="cc_011b_refund_now_desc_points" data-if="{{_global.claimCompleteCreateRefundRequest !== false &amp;&amp; (_global.claimCompletePreview?.totals?.refund_points_amount_total ?? 0) > 0 &amp;&amp; (_global.claimCompletePreview?.totals?.refund_points_amount_total_formatted ?? null) != null}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.complete.refund_now_desc_points|amount={{_global.claimCompletePreview?.totals?.refund_points_amount_total_formatted}}</p>
         <!-- 대상이 여러 통화에 걸치면 서버가 합계 표기를 내지 않는다 — 그때는 건수만 말한다. 화면이 숫자를 더해 기호를 붙이면 단위만 틀린 합계가 나간다. -->
-        <p data-ref="cc_012_refund_now_desc_mixed" data-if="{{_global.claimCompleteCreateRefundRequest !== false &amp;&amp; (_global.claimCompletePreview?.totals?.refund_amount_total_formatted ?? null) == null}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.complete.refund_now_desc|count={{(_global.claimCompleteRows ?? []).filter(r => r.refund_applicable).length}}</p>
-        <p data-ref="cc_013_refund_later_desc" data-if="{{_global.claimCompleteCreateRefundRequest === false}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.complete.refund_later_desc</p>
+        <p data-ref="cc_012_refund_now_desc_mixed" data-if="{{_global.claimCompleteCreateRefundRequest !== false &amp;&amp; (_global.claimCompletePreview?.totals?.refund_amount_total_formatted ?? null) == null}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.complete.refund_now_desc|count={{(_global.claimCompleteRows ?? []).filter(r => r.refund_applicable).length}}</p>
+        <p data-ref="cc_013_refund_later_desc" data-if="{{_global.claimCompleteCreateRefundRequest === false}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.complete.refund_later_desc</p>
         <!-- 환불신청서를 끄면 취소신청서도 생기지 않는다 (#599 후속 §5-5). 취소신청서는 '환불이 집행되어 주문에서 금액이 빠진 사실' 의 기록이라, 돈이 나가지 않으면 만들 것이 없다 — 이 관계를 적지 않으면 운영자는 완료 처리 후 취소 탭이 비어 있는 것을 결함으로 읽는다. -->
-        <p data-ref="cc_013_refund_later_cancellation_note" data-if="{{_global.claimCompleteCreateRefundRequest === false}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.complete.refund_later_desc_cancellation</p>
+        <p data-ref="cc_013_refund_later_cancellation_note" data-if="{{_global.claimCompleteCreateRefundRequest === false}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.complete.refund_later_desc_cancellation</p>
       </div>
       <!-- 요약 문구는 `$t:defer:` 를 쓰지 않는다 — defer 는 반복 서브트리(iteration·cellChildren)에서만 해소되고, 반복 밖 노드는 DynamicRenderer 가 건너뛰어 원문 키가 화면에 그대로 나온다(실측 확인). 이 블록은 반복 밖이므로 일반 `$t:` 다. -->
       <div data-ref="cc_014_summary" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-x-2 ecommerce:gap-y-1 ecommerce:text-xs ecommerce:text-gray-600 ecommerce:dark:text-gray-400">
@@ -123,7 +123,7 @@
         <span>$t:sirsoft-ecommerce.admin.claim.complete.cancel</span>
       </button>
       <!-- 완료 처리 실행. 요청 주소·방식은 모달을 연 쪽이 넘긴 실행 경로를 따르고 일괄 경로는 미리보기가 답한 신청서로 대상을 좁혀 보낸다 — 미리보기가 도는 동안 잠그는 것은 화면이 예고한 요약과 다른 선택으로 실행되지 않게 하기 위해서다. -->
-      <button data-ref="cc_022_submit_button" type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{(_global.claimCompleteRows ?? []).length === 0 || _global.isProcessing || _global.claimCompletePreviewLoading === true}}">
+      <button data-ref="cc_022_submit_button" type="button" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-primary" disabled="{{(_global.claimCompleteRows ?? []).length === 0 || _global.isProcessing || _global.claimCompletePreviewLoading === true}}">
         <on type="click">
           <set-state target="global" :isProcessing="true"/>
           <!-- onError 는 진행 상태만 되돌린다 — 사유 토스트는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). 여기서 한 번 더 띄우면 같은 문구가 두 번 뜬다. -->

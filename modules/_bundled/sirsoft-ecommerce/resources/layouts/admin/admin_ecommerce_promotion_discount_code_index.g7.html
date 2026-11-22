@@ -61,7 +61,7 @@
                 <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
               </on>
             </input>
-            <icon name="search" class="ecommerce:text-base ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:pointer-events-none"/>
+            <icon name="search" class="ecommerce:text-base ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce-text-muted ecommerce:pointer-events-none"/>
           </div>
           <div class="ecommerce-flex-center ecommerce:gap-2">
             <button type="button" class="ecommerce-btn ecommerce-btn-outline">
@@ -193,7 +193,7 @@ $t:sirsoft-ecommerce.admin.promotion_discount_code.filter.created_at</span>
             <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-wrap">
               <div class="ecommerce-flex-center ecommerce:gap-2">
                 <div class="ecommerce:relative">
-                  <icon name="calendar" class="ecommerce:text-base ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:pointer-events-none"/>
+                  <icon name="calendar" class="ecommerce:text-base ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce-text-muted ecommerce:pointer-events-none"/>
                   <input type="text" aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_discount_code.filter.created_at')}}" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.start_date" class="ecommerce-input ecommerce:w-32 ecommerce:pl-10" value="{{_local.startDate}}">
                     <on type="change">
                       <!-- 유효기간 시작일 -->
@@ -203,7 +203,7 @@ $t:sirsoft-ecommerce.admin.promotion_discount_code.filter.created_at</span>
                 </div>
                 <span class="ecommerce-text-secondary">~</span>
                 <div class="ecommerce:relative">
-                  <icon name="calendar" class="ecommerce:text-base ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:pointer-events-none"/>
+                  <icon name="calendar" class="ecommerce:text-base ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce-text-muted ecommerce:pointer-events-none"/>
                   <input type="text" aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_discount_code.filter.created_at')}}" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.end_date" class="ecommerce-input ecommerce:w-32 ecommerce:pl-10" value="{{_local.endDate}}">
                     <on type="change">
                       <!-- 유효기간 종료일 -->

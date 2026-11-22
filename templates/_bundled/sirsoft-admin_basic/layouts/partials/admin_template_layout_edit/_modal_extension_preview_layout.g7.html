@@ -12,13 +12,13 @@
       </on>
     </select>
     <footer>
-      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors">
+      <button type="button" class="btn btn-secondary">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button type="button" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm font-medium transition-colors disabled:opacity-50" disabled="{{!_global.previewLayoutSelection}}">
+      <button type="button" class="flex btn btn-primary" disabled="{{!_global.previewLayoutSelection}}">
         <on type="click">
           <!-- 창을 먼저 닫고 새 창을 연다 — 미리보기가 뜨는 동안 이 창이 뒤에 남아 있지 않게 한다. 실패 문구는 서버 사유가 아니라 정해진 안내 하나다. -->
           <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/preview" method="POST">

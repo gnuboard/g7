@@ -52,7 +52,7 @@
                                 "if": "{{!$method._orphaned && !_computed.isReadOnly}}",
                                 "props": {
                                     "data-drag-handle": true,
-                                    "className": "ecommerce:cursor-grab ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                    "className": "ecommerce:cursor-grab ecommerce-text-muted"
                                 },
                                 "children": [
                                     {

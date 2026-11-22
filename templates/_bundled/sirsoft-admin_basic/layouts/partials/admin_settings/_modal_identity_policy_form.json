@@ -26,7 +26,7 @@
                 "props": {
                     "type": "button",
                     "disabled": "{{_global.identity_policy_form_modal?.isSaving ?? false}}",
-                    "className": "px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    "className": "btn btn-secondary"
                 },
                 "children": [
                     {
@@ -465,7 +465,6 @@
                                             ],
                                             "props": {
                                                 "value": "{{_global.identity_policy_form_modal?.form?.provider_id ?? ''}}",
-                                                "className": "",
                                                 "options": "{{[{value: '', label: '$t:admin.identity.policies.form.use_default_provider'}].concat((identityProviders?.data ?? []).map(function(p) { return {value: p.id, label: p.label}; }))}}"
                                             }
                                         },
@@ -794,7 +793,6 @@
                                     ],
                                     "props": {
                                         "value": "{{_global.identity_policy_form_modal?.form?.conditions?.signup_stage ?? ''}}",
-                                        "className": "",
                                         "options": [
                                             {
                                                 "value": "",

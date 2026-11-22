@@ -129,7 +129,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {currency}{formattedPrice}
           </Span>
           {originalPrice && (
-            <Span className="text-sm text-gray-500 dark:text-gray-400 line-through">
+            <Span className="text-sm text-muted line-through">
               {currency}{formattedOriginalPrice}
             </Span>
           )}

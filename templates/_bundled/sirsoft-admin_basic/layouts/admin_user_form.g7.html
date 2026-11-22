@@ -146,12 +146,12 @@
   </init>
   <slot name="content">
     <div data-ref="user_form_content" data-key="form" data-track-changes class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900">
-      <responsive on="640-1023" class="p-6 min-h-screen bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="640-1023" class="admin-page-content"/>
       <responsive on="1024-" class="p-8 min-h-screen bg-gray-50 dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}" description="{{route?.id ? '$t:admin.users.form.page_description_edit|name=' + (user?.data?.name ?? '') + '|email=' + (user?.data?.email ?? '') : '$t:admin.users.form.page_description_create'}}"/>
       <div data-ref="sticky_header" class="sticky top-0 z-40 -mx-4 px-4 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700">
-        <responsive on="640-1023" class="sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
-        <responsive on="1024-" class="sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
+        <responsive on="640-1023" class-merge="-mx-6 px-6"/>
+        <responsive on="1024-" class-merge="-mx-8 px-8"/>
         <!-- 탭이 넘치면 글자 단위로 줄바꿈되지 않고 막대가 가로로 스크롤된다(상세와 같다).
              검증 오류가 난 칸이 든 탭은 이름 옆에 빨간 점이 붙는다(errorDot) — 오류 키를 항목의 묶음과 대조한 computed memberFieldErrorTabs 가 탭 id 를 준다.
              「위치정보」「추가 항목」「확장 항목」 탭은 그 묶음에 항목이 있을 때만 보인다(운영자가 항목을 모두 끄면 갈 구획이 없다). -->
@@ -223,7 +223,7 @@
                 <label class="form-label">$t:admin.users.member_fields.status.display_name_kind</label>
                 <div data-testid="member-status-display-name-kind" class="text-primary text-sm break-words">{{!!memberFields?.data?.member?.display_name_kind ? (memberFields?.data?.member?.display_name_kind_label ?? memberFields?.data?.member?.display_name_kind) : $t('admin.users.member_fields.status.display_name_kind_none', { kind: memberFields?.data?.member?.display_name_effective_kind_label ?? '' })}}</div>
                 <p data-if="{{!!route?.id &amp;&amp; memberFields?.data?.member?.display_name_kind_unavailable === true}}" data-testid="member-status-display-name-kind-unavailable" class="text-xs text-yellow-700 dark:text-yellow-400 mt-1 break-words">{{$t('admin.users.member_fields.status.display_name_kind_unavailable', { kind: memberFields?.data?.member?.display_name_effective_kind_label ?? '' })}}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:admin.users.member_fields.status.display_name_kind_hint</p>
+                <p class="text-xs text-muted mt-1">$t:admin.users.member_fields.status.display_name_kind_hint</p>
               </div>
               <div data-ref="member_status_display_name" data-if="{{!!route?.id &amp;&amp; ((memberFields?.data?.member?.display_name ?? null) !== null || (memberFields?.data?.member?.display_name_admin ?? null) !== null)}}">
                 <label class="form-label">$t:admin.users.member_fields.status.display_name_current</label>
@@ -243,7 +243,7 @@
               <div data-ref="member_status_nickname_next_changeable_at" data-if="{{!!route?.id &amp;&amp; !!memberFields?.data?.member?.nickname_next_changeable_at}}">
                 <label class="form-label">$t:admin.users.member_fields.status.nickname_next_changeable_at</label>
                 <div class="text-primary text-sm">{{memberFields?.data?.member?.nickname_next_changeable_at ?? ''}}</div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:admin.users.member_fields.status.nickname_next_changeable_hint</p>
+                <p class="text-xs text-muted mt-1">$t:admin.users.member_fields.status.nickname_next_changeable_hint</p>
               </div>
               <div data-ref="member_status_pending_required" data-if="{{!!route?.id &amp;&amp; (memberFields?.data?.member?.pending_required_fields ?? []).length > 0}}" class="col-span-full">
                 <label class="form-label">$t:admin.users.member_fields.status.pending_required</label>
@@ -272,8 +272,8 @@
                   </set-state>
                 </on>
               </tag-input>
-              <span data-if="{{_local.errors?.role_ids || _local.errors?.roles}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.role_ids?.[0] ?? _local.errors?.roles?.[0] ?? ''}}</span>
-              <p data-if="{{!route?.id}}" class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:admin.users.form.fields.role_default_hint</p>
+              <span data-if="{{_local.errors?.role_ids || _local.errors?.roles}}" class="form-error">{{_local.errors?.role_ids?.[0] ?? _local.errors?.roles?.[0] ?? ''}}</span>
+              <p data-if="{{!route?.id}}" class="text-xs text-muted mt-1">$t:admin.users.form.fields.role_default_hint</p>
             </div>
             <div data-ref="field_status">
               <label class="form-label">$t:admin.users.form.fields.status</label>
@@ -318,7 +318,7 @@
               </checkbox>
               <div>
                 <label class="form-label mb-0">$t:admin.users.form.fields.create_without_password</label>
-                <p class="text-xs text-gray-500 dark:text-gray-400">$t:admin.users.form.fields.create_without_password_hint</p>
+                <p class="text-xs text-muted">$t:admin.users.form.fields.create_without_password_hint</p>
               </div>
             </div>
             <!-- 비밀번호를 만들 수 없는 회원(7.2.0) — 비밀번호 인증 정책(회사 계정 로그인 강제, IdP 가 이 사이트 비밀번호를 허용하지 않음 등)이 막으면
@@ -334,20 +334,20 @@
                   <span>$t:admin.users.form.fields.password</span>
                   <span data-if="{{!route?.id}}" class="text-red-600 dark:text-red-400 ml-1">*</span>
                 </label>
-                <input type="password" name="password" placeholder="{{route?.id ? '$t:admin.users.form.fields.password_hint' : '$t:admin.users.form.fields.password'}}" class=""/>
-                <span data-if="{{_local.errors?.password}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.password?.[0] ?? ''}}</span>
+                <input type="password" name="password" placeholder="{{route?.id ? '$t:admin.users.form.fields.password_hint' : '$t:admin.users.form.fields.password'}}"/>
+                <span data-if="{{_local.errors?.password}}" class="form-error">{{_local.errors?.password?.[0] ?? ''}}</span>
               </div>
               <div data-ref="field_password_confirmation">
                 <label class="form-label">
                   <span>$t:admin.users.form.fields.password_confirmation</span>
                   <span data-if="{{!route?.id}}" class="text-red-600 dark:text-red-400 ml-1">*</span>
                 </label>
-                <input type="password" name="password_confirmation" placeholder="$t:admin.users.form.fields.password_confirmation" class=""/>
+                <input type="password" name="password_confirmation" placeholder="$t:admin.users.form.fields.password_confirmation"/>
               </div>
             </div>
             <!-- 켜진 비밀번호 규칙을 한 줄로 안내한다(보안 환경설정 값 — 서버가 같은 규칙으로 검사한다). 재사용 금지는 본인 계정일 때만
                  검사하므로(다른 회원에게 정해 주는 비밀번호는 검사하지 않는다) 본인일 때만 붙인다. -->
-            <p data-ref="password_rules_hint" data-if="{{!!route?.id ? (user !== undefined &amp;&amp; user?.data?.password_status?.can_set !== false) : (_local.form !== undefined &amp;&amp; !_local.form?.create_without_password)}}" class="flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400 -mt-2">
+            <p data-ref="password_rules_hint" data-if="{{!!route?.id ? (user !== undefined &amp;&amp; user?.data?.password_status?.can_set !== false) : (_local.form !== undefined &amp;&amp; !_local.form?.create_without_password)}}" class="flex flex-wrap gap-x-1 text-xs text-muted -mt-2">
               <span>$t:auth.password_rules.min_length|count={{_global.settings?.security?.password_min_length ?? 8}}</span>
               <span data-if="{{!!_global.settings?.security?.require_password_special_char}}">$t:auth.password_rules.special</span>
               <span data-if="{{!!_global.settings?.security?.password_require_char_types}}">$t:auth.password_rules.char_types</span>
@@ -369,15 +369,15 @@
                 <span class="text-red-600 dark:text-red-400 ml-1">*</span>
               </label>
               <input type="password" name="current_password" autoComplete="current-password" placeholder="$t:admin.users.form.password_policy.current_password" class="{{_local.errors?.current_password ? 'input-error' : ''}}"/>
-              <span data-if="{{_local.errors?.current_password}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.current_password?.[0] ?? ''}}</span>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:admin.users.form.password_policy.current_password_hint</p>
+              <span data-if="{{_local.errors?.current_password}}" class="form-error">{{_local.errors?.current_password?.[0] ?? ''}}</span>
+              <p class="text-xs text-muted mt-1">$t:admin.users.form.password_policy.current_password_hint</p>
             </div>
             <!-- 비밀번호가 없는 관리자(외부 인증 전용)가 자기 비밀번호를 처음 정할 때 — 현재 비밀번호 대신 이메일 인증번호로 본인을 확인한다.
                  확인해 받은 토큰을 폼 값(`verification_token`)에 넣어 저장 요청에 함께 보낸다. 서버가 본인 것인지·한 번만 쓰는지 확인한다. -->
             <div data-ref="password_reauth_verification" data-if="{{!!route?.id &amp;&amp; current_user !== undefined &amp;&amp; route?.id === current_user?.data?.uuid &amp;&amp; !!_local.form?.password &amp;&amp; user?.data?.has_password === false &amp;&amp; user?.data?.password_status?.can_set !== false}}" class="space-y-2">
               <!-- 메일을 받을 수 없는 관리자(대체 이메일)에게는 「이메일로 받은 인증번호」 대신 일반 안내 — 서버가 회사 계정 다시 로그인 등을 고른다 -->
-              <p data-if="{{(user?.data?.email_deliverable ?? current_user?.data?.email_deliverable) !== false}}" class="text-xs text-gray-500 dark:text-gray-400">$t:admin.users.form.password_policy.reauth_notice</p>
-              <p data-if="{{(user?.data?.email_deliverable ?? current_user?.data?.email_deliverable) === false}}" class="text-xs text-gray-500 dark:text-gray-400">$t:admin.users.form.password_policy.reauth_notice_other</p>
+              <p data-if="{{(user?.data?.email_deliverable ?? current_user?.data?.email_deliverable) !== false}}" class="text-xs text-muted">$t:admin.users.form.password_policy.reauth_notice</p>
+              <p data-if="{{(user?.data?.email_deliverable ?? current_user?.data?.email_deliverable) === false}}" class="text-xs text-muted">$t:admin.users.form.password_policy.reauth_notice_other</p>
               <p data-if="{{!!_local.form?.verification_token}}" class="text-sm text-green-700 dark:text-green-300" role="status">$t:admin.users.form.password_policy.reauth_verified</p>
               <div data-if="{{!_local.form?.verification_token}}" class="flex flex-wrap gap-2">
                 <button type="button" class="btn btn-secondary" disabled="{{_local.isRequestingReauthCode ?? false}}">
@@ -429,7 +429,7 @@
                   <span>$t:admin.users.form.password_policy.reauth_confirm</span>
                 </button>
               </div>
-              <span data-if="{{_local.errors?.verification_token}}" class="text-red-500 dark:text-red-400 text-xs">{{_local.errors?.verification_token?.[0] ?? ''}}</span>
+              <span data-if="{{_local.errors?.verification_token}}" class="form-error">{{_local.errors?.verification_token?.[0] ?? ''}}</span>
             </div>
           </div>
         </div>
@@ -443,10 +443,10 @@
                   <span>$t:admin.users.form.fields.email</span>
                   <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                 </label>
-                <input type="email" name="email" placeholder="$t:admin.users.form.fields.email" disabled="{{!!route?.id}}" class=""/>
+                <input type="email" name="email" placeholder="$t:admin.users.form.fields.email" disabled="{{!!route?.id}}"/>
                 <!-- 수정 모드 이메일은 늘 잠겨 있다(계정 식별자). 회사 계정이 관리하는 값이면 그 사유를 함께 적는다(7.2.0) -->
-                <p data-if="{{!!route?.id &amp;&amp; (user?.data?.locked_fields ?? []).includes('email')}}" class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:admin.users.form.fields.locked_by_company</p>
-                <span data-if="{{_local.errors?.email}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.email?.[0] ?? ''}}</span>
+                <p data-if="{{!!route?.id &amp;&amp; (user?.data?.locked_fields ?? []).includes('email')}}" class="text-xs text-muted mt-1">$t:admin.users.form.fields.locked_by_company</p>
+                <span data-if="{{_local.errors?.email}}" class="form-error">{{_local.errors?.email?.[0] ?? ''}}</span>
               </div>
             </div>
             <!-- 연락처 묶음(휴대폰, 전화번호, 홈페이지) — 항목 계약대로 공용 조각이 그린다. 넓은 화면에서는 두 칸씩 나란히 둔다. -->
@@ -569,7 +569,7 @@
                 <set-state target="local" form.password_expiry_policy="{{$event.target.value}}"/>
               </on>
             </select>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:admin.users.form.password_policy.expiry_hint</p>
+            <p class="text-xs text-muted mt-1">$t:admin.users.form.password_policy.expiry_hint</p>
             <!-- 현재 판정(수정 화면) — 저장된 설정 기준이다. 방금 고른 값은 저장해야 판정에 반영된다. -->
             <p data-ref="password_expiry_status_line" data-if="{{!!route?.id &amp;&amp; user?.data?.password_status}}" class="text-xs text-gray-700 dark:text-gray-300 mt-1">
               <span data-if="{{user?.data?.password_status?.applies &amp;&amp; user?.data?.password_status?.expired}}">$t:admin.users.form.password_policy.status_expired</span>
@@ -645,11 +645,11 @@
             </div>
             <div data-ref="field_search_history_site">
               <label class="form-label">{{(user?.data?.search_history?.scopes ?? {})['core.site']?.label ?? '$t:admin.users.detail.search_history.keywords'}} · $t:admin.users.detail.search_history.count|count={{((user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []).length}}</label>
-              <div data-ref="search_history_site_empty" data-if="{{!!user?.data?.search_history &amp;&amp; ((user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []).length === 0}}" class="text-gray-500 dark:text-gray-400 text-sm">$t:admin.users.detail.search_history.empty</div>
+              <div data-ref="search_history_site_empty" data-if="{{!!user?.data?.search_history &amp;&amp; ((user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []).length === 0}}" class="text-muted text-sm">$t:admin.users.detail.search_history.empty</div>
               <ul data-ref="search_history_site_list" data-if="{{((user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []).length > 0}}" class="divide-y divide-gray-200 dark:divide-gray-700">
                 <li data-each="history in (user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []" class="flex items-center justify-between gap-3 py-2">
-                  <span class="text-gray-500 dark:text-gray-400 text-sm break-all">{{history.keyword}}</span>
-                  <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{history.searched_at ?? '-'}}</span>
+                  <span class="text-muted text-sm break-all">{{history.keyword}}</span>
+                  <span class="text-xs text-muted whitespace-nowrap">{{history.searched_at ?? '-'}}</span>
                 </li>
               </ul>
             </div>
@@ -666,7 +666,7 @@
           <span>$t:common.cancel</span>
         </button>
         <!-- 수정 모드에서는 회원 정보가 폼에 채워지기 전까지 저장을 막는다 — 시드 전에 누르면 빈 본문이 나가 화면에는 값이 보이는데 "이름은 필수입니다" 로 거절된다. -->
-        <button type="button" data-ref="footer_save_button" disabled="{{_global.isSaving || (route?.id &amp;&amp; !_local.form?.email)}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button type="button" data-ref="footer_save_button" disabled="{{_global.isSaving || (route?.id &amp;&amp; !_local.form?.email)}}" class="flex-center btn btn-primary">
           <on type="click">
             <conditions>
               <!-- 상태를 탈퇴로 바꾸는 저장은 비가역 파기라 확인을 먼저 받는다 (공개이슈 #112). -->

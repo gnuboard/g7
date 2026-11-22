@@ -97,7 +97,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50",
+                        "className": "ecommerce-btn ecommerce-btn-primary",
                         "disabled": "{{!(_local.selectedItems || []).length || !_local.bulkIssueStatus || coupons?.data?.abilities?.can_update !== true}}"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.bulk.apply"
@@ -617,7 +617,7 @@
                                 "name": "Span",
                                 "if": "{{!row.created_by}}",
                                 "props": {
-                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                    "className": "ecommerce-text-muted"
                                 },
                                 "text": "-"
                             },
@@ -691,7 +691,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "fa-regular fa-user",
-                                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:flex-shrink-0"
+                                                    "className": "ecommerce-text-muted ecommerce:flex-shrink-0"
                                                 }
                                             },
                                             {

@@ -22,7 +22,7 @@
           <icon name="{{result.ok ? 'circle-check' : 'circle-xmark'}}" class="{{result.ok ? 'text-base text-green-600 dark:text-green-400 mt-0.5' : 'text-base text-red-600 dark:text-red-400 mt-0.5'}}"/>
           <div class="min-w-0">
             <span data-if="{{!!_global.queueConfirm?.names?.[result.uuid]}}" class="block text-sm font-medium text-gray-900 dark:text-white break-all">{{_global.queueConfirm?.names?.[result.uuid]}}</span>
-            <span class="block text-xs font-mono text-gray-500 dark:text-gray-400 break-all">{{result.uuid}}</span>
+            <span class="block text-xs font-mono text-muted break-all">{{result.uuid}}</span>
             <span class="block text-sm text-gray-800 dark:text-gray-200 break-all">{{result.message}}</span>
           </div>
         </li>
@@ -35,7 +35,7 @@
         </on>
         {{_global.queueConfirmResults ? $t('common.close') : $t('common.cancel')}}
       </button>
-      <button data-ref="queue_confirm_submit" data-if="{{!_global.queueConfirmResults}}" type="button" class="{{_global.queueConfirm?.action === 'delete' ? 'btn btn-danger flex-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed' : 'btn btn-info flex-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed'}}" disabled="{{_global.queueConfirmBusy || !(_global.queueConfirm?.uuids ?? []).length}}">
+      <button data-ref="queue_confirm_submit" data-if="{{!_global.queueConfirmResults}}" type="button" class="{{_global.queueConfirm?.action === 'delete' ? 'btn btn-danger flex-center gap-2' : 'btn btn-info flex-center gap-2'}}" disabled="{{_global.queueConfirmBusy || !(_global.queueConfirm?.uuids ?? []).length}}">
         <on type="click">
           <!-- 진행 표시를 켜고 갈래(재시도/삭제)대로 보낸다. 성공·실패 양쪽에서 진행 표시를 끈다.
                연타는 300ms 로 모아 요청 1회 — 버튼 disabled 는 첫 클릭의 상태 변경이 렌더된 뒤에야 걸려 같은 틱의 두 번째 클릭을 못 막는다. -->

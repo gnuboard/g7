@@ -27,6 +27,7 @@ import React from 'react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { expandSemanticClassName } from './support/semanticClasses';
 import { createLayoutTest, screen } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
 
@@ -325,7 +326,10 @@ describe('대시보드 알림 심각도별 배치와 색상', () => {
 
     expect(row).toContain('bg-gray-50');
     expect(row).not.toContain('bg-amber-50');
-    expect(icon).toContain('text-gray-500');
+    // 회색은 의미 클래스 text-muted 가 준다 — 정의(text-gray-500, 다크 짝)까지 펼쳐 확인한다 (#399)
+    expect(icon.split(/\s+/)).toContain('text-muted');
+    expect(expandSemanticClassName(icon)).toContain('text-gray-500');
+    expect(expandSemanticClassName(icon)).toContain('dark:text-gray-400');
     expect(document.querySelector('#dashboard_alert_banners')).toBeNull();
 
     testUtils.cleanup();

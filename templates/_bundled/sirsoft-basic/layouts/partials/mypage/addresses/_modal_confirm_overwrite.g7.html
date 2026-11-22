@@ -10,14 +10,14 @@
     </div>
     <footer>
       <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-        <responsive on="portable" type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"/>
+        <responsive on="portable" type="button" class-merge="flex-1 py-2.5"/>
         <on type="click">
           <close-modal/>
         </on>
         $t:common.cancel
       </button>
       <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
-        <responsive on="portable" type="button" class="flex-1 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"/>
+        <responsive on="portable" type="button" class-merge="flex-1 py-2.5"/>
         <on type="click">
           <!-- 덮어쓰기 진행 — 창을 먼저 닫는 이유는 이 요청이 성공하면 뒤에 열려 있던 편집 창까지 함께 닫혀야 하기 때문이다 -->
           <sequence>

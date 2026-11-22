@@ -16,6 +16,7 @@
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
+import { rangeClassName } from './support/responsiveClass';
 
 const layoutsDir = path.resolve(__dirname, '../../layouts');
 
@@ -120,9 +121,13 @@ describe('상점 화면 표시 다듬기', () => {
     expect(JSON.stringify(links[0])).toContain('$t:mypage.orders.track_shipping');
     expect(String(links[0].props.className)).toMatch(/dark:/);
     // 모바일·PC 두 모양 — 옆 「상세」 단추처럼 좁은 화면에서는 작은 모양으로 바뀐다
-    const portable = String(links[0].responsive?.portable?.props?.className ?? '');
-    expect(portable).toContain('text-xs');
-    expect(portable).toContain('py-1.5');
+    // 좁은 화면 값은 구간 class-merge 를 기본 className 위에 엔진 규칙으로 덧붙인 실효값이다 (#399)
+    const portable = rangeClassName(links[0], 'portable');
+    const portableTokens = portable.split(/\s+/);
+    expect(portableTokens).toContain('text-xs');
+    expect(portableTokens).toContain('py-1.5');
+    expect(portableTokens).not.toContain('text-sm');
+    expect(portableTokens).not.toContain('py-2');
     expect(portable).toMatch(/dark:/);
   });
 });

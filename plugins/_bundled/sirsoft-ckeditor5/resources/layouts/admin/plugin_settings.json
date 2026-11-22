@@ -66,7 +66,7 @@
                 "responsive": {
                     "640-1023": {
                         "props": {
-                            "className": "ckeditor:p-6 ckeditor:min-h-screen ckeditor:bg-gray-50 ckeditor:dark:bg-gray-900"
+                            "className": "ckeditor-admin-page-content"
                         }
                     },
                     "1024-": {
@@ -1010,7 +1010,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "{{_local.showPreview ? 'chevron-up' : 'chevron-down'}}",
-                                                    "className": "ckeditor:text-gray-500 ckeditor:dark:text-gray-400"
+                                                    "className": "ckeditor-text-muted"
                                                 }
                                             }
                                         ]

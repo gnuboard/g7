@@ -38,7 +38,7 @@
       <div class="sso:space-y-5">
         <div data-if="{{_global.ssoPendingExpired === true}}" data-ref="sso_admin_consent_expired" class="sso:space-y-4 sso:text-center">
           <p class="sso:text-sm sso:text-gray-700 sso:dark:text-gray-300">$t:sirsoft-sso.consent.expired</p>
-          <button type="button" class="sso:w-full sso:px-4 sso:py-2.5 sso:bg-gray-900 sso:dark:bg-white sso:text-white sso:dark:text-gray-900 sso:rounded-lg sso:font-medium sso:cursor-pointer">
+          <button type="button" class="sso:w-full sso-btn sso-btn-primary sso:py-2.5">
             <on type="click">
               <!-- 만료 안내에서 닫고 로그인 화면 처음으로 — 대기 정보가 사라졌으므로 회사 계정 로그인부터 다시 한다 -->
               <sequence>
@@ -78,7 +78,7 @@
             </div>
           </div>
           <p data-if="{{!!_global.ssoError}}" data-ref="sso_admin_consent_error" role="alert" class="sso:text-sm sso:text-red-600 sso:dark:text-red-400">{{_global.ssoError}}</p>
-          <button type="button" data-ref="sso_admin_consent_submit" class="sso:w-full sso:px-4 sso:py-3 sso:bg-gray-900 sso:dark:bg-white sso:text-white sso:dark:text-gray-900 sso:rounded-lg sso:font-medium sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed" disabled="{{_global.ssoBusy || !_global.ssoForm?.agree_terms || !_global.ssoForm?.agree_privacy}}">
+          <button type="button" data-ref="sso_admin_consent_submit" class="sso:w-full sso-btn sso-btn-primary sso:py-3" disabled="{{_global.ssoBusy || !_global.ssoForm?.agree_terms || !_global.ssoForm?.agree_privacy}}">
             <on type="click">
               <!-- 동의하고 시작 — 회원을 만들고 받은 인계 코드로 로그인을 이어 간다(2단계 인증·비밀번호 변경은 화면의 로그인 응답 분기가 처리) -->
               <sequence>
@@ -123,7 +123,7 @@
       <div class="sso:space-y-5">
         <div data-if="{{_global.ssoLinkExpired === true}}" data-ref="sso_admin_link_expired" class="sso:space-y-4 sso:text-center">
           <p class="sso:text-sm sso:text-gray-700 sso:dark:text-gray-300">$t:sirsoft-sso.link.expired</p>
-          <button type="button" class="sso:w-full sso:px-4 sso:py-2.5 sso:bg-gray-900 sso:dark:bg-white sso:text-white sso:dark:text-gray-900 sso:rounded-lg sso:font-medium sso:cursor-pointer">
+          <button type="button" class="sso:w-full sso-btn sso-btn-primary sso:py-2.5">
             <on type="click">
               <!-- 만료·횟수 초과 안내에서 닫고 로그인 화면 처음으로 -->
               <sequence>
@@ -155,7 +155,7 @@
           </div>
           <!-- 비밀번호로 확인 -->
           <div data-if="{{_global.ssoLinkMethod === 'password'}}" class="sso:space-y-2">
-            <label for="sso_link_password" class="sso:block sso:text-sm sso:font-medium sso:text-gray-700 sso:dark:text-gray-300">$t:sirsoft-sso.link.password</label>
+            <label for="sso_link_password" class="sso-form-label">$t:sirsoft-sso.link.password</label>
             <input type="password" id="sso_link_password" name="sso_link_password" value="{{_global.ssoForm?.password ?? ''}}" autoComplete="current-password" maxLength="255" class="sso:w-full sso:px-3 sso:py-2 sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:bg-white sso:dark:bg-gray-700 sso:text-gray-900 sso:dark:text-white" disabled="{{_global.ssoBusy}}">
               <on event="onChange">
                 <!-- 입력한 비밀번호를 담는다 — [연결하고 로그인] 이 이 값으로 확인한다 -->
@@ -166,7 +166,7 @@
           <!-- 메일 인증번호로 확인 -->
           <div data-if="{{_global.ssoLinkMethod === 'email'}}" class="sso:space-y-2">
             <button type="button" data-ref="sso_admin_link_request_code" class="sso:w-full sso:px-3 sso:py-3 sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:text-sm sso:text-gray-700 sso:dark:text-gray-300 sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed" disabled="{{_global.ssoBusy}}">
-              <responsive on="640-" class="sso:w-full sso:px-3 sso:py-2 sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:text-sm sso:text-gray-700 sso:dark:text-gray-300 sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed"/>
+              <responsive on="640-" class-merge="sso:py-2"/>
               <on type="click">
                 <!-- 인증번호 받기 — 기존 계정 메일로 보낸다 -->
                 <sequence>
@@ -193,7 +193,7 @@
             </input>
           </div>
           <p data-if="{{!!_global.ssoError}}" data-ref="sso_admin_link_error" role="alert" class="sso:text-sm sso:text-red-600 sso:dark:text-red-400">{{_global.ssoError}}</p>
-          <button type="button" data-ref="sso_admin_link_submit" class="sso:w-full sso:px-4 sso:py-3 sso:bg-gray-900 sso:dark:bg-white sso:text-white sso:dark:text-gray-900 sso:rounded-lg sso:font-medium sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed" disabled="{{_global.ssoBusy || (_global.ssoLinkMethod === 'password' ? !_global.ssoForm?.password : (!_global.ssoLinkChallengeId || !_global.ssoForm?.code))}}">
+          <button type="button" data-ref="sso_admin_link_submit" class="sso:w-full sso-btn sso-btn-primary sso:py-3" disabled="{{_global.ssoBusy || (_global.ssoLinkMethod === 'password' ? !_global.ssoForm?.password : (!_global.ssoLinkChallengeId || !_global.ssoForm?.code))}}">
             <on type="click">
               <!-- 연결하고 로그인 — 확인이 맞으면 연결하고 받은 인계 코드로 로그인을 이어 간다. 비밀번호 3번 오류면 처음부터 다시(만료 안내로 바뀐다) -->
               <sequence>

@@ -99,7 +99,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "fa-solid fa-search",
-                                                "className": "board:text-sm board:text-gray-500 board:dark:text-gray-400"
+                                                "className": "board:text-sm board-text-muted"
                                             }
                                         }
                                     ]
@@ -370,7 +370,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "board:text-gray-500 board:dark:text-gray-400"
+                                        "className": "board-text-muted"
                                     },
                                     "text": "~"
                                 },

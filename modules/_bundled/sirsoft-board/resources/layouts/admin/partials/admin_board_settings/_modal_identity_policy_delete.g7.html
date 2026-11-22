@@ -3,7 +3,7 @@
   <modal data-type="composite" data-ref="board_identity_policy_delete_modal" title="$t:admin.identity.policies.delete_title" size="sm">
     <p class="board:text-gray-700 board:dark:text-gray-300">$t:admin.identity.policies.delete_confirm</p>
     <footer>
-      <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed" disabled="{{_global.boardIdentityPolicyDeleting}}">
+      <button type="button" class="board-btn board-btn-secondary" disabled="{{_global.boardIdentityPolicyDeleting}}">
         <on type="click">
           <close-modal target="board_identity_policy_delete_modal"/>
         </on>

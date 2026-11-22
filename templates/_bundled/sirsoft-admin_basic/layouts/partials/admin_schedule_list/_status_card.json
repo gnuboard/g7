@@ -420,7 +420,7 @@
                             "name": "Div",
                             "if": "{{schedule_status !== undefined && (!schedule_status?.data?.queue?.measurable)}}",
                             "props": {
-                                "className": "mt-2 text-lg font-semibold text-gray-500 dark:text-gray-400"
+                                "className": "mt-2 text-lg font-semibold text-muted"
                             },
                             "text": "$t:admin.schedules.status_card.pending_unmeasurable"
                         },

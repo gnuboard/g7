@@ -203,7 +203,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "user",
-                                                            "className": "ecommerce:text-base ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce:text-base ecommerce-text-muted"
                                                         }
                                                     },
                                                     {
@@ -225,7 +225,7 @@
                                                     "data-testid": "real-name-sub",
                                                     "role": "note",
                                                     "aria-label": "{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.user_real_name })}}",
-                                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce:text-xs ecommerce-text-muted"
                                                 },
                                                 "text": "{{row.user_real_name}}"
                                             }
@@ -350,7 +350,7 @@
                                 "name": "Span",
                                 "if": "{{!row.order_number}}",
                                 "props": {
-                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-sm"
+                                    "className": "ecommerce-text-muted ecommerce:text-sm"
                                 },
                                 "text": "-"
                             }
@@ -403,7 +403,7 @@
                                 "name": "Span",
                                 "if": "{{!row.is_cancellable}}",
                                 "props": {
-                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-sm"
+                                    "className": "ecommerce-text-muted ecommerce:text-sm"
                                 },
                                 "text": "-"
                             }
@@ -473,7 +473,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
+                        "className": "ecommerce-btn ecommerce-btn-secondary"
                     },
                     "children": [
                         {

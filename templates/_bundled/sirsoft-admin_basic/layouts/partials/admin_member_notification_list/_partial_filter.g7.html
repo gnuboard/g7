@@ -21,7 +21,7 @@
           </on>
         </select>
         <div class="relative flex-1">
-          <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"/>
+          <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm pointer-events-none"/>
           <input name="search" type="text" placeholder="$t:admin.member_notification.search_placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
             <on type="change">
               <!-- 수신자로 찾을 때는 이름과 이메일 둘 다 걸린다 — 운영자가 둘 중 무엇을 들고 있는지 모르기 때문이다. -->
@@ -37,7 +37,7 @@
     <div data-ref="filter_grid" class="filter-grid">
       <div data-ref="read_filter" class="flex flex-col gap-2">
         <responsive on="768-" class="flex flex-row gap-2 items-center"/>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.member_notification.filter.read_label</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.member_notification.filter.read_label</span>
         <div class="flex-center flex-wrap gap-2">
           <select name="readState" class="select-composite w-36" value="{{_local.filter.read || 'all'}}">
             <options>
@@ -55,7 +55,7 @@
       </div>
       <div data-ref="created_range_filter" class="flex flex-col gap-2">
         <responsive on="768-" class="flex flex-row gap-2 items-center"/>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.member_notification.filter.created_label</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.member_notification.filter.created_label</span>
         <div class="flex-center flex-wrap gap-2">
           <input name="createdFrom" type="date" aria-label="$t:common.range_start|label={{$t('admin.member_notification.filter.created_label')}}" class="input w-40" value="{{_local.filter.createdFrom || ''}}">
             <on type="change">

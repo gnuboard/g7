@@ -7,9 +7,9 @@
         <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.identificationExpanded="{{!_local.ui.identificationExpanded}}"/>
       </on>
-      <icon name="barcode" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+      <icon name="barcode" class="ecommerce-text-muted"/>
       <span class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.product.sections.identification</span>
-      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.identificationExpanded !== false ? 'ecommerce:rotate-180' : ''}}"/>
+      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.identificationExpanded !== false ? 'ecommerce:rotate-180' : ''}}"/>
     </button>
     <div data-ref="identification_body" data-if="{{_local.ui.identificationExpanded !== false}}" class="ecommerce-row-stack">
       <div data-ref="identification_grid" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-6">

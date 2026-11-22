@@ -27,9 +27,6 @@
                             "id": "reported_content_header",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -182,7 +179,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "board:text-xs {{report_detail?.data?.target_status === 'published' ? 'board:text-green-700 board:dark:text-green-400' : report_detail?.data?.target_status === 'blinded' ? 'board:text-orange-700 board:dark:text-orange-400' : 'board:text-gray-500 board:dark:text-gray-400'}}"
+                                                        "className": "board:text-xs {{report_detail?.data?.target_status === 'published' ? 'board:text-green-700 board:dark:text-green-400' : report_detail?.data?.target_status === 'blinded' ? 'board:text-orange-700 board:dark:text-orange-400' : 'board-text-muted'}}"
                                                     },
                                                     "text": "{{report_detail?.data?.target_status_label ?? report_detail?.data?.target_status ?? '-'}}"
                                                 },
@@ -538,7 +535,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "clock",
-                                                "className": "board:text-base board:text-gray-500 board:dark:text-gray-400"
+                                                "className": "board:text-base board-text-muted"
                                             }
                                         },
                                         {
@@ -658,9 +655,6 @@
                                 "index_var": "reporterIdx"
                             },
                             "blur_until_loaded": "{{_local.reporters_loading}}",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "id": "reporter_item_card_{{reporterIdx}}",
@@ -676,9 +670,7 @@
                                             "name": "Div",
                                             "responsive": {
                                                 "desktop": {
-                                                    "props": {
-                                                        "className": "board-grid-2col board:grid-cols-5"
-                                                    }
+                                                    "classMerge": "board:grid-cols-5"
                                                 }
                                             },
                                             "props": {

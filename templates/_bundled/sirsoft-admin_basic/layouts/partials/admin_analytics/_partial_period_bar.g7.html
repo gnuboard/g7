@@ -130,7 +130,7 @@
             </sequence>
           </on>
         </input>
-        <span class="text-gray-500 dark:text-gray-400">~</span>
+        <span class="text-muted">~</span>
         <input data-ref="period_to" name="analytics_period_to" type="date" class="input flex-1 min-w-0" value="{{_computed.periodTo || ''}}" aria-label="$t:admin.analytics.period.to">
           <responsive on="640-" class="input min-w-0 flex-none w-40"/>
           <on type="change">
@@ -214,7 +214,7 @@
       </span>
       <!-- 모바일에서는 기간 바 아래 전폭 — 390px 에서 칩 사이에 끼면 눌리는 면적이 칩 하나만 해진다(계획서 §4.11). -->
       <button data-ref="csv_download_button" data-if="{{!!_computed.csvUrl}}" type="button" class="btn btn-secondary btn-sm flex-center gap-1.5 w-full">
-        <responsive on="640-" class="btn btn-secondary btn-sm flex-center gap-1.5 w-auto"/>
+        <responsive on="640-" class-merge="w-auto"/>
         <on type="click">
           <!-- CSV 는 토큰이 실리는 blob 요청으로 받는다 — `<a href>` 는 Authorization 이 없어 401 이다. -->
           <action handler="downloadAttachment" url="{{_computed.csvUrl}}" filename="{{_computed.csvFilename ?? 'analytics.csv'}}"/>

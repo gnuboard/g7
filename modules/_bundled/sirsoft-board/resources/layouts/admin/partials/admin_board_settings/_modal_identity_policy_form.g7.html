@@ -66,7 +66,7 @@
           </div>
           <div>
             <label class="board-form-label">$t:admin.identity.policies.form.provider_id</label>
-            <select value="{{_global.identity_policy_form_modal?.form?.provider_id ?? ''}}" class="" options="{{[{value: '', label: '$t:admin.identity.policies.form.use_default_provider'}].concat((identityProviders?.data ?? []).map(function(p) { return {value: p.id, label: p.label}; }))}}">
+            <select value="{{_global.identity_policy_form_modal?.form?.provider_id ?? ''}}" options="{{[{value: '', label: '$t:admin.identity.policies.form.use_default_provider'}].concat((identityProviders?.data ?? []).map(function(p) { return {value: p.id, label: p.label}; }))}}">
               <on type="change">
                 <!-- 어느 인증 수단을 쓸지 — 빈 값이면 시스템 기본 수단을 따르므로 목록 맨 앞에 그 뜻의 항목을 하나 끼워 둔다 -->
                 <set-state target="global" identity_policy_form_modal.form.provider_id="{{$event.target.value}}"/>
@@ -144,7 +144,7 @@
         </div>
         <div data-if="{{_global.identity_policy_form_modal?.form?.purpose === 'signup'}}">
           <label class="board-form-label">$t:admin.identity.policies.form.signup_stage</label>
-          <select value="{{_global.identity_policy_form_modal?.form?.conditions?.signup_stage ?? ''}}" class="">
+          <select value="{{_global.identity_policy_form_modal?.form?.conditions?.signup_stage ?? ''}}">
             <options>
               <option value="">$t:admin.identity.policies.form.signup_stage_unset</option>
               <option value="before_submit">$t:admin.identity.policies.form.signup_stage_before_submit</option>
@@ -161,7 +161,7 @@
       </div>
     </div>
     <footer>
-      <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving ?? false}}" class="board:px-4 board:py-2 board:text-sm board:font-medium board:bg-white board:dark:bg-gray-800 board:border board:border-gray-300 board:dark:border-gray-600 board:text-gray-700 board:dark:text-gray-200 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed">
+      <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving ?? false}}" class="board-btn board-btn-secondary">
         <on type="click">
           <close-modal target="identity_policy_form_modal"/>
         </on>

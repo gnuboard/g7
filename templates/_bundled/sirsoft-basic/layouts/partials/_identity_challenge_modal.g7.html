@@ -17,7 +17,7 @@
       <div class="flex items-center justify-between text-xs" role="status" aria-live="polite">
         <span data-if="{{(_global.identityChallenge?.remainingSeconds ?? 0) > 0}}" class="text-gray-600 dark:text-gray-400">$t:user.identity.challenge.remaining_time|minutes={{Math.floor((_global.identityChallenge?.remainingSeconds ?? 0) / 60)}}|seconds={{String((_global.identityChallenge?.remainingSeconds ?? 0) % 60).padStart(2, '0')}}</span>
         <span data-if="{{(_global.identityChallenge?.remainingSeconds ?? 0) <= 0 &amp;&amp; _global.identityChallenge?.expires_at}}" class="text-red-600 dark:text-red-400">$t:user.identity.challenge.expired</span>
-        <span class="text-gray-500 dark:text-gray-400">$t:user.identity.challenge.remaining_attempts|count={{Math.max(0, (_global.identityChallenge?.maxAttempts ?? 0) - (_global.identityChallenge?.attempts ?? 0))}}</span>
+        <span class="text-muted">$t:user.identity.challenge.remaining_attempts|count={{Math.max(0, (_global.identityChallenge?.maxAttempts ?? 0) - (_global.identityChallenge?.attempts ?? 0))}}</span>
       </div>
     </div>
     <!-- 코어 기본 UI (link) — 코어 mail provider 또는 provider_id 미지정 케이스의 link 렌더힌트 -->
@@ -26,7 +26,7 @@
         <icon name="fas fa-envelope" class="text-2xl text-blue-600 dark:text-blue-400"/>
       </div>
       <p class="text-sm text-gray-600 dark:text-gray-400">$t:user.identity.challenge.link_subtitle</p>
-      <p class="text-xs text-gray-500 dark:text-gray-400">$t:user.identity.challenge.check_spam</p>
+      <p class="text-xs text-muted">$t:user.identity.challenge.check_spam</p>
     </div>
     <!-- 외부 IDV 플러그인 슬롯 — inicis/KCP/PortOne 등이 자기 provider_id 매칭 시 UI 주입 (mode: append). 코어 mail provider 또는 미지정 케이스에서는 마운트되지 않음. -->
     <extension-point name="identity_provider_ui:provider" data-ref="identity_provider_ui_provider" data-if="{{_global.identityChallenge?.provider_id &amp;&amp; _global.identityChallenge?.provider_id !== 'g7:core.mail'}}">

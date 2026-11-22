@@ -1,7 +1,7 @@
 {
     "name": "plugins/sirsoft-social_login",
     "description": "Social login (Kakao, Naver, Google, Facebook, OIDC) for G7",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "type": "library",
     "authors": [
         {

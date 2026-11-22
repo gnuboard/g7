@@ -105,12 +105,12 @@
             <p class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.cache_description</p>
             <div data-ref="cache_info_row" class="ecommerce-flex-center ecommerce:gap-4">
               <div class="ecommerce-flex-center ecommerce:gap-2">
-                <icon name="database" class="ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+                <icon name="database" class="ecommerce:text-base ecommerce-icon-muted ecommerce-text-muted"/>
                 <span class="ecommerce:text-sm ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.current_cache_size:</span>
                 <span class="ecommerce-text-heading">{{seoStats?.data?.size_formatted ?? '-'}}</span>
               </div>
               <!-- 캐시 비우기는 설정 수정 권한의 일이다(서버 settings.update) — 읽기 전용이면 확인 창을 열지 않게 잠근다. -->
-              <button data-ref="seo_clear_cache_button" type="button" class="ecommerce-btn ecommerce-btn-danger ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+              <button data-ref="seo_clear_cache_button" type="button" class="ecommerce-btn ecommerce-btn-danger" disabled="{{_computed.isReadOnly}}">
                 <on type="click">
                   <open-modal target="modal_clear_seo_cache"/>
                 </on>

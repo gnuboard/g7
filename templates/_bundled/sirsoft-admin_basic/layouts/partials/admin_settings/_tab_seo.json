@@ -60,8 +60,7 @@
                                         "type": "text",
                                         "name": "seo.meta_title_suffix",
                                         "placeholder": "$t:admin.settings.seo.meta_title_suffix_placeholder",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "className": ""
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -129,8 +128,7 @@
                                         "type": "text",
                                         "name": "seo.meta_keywords",
                                         "placeholder": "$t:admin.settings.seo.meta_keywords_placeholder",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "className": ""
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -243,8 +241,7 @@
                                         "name": "seo.generator_content",
                                         "maxLength": 200,
                                         "placeholder": "GnuBoard7 {{_global.appConfig?.version ?? ''}}",
-                                        "disabled": "{{_computed.isReadOnly || !_local.form?.seo?.generator_enabled}}",
-                                        "className": ""
+                                        "disabled": "{{_computed.isReadOnly || !_local.form?.seo?.generator_enabled}}"
                                     }
                                 },
                                 {
@@ -311,8 +308,7 @@
                                         "type": "text",
                                         "name": "seo.og_default_site_name",
                                         "placeholder": "GNUBOARD.NET",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "className": ""
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -353,8 +349,7 @@
                                                 "min": "{{_local?.form?._meta?.limits?.seo_og_image_default_width_min ?? 0}}",
                                                 "max": "{{_local?.form?._meta?.limits?.seo_og_image_default_width_max ?? 8000}}",
                                                 "placeholder": "1200",
-                                                "disabled": "{{_computed.isReadOnly}}",
-                                                "className": ""
+                                                "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         }
                                     ]
@@ -380,8 +375,7 @@
                                                 "min": "{{_local?.form?._meta?.limits?.seo_og_image_default_height_min ?? 0}}",
                                                 "max": "{{_local?.form?._meta?.limits?.seo_og_image_default_height_max ?? 8000}}",
                                                 "placeholder": "630",
-                                                "disabled": "{{_computed.isReadOnly}}",
-                                                "className": ""
+                                                "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         }
                                     ]
@@ -629,7 +623,6 @@
                                     "props": {
                                         "name": "seo.twitter_default_card",
                                         "disabled": "{{_computed.isReadOnly}}",
-                                        "className": "",
                                         "options": [
                                             {
                                                 "value": "summary_large_image",
@@ -679,8 +672,7 @@
                                         "type": "text",
                                         "name": "seo.twitter_default_site",
                                         "placeholder": "@gnuboard",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "className": ""
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -986,8 +978,7 @@
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "min": "{{_local?.form?._meta?.limits?.seo_cache_ttl_min ?? 60}}",
                                         "max": "{{_local?.form?._meta?.limits?.seo_cache_ttl_max ?? 86400}}",
-                                        "placeholder": "7200",
-                                        "className": ""
+                                        "placeholder": "7200"
                                     }
                                 },
                                 {
@@ -1197,8 +1188,7 @@
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "min": "{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_min ?? 3600}}",
                                         "max": "{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_max ?? 604800}}",
-                                        "placeholder": "86400",
-                                        "className": ""
+                                        "placeholder": "86400"
                                     }
                                 },
                                 {
@@ -1233,8 +1223,7 @@
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "min": "{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_min ?? 1000}}",
                                         "max": "{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_max ?? 50000}}",
-                                        "placeholder": "50000",
-                                        "className": ""
+                                        "placeholder": "50000"
                                     }
                                 },
                                 {
@@ -1445,9 +1434,7 @@
                                             "name": "Input",
                                             "responsive": {
                                                 "768-": {
-                                                    "props": {
-                                                        "className": "flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"
-                                                    }
+                                                    "classMerge": "flex-1"
                                                 }
                                             },
                                             "props": {
@@ -1463,9 +1450,7 @@
                                             "name": "Button",
                                             "responsive": {
                                                 "768-": {
-                                                    "props": {
-                                                        "className": "w-auto px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex-center justify-center gap-2"
-                                                    }
+                                                    "classMerge": "w-auto"
                                                 }
                                             },
                                             "actions": [
@@ -1532,7 +1517,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "disabled": "{{_computed.isReadOnly || !!_local.isRegeneratingSitemap || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}",
-                                                "className": "w-full px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex-center justify-center gap-2"
+                                                "className": "w-full btn btn-primary whitespace-nowrap flex-center"
                                             },
                                             "children": [
                                                 {

@@ -187,7 +187,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+                    "className": "flex-center btn btn-primary",
                     "disabled": "{{_global.isTemplateInstalling}}"
                 },
                 "children": [
@@ -304,7 +304,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "link",
-                                "className": "text-base text-gray-500 dark:text-gray-400"
+                                "className": "text-base text-muted"
                             }
                         },
                         {
@@ -373,7 +373,7 @@
                             "if": "{{dep.type === 'module'}}",
                             "props": {
                                 "name": "cube",
-                                "className": "text-base text-gray-500 dark:text-gray-400"
+                                "className": "text-base text-muted"
                             }
                         },
                         {
@@ -382,7 +382,7 @@
                             "if": "{{dep.type === 'plugin'}}",
                             "props": {
                                 "name": "puzzle-piece",
-                                "className": "text-base text-gray-500 dark:text-gray-400"
+                                "className": "text-base text-muted"
                             }
                         },
                         {
@@ -472,7 +472,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "plug",
-                                "className": "text-base text-gray-500 dark:text-gray-400",
+                                "className": "text-base text-muted",
                                 "aria-hidden": "true"
                             }
                         },
@@ -533,7 +533,7 @@
                             "if": "{{item.type === 'module'}}",
                             "props": {
                                 "name": "cube",
-                                "className": "text-base text-gray-500 dark:text-gray-400",
+                                "className": "text-base text-muted",
                                 "aria-hidden": "true"
                             }
                         },
@@ -543,7 +543,7 @@
                             "if": "{{item.type === 'plugin'}}",
                             "props": {
                                 "name": "puzzle-piece",
-                                "className": "text-base text-gray-500 dark:text-gray-400",
+                                "className": "text-base text-muted",
                                 "aria-hidden": "true"
                             }
                         },
@@ -553,7 +553,7 @@
                             "if": "{{item.type === 'template'}}",
                             "props": {
                                 "name": "palette",
-                                "className": "text-base text-gray-500 dark:text-gray-400",
+                                "className": "text-base text-muted",
                                 "aria-hidden": "true"
                             }
                         },
@@ -644,7 +644,7 @@
                             "name": "Span",
                             "if": "{{(item.requires ?? []).length > 0}}",
                             "props": {
-                                "className": "w-full flex-start gap-1 ml-6 mt-1 px-2 py-1 text-xs rounded border {{item.can_select === true && ((_global.installSelectedIntegrations ?? []).includes(item.type + ':' + item.identifier) || ((_global.installSelectedIntegrations === undefined || _global.installSelectedIntegrations === null) && item.default_selected)) ? 'text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800' : 'text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 border-dashed border-gray-300 dark:border-gray-600'}}"
+                                "className": "w-full flex-start gap-1 ml-6 mt-1 px-2 py-1 text-xs rounded border {{item.can_select === true && ((_global.installSelectedIntegrations ?? []).includes(item.type + ':' + item.identifier) || ((_global.installSelectedIntegrations === undefined || _global.installSelectedIntegrations === null) && item.default_selected)) ? 'text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800' : 'text-muted bg-gray-50 dark:bg-gray-800 border-dashed border-gray-300 dark:border-gray-600'}}"
                             },
                             "children": [
                                 {
@@ -708,7 +708,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "language",
-                                "className": "text-base text-gray-500 dark:text-gray-400"
+                                "className": "text-base text-muted"
                             }
                         },
                         {

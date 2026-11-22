@@ -104,7 +104,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "btn btn-primary",
                         "disabled": "{{!_global.selectedFailedJobUuids?.length || queue_failed?.data?.abilities?.can_retry !== true}}"
                     },
                     "text": "$t:admin.schedules.queue.action.retry_selected"
@@ -484,7 +484,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5 break-all"
+                                            "className": "block text-xs text-muted font-mono mt-0.5 break-all"
                                         },
                                         "text": "{{row.job_class}}"
                                     },
@@ -519,7 +519,7 @@
                                 "name": "Span",
                                 "if": "{{row.connection}}",
                                 "props": {
-                                    "className": "block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5"
+                                    "className": "block text-xs text-muted font-mono mt-0.5"
                                 },
                                 "text": "{{row.connection}}"
                             }

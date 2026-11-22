@@ -88,7 +88,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "{{ch.icon ?? 'fas fa-bell'}}",
-                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                "className": "ecommerce-text-muted"
                                             }
                                         },
                                         {
@@ -183,7 +183,7 @@
                         "href": "/admin/ecommerce/settings?channel={{ch.id}}&page=1",
                         "mergeQuery": true,
                         "aria-current": "{{(query.channel ?? 'mail') === ch.id ? 'page' : undefined}}",
-                        "className": "{{(query.channel ?? 'mail') === ch.id ? 'ecommerce:border-b-2 ecommerce:border-indigo-500 ecommerce:dark:border-indigo-400 ecommerce:text-indigo-600 ecommerce:dark:text-indigo-400' : 'ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300'}} ecommerce:px-4 ecommerce:py-2.5 ecommerce:text-sm ecommerce:font-medium ecommerce:whitespace-nowrap ecommerce-flex-center ecommerce:gap-2"
+                        "className": "{{(query.channel ?? 'mail') === ch.id ? 'ecommerce:border-b-2 ecommerce:border-indigo-500 ecommerce:dark:border-indigo-400 ecommerce:text-indigo-600 ecommerce:dark:text-indigo-400' : 'ecommerce-text-muted ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300'}} ecommerce:px-4 ecommerce:py-2.5 ecommerce:text-sm ecommerce:font-medium ecommerce:whitespace-nowrap ecommerce-flex-center ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -445,7 +445,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}",
                                                                     "props": {
-                                                                        "className": "ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:italic"
+                                                                        "className": "ecommerce:text-sm ecommerce-text-muted ecommerce:italic"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.no_template_for_channel"
                                                                 },

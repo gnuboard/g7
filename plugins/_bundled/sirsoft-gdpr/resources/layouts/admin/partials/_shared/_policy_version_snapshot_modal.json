@@ -49,9 +49,7 @@
                     "if": "{{gdprPolicyVersionSnapshot?.data?.data}}",
                     "responsive": {
                         "640-": {
-                            "props": {
-                                "className": "gdpr-kv-list gdpr:grid-cols-[max-content_minmax(0,1fr)_max-content_minmax(0,1fr)] gdpr:gap-y-2 gdpr:text-xs gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:rounded-md gdpr:p-3 gdpr:bg-gray-50 gdpr:dark:bg-gray-900"
-                            }
+                            "classMerge": "gdpr:grid-cols-[max-content_minmax(0,1fr)_max-content_minmax(0,1fr)]"
                         }
                     },
                     "props": {
@@ -69,7 +67,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:flex-shrink-0"
+                                        "className": "gdpr-text-muted gdpr:flex-shrink-0"
                                     },
                                     "text": "$t:sirsoft-gdpr.settings.policy_version.published_at_label"
                                 },
@@ -94,7 +92,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:flex-shrink-0"
+                                        "className": "gdpr-text-muted gdpr:flex-shrink-0"
                                     },
                                     "text": "$t:sirsoft-gdpr.settings.policy_version.publisher_label"
                                 },
@@ -142,7 +140,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:flex-shrink-0"
+                                        "className": "gdpr-text-muted gdpr:flex-shrink-0"
                                     },
                                     "text": "$t:sirsoft-gdpr.settings.policy_version.history.col.change_type"
                                 },
@@ -167,7 +165,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:flex-shrink-0"
+                                        "className": "gdpr-text-muted gdpr:flex-shrink-0"
                                     },
                                     "text": "$t:sirsoft-gdpr.settings.policy_version.memo_label"
                                 },
@@ -324,7 +322,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "gdpr:text-gray-500 gdpr:dark:text-gray-400"
+                                                        "className": "gdpr-text-muted"
                                                     },
                                                     "text": "{{(category?.label && typeof category.label === 'object') ? ($localized(category.label) || '-') : (category?.label ?? '-')}}"
                                                 },
@@ -453,7 +451,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "gdpr:px-4 gdpr:py-2 gdpr:text-xs gdpr:font-medium gdpr:text-gray-700 gdpr:dark:text-gray-200 gdpr:bg-white gdpr:dark:bg-gray-800 gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:rounded gdpr:hover:bg-gray-50 gdpr:dark:hover:bg-gray-700 gdpr:transition-colors"
+                                "className": "gdpr-btn gdpr-btn-secondary gdpr:text-xs gdpr:rounded"
                             },
                             "children": [
                                 {

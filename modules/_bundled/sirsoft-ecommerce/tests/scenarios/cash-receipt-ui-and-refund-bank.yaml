@@ -170,6 +170,14 @@ effects:
   - checkout_refund_bank_partial_input_rejected_422
   - checkout_refund_bank_empty_allowed
   - checkout_refund_bank_name_resolved_from_code  # 은행코드 → 은행명 조회 저장
+  # 체크아웃 결제 partial 구조 (템플릿 sirsoft-basic, #399 선행 마킹 정리)
+  - checkout_payment_has_dbank_and_vbank_method_blocks  # 결제 partial 에 무통장, 가상계좌 블록이 각각 있다
+  - template_leaves_cash_receipt_fields_to_module # 현금영수증 도메인 필드(용도, 식별번호)는 모듈 소유라 템플릿 partial 에 없다
+  - checkout_refund_bank_fields_in_dbank_and_vbank_blocks  # 환불계좌 컨테이너와 은행, 계좌번호, 예금주 3필드가 무통장, 가상계좌 블록 양쪽에 있다
+  - checkout_refund_bank_fields_stored_in_local_refund_bank_keys  # 3필드가 _local.refundBankCode, refundBankAccount, refundBankHolder 에 setState 한다
+  - checkout_refund_bank_select_maps_settings_banks_to_value_label  # 은행 Select 는 설정의 banks 를 {value,label} 표현식으로 바꾼다(valueKey, labelKey prop 금지)
+  - checkout_refund_bank_grid_collapses_to_one_column_on_portable  # 환불계좌 2열 그리드가 portable 에서 1열로 접힌다
+  - new_ui_pairs_dark_variant_for_color_classes   # 신설 UI 의 배경, 글자, 테두리 색 클래스는 다크 짝을 갖는다(의미 클래스는 정의까지 펼쳐 본다)
 
   # 죽은 프로바이더(A3)의 판정·응답 계약은 cash-receipt-dead-provider.yaml 이 소유한다.
   # 이 매니페스트는 cross product 상한 초과로 effects 검사가 면제되어 있어, 그곳에 두면

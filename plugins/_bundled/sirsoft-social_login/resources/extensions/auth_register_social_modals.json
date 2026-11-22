@@ -187,7 +187,7 @@
                                                     "name": "Label",
                                                     "props": {
                                                         "htmlFor": "social_signup_name",
-                                                        "className": "sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300 sl:mb-1"
+                                                        "className": "sl-user-form-label"
                                                     },
                                                     "text": "$t:sirsoft-social_login.signup.name"
                                                 },
@@ -226,7 +226,7 @@
                                                     "name": "Label",
                                                     "props": {
                                                         "htmlFor": "social_signup_nickname",
-                                                        "className": "sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300 sl:mb-1"
+                                                        "className": "sl-user-form-label"
                                                     },
                                                     "text": "$t:sirsoft-social_login.signup.nickname"
                                                 },
@@ -348,9 +348,7 @@
                                                     "name": "Button",
                                                     "responsive": {
                                                         "640-": {
-                                                            "props": {
-                                                                "className": "sl:shrink-0 sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
-                                                            }
+                                                            "classMerge": "sl:py-2"
                                                         }
                                                     },
                                                     "actions": [
@@ -472,9 +470,7 @@
                                                     "name": "Button",
                                                     "responsive": {
                                                         "640-": {
-                                                            "props": {
-                                                                "className": "sl:shrink-0 sl:px-3 sl:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
-                                                            }
+                                                            "classMerge": "sl:py-2"
                                                         }
                                                     },
                                                     "actions": [
@@ -839,7 +835,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                "className": "sl:text-xs sl-text-muted"
                             },
                             "text": "$t:sirsoft-social_login.existing.hint"
                         },
@@ -898,9 +894,7 @@
                                             "name": "Button",
                                             "responsive": {
                                                 "640-": {
-                                                    "props": {
-                                                        "className": "sl:shrink-0 sl:px-3 sl:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
-                                                    }
+                                                    "classMerge": "sl:py-2"
                                                 }
                                             },
                                             "actions": [
@@ -995,9 +989,7 @@
                                     "name": "Button",
                                     "responsive": {
                                         "640-": {
-                                            "props": {
-                                                "className": "sl:w-full sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
-                                            }
+                                            "classMerge": "sl:py-2"
                                         }
                                     },
                                     "actions": [
@@ -1115,9 +1107,7 @@
                                             "name": "Button",
                                             "responsive": {
                                                 "640-": {
-                                                    "props": {
-                                                        "className": "sl:shrink-0 sl:px-3 sl:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
-                                                    }
+                                                    "classMerge": "sl:py-2"
                                                 }
                                             },
                                             "actions": [
@@ -1204,9 +1194,7 @@
                             "name": "Div",
                             "responsive": {
                                 "640-": {
-                                    "props": {
-                                        "className": "sl:flex sl:flex-row sl:gap-2 sl:pt-2 sl:border-t sl:border-gray-200 sl:dark:border-gray-700"
-                                    }
+                                    "classMerge": "sl:flex-row"
                                 }
                             },
                             "props": {
@@ -1219,9 +1207,7 @@
                                     "name": "Button",
                                     "responsive": {
                                         "640-": {
-                                            "props": {
-                                                "className": "sl:flex-1 sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50"
-                                            }
+                                            "classMerge": "sl:py-2"
                                         }
                                     },
                                     "actions": [
@@ -1292,9 +1278,7 @@
                                     "name": "Button",
                                     "responsive": {
                                         "640-": {
-                                            "props": {
-                                                "className": "sl:flex-1 sl:px-3 sl:py-2 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:hover:underline sl:cursor-pointer"
-                                            }
+                                            "classMerge": "sl:py-2"
                                         }
                                     },
                                     "actions": [

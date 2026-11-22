@@ -74,7 +74,7 @@
             <div data-testid="member-field-form-type-label" class="text-primary font-medium break-words">{{(_global.member_field_form_modal?.form?.type_label ?? (memberFieldDefs?.data?.types ?? []).find(t =&gt; t.key === (_global.member_field_form_modal?.form?.type ?? ''))?.label ?? (_global.member_field_form_modal?.form?.type ?? ''))}}</div>
             <p data-if="{{_global.member_field_form_modal?.isNew !== true}}" class="form-hint">$t:admin.settings.member.fields.form.type_locked</p>
           </div>
-          <button data-if="{{_global.member_field_form_modal?.isNew === true}}" data-testid="member-field-form-change-type" type="button" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap" disabled="{{_global.member_field_form_modal?.isSaving === true}}">
+          <button data-if="{{_global.member_field_form_modal?.isNew === true}}" data-testid="member-field-form-change-type" type="button" class="btn btn-secondary btn-sm whitespace-nowrap" disabled="{{_global.member_field_form_modal?.isSaving === true}}">
             <on type="click">
               <!-- 유형 바꾸기(U2). 유형을 고르는 첫 단계로 돌아간다. 적어 둔 이름과 공통 옵션은 그대로 남는다. -->
               <set-state target="global" member_field_form_modal.step="type" :member_field_form_modal.errors="null"/>
@@ -444,14 +444,14 @@
                 <span class="form-label">$t:admin.settings.member.fields.form.options.title</span>
               </div>
               <div data-if="{{_global.member_field_form_modal?.readOnly !== true}}" class="flex-center gap-2">
-                <button data-testid="member-field-form-options-paste-open" type="button" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap" disabled="{{(_global.member_field_form_modal?.readOnly === true || _global.member_field_form_modal?.isSaving === true)}}">
+                <button data-testid="member-field-form-options-paste-open" type="button" class="btn btn-secondary btn-sm whitespace-nowrap" disabled="{{(_global.member_field_form_modal?.readOnly === true || _global.member_field_form_modal?.isSaving === true)}}">
                   <on type="click">
                     <!-- 여러 줄 붙여넣기 칸을 연다(U9). 지난번에 붙여 둔 글은 비운다. -->
                     <set-state target="global" :member_field_form_modal.pasteOpen="true" member_field_form_modal.pasteText=""/>
                   </on>
                   <span>$t:admin.settings.member.fields.form.options.paste_button</span>
                 </button>
-                <button data-testid="member-field-form-options-add" type="button" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap" disabled="{{(_global.member_field_form_modal?.readOnly === true || _global.member_field_form_modal?.isSaving === true) || (_global.member_field_form_modal?.form?.options ?? []).length &gt;= 50}}">
+                <button data-testid="member-field-form-options-add" type="button" class="btn btn-secondary btn-sm whitespace-nowrap" disabled="{{(_global.member_field_form_modal?.readOnly === true || _global.member_field_form_modal?.isSaving === true) || (_global.member_field_form_modal?.form?.options ?? []).length &gt;= 50}}">
                   <on type="click">
                     <!-- 빈 선택지 한 줄을 더한다. 새 줄은 값(영문)을 고칠 수 있고, 저장된 줄은 값을 못 바꾼다. -->
                     <set-state target="global" member_field_form_modal.form.options="{{[...(_global.member_field_form_modal?.form?.options ?? []), { value: '', label: { }, _new: true }]}}" :member_field_form_modal.dirty="true"/>
@@ -471,14 +471,14 @@
               </textarea>
               <p class="form-hint">$t:admin.settings.member.fields.form.options.paste_hint</p>
               <div class="flex-center justify-end gap-2">
-                <button data-testid="member-field-form-options-paste-cancel" type="button" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+                <button data-testid="member-field-form-options-paste-cancel" type="button" class="btn btn-secondary btn-sm whitespace-nowrap">
                   <on type="click">
                     <!-- 붙여넣기 칸을 닫는다. 붙여 둔 글은 버린다. -->
                     <set-state target="global" :member_field_form_modal.pasteOpen="false" member_field_form_modal.pasteText=""/>
                   </on>
                   <span>$t:common.cancel</span>
                 </button>
-                <button data-testid="member-field-form-options-paste-apply" type="button" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap" disabled="{{String(_global.member_field_form_modal?.pasteText ?? '').trim() === ''}}">
+                <button data-testid="member-field-form-options-paste-apply" type="button" class="btn btn-secondary btn-sm whitespace-nowrap" disabled="{{String(_global.member_field_form_modal?.pasteText ?? '').trim() === ''}}">
                   <on type="click">
                     <!-- 줄마다 선택지 1개로 더한다(U9). 빈 줄은 건너뛴다. 값은 줄의 영문과 숫자로 만들고, 영문이 없으면 option1 부터 번호를 매기며,
                          이미 있는 값과 겹치면 뒤에 번호를 붙인다. 이름은 사이트 기본 언어 칸에 넣는다. 선택지는 50개까지다. -->
@@ -495,7 +495,7 @@
                   <div class="text-tertiary line-through break-words">{{($localized(opt.label) || opt.value) + ' (' + opt.value + ')'}}</div>
                   <p role="alert" class="text-red-600 dark:text-red-400 text-sm break-words">{{Number(opt.usage_count ?? 0) &gt; 0 ? $t('admin.settings.member.fields.form.options.remove_warning', { count: Number(opt.usage_count ?? 0) }) : $t('admin.settings.member.fields.form.options.remove_pending')}}</p>
                 </div>
-                <button data-testid="{{'member-field-form-option-restore-' + oi}}" type="button" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap" disabled="{{(_global.member_field_form_modal?.readOnly === true || _global.member_field_form_modal?.isSaving === true)}}">
+                <button data-testid="{{'member-field-form-option-restore-' + oi}}" type="button" class="btn btn-secondary btn-sm whitespace-nowrap" disabled="{{(_global.member_field_form_modal?.readOnly === true || _global.member_field_form_modal?.isSaving === true)}}">
                   <on type="click">
                     <!-- 지우기로 표시한 선택지를 되돌린다. 저장하기 전이라 회원 값은 그대로다. -->
                     <set-state target="global" member_field_form_modal.form.options="{{(_global.member_field_form_modal?.form?.options ?? []).map((o, i) =&gt; i === oi ? { ...o, _removed: false } : o)}}" :member_field_form_modal.dirty="true"/>
@@ -524,7 +524,7 @@
                     </on>
                   </multilingual-input>
                 </div>
-                <button data-if="{{_global.member_field_form_modal?.readOnly !== true}}" data-testid="{{'member-field-form-option-remove-' + oi}}" type="button" aria-label="$t:common.row_cell|row={{oi + 1}}|column={{$t('common.delete')}}" class="p-1.5 rounded text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_global.member_field_form_modal?.readOnly === true || _global.member_field_form_modal?.isSaving === true)}}">
+                <button data-if="{{_global.member_field_form_modal?.readOnly !== true}}" data-testid="{{'member-field-form-option-remove-' + oi}}" type="button" aria-label="$t:common.row_cell|row={{oi + 1}}|column={{$t('common.delete')}}" class="p-1.5 rounded text-muted hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_global.member_field_form_modal?.readOnly === true || _global.member_field_form_modal?.isSaving === true)}}">
                   <on type="click">
                     <!-- 선택지 지우기(U3). 새로 더한 줄은 바로 빼고, 저장된 선택지는 지우기로만 표시해 「이 값을 고른 회원 N명의 값이 비워집니다」를 보인다. 실제 삭제는 창을 저장할 때 일어난다. -->
                     <set-state target="global" member_field_form_modal.form.options="{{(_global.member_field_form_modal?.form?.options ?? []).flatMap((o, i) =&gt; i !== oi ? [o] : (o._new === true ? [] : [{ ...o, _removed: true }]))}}" :member_field_form_modal.dirty="true"/>
@@ -757,7 +757,7 @@
     </div>
     <footer>
       <span data-if="{{_global.member_field_form_modal?.confirmClose === true}}" data-testid="member-field-form-close-confirm" role="alert" class="text-warning-soft text-sm break-words">$t:admin.settings.member.fields.form.close_confirm.message</span>
-      <button data-if="{{_global.member_field_form_modal?.confirmClose === true}}" data-testid="member-field-form-close-keep" type="button" class="px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+      <button data-if="{{_global.member_field_form_modal?.confirmClose === true}}" data-testid="member-field-form-close-keep" type="button" class="btn btn-secondary">
         <on type="click">
           <!-- 계속 작성. 닫기 확인만 거두고 적은 내용은 그대로 둔다. -->
           <set-state target="global" :member_field_form_modal.confirmClose="false"/>
@@ -774,7 +774,7 @@
         </on>
         <span>$t:admin.settings.member.fields.form.close_confirm.discard</span>
       </button>
-      <button data-if="{{_global.member_field_form_modal?.confirmClose !== true}}" data-testid="member-field-form-cancel" type="button" disabled="{{_global.member_field_form_modal?.isSaving === true}}" class="px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+      <button data-if="{{_global.member_field_form_modal?.confirmClose !== true}}" data-testid="member-field-form-cancel" type="button" disabled="{{_global.member_field_form_modal?.isSaving === true}}" class="btn btn-secondary">
         <on type="click">
           <!-- 취소·닫기(U7). 고친 것이 있으면 바로 닫지 않고 하단을 확인 단추로 바꾼다. 고친 것이 없거나 읽기 전용이면 닫고 창 상태를 비운다. -->
           <sequence>

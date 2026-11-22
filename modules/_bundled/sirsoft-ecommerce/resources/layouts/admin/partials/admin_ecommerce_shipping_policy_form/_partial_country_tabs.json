@@ -81,7 +81,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-sm ecommerce-btn-primary ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                "className": "ecommerce-btn ecommerce-btn-sm ecommerce-btn-primary",
                                 "disabled": "{{!_local._selectedCountryToAdd || _computed.isReadOnly}}"
                             },
                             "children": [
@@ -160,7 +160,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "{{(_local.activeCountryTab ?? 0) === tabItem._idx ? 'ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:border-b-2 ecommerce:border-blue-500 ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:whitespace-nowrap' : 'ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300 ecommerce:whitespace-nowrap'}}"
+                        "className": "{{(_local.activeCountryTab ?? 0) === tabItem._idx ? 'ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:border-b-2 ecommerce:border-blue-500 ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:whitespace-nowrap' : 'ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce-text-muted ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300 ecommerce:whitespace-nowrap'}}"
                     },
                     "children": [
                         {

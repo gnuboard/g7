@@ -296,7 +296,7 @@
                     "name": "Div",
                     "if": "{{privacyTargets !== undefined && privacyTargets !== null && ((privacyTargets?.data?.data ?? []).length === 0)}}",
                     "props": {
-                        "className": "gdpr:flex gdpr:flex-col gdpr:items-center gdpr:gap-3 gdpr:text-center gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:py-6"
+                        "className": "gdpr:flex gdpr:flex-col gdpr:items-center gdpr:gap-3 gdpr:text-center gdpr-text-muted gdpr:py-6"
                     },
                     "children": [
                         {

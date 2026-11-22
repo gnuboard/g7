@@ -35,7 +35,7 @@
     </div>
     <div data-ref="cascade_dependencies_section" data-if="{{_global.installPreview?.dependencies &amp;&amp; _global.installPreview.dependencies.length > 0}}" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
       <div class="flex-center gap-2 mb-2">
-        <icon name="link" class="text-base text-gray-500 dark:text-gray-400"/>
+        <icon name="link" class="text-base text-muted"/>
         <span class="text-primary text-sm font-semibold">$t:admin.plugins.modals.cascade_dependencies_title</span>
       </div>
       <p class="text-tertiary mb-2">$t:admin.plugins.modals.cascade_dependencies_hint</p>
@@ -47,8 +47,8 @@
             <set-state target="global" installSelectedDeps="{{ $event.target.checked ? [ ...((_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier))).filter(id => id !== dep.identifier), dep.identifier ] : ((_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier))).filter(id => id !== dep.identifier) }}"/>
           </on>
         </input>
-        <icon data-if="{{dep.type === 'module'}}" name="cube" class="text-base text-gray-500 dark:text-gray-400"/>
-        <icon data-if="{{dep.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400"/>
+        <icon data-if="{{dep.type === 'module'}}" name="cube" class="text-base text-muted"/>
+        <icon data-if="{{dep.type === 'plugin'}}" name="puzzle-piece" class="text-base text-muted"/>
         <span class="text-primary text-sm">{{dep.name || dep.identifier}} ({{dep.identifier}})</span>
         <span class="text-tertiary font-mono">{{dep.required_version}}</span>
         <span data-if="{{dep.is_met}}" class="text-success-soft px-2 py-0.5 bg-green-50 dark:bg-green-900 rounded">$t:admin.plugins.modals.dependency_met</span>
@@ -66,7 +66,7 @@
          옛 코어는 `integrations` 를 싣지 않으므로 절이 그려지지 않는다. -->
     <div data-ref="cascade_integrations_section" data-if="{{(_global.installPreview?.integrations ?? []).length &gt; 0}}" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
       <div class="flex-center gap-2 mb-2">
-        <icon name="plug" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+        <icon name="plug" class="text-base text-muted" aria-hidden="true"/>
         <span class="text-primary text-sm font-semibold">$t:admin.extension_integrations.install_title</span>
       </div>
       <p class="text-tertiary mb-2">$t:admin.extension_integrations.install_hint</p>
@@ -77,9 +77,9 @@
             <set-state target="global" installSelectedIntegrations="{{ $event.target.checked ? [ ...((_global.installSelectedIntegrations ?? (_global.installPreview?.integrations ?? []).filter(x => x.default_selected).map(x => x.type + ':' + x.identifier))).filter(k => k !== item.type + ':' + item.identifier), item.type + ':' + item.identifier ] : ((_global.installSelectedIntegrations ?? (_global.installPreview?.integrations ?? []).filter(x => x.default_selected).map(x => x.type + ':' + x.identifier))).filter(k => k !== item.type + ':' + item.identifier) }}"/>
           </on>
         </input>
-        <icon data-if="{{item.type === 'module'}}" name="cube" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
-        <icon data-if="{{item.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
-        <icon data-if="{{item.type === 'template'}}" name="palette" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+        <icon data-if="{{item.type === 'module'}}" name="cube" class="text-base text-muted" aria-hidden="true"/>
+        <icon data-if="{{item.type === 'plugin'}}" name="puzzle-piece" class="text-base text-muted" aria-hidden="true"/>
+        <icon data-if="{{item.type === 'template'}}" name="palette" class="text-base text-muted" aria-hidden="true"/>
         <span class="text-primary text-sm">{{item.name || item.identifier}} ({{item.identifier}})</span>
         <span data-if="{{item.required_version &amp;&amp; item.required_version !== '*'}}" class="text-tertiary font-mono">{{item.required_version}}</span>
         <span data-if="{{item.status === 'not_installed'}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.extension_integrations.not_installed</span>
@@ -91,7 +91,7 @@
         <span data-if="{{item.blocked_by_permission === true}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.extension_integrations.requires_no_permission</span>
         <span data-if="{{item.blocked_reason}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">{{item.blocked_reason}}</span>
         <!-- 연동 대상 자신의 필수 의존(#153 D5) — 이 연동을 고르면 먼저 함께 설치된다. 체크 해제·선택 불가면 흐리게 -->
-        <span data-if="{{(item.requires ?? []).length &gt; 0}}" class="w-full flex-start gap-1 ml-6 mt-1 px-2 py-1 text-xs rounded border {{item.can_select === true &amp;&amp; ((_global.installSelectedIntegrations ?? []).includes(item.type + ':' + item.identifier) || ((_global.installSelectedIntegrations === undefined || _global.installSelectedIntegrations === null) &amp;&amp; item.default_selected)) ? 'text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800' : 'text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 border-dashed border-gray-300 dark:border-gray-600'}}">
+        <span data-if="{{(item.requires ?? []).length &gt; 0}}" class="w-full flex-start gap-1 ml-6 mt-1 px-2 py-1 text-xs rounded border {{item.can_select === true &amp;&amp; ((_global.installSelectedIntegrations ?? []).includes(item.type + ':' + item.identifier) || ((_global.installSelectedIntegrations === undefined || _global.installSelectedIntegrations === null) &amp;&amp; item.default_selected)) ? 'text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800' : 'text-muted bg-gray-50 dark:bg-gray-800 border-dashed border-gray-300 dark:border-gray-600'}}">
           <icon name="arrow-right" class="text-xs mt-0.5" aria-hidden="true"/>
           <span class="font-semibold">$t:admin.extension_integrations.requires_label</span>
           <span>{{(item.requires ?? []).map(r => (r.name || r.identifier) + ' (' + r.identifier + ')').join(', ')}}</span>
@@ -102,7 +102,7 @@
     </div>
     <div data-ref="cascade_language_packs_section" data-if="{{_global.installPreview?.language_packs &amp;&amp; _global.installPreview.language_packs.length > 0}}" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
       <div class="flex-center gap-2 mb-2">
-        <icon name="language" class="text-base text-gray-500 dark:text-gray-400"/>
+        <icon name="language" class="text-base text-muted"/>
         <span class="text-primary text-sm font-semibold">$t:admin.plugins.modals.cascade_language_packs_title</span>
       </div>
       <p class="text-tertiary mb-2">$t:admin.plugins.modals.cascade_language_packs_hint</p>
@@ -174,7 +174,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPluginInstalling}}">
+      <button type="button" class="flex-center btn btn-primary" disabled="{{_global.isPluginInstalling}}">
         <on type="click">
           <!-- 보낼 때 화면의 체크 상태를 그대로 싣지 않고 **미리보기 목록을 그 선택으로 다시 걸러** 만든다 —
             사이에 미리보기가 바뀌었더라도 지금 목록에 없는 것은 요청에 실리지 않는다.

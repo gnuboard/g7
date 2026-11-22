@@ -162,9 +162,7 @@
                                         "name": "H1",
                                         "responsive": {
                                             "640-": {
-                                                "props": {
-                                                    "className": "ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-1"
-                                                }
+                                                "classMerge": "ecommerce:text-2xl"
                                             }
                                         },
                                         "props": {
@@ -273,7 +271,7 @@
                                         "props": {
                                             "type": "button",
                                             "disabled": "{{templates?.data?.abilities?.can_create !== true}}",
-                                            "className": "ecommerce-flex-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                                            "className": "ecommerce-flex-center ecommerce:gap-1.5 ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm"
                                         },
                                         "children": [
                                             {

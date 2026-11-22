@@ -376,6 +376,36 @@ export function mergeClasses(baseClasses: string, overrideClasses?: string): str
 }
 
 /**
+ * responsive 구간의 `classMerge` 를 해석이 끝난 className 에 덧붙입니다 (충돌 교체형).
+ *
+ * `responsive.{key}.classMerge` 는 구간에서 **바뀐 토큰만** 적는 문법이다. 기본 className 에서 같은 축·같은 변형의
+ * 토큰은 지우고(`mergeClasses` 규칙), 나머지는 그대로 둔 채 merge 토큰을 뒤에 붙인다. 기본에 이미 있던 토큰을
+ * merge 에 다시 적어도 한 번만 남는다(그룹이 없는 의미 클래스 `admin-card` 도 중복되지 않는다).
+ *
+ * DynamicRenderer(일반 노드)와 RenderHelpers(셀·반복 항목) 두 경로, SEO 렌더러(`App\Support\Style\ClassMerger`)가
+ * 같은 규칙을 쓴다 — 공용 픽스처 `tests/Fixtures/class-merge/cases.json` 로 같은 결과를 증명한다.
+ *
+ * @param className - 바인딩·classMap 까지 해석된 className (없으면 빈 문자열)
+ * @param classMerge - 바인딩까지 해석된 구간 classMerge 값
+ * @returns 합친 className
+ * @since engine-v1.98.0
+ */
+export function applyResponsiveClassMerge(className: string | undefined | null, classMerge: string | undefined | null): string {
+  const base = typeof className === 'string' ? className : '';
+  if (typeof classMerge !== 'string' || classMerge.trim() === '') {
+    return base;
+  }
+
+  const mergeTokens = classMerge.split(/\s+/).filter(Boolean);
+  const mergeSet = new Set(mergeTokens);
+  // 같은 토큰은 merge 쪽 하나만 남긴다 — 그룹이 없는 토큰은 mergeClasses 가 지우지 않아 두 번 적힌다
+  const baseWithoutSame = base.split(/\s+/).filter((token) => token !== '' && !mergeSet.has(token)).join(' ');
+  const merged = mergeClasses(baseWithoutSame, Array.from(mergeSet).join(' '));
+
+  return merged.trim();
+}
+
+/**
  * 조건에 따라 클래스를 적용합니다.
  *
  * @param conditions - 조건과 클래스의 맵

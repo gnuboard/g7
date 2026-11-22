@@ -59,7 +59,7 @@
                 <span class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{(entry[1] ?? '').toString().substring(0, 20)}}{{(entry[1] ?? '').toString().length > 20 ? '...' : ''}}</span>
               </div>
             </div>
-            <p data-if="{{Object.keys(_local.form.product_notice ?? {}).length > 6}}" class="ecommerce:mt-2 ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:italic">... +{{Object.keys(_local.form.product_notice ?? {}).length - 6}} $t:sirsoft-ecommerce.admin.product.modal.save_template.more_fields</p>
+            <p data-if="{{Object.keys(_local.form.product_notice ?? {}).length > 6}}" class="ecommerce:mt-2 ecommerce-text-muted ecommerce:italic">... +{{Object.keys(_local.form.product_notice ?? {}).length - 6}} $t:sirsoft-ecommerce.admin.product.modal.save_template.more_fields</p>
           </div>
         </div>
       </div>

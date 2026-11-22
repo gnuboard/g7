@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.2.1] - 2026-11-21
+
+### Changed
+
+- 화면마다 따로 적던 흐린 글자·버튼·카드 모양을 이 확장 CSS 의 공통 클래스로 모았습니다. 위에 적은 것 외에는 화면 모양이 같습니다.
+
 ## [1.2.0] - 2026-11-20
 
 ### Added

@@ -559,7 +559,7 @@ $t:sirsoft-ecommerce.admin.claim.filter.claim_flags</span>
     </div>
     <!-- 프리셋 영역 — 데이터소스 기반 동적 표시 (카드 안 최상단, D21 ①) -->
     <div data-ref="preset_row" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4">
-      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:cursor-pointer ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-200">
+      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce-text-muted ecommerce:cursor-pointer ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-200">
         <on type="click">
           <open-modal target="modal_claim_preset_manage"/>
         </on>
@@ -634,7 +634,7 @@ $t:sirsoft-ecommerce.admin.claim.filter.claim_flags</span>
               </sequence>
             </on>
           </input>
-          <icon name="search" class="ecommerce:text-base ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:pointer-events-none"/>
+          <icon name="search" class="ecommerce:text-base ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce-text-muted ecommerce:pointer-events-none"/>
         </div>
       </div>
       <!-- 컬럼 선택 + 상세검색 버튼 -->
@@ -712,7 +712,7 @@ $t:sirsoft-ecommerce.admin.claim.filter.claim_flags</span>
         <div class="ecommerce-flex-center ecommerce:flex-1 ecommerce:justify-center ecommerce:gap-2">
           <responsive on="portable" class="ecommerce:contents"/>
           <button data-ref="f_911_search_button" type="button" class="ecommerce-btn ecommerce-btn-primary">
-            <responsive on="portable" class="ecommerce-btn ecommerce-btn-primary ecommerce:flex-1"/>
+            <responsive on="portable" class-merge="ecommerce:flex-1"/>
             <on type="click">
               <action-ref name="searchClaims"/>
             </on>
@@ -720,7 +720,7 @@ $t:sirsoft-ecommerce.admin.claim.filter.claim_flags</span>
           </button>
           <!-- 입력칸과 주소 조건을 함께 비워 둘이 같은 빈 조건을 가리키게 한다. 필터를 기본·상세로 나눈 배치는 운영자 설정이라 건드리지 않는다. -->
           <button data-ref="f_912_reset_button" type="button" class="ecommerce-btn ecommerce-btn-outline">
-            <responsive on="portable" class="ecommerce-btn ecommerce-btn-outline ecommerce:flex-1"/>
+            <responsive on="portable" class-merge="ecommerce:flex-1"/>
             <on type="click">
               <set-state target="_local" merge="shallow">
                 <field name="filter">

@@ -70,7 +70,7 @@
           <div data-each="area in {{memberDisplayNameOptions?.data?.areas ?? []}}" role="row" data-testid="{{'member-display-name-area-' + area.key}}" data-depth="{{Number(area.depth ?? 0)}}" class="grid grid-cols-1 gap-2 px-3 py-3 border-t border-gray-200 dark:border-gray-700">
             <responsive on="768-" class="grid grid-cols-3 gap-3 items-start px-3 py-3 border-t border-gray-200 dark:border-gray-700"/>
             <div role="cell" class="flex items-center flex-wrap gap-2 min-w-0" style="{{'padding-left:' + (Number(area.depth ?? 0) * 16) + 'px'}}">
-              <span data-if="{{Number(area.depth ?? 0) &gt; 0}}" aria-hidden="true" class="text-gray-500 dark:text-gray-400">└</span>
+              <span data-if="{{Number(area.depth ?? 0) &gt; 0}}" aria-hidden="true" class="text-muted">└</span>
               <span class="text-heading break-words">{{area.label ?? area.key}}</span>
               <span data-if="{{(area.owner_type ?? 'core') !== 'core'}}" data-testid="{{'member-display-name-area-owner-' + area.key}}" class="inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft">{{area.owner ?? ''}}</span>
             </div>

@@ -9,12 +9,12 @@
     <!-- 초기 로딩 상태 (데이터 없을 때만) -->
     <div data-if="{{_global.couponDownloadModal?.loading &amp;&amp; !_global.couponDownloadModal?.coupons?.data}}" class="flex flex-col items-center justify-center py-12">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mb-3"/>
-      <span class="text-sm text-gray-500 dark:text-gray-400">$t:shop.coupon_download.loading</span>
+      <span class="text-sm text-muted">$t:shop.coupon_download.loading</span>
     </div>
     <!-- 빈 상태 (쿠폰 없음) -->
     <div data-if="{{!_global.couponDownloadModal?.loading &amp;&amp; (_global.couponDownloadModal?.coupons?.data ?? []).length === 0}}" class="flex flex-col items-center justify-center py-12 text-center">
       <icon name="ticket" class="text-3xl text-gray-500 dark:text-gray-500 mb-3"/>
-      <p class="text-gray-500 dark:text-gray-400 text-sm">$t:shop.coupon_download.empty</p>
+      <p class="text-muted text-sm">$t:shop.coupon_download.empty</p>
     </div>
     <!-- 쿠폰 카드 그리드 -->
     <div data-if="{{(_global.couponDownloadModal?.coupons?.data ?? []).length > 0}}" class="flex flex-col">
@@ -64,7 +64,7 @@
       </div>
       <!-- 2열 그리드 (모바일 1열) - 무한스크롤 영역 -->
       <div class="relative grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
-        <responsive on="640-" class="relative grid grid-cols-2 gap-3 max-h-96 overflow-y-auto"/>
+        <responsive on="640-" class-merge="grid-cols-2"/>
         <on type="scroll">
           <!-- 무한스크롤: 하단 근접 시 다음 페이지 로드 (로딩 중/마지막 페이지 제외). debounce 로 연속 스크롤 이벤트 중복 호출 방지 -->
           <conditions :debounce="200">
@@ -101,11 +101,11 @@
           <!-- 쿠폰명 -->
           <p class="text-sm font-medium text-gray-900 dark:text-white mb-1 line-clamp-1">{{coupon.localized_name ?? coupon.name}}</p>
           <!-- 최소 주문 금액 — 선택 통화 환산 (A1-④, formatted 가 기호 포함) -->
-          <p data-if="{{coupon.min_order_amount > 0 &amp;&amp; coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}" class="text-xs text-gray-500 dark:text-gray-400 mb-1">$t:shop.coupon_download.min_order_amount {{coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}</p>
+          <p data-if="{{coupon.min_order_amount > 0 &amp;&amp; coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}" class="text-xs text-muted mb-1">$t:shop.coupon_download.min_order_amount {{coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}</p>
           <!-- 최소 주문 금액 — 폴백(환산 부재 시) -->
-          <p data-if="{{coupon.min_order_amount > 0 &amp;&amp; !coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}" class="text-xs text-gray-500 dark:text-gray-400 mb-1">$t:shop.coupon_download.min_order_amount {{Number(coupon.min_order_amount).toLocaleString()}}$t:shop.coupon_download.currency_unit</p>
+          <p data-if="{{coupon.min_order_amount > 0 &amp;&amp; !coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}" class="text-xs text-muted mb-1">$t:shop.coupon_download.min_order_amount {{Number(coupon.min_order_amount).toLocaleString()}}$t:shop.coupon_download.currency_unit</p>
           <!-- 유효기간 — 끝 날짜가 있으면 그 날짜, 없으면 서버가 만든 기간 문구(「발급일로부터 N일」 등, 기간이 없으면 '-'), 그것도 없으면 기한 없음 -->
-          <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">{{coupon.valid_to ? '$t:shop.coupon_download.valid_until ' + coupon.valid_to.split('T')[0] : (coupon.valid_period_formatted &amp;&amp; coupon.valid_period_formatted !== '-' ? coupon.valid_period_formatted : '$t:shop.coupon_download.no_expiry')}}</p>
+          <p class="text-xs text-muted mb-3">{{coupon.valid_to ? '$t:shop.coupon_download.valid_until ' + coupon.valid_to.split('T')[0] : (coupon.valid_period_formatted &amp;&amp; coupon.valid_period_formatted !== '-' ? coupon.valid_period_formatted : '$t:shop.coupon_download.no_expiry')}}</p>
           <!-- 다운로드 버튼 - 이미 받은 쿠폰 -->
           <button data-if="{{coupon.is_downloaded}}" type="button" :disabled="true" class="w-full py-2 text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded-md cursor-not-allowed">$t:shop.coupon_download.already_downloaded</button>
           <!-- 다운로드 버튼 - 다운로드 진행 중 -->
@@ -153,7 +153,7 @@
       <!-- 다음 페이지 로딩 인디케이터 (무한스크롤) -->
       <div data-if="{{_global.couponDownloadModal?.loadingMore}}" class="flex flex-col items-center justify-center py-4">
         <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400 mb-2"/>
-        <span class="text-xs text-gray-500 dark:text-gray-400">$t:shop.coupon_download.loading</span>
+        <span class="text-xs text-muted">$t:shop.coupon_download.loading</span>
       </div>
     </div>
   </modal>

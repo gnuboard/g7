@@ -15,6 +15,8 @@
  * - Validation 에러: 추가 폼 (carrierFormErrors) + 테이블 행 (_local.errors)
  */
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 
 // 레이아웃 JSON 임포트
 import carrierSection from '../../../layouts/admin/partials/admin_ecommerce_settings/_shipping_carrier_section.json';
@@ -62,6 +64,22 @@ function findButtonWithIcon(allNodes: any[], iconName: string): any {
 }
 
 /** 모든 Span/Button 중 text를 가진 노드(children 내부 Span 포함)에서 텍스트 검색 */
+/** 확장 생성 CSS — 의미 클래스 사본(`ecommerce-btn` 등)의 실제 정의를 확인한다 (#399 R-1) */
+const EXT_CSS = fs.readFileSync(path.resolve(__dirname, '../../../css/g7-extension.generated.css'), 'utf8');
+
+/**
+ * 추가 버튼이 주 버튼 모양인지 — 인라인 묶음(`bg-gray-900 dark:bg-white rounded-lg font-medium`)은
+ * 확장 사본 의미 클래스 `ecommerce-btn ecommerce-btn-primary` 로 묶였다(#399 R-1 P3). 그 정의가 같은 모양
+ * (모서리 0.5rem, 굵기 500, 배경 gray-900, 다크 배경 흰색)인지 생성 CSS 에서 확인한다.
+ */
+function expectPrimaryButtonLook(className: unknown): void {
+    expect(String(className ?? '').split(/\s+/)).toEqual(expect.arrayContaining(['ecommerce-btn', 'ecommerce-btn-primary']));
+    expect(EXT_CSS).toMatch(/\.ecommerce-btn\s*\{[^}]*border-radius:\s*\.5rem/);
+    expect(EXT_CSS).toMatch(/\.ecommerce-btn\s*\{[^}]*font-weight:\s*500/);
+    expect(EXT_CSS).toMatch(/\.ecommerce-btn-primary\s*\{[^}]*background-color:\s*oklch\(21% \.034 264\.665\)/);
+    expect(EXT_CSS).toMatch(/\.ecommerce-btn-primary:is\(\[data-g7-color-scheme="dark"\][^{]*\{[^}]*background-color:\s*#fff/);
+}
+
 function findButtonByChildText(allNodes: any[], textMatch: string): any {
     const buttons = findAllByName(allNodes, 'Button');
     return buttons.find((b: any) => {
@@ -178,10 +196,7 @@ describe('택배사 추가 버튼', () => {
         const headerAddBtn = findAllByName(allNodes, 'Button').find(
             (b: any) => b.if?.includes('!_local.isAddingCarrier')
         );
-        expect(headerAddBtn?.props?.className).toContain('bg-gray-900');
-        expect(headerAddBtn?.props?.className).toContain('dark:bg-white');
-        expect(headerAddBtn?.props?.className).toContain('rounded-lg');
-        expect(headerAddBtn?.props?.className).toContain('font-medium');
+        expectPrimaryButtonLook(headerAddBtn?.props?.className);
     });
 
     /**
@@ -579,7 +594,14 @@ describe('택배사 빈 상태 표시', () => {
                 n.if?.includes('_local.form?.shipping?.carriers') &&
                 n.if?.includes('length === 0')
         );
-        expect(emptyDiv?.props?.className).toContain('dark:');
+        // 인라인 회색 쌍(text-gray-500 + dark:text-gray-400)은 확장 사본 의미 클래스 ecommerce-text-muted 로 묶였다(#399 R-1 P1).
+        // 그 클래스가 다크 짝을 갖는지는 생성 CSS 에서 확인한다.
+        const tokens = String(emptyDiv?.props?.className ?? '').split(/\s+/);
+        if (tokens.includes('ecommerce-text-muted')) {
+            expect(EXT_CSS).toMatch(/\.ecommerce-text-muted:is\(\[data-g7-color-scheme="dark"\][^{]*\{[^}]*color:/);
+        } else {
+            expect(emptyDiv?.props?.className).toContain('dark:');
+        }
     });
 });
 
@@ -1279,7 +1301,7 @@ describe('입력 필드 스타일', () => {
         const headerAddBtn = findAllByName(allNodes, 'Button').find(
             (b: any) => b.if?.includes('!_local.isAddingCarrier')
         );
-        expect(headerAddBtn?.props?.className).toContain('rounded-lg');
+        expectPrimaryButtonLook(headerAddBtn?.props?.className);
         expect(headerAddBtn?.props?.variant).toBeUndefined();
         // 취소 버튼 (추가 폼)
         const cancelBtn = findButtonByChildText(allNodes, 'form.cancel');

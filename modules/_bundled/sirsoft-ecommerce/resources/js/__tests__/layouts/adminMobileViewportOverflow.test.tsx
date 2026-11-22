@@ -12,11 +12,30 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { applyResponsiveClassMerge } from '@core/template-engine/helpers/StyleHelpers';
 
 const layoutsDir = path.resolve(__dirname, '../../../layouts/admin');
 
 const load = (rel: string): any =>
   JSON.parse(fs.readFileSync(path.resolve(layoutsDir, rel), 'utf8'));
+
+/**
+ * 폭 구간의 실효 className — 구간 class(있으면 통째 교체) 위에 구간 class-merge 를 엔진 규칙으로 덧붙인 값 (engine-v1.98.0).
+ * 접두 토큰(`ecommerce:grid-cols-12`)끼리 충돌 교체가 되도록 서버가 내려 주는 접두 목록을 잠시 세운다.
+ * 구간이 없으면 undefined.
+ */
+function rangeCls(node: any, key: string): string | undefined {
+  const range = node?.responsive?.[key];
+  if (!range) return undefined;
+  const w = window as any;
+  const prev = w.G7Config;
+  w.G7Config = { ...(prev ?? {}), extensionClassPrefixes: ['ecommerce'] };
+  try {
+    return applyResponsiveClassMerge(range.props?.className ?? node?.props?.className, range.classMerge);
+  } finally {
+    w.G7Config = prev;
+  }
+}
 
 /** 트리 전체를 순회하며 술어를 만족하는 노드를 모은다. */
 function collect(node: any, pred: (n: any) => boolean, acc: any[] = []): any[] {
@@ -35,6 +54,27 @@ function collect(node: any, pred: (n: any) => boolean, acc: any[] = []): any[] {
 const cls = (n: any): string => {
   const c = n?.props?.className;
   return typeof c === 'string' ? c : '';
+};
+
+const EXT_CSS = fs.readFileSync(path.resolve(__dirname, '../../../css/g7-extension.generated.css'), 'utf8');
+
+/**
+ * className 이 주는 사방 패딩 단계(Tailwind 간격 숫자).
+ * 유틸 토큰(`ecommerce:p-6`)이면 그 숫자, 의미 클래스 사본(`ecommerce-admin-page-content`)이면
+ * 확장 생성 CSS 정의의 padding 배수를 읽는다(#399 — 본문 상자를 의미 클래스로 모음).
+ */
+const paddingStep = (className: string): string | null => {
+  const tokens = className.split(/\s+/).filter(Boolean);
+  for (const t of tokens) {
+    const util = /^ecommerce:p-(\d+)$/.exec(t);
+    if (util) return util[1];
+  }
+  for (const t of tokens) {
+    const escaped = t.replace(/[-/\\^$*+?.()|[\]{}:]/g, '\\$&');
+    const def = new RegExp(`\\.${escaped}\\s*\\{[^}]*padding:\\s*calc\\(\\.25rem \\* (\\d+)\\)`).exec(EXT_CSS);
+    if (def) return def[1];
+  }
+  return null;
 };
 
 describe('B1 — 모달 좌우 여백 (max-w-full 트랩)', () => {
@@ -76,8 +116,8 @@ describe('B2 — 주문상세 모달 상품표 카드형 전환', () => {
     expect(header.responsive?.portable?.if).toBe('{{false}}');
 
     // 390px 에서 12열이면 1열 = 16.4px → `249,000원`(56px) 같은 토큰이 숫자 내부에서 쪼개진다.
-    expect(body.responsive?.portable?.props?.className).toContain('grid-cols-1');
-    expect(body.responsive?.portable?.props?.className).not.toContain('grid-cols-12');
+    expect(rangeCls(body, 'portable')).toContain('grid-cols-1');
+    expect(rangeCls(body, 'portable')).not.toContain('grid-cols-12');
   });
 
   /**
@@ -93,7 +133,7 @@ describe('B2 — 주문상세 모달 상품표 카드형 전환', () => {
     expect(spanCells.length).toBeGreaterThan(0);
 
     for (const cell of spanCells) {
-      const portable = cell.responsive?.portable?.props?.className;
+      const portable = rangeCls(cell, 'portable');
       expect(portable).toBeDefined();
       // 1열 그리드에 col-span-5 가 남으면 암묵 열이 생겨 셀 폭이 들쭉날쭉해진다.
       expect(portable).not.toMatch(/col-span-\d+/);
@@ -215,13 +255,13 @@ describe('C2 — 쿠폰 발급기간 입력 행', () => {
     const row = collect(layout, (n) => n.id === 'issue_period_range')[0];
     expect(row).toBeTruthy();
     // flex-center 는 nowrap. w-52(208px) 두 개가 좁은 뷰포트를 넘긴다.
-    expect(row.responsive.portable.props.className).toContain('flex-wrap');
+    expect(rangeCls(row, 'portable')).toContain('flex-wrap');
 
     const inputs = collect(row, (n) => n.name === 'Input');
     expect(inputs.length).toBe(2);
     for (const i of inputs) {
-      expect(i.responsive.portable.props.className).toContain('w-full');
-      expect(i.responsive.portable.props.className).not.toContain('w-52');
+      expect(rangeCls(i, 'portable')).toContain('w-full');
+      expect(rangeCls(i, 'portable')).not.toContain('w-52');
     }
   });
 });
@@ -244,9 +284,9 @@ describe('C3 — 이커머스 환경설정 넘침', () => {
     expect(cls(nav)).toContain('ecommerce:px-4');
     const steps: Array<[string, string]> = [['640-1023', '6'], ['1024-', '8']];
     for (const [range, n] of steps) {
-      expect(content.responsive?.[range]?.props?.className).toContain(`ecommerce:p-${n}`);
-      expect(nav.responsive?.[range]?.props?.className).toContain(`ecommerce:-mx-${n}`);
-      expect(nav.responsive?.[range]?.props?.className).toContain(`ecommerce:px-${n}`);
+      expect(paddingStep(rangeCls(content, range))).toBe(n);
+      expect(rangeCls(nav, range)).toContain(`ecommerce:-mx-${n}`);
+      expect(rangeCls(nav, range)).toContain(`ecommerce:px-${n}`);
     }
   });
 
@@ -259,7 +299,7 @@ describe('C3 — 이커머스 환경설정 넘침', () => {
     const emailGroup = collect(layout, (n) => n.id === 'field_email')[0];
     expect(emailGroup).toBeTruthy();
     const row = collect(emailGroup, (n) => cls(n).startsWith('ecommerce-flex-center'))[0];
-    expect(row.responsive.portable.props.className).toContain('flex-wrap');
+    expect(rangeCls(row, 'portable')).toContain('flex-wrap');
   });
 
   /**
@@ -281,7 +321,7 @@ describe('C3 — 이커머스 환경설정 넘침', () => {
       expect(n.responsive['0-767']).toBeDefined();
       expect(n.responsive.mobile).toBeUndefined();
       expect(n.responsive.portable).toBeUndefined();
-      expect(n.responsive['0-767'].props.className).toContain('w-full');
+      expect(rangeCls(n, '0-767')).toContain('w-full');
     }
   });
 });

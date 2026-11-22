@@ -342,7 +342,7 @@
                     "name": "Label",
                     "if": "{{_global.appConfig?.auth?.login_identifier?.user !== 'email_or_username'}}",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                        "className": "form-label mb-3"
                     },
                     "text": "$t:auth.email"
                 },
@@ -351,7 +351,7 @@
                     "name": "Label",
                     "if": "{{_global.appConfig?.auth?.login_identifier?.user === 'email_or_username'}}",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                        "className": "form-label mb-3"
                     },
                     "text": "$t:auth.external.identifier"
                 },
@@ -503,7 +503,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "w-full text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer"
+                        "className": "w-full text-sm text-muted hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer"
                     },
                     "text": "$t:auth.external.use_other_email"
                 }
@@ -519,7 +519,7 @@
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                        "className": "form-label mb-3"
                     },
                     "text": "$t:auth.password"
                 },
@@ -650,7 +650,7 @@
                             "name": "Label",
                             "if": "{{_global.twoFactor?.provider_id !== 'totp'}}",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                                "className": "form-label mb-3"
                             },
                             "text": "$t:auth.two_factor.code_label"
                         },
@@ -659,7 +659,7 @@
                             "name": "Label",
                             "if": "{{_global.twoFactor?.provider_id === 'totp'}}",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                                "className": "form-label mb-3"
                             },
                             "text": "$t:auth.two_factor.code_label_app"
                         },
@@ -697,7 +697,7 @@
                             "name": "P",
                             "if": "{{_global.twoFactor?.expires_at}}",
                             "props": {
-                                "className": "mt-2 text-xs text-gray-500 dark:text-gray-400"
+                                "className": "mt-2 text-xs text-muted"
                             },
                             "text": "$t:auth.two_factor.valid_until|until={{_global.twoFactor?.expires_at | datetime}}"
                         },
@@ -706,7 +706,7 @@
                             "name": "P",
                             "if": "{{_global.twoFactor?.provider_id === 'totp'}}",
                             "props": {
-                                "className": "mt-2 text-xs text-gray-500 dark:text-gray-400"
+                                "className": "mt-2 text-xs text-muted"
                             },
                             "text": "$t:auth.two_factor.backup_hint"
                         }
@@ -941,7 +941,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                                "className": "form-label mb-3"
                             },
                             "text": "$t:auth.password_change.new_password"
                         },
@@ -978,7 +978,7 @@
                             "name": "P",
                             "if": "{{!!_global.settings?.security?.password_reuse_prevention_enabled || !!_global.settings?.security?.password_block_identifier || !!_global.settings?.security?.password_block_repeated_chars || !!_global.settings?.security?.password_block_sequential_chars}}",
                             "props": {
-                                "className": "mt-2 flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400"
+                                "className": "mt-2 flex flex-wrap gap-x-1 text-xs text-muted"
                             },
                             "children": [
                                 {
@@ -1016,7 +1016,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                "className": "mt-1 text-xs text-muted"
                             },
                             "text": "$t:auth.password_rules.not_current"
                         }
@@ -1030,7 +1030,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                                "className": "form-label mb-3"
                             },
                             "text": "$t:auth.password_change.confirm_password"
                         },

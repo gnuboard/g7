@@ -17,7 +17,7 @@
               <!-- 대표 계좌 지정. 하나만 대표일 수 있으므로 배열 전체를 다시 만들면서 고른 것만 참으로 둔다 — 끄는 동작은 없다(다른 것을 고르면 옮겨간다). -->
               <set-state target="local" form.order_settings.bank_accounts="{{(_local.form?.order_settings?.bank_accounts ?? []).map((a, i) => ({...a, is_default: i === account._idx}))}}" :hasChanges="true"/>
             </on>
-            <icon name="{{account.is_default ? 'circle-dot' : 'circle'}}" class="{{account.is_default ? 'ecommerce:text-blue-600 ecommerce:dark:text-blue-400' : 'ecommerce:text-gray-500 ecommerce:dark:text-gray-400'}}"/>
+            <icon name="{{account.is_default ? 'circle-dot' : 'circle'}}" class="{{account.is_default ? 'ecommerce:text-blue-600 ecommerce:dark:text-blue-400' : 'ecommerce-text-muted'}}"/>
           </button>
           <span class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number') + ' ' + (accountIndex + 1)}}</span>
         </div>

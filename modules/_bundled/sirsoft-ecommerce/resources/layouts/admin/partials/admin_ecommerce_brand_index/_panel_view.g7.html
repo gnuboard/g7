@@ -18,7 +18,7 @@
               <span class="ecommerce-form-sub-label">$t:sirsoft-ecommerce.admin.brand.info.slug</span>
               <span class="ecommerce-text-primary ecommerce:block ecommerce:text-sm ecommerce:font-mono">{{_global.selectedBrand?.slug}}</span>
             </div>
-            <div class="">
+            <div>
               <span class="ecommerce-form-sub-label">$t:sirsoft-ecommerce.admin.brand.info.name</span>
               <div data-each="nameEntry in {{Object.entries(_global.selectedBrand?.name || {})}}">
                 <div data-if="{{nameEntry[1]}}">
@@ -35,7 +35,7 @@
                 <span>{{_global.selectedBrand?.website}}</span>
                 <icon name="external-link" class="ecommerce:text-xs"/>
               </a>
-              <span data-if="{{!_global.selectedBrand?.website}}" class="ecommerce:block ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">-</span>
+              <span data-if="{{!_global.selectedBrand?.website}}" class="ecommerce:block ecommerce:text-sm ecommerce-text-muted">-</span>
             </div>
             <div>
               <span class="ecommerce-form-sub-label">$t:sirsoft-ecommerce.admin.brand.info.status</span>

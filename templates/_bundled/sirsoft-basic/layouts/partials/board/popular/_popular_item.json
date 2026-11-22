@@ -98,7 +98,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0",
+                                        "className": "text-sm text-muted flex-shrink-0",
                                         "title": "{{post.created_at ?? ''}}"
                                     },
                                     "text": "{{post.created_at_formatted ?? ''}}"

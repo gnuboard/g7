@@ -96,7 +96,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                        "className": "text-sm text-muted"
                                     },
                                     "text": "$t:claim.apply.select_all"
                                 }
@@ -192,9 +192,7 @@
                                             "if": "{{!_local.isGuest}}",
                                             "responsive": {
                                                 "portable": {
-                                                    "props": {
-                                                        "className": "inline-flex items-center justify-center w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 cursor-pointer"
-                                                    }
+                                                    "classMerge": "w-16 h-16"
                                                 }
                                             },
                                             "actions": [
@@ -236,7 +234,7 @@
                                                             "props": {
                                                                 "name": "image",
                                                                 "size": "lg",
-                                                                "className": "text-gray-500 dark:text-gray-400"
+                                                                "className": "text-muted"
                                                             }
                                                         }
                                                     ]
@@ -297,7 +295,7 @@
                                                             "props": {
                                                                 "name": "image",
                                                                 "size": "lg",
-                                                                "className": "text-gray-500 dark:text-gray-400"
+                                                                "className": "text-muted"
                                                             }
                                                         }
                                                     ]
@@ -369,7 +367,7 @@
                                                     "name": "P",
                                                     "if": "{{item.option_snapshot?.option_name}}",
                                                     "props": {
-                                                        "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                                                        "className": "text-sm text-muted mt-1"
                                                     },
                                                     "text": "{{$localized(item.option_snapshot?.option_name)}}"
                                                 },
@@ -400,7 +398,7 @@
                                                                 "item_var": "addOpt"
                                                             },
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}"
                                                         }
@@ -410,7 +408,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-sm text-gray-500 dark:text-gray-400 mt-0.5"
+                                                        "className": "text-sm text-muted mt-0.5"
                                                     },
                                                     "text": "{{item.unit_price_formatted ?? ''}} × {{item.quantity ?? 0}}$t:common.count_suffix"
                                                 },
@@ -470,7 +468,7 @@
                                                             "name": "Span",
                                                             "if": "{{!!item.carrier_name && !item.tracking_url}}",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "{{item.carrier_name}} {{item.tracking_number ?? ''}}"
                                                         }
@@ -595,7 +593,7 @@
                                                             "name": "Span",
                                                             "if": "{{item.review_deadline_passed === true}}",
                                                             "props": {
-                                                                "className": "inline-flex items-center gap-1 px-2.5 py-1 text-gray-500 dark:text-gray-400 text-xs font-medium"
+                                                                "className": "inline-flex items-center gap-1 px-2.5 py-1 text-muted text-xs font-medium"
                                                             },
                                                             "children": [
                                                                 {
@@ -744,7 +742,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.policy_name ?? ''}}"
                                                         },
@@ -752,7 +750,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "/"
                                                         },
@@ -762,7 +760,7 @@
                                                             "name": "Span",
                                                             "if": "{{((order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) > 0}}",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount_formatted ?? ''}}"
                                                         },
@@ -786,9 +784,7 @@
                                             "name": "Div",
                                             "responsive": {
                                                 "portable": {
-                                                    "props": {
-                                                        "className": "flex flex-col items-end gap-1 flex-shrink-0"
-                                                    }
+                                                    "classMerge": "gap-1"
                                                 }
                                             },
                                             "props": {
@@ -810,12 +806,12 @@
                                                             "responsive": {
                                                                 "portable": {
                                                                     "props": {
-                                                                        "className": "text-xs text-gray-500 dark:text-gray-400 line-through"
+                                                                        "className": "text-xs text-muted line-through"
                                                                     }
                                                                 }
                                                             },
                                                             "props": {
-                                                                "className": "text-sm text-gray-500 dark:text-gray-400 line-through"
+                                                                "className": "text-sm text-muted line-through"
                                                             },
                                                             "text": "{{item.subtotal_price_formatted ?? ''}}"
                                                         },
@@ -824,9 +820,7 @@
                                                             "name": "Span",
                                                             "responsive": {
                                                                 "portable": {
-                                                                    "props": {
-                                                                        "className": "text-sm font-bold text-gray-900 dark:text-white ml-1"
-                                                                    }
+                                                                    "classMerge": "text-sm"
                                                                 }
                                                             },
                                                             "props": {
@@ -869,7 +863,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "{{currency[1]?.formatted ?? ''}}"
                                                         }
@@ -916,7 +910,7 @@
                                                         }
                                                     },
                                                     "props": {
-                                                        "className": "flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "flex items-center gap-1 text-xs text-muted"
                                                     },
                                                     "children": [
                                                         {
@@ -1080,7 +1074,7 @@
                                                         }
                                                     },
                                                     "props": {
-                                                        "className": "inline-flex items-center gap-1 px-2.5 py-1 text-gray-500 dark:text-gray-400 text-xs font-medium"
+                                                        "className": "inline-flex items-center gap-1 px-2.5 py-1 text-muted text-xs font-medium"
                                                     },
                                                     "children": [
                                                         {

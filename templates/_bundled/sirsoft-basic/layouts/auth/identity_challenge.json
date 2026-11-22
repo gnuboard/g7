@@ -134,9 +134,7 @@
                         "name": "Div",
                         "responsive": {
                             "portable": {
-                                "props": {
-                                    "className": "w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
-                                }
+                                "classMerge": "p-6"
                             }
                         },
                         "props": {
@@ -521,7 +519,7 @@
                                                 "type": "basic",
                                                 "name": "P",
                                                 "props": {
-                                                    "className": "text-xs text-gray-500 dark:text-gray-400 text-center"
+                                                    "className": "text-xs text-muted text-center"
                                                 },
                                                 "text": "$t:user.identity.challenge.check_spam"
                                             }

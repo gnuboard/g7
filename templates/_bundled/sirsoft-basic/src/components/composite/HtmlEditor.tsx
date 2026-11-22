@@ -213,7 +213,7 @@ export const HtmlEditor: React.FC<HtmlEditorProps> = ({
       <Div className="flex items-center justify-between">
 
         {label && (
-          <Label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
+          <Label className="block text-sm font-medium text-muted">
             {label}
           </Label>
         )}

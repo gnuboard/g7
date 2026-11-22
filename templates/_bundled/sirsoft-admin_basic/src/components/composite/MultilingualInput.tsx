@@ -448,7 +448,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                 className="justify-start w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg transition-colors"
                 onClick={() => handleAddLocale(locale.code)}
               >
-                <Icon name="globe" className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                <Icon name="globe" className="w-3.5 h-3.5 text-muted" />
                 <Span>{locale.nativeName || locale.name}</Span>
               </Button>
             ))}

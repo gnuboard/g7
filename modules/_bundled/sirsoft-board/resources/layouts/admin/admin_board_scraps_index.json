@@ -660,7 +660,7 @@
                                                     "name": "Span",
                                                     "if": "{{row.is_deleted || !row.board}}",
                                                     "props": {
-                                                        "className": "board:font-medium board:truncate board:line-through board:text-gray-500 board:dark:text-gray-400"
+                                                        "className": "board:font-medium board:truncate board:line-through board-text-muted"
                                                     },
                                                     "text": "{{row.post_title}}"
                                                 },
@@ -776,7 +776,7 @@
                         ],
                         "props": {
                             "type": "button",
-                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
+                            "className": "board-btn board-btn-secondary"
                         },
                         "children": [
                             {
@@ -940,7 +940,7 @@
                         ],
                         "props": {
                             "type": "button",
-                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
+                            "className": "board-btn board-btn-secondary"
                         },
                         "children": [
                             {

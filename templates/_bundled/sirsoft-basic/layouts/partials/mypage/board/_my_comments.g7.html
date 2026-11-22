@@ -93,7 +93,7 @@
     <div class="space-y-3">
       <!-- 댓글 카드 반복 -->
       <div data-if="{{myComments?.data?.data &amp;&amp; myComments.data.data.length > 0}}" data-each="comment in {{myComments?.data?.data ?? []}}">
-        <a href="/board/{{comment.board_slug}}/{{comment.post_id_val}}" class="w-full text-left block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer">
+        <a href="/board/{{comment.board_slug}}/{{comment.post_id_val}}" class="w-full text-left block card-plain p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer">
           <on type="click">
             <navigate/>
           </on>
@@ -108,18 +108,18 @@
               <extension-point name="board_comment_row_badges" class="contents" data-extension-point="board_comment_row_badges" commentData="{{comment}}" commentId="{{comment.id}}" postId="{{comment.post_id_val}}" boardSlug="{{comment.board_slug}}" context="mypage_comments"/>
             </div>
             <!-- 댓글 작성일시 -->
-            <span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 whitespace-nowrap" title="{{comment.created_at ?? ''}}">{{comment.created_at_formatted ?? ''}}</span>
+            <span class="text-xs text-muted flex-shrink-0 whitespace-nowrap" title="{{comment.created_at ?? ''}}">{{comment.created_at_formatted ?? ''}}</span>
           </div>
           <!-- 댓글 내용 요약 (2줄) -->
           <div data-if="{{comment.content}}" class="mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2 break-words">{{comment.content}}</div>
         </a>
       </div>
       <!-- 댓글 없음 -->
-      <div data-if="{{myComments !== undefined &amp;&amp; (!myComments?.data?.data || myComments.data.data.length === 0)}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+      <div data-if="{{myComments !== undefined &amp;&amp; (!myComments?.data?.data || myComments.data.data.length === 0)}}" class="card-plain p-8 text-center">
         <icon name="comment" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
         <!-- 검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다 -->
-        <p data-if="{{!(!!_global.myCommentsSearchApplied || !!_global.myCommentsBoard)}}" class="text-gray-500 dark:text-gray-400">$t:mypage.board_activities.empty_comments</p>
-        <p data-if="{{!!_global.myCommentsSearchApplied || !!_global.myCommentsBoard}}" class="text-gray-500 dark:text-gray-400">$t:board.no_search_results</p>
+        <p data-if="{{!(!!_global.myCommentsSearchApplied || !!_global.myCommentsBoard)}}" class="text-muted">$t:mypage.board_activities.empty_comments</p>
+        <p data-if="{{!!_global.myCommentsSearchApplied || !!_global.myCommentsBoard}}" class="text-muted">$t:board.no_search_results</p>
         <a href="/boards" class="text-center inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
           <on type="click">
             <navigate/>

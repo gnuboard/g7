@@ -122,7 +122,7 @@
                     "name": "P",
                     "if": "{{(claim.data?.claim?.tracking_groups?.collection ?? []).length === 0 && !(claim.data?.claim?.items ?? []).every(i => i.is_unreturned === true)}}",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-sm text-muted"
                     },
                     "text": "$t:claim.detail.tracking_pending"
                 },
@@ -184,7 +184,7 @@
                                     "name": "Span",
                                     "if": "{{group.no_tracking === true}}",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                        "className": "text-sm text-muted"
                                     },
                                     "text": "$t:claim.detail.tracking_no_tracking"
                                 },
@@ -266,7 +266,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "text-sm text-muted"
                             },
                             "text": "$t:claim.detail.collection_completed_at"
                         },
@@ -293,7 +293,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                "className": "text-sm text-muted flex-shrink-0"
                             },
                             "text": "$t:claim.detail.collection_address"
                         },
@@ -338,7 +338,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                "className": "text-sm text-muted flex-shrink-0"
                                             },
                                             "text": "$t:claim.detail.collection_address_n|n={{addressIdx + 1}}"
                                         },
@@ -356,7 +356,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400 text-right"
+                                        "className": "text-xs text-muted text-right"
                                     },
                                     "text": "{{(claim.data?.claim?.items ?? []).filter(i => (address.claim_item_ids ?? []).includes(i.id)).map(i => i.product_name).join(', ')}}"
                                 }
@@ -434,7 +434,7 @@
                     "name": "P",
                     "if": "{{(claim.data?.claim?.tracking_groups?.redelivery ?? []).length === 0}}",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-sm text-muted"
                     },
                     "text": "$t:claim.detail.tracking_pending"
                 },
@@ -496,7 +496,7 @@
                                     "name": "Span",
                                     "if": "{{group.no_tracking === true}}",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                        "className": "text-sm text-muted"
                                     },
                                     "text": "$t:claim.detail.tracking_no_tracking"
                                 },
@@ -547,7 +547,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "text-sm text-muted"
                             },
                             "text": "$t:claim.detail.redelivered_at"
                         },

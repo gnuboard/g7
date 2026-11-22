@@ -163,7 +163,7 @@ const ScopeDropdown: React.FC<{
         }`}
       >
         <Span id={valueId}>{currentOption?.label ?? ''}</Span>
-        <Icon name={IconName.ChevronDown} className="w-3 h-3 text-gray-500 dark:text-gray-400" />
+        <Icon name={IconName.ChevronDown} className="w-3 h-3 text-muted" />
       </Div>
 
       {isOpen && (
@@ -714,7 +714,7 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
   if (data.length === 0) {
     return (
       <Div
-        className={`text-sm text-gray-500 dark:text-gray-400 py-4 text-center ${className}`}
+        className={`text-sm text-muted py-4 text-center ${className}`}
         id={id}
         {...editorAttrs}
       >

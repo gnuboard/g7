@@ -21,7 +21,7 @@
       </prop>
       <column field="number" header="NO" width="56px" :sortable="false">
         <cell>
-          <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{row.number}}</span>
+          <span class="ecommerce-text-muted">{{row.number}}</span>
         </cell>
       </column>
       <column field="created_at" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.datetime" width="150px" :sortable="true">
@@ -47,15 +47,15 @@
               </switch>
             </on>
             <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:rounded-lg ecommerce:px-1 ecommerce:py-0.5 ecommerce:transition-colors ecommerce:cursor-pointer">
-              <icon name="fa-regular fa-user" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:flex-shrink-0"/>
+              <icon name="fa-regular fa-user" class="ecommerce-text-muted ecommerce:flex-shrink-0"/>
               <span class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:truncate">{{row.user_name ?? ('#' + (row.user_id ?? ''))}}</span>
             </div>
           </action-menu>
           <span data-if="{{!row.user_uuid &amp;&amp; row.user_id}}" class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{row.user_name ?? ('#' + (row.user_id ?? ''))}}</span>
           <!-- 실명 보조 줄(#490) — 이름 칸은 관리자 영역 표시 이름이다. 서버가 실명 키를 줄 때만(회원 조회 권한이 있고 표시 이름과 다를 때) 그린다. -->
-          <span data-if="{{!!row.user_real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.user_real_name })}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:block ecommerce:px-1">{{row.user_real_name}}</span>
+          <span data-if="{{!!row.user_real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.user_real_name })}}" class="ecommerce:text-xs ecommerce-text-muted ecommerce:block ecommerce:px-1">{{row.user_real_name}}</span>
           <!-- 회원을 완전 삭제하면 거래 기록은 남기고 회원 연결만 끊는다(E3) — 「#」 만 보이지 않게 그 사실을 적는다. -->
-          <span data-if="{{!row.user_id}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.deleted_member</span>
+          <span data-if="{{!row.user_id}}" class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.deleted_member</span>
         </cell>
       </column>
       <column field="type" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.type" width="96px" :sortable="false">
@@ -79,12 +79,12 @@
             <span data-if="{{!!row.expires_at}}" class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{row.expires_at_formatted}}</span>
             <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-1.5">
               <span class="ecommerce:inline-flex ecommerce:items-center ecommerce:px-1.5 ecommerce:py-0.5 ecommerce:rounded ecommerce:text-xs ecommerce:font-medium ecommerce:bg-red-100 ecommerce:text-red-700 ecommerce:dark:bg-red-900/30 ecommerce:dark:text-red-300 ecommerce:w-fit">{{row.expiry_state === 'partial_expired' ? $t('sirsoft-ecommerce.admin.mileage_transactions.cell.partial_expired') : $t('sirsoft-ecommerce.admin.mileage_transactions.cell.expired')}}</span>
-              <span class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:defer:sirsoft-ecommerce.admin.mileage_transactions.cell.expired_amount|amount={{row.expired_amount_formatted}}</span>
+              <span class="ecommerce:text-xs ecommerce-text-muted">$t:defer:sirsoft-ecommerce.admin.mileage_transactions.cell.expired_amount|amount={{row.expired_amount_formatted}}</span>
             </div>
           </div>
           <span data-if="{{row.expiry_state === 'active' &amp;&amp; !!row.expires_at}}" class="ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{row.expires_at_formatted}}</span>
-          <span data-if="{{row.expiry_state === 'active' &amp;&amp; !row.expires_at &amp;&amp; row.is_earning &amp;&amp; row.remaining_amount > 0}}" class="ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.unlimited</span>
-          <span data-if="{{row.expiry_state === 'active' &amp;&amp; !row.expires_at &amp;&amp; !(row.is_earning &amp;&amp; row.remaining_amount > 0)}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.none</span>
+          <span data-if="{{row.expiry_state === 'active' &amp;&amp; !row.expires_at &amp;&amp; row.is_earning &amp;&amp; row.remaining_amount > 0}}" class="ecommerce:text-sm ecommerce-text-muted">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.unlimited</span>
+          <span data-if="{{row.expiry_state === 'active' &amp;&amp; !row.expires_at &amp;&amp; !(row.is_earning &amp;&amp; row.remaining_amount > 0)}}" class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.none</span>
         </cell>
       </column>
       <column field="order" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.order" width="120px" :sortable="false">
@@ -92,7 +92,7 @@
           <a href="/admin/ecommerce/orders/{{row.order_number}}" target="_blank" rel="noopener noreferrer" data-if="{{row.order_number}}" class="ecommerce:font-medium ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:cursor-pointer ecommerce:hover:underline">
             {{row.order_number}}
           </a>
-          <span data-if="{{!row.order_number}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.none</span>
+          <span data-if="{{!row.order_number}}" class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.none</span>
         </cell>
       </column>
       <column field="granted_by" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.granted_by" width="110px" :sortable="false">
@@ -102,13 +102,13 @@
               <item id="view_admin" href="/admin/users/{{row.granted_by_uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.mileage_transactions.cell.view_admin" iconName="user-shield"/>
             </prop>
             <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:rounded-lg ecommerce:px-1 ecommerce:py-0.5 ecommerce:transition-colors ecommerce:cursor-pointer">
-              <icon name="fa-solid fa-user-shield" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:flex-shrink-0"/>
+              <icon name="fa-solid fa-user-shield" class="ecommerce-text-muted ecommerce:flex-shrink-0"/>
               <span class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:truncate">{{row.granted_by_name}}</span>
             </div>
           </action-menu>
           <!-- 처리자 실명 보조 줄(#490) — 처리자 칸도 관리자 영역 표시 이름이다. 서버가 실명 키를 줄 때만 그린다. -->
-          <span data-if="{{!!row.granted_by_real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.granted_by_real_name })}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:block ecommerce:px-1">{{row.granted_by_real_name}}</span>
-          <span data-if="{{!row.granted_by_uuid}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.system</span>
+          <span data-if="{{!!row.granted_by_real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.granted_by_real_name })}}" class="ecommerce:text-xs ecommerce-text-muted ecommerce:block ecommerce:px-1">{{row.granted_by_real_name}}</span>
+          <span data-if="{{!row.granted_by_uuid}}" class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.system</span>
         </cell>
       </column>
       <prop name="rowActions">
@@ -117,23 +117,23 @@
       <expand>
         <div class="ecommerce:p-4 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:border-t ecommerce:border-gray-100 ecommerce:dark:border-gray-700">
           <div data-if="{{(linkedTransactions?.[row.id] ?? []).length > 0}}" class="ecommerce:space-y-1">
-            <p class="ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-2">$t:sirsoft-ecommerce.admin.mileage_transactions.linked.title</p>
+            <p class="ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted ecommerce:mb-2">$t:sirsoft-ecommerce.admin.mileage_transactions.linked.title</p>
             <div data-each="linked, linkedIndex in linkedTransactions?.[row.id] ?? []" class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:py-1">
-              <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{linked.created_at_formatted}}</span>
+              <span class="ecommerce-text-muted">{{linked.created_at_formatted}}</span>
               <span class="ecommerce:inline-flex ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-300">{{linked.type_label}}</span>
               <span class="{{linked.amount >= 0 ? 'ecommerce:text-green-700 ecommerce:dark:text-green-400' : 'ecommerce:text-red-600 ecommerce:dark:text-red-400'}}">{{(linked.amount >= 0 ? '+' : '') + (linked.amount_formatted ?? linked.amount)}}</span>
               <a href="/admin/ecommerce/orders/{{linked.order_number}}" target="_blank" rel="noopener noreferrer" data-if="{{linked.order_number}}" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1 ecommerce:font-medium ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:cursor-pointer ecommerce:hover:underline">
                 {{linked.order_number}}
               </a>
-              <span data-if="{{linked.granted_by_name}}" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1 ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">
+              <span data-if="{{linked.granted_by_name}}" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1 ecommerce:text-xs ecommerce-text-muted">
                 <icon name="fa-solid fa-user-shield" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-500"/>
                 <span>{{linked.granted_by_name}}</span>
               </span>
-              <span data-if="{{!linked.granted_by_name &amp;&amp; !linked.order_number}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.system</span>
+              <span data-if="{{!linked.granted_by_name &amp;&amp; !linked.order_number}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.system</span>
             </div>
           </div>
           <!-- 펼친 행의 딸린 거래는 응답이 와야 안다 — 받기 전(값 없음)에는 「연결된 거래가 없습니다」를 띄우지 않고, 받기에 실패하면(값 null) 실패를 알린다 -->
-          <div data-if="{{linkedTransactions?.[row.id] !== undefined &amp;&amp; linkedTransactions?.[row.id] !== null &amp;&amp; (linkedTransactions?.[row.id] ?? []).length === 0}}" class="ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.linked.empty</div>
+          <div data-if="{{linkedTransactions?.[row.id] !== undefined &amp;&amp; linkedTransactions?.[row.id] !== null &amp;&amp; (linkedTransactions?.[row.id] ?? []).length === 0}}" class="ecommerce:text-sm ecommerce-text-muted">$t:sirsoft-ecommerce.admin.mileage_transactions.linked.empty</div>
           <p data-ref="linked_transactions_load_failed" data-if="{{linkedTransactions?.[row.id] === null}}" role="alert" class="ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</p>
         </div>
       </expand>

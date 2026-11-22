@@ -36,7 +36,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "truck",
-                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                        "className": "ecommerce-text-muted"
                     }
                 },
                 {
@@ -52,7 +52,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.shippingExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
+                        "className": "ecommerce-admin-card-accordion-icon ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.shippingExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
                     }
                 }
             ]
@@ -437,7 +437,7 @@
                                             "name": "Div",
                                             "if": "{{((_computed.shippingPolicyOptions ?? []).find(p => p.id === _local.form.shipping_policy_id)?.country_settings ?? []).length === 0}}",
                                             "props": {
-                                                "className": "ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                "className": "ecommerce:text-sm ecommerce-text-muted"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.table.no_country_settings"
                                         },
@@ -496,7 +496,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                "className": "ecommerce-text-muted"
                                                             },
                                                             "text": "|"
                                                         },

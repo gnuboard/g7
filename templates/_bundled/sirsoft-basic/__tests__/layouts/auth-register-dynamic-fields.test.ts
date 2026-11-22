@@ -15,6 +15,7 @@ import { DataBindingEngine } from '@core/template-engine/DataBindingEngine';
 
 import registerLayout from '../../layouts/auth/register.json';
 import registerForm from '../../layouts/partials/auth/_register_form.json';
+import { expandSemanticTokens } from './support/semanticClasses';
 
 type Node = Record<string, any>;
 
@@ -288,7 +289,8 @@ describe('가입 화면 — 운영자 설정을 따르는 항목', () => {
       for (const key of ['email', 'password', 'password_confirmation', 'agree_terms', 'agree_privacy', 'display_name_kind']) {
         const line = formNodes.find((node) => typeof node.if === 'string' && node.if === `{{_local.errors?.${key}}}`);
         expect(line, `${key} 오류 줄`).toBeDefined();
-        expect(String(line!.props?.className)).toContain('text-xs');
+        // #399 R-1 — 오류 줄 묶음이 의미 클래스 `form-error` 로 바뀐 줄은 템플릿 CSS 정의(block mt-1 text-xs …)까지 펼쳐 본다
+        expect(expandSemanticTokens(line!.props?.className as string | undefined)).toContain('text-xs');
       }
       for (const input of formNodes.filter((node) => node.name === 'PasswordInput')) {
         expect(input.props?.error).toBeUndefined();

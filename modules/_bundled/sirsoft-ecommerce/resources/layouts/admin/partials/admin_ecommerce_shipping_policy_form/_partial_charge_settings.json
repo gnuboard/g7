@@ -363,7 +363,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "ecommerce-btn ecommerce-btn-sm ecommerce-btn-secondary ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "className": "ecommerce-btn ecommerce-btn-sm ecommerce-btn-secondary",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "children": [
@@ -612,7 +612,7 @@
                             "name": "Div",
                             "if": "{{(_computed.activeCountrySetting?.ranges?.tiers ?? []).length === 0}}",
                             "props": {
-                                "className": "ecommerce:text-center ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:border ecommerce:border-dashed ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg"
+                                "className": "ecommerce:text-center ecommerce:text-sm ecommerce-text-muted ecommerce:border ecommerce:border-dashed ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg"
                             },
                             "children": [
                                 {

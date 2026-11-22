@@ -90,7 +90,7 @@
                                     "name": "Div",
                                     "if": "{{!user?.data?.ecommerce_mileage?.enabled}}",
                                     "props": {
-                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:p-4 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:p-4 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg ecommerce:text-sm ecommerce-text-muted"
                                     },
                                     "children": [
                                         {
@@ -134,7 +134,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1"
+                                                        "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.user_mileage.available"
                                                 },
@@ -159,7 +159,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1"
+                                                        "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.user_mileage.pending"
                                                 },
@@ -167,7 +167,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce:block ecommerce:text-lg ecommerce:font-semibold ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce:block ecommerce:text-lg ecommerce:font-semibold ecommerce-text-muted"
                                                     },
                                                     "text": "{{(user?.data?.ecommerce_mileage?.pending ?? 0).toLocaleString()}} P"
                                                 }
@@ -184,7 +184,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1"
+                                                        "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.user_mileage.total_earned"
                                                 },
@@ -209,7 +209,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1"
+                                                        "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.user_mileage.expiring_soon"
                                                 },
@@ -233,7 +233,7 @@
                                     "props": {
                                         "href": "{{'/admin/ecommerce/mileage-transactions?search_field=email&search_keyword=' + encodeURIComponent(user?.data?.email ?? '')}}",
                                         "target": "_blank",
-                                        "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
+                                        "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:gap-1.5 ecommerce:px-3"
                                     },
                                     "children": [
                                         {

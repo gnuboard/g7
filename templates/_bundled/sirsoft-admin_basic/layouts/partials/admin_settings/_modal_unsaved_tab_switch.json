@@ -37,7 +37,7 @@
                 "props": {
                     "type": "button",
                     "data-testid": "settings-unsaved-tab-stay",
-                    "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    "className": "btn btn-secondary"
                 },
                 "text": "$t:admin.settings.unsaved_tab_modal.btn_stay"
             },

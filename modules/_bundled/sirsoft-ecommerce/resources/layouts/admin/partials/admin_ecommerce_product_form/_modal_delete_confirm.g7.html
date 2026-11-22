@@ -15,7 +15,7 @@
               <img src="{{_local.form.images?.[0]?.preview_url ?? _local.form.images?.[0]?.download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="ecommerce:w-full ecommerce:h-full ecommerce:object-cover"/>
             </div>
             <div data-if="{{!_local.form.images?.length}}" class="ecommerce-flex-center ecommerce:w-10 ecommerce:h-10 ecommerce:rounded-lg ecommerce:bg-gray-200 ecommerce:dark:bg-gray-700 ecommerce:justify-center ecommerce:flex-shrink-0">
-              <icon name="image" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+              <icon name="image" class="ecommerce:text-xl ecommerce-text-muted"/>
             </div>
             <div class="ecommerce:text-left">
               <p class="ecommerce-text-primary ecommerce:font-medium ecommerce:text-sm">{{$localized(_local.form.name)}}</p>
@@ -37,7 +37,7 @@
       <alert data-type="composite" type="error" title="$t:sirsoft-ecommerce.admin.product.modal.delete.cannot_delete_title" message="{{_global.deleteProduct?.reason}}"/>
     </div>
     <footer>
-      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isProductDeleting}}">
+      <button type="button" class="ecommerce-btn ecommerce-btn-secondary" disabled="{{_global.isProductDeleting}}">
         <on type="click">
           <close-modal target="modal_delete_confirm"/>
         </on>

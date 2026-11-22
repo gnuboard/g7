@@ -90,6 +90,7 @@
       <!-- 모달이 닫히면(언마운트) 폼 상태를 비운다 — 다음 오픈은 항상 시딩 전(READY=false)에서 시작해 이전 알림의 값이 보이거나 저장되는 창을 없앤다. -->
       <set-state target="global" :bz_tpl_modal="null" :bz_sms_modal="null"/>
     </on>
+    <!-- audit:allow layout-inline-semantic-duplicate reason: 알림 템플릿 편집 창에 주입하는 알림톡 템플릿 구역 상자, 청록 테두리에 p-4 space-y-3 를 쓰고 아래 여백이 없어 카드와 다름 -->
     <div data-ref="bizppurio_tpl_alimtalk_section" class="bizppurio:rounded-lg bizppurio:border bizppurio:border-teal-200 bizppurio:dark:border-gray-700 bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:p-4 bizppurio:space-y-3">
       <div class="bizppurio-flex-between bizppurio:flex-wrap bizppurio:gap-2">
         <div class="bizppurio:flex bizppurio:items-center bizppurio:flex-wrap bizppurio:gap-2">
@@ -100,11 +101,11 @@
             <span>{{$t('sirsoft-message_bizppurio.template.approval.' + ((((_global.bz_tpl_modal?.id) &amp;&amp; (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'approved' ? 'approved' : 'not_approved'))}}</span>
             <span data-if="{{(((_global.bz_tpl_modal?.id) &amp;&amp; (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') !== 'approved'}}" class="bizppurio:font-normal">{{'(' + $t('sirsoft-message_bizppurio.template.status.' + (((_global.bz_tpl_modal?.id) &amp;&amp; (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten')) + ')'}}</span>
           </span>
-          <span data-if="{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.requested_at_date_formatted}}" class="bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400">$t:sirsoft-message_bizppurio.template.row.requested_on|date={{(bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.requested_at_date_formatted ?? '').slice(5)}}</span>
-          <span data-if="{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.last_synced_at_date_formatted}}" class="bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400">$t:sirsoft-message_bizppurio.template.row.synced_on|date={{(bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.last_synced_at_date_formatted ?? '').slice(5)}}</span>
+          <span data-if="{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.requested_at_date_formatted}}" class="bizppurio:text-xs bizppurio-text-muted">$t:sirsoft-message_bizppurio.template.row.requested_on|date={{(bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.requested_at_date_formatted ?? '').slice(5)}}</span>
+          <span data-if="{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.last_synced_at_date_formatted}}" class="bizppurio:text-xs bizppurio-text-muted">$t:sirsoft-message_bizppurio.template.row.synced_on|date={{(bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.last_synced_at_date_formatted ?? '').slice(5)}}</span>
         </div>
         <div class="bizppurio:flex bizppurio:items-center bizppurio:flex-wrap bizppurio:gap-1.5">
-          <button data-if="{{!!(_global.bz_tpl_modal?.template_code)}}" type="button" class="bizppurio:text-xs bizppurio:px-2.5 bizppurio:py-1 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true || ((_global.bz_tpl_modal?.isSaving ?? false))}}">
+          <button data-if="{{!!(_global.bz_tpl_modal?.template_code)}}" type="button" class="bizppurio:text-xs bizppurio:px-2.5 bizppurio:py-1 bizppurio:rounded-md bizppurio-btn bizppurio-btn-secondary" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true || ((_global.bz_tpl_modal?.isSaving ?? false))}}">
             <on type="click">
               <!-- 카카오 상태 동기화 — 검수 결과는 카카오 쪽에서 바뀌므로 서버가 다시 조회해 맞춘 뒤 상세를 다시 읽어 모달 상태를 갱신한다. -->
               <sequence if="{{!(_global.bz_tpl_modal?.isSaving ?? false)}}">
@@ -134,7 +135,7 @@
             </on>
             $t:sirsoft-message_bizppurio.template.row.btn_refresh
           </button>
-          <button data-if="{{_global.bz_tpl_modal?.status === 'requested'}}" type="button" class="bizppurio:text-xs bizppurio:px-2.5 bizppurio:py-1 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true || ((_global.bz_tpl_modal?.isSaving ?? false))}}">
+          <button data-if="{{_global.bz_tpl_modal?.status === 'requested'}}" type="button" class="bizppurio:text-xs bizppurio:px-2.5 bizppurio:py-1 bizppurio:rounded-md bizppurio-btn bizppurio-btn-secondary" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true || ((_global.bz_tpl_modal?.isSaving ?? false))}}">
             <on type="click">
               <!-- 검수 신청 취소 — 검수중(requested) 템플릿을 초안으로 되돌린다. -->
               <sequence if="{{!(_global.bz_tpl_modal?.isSaving ?? false)}}">
@@ -155,7 +156,7 @@
             </on>
             $t:sirsoft-message_bizppurio.template.row.btn_cancel_request
           </button>
-          <button data-if="{{_global.bz_tpl_modal?.status === 'dormant'}}" type="button" class="bizppurio:text-xs bizppurio:px-2.5 bizppurio:py-1 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true || ((_global.bz_tpl_modal?.isSaving ?? false))}}">
+          <button data-if="{{_global.bz_tpl_modal?.status === 'dormant'}}" type="button" class="bizppurio:text-xs bizppurio:px-2.5 bizppurio:py-1 bizppurio:rounded-md bizppurio-btn bizppurio-btn-secondary" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true || ((_global.bz_tpl_modal?.isSaving ?? false))}}">
             <on type="click">
               <!-- 휴면 해제 — 휴면(dormant) 템플릿을 발송 가능 상태로 되돌리고 상세를 다시 읽는다. -->
               <sequence if="{{!(_global.bz_tpl_modal?.isSaving ?? false)}}">
@@ -211,7 +212,7 @@
           <p class="bizppurio:text-sm bizppurio:text-amber-900 bizppurio:dark:text-amber-100">$t:sirsoft-message_bizppurio.template.cancel_approval.warning|name={{_global.bz_tpl_modal?.notification_name ?? ''}}</p>
         </div>
         <div class="bizppurio:flex bizppurio:justify-end bizppurio:gap-2">
-          <button type="button" class="bizppurio:text-xs bizppurio:px-2.5 bizppurio:py-1 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed" disabled="{{(_global.bz_tpl_modal?.isSaving ?? false)}}">
+          <button type="button" class="bizppurio:text-xs bizppurio:px-2.5 bizppurio:py-1 bizppurio:rounded-md bizppurio-btn bizppurio-btn-secondary" disabled="{{(_global.bz_tpl_modal?.isSaving ?? false)}}">
             <on type="click">
               <!-- 인라인 확인 영역을 닫는다 — 승인 취소를 하지 않은 것으로 되돌린다. -->
               <set-state target="global" :bz_tpl_ui.confirmCancelApproval="false"/>
@@ -258,7 +259,7 @@
         </ul>
       </div>
       <!-- 상세(content) 를 받아오는 동안 편집 폼을 열지 않는다 — 시딩 내용으로 저장되거나 입력이 상세 도착에 덮이는 경쟁 차단(Playwright 실측). -->
-      <div data-ref="bizppurio_tpl_loading" data-if="{{!((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}" class="bizppurio:flex bizppurio:items-center bizppurio:gap-2 bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:py-2">
+      <div data-ref="bizppurio_tpl_loading" data-if="{{!((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}" class="bizppurio:flex bizppurio:items-center bizppurio:gap-2 bizppurio:text-xs bizppurio-text-muted bizppurio:py-2">
         <icon name="spinner" class="bizppurio:animate-spin bizppurio:text-sm bizppurio:leading-none"/>
         <span>$t:sirsoft-message_bizppurio.template.section.loading</span>
       </div>
@@ -269,6 +270,7 @@
           <span>{{$t('sirsoft-message_bizppurio.template.form.message_type') + ': ' + $t('sirsoft-message_bizppurio.template.form.templateMessageType_options.' + (_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA'))}}</span>
           <span>{{$t('sirsoft-message_bizppurio.template.form.emphasize_type') + ': ' + $t('sirsoft-message_bizppurio.template.form.templateEmphasizeType_options.' + (_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE'))}}</span>
         </div>
+        <!-- audit:allow layout-inline-semantic-duplicate reason: 잠긴 알림톡 템플릿의 본문 미리보기 상자, 고정폭 글자와 줄바꿈 보존에 여백 p-3 이라 카드 여백과 다름 -->
         <div class="bizppurio:text-sm bizppurio:font-mono bizppurio:whitespace-pre-wrap bizppurio:p-3 bizppurio:rounded-lg bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-200 bizppurio:dark:border-gray-700 bizppurio:text-gray-800 bizppurio:dark:text-gray-100">{{_global.bz_tpl_modal?.content?.templateContent ?? ''}}</div>
       </div>
       <!-- 작성 폼(구 modal_bizppurio_template 본문을 그대로 이식). draft/rejected(또는 행 없음)에서만 노출. -->
@@ -283,7 +285,7 @@
                 <set-state target="global" bz_tpl_modal.sender_profile="{{$event.target.value}}"/>
               </on>
             </select>
-            <p class="bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:mt-1">$t:sirsoft-message_bizppurio.template.form.sender_profile_hint</p>
+            <p class="bizppurio:text-xs bizppurio-text-muted bizppurio:mt-1">$t:sirsoft-message_bizppurio.template.form.sender_profile_hint</p>
           </div>
           <div>
             <label class="bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:block bizppurio:text-xs bizppurio:font-medium bizppurio:mb-1">$t:sirsoft-message_bizppurio.template.form.category *</label>
@@ -400,7 +402,7 @@
               <action handler="sirsoft-message_bizppurio.uploadTemplateImage" stateTarget="global" statePathUrl="bz_tpl_modal.content.templateImageUrl" statePathName="bz_tpl_modal.content.templateImageName" statePathStatus="bz_tpl_upload"/>
             </on>
           </input>
-          <p class="bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400">$t:sirsoft-message_bizppurio.template.form.image_hint|max=500&amp;width=500</p>
+          <p class="bizppurio:text-xs bizppurio-text-muted">$t:sirsoft-message_bizppurio.template.form.image_hint|max=500&amp;width=500</p>
           <span data-if="{{_global.bz_tpl_upload?.uploading}}" class="bizppurio:text-xs bizppurio:text-amber-700 bizppurio:dark:text-amber-400">$t:sirsoft-message_bizppurio.template.form.image_uploading</span>
           <span data-if="{{_global.bz_tpl_upload?.error}}" class="bizppurio:text-xs bizppurio:text-red-600 bizppurio:dark:text-red-400">{{_global.bz_tpl_upload?.error ?? ''}}</span>
           <span data-if="{{_global.bz_tpl_modal?.content?.templateImageUrl}}" class="bizppurio:text-xs bizppurio:text-green-700 bizppurio:dark:text-green-400 bizppurio:break-all bizppurio-break-all">{{_global.bz_tpl_modal?.content?.templateImageName}} — {{_global.bz_tpl_modal?.content?.templateImageUrl}}</span>
@@ -437,7 +439,7 @@
               $t:sirsoft-message_bizppurio.template.form.item_add
             </button>
           </div>
-          <p class="bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400">$t:sirsoft-message_bizppurio.template.form.item_list_hint</p>
+          <p class="bizppurio:text-xs bizppurio-text-muted">$t:sirsoft-message_bizppurio.template.form.item_list_hint</p>
           <div data-each="itm, itmIdx in {{_global.bz_tpl_modal?.content?.templateItem?.list ?? []}}" class="bizppurio:flex bizppurio:items-center bizppurio:gap-1.5">
             <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: itmIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.item_title')}}" class="bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs" :maxLength="6" placeholder="$t:sirsoft-message_bizppurio.template.form.item_title" value="{{itm.title ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
               <on type="change">
@@ -478,7 +480,7 @@
         <div>
           <div class="bizppurio-flex-between">
             <label class="bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:block bizppurio:text-xs bizppurio:font-medium bizppurio:mb-1">$t:sirsoft-message_bizppurio.template.form.content *</label>
-            <span class="bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400">{{(_global.bz_tpl_modal?.content?.templateContent ?? '').length}}/1000</span>
+            <span class="bizppurio:text-xs bizppurio-text-muted">{{(_global.bz_tpl_modal?.content?.templateContent ?? '').length}}/1000</span>
           </div>
           <textarea name="bz_template_content" :rows="6" :maxLength="1000" class="bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:font-mono" value="{{_global.bz_tpl_modal?.content?.templateContent ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
             <on type="change">
@@ -516,7 +518,7 @@
               <set-state target="global" bz_tpl_modal.content.templateHeader="{{$event.target.value}}"/>
             </on>
           </input>
-          <p class="bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:mt-1">$t:sirsoft-message_bizppurio.template.form.header_hint</p>
+          <p class="bizppurio:text-xs bizppurio-text-muted bizppurio:mt-1">$t:sirsoft-message_bizppurio.template.form.header_hint</p>
         </div>
         <div class="bizppurio:space-y-2">
           <div class="bizppurio-flex-between">
@@ -670,7 +672,7 @@
         <div data-ref="bizppurio_tpl_request_comment">
           <div class="bizppurio-flex-between">
             <label class="bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:block bizppurio:text-xs bizppurio:font-medium bizppurio:mb-1">$t:sirsoft-message_bizppurio.template.form.request_comment</label>
-            <span class="bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400">{{(_global.bz_tpl_modal?.request_comment ?? '').length}}/500</span>
+            <span class="bizppurio:text-xs bizppurio-text-muted">{{(_global.bz_tpl_modal?.request_comment ?? '').length}}/500</span>
           </div>
           <textarea name="bz_request_comment" :rows="3" :maxLength="500" class="bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100" placeholder="$t:sirsoft-message_bizppurio.template.form.request_comment_placeholder" value="{{_global.bz_tpl_modal?.request_comment ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
             <on type="change">
@@ -678,7 +680,7 @@
               <set-state target="global" bz_tpl_modal.request_comment="{{$event.target.value}}"/>
             </on>
           </textarea>
-          <p class="bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:mt-1">$t:sirsoft-message_bizppurio.template.form.request_comment_hint</p>
+          <p class="bizppurio:text-xs bizppurio-text-muted bizppurio:mt-1">$t:sirsoft-message_bizppurio.template.form.request_comment_hint</p>
         </div>
       </div>
     </div>
@@ -686,7 +688,7 @@
     <div data-ref="bizppurio_tpl_sms_section" class="bizppurio:rounded-lg bizppurio:border bizppurio:border-gray-200 bizppurio:dark:border-gray-700 bizppurio:p-4 bizppurio:space-y-3">
       <div class="bizppurio-flex-between bizppurio:flex-wrap bizppurio:gap-2">
         <div class="bizppurio:flex bizppurio:items-center bizppurio:gap-2">
-          <icon name="comment-sms" class="bizppurio:text-base bizppurio:leading-none bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:flex-shrink-0"/>
+          <icon name="comment-sms" class="bizppurio:text-base bizppurio:leading-none bizppurio-text-muted bizppurio:flex-shrink-0"/>
           <h4 class="bizppurio:text-sm bizppurio:font-semibold bizppurio:text-gray-800 bizppurio:dark:text-gray-100">$t:sirsoft-message_bizppurio.template.section.sms_title</h4>
         </div>
         <div class="bizppurio:flex bizppurio:items-center bizppurio:flex-wrap bizppurio:gap-3">
@@ -713,7 +715,7 @@
       <p class="bizppurio:text-xs bizppurio:text-teal-700 bizppurio:dark:text-teal-300 bizppurio:p-3 bizppurio:rounded-lg bizppurio:bg-teal-50 bizppurio:dark:bg-teal-950 bizppurio:border bizppurio:border-teal-200 bizppurio:dark:border-gray-700">$t:sirsoft-message_bizppurio.template.sms.hint</p>
       <!-- SMS 본문 언어 탭(§14.3). sms_body 는 로케일 맵이며 수신자 로케일로 발송된다 — 코어 알림 템플릿 편집 모달과 동일한 editLang 패턴. -->
       <div data-ref="bz_sms_lang_tabs" class="bizppurio:flex bizppurio:border-b bizppurio:border-gray-200 bizppurio:dark:border-gray-700">
-        <button data-each="loc in {{$locales}}" type="button" class="{{(_global.bz_sms_modal?.editLang ?? $locale) === loc ? 'bizppurio:border-b-2 bizppurio:border-teal-500 bizppurio:dark:border-teal-400 bizppurio:text-teal-700 bizppurio:dark:text-teal-400' : 'bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:hover:text-gray-700 bizppurio:dark:hover:text-gray-300'}} bizppurio:px-4 bizppurio:py-2 bizppurio:text-sm bizppurio:font-medium bizppurio:focus:outline-none">
+        <button data-each="loc in {{$locales}}" type="button" class="{{(_global.bz_sms_modal?.editLang ?? $locale) === loc ? 'bizppurio:border-b-2 bizppurio:border-teal-500 bizppurio:dark:border-teal-400 bizppurio:text-teal-700 bizppurio:dark:text-teal-400' : 'bizppurio-text-muted bizppurio:hover:text-gray-700 bizppurio:dark:hover:text-gray-300'}} bizppurio:px-4 bizppurio:py-2 bizppurio:text-sm bizppurio:font-medium bizppurio:focus:outline-none">
           <on type="click">
             <!-- SMS 본문 편집 언어 탭 — 본문은 로케일 맵이라 어느 언어를 편집 중인지 상태(editLang)에 둔다. -->
             <set-state target="global" bz_sms_modal.editLang="{{loc}}"/>

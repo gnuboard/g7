@@ -1104,7 +1104,7 @@
                                                                 "name": "Icon",
                                                                 "props": {
                                                                     "name": "image",
-                                                                    "className": "ecommerce:text-2xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                    "className": "ecommerce:text-2xl ecommerce-text-muted"
                                                                 }
                                                             }
                                                         ]
@@ -1331,7 +1331,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "ecommerce-btn ecommerce-btn-danger ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                            "className": "ecommerce-btn ecommerce-btn-danger",
                                             "disabled": "{{product?.data?.abilities?.can_delete !== true}}"
                                         },
                                         "text": "$t:sirsoft-ecommerce.common.delete"
@@ -1454,7 +1454,7 @@
                                         "props": {
                                             "type": "button",
                                             "disabled": "{{_local.isSaving || _computed.isReadOnly}}",
-                                            "className": "ecommerce-flex-center ecommerce-btn ecommerce-btn-primary ecommerce:gap-1.5 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                            "className": "ecommerce-flex-center ecommerce-btn ecommerce-btn-primary ecommerce:gap-1.5",
                                             "data-testid": "product-save"
                                         },
                                         "children": [

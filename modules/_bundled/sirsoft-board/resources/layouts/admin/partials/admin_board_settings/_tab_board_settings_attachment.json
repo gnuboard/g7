@@ -36,9 +36,6 @@
                             "id": "field_use_file_upload",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -114,9 +111,6 @@
                             "id": "field_max_file_size",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -199,7 +193,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.errors?.['basic_defaults.max_file_size']}}",
                                                     "props": {
-                                                        "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
+                                                        "className": "board-form-error"
                                                     },
                                                     "text": "{{(Array.isArray(_local.errors?.['basic_defaults.max_file_size']) ? _local.errors['basic_defaults.max_file_size'][0] : _local.errors?.['basic_defaults.max_file_size']) ?? ''}}"
                                                 }
@@ -213,9 +207,6 @@
                             "id": "field_max_file_count",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -298,7 +289,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.errors?.['basic_defaults.max_file_count']}}",
                                                     "props": {
-                                                        "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
+                                                        "className": "board-form-error"
                                                     },
                                                     "text": "{{(Array.isArray(_local.errors?.['basic_defaults.max_file_count']) ? _local.errors['basic_defaults.max_file_count'][0] : _local.errors?.['basic_defaults.max_file_count']) ?? ''}}"
                                                 }
@@ -312,9 +303,6 @@
                             "id": "field_allowed_extensions",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",

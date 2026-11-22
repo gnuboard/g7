@@ -67,7 +67,7 @@
       </on>
       $t:admin.schedules.action.bulk_delete
     </button>
-    <button data-ref="bulk_status_apply" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.selectedScheduleIds?.length || !_global.bulkStatusAction || schedules?.data?.abilities?.can_update !== true}}">
+    <button data-ref="bulk_status_apply" type="button" class="btn btn-primary" disabled="{{!_global.selectedScheduleIds?.length || !_global.bulkStatusAction || schedules?.data?.abilities?.can_update !== true}}">
       <on type="click">
         <!-- 일괄 적용 — 바로 바꾸지 않고 확인 창을 연다(기준 목록 모두 같다). 고른 방향·대상은 이미 전역에 있다. -->
         <open-modal target="schedule_bulk_status_modal"/>
@@ -147,7 +147,7 @@
             </on>
             {{row.label_localized}}
           </button>
-          <span class="block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">{{row.name}}</span>
+          <span class="block text-xs text-muted font-mono mt-0.5">{{row.name}}</span>
           <code class="block text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-400 font-mono mt-1 max-w-xs truncate">{{row.command}}</code>
           <div data-if="{{(row.unmet_conditions ?? []).length &gt; 0}}" class="mt-1">
             <!-- 실행 조건 미충족 배지 — 그 설정이 꺼져 있어 예약 실행이 건너뛰어진다(즉시 실행은 된다). 첫 조건이 코어 환경설정이고
@@ -177,7 +177,7 @@
             <badge data-type="composite" data-if="{{row.owner?.type === 'module'}}" color="blue" size="md" text="$t:admin.schedules.owner.module"/>
             <badge data-type="composite" data-if="{{row.owner?.type === 'plugin'}}" color="teal" size="md" text="$t:admin.schedules.owner.plugin"/>
             <badge data-type="composite" data-if="{{row.owner?.type === 'custom'}}" color="yellow" size="md" text="$t:admin.schedules.owner.custom"/>
-            <span data-if="{{['module', 'plugin'].includes(row.owner?.type)}}" class="text-xs text-gray-500 dark:text-gray-400 font-mono">{{row.owner?.identifier}}</span>
+            <span data-if="{{['module', 'plugin'].includes(row.owner?.type)}}" class="text-xs text-muted font-mono">{{row.owner?.identifier}}</span>
           </div>
         </div>
       </cell>
@@ -194,7 +194,7 @@
       <cell>
         <div>
           <span class="text-sm text-gray-900 dark:text-white">{{row.frequency_label}}</span>
-          <span data-if="{{row.frequency !== 'everyThirtySeconds'}}" class="block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">{{row.expression}}</span>
+          <span data-if="{{row.frequency !== 'everyThirtySeconds'}}" class="block text-xs text-muted font-mono mt-0.5">{{row.expression}}</span>
           <div class="flex-center flex-wrap gap-1 mt-1">
             <badge data-type="composite" data-if="{{row.dispatch_mode === 'queue'}}" color="blue" size="sm" text="$t:admin.schedules.dispatch_mode.queue"/>
             <badge data-type="composite" data-if="{{row.history_mode === 'failures_only'}}" color="gray" size="sm" text="$t:admin.schedules.history_mode.failures_only"/>

@@ -348,7 +348,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "~"
                         },
@@ -628,9 +628,7 @@
                     "if": "{{!!_computed.csvUrl}}",
                     "responsive": {
                         "640-": {
-                            "props": {
-                                "className": "btn btn-secondary btn-sm flex-center gap-1.5 w-auto"
-                            }
+                            "classMerge": "w-auto"
                         }
                     },
                     "actions": [

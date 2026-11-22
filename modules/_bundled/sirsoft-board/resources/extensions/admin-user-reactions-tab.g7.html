@@ -31,21 +31,21 @@
         </div>
         <div class="board:grid board:grid-cols-3 board:gap-4 board:mb-4">
           <div data-ref="field_reaction_count" class="board:p-3 board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg">
-            <span class="board:block board:text-xs board:text-gray-500 board:dark:text-gray-400 board:mb-1">$t:sirsoft-board.admin.users.reactions.count</span>
+            <span class="board:block board:text-xs board-text-muted board:mb-1">$t:sirsoft-board.admin.users.reactions.count</span>
             <span class="board:block board:text-lg board:font-semibold board:text-gray-900 board:dark:text-white">$t:sirsoft-board.admin.users.reactions.count_unit|count={{user?.data?.board_reactions?.count ?? 0}}</span>
           </div>
           <!-- 글과 댓글을 갈라 보여준다 — 총계만으로는 어느 쪽에 남은 반응인지 알 수 없어 정리 대상을 좁힐 수 없다 -->
           <div data-ref="field_reaction_breakdown" class="board:p-3 board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg">
-            <span class="board:block board:text-xs board:text-gray-500 board:dark:text-gray-400 board:mb-1">$t:sirsoft-board.admin.users.reactions.breakdown</span>
+            <span class="board:block board:text-xs board-text-muted board:mb-1">$t:sirsoft-board.admin.users.reactions.breakdown</span>
             <span class="board:block board:text-lg board:font-semibold board:text-gray-900 board:dark:text-white">$t:sirsoft-board.admin.users.reactions.breakdown_unit|post={{user?.data?.board_reactions?.post_count ?? 0}}|comment={{user?.data?.board_reactions?.comment_count ?? 0}}</span>
           </div>
           <div data-ref="field_latest_reacted_at" class="board:p-3 board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg">
-            <span class="board:block board:text-xs board:text-gray-500 board:dark:text-gray-400 board:mb-1">$t:sirsoft-board.admin.users.reactions.latest_reacted_at</span>
+            <span class="board:block board:text-xs board-text-muted board:mb-1">$t:sirsoft-board.admin.users.reactions.latest_reacted_at</span>
             <span class="board:block board:text-lg board:font-semibold board:text-gray-900 board:dark:text-white">{{user?.data?.board_reactions?.latest_reacted_at ?? '-'}}</span>
           </div>
         </div>
         <!-- 0건이면 링크를 숨긴다 — 눌러 봐야 빈 목록이고, 그 사실은 위 숫자가 이미 말한다 -->
-        <p data-if="{{(user?.data?.board_reactions?.count ?? 0) === 0}}" class="board:flex board:items-center board:gap-2 board:p-4 board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg board:text-sm board:text-gray-500 board:dark:text-gray-400">
+        <p data-if="{{(user?.data?.board_reactions?.count ?? 0) === 0}}" class="board:flex board:items-center board:gap-2 board:p-4 board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg board:text-sm board-text-muted">
           <icon name="circle-info" class="board:text-base board:flex-shrink-0"/>
           <span>$t:sirsoft-board.admin.users.reactions.none</span>
         </p>
@@ -53,7 +53,7 @@
           주소는 `href` 가 갖는다 — 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 그 주소로 연다.
           보통 클릭은 아래 `navigate` 가 같은 화면 안에서 옮긴다(링크의 기본 이동은 엔진이 막는다).
         -->
-        <a href="/admin/boards/reactions?user_uuid={{user?.data?.uuid ?? ''}}" data-ref="view_member_reactions" data-testid="user-reactions-link" data-if="{{(user?.data?.board_reactions?.count ?? 0) > 0}}" class="board:inline-flex board:items-center board:gap-1.5 board:px-3 board:py-2 board:text-sm board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:cursor-pointer">
+        <a href="/admin/boards/reactions?user_uuid={{user?.data?.uuid ?? ''}}" data-ref="view_member_reactions" data-testid="user-reactions-link" data-if="{{(user?.data?.board_reactions?.count ?? 0) > 0}}" class="board-btn board-btn-secondary board:gap-1.5 board:px-3">
           <on type="click">
             <navigate path="/admin/boards/reactions">
               <query user_uuid="{{user?.data?.uuid ?? ''}}"/>

@@ -294,7 +294,7 @@
                                     }
                                 ],
                                 "props": {
-                                    "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "className": "flex-center btn btn-secondary",
                                     "disabled": "{{_global.isCheckingTemplateUpdates || templates?.data?.abilities?.can_install !== true}}",
                                     "type": "button"
                                 },
@@ -345,7 +345,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "className": "flex-center btn btn-secondary",
                                     "disabled": "{{templates?.data?.abilities?.can_install !== true || _global.appConfig?.runtime_role === 'stage'}}",
                                     "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}"
                                 },
@@ -379,7 +379,7 @@
                                 },
                                 "props": {
                                     "type": "button",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                                    "className": "flex-center btn btn-primary"
                                 },
                                 "children": [
                                     {
@@ -427,7 +427,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "flex-center flex-1 justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "className": "flex-center flex-1 btn btn-secondary",
                                     "disabled": "{{templates?.data?.abilities?.can_install !== true || _global.appConfig?.runtime_role === 'stage'}}",
                                     "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}"
                                 },
@@ -454,7 +454,7 @@
                                 "if": "{{false}}",
                                 "props": {
                                     "type": "button",
-                                    "className": "flex-center flex-1 justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                                    "className": "flex-center flex-1 btn btn-primary"
                                 },
                                 "children": [
                                     {
@@ -798,14 +798,10 @@
                         "name": "Div",
                         "responsive": {
                             "640-1023": {
-                                "props": {
-                                    "className": "sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
-                                }
+                                "classMerge": "-mx-6 px-6"
                             },
                             "1024-": {
-                                "props": {
-                                    "className": "sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
-                                }
+                                "classMerge": "-mx-8 px-8"
                             }
                         },
                         "props": {

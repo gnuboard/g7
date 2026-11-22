@@ -46,7 +46,7 @@
         </div>
       </div>
       <div data-ref="log_table_header" class="ecommerce:hidden ecommerce:py-3 ecommerce:px-2 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
-        <responsive on="768-" class="ecommerce:block ecommerce:py-3 ecommerce:px-2 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700"/>
+        <responsive on="768-" class-merge="ecommerce:block"/>
         <div class="ecommerce-text-tertiary ecommerce:flex ecommerce:gap-4 ecommerce:font-medium ecommerce:uppercase">
           <span class="ecommerce:w-40 ecommerce:shrink-0">$t:sirsoft-ecommerce.admin.order.detail.activity_log.columns.date</span>
           <span class="ecommerce:w-40 ecommerce:shrink-0">$t:sirsoft-ecommerce.admin.order.detail.activity_log.columns.actor</span>
@@ -56,10 +56,10 @@
       <!-- 받기 실패 안내 — 실패하면 엔진은 이 데이터소스를 null 로 둔다. 실패한 채 「활동 로그가 없습니다」를 보이면 기록이 없는 줄 안다 -->
       <div data-ref="log_load_failed" data-if="{{order_logs === null}}" role="alert" class="ecommerce:py-12 ecommerce:text-center ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</div>
       <!-- 빈 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다 -->
-      <div data-ref="log_empty" data-if="{{order_logs !== undefined &amp;&amp; order_logs !== null &amp;&amp; (order_logs.data?.data ?? []).length === 0}}" class="ecommerce:py-12 ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.activity_log.empty</div>
+      <div data-ref="log_empty" data-if="{{order_logs !== undefined &amp;&amp; order_logs !== null &amp;&amp; (order_logs.data?.data ?? []).length === 0}}" class="ecommerce:py-12 ecommerce:text-center ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.activity_log.empty</div>
       <div data-ref="log_rows_{{logIdx}}" data-each="log, logIdx in {{order_logs.data?.data ?? []}}">
         <div class="ecommerce:hidden ecommerce:py-3 ecommerce:px-2 ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-800">
-          <responsive on="768-" class="ecommerce:block ecommerce:py-3 ecommerce:px-2 ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-800"/>
+          <responsive on="768-" class-merge="ecommerce:block"/>
           <div class="ecommerce-flex-center ecommerce:gap-4">
             <span class="ecommerce:w-40 ecommerce:shrink-0 ecommerce-text-label">{{log.created_at ?? ''}}</span>
             <div class="ecommerce:w-40 ecommerce:shrink-0">
@@ -113,7 +113,7 @@
           </div>
         </div>
         <div class="ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-800 ecommerce:py-3 ecommerce:px-2 ecommerce:space-y-1">
-          <responsive on="768-" class="ecommerce:hidden ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-800 ecommerce:py-3 ecommerce:px-2 ecommerce:space-y-1"/>
+          <responsive on="768-" class-merge="ecommerce:hidden"/>
           <div class="ecommerce-flex-between ecommerce:gap-2">
             <div class="ecommerce-flex-center ecommerce:gap-2">
               <action-menu data-type="composite" data-if="{{!!log.user?.uuid}}" position="left">
