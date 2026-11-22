@@ -1,5 +1,6 @@
 import React from 'react';
 import { IconName, IconStyle, IconSize, iconNameMap } from './IconTypes';
+import { parseIconName } from './iconNameParser';
 
 export interface IconProps extends Omit<React.HTMLAttributes<HTMLElement>, 'style'> {
   /**
@@ -110,32 +111,14 @@ export const Icon: React.FC<IconProps> = ({
     brands: 'fab',
   };
 
-  // 스타일 접두사를 IconStyle로 변환하는 매핑
-  const stylePrefixMap: Record<string, IconStyle> = {
-    'fa-solid': 'solid',
-    'fa-regular': 'regular',
-    'fa-light': 'light',
-    'fa-duotone': 'duotone',
-    'fa-brands': 'brands',
-  };
-
   const nameStr = typeof name === 'string' ? name : String(name);
 
-  // "fa-regular fa-pen-to-square" 형식 파싱
-  let resolvedStyle = iconStyle;
-  let iconName = nameStr;
-
-  // 스타일 접두사가 포함된 경우 파싱 (예: "fa-regular fa-pen-to-square")
-  for (const [prefix, styleValue] of Object.entries(stylePrefixMap)) {
-    if (nameStr.startsWith(prefix + ' ')) {
-      resolvedStyle = styleValue;
-      iconName = nameStr.substring(prefix.length + 1); // 스타일 접두사와 공백 제거
-      break;
-    }
-  }
-
-  // 아이콘 이름에서 'fa-' 접두사 제거 (이미 있으면)
-  iconName = iconName.replace(/^fa-/, '');
+  // 스타일 토큰 해석 — FA5 단축형(fas·far·fal·fad·fab)과 FA6 장형(fa-solid 등)을 모두 읽는다.
+  // 이름 속 토큰이 iconStyle prop 보다 우선한다(종전 fa-solid 동작과 같음). 종전에는 장형만 읽어
+  // `fas fa-users` 가 `fas fa-fas fa-users` 로 조합되고 `far`·`fab` 는 스타일을 잃었다(#381).
+  const parsed = parseIconName(nameStr);
+  const resolvedStyle: IconStyle = parsed.style ?? iconStyle;
+  let iconName = parsed.glyph;
 
   // 상태 의미 토큰(status-*) → 이 템플릿의 글리프. 서버(상태 Enum)는 아이콘 라이브러리를 알지
   // 않고 라이브러리 중립 토큰만 내보내므로, 토큰을 글리프로 바꾸는 표(IconTypes.iconNameMap)를
@@ -149,6 +132,7 @@ export const Icon: React.FC<IconProps> = ({
   const classes = [
     styleClassMap[resolvedStyle],
     `fa-${iconName}`,
+    ...parsed.extraClasses,
     size && `fa-${size}`,
     spin && 'fa-spin',
     pulse && 'fa-pulse',

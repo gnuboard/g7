@@ -70,7 +70,10 @@
             },
             "slug": "",
             "url": "",
-            "icon": "fas fa-home",
+            "icon_spec": {
+                "type": "class",
+                "value": "fas fa-home"
+            },
             "parent_id": null,
             "extension_type": null,
             "extension_identifier": null,
@@ -219,7 +222,10 @@
                                                 },
                                                 "slug": "",
                                                 "url": "",
-                                                "icon": "fas fa-home",
+                                                "icon_spec": {
+                                                    "type": "class",
+                                                    "value": "fas fa-home"
+                                                },
                                                 "parent_id": null,
                                                 "extension_type": null,
                                                 "extension_identifier": null,

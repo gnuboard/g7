@@ -93,6 +93,8 @@ php artisan plugin:activate sirsoft-popup
 # 업데이트 (번들 소스 기준 강제 반영)
 php artisan plugin:update sirsoft-popup --force
 ```
+
+저장소: https://github.com/gnuboard/g7-plugin-sirsoft-popup
 <!-- @generated:install END -->
 
 ## 관리자 설정

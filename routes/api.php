@@ -1001,6 +1001,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         // 그룹의 admin 미들웨어만 둔다 — 응답은 컨트롤러가 내 역할에 지정된 메뉴로 좁힌다(roles/active 와 같은 구조).
         Route::get('active', [AdminMenuController::class, 'active'])->name('api.admin.menus.active');
         Route::post('/', [AdminMenuController::class, 'store'])->middleware('permission:admin,core.menus.create')->name('api.admin.menus.store');
+        // 메뉴 아이콘 업로드 — 생성·수정 권한 중 하나면 된다(끝의 false = OR, #381)
+        Route::post('icon-upload', [AdminMenuController::class, 'uploadIcon'])->middleware('permission:admin,core.menus.create|core.menus.update,false')->name('api.admin.menus.icon-upload');
         Route::put('order', [AdminMenuController::class, 'updateOrder'])->middleware('permission:admin,core.menus.update')->name('api.admin.menus.update-order');
         Route::patch('bulk-roles', [AdminMenuController::class, 'bulkUpdateRoles'])->middleware('permission:admin,core.menus.update')->name('api.admin.menus.bulk-roles');
         Route::get('extension/{type}/{identifier}', [AdminMenuController::class, 'getByExtension'])->middleware('permission:admin,core.menus.read')->name('api.admin.menus.by-extension');

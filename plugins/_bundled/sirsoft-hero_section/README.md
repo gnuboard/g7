@@ -85,6 +85,8 @@ php artisan plugin:activate sirsoft-hero_section
 # 업데이트 (번들 소스 기준 강제 반영)
 php artisan plugin:update sirsoft-hero_section --force
 ```
+
+저장소: https://github.com/gnuboard/g7-plugin-sirsoft-hero_section
 <!-- @generated:install END -->
 
 ## 관리자 설정

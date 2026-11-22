@@ -1,0 +1,55 @@
+feature: 관리자 메뉴 API — 목록·계층·사이드바·생성·조회·수정·삭제·순서·상태·아이콘 업로드 (코어)
+
+description: |
+  `/api/admin/menus` 엔드포인트 묶음의 인증·권한·역할 노출 범위와 CRUD 계약을 고정한다.
+
+  권한 게이트:
+    - 전 엔드포인트는 관리자 인증(auth:sanctum + admin) 아래에 있다 — 인증이 없으면 401.
+    - index·hierarchy·show 는 core.menus.read, store 는 create, update·update_order·toggle_status 는 update,
+      destroy 는 delete, icon_upload 는 create 또는 update 중 하나를 요구한다 — 없으면 403.
+    - active(사이드바)는 메뉴 관리 권한을 요구하지 않고 「내 역할에 지정된 메뉴」만 돌려준다.
+
+  역할 노출 범위:
+    - admin 이 아닌 역할의 사용자는 목록·사이드바에서 자기 역할에 지정된 메뉴만 본다. admin 은 전부 본다.
+    - 목록 응답의 abilities(can_create·can_update·can_delete)는 사용자의 실제 권한을 그대로 비춘다.
+
+  actor 의미:
+    - unauthenticated — 토큰 없음
+    - no_permission — 관리자이지만 그 엔드포인트가 요구하는 권한이 없음
+    - full_admin — admin 역할 + 메뉴 권한 전부
+    - partial_permission — admin 이 아닌 역할로 메뉴 권한 일부만 가짐(응답 모양이 권한에 따라 달라지는 곳만)
+    - non_admin_role — admin 이 아닌 역할(역할 지정 메뉴만 노출되는지)
+
+axes:
+  endpoint: [index, hierarchy, active, store, show, update, destroy, update_order, toggle_status, icon_upload]
+  actor: [unauthenticated, no_permission, full_admin, partial_permission, non_admin_role]
+
+exclusions:
+  - { endpoint: [hierarchy, store, show, update, destroy, update_order, toggle_status, icon_upload], actor: non_admin_role, reason: "역할 지정 메뉴만 보이는 노출 필터는 목록(index)·사이드바(active)에만 있다 — 그 밖의 엔드포인트는 권한 미들웨어가 판정하므로 no_permission 이 경계를 잰다" }
+  - { endpoint: [hierarchy, active, store, show, update, destroy, update_order, toggle_status], actor: partial_permission, reason: "부분 권한 판정은 그 엔드포인트가 요구하는 권한 하나의 유무로 환원된다(no_permission 이 잰다) — 부분 권한이 응답 모양을 바꾸는 곳은 목록 abilities 와 생성·수정 중 하나로 열리는 업로드뿐이다" }
+  - { endpoint: active, actor: no_permission, reason: "사이드바는 메뉴 관리 권한을 요구하지 않는다(라우트에 permission 미들웨어 없음) — 권한 없는 관리자도 자기 역할 메뉴를 본다" }
+  - { endpoint: icon_upload, actor: full_admin, reason: "업로드 본 동작(래스터 첨부·SVG 인라인·형식 검사)은 menu-icon-spec.yaml 의 entry=upload 가 소유한다" }
+
+effects:
+  - unauthenticated_request_returns_401
+  - missing_permission_returns_403
+  - index_lists_filters_and_sorts
+  - index_abilities_reflect_permissions
+  - role_assignment_limits_visible_menus
+  - hierarchy_returns_nested_tree
+  - active_returns_only_active_menus
+  - store_creates_menu_with_validation
+  - store_assigns_admin_and_creator_roles
+  - show_returns_relations_or_404
+  - update_modifies_menu_with_validation
+  - destroy_deletes_leaf_and_blocks_parent
+  - update_order_moves_menus_and_rejects_cycles
+  - toggle_status_flips_is_active
+  - icon_upload_allowed_for_create_or_update_permission
+
+test_files:
+  - tests/Feature/Api/Admin/MenuControllerTest.php
+
+notes:
+  - 목록 응답의 하위 컬렉션 프루닝(하위 메뉴 역할 목록 제거)은 list-child-collection-pruning.yaml 이 소유한다.
+  - 메뉴 아이콘(icon·icon_spec) 저장·표시·업로드 계약은 menu-icon-spec.yaml 이 소유한다.

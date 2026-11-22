@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AdminSidebar, MenuItem } from '../AdminSidebar';
+import type { MenuIconSpecData } from '../MenuIcon';
 
 /**
  * 시험 동안 window.location 을 바꿔 끼운다.
@@ -373,5 +374,168 @@ describe('AdminSidebar', () => {
       expect(screen.queryByText('게시판 관리')).not.toBeInTheDocument();
       expect(screen.queryByText('게시판 신고 관리')).not.toBeInTheDocument();
     });
+  });
+});
+
+/**
+ * 구조형 메뉴 아이콘 (#381) — 사이드바의 네 렌더 분기(URL+하위 · 하위만 · URL만 · 둘 다 없음)가 모두
+ * `icon_spec`(class·image·svg)을 MenuIcon 으로 그리고, spec 없는 호환 문자열 icon 은 종전처럼 그 클래스를,
+ * 깨진 이미지는 `fas fa-circle` 을 그린다.
+ */
+describe('AdminSidebar — 구조형 메뉴 아이콘 (#381)', () => {
+  let originalG7Core: any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    originalG7Core = (window as any).G7Core;
+    (window as any).G7Core = { ...originalG7Core, dispatch: mockDispatch, locale: mockLocale, state: mockState };
+  });
+
+  afterEach(() => {
+    (window as any).G7Core = originalG7Core;
+  });
+
+  type Branch = 'url_parent' | 'toggle_parent' | 'leaf' | 'no_url_leaf';
+
+  const BRANCHES: Branch[] = ['url_parent', 'toggle_parent', 'leaf', 'no_url_leaf'];
+
+  /** 분기별 라벨 — 같은 라벨이 두 번 나오지 않게 분기 이름을 쓴다 */
+  const LABEL: Record<Branch, string> = {
+    url_parent: '아이콘-URL과하위',
+    toggle_parent: '아이콘-하위만',
+    leaf: '아이콘-URL만',
+    no_url_leaf: '아이콘-둘다없음',
+  };
+
+  const CLASS_SPEC: MenuIconSpecData = { type: 'class', value: 'fas fa-users' };
+  const IMAGE_SPEC: MenuIconSpecData = { type: 'image', source: 'site', path: '/images/menu.png', url: '/images/menu.png' };
+  const SVG_SPEC: MenuIconSpecData = {
+    type: 'svg',
+    value: '<svg viewBox="0 0 24 24"><script>alert(1)</script><path d="M0 0h24v24H0z" fill="currentColor"/></svg>',
+  };
+
+  /**
+   * 한 분기 모양의 메뉴 항목을 만든다.
+   *
+   * @param branch 렌더 분기
+   * @param icon 아이콘 필드 (icon · icon_spec)
+   * @returns 메뉴 항목
+   */
+  function menuFor(branch: Branch, icon: Pick<MenuItem, 'icon' | 'icon_spec'>): MenuItem {
+    const child: MenuItem = { id: 901, name: '자식', slug: 'child', url: '/admin/child', icon: 'fas fa-list' };
+    const base: MenuItem = { id: 900, name: LABEL[branch], slug: branch, ...icon };
+
+    switch (branch) {
+      case 'url_parent':
+        return { ...base, url: '/admin/icon-parent', children: [child] };
+      case 'toggle_parent':
+        return { ...base, url: null, children: [child] };
+      case 'leaf':
+        return { ...base, url: '/admin/icon-leaf' };
+      default:
+        return { ...base, url: null };
+    }
+  }
+
+  /**
+   * 분기의 항목 요소(링크 또는 단추)를 찾는다.
+   *
+   * @param branch 렌더 분기
+   * @returns 항목 요소
+   */
+  function itemElement(branch: Branch): HTMLElement {
+    const el = screen.getByText(LABEL[branch]).closest('a, button');
+    expect(el).not.toBeNull();
+
+    return el as HTMLElement;
+  }
+
+  /** URL+하위 분기는 아이콘에 간격·크기 클래스를 붙이고, 나머지 분기는 아이콘 상자 안에 맨 클래스로 그린다 */
+  const ICON_EXTRA: Record<Branch, string> = {
+    url_parent: ' mr-3 w-5 h-5 flex items-center justify-center',
+    toggle_parent: '',
+    leaf: '',
+    no_url_leaf: '',
+  };
+
+  /**
+   * @scenario surface=sidebar, icon_type=class
+   * @effects structured_menu_icons_render, structured_icon_renders_per_type
+   */
+  it.each(BRANCHES)('%s 분기 — class spec 을 그 FA 클래스로 그린다', (branch) => {
+    render(<AdminSidebar menu={[menuFor(branch, { icon: 'fas fa-users', icon_spec: CLASS_SPEC })]} currentLocale="ko" />);
+    const icons = itemElement(branch).querySelectorAll('i.fa-users');
+
+    expect(icons).toHaveLength(1);
+    expect(icons[0].className).toBe(`fas fa-users${ICON_EXTRA[branch]}`);
+    expect(icons[0].getAttribute('aria-hidden')).toBe('true');
+  });
+
+  /**
+   * @scenario surface=sidebar, icon_type=image
+   * @effects structured_menu_icons_render, structured_icon_renders_per_type
+   */
+  it.each(BRANCHES)('%s 분기 — image spec 을 <img> 로 그린다', (branch) => {
+    render(<AdminSidebar menu={[menuFor(branch, { icon: null, icon_spec: IMAGE_SPEC })]} currentLocale="ko" />);
+    const img = itemElement(branch).querySelector('img.menu-icon-media');
+
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute('src')).toBe('/images/menu.png');
+    expect(img?.getAttribute('alt')).toBe('');
+  });
+
+  /**
+   * @scenario surface=sidebar, icon_type=image
+   * @effects structured_menu_icons_render, broken_image_falls_back_to_circle
+   */
+  it.each(BRANCHES)('%s 분기 — 깨진 이미지는 fas fa-circle 로 바뀐다', (branch) => {
+    render(<AdminSidebar menu={[menuFor(branch, { icon: null, icon_spec: IMAGE_SPEC })]} currentLocale="ko" />);
+    const el = itemElement(branch);
+
+    fireEvent.error(el.querySelector('img.menu-icon-media')!);
+
+    expect(el.querySelector('img.menu-icon-media')).toBeNull();
+    const circle = el.querySelectorAll('i.fa-circle');
+    expect(circle).toHaveLength(1);
+    expect(circle[0].className).toBe(`fas fa-circle${ICON_EXTRA[branch]}`);
+  });
+
+  /**
+   * @scenario surface=sidebar, icon_type=svg
+   * @effects structured_menu_icons_render, structured_icon_renders_per_type, svg_sanitized_inline
+   */
+  it.each(BRANCHES)('%s 분기 — svg spec 을 정제해 인라인으로 그린다', (branch) => {
+    render(<AdminSidebar menu={[menuFor(branch, { icon: null, icon_spec: SVG_SPEC })]} currentLocale="ko" />);
+    const el = itemElement(branch);
+    const media = el.querySelector('span.menu-icon-media');
+
+    expect(media).not.toBeNull();
+    expect(media?.querySelectorAll('svg')).toHaveLength(1);
+    expect(el.querySelector('script')).toBeNull();
+    expect(media?.querySelector('path')?.getAttribute('fill')).toBe('currentColor');
+  });
+
+  /**
+   * @scenario surface=sidebar, icon_type=legacy_string
+   * @effects structured_menu_icons_render, legacy_icon_string_still_renders
+   */
+  it.each(BRANCHES)('%s 분기 — spec 없는 호환 문자열 icon(fas fa-home)은 종전처럼 그 클래스로 그린다', (branch) => {
+    render(<AdminSidebar menu={[menuFor(branch, { icon: 'fas fa-home' })]} currentLocale="ko" />);
+    const icons = itemElement(branch).querySelectorAll('i.fa-home');
+
+    expect(icons).toHaveLength(1);
+    expect(icons[0].className).toBe(`fas fa-home${ICON_EXTRA[branch]}`);
+  });
+
+  /**
+   * @scenario surface=sidebar, icon_type=legacy_string
+   * @effects structured_menu_icons_render, legacy_icon_string_still_renders
+   */
+  it.each(BRANCHES)('%s 분기 — icon·spec 이 모두 없으면 아이콘 자리를 그리지 않는다', (branch) => {
+    render(<AdminSidebar menu={[menuFor(branch, { icon: null, icon_spec: null })]} currentLocale="ko" />);
+    const el = itemElement(branch);
+
+    expect(el.querySelector('.admin-sidebar-icon-box')).toBeNull();
+    expect(el.querySelector('img, svg, i.fa-circle')).toBeNull();
   });
 });

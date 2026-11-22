@@ -5,6 +5,8 @@ import { Img } from '../basic/Img';
 import { Span } from '../basic/Span';
 import { Button } from '../basic/Button';
 import { I } from '../basic/I';
+import { MenuIcon, hasMenuIcon } from './MenuIcon';
+import type { MenuIconSpecData } from './MenuIcon';
 import type { EditorAttrs } from '../../types';
 import { isSameOriginRequest } from '../../support/sameOriginRequest';
 import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
@@ -46,7 +48,10 @@ export interface MenuItem {
   name: string | { ko: string; en: string };
   slug: string;
   url?: string | null;
-  icon?: string;
+  /** 호환 문자열 아이콘 — FA 클래스일 때만 값, 이미지·SVG 는 null (#381) */
+  icon?: string | null;
+  /** 구조형 아이콘 (class·image·svg) — 있으면 icon 보다 우선 */
+  icon_spec?: MenuIconSpecData | null;
   children?: MenuItem[];
   is_active?: boolean;
   module_id?: number | null;
@@ -369,9 +374,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               onClick={(event) => handleNavigate(event, item.url!)}
               className="button flex items-center justify-start flex-1 min-w-0"
             >
-              {item.icon && (
-                <I
-                  className={`${item.icon} ${collapsed ? '' : 'mr-3'} w-5 h-5 flex items-center justify-center`}
+              {hasMenuIcon(item.icon_spec, item.icon) && (
+                <MenuIcon
+                  spec={item.icon_spec}
+                  icon={item.icon}
+                  fallbackIcon="fas fa-circle"
+                  className={`${collapsed ? '' : 'mr-3'} w-5 h-5 flex items-center justify-center`}
                 />
               )}
               {!collapsed && <Span className="truncate">{label}</Span>}
@@ -404,9 +412,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             `}
           >
             <Div className="admin-sidebar-item-content">
-              {item.icon && (
+              {hasMenuIcon(item.icon_spec, item.icon) && (
                 <Div className="admin-sidebar-icon-box">
-                  <I className={item.icon} />
+                  <MenuIcon spec={item.icon_spec} icon={item.icon} fallbackIcon="fas fa-circle" />
                 </Div>
               )}
               {!collapsed && <Span>{label}</Span>}
@@ -438,9 +446,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             `}
           >
             <Div className="admin-sidebar-item-content">
-              {item.icon && (
+              {hasMenuIcon(item.icon_spec, item.icon) && (
                 <Div className="admin-sidebar-icon-box">
-                  <I className={item.icon} />
+                  <MenuIcon spec={item.icon_spec} icon={item.icon} fallbackIcon="fas fa-circle" />
                 </Div>
               )}
               {!collapsed && <Span>{label}</Span>}
@@ -460,9 +468,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             `}
           >
             <Div className="admin-sidebar-item-content">
-              {item.icon && (
+              {hasMenuIcon(item.icon_spec, item.icon) && (
                 <Div className="admin-sidebar-icon-box">
-                  <I className={item.icon} />
+                  <MenuIcon spec={item.icon_spec} icon={item.icon} fallbackIcon="fas fa-circle" />
                 </Div>
               )}
               {!collapsed && <Span>{label}</Span>}

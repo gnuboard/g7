@@ -7,8 +7,13 @@ description: |
   유형 아이콘 영문 이름(「info icon」)을 단언하던 경고(Alert) 테스트도 선택자가 함께 바뀌어, 소유 매니페스트가 없던 그 파일들을
   컴포넌트 축으로 묶는다. 접근 이름 계약은 `icon-only-control-names.yaml` 이 따로 잠근다.
 
+  이름 속 스타일 토큰(#381): 해석기(parseIconName)가 FA5 단축형(fas·far·fab·fal·fad)과 FA6 장형(fa-solid …)을 한 번만
+  읽어, Icon·UnifiedIcon·IconSelect 가 `fas fa-x` 를 `fas fa-fas fa-x` 로 겹쳐 그리거나 `far`·`fab` 스타일을 잃지 않는다.
+  관리자 레이아웃(템플릿·번들 모듈·번들 플러그인)의 스타일 토큰 붙은 아이콘 이름을 전수 스캔해 같은 규칙을 잰다.
+  결제 브랜드 마크와 메뉴 아이콘이 함께 쓰는 SVG 화이트리스트 정제(svgSanitize)도 공통 아이콘 기반이라 여기서 잠근다.
+
 axes:
-  component: [icon, chip_checkbox, tab_navigation, toast, alert]
+  component: [icon, chip_checkbox, tab_navigation, toast, alert, icon_parser, unified_icon, icon_select, layout_scan, svg_sanitize]
 
 effects:
   - icon_renders_fontawesome_classes_from_props
@@ -17,6 +22,11 @@ effects:
   - tab_navigation_contract_with_decorative_icon       # 탭 렌더·아이콘·배지·비활성·클릭·모바일 선택 상자가 그대로다
   - toast_contract_with_decorative_icon                # 위치·유형 스타일·수동/시간 제거·아이콘이 그대로다
   - alert_contract_with_decorative_icon                # 유형별 스타일·닫기 단추·아이콘 숨김(영문 유형 이름 없음)
+  - style_prefix_tokens_resolved_once                  # 이름 속 스타일 토큰을 한 번만 읽어 스타일 클래스 하나·fa-fas 류 겹친 클래스 없음·글리프와 추가 클래스 보존
+  - unified_icon_renders_by_prefix                     # UnifiedIcon 이 fa:/svg:/img: 접두로 소스를 가르고 크기·색·className·접근성 속성을 반영한다
+  - icon_select_dropdown_contract                      # IconSelect 열기·검색·선택(fas fa-xxx 반환)·닫기·비활성·숨은 입력
+  - icon_select_detects_prefixed_value                 # fas·far·fa-solid 접두 값을 글리프로 비교해 선택 항목을 보인다
+  - svg_markup_sanitized_by_whitelist                  # 인라인 SVG 에서 script·이벤트 처리기·foreignObject·style·use·href 를 지우고 currentColor 도형을 남긴다
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/Icon.test.tsx
@@ -24,6 +34,12 @@ test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TabNavigation.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Toast.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Alert.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/iconNameParser.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/UnifiedIcon.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/IconSelect.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/components/IconPrefixedLayoutNames.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/support/__tests__/svgSanitize.test.ts
 
 notes: |
-  e2e_browser=not_applicable — 컴포넌트 단위 렌더 계약이라 jsdom(Vitest)으로 잠근다.
+  e2e_browser=not_applicable — 컴포넌트 단위 렌더 계약이라 jsdom(Vitest)으로 잠근다. 레이아웃 전수 스캔은 .g7.html 원본을
+  읽어 Icon 으로 그려 보는 정적 대조다.

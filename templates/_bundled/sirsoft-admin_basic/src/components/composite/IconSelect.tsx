@@ -3,6 +3,7 @@ import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Input } from '../basic/Input';
 import { Icon } from '../basic/Icon';
+import { parseIconName } from '../basic/iconNameParser';
 import { Span } from '../basic/Span';
 import type { EditorAttrs } from '../../types';
 import { escapeToClose } from '../../support/keyboardActivation';
@@ -82,9 +83,9 @@ export const IconSelect: React.FC<IconSelectProps> = ({
   // value가 faIcon 형식(fas fa-xxx) 또는 Lucide 형식(IconName)일 수 있음
   const selectedOption = options.find((opt) => {
     if (!value) return false;
-    // FontAwesome 형식 (fas fa-xxx, far fa-xxx 등)
+    // FontAwesome 형식 (fas fa-xxx, far fa-xxx, fa-solid fa-xxx 등) — 글리프로 비교 (#381)
     if (value.includes('fa-')) {
-      const faIconName = value.replace(/^(fas|far|fab|fal|fad)\s+fa-/, '');
+      const faIconName = parseIconName(value).glyph;
       return opt.faIcon === faIconName || opt.faIcon === value;
     }
     // Lucide 형식 또는 직접 매칭

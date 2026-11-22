@@ -90,6 +90,8 @@ php artisan plugin:activate sirsoft-cdn_cloudfront
 # 업데이트 (번들 소스 기준 강제 반영)
 php artisan plugin:update sirsoft-cdn_cloudfront --force
 ```
+
+저장소: https://github.com/gnuboard/g7-plugin-sirsoft-cdn_cloudfront
 <!-- @generated:install END -->
 
 ## 관리자 설정

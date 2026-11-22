@@ -35,4 +35,7 @@ return [
     'bulk_roles_success' => 'メニュー:count件のロールを変更しました。',
     'bulk_roles_failed' => 'メニューのロール一括変更に失敗しました。',
     'bulk_roles_unmanageable' => '管理できないメニューが含まれています。',
+    'icon_uploaded' => 'アイコンをアップロードしました。メニューを保存すると反映されます。',
+    'icon_upload_failed' => 'アイコンをアップロードできませんでした。',
+    'icon_declaration_invalid' => 'メニュー「:slug」のアイコン宣言を無視しました(:reason)。アイコンなしでインストールしました。',
 ];

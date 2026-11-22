@@ -33,6 +33,8 @@ axes:
     - update_by_slug
     - form_data_edit_by_slug
     - add_to_menu_by_slug
+    # 관리자 메뉴 추가 아이콘 (코어 7.2.1 구조형 메뉴 아이콘)
+    - add_to_menu_icon_class
     # 폼 데이터 메타
     - form_data_meta_limits
     # 역할 동기화
@@ -56,6 +58,8 @@ effects:
   - board_use_scrap_update_persists_and_is_exposed
   # slug 라우팅
   - slug_resolves_board_in_admin_routes
+  # 관리자 메뉴 추가 아이콘
+  - add_to_menu_stores_class_icon
   # 폼 데이터 메타
   - form_data_meta_carries_limits_and_depth_fields
   # 역할 동기화

@@ -5,7 +5,9 @@ namespace App\Models;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\MenuPermissionType;
 use App\Models\Concerns\HasUserOverrides;
+use App\Services\MenuIconService;
 use App\Support\LocalizedValue;
+use App\Support\MenuIcon\MenuIconSpec;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,9 +22,13 @@ use Illuminate\Support\Facades\DB;
  *
  * 역할 기반 접근 제어를 지원합니다.
  *
- * 사용자가 관리자 UI 로 수정한 필드(name/icon/order/url) 는 `HasUserOverrides` trait
+ * 사용자가 관리자 UI 로 수정한 필드(name/icon/order/url/is_active/parent_id) 는 `HasUserOverrides` trait
  * 에 의해 `user_overrides` 컬럼에 자동 누적 기록되며, 이후 코어/확장 업데이트의
  * `syncMenu()` 경로에서 필드 단위로 보존됩니다.
+ *
+ * `icon` 은 FA 클래스 문자열 또는 구조형 JSON(image·svg) 정규형으로 저장한다 — 모든 쓰기가 뮤테이터로
+ * `MenuIconSpec::canonicalize()` 를 거치므로 같은 뜻이면 바이트가 같다(#381). 응답 출력은 반드시
+ * `MenuIconPresenter` 를 거친다(원문은 JSON 문자열일 수 있다).
  */
 class Menu extends Model
 {
@@ -47,7 +53,8 @@ class Menu extends Model
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [
         'url' => ['label_key' => 'activity_log.fields.url', 'type' => 'text'],
-        'icon' => ['label_key' => 'activity_log.fields.icon', 'type' => 'text'],
+        // display: SVG 코드(최대 32KB)를 로그에 통째로 쌓지 않도록 요약값으로 기록 (#381)
+        'icon' => ['label_key' => 'activity_log.fields.icon', 'type' => 'text', 'display' => [MenuIconSpec::class, 'activityLogSummary']],
         'parent_id' => ['label_key' => 'activity_log.fields.parent_id', 'type' => 'number'],
         'order' => ['label_key' => 'activity_log.fields.order', 'type' => 'number'],
         'is_active' => ['label_key' => 'activity_log.fields.is_active', 'type' => 'boolean'],
@@ -106,6 +113,82 @@ class Menu extends Model
             'extension_type' => ExtensionOwnerType::class,
             'user_overrides' => 'array',
         ];
+    }
+
+    /**
+     * 모델 이벤트 — 메뉴가 지워지면 이 메뉴에 묶인 업로드 아이콘 첨부를 커밋 뒤에 지운다.
+     *
+     * 노드별 Eloquent delete 경로(`MenuService::deleteMenu`·`ExtensionMenuSyncHelper::deleteMenuSubtree`)는 이 이벤트가 덮고,
+     * 쿼리 빌더 묶음 삭제 경로(`MenuRepository::deleteByExtension`·`CoreAdminMenuSeeder` 재시드)는 이벤트가 없어
+     * 삭제 전에 {@see self::purgeIconAttachmentsAfterCommit()} 을 직접 부른다.
+     * 커밋 뒤에 지워야 롤백 시 파일이 사라지지 않는다.
+     *
+     * @return void
+     */
+    protected static function booted(): void
+    {
+        static::deleted(function (Menu $menu): void {
+            static::purgeIconAttachmentsAfterCommit([(int) $menu->id]);
+        });
+    }
+
+    /**
+     * 메뉴 아이콘 첨부 정리를 커밋 뒤로 예약합니다.
+     *
+     * 모델 이벤트를 거치지 않는 묶음 삭제(`MenuRepository::deleteByExtension()`·`CoreAdminMenuSeeder` 재시드)가
+     * 삭제 전에 부른다 — 쿼리 빌더 delete 는 `deleted` 이벤트를 내지 않아 업로드 아이콘이 남는다.
+     *
+     * @param  array<int, int>  $menuIds  삭제할 메뉴 ID
+     * @return void
+     */
+    public static function purgeIconAttachmentsAfterCommit(array $menuIds): void
+    {
+        foreach ($menuIds as $menuId) {
+            $menuId = (int) $menuId;
+
+            DB::afterCommit(function () use ($menuId): void {
+                app(MenuIconService::class)->purgeMenuAttachments($menuId);
+            });
+        }
+    }
+
+    /**
+     * icon 세터 — 모든 쓰기를 정규형(`MenuIconSpec::canonicalize`)으로 맞춘다.
+     *
+     * 레거시 문자열 `fas fa-users` 와 구조형 `{type:'class', value:'fas fa-users'}` 가 같은 바이트가 되어
+     * `isDirty`·사용자 수정 표식·확장 동기화 비교가 같은 뜻을 같게 본다.
+     *
+     * @return Attribute icon 접근자·변경자
+     */
+    protected function icon(): Attribute
+    {
+        return Attribute::make(
+            set: fn (mixed $value) => MenuIconSpec::canonicalize($value),
+        );
+    }
+
+    /**
+     * 수정 여부 비교값 — icon 만 정규형으로 맞춘다 (mass update·planUpgrade·updating 훅 세 경로 공통).
+     *
+     * @param  string  $field  trackable 컬럼명
+     * @param  mixed  $value  비교할 값
+     * @return mixed 비교용 값
+     */
+    public function comparableTrackableValue(string $field, mixed $value): mixed
+    {
+        return $field === 'icon' ? MenuIconSpec::canonicalize($value) : $value;
+    }
+
+    /**
+     * 저장된 아이콘을 값 객체로 해석합니다.
+     *
+     * @return MenuIconSpec|null 아이콘, 없으면 null
+     */
+    public function iconSpec(): ?MenuIconSpec
+    {
+        $stored = $this->getAttributes()['icon'] ?? null;
+
+        return MenuIconSpec::fromStored(is_string($stored) ? $stored : null);
     }
 
     /**

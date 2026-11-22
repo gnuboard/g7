@@ -1,4 +1,5 @@
 import { default as React } from 'react';
+import { MenuIconSpecData } from './MenuIcon';
 import { EditorAttrs } from '../../types';
 /**
  * 메뉴 아이템 인터페이스 (API 응답 구조)
@@ -11,7 +12,10 @@ export interface MenuItem {
     };
     slug: string;
     url?: string | null;
-    icon?: string;
+    /** 호환 문자열 아이콘 — FA 클래스일 때만 값, 이미지·SVG 는 null (#381) */
+    icon?: string | null;
+    /** 구조형 아이콘 (class·image·svg) — 있으면 icon 보다 우선 */
+    icon_spec?: MenuIconSpecData | null;
     children?: MenuItem[];
     is_active?: boolean;
     module_id?: number | null;

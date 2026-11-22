@@ -22,6 +22,7 @@ import { mergeQueryIntoHref, resolveRowExpression, useLocationSearch } from '../
 import { Div } from '../basic/Div';
 import { H3 } from '../basic/H3';
 import type { EditorAttrs } from '../../types';
+import type { MenuIconSpecData } from './MenuIcon';
 
 // G7Core 전역 객체 접근
 const getG7Core = () => (window as any).G7Core;
@@ -31,7 +32,9 @@ export interface MenuItem {
   name: string | Record<string, string>;
   slug: string;
   url: string;
-  icon: string;
+  icon: string | null;
+  /** 구조형 아이콘 (#381, 코어 메뉴만 — 이커머스 브랜드·카테고리 목록은 없음) */
+  icon_spec?: MenuIconSpecData | null;
   order: number;
   is_active: boolean;
   parent_id: number | null;
@@ -488,6 +491,7 @@ export const SortableMenuList: React.FC<SortableMenuListProps> = ({
     slug: item.slug,
     url: item.url,
     icon: item.icon,
+    iconSpec: item.icon_spec ?? null,
     isActive: item.is_active,
     isModuleMenu: !!item.module_id,
     moduleName: item.module ? getMenuLabel(item.module.name) : undefined,

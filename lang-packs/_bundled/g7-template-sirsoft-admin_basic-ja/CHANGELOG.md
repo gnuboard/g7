@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.2.1] - 2026-11-21
+
+### Added
+
+- 메뉴 관리 아이콘 칸의 탭·미리보기·직접 입력·업로드·SVG 코드 안내 문구(`admin.menus.icon_field.*`)와 확장 작업 결과 창의 「메뉴 아이콘」 단계 이름(`extensions.lifecycle_warnings.steps.menu_icon`)의 일본어 번역을 추가했습니다.
+
 ## [1.2.0] - 2026-11-20
 
 ### Added

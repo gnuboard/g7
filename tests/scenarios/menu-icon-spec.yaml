@@ -1,0 +1,72 @@
+feature: 관리자 메뉴 아이콘 — FA 클래스 · 이미지 · 인라인 SVG (#381)
+
+description: |
+  관리자 메뉴 아이콘은 FA 클래스 문자열만 받던 것을 세 형으로 넓힌다.
+    - class — FA 클래스 평문(`fas fa-users`, 공백 정규화). 레거시 문자열과 같은 바이트로 저장된다.
+    - image — 사이트 내부 경로(`/`로 시작) · 업로드 첨부(collection `menu_icons`) · 확장 패키지 상대경로(읽기 전용)
+    - svg — 인라인 SVG 코드(32KB, script·on*·외부 참조·style·image·use·a·애니메이션 거부). SVG 파일 업로드는 파일로
+      저장하지 않고 검사 뒤 인라인 코드로 돌려준다(첨부 SVG 는 다운로드로만 나가 사이드바에 보이지 않는다).
+
+  저장은 `menus.icon` 한 칸에 정규형 한 가지만 쓴다(class 평문 · image/svg 키 사전순 JSON, 표시용 url 제외).
+  같은 뜻이면 같은 바이트여야 사용자 수정 표식(user_overrides)과 확장 동기화 비교가 오탐하지 않는다.
+  응답은 호환 문자열 `icon`(class 일 때만) + 구조형 `icon_spec`(url 은 응답 시점에 마운트 접두·첨부 해시·확장 자산 URL)이다.
+
+  진입 경로(entry):
+    - api_create / api_update — 관리자 메뉴 API(검증 규칙 MenuIconSpecRule → MenuService). 서비스 직접 호출도 같은 경로다.
+    - extension_sync — 확장 선언(`getAdminMenus()`)을 ExtensionMenuSyncHelper 가 MenuIconDeclaration 으로 정규화
+    - core_seed — `config/core.php` menus 를 CoreAdminMenuSeeder 가 같은 정규화기로 시드
+    - upload — 아이콘 업로드 엔드포인트(MenuIconService::upload) — 래스터는 미바인딩 첨부, SVG 는 인라인 코드
+
+  icon_type 의 legacy_string 은 구조형이 아닌 문자열 입력(API 의 `icon` 필드 · 문자열 선언)이고, class 는 구조형
+  `{type:'class', value}` 입력이다.
+
+axes:
+  icon_type: [class, image_site, image_attachment, image_package, svg, legacy_string]
+  entry: [api_create, api_update, extension_sync, core_seed, upload]
+
+exclusions:
+  - { entry: upload, icon_type: [class, image_site, image_package, legacy_string], reason: "업로드는 래스터 첨부(image_attachment) 아니면 인라인 svg 만 만든다 — 클래스·경로·패키지 이미지는 업로드로 생기지 않는다" }
+  # core_seed × image_attachment 는 제외하지 않는다 — 재시드가 코어 메뉴 아래 운영자 메뉴(업로드 아이콘)를 FK 연쇄로 지우며
+  # 그 첨부를 정리하는 경로를 CoreAdminMenuSeederIconTest 가 잰다(6차 E-6c)
+
+effects:
+  - canonical_storage                  # 모든 입력이 정규형(class 평문 · 키 사전순 JSON, url 제외)으로 저장된다
+  - legacy_icon_exposed                # 응답 icon 은 class 일 때만 문자열, image·svg 는 null(외부 템플릿 호환)
+  - url_presented                      # image url 은 응답 시점에 만든다(마운트 접두 · 첨부 해시 · 확장 자산 URL)
+  - same_value_not_marked              # 같은 뜻의 재저장(구조형·공백만 다름)은 사용자 수정 표식이 아니다
+  - change_marked                      # 실제로 바꾼 아이콘은 icon 으로 표식된다(icon_spec 변환이 before_update 훅보다 앞선다)
+  - sync_respects_override             # 표식된 운영자 아이콘은 확장 동기화가 덮지 않고, 값이 같아지면 표식을 푼다
+  - attachment_bound                   # 저장한 업로드 첨부는 그 메뉴에 묶이고, 남의 메뉴·다른 컬렉션 첨부는 쓸 수 없다
+  - attachment_replaced_deleted        # 업로드 아이콘을 바꾸면 이전 첨부를 커밋 뒤에 지운다
+  - menu_delete_purges_attachment      # 메뉴 삭제(서비스·확장 정리 경로)는 묶인 첨부를 커밋 뒤에 지우고, 롤백이면 남긴다
+  - unsaved_upload_orphan              # 저장하지 않은 업로드는 미바인딩 첨부(고아 후보)로 남는다
+  - svg_upload_not_file                # SVG 파일 업로드는 첨부를 만들지 않고 인라인 svg 코드로 돌려준다
+  - unsafe_svg_rejected                # 위험한 SVG(스크립트·이벤트·외부 참조·style 등)·32KB 초과는 사유와 함께 거부된다
+  - external_url_rejected              # 외부 주소·data:·상위 탈출·SVG 확장자 이미지 경로는 거부된다
+  - activity_log_summary               # 활동 로그 icon 값은 요약(svg 는 해시·바이트 수)으로 기록된다
+  - icon_spec_precedes_icon            # icon 과 icon_spec 을 함께 보내면 icon_spec 이 이긴다
+  - legacy_null_keeps_structured_icon  # icon_spec 없이 온 icon:null(아이콘 칸 모르는 템플릿의 되돌림)은 이미지·SVG 아이콘·첨부를 지우지 않는다
+  - package_image_read_only            # 확장 선언 이미지는 생성에서 거부, 수정에서 그대로 되돌려 보낼 때만 통과
+  - unchanged_stored_icon_passes       # 수정에서 현재 저장값을 그대로 되돌려 보내면(icon_spec·icon 모두) 형식 검사 없이 통과 — 예전 API 로 저장된 비클래스 문자열 메뉴도 이름만 바꿔 저장된다
+  - upload_file_type_enforced          # 업로드는 크기·형식·내용(이름 바꾼 SVG)을 검사한다
+  - invalid_declaration_ignored_with_warning  # 잘못된 선언은 설치를 막지 않고 null + 경고 로그 + 라이프사이클 경고(menu_icon)
+
+test_files:
+  - tests/Unit/Support/MenuIcon/MenuIconSpecTest.php
+  - tests/Unit/Support/MenuIcon/MenuIconSvgValidatorTest.php
+  - tests/Unit/Support/MenuIcon/MenuIconDeclarationTest.php
+  - tests/Unit/Support/MenuIcon/MenuIconPresenterTest.php
+  - tests/Unit/Rules/MenuIconSpecRuleTest.php
+  - tests/Unit/Models/MenuIconUserOverridesTest.php
+  - tests/Unit/Extension/ExtensionMenuSyncHelperTest.php
+  - tests/Unit/Listeners/MenuUserOverridesListenerTest.php
+  - tests/Feature/Api/Admin/MenuControllerTest.php
+  - tests/Feature/Menu/MenuIconAttachmentLifecycleTest.php
+  - tests/Feature/Menu/CoreAdminMenuSeederIconTest.php
+  - tests/Feature/Extension/ExtensionSyncUserOverridesTest.php
+  - tests/Feature/Menu/MenuIconServiceTest.php
+
+notes:
+  - 관리자 메뉴 API 의 인증·권한·CRUD 계약은 admin-menu-api.yaml 이 소유한다(업로드 엔드포인트 권한 포함).
+  - class 선언 아이콘이 FA 6.4.0 이름인지는 font-icon-names.yaml(source=menu_declaration)이 잰다.
+  - 활동 로그 display 요약 메커니즘 자체는 activity-log-change-detector.yaml(display_meta_summarizes_values)이 잰다.

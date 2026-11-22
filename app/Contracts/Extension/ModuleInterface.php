@@ -160,7 +160,10 @@ interface ModuleInterface extends CacheableExtensionInterface
      * - name: 다국어 배열 ['ko' => '메뉴명', 'en' => 'Menu Name'] 또는 문자열 (역호환성)
      * - slug: 메뉴 고유 식별자 (string)
      * - url: 메뉴 URL (string)
-     * - icon: 아이콘 클래스 (string, optional)
+     * - icon: 아이콘 (optional) — `string`(Font Awesome 클래스, 예 'fas fa-users')
+     *   | `array{type: 'class'|'image'|'svg', value?: string, path?: string}`
+     *   (image·svg 의 path 는 모듈 루트 기준 상대경로, svg 는 설치 시 검사해 인라인 코드로 저장.
+     *   잘못된 선언은 설치를 막지 않고 아이콘 없이 저장 + 라이프사이클 경고 `menu_icon`)
      * - order: 메뉴 순서 (int, optional)
      * - children: 하위 메뉴 배열 (array, optional) - 동일한 구조를 따름
      *

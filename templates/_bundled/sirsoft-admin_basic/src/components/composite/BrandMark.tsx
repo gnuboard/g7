@@ -1,9 +1,8 @@
 import React, { useMemo } from 'react';
-// @ts-ignore - DOMPurify 타입 정의 없음
-import DOMPurify from 'dompurify';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import type { EditorAttrs } from '../../types';
+import { sanitizeSvgMarkup } from '../../support/svgSanitize';
 
 /**
  * 브랜드 마크 데이터
@@ -43,39 +42,6 @@ export interface BrandMarkProps {
 }
 
 /**
- * SVG 브랜드 로고 화이트리스트 sanitize 설정.
- *
- * 레이아웃 JSON 저장 검증은 SVG 문자열 내부의 위험 요소(onload/script/foreignObject 등)를
- * 검출하지 않으므로, XSS 방어는 전적으로 이 렌더 시점 sanitize 가 담당한다.
- * 브랜드 로고에 필요한 프리미티브 태그/속성만 허용하고, 스크립트·이벤트 핸들러·외부
- * 참조(foreignObject/image/use/href) 는 배제한다.
- */
-const SVG_SANITIZE_CONFIG: any = {
-  ALLOWED_TAGS: [
-    'svg', 'g', 'defs', 'title', 'desc',
-    'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'path',
-    'text', 'tspan',
-    'linearGradient', 'radialGradient', 'stop',
-    'clipPath',
-  ],
-  ALLOWED_ATTR: [
-    'xmlns', 'width', 'height', 'viewBox', 'role', 'aria-label', 'aria-hidden',
-    'fill', 'fill-opacity', 'fill-rule', 'stroke', 'stroke-width', 'stroke-linecap',
-    'stroke-linejoin', 'opacity', 'transform',
-    'x', 'y', 'x1', 'y1', 'x2', 'y2', 'cx', 'cy', 'r', 'rx', 'ry',
-    'd', 'points', 'width', 'height',
-    'text-anchor', 'dominant-baseline', 'font-family', 'font-size', 'font-weight',
-    'offset', 'stop-color', 'stop-opacity', 'gradientUnits', 'id', 'clip-path',
-  ],
-  // xlink:href / href / use / image / foreignObject 등 외부·스크립트 벡터 강제 차단.
-  FORBID_TAGS: ['script', 'foreignObject', 'image', 'use', 'a', 'style'],
-  FORBID_ATTR: [
-    'onload', 'onerror', 'onclick', 'onmouseover', 'onfocus', 'onblur',
-    'href', 'xlink:href',
-  ],
-};
-
-/**
  * 결제 브랜드 마크 컴포넌트 (관리자)
  *
  * 결제수단 카탈로그가 내려준 브랜드 시각정보를 데이터 기반으로 렌더한다.
@@ -106,11 +72,8 @@ export const BrandMark: React.FC<BrandMarkProps> = ({
 
   // SVG 로고를 화이트리스트 sanitize (렌더 시점 XSS 방어선).
   const sanitizedSvg = useMemo(() => {
-    if (!svg || svg.trim() === '') {
-      return '';
-    }
-
-    return DOMPurify.sanitize(svg, SVG_SANITIZE_CONFIG) as unknown as string;
+    // 설정은 메뉴 아이콘(MenuIcon)과 공용 — src/support/svgSanitize.ts
+    return sanitizeSvgMarkup(svg);
   }, [svg]);
 
   const dimensionStyle: React.CSSProperties = {

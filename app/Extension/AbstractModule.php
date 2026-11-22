@@ -488,6 +488,7 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      *
      * 기본적으로 빈 배열 반환
      * 모듈 개발자가 관리자 메뉴가 필요한 경우 오버라이드
+     * 항목의 icon 은 FA 클래스 문자열 또는 `['type' => 'class'|'image'|'svg', 'value'|'path' => …]` ({@see ModuleInterface::getAdminMenus()})
      *
      * @return array 관리자 메뉴 정의 배열
      */

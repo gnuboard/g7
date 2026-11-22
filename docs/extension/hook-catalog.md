@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (741)
+- [코어](#코어) (742)
 - [기본 제공 확장](#기본-제공-확장) (19)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -370,6 +370,7 @@
 | `core.menu.list_validation_rules` | filter | 2 |  |
 | `core.menu.update_order_validation_rules` | filter | 2 |  |
 | `core.menu.update_validation_rules` | filter | 2 |  |
+| `core.menu.upload_icon_validation_rules` | filter | 2 |  |
 | `core.menus.config` | filter | 1 |  |
 | `core.module.activate_validation_rules` | filter | 2 |  |
 | `core.module.deactivate_validation_rules` | filter | 2 |  |

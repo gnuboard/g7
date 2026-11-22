@@ -375,6 +375,19 @@ class Product extends Model
 | `boolean` | 참/거짓 | true/false |
 | `json` | JSON 데이터 | 객체/배열 |
 
+### 표시 요약 (`display`, 선택)
+
+값이 커서 변경 이력에 통째로 남기면 안 되는 필드는 `display` 에 callable 을 둡니다. ChangeDetector 는 **원값으로 비교를 끝낸 뒤** 기록하는 `old`·`new` 만 callable 의 반환값으로 바꿉니다(값이 같으면 항목 자체가 없다).
+
+```php
+'icon' => [
+    'label_key' => 'activity_log.fields.icon',
+    'type' => 'text',
+    // SVG 아이콘 코드(최대 32KB) 대신 `svg:1a2b3c4d(812B)` 같은 요약을 기록
+    'display' => [MenuIconSpec::class, 'activityLogSummary'],
+],
+```
+
 ### ChangeDetector 사용법
 
 ```php

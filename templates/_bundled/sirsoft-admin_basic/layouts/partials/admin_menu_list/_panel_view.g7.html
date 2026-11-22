@@ -26,8 +26,8 @@
           <div class="flex-start">
             <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.icon</span>
             <div class="flex-center gap-2">
-              <icon name="{{_global.selectedMenu?.icon || 'file'}}" class="text-base text-secondary"/>
-              <span class="text-primary text-sm">{{_global.selectedMenu?.icon}}</span>
+              <menu-icon data-type="composite" data-ref="view_menu_icon" spec="{{_global.selectedMenu?.icon_spec ?? null}}" icon="{{_global.selectedMenu?.icon ?? null}}" fallbackIcon="file" class="text-base text-secondary"/>
+              <span data-ref="view_menu_icon_label" class="text-primary text-sm break-all">{{_global.selectedMenu?.icon_spec?.type === 'svg' ? '$t:admin.menus.icon_field.type_svg' : (_global.selectedMenu?.icon_spec?.source === 'attachment' ? '$t:admin.menus.icon_field.uploaded_image' : (_global.selectedMenu?.icon_spec?.type === 'image' ? _global.selectedMenu?.icon_spec?.path : (_global.selectedMenu?.icon ?? '')))}}</span>
             </div>
           </div>
           <div class="flex-start">
@@ -120,7 +120,7 @@
                 <field name="name" value="{{_global.selectedMenu?.name}}"/>
                 <field name="slug" value="{{_global.selectedMenu?.slug}}"/>
                 <field name="url" value="{{_global.selectedMenu?.url}}"/>
-                <field name="icon" value="{{_global.selectedMenu?.icon}}"/>
+                <field name="icon_spec" value="{{_global.selectedMenu?.icon_spec ?? null}}"/>
                 <field name="parent_id" value="{{_global.selectedMenu?.parent_id}}"/>
                 <field name="extension_type" value="{{_global.selectedMenu?.extension_type}}"/>
                 <field name="extension_identifier" value="{{_global.selectedMenu?.extension_identifier}}"/>
