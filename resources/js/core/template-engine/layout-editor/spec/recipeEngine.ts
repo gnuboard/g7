@@ -619,34 +619,14 @@ export function applyRecipe(
     return applyNodeKey(node, effectiveApply, clearGroup ? undefined : value);
   }
 
-  // B안 className 시드.
+  // 디바이스 scope 의 className (engine-v1.98.0 — 종전 「B안 시드」 대체).
   //
-  // DynamicRenderer 의 responsive 머지는 props 얕은 머지(`{...base.props, ...override.props}`)
-  // 라, className 은 단일 문자열 키이므로 `responsive[bp].props.className` 이 base className 을
-  // **통째 대체**한다. 따라서 디바이스 scope 에서 className 토큰 하나만 적용해도 그 디바이스
-  // 폭에서 base 의 다른 토큰이 전부 사라진다. 이를 막기 위해, 디바이스 scope 에서 className 을
-  // **처음** 편집할 때(그 scope 컨테이너에 아직 className 이 없을 때) base className 전체를 시드해
-  // 둔 뒤 그 위에 토큰을 적용/제거한다(라이트·다크 토큰 모두 복사 — 그 디바이스에서 두 색 모드
-  // 가 다 유지되도록).
-  //
-  // 트레이드오프(명시적): 시드는 **편집 시점의 base className 을 복사**하는 것이라, 이후 base
-  // 를 바꿔도 디바이스 override 는 그 복사본을 유지한다(기본값 변경과 독립). 되돌리려면 편집기의
-  // "기본값으로 초기화"(디바이스 override 제거)를 사용한다. 엔진 머지 동작을 바꾸지 않아 기존
-  // responsive 사용처/사용자 페이지에는 영향이 없다.
-  const seedClassName =
-    scope.breakpoint !== 'base' && touchesClassToken
-      ? (() => {
-          const base = (node.props ?? {}) as Record<string, unknown>;
-          return typeof base.className === 'string' ? base.className : undefined;
-        })()
-      : undefined;
-
+  // `withScopedProps` 가 mutator 에 그 폭의 실효 className(기본 + 구간 classMerge)을 넘기고, 편집 뒤에는 기본 대비
+  // 바뀐 토큰만 `responsive[bp].classMerge` 로 저장한다. 종전에는 처음 편집할 때 기본 className 전체를 구간
+  // `props.className` 에 복사(시드)해 두었다 — 엔진이 구간 className 을 통째로 교체했기 때문이다. 그 복사본은 편집
+  // 시점에 묶여 기본값을 나중에 바꿔도 따라가지 않았고, 운영자 화면에도 같은 문자열 반복이 쌓였다(#399 F10).
+  // 이미 `props.className` 을 가진 구간은 그 값을 기준으로 고치고 같은 자리에 쓴다(styleScope 참고).
   return withScopedProps(node, scope, (props, style) => {
-    // B안 시드 — scope 컨테이너에 className 이 아직 없고 base 에 className 이 있으면 복사.
-    if (seedClassName !== undefined && typeof props.className !== 'string') {
-      props.className = seedClassName;
-    }
-
     if (clearGroup) {
       // group 토큰 제거 (classToken 계열) — 다크면 `dark:` 토큰만 대상
       const isGroupToken = buildGroupTokenMatcher(normalized, dark);
@@ -965,10 +945,10 @@ export function reverseResolve(
   const baseStyle = styleOf(baseProps);
   const baseResolved = resolveFromContainer(normalized, baseProps, baseStyle, dark);
 
-  // B안 시드 보정:
-  // 디바이스 scope 컨테이너에는 className 편집 시 base className 전체가 시드된다(얕은 머지
-  // 대응). 따라서 scope 컨테이너에 그 컨트롤 group 토큰이 "있다"는 사실만으로는 사용자가
-  // 그 디바이스에서 명시 변경했다고 볼 수 없다 — 시드된 base 값일 수 있다. 이를 구분해 D6
+  // 상속값 보정:
+  // 디바이스 scope 컨테이너의 className 은 base 를 이어받은 값이다(통째 교체 구간은 base 전체 복사본, 덧붙이기
+  // 구간은 base + classMerge 실효값). 따라서 scope 컨테이너에 그 컨트롤 group 토큰이 "있다"는 사실만으로는 사용자가
+  // 그 디바이스에서 명시 변경했다고 볼 수 없다 — 이어받은 base 값일 수 있다. 이를 구분해 D6
   // placeholder 를 정확히 유지하려면, **scope 값이 base 값과 같으면 시드(또는 상속)로 보고
   // placeholder 취급**(흐릿), 다를 때만 진짜 override 로 본다. 이로써 시드된 base 토큰들은
   // 전부 placeholder 로 흐려지고, 사용자가 실제 바꾼 컨트롤만 진하게 표시된다.

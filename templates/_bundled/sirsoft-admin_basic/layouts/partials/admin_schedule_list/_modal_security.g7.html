@@ -70,7 +70,7 @@
               <div class="flex-between gap-2">
                 <div class="min-w-0">
                   <code class="text-xs font-mono text-gray-800 dark:text-gray-200 break-all">{{item.command}}</code>
-                  <span data-if="{{(item.options ?? []).length &gt; 0}}" class="block text-xs font-mono text-gray-500 dark:text-gray-400 break-all">{{(item.options ?? []).map(o => '--' + o).join(' ')}}</span>
+                  <span data-if="{{(item.options ?? []).length &gt; 0}}" class="block text-xs font-mono text-muted break-all">{{(item.options ?? []).map(o => '--' + o).join(' ')}}</span>
                 </div>
                 <div class="flex-center gap-1 flex-shrink-0">
                   <badge data-type="composite" data-if="{{item.denied === true}}" color="red" size="sm" text="$t:admin.schedules.security.denied"/>

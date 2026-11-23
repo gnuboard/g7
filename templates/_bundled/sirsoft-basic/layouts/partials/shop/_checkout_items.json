@@ -9,12 +9,12 @@
     "responsive": {
         "portable": {
             "props": {
-                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                "className": "card-plain p-4"
             }
         }
     },
     "props": {
-        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
+        "className": "card-plain p-6"
     },
     "children": [
         {
@@ -140,7 +140,7 @@
                                                             "props": {
                                                                 "name": "image",
                                                                 "size": "lg",
-                                                                "className": "text-gray-500 dark:text-gray-400"
+                                                                "className": "text-muted"
                                                             }
                                                         }
                                                     ]
@@ -196,12 +196,12 @@
                                             "responsive": {
                                                 "portable": {
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                                        "className": "text-xs text-muted mt-0.5"
                                                     }
                                                 }
                                             },
                                             "props": {
-                                                "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                                                "className": "text-sm text-muted mt-1"
                                             },
                                             "text": "{{Object.entries(item.product_option?.option_values_localized ?? {}).map(([k, v]) => k + ': ' + v).join(', ')}}"
                                         },
@@ -223,7 +223,7 @@
                                                     "name": "P",
                                                     "props": {
                                                         "data-testid": "checkout-item-additional-option",
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-muted"
                                                     },
                                                     "text": "{{addOpt.group_name ? addOpt.group_name + ': ' : ''}}{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}"
                                                 }
@@ -258,7 +258,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-muted"
                                                     },
                                                     "text": "{{checkoutData.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.policy_name}}"
                                                 },
@@ -266,7 +266,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-muted"
                                                     },
                                                     "text": "/"
                                                 },
@@ -306,7 +306,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400 line-through"
+                                                        "className": "text-xs text-muted line-through"
                                                     },
                                                     "text": "{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.list_price_formatted ?? ''}}"
                                                 },
@@ -338,7 +338,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400 line-through"
+                                                        "className": "text-xs text-muted line-through"
                                                     },
                                                     "text": "{{currency[1]?.formatted}}"
                                                 }
@@ -387,7 +387,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-muted"
                                                     },
                                                     "text": "{{currency[1]?.formatted}}"
                                                 }
@@ -487,9 +487,7 @@
                                                     "name": "Select",
                                                     "responsive": {
                                                         "portable": {
-                                                            "props": {
-                                                                "className": "w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500"
-                                                            }
+                                                            "classMerge": "w-full py-1.5"
                                                         }
                                                     },
                                                     "actions": [
@@ -571,9 +569,7 @@
                                                     "if": "{{_local.checkout?.item_coupons?.[item.product_option_id]?.[0]}}",
                                                     "responsive": {
                                                         "portable": {
-                                                            "props": {
-                                                                "className": "w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500"
-                                                            }
+                                                            "classMerge": "w-full py-1.5"
                                                         }
                                                     },
                                                     "actions": [
@@ -658,9 +654,7 @@
                                     "name": "Div",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "flex flex-col items-end justify-start flex-shrink-0 ml-2"
-                                            }
+                                            "classMerge": "ml-2"
                                         }
                                     },
                                     "props": {
@@ -672,7 +666,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             },
                                             "text": "$t:shop.cart.subtotal"
                                         },
@@ -692,7 +686,7 @@
                                             "name": "Div",
                                             "if": "{{(item.product_coupon_discount_amount ?? 0) > 0}}",
                                             "props": {
-                                                "className": "text-sm text-gray-500 dark:text-gray-400 line-through"
+                                                "className": "text-sm text-muted line-through"
                                             },
                                             "text": "{{item.multi_currency_subtotal?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_formatted}}"
                                         },
@@ -723,7 +717,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-muted"
                                                     },
                                                     "text": "{{subtotalCurrency[1]?.formatted}}"
                                                 }

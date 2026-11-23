@@ -6,7 +6,7 @@
       <h3 class="board-section-heading">$t:sirsoft-board.admin.posts.detail.comments_title|count={{post?.data?.comment_count ?? 0}}</h3>
     </div>
     <div data-ref="comments_card">
-      <div data-ref="comments_list_container" data-if="{{(post?.data?.comment_count ?? 0) > 0}}" class="">
+      <div data-ref="comments_list_container" data-if="{{(post?.data?.comment_count ?? 0) > 0}}">
         <div data-ref="comment_wrapper_{{idx}}" data-each="comment, idx in post?.data?.comments ?? []">
           <div data-ref="comment_visible_{{idx}}" data-if="{{(comment?.depth ?? 0) === 0 || (_local.collapsedReplies?.[$computed.commentRootMap?.[comment.id]] === false)}}">
             <div data-ref="comment_item_{{idx}}" class="board:border-b board:border-gray-200 board:dark:border-gray-700 board:px-4 board:py-3 board:hover:bg-gray-50 board:dark:hover:bg-gray-700/50 board:transition-colors">
@@ -21,7 +21,7 @@
               </prop>
               <div class="board:p-3 board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg board:border board:border-gray-200 board:dark:border-gray-700">
                 <div class="board-flex-start board:gap-2 board:mb-2">
-                  <icon name="turn-up" class="board:text-sm board:rotate-90 board:mt-1 board:text-gray-500 board:dark:text-gray-400"/>
+                  <icon name="turn-up" class="board:text-sm board:rotate-90 board:mt-1 board-text-muted"/>
                   <span class="board-text-label">$t:sirsoft-board.admin.posts.detail.replying_to|name={{comment.author.name || $t('sirsoft-board.admin.posts.unknown_author')}}</span>
                 </div>
                 <textarea value="{{_local.reply_comment_content ?? ''}}" aria-label="$t:sirsoft-board.admin.posts.detail.replying_to|name={{comment.author.name || $t('sirsoft-board.admin.posts.unknown_author')}}" placeholder="$t:sirsoft-board.admin.posts.detail.reply_placeholder" :rows="2" disabled="{{post?.data?.abilities?.can_write_comments !== true}}" class="board:w-full board:px-3 board:py-2 board:text-sm board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800 board:mb-2 board:disabled:opacity-50 board:disabled:cursor-not-allowed">
@@ -38,7 +38,7 @@
                     </on>
                     <span>$t:sirsoft-board.admin.posts.detail.cancel</span>
                   </button>
-                  <button type="button" class="board:px-3 board:py-1.5 board:text-sm board:bg-blue-600 board:text-white board:rounded-lg board:hover:bg-blue-700 board:dark:bg-blue-600 board:dark:hover:bg-blue-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed" disabled="{{post?.data?.abilities?.can_write_comments !== true || _local.replySubmitting === true}}">
+                  <button type="button" class="board-btn board-btn-primary board-btn-sm" disabled="{{post?.data?.abilities?.can_write_comments !== true || _local.replySubmitting === true}}">
                     <on type="click">
                       <!-- 답글 등록 — 부모 댓글의 id 와 그보다 한 단 깊은 깊이를 함께 보낸다. 성공하면 글 전체를 다시 읽어 새 답글이 제자리(부모 아래)에 끼워지게 한다 -->
                       <sequence if="{{_local.replySubmitting !== true}}">

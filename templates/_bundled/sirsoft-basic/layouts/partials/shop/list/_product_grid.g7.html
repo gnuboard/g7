@@ -13,10 +13,10 @@
     <!-- 빈 상태 -->
     <div data-if="{{products !== undefined &amp;&amp; (products?.data?.data ?? []).length === 0}}" class="flex flex-col items-center justify-center py-20 px-4 my-16">
       <div class="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-5">
-        <icon name="search" size="2x" class="text-gray-500 dark:text-gray-400"/>
+        <icon name="search" size="2x" class="text-muted"/>
       </div>
       <p class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-1">$t:shop.no_products</p>
-      <p class="text-sm text-gray-500 dark:text-gray-400">$t:shop.no_search_results</p>
+      <p class="text-sm text-muted">$t:shop.no_search_results</p>
     </div>
     <!-- 쪽 번호 — 다른 목록과 같은 쪽 번호 컴포넌트(번호마다 실제 링크). 총 건수가 상한에 걸리면 last_page 가 null 로 온다.
          그때 last_page 만 보고 판단하면 쪽 이동이 통째로 사라지므로 has_more_pages 와 현재 쪽도 함께 본다 -->

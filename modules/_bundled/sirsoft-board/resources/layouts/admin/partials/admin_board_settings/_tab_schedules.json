@@ -188,7 +188,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "board:block board:text-xs board:text-gray-500 board:dark:text-gray-400 board:font-mono board:mt-0.5"
+                                                    "className": "board:block board:text-xs board-text-muted board:font-mono board:mt-0.5"
                                                 },
                                                 "text": "{{row.name}}"
                                             },
@@ -197,7 +197,7 @@
                                                 "name": "Span",
                                                 "if": "{{row.description_localized}}",
                                                 "props": {
-                                                    "className": "board:block board:text-xs board:text-gray-500 board:dark:text-gray-400 board:mt-0.5"
+                                                    "className": "board:block board:text-xs board-text-muted board:mt-0.5"
                                                 },
                                                 "text": "{{row.description_localized}}"
                                             },
@@ -245,7 +245,7 @@
                                         "name": "Span",
                                         "if": "{{row.frequency !== 'everyThirtySeconds'}}",
                                         "props": {
-                                            "className": "board:block board:text-xs board:text-gray-500 board:dark:text-gray-400 board:font-mono board:mt-0.5"
+                                            "className": "board:block board:text-xs board-text-muted board:font-mono board:mt-0.5"
                                         },
                                         "text": "{{row.expression}}"
                                     }

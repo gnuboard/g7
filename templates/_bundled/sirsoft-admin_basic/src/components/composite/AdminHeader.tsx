@@ -142,7 +142,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
             </Div>
             <Div className="max-h-96 overflow-y-auto">
               {notifications.length === 0 ? (
-                <Div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                <Div className="px-4 py-8 text-center text-muted">
                   <Span>{t('common.no_notifications')}</Span>
                 </Div>
               ) : (
@@ -221,7 +221,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
           <Div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
             <Div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
               <Div className="font-semibold text-gray-900 dark:text-white">{userShownName}</Div>
-              <Div className="text-gray-500 dark:text-gray-400 text-sm">{user.email}</Div>
+              <Div className="text-muted text-sm">{user.email}</Div>
             </Div>
             <Div className="py-2">
               <Button

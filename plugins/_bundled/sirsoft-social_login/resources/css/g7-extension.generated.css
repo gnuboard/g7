@@ -50,6 +50,14 @@
     color: oklch(87.2% .01 258.338);
   }
 
+  .sl-text-muted {
+    color: oklch(55.1% .027 264.364);
+  }
+
+  .sl-text-muted:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(70.7% .022 261.325);
+  }
+
   .sl-text-label {
     font-size: .875rem;
     line-height: var(--tw-leading,calc(1.25 / .875));
@@ -783,6 +791,20 @@
 
   .sl\:\[\&_\.btn\]\:w-full .sl-btn {
     width: 100%;
+  }
+
+  .sl-user-form-label {
+    margin-bottom: calc(.25rem*1);
+    font-size: .875rem;
+    line-height: var(--tw-leading,calc(1.25/.875));
+    --tw-font-weight: 500;
+    font-weight: 500;
+    color: oklch(37.3% .034 259.733);
+    display: block;
+  }
+
+  .sl-user-form-label:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(87.2% .01 258.338);
   }
 }
 

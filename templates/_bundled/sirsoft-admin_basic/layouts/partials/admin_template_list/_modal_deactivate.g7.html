@@ -16,9 +16,9 @@
       <p class="mt-3 text-body font-medium">$t:admin.extension_integrations.integrated_by_label</p>
       <div class="mt-2 row-stack">
         <div data-each="item in _global.selectedTemplate?.integrated_by ?? []" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-          <icon data-if="{{item.type === 'module'}}" name="cube" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
-          <icon data-if="{{item.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
-          <icon data-if="{{item.type === 'template'}}" name="palette" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+          <icon data-if="{{item.type === 'module'}}" name="cube" class="text-base text-muted" aria-hidden="true"/>
+          <icon data-if="{{item.type === 'plugin'}}" name="puzzle-piece" class="text-base text-muted" aria-hidden="true"/>
+          <icon data-if="{{item.type === 'template'}}" name="palette" class="text-base text-muted" aria-hidden="true"/>
           <span class="text-body break-words">{{item.name || item.identifier}} ({{item.identifier}})</span>
         </div>
       </div>
@@ -34,7 +34,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isTemplateDeactivating}}">
+      <button type="button" class="flex-center btn btn-primary" disabled="{{_global.isTemplateDeactivating}}">
         <on type="click">
           <!-- 비활성 실행 — 목록과 확장 번들을 함께 갱신한다.
                활성 창과 달리 화면을 다시 읽지 않는다(끄는 쪽은 지금 보는 화면을 갈아치우지 않는다). -->

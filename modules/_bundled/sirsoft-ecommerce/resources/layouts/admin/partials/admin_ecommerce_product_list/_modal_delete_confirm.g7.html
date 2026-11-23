@@ -19,14 +19,14 @@
         <p class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.product.modal.delete.related_images|count={{_global.deleteProduct?.relatedData?.images ?? 0}}</p>
         <p class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.product.modal.delete.related_options|count={{_global.deleteProduct?.relatedData?.options ?? 0}}</p>
         <p class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.product.modal.delete.related_additional_options|count={{_global.deleteProduct?.relatedData?.additionalOptions ?? 0}}</p>
-        <alert data-type="composite" type="warning" message="$t:sirsoft-ecommerce.admin.product.modal.delete.warning_message" class=""/>
+        <alert data-type="composite" type="warning" message="$t:sirsoft-ecommerce.admin.product.modal.delete.warning_message"/>
       </div>
     </div>
     <div data-if="{{_global.deleteProduct?.canDelete === false}}">
       <alert data-type="composite" type="error" title="$t:sirsoft-ecommerce.admin.product.modal.delete.cannot_delete_title" message="{{_global.deleteProduct?.reason}}"/>
     </div>
     <footer>
-      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isProductDeleting}}">
+      <button type="button" class="ecommerce-btn ecommerce-btn-secondary" disabled="{{_global.isProductDeleting}}">
         <on type="click">
           <close-modal/>
         </on>

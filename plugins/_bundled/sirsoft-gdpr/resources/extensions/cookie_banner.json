@@ -238,7 +238,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "disabled": "{{!!_global.gdprBannerSubmittingAction}}",
-                                                "className": "gdpr:px-2 gdpr:py-2 gdpr:text-sm gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:underline gdpr:hover:no-underline gdpr:hover:text-gray-700 gdpr:dark:hover:text-gray-200 gdpr:font-medium gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed gdpr:inline-flex gdpr:items-center gdpr:bg-transparent"
+                                                "className": "gdpr:px-2 gdpr:py-2 gdpr:text-sm gdpr-text-muted gdpr:underline gdpr:hover:no-underline gdpr:hover:text-gray-700 gdpr:dark:hover:text-gray-200 gdpr:font-medium gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed gdpr:inline-flex gdpr:items-center gdpr:bg-transparent"
                                             },
                                             "children": [
                                                 {
@@ -508,7 +508,7 @@
                             "name": "Div",
                             "if": "{{!!gdprPublicSettings?.data?.legal_entity_name || !!gdprPublicSettings?.data?.data_storage_location}}",
                             "props": {
-                                "className": "gdpr:mt-3 gdpr:pt-2 gdpr:border-t gdpr:border-gray-100 gdpr:dark:border-gray-700 gdpr:text-xs gdpr:text-gray-500 gdpr:dark:text-gray-400"
+                                "className": "gdpr:mt-3 gdpr:pt-2 gdpr:border-t gdpr:border-gray-100 gdpr:dark:border-gray-700 gdpr:text-xs gdpr-text-muted"
                             },
                             "children": [
                                 {
@@ -609,7 +609,7 @@
                                                             "name": "P",
                                                             "if": "{{!!$localized(category?.description)}}",
                                                             "props": {
-                                                                "className": "gdpr:mt-1 gdpr:text-xs gdpr:leading-relaxed gdpr:text-gray-500 gdpr:dark:text-gray-400"
+                                                                "className": "gdpr:mt-1 gdpr:text-xs gdpr:leading-relaxed gdpr-text-muted"
                                                             },
                                                             "text": "{{$localized(category?.description)}}"
                                                         }

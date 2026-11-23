@@ -10,12 +10,12 @@
     "responsive": {
         "portable": {
             "props": {
-                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                "className": "card-plain p-4"
             }
         }
     },
     "props": {
-        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
+        "className": "card-plain p-6"
     },
     "children": [
         {
@@ -112,7 +112,7 @@
                     "name": "Div",
                     "if": "{{(checkoutData.data.mileage?.max_usable ?? 0) > 0}}",
                     "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400 mb-2"
+                        "className": "text-xs text-muted mb-2"
                     },
                     "text": "$t:shop.checkout.mileage_max_usable|amount={{(checkoutData.data.mileage?.max_usable ?? 0).toLocaleString()}}"
                 },
@@ -129,9 +129,7 @@
                             "name": "Input",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
-                                    }
+                                    "classMerge": "px-3 text-sm"
                                 }
                             },
                             "actions": [
@@ -183,9 +181,7 @@
                             "name": "Button",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"
-                                    }
+                                    "classMerge": "px-3 text-sm"
                                 }
                             },
                             "actions": [
@@ -271,7 +267,7 @@
                     "name": "Div",
                     "if": "{{(checkoutData.data.mileage?.available ?? 0) === 0}}",
                     "props": {
-                        "className": "mt-2 text-xs text-gray-500 dark:text-gray-400"
+                        "className": "mt-2 text-xs text-muted"
                     },
                     "text": "$t:shop.checkout.mileage_insufficient"
                 }

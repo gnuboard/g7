@@ -9,17 +9,17 @@
         <div class="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
           <img data-if="{{$parent._local.reviewTarget?.thumbnail_url}}" src="{{$parent._local.reviewTarget?.thumbnail_url ?? ''}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{$parent._local.reviewTarget?.product_name ?? ''}}" class="w-full h-full object-cover"/>
           <div data-if="{{!$parent._local.reviewTarget?.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
-            <icon name="image" size="lg" class="text-gray-500 dark:text-gray-400"/>
+            <icon name="image" size="lg" class="text-muted"/>
           </div>
         </div>
         <div class="flex-1 min-w-0">
           <p class="text-sm font-medium text-gray-900 dark:text-white line-clamp-1">{{$parent._local.reviewTarget?.product_name ?? ''}}</p>
-          <p data-if="{{$parent._local.reviewTarget?.option_name}}" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{$parent._local.reviewTarget?.option_name ?? ''}}</p>
+          <p data-if="{{$parent._local.reviewTarget?.option_name}}" class="text-xs text-muted mt-0.5">{{$parent._local.reviewTarget?.option_name ?? ''}}</p>
         </div>
       </div>
       <!-- 별점 선택 — _local에 저장 (취소 모달 패턴과 동일) -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:mypage.order_detail.review_modal.rating_label</label>
+        <label class="form-label mb-2">$t:mypage.order_detail.review_modal.rating_label</label>
         <div class="flex gap-1">
           <button aria-label="$t:mypage.order_detail.review_modal.rating_star|count=1" aria-pressed="{{(_local.reviewRating ?? 5) === 1}}" type="button" class="p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 1 ? 'text-yellow-700 dark:text-yellow-600' : 'text-gray-500 dark:text-gray-500'}}">
             <on type="click">
@@ -60,7 +60,7 @@
       </div>
       <!-- 리뷰 내용 — _local에 저장 (취소 모달 패턴과 동일) -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:mypage.order_detail.review_modal.content_label</label>
+        <label class="form-label mb-2">$t:mypage.order_detail.review_modal.content_label</label>
         <textarea aria-label="$t:mypage.order_detail.review_modal.content_label" value="{{_local.reviewContent ?? ''}}" placeholder="$t:mypage.order_detail.review_modal.content_placeholder" :rows="5" :maxLength="2000" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none">
           <on type="input">
             <!-- 본문. 글자수 상한은 컴포넌트가 막고 아래 카운터가 남은 수를 보여 준다 -->
@@ -68,13 +68,13 @@
           </on>
         </textarea>
         <div class="flex justify-between mt-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.order_detail.review_modal.content_min_length</span>
-          <span class="text-xs text-gray-500 dark:text-gray-400">{{(_local.reviewContent ?? '').length}}/2000</span>
+          <span class="text-xs text-muted">$t:mypage.order_detail.review_modal.content_min_length</span>
+          <span class="text-xs text-muted">{{(_local.reviewContent ?? '').length}}/2000</span>
         </div>
       </div>
       <!-- 이미지 첨부 (리뷰 정책 max_images=0 이면 숨김) -->
       <div data-if="{{(reviewSettings?.data?.review_settings?.max_images ?? 5) > 0}}">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:mypage.order_detail.review_modal.image_label|count={{reviewSettings?.data?.review_settings?.max_images ?? 5}}</label>
+        <label class="form-label mb-2">$t:mypage.order_detail.review_modal.image_label|count={{reviewSettings?.data?.review_settings?.max_images ?? 5}}</label>
         <!-- 첨부 업로더 확장점(선택형) — 업로더는 파일을 고르기만 하고, 리뷰 등록 요청에 실려 함께 올라간다. 대체 업로더도 onFilesChange 에
              { target: { files } } 모양을 넘겨야 한다. 정책 값은 아래 기본 업로더와 같다. -->
         <extension-point name="attachment_uploader" data-ref="review_images_uploader_slot" class="contents">
@@ -132,7 +132,7 @@
           $t:common.cancel
         </button>
         <!-- 등록 버튼 — 데이터를 params로 핸들러에 직접 전달 (취소 모달 패턴과 동일) -->
-        <button type="button" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_local.isSubmittingReview === true}}">
+        <button type="button" class="flex-1 flex btn btn-accent gap-2 py-2.5 cursor-pointer" disabled="{{_local.isSubmittingReview === true}}">
           <on type="click">
             <action handler="sirsoft-ecommerce.submitReview" orderId="{{$parent._local.reviewTarget?.orderId ?? ''}}" optionId="{{$parent._local.reviewTarget?.id ?? ''}}" productId="{{$parent._local.reviewTarget?.product_id ?? ''}}" rating="{{_local.reviewRating ?? 5}}" content="{{_local.reviewContent ?? ''}}" images="{{_local.reviewImages ?? []}}"/>
           </on>

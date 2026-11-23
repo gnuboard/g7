@@ -13,6 +13,7 @@ import { describe, it, expect } from 'vitest';
 import { actionsOf, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 import partial from '../../layouts/partials/member/_member_fields.json';
+import { expandSemanticClassName, expandSemanticTokens } from './support/semanticClasses';
 
 type Node = {
   id?: string;
@@ -203,7 +204,9 @@ describe('회원 항목 반복 조각', () => {
     };
     for (const notice of Object.values(notices)) {
       expect(notice).toBeDefined();
-      expect(notice.props?.className).toContain('text-xs text-gray-500 dark:text-gray-400');
+      // #399 R-1 — 보조 글자색 묶음이 의미 클래스 `text-muted` 로 바뀌었다. 템플릿 CSS 정의까지 펼쳐 같은 크기·색·다크 짝을 확인한다
+      expect(String(notice.props?.className).split(/\s+/)).toContain('text-muted');
+      expect(expandSemanticTokens(notice.props?.className)).toEqual(expect.arrayContaining(['text-xs', 'text-gray-500', 'dark:text-gray-400']));
     }
 
     const shown = (field: Record<string, unknown>) =>
@@ -352,7 +355,8 @@ describe('회원 항목 반복 조각', () => {
    */
   it('글자색, 테두리, 배경 클래스에 다크 짝이 있다', () => {
     for (const node of nodes) {
-      const className = String(node.props?.className ?? '');
+      // #399 R-1 — 의미 클래스(`text-muted`, `form-error` 등)는 템플릿 CSS 정의(다크 짝 포함)까지 펼쳐 본다
+      const className = expandSemanticClassName(node.props?.className as string | undefined);
       if (/\btext-(gray|red)-\d+/.test(className)) expect(className).toMatch(/dark:text-/);
       if (/\bbg-white\b/.test(className)) expect(className).toMatch(/dark:bg-/);
       if (/\bborder-gray-\d+/.test(className)) expect(className).toMatch(/dark:border-/);

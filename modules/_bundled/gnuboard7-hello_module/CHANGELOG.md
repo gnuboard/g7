@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [0.3.1] - 2026-11-22
+
+### Changed
+
+- 메모 작성 화면 입력칸의 빈 class 속성을 지웠습니다. 화면 모양은 같습니다.
+
 ## [0.3.0] - 2026-11-20
 
 ### Added

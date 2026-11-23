@@ -26,15 +26,15 @@
           </div>
           <extension-badge data-type="composite" type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
         </div>
-        <span data-ref="board_search_history_count" class="board:block board:text-xs board:text-gray-500 board:dark:text-gray-400 board:mb-2">$t:sirsoft-board.admin.users.search_history.count_unit|count={{((user?.data?.search_history?.scopes ?? {})['sirsoft-board.posts']?.items ?? []).length}}</span>
-        <p data-ref="board_search_history_empty" data-if="{{((user?.data?.search_history?.scopes ?? {})['sirsoft-board.posts']?.items ?? []).length === 0}}" class="board:flex board:items-center board:gap-2 board:p-4 board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg board:text-sm board:text-gray-500 board:dark:text-gray-400">
+        <span data-ref="board_search_history_count" class="board:block board:text-xs board-text-muted board:mb-2">$t:sirsoft-board.admin.users.search_history.count_unit|count={{((user?.data?.search_history?.scopes ?? {})['sirsoft-board.posts']?.items ?? []).length}}</span>
+        <p data-ref="board_search_history_empty" data-if="{{((user?.data?.search_history?.scopes ?? {})['sirsoft-board.posts']?.items ?? []).length === 0}}" class="board:flex board:items-center board:gap-2 board:p-4 board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg board:text-sm board-text-muted">
           <icon name="circle-info" class="board:text-base board:flex-shrink-0"/>
           <span>$t:sirsoft-board.admin.users.search_history.empty</span>
         </p>
         <ul data-ref="board_search_history_list" data-if="{{((user?.data?.search_history?.scopes ?? {})['sirsoft-board.posts']?.items ?? []).length > 0}}" class="board:p-3 board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg board:divide-y board:divide-gray-200 board:dark:divide-gray-700">
           <li data-each="history in (user?.data?.search_history?.scopes ?? {})['sirsoft-board.posts']?.items ?? []" class="board:flex board:items-center board:justify-between board:gap-3 board:py-1.5">
             <span class="board:text-sm board:text-gray-900 board:dark:text-white board:break-all board-break-all">{{history.keyword}}</span>
-            <span class="board:text-xs board:text-gray-500 board:dark:text-gray-400 board:whitespace-nowrap">{{history.searched_at ?? '-'}}</span>
+            <span class="board:text-xs board-text-muted board:whitespace-nowrap">{{history.searched_at ?? '-'}}</span>
           </li>
         </ul>
       </div>

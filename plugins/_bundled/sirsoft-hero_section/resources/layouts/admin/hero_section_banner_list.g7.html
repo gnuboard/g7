@@ -219,9 +219,9 @@
           <span class="hs:ml-1 hs:tabular-nums">{{banners?.data?.statistics?.positions?.[tab.key] ?? ''}}</span>
         </a>
       </nav>
-      <p class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:mb-6">$t:sirsoft-hero_section.admin.position.hint</p>
+      <p class="hs:text-xs hs-text-muted hs:mb-6">$t:sirsoft-hero_section.admin.position.hint</p>
       <!-- 위치 설정을 받는 중·받지 못함 — 이 응답 전에는 지금 위치가 동적인지 몰라 화면 틀을 그리지 않는다 -->
-      <p data-ref="positions_loading" data-if="{{!_computed.positionsReady &amp;&amp; !_computed.positionsFailed &amp;&amp; !_computed.positionsMissing}}" role="status" class="hs:py-6 hs:text-center hs:text-sm hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.position.loading</p>
+      <p data-ref="positions_loading" data-if="{{!_computed.positionsReady &amp;&amp; !_computed.positionsFailed &amp;&amp; !_computed.positionsMissing}}" role="status" class="hs:py-6 hs:text-center hs:text-sm hs-text-muted">$t:sirsoft-hero_section.admin.position.loading</p>
       <div data-ref="positions_failed" data-if="{{_computed.positionsFailed}}" role="alert" class="hs-alert-warning hs:mb-6">
         <icon name="triangle-exclamation" class="hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"/>
         <p class="hs:text-sm hs:text-yellow-800 hs:dark:text-yellow-200">$t:sirsoft-hero_section.admin.position.load_failed</p>
@@ -280,7 +280,7 @@
             </sequence>
           </on>
         </searchable-dropdown>
-        <span data-ref="target_count" data-if="{{!!_computed.currentTarget}}" class="hs:text-sm hs:text-gray-500 hs:dark:text-gray-400 hs:tabular-nums">$t:sirsoft-hero_section.admin.target.count|count={{_computed.placementCount}}</span>
+        <span data-ref="target_count" data-if="{{!!_computed.currentTarget}}" class="hs:text-sm hs-text-muted hs:tabular-nums">$t:sirsoft-hero_section.admin.target.count|count={{_computed.placementCount}}</span>
       </div>
       <!-- 대상을 고르기 전 — 목록·미리보기는 비어 있고 등록·순서 변경은 막혀 있다. 왜 비었는지 알린다 -->
       <div data-ref="target_pick_first" data-if="{{_computed.isDynamic &amp;&amp; !_computed.currentTarget}}" role="status" class="hs-alert-info hs:mb-6">
@@ -307,14 +307,15 @@
         <!-- 대상 목록 — 동적 위치에서 대상을 고르기 전. 배너가 있는 대상을 최근 수정 순으로, 전체·노출 중 건수와 관리 진입·사이트 주소를 보인다.
           지워진 대상도 배너가 남았으면 「없는 대상」으로 남아 관리로 들어간다(사이트에 나가지 않으므로 노출 중은 0). 위치 전체 배너 수와 대상 수는 머리에 따로 적는다.
           배너가 없어도 대상 설정이 남은 대상은 그 뒤에 건수 0으로 이어 보여(지워진 대상 포함) 들어가 되돌릴 수 있게 하고, 대상 설정이 있는 행에는 표식을 붙인다.
-          「관리」 주소는 저장 키를 인코딩해 싣고(외부 확장 키에 `&`·`=` 가 있어도 갈라지지 않게) 지금 쪽을 이고 간다 -->
+          「관리」 주소는 저장 키를 인코딩해 싣고(외부 확장 키에 `&`·`=` 가 있어도 갈라지지 않게) 지금 쪽을 이고 간다
+          audit:allow layout-inline-semantic-duplicate reason: 대상 목록 상자, 위쪽 3칸 격자(top_cards)의 칸이라 간격은 격자 gap-4 가 주고 아래 여백(mb-6)과 flex-col 을 쓰지 않음 -->
         <section data-ref="target_list_card" data-if="{{_computed.showTargetList}}" aria-labelledby="hero_target_list_heading" class="hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4">
-          <responsive on="desktop" class="hs:col-span-2 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4"/>
+          <responsive on="desktop" class-merge="hs:col-span-2"/>
           <div class="hs-flex-between hs:flex-wrap hs:gap-2 hs:mb-3">
             <h2 id="hero_target_list_heading" class="hs:text-base hs:font-semibold hs:text-gray-900 hs:dark:text-white">$t:sirsoft-hero_section.admin.target_list.title|target={{_computed.targetTypeLabel}}</h2>
-            <span data-ref="target_list_summary" data-if="{{_computed.placementList != null}}" class="hs:text-sm hs:text-gray-500 hs:dark:text-gray-400 hs:tabular-nums">$t:sirsoft-hero_section.admin.target_list.summary|banners={{_computed.placementList?.summary?.banners ?? 0}}|targets={{_computed.placementList?.summary?.targets ?? 0}}</span>
+            <span data-ref="target_list_summary" data-if="{{_computed.placementList != null}}" class="hs:text-sm hs-text-muted hs:tabular-nums">$t:sirsoft-hero_section.admin.target_list.summary|banners={{_computed.placementList?.summary?.banners ?? 0}}|targets={{_computed.placementList?.summary?.targets ?? 0}}</span>
           </div>
-          <p data-ref="target_list_loading" data-if="{{_computed.placementList == null &amp;&amp; !_computed.placementsFailed}}" role="status" class="hs:py-6 hs:text-center hs:text-sm hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.target_list.loading</p>
+          <p data-ref="target_list_loading" data-if="{{_computed.placementList == null &amp;&amp; !_computed.placementsFailed}}" role="status" class="hs:py-6 hs:text-center hs:text-sm hs-text-muted">$t:sirsoft-hero_section.admin.target_list.loading</p>
           <div data-ref="target_list_error" data-if="{{_computed.placementsFailed}}" role="alert" class="hs:flex hs:flex-wrap hs:items-center hs:justify-center hs:gap-3 hs:py-6">
             <p class="hs:text-sm hs:text-red-700 hs:dark:text-red-300">$t:sirsoft-hero_section.admin.target_list.load_failed</p>
             <button type="button" data-ref="target_list_retry" class="hs-btn hs-btn-secondary">
@@ -334,7 +335,7 @@
               <div class="hs:min-w-0 hs:flex hs:flex-col hs:gap-0.5">
                 <span data-if="{{item.exists}}" class="hs:font-medium hs:text-gray-900 hs:dark:text-white hs:break-all">{{item.label}}</span>
                 <span data-if="{{!item.exists}}" class="hs:font-medium hs:text-amber-700 hs:dark:text-amber-300 hs:break-all">$t:sirsoft-hero_section.admin.target.missing_label|key={{item.key}}</span>
-                <span class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:tabular-nums">$t:sirsoft-hero_section.admin.target_list.counts|total={{item.total}}|active={{item.active}}</span>
+                <span class="hs:text-xs hs-text-muted hs:tabular-nums">$t:sirsoft-hero_section.admin.target_list.counts|total={{item.total}}|active={{item.active}}</span>
                 <span data-if="{{item.has_settings === true}}" class="hs:self-start hs:inline-flex hs:items-center hs:rounded hs:bg-blue-50 hs:dark:bg-blue-900/40 hs:px-1.5 hs:py-0.5 hs:text-xs hs:text-blue-700 hs:dark:text-blue-200">$t:sirsoft-hero_section.admin.target_list.settings_badge</span>
               </div>
               <div class="hs:flex hs:flex-wrap hs:items-center hs:gap-2">
@@ -352,9 +353,10 @@
             <a data-ref="target_list_next" data-if="{{(_computed.placementList?.pagination?.current_page ?? 1) &lt; (_computed.placementList?.pagination?.last_page ?? 0)}}" href="/admin/plugins/sirsoft-hero_section/banners?position={{_computed.currentPosition}}&amp;tpage={{(_computed.placementList?.pagination?.current_page ?? 0) + 1}}" class="hs:text-sm hs:text-blue-700 hs:dark:text-blue-300 hs:underline">$t:sirsoft-hero_section.admin.target_list.next</a>
           </nav>
         </section>
-        <!-- 미리보기 — 지금 노출 중인 배너를 사용자 슬라이더 그대로 그린다. 응답은 관리자 상세 모양(다국어 원본 객체)이라 문구 네 칸을 지금 화면 언어 글자로 바꿔 넘긴다(객체를 그대로 넘기면 슬라이더가 그리다 깨진다) -->
+        <!-- 미리보기 — 지금 노출 중인 배너를 사용자 슬라이더 그대로 그린다. 응답은 관리자 상세 모양(다국어 원본 객체)이라 문구 네 칸을 지금 화면 언어 글자로 바꿔 넘긴다(객체를 그대로 넘기면 슬라이더가 그리다 깨진다)
+          audit:allow layout-inline-semantic-duplicate reason: 미리보기 상자, 3칸 격자의 칸으로 col-span-2 를 차지하며 여백은 p-4 뿐이고 아래 여백은 격자가 가짐 -->
         <section data-ref="preview_card" data-if="{{_computed.positionsReady &amp;&amp; !_computed.showTargetList}}" aria-labelledby="hero_preview_heading" class="hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4">
-          <responsive on="desktop" class="hs:col-span-2 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4"/>
+          <responsive on="desktop" class-merge="hs:col-span-2"/>
           <div class="hs-flex-between hs:flex-wrap hs:gap-2 hs:mb-3">
             <div class="hs:flex hs:flex-wrap hs:items-center hs:gap-x-3 hs:gap-y-1">
               <h2 id="hero_preview_heading" class="hs:text-base hs:font-semibold hs:text-gray-900 hs:dark:text-white">$t:sirsoft-hero_section.admin.preview.title|count={{(preview?.data?.data ?? []).length}}</h2>
@@ -383,13 +385,14 @@
           </div>
           <sirsoft-hero_section.hero-banner-preview data-type="composite" data-ref="hero_preview" data-if="{{!_computed.isDynamic || !!_computed.targetData}}" banners="{{(preview?.data?.data ?? []).map(b =&gt; ({...b, title: b.title_localized, eyebrow: $localized(b.eyebrow) ?? '', description: $localized(b.description) ?? '', button_text: $localized(b.button_text) ?? '', image_alt: $localized(b.image_alt) || b.title_localized}))}}" settings="{{_computed.previewSettings}}" device="{{_local.previewDevice}}" frame="{{position_settings?.data?.editor?.preview_frame ?? null}}" position="{{_computed.currentPosition}}" emptyText="{{!_computed.targetReady ? $t('sirsoft-hero_section.admin.target.pick_first', {target: _computed.targetTypeLabel}) : preview === undefined ? '' : (_computed.placementCount &gt; 0 ? $t('sirsoft-hero_section.admin.preview.empty_with_counts', { scheduled: banners?.data?.statistics?.statuses?.scheduled ?? 0, inactive: banners?.data?.statistics?.statuses?.inactive ?? 0, ended: banners?.data?.statistics?.statuses?.ended ?? 0 }) : $t('sirsoft-hero_section.admin.preview.empty'))}}"/>
         </section>
-        <!-- 슬라이더 설정 — 이 위치에만 적용. 위치 설정이 오기 전에는 그리지 않는다(기본값에서 고쳐 저장하면 실제 설정을 덮는다) -->
+        <!-- 슬라이더 설정 — 이 위치에만 적용. 위치 설정이 오기 전에는 그리지 않는다(기본값에서 고쳐 저장하면 실제 설정을 덮는다)
+          audit:allow layout-inline-semantic-duplicate reason: 슬라이더 설정 상자, 격자 칸이라 mb-6 이 없고 안쪽 간격 gap-4 를 쓰는 세로 쌓기라 카드 여백과 다름 -->
         <section data-ref="slider_card" data-if="{{_computed.positionsReady}}" aria-labelledby="hero_slider_heading" class="hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4 hs:flex hs:flex-col hs:gap-4">
           <div>
             <h2 id="hero_slider_heading" class="hs:text-base hs:font-semibold hs:text-gray-900 hs:dark:text-white">$t:sirsoft-hero_section.admin.slider.title</h2>
-            <p data-ref="slider_scope" data-if="{{!_computed.isDynamic}}" class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:mt-1">$t:sirsoft-hero_section.admin.slider.scope|position={{_computed.positionLabel}}</p>
+            <p data-ref="slider_scope" data-if="{{!_computed.isDynamic}}" class="hs:text-xs hs-text-muted hs:mt-1">$t:sirsoft-hero_section.admin.slider.scope|position={{_computed.positionLabel}}</p>
             <!-- 동적 위치는 슬라이더 설정이 위치 단위라 그 위치의 모든 대상에 함께 적용된다(D6) -->
-            <p data-ref="slider_scope_dynamic" data-if="{{_computed.isDynamic}}" class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:mt-1">$t:sirsoft-hero_section.admin.slider.scope_dynamic|position={{_computed.positionLabel}}|target={{_computed.targetTypeLabel}}</p>
+            <p data-ref="slider_scope_dynamic" data-if="{{_computed.isDynamic}}" class="hs:text-xs hs-text-muted hs:mt-1">$t:sirsoft-hero_section.admin.slider.scope_dynamic|position={{_computed.positionLabel}}|target={{_computed.targetTypeLabel}}</p>
           </div>
           <label class="hs-flex-between hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300" htmlFor="hero_slider_autoplay">
             <span>$t:sirsoft-hero_section.admin.slider.autoplay</span>
@@ -448,7 +451,7 @@
                 <set-state target="local" sliderForm="{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, pagination: $event.target.value})}}"/>
               </on>
             </select>
-            <span class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.slider.pagination_hint</span>
+            <span class="hs:text-xs hs-text-muted">$t:sirsoft-hero_section.admin.slider.pagination_hint</span>
           </label>
           <!-- 표시 폭 — 고르면 저장 전에 위 미리보기가 바로 바뀐다 -->
           <label class="hs:flex hs:flex-col hs:gap-1 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300" htmlFor="hero_slider_width">
@@ -463,7 +466,7 @@
                 <set-state target="local" sliderForm="{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, width: $event.target.value})}}"/>
               </on>
             </select>
-            <span class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.slider.width_hint</span>
+            <span class="hs:text-xs hs-text-muted">$t:sirsoft-hero_section.admin.slider.width_hint</span>
           </label>
           <!-- 기기별 최대 높이 — 비율대로 그리다가 이 높이에서 멈춘다. 비우면 비율대로(화면 전체 폭은 640px). 고치면 저장 전에 위 미리보기가 바로 바뀐다 -->
           <div data-ref="slider_max_height" role="group" aria-labelledby="hero_slider_max_height_label" class="hs:flex hs:flex-col hs:gap-1 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300">
@@ -488,7 +491,7 @@
                 </input>
               </label>
             </div>
-            <span class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.slider.max_height_hint|min={{_computed.maxHeightLimits.min}}|max={{_computed.maxHeightLimits.max}}</span>
+            <span class="hs:text-xs hs-text-muted">$t:sirsoft-hero_section.admin.slider.max_height_hint|min={{_computed.maxHeightLimits.min}}|max={{_computed.maxHeightLimits.max}}</span>
             <span data-ref="max_height_invalid" data-if="{{_computed.maxHeightInvalid}}" role="status" class="hs:text-xs hs:text-red-700 hs:dark:text-red-300">$t:sirsoft-hero_section.admin.slider.max_height_invalid|min={{_computed.maxHeightLimits.min}}|max={{_computed.maxHeightLimits.max}}</span>
           </div>
           <!-- 메뉴 겹치기 — 화면 전체 폭일 때만 사이트에 적용된다(본문 폭이면 메뉴 양옆이 배너 밖이라 글자가 묻힌다). 본문 폭에서도 켜 둘 수는 있고 안내만 한다 -->
@@ -501,7 +504,7 @@
               </on>
             </input>
           </label>
-          <p data-ref="header_overlay_hint" class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.slider.header_overlay_hint</p>
+          <p data-ref="header_overlay_hint" class="hs:text-xs hs-text-muted">$t:sirsoft-hero_section.admin.slider.header_overlay_hint</p>
           <!-- 메뉴 겹치기 + 낮은 최대 높이 — 문구가 메뉴 높이만큼 아래에서 시작해 자리가 좁아질 수 있다. 편집 미리보기는 메뉴를 겹치지 않으므로 사이트에서 확인하라고만 알린다(저장은 막지 않는다) -->
           <p data-ref="max_height_overlay_tight" data-if="{{_computed.maxHeightOverlayTight}}" role="status" class="hs:text-xs hs:text-amber-700 hs:dark:text-amber-300">$t:sirsoft-hero_section.admin.slider.max_height_overlay_tight|min={{_computed.maxHeightLimits.overlay_hint}}</p>
           <p data-ref="header_overlay_needs_full" data-if="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).header_overlay === true &amp;&amp; ((_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).width ?? 'content') !== 'full'}}" role="status" class="hs:text-xs hs:text-amber-700 hs:dark:text-amber-300">$t:sirsoft-hero_section.admin.slider.header_overlay_needs_full</p>
@@ -530,13 +533,14 @@
         </section>
         <!-- 이 대상 설정 — 동적 위치에서 대상을 골랐을 때만. 항목마다 「이 대상만 따로」를 켠 것만 저장하고(빠진 항목 =
           위치 기본값 상속), 끈 항목은 위치 기본값을 따라 바뀐다. 처음 열어도 위치 값을 복제해 저장하지 않는다. 자동 재생 끔·최대 높이 비움(제한 없음)도
-          이 대상만의 명시값이다. 「위치 기본값으로 되돌리기」는 이 대상의 재정의만 지운다(배너·위치 기본값·다른 대상은 그대로) -->
+          이 대상만의 명시값이다. 「위치 기본값으로 되돌리기」는 이 대상의 재정의만 지운다(배너·위치 기본값·다른 대상은 그대로)
+          audit:allow layout-inline-semantic-duplicate reason: 이 대상 설정 상자, 슬라이더 설정과 같은 격자 칸 구성으로 p-4 flex-col gap-4 만 쓰고 아래 여백이 없음 -->
         <section data-ref="target_settings_card" data-if="{{_computed.isDynamic &amp;&amp; _computed.targetReady}}" aria-labelledby="hero_target_settings_heading" class="hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4 hs:flex hs:flex-col hs:gap-4">
           <div>
             <h2 id="hero_target_settings_heading" class="hs:text-base hs:font-semibold hs:text-gray-900 hs:dark:text-white">$t:sirsoft-hero_section.admin.target_settings.title</h2>
-            <p data-ref="target_settings_scope" class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:mt-1">$t:sirsoft-hero_section.admin.target_settings.scope|position={{_computed.positionLabel}}|target={{_computed.selectedTarget?.label ?? _computed.currentTarget}}</p>
+            <p data-ref="target_settings_scope" class="hs:text-xs hs-text-muted hs:mt-1">$t:sirsoft-hero_section.admin.target_settings.scope|position={{_computed.positionLabel}}|target={{_computed.selectedTarget?.label ?? _computed.currentTarget}}</p>
           </div>
-          <p data-ref="target_settings_loading" data-if="{{!_computed.targetData &amp;&amp; !_computed.targetSettingsFailed}}" role="status" class="hs:text-sm hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.target_settings.loading</p>
+          <p data-ref="target_settings_loading" data-if="{{!_computed.targetData &amp;&amp; !_computed.targetSettingsFailed}}" role="status" class="hs:text-sm hs-text-muted">$t:sirsoft-hero_section.admin.target_settings.loading</p>
           <div data-ref="target_settings_failed" data-if="{{_computed.targetSettingsFailed}}" role="alert" class="hs-alert-warning">
             <p>$t:sirsoft-hero_section.admin.target_settings.load_failed</p>
             <button type="button" data-ref="target_settings_retry" class="hs-btn hs-btn-secondary">
@@ -561,7 +565,7 @@
                 </on>
               </input>
             </label>
-            <span data-ref="target_source_autoplay" id="hero_target_source_autoplay" class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400">{{_computed.targetOverridden.includes('autoplay') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}</span>
+            <span data-ref="target_source_autoplay" id="hero_target_source_autoplay" class="hs:text-xs hs-text-muted">{{_computed.targetOverridden.includes('autoplay') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}</span>
           </div>
           <div data-ref="target_row_interval_seconds" class="hs:grid hs:grid-cols-[auto_1fr_auto] hs:items-center hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300">
             <input type="checkbox" id="hero_target_inherit_interval_seconds" class="hs:h-4 hs:w-4 hs:rounded hs:text-blue-600" aria-label="{{$t('sirsoft-hero_section.admin.target_settings.own_label', {item: $t('sirsoft-hero_section.admin.target_settings.items.interval_seconds')})}}" checked="{{_computed.targetOverridden.includes('interval_seconds')}}" disabled="{{!_computed.canWrite || !_computed.targetData}}">
@@ -584,7 +588,7 @@
                 </on>
               </select>
             </label>
-            <span data-ref="target_source_interval_seconds" id="hero_target_source_interval_seconds" class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400">{{_computed.targetOverridden.includes('interval_seconds') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}</span>
+            <span data-ref="target_source_interval_seconds" id="hero_target_source_interval_seconds" class="hs:text-xs hs-text-muted">{{_computed.targetOverridden.includes('interval_seconds') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}</span>
           </div>
           <div data-ref="target_row_effect" class="hs:grid hs:grid-cols-[auto_1fr_auto] hs:items-center hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300">
             <input type="checkbox" id="hero_target_inherit_effect" class="hs:h-4 hs:w-4 hs:rounded hs:text-blue-600" aria-label="{{$t('sirsoft-hero_section.admin.target_settings.own_label', {item: $t('sirsoft-hero_section.admin.target_settings.items.effect')})}}" checked="{{_computed.targetOverridden.includes('effect')}}" disabled="{{!_computed.canWrite || !_computed.targetData}}">
@@ -611,7 +615,7 @@
                 </on>
               </select>
             </label>
-            <span data-ref="target_source_effect" id="hero_target_source_effect" class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400">{{_computed.targetOverridden.includes('effect') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}</span>
+            <span data-ref="target_source_effect" id="hero_target_source_effect" class="hs:text-xs hs-text-muted">{{_computed.targetOverridden.includes('effect') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}</span>
           </div>
           <div data-ref="target_row_width" class="hs:grid hs:grid-cols-[auto_1fr_auto] hs:items-center hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300">
             <input type="checkbox" id="hero_target_inherit_width" class="hs:h-4 hs:w-4 hs:rounded hs:text-blue-600" aria-label="{{$t('sirsoft-hero_section.admin.target_settings.own_label', {item: $t('sirsoft-hero_section.admin.target_settings.items.width')})}}" checked="{{_computed.targetOverridden.includes('width')}}" disabled="{{!_computed.canWrite || !_computed.targetData}}">
@@ -633,7 +637,7 @@
                 </on>
               </select>
             </label>
-            <span data-ref="target_source_width" id="hero_target_source_width" class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400">{{_computed.targetOverridden.includes('width') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}</span>
+            <span data-ref="target_source_width" id="hero_target_source_width" class="hs:text-xs hs-text-muted">{{_computed.targetOverridden.includes('width') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}</span>
           </div>
           <div data-ref="target_row_header_overlay" class="hs:grid hs:grid-cols-[auto_1fr_auto] hs:items-center hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300">
             <input type="checkbox" id="hero_target_inherit_header_overlay" class="hs:h-4 hs:w-4 hs:rounded hs:text-blue-600" aria-label="{{$t('sirsoft-hero_section.admin.target_settings.own_label', {item: $t('sirsoft-hero_section.admin.target_settings.items.header_overlay')})}}" checked="{{_computed.targetOverridden.includes('header_overlay')}}" disabled="{{!_computed.canWrite || !_computed.targetData}}">
@@ -651,7 +655,7 @@
                 </on>
               </input>
             </label>
-            <span data-ref="target_source_header_overlay" id="hero_target_source_header_overlay" class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400">{{_computed.targetOverridden.includes('header_overlay') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}</span>
+            <span data-ref="target_source_header_overlay" id="hero_target_source_header_overlay" class="hs:text-xs hs-text-muted">{{_computed.targetOverridden.includes('header_overlay') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}</span>
           </div>
           <div data-ref="target_row_pagination" class="hs:grid hs:grid-cols-[auto_1fr_auto] hs:items-center hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300">
             <input type="checkbox" id="hero_target_inherit_pagination" class="hs:h-4 hs:w-4 hs:rounded hs:text-blue-600" aria-label="{{$t('sirsoft-hero_section.admin.target_settings.own_label', {item: $t('sirsoft-hero_section.admin.target_settings.items.pagination')})}}" checked="{{_computed.targetOverridden.includes('pagination')}}" disabled="{{!_computed.canWrite || !_computed.targetData}}">
@@ -676,7 +680,7 @@
                 </on>
               </select>
             </label>
-            <span data-ref="target_source_pagination" id="hero_target_source_pagination" class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400">{{_computed.targetOverridden.includes('pagination') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}</span>
+            <span data-ref="target_source_pagination" id="hero_target_source_pagination" class="hs:text-xs hs-text-muted">{{_computed.targetOverridden.includes('pagination') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}</span>
           </div>
           <div data-ref="target_row_max_height_pc" class="hs:grid hs:grid-cols-[auto_1fr_auto] hs:items-center hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300">
             <input type="checkbox" id="hero_target_inherit_max_height_pc" class="hs:h-4 hs:w-4 hs:rounded hs:text-blue-600" aria-label="{{$t('sirsoft-hero_section.admin.target_settings.own_label', {item: $t('sirsoft-hero_section.admin.target_settings.items.max_height_pc')})}}" checked="{{_computed.targetOverridden.includes('max_height_pc')}}" disabled="{{!_computed.canWrite || !_computed.targetData}}">
@@ -694,7 +698,7 @@
                 </on>
               </input>
             </label>
-            <span data-ref="target_source_max_height_pc" id="hero_target_source_max_height_pc" class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400">{{_computed.targetOverridden.includes('max_height_pc') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}</span>
+            <span data-ref="target_source_max_height_pc" id="hero_target_source_max_height_pc" class="hs:text-xs hs-text-muted">{{_computed.targetOverridden.includes('max_height_pc') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}</span>
           </div>
           <div data-ref="target_row_max_height_mobile" class="hs:grid hs:grid-cols-[auto_1fr_auto] hs:items-center hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300">
             <input type="checkbox" id="hero_target_inherit_max_height_mobile" class="hs:h-4 hs:w-4 hs:rounded hs:text-blue-600" aria-label="{{$t('sirsoft-hero_section.admin.target_settings.own_label', {item: $t('sirsoft-hero_section.admin.target_settings.items.max_height_mobile')})}}" checked="{{_computed.targetOverridden.includes('max_height_mobile')}}" disabled="{{!_computed.canWrite || !_computed.targetData}}">
@@ -712,7 +716,7 @@
                 </on>
               </input>
             </label>
-            <span data-ref="target_source_max_height_mobile" id="hero_target_source_max_height_mobile" class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400">{{_computed.targetOverridden.includes('max_height_mobile') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}</span>
+            <span data-ref="target_source_max_height_mobile" id="hero_target_source_max_height_mobile" class="hs:text-xs hs-text-muted">{{_computed.targetOverridden.includes('max_height_mobile') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}</span>
           </div>
           <div class="hs:flex hs:flex-wrap hs:gap-2">
             <button type="button" data-ref="target_settings_save" data-if="{{_computed.canWrite}}" class="hs-btn hs-btn-primary hs-flex-center hs:gap-1.5" disabled="{{_computed.targetSaving || !_computed.targetDirty || _computed.targetData?.target?.exists === false || ['max_height_pc', 'max_height_mobile'].some(f =&gt; _computed.targetDraft[f] != null &amp;&amp; (!Number.isInteger(_computed.targetDraft[f]) || _computed.targetDraft[f] &lt; _computed.maxHeightLimits.min || _computed.targetDraft[f] &gt; _computed.maxHeightLimits.max))}}">
@@ -871,7 +875,8 @@
           </on>
         </select>
       </div>
-      <!-- 첫 배너 안내 — 이 위치에 배너가 하나도 없을 때만. 조건으로 걸러 0건인 것과 구분한다(그때는 표 빈 문구) -->
+      <!-- 첫 배너 안내 — 이 위치에 배너가 하나도 없을 때만. 조건으로 걸러 0건인 것과 구분한다(그때는 표 빈 문구)
+        audit:allow layout-inline-semantic-duplicate reason: 첫 배너 안내 상자, 점선 테두리에 가운데 정렬과 px-4 py-8 mb-4 를 쓰는 빈 상태 안내라 카드 모양과 여백이 다름 -->
       <div data-ref="empty_position_card" data-if="{{banners !== undefined &amp;&amp; _computed.targetReady &amp;&amp; _computed.placementCount === 0}}" class="hs:flex hs:flex-col hs:items-center hs:gap-3 hs:mb-4 hs:px-4 hs:py-8 hs:text-center hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-dashed hs:border-gray-300 hs:dark:border-gray-600">
         <icon name="fa-regular fa-image" class="hs:text-3xl hs:text-gray-400 hs:dark:text-gray-500"/>
         <p class="hs:text-base hs:font-medium hs:text-gray-900 hs:dark:text-white">$t:sirsoft-hero_section.admin.list.empty_position.title|position={{_computed.isDynamic ? (_computed.selectedTarget?.label ?? _computed.positionLabel) : _computed.positionLabel}}</p>
@@ -1077,19 +1082,19 @@
                   <responsive on="768-" class="hs:flex hs:cursor-grab hs:text-gray-400 hs:hover:text-gray-600 hs:dark:text-gray-500 hs:dark:hover:text-gray-300"/>
                   <icon name="fa-solid fa-grip-vertical" class="hs:text-sm"/>
                 </div>
-                <span class="hs:w-6 hs:text-right hs:text-sm hs:tabular-nums hs:text-gray-500 hs:dark:text-gray-400">{{row._idx + 1}}</span>
+                <span class="hs:w-6 hs:text-right hs:text-sm hs:tabular-nums hs-text-muted">{{row._idx + 1}}</span>
                 <!-- 배너는 가로로 긴 이미지(3:1 안팎) — 이 플러그인 확장 규격 sirsoft-hero_section.list(가로 240, 가로만 맞춤) 한 장. 정사각 자르기(sm)는 배너 가운데 1/3 만 남긴다 -->
                 <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail | thumb('sirsoft-hero_section.list')}}" loading="lazy" decoding="async" alt="" class="hs:w-16 hs:h-6 hs:object-cover hs:rounded"/>
                 <span class="hs:truncate hs:flex-1 hs:font-medium hs:text-gray-900 hs:dark:text-gray-100">{{row.title}}</span>
                 <status-badge data-type="composite" status="{{row.status === 'active' ? 'success' : (row.status === 'scheduled' ? 'info' : (row.status === 'ended' ? 'default' : 'danger'))}}" label="{{$t('sirsoft-hero_section.admin.status.' + row.status)}}" :showIcon="false"/>
-                <button data-testid="hero-reorder-up-{{row.id}}" type="button" aria-label="{{$t('sirsoft-hero_section.admin.reorder.move_up', { name: row.title })}}" class="hs-flex-center hs:w-10 hs:h-10 hs:shrink-0 hs:text-gray-500 hs:hover:text-gray-800 hs:dark:text-gray-400 hs:dark:hover:text-gray-100 hs:rounded hs:hover:bg-gray-100 hs:dark:hover:bg-gray-700 hs:disabled:opacity-40 hs:disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === 0}}">
+                <button data-testid="hero-reorder-up-{{row.id}}" type="button" aria-label="{{$t('sirsoft-hero_section.admin.reorder.move_up', { name: row.title })}}" class="hs-flex-center hs:w-10 hs:h-10 hs:shrink-0 hs-text-muted hs:hover:text-gray-800 hs:dark:hover:text-gray-100 hs:rounded hs:hover:bg-gray-100 hs:dark:hover:bg-gray-700 hs:disabled:opacity-40 hs:disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === 0}}">
                   <on type="click">
                     <!-- 한 칸 위로 — 이웃과 자리를 맞바꾸고 이전 저장 오류 안내를 지운다(저장은 [저장]에서) -->
                     <set-state target="global" reorderItems="{{(_global.reorderItems ?? []).map((r, i, a) =&gt; i === row._idx - 1 ? a[row._idx] : (i === row._idx ? a[row._idx - 1] : r))}}" :reorderError="null"/>
                   </on>
                   <icon name="fa-solid fa-chevron-up" class="hs:text-xs"/>
                 </button>
-                <button data-testid="hero-reorder-down-{{row.id}}" type="button" aria-label="{{$t('sirsoft-hero_section.admin.reorder.move_down', { name: row.title })}}" class="hs-flex-center hs:w-10 hs:h-10 hs:shrink-0 hs:text-gray-500 hs:hover:text-gray-800 hs:dark:text-gray-400 hs:dark:hover:text-gray-100 hs:rounded hs:hover:bg-gray-100 hs:dark:hover:bg-gray-700 hs:disabled:opacity-40 hs:disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}">
+                <button data-testid="hero-reorder-down-{{row.id}}" type="button" aria-label="{{$t('sirsoft-hero_section.admin.reorder.move_down', { name: row.title })}}" class="hs-flex-center hs:w-10 hs:h-10 hs:shrink-0 hs-text-muted hs:hover:text-gray-800 hs:dark:hover:text-gray-100 hs:rounded hs:hover:bg-gray-100 hs:dark:hover:bg-gray-700 hs:disabled:opacity-40 hs:disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}">
                   <on type="click">
                     <!-- 한 칸 아래로 — 이웃과 자리를 맞바꾸고 이전 저장 오류 안내를 지운다 -->
                     <set-state target="global" reorderItems="{{(_global.reorderItems ?? []).map((r, i, a) =&gt; i === row._idx ? a[row._idx + 1] : (i === row._idx + 1 ? a[row._idx] : r))}}" :reorderError="null"/>

@@ -460,7 +460,7 @@ export const MenuIconField: React.FC<MenuIconFieldProps> = ({
               disabled={disabled}
               className="w-full"
             />
-            <P className="text-xs text-gray-500 dark:text-gray-400">
+            <P className="text-xs text-muted">
               {directHintKey ? t(directHintKey) : t('input_hint')}
             </P>
             {directError && (
@@ -481,7 +481,7 @@ export const MenuIconField: React.FC<MenuIconFieldProps> = ({
               disabled={disabled || uploading}
               aria-label={t('upload_button')}
             />
-            <P className="text-xs text-gray-500 dark:text-gray-400">{t('upload_hint')}</P>
+            <P className="text-xs text-muted">{t('upload_hint')}</P>
             {uploadError && (
               <P className="text-xs text-red-600 dark:text-red-400" role="alert">
                 {uploadError}
@@ -501,7 +501,7 @@ export const MenuIconField: React.FC<MenuIconFieldProps> = ({
               disabled={disabled}
               className="w-full font-mono text-xs"
             />
-            <P className="text-xs text-gray-500 dark:text-gray-400">{t('svg_hint')}</P>
+            <P className="text-xs text-muted">{t('svg_hint')}</P>
             {svgLooksWrong && (
               <P className="text-xs text-amber-600 dark:text-amber-400">{t('svg_not_svg')}</P>
             )}

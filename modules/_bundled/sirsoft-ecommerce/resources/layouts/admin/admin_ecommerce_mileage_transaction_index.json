@@ -233,7 +233,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "ecommerce:p-6 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:min-h-screen"
+                    "className": "ecommerce-admin-page-content"
                 },
                 "children": [
                     {
@@ -342,7 +342,7 @@
                                         "props": {
                                             "type": "button",
                                             "disabled": "{{transactions?.data?.abilities?.can_manage !== true}}",
-                                            "className": "ecommerce-btn ecommerce-btn-primary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:shrink-0 ecommerce:whitespace-nowrap"
+                                            "className": "ecommerce-btn ecommerce-btn-primary ecommerce:text-sm ecommerce:shrink-0 ecommerce:whitespace-nowrap"
                                         },
                                         "children": [
                                             {
@@ -421,7 +421,7 @@
                                 "props": {
                                     "type": "button",
                                     "disabled": "{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}",
-                                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                                    "className": "ecommerce-btn ecommerce-btn-primary"
                                 },
                                 "children": [
                                     {

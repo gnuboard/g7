@@ -63,7 +63,7 @@
           </div>
         </div>
         <!-- 고른 추가 금액(하나당) -->
-        <div data-if="{{(_local.noOptionAdditionalTotal ?? 0) > 0}}" data-testid="single-additional-options-amount" class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <div data-if="{{(_local.noOptionAdditionalTotal ?? 0) > 0}}" data-testid="single-additional-options-amount" class="flex items-center justify-between text-xs text-muted">
           <span>$t:shop.additional_options_amount</span>
           <span>{{(() => { const code = _global.preferredCurrency ?? _global.defaultCurrency; const cur = (_global.availableCurrencies ?? []).find(x => x.code === code) ?? (_global.availableCurrencies ?? []).find(x => x.is_default); const converted = _local.noOptionAdditionalMultiCurrencyTotal?.[code]?.value; const amount = converted ?? (_local.noOptionAdditionalTotal ?? 0); const dp = cur?.decimal_places ?? 0; const n = amount.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = cur?.symbol ?? '₩'; return '+' + ((cur?.code === 'KRW' || s === '₩' || s === '원') ? ($t('sirsoft-ecommerce.currency.krw_prefix') + n + $t('sirsoft-ecommerce.currency.krw_suffix')) : (s + n)); })()}}</span>
         </div>
@@ -71,8 +71,8 @@
     </div>
     <!-- === 수량 제한 안내 (판매중일 때만) === -->
     <div data-if="{{product.data?.sales_status === 'on_sale' &amp;&amp; (product.data?.min_purchase_qty > 1 || product.data?.max_purchase_qty > 0)}}" class="px-1 mb-2 space-y-0.5">
-      <span data-if="{{product.data?.min_purchase_qty > 1}}" class="block text-xs text-gray-500 dark:text-gray-400">$t:shop.min_purchase_qty_notice|qty={{product.data?.min_purchase_qty}}</span>
-      <span data-if="{{product.data?.max_purchase_qty > 0}}" class="block text-xs text-gray-500 dark:text-gray-400">$t:shop.max_purchase_qty_notice|count={{product.data?.max_purchase_qty}}|qty={{product.data?.max_purchase_qty}}</span>
+      <span data-if="{{product.data?.min_purchase_qty > 1}}" class="block text-xs text-muted">$t:shop.min_purchase_qty_notice|qty={{product.data?.min_purchase_qty}}</span>
+      <span data-if="{{product.data?.max_purchase_qty > 0}}" class="block text-xs text-muted">$t:shop.max_purchase_qty_notice|count={{product.data?.max_purchase_qty}}|qty={{product.data?.max_purchase_qty}}</span>
     </div>
     <!-- === 선택한 상품 섹션 (옵션 있는 상품, 총 금액 위에 표시, 판매중일 때만) === -->
     <div data-if="{{product.data?.sales_status === 'on_sale' &amp;&amp; product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 &amp;&amp; _local.selectedOptionItems &amp;&amp; _local.selectedOptionItems.length > 0}}" class="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
@@ -87,7 +87,7 @@
               <!-- 옵션마다 과세 종류가 다를 때, 고른 옵션의 과세 종류(옵션 지정 ?? 상품 기본값)가 면세·영세면 표시한다. 모두 같으면 가격 옆에 보이므로 여기엔 붙이지 않는다 (#612) -->
               <span data-if="{{['tax_free', 'zero_rated'].includes(((product.data?.options ?? []).find(o => o.id === item.optionId)?.tax_status ?? product.data?.tax_status)) &amp;&amp; !(product.data?.options ?? []).every(o => (o.tax_status ?? product.data?.tax_status) === (product.data?.options?.[0]?.tax_status ?? product.data?.tax_status))}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{((product.data?.options ?? []).find(o => o.id === item.optionId)?.tax_status ?? product.data?.tax_status) === 'zero_rated' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}}">{{(product.data?.options ?? []).find(o => o.id === item.optionId)?.tax_status_label ?? product.data?.tax_status_label}}</span>
             </div>
-            <button type="button" aria-label="$t:common.delete" class="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
+            <button type="button" aria-label="$t:common.delete" class="text-muted hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
               <on type="click">
                 <!-- 쌓아 둔 줄 하나를 뺀다. 총액도 함께 다시 계산되므로 핸들러가 맡는다 -->
                 <action handler="sirsoft-basic.removeSelectedItem" itemIndex="{{itemIndex}}" selectedOptionItems="{{_local.selectedOptionItems}}"/>
@@ -124,7 +124,7 @@
             </div>
           </div>
           <!-- 추가옵션 추가금 합계 표기 (선택된 추가금이 있을 때) -->
-          <div data-if="{{(item.additionalOptionsTotal ?? 0) > 0}}" data-testid="additional-options-amount" class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+          <div data-if="{{(item.additionalOptionsTotal ?? 0) > 0}}" data-testid="additional-options-amount" class="flex items-center justify-between text-xs text-muted mb-2">
             <span>$t:shop.additional_options_amount</span>
             <!-- 추가금은 기본통화 기준으로 저장되므로 표시통화 환산값(핸들러가 서버 맵에서 계산)을 우선 사용한다. 없으면 기본통화 표기로 폴백 -->
             <span>{{(() => { const code = _global.preferredCurrency ?? _global.defaultCurrency; const cur = (_global.availableCurrencies ?? []).find(x => x.code === code) ?? (_global.availableCurrencies ?? []).find(x => x.is_default); const converted = item.additionalOptionsMultiCurrencyTotal?.[code]?.value; const amount = converted ?? (item.additionalOptionsTotal ?? 0); const dp = cur?.decimal_places ?? 0; const n = amount.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = cur?.symbol ?? '₩'; return '+' + ((cur?.code === 'KRW' || s === '₩' || s === '원') ? ($t('sirsoft-ecommerce.currency.krw_prefix') + n + $t('sirsoft-ecommerce.currency.krw_suffix')) : (s + n)); })()}}</span>

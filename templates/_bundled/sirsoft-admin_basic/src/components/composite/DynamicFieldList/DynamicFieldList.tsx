@@ -297,7 +297,7 @@ export const DynamicFieldList: React.FC<DynamicFieldListProps> = ({
 
         {/* 순번 헤더 */}
         {showIndex && (
-          <Div className="flex-shrink-0 w-8 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+          <Div className="flex-shrink-0 w-8 text-center text-xs font-medium text-muted uppercase">
             #
           </Div>
         )}
@@ -306,7 +306,7 @@ export const DynamicFieldList: React.FC<DynamicFieldListProps> = ({
         {columns.map((column) => (
           <Div
             key={column.key}
-            className={`flex-1 min-w-0 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase ${column.width || ''}`}
+            className={`flex-1 min-w-0 text-xs font-medium text-muted uppercase ${column.width || ''}`}
             style={column.width ? { flex: 'none', width: column.width } : {}}
           >
             {column.label}
@@ -358,7 +358,7 @@ export const DynamicFieldList: React.FC<DynamicFieldListProps> = ({
           </SortableContext>
         </DndContext>
       ) : (
-        <Div className="border-x border-gray-200 dark:border-gray-700 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+        <Div className="border-x border-gray-200 dark:border-gray-700 py-8 text-center text-muted text-sm">
           {emptyMessage}
         </Div>
       )}

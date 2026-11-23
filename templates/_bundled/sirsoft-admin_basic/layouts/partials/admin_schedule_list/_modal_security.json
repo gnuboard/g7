@@ -441,7 +441,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{(item.options ?? []).length > 0}}",
                                                                     "props": {
-                                                                        "className": "block text-xs font-mono text-gray-500 dark:text-gray-400 break-all"
+                                                                        "className": "block text-xs font-mono text-muted break-all"
                                                                     },
                                                                     "text": "{{(item.options ?? []).map(o => '--' + o).join(' ')}}"
                                                                 }

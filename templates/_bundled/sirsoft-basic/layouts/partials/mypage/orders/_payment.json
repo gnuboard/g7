@@ -79,13 +79,11 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:mypage.order_detail.product_amount"
                         },
@@ -94,9 +92,7 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-900 dark:text-white text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
@@ -128,13 +124,11 @@
                                     "name": "Span",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "text-gray-500 dark:text-gray-400 text-sm"
-                                            }
+                                            "classMerge": "text-sm"
                                         }
                                     },
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400"
+                                        "className": "text-muted"
                                     },
                                     "text": "$t:mypage.order_detail.discount_amount"
                                 },
@@ -143,9 +137,7 @@
                                     "name": "Span",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "text-red-600 dark:text-red-400 font-medium text-sm"
-                                            }
+                                            "classMerge": "text-sm"
                                         }
                                     },
                                     "props": {
@@ -191,7 +183,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                        "className": "text-sm text-muted"
                                                     },
                                                     "text": "$t:mypage.order_detail.product_coupon_discount"
                                                 }
@@ -246,7 +238,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "{{pCoupon.name ?? ''}}"
                                                         }
@@ -292,7 +284,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                        "className": "text-sm text-muted"
                                                     },
                                                     "text": "$t:mypage.order_detail.order_coupon_discount"
                                                 }
@@ -347,7 +339,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "{{oCoupon.name ?? ''}}"
                                                         }
@@ -393,7 +385,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                        "className": "text-sm text-muted"
                                                     },
                                                     "text": "$t:mypage.order_detail.code_discount"
                                                 }
@@ -448,7 +440,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "{{dCode.code ?? ''}} ({{dCode.name ?? ''}})"
                                                         }
@@ -483,13 +475,11 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:mypage.order_detail.shipping_fee"
                         },
@@ -500,9 +490,7 @@
                             "if": "{{!!order?.data && Number(order.data.total_shipping_amount ?? 0) === 0}}",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-green-700 dark:text-green-400 font-medium text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
@@ -517,9 +505,7 @@
                             "if": "{{Number(order.data.total_shipping_amount ?? 0) > 0}}",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-900 dark:text-white text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
@@ -568,7 +554,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             },
                                             "text": "{{sCoupon.name ?? ''}}"
                                         }
@@ -600,13 +586,11 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:mypage.order_detail.points_used"
                         },
@@ -615,9 +599,7 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-red-600 dark:text-red-400 font-medium text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
@@ -641,13 +623,11 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:mypage.order_detail.deposit_used"
                         },
@@ -656,9 +636,7 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-red-600 dark:text-red-400 font-medium text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
@@ -682,9 +660,7 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-blue-600 dark:text-blue-400 font-medium text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
@@ -705,9 +681,7 @@
                                     "name": "Span",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "text-blue-600 dark:text-blue-400 font-medium text-sm"
-                                            }
+                                            "classMerge": "text-sm"
                                         }
                                     },
                                     "props": {
@@ -731,7 +705,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             },
                                             "text": "{{claimPaidCurrency[1]?.formatted ?? ''}}"
                                         }
@@ -755,13 +729,11 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:mypage.order_detail.refund_mileage_credit"
                         },
@@ -770,9 +742,7 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-900 dark:text-white font-medium text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
@@ -803,9 +773,7 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-900 dark:text-white font-medium text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
@@ -851,7 +819,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             },
                                             "text": "{{currency[1]?.formatted ?? ''}}"
                                         }
@@ -863,7 +831,7 @@
                                     "name": "Span",
                                     "if": "{{order.data.payment?.is_cross_currency}}",
                                     "props": {
-                                        "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                        "className": "block text-xs text-muted mt-0.5"
                                     },
                                     "text": "$t:mypage.order_detail.charged_in_payment_currency|currency={{order.data.payment?.payment_currency}}|amount={{order.data.payment?.paid_amount_formatted}}"
                                 }
@@ -884,7 +852,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "text-sm text-muted"
                             },
                             "text": "$t:mypage.order_detail.points_earning"
                         },
@@ -920,13 +888,11 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:mypage.order_detail.payment_method"
                         },
@@ -935,9 +901,7 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "text-gray-900 dark:text-white text-sm"
-                                    }
+                                    "classMerge": "text-sm"
                                 }
                             },
                             "props": {

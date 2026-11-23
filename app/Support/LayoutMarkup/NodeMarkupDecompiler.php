@@ -603,6 +603,12 @@ final class NodeMarkupDecompiler
             $attributes[] = $this->attr('data-each', $this->eachExpression($override['iteration']));
         }
 
+        // 덧붙이기 클래스(engine-v1.98.0) — `class` 와 나란히 쓸 수 있다(구간 className 위에 덧붙는다)
+        // 빈 값은 내지 않는다 — 컴파일러가 `class-merge=""` 를 값 없음 오류로 거부해 HTML 보기 왕복이 막힌다(엔진은 빈 값을 무시한다)
+        if (isset($override['classMerge']) && is_string($override['classMerge']) && trim($override['classMerge']) !== '') {
+            $attributes[] = $this->attr(NodeCompiler::CLASS_MERGE_ATTRIBUTE, $override['classMerge']);
+        }
+
         // 구조 노드 키도 브레이크포인트별로 오버라이드된다(portable 전용 classMap 실사용).
         if (isset($override['classMap'])) {
             $children[] = $this->classMap($override['classMap']);

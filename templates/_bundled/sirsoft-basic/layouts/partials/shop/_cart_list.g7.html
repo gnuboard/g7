@@ -46,7 +46,7 @@
       <!-- 장바구니 비어있음 -->
       <div data-if="{{cartItems !== undefined &amp;&amp; (!cartItems.data.items || cartItems.data.items.length === 0)}}" class="text-center py-16">
         <icon name="shopping-cart" class="text-[4rem] mx-auto mb-4 text-gray-500 dark:text-gray-500"/>
-        <p class="text-gray-500 dark:text-gray-400 mb-4">$t:shop.cart.empty</p>
+        <p class="text-muted mb-4">$t:shop.cart.empty</p>
         <a href="{{_global.shopBase}}/products" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer">
           <on type="click">
             <navigate/>

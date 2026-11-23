@@ -14,6 +14,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 
 // 레이아웃 JSON 임포트
 import mainLayout from '../../../layouts/admin/admin_ecommerce_shipping_policy_form.json';
@@ -24,6 +26,23 @@ import chargeSettingsPartial from '../../../layouts/admin/partials/admin_ecommer
 import extraFeePartial from '../../../layouts/admin/partials/admin_ecommerce_shipping_policy_form/_partial_extra_fee.json';
 import extraFeeTemplateModal from '../../../layouts/admin/partials/admin_ecommerce_shipping_policy_form/_modal_extra_fee_template.json';
 import { asArray, callbacksOf, initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
+
+/** 확장 생성 CSS — 의미 클래스 사본(`ecommerce-btn` 등)의 실제 정의를 확인한다 (#399 R-1) */
+const EXT_CSS = fs.readFileSync(path.resolve(__dirname, '../../../css/g7-extension.generated.css'), 'utf8');
+
+/**
+ * 꺼진 단추 모양 — 인라인 `disabled:opacity-50 disabled:cursor-not-allowed` 는 `ecommerce-btn` 과 함께 쓸 때
+ * 뺐다(#399 R-1 P7, `.ecommerce-btn:disabled` 가 이미 준다). 그 정의를 생성 CSS 에서 확인한다.
+ */
+function expectDisabledLook(className: unknown): void {
+    const value = String(className ?? '');
+    if (value.split(/\s+/).includes('ecommerce-btn')) {
+        expect(EXT_CSS).toMatch(/\.ecommerce-btn:disabled[^{]*\{[^}]*cursor:\s*not-allowed[^}]*opacity:\s*\.5/);
+        return;
+    }
+    expect(value).toContain('disabled:opacity-50');
+    expect(value).toContain('disabled:cursor-not-allowed');
+}
 
 // ===== 유틸리티 =====
 
@@ -1577,9 +1596,19 @@ describe('shippingPolicyFormLayouts', () => {
             expect(json).toContain('_global.isTemplateDeleting || $parent._computed?.isReadOnly !== false');
             // 전체 내보내기 버튼
             expect(json).toContain('"disabled":"{{$parent._computed?.isReadOnly !== false}}"');
-            // disabled 스타일 클래스
-            expect(json).toContain('disabled:opacity-50');
-            expect(json).toContain('disabled:cursor-not-allowed');
+            // disabled 스타일 — 꺼질 수 있는 툴바 단추마다 꺼진 모양을 갖는다
+            const buttons: any[] = [];
+            const walk = (n: any): void => {
+                if (Array.isArray(n)) return n.forEach(walk);
+                if (!n || typeof n !== 'object') return;
+                if (n.name === 'Button' && typeof n.props?.disabled === 'string') buttons.push(n);
+                Object.values(n).forEach(walk);
+            };
+            walk(toolbar);
+            expect(buttons.length).toBeGreaterThanOrEqual(4);
+            for (const button of buttons) {
+                expectDisabledLook(button.props.className);
+            }
         });
 
         /**

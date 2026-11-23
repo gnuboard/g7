@@ -42,7 +42,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5"
+                                "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.expiry.enabled_hint"
                         }
@@ -109,7 +109,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.['mileage.expiry_days']}}",
                     "props": {
-                        "className": "ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:text-xs ecommerce:mt-1 ecommerce:block"
+                        "className": "ecommerce-form-error"
                     },
                     "text": "{{_local.errors?.['mileage.expiry_days']?.[0] ?? ''}}"
                 }

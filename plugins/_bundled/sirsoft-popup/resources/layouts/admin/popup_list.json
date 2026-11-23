@@ -205,7 +205,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400 gpp:mb-1"
+                                            "className": "gpp:text-xs g7pp-text-muted gpp:mb-1"
                                         },
                                         "text": "$t:sirsoft-popup.admin.breadcrumb"
                                     },
@@ -315,7 +315,7 @@
                         ]
                     },
                     {
-                        "comment": "지금 노출 중 — 캐러셀 순서대로. 경로·대상·기기는 방문자마다 달라 기기 표시만 단다(결정 R10)",
+                        "comment": "지금 노출 중 — 캐러셀 순서대로. 경로·대상·기기는 방문자마다 달라 기기 표시만 단다(결정 R10)\n        audit:allow layout-inline-semantic-duplicate reason: 지금 노출 중 요약 상자의 데스크톱 구간, 기본은 admin-card 사본인데 넓은 화면에서 가로 배치(flex-row items-center)로 바꾸려고 구간 class 를 통째로 적어 flex-col 인 카드와 배치가 다름",
                         "id": "summary_card",
                         "type": "basic",
                         "name": "Section",
@@ -328,7 +328,7 @@
                         },
                         "props": {
                             "aria-labelledby": "popup_summary_heading",
-                            "className": "gpp:bg-white gpp:dark:bg-gray-800 gpp:rounded-lg gpp:border gpp:border-gray-200 gpp:dark:border-gray-700 gpp:p-4 gpp:mb-6 gpp:flex gpp:flex-col gpp:gap-4"
+                            "className": "g7pp-admin-card gpp:gap-4"
                         },
                         "children": [
                             {
@@ -336,9 +336,7 @@
                                 "name": "Div",
                                 "responsive": {
                                     "desktop": {
-                                        "props": {
-                                            "className": "gpp:w-1/5 gpp:shrink-0"
-                                        }
+                                        "classMerge": "gpp:w-1/5"
                                     }
                                 },
                                 "props": {
@@ -358,7 +356,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400 gpp:mt-1"
+                                            "className": "gpp:text-xs g7pp-text-muted gpp:mt-1"
                                         },
                                         "text": "$t:sirsoft-popup.admin.summary.order_hint"
                                     }
@@ -369,7 +367,7 @@
                                 "name": "P",
                                 "if": "{{summary !== undefined && (summary?.data?.data ?? []).length === 0}}",
                                 "props": {
-                                    "className": "gpp:text-sm gpp:text-gray-500 gpp:dark:text-gray-400 gpp:flex-1"
+                                    "className": "gpp:text-sm g7pp-text-muted gpp:flex-1"
                                 },
                                 "text": "$t:sirsoft-popup.admin.summary.empty"
                             },
@@ -1447,7 +1445,7 @@
                                             "name": "Span",
                                             "if": "{{!row.thumbnail}}",
                                             "props": {
-                                                "className": "gpp:w-12 gpp:h-14 g7pp-flex-center gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700 gpp:bg-white gpp:dark:bg-gray-800 gpp:text-[10px] gpp:text-gray-500 gpp:dark:text-gray-400 gpp:text-center"
+                                                "className": "gpp:w-12 gpp:h-14 g7pp-flex-center gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700 gpp:bg-white gpp:dark:bg-gray-800 gpp:text-[10px] g7pp-text-muted gpp:text-center"
                                             },
                                             "text": "$t:sirsoft-popup.admin.content_type.html_short"
                                         }
@@ -1483,7 +1481,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400"
+                                                        "className": "gpp:text-xs g7pp-text-muted"
                                                     },
                                                     "text": "{{$t('sirsoft-popup.admin.content_type.' + row.content_type)}}{{(row.filled_locales ?? []).length > 0 ? ' · ' + (row.filled_locales ?? []).map(l => _global.appConfig?.localeNames?.[l] ?? l.toUpperCase()).join(' · ') : ''}}"
                                                 }
@@ -1530,7 +1528,7 @@
                                                     "name": "Span",
                                                     "if": "{{(row.routes ?? []).length > 3}}",
                                                     "props": {
-                                                        "className": "gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400"
+                                                        "className": "gpp:text-xs g7pp-text-muted"
                                                     },
                                                     "text": "$t:sirsoft-popup.admin.list.more_routes|count={{(row.routes ?? []).length - 3}}"
                                                 }
@@ -2301,7 +2299,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "gpp:w-6 gpp:text-right gpp:text-sm gpp:tabular-nums gpp:text-gray-500 gpp:dark:text-gray-400"
+                                                    "className": "gpp:w-6 gpp:text-right gpp:text-sm gpp:tabular-nums g7pp-text-muted"
                                                 },
                                                 "text": "{{row._idx + 1}}"
                                             },
@@ -2355,7 +2353,7 @@
                                                     "data-testid": "popup-reorder-up-{{row.id}}",
                                                     "type": "button",
                                                     "aria-label": "{{$t('sirsoft-popup.admin.reorder.move_up', { name: row.title })}}",
-                                                    "className": "g7pp-flex-center gpp:w-10 gpp:h-10 gpp:shrink-0 gpp:text-gray-500 gpp:hover:text-gray-800 gpp:dark:text-gray-400 gpp:dark:hover:text-gray-100 gpp:rounded gpp:hover:bg-gray-100 gpp:dark:hover:bg-gray-700 gpp:disabled:opacity-40 gpp:disabled:cursor-not-allowed",
+                                                    "className": "g7pp-flex-center gpp:w-10 gpp:h-10 gpp:shrink-0 g7pp-text-muted gpp:hover:text-gray-800 gpp:dark:hover:text-gray-100 gpp:rounded gpp:hover:bg-gray-100 gpp:dark:hover:bg-gray-700 gpp:disabled:opacity-40 gpp:disabled:cursor-not-allowed",
                                                     "disabled": "{{_global.reorderSaving || row._idx === 0}}"
                                                 },
                                                 "children": [
@@ -2388,7 +2386,7 @@
                                                     "data-testid": "popup-reorder-down-{{row.id}}",
                                                     "type": "button",
                                                     "aria-label": "{{$t('sirsoft-popup.admin.reorder.move_down', { name: row.title })}}",
-                                                    "className": "g7pp-flex-center gpp:w-10 gpp:h-10 gpp:shrink-0 gpp:text-gray-500 gpp:hover:text-gray-800 gpp:dark:text-gray-400 gpp:dark:hover:text-gray-100 gpp:rounded gpp:hover:bg-gray-100 gpp:dark:hover:bg-gray-700 gpp:disabled:opacity-40 gpp:disabled:cursor-not-allowed",
+                                                    "className": "g7pp-flex-center gpp:w-10 gpp:h-10 gpp:shrink-0 g7pp-text-muted gpp:hover:text-gray-800 gpp:dark:hover:text-gray-100 gpp:rounded gpp:hover:bg-gray-100 gpp:dark:hover:bg-gray-700 gpp:disabled:opacity-40 gpp:disabled:cursor-not-allowed",
                                                     "disabled": "{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}"
                                                 },
                                                 "children": [

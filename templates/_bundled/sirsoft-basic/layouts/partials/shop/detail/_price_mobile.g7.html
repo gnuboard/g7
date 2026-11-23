@@ -4,7 +4,7 @@
   <div>
     <!-- 할인 전 금액 (취소선, 할인 있을 때) -->
     <div data-if="{{product.data?.discount_rate > 0}}" class="mb-1">
-      <span class="text-sm text-gray-500 dark:text-gray-400 line-through">{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.list_price_formatted}}</span>
+      <span class="text-sm text-muted line-through">{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.list_price_formatted}}</span>
     </div>
     <!-- 할인율 + 판매가 (할인 있을 때) -->
     <div data-if="{{product.data?.discount_rate > 0}}" class="flex items-center gap-2">

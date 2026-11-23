@@ -124,14 +124,10 @@
                             },
                             "responsive": {
                                 "tablet": {
-                                    "props": {
-                                        "className": "board:flex board:items-center board:flex-wrap board:gap-2 board:col-span-2"
-                                    }
+                                    "classMerge": "board:col-span-2"
                                 },
                                 "desktop": {
-                                    "props": {
-                                        "className": "board:flex board:items-center board:flex-wrap board:gap-2 board:col-span-4"
-                                    }
+                                    "classMerge": "board:col-span-4"
                                 }
                             },
                             "props": {

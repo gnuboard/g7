@@ -197,7 +197,7 @@
                     "name": "P",
                     "if": "{{$parent._local.deleteModal.targetIds?.length > 1}}",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400 mt-2"
+                        "className": "text-sm text-muted mt-2"
                     },
                     "text": "$t:shop.cart.delete_modal.count|count={{$parent._local.deleteModal.targetIds?.length}}"
                 }

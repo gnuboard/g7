@@ -138,7 +138,7 @@
               <label class="page-form-label">
                 <span>$t:sirsoft-page.admin.page.form.fields.published</span>
               </label>
-              <select data-ref="published_select" value="{{String(_local.form?.published ?? false)}}" disabled="{{_computed.isReadOnly}}" class="">
+              <select data-ref="published_select" value="{{String(_local.form?.published ?? false)}}" disabled="{{_computed.isReadOnly}}">
                 <options>
                   <option value="true">$t:sirsoft-page.admin.page.published_status.published</option>
                   <option value="false">$t:sirsoft-page.admin.page.published_status.unpublished</option>
@@ -291,7 +291,7 @@
             <label class="page-form-label-muted">
               <span>$t:sirsoft-page.admin.page.form.seo.seo_title</span>
             </label>
-            <input type="text" placeholder="$t:sirsoft-page.admin.page.form.seo.seo_title_placeholder" value="{{_local.form?.seo_meta?.title ?? ''}}" disabled="{{_computed.isReadOnly}}" class="">
+            <input type="text" placeholder="$t:sirsoft-page.admin.page.form.seo.seo_title_placeholder" value="{{_local.form?.seo_meta?.title ?? ''}}" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- SEO 제목 — 비워 두면 페이지 제목이 대신 쓰인다 -->
                 <set-state target="local" form.seo_meta.title="{{$event.target.value}}"/>
@@ -302,7 +302,7 @@
             <label class="page-form-label-muted">
               <span>$t:sirsoft-page.admin.page.form.seo.seo_description</span>
             </label>
-            <textarea placeholder="$t:sirsoft-page.admin.page.form.seo.seo_description_placeholder" value="{{_local.form?.seo_meta?.description ?? ''}}" disabled="{{_computed.isReadOnly}}" :rows="3" class="">
+            <textarea placeholder="$t:sirsoft-page.admin.page.form.seo.seo_description_placeholder" value="{{_local.form?.seo_meta?.description ?? ''}}" disabled="{{_computed.isReadOnly}}" :rows="3">
               <on type="change">
                 <!-- SEO 설명 -->
                 <set-state target="local" form.seo_meta.description="{{$event.target.value}}"/>
@@ -313,7 +313,7 @@
             <label class="page-form-label-muted">
               <span>$t:sirsoft-page.admin.page.form.seo.seo_keywords</span>
             </label>
-            <input type="text" placeholder="$t:sirsoft-page.admin.page.form.seo.seo_keywords_placeholder" value="{{_local.form?.seo_meta?.keywords ?? ''}}" disabled="{{_computed.isReadOnly}}" class="">
+            <input type="text" placeholder="$t:sirsoft-page.admin.page.form.seo.seo_keywords_placeholder" value="{{_local.form?.seo_meta?.keywords ?? ''}}" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- SEO 키워드 -->
                 <set-state target="local" form.seo_meta.keywords="{{$event.target.value}}"/>
@@ -332,7 +332,7 @@
           </on>
           <span>$t:common.cancel</span>
         </a>
-        <button data-ref="footer_save_button" data-if="{{!_computed.isReadOnly}}" type="button" disabled="{{_local.saving}}" class="page-btn page-btn-primary page-flex-center page:gap-1.5 page:disabled:opacity-50 page:disabled:cursor-not-allowed">
+        <button data-ref="footer_save_button" data-if="{{!_computed.isReadOnly}}" type="button" disabled="{{_local.saving}}" class="page-btn page-btn-primary page-flex-center page:gap-1.5">
           <on type="click">
             <!-- 저장 — 슬러그 중복확인을 통과했는지 먼저 보고, 통과하지 못했으면 서버에 보내지 않고 그 필드에 오류를 세운다 -->
             <conditions>

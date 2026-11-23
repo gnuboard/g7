@@ -22,7 +22,7 @@
         </on>
         $t:sirsoft-ecommerce.admin.product_review.modal.status_change.cancel
       </button>
-      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{(_local.isBatchProcessing ?? false) || reviews.data?.abilities?.can_update !== true}}">
+      <button type="button" class="ecommerce-btn ecommerce-btn-primary" disabled="{{(_local.isBatchProcessing ?? false) || reviews.data?.abilities?.can_update !== true}}">
         <on type="click">
           <!-- 일괄 상태 변경 실행. 성공 갈래가 진행 깃발·작업 선택·체크한 리뷰를 모두 비운 뒤 목록을 다시 부른다. -->
           <sequence>

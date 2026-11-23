@@ -454,7 +454,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "sl:text-sm sl:text-gray-500 sl:dark:text-gray-400"
+                                        "className": "sl:text-sm sl-text-muted"
                                     },
                                     "text": "·"
                                 },
@@ -500,6 +500,7 @@
                                     },
                                     "children": [
                                         {
+                                            "comment": "audit:allow layout-inline-semantic-duplicate reason: 소셜 로그인 알림 템플릿 편집 창의 수신자 규칙 한 건 상자, 보라 테두리에 여백 p-3 space-y-2 라 카드가 아님",
                                             "type": "basic",
                                             "name": "Div",
                                             "iteration": {
@@ -941,7 +942,7 @@
                                                             "name": "P",
                                                             "if": "{{rcpt.type === 'site_admin_email'}}",
                                                             "props": {
-                                                                "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                                                "className": "sl:text-xs sl-text-muted"
                                                             },
                                                             "text": "$t:admin.settings.notification_definitions.recipients.site_admin_email_hint"
                                                         },
@@ -1048,7 +1049,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{(_global.sl_notification_template_form_modal?.editLang ?? $locale) === loc ? 'sl:border-b-2 sl:border-indigo-500 sl:dark:border-indigo-400 sl:text-indigo-600 sl:dark:text-indigo-400' : 'sl:text-gray-500 sl:dark:text-gray-400 sl:hover:text-gray-700 sl:dark:hover:text-gray-300'}} sl:px-4 sl:py-2 sl:text-sm sl:font-medium sl:focus:outline-none"
+                                        "className": "{{(_global.sl_notification_template_form_modal?.editLang ?? $locale) === loc ? 'sl:border-b-2 sl:border-indigo-500 sl:dark:border-indigo-400 sl:text-indigo-600 sl:dark:text-indigo-400' : 'sl-text-muted sl:hover:text-gray-700 sl:dark:hover:text-gray-300'}} sl:px-4 sl:py-2 sl:text-sm sl:font-medium sl:focus:outline-none"
                                     },
                                     "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
                                 }
@@ -1106,8 +1107,7 @@
                                             "props": {
                                                 "type": "text",
                                                 "aria-label": "$t:sirsoft-social_login.admin.notifications.edit_modal.subject",
-                                                "value": "{{_global.sl_notification_template_form_modal?.template?.subject?.[_global.sl_notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
-                                                "className": ""
+                                                "value": "{{_global.sl_notification_template_form_modal?.template?.subject?.[_global.sl_notification_template_form_modal?.editLang ?? $locale] ?? ''}}"
                                             }
                                         }
                                     ]

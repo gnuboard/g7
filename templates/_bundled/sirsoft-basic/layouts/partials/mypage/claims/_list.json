@@ -14,9 +14,7 @@
             "name": "Div",
             "responsive": {
                 "portable": {
-                    "props": {
-                        "className": "flex items-center gap-1 border-b border-gray-200 dark:border-gray-700 mb-3 overflow-x-auto"
-                    }
+                    "classMerge": "mb-3"
                 }
             },
             "props": {
@@ -87,7 +85,7 @@
                     "props": {
                         "href": "{{(_local.claimListPath ?? '') + '?type=' + tab.id + '&page=1'}}",
                         "aria-disabled": "{{_local.claimsLoading === true || claims?.data == null}}",
-                        "className": "{{(_local.claimsType ?? query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id ? 'inline-block px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white cursor-pointer' : 'inline-block px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer'}}"
+                        "className": "{{(_local.claimsType ?? query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id ? 'inline-block px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white cursor-pointer' : 'inline-block px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-muted hover:text-gray-900 dark:hover:text-white cursor-pointer'}}"
                     },
                     "children": [
                         {
@@ -181,7 +179,7 @@
                     "props": {
                         "type": "button",
                         "aria-disabled": "{{_local.claimsLoading === true || claims?.data == null}}",
-                        "className": "{{(_local.claimsType ?? query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id ? 'px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white cursor-pointer' : 'px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer'}}"
+                        "className": "{{(_local.claimsType ?? query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id ? 'px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white cursor-pointer' : 'px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-muted hover:text-gray-900 dark:hover:text-white cursor-pointer'}}"
                     },
                     "children": [
                         {
@@ -243,12 +241,12 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                                        "className": "card-plain p-3"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                                "className": "card-plain p-4"
                             },
                             "children": [
                                 {
@@ -345,7 +343,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                                        "className": "text-xs text-muted mt-0.5"
                                                     },
                                                     "text": "$t:claim.list.requested_at|at={{claim.requested_at_formatted ?? ''}}"
                                                 },
@@ -353,7 +351,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                                        "className": "text-xs text-muted mt-0.5"
                                                     },
                                                     "text": "$t:claim.list.order_number|number={{claim.order_number ?? ''}}"
                                                 }
@@ -438,7 +436,7 @@
                                                             "props": {
                                                                 "href": "{{(_local.claimDetailPathBase ?? '') + '/' + claim.claim_number + '/edit'}}",
                                                                 "mergeQuery": true,
-                                                                "className": "inline-flex items-center justify-center px-2.5 py-1 text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                                                "className": "btn btn-outline px-2.5 py-1 text-xs rounded-md cursor-pointer"
                                                             },
                                                             "text": "$t:claim.list.edit"
                                                         },
@@ -525,7 +523,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs font-medium text-muted"
                                                     },
                                                     "text": "$t:claim.list.col_items"
                                                 },
@@ -573,7 +571,7 @@
                                                                             "name": "Icon",
                                                                             "props": {
                                                                                 "name": "image",
-                                                                                "className": "text-xl text-gray-500 dark:text-gray-400"
+                                                                                "className": "text-xl text-muted"
                                                                             }
                                                                         }
                                                                     ]
@@ -599,7 +597,7 @@
                                                                     "type": "basic",
                                                                     "name": "P",
                                                                     "props": {
-                                                                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate"
+                                                                        "className": "text-xs text-muted mt-0.5 truncate"
                                                                     },
                                                                     "text": "{{item.product_option_name ?? ''}} · {{item.quantity ?? 0}}$t:shop.count_unit"
                                                                 },
@@ -627,7 +625,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                                "className": "text-xs text-muted"
                                                                             },
                                                                             "text": "{{currency[1]?.formatted ?? ''}}"
                                                                         }
@@ -649,7 +647,7 @@
                                                                     "name": "P",
                                                                     "if": "{{(item.new_additional_options ?? []).length > 0}}",
                                                                     "props": {
-                                                                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate"
+                                                                        "className": "text-xs text-muted mt-0.5 truncate"
                                                                     },
                                                                     "text": "+ {{(item.new_additional_options ?? []).map(o => o.custom_text ? (o.name + ' (' + o.custom_text + ')') : o.name).join(', ')}}"
                                                                 },
@@ -670,7 +668,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                                "className": "text-xs text-muted"
                                                                             },
                                                                             "text": "{{currency[1]?.formatted ?? ''}}"
                                                                         }
@@ -695,7 +693,7 @@
                                                     "name": "P",
                                                     "if": "{{(claim.items ?? []).length === 0}}",
                                                     "props": {
-                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                        "className": "text-sm text-muted"
                                                     },
                                                     "text": "—"
                                                 }
@@ -713,7 +711,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs font-medium text-muted"
                                                     },
                                                     "text": "$t:claim.list.col_reason"
                                                 },
@@ -730,7 +728,7 @@
                                                     "name": "P",
                                                     "if": "{{!!claim.fault_type_label}}",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-muted"
                                                     },
                                                     "text": "({{claim.fault_type_label}})"
                                                 }
@@ -748,7 +746,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs font-medium text-muted"
                                                     },
                                                     "text": "$t:claim.list.col_tracking"
                                                 },
@@ -757,7 +755,7 @@
                                                     "name": "P",
                                                     "if": "{{claim.claim_type !== 'exchange' && claim.claim_type !== 'return'}}",
                                                     "props": {
-                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                        "className": "text-sm text-muted"
                                                     },
                                                     "text": "—"
                                                 },
@@ -774,7 +772,7 @@
                                                             "type": "basic",
                                                             "name": "P",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "$t:claim.list.collection"
                                                         },
@@ -796,7 +794,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{(claim.tracking_summary?.collection?.count ?? 0) > 1}}",
                                                                     "props": {
-                                                                        "className": "ml-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "ml-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:claim.list.tracking_more|more={{(claim.tracking_summary?.collection?.count ?? 0) - 1}}"
                                                                 }
@@ -807,7 +805,7 @@
                                                             "name": "P",
                                                             "if": "{{!claim.tracking_summary?.collection?.first}}",
                                                             "props": {
-                                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                "className": "text-sm text-muted"
                                                             },
                                                             "text": "—"
                                                         }
@@ -826,7 +824,7 @@
                                                             "type": "basic",
                                                             "name": "P",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "$t:claim.list.redelivery"
                                                         },
@@ -848,7 +846,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{(claim.tracking_summary?.redelivery?.count ?? 0) > 1}}",
                                                                     "props": {
-                                                                        "className": "ml-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "ml-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:claim.list.tracking_more|more={{(claim.tracking_summary?.redelivery?.count ?? 0) - 1}}"
                                                                 }
@@ -859,7 +857,7 @@
                                                             "name": "P",
                                                             "if": "{{!claim.tracking_summary?.redelivery?.first}}",
                                                             "props": {
-                                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                "className": "text-sm text-muted"
                                                             },
                                                             "text": "—"
                                                         }
@@ -879,7 +877,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs font-medium text-muted"
                                                     },
                                                     "text": "$t:claim.list.col_amount"
                                                 },
@@ -896,7 +894,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "{{claim.claim_type === 'exchange' ? $t('claim.list.round_trip_shipping_fee') : $t('claim.list.collection_shipping_fee')}}"
                                                         },
@@ -927,7 +925,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "{{currency[1]?.formatted ?? ''}}"
                                                         }
@@ -946,7 +944,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "$t:claim.list.additional_product_amount"
                                                         },
@@ -977,7 +975,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "{{additionalAmountCurrency[1]?.formatted ?? additionalAmountCurrency[1] ?? ''}}"
                                                         }
@@ -996,7 +994,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "$t:claim.list.refund_product_amount"
                                                         },
@@ -1027,7 +1025,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "{{refundAmountCurrency[1]?.formatted ?? refundAmountCurrency[1] ?? ''}}"
                                                         }
@@ -1046,7 +1044,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "$t:claim.list.refund_amount"
                                                         },
@@ -1077,7 +1075,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "{{currency[1]?.formatted ?? ''}}"
                                                         }
@@ -1127,7 +1125,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "{{currency[1]?.formatted ?? ''}}"
                                                         }
@@ -1139,7 +1137,7 @@
                                                     "name": "P",
                                                     "if": "{{!!claim.charge_method_label && (claim.total_charge_amount ?? 0) > 0}}",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400 text-right"
+                                                        "className": "text-xs text-muted text-right"
                                                     },
                                                     "text": "{{claim.charge_method_label}}"
                                                 }
@@ -1243,7 +1241,7 @@
             "name": "Div",
             "if": "{{!!claims.data && (claims.data?.data ?? []).length === 0}}",
             "props": {
-                "className": "flex flex-col items-center justify-center py-16 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                "className": "flex flex-col items-center justify-center py-16 card-plain"
             },
             "children": [
                 {
@@ -1258,7 +1256,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "mt-4 text-sm text-gray-500 dark:text-gray-400"
+                        "className": "mt-4 text-sm text-muted"
                     },
                     "text": "$t:claim.list.empty"
                 },
@@ -1318,7 +1316,7 @@
                     "if": "{{_local.claimsLoading === true}}",
                     "props": {
                         "name": "spinner",
-                        "className": "text-sm text-gray-500 dark:text-gray-400 animate-spin"
+                        "className": "text-sm text-muted animate-spin"
                     }
                 }
             ]

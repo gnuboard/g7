@@ -18,7 +18,7 @@
   2열 격자의 한 칸이 아니라 한 줄 전체를 쓴다(768px 이상 구간의 col-span-2) — 안내 상자와 경고가 반 칸에 끼면 줄바꿈이 많아진다.
   「스케줄 관리에서 변경」 안내는 설정 화면 공통 모양(파란 안내 상자 + 정보 아이콘 + 한 문장 + 링크)이고, 11:00 권장 안내는 이 블록에만 둔다 -->
 <div data-ref="koreaexim_schedule_block" class="koreaexim-form-group">
-  <responsive on="768-" class="koreaexim-form-group koreaexim:col-span-2"/>
+  <responsive on="768-" class-merge="koreaexim:col-span-2"/>
 <span class="koreaexim-form-label">$t:sirsoft-koreaexim.schedule.title</span>
 <p data-ref="koreaexim_schedule_next_run" class="koreaexim:text-sm">$t:sirsoft-koreaexim.next_run {{koreaeximStatus?.data?.next_run_at ?? '-'}}</p>
 <p class="koreaexim-form-hint">$t:sirsoft-koreaexim.site_time {{koreaeximStatus?.data?.update_time_site ?? '-'}}</p>

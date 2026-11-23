@@ -51,11 +51,11 @@
           <div class="ecommerce:group ecommerce-flex-between">
             <div class="ecommerce:flex ecommerce:flex-col">
               <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-1">
-                <icon name="user" class="ecommerce:text-base ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+                <icon name="user" class="ecommerce:text-base ecommerce-text-muted"/>
                 <span class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white">{{row.user_name}}</span>
               </div>
               <!-- 실명 보조 줄(#490) — 이름 칸은 관리자 영역 표시 이름이다. 서버가 실명 키를 줄 때만(회원 조회 권한이 있고 표시 이름과 다를 때) 그린다. -->
-              <span data-if="{{!!row.user_real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.user_real_name })}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{row.user_real_name}}</span>
+              <span data-if="{{!!row.user_real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.user_real_name })}}" class="ecommerce:text-xs ecommerce-text-muted">{{row.user_real_name}}</span>
             </div>
             <action-menu data-type="composite" triggerLabel="" triggerIconName="ellipsis-vertical" position="right" class="ecommerce:opacity-0 ecommerce:group-hover:opacity-100">
               <prop name="items">
@@ -95,7 +95,7 @@
       <column comment="사용처: 사용된 건은 주문번호 링크, 아니면 - 표시" field="order_number" header="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.used_order" width="160px">
         <cell>
           <a data-if="{{!!row.order_number}}" href="/admin/ecommerce/orders/{{row.order_number}}" class="ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline ecommerce:text-sm ecommerce:font-medium">{{row.order_number}}</a>
-          <span data-if="{{!row.order_number}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-sm">-</span>
+          <span data-if="{{!row.order_number}}" class="ecommerce-text-muted ecommerce:text-sm">-</span>
         </cell>
       </column>
       <column comment="작업: 미사용(취소 가능) 건만 발급취소 버튼 노출" field="actions" header="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.actions" width="120px">
@@ -116,7 +116,7 @@
             </on>
             $t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.action.cancel_issue
           </button>
-          <span data-if="{{!row.is_cancellable}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-sm">-</span>
+          <span data-if="{{!row.is_cancellable}}" class="ecommerce-text-muted ecommerce:text-sm">-</span>
         </cell>
       </column>
     </data-grid>
@@ -132,7 +132,7 @@
       </pagination>
     </div>
     <div class="ecommerce:flex ecommerce:justify-end ecommerce:mt-6">
-      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+      <button type="button" class="ecommerce-btn ecommerce-btn-secondary">
         <on type="click">
           <close-modal/>
         </on>

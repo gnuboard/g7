@@ -207,7 +207,7 @@
                                     "name": "P",
                                     "if": "{{_global.socialLoginFieldsState === 'loading'}}",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                        "className": "text-sm text-muted"
                                     },
                                     "text": "$t:common.loading"
                                 },
@@ -261,7 +261,7 @@
                                                                     "name": "Label",
                                                                     "if": "{{field.type !== 'boolean' || !!field.constraints?.inline_label}}",
                                                                     "props": {
-                                                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words"
+                                                                        "className": "form-label break-words"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -287,7 +287,7 @@
                                                                     "name": "P",
                                                                     "if": "{{field.deferred}}",
                                                                     "props": {
-                                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                        "className": "text-sm text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.upload_after_signup"
                                                                 },
@@ -383,7 +383,7 @@
                                                                     "name": "P",
                                                                     "if": "{{(field.ui?.group ?? '') === 'agreements'}}",
                                                                     "props": {
-                                                                        "className": "ml-6 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "ml-6 text-xs text-muted"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -414,7 +414,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && field.locked_reason === 'sso'}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:mypage.profile.locked_by_company"
                                                                 },
@@ -424,7 +424,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && field.locked_reason === 'identity'}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.locked_identity"
                                                                 },
@@ -434,7 +434,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && field.locked_reason === 'admin_only'}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.locked_admin_only"
                                                                 },
@@ -444,7 +444,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && field.locked_reason === 'nickname_interval' && !!field.locked_until}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.locked_until|date={{field.locked_until}}"
                                                                 },
@@ -454,7 +454,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && ['sso', 'identity', 'admin_only'].indexOf(field.locked_reason) === -1 && !(field.locked_reason === 'nickname_interval' && !!field.locked_until)}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.locked_generic"
                                                                 },
@@ -464,7 +464,7 @@
                                                                     "name": "P",
                                                                     "if": "{{field.help}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400 break-words"
+                                                                        "className": "mt-1 text-xs text-muted break-words"
                                                                     },
                                                                     "text": "{{field.help}}"
                                                                 },
@@ -475,7 +475,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{Object.keys(_global.socialLoginErrors ?? {}).some(function(k) { return k === field.name || k.indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(k) !== -1; })}}",
                                                                     "props": {
-                                                                        "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
+                                                                        "className": "form-error"
                                                                     },
                                                                     "text": "{{Object.entries(_global.socialLoginErrors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(entry[0]) !== -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}"
                                                                 }
@@ -506,7 +506,7 @@
                                                     "name": "Label",
                                                     "props": {
                                                         "htmlFor": "social_signup_name",
-                                                        "className": "sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300 sl:mb-1"
+                                                        "className": "sl-user-form-label"
                                                     },
                                                     "text": "$t:sirsoft-social_login.signup.name"
                                                 },
@@ -545,7 +545,7 @@
                                                     "name": "Label",
                                                     "props": {
                                                         "htmlFor": "social_signup_nickname",
-                                                        "className": "sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300 sl:mb-1"
+                                                        "className": "sl-user-form-label"
                                                     },
                                                     "text": "$t:sirsoft-social_login.signup.nickname"
                                                 },
@@ -667,9 +667,7 @@
                                                     "name": "Button",
                                                     "responsive": {
                                                         "640-": {
-                                                            "props": {
-                                                                "className": "sl:shrink-0 sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
-                                                            }
+                                                            "classMerge": "sl:py-2"
                                                         }
                                                     },
                                                     "actions": [
@@ -791,9 +789,7 @@
                                                     "name": "Button",
                                                     "responsive": {
                                                         "640-": {
-                                                            "props": {
-                                                                "className": "sl:shrink-0 sl:px-3 sl:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
-                                                            }
+                                                            "classMerge": "sl:py-2"
                                                         }
                                                     },
                                                     "actions": [
@@ -1086,7 +1082,7 @@
                                                                     "name": "Label",
                                                                     "if": "{{field.type !== 'boolean' || !!field.constraints?.inline_label}}",
                                                                     "props": {
-                                                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words"
+                                                                        "className": "form-label break-words"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -1112,7 +1108,7 @@
                                                                     "name": "P",
                                                                     "if": "{{field.deferred}}",
                                                                     "props": {
-                                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                        "className": "text-sm text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.upload_after_signup"
                                                                 },
@@ -1208,7 +1204,7 @@
                                                                     "name": "P",
                                                                     "if": "{{(field.ui?.group ?? '') === 'agreements'}}",
                                                                     "props": {
-                                                                        "className": "ml-6 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "ml-6 text-xs text-muted"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -1239,7 +1235,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && field.locked_reason === 'sso'}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:mypage.profile.locked_by_company"
                                                                 },
@@ -1249,7 +1245,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && field.locked_reason === 'identity'}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.locked_identity"
                                                                 },
@@ -1259,7 +1255,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && field.locked_reason === 'admin_only'}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.locked_admin_only"
                                                                 },
@@ -1269,7 +1265,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && field.locked_reason === 'nickname_interval' && !!field.locked_until}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.locked_until|date={{field.locked_until}}"
                                                                 },
@@ -1279,7 +1275,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && ['sso', 'identity', 'admin_only'].indexOf(field.locked_reason) === -1 && !(field.locked_reason === 'nickname_interval' && !!field.locked_until)}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.locked_generic"
                                                                 },
@@ -1289,7 +1285,7 @@
                                                                     "name": "P",
                                                                     "if": "{{field.help}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400 break-words"
+                                                                        "className": "mt-1 text-xs text-muted break-words"
                                                                     },
                                                                     "text": "{{field.help}}"
                                                                 },
@@ -1300,7 +1296,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{Object.keys(_global.socialLoginErrors ?? {}).some(function(k) { return k === field.name || k.indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(k) !== -1; })}}",
                                                                     "props": {
-                                                                        "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
+                                                                        "className": "form-error"
                                                                     },
                                                                     "text": "{{Object.entries(_global.socialLoginErrors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(entry[0]) !== -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}"
                                                                 }
@@ -1451,7 +1447,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                "className": "sl:text-xs sl-text-muted"
                             },
                             "text": "$t:sirsoft-social_login.existing.hint"
                         },
@@ -1510,9 +1506,7 @@
                                             "name": "Button",
                                             "responsive": {
                                                 "640-": {
-                                                    "props": {
-                                                        "className": "sl:shrink-0 sl:px-3 sl:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
-                                                    }
+                                                    "classMerge": "sl:py-2"
                                                 }
                                             },
                                             "actions": [
@@ -1607,9 +1601,7 @@
                                     "name": "Button",
                                     "responsive": {
                                         "640-": {
-                                            "props": {
-                                                "className": "sl:w-full sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
-                                            }
+                                            "classMerge": "sl:py-2"
                                         }
                                     },
                                     "actions": [
@@ -1727,9 +1719,7 @@
                                             "name": "Button",
                                             "responsive": {
                                                 "640-": {
-                                                    "props": {
-                                                        "className": "sl:shrink-0 sl:px-3 sl:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
-                                                    }
+                                                    "classMerge": "sl:py-2"
                                                 }
                                             },
                                             "actions": [
@@ -1816,9 +1806,7 @@
                             "name": "Div",
                             "responsive": {
                                 "640-": {
-                                    "props": {
-                                        "className": "sl:flex sl:flex-row sl:gap-2 sl:pt-2 sl:border-t sl:border-gray-200 sl:dark:border-gray-700"
-                                    }
+                                    "classMerge": "sl:flex-row"
                                 }
                             },
                             "props": {
@@ -1831,9 +1819,7 @@
                                     "name": "Button",
                                     "responsive": {
                                         "640-": {
-                                            "props": {
-                                                "className": "sl:flex-1 sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50"
-                                            }
+                                            "classMerge": "sl:py-2"
                                         }
                                     },
                                     "actions": [
@@ -1904,9 +1890,7 @@
                                     "name": "Button",
                                     "responsive": {
                                         "640-": {
-                                            "props": {
-                                                "className": "sl:flex-1 sl:px-3 sl:py-2 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:hover:underline sl:cursor-pointer"
-                                            }
+                                            "classMerge": "sl:py-2"
                                         }
                                     },
                                     "actions": [

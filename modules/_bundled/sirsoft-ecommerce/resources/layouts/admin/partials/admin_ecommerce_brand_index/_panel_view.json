@@ -93,9 +93,6 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
-                                            "props": {
-                                                "className": ""
-                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
@@ -189,7 +186,7 @@
                                                     "name": "Span",
                                                     "if": "{{!_global.selectedBrand?.website}}",
                                                     "props": {
-                                                        "className": "ecommerce:block ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce:block ecommerce:text-sm ecommerce-text-muted"
                                                     },
                                                     "text": "-"
                                                 }

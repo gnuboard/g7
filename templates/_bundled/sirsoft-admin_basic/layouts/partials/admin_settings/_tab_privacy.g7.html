@@ -146,7 +146,7 @@
             </div>
           </div>
         </div>
-        <div data-ref="field_withdrawn_retention_days" data-if="{{!!_local.form?.privacy?.withdrawn_retention_enabled &amp;&amp; _local.form?.privacy?.withdrawn_retention_enabled !== '0'}}" class="">
+        <div data-ref="field_withdrawn_retention_days" data-if="{{!!_local.form?.privacy?.withdrawn_retention_enabled &amp;&amp; _local.form?.privacy?.withdrawn_retention_enabled !== '0'}}">
           <label class="form-label">$t:admin.settings.privacy.withdrawn.days</label>
           <input type="number" name="privacy.withdrawn_retention_days" placeholder="365" min="{{_local?.form?._meta?.limits?.privacy_retention_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.privacy_retention_days_max ?? 3650}}" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['privacy.withdrawn_retention_days'] ? 'input-error' : ''}}"/>
           <span data-if="{{_local.errors?.['privacy.withdrawn_retention_days']}}" class="form-error">{{_local.errors?.['privacy.withdrawn_retention_days']?.[0] ?? ''}}</span>
@@ -224,13 +224,13 @@
             </div>
           </div>
         </div>
-        <div data-ref="field_dormant_days" data-if="{{!!_local.form?.privacy?.dormant_enabled &amp;&amp; _local.form?.privacy?.dormant_enabled !== '0'}}" class="">
+        <div data-ref="field_dormant_days" data-if="{{!!_local.form?.privacy?.dormant_enabled &amp;&amp; _local.form?.privacy?.dormant_enabled !== '0'}}">
           <label class="form-label">$t:admin.settings.privacy.dormant.days</label>
           <input type="number" name="privacy.dormant_days" placeholder="730" min="{{_local?.form?._meta?.limits?.privacy_dormant_days_min ?? 30}}" max="{{_local?.form?._meta?.limits?.privacy_retention_days_max ?? 3650}}" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['privacy.dormant_days'] ? 'input-error' : ''}}"/>
           <span data-if="{{_local.errors?.['privacy.dormant_days']}}" class="form-error">{{_local.errors?.['privacy.dormant_days']?.[0] ?? ''}}</span>
           <p class="text-hint mt-1">$t:admin.settings.privacy.dormant.days_hint</p>
         </div>
-        <div data-ref="field_dormant_notice_days" data-if="{{!!_local.form?.privacy?.dormant_enabled &amp;&amp; _local.form?.privacy?.dormant_enabled !== '0'}}" class="">
+        <div data-ref="field_dormant_notice_days" data-if="{{!!_local.form?.privacy?.dormant_enabled &amp;&amp; _local.form?.privacy?.dormant_enabled !== '0'}}">
           <label class="form-label">$t:admin.settings.privacy.dormant.notice_days</label>
           <input type="number" name="privacy.dormant_notice_days" placeholder="30" min="{{_local?.form?._meta?.limits?.privacy_dormant_notice_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.privacy_dormant_notice_days_max ?? 365}}" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['privacy.dormant_notice_days'] ? 'input-error' : ''}}"/>
           <span data-if="{{_local.errors?.['privacy.dormant_notice_days']}}" class="form-error">{{_local.errors?.['privacy.dormant_notice_days']?.[0] ?? ''}}</span>
@@ -246,7 +246,7 @@
           </div>
           <toggle data-type="composite" name="privacy.dormant_withdraw_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
         </div>
-        <div data-ref="field_dormant_withdraw_days" data-if="{{!!_local.form?.privacy?.dormant_enabled &amp;&amp; _local.form?.privacy?.dormant_enabled !== '0' &amp;&amp; !!_local.form?.privacy?.dormant_withdraw_enabled &amp;&amp; _local.form?.privacy?.dormant_withdraw_enabled !== '0'}}" class="">
+        <div data-ref="field_dormant_withdraw_days" data-if="{{!!_local.form?.privacy?.dormant_enabled &amp;&amp; _local.form?.privacy?.dormant_enabled !== '0' &amp;&amp; !!_local.form?.privacy?.dormant_withdraw_enabled &amp;&amp; _local.form?.privacy?.dormant_withdraw_enabled !== '0'}}">
           <label class="form-label">$t:admin.settings.privacy.dormant.withdraw_days</label>
           <input type="number" name="privacy.dormant_withdraw_days" placeholder="365" min="{{_local?.form?._meta?.limits?.privacy_retention_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.privacy_retention_days_max ?? 3650}}" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['privacy.dormant_withdraw_days'] ? 'input-error' : ''}}"/>
           <span data-if="{{_local.errors?.['privacy.dormant_withdraw_days']}}" class="form-error">{{_local.errors?.['privacy.dormant_withdraw_days']?.[0] ?? ''}}</span>
@@ -286,7 +286,7 @@
           <p data-ref="search_history_scopes_empty" data-if="{{!!_local.form?._meta &amp;&amp; (_local.form?.privacy?.search_history_scopes ?? []).length === 0}}" class="text-hint mt-2">$t:admin.settings.privacy.search_history.empty</p>
           <div data-ref="search_history_scope_list" data-if="{{(_local.form?.privacy?.search_history_scopes ?? []).length &gt; 0}}" class="mt-2 rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
             <div data-each="row, idx in _local.form?.privacy?.search_history_scopes ?? []" data-ref="search_history_scope_row_{{idx}}" class="px-4 py-3 flex flex-col gap-3">
-              <responsive on="768-" class="px-4 py-3 flex flex-row gap-3 items-start justify-between"/>
+              <responsive on="768-" class-merge="flex-row items-start justify-between"/>
               <div class="min-w-0">
                 <span class="text-heading wrap-anywhere">{{(_local.form?._meta?.search_scopes ?? []).find((s) =&gt; s.scope === row.scope)?.label ?? row.scope}}</span>
                 <p class="text-hint wrap-anywhere">$t:admin.settings.privacy.search_history.scope_meta|owner={{(_local.form?._meta?.search_scopes ?? []).find((s) =&gt; s.scope === row.scope)?.owner_label ?? ''}}|scope={{row.scope}}</p>

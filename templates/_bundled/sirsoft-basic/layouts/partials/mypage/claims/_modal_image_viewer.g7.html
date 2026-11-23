@@ -10,7 +10,7 @@
         <set-state target="global" :claimImageViewer="null"/>
       </on>
       <img data-if="{{!!_global.claimImageViewer?.url}}" src="{{_global.claimImageViewer?.url}}" alt="{{_global.claimImageViewer?.name ?? ''}}" class="w-full h-auto rounded-lg object-contain bg-gray-100 dark:bg-gray-900"/>
-      <p data-if="{{!!_global.claimImageViewer?.name}}" class="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center break-all">{{_global.claimImageViewer?.name}}</p>
+      <p data-if="{{!!_global.claimImageViewer?.name}}" class="mt-2 text-xs text-muted text-center break-all">{{_global.claimImageViewer?.name}}</p>
     </div>
     <footer>
       <!-- 닫으면서 대상도 지운다 — 남기면 다음에 다른 사진으로 열었을 때 잠깐 앞 사진이 보인다. -->

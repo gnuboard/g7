@@ -115,7 +115,7 @@
                 "responsive": {
                     "640-1023": {
                         "props": {
-                            "className": "p-6 min-h-screen bg-gray-50 dark:bg-gray-900"
+                            "className": "admin-page-content"
                         }
                     },
                     "1024-": {
@@ -239,7 +239,7 @@
                                 "props": {
                                     "type": "button",
                                     "disabled": "{{menus?.data?.abilities?.can_create !== true || _global.menuBulkMode === true}}",
-                                    "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "flex-center btn btn-primary h-10"
                                 },
                                 "children": [
                                     {

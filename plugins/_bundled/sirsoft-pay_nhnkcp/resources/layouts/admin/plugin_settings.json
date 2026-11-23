@@ -96,7 +96,7 @@
                 "responsive": {
                     "640-1023": {
                         "props": {
-                            "className": "paynhnkcp:p-6 paynhnkcp:min-h-screen paynhnkcp:bg-gray-50 paynhnkcp:dark:bg-gray-900"
+                            "className": "pay-nhnkcp-admin-page-content"
                         }
                     },
                     "1024-": {
@@ -277,9 +277,7 @@
                                 "name": "Div",
                                 "responsive": {
                                     "640-": {
-                                        "props": {
-                                            "className": "paynhnkcp:grid paynhnkcp:grid-cols-3 paynhnkcp:gap-3 paynhnkcp:p-4 paynhnkcp:border-b paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700"
-                                        }
+                                        "classMerge": "paynhnkcp:grid-cols-3"
                                     }
                                 },
                                 "props": {

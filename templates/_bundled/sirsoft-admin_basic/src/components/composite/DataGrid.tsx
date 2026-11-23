@@ -1520,7 +1520,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
             <Div className="grid grid-cols-2 gap-x-4 gap-y-2">
               {cols.map((col) => (
                 <Div key={col.field} className="min-w-0">
-                  <Span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <Span className="text-xs font-medium text-muted uppercase">
                     {col.header}
                   </Span>
                   <Div className="text-sm text-gray-900 dark:text-gray-200 mt-0.5 break-words">
@@ -1578,7 +1578,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                 onClick={() => setIsColumnSelectorOpen(!isColumnSelectorOpen)}
                 className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
               >
-                <Icon name={IconName.Cog} className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <Icon name={IconName.Cog} className="w-4 h-4 text-muted" />
                 <Span className="text-sm text-gray-700 dark:text-gray-300">
                   {resolvedColumnSelectorText}
                 </Span>
@@ -1605,7 +1605,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                         <Span className="text-sm text-gray-700 dark:text-gray-300">
                           {col.header}
                           {col.required && (
-                            <Span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
+                            <Span className="text-xs text-muted ml-1">
                               ({resolvedRequiredText})
                             </Span>
                           )}
@@ -1637,7 +1637,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
               </Div>
             ))
           ) : (
-            <Div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <Div className="text-center py-8 text-muted">
               {resolvedEmptyMessage}
             </Div>
           )}
@@ -1654,7 +1654,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                     const column = displayColumns.find(col => col.field === cell.field);
                     return (
                       <Div key={`footer-mobile-${idx}`} className="flex justify-between text-sm">
-                        <Span className="text-gray-500 dark:text-gray-400">{column?.header || ''}</Span>
+                        <Span className="text-muted">{column?.header || ''}</Span>
                         <Span className={cell.className || 'text-gray-900 dark:text-gray-100'}>
                           {cell.children && cell.children.length > 0
                             ? renderCellChildren(cell.children, {}, null, `footer-mobile-${idx}`, __componentContext)
@@ -1701,7 +1701,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
               onClick={() => setIsColumnSelectorOpen(!isColumnSelectorOpen)}
               className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
             >
-              <Icon name={IconName.Cog} className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <Icon name={IconName.Cog} className="w-4 h-4 text-muted" />
               <Span className="text-sm text-gray-700 dark:text-gray-300">
                 {resolvedColumnSelectorText}
               </Span>
@@ -1728,7 +1728,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                       <Span className="text-sm text-gray-700 dark:text-gray-300">
                         {col.header}
                         {col.required && (
-                          <Span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
+                          <Span className="text-xs text-muted ml-1">
                             ({resolvedRequiredText})
                           </Span>
                         )}
@@ -1967,7 +1967,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                     (selectable ? 1 : 0) +
                     (rowActions && rowActions.length > 0 ? 1 : 0)
                   }
-                  className="px-6 py-8 text-center text-gray-500 dark:text-gray-400"
+                  className="px-6 py-8 text-center text-muted"
                 >
                   {resolvedEmptyMessage}
                 </Td>

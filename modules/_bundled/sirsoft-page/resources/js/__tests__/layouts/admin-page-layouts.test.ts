@@ -9,10 +9,31 @@ import adminPageList from '../../../layouts/admin/admin_page_list.json';
 import adminPageForm from '../../../layouts/admin/admin_page_form.json';
 import adminPageDetail from '../../../layouts/admin/admin_page_detail.json';
 import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
+import { applyResponsiveClassMerge } from '@core/template-engine/helpers/StyleHelpers';
 
 // ─────────────────────────────────────────────
 // 유틸리티
 // ─────────────────────────────────────────────
+
+/**
+ * 폭 구간의 실효 className — 구간 class(있으면 통째 교체) 위에 구간 class-merge 를 엔진 규칙으로 덧붙인 값 (engine-v1.98.0).
+ * 접두 토큰(`page:grid-cols-1`)끼리 충돌 교체가 되도록 서버가 내려 주는 접두 목록을 잠시 세운다.
+ */
+function rangeClassName(node: any, key: string): string {
+    const range = node?.responsive?.[key];
+    if (!range) return '';
+    const g = globalThis as { window?: { G7Config?: Record<string, unknown> } };
+    const created = g.window === undefined;
+    if (created) g.window = {};
+    const prev = g.window!.G7Config;
+    g.window!.G7Config = { ...(prev ?? {}), extensionClassPrefixes: ['page'] };
+    try {
+        return applyResponsiveClassMerge(range.props?.className ?? node?.props?.className, range.classMerge);
+    } finally {
+        if (created) delete g.window;
+        else g.window!.G7Config = prev;
+    }
+}
 
 function findById(node: any, id: string): any | null {
     if (!node) return null;
@@ -1294,7 +1315,9 @@ describe('admin_page_detail.json', () => {
         expect(infoGrid).not.toBeNull();
         // 폭 미디어를 품은 의미 클래스 대신 접두 유틸 + 엔진 responsive(768px 이상 2열)로 쓴다
         expect(infoGrid.props.className.split(/\s+/)).toEqual(expect.arrayContaining(['page:grid', 'page:grid-cols-1']));
-        expect(String(infoGrid.responsive?.['768-']?.props?.className ?? '').split(/\s+/)).toContain('page:grid-cols-2');
+        const wide = rangeClassName(infoGrid, '768-').split(/\s+/);
+        expect(wide).toContain('page:grid-cols-2');
+        expect(wide).not.toContain('page:grid-cols-1');
         expect(infoGrid.props.className).not.toContain('grid-2col-responsive');
         // 세로 나열 원인이던 panel-header-row 단독 사용 금지
         expect(infoGrid.props.className).not.toBe('panel-header-row');

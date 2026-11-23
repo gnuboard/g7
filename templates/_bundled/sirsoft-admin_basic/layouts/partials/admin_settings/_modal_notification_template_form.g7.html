@@ -48,7 +48,7 @@
           <span class="text-label-subtle font-medium">$t:admin.settings.notification_definitions.edit_modal.type_label</span>
           <span class="text-primary text-sm font-semibold">{{$localized(_global.notification_template_form_modal?.definition?.name) || (_global.notification_template_form_modal?.definition?.type ?? '')}}</span>
           <span class="text-body font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{_global.notification_template_form_modal?.definition?.type ?? ''}}</span>
-          <span class="text-sm text-gray-500 dark:text-gray-400">·</span>
+          <span class="text-sm text-muted">·</span>
           <span class="text-label-subtle">$t:admin.settings.notification_definitions.edit_modal.channel_label</span>
           <span class="text-sm font-medium text-indigo-600 dark:text-indigo-400">{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.name ?? _global.notification_template_form_modal?.template?.channel ?? ''}}</span>
         </div>
@@ -57,6 +57,7 @@
         <div data-ref="template_recipients_section" data-if="{{_global.notification_template_form_modal?.definition?.category !== 'identity'}}" class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4 space-y-3">
           <h4 class="text-sm font-medium text-purple-800 dark:text-purple-200">$t:admin.settings.notification_definitions.recipients.title</h4>
           <div class="stack-tight">
+            <!-- audit:allow layout-inline-semantic-duplicate reason: 알림 템플릿 편집 창의 수신자 규칙 한 건 상자, 보라 구역 안에서 보라 테두리와 여백 p-3 space-y-2 를 써서 카드와 테두리 색과 여백이 다름 -->
             <div data-each="rcpt, rcptIdx in {{_global.notification_template_form_modal?.recipients ?? []}}" class="bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-600 rounded-lg p-3 space-y-2">
               <div class="flex-between">
                 <span class="text-xs font-medium text-purple-700 dark:text-purple-300">$t:admin.settings.notification_definitions.recipients.rule_label|index={{rcptIdx + 1}}</span>
@@ -205,7 +206,7 @@
         <!-- 알림 템플릿 편집 모달 본문 확장 슬롯(범용). 채널을 소유한 확장이 그 채널 전용 편집 UI(예: 외부 발송 채널의 템플릿 작성·발송 설정)를 이 자리에 주입한다. 채널 메타 template_editor='none'(종전 hidden_template_editor=true 와 같은 뜻) 인 채널은 아래 코어 제목/본문 입력이 숨겨지고 이 슬롯이 본문 편집을 대신한다. 특정 확장을 알지 못하며, 미주입 시 빈 자리로 남는다. -->
         <extension-point name="notification_template_form_sections" data-ref="template_form_sections_ext" definition="{{_global.notification_template_form_modal?.definition}}" template="{{_global.notification_template_form_modal?.template}}" channel="{{_global.notification_template_form_modal?.template?.channel ?? ''}}" modalId="modal_notification_template_form" stateKey="notification_template_form_modal" saveEndpoint="{{'/api/admin/notification-templates/' + _global.notification_template_form_modal?.template?.id}}" refetchDataSourceId="notificationDefinitions"/>
         <div data-ref="template_lang_tabs" data-if="{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" class="flex border-b border-gray-200 dark:border-gray-700">
-          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.notification_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none">
+          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.notification_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-muted hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none">
             <on type="click">
               <!-- 편집 언어 전환 — 아래 제목·본문이 함께 이 로케일을 바라본다.
      값은 언어별 객체에 남으므로 탭을 옮겨도 쓰던 것이 사라지지 않는다. -->
@@ -220,7 +221,7 @@
               <span>$t:admin.settings.notification_definitions.edit_modal.subject</span>
               <span class="text-required">*</span>
             </label>
-            <input type="text" value="{{_global.notification_template_form_modal?.template?.subject?.[_global.notification_template_form_modal?.editLang ?? $locale] ?? ''}}" class="">
+            <input type="text" value="{{_global.notification_template_form_modal?.template?.subject?.[_global.notification_template_form_modal?.editLang ?? $locale] ?? ''}}">
               <on type="change">
                 <!-- 제목(언어별) — 기존 객체를 복사해 지금 탭의 로케일 키만 갈아 끼운다. -->
                 <set-state target="global" notification_template_form_modal.template.subject="{{Object.assign({}, _global.notification_template_form_modal?.template?.subject, {[_global.notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"/>
@@ -311,9 +312,9 @@
     </div>
     <footer>
       <!-- 미리보기 — 편집 중인 제목·본문을 서버에 보내 변수를 채운 모습을 받아 미리보기 창에 띄운다. 저장 중에는 잠긴다 — 요청이 도는 도중 창이 바뀌면 성공·실패 안내가 갈 곳을 잃는다 -->
-      <button data-if="{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" type="button" class="text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors mr-auto" disabled="{{_global.notification_template_form_modal?.isSaving ?? false}}">
+      <button data-if="{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" type="button" class="btn btn-secondary rounded-md mr-auto" disabled="{{_global.notification_template_form_modal?.isSaving ?? false}}">
         <!-- 왼쪽 단추는 오른쪽 묶음과 떨어뜨린다. 640px 이하에서는 Modal 이 세로로 쌓으므로 여백을 빼고 폭을 채운다(#869) -->
-        <responsive on="-640" class="text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"/>
+        <responsive on="-640" class="btn btn-secondary rounded-md"/>
         <on type="click">
           <api-call :auth_required="true" target="/api/admin/notification-templates/preview" method="POST">
             <success>
@@ -329,7 +330,7 @@
         $t:admin.settings.notification_definitions.edit_modal.btn_preview
       </button>
       <!-- 취소 — 편집 창을 닫고 창 이름 공간의 폼 상태를 비운다 -->
-      <button type="button" class="text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.notification_template_form_modal?.isSaving ?? false}}">
+      <button type="button" class="btn btn-secondary rounded-md" disabled="{{_global.notification_template_form_modal?.isSaving ?? false}}">
         <on type="click">
           <close-modal target="modal_notification_template_form"/>
           <!-- 취소로 닫으면 창 이름 공간을 바로 비운다(7.1.1) -->

@@ -1230,7 +1230,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
                 name: labels[closeRequest.key] ?? labelFromKey(closeRequest.key),
               })}
             </Span>
-            <Span className="block mt-1 text-xs text-gray-500 dark:text-gray-400" aria-live="polite">
+            <Span className="block mt-1 text-xs text-muted" aria-live="polite">
               {closeRequest.saving
                 ? t('admin.templates.layout_edit.draft.close_saving')
                 : closeRequest.failed
@@ -1294,7 +1294,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
               <Span className="font-medium text-gray-900 dark:text-gray-100">
                 {t('admin.templates.layout_edit.conflict.diff_title')}
               </Span>
-              <Span className="flex-1 text-xs text-gray-500 dark:text-gray-400 truncate">
+              <Span className="flex-1 text-xs text-muted truncate">
                 {t('admin.templates.layout_edit.conflict.diff_legend', {
                   mine: activeBuffer?.baseRevision ?? 0,
                   server: serverRevision,
@@ -1360,7 +1360,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
 
                 return (
                   <Div key={group}>
-                    <Span className="block mt-3 mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    <Span className="block mt-3 mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">
                       {t(CODE_SHORTCUT_GROUP_LABEL[group])}
                     </Span>
                     {specs.map((spec) => (
@@ -1369,7 +1369,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
                         className="flex justify-between gap-4 py-1 text-xs border-b border-dashed border-gray-200 dark:border-gray-700"
                       >
                         <Span className="text-gray-700 dark:text-gray-300">{t(spec.labelKey)}</Span>
-                        <Span className="font-mono text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        <Span className="font-mono text-muted whitespace-nowrap">
                           {spec.combos.map((combo) => formatCodeCombo(combo, isMac)).join(' · ')}
                         </Span>
                       </Div>
@@ -1380,7 +1380,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
                         className="flex justify-between gap-4 py-1 text-xs border-b border-dashed border-gray-200 dark:border-gray-700"
                       >
                         <Span className="text-gray-700 dark:text-gray-300">{t(entry.labelKey)}</Span>
-                        <Span className="font-mono text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        <Span className="font-mono text-muted whitespace-nowrap">
                           {formatCodeCombo(entry.combo, isMac)}
                         </Span>
                       </Div>

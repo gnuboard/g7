@@ -42,7 +42,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button data-ref="reaggregate_run_button" type="button" class="btn btn-primary flex-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.analyticsReagg?.from || !_global.analyticsReagg?.to || _global.analyticsReaggRunning}}">
+      <button data-ref="reaggregate_run_button" type="button" class="btn btn-primary flex-center gap-2" disabled="{{!_global.analyticsReagg?.from || !_global.analyticsReagg?.to || _global.analyticsReaggRunning}}">
         <on type="click">
           <!-- 큐에 넘긴 뒤 이력 표를 다시 받는다 — 새 running 행이 보여야 진행률 폴링이 붙는다.
                재집계는 늘 워커가 맡으므로(`ArchiveRunController::store`) 응답이 돌아온 순간엔 아직 행이

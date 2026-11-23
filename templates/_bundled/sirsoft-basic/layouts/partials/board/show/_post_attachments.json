@@ -80,7 +80,7 @@
                             "props": {
                                 "name": "{{_local.showAttachments === false ? 'chevron-down' : 'chevron-up'}}",
                                 "size": "lg",
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             }
                         }
                     ]
@@ -158,7 +158,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "file",
-                                        "className": "text-3xl text-gray-500 dark:text-gray-400"
+                                        "className": "text-3xl text-muted"
                                     }
                                 }
                             ]
@@ -183,7 +183,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                        "className": "block text-xs text-muted"
                                     },
                                     "text": "{{attachment?.size_formatted}}"
                                 }
@@ -246,7 +246,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "group flex w-full justify-start items-center gap-3 p-3 text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
+                        "className": "group flex w-full justify-start items-center gap-3 p-3 text-left card-plain hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
                     },
                     "children": [
                         {
@@ -286,7 +286,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "file",
-                                        "className": "text-3xl text-gray-500 dark:text-gray-400"
+                                        "className": "text-3xl text-muted"
                                     }
                                 }
                             ]
@@ -311,7 +311,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                        "className": "block text-xs text-muted"
                                     },
                                     "text": "{{attachment?.size_formatted}}"
                                 }

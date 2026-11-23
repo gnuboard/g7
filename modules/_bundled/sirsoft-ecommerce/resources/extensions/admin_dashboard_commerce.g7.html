@@ -19,8 +19,8 @@
       <responsive on="tablet" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
       <responsive on="desktop" class="ecommerce:grid ecommerce:grid-cols-4 ecommerce:gap-5"/>
       <div data-ref="commerce_today_summary" class="ecommerce:flex ecommerce:items-center ecommerce:flex-wrap ecommerce:gap-2">
-        <responsive on="tablet" class="ecommerce:flex ecommerce:items-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:col-span-2"/>
-        <responsive on="desktop" class="ecommerce:flex ecommerce:items-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:col-span-4"/>
+        <responsive on="tablet" class-merge="ecommerce:col-span-2"/>
+        <responsive on="desktop" class-merge="ecommerce:col-span-4"/>
         <blur-until-loaded sources="commerce_overview"/>
         <span data-ref="commerce_today_label" class="ecommerce:text-sm ecommerce:font-semibold ecommerce:text-slate-500 ecommerce:dark:text-slate-400">$t:admin.dashboard.stats.today</span>
         <a href="/admin/ecommerce/orders?order_status[]=pending_payment&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}" data-ref="today_pending_payment_badge" class="ecommerce:px-2 ecommerce:py-1 ecommerce:text-xs ecommerce:font-medium ecommerce:rounded-full ecommerce:bg-slate-200 ecommerce:text-slate-700 ecommerce:dark:bg-slate-700 ecommerce:dark:text-slate-200 ecommerce:cursor-pointer ecommerce:hover:bg-slate-300 ecommerce:dark:hover:bg-slate-600 ecommerce:transition-colors">

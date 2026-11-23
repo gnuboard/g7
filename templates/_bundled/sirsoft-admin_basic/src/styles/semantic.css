@@ -23,7 +23,7 @@
  */
 @source "../../layouts/**/*.json";
 /* SAFELIST-START */
-@source inline("bg-blue-600 bg-gray-100 bg-gray-50 bg-gray-800 bg-gray-900 bg-red-600 bg-white block border border-0 border-blue-600 border-dashed border-dotted border-gray-300 border-gray-500 border-gray-700 border-gray-900 border-green-600 border-red-600 border-solid border-white dark:bg-amber-500 dark:bg-amber-700 dark:bg-amber-900 dark:bg-amber-900/20 dark:bg-amber-900/30 dark:bg-amber-900/40 dark:bg-amber-900/50 dark:bg-blue-400 dark:bg-blue-500 dark:bg-blue-600 dark:bg-blue-800 dark:bg-blue-900 dark:bg-blue-900/20 dark:bg-blue-900/30 dark:bg-blue-900/40 dark:bg-blue-900/50 dark:bg-emerald-400 dark:bg-emerald-900/20 dark:bg-gray-100 dark:bg-gray-50 dark:bg-gray-600 dark:bg-gray-700 dark:bg-gray-700/50 dark:bg-gray-800 dark:bg-gray-800/50 dark:bg-gray-900 dark:bg-gray-900/50 dark:bg-gray-950 dark:bg-green-900 dark:bg-green-900/20 dark:bg-green-900/30 dark:bg-indigo-400 dark:bg-indigo-500 dark:bg-indigo-900/30 dark:bg-orange-700 dark:bg-purple-900 dark:bg-purple-900/20 dark:bg-purple-900/30 dark:bg-purple-900/40 dark:bg-purple-900/50 dark:bg-red-600 dark:bg-red-700 dark:bg-red-900 dark:bg-red-900/20 dark:bg-red-900/30 dark:bg-rose-400 dark:bg-rose-900 dark:bg-slate-300 dark:bg-slate-600 dark:bg-slate-700 dark:bg-slate-800 dark:bg-white dark:bg-yellow-700 dark:bg-yellow-900 dark:bg-yellow-900/20 dark:bg-yellow-900/30 dark:block dark:border dark:border-0 dark:border-amber-400 dark:border-amber-600 dark:border-amber-700 dark:border-amber-800 dark:border-blue-600 dark:border-blue-700 dark:border-blue-800 dark:border-dashed dark:border-dotted dark:border-emerald-800 dark:border-gray-300 dark:border-gray-500 dark:border-gray-600 dark:border-gray-700 dark:border-gray-900 dark:border-green-600 dark:border-green-800 dark:border-indigo-400 dark:border-orange-600 dark:border-purple-600 dark:border-purple-700 dark:border-red-500 dark:border-red-600 dark:border-red-700 dark:border-red-800 dark:border-solid dark:border-white dark:border-yellow-600 dark:border-yellow-700 dark:border-yellow-800 dark:disabled:bg-blue-800 dark:disabled:bg-gray-600 dark:disabled:bg-gray-900 dark:disabled:hover:bg-indigo-500 dark:disabled:text-gray-600 dark:divide-gray-700 dark:flex dark:flex-1 dark:flex-auto dark:flex-col dark:flex-none dark:flex-row dark:flex-wrap dark:focus:ring-amber-400 dark:focus:ring-blue-400 dark:focus:ring-indigo-400 dark:focus:ring-offset-gray-900 dark:focus:ring-slate-500 dark:font-bold dark:font-medium dark:font-normal dark:from-blue-900 dark:hover:bg-amber-600 dark:hover:bg-amber-800 dark:hover:bg-blue-600 dark:hover:bg-blue-700 dark:hover:bg-gray-100 dark:hover:bg-gray-200 dark:hover:bg-gray-500 dark:hover:bg-gray-600 dark:hover:bg-gray-700 dark:hover:bg-gray-700/30 dark:hover:bg-indigo-600 dark:hover:bg-indigo-900/30 dark:hover:bg-orange-800 dark:hover:bg-orange-900/30 dark:hover:bg-red-600 dark:hover:bg-red-700 dark:hover:bg-red-800 dark:hover:bg-red-900/20 dark:hover:bg-red-900/30 dark:hover:bg-red-900/40 dark:hover:bg-slate-200 dark:hover:bg-slate-600 dark:hover:bg-yellow-800 dark:hover:text-blue-300 dark:hover:text-blue-400 dark:hover:text-gray-100 dark:hover:text-gray-200 dark:hover:text-gray-300 dark:hover:text-indigo-300 dark:hover:text-purple-200 dark:hover:text-red-400 dark:hover:text-slate-800 dark:hover:text-white dark:italic dark:items-center dark:items-end dark:items-start dark:items-stretch dark:justify-around dark:justify-between dark:justify-center dark:justify-end dark:justify-start dark:opacity-0 dark:opacity-100 dark:opacity-25 dark:opacity-50 dark:opacity-75 dark:overflow-auto dark:overflow-hidden dark:overflow-visible dark:overflow-x-auto dark:overflow-y-auto dark:placeholder-gray-300 dark:prose-invert dark:ring-gray-800 dark:rounded dark:rounded-full dark:rounded-lg dark:rounded-none dark:rounded-sm dark:rounded-xl dark:self-center dark:self-end dark:self-start dark:self-stretch dark:shadow dark:shadow-2xl dark:shadow-lg dark:shadow-none dark:shadow-sm dark:shadow-xl dark:text-2xl dark:text-amber-100 dark:text-amber-200 dark:text-amber-300 dark:text-amber-400 dark:text-base dark:text-blue-100 dark:text-blue-200 dark:text-blue-300 dark:text-blue-400 dark:text-blue-600 dark:text-center dark:text-emerald-300 dark:text-gray-100 dark:text-gray-200 dark:text-gray-300 dark:text-gray-400 dark:text-gray-500 dark:text-gray-600 dark:text-gray-700 dark:text-gray-900 dark:text-green-100 dark:text-green-200 dark:text-green-300 dark:text-green-400 dark:text-green-600 dark:text-indigo-300 dark:text-indigo-400 dark:text-justify dark:text-left dark:text-lg dark:text-orange-200 dark:text-orange-400 dark:text-orange-500 dark:text-purple-100 dark:text-purple-200 dark:text-purple-300 dark:text-purple-400 dark:text-red-200 dark:text-red-300 dark:text-red-400 dark:text-red-500 dark:text-red-600 dark:text-right dark:text-slate-300 dark:text-slate-400 dark:text-sm dark:text-white dark:text-xl dark:text-xs dark:text-yellow-100 dark:text-yellow-200 dark:text-yellow-300 dark:text-yellow-400 dark:text-yellow-500 dark:to-indigo-900 dark:underline dark:whitespace-normal dark:whitespace-nowrap dark:whitespace-pre-wrap disabled:bg-blue-400 disabled:bg-gray-100 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 disabled:hover:bg-transparent disabled:no-underline disabled:opacity-50 disabled:text-gray-400 flex flex-1 flex-auto flex-col flex-none flex-row flex-wrap focus:border-blue-500 focus:border-indigo-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-blue-500 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-red-500 focus:ring-slate-400 font-bold font-medium font-normal h-[220px] h-[260px] hover:-translate-y-0.5 hover:bg-amber-50 hover:bg-amber-700 hover:bg-amber-800 hover:bg-blue-700 hover:bg-gray-100 hover:bg-gray-200 hover:bg-gray-300 hover:bg-gray-50 hover:bg-gray-800 hover:bg-indigo-50 hover:bg-indigo-700 hover:bg-orange-50 hover:bg-orange-800 hover:bg-red-100 hover:bg-red-50 hover:bg-red-700 hover:bg-slate-50 hover:bg-slate-700 hover:bg-yellow-800 hover:decoration-solid hover:no-underline hover:text-blue-600 hover:text-gray-600 hover:text-gray-700 hover:text-gray-900 hover:text-indigo-700 hover:text-purple-800 hover:text-purple-900 hover:text-red-500 hover:text-red-600 hover:text-white hover:underline italic items-center items-end items-start items-stretch justify-around justify-between justify-center justify-end justify-start max-h-[400px] max-h-[500px] max-h-[50vh] max-h-[560px] max-h-[70vh] max-w-[160px] max-w-[200px] min-h-[200px] min-h-[420px] min-h-[44px] min-h-[480px] min-h-[60vh] min-w-[120px] min-w-[200px] min-w-[220px] min-w-[240px] min-w-[64px] min-w-[80px] opacity-0 opacity-100 opacity-25 opacity-50 opacity-75 overflow-auto overflow-hidden overflow-visible overflow-x-auto overflow-y-auto rounded rounded-full rounded-lg rounded-none rounded-sm rounded-xl self-center self-end self-start self-stretch shadow shadow-2xl shadow-lg shadow-none shadow-sm shadow-xl text-2xl text-[10px] text-[11px] text-base text-blue-600 text-center text-gray-500 text-gray-700 text-gray-900 text-green-600 text-justify text-left text-lg text-red-600 text-right text-sm text-white text-xl text-xs underline whitespace-normal whitespace-nowrap whitespace-pre-wrap");
+@source inline("bg-blue-600 bg-gray-100 bg-gray-50 bg-gray-800 bg-gray-900 bg-red-600 bg-white block border border-0 border-blue-600 border-dashed border-dotted border-gray-300 border-gray-500 border-gray-700 border-gray-900 border-green-600 border-red-600 border-solid border-white dark:bg-amber-500 dark:bg-amber-700 dark:bg-amber-900 dark:bg-amber-900/20 dark:bg-amber-900/30 dark:bg-amber-900/40 dark:bg-amber-900/50 dark:bg-blue-400 dark:bg-blue-500 dark:bg-blue-600 dark:bg-blue-800 dark:bg-blue-900 dark:bg-blue-900/20 dark:bg-blue-900/30 dark:bg-blue-900/40 dark:bg-blue-900/50 dark:bg-emerald-400 dark:bg-emerald-900/20 dark:bg-gray-100 dark:bg-gray-50 dark:bg-gray-600 dark:bg-gray-700 dark:bg-gray-700/50 dark:bg-gray-800 dark:bg-gray-800/50 dark:bg-gray-900 dark:bg-gray-900/50 dark:bg-gray-950 dark:bg-green-900 dark:bg-green-900/20 dark:bg-green-900/30 dark:bg-indigo-400 dark:bg-indigo-500 dark:bg-indigo-900/30 dark:bg-orange-700 dark:bg-purple-900 dark:bg-purple-900/20 dark:bg-purple-900/30 dark:bg-purple-900/40 dark:bg-purple-900/50 dark:bg-red-600 dark:bg-red-700 dark:bg-red-900 dark:bg-red-900/20 dark:bg-red-900/30 dark:bg-rose-400 dark:bg-rose-900 dark:bg-slate-300 dark:bg-slate-600 dark:bg-slate-700 dark:bg-slate-800 dark:bg-white dark:bg-yellow-700 dark:bg-yellow-900 dark:bg-yellow-900/20 dark:bg-yellow-900/30 dark:block dark:border dark:border-0 dark:border-amber-400 dark:border-amber-600 dark:border-amber-700 dark:border-amber-800 dark:border-blue-600 dark:border-blue-700 dark:border-blue-800 dark:border-dashed dark:border-dotted dark:border-emerald-800 dark:border-gray-300 dark:border-gray-500 dark:border-gray-600 dark:border-gray-700 dark:border-gray-900 dark:border-green-600 dark:border-green-800 dark:border-indigo-400 dark:border-orange-600 dark:border-purple-600 dark:border-purple-700 dark:border-red-500 dark:border-red-600 dark:border-red-700 dark:border-red-800 dark:border-solid dark:border-white dark:border-yellow-600 dark:border-yellow-700 dark:border-yellow-800 dark:disabled:bg-gray-900 dark:disabled:hover:bg-indigo-500 dark:disabled:text-gray-600 dark:divide-gray-700 dark:flex dark:flex-1 dark:flex-auto dark:flex-col dark:flex-none dark:flex-row dark:flex-wrap dark:focus:ring-amber-400 dark:focus:ring-blue-400 dark:focus:ring-indigo-400 dark:focus:ring-offset-gray-900 dark:focus:ring-slate-500 dark:font-bold dark:font-medium dark:font-normal dark:from-blue-900 dark:hover:bg-amber-600 dark:hover:bg-amber-800 dark:hover:bg-blue-700 dark:hover:bg-gray-100 dark:hover:bg-gray-200 dark:hover:bg-gray-500 dark:hover:bg-gray-600 dark:hover:bg-gray-700 dark:hover:bg-gray-700/30 dark:hover:bg-indigo-600 dark:hover:bg-indigo-900/30 dark:hover:bg-orange-800 dark:hover:bg-orange-900/30 dark:hover:bg-red-600 dark:hover:bg-red-700 dark:hover:bg-red-800 dark:hover:bg-red-900/20 dark:hover:bg-red-900/30 dark:hover:bg-red-900/40 dark:hover:bg-slate-200 dark:hover:bg-slate-600 dark:hover:bg-yellow-800 dark:hover:text-blue-300 dark:hover:text-blue-400 dark:hover:text-gray-100 dark:hover:text-gray-200 dark:hover:text-gray-300 dark:hover:text-indigo-300 dark:hover:text-purple-200 dark:hover:text-red-400 dark:hover:text-slate-800 dark:hover:text-white dark:italic dark:items-center dark:items-end dark:items-start dark:items-stretch dark:justify-around dark:justify-between dark:justify-center dark:justify-end dark:justify-start dark:opacity-0 dark:opacity-100 dark:opacity-25 dark:opacity-50 dark:opacity-75 dark:overflow-auto dark:overflow-hidden dark:overflow-visible dark:overflow-x-auto dark:overflow-y-auto dark:placeholder-gray-300 dark:prose-invert dark:ring-gray-800 dark:rounded dark:rounded-full dark:rounded-lg dark:rounded-none dark:rounded-sm dark:rounded-xl dark:self-center dark:self-end dark:self-start dark:self-stretch dark:shadow dark:shadow-2xl dark:shadow-lg dark:shadow-none dark:shadow-sm dark:shadow-xl dark:text-2xl dark:text-amber-100 dark:text-amber-200 dark:text-amber-300 dark:text-amber-400 dark:text-base dark:text-blue-100 dark:text-blue-200 dark:text-blue-300 dark:text-blue-400 dark:text-blue-600 dark:text-center dark:text-emerald-300 dark:text-gray-100 dark:text-gray-200 dark:text-gray-300 dark:text-gray-400 dark:text-gray-500 dark:text-gray-600 dark:text-gray-700 dark:text-gray-900 dark:text-green-100 dark:text-green-200 dark:text-green-300 dark:text-green-400 dark:text-green-600 dark:text-indigo-300 dark:text-indigo-400 dark:text-justify dark:text-left dark:text-lg dark:text-orange-200 dark:text-orange-400 dark:text-orange-500 dark:text-purple-100 dark:text-purple-200 dark:text-purple-300 dark:text-purple-400 dark:text-red-200 dark:text-red-300 dark:text-red-400 dark:text-red-500 dark:text-red-600 dark:text-right dark:text-slate-300 dark:text-slate-400 dark:text-sm dark:text-white dark:text-xl dark:text-xs dark:text-yellow-100 dark:text-yellow-200 dark:text-yellow-300 dark:text-yellow-400 dark:text-yellow-500 dark:to-indigo-900 dark:underline dark:whitespace-normal dark:whitespace-nowrap dark:whitespace-pre-wrap disabled:bg-gray-100 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 disabled:hover:bg-transparent disabled:no-underline disabled:opacity-50 disabled:text-gray-400 flex flex-1 flex-auto flex-col flex-none flex-row flex-wrap focus:border-blue-500 focus:border-indigo-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-blue-500 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-red-500 focus:ring-slate-400 font-bold font-medium font-normal h-[220px] h-[260px] hover:-translate-y-0.5 hover:bg-amber-50 hover:bg-amber-700 hover:bg-amber-800 hover:bg-blue-700 hover:bg-gray-100 hover:bg-gray-200 hover:bg-gray-300 hover:bg-gray-50 hover:bg-gray-800 hover:bg-indigo-50 hover:bg-indigo-700 hover:bg-orange-50 hover:bg-orange-800 hover:bg-red-100 hover:bg-red-50 hover:bg-red-700 hover:bg-slate-50 hover:bg-slate-700 hover:bg-yellow-800 hover:decoration-solid hover:no-underline hover:text-blue-600 hover:text-gray-600 hover:text-gray-700 hover:text-gray-900 hover:text-indigo-700 hover:text-purple-800 hover:text-purple-900 hover:text-red-500 hover:text-red-600 hover:text-white hover:underline italic items-center items-end items-start items-stretch justify-around justify-between justify-center justify-end justify-start max-h-[400px] max-h-[500px] max-h-[50vh] max-h-[560px] max-h-[70vh] max-w-[160px] max-w-[200px] min-h-[200px] min-h-[420px] min-h-[44px] min-h-[480px] min-h-[60vh] min-w-[120px] min-w-[200px] min-w-[220px] min-w-[240px] min-w-[64px] min-w-[80px] opacity-0 opacity-100 opacity-25 opacity-50 opacity-75 overflow-auto overflow-hidden overflow-visible overflow-x-auto overflow-y-auto rounded rounded-full rounded-lg rounded-none rounded-sm rounded-xl self-center self-end self-start self-stretch shadow shadow-2xl shadow-lg shadow-none shadow-sm shadow-xl text-2xl text-[10px] text-[11px] text-base text-blue-600 text-center text-gray-500 text-gray-700 text-gray-900 text-green-600 text-justify text-left text-lg text-red-600 text-right text-sm text-white text-xl text-xs underline whitespace-normal whitespace-nowrap whitespace-pre-wrap");
 /* SAFELIST-END */
 @source "../../layouts/**/*.g7.html";
 
@@ -76,10 +76,8 @@
   }
   /*
    * Tertiary text — xs 사이즈의 옅은 보조 텍스트 (메타 / 캡션 / 시각 / 보조 설명).
-   * 인라인 `text-xs text-gray-500 dark:text-gray-400` 가 관리자 화면 전반에
-   * 광범위 복붙되어 있어 단일 시맨틱으로 흡수.
-   * (이전 다크 톤 dark:text-gray-500 은 호출처 0 건이라 dark:text-gray-400 으로
-   * 정합 — 인라인 실제 사용 톤과 일치)
+   * 값: `text-xs text-gray-600 dark:text-gray-300`. 관리자 화면 전반에 복붙되던 인라인 보조 텍스트를
+   * 단일 시맨틱으로 흡수했고, 이후 대비를 높이려고 gray-500/400 에서 gray-600/300 으로 올렸다.
    */
   .text-tertiary {
     @apply text-xs text-gray-600;
@@ -122,6 +120,7 @@
    * 줄의 설명 + 본문 영역과 분리하는 mb-6. 인라인 'text-label-subtle mb-6'
    * 30+ 건 흡수.
    */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .section-description {
     @apply text-sm text-gray-500 mb-6;
     @apply dark:text-gray-400;
@@ -189,214 +188,262 @@
   }
 
   /* Success - 성공, 완료, 활성화 */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-success {
     @apply bg-green-100;
     @apply dark:bg-green-900;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-success-light {
     @apply bg-green-50;
     @apply dark:bg-green-900/20;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-success-solid {
     @apply bg-green-600;
     @apply dark:bg-green-500;
   }
 
   /* Error/Danger - 오류, 위험, 삭제 */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-error {
     @apply bg-red-100;
     @apply dark:bg-red-900;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-error-light {
     @apply bg-red-50;
     @apply dark:bg-red-900/20;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-error-solid {
     @apply bg-red-600;
     @apply dark:bg-red-500;
   }
 
   /* Warning - 경고, 주의 */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-warning {
     @apply bg-yellow-100;
     @apply dark:bg-yellow-900;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-warning-light {
     @apply bg-yellow-50;
     @apply dark:bg-yellow-900/20;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-warning-solid {
     @apply bg-yellow-600;
     @apply dark:bg-yellow-500;
   }
 
   /* Info - 정보, 안내 */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-info {
     @apply bg-blue-100;
     @apply dark:bg-blue-900;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-info-light {
     @apply bg-blue-50;
     @apply dark:bg-blue-900/20;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-info-solid {
     @apply bg-blue-600;
     @apply dark:bg-blue-500;
   }
 
   /* Ready - 배송준비 (cyan) */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-ready {
     @apply bg-cyan-100;
     @apply dark:bg-cyan-900;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-ready-light {
     @apply bg-cyan-50;
     @apply dark:bg-cyan-900/20;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-ready-solid {
     @apply bg-cyan-600;
     @apply dark:bg-cyan-400;
   }
 
   /* Progress - 배송중 (indigo) */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-progress {
     @apply bg-indigo-100;
     @apply dark:bg-indigo-900;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-progress-light {
     @apply bg-indigo-50;
     @apply dark:bg-indigo-900/20;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-progress-solid {
     @apply bg-indigo-600;
     @apply dark:bg-indigo-400;
   }
 
   /* Complete - 배송완료 (pink) */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-complete {
     @apply bg-pink-100;
     @apply dark:bg-pink-900;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-complete-light {
     @apply bg-pink-50;
     @apply dark:bg-pink-900/20;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-complete-solid {
     @apply bg-pink-600;
     @apply dark:bg-pink-400;
   }
 
   /* Hold - 비활성, 대기 (gray) */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-hold {
     @apply bg-gray-100;
     @apply dark:bg-gray-800;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-hold-light {
     @apply bg-gray-50;
     @apply dark:bg-gray-800/50;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .bg-hold-solid {
     @apply bg-gray-500;
     @apply dark:bg-gray-400;
   }
 
   /* Semantic Text Colors */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .text-success {
     @apply text-green-700;
     @apply dark:text-green-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .text-error {
     @apply text-red-600;
     @apply dark:text-red-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .text-warning {
     @apply text-yellow-700;
     @apply dark:text-yellow-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .text-info {
     @apply text-blue-600;
     @apply dark:text-blue-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .text-ready {
     @apply text-cyan-700;
     @apply dark:text-cyan-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .text-progress {
     @apply text-indigo-600;
     @apply dark:text-indigo-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .text-complete {
     @apply text-pink-700;
     @apply dark:text-pink-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .text-hold {
     @apply text-gray-500;
     @apply dark:text-gray-400;
   }
 
   /* Semantic Text Colors - Light variants (solid 배경 위 텍스트용) */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .text-success-light {
     @apply text-white;
     @apply dark:text-green-900;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .text-error-light {
     @apply text-white;
     @apply dark:text-red-900;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .text-warning-light {
     @apply text-white;
     @apply dark:text-yellow-900;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .text-info-light {
     @apply text-white;
     @apply dark:text-blue-900;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .text-ready-light {
     @apply text-white;
     @apply dark:text-cyan-900;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .text-progress-light {
     @apply text-white;
     @apply dark:text-indigo-900;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .text-complete-light {
     @apply text-white;
     @apply dark:text-pink-900;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .text-hold-light {
     @apply text-white;
     @apply dark:text-gray-900;
   }
 
   /* Semantic Border Colors */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .border-success {
     @apply border-green-200;
     @apply dark:border-green-800;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .border-error {
     @apply border-red-200;
     @apply dark:border-red-800;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .border-warning {
     @apply border-yellow-200;
     @apply dark:border-yellow-800;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .border-info {
     @apply border-blue-200;
     @apply dark:border-blue-800;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .border-ready {
     @apply border-cyan-200;
     @apply dark:border-cyan-800;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .border-progress {
     @apply border-indigo-200;
     @apply dark:border-indigo-800;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .border-complete {
     @apply border-pink-200;
     @apply dark:border-pink-800;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .border-hold {
     @apply border-gray-300;
     @apply dark:border-gray-600;
@@ -461,6 +508,11 @@
    */
   .btn-sm {
     @apply px-3 py-1.5;
+  }
+
+  /* 큰 버튼 — Button size="lg" 가 붙인다 (#399, 7.2.1) */
+  .btn-lg {
+    @apply px-6 py-3 text-base;
   }
 
   /* Primary Button (다운로드, 저장) */
@@ -550,10 +602,12 @@
     @apply bg-cyan-50 border-cyan-500 text-cyan-700;
     @apply dark:bg-cyan-900/20 dark:border-cyan-400 dark:text-cyan-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .btn-badge-indigo {
     @apply bg-indigo-50 border-indigo-500 text-indigo-600;
     @apply dark:bg-indigo-900/20 dark:border-indigo-400 dark:text-indigo-300;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .btn-badge-pink {
     @apply bg-pink-50 border-pink-500 text-pink-700;
     @apply dark:bg-pink-900/20 dark:border-pink-400 dark:text-pink-300;
@@ -629,9 +683,11 @@
   .input-w-lg {
     @apply w-64;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .input-w-xl {
     @apply w-80;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .input-w-auto {
     @apply w-auto;
   }
@@ -680,17 +736,21 @@
     @apply dark:disabled:bg-gray-700 dark:disabled:text-gray-500;
   }
 
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .select-composite-sm {
     @apply h-8 text-xs;
   }
 
   /* Select Width Variants */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .select-w-sm {
     @apply w-32;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .select-w-md {
     @apply w-48;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .select-w-lg {
     @apply w-64;
   }
@@ -710,6 +770,7 @@
   }
 
   /* Tag Input */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .tag-input-container {
     @apply flex flex-wrap items-center gap-2;
   }
@@ -727,19 +788,6 @@
     @apply space-y-1.5;
   }
 
-  /*
-   * Form Label / Hint — 폼 필드 위/아래 보조 텍스트 시맨틱.
-   * 인라인 Tailwind (block text-sm font-medium text-gray-700 dark:text-gray-300 등) 가
-   * 관리자 폼 전반에 광범위 복붙되어 있어 단일 시맨틱으로 흡수.
-   * (— 두 곳에 중복 정의되어 있던 .form-label 중 본 정의는 폐기.
-   * 하단 마진 mb-1 도 단일 정의 안에 흡수하여 호출처 'form-label mb-N' multi-class
-   * 의 mb-* 토큰을 모두 제거.)
-   */
-  .form-hint {
-    @apply text-xs text-gray-600 mt-1;
-    @apply dark:text-gray-300;
-  }
-
   /* Textarea Size Variants */
   .textarea-sm {
     min-height: 5rem;
@@ -747,6 +795,7 @@
   .textarea-md {
     min-height: 8rem;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .textarea-lg {
     min-height: 12rem;
   }
@@ -756,6 +805,7 @@
     @apply border border-red-500 focus:ring-red-500;
     @apply dark:border-red-500;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .input-success {
     @apply border border-green-500 focus:ring-green-500;
     @apply dark:border-green-500;
@@ -780,6 +830,7 @@
     @apply block text-xs text-red-700 mt-1;
     @apply dark:text-red-300;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .form-success {
     @apply text-sm text-green-700;
     @apply dark:text-green-400;
@@ -904,11 +955,13 @@
    * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
    * 새 레이아웃은 쓰지 않는다.
    */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .search-bar {
     @apply flex flex-col gap-3;
     /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply md:flex-row md:flex-wrap md:items-center;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .search-bar-select {
     @apply w-full h-9 bg-gray-100 text-gray-900 px-3 rounded-lg text-sm;
     @apply placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:outline-none;
@@ -916,11 +969,13 @@
     /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply md:w-32 md:shrink-0;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .search-bar-select-custom {
     @apply w-full;
     /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply md:w-32 md:shrink-0;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .search-bar-input {
     @apply w-full h-9 bg-gray-100 text-gray-900 px-3 rounded-lg text-sm;
     @apply placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:outline-none;
@@ -928,6 +983,7 @@
     /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply md:flex-1 md:min-w-64;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .search-bar-reset {
     @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 cursor-pointer;
     @apply bg-transparent text-gray-700 border border-gray-300 hover:bg-gray-50;
@@ -954,6 +1010,7 @@
    * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
    * 새 레이아웃은 쓰지 않는다.
    */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .filter-row {
     @apply flex flex-col gap-2;
     /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
@@ -1019,6 +1076,7 @@
     @apply hover:bg-gray-100;
     @apply dark:text-gray-300 dark:hover:bg-gray-700;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .dropdown-item-icon {
     @apply text-gray-500;
     @apply dark:text-gray-400;
@@ -1031,6 +1089,7 @@
     @apply bg-gray-100;
     @apply dark:bg-gray-700;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .dropdown-divider {
     @apply border-t border-gray-100 my-1;
     @apply dark:border-gray-700;
@@ -1198,6 +1257,7 @@
     @apply px-4 py-3 text-sm text-gray-900;
     @apply dark:text-gray-100;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .table-actions {
     @apply flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200;
     @apply dark:bg-gray-900 dark:border-gray-700;
@@ -1235,6 +1295,7 @@
   }
 
   /* Modal */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .modal-overlay {
     @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50;
   }
@@ -1292,19 +1353,24 @@
     @apply bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6;
     @apply dark:bg-gray-800;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .modal-lg {
     @apply max-w-lg;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .modal-xl {
     @apply max-w-xl;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .modal-header {
     @apply flex items-start justify-between mb-4;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .modal-close {
     @apply p-1 text-gray-500 hover:text-gray-600 rounded-lg hover:bg-gray-100 cursor-pointer;
     @apply dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .modal-body {
     @apply py-4;
   }
@@ -1327,6 +1393,7 @@
     @apply text-2xl leading-none text-red-600;
     @apply dark:text-red-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .danger-confirm-title {
     @apply text-lg font-semibold text-gray-900 text-center mb-2;
     @apply dark:text-white;
@@ -1335,14 +1402,17 @@
     @apply text-sm text-gray-600 text-center mb-4;
     @apply dark:text-gray-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .danger-confirm-warning {
     @apply bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4;
     @apply dark:bg-yellow-900/20 dark:border-yellow-700;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .danger-confirm-warning-title {
     @apply text-sm font-semibold text-yellow-800 mb-2;
     @apply dark:text-yellow-300;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .danger-confirm-warning-list {
     @apply text-sm text-yellow-700 list-disc list-inside space-y-1;
     @apply dark:text-yellow-400;
@@ -1351,6 +1421,7 @@
     @apply text-sm text-red-600 text-center;
     @apply dark:text-red-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .danger-confirm-footer {
     @apply flex justify-center gap-3 mt-6;
   }
@@ -1426,17 +1497,21 @@
   }
   /* NOTE: legacy `.card-header { mb-6 }` 정의는 제거됨 — 표준 .card-header
    * 정의(line ~461, flex items-center gap-2 + mb-0)와 cascade 충돌하여 무력화시킴. */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .card-section-title {
     @apply text-lg font-semibold text-gray-900 pb-4 mb-6 border-b border-gray-200 -mx-6 px-6;
     @apply dark:text-white dark:border-gray-700;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .card-account {
     @apply bg-gray-50 rounded-lg p-4 relative;
     @apply dark:bg-gray-900;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .card-account-default {
     @apply absolute top-3 left-3;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .card-account-delete {
     @apply absolute top-3 right-3;
   }
@@ -1493,10 +1568,12 @@
   .toast {
     @apply fixed bottom-4 right-4 z-50;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .toast-item {
     @apply flex items-center gap-3 bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg;
     @apply dark:bg-white dark:text-gray-900;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .toast-icon {
     @apply flex-shrink-0;
   }
@@ -1516,6 +1593,7 @@
   }
 
   /* Mobile Card View */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .table-mobile-cards {
     @apply hidden;
   }
@@ -1549,10 +1627,12 @@
     @apply mt-4 pt-3 border-t border-gray-100 flex items-center justify-between;
     @apply dark:border-gray-700;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .excel-card-creator {
     @apply text-sm text-gray-700;
     @apply dark:text-gray-300;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .excel-card-creator-label {
     @apply text-gray-500 mr-2;
     @apply dark:text-gray-400;
@@ -1586,6 +1666,7 @@
   .select-dropdown.hidden {
     @apply hidden;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .select-dropdown-inner {
     @apply py-2 max-h-60 overflow-auto;
   }
@@ -1602,21 +1683,25 @@
   .select-option:disabled {
     @apply opacity-50 cursor-not-allowed;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .select-option-check {
     @apply w-5 h-5 text-blue-600 ml-auto flex-shrink-0;
     @apply dark:text-blue-400;
   }
 
   /* Multi Select */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .multi-select {
     @apply relative inline-block;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .multi-select-trigger {
     @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium;
     @apply bg-transparent text-gray-700 border border-gray-300 rounded-lg;
     @apply cursor-pointer hover:bg-gray-50;
     @apply dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .multi-select-count {
     @apply text-gray-500;
     @apply dark:text-gray-400;
@@ -1628,34 +1713,42 @@
   .multi-select-dropdown.hidden {
     @apply hidden;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .multi-select-header {
     @apply px-4 py-3 text-sm font-medium text-gray-900 border-b border-gray-100;
     @apply dark:text-white dark:border-gray-700;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .multi-select-hint {
     @apply text-xs text-gray-500 font-normal;
     @apply dark:text-gray-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .multi-select-items {
     @apply py-2 max-h-80 overflow-auto;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .multi-select-item {
     @apply flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 cursor-pointer;
     @apply hover:bg-gray-50;
     @apply dark:text-gray-300 dark:hover:bg-gray-700;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .multi-select-item.disabled {
     @apply opacity-50 cursor-not-allowed;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .multi-select-item.disabled:hover {
     @apply bg-transparent;
     @apply dark:bg-transparent;
   }
 
   /* Ghost Select */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .select-ghost {
     @apply relative inline-block;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .select-ghost-trigger {
     @apply inline-flex items-center gap-1 px-2 py-1.5 text-sm font-medium;
     @apply bg-transparent text-gray-700 rounded-lg cursor-pointer;
@@ -1678,15 +1771,18 @@
     @apply text-blue-600 font-medium;
     @apply dark:text-blue-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .select-ghost-check {
     @apply w-4 h-4 text-blue-600;
     @apply dark:text-blue-400;
   }
 
   /* Searchable Dropdown */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .searchable-dropdown {
     @apply relative inline-block;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .searchable-dropdown-trigger {
     @apply min-w-[200px] px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium;
     @apply flex items-center justify-between gap-2 cursor-pointer;
@@ -1708,16 +1804,19 @@
   .searchable-dropdown-dropdown.hidden {
     @apply hidden;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .searchable-dropdown-search {
     @apply p-3 border-b border-gray-200;
     @apply dark:border-gray-700;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .searchable-dropdown-search-input {
     @apply w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg text-sm;
     @apply border border-gray-200 placeholder-gray-500;
     @apply focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none;
     @apply dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:placeholder-gray-300;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .searchable-dropdown-items {
     @apply py-2 max-h-80 overflow-auto;
   }
@@ -1730,13 +1829,16 @@
   .searchable-dropdown-option:disabled {
     @apply opacity-50 cursor-not-allowed;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .searchable-dropdown-check-area {
     @apply w-5 h-5 flex-shrink-0 mt-0.5;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .searchable-dropdown-check {
     @apply w-5 h-5 text-blue-600;
     @apply dark:text-blue-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .searchable-dropdown-option-content {
     @apply flex-1 min-w-0;
   }
@@ -1748,10 +1850,12 @@
     @apply text-blue-600;
     @apply dark:text-blue-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .searchable-dropdown-option-description {
     @apply text-sm text-gray-500 mt-0.5;
     @apply dark:text-gray-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .searchable-dropdown-message {
     @apply px-4 py-6 text-center text-gray-500;
     @apply dark:text-gray-400;
@@ -1777,6 +1881,7 @@
     @apply bg-purple-50 text-purple-600;
     @apply dark:bg-purple-900/20 dark:text-purple-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .stats-icon-orange {
     @apply bg-orange-50 text-orange-700;
     @apply dark:bg-orange-900/20 dark:text-orange-400;
@@ -1822,13 +1927,16 @@
     @apply bg-blue-50;
     @apply dark:bg-blue-900/20;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .tree-item-content {
     @apply flex items-center gap-2 flex-1 min-w-0;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .tree-item-icon {
     @apply w-4 h-4 text-gray-500 flex-shrink-0;
     @apply dark:text-gray-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .tree-item-label {
     @apply text-sm text-gray-700 truncate;
     @apply dark:text-gray-300;
@@ -1841,13 +1949,18 @@
   .tree-expand-btn.hidden {
     @apply invisible;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .tree-children {
     @apply ml-6 pl-4 border-l border-gray-200;
     @apply dark:border-gray-700;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .tree-level-1 { @apply ml-0 pl-0 border-l-0; }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .tree-level-2 { @apply ml-6 pl-4 border-l border-gray-200 dark:border-gray-700; }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .tree-level-3 { @apply ml-6 pl-4 border-l border-gray-200 dark:border-gray-700; }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .tree-level-4 { @apply ml-6 pl-4 border-l border-gray-200 dark:border-gray-700; }
 
   /* Category Selector */
@@ -1871,38 +1984,46 @@
   }
 
   /* Dashboard Components */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .stats-card {
     @apply bg-white p-5 rounded-2xl border border-slate-100 flex flex-col justify-between h-36;
     @apply dark:bg-slate-800 dark:border-slate-700;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .dashboard-panel {
     @apply bg-white rounded-3xl p-6 shadow-sm border border-slate-100;
     @apply dark:bg-slate-800 dark:border-slate-700;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .stats-value {
     @apply text-[2rem] font-bold text-slate-900 leading-none mb-2;
     @apply dark:text-white;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .stats-trend {
     @apply flex items-center gap-1 text-xs font-semibold text-emerald-700;
   }
 
   /* Status Badges */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .status-active {
     @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
     @apply bg-green-100 text-green-800;
     @apply dark:bg-green-900/30 dark:text-green-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .status-inactive {
     @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
     @apply bg-gray-100 text-gray-600;
     @apply dark:bg-gray-700 dark:text-gray-300;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .status-pending {
     @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
     @apply bg-yellow-100 text-yellow-700;
     @apply dark:bg-yellow-900/30 dark:text-yellow-400;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .status-error {
     @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
     @apply bg-red-100 text-red-700;
@@ -1910,13 +2031,16 @@
   }
 
   /* List Items */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .list-item {
     @apply flex items-center gap-3 py-3 border-b border-gray-100;
     @apply dark:border-gray-700;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .list-item:last-child {
     @apply border-b-0;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .list-item-hover {
     @apply flex items-center gap-3 py-3 px-3 -mx-3 rounded-lg;
     @apply hover:bg-gray-50;
@@ -1924,17 +2048,21 @@
   }
 
   /* Empty State */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .empty-state {
     @apply flex flex-col items-center justify-center py-12 text-center;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .empty-state-icon {
     @apply w-16 h-16 text-gray-300 mb-4;
     @apply dark:text-gray-600;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .empty-state-title {
     @apply text-lg font-medium text-gray-900 mb-2;
     @apply dark:text-white;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .empty-state-description {
     @apply text-sm text-gray-500 mb-4;
     @apply dark:text-gray-400;
@@ -1945,6 +2073,7 @@
    * ======================================== */
 
   /* Page Header */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .page-header {
     @apply flex items-center justify-between mb-6;
   }
@@ -1954,6 +2083,7 @@
    * 페이지 제목 영역을 표시할 때 사용 (이커머스 상품 등록 / 주문 상세 /
    * 쿠폰 폼 등). 보강.
    */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .page-header-padded {
     @apply flex items-center justify-between mb-6 px-6;
   }
@@ -1962,15 +2092,18 @@
    * 음수 마진으로 카드 폭 끝까지 차지. 게시판 폼 / 사용자 상세 등 헤더 영역
    * 시각 강조용. 보강.
    */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .page-header-fullbleed {
     @apply flex items-center justify-between mb-6 -mx-6 px-6 bg-gray-50;
     @apply dark:bg-gray-900;
   }
   /* 폭이 모자라면 버튼을 다음 줄로 넘긴다 — 줄바꿈 없이 눌리면 버튼 글자가 한 글자씩 세로로 꺾인다. */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .page-actions {
     @apply flex flex-wrap items-center gap-3;
   }
   /* 머리말 버튼은 줄어들지 않고 글자를 한 줄로 둔다 — 자리가 모자라면 .page-actions 가 줄을 바꾼다 */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .page-actions > * {
     @apply shrink-0 whitespace-nowrap;
   }
@@ -1987,6 +2120,7 @@
   }
 
   /* Section Components */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .section-card {
     @apply scroll-mt-32 bg-white border border-gray-200 rounded-lg p-6 mt-6;
     @apply dark:bg-gray-800 dark:border-gray-700;
@@ -1995,9 +2129,11 @@
     @apply text-lg font-semibold text-gray-900 mb-6;
     @apply dark:text-white;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .info-row {
     @apply flex items-center gap-2 mb-4;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .action-buttons {
     @apply flex justify-end gap-3 mt-6;
   }
@@ -2011,6 +2147,11 @@
     @apply block text-sm font-medium text-gray-500 mb-1;
     @apply dark:text-gray-400;
   }
+  /*
+   * Form Hint — 폼 필드 아래 보조 설명(text-xs gray-600, 다크 gray-300, 위 여백 mt-1).
+   * 같은 값의 정의가 「Form Group」 아래에도 있었으나 하나로 합쳤다. 계단식 순서는 이쪽(뒤 정의)이
+   * 이기던 자리 그대로라 계산 결과가 같다.
+   */
   .form-hint {
     @apply text-xs text-gray-600 mt-1;
     @apply dark:text-gray-300;
@@ -2028,10 +2169,11 @@
 
   /* Icon Sizes
      상자 크기(w/h)와 글리프 크기(font-size)를 함께 정한다. 아이콘은 FontAwesome `<i>` 웹폰트로
-     그려지므로 w-*/h- 만 주면 상자만 커지고 글리프는 본문에서 물려받은 14px 에 머문다 — KPI 카드의
+     그려지므로 w-* 와 h-* 만 주면 상자만 커지고 글리프는 본문에서 물려받은 14px 에 머문다 — KPI 카드의
      48px 상자 안에서 아이콘이 14px 로 그려지던 원인이다(#682 라운드 4, 검수 지적 ②). `leading-none` 은
      h- 와 줄 높이를 맞춰 상자가 세로로 3px 늘어나지 않게 하고, `text-center` 는 글리프가 상자보다
      좁을 때 가운데 두기 위함이다. `<svg>` 로 쓰는 자리에서는 이 세 값이 무해하다. */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .icon-xs {
     @apply w-3 h-3 leading-none text-center;
     font-size: 0.75rem;
@@ -2048,42 +2190,52 @@
     @apply w-6 h-6 leading-none text-center;
     font-size: 1.5rem;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .icon-xl {
     @apply w-8 h-8 leading-none text-center;
     font-size: 2rem;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .icon-2xl {
     @apply w-10 h-10 leading-none text-center;
     font-size: 2.5rem;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .icon-action {
     @apply text-gray-500 hover:text-gray-600 cursor-pointer;
     @apply dark:text-gray-400 dark:hover:text-gray-300;
   }
 
   /* Content Containers */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .page-container {
     @apply min-h-screen bg-gray-50 p-6;
     @apply dark:bg-gray-900;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .content-area {
     @apply max-w-7xl mx-auto;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .content-panel {
     @apply bg-white rounded-lg border border-gray-200 p-6;
     @apply dark:bg-gray-800 dark:border-gray-700;
   }
 
   /* Flex Utilities */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .flex-row-center {
     @apply flex items-center;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .flex-row-between {
     @apply flex items-center justify-between;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .flex-row-end {
     @apply flex items-center justify-end;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .flex-col-start {
     @apply flex flex-col items-start;
   }
@@ -2100,6 +2252,7 @@
   .flex-wrap-center {
     @apply flex flex-wrap items-center;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .inline-flex-center {
     @apply inline-flex items-center;
   }
@@ -2285,6 +2438,7 @@
    * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
    * 새 레이아웃은 쓰지 않는다.
    */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .sub-tab-nav {
     /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply bg-white dark:bg-gray-800 flex gap-1 px-6 sm:px-8 lg:px-10;
@@ -2347,9 +2501,8 @@
   }
 
   /*
-   * Text Hint — 라벨/제목 아래 보조 설명 톤 (text-xs text-gray-400 dark:text-gray-500).
-   * `.text-tertiary` (text-xs text-gray-500 dark:text-gray-400) 보다 light
-   * 모드에서 더 옅고 dark 모드에서 더 muted — "강조도 낮은 hint" 용도.
+   * Text Hint — 라벨/제목 아래 보조 설명 톤 (text-xs text-gray-600 dark:text-gray-300).
+   * 지금 값은 `.text-tertiary` 와 같다(둘 다 gray-600/300 으로 대비를 올렸다). 용도 이름으로 남긴다.
    */
   .text-hint {
     @apply text-xs text-gray-600 dark:text-gray-300;
@@ -2414,6 +2567,7 @@
    * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
    * 새 레이아웃은 쓰지 않는다.
    */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .kv-list-2 {
     @apply grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1 items-baseline;
     /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
@@ -2468,7 +2622,8 @@
 
   /*
    * Form Field Hint — 폼 필드 옆 보조 hint 텍스트 자산.
-   * .text-tertiary 톤 + 살짝 내려서(mt-0.5) + font-normal 로 강조 해제.
+   * text-xs gray-500(다크 gray-400) + 살짝 내려서(mt-0.5) + font-normal 로 강조 해제.
+   * `.text-tertiary`(gray-600/300)보다 한 단계 옅다.
    */
   .text-field-hint {
     @apply text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal;
@@ -2489,6 +2644,7 @@
    * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
    * 새 레이아웃은 쓰지 않는다.
    */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .grid-3col-responsive {
     /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply grid grid-cols-1 lg:grid-cols-3 gap-4 items-start;
@@ -2577,9 +2733,9 @@
 
   /*
    * Text Table Header — 테이블 헤더 셀 톤 자산.
-   * text-xs + uppercase + tracking-wider + medium + tertiary 색조
+   * text-xs + uppercase + tracking-wider + medium + 색조
    * (text-gray-500 dark:text-gray-400). 테이블 컬럼 라벨 표준.
-   * .text-tertiary 의 토큰을 직접 inline.
+   * `.text-tertiary`(gray-600/300)보다 한 단계 옅은 값을 직접 적는다.
    */
   .text-table-header {
     @apply text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider;
@@ -2623,12 +2779,15 @@
   .gap-sm {
     @apply gap-2;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .gap-md {
     @apply gap-4;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .gap-lg {
     @apply gap-6;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .mb-sm {
     @apply mb-2;
   }
@@ -2640,28 +2799,34 @@
   }
 
   /* Surface */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .surface {
     @apply bg-white;
     @apply dark:bg-gray-800;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .surface-alt {
     @apply bg-gray-50;
     @apply dark:bg-gray-900;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .card-border {
     @apply border border-gray-200 rounded-lg;
     @apply dark:border-gray-700;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .card-border-xl {
     @apply border border-gray-200 rounded-xl;
     @apply dark:border-gray-700;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .border-light {
     @apply border border-gray-300;
     @apply dark:border-gray-600;
   }
 
   /* State Utilities */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .disabled-state {
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
     @apply aria-disabled:opacity-50 aria-disabled:cursor-not-allowed;
@@ -2677,57 +2842,71 @@
   .card-link-card :is(a[href], button, input, select, textarea, label, summary, [role], [tabindex]) {
     pointer-events: auto;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .focus-ring {
     @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
     @apply dark:focus:ring-offset-gray-800;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .focus-ring-inset {
     @apply focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .hover-bg {
     @apply hover:bg-gray-100;
     @apply dark:hover:bg-gray-700;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .hover-bg-light {
     @apply hover:bg-gray-50;
     @apply dark:hover:bg-gray-800;
   }
 
   /* Button Utilities */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .btn-base {
     @apply inline-flex items-center justify-center font-medium rounded-lg;
     @apply transition-colors duration-200;
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
     @apply aria-disabled:opacity-50 aria-disabled:cursor-not-allowed;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .btn-size-sm {
     @apply px-3 py-1.5 text-sm;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .btn-size-md {
     @apply px-4 py-2 text-sm;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .btn-size-lg {
     @apply px-6 py-3 text-base;
   }
 
   /* Badge Utilities */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .badge-base {
     @apply inline-flex items-center rounded-full text-xs font-medium;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .badge-size-sm {
     @apply px-2 py-0.5;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .badge-size-md {
     @apply px-2.5 py-1;
   }
 
   /* Shadow Utilities */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .shadow-card {
     @apply shadow-sm;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .shadow-dropdown {
     @apply shadow-lg;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .shadow-hover {
     @apply hover:shadow-md;
   }
@@ -2739,6 +2918,7 @@
    * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
    * 새 레이아웃은 쓰지 않는다.
    */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .page-title {
     @apply text-xl font-semibold text-gray-900;
     /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
@@ -2834,6 +3014,7 @@
    * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
    * 새 레이아웃은 쓰지 않는다.
    */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .sticky-tab-nav-responsive {
     /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply sticky top-0 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 border-b bg-gray-50 border-gray-200;
@@ -2920,6 +3101,7 @@
    * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
    * 새 레이아웃은 쓰지 않는다.
    */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .admin-page-content-responsive {
     /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply p-4 sm:p-6 lg:p-8 min-h-screen bg-gray-50;
@@ -2934,6 +3116,7 @@
    * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
    * 새 레이아웃은 쓰지 않는다.
    */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .admin-page-content-responsive-fluid {
     /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply p-4 sm:p-6 lg:p-8 bg-gray-50;
@@ -2968,6 +3151,7 @@
    * product_notice_index 2건). 보강 — viewport 풀-bleed 콘텐츠 영역
    * 카테고리 확립.
    */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .admin-page-content-viewport {
     @apply p-6 bg-gray-50 h-[calc(100vh-64px)] overflow-hidden;
     @apply dark:bg-gray-900;
@@ -2977,6 +3161,7 @@
    * .admin-page-content-viewport 의 작은 padding (p-4) 변형. 위 2건의
    * responsive.portable 분기에 토큰 동치로 잔존하던 패턴을 흡수.
    */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .admin-page-content-viewport-compact {
     @apply p-4 bg-gray-50 h-[calc(100vh-64px)] overflow-hidden;
     @apply dark:bg-gray-900;
@@ -3227,6 +3412,7 @@
    * 폐지 예정 — `.admin-footer-bar` 의 옛 이름. 768px 이상 가로 배치가 정의 안에 있어 부품은 더 쓰지 않는다.
    * 사이트에서 직접 쓴 화면이 그대로 보이도록 이번 출시에 남기고 다음 출시 이후 뺀다.
    */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .admin-footer-row {
     /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply flex flex-col md:flex-row items-center justify-between gap-4;
@@ -3246,15 +3432,19 @@
   }
 
   /* Responsive Grid */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .responsive-grid {
     @apply grid grid-cols-1 gap-4;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .grid-cols-1-lg-3 {
     @apply grid grid-cols-1 gap-6;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .col-span-1-lg {
     @apply col-span-1;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .col-span-2-lg {
     @apply col-span-1;
   }
@@ -3274,12 +3464,14 @@
    */
 
   /* Modal Typography */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .modal-description {
     @apply text-sm text-gray-500 mt-1;
     @apply dark:text-gray-400;
   }
 
   /* Toast Typography */
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   .toast-message {
     @apply text-sm;
   }
@@ -3321,6 +3513,7 @@
    (입력 칸 묶음·머리말·버튼 묶음·반응형 격자·표 숨김)은 사이트에서 직접 고친 레이아웃의 호환을 위해 폐지 예정으로
    남기고, 다음 출시 이후 제거한다. */
 @media (max-width: 640px) {
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .page-header,
   .page-header-padded,
@@ -3329,6 +3522,7 @@
     align-items: flex-start;
     gap: 1rem;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .page-actions {
     width: 100%;
@@ -3354,6 +3548,7 @@
 
 /* Responsive Grid - sm breakpoint */
 @media (min-width: 640px) {
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .responsive-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3362,18 +3557,22 @@
 
 /* Responsive Grid - lg breakpoint */
 @media (min-width: 1024px) {
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .responsive-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .grid-cols-1-lg-3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .col-span-1-lg {
     grid-column: span 1 / span 1;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .col-span-2-lg {
     grid-column: span 2 / span 2;
@@ -3382,6 +3581,7 @@
 
 /* Responsive Grid - 오버플로우 방지 */
 @media (max-width: 480px) {
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .responsive-grid {
     grid-template-columns: 1fr !important;
@@ -3390,14 +3590,17 @@
 
 /* Mobile Card View - 768px 이하에서 표시 */
 @media (max-width: 768px) {
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .table-mobile-cards {
     display: block;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .table-mobile-cards > * + * {
     margin-top: 1rem;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .table-desktop {
     display: none !important;
@@ -3415,6 +3618,7 @@
     max-height: calc(100vh - 2rem);
     overflow-y: auto;
   }
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .modal-overlay {
     padding: 1rem;
@@ -3436,6 +3640,7 @@
 
 /* Card Account - 오버플로우 방지 */
 @media (max-width: 640px) {
+  /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
   /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .card-account {
     width: 100%;

@@ -11,7 +11,7 @@
       <p class="koreaexim-text-error-soft">$t:sirsoft-koreaexim.notification_definitions.reset_modal.warning_message</p>
     </div>
     <footer>
-      <button type="button" class="koreaexim:px-4 koreaexim:py-2 koreaexim:bg-white koreaexim:dark:bg-gray-800 koreaexim:text-gray-700 koreaexim:dark:text-gray-300 koreaexim:border koreaexim:border-gray-300 koreaexim:dark:border-gray-600 koreaexim:rounded-lg koreaexim:hover:bg-gray-50 koreaexim:dark:hover:bg-gray-700 koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed" disabled="{{_global.isResettingNotification}}">
+      <button type="button" class="koreaexim-btn koreaexim-btn-secondary" disabled="{{_global.isResettingNotification}}">
         <on type="click">
           <close-modal target="modal_koreaexim_notification_definition_reset"/>
         </on>

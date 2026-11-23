@@ -235,7 +235,7 @@ const CellRenderer: React.FC<{
       if (column.render) {
         return <>{column.render(item, index, handleChange)}</>;
       }
-      return <Span className="text-gray-500 dark:text-gray-400">-</Span>;
+      return <Span className="text-muted">-</Span>;
 
     default:
       return <Span className="text-gray-900 dark:text-white text-sm">{String(value ?? '')}</Span>;
@@ -331,7 +331,7 @@ export const DynamicFieldListItem: React.FC<DynamicFieldListItemProps> = ({
         <Div
           {...attributes}
           {...listeners}
-          className="flex-shrink-0 w-6 h-6 flex items-center justify-center cursor-grab active:cursor-grabbing text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-400"
+          className="flex-shrink-0 w-6 h-6 flex items-center justify-center cursor-grab active:cursor-grabbing text-muted hover:text-gray-600 dark:hover:text-gray-400"
           style={indentStyle}
         >
           <Icon name="grip-vertical" className="w-4 h-4" />
@@ -405,7 +405,7 @@ export const DynamicFieldListItem: React.FC<DynamicFieldListItemProps> = ({
           <Button
             type="button"
             onClick={onRemove}
-            className="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300 rounded transition-colors"
+            className="p-1.5 text-muted hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300 rounded transition-colors"
             title="삭제"
           >
             <Icon name="minus" className="w-4 h-4" />

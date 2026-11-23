@@ -11,12 +11,12 @@
     "responsive": {
         "portable": {
             "props": {
-                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                "className": "card-plain p-4"
             }
         }
     },
     "props": {
-        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
+        "className": "card-plain p-6"
     },
     "children": [
         {
@@ -203,9 +203,7 @@
                                             "name": "P",
                                             "responsive": {
                                                 "portable": {
-                                                    "props": {
-                                                        "className": "font-medium text-sm text-gray-900 dark:text-white"
-                                                    }
+                                                    "classMerge": "text-sm"
                                                 }
                                             },
                                             "props": {
@@ -220,12 +218,12 @@
                                             "responsive": {
                                                 "portable": {
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-muted"
                                                     }
                                                 }
                                             },
                                             "props": {
-                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                "className": "text-sm text-muted"
                                             },
                                             "text": "{{$localized(method._cached_description)}}"
                                         }
@@ -348,7 +346,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "form-label"
                             },
                             "text": "$t:shop.checkout.depositor_name"
                         },
@@ -357,9 +355,7 @@
                             "name": "Input",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
-                                    }
+                                    "classMerge": "px-3 text-sm"
                                 }
                             },
                             "actions": [
@@ -404,7 +400,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                "className": "form-label mb-2"
                             },
                             "text": "$t:shop.checkout.refund_bank_title"
                         },
@@ -428,9 +424,7 @@
                                     "name": "Select",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
-                                            }
+                                            "classMerge": "px-3 text-sm"
                                         }
                                     },
                                     "actions": [
@@ -457,9 +451,7 @@
                                     "name": "Input",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
-                                            }
+                                            "classMerge": "px-3 text-sm"
                                         }
                                     },
                                     "actions": [
@@ -488,9 +480,7 @@
                             "name": "Input",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "w-full mt-3 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
-                                    }
+                                    "classMerge": "px-3 text-sm"
                                 }
                             },
                             "actions": [
@@ -567,7 +557,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                "className": "form-label mb-2"
                             },
                             "children": [
                                 {
@@ -635,7 +625,7 @@
                                                             "props": {
                                                                 "name": "{{_local.selectedDbank?.bank_code === bank.bank_code ? 'circle-check' : 'circle'}}",
                                                                 "iconStyle": "{{_local.selectedDbank?.bank_code === bank.bank_code ? 'solid' : 'regular'}}",
-                                                                "className": "{{_local.selectedDbank?.bank_code === bank.bank_code ? 'text-xl text-blue-500 dark:text-blue-400 flex-shrink-0' : 'text-xl text-gray-500 dark:text-gray-400 flex-shrink-0'}}"
+                                                                "className": "{{_local.selectedDbank?.bank_code === bank.bank_code ? 'text-xl text-blue-500 dark:text-blue-400 flex-shrink-0' : 'text-xl text-muted flex-shrink-0'}}"
                                                             }
                                                         },
                                                         {
@@ -676,7 +666,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['dbank.bank_code']}}",
                             "props": {
-                                "className": "text-red-600 dark:text-red-300 text-xs mt-1 block"
+                                "className": "form-error dark:text-red-300"
                             },
                             "text": "{{_local.errors?.['dbank.bank_code']?.[0] ?? ''}}"
                         }
@@ -701,7 +691,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "form-label"
                             },
                             "children": [
                                 {
@@ -754,7 +744,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.depositor_name}}",
                             "props": {
-                                "className": "text-red-600 dark:text-red-300 text-xs mt-1 block"
+                                "className": "form-error dark:text-red-300"
                             },
                             "text": "{{_local.errors?.depositor_name?.[0] ?? ''}}"
                         }
@@ -780,7 +770,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                "className": "form-label mb-2"
                             },
                             "text": "$t:shop.checkout.refund_bank_title"
                         },
@@ -804,9 +794,7 @@
                                     "name": "Select",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
-                                            }
+                                            "classMerge": "px-3 text-sm"
                                         }
                                     },
                                     "actions": [
@@ -833,9 +821,7 @@
                                     "name": "Input",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
-                                            }
+                                            "classMerge": "px-3 text-sm"
                                         }
                                     },
                                     "actions": [
@@ -864,9 +850,7 @@
                             "name": "Input",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "w-full mt-3 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
-                                    }
+                                    "classMerge": "px-3 text-sm"
                                 }
                             },
                             "actions": [
@@ -892,7 +876,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-2"
+                                "className": "text-xs text-muted mt-2"
                             },
                             "text": "$t:shop.checkout.refund_bank_partial_notice"
                         }

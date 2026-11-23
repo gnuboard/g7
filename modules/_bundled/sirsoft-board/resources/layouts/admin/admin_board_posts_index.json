@@ -577,9 +577,7 @@
                                         "name": "Button",
                                         "responsive": {
                                             "portable": {
-                                                "props": {
-                                                    "className": "board:w-full board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board-text-body board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors board:font-medium"
-                                                }
+                                                "classMerge": "board:w-full"
                                             }
                                         },
                                         "actions": [
@@ -624,9 +622,7 @@
                                         "name": "Button",
                                         "responsive": {
                                             "portable": {
-                                                "props": {
-                                                    "className": "board:w-full board:px-4 board:py-2 board:bg-gray-800 board:dark:bg-gray-600 board:text-white board:rounded-lg board:hover:bg-gray-900 board:dark:hover:bg-gray-500 board:transition-colors board:text-sm board:font-medium"
-                                                }
+                                                "classMerge": "board:w-full"
                                             }
                                         },
                                         "actions": [
@@ -889,7 +885,7 @@
                                         "props": {
                                             "type": "button",
                                             "data-testid": "admin-post-bulk-restore",
-                                            "className": "board:px-3 board:py-1.5 board:bg-blue-600 board:text-white board:rounded board:hover:bg-blue-700 board:dark:bg-blue-600 board:dark:hover:bg-blue-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed board:text-sm board:font-medium board:transition-colors",
+                                            "className": "board-btn board-btn-primary board-btn-sm board:rounded",
                                             "disabled": "{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}"
                                         },
                                         "children": [
@@ -1031,7 +1027,7 @@
                                                     "if": "{{row.is_reply}}",
                                                     "props": {
                                                         "name": "level-up-alt",
-                                                        "className": "board:text-sm board:rotate-90 board:mt-1 board:text-gray-500 board:dark:text-gray-400"
+                                                        "className": "board:text-sm board:rotate-90 board:mt-1 board-text-muted"
                                                     }
                                                 },
                                                 {
@@ -1066,7 +1062,7 @@
                                                                     "if": "{{row.is_secret}}",
                                                                     "props": {
                                                                         "name": "lock",
-                                                                        "className": "board:text-sm board:text-gray-500 board:dark:text-gray-400"
+                                                                        "className": "board:text-sm board-text-muted"
                                                                     }
                                                                 },
                                                                 {
@@ -1107,7 +1103,7 @@
                                                                     "if": "{{row.has_attachment}}",
                                                                     "props": {
                                                                         "name": "paperclip",
-                                                                        "className": "board:text-sm board:text-gray-500 board:dark:text-gray-400"
+                                                                        "className": "board:text-sm board-text-muted"
                                                                     }
                                                                 },
                                                                 {
@@ -1314,7 +1310,7 @@
                         ],
                         "props": {
                             "type": "button",
-                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
+                            "className": "board-btn board-btn-secondary"
                         },
                         "children": [
                             {
@@ -1440,7 +1436,7 @@
                         ],
                         "props": {
                             "type": "button",
-                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
+                            "className": "board-btn board-btn-secondary"
                         },
                         "children": [
                             {
@@ -1844,7 +1840,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "board:flex-shrink-0 board:text-xs board:text-gray-500 board:dark:text-gray-400 board:text-right"
+                                                "className": "board:flex-shrink-0 board:text-xs board-text-muted board:text-right"
                                             },
                                             "text": "{{skippedPost.reason_label ?? skippedPost.reason}}"
                                         }

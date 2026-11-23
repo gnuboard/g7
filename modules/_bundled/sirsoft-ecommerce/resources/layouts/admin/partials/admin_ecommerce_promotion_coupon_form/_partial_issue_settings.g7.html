@@ -56,7 +56,7 @@
             </radio-group>
             <!-- 기간설정 시: 시작일 ~ 종료일. flex-center 는 nowrap 이고 datetime-local 입력이 각 208px(w-52) 이라 좁은 뷰포트에서 행이 콘텐츠 영역을 넘친다 → portable 에서 줄바꿈 + 입력 전폭. -->
             <div data-ref="issue_period_range" data-if="{{_local.issue_period_type === 'limited'}}" class="ecommerce-flex-center ecommerce:gap-2">
-              <responsive on="portable" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2"/>
+              <responsive on="portable" class-merge="ecommerce:flex-wrap"/>
               <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period')}}" type="datetime-local" name="issue_from" class="ecommerce-input ecommerce:w-52">
                 <responsive on="portable" aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period')}}" type="datetime-local" name="issue_from" class="ecommerce-input ecommerce:w-full"/>
               </input>

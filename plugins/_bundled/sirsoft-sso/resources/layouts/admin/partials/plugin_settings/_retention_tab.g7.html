@@ -31,7 +31,7 @@
           <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.retention.hints.failure_alert</p>
         </div>
         <div class="sso:grid sso:grid-cols-2 sso:gap-3">
-          <responsive on="desktop" class="sso:col-span-2 sso:grid sso:grid-cols-2 sso:gap-3"/>
+          <responsive on="desktop" class-merge="sso:col-span-2"/>
           <div>
             <label class="sso-form-label">$t:sirsoft-sso.admin.settings.retention.fields.failure_alert_count</label>
             <!-- audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다 -->
@@ -64,7 +64,7 @@
           <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.retention.hints.ttl</p>
         </div>
         <div class="sso:grid sso:grid-cols-2 sso:gap-3">
-          <responsive on="desktop" class="sso:col-span-2 sso:grid sso:grid-cols-2 sso:gap-3"/>
+          <responsive on="desktop" class-merge="sso:col-span-2"/>
           <div>
             <label class="sso-form-label">$t:sirsoft-sso.admin.settings.retention.fields.state_ttl_minutes</label>
             <!-- audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다 -->

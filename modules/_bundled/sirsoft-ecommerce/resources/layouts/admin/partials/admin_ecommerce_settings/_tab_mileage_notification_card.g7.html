@@ -6,7 +6,7 @@
     <div class="ecommerce-flex-between ecommerce:py-3">
       <div>
         <label class="ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.mileage_settings.notification.enabled</label>
-        <p class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5">$t:sirsoft-ecommerce.admin.mileage_settings.notification.enabled_hint</p>
+        <p class="ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5">$t:sirsoft-ecommerce.admin.mileage_settings.notification.enabled_hint</p>
       </div>
       <toggle data-type="composite" name="mileage.expiry_notification_enabled" value="{{_local.form?.mileage?.expiry_notification_enabled ?? true}}" disabled="{{_computed.isReadOnly}}"/>
     </div>
@@ -24,19 +24,19 @@
         <div data-ref="template_status_list" class="ecommerce:space-y-2">
           <div data-ref="template_status_row_{{tplIndex}}" data-each="tpl, tplIndex in (((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'mileage_expiring_soon')?.templates) ?? [])" class="ecommerce-flex-between ecommerce:gap-2 ecommerce:px-3 ecommerce:py-2 ecommerce:rounded-lg ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700/40">
             <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:min-w-0">
-              <icon name="{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}" size="sm" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:flex-shrink-0"/>
+              <icon name="{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}" size="sm" class="ecommerce-text-muted ecommerce:flex-shrink-0"/>
               <div class="ecommerce:min-w-0">
-                <span class="ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{tpl.channel === 'mail' ? $t('sirsoft-ecommerce.admin.mileage_settings.notification.channel_mail') : (tpl.channel === 'database' ? $t('sirsoft-ecommerce.admin.mileage_settings.notification.channel_database') : tpl.channel)}}</span>
+                <span class="ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted">{{tpl.channel === 'mail' ? $t('sirsoft-ecommerce.admin.mileage_settings.notification.channel_mail') : (tpl.channel === 'database' ? $t('sirsoft-ecommerce.admin.mileage_settings.notification.channel_database') : tpl.channel)}}</span>
                 <span class="ecommerce:block ecommerce:text-sm ecommerce:text-gray-800 ecommerce:dark:text-gray-200 ecommerce:truncate">{{$localized(tpl.subject) || $t('sirsoft-ecommerce.admin.mileage_settings.notification.template_status_empty')}}</span>
               </div>
             </div>
             <span class="{{tpl.is_active ? 'ecommerce:bg-green-50 ecommerce:text-green-700 ecommerce:dark:bg-green-900/30 ecommerce:dark:text-green-300' : 'ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-300'}} ecommerce:inline-flex ecommerce:items-center ecommerce:px-2.5 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:flex-shrink-0">{{tpl.is_active ? $t('sirsoft-ecommerce.admin.mileage_settings.notification.template_status_active') : $t('sirsoft-ecommerce.admin.mileage_settings.notification.template_status_inactive')}}</span>
           </div>
-          <div data-if="{{ecommerceNotificationDefinitions !== undefined &amp;&amp; ((((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'mileage_expiring_soon')?.templates) ?? []).length === 0)}}" class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.notification.template_status_empty</div>
+          <div data-if="{{ecommerceNotificationDefinitions !== undefined &amp;&amp; ((((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'mileage_expiring_soon')?.templates) ?? []).length === 0)}}" class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce-text-muted">$t:sirsoft-ecommerce.admin.mileage_settings.notification.template_status_empty</div>
         </div>
         <div class="ecommerce-flex-between ecommerce:gap-2 ecommerce:flex-wrap ecommerce:mt-3">
-          <p class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.notification.template_status_hint</p>
-          <a href="/admin/ecommerce/settings?tab=notification_definitions" data-ref="go_to_notification_settings" class="ecommerce:flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors">
+          <p class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.mileage_settings.notification.template_status_hint</p>
+          <a href="/admin/ecommerce/settings?tab=notification_definitions" data-ref="go_to_notification_settings" class="ecommerce:flex ecommerce-btn ecommerce-btn-secondary ecommerce:gap-1.5 ecommerce:px-3">
             <on type="click">
               <!-- 알림 설정 화면으로 이동. 마일리지 알림의 실제 문구·채널은 그쪽에서 정하므로 여기서는 자리만 안내한다. -->
               <sequence>

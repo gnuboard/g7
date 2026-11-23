@@ -14,7 +14,7 @@
           <!-- 첨부파일 개수 -->
           <span class="ml-1 px-1.5 py-0.5 text-xs font-medium bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded">{{post?.data?.attachment_count ?? 0}}</span>
         </span>
-        <icon name="{{_local.showAttachments === false ? 'chevron-down' : 'chevron-up'}}" size="lg" class="text-gray-500 dark:text-gray-400"/>
+        <icon name="{{_local.showAttachments === false ? 'chevron-down' : 'chevron-up'}}" size="lg" class="text-muted"/>
       </button>
     </h3>
     <!-- 첨부파일 목록 -->
@@ -30,12 +30,12 @@
         </span>
         <!-- 파일 아이콘 (일반 파일인 경우) -->
         <span data-if="{{!attachment?.is_image}}" class="flex-shrink-0 w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-          <icon name="file" class="text-3xl text-gray-500 dark:text-gray-400"/>
+          <icon name="file" class="text-3xl text-muted"/>
         </span>
         <!-- 파일 정보 -->
         <span class="flex-1 min-w-0">
           <span class="block text-sm font-medium text-gray-900 dark:text-white truncate mb-1">{{attachment?.original_filename}}</span>
-          <span class="block text-xs text-gray-500 dark:text-gray-400">{{attachment?.size_formatted}}</span>
+          <span class="block text-xs text-muted">{{attachment?.size_formatted}}</span>
         </span>
         <!-- 다운로드 아이콘 -->
         <span class="flex-shrink-0">
@@ -43,7 +43,7 @@
         </span>
       </button>
       <!-- 첨부파일 카드 - 권한 없을 때 (클릭 시 토스트 표시). 누르면 안내가 뜨는 단추다 — Enter·Space 로도 같은 안내를 받는다 -->
-      <button type="button" data-if="{{post?.data?.abilities?.can_download !== true}}" class="group flex w-full justify-start items-center gap-3 p-3 text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer">
+      <button type="button" data-if="{{post?.data?.abilities?.can_download !== true}}" class="group flex w-full justify-start items-center gap-3 p-3 text-left card-plain hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer">
         <on type="click">
           <!-- 회원은 권한 없음 안내, 비회원은 로그인하면 받을 수 있는 게시판이 있어 로그인으로 안내한다 -->
           <sequence>
@@ -58,12 +58,12 @@
         </span>
         <!-- 파일 아이콘 (일반 파일인 경우) -->
         <span data-if="{{!attachment?.is_image}}" class="flex-shrink-0 w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-          <icon name="file" class="text-3xl text-gray-500 dark:text-gray-400"/>
+          <icon name="file" class="text-3xl text-muted"/>
         </span>
         <!-- 파일 정보 -->
         <span class="flex-1 min-w-0">
           <span class="block text-sm font-medium text-gray-900 dark:text-white truncate mb-1">{{attachment?.original_filename}}</span>
-          <span class="block text-xs text-gray-500 dark:text-gray-400">{{attachment?.size_formatted}}</span>
+          <span class="block text-xs text-muted">{{attachment?.size_formatted}}</span>
         </span>
         <!-- 다운로드 아이콘 (비활성화 스타일) -->
         <span class="flex-shrink-0">

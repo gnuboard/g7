@@ -188,7 +188,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:font-mono ecommerce:mt-0.5"
+                                                    "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:font-mono ecommerce:mt-0.5"
                                                 },
                                                 "text": "{{row.name}}"
                                             },
@@ -197,7 +197,7 @@
                                                 "name": "Span",
                                                 "if": "{{row.description_localized}}",
                                                 "props": {
-                                                    "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5"
+                                                    "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5"
                                                 },
                                                 "text": "{{row.description_localized}}"
                                             },
@@ -245,7 +245,7 @@
                                         "name": "Span",
                                         "if": "{{row.frequency !== 'everyThirtySeconds'}}",
                                         "props": {
-                                            "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:font-mono ecommerce:mt-0.5"
+                                            "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:font-mono ecommerce:mt-0.5"
                                         },
                                         "text": "{{row.expression}}"
                                     }

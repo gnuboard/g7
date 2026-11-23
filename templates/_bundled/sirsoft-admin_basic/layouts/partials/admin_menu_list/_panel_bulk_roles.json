@@ -84,7 +84,7 @@
                                     "name": "Span",
                                     "if": "{{(_global.menuBulkSelectedIds ?? []).length > 10}}",
                                     "props": {
-                                        "className": "px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400"
+                                        "className": "px-2 py-0.5 text-xs text-muted"
                                     },
                                     "text": "$t:admin.menus.bulk.more_count|count={{(_global.menuBulkSelectedIds ?? []).length - 10}}"
                                 }
@@ -227,7 +227,7 @@
                             "props": {
                                 "type": "button",
                                 "disabled": "{{(_global.menuBulkSelectedIds ?? []).length === 0}}",
-                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "btn btn-secondary"
                             },
                             "text": "$t:admin.menus.bulk.clear"
                         },
@@ -252,7 +252,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                "className": "btn btn-secondary"
                             },
                             "text": "$t:admin.menus.bulk.exit"
                         },
@@ -283,7 +283,7 @@
                             "props": {
                                 "type": "button",
                                 "disabled": "{{(_global.menuBulkSelectedIds ?? []).length === 0 || (_global.menuBulkRoleIds ?? []).length === 0}}",
-                                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "btn btn-primary"
                             },
                             "text": "$t:admin.menus.bulk.apply"
                         }

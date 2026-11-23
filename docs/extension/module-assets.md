@@ -503,7 +503,8 @@ namespace 를 선언한 확장의 CSS 는 코어가 서빙할 때 층을 정리�
 ```
 
 - `@custom-variant dark` 로 `{letters}:dark:` 가 중립 표식을 따르게 한다.
-- 화면 폭에 따라 바뀌는 클래스는 `{letters}:md:` 같은 반응형 접두로 쓰지 않는다. 노드의 `<responsive on="…">` 구간에 그 폭에서 쓸 클래스 전체를 둔다([반응형 레이아웃](../frontend/responsive-layout.md)). 레이아웃 정적 검사가 반응형 접두를 막는다.
+- 화면 폭에 따라 바뀌는 클래스는 `{letters}:md:` 같은 반응형 접두로 쓰지 않는다. 노드의 `<responsive on="…">` 구간에 두되, 기본 클래스 일부만 바뀌면 `class-merge` 로 바뀐 클래스만 적는다(코어 7.2.1, [바뀐 클래스만 덧붙이기](../frontend/responsive-layout.md#바뀐-클래스만-덧붙이기-class-merge)). 레이아웃 정적 검사가 반응형 접두를 막는다.
+- 여러 화면에 반복되는 흐린 글자, 버튼, 카드 묶음은 템플릿 의미 클래스의 확장 사본(`{ns}-text-muted`, `{ns}-btn-primary` 등)으로 쓴다([레이아웃 의미 클래스](../frontend/semantic-classes.md)).
 - `theme`·`utilities` 층은 서빙 때 벗겨져 유틸리티가 ② 칸에 실린다.
 - 빌드 배선(`@tailwindcss/vite`, `package.json`)과, 기존 레이아웃 클래스를 자동으로 옮기는 변환 도구는 [확장 CSS 도구](../../scripts/extension-css/README.md) 에 있다.
 

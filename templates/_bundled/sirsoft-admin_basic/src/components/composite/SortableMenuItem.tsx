@@ -103,7 +103,7 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
   className = '',
   selectedClassName = 'bg-blue-50 dark:bg-blue-900/30 border-blue-500',
   defaultClassName = 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600',
-  dragHandleClassName = 'text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300',
+  dragHandleClassName = 'text-muted hover:text-gray-600 dark:hover:text-gray-300',
   iconContainerClassName = 'bg-gray-100 dark:bg-gray-700',
   contentClassName = '',
   enableDrag = true,
@@ -252,7 +252,7 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
             <Icon name="cube" className="w-2 h-2 text-gray-500 dark:text-gray-500 ml-2" title={item.moduleName} />
           )}
         </Div>
-        <Span className="text-xs text-gray-500 dark:text-gray-400 truncate block">
+        <Span className="text-xs text-muted truncate block">
           {item.url}
         </Span>
         {Array.isArray(item.roleNames) && (
@@ -276,7 +276,7 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
                   </Span>
                 ))}
                 {hiddenRoleCount > 0 && (
-                  <Span className="text-[11px] leading-none text-gray-500 dark:text-gray-400">
+                  <Span className="text-[11px] leading-none text-muted">
                     {t('admin.menus.list_roles_more', { count: hiddenRoleCount })}
                   </Span>
                 )}

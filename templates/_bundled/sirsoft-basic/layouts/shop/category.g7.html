@@ -65,7 +65,7 @@
         <div class="flex items-center justify-between mt-1">
           <p data-if="{{!!category?.data?.description_localized}}" class="text-gray-600 dark:text-gray-400 min-w-0 wrap-anywhere">{{category?.data?.description_localized ?? ''}}</p>
           <!-- 브레드크럼 (전체 > 경로 > 현재) -->
-          <div class="flex flex-wrap items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+          <div class="flex flex-wrap items-center gap-1 text-sm text-muted">
             <a href="{{_global.shopBase}}/products" class="hover:text-gray-700 dark:hover:text-gray-300">$t:shop.category.all</a>
             <div data-each="crumb in {{category?.data?.breadcrumb ?? []}}">
               <span class="flex items-center gap-1">

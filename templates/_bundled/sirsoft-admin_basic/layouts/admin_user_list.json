@@ -574,9 +574,6 @@
                         "if": "{{users?.data?.abilities?.can_update === true}}",
                         "responsive": {
                             "portable": {
-                                "props": {
-                                    "className": "bulk-actions-bar"
-                                },
                                 "children": [
                                     {
                                         "id": "mobile_selected_count",

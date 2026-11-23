@@ -57,7 +57,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "credit-card",
-                                                    "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce-text-muted"
                                                 }
                                             },
                                             {
@@ -170,9 +170,7 @@
                                         "name": "Select",
                                         "responsive": {
                                             "768-": {
-                                                "props": {
-                                                    "className": "ecommerce:h-9 ecommerce:shrink-0"
-                                                }
+                                                "classMerge": "ecommerce:shrink-0"
                                             }
                                         },
                                         "actions": [
@@ -217,9 +215,7 @@
                                         "name": "Input",
                                         "responsive": {
                                             "768-": {
-                                                "props": {
-                                                    "className": "ecommerce:w-full ecommerce:h-9 ecommerce:bg-gray-100 ecommerce:text-gray-900 ecommerce:px-3 ecommerce:rounded-lg ecommerce:text-sm ecommerce:placeholder:text-gray-600 ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500 ecommerce:focus:outline-none ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-100 ecommerce:dark:placeholder:text-gray-300 ecommerce:flex-1 ecommerce:min-w-64"
-                                                }
+                                                "classMerge": "ecommerce:flex-1 ecommerce:min-w-64"
                                             }
                                         },
                                         "actions": [
@@ -246,9 +242,7 @@
                                         "name": "Button",
                                         "responsive": {
                                             "768-": {
-                                                "props": {
-                                                    "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:justify-center ecommerce:gap-1.5 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:rounded-lg ecommerce:transition-colors ecommerce:duration-200 ecommerce:cursor-pointer ecommerce:bg-transparent ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:hover:bg-gray-50 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600 ecommerce:dark:hover:bg-gray-700 ecommerce:w-auto ecommerce:shrink-0"
-                                                }
+                                                "classMerge": "ecommerce:w-auto"
                                             }
                                         },
                                         "actions": [
@@ -272,7 +266,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:justify-center ecommerce:gap-1.5 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:rounded-lg ecommerce:transition-colors ecommerce:duration-200 ecommerce:cursor-pointer ecommerce:bg-transparent ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:hover:bg-gray-50 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600 ecommerce:dark:hover:bg-gray-700 ecommerce:w-full ecommerce:shrink-0"
+                                            "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:gap-1.5 ecommerce:w-full ecommerce:shrink-0"
                                         },
                                         "children": [
                                             {
@@ -724,7 +718,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "calendar",
-                                                            "className": "ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce:text-base ecommerce-icon-muted ecommerce-text-muted"
                                                         }
                                                     },
                                                     {
@@ -732,9 +726,7 @@
                                                         "name": "Input",
                                                         "responsive": {
                                                             "768-": {
-                                                                "props": {
-                                                                    "className": "ecommerce-input ecommerce:w-36"
-                                                                }
+                                                                "classMerge": "ecommerce:w-36"
                                                             }
                                                         },
                                                         "actions": [
@@ -764,12 +756,12 @@
                                                 "responsive": {
                                                     "768-": {
                                                         "props": {
-                                                            "className": "ecommerce:block ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce:block ecommerce-text-muted"
                                                         }
                                                     }
                                                 },
                                                 "props": {
-                                                    "className": "ecommerce:hidden ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce:hidden ecommerce-text-muted"
                                                 },
                                                 "text": "~"
                                             },
@@ -785,7 +777,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "calendar",
-                                                            "className": "ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce:text-base ecommerce-icon-muted ecommerce-text-muted"
                                                         }
                                                     },
                                                     {
@@ -793,9 +785,7 @@
                                                         "name": "Input",
                                                         "responsive": {
                                                             "768-": {
-                                                                "props": {
-                                                                    "className": "ecommerce-input ecommerce:w-36"
-                                                                }
+                                                                "classMerge": "ecommerce:w-36"
                                                             }
                                                         },
                                                         "actions": [
@@ -869,9 +859,7 @@
                                                 "name": "Input",
                                                 "responsive": {
                                                     "768-": {
-                                                        "props": {
-                                                            "className": "ecommerce-input ecommerce:w-28"
-                                                        }
+                                                        "classMerge": "ecommerce:w-28"
                                                     }
                                                 },
                                                 "actions": [
@@ -898,12 +886,12 @@
                                                 "responsive": {
                                                     "768-": {
                                                         "props": {
-                                                            "className": "ecommerce:block ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce:block ecommerce-text-muted"
                                                         }
                                                     }
                                                 },
                                                 "props": {
-                                                    "className": "ecommerce:hidden ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce:hidden ecommerce-text-muted"
                                                 },
                                                 "text": "~"
                                             },
@@ -912,9 +900,7 @@
                                                 "name": "Input",
                                                 "responsive": {
                                                     "768-": {
-                                                        "props": {
-                                                            "className": "ecommerce-input ecommerce:w-28"
-                                                        }
+                                                        "classMerge": "ecommerce:w-28"
                                                     }
                                                 },
                                                 "actions": [

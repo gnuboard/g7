@@ -436,7 +436,7 @@
                                                 "props": {
                                                     "type": "button",
                                                     "disabled": "{{_local.isSaving || _computed.isReadOnly}}",
-                                                    "className": "ecommerce-flex-center ecommerce-btn ecommerce-btn-primary ecommerce:gap-1.5 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:shrink-0 ecommerce:whitespace-nowrap"
+                                                    "className": "ecommerce-flex-center ecommerce-btn ecommerce-btn-primary ecommerce:gap-1.5 ecommerce:shrink-0 ecommerce:whitespace-nowrap"
                                                 },
                                                 "children": [
                                                     {

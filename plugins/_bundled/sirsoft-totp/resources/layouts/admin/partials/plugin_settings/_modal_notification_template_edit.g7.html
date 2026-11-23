@@ -37,13 +37,14 @@
           <span class="totp-text-label-subtle totp:font-medium">$t:sirsoft-totp.admin.notifications.edit_modal.type_label</span>
           <span class="totp-text-primary totp:text-sm totp:font-semibold">{{$localized(_global.totp_notification_template_form_modal?.definition?.name)}}</span>
           <span class="totp-text-body totp:font-mono totp:px-1.5 totp:py-0.5 totp:bg-gray-100 totp:dark:bg-gray-700 totp:rounded">{{_global.totp_notification_template_form_modal?.definition?.type ?? ''}}</span>
-          <span class="totp:text-sm totp:text-gray-500 totp:dark:text-gray-400">·</span>
+          <span class="totp:text-sm totp-text-muted">·</span>
           <span class="totp-text-label-subtle">$t:sirsoft-totp.admin.notifications.edit_modal.channel_label</span>
           <span class="totp:text-sm totp:font-medium totp:text-indigo-600 totp:dark:text-indigo-400">{{((totpNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.totp_notification_template_form_modal?.template?.channel)?.name ?? _global.totp_notification_template_form_modal?.template?.channel)}}</span>
         </div>
         <div data-ref="totp_template_recipients_section" class="totp:bg-purple-50 totp:dark:bg-purple-900/20 totp:border totp:border-purple-200 totp:dark:border-purple-700 totp:rounded-lg totp:p-4 totp:space-y-3">
           <h4 class="totp:text-sm totp:font-medium totp:text-purple-800 totp:dark:text-purple-200">$t:admin.settings.notification_definitions.recipients.title</h4>
           <div class="totp-stack-tight">
+            <!-- audit:allow layout-inline-semantic-duplicate reason: TOTP 알림 템플릿 편집 창의 수신자 규칙 한 건 상자, 보라 테두리와 p-3 space-y-2 여백을 써서 카드 여백과 다름 -->
             <div data-each="rcpt, rcptIdx in {{_global.totp_notification_template_form_modal?.recipients ?? []}}" class="totp:bg-white totp:dark:bg-gray-800 totp:border totp:border-purple-200 totp:dark:border-purple-600 totp:rounded-lg totp:p-3 totp:space-y-2">
               <div class="totp-flex-between">
                 <span class="totp:text-xs totp:font-medium totp:text-purple-700 totp:dark:text-purple-300">$t:admin.settings.notification_definitions.recipients.rule_label|index={{rcptIdx + 1}}</span>
@@ -190,7 +191,7 @@
         <!-- 알림 템플릿 편집 모달 본문 확장 슬롯(범용). 채널을 소유한 확장이 그 채널 전용 편집 UI(예: 외부 발송 채널의 템플릿 작성·발송 설정)를 이 자리에 주입한다. 채널 메타 template_editor='none'(종전 hidden_template_editor=true 와 같은 뜻) 인 채널은 아래 코어 제목/본문 입력이 숨겨지고 이 슬롯이 본문 편집을 대신한다. 특정 확장을 알지 못하며, 미주입 시 빈 자리로 남는다. -->
         <extension-point name="notification_template_form_sections" data-ref="totp_template_form_sections_ext" definition="{{_global.totp_notification_template_form_modal?.definition}}" template="{{_global.totp_notification_template_form_modal?.template}}" channel="{{_global.totp_notification_template_form_modal?.template?.channel ?? ''}}" modalId="modal_totp_notification_template_edit" stateKey="totp_notification_template_form_modal" saveEndpoint="{{'/api/admin/notification-templates/' + _global.totp_notification_template_form_modal?.template?.id}}" refetchDataSourceId="totpNotificationDefinitions"/>
         <div data-ref="totp_template_lang_tabs" data-if="{{!((totpNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.totp_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" class="totp:flex totp:border-b totp:border-gray-200 totp:dark:border-gray-700">
-          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.totp_notification_template_form_modal?.editLang ?? $locale) === loc ? 'totp:border-b-2 totp:border-indigo-500 totp:dark:border-indigo-400 totp:text-indigo-600 totp:dark:text-indigo-400' : 'totp:text-gray-500 totp:dark:text-gray-400 totp:hover:text-gray-700 totp:dark:hover:text-gray-300'}} totp:px-4 totp:py-2 totp:text-sm totp:font-medium totp:focus:outline-none">
+          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.totp_notification_template_form_modal?.editLang ?? $locale) === loc ? 'totp:border-b-2 totp:border-indigo-500 totp:dark:border-indigo-400 totp:text-indigo-600 totp:dark:text-indigo-400' : 'totp-text-muted totp:hover:text-gray-700 totp:dark:hover:text-gray-300'}} totp:px-4 totp:py-2 totp:text-sm totp:font-medium totp:focus:outline-none">
             <on type="click">
               <!-- 편집 언어 전환 — 아래 제목·본문이 함께 이 로케일을 바라본다.
      값은 언어별 객체에 남으므로 탭을 옮겨도 쓰던 것이 사라지지 않는다. -->
@@ -205,7 +206,7 @@
               <span>$t:sirsoft-totp.admin.notifications.edit_modal.subject</span>
               <span class="totp-text-required">*</span>
             </label>
-            <input type="text" aria-label="$t:sirsoft-totp.admin.notifications.edit_modal.subject" value="{{_global.totp_notification_template_form_modal?.template?.subject?.[_global.totp_notification_template_form_modal?.editLang ?? $locale] ?? ''}}" class="">
+            <input type="text" aria-label="$t:sirsoft-totp.admin.notifications.edit_modal.subject" value="{{_global.totp_notification_template_form_modal?.template?.subject?.[_global.totp_notification_template_form_modal?.editLang ?? $locale] ?? ''}}">
               <on type="change">
                 <!-- 제목(언어별) — 기존 객체를 복사해 지금 탭의 로케일 키만 갈아 끼운다. -->
                 <set-state target="global" totp_notification_template_form_modal.template.subject="{{Object.assign({}, _global.totp_notification_template_form_modal?.template?.subject, {[_global.totp_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"/>

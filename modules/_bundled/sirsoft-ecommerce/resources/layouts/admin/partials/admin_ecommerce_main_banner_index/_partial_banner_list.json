@@ -166,7 +166,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "ecommerce-drag-handle ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                "className": "ecommerce-drag-handle ecommerce-text-muted"
                             },
                             "children": [
                                 {
@@ -277,7 +277,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "ecommerce-drag-handle ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                "className": "ecommerce-drag-handle ecommerce-text-muted"
                             },
                             "children": [
                                 {

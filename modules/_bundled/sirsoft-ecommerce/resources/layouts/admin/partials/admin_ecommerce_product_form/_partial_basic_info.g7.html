@@ -8,9 +8,9 @@
         <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.basicInfoExpanded="{{!(_local.ui.basicInfoExpanded ?? true)}}"/>
       </on>
-      <icon name="box" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+      <icon name="box" class="ecommerce-text-muted"/>
       <span class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.product.sections.basic_info</span>
-      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{(_local.ui.basicInfoExpanded ?? true) ? 'ecommerce:rotate-180' : ''}}"/>
+      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200 {{(_local.ui.basicInfoExpanded ?? true) ? 'ecommerce:rotate-180' : ''}}"/>
     </button>
     <div data-ref="basic_info_body" data-if="{{_local.ui.basicInfoExpanded ?? true}}" class="ecommerce-row-stack">
       <div data-ref="field_category">
@@ -59,8 +59,8 @@
                   <icon data-if="{{cat2.children?.length > 0}}" name="chevron-right" class="ecommerce:text-base"/>
                 </button>
               </div>
-              <div data-if="{{!_isolated.selectedCategories[0]}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
-              <div data-if="{{_isolated.selectedCategories[0] &amp;&amp; !(_isolated.selectedCategories[0]?.children?.length > 0)}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
+              <div data-if="{{!_isolated.selectedCategories[0]}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce-text-muted ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
+              <div data-if="{{_isolated.selectedCategories[0] &amp;&amp; !(_isolated.selectedCategories[0]?.children?.length > 0)}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce-text-muted ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
             </div>
           </div>
           <div data-ref="category_col_3">
@@ -76,8 +76,8 @@
                   <icon data-if="{{cat3.children?.length > 0}}" name="chevron-right" class="ecommerce:text-base"/>
                 </button>
               </div>
-              <div data-if="{{!_isolated.selectedCategories[1]}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
-              <div data-if="{{_isolated.selectedCategories[1] &amp;&amp; !(_isolated.selectedCategories[1]?.children?.length > 0)}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
+              <div data-if="{{!_isolated.selectedCategories[1]}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce-text-muted ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
+              <div data-if="{{_isolated.selectedCategories[1] &amp;&amp; !(_isolated.selectedCategories[1]?.children?.length > 0)}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce-text-muted ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
             </div>
           </div>
           <div data-ref="category_col_4">
@@ -92,8 +92,8 @@
                   <span>{{$localized(cat4.name)}}</span>
                 </button>
               </div>
-              <div data-if="{{!_isolated.selectedCategories[2]}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
-              <div data-if="{{_isolated.selectedCategories[2] &amp;&amp; !(_isolated.selectedCategories[2]?.children?.length > 0)}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
+              <div data-if="{{!_isolated.selectedCategories[2]}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce-text-muted ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
+              <div data-if="{{_isolated.selectedCategories[2] &amp;&amp; !(_isolated.selectedCategories[2]?.children?.length > 0)}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce-text-muted ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
             </div>
           </div>
         </div>
@@ -152,8 +152,8 @@
                 {{$localized(cat.name)}}
               </button>
             </div>
-            <div data-if="{{(_isolated.categoryStep ?? 1) === 2 &amp;&amp; !_isolated.selectedCategories[0]}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
-            <div data-if="{{(_isolated.categoryStep ?? 1) === 2 &amp;&amp; _isolated.selectedCategories[0] &amp;&amp; !(_isolated.selectedCategories[0]?.children?.length > 0)}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
+            <div data-if="{{(_isolated.categoryStep ?? 1) === 2 &amp;&amp; !_isolated.selectedCategories[0]}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce-text-muted ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
+            <div data-if="{{(_isolated.categoryStep ?? 1) === 2 &amp;&amp; _isolated.selectedCategories[0] &amp;&amp; !(_isolated.selectedCategories[0]?.children?.length > 0)}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce-text-muted ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
             <div data-if="{{(_isolated.categoryStep ?? 1) === 3 &amp;&amp; _isolated.selectedCategories[1]?.children?.length > 0}}" data-each="cat in _isolated.selectedCategories[1]?.children ?? []">
               <!-- 좁은 화면 3단 고르기 -->
               <button type="button" class="ecommerce:flex ecommerce:w-full ecommerce:justify-start ecommerce:text-left ecommerce-category-item-mobile" data-selected="{{_isolated.selectedCategories[2]?.id === cat.id}}" aria-pressed="{{_isolated.selectedCategories[2]?.id === cat.id}}">
@@ -163,8 +163,8 @@
                 {{$localized(cat.name)}}
               </button>
             </div>
-            <div data-if="{{(_isolated.categoryStep ?? 1) === 3 &amp;&amp; !_isolated.selectedCategories[1]}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
-            <div data-if="{{(_isolated.categoryStep ?? 1) === 3 &amp;&amp; _isolated.selectedCategories[1] &amp;&amp; !(_isolated.selectedCategories[1]?.children?.length > 0)}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
+            <div data-if="{{(_isolated.categoryStep ?? 1) === 3 &amp;&amp; !_isolated.selectedCategories[1]}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce-text-muted ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
+            <div data-if="{{(_isolated.categoryStep ?? 1) === 3 &amp;&amp; _isolated.selectedCategories[1] &amp;&amp; !(_isolated.selectedCategories[1]?.children?.length > 0)}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce-text-muted ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
             <div data-if="{{(_isolated.categoryStep ?? 1) === 4 &amp;&amp; _isolated.selectedCategories[2]?.children?.length > 0}}" data-each="cat in _isolated.selectedCategories[2]?.children ?? []">
               <!-- 좁은 화면 4단 고르기 -->
               <button type="button" class="ecommerce:flex ecommerce:w-full ecommerce:justify-start ecommerce:text-left ecommerce-category-item-mobile" data-selected="{{_isolated.selectedCategories[3]?.id === cat.id}}" aria-pressed="{{_isolated.selectedCategories[3]?.id === cat.id}}">
@@ -174,11 +174,11 @@
                 {{$localized(cat.name)}}
               </button>
             </div>
-            <div data-if="{{(_isolated.categoryStep ?? 1) === 4 &amp;&amp; !_isolated.selectedCategories[2]}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
-            <div data-if="{{(_isolated.categoryStep ?? 1) === 4 &amp;&amp; _isolated.selectedCategories[2] &amp;&amp; !(_isolated.selectedCategories[2]?.children?.length > 0)}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
+            <div data-if="{{(_isolated.categoryStep ?? 1) === 4 &amp;&amp; !_isolated.selectedCategories[2]}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce-text-muted ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
+            <div data-if="{{(_isolated.categoryStep ?? 1) === 4 &amp;&amp; _isolated.selectedCategories[2] &amp;&amp; !(_isolated.selectedCategories[2]?.children?.length > 0)}}" class="ecommerce:p-4 ecommerce:text-sm ecommerce-text-muted ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
           </div>
         </div>
-        <button data-ref="add_category_button" data-if="{{(_local.form.category_ids ?? []).length < 5 &amp;&amp; _isolated.selectedCategories?.filter(c => c !== null).length > 0}}" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+        <button data-ref="add_category_button" data-if="{{(_local.form.category_ids ?? []).length < 5 &amp;&amp; _isolated.selectedCategories?.filter(c => c !== null).length > 0}}" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:text-sm" disabled="{{_computed.isReadOnly}}">
           <on type="click">
             <action handler="sirsoft-ecommerce.addCategoryToSelection"/>
           </on>
@@ -190,7 +190,7 @@
           <div class="ecommerce-flex-center ecommerce:flex-row ecommerce:flex-wrap ecommerce:gap-2">
             <div data-each="catInfo, catIdx in ((_local.selectedCategoryInfos ?? []).length > 0) ? (_local.selectedCategoryInfos ?? []) : ((_local.form?.categories ?? []).map(c => ({ id: c.id, breadcrumb: c.breadcrumb || c.name_localized || $localized(c.name) })))" class="ecommerce:inline-flex ecommerce:items-center ecommerce:flex-shrink-0 ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-full ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm">
               <span class="ecommerce:text-gray-700 ecommerce:dark:text-gray-200">{{catInfo.breadcrumb}}</span>
-              <button data-if="{{!_computed.isReadOnly}}" type="button" class="ecommerce:ml-2 ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:hover:text-red-600 ecommerce:dark:hover:text-red-400" aria-label="$t:sirsoft-ecommerce.common.remove">
+              <button data-if="{{!_computed.isReadOnly}}" type="button" class="ecommerce:ml-2 ecommerce-text-muted ecommerce:hover:text-red-600 ecommerce:dark:hover:text-red-400" aria-label="$t:sirsoft-ecommerce.common.remove">
                 <on type="click">
                   <!-- 고른 분류 하나 떼기 -->
                   <action handler="sirsoft-ecommerce.removeCategoryFromSelection" categoryId="{{catInfo.id}}"/>
@@ -253,7 +253,7 @@
         </div>
         <div class="ecommerce:flex ecommerce:gap-2">
           <input type="text" name="product_code" aria-label="$t:sirsoft-ecommerce.admin.product.fields.product_code" class="{{_local.errors?.product_code ? 'ecommerce-input ecommerce-input-error ecommerce:flex-1' : 'ecommerce-input ecommerce:flex-1'}}" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.product_code" disabled="{{!!route.itemCode || _computed.isReadOnly}}"/>
-          <button data-ref="generate_product_code_button" data-if="{{!route.itemCode}}" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:whitespace-nowrap ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+          <button data-ref="generate_product_code_button" data-if="{{!route.itemCode}}" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:whitespace-nowrap" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <action handler="sirsoft-ecommerce.generateProductCode"/>
             </on>

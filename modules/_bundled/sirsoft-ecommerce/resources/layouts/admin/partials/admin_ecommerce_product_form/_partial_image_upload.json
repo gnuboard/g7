@@ -36,7 +36,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "images",
-                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                        "className": "ecommerce-text-muted"
                     }
                 },
                 {
@@ -60,7 +60,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.imagesExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
+                        "className": "ecommerce-admin-card-accordion-icon ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.imagesExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
                     }
                 }
             ]

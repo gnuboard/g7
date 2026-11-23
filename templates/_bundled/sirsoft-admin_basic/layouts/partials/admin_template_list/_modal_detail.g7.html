@@ -132,7 +132,7 @@
               <p class="text-label-subtle mb-2">$t:admin.templates.modals.required_modules</p>
               <div class="row-stack">
                 <div data-each="mod in _global.selectedTemplate.dependencies.modules" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-                  <icon name="cube" class="text-base text-gray-500 dark:text-gray-400"/>
+                  <icon name="cube" class="text-base text-muted"/>
                   <span class="text-heading">{{mod.name || mod.identifier}} ({{mod.identifier}})</span>
                   <span class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono">$t:admin.templates.modals.dependency_required_version|version={{mod.required_version}}</span>
                   <span data-if="{{mod.installed_version}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded font-mono">$t:admin.templates.modals.dependency_installed_version|version={{mod.installed_version}}</span>
@@ -147,7 +147,7 @@
               <p class="text-label-subtle mb-2">$t:admin.templates.modals.required_plugins</p>
               <div class="row-stack">
                 <div data-each="plug in _global.selectedTemplate.dependencies.plugins" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-                  <icon name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400"/>
+                  <icon name="puzzle-piece" class="text-base text-muted"/>
                   <span class="text-heading">{{plug.name || plug.identifier}} ({{plug.identifier}})</span>
                   <span class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono">$t:admin.templates.modals.dependency_required_version|version={{plug.required_version}}</span>
                   <span data-if="{{plug.installed_version}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded font-mono">$t:admin.templates.modals.dependency_installed_version|version={{plug.installed_version}}</span>
@@ -171,9 +171,9 @@
             <p class="text-label-subtle mb-2">$t:admin.extension_integrations.hint</p>
             <div class="row-stack">
               <div data-each="item in _global.selectedTemplate.integrations" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-                <icon data-if="{{item.type === 'module'}}" name="cube" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
-                <icon data-if="{{item.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
-                <icon data-if="{{item.type === 'template'}}" name="palette" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+                <icon data-if="{{item.type === 'module'}}" name="cube" class="text-base text-muted" aria-hidden="true"/>
+                <icon data-if="{{item.type === 'plugin'}}" name="puzzle-piece" class="text-base text-muted" aria-hidden="true"/>
+                <icon data-if="{{item.type === 'template'}}" name="palette" class="text-base text-muted" aria-hidden="true"/>
                 <span class="text-heading">{{item.name}} ({{item.identifier}})</span>
                 <span data-if="{{item.required_version &amp;&amp; item.required_version !== '*'}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono">$t:admin.extension_integrations.required_version|version={{item.required_version}}</span>
                 <span data-if="{{item.installed_version}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded font-mono">$t:admin.extension_integrations.installed_version|version={{item.installed_version}}</span>
@@ -240,7 +240,7 @@
         </div>
       </div>
       <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0">
-        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
+        <button type="button" class="btn btn-primary">
           <on type="click">
             <close-modal/>
           </on>

@@ -317,7 +317,7 @@
                                             "name": "P",
                                             "if": "{{Object.keys(_local.form.product_notice ?? {}).length > 6}}",
                                             "props": {
-                                                "className": "ecommerce:mt-2 ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:italic"
+                                                "className": "ecommerce:mt-2 ecommerce-text-muted ecommerce:italic"
                                             },
                                             "text": "... +{{Object.keys(_local.form.product_notice ?? {}).length - 6}} $t:sirsoft-ecommerce.admin.product.modal.save_template.more_fields"
                                         }

@@ -366,7 +366,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:flex-1 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:flex-1",
                                 "disabled": "{{$parent._local.bankModalSaving || $parent._computed.isReadOnly}}"
                             },
                             "children": [
@@ -470,7 +470,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-primary ecommerce:flex-1 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                "className": "ecommerce-btn ecommerce-btn-primary ecommerce:flex-1",
                                 "disabled": "{{$parent._local.bankModalSaving || $parent._computed.isReadOnly}}"
                             },
                             "children": [

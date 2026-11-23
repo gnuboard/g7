@@ -88,7 +88,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "{{ch.icon ?? 'fas fa-bell'}}",
-                                                "className": "text-gray-500 dark:text-gray-400"
+                                                "className": "text-muted"
                                             }
                                         },
                                         {
@@ -174,7 +174,7 @@
                         "href": "/admin/settings?channel={{ch.id}}&page=1",
                         "mergeQuery": true,
                         "aria-current": "{{(query.channel ?? 'mail') === ch.id ? 'page' : undefined}}",
-                        "className": "button {{(query.channel ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2"
+                        "className": "button {{(query.channel ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-muted hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2"
                     },
                     "children": [
                         {
@@ -271,9 +271,7 @@
                             "if": "{{(query.category ?? '') === 'identity' && notificationDefinitions?.data?.abilities?.can_create === true}}",
                             "responsive": {
                                 "640-": {
-                                    "props": {
-                                        "className": "w-auto text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    }
+                                    "classMerge": "w-auto"
                                 }
                             },
                             "actions": [
@@ -567,7 +565,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}",
                                                                     "props": {
-                                                                        "className": "text-sm text-gray-500 dark:text-gray-400 italic"
+                                                                        "className": "text-sm text-muted italic"
                                                                     },
                                                                     "text": "$t:admin.settings.notification_definitions.no_template_for_channel"
                                                                 },

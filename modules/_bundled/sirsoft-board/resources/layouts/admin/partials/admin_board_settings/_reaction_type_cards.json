@@ -971,7 +971,7 @@
                             "props": {
                                 "data-testid": "reaction-type-form-confirm-m",
                                 "type": "button",
-                                "className": "board:px-3 board:py-1.5 board:text-sm board:bg-gray-900 board:dark:bg-white board:text-white board:dark:text-gray-900 board:rounded-lg board:hover:bg-gray-800 board:dark:hover:bg-gray-100 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                                "className": "board-btn board-btn-primary board-btn-sm",
                                 "disabled": "{{_computed.isReadOnly}}"
                             },
                             "children": [

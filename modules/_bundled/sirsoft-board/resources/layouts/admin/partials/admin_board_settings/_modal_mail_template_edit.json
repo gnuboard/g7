@@ -270,7 +270,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{($parent._local.editLang ?? $locale) === 'ko' ? 'board:border-b-2 board:border-indigo-500 board:text-indigo-600 board:dark:text-indigo-400' : 'board:text-gray-500 board:dark:text-gray-400 board:hover:text-gray-700 board:dark:hover:text-gray-300'}} board:px-4 board:py-2 board:text-sm board:font-medium board:focus:outline-none"
+                                        "className": "{{($parent._local.editLang ?? $locale) === 'ko' ? 'board:border-b-2 board:border-indigo-500 board:text-indigo-600 board:dark:text-indigo-400' : 'board-text-muted board:hover:text-gray-700 board:dark:hover:text-gray-300'}} board:px-4 board:py-2 board:text-sm board:font-medium board:focus:outline-none"
                                     },
                                     "text": "한국어"
                                 },
@@ -290,7 +290,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{($parent._local.editLang ?? $locale) === 'en' ? 'board:border-b-2 board:border-indigo-500 board:text-indigo-600 board:dark:text-indigo-400' : 'board:text-gray-500 board:dark:text-gray-400 board:hover:text-gray-700 board:dark:hover:text-gray-300'}} board:px-4 board:py-2 board:text-sm board:font-medium board:focus:outline-none"
+                                        "className": "{{($parent._local.editLang ?? $locale) === 'en' ? 'board:border-b-2 board:border-indigo-500 board:text-indigo-600 board:dark:text-indigo-400' : 'board-text-muted board:hover:text-gray-700 board:dark:hover:text-gray-300'}} board:px-4 board:py-2 board:text-sm board:font-medium board:focus:outline-none"
                                     },
                                     "text": "English"
                                 }

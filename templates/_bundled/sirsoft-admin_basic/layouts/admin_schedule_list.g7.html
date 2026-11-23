@@ -368,7 +368,7 @@
           <icon name="shield-halved" size="md"/>
           <span>$t:admin.schedules.action.security_policy</span>
         </button>
-        <button data-ref="add_schedule_button" data-if="{{route.path !== '/admin/schedules/queue'}}" type="button" class="flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{schedules?.data?.abilities?.can_create !== true}}">
+        <button data-ref="add_schedule_button" data-if="{{route.path !== '/admin/schedules/queue'}}" type="button" class="flex-center btn btn-primary h-10" disabled="{{schedules?.data?.abilities?.can_create !== true}}">
           <on type="click">
             <!-- 새 예약 — 폼 창을 등록 모드로 연다. 대상을 **비우고** 여는 것이 핵심이다.
                  그 창은 수정과 겸용이라, 안 비우면 직전에 고친 예약의 값이 새 등록에 실린다.
@@ -402,8 +402,8 @@
       <!-- 탭 바 — 본문 안쪽 여백을 음수 여백으로 덮어 끝까지 붙인다. 본문 여백이 폭에 따라 p-4·p-6·p-8 로 바뀌므로 탭 바도
            같은 단계의 -responsive 짝을 쓴다(템플릿 관리·환경설정과 같다 — 고정 -mx-6 은 좁은 화면에서 8px 넘쳤다). -->
       <div data-ref="tab_navigation_wrapper" class="sticky top-0 z-40 -mx-4 px-4 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700">
-        <responsive on="640-1023" class="sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
-        <responsive on="1024-" class="sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
+        <responsive on="640-1023" class-merge="-mx-6 px-6"/>
+        <responsive on="1024-" class-merge="-mx-8 px-8"/>
         <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeScheduleTab || (route.path === '/admin/schedules/queue' ? 'queue' : 'schedules')}}" variant="default">
           <prop name="tabs">
             <item id="schedules" href="/admin/schedules" label="$t:admin.schedules.tabs.schedules"/>

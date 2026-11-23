@@ -385,7 +385,7 @@
                                                     "if": "{{Number(area.depth ?? 0) > 0}}",
                                                     "props": {
                                                         "aria-hidden": "true",
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-muted"
                                                     },
                                                     "text": "└"
                                                 },

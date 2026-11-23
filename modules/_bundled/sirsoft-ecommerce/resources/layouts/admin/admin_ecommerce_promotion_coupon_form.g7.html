@@ -162,7 +162,7 @@
               </on>
               $t:sirsoft-ecommerce.admin.promotion_coupon.form.button.cancel
             </a>
-            <button data-ref="save_button_top" type="button" disabled="{{_local.isSaving || _computed.isReadOnly}}" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-primary ecommerce:gap-1.5 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:shrink-0 ecommerce:whitespace-nowrap">
+            <button data-ref="save_button_top" type="button" disabled="{{_local.isSaving || _computed.isReadOnly}}" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-primary ecommerce:gap-1.5 ecommerce:shrink-0 ecommerce:whitespace-nowrap">
               <on type="click">
                 <!-- 저장 — 등록/수정 구분은 `route.id` 하나로 엔드포인트와 메서드를 함께 가른다. 성공하면 목록으로 돌아가므로 폼을 되받지 않고, 실패하면 서버 오류를 폼 위 배너로 넘긴다 -->
                 <sequence>

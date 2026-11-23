@@ -235,7 +235,7 @@
                 "responsive": {
                     "640-1023": {
                         "props": {
-                            "className": "sso:p-6 sso:min-h-screen sso:bg-gray-50 sso:dark:bg-gray-900"
+                            "className": "sso-admin-page-content"
                         }
                     },
                     "1024-": {

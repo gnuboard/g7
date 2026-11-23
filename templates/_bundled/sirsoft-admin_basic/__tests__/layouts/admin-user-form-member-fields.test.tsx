@@ -26,6 +26,7 @@ import { MemberFieldInput } from '../../src/components/composite/MemberFieldInpu
 import { TabNavigationScroll } from '../../src/components/composite/TabNavigationScroll';
 import adminKo from '../../lang/partial/ko/admin.json';
 import adminEn from '../../lang/partial/en/admin.json';
+import { expandSemanticTokens } from './support/semanticClasses';
 
 // 엔진(코어)은 저장소 루트의 react 를, 실물 부품(MemberFieldInput, TabNavigationScroll)은 이 템플릿 node_modules 의 react 를 읽어 사본이 둘이 된다 — 루트 사본으로 맞춘다
 vi.mock('react', async () => {
@@ -365,7 +366,9 @@ describe('회원 항목 반복 조각 (관리자, 입력)', () => {
     };
     for (const notice of Object.values(notices)) {
       expect(notice).toBeDefined();
-      expect(notice.props.className).toContain('text-xs text-gray-500 dark:text-gray-400');
+      // #399 R-1 — gray-500 / 다크 gray-400 짝은 의미 클래스 `text-muted` 로 묶였다. 정의(semantic.css)를 펼쳐 같은 짝을 확인한다
+      expect(String(notice.props.className).split(/\s+/)).toEqual(expect.arrayContaining(['text-xs', 'text-muted']));
+      expect(expandSemanticTokens(notice.props.className)).toEqual(expect.arrayContaining(['text-xs', 'text-gray-500', 'dark:text-gray-400']));
     }
     const shown = (field: Json) => Object.entries(notices).filter(([, node]) => evaluate(node.if, { field }) === true).map(([reason]) => reason);
 

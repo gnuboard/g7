@@ -10,7 +10,7 @@
       <icon data-ref="error_icon" name="triangle-exclamation" class="text-8xl text-orange-600 dark:text-orange-500 mb-6"/>
       <h1 data-ref="error_code" class="text-primary text-6xl font-bold mb-4">503</h1>
       <h2 data-ref="error_title" class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2">$t:errors.503.title</h2>
-      <p data-ref="error_message" class="text-gray-500 dark:text-gray-400 mb-4 max-w-md">$t:errors.503.message</p>
+      <p data-ref="error_message" class="text-muted mb-4 max-w-md">$t:errors.503.message</p>
       <div data-ref="dependency_info" data-if="{{_global.errorData &amp;&amp; ((_global.errorData.modules &amp;&amp; _global.errorData.modules.length > 0) || (_global.errorData.plugins &amp;&amp; _global.errorData.plugins.length > 0))}}" class="alert-warning text-left max-w-md w-full">
         <p class="text-sm font-medium text-orange-800 dark:text-orange-200 mb-3">$t:errors.503.unmet_dependencies</p>
         <div data-ref="modules_list" data-if="{{_global.errorData.modules &amp;&amp; _global.errorData.modules.length > 0}}" class="mb-3">
@@ -38,7 +38,7 @@
           </div>
         </div>
       </div>
-      <p data-ref="contact_message" class="text-sm text-gray-500 dark:text-gray-400 mb-8">$t:errors.503.contact_admin</p>
+      <p data-ref="contact_message" class="text-sm text-muted mb-8">$t:errors.503.contact_admin</p>
       <a data-ref="back_button" href="/admin" class="button px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white dark:text-white font-medium rounded-lg transition-colors">
         <on type="click">
           <navigate/>

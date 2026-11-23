@@ -119,7 +119,7 @@
           </div>
           <div class="page:flex page:flex-wrap page:items-baseline page:gap-2">
             <h2 class="page-text-primary page:text-xl page:font-bold">{{page?.data?.title?.[ _local.lang ?? $locale ?? 'ko'] ?? '-'}}</h2>
-            <span class="page:text-sm page:text-gray-500 page:dark:text-gray-400 page:font-mono">{{page?.data?.slug ?? ''}}</span>
+            <span class="page:text-sm page-text-muted page:font-mono">{{page?.data?.slug ?? ''}}</span>
             <badge data-type="composite" text="v{{page?.data?.current_version ?? 1}}" color="blue" size="md"/>
             <a data-if="{{page?.data?.published}}" href="/page/{{page?.data?.slug ?? ''}}" target="_blank" class="page:inline-flex page:items-center page:gap-1 page:text-xs page:text-blue-600 page:dark:text-blue-400 page:hover:text-blue-700 page:dark:hover:text-blue-300 page:transition-colors">
               <icon name="arrow-up-right-from-square" class="page:text-[10px]"/>
@@ -128,7 +128,7 @@
           </div>
         </div>
         <div data-ref="info_grid" class="page:grid page:grid-cols-1 page:gap-4 page:pt-4 page:border-t page:border-gray-200 page:dark:border-gray-700">
-          <responsive on="768-" class="page:grid page:grid-cols-2 page:gap-4 page:pt-4 page:border-t page:border-gray-200 page:dark:border-gray-700"/>
+          <responsive on="768-" class-merge="page:grid-cols-2"/>
           <div class="page:flex page:items-baseline page:gap-3">
             <span class="page-text-table-header page:shrink-0 page:w-20">$t:sirsoft-page.admin.page.detail.info.creator</span>
             <div class="page:min-w-0">
@@ -193,13 +193,13 @@
             </span>
             <!-- 파일 아이콘 (일반 파일인 경우) -->
             <span data-if="{{!attachment_item?.is_image}}" class="page-flex-center page:flex-shrink-0 page:w-12 page:h-12 page:rounded-md page:bg-white page:dark:bg-gray-700 page:justify-center">
-              <icon name="file" class="page:text-lg page:text-gray-500 page:dark:text-gray-400"/>
+              <icon name="file" class="page:text-lg page-text-muted"/>
             </span>
             <span class="page:flex-1 page:min-w-0">
               <span class="page:block page-text-body page:truncate">{{attachment_item?.original_filename ?? ''}}</span>
               <span class="page-text-hint page:block">{{attachment_item?.size_formatted ?? ''}}</span>
             </span>
-            <icon name="download" class="page:text-gray-500 page:dark:text-gray-400 page:group-hover:text-blue-500 page-attachment-icon page:transition-colors"/>
+            <icon name="download" class="page-text-muted page:group-hover:text-blue-500 page-attachment-icon page:transition-colors"/>
           </button>
         </div>
       </div>
@@ -249,15 +249,15 @@
           </column>
           <column field="created_at" header="$t:sirsoft-page.admin.page.detail.versions.created_at" width="180px">
             <cell>
-              <span class="page:text-sm page:text-gray-500 page:dark:text-gray-400">{{row.created_at ?? '-'}}</span>
+              <span class="page:text-sm page-text-muted">{{row.created_at ?? '-'}}</span>
             </cell>
           </column>
           <column field="changes_summary" header="$t:sirsoft-page.admin.page.detail.versions.changes">
             <cell>
-              <span data-if="{{row.version === 1}}" class="page:text-sm page:text-gray-500 page:dark:text-gray-400 page:italic">$t:sirsoft-page.admin.page.detail.versions.initial</span>
+              <span data-if="{{row.version === 1}}" class="page:text-sm page-text-muted page:italic">$t:sirsoft-page.admin.page.detail.versions.initial</span>
               <badge data-type="composite" data-if="{{row.version !== 1 &amp;&amp; row.changes_summary?.restored_from}}" text="$t:defer:sirsoft-page.admin.page.detail.versions.restored_from|version={{row.changes_summary.restored_from}}" color="blue" class="page:mb-1"/>
               <span data-if="{{row.version !== 1 &amp;&amp; row.changes_summary?.changed_fields?.length > 0}}" class="page:text-sm page:text-gray-600 page:dark:text-gray-400" data-testid="page-version-changed-fields">{{row.changes_summary?.changed_fields?.map(f => $t('sirsoft-page.admin.page.detail.versions.field_labels.' + f)).join(', ') ?? '-'}}</span>
-              <span data-if="{{row.version !== 1 &amp;&amp; (!row.changes_summary || !row.changes_summary?.changed_fields?.length) &amp;&amp; !row.changes_summary?.restored_from}}" class="page:text-sm page:text-gray-500 page:dark:text-gray-400">-</span>
+              <span data-if="{{row.version !== 1 &amp;&amp; (!row.changes_summary || !row.changes_summary?.changed_fields?.length) &amp;&amp; !row.changes_summary?.restored_from}}" class="page:text-sm page-text-muted">-</span>
             </cell>
           </column>
           <column field="actions" header="$t:sirsoft-page.admin.page.detail.versions.actions" width="80px">

@@ -229,7 +229,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400 gpp:mb-1"
+                                            "className": "gpp:text-xs g7pp-text-muted gpp:mb-1"
                                         },
                                         "text": "$t:sirsoft-popup.admin.breadcrumb"
                                     },
@@ -538,9 +538,7 @@
                                 "debounce": 0,
                                 "responsive": {
                                     "desktop": {
-                                        "props": {
-                                            "className": "gpp:col-span-2 gpp:flex gpp:flex-col gpp:gap-6"
-                                        }
+                                        "classMerge": "gpp:col-span-2"
                                     }
                                 },
                                 "props": {
@@ -965,7 +963,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400"
+                                                                            "className": "gpp:text-xs g7pp-text-muted"
                                                                         },
                                                                         "text": "$t:sirsoft-popup.admin.form.optional"
                                                                     }
@@ -1287,7 +1285,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400"
+                                                                            "className": "gpp:text-xs g7pp-text-muted"
                                                                         },
                                                                         "text": "$t:sirsoft-popup.admin.form.link_url_optional"
                                                                     }
@@ -1567,7 +1565,7 @@
                                                                                         "props": {
                                                                                             "type": "button",
                                                                                             "aria-label": "{{$t('sirsoft-popup.admin.form.route_remove', { route: route })}}",
-                                                                                            "className": "g7pp-flex-center gpp:w-8 gpp:h-8 gpp:rounded-full gpp:text-gray-500 gpp:hover:text-gray-800 gpp:dark:text-gray-400 gpp:dark:hover:text-gray-100"
+                                                                                            "className": "g7pp-flex-center gpp:w-8 gpp:h-8 gpp:rounded-full g7pp-text-muted gpp:hover:text-gray-800 gpp:dark:hover:text-gray-100"
                                                                                         },
                                                                                         "children": [
                                                                                             {

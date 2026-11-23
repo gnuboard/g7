@@ -5,6 +5,21 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.98.0] - 2026-11-21
+
+### Added
+
+- (engine-v1.98.0) 레이아웃 노드 `responsive.{key}.classMerge` — 그 구간에서 바뀐 클래스만 기본 className 에 덧붙입니다(마크업 `<responsive on="portable" class-merge="p-6"/>`). 종전 구간 `props.className` 은 기본 className 을 통째로 교체해, 패딩 하나만 바꿔도 클래스 전체를 다시 적어야 했습니다(번들 레이아웃 재작성 2,415구간). 병합은 `mergeClasses` 의 충돌 교체 규칙(같은 축·같은 변형 토큰만 교체, 확장 앞글자를 떼고 판정)을 쓰고 같은 토큰은 한 번만 남깁니다(새 공용 함수 `StyleHelpers.applyResponsiveClassMerge`). 적용 순서: 구간 매칭 → props 얕은 병합(구간 `class` 가 있으면 종전대로 교체) → 바인딩 해석 → classMap → classMerge(`RenderHelpers.resolveResponsiveClassMergeValue` 로 바인딩 해석). DynamicRenderer 와 셀·반복 항목 렌더(`renderItemChildren`)가 같은 순서로 적용하고, SEO 봇 렌더(`App\Support\Style\ClassMerger`)와 공용 픽스처 `tests/Fixtures/class-merge/cases.json` 로 같은 결과를 증명합니다. props 의 형제 키라 구버전 엔진은 무시하고 DOM 으로 새지 않습니다. 단계 숫자가 없는 색 이름(`bg-white`·`text-white`)은 종전 규칙대로 색 그룹에 걸리지 않아 교체되지 않습니다. 회귀 잠금: `DynamicRenderer.responsiveClassMerge.test.tsx`(9건), `RenderHelpers.responsiveClassMerge.test.tsx`(4건), `StyleHelpers.classMergeParity.test.ts`(픽스처 30사례) (helpers/StyleHelpers.ts, helpers/RenderHelpers.ts, DynamicRenderer.tsx)
+
+### Changed
+
+- (engine-v1.98.0) 레이아웃 편집기 디바이스 탭의 className 편집이 기본 대비 바뀐 토큰만 `responsive.{bp}.classMerge` 로 저장합니다. 종전 「B안 시드」는 처음 편집할 때 기본 className 전체를 구간 `props.className` 에 복사해, 기본값을 나중에 바꿔도 구간이 따라가지 않았고 운영자 화면에도 같은 문자열 반복이 쌓였습니다. 덧붙이기로 나타낼 수 없는 편집(기본 토큰을 지우기만 함)과 기본 className 에 바인딩이 있는 노드, 이미 구간 `props.className` 을 가진 구간은 종전처럼 통째 교체로 읽고 씁니다(한 구간에 두 방식을 섞지 않음). 표시점·「기본값으로 초기화」도 classMerge 를 인식합니다. 회귀 잠금: `recipeEngine.scope.test.ts`, `styleScope.test.ts` 「classMerge 구간」 (layout-editor/spec/styleScope.ts, layout-editor/spec/recipeEngine.ts)
+- (engine-v1.98.0) DevTools 의 폭 접두 안내(StyleTracker 「폭 조건 없는 hidden」, TailwindValidator 폭 접두 경고)가 구간 className 통째 교체 대신 `<responsive on="…" class-merge="…"/>` 로 바뀐 클래스만 덧붙이라고 권합니다 (devtools/StyleTracker.ts, devtools/TailwindValidator.ts)
+
+### Fixed
+
+- (engine-v1.98.0) 노드 `responsive.{key}.classMap` 이 무시돼 그 구간에서 classMap 클래스가 조용히 빠지던 문제를 고쳤습니다. 이제 구간 classMap 이 기본 classMap 을 대신합니다. 셀·반복 항목 렌더 경로는 classMap 자체를 적용하지 않았는데, 이제 DynamicRenderer 와 같은 순서로 적용합니다(번들 레이아웃의 셀 정의·구간 classMap 사용은 0건이라 기존 화면은 바뀌지 않습니다). 발생 시점: responsive 도입(engine-v1.1.0) 이후 줄곧, 7.2.0 출시본 포함. 회귀 잠금: `DynamicRenderer.responsiveClassMerge.test.tsx` 「구간 classMap」, `RenderHelpers.responsiveClassMerge.test.tsx` 「셀 노드 classMap」 (DynamicRenderer.tsx, helpers/RenderHelpers.ts)
+
 ## [engine-v1.97.1] - 2026-11-21
 
 ### Fixed

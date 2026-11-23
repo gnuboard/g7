@@ -12,7 +12,7 @@
         <p data-if="{{(_global.menuBulkSelectedIds ?? []).length === 0}}" class="text-tertiary">$t:admin.menus.bulk.empty_selection</p>
         <div data-if="{{(_global.menuBulkSelectedIds ?? []).length > 0}}" class="flex flex-wrap gap-1">
           <span data-each="picked in {{(menus?.data?.data ?? []).flatMap(m => [m, ...(m.children ?? [])]).filter(m => (_global.menuBulkSelectedIds ?? []).includes(m.id)).slice(0, 10)}}" class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">{{$localized(picked.name)}}</span>
-          <span data-if="{{(_global.menuBulkSelectedIds ?? []).length > 10}}" class="px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400">$t:admin.menus.bulk.more_count|count={{(_global.menuBulkSelectedIds ?? []).length - 10}}</span>
+          <span data-if="{{(_global.menuBulkSelectedIds ?? []).length > 10}}" class="px-2 py-0.5 text-xs text-muted">$t:admin.menus.bulk.more_count|count={{(_global.menuBulkSelectedIds ?? []).length - 10}}</span>
         </div>
       </div>
       <div data-ref="bulk_roles_field">
@@ -42,21 +42,21 @@
         <span>$t:admin.menus.bulk.rule_hint</span>
       </div>
       <div data-ref="bulk_buttons" class="flex flex-wrap justify-end gap-2">
-        <button data-ref="bulk_clear_button" type="button" disabled="{{(_global.menuBulkSelectedIds ?? []).length === 0}}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="bulk_clear_button" type="button" disabled="{{(_global.menuBulkSelectedIds ?? []).length === 0}}" class="btn btn-secondary">
           <on type="click">
             <!-- 선택만 비운다 — 모드와 고른 역할은 그대로 둔다 -->
             <set-state target="global" :menuBulkSelectedIds="[]"/>
           </on>
           $t:admin.menus.bulk.clear
         </button>
-        <button data-ref="bulk_exit_button" type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <button data-ref="bulk_exit_button" type="button" class="btn btn-secondary">
           <on type="click">
             <!-- 선택 모드 끝내기 — 상단 토글을 끈 것과 같다. 고른 것과 역할을 비워 다음에 켤 때 남지 않게 한다. -->
             <set-state target="global" :menuBulkMode="false" :menuBulkSelectedIds="[]" :menuBulkRoleIds="[]" menuBulkAction="add" :menuBulkError="null"/>
           </on>
           $t:admin.menus.bulk.exit
         </button>
-        <button data-ref="bulk_apply_button" type="button" disabled="{{(_global.menuBulkSelectedIds ?? []).length === 0 || (_global.menuBulkRoleIds ?? []).length === 0}}" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="bulk_apply_button" type="button" disabled="{{(_global.menuBulkSelectedIds ?? []).length === 0 || (_global.menuBulkRoleIds ?? []).length === 0}}" class="btn btn-primary">
           <on type="click">
             <!-- 적용 — 확인 창을 연다. 지난 실패 문구는 비운다. -->
             <sequence>

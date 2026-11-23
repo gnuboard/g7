@@ -38,7 +38,7 @@
             <!-- 확장 규격은 확장이 정한 이름(현재 언어)을 위에, 식별자를 아래에 작게 — 규격 표와 같은 표기 -->
             <span class="flex flex-col">
               <span data-if="{{!!$localized(_global.thumbnailPregen?.presetLabels?.[preset])}}" class="text-gray-800 dark:text-gray-200" data-testid="{{'thumbnail-pregen-preset-label-' + preset}}">{{$localized(_global.thumbnailPregen?.presetLabels?.[preset])}}</span>
-              <span class="{{$localized(_global.thumbnailPregen?.presetLabels?.[preset]) ? 'font-mono text-xs text-gray-500 dark:text-gray-400' : 'font-mono'}}" data-testid="{{'thumbnail-pregen-preset-ident-' + preset}}">{{preset}}</span>
+              <span class="{{$localized(_global.thumbnailPregen?.presetLabels?.[preset]) ? 'font-mono text-xs text-muted' : 'font-mono'}}" data-testid="{{'thumbnail-pregen-preset-ident-' + preset}}">{{preset}}</span>
             </span>
           </label>
         </div>

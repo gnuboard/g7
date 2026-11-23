@@ -34,7 +34,7 @@
           </on>
         </input>
         <label for="qna_is_secret" class="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1 cursor-pointer select-none">
-          <icon name="lock" class="text-xs text-gray-500 dark:text-gray-400"/>
+          <icon name="lock" class="text-xs text-muted"/>
           <span>$t:shop.qna.is_secret</span>
         </label>
       </div>
@@ -51,7 +51,7 @@
             </set-state>
           </on>
         </select>
-        <span data-if="{{_global.qnaErrors?.category}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{(_global.qnaErrors?.category ?? [])[0] ?? ''}}</span>
+        <span data-if="{{_global.qnaErrors?.category}}" class="form-error">{{(_global.qnaErrors?.category ?? [])[0] ?? ''}}</span>
       </div>
       <!-- 제목 입력 -->
       <div class="space-y-1">
@@ -66,7 +66,7 @@
             </set-state>
           </on>
         </input>
-        <span data-if="{{_global.qnaErrors?.title}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{(_global.qnaErrors?.title ?? [])[0] ?? ''}}</span>
+        <span data-if="{{_global.qnaErrors?.title}}" class="form-error">{{(_global.qnaErrors?.title ?? [])[0] ?? ''}}</span>
       </div>
       <!-- 문의 내용 -->
       <div class="space-y-1">
@@ -81,7 +81,7 @@
             </set-state>
           </on>
         </textarea>
-        <span data-if="{{_global.qnaErrors?.content}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{(_global.qnaErrors?.content ?? [])[0] ?? ''}}</span>
+        <span data-if="{{_global.qnaErrors?.content}}" class="form-error">{{(_global.qnaErrors?.content ?? [])[0] ?? ''}}</span>
       </div>
     </div>
     <!-- 모달 푸터 - 취소 / 등록 -->

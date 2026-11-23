@@ -91,7 +91,8 @@ describe('Footer — 사업자 정보', () => {
     const { container } = render(<Footer siteName="시험 상점" businessInfo={{ company_name: '시험 상사' }} />);
 
     const block = container.querySelector('[data-footer-business]') as HTMLElement;
-    expect(block.className).toMatch(/text-gray-\d+ dark:text-gray-\d+/);
+    // 다크 짝은 의미 클래스 text-muted(gray-500 / 다크 gray-400)가 함께 준다 — 인라인 짝도 인정한다 (#399)
+    expect(block.className).toMatch(/(^|\s)text-muted(\s|$)|text-gray-\d+ dark:text-gray-\d+/);
     const copyright = Array.from(container.querySelectorAll('p')).find((p) => p.textContent?.includes('All rights reserved'))!;
     // DOCUMENT_POSITION_FOLLOWING(4): 저작권 줄이 블록 뒤에 온다
     expect(block.compareDocumentPosition(copyright) & 4).toBe(4);

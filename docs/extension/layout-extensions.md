@@ -764,12 +764,12 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 ```html
 <extension extension-point="admin_user_list_filters" mode="append" priority="200">
   <div data-ref="ext_vendor_point_filter_row" class="vendormodule:flex vendormodule:flex-col vendormodule:gap-2">
-    <responsive on="768-" class="vendormodule:flex vendormodule:flex-row vendormodule:items-center vendormodule:gap-2"/>
+    <responsive on="768-" class-merge="vendormodule:flex-row vendormodule:items-center"/>
     <permissions>
       <permission>vendor-module.points.read</permission>
     </permissions>
     <span class="vendormodule:block vendormodule:mb-2 vendormodule:w-32 vendormodule:text-sm vendormodule:text-gray-600 vendormodule:dark:text-gray-400 vendormodule:shrink-0">
-      <responsive on="768-" class="vendormodule:block vendormodule:mb-0 vendormodule:w-32 vendormodule:text-sm vendormodule:text-gray-600 vendormodule:dark:text-gray-400 vendormodule:shrink-0"/>
+      <responsive on="768-" class-merge="vendormodule:mb-0"/>
       $t:vendor-module.admin.user_filter.points
     </span>
     <input type="number" name="vendorPointMin" class="vendor-module-input vendormodule:w-32" value="{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('vendor-module.point_min=')) || '').slice('vendor-module.point_min='.length)}}">
@@ -785,7 +785,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 </extension>
 ```
 
-- 클래스는 모두 이 모듈의 앞글자를 붙여 모듈 자기 CSS 로 싣는다 — 이 예는 `assets.css.namespace` 를 `vendor-module` 로 선언한 경우로, 접두 빌드 클래스는 `vendormodule:…`, 손으로 쓴 의미 클래스는 `vendor-module-input` 이다. 템플릿의 `input` 같은 의미 클래스나 앞글자 없는 Tailwind 클래스는 그 템플릿 CSS 에 있을 때만 그려진다([확장 CSS 자기 공급 규약](module-assets.md#확장-css-자기-공급-규약)). 화면 폭에 따른 배치는 Tailwind 반응형 접두(`md:flex-row` 등) 대신 `<responsive on="768-">` 구간에 그 폭의 클래스 전체를 둔다([반응형 레이아웃](../frontend/responsive-layout.md)). 관리자 템플릿의 필터 행 클래스(`filter-row`·`filter-field-label`)는 그 템플릿 CSS 에만 있어, 다른 관리자 템플릿에 주입되면 행 배치가 무너진다.
+- 클래스는 모두 이 모듈의 앞글자를 붙여 모듈 자기 CSS 로 싣는다 — 이 예는 `assets.css.namespace` 를 `vendor-module` 로 선언한 경우로, 접두 빌드 클래스는 `vendormodule:…`, 손으로 쓴 의미 클래스는 `vendor-module-input` 이다. 템플릿의 `input` 같은 의미 클래스나 앞글자 없는 Tailwind 클래스는 그 템플릿 CSS 에 있을 때만 그려진다([확장 CSS 자기 공급 규약](module-assets.md#확장-css-자기-공급-규약)). 화면 폭에 따른 배치는 Tailwind 반응형 접두(`md:flex-row` 등) 대신 `<responsive on="768-" class-merge="…">` 구간에 그 폭에서 바뀌는 클래스만 둔다(코어 7.2.1, [바뀐 클래스만 덧붙이기](../frontend/responsive-layout.md#바뀐-클래스만-덧붙이기-class-merge)). 반복되는 흐린 글자, 버튼, 카드 묶음은 의미 클래스의 확장 사본으로 쓴다([레이아웃 의미 클래스](../frontend/semantic-classes.md)). 관리자 템플릿의 필터 행 클래스(`filter-row`·`filter-field-label`)는 그 템플릿 CSS 에만 있어, 다른 관리자 템플릿에 주입되면 행 배치가 무너진다.
 - 값 조립 핸들러는 모듈이 자기 네임스페이스로 등록한다(`vendor-module.setUserFilterExt` — 같은 키 교체, 빈 값 제거, `{확장id}.{키}={값}` 원소). 관리자 템플릿의 `setUserFilterExt` 는 그 템플릿 화면용이라 다른 관리자 템플릿에는 없다 — 조각이 부르면 그 템플릿에서 값이 검색에 실리지 않는다. 구현 예: `modules/_bundled/sirsoft-ecommerce/resources/js/handlers/userListFilterExtHandlers.ts`.
 - 표시값은 같은 배열(`_local.userFilterExtraQuery`)에서 되읽는다 — 새로고침·뒤로가기에서 URL 의 `ext_filters[]` 로 복원된다.
 - 코어의 필터 초기화는 이 배열을 비운다.

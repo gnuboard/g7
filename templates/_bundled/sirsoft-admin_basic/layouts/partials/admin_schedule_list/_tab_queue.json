@@ -177,7 +177,7 @@
                             "name": "Div",
                             "if": "{{queue_status?.data?.measurable === false}}",
                             "props": {
-                                "className": "mt-2 text-lg font-semibold text-gray-500 dark:text-gray-400"
+                                "className": "mt-2 text-lg font-semibold text-muted"
                             },
                             "text": "$t:admin.schedules.queue.status.unmeasurable"
                         },
@@ -497,9 +497,7 @@
                                     "name": "Span",
                                     "responsive": {
                                         "768-": {
-                                            "props": {
-                                                "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
-                                            }
+                                            "classMerge": "mb-0 shrink-0 flex items-center"
                                         }
                                     },
                                     "props": {
@@ -647,9 +645,7 @@
                                     "name": "Span",
                                     "responsive": {
                                         "768-": {
-                                            "props": {
-                                                "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
-                                            }
+                                            "classMerge": "mb-0 shrink-0 flex items-center"
                                         }
                                     },
                                     "props": {
@@ -743,9 +739,7 @@
                                     "name": "Span",
                                     "responsive": {
                                         "768-": {
-                                            "props": {
-                                                "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
-                                            }
+                                            "classMerge": "mb-0 shrink-0 flex items-center"
                                         }
                                     },
                                     "props": {
@@ -929,9 +923,7 @@
                                     "name": "Span",
                                     "responsive": {
                                         "768-": {
-                                            "props": {
-                                                "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
-                                            }
+                                            "classMerge": "mb-0 shrink-0 flex items-center"
                                         }
                                     },
                                     "props": {
@@ -1287,9 +1279,7 @@
                                     "if": "{{_local.isQueueEditMode || (query.view === 'logs' ? ['queue', 'connection', 'status', 'date'] : (query.view === 'failed' ? ['queue', 'connection', 'date'] : ['queue', 'connection'])).some(f => !(_local.queueVisibleFilters || []).includes(f))}}",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "flex-center btn btn-outline justify-center gap-2 w-full"
-                                            }
+                                            "classMerge": "justify-center w-full"
                                         }
                                     },
                                     "actions": [
@@ -1459,9 +1449,7 @@
                                             "name": "Button",
                                             "responsive": {
                                                 "portable": {
-                                                    "props": {
-                                                        "className": "btn btn-primary flex-1"
-                                                    }
+                                                    "classMerge": "flex-1"
                                                 }
                                             },
                                             "actions": [

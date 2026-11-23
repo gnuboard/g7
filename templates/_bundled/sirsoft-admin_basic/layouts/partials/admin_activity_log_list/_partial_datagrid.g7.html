@@ -62,6 +62,7 @@
             <icon name="{{(_local.openSnapshots ?? {})[row.id] === true ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}" class="text-xs"/>
             <span>{{(_local.openSnapshots ?? {})[row.id] === true ? $t('admin.activity_log.detail.snapshot_hide') : $t('admin.activity_log.detail.snapshot_show')}}</span>
           </button>
+          <!-- audit:allow layout-inline-semantic-duplicate reason: 활동 로그 줄에서 펼쳐 보는 삭제 전 본문 미리보기 상자, 고정폭 글자에 여백 p-3 과 최대 높이 스크롤을 써서 카드 여백(p-4 mb-6)과 다름 -->
           <div data-if="{{(_local.openSnapshots ?? {})[row.id] === true}}" class="p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg font-mono text-xs whitespace-pre-wrap break-all max-h-80 overflow-y-auto text-gray-700 dark:text-gray-300">{{raw:row.snapshot?.content_preview ?? ''}}</div>
           <p data-if="{{(_local.openSnapshots ?? {})[row.id] === true &amp;&amp; row.snapshot?.content_truncated === true}}" class="text-xs text-amber-700 dark:text-amber-400">$t:admin.activity_log.detail.snapshot_content_truncated</p>
         </div>
@@ -100,7 +101,7 @@
         <!-- 회원이 없는 로그(시스템·CLI)도 API 는 user 객체를 준다({uuid: null, name: "시스템(CLI)" 등}).
           그래서 user 유무가 아니라 uuid 유무로 가른다 — user 유무로 가르면 시스템 로그에도 회원 메뉴가
           그려지고 「회원 정보 보기」가 /admin/users/undefined 로 이동한다. -->
-        <span data-if="{{!row.user?.uuid}}" class="text-gray-500 dark:text-gray-400">{{row.actor_name ?? row.user?.name ?? '-'}}</span>
+        <span data-if="{{!row.user?.uuid}}" class="text-muted">{{row.actor_name ?? row.user?.name ?? '-'}}</span>
         <action-menu data-type="composite" data-if="{{!!row.user?.uuid}}" position="right">
           <prop name="items">
             <item id="view_member" label="$t:admin.activity_log.action.view_member" iconName="user" href="/admin/users/{{row.user.uuid}}" target="_blank" if="{{!!row.user?.uuid}}"/>
@@ -120,7 +121,7 @@
             </switch>
           </on>
           <div class="flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors">
-            <icon name="fa-regular fa-user" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+            <icon name="fa-regular fa-user" class="text-muted flex-shrink-0"/>
             <div class="min-w-0 flex-1">
               <span class="font-medium text-gray-900 dark:text-gray-100 truncate block">{{row.user.name}}</span>
               <!-- 실명 보조 줄. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 real_name 을 싣는다. -->

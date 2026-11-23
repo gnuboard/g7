@@ -9,7 +9,8 @@
 ```text
 1. 화면 폭 분기는 responsive 속성 하나로만 (프리셋 mobile/tablet/desktop/portable + 커스텀 구간 min-max)
 2. Tailwind 반응형 접두(sm: md: lg: xl: 2xl: min-[..]: max-[..]:)는 쓰지 않는다 — 감사 규칙이 막는다
-3. 구간 값의 className 은 통째로 교체된다 → 그 구간의 전체 클래스를 쓴다
+3. 구간에서 바뀐 클래스만 쓸 때는 class-merge (engine-v1.98.0, 코어 7.2.1) → 같은 종류 값만 바뀌고 나머지 기본 클래스는 남는다
+   구간 class 는 className 을 통째로 교체한다 → 그 구간의 전체 클래스를 쓴다
 4. 전역 상태: _global.sidebarOpen 등 사용자 조작 상태는 식으로 분기
 5. z-index 계층: modal(50) > dropdown(40) > sidebar(30)
 ```
@@ -57,7 +58,7 @@
 
 ## 1. responsive 속성 (권장)
 
-`responsive` 속성을 사용하면 화면 크기에 따라 컴포넌트의 props, children, text, if, iteration을 오버라이드할 수 있습니다.
+`responsive` 속성을 사용하면 화면 크기에 따라 컴포넌트의 props, children, text, if, iteration을 오버라이드하고, 기본 className 에 그 구간에서 바뀐 클래스만 덧붙일 수 있습니다([바뀐 클래스만 덧붙이기](#바뀐-클래스만-덧붙이기-class-merge)).
 
 ### Breakpoint 프리셋
 
@@ -287,7 +288,7 @@ G7Core.renderItemChildren(cellChildren, { row }, G7Core.getComponentMap(), key, 
 
 ### Props 머지 규칙
 
-**얕은 머지 (Shallow Merge)**: 지정한 props만 대체, 미지정 props는 유지
+**얕은 머지 (Shallow Merge)**: 구간에 적은 props 만 대체하고, 적지 않은 props 는 기본값을 유지한다. 구간 `class` 도 prop 하나(`className`)라서, 적으면 기본 `className` 을 **통째로** 교체한다. 기본 클래스 일부만 바꿀 때는 아래 [class-merge](#바뀐-클래스만-덧붙이기-class-merge) 를 쓴다.
 
 ```html
 <div class="base-class" variant="primary" size="large">
@@ -317,9 +318,84 @@ G7Core.renderItemChildren(cellChildren, { row }, G7Core.getComponentMap(), key, 
 
 **모바일에서 적용되는 props**:
 
-- `className`: `"mobile-class"` (대체됨)
+- `className`: `"mobile-class"` (구간 `class` 라서 통째로 대체됨. `base-class` 는 남지 않는다)
 - `variant`: `"primary"` (유지)
 - `size`: `"large"` (유지)
+
+### 바뀐 클래스만 덧붙이기 (class-merge)
+
+engine-v1.98.0(코어 7.2.1)부터 `<responsive>` 에 `class-merge` 를 쓰면 그 구간에서 **바뀐 클래스만** 적는다. 엔진은 기본 `className` 에서 같은 종류(같은 CSS 속성 축)이고 같은 변형(`dark:`, `hover:` 등)인 토큰을 지우고, 나머지는 그대로 둔 채 `class-merge` 토큰을 뒤에 붙인다. 패딩 하나를 바꾸려고 구간 클래스 전체를 다시 적지 않아도 되고, 나중에 기본 클래스를 고치면 그 구간에도 그대로 반영된다. 기본 클래스 일부만 바뀌는 구간은 이 방식이 권장이다. 여러 화면에 반복되는 클래스 묶음 자체는 [레이아웃 의미 클래스](semantic-classes.md)로 줄인다.
+
+```html
+<div data-ref="login_card" class="w-full max-w-md p-8 bg-white rounded-lg">
+  <responsive on="portable" class-merge="p-6"/>
+  본문
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다. `classMerge` 는 `props` 가 아니라 구간 값의 형제 키다.
+
+```json
+{
+  "id": "login_card",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "w-full max-w-md p-8 bg-white rounded-lg"
+  },
+  "text": "본문",
+  "responsive": {
+    "portable": { "classMerge": "p-6" }
+  }
+}
+```
+
+**모바일과 태블릿(0~1023px)의 실효 className**: `w-full max-w-md bg-white rounded-lg p-6` — `p-8` 만 `p-6` 으로 바뀌고 나머지는 남는다. 데스크톱은 기본값 그대로다.
+
+병합 규칙:
+
+| 규칙 | 기본 | `class-merge` | 결과 |
+| --- | --- | --- | --- |
+| 같은 축, 같은 변형이면 교체 | `p-8 rounded-lg` | `p-6` | `rounded-lg p-6` |
+| 변형이 다르면 둘 다 남는다 | `bg-gray-100 dark:bg-gray-800` | `bg-gray-50` | `dark:bg-gray-800 bg-gray-50` |
+| 상위 축은 하위 축을 덮는다 | `px-4 py-2` | `p-0` | `p-0` |
+| 하위 축은 상위 축을 지우지 않는다 | `p-4` | `px-2` | `p-4 px-2` |
+| 같은 토큰은 한 번만 남는다 | `admin-card p-4` | `admin-card` | `p-4 admin-card` |
+| 확장 CSS 앞글자는 떼고 판정한다 | `ecommerce:px-2` | `px-4` | `px-4` |
+
+변형이 다르면 지우지 않으므로, 라이트 모드 값만 바꿀 때 기본의 `dark:` 짝을 구간에 다시 적지 않아도 된다. 마지막 줄의 앞글자는 활성 확장이 CSS 에 붙이는 앞글자(`ecommerce:` 등)다.
+
+**적용 순서** — 일반 노드, 셀과 반복 항목(DataGrid 셀 정의 등), 검색 봇 화면이 모두 같은 순서를 따른다.
+
+1. 화면 폭에 맞는 구간 키 하나를 고른다([우선순위](#우선순위)).
+2. 구간 `props` 를 기본 props 에 얕게 병합한다. 구간 `class` 가 있으면 여기서 `className` 이 통째로 바뀐다.
+3. 바인딩(`{{…}}`)을 해석한다.
+4. `classMap` 을 적용한다. 구간에 `classMap` 이 있으면 기본 `classMap` 대신 그것을 쓴다.
+5. 그 결과 `className` 에 `class-merge` 를 덧붙인다. `class-merge` 값에도 바인딩을 쓸 수 있다.
+
+그래서 구간 `class` 와 `class-merge` 를 함께 쓰면 `class-merge` 는 구간 `class` 위에 덧붙는다. 검색 봇 화면은 데스크톱(1024px) 구간으로 그리며, 그 구간의 `class-merge` 와 `classMap` 을 같은 규칙으로 적용한다.
+
+**한계 — 단계 숫자가 없는 색 이름.** `bg-white`, `text-white`, `text-black` 처럼 `-500` 같은 단계가 붙지 않은 색 이름은 색 그룹으로 판정되지 않아 교체되지 않는다. 기본 `bg-white` 에 `class-merge="bg-gray-50"` 를 쓰면 `bg-white bg-gray-50` 이 함께 남고, 어느 색이 보일지는 CSS 선언 순서로 정해진다. 이런 색을 구간에서 바꾸려면 구간 `class` 로 통째로 교체한다.
+
+#### `class` 와 `class-merge` 고르기
+
+| 구간에서 하려는 일 | 쓸 것 |
+| --- | --- |
+| 기본 클래스 일부를 바꾸거나 더함 | `class-merge` (권장) |
+| 기본 토큰을 지우기만 함(대신 붙일 값이 없음) | `class` |
+| 단계 숫자가 없는 색 이름(`bg-white` 등)을 바꿈 | `class` |
+| 구간의 클래스 구성이 기본과 전혀 다름 | `class` |
+
+#### 작성 제약
+
+- `class-merge` 에 폭 변형(`md:`, `max-md:`, `min-[900px]:` 등)을 적으면 컴파일 경고 `class_merge_breakpoint_variant` 가 난다. 구간이 이미 폭 조건이므로 폭 변형 없이 적거나 구간을 나눈다.
+- 빈 값(`class-merge=""`)은 컴파일 오류(`directive_needs_value`)다.
+- 구간 `class` 가 기본 className 을 거의 그대로(기본 토큰의 80% 이상) 다시 적고 몇 개만 바꾼 형태이고, 바뀐 토큰만 `class-merge` 로 옮겨도 같은 결과가 나오면 정적 검사가 막는다. 기본을 그대로 복사한 구간 `class` 도 같다(지우면 된다). 기본이나 구간 className 에 바인딩(`{{…}}`)이 있거나 노드에 `classMap` 이 있으면 대상이 아니다. 면제가 꼭 필요하면 그 요소 바로 앞 주석 `<!-- audit:allow layout-responsive-class-rewrite reason: … -->` 에 사유를 적는다.
+- `class-merge` 를 쓰는 템플릿과 확장은 manifest 의 `g7_version` 을 `>=7.2.1` 로 둔다. 그 전 엔진은 이 키를 무시하므로(DOM 에 새지는 않는다) 그 구간이 기본 클래스로 그려진다.
+
+#### 레이아웃 편집기에서 저장되는 형태
+
+태블릿과 모바일 탭에서 className 을 고치면 기본 대비 바뀐 토큰만 `classMerge` 로 저장한다. 덧붙이기로 나타낼 수 없는 편집(기본 토큰을 지우기만 함), 기본 `className` 에 바인딩이 있는 노드, 이미 구간 `class` 를 가진 구간은 종전처럼 구간 `className` 을 통째로 교체하는 방식으로 저장한다.
 
 ### children 완전 교체
 
@@ -475,7 +551,9 @@ G7Core.renderItemChildren(cellChildren, { row }, G7Core.getComponentMap(), key, 
 
 `min-[N]:` 은 `N-`, `max-[N]:` 은 `-(N-1)` 로 옮긴다(Tailwind 의 `max-[N]` 은 N **미만**이다).
 
-한 노드에서 엔진은 **키 하나만** 고르고(커스텀 구간 > 프리셋, 커스텀끼리는 좁은 범위 우선), 그 구간의 `className` 은 기본값을 **통째로** 교체한다. 그래서 각 구간 값에는 기본 클래스 중 그 구간에서도 살아 있는 것과 그 구간의 클래스를 모두 적는다. 같은 CSS 속성끼리는 구간 값이 이긴다(예: 기본 `px-2` + `md:p-4` → `768-` 구간은 `p-4`). 구간 값이 `className` 을 통째로 바꾸므로 `dark:` 짝도 그 구간 값에 다시 적는다([다크 모드](./dark-mode.md)).
+접두를 옮길 때는 접두가 붙어 있던 클래스만 그 구간의 `class-merge` 에 적는다([바뀐 클래스만 덧붙이기](#바뀐-클래스만-덧붙이기-class-merge)). 같은 CSS 속성끼리는 구간 값이 이기고 나머지 기본 클래스와 `dark:` 짝은 그대로 남는다(예: 기본 `px-2 text-sm` + `md:p-4` → `768-` 구간 `class-merge="p-4"`, 결과 `text-sm p-4`). 한 노드에서 엔진은 **키 하나만** 고르므로(커스텀 구간 > 프리셋, 커스텀끼리는 좁은 범위 우선) 위 구간에는 아래 구간의 접두 클래스 중 그 폭에서도 살아 있는 것을 함께 적는다(예: `md:flex-row lg:gap-8` → `768-1023` 은 `flex-row`, `1024-` 는 `flex-row gap-8`).
+
+구간 `class` 로 적으면 기본 `className` 을 **통째로** 교체한다. 그때는 기본 클래스 중 그 구간에서도 살아 있는 것과 `dark:` 짝까지 그 구간 값에 다시 적는다([다크 모드](./dark-mode.md)). 단계 숫자가 없는 색 이름(`bg-white` 등)을 구간에서 바꿀 때는 `class-merge` 로 교체되지 않으므로 구간 `class` 를 쓴다.
 
 ### 함정: 열린 구간과 프리셋을 한 노드에 섞지 않는다
 
@@ -498,7 +576,7 @@ G7Core.renderItemChildren(cellChildren, { row }, G7Core.getComponentMap(), key, 
 
 `.g7.html` 을 구울 때(편집기 저장, `php artisan layout:decompile`) 한 노드의 `responsive` 에서 **열린 커스텀 구간**(한쪽 끝을 비운 키, `768-`, `-1023`)이 다른 열린 커스텀 구간이나 프리셋과 **같은 폭에서 함께 맞으면** 이 경고가 난다. 굽기는 막지 않는다. 경고에는 부품 이름과 겹친 키가 선언 순서대로 실린다.
 
-판정은 엔진의 키 고르기를 그대로 따른다. 두 키가 함께 맞는 폭이 있으면 엔진은 하나만 골라 그 키의 값만 기본값 위에 덮어 쓰므로(`props` 는 얕은 병합, `children`·`text`·`if`·`iteration` 은 교체) 다른 키의 값은 그 폭에서 쓰이지 않는다. 고르는 순서는 커스텀 구간이 넓이와 상관없이 프리셋보다 먼저, 커스텀끼리는 좁은 구간이 먼저다. 위가 열린 구간끼리는 넓이가 둘 다 무한이라 가리지 못하고 먼저 적은 키가 남는다.
+판정은 엔진의 키 고르기를 그대로 따른다. 두 키가 함께 맞는 폭이 있으면 엔진은 하나만 골라 그 키의 값만 기본값 위에 덮어 쓰므로(`props` 는 얕은 병합, `classMerge` 는 덧붙임, `children`·`text`·`if`·`iteration` 은 교체) 다른 키의 값은 그 폭에서 쓰이지 않는다. 고르는 순서는 커스텀 구간이 넓이와 상관없이 프리셋보다 먼저, 커스텀끼리는 좁은 구간이 먼저다. 위가 열린 구간끼리는 넓이가 둘 다 무한이라 가리지 못하고 먼저 적은 키가 남는다.
 
 ```text
 ⚠ { "768-": …, "1024-": … }    1024px 이상에서 둘 다 맞는다. 먼저 적은 768- 이 늘 이겨 1024- 값은 쓰이지 않는다
@@ -550,11 +628,11 @@ G7Core.renderItemChildren(cellChildren, { row }, G7Core.getComponentMap(), key, 
 
 <!-- ✅ responsive -->
 <div data-ref="cell" class="w-full aspect-square">
-  <responsive on="768-" class="aspect-square w-20 h-20"/>
+  <responsive on="768-" class-merge="w-20 h-20"/>
 </div>
 ```
 
-> 위는 소스(`.g7.html`), 아래는 ✅ 의 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 ✅ 의 컴파일 결과인 런타임 계약 JSON 이다. 768px 이상의 실효 className 은 `aspect-square w-20 h-20` 이다(`w-full` 이 `w-20` 으로 바뀐다).
 
 ```json
 {
@@ -563,7 +641,7 @@ G7Core.renderItemChildren(cellChildren, { row }, G7Core.getComponentMap(), key, 
   "name": "Div",
   "props": { "className": "w-full aspect-square" },
   "responsive": {
-    "768-": { "props": { "className": "aspect-square w-20 h-20" } }
+    "768-": { "classMerge": "w-20 h-20" }
   }
 }
 ```
@@ -572,7 +650,7 @@ G7Core.renderItemChildren(cellChildren, { row }, G7Core.getComponentMap(), key, 
 
 ```html
 <img src="{{row.thumbnail_url}}" thumbPreset="md" class="w-full aspect-square object-cover">
-  <responsive on="768-" thumbPreset="sm" class="w-20 h-20 object-cover"/>
+  <responsive on="768-" thumbPreset="sm" class-merge="w-20 h-20"/>
 </img>
 ```
 
@@ -609,7 +687,7 @@ G7Core.renderItemChildren(cellChildren, { row }, G7Core.getComponentMap(), key, 
 - **모바일**: `_global.sidebarOpen` 상태에 따라 슬라이드 인/아웃
   - `true`: `translate-x-0` (제자리)
   - `false`: `-translate-x-full` (왼쪽으로 완전히 숨김)
-- **데스크톱(1024px 이상)**: `responsive` 의 `desktop` 구간 값으로 교체되어 항상 표시 (`relative translate-x-0`). 교체된 값에도 `bg-white dark:bg-gray-800` 을 다시 적어야 배경과 다크 모드 짝이 남는다
+- **데스크톱(1024px 이상)**: `responsive` 의 `desktop` 구간 `class` 로 className 을 통째로 교체해 항상 표시 (`relative translate-x-0`). 데스크톱에서 없애야 할 토큰(`inset-y-0 left-0 z-50`, 전환 효과)이 있어 덧붙이기(`class-merge`)로는 나타낼 수 없기 때문이다. 통째로 교체하므로 `bg-white dark:bg-gray-800` 도 다시 적어야 배경과 다크 모드 짝이 남는다
 - **애니메이션**: `transition-transform duration-300` (300ms)
 
 ---
@@ -691,7 +769,7 @@ G7Core.renderItemChildren(cellChildren, { row }, G7Core.getComponentMap(), key, 
 | 좁은 라벨·배지·칩 | `truncate` + 폭 상한(`max-w-32` 등) | 한 줄 … |
 | 표 셀 | 셀 `w-full max-w-0` + 안쪽 `block truncate` | 자동 표 배치가 셀을 늘리지 않음 |
 
-- `responsive.*.props.className` 은 기본 `className` 을 **대체**한다([Props 머지 규칙](#props-머지-규칙)) — 위 클래스는 반응형 문자열에도 모두 넣는다.
+- 구간 `class`(`responsive.*.props.className`)는 기본 `className` 을 **대체**하므로([Props 머지 규칙](#props-머지-규칙)) 위 클래스를 그 구간 값에도 모두 넣는다. 구간을 `class-merge` 로 적으면 기본의 `min-w-0`, `truncate` 등이 그대로 남는다.
 - 레이아웃에만 쓰는 새 클래스는 빌드 CSS 에 없을 수 있다 — [tailwind-safelist.md](tailwind-safelist.md) 로 확인한다.
 - 이미지 로고에 `max-w-full` 을 주면 `object-contain` 을 함께 줘 비율이 찌그러지지 않게 한다.
 
@@ -837,12 +915,12 @@ Tailwind 임의 값 접두(`min-[900px]:`, `max-[1200px]:`) 대신 `responsive` 
 
 <!-- ✅ responsive -->
 <div data-ref="body" class="hidden">
-  <responsive on="900-1199" class="grid"/>
-  <responsive on="1200-" class="flex"/>
+  <responsive on="900-1199" class-merge="grid"/>
+  <responsive on="1200-" class-merge="flex"/>
 </div>
 ```
 
-> 위는 소스(`.g7.html`), 아래는 ✅ 의 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 ✅ 의 컴파일 결과인 런타임 계약 JSON 이다. `grid`, `flex`, `hidden` 은 같은 축(display)이라 `class-merge` 가 `hidden` 을 바꾼다.
 
 ```json
 {
@@ -851,8 +929,8 @@ Tailwind 임의 값 접두(`min-[900px]:`, `max-[1200px]:`) 대신 `responsive` 
   "name": "Div",
   "props": { "className": "hidden" },
   "responsive": {
-    "900-1199": { "props": { "className": "grid" } },
-    "1200-": { "props": { "className": "flex" } }
+    "900-1199": { "classMerge": "grid" },
+    "1200-": { "classMerge": "flex" }
   }
 }
 ```

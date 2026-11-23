@@ -303,7 +303,7 @@
                             "if": "{{(_local.noOptionAdditionalTotal ?? 0) > 0}}",
                             "props": {
                                 "data-testid": "single-additional-options-amount",
-                                "className": "flex items-center justify-between text-xs text-gray-500 dark:text-gray-400"
+                                "className": "flex items-center justify-between text-xs text-muted"
                             },
                             "children": [
                                 {
@@ -336,7 +336,7 @@
                     "name": "Span",
                     "if": "{{product.data?.min_purchase_qty > 1}}",
                     "props": {
-                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                        "className": "block text-xs text-muted"
                     },
                     "text": "$t:shop.min_purchase_qty_notice|qty={{product.data?.min_purchase_qty}}"
                 },
@@ -345,7 +345,7 @@
                     "name": "Span",
                     "if": "{{product.data?.max_purchase_qty > 0}}",
                     "props": {
-                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                        "className": "block text-xs text-muted"
                     },
                     "text": "$t:shop.max_purchase_qty_notice|count={{product.data?.max_purchase_qty}}|qty={{product.data?.max_purchase_qty}}"
                 }
@@ -440,7 +440,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "aria-label": "$t:common.delete",
-                                                "className": "text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+                                                "className": "text-muted hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
                                             },
                                             "children": [
                                                 {
@@ -603,7 +603,7 @@
                                     "if": "{{(item.additionalOptionsTotal ?? 0) > 0}}",
                                     "props": {
                                         "data-testid": "additional-options-amount",
-                                        "className": "flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2"
+                                        "className": "flex items-center justify-between text-xs text-muted mb-2"
                                     },
                                     "children": [
                                         {

@@ -29,7 +29,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('status') ? (_local.visibleFilters || []).filter(f => f !== 'status') : [...(_local.visibleFilters || []), 'status']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.status</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.users.filter.status</span>
         <div class="flex-center flex-wrap gap-3">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="checkbox" name="statusAll" class="checkbox" checked="{{(_local.filter.status || []).length === 0}}">
@@ -59,7 +59,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('role') ? (_local.visibleFilters || []).filter(f => f !== 'role') : [...(_local.visibleFilters || []), 'role']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.role</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.users.filter.role</span>
         <!-- 역할은 설치마다 수십 개가 될 수 있어 체크박스를 늘어놓으면 행이 화면 몇 개 높이로 자란다 — 회원 폼의
              역할 선택과 같은 「검색 + 태그」 한 칸으로 고른다. 비워 두면 전체다(「전체」 칸이 따로 없다).
              값은 id 문자열이다 — URL(`role_ids[]`)에서 되읽으면 문자열로 오므로 선택지 value 도 문자열로 맞춘다.
@@ -83,7 +83,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('createdAt') ? (_local.visibleFilters || []).filter(f => f !== 'createdAt') : [...(_local.visibleFilters || []), 'createdAt']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.created_at</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.users.filter.created_at</span>
         <div class="flex-center flex-wrap gap-2">
           <div class="flex-center gap-2">
             <icon name="calendar" class="text-base text-gray-500 dark:text-gray-500"/>
@@ -93,7 +93,7 @@
                 <set-state target="_local" filter.createdStartDate="{{$event.target.value}}" filter.createdDateQuick=""/>
               </on>
             </input>
-            <span class="text-gray-500 dark:text-gray-400">~</span>
+            <span class="text-muted">~</span>
             <input type="date" aria-label="$t:common.range_end|label={{$t('admin.users.filter.created_at')}}" name="createdEndDate" value="{{_local.filter.createdEndDate || ''}}" class="input w-36">
               <on type="change">
                 <!-- 가입일 종료. 시작일과 같은 이유로 빠른 기간 표시를 지운다. -->
@@ -173,7 +173,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('lastLoginAt') ? (_local.visibleFilters || []).filter(f => f !== 'lastLoginAt') : [...(_local.visibleFilters || []), 'lastLoginAt']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.last_login</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.users.filter.last_login</span>
         <div class="flex-center flex-wrap gap-2">
           <div class="flex-center gap-2">
             <icon name="calendar" class="text-base text-gray-500 dark:text-gray-500"/>
@@ -183,7 +183,7 @@
                 <set-state target="_local" filter.lastLoginStartDate="{{$event.target.value}}" filter.lastLoginDateQuick=""/>
               </on>
             </input>
-            <span class="text-gray-500 dark:text-gray-400">~</span>
+            <span class="text-muted">~</span>
             <input type="date" aria-label="$t:common.range_end|label={{$t('admin.users.filter.last_login')}}" name="lastLoginEndDate" value="{{_local.filter.lastLoginEndDate || ''}}" disabled="{{!!_local.filter.neverLoggedIn}}" class="input w-36">
               <on type="change">
                 <!-- 최근 로그인 종료. -->
@@ -272,7 +272,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('adminScope') ? (_local.visibleFilters || []).filter(f => f !== 'adminScope') : [...(_local.visibleFilters || []), 'adminScope']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.admin_scope</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.users.filter.admin_scope</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="adminScope" value="all" checked="{{(_local.filter.adminScope || 'all') === 'all'}}" class="radio">
@@ -311,7 +311,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('lockState') ? (_local.visibleFilters || []).filter(f => f !== 'lockState') : [...(_local.visibleFilters || []), 'lockState']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.lock_state</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.users.filter.lock_state</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="lockState" value="all" checked="{{(_local.filter.lockState || 'all') === 'all'}}" class="radio">
@@ -350,7 +350,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('dormantAt') ? (_local.visibleFilters || []).filter(f => f !== 'dormantAt') : [...(_local.visibleFilters || []), 'dormantAt']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.dormant_at</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.users.filter.dormant_at</span>
         <div class="flex-center gap-2">
           <icon name="calendar" class="text-base text-gray-500 dark:text-gray-500"/>
           <input type="date" aria-label="$t:common.range_start|label={{$t('admin.users.filter.dormant_at')}}" name="dormantStartDate" value="{{_local.filter.dormantStartDate || ''}}" class="input w-36">
@@ -359,7 +359,7 @@
               <set-state target="_local" filter.dormantStartDate="{{$event.target.value}}"/>
             </on>
           </input>
-          <span class="text-gray-500 dark:text-gray-400">~</span>
+          <span class="text-muted">~</span>
           <input type="date" aria-label="$t:common.range_end|label={{$t('admin.users.filter.dormant_at')}}" name="dormantEndDate" value="{{_local.filter.dormantEndDate || ''}}" class="input w-36">
             <on type="change">
               <!-- 휴면 전환일 종료. -->
@@ -376,7 +376,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('statusChangedAt') ? (_local.visibleFilters || []).filter(f => f !== 'statusChangedAt') : [...(_local.visibleFilters || []), 'statusChangedAt']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.status_changed</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.users.filter.status_changed</span>
         <div class="flex-center flex-wrap gap-2">
           <select name="statusChangedType" aria-label="$t:admin.users.filter.status_changed" class="w-28" value="{{_local.filter.statusChangedType || ''}}">
             <options>
@@ -397,7 +397,7 @@
                 <set-state target="_local" filter.statusChangedStart="{{$event.target.value}}"/>
               </on>
             </input>
-            <span class="text-gray-500 dark:text-gray-400">~</span>
+            <span class="text-muted">~</span>
             <input type="date" aria-label="$t:common.range_end|label={{$t('admin.users.filter.status_changed')}}" name="statusChangedEnd" value="{{_local.filter.statusChangedEnd || ''}}" disabled="{{!_local.filter.statusChangedType}}" class="input w-36">
               <on type="change">
                 <!-- 상태 변경일 종료. -->
@@ -415,7 +415,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('language') ? (_local.visibleFilters || []).filter(f => f !== 'language') : [...(_local.visibleFilters || []), 'language']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.language</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.users.filter.language</span>
         <div class="flex-center gap-2">
           <select name="language" class="w-40" value="{{_local.filter.language || ''}}" options="{{[{ value: '', label: '$t:common.all' }, ...(($locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l })))]}}">
             <on type="change">
@@ -433,7 +433,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('country') ? (_local.visibleFilters || []).filter(f => f !== 'country') : [...(_local.visibleFilters || []), 'country']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.country</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.users.filter.country</span>
         <div class="flex-center gap-2 flex-1">
           <searchable-dropdown data-type="composite" aria-label="$t:admin.users.filter.country" options="{{_computed.countryOptions ?? []}}" value="{{_local.filter.country || ''}}" triggerLabel="$t:admin.users.filter.country_select" searchPlaceholder="$t:admin.users.filter.country_search" noResultsText="$t:common.no_results" class="w-64">
             <on type="change" event="onChange">
@@ -441,7 +441,7 @@
               <set-state target="_local" filter.country="{{$args[0]}}"/>
             </on>
           </searchable-dropdown>
-          <button data-if="{{!!_local.filter.country}}" type="button" aria-label="$t:common.clear_selection" title="$t:common.clear_selection" class="text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
+          <button data-if="{{!!_local.filter.country}}" type="button" aria-label="$t:common.clear_selection" title="$t:common.clear_selection" class="text-muted hover:text-gray-600 dark:hover:text-gray-300">
             <on type="click">
               <!-- 고른 국가 지우기. -->
               <set-state target="_local" filter.country=""/>
@@ -458,7 +458,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('emailVerified') ? (_local.visibleFilters || []).filter(f => f !== 'emailVerified') : [...(_local.visibleFilters || []), 'emailVerified']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.email_verified</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.users.filter.email_verified</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="emailVerified" value="all" checked="{{(_local.filter.emailVerified || 'all') === 'all'}}" class="radio">
@@ -497,7 +497,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('identityVerified') ? (_local.visibleFilters || []).filter(f => f !== 'identityVerified') : [...(_local.visibleFilters || []), 'identityVerified']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.identity_verified</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.users.filter.identity_verified</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="identityVerified" value="all" checked="{{(_local.filter.identityVerified || 'all') === 'all'}}" class="radio">
@@ -536,7 +536,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('requiredMissing') ? (_local.visibleFilters || []).filter(f => f !== 'requiredMissing') : [...(_local.visibleFilters || []), 'requiredMissing']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.list_member_fields.filter_required_missing</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.users.list_member_fields.filter_required_missing</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="checkbox" name="requiredMissing" class="checkbox" checked="{{!!_local.filter.requiredMissing}}">
@@ -557,7 +557,7 @@
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('nicknameDuplicate') ? (_local.visibleFilters || []).filter(f => f !== 'nicknameDuplicate') : [...(_local.visibleFilters || []), 'nicknameDuplicate']}}"/>
           </on>
         </input>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.list_member_fields.filter_nickname_duplicate</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.users.list_member_fields.filter_nickname_duplicate</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="checkbox" name="nicknameDuplicate" class="checkbox" checked="{{!!_local.filter.nicknameDuplicate}}">
@@ -625,7 +625,7 @@
           </on>
         </column-selector>
         <button data-ref="detail_search_toggle" type="button" class="btn btn-outline flex-center gap-2">
-          <responsive on="portable" class="flex-center btn btn-outline justify-center gap-2 w-full"/>
+          <responsive on="portable" class-merge="justify-center w-full"/>
           <on type="click">
             <!-- 상세 필터 펼침/접힘. 편집모드를 켜면 아래 검색편집 버튼이 이 값을 강제로 참으로 만든다. -->
             <set-state target="_local" showDetailFilter="{{!_local.showDetailFilter}}"/>
@@ -659,7 +659,7 @@
         <div class="flex-center justify-center gap-2 flex-1">
           <responsive on="portable" class="contents"/>
           <button data-ref="search_button" type="button" class="btn btn-primary">
-            <responsive on="portable" class="btn btn-primary flex-1"/>
+            <responsive on="portable" class-merge="flex-1"/>
             <on type="click">
               <action-ref name="searchUsers"/>
             </on>

@@ -13,7 +13,7 @@
                     "name": "Div",
                     "if": "{{!!user?.data?.ecommerce_mileage}}",
                     "props": {
-                        "className": "ecommerce:mt-4 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-5"
+                        "className": "ecommerce:mt-4 ecommerce-card-plain ecommerce:p-5"
                     },
                     "children": [
                         {
@@ -53,7 +53,7 @@
                             "name": "Span",
                             "if": "{{!user?.data?.ecommerce_mileage?.enabled}}",
                             "props": {
-                                "className": "ecommerce:block ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                "className": "ecommerce:block ecommerce:text-sm ecommerce-text-muted"
                             },
                             "text": "$t:sirsoft-ecommerce.user_mileage.disabled_notice"
                         },
@@ -73,7 +73,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted"
                                             },
                                             "text": "$t:sirsoft-ecommerce.user_mileage.available"
                                         },

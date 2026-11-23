@@ -348,7 +348,7 @@
                                 "props": {
                                     "type": "button",
                                     "disabled": "{{_computed.isReadOnly || _local.isSaving || (!!route?.id && !_local.hasChanges)}}",
-                                    "className": "board-flex-center board:gap-2 board:px-4 board:py-2 board:bg-blue-600 board:text-white board:rounded-lg board:hover:bg-blue-700 board:dark:bg-blue-600 board:dark:hover:bg-blue-700 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed"
+                                    "className": "board-flex-center board-btn board-btn-primary"
                                 },
                                 "children": [
                                     {
@@ -523,10 +523,7 @@
                             {
                                 "type": "basic",
                                 "name": "Div",
-                                "if": "{{!_local.hasChanges}}",
-                                "props": {
-                                    "className": ""
-                                }
+                                "if": "{{!_local.hasChanges}}"
                             },
                             {
                                 "type": "basic",

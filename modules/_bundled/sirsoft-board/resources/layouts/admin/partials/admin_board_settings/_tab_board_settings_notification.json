@@ -36,9 +36,6 @@
                             "id": "field_notify_author",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -114,9 +111,6 @@
                             "id": "field_notify_admin_on_post",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",

@@ -26,13 +26,13 @@
       </div>
     </div>
     <footer>
-      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.ecommerceExportIsRetrying}}">
+      <button type="button" class="ecommerce-btn ecommerce-btn-secondary" disabled="{{_global.ecommerceExportIsRetrying}}">
         <on type="click">
           <close-modal/>
         </on>
         $t:sirsoft-ecommerce.admin.export.common.cancel
       </button>
-      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-500 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-600 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.ecommerceExportIsRetrying}}">
+      <button type="button" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-primary" disabled="{{_global.ecommerceExportIsRetrying}}">
         <on type="click">
           <!-- 다시 요청 실행. 새 작업이 목록 맨 위에 대기로 나타나고, 목록 응답의 `has_active` 가 자동 갱신을 다시 건다. -->
           <sequence>

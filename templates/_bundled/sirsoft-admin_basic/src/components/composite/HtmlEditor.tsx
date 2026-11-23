@@ -335,7 +335,7 @@ export const HtmlEditor: React.FC<HtmlEditorProps> = ({
       {/* 라벨 및 HTML 모드 토글 */}
       <Div className="flex items-center justify-between">
         {label && (
-          <Label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
+          <Label className="block text-sm font-medium text-muted">
             {label}
           </Label>
         )}

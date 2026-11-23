@@ -161,7 +161,7 @@
   </transition-overlay>
   <slot name="content">
     <div data-ref="analytics_settings_content" data-key="form" data-track-changes class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900">
-      <responsive on="640-1023" class="p-6 min-h-screen bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="640-1023" class="admin-page-content"/>
       <responsive on="1024-" class="p-8 min-h-screen bg-gray-50 dark:bg-gray-900"/>
       <div data-ref="page_header" class="flex-between mb-4">
         <div>
@@ -206,11 +206,11 @@
         </div>
       </div>
       <div data-ref="sticky_header" class="sticky top-0 z-40 -mx-4 px-4 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700">
-        <responsive on="640-1023" class="sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
-        <responsive on="1024-" class="sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
+        <responsive on="640-1023" class-merge="-mx-6 px-6"/>
+        <responsive on="1024-" class-merge="-mx-8 px-8"/>
         <tab-navigation data-type="composite" data-ref="settings_tabs" class="sticky top-0 z-40 -mx-4 px-4 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700" activeTabId="{{query.tab || 'collection'}}" variant="default">
-          <responsive on="640-1023" class="sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
-          <responsive on="1024-" class="sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
+          <responsive on="640-1023" class-merge="-mx-6 px-6"/>
+          <responsive on="1024-" class-merge="-mx-8 px-8"/>
           <prop name="tabs">
             <item id="collection" href="/admin/analytics/settings?tab=collection" label="$t:admin.analytics.settings.tabs.collection"/>
             <item id="privacy" href="/admin/analytics/settings?tab=privacy" label="$t:admin.analytics.settings.tabs.privacy"/>

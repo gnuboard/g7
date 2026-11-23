@@ -446,7 +446,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </Span>
           )}
           {product.brand_name && (
-            <Span className="text-xs text-gray-500 dark:text-gray-400">
+            <Span className="text-xs text-muted">
               {product.brand_name}
             </Span>
           )}
@@ -487,7 +487,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <Span className="text-xs text-gray-600 dark:text-gray-400 ml-0.5">
             {(product.rating_avg ?? 0).toFixed(1)}
           </Span>
-          <Span className="text-xs text-gray-500 dark:text-gray-400">
+          <Span className="text-xs text-muted">
             ({product.review_count ?? 0})
           </Span>
         </Div>
@@ -498,7 +498,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             {sellingPrice}
           </Span>
           {listPrice && hasDiscount && (
-            <Span className="text-sm text-gray-500 dark:text-gray-400 line-through">
+            <Span className="text-sm text-muted line-through">
               {listPrice}
             </Span>
           )}

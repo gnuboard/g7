@@ -59,7 +59,7 @@
       </div>
       <!-- 다시 받기에 실패하면 엔진이 값을 null 로 둔다 — 「대상이 없습니다」 대신 불러오기 실패를 알린다 -->
       <p data-ref="privacy_targets_load_failed" data-if="{{privacyTargets === null}}" role="alert" class="board:py-6 board:text-center board:text-sm board:text-red-600 board:dark:text-red-400">$t:sirsoft-board.common.list_load_failed</p>
-      <div data-ref="privacy_targets_empty" data-if="{{privacyTargets !== undefined &amp;&amp; privacyTargets !== null &amp;&amp; ((privacyTargets?.data?.data ?? []).length === 0)}}" class="board:flex board:flex-col board:items-center board:gap-3 board:text-center board:text-gray-500 board:dark:text-gray-400 board:py-6">
+      <div data-ref="privacy_targets_empty" data-if="{{privacyTargets !== undefined &amp;&amp; privacyTargets !== null &amp;&amp; ((privacyTargets?.data?.data ?? []).length === 0)}}" class="board:flex board:flex-col board:items-center board:gap-3 board:text-center board-text-muted board:py-6">
         <icon name="inbox" class="board:text-4xl"/>
         <span class="board:text-sm">$t:sirsoft-board.admin.settings.privacy_retention.targets.empty</span>
       </div>

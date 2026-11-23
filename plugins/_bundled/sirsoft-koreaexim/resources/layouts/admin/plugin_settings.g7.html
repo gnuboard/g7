@@ -98,7 +98,7 @@
 </permissions>
 <slot name="content">
 <div data-ref="koreaexim_settings_content" data-key="form" data-track-changes class="koreaexim:p-4 koreaexim:min-h-screen koreaexim:bg-gray-50 koreaexim:dark:bg-gray-900">
-  <responsive on="640-1023" class="koreaexim:p-6 koreaexim:min-h-screen koreaexim:bg-gray-50 koreaexim:dark:bg-gray-900"/>
+  <responsive on="640-1023" class="koreaexim-admin-page-content"/>
   <responsive on="1024-" class="koreaexim:p-8 koreaexim:min-h-screen koreaexim:bg-gray-50 koreaexim:dark:bg-gray-900"/>
 <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-koreaexim.title" description="$t:sirsoft-koreaexim.description">
 <a href="/admin/plugins" data-ref="koreaexim_back" class="koreaexim-button koreaexim-btn koreaexim-btn-secondary koreaexim:whitespace-nowrap" aria-label="$t:admin.plugins.back_to_list">
@@ -110,8 +110,8 @@
 </a>
 </page-header>
 <tab-navigation data-type="composite" data-ref="koreaexim_tab_navigation" activeTabId="{{_computed.activeTab}}" variant="default" class="koreaexim:sticky koreaexim:top-0 koreaexim:z-40 koreaexim:-mx-4 koreaexim:px-4 koreaexim:border-b koreaexim:bg-gray-50 koreaexim:border-gray-200 koreaexim:dark:bg-gray-900 koreaexim:dark:border-gray-700">
-  <responsive on="640-1023" class="koreaexim:sticky koreaexim:top-0 koreaexim:z-40 koreaexim:-mx-6 koreaexim:px-6 koreaexim:border-b koreaexim:bg-gray-50 koreaexim:border-gray-200 koreaexim:dark:bg-gray-900 koreaexim:dark:border-gray-700"/>
-  <responsive on="1024-" class="koreaexim:sticky koreaexim:top-0 koreaexim:z-40 koreaexim:-mx-8 koreaexim:px-8 koreaexim:border-b koreaexim:bg-gray-50 koreaexim:border-gray-200 koreaexim:dark:bg-gray-900 koreaexim:dark:border-gray-700"/>
+  <responsive on="640-1023" class-merge="koreaexim:-mx-6 koreaexim:px-6"/>
+  <responsive on="1024-" class-merge="koreaexim:-mx-8 koreaexim:px-8"/>
 <prop name="tabs">
 <item href="/admin/plugins/sirsoft-koreaexim/settings?tab=settings" id="settings" label="$t:sirsoft-koreaexim.settings_tab"/>
 <item href="/admin/plugins/sirsoft-koreaexim/settings?tab=history" id="history" label="$t:sirsoft-koreaexim.history_tab"/>
@@ -144,7 +144,7 @@
 </on>
 <span>$t:common.cancel</span>
 </a>
-<button type="button" data-ref="koreaexim_save" disabled="{{_computed.isSettingsReadOnly || !_local.hasChanges || _local.isSaving}}" class="koreaexim-btn koreaexim-btn-primary koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed">
+<button type="button" data-ref="koreaexim_save" disabled="{{_computed.isSettingsReadOnly || !_local.hasChanges || _local.isSaving}}" class="koreaexim-btn koreaexim-btn-primary">
 <on type="click">
 <!-- 설정 저장 — 폼 전체를 PUT 하고 성공하면 설정·상태를 다시 받아 변경 표시를 내린다. 검증 오류는 _local.errors 로 각 필드 밑에 그린다 -->
 <sequence>

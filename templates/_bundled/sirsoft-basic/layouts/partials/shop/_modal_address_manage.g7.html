@@ -48,7 +48,7 @@
       <!-- 배송지 목록 -->
       <div class="space-y-3 max-h-96 overflow-y-auto">
         <!-- 배송지 없음 -->
-        <div data-if="{{!(userAddresses?.data?.addresses?.data ?? []).length}}" class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <div data-if="{{!(userAddresses?.data?.addresses?.data ?? []).length}}" class="text-center py-8 text-muted">
           <icon name="map-marker-alt" size="2xl" class="text-gray-500 dark:text-gray-500 mb-2"/>
           <p>$t:shop.checkout.no_saved_addresses</p>
         </div>
@@ -78,7 +78,7 @@
               </span>
               <!-- 주소 (국내: 우편번호 + 주소 + 상세주소) -->
               <span data-if="{{(addr.country_code ?? 'KR') === 'KR'}}" class="block text-sm text-gray-600 dark:text-gray-400">
-                <span class="text-gray-500 dark:text-gray-400 mr-1">({{addr.zipcode}})</span>
+                <span class="text-muted mr-1">({{addr.zipcode}})</span>
                 <span>{{addr.address}} {{addr.address_detail ?? ''}}</span>
               </span>
               <!-- 주소 (해외: 서버가 조립한 full_address — 국내 전용 형식으로 찍으면 '()' 만 보인다. 마이페이지 배송지 목록과 동일 규칙.) -->
@@ -185,7 +185,7 @@
       <form class="space-y-4">
         <!-- 배송지명 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label class="form-label">
             <span>$t:mypage.addresses.form.label</span>
             <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
           </label>
@@ -199,7 +199,7 @@
         </div>
         <!-- 배송국가 (D10 — 해외배송 활성 시에만 표시. change 로 checkoutAddressModal.editing.country_code 에 쓴다. 선택에 따라 국내/해외 주소 입력 분기.) -->
         <div data-if="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:shop.checkout.shipping_country</label>
+          <label class="form-label">$t:shop.checkout.shipping_country</label>
           <select name="country_code" aria-label="$t:shop.checkout.shipping_country" value="{{_global.checkoutAddressModal?.editing?.country_code ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}" class="w-full">
             <on type="change">
               <!-- 칸 값을 편집 중인 배송지의 국가(`_global.checkoutAddressModal.editing.country_code`)에 옮긴다 -->
@@ -212,7 +212,7 @@
           <responsive on="portable" class="grid grid-cols-1 gap-3"/>
           <!-- 받는 분 -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label class="form-label">
               <span>$t:mypage.addresses.form.recipient</span>
               <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
             </label>
@@ -226,7 +226,7 @@
           </div>
           <!-- 연락처 -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label class="form-label">
               <span>$t:mypage.addresses.form.phone</span>
               <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
             </label>
@@ -241,7 +241,7 @@
         </div>
         <!-- 주소 검색 (국내 KR — 다음우편번호. 해외배송 OFF 또는 KR 선택 시 표시) -->
         <div data-if="{{(_global.checkoutAddressModal?.editing?.country_code ?? 'KR') === 'KR'}}">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label class="form-label">
             <span>$t:mypage.addresses.form.address</span>
             <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
           </label>
@@ -309,11 +309,11 @@
               <set-state target="global" checkoutAddressModal.editing.intl_postal_code="{{$event.target.value}}"/>
             </on>
           </input>
-          <span data-if="{{_global.checkoutAddressModal?.errors?.address_line_1 || _global.checkoutAddressModal?.errors?.intl_city || _global.checkoutAddressModal?.errors?.intl_postal_code}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{_global.checkoutAddressModal?.errors?.address_line_1?.[0] ?? _global.checkoutAddressModal?.errors?.intl_city?.[0] ?? _global.checkoutAddressModal?.errors?.intl_postal_code?.[0] ?? ''}}</span>
+          <span data-if="{{_global.checkoutAddressModal?.errors?.address_line_1 || _global.checkoutAddressModal?.errors?.intl_city || _global.checkoutAddressModal?.errors?.intl_postal_code}}" class="form-error">{{_global.checkoutAddressModal?.errors?.address_line_1?.[0] ?? _global.checkoutAddressModal?.errors?.intl_city?.[0] ?? _global.checkoutAddressModal?.errors?.intl_postal_code?.[0] ?? ''}}</span>
         </div>
         <!-- 상세 주소 (국내 KR 전용 — 해외는 address_line_2 사용) -->
         <div data-if="{{(_global.checkoutAddressModal?.editing?.country_code ?? 'KR') === 'KR'}}">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:mypage.addresses.form.detail_address</label>
+          <label class="form-label">$t:mypage.addresses.form.detail_address</label>
           <input aria-label="$t:mypage.addresses.form.detail_address" type="text" name="address_detail" value="{{_global.checkoutAddressModal?.editing?.address_detail ?? ''}}" placeholder="$t:mypage.addresses.form.detail_placeholder" class="{{_global.checkoutAddressModal?.errors?.address_detail ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}">
             <on type="change">
               <!-- 칸 값을 편집 중인 배송지의 상세 주소(`_global.checkoutAddressModal.editing.address_detail`)에 옮긴다 -->
@@ -343,7 +343,7 @@
             </on>
             $t:common.back
           </button>
-          <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{_global.checkoutAddressModal?.isSaving ?? false}}">
+          <button type="button" class="btn btn-primary flex gap-2" disabled="{{_global.checkoutAddressModal?.isSaving ?? false}}">
             <on type="click">
               <!-- 등록과 수정이 같은 버튼이다 — `checkoutAddressModal.editing.id` 유무로 보낼 곳과 메서드가 갈린다.
                    먼저 버튼을 잠가 두 번 눌러 배송지가 둘 생기는 것을 막는다 -->

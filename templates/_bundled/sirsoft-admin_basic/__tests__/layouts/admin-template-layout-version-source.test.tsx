@@ -21,6 +21,7 @@ import versionModal from '../../layouts/partials/admin_template_layout_edit/_mod
 import extensionVersionModal from '../../layouts/partials/admin_template_layout_edit/_modal_extension_version_history.json';
 import adminKo from '../../lang/partial/ko/admin.json';
 import adminEn from '../../lang/partial/en/admin.json';
+import { expandSemanticTokens } from './support/semanticClasses';
 
 type Json = Record<string, any>;
 
@@ -225,7 +226,8 @@ describe('[버전 히스토리] 창 — 판의 출처 한 줄 (#888)', () => {
      */
     it('출처 줄은 밝은·어두운 글자색을 짝으로 갖는다', () => {
       const [line] = collect(win.modal, (n) => typeof n.props?.['data-testid'] === 'string' && n.props['data-testid'].startsWith(win.testIdPrefix));
-      const classes = String(line?.props?.className ?? '').split(/\s+/);
+      // #399 R-1 — 인라인 짝 대신 의미 클래스(`text-muted`)를 쓰면 그 정의(semantic.css @apply)를 펼쳐 같은 짝을 확인한다
+      const classes = expandSemanticTokens(String(line?.props?.className ?? ''));
 
       expect(classes.some((c) => /^text-(gray|slate)-\d+$/.test(c))).toBe(true);
       expect(classes.some((c) => /^dark:text-(gray|slate)-\d+$/.test(c))).toBe(true);

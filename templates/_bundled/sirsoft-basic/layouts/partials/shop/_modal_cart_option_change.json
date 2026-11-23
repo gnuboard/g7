@@ -286,7 +286,7 @@
                                             "props": {
                                                 "name": "image",
                                                 "size": "lg",
-                                                "className": "text-gray-500 dark:text-gray-400"
+                                                "className": "text-muted"
                                             }
                                         }
                                     ]
@@ -313,7 +313,7 @@
                                     "name": "P",
                                     "if": "{{$parent._local.optionModal.targetItem?.option_name}}",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                                        "className": "text-sm text-muted mt-1"
                                     },
                                     "text": "{{$parent._local.optionModal.targetItem?.option_name_localized ?? $localized($parent._local.optionModal.targetItem?.option_name)}}"
                                 },
@@ -348,7 +348,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-muted"
                                                     },
                                                     "text": "{{currency[1]?.formatted}}"
                                                 }

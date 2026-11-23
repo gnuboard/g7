@@ -1,0 +1,37 @@
+feature: 관리자 템플릿 Button — variant·size 를 적으면 의미 클래스가 붙는다 (#399 F12, 7.2.1)
+
+description: |
+  Button 은 `variant`·`size` prop 을 받기만 하고 클래스를 붙이지 않아, 계약(components.json)대로 variant 를 써도
+  민자 버튼이 나왔다. 이제 variant 를 **적었을 때만** `btn btn-{variant}` 를 붙이고(primary·secondary·danger·success·
+  ghost·outline), size 는 sm → btn-sm, lg → btn-lg 를 붙인다. variant 를 적지 않은 버튼(레이아웃 className 으로 모양을
+  내는 대부분)은 바뀌지 않는다. 호출처 className 이 내부 클래스를 이긴다(mergeClasses).
+  IconButton 의 variant 색도 같은 의미 클래스를 쓴다(primary 파랑 → 검정 주 버튼).
+
+# axis 의미:
+#   variant — omitted 생략, named 6종 중 하나
+#   size — omitted·md 생략, sm, lg
+axes:
+  variant: [omitted, named]
+  size: [omitted, sm, lg]
+
+effects:
+  - button_variant_adds_semantic_classes_only_when_given   # variant 를 적었을 때만 btn btn-{variant}
+  - button_size_maps_to_btn_size_classes                   # sm → btn-sm, lg → btn-lg, md·생략 → 없음
+  - caller_class_name_wins_over_internal_classes           # 호출처 className 이 같은 축 내부 클래스를 이긴다
+  # 버튼 기본 계약 (Button.test.tsx, IconButton.test.tsx — #399 선행 마킹 정리)
+  - button_renders_children                                # variant, size 를 적든 안 적든 자식 문구를 그린다
+  - button_click_calls_on_click                            # 클릭이 onClick 을 한 번 부른다(Button, IconButton)
+  - disabled_button_ignores_click                          # disabled 면 클릭이 onClick 에 닿지 않는다(Button, IconButton)
+  - button_forwards_native_html_attributes                 # type, disabled, name, value, aria-label, data-*, style 을 버튼 요소에 넘긴다
+  - button_keeps_caller_class_name                         # 호출처 className 이 버튼 요소에 붙는다(Button, IconButton)
+  - icon_button_renders_button                             # IconButton 은 button 역할 요소로 그린다
+  - icon_button_shows_label_when_given                     # label 을 주면 아이콘 옆에 문구를 그린다
+  - icon_button_without_label_uses_square_size_classes     # label 이 없으면 size 별 정사각 크기(w-8 h-8, w-10 h-10, w-12 h-12)
+  - icon_button_with_label_uses_padding_size               # label 이 있으면 정사각 대신 여백(px-4 py-2) 크기
+  - icon_button_variant_uses_semantic_btn_classes          # IconButton variant(primary, secondary, danger, ghost)는 btn-{variant} 의미 클래스를 쓴다(primary 는 검정 주 버튼)
+  - icon_button_outline_variant_keeps_legacy_tokens        # outline 은 종전 토큰(투명 바탕, 회색 테두리) 그대로다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/Button.variant.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/Button.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/IconButton.test.tsx

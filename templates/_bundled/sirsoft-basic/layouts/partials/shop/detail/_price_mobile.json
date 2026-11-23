@@ -20,7 +20,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400 line-through"
+                        "className": "text-sm text-muted line-through"
                     },
                     "text": "{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.list_price_formatted}}"
                 }

@@ -122,6 +122,7 @@
 | [identity-guard-interceptor.md](identity-guard-interceptor.md) | IdentityGuardInterceptor — 코어 본인인증 인터셉터 레퍼런스 |
 | [identity-verification-ui.md](identity-verification-ui.md) | 본인인증(IDV) 공통 UI 가이드 |
 | [scroll-restoration.md](scroll-restoration.md) | 뒤로/앞으로 가기·새로고침 스크롤 복원 |
+| [semantic-classes.md](semantic-classes.md) | 레이아웃 의미 클래스 우선 |
 
 
 <!-- AUTO-GENERATED-END: frontend-readme-docs -->

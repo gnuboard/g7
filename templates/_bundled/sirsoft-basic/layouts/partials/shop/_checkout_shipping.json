@@ -9,7 +9,7 @@
     "responsive": {
         "portable": {
             "props": {
-                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                "className": "card-plain p-4"
             }
         }
     },
@@ -97,7 +97,7 @@
         }
     ],
     "props": {
-        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
+        "className": "card-plain p-6"
     },
     "children": [
         {
@@ -274,9 +274,7 @@
                     "name": "Button",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "px-3 py-1.5 border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 rounded-full text-xs hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-1"
-                            }
+                            "classMerge": "px-3 py-1.5 text-xs"
                         }
                     },
                     "actions": [
@@ -415,7 +413,7 @@
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                        "className": "form-label"
                     },
                     "children": [
                         {
@@ -438,9 +436,7 @@
                     "name": "Select",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
-                            }
+                            "classMerge": "px-3 text-sm"
                         }
                     },
                     "actions": [
@@ -541,7 +537,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "form-label"
                             },
                             "children": [
                                 {
@@ -604,7 +600,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['shipping.recipient_name']}}",
                             "props": {
-                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
+                                "className": "form-error"
                             },
                             "text": "{{_local.errors?.['shipping.recipient_name']?.[0] ?? ''}}"
                         }
@@ -619,7 +615,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "form-label"
                             },
                             "children": [
                                 {
@@ -682,7 +678,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['shipping.recipient_phone']}}",
                             "props": {
-                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
+                                "className": "form-error"
                             },
                             "text": "{{_local.errors?.['shipping.recipient_phone']?.[0] ?? ''}}"
                         }
@@ -710,7 +706,7 @@
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                        "className": "form-label"
                     },
                     "children": [
                         {
@@ -910,7 +906,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        "className": "form-label"
                                     },
                                     "children": [
                                         {
@@ -997,7 +993,7 @@
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                        "className": "form-label"
                     },
                     "children": [
                         {
@@ -1055,7 +1051,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['shipping.address_line_1']}}",
                             "props": {
-                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
+                                "className": "form-error"
                             },
                             "text": "{{_local.errors?.['shipping.address_line_1']?.[0] ?? ''}}"
                         }
@@ -1067,9 +1063,7 @@
                     "name": "Input",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
-                            }
+                            "classMerge": "px-3 text-sm"
                         }
                     },
                     "actions": [
@@ -1115,7 +1109,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        "className": "form-label"
                                     },
                                     "children": [
                                         {
@@ -1168,7 +1162,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['shipping.intl_city']}}",
                                     "props": {
-                                        "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
+                                        "className": "form-error"
                                     },
                                     "text": "{{_local.errors?.['shipping.intl_city']?.[0] ?? ''}}"
                                 }
@@ -1182,7 +1176,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        "className": "form-label"
                                     },
                                     "text": "$t:shop.checkout.intl_state"
                                 },
@@ -1191,9 +1185,7 @@
                                     "name": "Input",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
-                                            }
+                                            "classMerge": "px-3 text-sm"
                                         }
                                     },
                                     "actions": [
@@ -1229,7 +1221,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "form-label"
                             },
                             "children": [
                                 {
@@ -1282,7 +1274,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['shipping.intl_postal_code']}}",
                             "props": {
-                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
+                                "className": "form-error"
                             },
                             "text": "{{_local.errors?.['shipping.intl_postal_code']?.[0] ?? ''}}"
                         }
@@ -1311,7 +1303,7 @@
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                        "className": "form-label"
                     },
                     "children": [
                         {
@@ -1336,9 +1328,7 @@
                     "name": "Select",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
-                            }
+                            "classMerge": "px-3 text-sm"
                         }
                     },
                     "actions": [
@@ -1393,7 +1383,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.shipping_memo}}",
                     "props": {
-                        "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
+                        "className": "form-error"
                     },
                     "text": "{{_local.errors?.shipping_memo?.[0] ?? ''}}"
                 }
@@ -1420,9 +1410,7 @@
                     "name": "Input",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
-                            }
+                            "classMerge": "px-3 text-sm"
                         }
                     },
                     "actions": [

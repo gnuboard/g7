@@ -203,7 +203,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400"
+                                "className": "pay-nicepayments-text-muted"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.user.supply_amount"
                         },
@@ -228,7 +228,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400"
+                                "className": "pay-nicepayments-text-muted"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.user.vat_amount"
                         },
@@ -254,7 +254,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400"
+                                "className": "pay-nicepayments-text-muted"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.user.tax_free_amount"
                         },
@@ -280,7 +280,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400"
+                                "className": "pay-nicepayments-text-muted"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.user.zero_rated_amount"
                         },
@@ -318,7 +318,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "paynicepayments:text-sm paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400"
+                                "className": "paynicepayments:text-sm pay-nicepayments-text-muted"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.user.easy_pay_label"
                         },
@@ -369,7 +369,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "paynicepayments:text-sm paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400"
+                                "className": "paynicepayments:text-sm pay-nicepayments-text-muted"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.user.receipt_label"
                         },

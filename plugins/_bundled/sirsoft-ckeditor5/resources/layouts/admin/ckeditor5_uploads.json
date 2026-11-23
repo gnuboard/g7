@@ -307,7 +307,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "search",
-                                                    "className": "ckeditor:absolute ckeditor:left-3 ckeditor:top-1/2 ckeditor:-translate-y-1/2 ckeditor:text-gray-500 ckeditor:dark:text-gray-400 ckeditor:text-sm ckeditor:leading-none ckeditor:pointer-events-none"
+                                                    "className": "ckeditor:absolute ckeditor:left-3 ckeditor:top-1/2 ckeditor:-translate-y-1/2 ckeditor-text-muted ckeditor:text-sm ckeditor:leading-none ckeditor:pointer-events-none"
                                                 }
                                             },
                                             {

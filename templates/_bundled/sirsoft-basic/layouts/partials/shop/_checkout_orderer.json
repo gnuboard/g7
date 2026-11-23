@@ -9,12 +9,12 @@
     "responsive": {
         "portable": {
             "props": {
-                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                "className": "card-plain p-4"
             }
         }
     },
     "props": {
-        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
+        "className": "card-plain p-6"
     },
     "children": [
         {
@@ -81,7 +81,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "form-label"
                             },
                             "children": [
                                 {
@@ -144,7 +144,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['orderer.name']}}",
                             "props": {
-                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
+                                "className": "form-error"
                             },
                             "text": "{{_local.errors?.['orderer.name']?.[0] ?? ''}}"
                         }
@@ -159,7 +159,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "form-label"
                             },
                             "children": [
                                 {
@@ -222,7 +222,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['orderer.phone']}}",
                             "props": {
-                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
+                                "className": "form-error"
                             },
                             "text": "{{_local.errors?.['orderer.phone']?.[0] ?? ''}}"
                         }
@@ -241,7 +241,7 @@
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                        "className": "form-label"
                     },
                     "children": [
                         {
@@ -298,7 +298,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.['orderer.email']}}",
                     "props": {
-                        "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
+                        "className": "form-error"
                     },
                     "text": "{{_local.errors?.['orderer.email']?.[0] ?? ''}}"
                 }
@@ -340,7 +340,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "text-xs text-muted"
                             },
                             "text": "$t:shop.checkout.guest_lookup_hint"
                         }
@@ -370,7 +370,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        "className": "form-label"
                                     },
                                     "children": [
                                         {
@@ -434,7 +434,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        "className": "form-label"
                                     },
                                     "children": [
                                         {

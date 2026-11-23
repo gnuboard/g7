@@ -66,7 +66,7 @@
                 "responsive": {
                     "640-1023": {
                         "props": {
-                            "className": "verificationkginicis:p-6 verificationkginicis:min-h-screen verificationkginicis:bg-gray-50 verificationkginicis:dark:bg-gray-900"
+                            "className": "verification-kginicis-admin-page-content"
                         }
                     },
                     "1024-": {
@@ -625,9 +625,7 @@
                                                 "name": "Div",
                                                 "responsive": {
                                                     "desktop": {
-                                                        "props": {
-                                                            "className": "verificationkginicis:col-span-4 verificationkginicis:space-y-3"
-                                                        }
+                                                        "classMerge": "verificationkginicis:col-span-4"
                                                     }
                                                 },
                                                 "props": {
@@ -775,9 +773,7 @@
                                         "name": "Div",
                                         "responsive": {
                                             "desktop": {
-                                                "props": {
-                                                    "className": "verificationkginicis:grid verificationkginicis:grid-cols-12 verificationkginicis:gap-4 verificationkginicis:items-start verificationkginicis:pt-6 verificationkginicis:border-t verificationkginicis:border-gray-200 verificationkginicis:dark:border-gray-700"
-                                                }
+                                                "classMerge": "verificationkginicis:grid-cols-12"
                                             }
                                         },
                                         "props": {
@@ -826,9 +822,7 @@
                                                 "name": "Div",
                                                 "responsive": {
                                                     "desktop": {
-                                                        "props": {
-                                                            "className": "verification-kginicis-flex-center verificationkginicis:col-span-4 verificationkginicis:justify-end"
-                                                        }
+                                                        "classMerge": "verificationkginicis:col-span-4"
                                                     }
                                                 },
                                                 "props": {

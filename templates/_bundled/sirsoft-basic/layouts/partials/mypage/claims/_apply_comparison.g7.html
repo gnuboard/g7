@@ -6,7 +6,7 @@ P3-① — adjustment.cancel_blocked 면 사유 + 안내를 이 자리에 남기
     <!-- 헤더 — 제목 + 접기/펼치기 토글(aria-expanded · aria-controls) -->
     <div class="flex items-center justify-between gap-2 mb-2">
       <h4 class="text-sm font-semibold text-gray-900 dark:text-white">$t:claim.apply.comparison.title</h4>
-      <button type="button" class="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white underline-offset-2 hover:underline" aria-expanded="{{_local.claimComparisonOpen === true}}" aria-controls="claim-comparison-body" data-testid="claim-comparison-toggle">
+      <button type="button" class="text-xs text-muted hover:text-gray-900 dark:hover:text-white underline-offset-2 hover:underline" aria-expanded="{{_local.claimComparisonOpen === true}}" aria-controls="claim-comparison-body" data-testid="claim-comparison-toggle">
         <on type="click">
           <action handler="sirsoft-ecommerce.toggleClaimComparison"/>
         </on>
@@ -14,21 +14,21 @@ P3-① — adjustment.cancel_blocked 면 사유 + 안내를 이 자리에 남기
       </button>
     </div>
     <!-- 계산 중 — 스피너 1줄 -->
-    <div data-if="{{_local.claimEstimateLoading === true}}" class="flex items-center gap-2 py-2 text-xs text-gray-500 dark:text-gray-400">
+    <div data-if="{{_local.claimEstimateLoading === true}}" class="flex items-center gap-2 py-2 text-xs text-muted">
       <icon name="spinner" class="animate-spin text-sm"/>
-      <span class="">$t:claim.apply.estimate_loading</span>
+      <span>$t:claim.apply.estimate_loading</span>
     </div>
     <!-- 수정 화면 — 미리보기를 강제하지 않으므로 아직 계산 전이면 안내 한 줄 -->
-    <p data-if="{{_local.claimEstimateLoading !== true &amp;&amp; !_local.claimEstimate &amp;&amp; _local.claimEditMode === true}}" class="text-xs text-gray-500 dark:text-gray-400">$t:claim.apply.comparison.empty_hint</p>
+    <p data-if="{{_local.claimEstimateLoading !== true &amp;&amp; !_local.claimEstimate &amp;&amp; _local.claimEditMode === true}}" class="text-xs text-muted">$t:claim.apply.comparison.empty_hint</p>
     <!-- 본문 — 접힘 상태에서는 렌더하지 않는다(토글이 열 때만). -->
     <div data-if="{{_local.claimComparisonOpen === true &amp;&amp; _local.claimEstimateLoading !== true &amp;&amp; !!_local.claimEstimate?.adjustment?.original_snapshot}}" id="claim-comparison-body" class="space-y-3">
       <!-- 주문금액 비교표 (§4-1 1~16행) — 금액은 서버 formatted 직독, 후열은 전열과 다를 때만 강조색. 클라이언트 포맷·합산 금지. -->
       <div class="text-xs">
         <!-- 표 머리글 — 열 라벨은 유형별 키(취소 전/후 · 환불 전/후 · 반품 전/후 · 교환 전/후) -->
         <div class="grid grid-cols-3 gap-x-3 pb-1 mb-1 border-b border-gray-200 dark:border-gray-700">
-          <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">$t:claim.apply.comparison.col_item</span>
-          <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 text-right">{{_local.claimType === 'exchange' ? $t('claim.apply.comparison.col_before_exchange') : (_local.claimType === 'return' ? $t('claim.apply.comparison.col_before_return') : ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.comparison.col_before_cancel') : $t('claim.apply.comparison.col_before_refund')))}}</span>
-          <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 text-right">{{_local.claimType === 'exchange' ? $t('claim.apply.comparison.col_after_exchange') : (_local.claimType === 'return' ? $t('claim.apply.comparison.col_after_return') : ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.comparison.col_after_cancel') : $t('claim.apply.comparison.col_after_refund')))}}</span>
+          <span class="text-[11px] font-semibold text-muted">$t:claim.apply.comparison.col_item</span>
+          <span class="text-[11px] font-semibold text-muted text-right">{{_local.claimType === 'exchange' ? $t('claim.apply.comparison.col_before_exchange') : (_local.claimType === 'return' ? $t('claim.apply.comparison.col_before_return') : ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.comparison.col_before_cancel') : $t('claim.apply.comparison.col_before_refund')))}}</span>
+          <span class="text-[11px] font-semibold text-muted text-right">{{_local.claimType === 'exchange' ? $t('claim.apply.comparison.col_after_exchange') : (_local.claimType === 'return' ? $t('claim.apply.comparison.col_after_return') : ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.comparison.col_after_cancel') : $t('claim.apply.comparison.col_after_refund')))}}</span>
         </div>
         <!-- row_item_count — item_count -->
         <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="item_count">
@@ -46,13 +46,13 @@ P3-① — adjustment.cancel_blocked 면 사유 + 안내를 이 자리에 남기
           <div class="text-right">
             <span class="text-gray-900 dark:text-white">{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.total_list_price_amount ?? ''}}</span>
             <div data-if="{{!!_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_total_list_price_amount_formatted}}" class="mt-0.5">
-              <span data-each="mc in {{Object.entries(_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-[11px] text-gray-500 dark:text-gray-400 block">{{mc[1]}}</span>
+              <span data-each="mc in {{Object.entries(_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-[11px] text-muted block">{{mc[1]}}</span>
             </div>
           </div>
           <div class="text-right">
             <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_list_price_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_list_price_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}">{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.total_list_price_amount ?? ''}}</span>
             <div data-if="{{!!_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted}}" class="mt-0.5">
-              <span data-each="mc in {{Object.entries(_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-[11px] text-gray-500 dark:text-gray-400 block">{{mc[1]}}</span>
+              <span data-each="mc in {{Object.entries(_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-[11px] text-muted block">{{mc[1]}}</span>
             </div>
           </div>
         </div>
@@ -62,13 +62,13 @@ P3-① — adjustment.cancel_blocked 면 사유 + 안내를 이 자리에 남기
           <div class="text-right">
             <span class="text-gray-900 dark:text-white">{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.subtotal_amount ?? ''}}</span>
             <div data-if="{{!!_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_subtotal_amount_formatted}}" class="mt-0.5">
-              <span data-each="mc in {{Object.entries(_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-[11px] text-gray-500 dark:text-gray-400 block">{{mc[1]}}</span>
+              <span data-each="mc in {{Object.entries(_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-[11px] text-muted block">{{mc[1]}}</span>
             </div>
           </div>
           <div class="text-right">
             <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.subtotal_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.subtotal_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}">{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.subtotal_amount ?? ''}}</span>
             <div data-if="{{!!_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted}}" class="mt-0.5">
-              <span data-each="mc in {{Object.entries(_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-[11px] text-gray-500 dark:text-gray-400 block">{{mc[1]}}</span>
+              <span data-each="mc in {{Object.entries(_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-[11px] text-muted block">{{mc[1]}}</span>
             </div>
           </div>
         </div>
@@ -168,13 +168,13 @@ P3-① — adjustment.cancel_blocked 면 사유 + 안내를 이 자리에 남기
           <div class="text-right">
             <span class="text-gray-900 dark:text-white font-semibold">{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.total_paid_amount ?? ''}}</span>
             <div data-if="{{!!_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_total_paid_amount_formatted}}" class="mt-0.5">
-              <span data-each="mc in {{Object.entries(_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-[11px] text-gray-500 dark:text-gray-400 block">{{mc[1]}}</span>
+              <span data-each="mc in {{Object.entries(_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-[11px] text-muted block">{{mc[1]}}</span>
             </div>
           </div>
           <div class="text-right">
             <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_paid_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_paid_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white font-semibold'}}">{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.total_paid_amount ?? ''}}</span>
             <div data-if="{{!!_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted}}" class="mt-0.5">
-              <span data-each="mc in {{Object.entries(_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-[11px] text-gray-500 dark:text-gray-400 block">{{mc[1]}}</span>
+              <span data-each="mc in {{Object.entries(_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-[11px] text-muted block">{{mc[1]}}</span>
             </div>
           </div>
         </div>
@@ -222,47 +222,47 @@ P3-① — adjustment.cancel_blocked 면 사유 + 안내를 이 자리에 남기
           <div class="text-right">
             <span class="text-red-600 dark:text-red-400 text-base block">{{_local.claimEstimate?.adjustment?.refund_formatted?.base?.refund_total ?? ''}}</span>
             <div data-each="mc in {{_local.claimEstimateFormatted?.mc_refund_total ?? []}}" class="flex flex-wrap gap-x-2 justify-end">
-              <span class="text-[11px] text-gray-500 dark:text-gray-400">{{mc.formatted ?? ''}}</span>
+              <span class="text-[11px] text-muted">{{mc.formatted ?? ''}}</span>
             </div>
           </div>
         </div>
         <!-- 현금 환불분 -->
         <div class="flex items-baseline justify-between gap-2 text-xs" data-line="refund_cash">
-          <span class="text-gray-500 dark:text-gray-400 break-keep">$t:claim.apply.comparison.refund_cash</span>
+          <span class="text-muted break-keep">$t:claim.apply.comparison.refund_cash</span>
           <div class="text-right">
             <span class="text-gray-700 dark:text-gray-300">{{_local.claimEstimateFormatted?.refund_cash ?? ''}}</span>
             <div data-each="mc in {{_local.claimEstimateFormatted?.mc_refund_cash ?? []}}" class="flex flex-wrap gap-x-2 justify-end">
-              <span class="text-[11px] text-gray-500 dark:text-gray-400">{{mc.formatted ?? ''}}</span>
+              <span class="text-[11px] text-muted">{{mc.formatted ?? ''}}</span>
             </div>
           </div>
         </div>
         <!-- 마일리지 환불분 — 마일리지를 쓴 주문에서만. 사용 마일리지를 차감하지 않은 주문(수동 결제완료에서 「마일리지 차감」을 끈 주문 등)은 그 마일리지를 돌려주지 않아 몫이 0 인데(Q15), 줄을 숨기면 마일리지를 썼는데 왜 안 돌아오는지 알 수 없다 — 「0원 (차감되지 않은 마일리지)」로 이유와 함께 세운다. -->
         <div data-if="{{(_local.claimEstimate?.adjustment?.refund_points_amount ?? 0) > 0 || order?.data?.points_not_deducted === true}}" class="flex items-baseline justify-between gap-2 text-xs" data-line="refund_points">
-          <span class="text-gray-500 dark:text-gray-400 break-keep">$t:claim.apply.comparison.refund_points</span>
+          <span class="text-muted break-keep">$t:claim.apply.comparison.refund_points</span>
           <div class="text-right">
             <span class="text-gray-700 dark:text-gray-300">{{order?.data?.points_not_deducted === true ? '$t:claim.apply.comparison.refund_points_not_deducted' : (_local.claimEstimateFormatted?.refund_points ?? '')}}</span>
             <div data-each="mc in {{_local.claimEstimateFormatted?.mc_refund_points ?? []}}" class="flex flex-wrap gap-x-2 justify-end">
-              <span class="text-[11px] text-gray-500 dark:text-gray-400">{{mc.formatted ?? ''}}</span>
+              <span class="text-[11px] text-muted">{{mc.formatted ?? ''}}</span>
             </div>
           </div>
         </div>
         <!-- 환불 후 잔여 결제 잔액 -->
         <div class="flex items-baseline justify-between gap-2 text-xs" data-line="remaining_pg">
-          <span class="text-gray-500 dark:text-gray-400 break-keep">$t:claim.apply.comparison.remaining_pg</span>
+          <span class="text-muted break-keep">$t:claim.apply.comparison.remaining_pg</span>
           <div class="text-right">
             <span class="text-gray-700 dark:text-gray-300">{{_local.claimEstimateFormatted?.remaining_pg_balance ?? ''}}</span>
             <div data-each="mc in {{_local.claimEstimateFormatted?.mc_remaining_pg_balance ?? []}}" class="flex flex-wrap gap-x-2 justify-end">
-              <span class="text-[11px] text-gray-500 dark:text-gray-400">{{mc.formatted ?? ''}}</span>
+              <span class="text-[11px] text-muted">{{mc.formatted ?? ''}}</span>
             </div>
           </div>
         </div>
         <!-- 환불 후 잔여 마일리지 -->
         <div class="flex items-baseline justify-between gap-2 text-xs" data-line="remaining_points">
-          <span class="text-gray-500 dark:text-gray-400 break-keep">$t:claim.apply.comparison.remaining_points</span>
+          <span class="text-muted break-keep">$t:claim.apply.comparison.remaining_points</span>
           <div class="text-right">
             <span class="text-gray-700 dark:text-gray-300">{{_local.claimEstimateFormatted?.remaining_points_balance ?? ''}}</span>
             <div data-each="mc in {{_local.claimEstimateFormatted?.mc_remaining_points_balance ?? []}}" class="flex flex-wrap gap-x-2 justify-end">
-              <span class="text-[11px] text-gray-500 dark:text-gray-400">{{mc.formatted ?? ''}}</span>
+              <span class="text-[11px] text-muted">{{mc.formatted ?? ''}}</span>
             </div>
           </div>
         </div>
@@ -273,7 +273,7 @@ P3-① — adjustment.cancel_blocked 면 사유 + 안내를 이 자리에 남기
             <span class="text-gray-600 dark:text-gray-400 break-keep">{{coupon.coupon_name ?? ''}}</span>
             <span class="text-gray-700 dark:text-gray-300 whitespace-nowrap">{{coupon.discount_amount_formatted ?? ''}}</span>
           </div>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:claim.apply.comparison.restored_coupons_notice</p>
+          <p class="text-xs text-muted mt-1">$t:claim.apply.comparison.restored_coupons_notice</p>
         </div>
       </div>
     </div>

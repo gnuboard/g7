@@ -15,7 +15,7 @@
         <responsive on="desktop" class="ecommerce:grid ecommerce:grid-cols-3 ecommerce:gap-3"/>
         <div data-each="ch, chIdx in {{availableChannels?.data?.channels ?? []}}" class="ecommerce-flex-between ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg">
           <div class="ecommerce-flex-center ecommerce:gap-2">
-            <icon name="{{ch.icon ?? 'fas fa-bell'}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+            <icon name="{{ch.icon ?? 'fas fa-bell'}}" class="ecommerce-text-muted"/>
             <div>
               <span class="ecommerce-text-heading">{{ch.name ?? ch.id}}</span>
               <span class="ecommerce-text-hint ecommerce:block">{{ch.source_label ?? ch.source}}</span>
@@ -31,7 +31,7 @@
       </div>
     </div>
     <div data-ref="ecommerce_channel_sub_tabs" class="ecommerce:flex ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:overflow-x-auto">
-      <a href="/admin/ecommerce/settings?channel={{ch.id}}&amp;page=1" :mergeQuery="true" aria-current="{{(query.channel ?? 'mail') === ch.id ? 'page' : undefined}}" data-each="ch, chIdx in {{(availableChannels?.data?.channels ?? []).filter(c => c.hidden_tab !== true &amp;&amp; (c.source === 'core' ? (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false : (c.tab_channels ?? [c.id]).filter(tc => (_local.form?.notifications?.channels ?? []).find(nc => nc.id === tc)?.is_active === true).length > 0))}}" class="{{(query.channel ?? 'mail') === ch.id ? 'ecommerce:border-b-2 ecommerce:border-indigo-500 ecommerce:dark:border-indigo-400 ecommerce:text-indigo-600 ecommerce:dark:text-indigo-400' : 'ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300'}} ecommerce:px-4 ecommerce:py-2.5 ecommerce:text-sm ecommerce:font-medium ecommerce:whitespace-nowrap ecommerce-flex-center ecommerce:gap-2">
+      <a href="/admin/ecommerce/settings?channel={{ch.id}}&amp;page=1" :mergeQuery="true" aria-current="{{(query.channel ?? 'mail') === ch.id ? 'page' : undefined}}" data-each="ch, chIdx in {{(availableChannels?.data?.channels ?? []).filter(c => c.hidden_tab !== true &amp;&amp; (c.source === 'core' ? (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false : (c.tab_channels ?? [c.id]).filter(tc => (_local.form?.notifications?.channels ?? []).find(nc => nc.id === tc)?.is_active === true).length > 0))}}" class="{{(query.channel ?? 'mail') === ch.id ? 'ecommerce:border-b-2 ecommerce:border-indigo-500 ecommerce:dark:border-indigo-400 ecommerce:text-indigo-600 ecommerce:dark:text-indigo-400' : 'ecommerce-text-muted ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300'}} ecommerce:px-4 ecommerce:py-2.5 ecommerce:text-sm ecommerce:font-medium ecommerce:whitespace-nowrap ecommerce-flex-center ecommerce:gap-2">
         <on type="click">
           <!-- 채널 탭을 바꾼다 — 쪽 번호는 1로, 다른 조건은 이고 간다. -->
           <sequence>
@@ -89,7 +89,7 @@
                     <span data-if="{{def.is_default}}" class="ecommerce:bg-blue-100 ecommerce:text-blue-800 ecommerce:dark:bg-blue-900 ecommerce:dark:text-blue-300 ecommerce:text-xs ecommerce:font-medium ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full">$t:sirsoft-ecommerce.admin.settings.notification_definitions.default_badge</span>
                   </div>
                   <p data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" class="ecommerce-text-label-subtle ecommerce:truncate">{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.subject?.[$locale] ?? ''}}</p>
-                  <p data-if="{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" class="ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:italic">$t:sirsoft-ecommerce.admin.settings.notification_definitions.no_template_for_channel</p>
+                  <p data-if="{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" class="ecommerce:text-sm ecommerce-text-muted ecommerce:italic">$t:sirsoft-ecommerce.admin.settings.notification_definitions.no_template_for_channel</p>
                   <!-- 운영자가 발송 수단을 켜서 코어가 만든 빈 템플릿 — 내용과 받는 사람을 채우고 켜야 이 수단으로 발송된다 -->
                   <p data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_user_created &amp;&amp; !(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active}}" class="ecommerce:text-sm ecommerce:text-amber-700 ecommerce:dark:text-amber-400">$t:admin.settings.notification_definitions.user_template_inactive</p>
                   <!-- 본인인증 알림은 수신자가 「인증을 요청한 대상」으로 고정이다(수신자 규칙이 없다) — 편집 대신 고정 문구. -->

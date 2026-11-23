@@ -27,7 +27,7 @@
         </div>
         <!-- 액션 버튼 그룹 -->
         <div class="flex items-center gap-3">
-          <responsive on="portable" class="flex items-center justify-end gap-3"/>
+          <responsive on="portable" class-merge="justify-end"/>
           <!-- 읽지 않은 알림을 모두 읽음으로 표시한다. 목록이 비어 있으면 버튼 자체가 뜨지 않는다 -->
           <button data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{userNotifications?.data?.abilities?.can_update !== true}}" title="{{userNotifications?.data?.abilities?.can_update === true ? '' : '$t:mypage.notifications.no_permission'}}">
             <on type="click">
@@ -118,7 +118,7 @@
               <!-- 알림 메시지 -->
               <p class="text-sm text-gray-600 dark:text-gray-400 mb-1 break-words">{{notification.body ?? ''}}</p>
               <!-- 날짜 -->
-              <span class="text-xs text-gray-500 dark:text-gray-400">{{notification.created_at | datetime}}</span>
+              <span class="text-xs text-muted">{{notification.created_at | datetime}}</span>
             </div>
           </div>
         </div>
@@ -127,7 +127,7 @@
       <div data-if="{{userNotifications !== undefined &amp;&amp; (!userNotifications.data.data || userNotifications.data.data.length === 0)}}" class="p-12 text-center">
         <responsive on="portable" class="p-8 text-center"/>
         <icon name="bell-off" class="text-5xl mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
-        <p class="text-gray-500 dark:text-gray-400">$t:mypage.notifications.empty</p>
+        <p class="text-muted">$t:mypage.notifications.empty</p>
       </div>
       <!-- 페이지네이션 -->
       <pagination data-type="composite" data-if="{{((userNotifications.data.last_page ?? 0) > 1) || (userNotifications.data.has_more_pages === true) || ((userNotifications.data.current_page ?? 1) > 1)}}" currentPage="{{userNotifications.data.current_page}}" totalPages="{{userNotifications.data.last_page ?? null}}" hasMorePages="{{userNotifications.data.has_more_pages ?? false}}" class="p-4 border-t border-gray-200 dark:border-gray-700">

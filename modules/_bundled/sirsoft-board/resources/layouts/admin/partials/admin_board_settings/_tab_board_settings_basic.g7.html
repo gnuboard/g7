@@ -11,7 +11,7 @@
         <p class="board:text-xs board-tone-info">$t:sirsoft-board.admin.settings.page_info</p>
       </div>
       <div class="board-row-stack">
-        <div data-ref="field_type" class="">
+        <div data-ref="field_type">
           <div class="board-flex-center board:gap-4">
             <div class="board:flex-1">
               <div class="board-flex-center board:gap-2">
@@ -24,7 +24,7 @@
                   </input>
                   <span>$t:sirsoft-board.admin.settings.fields.type</span>
                 </label>
-                <button data-ref="settings_btn_manage_board_types" type="button" variant="ghost" size="sm" class="board:inline-flex board:items-center board:gap-1 board:text-xs board:rounded-full board:px-2.5 board:py-0.5 board:bg-gray-100 board:dark:bg-gray-700 board:text-gray-600 board:dark:text-gray-300 board:hover:bg-gray-200 board:dark:hover:bg-gray-600 board:disabled:opacity-50 board:disabled:cursor-not-allowed" title="{{_computed.canManageBoardTypes ? '' : '$t:sirsoft-board.admin.settings.board_types_no_permission'}}" disabled="{{!_computed.canManageBoardTypes}}">
+                <button data-ref="settings_btn_manage_board_types" type="button" class="board:inline-flex board:items-center board:gap-1 board:text-xs board:rounded-full board:px-2.5 board:py-0.5 board:bg-gray-100 board:dark:bg-gray-700 board:text-gray-600 board:dark:text-gray-300 board:hover:bg-gray-200 board:dark:hover:bg-gray-600 board:disabled:opacity-50 board:disabled:cursor-not-allowed" title="{{_computed.canManageBoardTypes ? '' : '$t:sirsoft-board.admin.settings.board_types_no_permission'}}" disabled="{{!_computed.canManageBoardTypes}}">
                   <on type="click">
                     <!-- 유형 관리 창 열기 — 폼을 빈 「추가」 상태로 맞춘 «뒤» 목록을 새로 받아 오고, 받아 온 다음에야 창을 연다(빈 표가 잠깐 비치지 않게) -->
                     <sequence>
@@ -51,7 +51,7 @@
             <select name="basic_defaults.type" aria-label="$t:sirsoft-board.admin.settings.fields.type" options="{{board_types?.data?.map(t => ({value: t.slug, label: ($localized(t.name) || t.slug) + ' (' + t.slug + ')'})) ?? []}}" class="board:w-48 board:flex-shrink-0 board:text-sm" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
-        <div data-ref="field_secret_mode" class="">
+        <div data-ref="field_secret_mode">
           <div class="board-flex-center board:gap-4">
             <label class="board-flex-start board:gap-2 board-text-heading board:flex-1 board:cursor-pointer">
               <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('secret_mode')}}" disabled="{{!_computed.canBulkApply}}">
@@ -74,7 +74,7 @@
             </select>
           </div>
         </div>
-        <div data-ref="field_show_view_count" class="">
+        <div data-ref="field_show_view_count">
           <div class="board-flex-center board:gap-4">
             <label class="board-flex-start board:gap-2 board-text-heading board:flex-1 board:cursor-pointer">
               <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('show_view_count')}}" disabled="{{!_computed.canBulkApply}}">
@@ -91,7 +91,7 @@
             <toggle ariaLabel="$t:sirsoft-board.admin.settings.fields.show_view_count" data-type="composite" name="basic_defaults.show_view_count" class="board:flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
-        <div data-ref="field_use_report" class="">
+        <div data-ref="field_use_report">
           <div class="board-flex-center board:gap-4">
             <label class="board-flex-start board:gap-2 board-text-heading board:flex-1 board:cursor-pointer">
               <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_report')}}" disabled="{{!_computed.canBulkApply}}">
@@ -108,7 +108,7 @@
             <toggle ariaLabel="$t:sirsoft-board.admin.settings.fields.use_report" data-type="composite" name="basic_defaults.use_report" class="board:flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
-        <div data-ref="field_use_scrap" class="">
+        <div data-ref="field_use_scrap">
           <div class="board-flex-center board:gap-4">
             <label class="board-flex-start board:gap-2 board-text-heading board:flex-1 board:cursor-pointer">
               <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_scrap')}}" disabled="{{!_computed.canBulkApply}}">
@@ -125,7 +125,7 @@
             <toggle ariaLabel="$t:sirsoft-board.admin.settings.fields.use_scrap" data-type="composite" name="basic_defaults.use_scrap" class="board:flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
-        <div data-ref="field_use_reaction" class="">
+        <div data-ref="field_use_reaction">
           <div class="board-flex-center board:gap-4">
             <label class="board-flex-start board:gap-2 board-text-heading board:flex-1 board:cursor-pointer">
               <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_reaction')}}" disabled="{{!_computed.canBulkApply}}">
@@ -177,7 +177,7 @@
         </div>
         <!-- 댓글 반응 — 반응 사용의 하위 토글이다. 글 반응을 끄면 댓글 반응만 남을 수 없으므로
           상위가 꺼져 있으면 이 줄도 잠근다(백엔드도 같은 판정을 한다). -->
-        <div data-ref="field_use_comment_reaction" class="">
+        <div data-ref="field_use_comment_reaction">
           <div class="board-flex-center board:gap-4">
             <label class="board-flex-start board:gap-2 board-text-heading board:flex-1 board:cursor-pointer">
               <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_comment_reaction')}}" disabled="{{!_computed.canBulkApply}}">

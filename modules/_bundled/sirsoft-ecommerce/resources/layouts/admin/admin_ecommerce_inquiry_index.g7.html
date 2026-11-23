@@ -59,7 +59,7 @@
     <set-state target="global" :selectedItems_inquiries="[]"/>
   </init>
   <slot name="content">
-    <div data-ref="inquiries_content" class="ecommerce:p-6 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:min-h-screen">
+    <div data-ref="inquiries_content" class="ecommerce-admin-page-content">
       <div data-ref="page_header" class="ecommerce:flex ecommerce:justify-between ecommerce:mb-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4">
         <responsive on="641-" class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-6"/>
         <div data-ref="page_header_left">
@@ -71,7 +71,7 @@
       <div data-ref="member_filter_banner" data-if="{{!!query.user_uuid}}" class="ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/20 ecommerce:border ecommerce:border-blue-200 ecommerce:dark:border-blue-800 ecommerce:rounded-lg ecommerce:p-3 ecommerce:mb-4 ecommerce:flex ecommerce:items-center ecommerce:gap-2">
         <icon name="circle-info" class="ecommerce:text-base ecommerce:text-blue-600 ecommerce:dark:text-blue-400"/>
         <span class="ecommerce:text-sm ecommerce:text-blue-700 ecommerce:dark:text-blue-300 ecommerce:flex-1">$t:sirsoft-ecommerce.admin.inquiries.filters.member_filter_notice</span>
-        <button data-ref="member_filter_clear" type="button" class="ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+        <button data-ref="member_filter_clear" type="button" class="ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm">
           <on type="click">
             <!-- 회원 한정만 떼고 검색어·기간은 남긴다 — 배너가 말하는 것이 그것뿐이다 -->
             <navigate path="/admin/ecommerce/inquiries" :mergeQuery="true" :replace="true" transition_overlay_target="inquiries_datagrid__body">
@@ -81,10 +81,11 @@
           <span>$t:sirsoft-ecommerce.admin.inquiries.filters.member_filter_clear</span>
         </button>
       </div>
+      <!-- audit:allow layout-inline-semantic-duplicate reason: 상품 문의 목록의 검색 필터 상자, 아래 간격 mb-4 에 flex-col 이 없어 카드 여백과 배치가 다름 -->
       <div data-ref="filter_area" class="ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4 ecommerce:mb-4">
         <div data-ref="filter_row" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-end ecommerce:gap-3">
           <div data-ref="search_field_group" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-1">
-            <label class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.inquiries.filters.search_label</label>
+            <label class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.inquiries.filters.search_label</label>
             <select data-ref="search_field_select" class="ecommerce:w-32 ecommerce:text-sm" value="{{_local.filter.searchField ?? 'member'}}">
               <options>
                 <option value="member">$t:sirsoft-ecommerce.admin.inquiries.search_fields.member</option>
@@ -104,7 +105,7 @@
             </select>
           </div>
           <div data-ref="search_keyword_group" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:flex-1 ecommerce:min-w-[200px]">
-            <label class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.inquiries.filters.keyword_label</label>
+            <label class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.inquiries.filters.keyword_label</label>
             <input data-ref="search_keyword_input" type="text" class="ecommerce:text-sm" placeholder="$t:sirsoft-ecommerce.admin.inquiries.filters.keyword_placeholder" value="{{_local.filter.searchKeyword ?? ''}}">
               <on type="change">
                 <!-- 검색어를 손에 담아 둔다 — 엔터가 검색 액션을 부른다 -->
@@ -120,7 +121,7 @@
             </input>
           </div>
           <div data-ref="date_range_group" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-1">
-            <label class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.inquiries.filters.date_label</label>
+            <label class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.inquiries.filters.date_label</label>
             <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-2">
               <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.inquiries.filters.date_label')}}" data-ref="start_date_input" type="date" class="ecommerce:text-sm" value="{{_local.filter.startDate ?? ''}}">
                 <on type="change">
@@ -132,7 +133,7 @@
                   </set-state>
                 </on>
               </input>
-              <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">~</span>
+              <span class="ecommerce-text-muted">~</span>
               <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.inquiries.filters.date_label')}}" data-ref="end_date_input" type="date" class="ecommerce:text-sm" value="{{_local.filter.endDate ?? ''}}">
                 <on type="change">
                   <!-- 기간 끝 — 담아만 둔다 -->
@@ -146,7 +147,7 @@
             </div>
           </div>
           <div data-ref="is_answered_filter" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-1">
-            <label class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.inquiries.filters.is_answered_label</label>
+            <label class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.inquiries.filters.is_answered_label</label>
             <select data-ref="is_answered_select" class="ecommerce:w-32 ecommerce:text-sm" value="{{_local.filter.isAnswered ?? ''}}">
               <options>
                 <option value="">$t:sirsoft-ecommerce.admin.inquiries.filters.is_answered_all</option>
@@ -164,7 +165,7 @@
             </select>
           </div>
           <div data-ref="filter_buttons" class="ecommerce:flex ecommerce:items-center ecommerce:gap-2">
-            <button data-ref="reset_button" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+            <button data-ref="reset_button" type="button" class="ecommerce-btn ecommerce-btn-secondary">
               <on type="click">
                 <!-- 초기화 ①  손에 담아 둔 조건과 선택을 먼저 비운다 (URL 만 털면 화면 입력값이 남는다) -->
                 <set-state target="local">
@@ -259,12 +260,12 @@
                   </on>
                   {{row.member?.name}}
                 </a>
-                <span data-if="{{!row.member}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.inquiries.badges.guest</span>
+                <span data-if="{{!row.member}}" class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.inquiries.badges.guest</span>
                 <badge data-type="composite" data-if="{{row.member?.is_withdrawn}}" color="gray" size="sm">$t:sirsoft-ecommerce.admin.inquiries.badges.withdrawn</badge>
               </div>
               <!-- 실명 보조 줄(#490) — 이름 칸은 관리자 영역 표시 이름이다. 서버가 실명 키를 줄 때만(회원 조회 권한이 있고 표시 이름과 다를 때) 그린다. -->
-              <span data-if="{{!!row.member?.real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.member?.real_name })}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{row.member?.real_name}}</span>
-              <span data-if="{{row.member?.email}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{row.member?.email}}</span>
+              <span data-if="{{!!row.member?.real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.member?.real_name })}}" class="ecommerce:text-xs ecommerce-text-muted">{{row.member?.real_name}}</span>
+              <span data-if="{{row.member?.email}}" class="ecommerce:text-xs ecommerce-text-muted">{{row.member?.email}}</span>
             </div>
           </cell>
         </column>
@@ -282,7 +283,7 @@
         <column field="content_excerpt" header="$t:sirsoft-ecommerce.admin.inquiries.columns.content" cellClassName="ecommerce:max-w-xs">
           <cell>
             <span data-if="{{!!row.content_excerpt}}" class="ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{row.content_excerpt}}</span>
-            <span data-if="{{!row.content_excerpt}}" class="ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.inquiries.content_unavailable</span>
+            <span data-if="{{!row.content_excerpt}}" class="ecommerce:text-sm ecommerce-text-muted">$t:sirsoft-ecommerce.admin.inquiries.content_unavailable</span>
           </cell>
         </column>
         <column field="is_answered" header="$t:sirsoft-ecommerce.admin.inquiries.columns.status">
@@ -342,7 +343,7 @@
         <p class="ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300">$t:sirsoft-ecommerce.admin.inquiries.modal.delete.message</p>
       </div>
       <footer>
-        <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+        <button type="button" class="ecommerce-btn ecommerce-btn-secondary">
           <on type="click">
             <close-modal/>
           </on>
@@ -384,7 +385,7 @@
       <div class="ecommerce:py-2">
         <!-- 누구의 어떤 문의에 답하는지 — 목록에서 행을 고른 뒤 모달만 보고도 확인되어야 한다 -->
         <div class="ecommerce:mb-3 ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg">
-          <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1">{{_global.replyTarget_inquiries?.member?.name ?? '-'}} · {{_global.replyTarget_inquiries?.product?.name ?? '-'}}</span>
+          <span class="ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mb-1">{{_global.replyTarget_inquiries?.member?.name ?? '-'}} · {{_global.replyTarget_inquiries?.product?.name ?? '-'}}</span>
           <span class="ecommerce:block ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{_global.replyTarget_inquiries?.content_excerpt ?? ''}}</span>
         </div>
         <p data-if="{{_global.replyTarget_inquiries?.is_answered}}" class="ecommerce:mb-2 ecommerce:text-xs ecommerce:text-amber-700 ecommerce:dark:text-amber-400">$t:sirsoft-ecommerce.admin.inquiries.modal.reply.already_answered</p>
@@ -397,13 +398,13 @@
         </textarea>
       </div>
       <footer>
-        <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+        <button type="button" class="ecommerce-btn ecommerce-btn-secondary">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button type="button" data-testid="admin-inquiries-reply-submit" class="ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-700 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-800 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.replying_inquiries || !(_global.replyContent_inquiries || '').trim() || inquiries?.data?.abilities?.can_reply !== true}}">
+        <button type="button" data-testid="admin-inquiries-reply-submit" class="ecommerce-btn ecommerce-btn-primary" disabled="{{_global.replying_inquiries || !(_global.replyContent_inquiries || '').trim() || inquiries?.data?.abilities?.can_reply !== true}}">
           <on type="click">
             <!-- 등록 버튼을 먼저 잠근다 — 응답이 늦는 사이 두 번 눌리면 답변이 두 번 달린다 -->
             <set-state target="global" :replying_inquiries="true"/>
@@ -438,7 +439,7 @@
         <p class="ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300">$t:sirsoft-ecommerce.admin.inquiries.modal.bulk_delete.message|count={{(_global.selectedItems_inquiries ?? []).length}}</p>
       </div>
       <footer>
-        <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+        <button type="button" class="ecommerce-btn ecommerce-btn-secondary">
           <on type="click">
             <close-modal/>
           </on>

@@ -131,14 +131,10 @@
                             },
                             "responsive": {
                                 "tablet": {
-                                    "props": {
-                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:col-span-2"
-                                    }
+                                    "classMerge": "ecommerce:col-span-2"
                                 },
                                 "desktop": {
-                                    "props": {
-                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:col-span-4"
-                                    }
+                                    "classMerge": "ecommerce:col-span-4"
                                 }
                             },
                             "props": {

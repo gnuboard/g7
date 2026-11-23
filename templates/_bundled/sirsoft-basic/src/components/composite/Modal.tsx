@@ -136,7 +136,7 @@ export const Modal: React.FC<ModalProps> = ({
   onClose,
   title,
   icon,
-  iconClassName = 'text-gray-500 dark:text-gray-400',
+  iconClassName = 'text-muted',
   closeOnBackdropClick = true,
   closeOnOverlayClick,
   showCloseButton = true,
@@ -352,7 +352,7 @@ export const Modal: React.FC<ModalProps> = ({
                 onClick={onClose}
                 // 사용자 템플릿 기반 스타일은 button 에 손가락 커서를 주지 않는다 — 같은 창의 「취소」·확인 버튼처럼
                 // 직접 단다(7.1.0 실측: 닫기만 cursor default).
-                className="ml-auto text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none cursor-pointer"
+                className="ml-auto text-muted hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none cursor-pointer"
                 aria-label={t('common.close_modal')}
               >
                 <svg

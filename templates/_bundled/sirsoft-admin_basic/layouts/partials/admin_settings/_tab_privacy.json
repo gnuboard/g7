@@ -712,9 +712,6 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{!!_local.form?.privacy?.withdrawn_retention_enabled && _local.form?.privacy?.withdrawn_retention_enabled !== '0'}}",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1091,9 +1088,6 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{!!_local.form?.privacy?.dormant_enabled && _local.form?.privacy?.dormant_enabled !== '0'}}",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1140,9 +1134,6 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{!!_local.form?.privacy?.dormant_enabled && _local.form?.privacy?.dormant_enabled !== '0'}}",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1249,9 +1240,6 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{!!_local.form?.privacy?.dormant_enabled && _local.form?.privacy?.dormant_enabled !== '0' && !!_local.form?.privacy?.dormant_withdraw_enabled && _local.form?.privacy?.dormant_withdraw_enabled !== '0'}}",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1483,9 +1471,7 @@
                                             },
                                             "responsive": {
                                                 "768-": {
-                                                    "props": {
-                                                        "className": "px-4 py-3 flex flex-row gap-3 items-start justify-between"
-                                                    }
+                                                    "classMerge": "flex-row items-start justify-between"
                                                 }
                                             },
                                             "props": {

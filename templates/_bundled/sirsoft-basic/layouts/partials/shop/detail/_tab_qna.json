@@ -1134,7 +1134,7 @@
                                                                     "name": "Icon",
                                                                     "props": {
                                                                         "name": "clock",
-                                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                        "className": "text-sm text-muted"
                                                                     }
                                                                 },
                                                                 {
@@ -1383,7 +1383,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:shop.qna.empty"
                         }

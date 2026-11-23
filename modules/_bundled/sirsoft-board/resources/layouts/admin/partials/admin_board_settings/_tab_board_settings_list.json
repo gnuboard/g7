@@ -36,9 +36,6 @@
                             "id": "field_order_by",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -132,9 +129,6 @@
                             "id": "field_order_direction",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -220,9 +214,6 @@
                             "id": "field_per_page",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -305,7 +296,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.errors?.['basic_defaults.per_page']}}",
                                                     "props": {
-                                                        "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
+                                                        "className": "board-form-error"
                                                     },
                                                     "text": "{{(Array.isArray(_local.errors?.['basic_defaults.per_page']) ? _local.errors['basic_defaults.per_page'][0] : _local.errors?.['basic_defaults.per_page']) ?? ''}}"
                                                 }
@@ -319,9 +310,6 @@
                             "id": "field_per_page_mobile",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -404,7 +392,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.errors?.['basic_defaults.per_page_mobile']}}",
                                                     "props": {
-                                                        "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
+                                                        "className": "board-form-error"
                                                     },
                                                     "text": "{{(Array.isArray(_local.errors?.['basic_defaults.per_page_mobile']) ? _local.errors['basic_defaults.per_page_mobile'][0] : _local.errors?.['basic_defaults.per_page_mobile']) ?? ''}}"
                                                 }

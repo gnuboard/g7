@@ -25,7 +25,7 @@
   </permissions>
   <slot name="content">
     <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="paykginicis:p-4 paykginicis:min-h-screen paykginicis:bg-gray-50 paykginicis:dark:bg-gray-900">
-      <responsive on="640-1023" class="paykginicis:p-6 paykginicis:min-h-screen paykginicis:bg-gray-50 paykginicis:dark:bg-gray-900"/>
+      <responsive on="640-1023" class="pay-kginicis-admin-page-content"/>
       <responsive on="1024-" class="paykginicis:p-8 paykginicis:min-h-screen paykginicis:bg-gray-50 paykginicis:dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-pay_kginicis.settings.title" description="$t:sirsoft-pay_kginicis.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="pay-kginicis-alert-warning paykginicis:mt-6">
@@ -96,7 +96,7 @@
               <responsive on="desktop" class="paykginicis:col-span-2"/>
               <div class="paykginicis:relative">
                 <input type="{{_local._show_live_sign_key ? 'text' : 'password'}}" name="live_sign_key" placeholder="••••••••••••••••" class="paykginicis:w-full paykginicis:pl-3 paykginicis:pr-10 paykginicis:py-2 paykginicis:border paykginicis:border-gray-300 paykginicis:dark:border-gray-600 paykginicis:rounded-lg paykginicis:bg-white paykginicis:dark:bg-gray-700 paykginicis:focus:ring-2 paykginicis:focus:ring-blue-500 paykginicis:dark:focus:ring-blue-400 paykginicis:focus:border-transparent paykginicis:font-mono paykginicis:text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
-                <button type="button" class="paykginicis:absolute paykginicis:right-2 paykginicis:top-1/2 paykginicis:-translate-y-1/2 paykginicis:p-1 paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hover:text-gray-600 paykginicis:dark:hover:text-gray-200" aria-label="{{_local._show_live_sign_key ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_sign_key}}">
+                <button type="button" class="paykginicis:absolute paykginicis:right-2 paykginicis:top-1/2 paykginicis:-translate-y-1/2 paykginicis:p-1 pay-kginicis-text-muted paykginicis:hover:text-gray-600 paykginicis:dark:hover:text-gray-200" aria-label="{{_local._show_live_sign_key ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_sign_key}}">
                   <on type="click">
                     <!-- 상점 sign key 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
                     <set-state target="local" _show_live_sign_key="{{!_local._show_live_sign_key}}"/>
@@ -118,7 +118,7 @@
               <responsive on="desktop" class="paykginicis:col-span-2"/>
               <div class="paykginicis:relative">
                 <input type="{{_local._show_live_iniapi_key ? 'text' : 'password'}}" name="live_iniapi_key" placeholder="••••••••••••••••" class="paykginicis:w-full paykginicis:pl-3 paykginicis:pr-10 paykginicis:py-2 paykginicis:border paykginicis:border-gray-300 paykginicis:dark:border-gray-600 paykginicis:rounded-lg paykginicis:bg-white paykginicis:dark:bg-gray-700 paykginicis:focus:ring-2 paykginicis:focus:ring-blue-500 paykginicis:dark:focus:ring-blue-400 paykginicis:focus:border-transparent paykginicis:font-mono paykginicis:text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
-                <button type="button" class="paykginicis:absolute paykginicis:right-2 paykginicis:top-1/2 paykginicis:-translate-y-1/2 paykginicis:p-1 paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hover:text-gray-600 paykginicis:dark:hover:text-gray-200" aria-label="{{_local._show_live_iniapi_key ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_iniapi_key}}">
+                <button type="button" class="paykginicis:absolute paykginicis:right-2 paykginicis:top-1/2 paykginicis:-translate-y-1/2 paykginicis:p-1 pay-kginicis-text-muted paykginicis:hover:text-gray-600 paykginicis:dark:hover:text-gray-200" aria-label="{{_local._show_live_iniapi_key ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_iniapi_key}}">
                   <on type="click">
                     <!-- INIAPI key 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
                     <set-state target="local" _show_live_iniapi_key="{{!_local._show_live_iniapi_key}}"/>
@@ -140,7 +140,7 @@
               <responsive on="desktop" class="paykginicis:col-span-2"/>
               <div class="paykginicis:relative">
                 <input type="{{_local._show_live_iniapi_iv ? 'text' : 'password'}}" name="live_iniapi_iv" placeholder="••••••••••••••••" class="paykginicis:w-full paykginicis:pl-3 paykginicis:pr-10 paykginicis:py-2 paykginicis:border paykginicis:border-gray-300 paykginicis:dark:border-gray-600 paykginicis:rounded-lg paykginicis:bg-white paykginicis:dark:bg-gray-700 paykginicis:focus:ring-2 paykginicis:focus:ring-blue-500 paykginicis:dark:focus:ring-blue-400 paykginicis:focus:border-transparent paykginicis:font-mono paykginicis:text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
-                <button type="button" class="paykginicis:absolute paykginicis:right-2 paykginicis:top-1/2 paykginicis:-translate-y-1/2 paykginicis:p-1 paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hover:text-gray-600 paykginicis:dark:hover:text-gray-200" aria-label="{{_local._show_live_iniapi_iv ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_iniapi_iv}}">
+                <button type="button" class="paykginicis:absolute paykginicis:right-2 paykginicis:top-1/2 paykginicis:-translate-y-1/2 paykginicis:p-1 pay-kginicis-text-muted paykginicis:hover:text-gray-600 paykginicis:dark:hover:text-gray-200" aria-label="{{_local._show_live_iniapi_iv ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_iniapi_iv}}">
                   <on type="click">
                     <!-- INIAPI IV 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
                     <set-state target="local" _show_live_iniapi_iv="{{!_local._show_live_iniapi_iv}}"/>
@@ -162,7 +162,7 @@
               <responsive on="desktop" class="paykginicis:col-span-2"/>
               <div class="paykginicis:relative">
                 <input type="{{_local._show_live_mobile_hash_key ? 'text' : 'password'}}" name="live_mobile_hash_key" placeholder="••••••••••••••••" class="paykginicis:w-full paykginicis:pl-3 paykginicis:pr-10 paykginicis:py-2 paykginicis:border paykginicis:border-gray-300 paykginicis:dark:border-gray-600 paykginicis:rounded-lg paykginicis:bg-white paykginicis:dark:bg-gray-700 paykginicis:focus:ring-2 paykginicis:focus:ring-blue-500 paykginicis:dark:focus:ring-blue-400 paykginicis:focus:border-transparent paykginicis:font-mono paykginicis:text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
-                <button type="button" class="paykginicis:absolute paykginicis:right-2 paykginicis:top-1/2 paykginicis:-translate-y-1/2 paykginicis:p-1 paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hover:text-gray-600 paykginicis:dark:hover:text-gray-200" aria-label="{{_local._show_live_mobile_hash_key ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_mobile_hash_key}}">
+                <button type="button" class="paykginicis:absolute paykginicis:right-2 paykginicis:top-1/2 paykginicis:-translate-y-1/2 paykginicis:p-1 pay-kginicis-text-muted paykginicis:hover:text-gray-600 paykginicis:dark:hover:text-gray-200" aria-label="{{_local._show_live_mobile_hash_key ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_mobile_hash_key}}">
                   <on type="click">
                     <!-- 모바일 hash key 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
                     <set-state target="local" _show_live_mobile_hash_key="{{!_local._show_live_mobile_hash_key}}"/>
@@ -260,7 +260,7 @@
                 </div>
               </div>
               <div class="pay-kginicis-flex-center paykginicis:flex-wrap paykginicis:gap-2">
-                <button type="button" disabled="{{_computed.isPluginReadOnly || vbank_info?.data?.abilities?.can_create_cbt_test_product !== true || (_local.cbtTestProductCreating)}}" class="paykginicis:inline-flex paykginicis:items-center paykginicis:gap-1.5 paykginicis:px-3 paykginicis:py-1.5 paykginicis:text-xs paykginicis:font-medium paykginicis:bg-blue-600 paykginicis:hover:bg-blue-700 paykginicis:dark:bg-blue-600 paykginicis:dark:hover:bg-blue-700 paykginicis:text-white paykginicis:rounded-md paykginicis:transition-colors paykginicis:disabled:opacity-50 paykginicis:disabled:cursor-not-allowed">
+                <button type="button" disabled="{{_computed.isPluginReadOnly || vbank_info?.data?.abilities?.can_create_cbt_test_product !== true || (_local.cbtTestProductCreating)}}" class="pay-kginicis-btn pay-kginicis-btn-primary pay-kginicis-btn-sm paykginicis:gap-1.5 paykginicis:text-xs paykginicis:rounded-md">
                   <on type="click">
                     <!-- CBT 테스트 상품 생성 — 진행 플래그를 세우고 직전 결과·오류를 함께 지운 뒤 호출한다 -->
                     <sequence>
@@ -328,12 +328,12 @@
                 <!-- IP 정보 카드 -->
                 <div class="paykginicis:p-3 paykginicis:rounded-md paykginicis:bg-white paykginicis:dark:bg-gray-800 paykginicis:border paykginicis:border-amber-200 paykginicis:dark:border-amber-700 paykginicis:text-xs paykginicis:space-y-2">
                   <div class="paykginicis:flex paykginicis:items-baseline paykginicis:gap-2">
-                    <span class="paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300"><responsive on="640-" class="paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300 pay-kginicis-label-col"/>$t:sirsoft-pay_kginicis.settings.cbt_connectivity_egress_ip_label</span>
+                    <span class="paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300"><responsive on="640-" class-merge="pay-kginicis-label-col"/>$t:sirsoft-pay_kginicis.settings.cbt_connectivity_egress_ip_label</span>
                     <span class="paykginicis:font-mono pay-kginicis-tone-warning paykginicis:font-bold paykginicis:select-all">{{_local.cbtConnCheckResult?.egress_ip ?? '$t:sirsoft-pay_kginicis.settings.cbt_connectivity_unknown'}}</span>
                   </div>
-                  <p class="paykginicis:text-[11px] paykginicis:text-gray-500 paykginicis:dark:text-gray-400"><responsive on="640-" class="paykginicis:text-[11px] paykginicis:text-gray-500 paykginicis:dark:text-gray-400 pay-kginicis-label-indent"/>$t:sirsoft-pay_kginicis.settings.cbt_connectivity_hint_egress</p>
+                  <p class="paykginicis:text-[11px] pay-kginicis-text-muted"><responsive on="640-" class-merge="pay-kginicis-label-indent"/>$t:sirsoft-pay_kginicis.settings.cbt_connectivity_hint_egress</p>
                   <div class="paykginicis:flex paykginicis:items-baseline paykginicis:gap-2">
-                    <span class="paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300"><responsive on="640-" class="paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300 pay-kginicis-label-col"/>$t:sirsoft-pay_kginicis.settings.cbt_connectivity_server_ip_label</span>
+                    <span class="paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300"><responsive on="640-" class-merge="pay-kginicis-label-col"/>$t:sirsoft-pay_kginicis.settings.cbt_connectivity_server_ip_label</span>
                     <span class="pay-kginicis-text-secondary paykginicis:font-mono paykginicis:select-all">{{_local.cbtConnCheckResult?.server_ip ?? '-'}}</span>
                   </div>
                 </div>
@@ -341,22 +341,22 @@
                 <div class="paykginicis:p-3 paykginicis:rounded-md paykginicis:bg-white paykginicis:dark:bg-gray-800 paykginicis:border paykginicis:border-amber-200 paykginicis:dark:border-amber-700 paykginicis:text-xs paykginicis:space-y-2">
                   <div class="paykginicis:font-semibold paykginicis:text-gray-800 paykginicis:dark:text-gray-200">$t:sirsoft-pay_kginicis.settings.cbt_callback_title</div>
                   <div class="pay-kginicis-callback-table paykginicis:gap-x-3 paykginicis:gap-y-1.5">
-                    <responsive on="640-" class="pay-kginicis-callback-table pay-kginicis-callback-table--wide paykginicis:gap-x-3 paykginicis:gap-y-1.5"/>
-                    <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_app_url_label</span>
+                    <responsive on="640-" class-merge="pay-kginicis-callback-table--wide"/>
+                    <span class="pay-kginicis-text-muted">$t:sirsoft-pay_kginicis.settings.cbt_callback_app_url_label</span>
                     <span class="paykginicis:font-mono paykginicis:text-gray-700 paykginicis:dark:text-gray-300 paykginicis:break-all pay-kginicis-break-all paykginicis:select-all">{{_local.cbtConnCheckResult?.callback?.app_url ?? '-'}}</span>
-                    <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_url_label</span>
+                    <span class="pay-kginicis-text-muted">$t:sirsoft-pay_kginicis.settings.cbt_callback_url_label</span>
                     <span class="paykginicis:font-mono paykginicis:text-gray-700 paykginicis:dark:text-gray-300 paykginicis:break-all pay-kginicis-break-all paykginicis:select-all">{{_local.cbtConnCheckResult?.callback?.callback_url ?? '-'}}</span>
-                    <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_https_label</span>
+                    <span class="pay-kginicis-text-muted">$t:sirsoft-pay_kginicis.settings.cbt_callback_https_label</span>
                     <span data-if="{{_local.cbtConnCheckResult?.callback?.app_url_https &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_https}}" class="paykginicis:font-semibold pay-kginicis-tone-success">$t:sirsoft-pay_kginicis.settings.cbt_callback_ok</span>
                     <span data-if="{{!(_local.cbtConnCheckResult?.callback?.app_url_https &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_https)}}" class="paykginicis:font-semibold pay-kginicis-tone-danger">$t:sirsoft-pay_kginicis.settings.cbt_callback_check</span>
-                    <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_public_label</span>
+                    <span class="pay-kginicis-text-muted">$t:sirsoft-pay_kginicis.settings.cbt_callback_public_label</span>
                     <span data-if="{{_local.cbtConnCheckResult?.callback?.app_url_public &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_public}}" class="paykginicis:font-semibold pay-kginicis-tone-success">$t:sirsoft-pay_kginicis.settings.cbt_callback_ok</span>
                     <span data-if="{{!(_local.cbtConnCheckResult?.callback?.app_url_public &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_public)}}" class="paykginicis:font-semibold pay-kginicis-tone-danger">$t:sirsoft-pay_kginicis.settings.cbt_callback_check</span>
-                    <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_host_match_label</span>
+                    <span class="pay-kginicis-text-muted">$t:sirsoft-pay_kginicis.settings.cbt_callback_host_match_label</span>
                     <span data-if="{{_local.cbtConnCheckResult?.callback?.host_matches_app_url}}" class="paykginicis:font-semibold pay-kginicis-tone-success">$t:sirsoft-pay_kginicis.settings.cbt_callback_ok</span>
                     <span data-if="{{!_local.cbtConnCheckResult?.callback?.host_matches_app_url}}" class="paykginicis:font-semibold pay-kginicis-tone-danger">$t:sirsoft-pay_kginicis.settings.cbt_callback_check</span>
                   </div>
-                  <p class="paykginicis:text-[11px] paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:leading-relaxed">$t:sirsoft-pay_kginicis.settings.cbt_callback_hint</p>
+                  <p class="paykginicis:text-[11px] pay-kginicis-text-muted paykginicis:leading-relaxed">$t:sirsoft-pay_kginicis.settings.cbt_callback_hint</p>
                 </div>
                 <!-- 호스트별 진단 결과 (devcbt / cbt) -->
                 <div data-each="host, idx in {{_local.cbtConnCheckResult?.hosts ?? []}}" class="paykginicis:flex paykginicis:flex-col paykginicis:gap-2">
@@ -366,11 +366,11 @@
                       <span class="paykginicis:text-[10px] paykginicis:px-2 paykginicis:py-0.5 paykginicis:rounded paykginicis:bg-gray-100 paykginicis:dark:bg-gray-700 paykginicis:text-gray-600 paykginicis:dark:text-gray-300">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_env_test</span>
                     </div>
                     <div class="paykginicis:flex paykginicis:items-baseline paykginicis:gap-2">
-                      <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400 pay-kginicis-label-narrow">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_dns_label</span>
+                      <span class="pay-kginicis-text-muted pay-kginicis-label-narrow">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_dns_label</span>
                       <span class="paykginicis:font-mono paykginicis:text-gray-700 paykginicis:dark:text-gray-300">{{host.dns_resolved_ip ?? '-'}}</span>
                     </div>
                     <div class="paykginicis:flex paykginicis:items-baseline paykginicis:gap-2">
-                      <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400 pay-kginicis-label-narrow">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_tcp_label</span>
+                      <span class="pay-kginicis-text-muted pay-kginicis-label-narrow">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_tcp_label</span>
                       <span data-if="{{host.tcp_443_reachable}}" class="paykginicis:px-1.5 paykginicis:py-0.5 paykginicis:rounded paykginicis:bg-green-100 paykginicis:dark:bg-green-900/40 pay-kginicis-tone-success-strong paykginicis:font-medium">✓ {{host.tcp_443_latency_ms}}ms</span>
                       <span data-if="{{!host.tcp_443_reachable}}" class="paykginicis:px-1.5 paykginicis:py-0.5 paykginicis:rounded paykginicis:bg-red-100 paykginicis:dark:bg-red-900/40 pay-kginicis-tone-danger-strong paykginicis:font-medium">✗ {{host.tcp_443_error ?? '$t:sirsoft-pay_kginicis.settings.cbt_connectivity_unreachable'}}</span>
                     </div>

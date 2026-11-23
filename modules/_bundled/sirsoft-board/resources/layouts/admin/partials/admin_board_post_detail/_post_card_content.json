@@ -83,7 +83,7 @@
                                             "if": "{{post?.data?.is_secret}}",
                                             "props": {
                                                 "name": "lock",
-                                                "className": "board:text-xl board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"
+                                                "className": "board:text-xl board-text-muted board:flex-shrink-0"
                                             }
                                         },
                                         {
@@ -136,9 +136,7 @@
                             "name": "Div",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "board-flex-center board:gap-2 board:ml-auto"
-                                    }
+                                    "classMerge": "board:ml-auto"
                                 }
                             },
                             "props": {
@@ -644,7 +642,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "{{_local.showAttachments ? 'chevron-up' : 'chevron-down'}}",
-                                "className": "board:text-base board:text-gray-500 board:dark:text-gray-400"
+                                "className": "board:text-base board-text-muted"
                             }
                         }
                     ]
@@ -734,7 +732,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "file",
-                                                        "className": "board:text-lg board:text-gray-500 board:dark:text-gray-400"
+                                                        "className": "board:text-lg board-text-muted"
                                                     }
                                                 }
                                             ]
@@ -823,7 +821,7 @@
                                     "props": {
                                         "name": "comment",
                                         "size": "sm",
-                                        "className": "board:text-gray-500 board:dark:text-gray-400"
+                                        "className": "board-text-muted"
                                     }
                                 },
                                 {
@@ -902,7 +900,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "board:text-gray-500 board:dark:text-gray-400"
+                                        "className": "board-text-muted"
                                     },
                                     "text": "{{post?.data?.parent?.created_at ?? ''}}"
                                 }
@@ -926,7 +924,7 @@
                             "props": {
                                 "name": "lock",
                                 "size": "sm",
-                                "className": "board:text-gray-500 board:dark:text-gray-400"
+                                "className": "board-text-muted"
                             }
                         },
                         {
@@ -1010,7 +1008,7 @@
                             "name": "Span",
                             "if": "{{post?.data?.parent?.is_secret && post?.data?.parent?.content === null}}",
                             "props": {
-                                "className": "board:text-gray-500 board:dark:text-gray-400 board:italic"
+                                "className": "board-text-muted board:italic"
                             },
                             "text": "$t:sirsoft-board.admin.posts.detail.reply_secret_content"
                         },
@@ -1118,7 +1116,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "eye-slash",
-                                                "className": "board:text-xl board:text-gray-500 board:dark:text-gray-400"
+                                                "className": "board:text-xl board-text-muted"
                                             }
                                         },
                                         {
@@ -1331,7 +1329,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "chevron-left",
-                                                "className": "board:text-base board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"
+                                                "className": "board:text-base board-text-muted board:flex-shrink-0"
                                             }
                                         },
                                         {
@@ -1422,7 +1420,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "chevron-right",
-                                                "className": "board:text-base board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"
+                                                "className": "board:text-base board-text-muted board:flex-shrink-0"
                                             }
                                         }
                                     ]

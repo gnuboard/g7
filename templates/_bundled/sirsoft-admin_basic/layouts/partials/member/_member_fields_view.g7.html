@@ -19,7 +19,7 @@
         <div data-if="{{(field.files ?? []).length === 0}}" class="text-primary text-sm">-</div>
         <ul data-if="{{(field.files ?? []).length > 0}}" class="space-y-1">
           <li data-each="fieldFile in {{field.files ?? []}}" data-ref="mf_view_file_{{field.key}}_{{fieldFile.id}}" class="flex items-center gap-2 min-w-0">
-            <icon name="paperclip" size="sm" class="shrink-0 text-gray-500 dark:text-gray-400"/>
+            <icon name="paperclip" size="sm" class="shrink-0 text-muted"/>
             <button type="button" class="min-w-0 justify-start text-left text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
               <on type="click">
                 <!-- 내려받기 — 회원 본인과 관리자만 받을 수 있는 파일이라 로그인 토큰이 실리는 경로로 받는다. -->

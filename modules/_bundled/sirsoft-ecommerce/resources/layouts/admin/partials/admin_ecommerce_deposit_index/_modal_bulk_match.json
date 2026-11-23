@@ -146,7 +146,7 @@
                                                     "props": {
                                                         "aria-label": "$t:common.close",
                                                         "type": "button",
-                                                        "className": "ecommerce:absolute ecommerce:right-2 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:text-gray-500 ecommerce:hover:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-gray-300"
+                                                        "className": "ecommerce:absolute ecommerce:right-2 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-text-muted ecommerce:hover:text-gray-600 ecommerce:dark:hover:text-gray-300"
                                                     },
                                                     "children": [
                                                         {
@@ -470,7 +470,7 @@
                                                             "props": {
                                                                 "aria-label": "$t:common.close",
                                                                 "type": "button",
-                                                                "className": "ecommerce:absolute ecommerce:right-2 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:text-gray-500 ecommerce:hover:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-gray-300"
+                                                                "className": "ecommerce:absolute ecommerce:right-2 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-text-muted ecommerce:hover:text-gray-600 ecommerce:dark:hover:text-gray-300"
                                                             },
                                                             "children": [
                                                                 {

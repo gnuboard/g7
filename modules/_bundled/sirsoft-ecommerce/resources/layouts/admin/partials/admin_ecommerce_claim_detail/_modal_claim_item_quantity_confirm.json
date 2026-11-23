@@ -23,7 +23,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors"
+                    "className": "ecommerce-btn ecommerce-btn-secondary"
                 },
                 "text": "$t:common.cancel"
             },
@@ -61,7 +61,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "className": "ecommerce-btn ecommerce-btn-primary",
                     "disabled": "{{_local.isUpdatingClaimItems === true}}"
                 },
                 "children": [
@@ -207,7 +207,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                "className": "ecommerce-text-muted"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder"
                         },
@@ -223,7 +223,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                "className": "ecommerce-text-muted"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder"
                         },
@@ -244,7 +244,7 @@
                     "name": "P",
                     "if": "{{(_global.claimItemQuantityContext?.rows ?? []).some(r => r.splittable === true)}}",
                     "props": {
-                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                        "className": "ecommerce:text-xs ecommerce-text-muted"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.items.quantity_split_hint"
                 },
@@ -255,7 +255,7 @@
                     "name": "P",
                     "if": "{{(_global.claimItemQuantityContext?.rows ?? []).some(r => r.splittable !== true && r.quantity > 1)}}",
                     "props": {
-                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                        "className": "ecommerce:text-xs ecommerce-text-muted"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.items.quantity_not_splittable"
                 }

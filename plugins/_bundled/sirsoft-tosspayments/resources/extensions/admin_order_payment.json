@@ -61,7 +61,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400"
+                                                "className": "paytosspayments:text-sm pay-tosspayments-text-muted"
                                             },
                                             "text": "$t:sirsoft-tosspayments.admin.escrow_label"
                                         },
@@ -88,7 +88,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400"
+                                                "className": "paytosspayments:text-sm pay-tosspayments-text-muted"
                                             },
                                             "text": "$t:sirsoft-tosspayments.admin.vbank_label"
                                         },
@@ -115,7 +115,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400"
+                                                "className": "paytosspayments:text-sm pay-tosspayments-text-muted"
                                             },
                                             "text": "$t:sirsoft-tosspayments.admin.vbank_due_label"
                                         },
@@ -142,7 +142,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400"
+                                                "className": "paytosspayments:text-sm pay-tosspayments-text-muted"
                                             },
                                             "text": "$t:sirsoft-tosspayments.admin.receipt_label"
                                         },

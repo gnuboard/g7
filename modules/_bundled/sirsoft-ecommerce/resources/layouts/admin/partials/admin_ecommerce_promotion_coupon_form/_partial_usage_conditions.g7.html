@@ -43,7 +43,7 @@
       <div data-ref="target_products_section" data-if="{{_local.form?.target_scope === 'products'}}">
         <!-- 상품 검색 토글 버튼 + 선택삭제 -->
         <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4">
-          <button data-ref="toggle_product_search" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:hover:bg-blue-700 ecommerce:dark:bg-blue-600 ecommerce:dark:hover:bg-blue-700 ecommerce:text-white ecommerce:rounded-lg ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm">
+          <button data-ref="toggle_product_search" type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce-flex-center">
             <on type="click">
               <!-- 상품 검색 패널 접기/펴기. 옆 아이콘의 방향도 같은 값을 본다. -->
               <set-state target="_local" productSearchOpen="{{!_local.productSearchOpen}}"/>
@@ -165,7 +165,7 @@
       <div data-ref="target_categories_section" data-if="{{_local.form?.target_scope === 'categories'}}">
         <!-- 카테고리 검색 토글 버튼 + 선택삭제 -->
         <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4">
-          <button data-ref="toggle_category_search" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:hover:bg-blue-700 ecommerce:dark:bg-blue-600 ecommerce:dark:hover:bg-blue-700 ecommerce:text-white ecommerce:rounded-lg ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm">
+          <button data-ref="toggle_category_search" type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce-flex-center">
             <on type="click">
               <!-- 분류 검색 패널 접기/펴기 — 상품 쪽과 같은 형태이고 키만 다르다. -->
               <set-state target="_local" categorySearchOpen="{{!_local.categorySearchOpen}}"/>

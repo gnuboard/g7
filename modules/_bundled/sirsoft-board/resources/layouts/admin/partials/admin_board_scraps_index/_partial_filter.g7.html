@@ -32,7 +32,7 @@
         </select>
         <div class="board:relative board:flex-1">
           <span class="board:absolute board:left-3 board:top-1/2 board:-translate-y-1/2 board:pointer-events-none">
-            <icon name="fa-solid fa-search" class="board:text-sm board:text-gray-500 board:dark:text-gray-400"/>
+            <icon name="fa-solid fa-search" class="board:text-sm board-text-muted"/>
           </span>
           <input data-ref="search_input" name="search" type="text" placeholder="$t:sirsoft-board.admin.scraps.search_placeholder" class="board-input board:pl-10" value="{{_local.searchQuery || ''}}">
             <on type="change">
@@ -72,7 +72,7 @@ $t:sirsoft-board.admin.scraps.filters.scrapped_at_label</span>
               <set-state target="global" dateFrom="{{$event.target.value}}" dateQuick=""/>
             </on>
           </input>
-          <span class="board:text-gray-500 board:dark:text-gray-400">~</span>
+          <span class="board-text-muted">~</span>
           <input data-ref="date_to" type="date" aria-label="$t:common.range_end|label={{$t('sirsoft-board.admin.scraps.filters.scrapped_at_label')}}" class="board-input board:w-40" value="{{_global.dateTo !== undefined ? _global.dateTo : (query.scrapped_at_to || '')}}">
             <on type="change">
               <!-- 종료일 직접 입력 — 빠른 기간 버튼 선택(dateQuick)은 해제한다 -->

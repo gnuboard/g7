@@ -36,7 +36,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "sliders",
-                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                        "className": "ecommerce-text-muted"
                     }
                 },
                 {
@@ -52,7 +52,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.productOptionsExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
+                        "className": "ecommerce-admin-card-accordion-icon ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.productOptionsExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
                     }
                 }
             ]
@@ -300,7 +300,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-primary ecommerce:w-full ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                "className": "ecommerce-btn ecommerce-btn-primary ecommerce:w-full",
                                 "disabled": "{{_computed.isReadOnly}}"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.options.generate_options"
@@ -1130,7 +1130,7 @@
                                                                             ],
                                                                             "props": {
                                                                                 "type": "button",
-                                                                                "className": "ecommerce:p-1 ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:hover:text-red-600 ecommerce:dark:hover:text-red-400",
+                                                                                "className": "ecommerce:p-1 ecommerce-text-muted ecommerce:hover:text-red-600 ecommerce:dark:hover:text-red-400",
                                                                                 "aria-label": "$t:common.delete"
                                                                             },
                                                                             "children": [
@@ -1991,7 +1991,7 @@
                                                         "name": "Div",
                                                         "if": "{{!_computed.isReadOnly}}",
                                                         "props": {
-                                                            "className": "ecommerce:text-gray-500 ecommerce:hover:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-gray-300 ecommerce:select-none",
+                                                            "className": "ecommerce-text-muted ecommerce:hover:text-gray-600 ecommerce:dark:hover:text-gray-300 ecommerce:select-none",
                                                             "data-drag-handle": true
                                                         },
                                                         "children": [
@@ -2158,9 +2158,7 @@
                                                         },
                                                         "responsive": {
                                                             "640-": {
-                                                                "props": {
-                                                                    "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-start ecommerce:p-3 ecommerce:bg-white ecommerce:dark:bg-gray-900/40 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded"
-                                                                }
+                                                                "classMerge": "ecommerce:flex-row ecommerce:items-start"
                                                             }
                                                         },
                                                         "props": {
@@ -2341,9 +2339,7 @@
                                                                 "name": "Label",
                                                                 "responsive": {
                                                                     "640-": {
-                                                                        "props": {
-                                                                            "className": "ecommerce-flex-center ecommerce:gap-1 ecommerce:mt-6 ecommerce:cursor-pointer"
-                                                                        }
+                                                                        "classMerge": "ecommerce:mt-6"
                                                                     }
                                                                 },
                                                                 "props": {
@@ -2391,9 +2387,7 @@
                                                                 "name": "Div",
                                                                 "responsive": {
                                                                     "640-": {
-                                                                        "props": {
-                                                                            "className": "ecommerce-flex-center ecommerce:gap-1 ecommerce:mt-6"
-                                                                        }
+                                                                        "classMerge": "ecommerce:mt-6"
                                                                     }
                                                                 },
                                                                 "props": {
@@ -2440,9 +2434,7 @@
                                                                 "name": "Div",
                                                                 "responsive": {
                                                                     "640-": {
-                                                                        "props": {
-                                                                            "className": "ecommerce-flex-center ecommerce:gap-1 ecommerce:mt-6"
-                                                                        }
+                                                                        "classMerge": "ecommerce:mt-6"
                                                                     }
                                                                 },
                                                                 "props": {
@@ -2490,9 +2482,7 @@
                                                                 "if": "{{!_computed.isReadOnly}}",
                                                                 "responsive": {
                                                                     "640-": {
-                                                                        "props": {
-                                                                            "className": "ecommerce-btn ecommerce-btn-ghost ecommerce:text-red-500 ecommerce:hover:text-red-700 ecommerce:dark:text-red-400 ecommerce:dark:hover:text-red-300 ecommerce:mt-6"
-                                                                        }
+                                                                        "classMerge": "ecommerce:mt-6"
                                                                     }
                                                                 },
                                                                 "actions": [

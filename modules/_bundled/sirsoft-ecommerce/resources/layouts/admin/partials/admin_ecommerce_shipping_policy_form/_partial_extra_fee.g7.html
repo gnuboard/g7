@@ -35,7 +35,7 @@
         <div data-ref="extra_fee_settings_header" class="ecommerce-flex-between">
           <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_settings</label>
           <div class="ecommerce:flex ecommerce:gap-2">
-            <button type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-secondary ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+            <button type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-secondary" disabled="{{_computed.isReadOnly}}">
               <on type="click">
                 <!-- 템플릿 불러오기 창 열기 — 목록을 **먼저 다시 받고** 연다. 창이 스스로 조회하지 않으므로, 순서를 뒤집으면 지난번 목록이 잠깐 보인다. -->
                 <sequence>
@@ -47,7 +47,7 @@
               <icon name="file-text" class="ecommerce:text-xs ecommerce:mr-1"/>
               <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_load</span>
             </button>
-            <button type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-secondary ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+            <button type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-secondary" disabled="{{_computed.isReadOnly}}">
               <on type="click">
                 <!-- 빈 줄 하나 추가 — 아래 표·카드 두 벌이 같은 배열을 그리므로 한 번의 추가가 양쪽에 함께 나타난다. -->
                 <action handler="sirsoft-ecommerce.addExtraFeeRow" countryIndex="{{_local.activeCountryTab ?? 0}}"/>
@@ -153,7 +153,7 @@
             </table>
           </div>
         </div>
-        <div data-if="{{(_computed.activeCountrySetting?.extra_fee_settings ?? []).length === 0}}" class="ecommerce:text-center ecommerce:py-4 ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:border ecommerce:border-dashed ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg">
+        <div data-if="{{(_computed.activeCountrySetting?.extra_fee_settings ?? []).length === 0}}" class="ecommerce:text-center ecommerce:py-4 ecommerce:text-sm ecommerce-text-muted ecommerce:border ecommerce:border-dashed ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg">
           <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.no_extra_fee</span>
         </div>
       </div>

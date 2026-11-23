@@ -150,7 +150,7 @@ export const IconSelect: React.FC<IconSelectProps> = ({
               <Span className="text-gray-900 dark:text-white">{selectedOption.label}</Span>
             </>
           ) : (
-            <Span className="text-gray-500 dark:text-gray-400">{placeholder}</Span>
+            <Span className="text-muted">{placeholder}</Span>
           )}
         </Div>
         <Icon
@@ -197,7 +197,7 @@ export const IconSelect: React.FC<IconSelectProps> = ({
                 </Button>
               ))
             ) : (
-              <Div className="px-3 py-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+              <Div className="px-3 py-4 text-sm text-muted text-center">
                 {noResultsText}
               </Div>
             )}

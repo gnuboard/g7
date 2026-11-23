@@ -10,25 +10,25 @@
         <div class="grid grid-cols-1 gap-4">
           <responsive on="768-" class="grid grid-cols-2 gap-4"/>
           <div>
-            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">$t:admin.identity.logs.detail.expanded.target_hash_label</span>
+            <span class="block text-xs font-semibold text-muted uppercase tracking-wide">$t:admin.identity.logs.detail.expanded.target_hash_label</span>
             <span class="block text-xs font-mono text-gray-700 dark:text-gray-300 break-all mt-0.5">{{row.target_hash ?? '-'}}</span>
           </div>
           <div>
-            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">$t:admin.identity.logs.detail.expanded.origin_label</span>
+            <span class="block text-xs font-semibold text-muted uppercase tracking-wide">$t:admin.identity.logs.detail.expanded.origin_label</span>
             <span class="block text-body mt-0.5">{{(row.origin_type ? $t('admin.identity.logs.origin_type.' + row.origin_type) : '-') + ' / ' + (row.origin_identifier ?? '-')}}</span>
           </div>
           <div data-if="{{row.origin_policy_key}}">
             <responsive on="768-" class="col-span-2"/>
-            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">$t:admin.identity.logs.detail.expanded.origin_policy_key_label</span>
+            <span class="block text-xs font-semibold text-muted uppercase tracking-wide">$t:admin.identity.logs.detail.expanded.origin_policy_key_label</span>
             <span class="block text-body font-mono break-all mt-0.5">{{row.origin_policy_key}}</span>
           </div>
         </div>
         <div data-if="{{row.properties}}">
-          <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">$t:admin.identity.logs.detail.expanded.properties_label</span>
+          <span class="block text-xs font-semibold text-muted uppercase tracking-wide mb-1">$t:admin.identity.logs.detail.expanded.properties_label</span>
           <pre class="admin-card">{{raw:JSON.stringify(row.properties ?? {}, null, 2)}}</pre>
         </div>
         <div data-if="{{row.metadata}}">
-          <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">$t:admin.identity.logs.detail.expanded.metadata_label</span>
+          <span class="block text-xs font-semibold text-muted uppercase tracking-wide mb-1">$t:admin.identity.logs.detail.expanded.metadata_label</span>
           <pre class="admin-card">{{raw:JSON.stringify(row.metadata ?? {}, null, 2)}}</pre>
         </div>
         <div class="flex justify-end">

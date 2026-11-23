@@ -107,12 +107,12 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
               {hasEllipsis && isFirst && (
                 <>
                   <BreadcrumbLink item={item} isLast={false} />
-                  <Span className="text-gray-500 dark:text-gray-400" aria-hidden="true">
+                  <Span className="text-muted" aria-hidden="true">
                     {separator}
                   </Span>
-                  <Span className="text-gray-500 dark:text-gray-400">...</Span>
+                  <Span className="text-muted">...</Span>
                   {displayItems.length > 1 && (
-                    <Span className="text-gray-500 dark:text-gray-400" aria-hidden="true">
+                    <Span className="text-muted" aria-hidden="true">
                       {separator}
                     </Span>
                   )}
@@ -124,7 +124,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
                 <>
                   <BreadcrumbLink item={item} isLast={isLast} />
                   {!isLast && (
-                    <Span className="text-gray-500 dark:text-gray-400" aria-hidden="true">
+                    <Span className="text-muted" aria-hidden="true">
                       {separator}
                     </Span>
                   )}

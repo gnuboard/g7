@@ -81,7 +81,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
+                                        "className": "sso:text-xs sso-text-muted"
                                     },
                                     "text": "{{(_local.idpForm?.key ?? '') + ' · ' + (_local.idpForm?.protocol_label ?? '')}}"
                                 }
@@ -825,13 +825,11 @@
                                             "name": "Span",
                                             "responsive": {
                                                 "640-": {
-                                                    "props": {
-                                                        "className": "sso:text-xs sso:font-medium sso:text-gray-500 sso:dark:text-gray-400 sso:w-40 sso:flex-shrink-0"
-                                                    }
+                                                    "classMerge": "sso:w-40"
                                                 }
                                             },
                                             "props": {
-                                                "className": "sso:text-xs sso:font-medium sso:text-gray-500 sso:dark:text-gray-400 sso:flex-shrink-0"
+                                                "className": "sso:text-xs sso:font-medium sso-text-muted sso:flex-shrink-0"
                                             },
                                             "text": "{{row.label}}"
                                         },
@@ -899,9 +897,7 @@
                             "if": "{{_local.idpForm?.protocol === 'saml'}}",
                             "responsive": {
                                 "640-": {
-                                    "props": {
-                                        "className": "sso:pt-4 sso:border-t sso:border-gray-200 sso:dark:border-gray-700 sso:flex sso:flex-row sso:items-center sso:gap-2"
-                                    }
+                                    "classMerge": "sso:flex-row sso:items-center"
                                 }
                             },
                             "props": {
@@ -1115,9 +1111,7 @@
                                     "name": "Div",
                                     "responsive": {
                                         "desktop": {
-                                            "props": {
-                                                "className": "sso:col-span-2 sso:space-y-2"
-                                            }
+                                            "classMerge": "sso:col-span-2"
                                         }
                                     },
                                     "props": {
@@ -1544,9 +1538,7 @@
                                     "name": "Input",
                                     "responsive": {
                                         "768-": {
-                                            "props": {
-                                                "className": "sso-input sso:w-48"
-                                            }
+                                            "classMerge": "sso:w-48"
                                         }
                                     },
                                     "actions": [
@@ -1574,9 +1566,7 @@
                                     "name": "Input",
                                     "responsive": {
                                         "768-": {
-                                            "props": {
-                                                "className": "sso-input sso:w-48"
-                                            }
+                                            "classMerge": "sso:w-48"
                                         }
                                     },
                                     "actions": [
@@ -2002,9 +1992,7 @@
                                     "name": "Input",
                                     "responsive": {
                                         "768-": {
-                                            "props": {
-                                                "className": "sso-input sso:flex-1"
-                                            }
+                                            "classMerge": "sso:flex-1"
                                         }
                                     },
                                     "actions": [
@@ -2032,9 +2020,7 @@
                                     "name": "Input",
                                     "responsive": {
                                         "768-": {
-                                            "props": {
-                                                "className": "sso-input sso:w-48"
-                                            }
+                                            "classMerge": "sso:w-48"
                                         }
                                     },
                                     "actions": [
@@ -2643,7 +2629,7 @@
                                                             "name": "P",
                                                             "if": "{{!!_local.idpForm?.scim?.has_token}}",
                                                             "props": {
-                                                                "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
+                                                                "className": "sso:text-xs sso-text-muted"
                                                             },
                                                             "text": "{{$t('sirsoft-sso.admin.settings.idp.scim_token_issued_at')}}: {{_local.idpForm?.scim?.token_issued_at | datetime | default('-')}}"
                                                         },
@@ -2652,7 +2638,7 @@
                                                             "name": "P",
                                                             "if": "{{!_local.idpForm?.scim?.has_token}}",
                                                             "props": {
-                                                                "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
+                                                                "className": "sso:text-xs sso-text-muted"
                                                             },
                                                             "text": "$t:sirsoft-sso.admin.settings.idp.scim_token_none"
                                                         },
@@ -3183,9 +3169,7 @@
                                             "name": "Input",
                                             "responsive": {
                                                 "640-": {
-                                                    "props": {
-                                                        "className": "sso-input sso:w-1/3"
-                                                    }
+                                                    "classMerge": "sso:w-1/3"
                                                 }
                                             },
                                             "actions": [
@@ -3212,9 +3196,7 @@
                                             "name": "Input",
                                             "responsive": {
                                                 "640-": {
-                                                    "props": {
-                                                        "className": "sso-input sso:w-1/3"
-                                                    }
+                                                    "classMerge": "sso:w-1/3"
                                                 }
                                             },
                                             "actions": [
@@ -3375,7 +3357,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "sso:text-gray-500 sso:dark:text-gray-400"
+                                        "className": "sso-text-muted"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.idp.last_success"
                                 },
@@ -3391,7 +3373,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "sso:text-gray-500 sso:dark:text-gray-400"
+                                        "className": "sso-text-muted"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.idp.last_error"
                                 },
@@ -3407,7 +3389,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "sso:text-gray-500 sso:dark:text-gray-400"
+                                        "className": "sso-text-muted"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.idp.periodic_checked_at"
                                 },
@@ -3424,7 +3406,7 @@
                                     "name": "Span",
                                     "if": "{{!!_local.idpForm?.cert_expires_at}}",
                                     "props": {
-                                        "className": "sso:text-gray-500 sso:dark:text-gray-400"
+                                        "className": "sso-text-muted"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.idp.cert_expires_at"
                                 },
@@ -3485,7 +3467,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "sso:text-gray-500 sso:dark:text-gray-400 sso:whitespace-nowrap"
+                                                        "className": "sso-text-muted sso:whitespace-nowrap"
                                                     },
                                                     "text": "{{attempt.created_at | datetime | default('-')}}"
                                                 },
@@ -3521,7 +3503,7 @@
                                                     "name": "Span",
                                                     "if": "{{!!attempt.response_summary}}",
                                                     "props": {
-                                                        "className": "sso:basis-full sso:text-gray-500 sso:dark:text-gray-400 sso:break-all sso-break-all"
+                                                        "className": "sso:basis-full sso-text-muted sso:break-all sso-break-all"
                                                     },
                                                     "text": "{{[(attempt.response_summary?.signed ? $t('sirsoft-sso.admin.settings.idp.response_summary.signed') : $t('sirsoft-sso.admin.settings.idp.response_summary.unsigned')), $t('sirsoft-sso.admin.settings.idp.response_summary.not_on_or_after') + ' ' + (attempt.response_summary?.not_on_or_after ?? '-'), $t('sirsoft-sso.admin.settings.idp.response_summary.audiences') + ' ' + ((attempt.response_summary?.audiences ?? []).join(', ') || '-')].join(' · ')}}"
                                                 }

@@ -12,7 +12,7 @@
       <p class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.description</p>
       <!-- 결제예정금액 요약 (참고용) -->
       <div class="ecommerce:rounded-lg ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:p-3 ecommerce-flex-between ecommerce:text-sm">
-        <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.due_amount</span>
+        <span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.due_amount</span>
         <!-- 결제 통화 기준 실청구액 — 입금액 입력·서버 검증과 같은 SSoT. base 금액(total_due_amount_formatted)을 쓰면 base≠결제 통화 주문에서 운영자가 보는 금액과 저장 가능한 금액이 어긋난다. -->
         <span class="ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{order.data?.total_due_charge_amount_formatted ?? order.data?.total_due_amount_formatted ?? ''}}</span>
       </div>
@@ -67,7 +67,7 @@
         </on>
         <span>$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.cancel</span>
       </button>
-      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_local.isConfirmingDeposit || order?.data?.abilities?.can_update !== true}}">
+      <button type="button" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-primary" disabled="{{_local.isConfirmingDeposit || order?.data?.abilities?.can_update !== true}}">
         <on type="click">
           <!-- 입금확인 실행 — 화면 값 넷을 그대로 핸들러에 넘긴다. 잠금·오류 표시·창 닫기·목록 갱신이 모두 그 핸들러 안에서 일어나므로 여기에는 성공·실패 갈래가 없다. -->
           <action handler="sirsoft-ecommerce.confirmDeposit" orderId="{{route.orderNumber}}" amount="{{_local.depositAmount}}" depositorName="{{_local.depositorName ?? ''}}" markOrderComplete="{{_local.markOrderComplete ?? false}}"/>

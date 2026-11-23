@@ -291,7 +291,7 @@
                                         ],
                                         "props": {
                                             "href": "/login?local=1",
-                                            "className": "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer"
+                                            "className": "text-muted hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer"
                                         },
                                         "text": "$t:auth.external.other_method"
                                     }
@@ -316,7 +316,7 @@
                                         ],
                                         "props": {
                                             "href": "/forgot-password",
-                                            "className": "inline-flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer"
+                                            "className": "inline-flex items-center justify-center text-muted hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer"
                                         },
                                         "text": "$t:auth.forgot_password_link"
                                     },
@@ -384,7 +384,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "px-3 bg-white dark:bg-gray-800 text-sm text-gray-500 dark:text-gray-400"
+                                                            "className": "px-3 bg-white dark:bg-gray-800 text-sm text-muted"
                                                         },
                                                         "text": "$t:auth.guest_checkout.divider"
                                                     }
@@ -412,7 +412,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "mt-2 text-center text-xs text-gray-500 dark:text-gray-400"
+                                            "className": "mt-2 text-center text-xs text-muted"
                                         },
                                         "text": "$t:auth.guest_checkout.hint"
                                     }
@@ -432,7 +432,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-gray-500 dark:text-gray-400 mr-1"
+                                            "className": "text-muted mr-1"
                                         },
                                         "text": "$t:shop.guest_order_form.login_screen_hint"
                                     },

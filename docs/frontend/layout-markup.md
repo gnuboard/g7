@@ -266,7 +266,8 @@
 | `blur_until_loaded` | `data-blur-until-loaded` 또는 `<blur-until-loaded>` |
 | `classMap` | `<class-map key base default><variant when>…</class-map>` |
 | `isolatedState`(+`isolatedScopeId`) | `<isolated-state scope-id="…">` |
-| `responsive` | `<responsive on="portable">…</responsive>`. `on` 은 프리셋(portable/mobile/tablet/desktop) 또는 커스텀 구간 `min-max`(`768-1023`)·`min-`(`1024-`)·`-max`(`-767`). 한 노드에 같은 `on` 을 두 번 쓰면 `duplicate_node_key` 에러. 구간을 나누는 법은 [responsive-layout.md](responsive-layout.md#함정-열린-구간과-프리셋을-한-노드에-섞지-않는다) |
+| `responsive` | `<responsive on="portable">…</responsive>`. `on` 은 프리셋(portable/mobile/tablet/desktop) 또는 커스텀 구간 `min-max`(`768-1023`)·`min-`(`1024-`)·`-max`(`-767`). 한 노드에 같은 `on` 을 두 번 쓰면 `duplicate_node_key` 에러. 구간을 나누는 법은 [responsive-layout.md](responsive-layout.md#함정-열린-구간과-프리셋을-한-노드에-섞지-않는다). 구간의 `class` 는 기본 className 을 통째로 교체한다 |
+| `responsive.{key}.classMerge` | `<responsive on="portable" class-merge="p-6"/>` — 그 구간에서 바뀐 클래스만 기본 className 에 덧붙인다. 같은 축, 같은 변형의 기본 토큰만 바뀌고 나머지는 남는다(engine-v1.98.0, 코어 7.2.1). `props` 가 아니라 구간 값의 형제 키라 그 전 엔진은 무시한다. 빈 값은 `directive_needs_value` 에러, 값에 폭 변형(`md:` 등)이 있으면 `class_merge_breakpoint_variant` 경고. 규칙과 한계는 [responsive-layout.md](responsive-layout.md#바뀐-클래스만-덧붙이기-class-merge) |
 | `lifecycle` | `<on event="mount">`/`<on event="unmount">` |
 | `onComponentEvent` | `<on listen="…">` |
 | `actions` | `<on event="click">…</on>` — §6 |
@@ -324,6 +325,8 @@ hoist 태그는 **부모 컴포넌트 이름과 무관하게** 같은 props 키�
   </prop-footer>
 </modal>
 ```
+
+> **`<button variant>` 는 버튼 모양 클래스를 붙인다 (7.2.1).** 두 번들 템플릿의 `Button` 은 `variant` 를 적으면 `btn btn-{variant}` 를 스스로 붙이고, 적은 `class` 는 그 위에 병합한다. 관리자 템플릿(`sirsoft-admin_basic`)의 값은 `primary`, `secondary`, `danger`, `success`, `ghost`, `outline` 이고, 사용자 템플릿(`sirsoft-basic`)은 여기에 `accent` 가 더해진다. `size` 는 `sm` 이면 `btn-sm`, `lg` 면 `btn-lg` 를 붙인다. `variant` 를 적지 않은 버튼은 종전처럼 적은 `class` 만 쓴다.
 
 > **기본 태그(`div`·`span`·`h1`~`h4`·`p`·`button` 등)의 글자는 본문에 쓴다.** `<h2 text="제목"/>` 처럼 `text=` 속성으로 적으면 노드 `text` 가 아니라 `props.text` 로 컴파일되고, 기본 컴포넌트는 `props.text` 를 그리지 않아 컴파일·렌더 모두 통과한 채 빈 칸이 된다. `text` prop 을 선언한 컴포넌트(`<badge>`·`<loading-spinner>` 등)만 `text=` 로 쓴다.
 

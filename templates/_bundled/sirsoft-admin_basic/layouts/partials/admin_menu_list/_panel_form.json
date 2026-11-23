@@ -89,7 +89,7 @@
                                 "type": "submit",
                                 "form": "menu_form",
                                 "disabled": "{{_global.isSaving || _global.menuIconUploading}}",
-                                "className": "flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "flex-center gap-1.5 btn btn-primary btn-sm"
                             },
                             "children": [
                                 {
@@ -415,7 +415,7 @@
                                             "name": "Span",
                                             "if": "{{_global.formErrors?.slug}}",
                                             "props": {
-                                                "className": "text-red-600 dark:text-red-400 text-xs"
+                                                "className": "form-error"
                                             },
                                             "text": "{{_global.formErrors?.slug?.[0] ?? ''}}"
                                         },
@@ -473,7 +473,7 @@
                                             "name": "Span",
                                             "if": "{{_global.formErrors?.url}}",
                                             "props": {
-                                                "className": "text-red-600 dark:text-red-400 text-xs"
+                                                "className": "form-error"
                                             },
                                             "text": "{{_global.formErrors?.url?.[0] ?? ''}}"
                                         },
@@ -580,7 +580,7 @@
                                                     "name": "Span",
                                                     "if": "{{_global.formErrors?.parent_id}}",
                                                     "props": {
-                                                        "className": "text-red-600 dark:text-red-400 text-xs"
+                                                        "className": "form-error"
                                                     },
                                                     "text": "{{_global.formErrors?.parent_id?.[0] ?? ''}}"
                                                 }
@@ -842,7 +842,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400 w-20"
+                                                        "className": "text-muted w-20"
                                                     },
                                                     "text": "$t:admin.menus.info.creator"
                                                 },
@@ -894,7 +894,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400 w-20"
+                                                        "className": "text-muted w-20"
                                                     },
                                                     "text": "$t:admin.menus.info.created_at"
                                                 },
@@ -934,7 +934,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400 w-20"
+                                                        "className": "text-muted w-20"
                                                     },
                                                     "text": "$t:admin.menus.info.updated_at"
                                                 },

@@ -149,7 +149,7 @@
                 "responsive": {
                     "640-1023": {
                         "props": {
-                            "className": "bizppurio:p-6 bizppurio:min-h-screen bizppurio:bg-gray-50 bizppurio:dark:bg-gray-900"
+                            "className": "bizppurio-admin-page-content"
                         }
                     },
                     "1024-": {
@@ -230,7 +230,7 @@
                                 "props": {
                                     "href": "/admin/plugins/{{route.identifier}}/settings?tab=connection",
                                     "mergeQuery": true,
-                                    "className": "bizppurio-button bizppurio:px-4 bizppurio:py-2.5 bizppurio:text-sm bizppurio:font-medium bizppurio:border-b-2 bizppurio:transition-colors {{(query.tab ?? 'connection') === 'connection' ? 'bizppurio:border-blue-500 bizppurio:text-blue-600 bizppurio:dark:text-blue-400' : 'bizppurio:border-transparent bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:hover:text-gray-700 bizppurio:dark:hover:text-gray-200'}}"
+                                    "className": "bizppurio-button bizppurio:px-4 bizppurio:py-2.5 bizppurio:text-sm bizppurio:font-medium bizppurio:border-b-2 bizppurio:transition-colors {{(query.tab ?? 'connection') === 'connection' ? 'bizppurio:border-blue-500 bizppurio:text-blue-600 bizppurio:dark:text-blue-400' : 'bizppurio:border-transparent bizppurio-text-muted bizppurio:hover:text-gray-700 bizppurio:dark:hover:text-gray-200'}}"
                                 },
                                 "children": [
                                     {
@@ -273,7 +273,7 @@
                                 "props": {
                                     "href": "/admin/plugins/{{route.identifier}}/settings?tab=templates",
                                     "mergeQuery": true,
-                                    "className": "bizppurio:px-4 bizppurio:py-2.5 bizppurio:text-sm bizppurio:font-medium bizppurio:border-b-2 bizppurio:transition-colors {{(query.tab ?? 'connection') === 'templates' ? 'bizppurio:border-blue-500 bizppurio:text-blue-600 bizppurio:dark:text-blue-400' : 'bizppurio:border-transparent bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:hover:text-gray-700 bizppurio:dark:hover:text-gray-200'}}"
+                                    "className": "bizppurio:px-4 bizppurio:py-2.5 bizppurio:text-sm bizppurio:font-medium bizppurio:border-b-2 bizppurio:transition-colors {{(query.tab ?? 'connection') === 'templates' ? 'bizppurio:border-blue-500 bizppurio:text-blue-600 bizppurio:dark:text-blue-400' : 'bizppurio:border-transparent bizppurio-text-muted bizppurio:hover:text-gray-700 bizppurio:dark:hover:text-gray-200'}}"
                                 },
                                 "children": [
                                     {
@@ -365,9 +365,7 @@
                                         "name": "Div",
                                         "responsive": {
                                             "desktop": {
-                                                "props": {
-                                                    "className": "bizppurio:mt-3 bizppurio:pt-3 bizppurio:border-t bizppurio:border-blue-100 bizppurio:dark:border-blue-900 bizppurio:grid bizppurio:grid-cols-2 bizppurio:gap-4"
-                                                }
+                                                "classMerge": "bizppurio:grid-cols-2"
                                             }
                                         },
                                         "props": {
@@ -968,9 +966,7 @@
                                                         "name": "Div",
                                                         "responsive": {
                                                             "desktop": {
-                                                                "props": {
-                                                                    "className": "bizppurio:col-span-8 bizppurio:flex bizppurio:justify-end"
-                                                                }
+                                                                "classMerge": "bizppurio:col-span-8 bizppurio:justify-end"
                                                             }
                                                         },
                                                         "props": {
@@ -2040,7 +2036,7 @@
                                                     }
                                                 },
                                                 "props": {
-                                                    "className": "bizppurio:grid bizppurio:grid-cols-12 bizppurio:gap-2 bizppurio:px-4 bizppurio:py-2.5 bizppurio:bg-gray-50 bizppurio:dark:bg-gray-900 bizppurio:text-xs bizppurio:font-medium bizppurio:text-gray-500 bizppurio:dark:text-gray-400"
+                                                    "className": "bizppurio:grid bizppurio:grid-cols-12 bizppurio:gap-2 bizppurio:px-4 bizppurio:py-2.5 bizppurio:bg-gray-50 bizppurio:dark:bg-gray-900 bizppurio:text-xs bizppurio:font-medium bizppurio-text-muted"
                                                 },
                                                 "children": [
                                                     {
@@ -2161,7 +2157,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "P",
                                                                                 "props": {
-                                                                                    "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400"
+                                                                                    "className": "bizppurio:text-xs bizppurio-text-muted"
                                                                                 },
                                                                                 "text": "{{bzRow.notification_type}}"
                                                                             },
@@ -2172,7 +2168,7 @@
                                                                                 "responsive": {
                                                                                     "portable": {
                                                                                         "props": {
-                                                                                            "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:mt-1"
+                                                                                            "className": "bizppurio:text-xs bizppurio-text-muted bizppurio:mt-1"
                                                                                         }
                                                                                     }
                                                                                 },
@@ -2818,7 +2814,7 @@
                                                 "name": "Div",
                                                 "if": "{{bizppurio_templates_list !== undefined && ((bizppurio_templates_list?.data?.templates ?? []).length === 0)}}",
                                                 "props": {
-                                                    "className": "bizppurio:py-10 bizppurio:text-center bizppurio:text-gray-500 bizppurio:dark:text-gray-400"
+                                                    "className": "bizppurio:py-10 bizppurio:text-center bizppurio-text-muted"
                                                 },
                                                 "children": [
                                                     {
@@ -2927,7 +2923,7 @@
                         ],
                         "props": {
                             "type": "button",
-                            "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50",
+                            "className": "bizppurio-btn bizppurio-btn-secondary bizppurio:rounded-md",
                             "disabled": "{{_global.bz_tpl_modal?.isSaving ?? false}}"
                         },
                         "text": "$t:common.cancel"
@@ -3006,7 +3002,7 @@
                         ],
                         "props": {
                             "type": "button",
-                            "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50",
+                            "className": "bizppurio-btn bizppurio-btn-secondary bizppurio:rounded-md",
                             "disabled": "{{_computed.isMessagingReadOnly || ((_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false))}}"
                         },
                         "text": "$t:sirsoft-message_bizppurio.template.form.btn_save"
@@ -3084,7 +3080,7 @@
                         ],
                         "props": {
                             "type": "button",
-                            "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50",
+                            "className": "bizppurio-btn bizppurio-btn-secondary bizppurio:rounded-md",
                             "disabled": "{{_computed.isMessagingReadOnly || ((_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false))}}"
                         },
                         "text": "$t:sirsoft-message_bizppurio.template.form.btn_save"
@@ -3453,7 +3449,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:mt-1"
+                                                "className": "bizppurio:text-xs bizppurio-text-muted bizppurio:mt-1"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.sender_profile_hint"
                                         }
@@ -3869,7 +3865,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400"
+                                        "className": "bizppurio:text-xs bizppurio-text-muted"
                                     },
                                     "text": "$t:sirsoft-message_bizppurio.template.form.image_hint|max=500&width=500"
                                 },
@@ -4033,7 +4029,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400"
+                                        "className": "bizppurio:text-xs bizppurio-text-muted"
                                     },
                                     "text": "$t:sirsoft-message_bizppurio.template.form.item_list_hint"
                                 },
@@ -4214,7 +4210,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400"
+                                                "className": "bizppurio:text-xs bizppurio-text-muted"
                                             },
                                             "text": "{{(_global.bz_tpl_modal?.content?.templateContent ?? '').length}}/1000"
                                         }
@@ -4372,7 +4368,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:mt-1"
+                                        "className": "bizppurio:text-xs bizppurio-text-muted bizppurio:mt-1"
                                     },
                                     "text": "$t:sirsoft-message_bizppurio.template.form.header_hint"
                                 }
@@ -5001,7 +4997,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400"
+                                                "className": "bizppurio:text-xs bizppurio-text-muted"
                                             },
                                             "text": "{{(_global.bz_tpl_modal?.request_comment ?? '').length}}/500"
                                         }
@@ -5035,7 +5031,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:mt-1"
+                                        "className": "bizppurio:text-xs bizppurio-text-muted bizppurio:mt-1"
                                     },
                                     "text": "$t:sirsoft-message_bizppurio.template.form.request_comment_hint"
                                 }
@@ -5070,7 +5066,7 @@
                         ],
                         "props": {
                             "type": "button",
-                            "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50",
+                            "className": "bizppurio-btn bizppurio-btn-secondary bizppurio:rounded-md",
                             "disabled": "{{_global.bz_sms_modal?.isSaving ?? false}}"
                         },
                         "text": "$t:common.cancel"
@@ -5201,7 +5197,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{(_global.bz_sms_modal?.editLang ?? $locale) === loc ? 'bizppurio:border-b-2 bizppurio:border-teal-500 bizppurio:dark:border-teal-400 bizppurio:text-teal-700 bizppurio:dark:text-teal-400' : 'bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:hover:text-gray-700 bizppurio:dark:hover:text-gray-300'}} bizppurio:px-4 bizppurio:py-2 bizppurio:text-sm bizppurio:font-medium bizppurio:focus:outline-none"
+                                        "className": "{{(_global.bz_sms_modal?.editLang ?? $locale) === loc ? 'bizppurio:border-b-2 bizppurio:border-teal-500 bizppurio:dark:border-teal-400 bizppurio:text-teal-700 bizppurio:dark:text-teal-400' : 'bizppurio-text-muted bizppurio:hover:text-gray-700 bizppurio:dark:hover:text-gray-300'}} bizppurio:px-4 bizppurio:py-2 bizppurio:text-sm bizppurio:font-medium bizppurio:focus:outline-none"
                                     },
                                     "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
                                 }
@@ -5314,7 +5310,7 @@
                         ],
                         "props": {
                             "type": "button",
-                            "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50",
+                            "className": "bizppurio-btn bizppurio-btn-secondary bizppurio:rounded-md",
                             "disabled": "{{_global.bz_cancel_approval?.isSaving ?? false}}"
                         },
                         "text": "$t:common.cancel"
@@ -5492,7 +5488,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50"
+                                "className": "bizppurio-btn bizppurio-btn-secondary bizppurio:rounded-md"
                             },
                             "text": "$t:sirsoft-message_bizppurio.template.rejection.btn_close"
                         }
@@ -5525,7 +5521,7 @@
                         ],
                         "props": {
                             "type": "button",
-                            "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50",
+                            "className": "bizppurio-btn bizppurio-btn-secondary bizppurio:rounded-md",
                             "disabled": "{{_global.bz_delete_modal?.isSaving ?? false}}"
                         },
                         "text": "$t:common.cancel"

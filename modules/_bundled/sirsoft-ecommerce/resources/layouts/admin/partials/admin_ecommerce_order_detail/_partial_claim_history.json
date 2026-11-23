@@ -142,7 +142,7 @@
                     "name": "Div",
                     "if": "{{orderClaims !== undefined && (orderClaims?.data?.unavailable !== true && (_computed.claimHistoryRows ?? []).length === 0)}}",
                     "props": {
-                        "className": "ecommerce:py-10 ecommerce:text-center ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                        "className": "ecommerce:py-10 ecommerce:text-center ecommerce:text-sm ecommerce-text-muted"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.empty"
                 },
@@ -260,7 +260,7 @@
                                                     "name": "Div",
                                                     "if": "{{!!claim.source_claim_number}}",
                                                     "props": {
-                                                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce-text-muted"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.source_claim|number={{claim.source_claim_number ?? ''}}"
                                                 },
@@ -268,7 +268,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce-text-muted"
                                                     },
                                                     "text": "{{claim.requested_at_formatted ?? ''}} · {{claim.requester_name ?? ''}}"
                                                 },
@@ -366,7 +366,7 @@
                                                                     "if": "{{!item.thumbnail_url}}",
                                                                     "props": {
                                                                         "name": "image",
-                                                                        "className": "ecommerce:text-base ecommerce:text-gray-500 ecommerce:dark:text-gray-400",
+                                                                        "className": "ecommerce:text-base ecommerce-text-muted",
                                                                         "data-thumb-placeholder": "true"
                                                                     }
                                                                 }
@@ -392,7 +392,7 @@
                                                                     "name": "Div",
                                                                     "if": "{{!!item.product_option_name}}",
                                                                     "props": {
-                                                                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                        "className": "ecommerce:text-xs ecommerce-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.original_product: {{item.product_option_name ?? ''}} {{item.unit_price_formatted ?? ''}}"
                                                                 },
@@ -420,7 +420,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                "className": "ecommerce:text-xs ecommerce-text-muted"
                                                             },
                                                             "text": "{{item.quantity ?? 0}}{{item.original_quantity ? '/' + item.original_quantity : ''}}"
                                                         },
@@ -459,7 +459,7 @@
                                                                             "name": "Div",
                                                                             "if": "{{(item.amount_type ?? 'none') !== 'none'}}",
                                                                             "props": {
-                                                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                                "className": "ecommerce:text-xs ecommerce-text-muted"
                                                                             },
                                                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount_type.{{item.amount_type ?? 'none'}}"
                                                                         }
@@ -511,7 +511,7 @@
                                                     "type": "basic",
                                                     "name": "Th",
                                                     "props": {
-                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:whitespace-nowrap ecommerce:w-56"
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted ecommerce:whitespace-nowrap ecommerce:w-56"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.claim_number"
                                                 },
@@ -519,7 +519,7 @@
                                                     "type": "basic",
                                                     "name": "Th",
                                                     "props": {
-                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.product"
                                                 },
@@ -527,7 +527,7 @@
                                                     "type": "basic",
                                                     "name": "Th",
                                                     "props": {
-                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-center ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:whitespace-nowrap ecommerce:w-20"
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-center ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted ecommerce:whitespace-nowrap ecommerce:w-20"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.quantity"
                                                 },
@@ -535,7 +535,7 @@
                                                     "type": "basic",
                                                     "name": "Th",
                                                     "props": {
-                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-right ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:whitespace-nowrap ecommerce:w-32"
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-right ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted ecommerce:whitespace-nowrap ecommerce:w-32"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.amount"
                                                 },
@@ -543,7 +543,7 @@
                                                     "type": "basic",
                                                     "name": "Th",
                                                     "props": {
-                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-center ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:whitespace-nowrap ecommerce:w-28"
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-center ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted ecommerce:whitespace-nowrap ecommerce:w-28"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.status"
                                                 }
@@ -651,7 +651,7 @@
                                                             "name": "Div",
                                                             "if": "{{!!claim.source_claim_number}}",
                                                             "props": {
-                                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                "className": "ecommerce:text-xs ecommerce-text-muted"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.source_claim|number={{claim.source_claim_number ?? ''}}"
                                                         },
@@ -659,7 +659,7 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                "className": "ecommerce:text-xs ecommerce-text-muted"
                                                             },
                                                             "text": "{{claim.requested_at_formatted ?? ''}} · {{claim.requester_name ?? ''}}"
                                                         },
@@ -751,7 +751,7 @@
                                                                             "if": "{{!item.thumbnail_url}}",
                                                                             "props": {
                                                                                 "name": "image",
-                                                                                "className": "ecommerce:text-base ecommerce:text-gray-500 ecommerce:dark:text-gray-400",
+                                                                                "className": "ecommerce:text-base ecommerce-text-muted",
                                                                                 "data-thumb-placeholder": "true"
                                                                             }
                                                                         }
@@ -777,7 +777,7 @@
                                                                             "name": "Div",
                                                                             "if": "{{!!item.product_option_name}}",
                                                                             "props": {
-                                                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                                "className": "ecommerce:text-xs ecommerce-text-muted"
                                                                             },
                                                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.original_product: {{item.product_option_name ?? ''}} {{item.unit_price_formatted ?? ''}}"
                                                                         },
@@ -834,7 +834,7 @@
                                                             "name": "Div",
                                                             "if": "{{(item.amount_type ?? 'none') !== 'none'}}",
                                                             "props": {
-                                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                "className": "ecommerce:text-xs ecommerce-text-muted"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount_type.{{item.amount_type ?? 'none'}}"
                                                         }

@@ -75,7 +75,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "px-3 py-1.5 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors",
+                    "className": "btn btn-primary btn-sm rounded-md",
                     "disabled": "{{_local.loadingChangelog}}"
                 },
                 "children": [
@@ -108,7 +108,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                    "className": "btn btn-secondary btn-sm rounded-md"
                 },
                 "text": "$t:admin.settings.info.how_to_update"
             }
@@ -297,7 +297,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "block text-xs text-muted"
                                                                     },
                                                                     "text": "$t:admin.settings.info.custom_conflict_installed|version={{conflict.installed}}"
                                                                 }
@@ -452,9 +452,6 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{!$parent._local.coreUpdateInfo?.update_available}}",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "type": "basic",

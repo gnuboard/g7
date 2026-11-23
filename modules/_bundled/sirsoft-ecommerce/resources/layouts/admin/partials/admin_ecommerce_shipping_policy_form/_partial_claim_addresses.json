@@ -361,7 +361,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:hover:text-red-600 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-red-400 ecommerce:self-start ecommerce:underline",
+                                "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:hover:text-red-600 ecommerce:dark:hover:text-red-400 ecommerce:self-start ecommerce:underline",
                                 "disabled": "{{_computed.isReadOnly || (!!route.id && _local.claimAddresses?._loaded !== true)}}"
                             },
                             "children": [
@@ -643,7 +643,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:hover:text-red-600 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-red-400 ecommerce:self-start ecommerce:underline",
+                                "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:hover:text-red-600 ecommerce:dark:hover:text-red-400 ecommerce:self-start ecommerce:underline",
                                 "disabled": "{{_computed.isReadOnly || (!!route.id && _local.claimAddresses?._loaded !== true)}}"
                             },
                             "children": [

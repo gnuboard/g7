@@ -10,6 +10,9 @@ describe('LayoutFileList 컴포넌트', () => {
   ];
 
   describe('기본 렌더링', () => {
+    /**
+     * @effects layout_file_list_renders_file_names
+     */
     it('파일 목록이 렌더링된다', () => {
       const onSelect = vi.fn();
       render(<LayoutFileList files={mockFiles} onSelect={onSelect} />);
@@ -19,6 +22,9 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(screen.getByText('layout3.json')).toBeTruthy();
     });
 
+    /**
+     * @effects layout_file_list_formats_updated_at
+     */
     it('updated_at이 포맷팅되어 표시된다', () => {
       const onSelect = vi.fn();
       const { container } = render(<LayoutFileList files={mockFiles} onSelect={onSelect} />);
@@ -28,6 +34,9 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(dateElements.length).toBeGreaterThan(0);
     });
 
+    /**
+     * @effects layout_editor_composites_expose_aria_roles
+     */
     it('role="listbox" 속성이 있다', () => {
       const onSelect = vi.fn();
       const { container } = render(<LayoutFileList files={mockFiles} onSelect={onSelect} />);
@@ -35,6 +44,9 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(listboxElement).toBeTruthy();
     });
 
+    /**
+     * @effects layout_editor_composites_expose_aria_roles
+     */
     it('aria-label이 있다', () => {
       const onSelect = vi.fn();
       const { container } = render(<LayoutFileList files={mockFiles} onSelect={onSelect} />);
@@ -44,6 +56,9 @@ describe('LayoutFileList 컴포넌트', () => {
   });
 
   describe('파일 항목 렌더링', () => {
+    /**
+     * @effects layout_editor_composites_expose_aria_roles
+     */
     it('각 파일 항목은 role="option" 속성이 있다', () => {
       const onSelect = vi.fn();
       const { container } = render(<LayoutFileList files={mockFiles} onSelect={onSelect} />);
@@ -51,6 +66,9 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(optionElements.length).toBe(mockFiles.length);
     });
 
+    /**
+     * @effects layout_editor_composites_expose_aria_roles
+     */
     it('각 파일 항목은 tabIndex=0이 설정된다', () => {
       const onSelect = vi.fn();
       const { container } = render(<LayoutFileList files={mockFiles} onSelect={onSelect} />);
@@ -62,6 +80,9 @@ describe('LayoutFileList 컴포넌트', () => {
   });
 
   describe('선택된 파일 하이라이트', () => {
+    /**
+     * @effects layout_editor_highlights_selected_items
+     */
     it('selectedId와 일치하는 항목이 하이라이트된다', () => {
       const onSelect = vi.fn();
       const { container } = render(
@@ -77,6 +98,9 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(selectedElement?.textContent).toContain('layout2.json');
     });
 
+    /**
+     * @effects layout_editor_highlights_selected_items
+     */
     it('선택된 항목은 aria-selected="true"가 설정된다', () => {
       const onSelect = vi.fn();
       const { container } = render(
@@ -87,6 +111,9 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(selectedElement).toBeTruthy();
     });
 
+    /**
+     * @effects layout_editor_highlights_selected_items
+     */
     it('선택되지 않은 항목은 aria-selected="false"가 설정된다', () => {
       const onSelect = vi.fn();
       const { container } = render(
@@ -97,6 +124,9 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(notSelectedElements.length).toBe(mockFiles.length - 1);
     });
 
+    /**
+     * @effects layout_editor_highlights_selected_items
+     */
     it('선택된 항목은 bg-blue-100 클래스를 갖는다', () => {
       const onSelect = vi.fn();
       const { container } = render(
@@ -107,6 +137,9 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(selectedElement?.className).toContain('bg-blue-100');
     });
 
+    /**
+     * @effects layout_editor_highlights_selected_items
+     */
     it('선택된 항목은 border-l-4 클래스를 갖는다', () => {
       const onSelect = vi.fn();
       const { container } = render(
@@ -120,6 +153,9 @@ describe('LayoutFileList 컴포넌트', () => {
   });
 
   describe('onSelect 콜백', () => {
+    /**
+     * @effects layout_file_list_click_reports_file_id
+     */
     it('파일 클릭 시 onSelect가 호출된다', () => {
       const onSelect = vi.fn();
       const { container } = render(<LayoutFileList files={mockFiles} onSelect={onSelect} />);
@@ -132,6 +168,9 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(onSelect).toHaveBeenCalledWith(1);
     });
 
+    /**
+     * @effects layout_file_list_click_reports_file_id
+     */
     it('다른 파일 클릭 시 올바른 id로 onSelect가 호출된다', () => {
       const onSelect = vi.fn();
       const { container } = render(<LayoutFileList files={mockFiles} onSelect={onSelect} />);
@@ -143,6 +182,9 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(onSelect).toHaveBeenCalledWith(2);
     });
 
+    /**
+     * @effects layout_file_list_selects_with_enter_key
+     */
     it('Enter 키 입력 시 onSelect가 호출된다', () => {
       const onSelect = vi.fn();
       const { container } = render(<LayoutFileList files={mockFiles} onSelect={onSelect} />);
@@ -154,6 +196,9 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(onSelect).toHaveBeenCalledWith(1);
     });
 
+    /**
+     * @effects layout_file_list_selects_with_space_key
+     */
     it('Space 키 입력 시 onSelect가 호출된다', () => {
       const onSelect = vi.fn();
       const { container } = render(<LayoutFileList files={mockFiles} onSelect={onSelect} />);
@@ -165,6 +210,9 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(onSelect).toHaveBeenCalledWith(1);
     });
 
+    /**
+     * @effects layout_file_list_ignores_other_keys
+     */
     it('다른 키 입력 시 onSelect가 호출되지 않는다', () => {
       const onSelect = vi.fn();
       const { container } = render(<LayoutFileList files={mockFiles} onSelect={onSelect} />);
@@ -177,6 +225,9 @@ describe('LayoutFileList 컴포넌트', () => {
   });
 
   describe('빈 배열 처리', () => {
+    /**
+     * @effects layout_editor_tolerates_empty_or_malformed_data
+     */
     it('빈 배열일 때 안내 메시지가 표시된다', () => {
       const onSelect = vi.fn();
       render(<LayoutFileList files={[]} onSelect={onSelect} />);
@@ -184,6 +235,9 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(screen.getByText('파일이 없습니다.')).toBeTruthy();
     });
 
+    /**
+     * @effects layout_editor_tolerates_empty_or_malformed_data
+     */
     it('빈 배열일 때 listbox가 렌더링되지 않는다', () => {
       const onSelect = vi.fn();
       const { container } = render(<LayoutFileList files={[]} onSelect={onSelect} />);
@@ -192,17 +246,24 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(listboxElement).toBeNull();
     });
 
+    /**
+     * @effects layout_editor_tolerates_empty_or_malformed_data
+     */
     it('빈 배열일 때 안내 메시지는 회색 텍스트이다', () => {
       const onSelect = vi.fn();
       const { container } = render(<LayoutFileList files={[]} onSelect={onSelect} />);
 
-      const messageElement = container.querySelector('.text-gray-500');
+      // 회색 보조 글자는 의미 클래스 text-muted 가 준다 (#399)
+      const messageElement = container.querySelector('.text-muted');
       expect(messageElement).toBeTruthy();
       expect(messageElement?.textContent).toBe('파일이 없습니다.');
     });
   });
 
   describe('사용자 정의 Props', () => {
+    /**
+     * @effects layout_file_list_keeps_caller_class_name
+     */
     it('사용자 정의 클래스가 적용된다', () => {
       const onSelect = vi.fn();
       const { container } = render(
@@ -216,6 +277,9 @@ describe('LayoutFileList 컴포넌트', () => {
   });
 
   describe('날짜 포맷팅', () => {
+    /**
+     * @effects layout_file_list_formats_updated_at
+     */
     it('ISO 형식 날짜가 YYYY-MM-DD HH:MM 형식으로 변환된다', () => {
       const onSelect = vi.fn();
       const files: LayoutFileItem[] = [
@@ -233,6 +297,9 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(dateText).toMatch(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}/);
     });
 
+    /**
+     * @effects layout_editor_tolerates_empty_or_malformed_data
+     */
     it('잘못된 날짜 형식은 원본 문자열을 반환한다', () => {
       const onSelect = vi.fn();
       const files: LayoutFileItem[] = [
@@ -247,6 +314,9 @@ describe('LayoutFileList 컴포넌트', () => {
   });
 
   describe('복합 시나리오', () => {
+    /**
+     * @effects layout_file_list_click_reports_file_id
+     */
     it('여러 파일 중 하나를 선택하고 다시 클릭할 수 있다', () => {
       const onSelect = vi.fn();
       const { container } = render(
@@ -266,6 +336,9 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(onSelect).toHaveBeenCalledTimes(2);
     });
 
+    /**
+     * @effects layout_file_list_click_reports_file_id
+     */
     it('같은 파일을 여러 번 클릭할 수 있다', () => {
       const onSelect = vi.fn();
       const { container } = render(
@@ -284,6 +357,9 @@ describe('LayoutFileList 컴포넌트', () => {
   });
 
   describe('다크 모드 클래스', () => {
+    /**
+     * @effects layout_file_list_pairs_dark_mode_classes
+     */
     it('선택된 항목은 다크 모드 클래스를 갖는다', () => {
       const onSelect = vi.fn();
       const { container } = render(
@@ -294,6 +370,9 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(selectedElement?.className).toContain('dark:bg-blue-900');
     });
 
+    /**
+     * @effects layout_file_list_pairs_dark_mode_classes
+     */
     it('선택되지 않은 항목은 다크 모드 hover 클래스를 갖는다', () => {
       const onSelect = vi.fn();
       const { container } = render(
@@ -304,16 +383,24 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(notSelectedElement?.className).toContain('dark:hover:bg-gray-800');
     });
 
-    it('빈 목록 안내 메시지는 다크 모드 클래스를 갖는다', () => {
+    /**
+     * @effects layout_file_list_pairs_dark_mode_classes
+     */
+    it('빈 목록 안내 메시지는 다크 모드 색을 함께 주는 text-muted 를 갖는다', () => {
       const onSelect = vi.fn();
       const { container } = render(<LayoutFileList files={[]} onSelect={onSelect} />);
 
-      const messageElement = container.querySelector('.text-gray-500');
-      expect(messageElement?.className).toContain('dark:text-gray-400');
+      // .text-muted = gray-500 / 다크 gray-400 — 인라인 짝(text-gray-500 dark:text-gray-400)을 따로 두지 않는다 (#399)
+      const messageElement = container.querySelector('.text-muted');
+      expect(messageElement?.textContent).toBe('파일이 없습니다.');
+      expect(messageElement?.className).not.toContain('text-gray-500');
     });
   });
 
   describe('문자열 ID 지원', () => {
+    /**
+     * @effects layout_file_list_accepts_string_ids
+     */
     it('문자열 ID를 사용하는 파일 목록이 렌더링된다', () => {
       const onSelect = vi.fn();
       const filesWithStringId: LayoutFileItem[] = [
@@ -327,6 +414,9 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(screen.getByText('layout2.json')).toBeTruthy();
     });
 
+    /**
+     * @effects layout_file_list_accepts_string_ids
+     */
     it('문자열 ID로 선택이 동작한다', () => {
       const onSelect = vi.fn();
       const filesWithStringId: LayoutFileItem[] = [
@@ -342,6 +432,9 @@ describe('LayoutFileList 컴포넌트', () => {
       expect(selectedElement?.textContent).toContain('layout2.json');
     });
 
+    /**
+     * @effects layout_file_list_accepts_string_ids
+     */
     it('문자열 ID로 onSelect 콜백이 호출된다', () => {
       const onSelect = vi.fn();
       const filesWithStringId: LayoutFileItem[] = [

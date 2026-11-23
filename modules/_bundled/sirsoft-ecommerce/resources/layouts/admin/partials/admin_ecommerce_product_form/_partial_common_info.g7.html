@@ -8,9 +8,9 @@
         <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.commonInfoExpanded="{{!_local.ui.commonInfoExpanded}}"/>
       </on>
-      <icon name="file-alt" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+      <icon name="file-alt" class="ecommerce-text-muted"/>
       <span class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.product.sections.common_info</span>
-      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.commonInfoExpanded !== false ? 'ecommerce:rotate-180' : ''}}"/>
+      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.commonInfoExpanded !== false ? 'ecommerce:rotate-180' : ''}}"/>
     </button>
     <div data-ref="common_info_body" data-if="{{_local.ui.commonInfoExpanded !== false}}" class="ecommerce-row-stack">
       <div data-ref="common_info_template_header" class="ecommerce-flex-between">
@@ -84,7 +84,7 @@
             <set-state target="local" ui.commonInfoDetailExpanded="{{!_local.ui.commonInfoDetailExpanded}}"/>
           </on>
           <span class="ecommerce-text-primary ecommerce:font-medium">{{$localized((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.name)}}</span>
-          <icon name="chevron-down" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.commonInfoDetailExpanded ? 'ecommerce:rotate-180' : ''}}"/>
+          <icon name="chevron-down" class="ecommerce:text-xl ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.commonInfoDetailExpanded ? 'ecommerce:rotate-180' : ''}}"/>
         </button>
         <div data-ref="common_info_detail_body" data-if="{{_local.ui.commonInfoDetailExpanded}}" class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
           <multilingual-tab-panel data-type="composite" data-ref="common_info_locale_tabs" variant="underline" class="ecommerce:px-4 ecommerce:pt-4" locales="{{Object.keys((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content ?? {}).filter(k => k &amp;&amp; (common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[k])}}">
@@ -108,7 +108,7 @@
         <icon name="circle-exclamation" class="ecommerce:text-base"/>
         <span>$t:sirsoft-ecommerce.admin.product.selector_forbidden.common_infos</span>
       </div>
-      <div data-ref="common_info_empty_state" data-if="{{common_infos !== undefined &amp;&amp; (common_infos?.data?.unavailable !== true &amp;&amp; !(common_infos?.data?.data ?? []).length)}}" class="ecommerce:text-center ecommerce:py-8 ecommerce:text-gray-500 ecommerce:dark:text-gray-400">
+      <div data-ref="common_info_empty_state" data-if="{{common_infos !== undefined &amp;&amp; (common_infos?.data?.unavailable !== true &amp;&amp; !(common_infos?.data?.data ?? []).length)}}" class="ecommerce:text-center ecommerce:py-8 ecommerce-text-muted">
         <p class="ecommerce:text-sm">$t:sirsoft-ecommerce.admin.product.common_info.empty</p>
       </div>
     </div>

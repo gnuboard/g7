@@ -38,7 +38,7 @@
                     ],
                     "props": {
                         "href": "/admin/ecommerce/mileage-transactions",
-                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors"
+                        "className": "ecommerce:flex ecommerce-btn ecommerce-btn-secondary ecommerce:gap-1.5 ecommerce:px-3"
                     },
                     "children": [
                         {
@@ -81,7 +81,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5"
+                                "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.basic.enabled_hint"
                         }
@@ -157,7 +157,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.['mileage.default_earn_rate']}}",
                     "props": {
-                        "className": "ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:text-xs ecommerce:mt-1 ecommerce:block"
+                        "className": "ecommerce-form-error"
                     },
                     "text": "{{_local.errors?.['mileage.default_earn_rate']?.[0] ?? ''}}"
                 },
@@ -165,7 +165,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-1"
+                        "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:mt-1"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_rate_hint"
                 }
@@ -253,7 +253,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-1"
+                        "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:mt-1"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_trigger_hint"
                 }
@@ -291,7 +291,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5"
+                                        "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.mileage_settings.policy.signup_earn_hint"
                                 }
@@ -345,7 +345,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.['mileage.signup_earn_amount']}}",
                     "props": {
-                        "className": "ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:text-xs ecommerce:mt-1 ecommerce:block"
+                        "className": "ecommerce-form-error"
                     },
                     "text": "{{_local.errors?.['mileage.signup_earn_amount']?.[0] ?? ''}}"
                 }
@@ -376,7 +376,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5"
+                                "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.policy.no_earn_when_points_used_hint"
                         }
@@ -425,7 +425,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5"
+                                        "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.mileage_settings.policy.min_product_total_for_use_hint"
                                 }
@@ -479,7 +479,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.['mileage.min_product_total_for_use']}}",
                     "props": {
-                        "className": "ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:text-xs ecommerce:mt-1 ecommerce:block"
+                        "className": "ecommerce-form-error"
                     },
                     "text": "{{_local.errors?.['mileage.min_product_total_for_use']?.[0] ?? ''}}"
                 }

@@ -397,7 +397,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 }
 ```
 
-화면 폭에 따른 분기(데스크톱에서 항상 펼침)는 Tailwind 반응형 접두(`lg:` 등) 대신 `responsive` 구간 값으로 하고, 구간 값이 `className` 을 통째로 바꾸므로 배경과 `dark:` 짝도 다시 적는다([반응형 레이아웃](responsive-layout.md)).
+화면 폭에 따른 분기(데스크톱에서 항상 펼침)는 Tailwind 반응형 접두(`lg:` 등) 대신 `responsive` 구간 값으로 한다. 이 예시는 데스크톱에서 없애야 할 토큰이 있어 구간 `class` 로 `className` 을 통째로 바꾸므로 배경과 `dark:` 짝도 다시 적는다. 기본 클래스 일부만 바꿀 때는 `class-merge` 로 바뀐 클래스만 덧붙인다([반응형 레이아웃](responsive-layout.md#바뀐-클래스만-덧붙이기-class-merge)).
 
 ---
 

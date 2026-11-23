@@ -10,7 +10,7 @@
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
 | [백엔드](backend/) | 50개 | 정상 |
-| [프론트엔드](frontend/) | 50개 | 정상 |
+| [프론트엔드](frontend/) | 51개 | 정상 |
 | [확장 시스템](extension/) | 46개 | 정상 |
 | 공통 | 23개 | 정상 |
 | [절대 금지 패턴](rules/) | 0개 | 정상 |
@@ -197,7 +197,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [user-overrides.md](backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) |
 | [validation.md](backend/validation.md) | 검증 (Validation) |
 
-### 프론트엔드 (50개)
+### 프론트엔드 (51개)
 
 | 문서 | 제목 |
 |------|------|
@@ -244,6 +244,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [responsive-layout.md](frontend/responsive-layout.md) | 반응형 레이아웃 개발 (engine-v1.1.0+) |
 | [scroll-restoration.md](frontend/scroll-restoration.md) | 뒤로/앞으로 가기·새로고침 스크롤 복원 |
 | [security.md](frontend/security.md) | 보안 및 검증 |
+| [semantic-classes.md](frontend/semantic-classes.md) | 레이아웃 의미 클래스 우선 |
 | [state-management-advanced.md](frontend/state-management-advanced.md) | 상태 관리 - 고급 기능 |
 | [state-management-forms.md](frontend/state-management-forms.md) | 상태 관리 - 폼 자동 바인딩 및 setState |
 | [state-management.md](frontend/state-management.md) | 전역 상태 관리 |

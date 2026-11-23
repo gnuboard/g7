@@ -382,7 +382,7 @@
                     },
                     "props": {
                         "data-testid": "my-report-row-{{report.id}}",
-                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 {{report.target_deleted ? 'opacity-75' : ''}}"
+                        "className": "card-plain p-4 {{report.target_deleted ? 'opacity-75' : ''}}"
                     },
                     "children": [
                         {
@@ -581,7 +581,7 @@
                     "if": "{{myReports !== undefined && (myReports?.data?.data ?? []).length === 0}}",
                     "props": {
                         "data-testid": "my-reports-empty",
-                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center"
+                        "className": "card-plain p-8 text-center"
                     },
                     "children": [
                         {
@@ -599,7 +599,7 @@
                             "name": "P",
                             "if": "{{!(!!_global.myReportsSearchApplied || !!_global.myReportsBoard || !!_global.myReportsStatus || !!_global.myReportsTargetType)}}",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:mypage.board_activities.reports.empty"
                         },
@@ -608,7 +608,7 @@
                             "name": "P",
                             "if": "{{!!_global.myReportsSearchApplied || !!_global.myReportsBoard || !!_global.myReportsStatus || !!_global.myReportsTargetType}}",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:board.no_search_results"
                         }

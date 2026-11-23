@@ -9,7 +9,7 @@
         <responsive on="portable" class="text-lg font-semibold text-gray-900 dark:text-white"/>
         $t:mypage.scrap.title
       </h2>
-      <span class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.scrap.count|count={{scrap.data.pagination.total ?? 0}}</span>
+      <span class="text-sm text-muted">$t:mypage.scrap.count|count={{scrap.data.pagination.total ?? 0}}</span>
     </div>
     <!-- 검색 영역 — 검색 대상 셀렉트 + 검색어 + 검색/초기화 버튼. 셀렉트는 데이터소스 endpoint 의 search_field 로 바로 이어진다(제목만/내용만을 백엔드가 갈라 준다) -->
     <div class="flex gap-2">
@@ -40,7 +40,7 @@
         </on>
       </input>
       <!-- 검색 버튼 — 클릭한 버튼에만 스피너 표시(_local.scrapSearching). 두 버튼 모두 disabled 는 어느 쪽이든 진행 중이면 함께 잠가 중복 클릭을 막되, 스피너/텍스트 전환은 각자의 상태만 반영해 눌리지 않은 버튼까지 로딩으로 보이지 않게 한다. refetchDataSource 완료 후에야 다음 setState 로 로딩을 끈다(sequence 는 각 액션을 순차 await) -->
-      <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{(_local.scrapSearching || _local.scrapResetting) ?? false}}">
+      <button type="button" class="btn btn-primary text-sm flex gap-2" disabled="{{(_local.scrapSearching || _local.scrapResetting) ?? false}}">
         <on type="click">
           <!-- 검색 결과는 다른 행 집합이다 — 이전 선택을 들고 가면 화면에 없는 행이 선택된 채로 일괄 해제에 실린다 -->
           <set-state target="local" :scrapSearching="true" :scrapPage="1" :scrapSelectedIds="[]" scrapSearchApplied="{{_local.scrapSearch ?? ''}}"/>
@@ -53,7 +53,7 @@
         <span data-if="{{_local.scrapSearching}}">$t:common.processing</span>
       </button>
       <!-- 초기화 버튼 — 검색 버튼과 동일한 로딩 표시 UX 이나, 자기 자신만 스피너가 도는 별도 상태(_local.scrapResetting) 사용 -->
-      <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{(_local.scrapSearching || _local.scrapResetting) ?? false}}">
+      <button type="button" class="btn btn-outline text-sm flex gap-2" disabled="{{(_local.scrapSearching || _local.scrapResetting) ?? false}}">
         <on type="click">
           <!-- 검색어·검색 대상·선택을 한꺼번에 처음 상태로 되돌린다 -->
           <set-state target="local" :scrapResetting="true" scrapSearch="" scrapSearchApplied="" scrapSearchField="title_content" :scrapPage="1" :scrapSelectedIds="[]"/>
@@ -70,7 +70,7 @@
     <div data-ref="scrap_bulk_bar" data-if="{{(scrap?.data?.data ?? []).length > 0}}" class="flex items-center gap-3">
       <!-- 전체 선택 라벨은 모바일 전용이다 — PC 는 표 머리글의 체크박스가 같은 일을 한다 -->
       <label class="hidden items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
-        <responsive on="portable" class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer"/>
+        <responsive on="portable" class-merge="flex"/>
         <input data-testid="scrap-select-all-m" type="checkbox" aria-label="$t:common.select_all" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500" checked="{{(scrap?.data?.data ?? []).length > 0 &amp;&amp; (scrap?.data?.data ?? []).every(r => (_local.scrapSelectedIds ?? []).includes(r.id))}}">
           <on type="change">
             <!-- 전체 선택(모바일) — 체크 상태에 따라 이 쪽 전부를 선택하거나 비운다 -->
@@ -79,7 +79,7 @@
         </input>
         <span>$t:mypage.scrap.select_all</span>
       </label>
-      <span data-ref="scrap_selected_count" class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.scrap.selected_count|count={{(_local.scrapSelectedIds ?? []).length}}</span>
+      <span data-ref="scrap_selected_count" class="text-sm text-muted">$t:mypage.scrap.selected_count|count={{(_local.scrapSelectedIds ?? []).length}}</span>
       <button data-ref="scrap_bulk_delete_button" data-testid="scrap-bulk-delete-btn" type="button" class="ml-auto px-3 py-1.5 text-xs font-medium rounded-md border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap" disabled="{{!(_local.scrapSelectedIds ?? []).length}}">
         <on type="click">
           <open-modal target="scrap_bulk_delete_modal"/>
@@ -95,7 +95,7 @@
         <table class="w-full text-sm">
           <thead class="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
             <tr>
-              <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 w-10">
+              <th class="px-4 py-3 text-left font-medium text-muted w-10">
                 <!-- 전체 선택 — 「이 페이지의 행이 모두 선택돼 있는가」로 체크 상태를 정한다(every). 끄면 전부 비운다 -->
                 <input data-testid="scrap-select-all" type="checkbox" aria-label="$t:common.select_all" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500" checked="{{(scrap?.data?.data ?? []).length > 0 &amp;&amp; (scrap?.data?.data ?? []).every(r => (_local.scrapSelectedIds ?? []).includes(r.id))}}">
                   <on type="change">
@@ -103,12 +103,12 @@
                   </on>
                 </input>
               </th>
-              <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 w-32">$t:mypage.scrap.table.board</th>
-              <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">$t:mypage.scrap.table.title</th>
-              <th class="px-4 py-3 text-center font-medium text-gray-500 dark:text-gray-400 w-24">$t:mypage.scrap.table.author</th>
-              <th class="px-4 py-3 text-center font-medium text-gray-500 dark:text-gray-400 w-20">$t:mypage.scrap.table.comments</th>
-              <th class="px-4 py-3 text-center font-medium text-gray-500 dark:text-gray-400 w-24">$t:mypage.scrap.table.scrapped_at</th>
-              <th class="px-4 py-3 text-center font-medium text-gray-500 dark:text-gray-400 w-24">$t:mypage.scrap.table.manage</th>
+              <th class="px-4 py-3 text-left font-medium text-muted w-32">$t:mypage.scrap.table.board</th>
+              <th class="px-4 py-3 text-left font-medium text-muted">$t:mypage.scrap.table.title</th>
+              <th class="px-4 py-3 text-center font-medium text-muted w-24">$t:mypage.scrap.table.author</th>
+              <th class="px-4 py-3 text-center font-medium text-muted w-20">$t:mypage.scrap.table.comments</th>
+              <th class="px-4 py-3 text-center font-medium text-muted w-24">$t:mypage.scrap.table.scrapped_at</th>
+              <th class="px-4 py-3 text-center font-medium text-muted w-24">$t:mypage.scrap.table.manage</th>
             </tr>
           </thead>
           <tbody data-each="item in {{scrap.data.data ?? []}}">
@@ -246,7 +246,7 @@
       <!-- 스크랩 카드 목록 (모바일) — PC 숨김. 표 컬럼이 좁은 화면에 안 맞아 카드형으로 별도 유지. PC 표와 모바일 카드가 DOM 에 동시에 존재하므로 data-testid 에 -m- 접미를 둔다(Playwright strict 모드 충돌 방지) -->
       <div data-if="{{scrap.data.data &amp;&amp; scrap.data.data.length > 0}}" class="hidden">
         <responsive on="portable" class="space-y-3"/>
-        <div data-each="item in {{scrap.data.data ?? []}}" data-testid="scrap-card-m-{{item.id}}" class="flex items-start gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+        <div data-each="item in {{scrap.data.data ?? []}}" data-testid="scrap-card-m-{{item.id}}" class="flex items-start gap-3 card-plain p-3">
           <!-- 카드 선택 체크박스 — 「내 반응」·「알림」 카드처럼 왼쪽 칸에 두고 본문은 오른쪽 칸(한 줄을 따로 쓰지 않는다). 카드 본문(클릭 시 원글 이동) **밖**에 둔다. 안에 두면 체크하려다 원글로 넘어간다 -->
           <div class="shrink-0 pt-1">
             <input data-testid="scrap-check-m-{{item.id}}" type="checkbox" aria-label="$t:common.select_item|name={{item.is_deleted ? $t('mypage.scrap.deleted_post') : (item.title ?? '')}}" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500" checked="{{(_local.scrapSelectedIds ?? []).includes(item.id)}}">
@@ -270,10 +270,10 @@
                 <!-- 확장 자리 — 모바일 카드의 글 배지 자리(#149). PC 표와 같은 이름이라 조각이 두 번 렌더되고 화면 폭에 따라 한쪽만 보인다 -->
                 <extension-point name="board_post_row_badges" class="contents" data-extension-point="board_post_row_badges" post="{{item}}" postId="{{item.post_id}}" boardSlug="{{item.board_slug}}" context="mypage_scrap"/>
               </div>
-              <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+              <div class="flex items-center gap-3 text-xs text-muted">
                 <span>{{item.author_name ?? ''}}</span>
                 <span>$t:mypage.scrap.comments|count={{item.comments_count ?? 0}}</span>
-                <span class="text-gray-500 dark:text-gray-400">{{item.scrapped_at ?? ''}}</span>
+                <span class="text-muted">{{item.scrapped_at ?? ''}}</span>
               </div>
             </a>
             <!-- 스크랩이 중지된 게시판의 카드 — 톤다운 + 배지, 카드 클릭 이동 없음 -->
@@ -295,10 +295,10 @@
               <div class="flex items-center gap-2 mb-1">
                 <span data-if="{{!item.board_deleted}}" class="shrink-0 truncate max-w-32 text-xs font-semibold px-2 py-1 rounded text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700">{{item.board_name ?? ''}}</span>
                 <span data-if="{{item.board_deleted}}" data-testid="scrap-board-deleted-m-{{item.id}}" class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700">$t:mypage.scrap.board_deleted_flag</span>
-                <h3 class="shrink-0 text-sm font-medium text-gray-500 dark:text-gray-400 italic">$t:mypage.scrap.deleted_post</h3>
+                <h3 class="shrink-0 text-sm font-medium text-muted italic">$t:mypage.scrap.deleted_post</h3>
                 <span class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900">$t:mypage.scrap.deleted_flag</span>
               </div>
-              <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+              <div class="flex items-center gap-3 text-xs text-muted">
                 <span>{{item.author_name ?? ''}}</span>
                 <span>{{item.scrapped_at ?? ''}}</span>
               </div>
@@ -326,12 +326,12 @@
         </div>
       </div>
       <!-- 스크랩 목록 없음 (항상 노출 탭 — 빈 상태 안내, 확정 03) — 마이페이지 마일리지 탭과 동일한 카드 박스로 감싼다 -->
-      <div data-if="{{scrap !== undefined &amp;&amp; (!scrap.data.data || scrap.data.data.length === 0)}}" class="flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
-        <responsive on="portable" class="flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center"/>
+      <div data-if="{{scrap !== undefined &amp;&amp; (!scrap.data.data || scrap.data.data.length === 0)}}" class="flex flex-col items-center justify-center card-plain p-8 text-center">
+        <responsive on="portable" class-merge="p-6"/>
         <icon name="bookmark" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
         <!-- 검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다 -->
-        <p data-if="{{!(!!_local.scrapSearchApplied)}}" class="text-gray-500 dark:text-gray-400">$t:mypage.scrap.empty</p>
-        <p data-if="{{!!_local.scrapSearchApplied}}" class="text-gray-500 dark:text-gray-400">$t:board.no_search_results</p>
+        <p data-if="{{!(!!_local.scrapSearchApplied)}}" class="text-muted">$t:mypage.scrap.empty</p>
+        <p data-if="{{!!_local.scrapSearchApplied}}" class="text-muted">$t:board.no_search_results</p>
       </div>
       <!-- 페이지네이션 — 마이페이지 문의내역 탭과 동일하게 항상 노출 (1페이지뿐이어도 표시). 총 건수가 상한에 걸리면 last_page 가 null 로 온다 — 그때는 has_more_pages 로 다음 이동을 끝까지 열어 둔다 -->
       <pagination data-type="composite" currentPage="{{scrap.data.pagination.current_page ?? 1}}" totalPages="{{scrap.data.pagination.last_page ?? null}}" hasMorePages="{{scrap.data.pagination.has_more_pages ?? false}}" class="pt-4 flex justify-center">

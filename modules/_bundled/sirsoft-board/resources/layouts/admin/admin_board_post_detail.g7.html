@@ -79,7 +79,7 @@
         <p data-if="{{_global.modal_data?.type !== 'post'}}" class="board-text-label-subtle">{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_comment' : '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_reply'}}</p>
       </div>
       <footer>
-        <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
+        <button type="button" class="board-btn board-btn-secondary">
           <on type="click">
             <close-modal/>
           </on>
@@ -147,7 +147,7 @@
         </div>
       </div>
       <footer>
-        <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
+        <button type="button" class="board-btn board-btn-secondary">
           <on type="click">
             <close-modal/>
           </on>
@@ -190,7 +190,7 @@
         <p class="board:text-gray-700 board:dark:text-gray-300 board:mb-4">{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.blind_confirm'}}</p>
         <label class="board-form-label">
           <span>$t:sirsoft-board.admin.posts.modals.blind_reason_label</span>
-          <span class="board:text-gray-500 board:dark:text-gray-400 board:ml-1">$t:sirsoft-board.common.optional</span>
+          <span class="board-text-muted board:ml-1">$t:sirsoft-board.common.optional</span>
         </label>
         <textarea id="blind_reason" :rows="3" placeholder="$t:sirsoft-board.admin.posts.modals.blind_reason_placeholder" class="board:w-full board:px-3 board:py-2 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800 board:focus:ring-2 board:focus:ring-blue-500 board:dark:focus:ring-blue-400">
           <on type="change">
@@ -200,7 +200,7 @@
         </textarea>
       </div>
       <footer>
-        <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
+        <button type="button" class="board-btn board-btn-secondary">
           <on type="click">
             <close-modal/>
           </on>
@@ -239,7 +239,7 @@
         <p class="board:text-gray-700 board:dark:text-gray-300 board:mb-4">{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.restore_confirm'}}</p>
       </div>
       <footer>
-        <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
+        <button type="button" class="board-btn board-btn-secondary">
           <on type="click">
             <close-modal/>
           </on>

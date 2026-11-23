@@ -160,7 +160,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                "className": "ecommerce:text-xs ecommerce-text-muted"
                                             },
                                             "text": "{{product.changes}}"
                                         }
@@ -220,7 +220,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                "className": "ecommerce:text-xs ecommerce-text-muted"
                                             },
                                             "text": "{{option.changes}}"
                                         }

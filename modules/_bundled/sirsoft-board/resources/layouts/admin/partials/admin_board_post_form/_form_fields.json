@@ -28,9 +28,6 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{route?.id && form_meta?.data?.author}}",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -125,9 +122,6 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{form_meta?.data?.board?.user_abilities?.can_write_notice || form_meta?.data?.board?.secret_mode !== 'disabled'}}",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -324,9 +318,7 @@
                             "name": "Select",
                             "responsive": {
                                 "640-": {
-                                    "props": {
-                                        "className": "board:block board:w-64 board:rounded-lg board:border board:border-gray-300 board:dark:border-gray-600 board:bg-white board:dark:bg-gray-800 board:px-3 board:py-2 board:focus:border-blue-500 board:focus:outline-none board:focus:ring-1 board:focus:ring-blue-500 board:dark:focus:ring-blue-400 board:disabled:opacity-50 board:disabled:cursor-not-allowed"
-                                    }
+                                    "classMerge": "board:w-64"
                                 }
                             },
                             "props": {
@@ -351,9 +343,6 @@
                             "id": "title_section",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",

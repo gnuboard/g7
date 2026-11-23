@@ -85,7 +85,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "className": "ecommerce-flex-center ecommerce-btn ecommerce-btn-primary",
                     "disabled": "{{(!$parent._local.batchOrderStatus && !$parent._local.batchCarrierId && !$parent._local.batchTrackingNumber) || (($parent._local.batchOrderStatus === 'shipping_ready' || $parent._local.batchOrderStatus === 'shipping' || $parent._local.batchOrderStatus === 'delivered') && (!$parent._local.batchCarrierId || !$parent._local.batchTrackingNumber)) || _global.manualPaidPreviewLoading === true || !!_global.manualPaidPreviewError || (_global.manualPaidPreview?.orders?.[0]?.restoration?.coupon_conflicts ?? []).length > 0 || _global.isProcessing}}"
                 },
                 "children": [
@@ -222,9 +222,7 @@
                                             },
                                             "responsive": {
                                                 "portable": {
-                                                    "props": {
-                                                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-2 ecommerce:px-3 ecommerce:py-2 ecommerce:items-center"
-                                                    }
+                                                    "classMerge": "ecommerce:grid-cols-1"
                                                 }
                                             },
                                             "props": {
@@ -453,7 +451,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:w-28 ecommerce:flex-shrink-0"
+                                                "className": "ecommerce-text-muted ecommerce:w-28 ecommerce:flex-shrink-0"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.status_label"
                                         },
@@ -479,7 +477,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:w-28 ecommerce:flex-shrink-0"
+                                                "className": "ecommerce-text-muted ecommerce:w-28 ecommerce:flex-shrink-0"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.carrier_label"
                                         },
@@ -505,7 +503,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:w-28 ecommerce:flex-shrink-0"
+                                                "className": "ecommerce-text-muted ecommerce:w-28 ecommerce:flex-shrink-0"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.tracking_label"
                                         },

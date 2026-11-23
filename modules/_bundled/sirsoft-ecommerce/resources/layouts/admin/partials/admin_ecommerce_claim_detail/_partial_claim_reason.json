@@ -180,7 +180,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-2"
+                                "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:mb-2"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.images_hint|count={{claim?.data?.attachment_settings?.max_images ?? 0}}|max={{claim?.data?.attachment_settings?.max_images ?? 0}}&size={{(claim?.data?.attachment_settings?.image_max_size_mb ?? '-') + 'MB'}}&types={{(claim?.data?.attachment_settings?.allowed_extensions ?? []).join(', ')}}"
                         },
@@ -357,7 +357,7 @@
                                             "name": "Span",
                                             "if": "{{!!originImage.uploader_name}}",
                                             "props": {
-                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                "className": "ecommerce-text-muted"
                                             },
                                             "text": "{{originImage.uploader_name ?? ''}}"
                                         },
@@ -366,7 +366,7 @@
                                             "name": "Span",
                                             "if": "{{!!originImage.created_at}}",
                                             "props": {
-                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                "className": "ecommerce-text-muted"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.image_origin_uploaded_at|at={{originImage.created_at ?? ''}}"
                                         }
@@ -589,7 +589,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-1"
+                                "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:mt-1"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.reactivated_hint"
                         }

@@ -4,42 +4,42 @@
     <h3 data-ref="section_post" class="board-card-title">$t:sirsoft-board.admin.form.tabs.post</h3>
     <div data-ref="section_post_fields" class="board-row-stack">
       <div data-ref="post_title_length_group" class="board-grid-2col">
-        <div data-ref="min_title_length_field" class="">
+        <div data-ref="min_title_length_field">
           <label data-ref="min_title_length_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.min_title_length.label</span>
           </label>
-          <input data-ref="min_title_length_input" type="number" name="min_title_length" min="{{_local?.form?._meta?.limits?.min_title_length_min ?? 0}}" max="{{_local?.form?._meta?.limits?.min_title_length_max ?? 200}}" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input data-ref="min_title_length_input" type="number" name="min_title_length" min="{{_local?.form?._meta?.limits?.min_title_length_min ?? 0}}" max="{{_local?.form?._meta?.limits?.min_title_length_max ?? 200}}" disabled="{{_computed.isReadOnly}}"/>
           <p data-ref="min_title_length_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.min_title_length.hint|min={{board_config?.data?.limits?.min_title_length_min ?? 0}}|max={{board_config?.data?.limits?.min_title_length_max ?? 200}}</p>
           <span data-if="{{_local.errors?.min_title_length}}" class="board-form-error-xs board:mt-1">{{_local.errors?.min_title_length?.[0] ?? ''}}</span>
         </div>
-        <div data-ref="max_title_length_field" class="">
+        <div data-ref="max_title_length_field">
           <label data-ref="max_title_length_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.max_title_length.label</span>
           </label>
-          <input data-ref="max_title_length_input" type="number" name="max_title_length" min="{{_local?.form?._meta?.limits?.max_title_length_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_title_length_max ?? 1000}}" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input data-ref="max_title_length_input" type="number" name="max_title_length" min="{{_local?.form?._meta?.limits?.max_title_length_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_title_length_max ?? 1000}}" disabled="{{_computed.isReadOnly}}"/>
           <p data-ref="max_title_length_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.max_title_length.hint|min={{board_config?.data?.limits?.max_title_length_min ?? 1}}|max={{board_config?.data?.limits?.max_title_length_max ?? 200}}</p>
           <span data-if="{{_local.errors?.max_title_length}}" class="board-form-error-xs board:mt-1">{{_local.errors?.max_title_length?.[0] ?? ''}}</span>
         </div>
       </div>
       <div data-ref="post_content_length_group" class="board-grid-2col">
-        <div data-ref="min_content_length_field" class="">
+        <div data-ref="min_content_length_field">
           <label data-ref="min_content_length_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.min_content_length.label</span>
           </label>
-          <input data-ref="min_content_length_input" type="number" name="min_content_length" min="{{_local?.form?._meta?.limits?.min_content_length_min ?? 0}}" max="{{_local?.form?._meta?.limits?.min_content_length_max ?? 10000}}" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input data-ref="min_content_length_input" type="number" name="min_content_length" min="{{_local?.form?._meta?.limits?.min_content_length_min ?? 0}}" max="{{_local?.form?._meta?.limits?.min_content_length_max ?? 10000}}" disabled="{{_computed.isReadOnly}}"/>
           <p data-ref="min_content_length_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.min_content_length.hint|min={{board_config?.data?.limits?.min_content_length_min ?? 0}}|max={{board_config?.data?.limits?.min_content_length_max ?? 10000}}</p>
           <span data-if="{{_local.errors?.min_content_length}}" class="board-form-error-xs board:mt-1">{{_local.errors?.min_content_length?.[0] ?? ''}}</span>
         </div>
-        <div data-ref="max_content_length_field" class="">
+        <div data-ref="max_content_length_field">
           <label data-ref="max_content_length_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.max_content_length.label</span>
           </label>
-          <input data-ref="max_content_length_input" type="number" name="max_content_length" min="{{_local?.form?._meta?.limits?.max_content_length_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_content_length_max ?? 100000}}" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input data-ref="max_content_length_input" type="number" name="max_content_length" min="{{_local?.form?._meta?.limits?.max_content_length_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_content_length_max ?? 100000}}" disabled="{{_computed.isReadOnly}}"/>
           <p data-ref="max_content_length_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.max_content_length.hint|min={{board_config?.data?.limits?.max_content_length_min ?? 1}}|max={{board_config?.data?.limits?.max_content_length_max ?? 50000}}</p>
           <span data-if="{{_local.errors?.max_content_length}}" class="board-form-error-xs board:mt-1">{{_local.errors?.max_content_length?.[0] ?? ''}}</span>
         </div>
       </div>
-      <div data-ref="blocked_keywords_field" class="">
+      <div data-ref="blocked_keywords_field">
         <label data-ref="blocked_keywords_label" class="board-form-label">
           <span>$t:sirsoft-board.admin.form.fields.blocked_keywords.label</span>
         </label>
@@ -47,11 +47,11 @@
         <p data-ref="blocked_keywords_description" class="board-form-hint">$t:sirsoft-board.admin.form.fields.blocked_keywords.description</p>
         <span data-if="{{_local.errors?.blocked_keywords}}" class="board-form-error-xs board:mt-1">{{_local.errors?.blocked_keywords?.[0] ?? ''}}</span>
       </div>
-      <div data-ref="new_display_hours_field" class="">
+      <div data-ref="new_display_hours_field">
         <label data-ref="new_display_hours_label" class="board-form-label">
           <span>$t:sirsoft-board.admin.form.fields.new_display_hours.label</span>
         </label>
-        <input data-ref="new_display_hours_input" type="number" name="new_display_hours" min="{{_local?.form?._meta?.limits?.new_display_hours_min ?? 0}}" max="{{_local?.form?._meta?.limits?.new_display_hours_max ?? 720}}" disabled="{{_computed.isReadOnly}}" class=""/>
+        <input data-ref="new_display_hours_input" type="number" name="new_display_hours" min="{{_local?.form?._meta?.limits?.new_display_hours_min ?? 0}}" max="{{_local?.form?._meta?.limits?.new_display_hours_max ?? 720}}" disabled="{{_computed.isReadOnly}}"/>
         <p data-ref="new_display_hours_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.new_display_hours.hint</p>
         <span data-if="{{_local.errors?.new_display_hours}}" class="board-form-error-xs board:mt-1">{{_local.errors?.new_display_hours?.[0] ?? ''}}</span>
       </div>
@@ -62,19 +62,19 @@
         </div>
         <toggle data-type="composite" name="use_reply" disabled="{{_computed.isReadOnly}}" class="board:flex-shrink-0 board:ml-4"/>
       </div>
-      <div data-ref="max_reply_depth_field" data-if="{{_local.form.use_reply}}" class="">
+      <div data-ref="max_reply_depth_field" data-if="{{_local.form.use_reply}}">
         <label data-ref="max_reply_depth_label" class="board-form-label">
           <span>$t:sirsoft-board.admin.form.fields.max_reply_depth.label</span>
         </label>
-        <input data-ref="max_reply_depth_input" type="number" name="max_reply_depth" min="{{_local?.form?._meta?.limits?.max_reply_depth_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_reply_depth_max ?? 10}}" disabled="{{_computed.isReadOnly}}" class=""/>
+        <input data-ref="max_reply_depth_input" type="number" name="max_reply_depth" min="{{_local?.form?._meta?.limits?.max_reply_depth_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_reply_depth_max ?? 10}}" disabled="{{_computed.isReadOnly}}"/>
         <p data-ref="max_reply_depth_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.max_reply_depth.hint|min={{board_config?.data?.limits?.max_reply_depth_min ?? 1}}|max={{board_config?.data?.limits?.max_reply_depth_max ?? 10}}</p>
         <span data-if="{{_local.errors?.max_reply_depth}}" class="board-form-error-xs board:mt-1">{{_local.errors?.max_reply_depth?.[0] ?? ''}}</span>
       </div>
-      <div data-ref="reply_delete_policy_field" data-if="{{_local.form.use_reply}}" class="">
+      <div data-ref="reply_delete_policy_field" data-if="{{_local.form.use_reply}}">
         <label data-ref="reply_delete_policy_label" class="board-form-label">
           <span>$t:sirsoft-board.admin.form.fields.reply_delete_policy.label</span>
         </label>
-        <select data-ref="reply_delete_policy_select" name="reply_delete_policy" disabled="{{_computed.isReadOnly}}" class="">
+        <select data-ref="reply_delete_policy_select" name="reply_delete_policy" disabled="{{_computed.isReadOnly}}">
           <options>
             <option value="cascade">$t:sirsoft-board.admin.form.fields.reply_delete_policy.options.cascade</option>
             <option value="block">$t:sirsoft-board.admin.form.fields.reply_delete_policy.options.block</option>
@@ -83,11 +83,11 @@
         <p data-ref="reply_delete_policy_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.reply_delete_policy.hint</p>
         <span data-if="{{_local.errors?.reply_delete_policy}}" class="board-form-error-xs board:mt-1">{{_local.errors?.reply_delete_policy?.[0] ?? ''}}</span>
       </div>
-      <div data-ref="secret_reply_visibility_field" data-if="{{_local.form.use_reply &amp;&amp; _local.form.secret_mode !== 'disabled'}}" class="">
+      <div data-ref="secret_reply_visibility_field" data-if="{{_local.form.use_reply &amp;&amp; _local.form.secret_mode !== 'disabled'}}">
         <label data-ref="secret_reply_visibility_label" class="board-form-label">
           <span>$t:sirsoft-board.admin.form.fields.secret_reply_visibility.label</span>
         </label>
-        <select data-ref="secret_reply_visibility_select" name="secret_reply_visibility" disabled="{{_computed.isReadOnly}}" class="">
+        <select data-ref="secret_reply_visibility_select" name="secret_reply_visibility" disabled="{{_computed.isReadOnly}}">
           <prop name="options">
             <item value="thread_path" label="$t:sirsoft-board.admin.form.fields.secret_reply_visibility.options.thread_path" description="$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.thread_path"/>
             <item value="descendants_only" label="$t:sirsoft-board.admin.form.fields.secret_reply_visibility.options.descendants_only" description="$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.descendants_only"/>
@@ -107,32 +107,32 @@
         <toggle data-type="composite" name="use_comment" disabled="{{_computed.isReadOnly}}" class="board:flex-shrink-0 board:ml-4"/>
       </div>
       <div data-ref="post_comment_length_group" data-if="{{_local.form.use_comment}}" class="board-grid-2col">
-        <div data-ref="min_comment_length_field" class="">
+        <div data-ref="min_comment_length_field">
           <label data-ref="min_comment_length_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.min_comment_length.label</span>
           </label>
-          <input data-ref="min_comment_length_input" type="number" name="min_comment_length" min="{{_local?.form?._meta?.limits?.min_comment_length_min ?? 0}}" max="{{_local?.form?._meta?.limits?.min_comment_length_max ?? 1000}}" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input data-ref="min_comment_length_input" type="number" name="min_comment_length" min="{{_local?.form?._meta?.limits?.min_comment_length_min ?? 0}}" max="{{_local?.form?._meta?.limits?.min_comment_length_max ?? 1000}}" disabled="{{_computed.isReadOnly}}"/>
           <p data-ref="min_comment_length_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.min_comment_length.hint|min={{board_config?.data?.limits?.min_comment_length_min ?? 0}}|max={{board_config?.data?.limits?.min_comment_length_max ?? 1000}}</p>
           <span data-if="{{_local.errors?.min_comment_length}}" class="board-form-error-xs board:mt-1">{{_local.errors?.min_comment_length?.[0] ?? ''}}</span>
         </div>
-        <div data-ref="max_comment_length_field" class="">
+        <div data-ref="max_comment_length_field">
           <label data-ref="max_comment_length_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.max_comment_length.label</span>
           </label>
-          <input data-ref="max_comment_length_input" type="number" name="max_comment_length" min="{{_local?.form?._meta?.limits?.max_comment_length_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_comment_length_max ?? 10000}}" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input data-ref="max_comment_length_input" type="number" name="max_comment_length" min="{{_local?.form?._meta?.limits?.max_comment_length_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_comment_length_max ?? 10000}}" disabled="{{_computed.isReadOnly}}"/>
           <p data-ref="max_comment_length_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.max_comment_length.hint|min={{board_config?.data?.limits?.max_comment_length_min ?? 1}}|max={{board_config?.data?.limits?.max_comment_length_max ?? 1000}}</p>
           <span data-if="{{_local.errors?.max_comment_length}}" class="board-form-error-xs board:mt-1">{{_local.errors?.max_comment_length?.[0] ?? ''}}</span>
         </div>
       </div>
-      <div data-ref="max_comment_depth_field" data-if="{{_local.form.use_comment}}" class="">
+      <div data-ref="max_comment_depth_field" data-if="{{_local.form.use_comment}}">
         <label data-ref="max_comment_depth_label" class="board-form-label">
           <span>$t:sirsoft-board.admin.form.fields.max_comment_depth.label</span>
         </label>
-        <input data-ref="max_comment_depth_input" type="number" name="max_comment_depth" min="{{_local?.form?._meta?.limits?.max_comment_depth_min ?? 0}}" max="{{_local?.form?._meta?.limits?.max_comment_depth_max ?? 10}}" disabled="{{_computed.isReadOnly}}" class=""/>
+        <input data-ref="max_comment_depth_input" type="number" name="max_comment_depth" min="{{_local?.form?._meta?.limits?.max_comment_depth_min ?? 0}}" max="{{_local?.form?._meta?.limits?.max_comment_depth_max ?? 10}}" disabled="{{_computed.isReadOnly}}"/>
         <p data-ref="max_comment_depth_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.max_comment_depth.hint|min={{board_config?.data?.limits?.max_comment_depth_min ?? 0}}|max={{board_config?.data?.limits?.max_comment_depth_max ?? 10}}</p>
         <span data-if="{{_local.errors?.max_comment_depth}}" class="board-form-error-xs board:mt-1">{{_local.errors?.max_comment_depth?.[0] ?? ''}}</span>
       </div>
-      <div data-ref="comment_order_field" data-if="{{_local.form.use_comment}}" class="">
+      <div data-ref="comment_order_field" data-if="{{_local.form.use_comment}}">
         <label data-ref="comment_order_label" class="board-form-label">
           <span>$t:sirsoft-board.admin.form.fields.comment_order.label</span>
         </label>
@@ -151,24 +151,24 @@
         <toggle data-type="composite" name="use_file_upload" disabled="{{_computed.isReadOnly}}" class="board:flex-shrink-0 board:ml-4"/>
       </div>
       <div data-ref="file_settings_group" data-if="{{_local.form.use_file_upload}}" class="board-grid-2col">
-        <div data-ref="max_file_count_field" class="">
+        <div data-ref="max_file_count_field">
           <label data-ref="max_file_count_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.max_file_count.label</span>
           </label>
-          <input data-ref="max_file_count_input" type="number" name="max_file_count" min="{{_local?.form?._meta?.limits?.max_file_count_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_file_count_max ?? 20}}" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input data-ref="max_file_count_input" type="number" name="max_file_count" min="{{_local?.form?._meta?.limits?.max_file_count_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_file_count_max ?? 20}}" disabled="{{_computed.isReadOnly}}"/>
           <p data-ref="max_file_count_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.max_file_count.hint|count={{board_config?.data?.limits?.max_file_count_max ?? 20}}|min={{board_config?.data?.limits?.max_file_count_min ?? 1}}|max={{board_config?.data?.limits?.max_file_count_max ?? 20}}</p>
           <span data-if="{{_local.errors?.max_file_count}}" class="board-form-error-xs board:mt-1">{{_local.errors?.max_file_count?.[0] ?? ''}}</span>
         </div>
-        <div data-ref="max_file_size_field" class="">
+        <div data-ref="max_file_size_field">
           <label data-ref="max_file_size_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.max_file_size.label</span>
           </label>
-          <input data-ref="max_file_size_input" type="number" name="max_file_size" min="{{_local?.form?._meta?.limits?.max_file_size_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_file_size_max ?? 200}}" placeholder="$t:sirsoft-board.admin.form.fields.max_file_size.placeholder" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input data-ref="max_file_size_input" type="number" name="max_file_size" min="{{_local?.form?._meta?.limits?.max_file_size_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_file_size_max ?? 200}}" placeholder="$t:sirsoft-board.admin.form.fields.max_file_size.placeholder" disabled="{{_computed.isReadOnly}}"/>
           <p data-ref="max_file_size_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.max_file_size.hint|maxMB={{board_config?.data?.limits?.max_file_size_max ?? 200}}</p>
           <span data-if="{{_local.errors?.max_file_size}}" class="board-form-error-xs board:mt-1">{{_local.errors?.max_file_size?.[0] ?? ''}}</span>
         </div>
       </div>
-      <div data-ref="allowed_extensions_field" data-if="{{_local.form.use_file_upload}}" class="">
+      <div data-ref="allowed_extensions_field" data-if="{{_local.form.use_file_upload}}">
         <label data-ref="allowed_extensions_label" class="board-form-label">
           <span>$t:sirsoft-board.admin.form.fields.allowed_extensions.label</span>
         </label>
@@ -181,7 +181,7 @@
            방식은 셋이다: 사이트 기본값 따름(inherit), 특정 종류 고정(fixed), 회원이 고른 값(member).
            값은 `form.display_name_setting = { mode, kind }` 한 객체로 저장 본문에 실린다. 「고정」이 아니면 kind 를 null 로 되돌린다
            (서버는 fixed 일 때만 kind 를 읽고, 남은 kind 가 다음에 「고정」으로 돌아올 때 엉뚱한 기본값이 되지 않게 한다) -->
-      <div data-ref="display_name_field" class="">
+      <div data-ref="display_name_field">
         <label data-ref="display_name_label" class="board-form-label">
           <span>$t:sirsoft-board.admin.form.display_name.label</span>
         </label>
@@ -228,7 +228,7 @@
            항목은 집합 전체(모든 게시판)에 생기고 지워지므로, 만들 때는 꺼진 채로 두고 지울 때는 모든 게시판에서 사라진다고 묻는다.
            다른 확장이 기여한 항목은 그 확장이, 모듈이 선언한 항목은 모듈이 맡아 지울 수 없다.
            넓은 화면은 표, 좁은 화면은 항목별 카드로 같은 값을 그린다 -->
-      <div data-ref="guest_author_fields_field" class="">
+      <div data-ref="guest_author_fields_field">
         <label data-ref="guest_author_fields_label" class="board-form-label">
           <span>$t:sirsoft-board.admin.form.guest_author_fields.label</span>
         </label>
@@ -261,7 +261,7 @@
                     <p data-if="{{row.fixed !== true &amp;&amp; row.available !== false &amp;&amp; !!(row.post?.lock_reason ?? row.comment?.lock_reason)}}" class="board-form-hint">{{row.post?.lock_reason ?? row.comment?.lock_reason ?? ''}}</p>
                   </div>
                   <span class="board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-gray-100 board:text-gray-800 board:dark:bg-gray-700 board:dark:text-gray-200 board:shrink-0">{{row.source_label ? row.source_label : (row.source_type === 'custom' ? $t('sirsoft-board.admin.form.guest_author_fields.source.custom') : $t('sirsoft-board.admin.form.guest_author_fields.source.board'))}}</span>
-                  <button data-ref="guest_field_card_delete_{{row.key}}" data-if="{{row.is_custom === true &amp;&amp; !_computed.isReadOnly}}" type="button" aria-label="$t:sirsoft-board.admin.form.guest_author_fields.delete|label={{row.label}}" class="board:p-1 board:shrink-0 board:text-gray-500 board:dark:text-gray-400 board:hover:text-red-600 board:dark:hover:text-red-400">
+                  <button data-ref="guest_field_card_delete_{{row.key}}" data-if="{{row.is_custom === true &amp;&amp; !_computed.isReadOnly}}" type="button" aria-label="$t:sirsoft-board.admin.form.guest_author_fields.delete|label={{row.label}}" class="board:p-1 board:shrink-0 board-text-muted board:hover:text-red-600 board:dark:hover:text-red-400">
                     <on type="click">
                       <!-- 확인을 받고 지운다. 항목은 모든 게시판에서 사라지고 받은 값도 지워진다. 성공하면 이 표에서 행과 값을 뺀다(게시판 저장과 따로 즉시 반영) -->
                       <sequence confirm="$t:sirsoft-board.admin.form.guest_author_fields.delete_confirm|label={{row.label}}">
@@ -315,7 +315,7 @@
               <tr data-ref="guest_field_row_{{row.key}}" data-each="row in (_local.form?.guest_author_field_rows ?? []).map(r => ({...r, _v: {post: {enabled: (_local.form?.guest_author_fields?.[r.key]?.post?.enabled ?? r.post?.enabled) === true, required: (_local.form?.guest_author_fields?.[r.key]?.post?.enabled ?? r.post?.enabled) === true &amp;&amp; (_local.form?.guest_author_fields?.[r.key]?.post?.required ?? r.post?.required) === true}, comment: {enabled: (_local.form?.guest_author_fields?.[r.key]?.comment?.enabled ?? r.comment?.enabled) === true, required: (_local.form?.guest_author_fields?.[r.key]?.comment?.enabled ?? r.comment?.enabled) === true &amp;&amp; (_local.form?.guest_author_fields?.[r.key]?.comment?.required ?? r.comment?.required) === true}}}))" class="board:border-t board:border-gray-200 board:dark:border-gray-700">
                 <td class="board:px-4 board:py-2">
                   <div class="board-flex-center board:gap-2 board:min-w-0">
-                    <icon data-if="{{row.fixed === true}}" name="lock" class="board:text-xs board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"/>
+                    <icon data-if="{{row.fixed === true}}" name="lock" class="board:text-xs board-text-muted board:flex-shrink-0"/>
                     <span class="board-text-heading board:min-w-0 board:wrap-anywhere">{{row.label}}</span>
                   </div>
                   <p data-if="{{row.fixed === true}}" class="board-form-hint">$t:sirsoft-board.admin.form.guest_author_fields.fixed_hint</p>
@@ -341,7 +341,7 @@
                 </td>
                 <!-- 운영자가 만든 항목만 지울 수 있다 -->
                 <td class="board:px-4 board:py-2 board:text-center">
-                  <button data-ref="guest_field_delete_{{row.key}}" data-if="{{row.is_custom === true &amp;&amp; !_computed.isReadOnly}}" type="button" aria-label="$t:sirsoft-board.admin.form.guest_author_fields.delete|label={{row.label}}" class="board:p-1 board:text-gray-500 board:dark:text-gray-400 board:hover:text-red-600 board:dark:hover:text-red-400">
+                  <button data-ref="guest_field_delete_{{row.key}}" data-if="{{row.is_custom === true &amp;&amp; !_computed.isReadOnly}}" type="button" aria-label="$t:sirsoft-board.admin.form.guest_author_fields.delete|label={{row.label}}" class="board:p-1 board-text-muted board:hover:text-red-600 board:dark:hover:text-red-400">
                     <on type="click">
                       <!-- 확인을 받고 지운다. 항목은 모든 게시판에서 사라지고 받은 값도 지워진다. 성공하면 이 표에서 행과 값을 뺀다(게시판 저장과 따로 즉시 반영) -->
                       <sequence confirm="$t:sirsoft-board.admin.form.guest_author_fields.delete_confirm|label={{row.label}}">

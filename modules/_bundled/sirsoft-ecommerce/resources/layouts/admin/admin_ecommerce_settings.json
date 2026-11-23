@@ -539,7 +539,7 @@
                 "responsive": {
                     "640-1023": {
                         "props": {
-                            "className": "ecommerce:p-6 ecommerce:min-h-screen ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900"
+                            "className": "ecommerce-admin-page-content"
                         }
                     },
                     "1024-": {
@@ -595,14 +595,10 @@
                         "name": "TabNavigation",
                         "responsive": {
                             "640-1023": {
-                                "props": {
-                                    "className": "ecommerce:sticky ecommerce:top-0 ecommerce:z-40 ecommerce:-mx-6 ecommerce:px-6 ecommerce:border-b ecommerce:bg-gray-50 ecommerce:border-gray-200 ecommerce:dark:bg-gray-900 ecommerce:dark:border-gray-700"
-                                }
+                                "classMerge": "ecommerce:-mx-6 ecommerce:px-6"
                             },
                             "1024-": {
-                                "props": {
-                                    "className": "ecommerce:sticky ecommerce:top-0 ecommerce:z-40 ecommerce:-mx-8 ecommerce:px-8 ecommerce:border-b ecommerce:bg-gray-50 ecommerce:border-gray-200 ecommerce:dark:bg-gray-900 ecommerce:dark:border-gray-700"
-                                }
+                                "classMerge": "ecommerce:-mx-8 ecommerce:px-8"
                             }
                         },
                         "actions": [

@@ -4,6 +4,9 @@
  * JSON 트리에서 ID/이름 검색 및 핸들러 추출을 위한 유틸리티.
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
+
 export type AnyNode = Record<string, unknown> & {
     id?: string;
     name?: string;
@@ -172,4 +175,27 @@ export function collectComponentNames(json: unknown): string[] {
         .map((m) => m.match(/"name":\s*"([A-Z][a-zA-Z0-9_]*)"/)?.[1] ?? '')
         .filter(Boolean);
     return Array.from(new Set(names));
+}
+
+/** Tailwind v4 회색 값(생성 CSS 가 내는 꼴 그대로) — 보조 글자색 gray-500, 다크 gray-400 */
+export const TAILWIND_GRAY_500 = 'oklch(55.1% .027 264.364)';
+export const TAILWIND_GRAY_400 = 'oklch(70.7% .022 261.325)';
+
+/**
+ * 플러그인 생성 CSS(`resources/css/g7-extension.generated.css`)에서 의미 클래스 사본의 글자색을 읽는다 (#399 R-2).
+ *
+ * 레이아웃이 `gdpr:text-gray-500 gdpr:dark:text-gray-400` 같은 인라인 짝 대신 `gdpr-text-muted` 를 쓰게 되었으므로,
+ * 이름만 보지 않고 그 클래스가 플러그인 CSS 에 실제로 같은 색(밝은 화면·다크 화면)으로 정의돼 있는지 확인할 때 쓴다.
+ *
+ * @param className 점 없는 클래스 이름(예: `gdpr-text-muted`)
+ * @returns 밝은 화면 색과 다크 화면 색(정의가 없으면 null)
+ */
+export function pluginClassTextColors(className: string): { light: string | null; dark: string | null } {
+    // jsdom 환경에서는 import.meta.url 이 file 주소가 아니므로 이 파일 위치(vite-node 가 주는 __dirname)로 플러그인 CSS 를 찾는다
+    const css = fs.readFileSync(path.resolve(__dirname, '../../../css/g7-extension.generated.css'), 'utf8');
+    const escaped = className.replace(/[-/\\^$*+?.()|[\]{}:]/g, '\\$&');
+    const colorOf = (body: string | undefined) => body?.match(/(?:^|[;{\s])color:\s*([^;]+);/)?.[1]?.trim() ?? null;
+    const light = css.match(new RegExp(`\\.${escaped}\\s*\\{([^}]*)\\}`))?.[1];
+    const dark = css.match(new RegExp(`\\.${escaped}:is\\(\\[data-g7-color-scheme="dark"\\][^{]*\\{([^}]*)\\}`))?.[1];
+    return { light: colorOf(light), dark: colorOf(dark) };
 }

@@ -1,0 +1,31 @@
+feature: responsive 구간 classMerge — 폭별로 바뀐 클래스만 덧붙이기, 구간 classMap 적용 (7.2.1, engine-v1.98.0, #399)
+
+description: |
+  레이아웃 노드의 `responsive.{key}.classMerge`(마크업 `<responsive on="…" class-merge="…">`)는 그 구간에서
+  바뀐 클래스만 기본 className 에 충돌 교체형으로 덧붙인다(mergeClasses 규칙, 바인딩·classMap 해석 뒤).
+  종전에는 구간 className 이 기본 className 을 통째로 교체해 패딩 하나만 바꿔도 클래스 전체를 다시 적어야 했고
+  (#399 F10), 레이아웃 편집기도 디바이스 탭 편집 때 기본 className 전체를 복사했다. 같은 노드의 구간 classMap 은
+  엔진 두 경로와 SEO 가 무시했다(F11). 브라우저 렌더러(DynamicRenderer·셀 렌더)와 봇 렌더러(ComponentHtmlMapper)는
+  공용 픽스처로 같은 병합 결과를 증명한다. 봇 HTML 쪽 효과는 seo-component-html-mapper.yaml, 편집기 디바이스 탭 저장 효과는
+  layout-editor-style-scope.yaml 이 소유한다.
+
+axes:
+  surface: [renderer, cell_renderer, fixture, markup, linter]
+
+effects:
+  - class_merge_replaces_same_axis_and_keeps_rest      # 같은 축·같은 변형 토큰만 교체, 나머지 기본 토큰 유지
+  - class_merge_applies_only_in_matching_range         # 구간에 맞지 않는 폭에서는 기본 className 그대로
+  - class_merge_resolves_bindings_first                # className·classMerge 바인딩 해석 뒤 병합
+  - breakpoint_class_map_replaces_base_class_map       # 구간 classMap 이 기본 classMap 을 대신하고 classMerge 는 그 뒤에
+  - class_merge_applies_once_per_item                  # 반복 항목마다 한 번만(토큰 중복 없음)
+  - extension_prefix_tokens_merge_on_same_axis         # 확장 앞글자(ecommerce:) 토큰도 같은 축으로 교체
+  - seo_class_merger_matches_engine_fixture            # SEO 병합기와 엔진이 공용 픽스처에서 같은 결과
+  - markup_class_merge_compiles_and_round_trips        # class-merge 컴파일·역출력 왕복, 빈 값 오류
+  - linter_warns_breakpoint_variant_in_class_merge     # class-merge 안 폭 변형 경고
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.responsiveClassMerge.test.tsx
+  - resources/js/core/template-engine/helpers/__tests__/RenderHelpers.responsiveClassMerge.test.tsx
+  - resources/js/core/template-engine/helpers/__tests__/StyleHelpers.classMergeParity.test.ts
+  - tests/Unit/Support/Style/ClassMergerTest.php
+  - tests/Unit/Support/LayoutMarkup/ResponsiveClassMergeMarkupTest.php

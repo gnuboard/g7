@@ -377,7 +377,7 @@
                             ],
                             "props": {
                                 "href": "/board/{{post.board_slug}}/{{post.id}}",
-                                "className": "w-full text-left block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
+                                "className": "w-full text-left block card-plain p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
                             },
                             "children": [
                                 {
@@ -444,7 +444,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 whitespace-nowrap",
+                                                "className": "text-xs text-muted flex-shrink-0 whitespace-nowrap",
                                                 "title": "{{post.created_at ?? ''}}"
                                             },
                                             "text": "{{post.created_at_formatted ?? ''}}"
@@ -466,7 +466,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400"
+                                        "className": "flex items-center gap-4 mt-2 text-xs text-muted"
                                     },
                                     "children": [
                                         {
@@ -519,7 +519,7 @@
                     "name": "Div",
                     "if": "{{myPosts !== undefined && (!myPosts?.data?.data || myPosts.data.data.length === 0)}}",
                     "props": {
-                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center"
+                        "className": "card-plain p-8 text-center"
                     },
                     "children": [
                         {
@@ -537,7 +537,7 @@
                             "name": "P",
                             "if": "{{!(!!_global.myPostsSearchApplied || !!_global.myPostsBoard)}}",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:mypage.board_activities.empty_posts"
                         },
@@ -546,7 +546,7 @@
                             "name": "P",
                             "if": "{{!!_global.myPostsSearchApplied || !!_global.myPostsBoard}}",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:board.no_search_results"
                         },

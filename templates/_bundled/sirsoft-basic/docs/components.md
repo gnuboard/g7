@@ -143,7 +143,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | `Textarea` | 텍스트 영역 | label, error | - |
 | `Checkbox` | 체크박스 | label | checked |
 | `PasswordInput` | 비밀번호 입력 (보기/숨기기, 조건 검증, 확인 일치) | label, error, showToggle, showValidation, isConfirmField, confirmTarget, showRules, ... | - |
-| `Button` | 버튼 | variant, size | - |
+| `Button` | 버튼 | variant (`primary`\|`secondary`\|`danger`\|`success`\|`ghost`\|`outline`\|`accent` — 적으면 `btn btn-{variant}` 를 붙이고, 생략하면 className 만 쓴다. accent 는 포인트 색), size (`sm`\|`md`\|`lg` — sm 은 `btn-sm`, lg 는 `btn-lg`) | - |
 
 #### 미디어
 

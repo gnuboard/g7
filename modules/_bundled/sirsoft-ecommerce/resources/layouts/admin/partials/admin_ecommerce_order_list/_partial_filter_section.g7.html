@@ -477,7 +477,7 @@ $t:sirsoft-ecommerce.admin.order.filter.orderer</span>
             </on>
           </searchable-dropdown>
           <!-- F-162 -->
-          <button data-ref="f_162_orderer_clear_button" data-if="{{!!_local.filter.ordererUuid}}" type="button" class="ecommerce:text-gray-500 ecommerce:hover:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-gray-300" aria-label="$t:common.remove">
+          <button data-ref="f_162_orderer_clear_button" data-if="{{!!_local.filter.ordererUuid}}" type="button" class="ecommerce-text-muted ecommerce:hover:text-gray-600 ecommerce:dark:hover:text-gray-300" aria-label="$t:common.remove">
             <on type="click">
               <set-state target="local" filter.ordererUuid="" :ordererSearchResults="[]"/>
             </on>
@@ -838,7 +838,7 @@ $t:sirsoft-ecommerce.admin.order.filter.claim.requested_at</span>
     </div>
     <!-- 프리셋 영역 - 데이터소스 기반 동적 표시 -->
     <div data-ref="preset_row" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4">
-      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:cursor-pointer ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-200">
+      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce-text-muted ecommerce:cursor-pointer ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-200">
         <on type="click">
           <open-modal target="modal_preset_manage"/>
         </on>
@@ -930,7 +930,7 @@ $t:sirsoft-ecommerce.admin.order.filter.claim.requested_at</span>
               </sequence>
             </on>
           </input>
-          <icon name="search" class="ecommerce:text-base ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:pointer-events-none"/>
+          <icon name="search" class="ecommerce:text-base ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce-text-muted ecommerce:pointer-events-none"/>
         </div>
       </div>
       <!-- F-003, F-004 컬럼 선택 + 상세검색 버튼 -->
@@ -1011,7 +1011,7 @@ $t:sirsoft-ecommerce.admin.order.filter.claim.requested_at</span>
           <responsive on="portable" class="ecommerce:contents"/>
           <!-- F-141 검색 버튼 -->
           <button data-ref="f_141_search_button" type="button" class="ecommerce-btn ecommerce-btn-primary">
-            <responsive on="portable" class="ecommerce-btn ecommerce-btn-primary ecommerce:flex-1"/>
+            <responsive on="portable" class-merge="ecommerce:flex-1"/>
             <on type="click">
               <action-ref name="searchOrders"/>
             </on>
@@ -1019,7 +1019,7 @@ $t:sirsoft-ecommerce.admin.order.filter.claim.requested_at</span>
           </button>
           <!-- F-142 초기화 버튼 -->
           <button data-ref="f_142_reset_button" type="button" class="ecommerce-btn ecommerce-btn-outline">
-            <responsive on="portable" class="ecommerce-btn ecommerce-btn-outline ecommerce:flex-1"/>
+            <responsive on="portable" class-merge="ecommerce:flex-1"/>
             <on type="click">
               <set-state target="_local" merge="shallow" :ordererSearchResults="[]">
                 <field name="filter">

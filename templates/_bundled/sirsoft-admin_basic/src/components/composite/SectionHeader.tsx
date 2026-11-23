@@ -64,7 +64,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
       <Div>
         {title && <H2 className="text-base font-semibold text-gray-900 dark:text-white">{title}</H2>}
         {description && (
-          <P className="mt-1 text-sm text-gray-500 dark:text-gray-400">{description}</P>
+          <P className="mt-1 text-sm text-muted">{description}</P>
         )}
       </Div>
       {children && <Div className="flex items-center gap-2">{children}</Div>}

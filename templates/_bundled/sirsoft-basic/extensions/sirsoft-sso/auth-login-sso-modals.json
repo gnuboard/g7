@@ -280,7 +280,7 @@
                                     "name": "P",
                                     "if": "{{_global.ssoFieldsState === 'loading'}}",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                        "className": "text-sm text-muted"
                                     },
                                     "text": "$t:common.loading"
                                 },
@@ -334,7 +334,7 @@
                                                                     "name": "Label",
                                                                     "if": "{{field.type !== 'boolean' || !!field.constraints?.inline_label}}",
                                                                     "props": {
-                                                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words"
+                                                                        "className": "form-label break-words"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -360,7 +360,7 @@
                                                                     "name": "P",
                                                                     "if": "{{field.deferred}}",
                                                                     "props": {
-                                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                        "className": "text-sm text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.upload_after_signup"
                                                                 },
@@ -456,7 +456,7 @@
                                                                     "name": "P",
                                                                     "if": "{{(field.ui?.group ?? '') === 'agreements'}}",
                                                                     "props": {
-                                                                        "className": "ml-6 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "ml-6 text-xs text-muted"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -487,7 +487,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && field.locked_reason === 'sso'}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:mypage.profile.locked_by_company"
                                                                 },
@@ -497,7 +497,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && field.locked_reason === 'identity'}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.locked_identity"
                                                                 },
@@ -507,7 +507,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && field.locked_reason === 'admin_only'}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.locked_admin_only"
                                                                 },
@@ -517,7 +517,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && field.locked_reason === 'nickname_interval' && !!field.locked_until}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.locked_until|date={{field.locked_until}}"
                                                                 },
@@ -527,7 +527,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && ['sso', 'identity', 'admin_only'].indexOf(field.locked_reason) === -1 && !(field.locked_reason === 'nickname_interval' && !!field.locked_until)}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.locked_generic"
                                                                 },
@@ -537,7 +537,7 @@
                                                                     "name": "P",
                                                                     "if": "{{field.help}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400 break-words"
+                                                                        "className": "mt-1 text-xs text-muted break-words"
                                                                     },
                                                                     "text": "{{field.help}}"
                                                                 },
@@ -548,7 +548,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{Object.keys(_global.ssoErrors ?? {}).some(function(k) { return k === field.name || k.indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(k) !== -1; })}}",
                                                                     "props": {
-                                                                        "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
+                                                                        "className": "form-error"
                                                                     },
                                                                     "text": "{{Object.entries(_global.ssoErrors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(entry[0]) !== -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}"
                                                                 }
@@ -697,7 +697,7 @@
                                                                     "name": "Label",
                                                                     "if": "{{field.type !== 'boolean' || !!field.constraints?.inline_label}}",
                                                                     "props": {
-                                                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words"
+                                                                        "className": "form-label break-words"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -723,7 +723,7 @@
                                                                     "name": "P",
                                                                     "if": "{{field.deferred}}",
                                                                     "props": {
-                                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                        "className": "text-sm text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.upload_after_signup"
                                                                 },
@@ -819,7 +819,7 @@
                                                                     "name": "P",
                                                                     "if": "{{(field.ui?.group ?? '') === 'agreements'}}",
                                                                     "props": {
-                                                                        "className": "ml-6 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "ml-6 text-xs text-muted"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -850,7 +850,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && field.locked_reason === 'sso'}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:mypage.profile.locked_by_company"
                                                                 },
@@ -860,7 +860,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && field.locked_reason === 'identity'}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.locked_identity"
                                                                 },
@@ -870,7 +870,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && field.locked_reason === 'admin_only'}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.locked_admin_only"
                                                                 },
@@ -880,7 +880,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && field.locked_reason === 'nickname_interval' && !!field.locked_until}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.locked_until|date={{field.locked_until}}"
                                                                 },
@@ -890,7 +890,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!!field.readonly && ['sso', 'identity', 'admin_only'].indexOf(field.locked_reason) === -1 && !(field.locked_reason === 'nickname_interval' && !!field.locked_until)}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "mt-1 text-xs text-muted"
                                                                     },
                                                                     "text": "$t:member.fields.locked_generic"
                                                                 },
@@ -900,7 +900,7 @@
                                                                     "name": "P",
                                                                     "if": "{{field.help}}",
                                                                     "props": {
-                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400 break-words"
+                                                                        "className": "mt-1 text-xs text-muted break-words"
                                                                     },
                                                                     "text": "{{field.help}}"
                                                                 },
@@ -911,7 +911,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{Object.keys(_global.ssoErrors ?? {}).some(function(k) { return k === field.name || k.indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(k) !== -1; })}}",
                                                                     "props": {
-                                                                        "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
+                                                                        "className": "form-error"
                                                                     },
                                                                     "text": "{{Object.entries(_global.ssoErrors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(entry[0]) !== -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}"
                                                                 }
@@ -1270,9 +1270,7 @@
                                             "name": "Button",
                                             "responsive": {
                                                 "640-": {
-                                                    "props": {
-                                                        "className": "sso:w-full sso:px-3 sso:py-2 sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:text-sm sso:text-gray-700 sso:dark:text-gray-300 sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed"
-                                                    }
+                                                    "classMerge": "sso:py-2"
                                                 }
                                             },
                                             "actions": [

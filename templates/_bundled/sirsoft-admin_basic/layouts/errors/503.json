@@ -50,7 +50,7 @@
                         "type": "basic",
                         "name": "P",
                         "props": {
-                            "className": "text-gray-500 dark:text-gray-400 mb-4 max-w-md"
+                            "className": "text-muted mb-4 max-w-md"
                         },
                         "text": "$t:errors.503.message"
                     },
@@ -237,7 +237,7 @@
                         "type": "basic",
                         "name": "P",
                         "props": {
-                            "className": "text-sm text-gray-500 dark:text-gray-400 mb-8"
+                            "className": "text-sm text-muted mb-8"
                         },
                         "text": "$t:errors.503.contact_admin"
                     },

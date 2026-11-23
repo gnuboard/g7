@@ -29,13 +29,11 @@
             "if": "{{mileage_balance !== undefined && !mileage_balance?.data?.mileage?.enabled}}",
             "responsive": {
                 "portable": {
-                    "props": {
-                        "className": "flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center"
-                    }
+                    "classMerge": "p-6"
                 }
             },
             "props": {
-                "className": "flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center"
+                "className": "flex flex-col items-center justify-center card-plain p-8 text-center"
             },
             "children": [
                 {
@@ -51,7 +49,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-gray-500 dark:text-gray-400"
+                        "className": "text-muted"
                     },
                     "text": "$t:mypage.mileage.disabled_notice"
                 }
@@ -79,9 +77,7 @@
                     "name": "Div",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm"
-                            }
+                            "classMerge": "p-4"
                         }
                     },
                     "props": {
@@ -92,7 +88,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                "className": "block text-xs text-muted mb-1"
                             },
                             "text": "$t:mypage.mileage.summary.available"
                         },
@@ -101,9 +97,7 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "block text-lg font-bold text-gray-900 dark:text-white"
-                                    }
+                                    "classMerge": "text-lg"
                                 }
                             },
                             "props": {
@@ -119,9 +113,7 @@
                     "name": "Div",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm"
-                            }
+                            "classMerge": "p-4"
                         }
                     },
                     "props": {
@@ -132,7 +124,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                "className": "block text-xs text-muted mb-1"
                             },
                             "text": "$t:mypage.mileage.summary.expiring_soon"
                         },
@@ -141,9 +133,7 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "block text-lg font-bold text-amber-600 dark:text-amber-400"
-                                    }
+                                    "classMerge": "text-lg"
                                 }
                             },
                             "props": {
@@ -157,7 +147,7 @@
                             "name": "Span",
                             "if": "{{mileage_balance?.data?.mileage?.expiring_date_formatted}}",
                             "props": {
-                                "className": "block text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                "className": "block text-xs text-muted mt-1"
                             },
                             "text": "$t:mypage.mileage.summary.expiring_until|date={{mileage_balance?.data?.mileage?.expiring_date_formatted}}"
                         }
@@ -169,9 +159,7 @@
                     "name": "Div",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm"
-                            }
+                            "classMerge": "p-4"
                         }
                     },
                     "props": {
@@ -182,7 +170,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                "className": "block text-xs text-muted mb-1"
                             },
                             "text": "$t:mypage.mileage.summary.total_earned"
                         },
@@ -191,9 +179,7 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "block text-lg font-bold text-gray-900 dark:text-white"
-                                    }
+                                    "classMerge": "text-lg"
                                 }
                             },
                             "props": {
@@ -209,9 +195,7 @@
                     "name": "Div",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm"
-                            }
+                            "classMerge": "p-4"
                         }
                     },
                     "props": {
@@ -222,7 +206,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                "className": "block text-xs text-muted mb-1"
                             },
                             "text": "$t:mypage.mileage.summary.total_used"
                         },
@@ -231,9 +215,7 @@
                             "name": "Span",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "block text-lg font-bold text-gray-900 dark:text-white"
-                                    }
+                                    "classMerge": "text-lg"
                                 }
                             },
                             "props": {
@@ -529,7 +511,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400"
+                                                "className": "px-4 py-3 text-left font-medium text-muted"
                                             },
                                             "text": "$t:mypage.mileage.table.date"
                                         },
@@ -537,7 +519,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400"
+                                                "className": "px-4 py-3 text-left font-medium text-muted"
                                             },
                                             "text": "$t:mypage.mileage.table.category"
                                         },
@@ -545,7 +527,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400"
+                                                "className": "px-4 py-3 text-left font-medium text-muted"
                                             },
                                             "text": "$t:mypage.mileage.table.description"
                                         },
@@ -553,7 +535,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "px-4 py-3 text-right font-medium text-gray-500 dark:text-gray-400"
+                                                "className": "px-4 py-3 text-right font-medium text-muted"
                                             },
                                             "text": "$t:mypage.mileage.table.amount"
                                         },
@@ -561,7 +543,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400"
+                                                "className": "px-4 py-3 text-left font-medium text-muted"
                                             },
                                             "text": "$t:mypage.mileage.table.expires_at"
                                         }
@@ -588,7 +570,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                                                "className": "px-4 py-3 text-muted whitespace-nowrap"
                                             },
                                             "text": "{{tx.created_at_formatted ?? ''}}"
                                         },
@@ -653,7 +635,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                                                "className": "px-4 py-3 text-muted whitespace-nowrap"
                                             },
                                             "text": "{{tx.expires_at_formatted ?? '-'}}"
                                         }
@@ -693,7 +675,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                                "className": "card-plain p-3"
                             },
                             "children": [
                                 {
@@ -754,7 +736,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             },
                                             "text": "{{tx.created_at_formatted ?? ''}}"
                                         },
@@ -763,7 +745,7 @@
                                             "name": "Span",
                                             "if": "{{tx.expires_at_formatted}}",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             },
                                             "text": "$t:mypage.mileage.expires_label|date={{tx.expires_at_formatted}}"
                                         }
@@ -783,12 +765,12 @@
             "responsive": {
                 "portable": {
                     "props": {
-                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center"
+                        "className": "card-plain p-6 text-center"
                     }
                 }
             },
             "props": {
-                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center"
+                "className": "card-plain p-8 text-center"
             },
             "children": [
                 {
@@ -814,13 +796,11 @@
                     "name": "P",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
-                            }
+                            "classMerge": "text-sm"
                         }
                     },
                     "props": {
-                        "className": "text-gray-500 dark:text-gray-400"
+                        "className": "text-muted"
                     },
                     "text": "$t:mypage.mileage.empty"
                 }

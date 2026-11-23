@@ -17,7 +17,7 @@
         </button>
         <div class="sso:min-w-0">
           <h2 class="sso:text-lg sso:font-semibold sso:text-gray-900 sso:dark:text-white sso:truncate">{{_local.idpForm?.display_label ?? ''}}</h2>
-          <p class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">{{(_local.idpForm?.key ?? '') + ' · ' + (_local.idpForm?.protocol_label ?? '')}}</p>
+          <p class="sso:text-xs sso-text-muted">{{(_local.idpForm?.key ?? '') + ' · ' + (_local.idpForm?.protocol_label ?? '')}}</p>
         </div>
       </div>
       <div class="sso:flex sso:flex-wrap sso:gap-2">
@@ -166,7 +166,7 @@
           <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.sp_info_hint</p>
           <div data-each="row in _local.idpForm?.sp_info ?? []" data-key="{{row.key}}" data-ref="sp_info_row_{{row.key}}" class="sso:flex sso:flex-col sso:gap-2">
             <responsive on="640-" class="sso:flex sso:flex-row sso:items-center sso:gap-2"/>
-            <span class="sso:text-xs sso:font-medium sso:text-gray-500 sso:dark:text-gray-400 sso:flex-shrink-0"><responsive on="640-" class="sso:text-xs sso:font-medium sso:text-gray-500 sso:dark:text-gray-400 sso:w-40 sso:flex-shrink-0"/>{{row.label}}</span>
+            <span class="sso:text-xs sso:font-medium sso-text-muted sso:flex-shrink-0"><responsive on="640-" class-merge="sso:w-40"/>{{row.label}}</span>
             <code class="sso:flex-1 sso:min-w-0 sso:break-all sso-break-all sso:text-xs sso:bg-gray-50 sso:dark:bg-gray-900 sso:text-gray-800 sso:dark:text-gray-200 sso:px-2 sso:py-1.5 sso:rounded">{{row.value}}</code>
             <button data-ref="copy_sp_info_{{row.key}}" type="button" class="sso-btn sso-btn-secondary sso:text-xs" aria-label="$t:sirsoft-sso.admin.common.copy_named|name={{row.label}}">
               <on type="click">
@@ -179,7 +179,7 @@
           </div>
         </div>
         <div data-ref="sp_keys_section" data-if="{{_local.idpForm?.protocol === 'saml'}}" class="sso:pt-4 sso:border-t sso:border-gray-200 sso:dark:border-gray-700 sso:flex sso:flex-col sso:gap-2">
-          <responsive on="640-" class="sso:pt-4 sso:border-t sso:border-gray-200 sso:dark:border-gray-700 sso:flex sso:flex-row sso:items-center sso:gap-2"/>
+          <responsive on="640-" class-merge="sso:flex-row sso:items-center"/>
           <p class="sso:flex-1 sso:text-sm sso:text-gray-600 sso:dark:text-gray-400">$t:sirsoft-sso.admin.idp.saml_generate_sp_keys_confirm</p>
           <button data-ref="generate_sp_keys" type="button" class="sso-btn sso-btn-secondary sso:text-sm" disabled="{{!_computed.canUpdate}}">
             <on type="click">
@@ -223,7 +223,7 @@
             <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.owned_domains</p>
           </div>
           <div class="sso:space-y-2">
-            <responsive on="desktop" class="sso:col-span-2 sso:space-y-2"/>
+            <responsive on="desktop" class-merge="sso:col-span-2"/>
             <tag-input data-type="composite" name="owned_domains" :creatable="true" placeholder="corp.example" class="sso:w-full" defaultVariant="blue" disabled="{{!_computed.canUpdate}}"/>
             <div class="sso-flex-start sso:gap-3">
               <toggle data-type="composite" name="enforce_owned_domains" ariaLabel="$t:sirsoft-sso.admin.settings.idp.fields.enforce_owned_domains" size="md" disabled="{{!_computed.canUpdate}}"/>
@@ -295,14 +295,14 @@
         <div data-each="rule, index in _local.idpForm?.attribute_map ?? []" data-key="{{'attr-' + index}}" data-ref="attribute_rule_{{index}}" class="sso:flex sso:flex-col sso:gap-2">
           <responsive on="768-" class="sso:flex sso:flex-row sso:items-center sso:gap-2"/>
           <input type="text" class="sso-input" value="{{rule.field}}" placeholder="name / attr:department" aria-label="$t:sirsoft-sso.admin.settings.idp.fields.attribute_field" disabled="{{!_computed.canUpdate}}">
-            <responsive on="768-" class="sso-input sso:w-48"/>
+            <responsive on="768-" class-merge="sso:w-48"/>
             <on type="change">
               <!-- 회원 쪽 칸 이름 — 이 줄만 바꾼다 -->
               <set-state target="local" idpForm.attribute_map="{{(_local.idpForm?.attribute_map ?? []).map((r, i) => i === index ? Object.assign({}, r, { field: $event.target.value }) : r)}}"/>
             </on>
           </input>
           <input type="text" class="sso-input" value="{{rule.source}}" placeholder="displayName" aria-label="$t:sirsoft-sso.admin.settings.idp.fields.attribute_source" disabled="{{!_computed.canUpdate}}">
-            <responsive on="768-" class="sso-input sso:w-48"/>
+            <responsive on="768-" class-merge="sso:w-48"/>
             <on type="change">
               <!-- IdP 가 주는 속성 이름 — 이 줄만 바꾼다 -->
               <set-state target="local" idpForm.attribute_map="{{(_local.idpForm?.attribute_map ?? []).map((r, i) => i === index ? Object.assign({}, r, { source: $event.target.value }) : r)}}"/>
@@ -377,14 +377,14 @@
         <div data-each="rule, index in _local.idpForm?.role_mapping ?? []" data-key="{{'role-' + index}}" data-ref="role_rule_{{index}}" class="sso:flex sso:flex-col sso:gap-2">
           <responsive on="768-" class="sso:flex sso:flex-row sso:items-center sso:gap-2"/>
           <input type="text" class="sso-input" value="{{rule.group}}" placeholder="$t:sirsoft-sso.admin.settings.idp.placeholders.group" aria-label="$t:sirsoft-sso.admin.settings.idp.fields.role_group" disabled="{{!_computed.canUpdate || (rule.role === 'admin' &amp;&amp; !_computed.isSuper)}}">
-            <responsive on="768-" class="sso-input sso:flex-1"/>
+            <responsive on="768-" class-merge="sso:flex-1"/>
             <on type="change">
               <!-- IdP 그룹 이름 — 이 줄만 바꾼다 -->
               <set-state target="local" idpForm.role_mapping="{{(_local.idpForm?.role_mapping ?? []).map((r, i) => i === index ? Object.assign({}, r, { group: $event.target.value }) : r)}}"/>
             </on>
           </input>
           <input type="text" class="sso-input" value="{{rule.role}}" placeholder="manager" aria-label="$t:sirsoft-sso.admin.settings.idp.fields.role_role" disabled="{{!_computed.canUpdate || (rule.role === 'admin' &amp;&amp; !_computed.isSuper)}}">
-            <responsive on="768-" class="sso-input sso:w-48"/>
+            <responsive on="768-" class-merge="sso:w-48"/>
             <on type="change">
               <!-- 붙일 역할 식별자 — 관리자 역할 줄은 최고관리자만 고친다 -->
               <set-state target="local" idpForm.role_mapping="{{(_local.idpForm?.role_mapping ?? []).map((r, i) => i === index ? Object.assign({}, r, { role: $event.target.value }) : r)}}"/>
@@ -493,8 +493,8 @@
                 <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.scim_match</p>
               </div>
               <div class="sso:space-y-2">
-                <p data-if="{{!!_local.idpForm?.scim?.has_token}}" class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">{{$t('sirsoft-sso.admin.settings.idp.scim_token_issued_at')}}: {{_local.idpForm?.scim?.token_issued_at | datetime | default('-')}}</p>
-                <p data-if="{{!_local.idpForm?.scim?.has_token}}" class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">$t:sirsoft-sso.admin.settings.idp.scim_token_none</p>
+                <p data-if="{{!!_local.idpForm?.scim?.has_token}}" class="sso:text-xs sso-text-muted">{{$t('sirsoft-sso.admin.settings.idp.scim_token_issued_at')}}: {{_local.idpForm?.scim?.token_issued_at | datetime | default('-')}}</p>
+                <p data-if="{{!_local.idpForm?.scim?.has_token}}" class="sso:text-xs sso-text-muted">$t:sirsoft-sso.admin.settings.idp.scim_token_none</p>
                 <button data-ref="issue_scim_token" data-if="{{!_local.idpForm?.scim?.has_token}}" type="button" class="sso-btn sso-btn-secondary sso:text-sm" disabled="{{!_computed.canUpdate}}">
                   <on type="click">
                     <!-- SCIM 토큰 첫 발급 — 응답에서 한 번만 보인다. 무효화할 이전 토큰이 없어 확인을 묻지 않는다 -->
@@ -611,14 +611,14 @@
           <div class="sso:flex sso:flex-col sso:gap-2">
             <responsive on="640-" class="sso:flex sso:flex-row sso:gap-2"/>
             <input type="text" class="sso-input" value="{{_local.ldapTestId ?? ''}}" autoComplete="off" aria-label="$t:sirsoft-sso.admin.idp.ldap_test_identifier">
-              <responsive on="640-" class="sso-input sso:w-1/3"/>
+              <responsive on="640-" class-merge="sso:w-1/3"/>
               <on type="change">
                 <!-- 시험할 디렉터리 계정 식별자 — 화면 상태에만 둔다 -->
                 <set-state target="local" ldapTestId="{{$event.target.value}}"/>
               </on>
             </input>
             <input type="password" class="sso-input" value="{{_local.ldapTestPw ?? ''}}" autoComplete="new-password" aria-label="$t:sirsoft-sso.admin.idp.ldap_test_password">
-              <responsive on="640-" class="sso-input sso:w-1/3"/>
+              <responsive on="640-" class-merge="sso:w-1/3"/>
               <on type="change">
                 <!-- 시험용 비밀번호 — 화면 상태에만 두고 시험이 끝나면 비운다 -->
                 <set-state target="local" ldapTestPw="{{$event.target.value}}"/>
@@ -652,13 +652,13 @@
           </ul>
         </div>
         <div class="sso:grid sso:grid-cols-3 sso:gap-x-4 sso:gap-y-1 sso:text-sm">
-          <span class="sso:text-gray-500 sso:dark:text-gray-400">$t:sirsoft-sso.admin.settings.idp.last_success</span>
+          <span class="sso-text-muted">$t:sirsoft-sso.admin.settings.idp.last_success</span>
           <span class="sso:col-span-2 sso:text-gray-800 sso:dark:text-gray-200">{{_local.idpForm?.last_success_at | datetime | default('-')}}</span>
-          <span class="sso:text-gray-500 sso:dark:text-gray-400">$t:sirsoft-sso.admin.settings.idp.last_error</span>
+          <span class="sso-text-muted">$t:sirsoft-sso.admin.settings.idp.last_error</span>
           <span class="sso:col-span-2 sso:text-gray-800 sso:dark:text-gray-200">{{_local.idpForm?.last_error_at | datetime | default('-')}}{{_local.idpForm?.last_error_at &amp;&amp; _local.idpForm?.last_error_code ? ' (' + _local.idpForm.last_error_code + ')' : ''}}</span>
-          <span class="sso:text-gray-500 sso:dark:text-gray-400">$t:sirsoft-sso.admin.settings.idp.periodic_checked_at</span>
+          <span class="sso-text-muted">$t:sirsoft-sso.admin.settings.idp.periodic_checked_at</span>
           <span class="sso:col-span-2 sso:text-gray-800 sso:dark:text-gray-200">{{_local.idpForm?.periodic_checked_at | datetime | default('-')}}</span>
-          <span data-if="{{!!_local.idpForm?.cert_expires_at}}" class="sso:text-gray-500 sso:dark:text-gray-400">$t:sirsoft-sso.admin.settings.idp.cert_expires_at</span>
+          <span data-if="{{!!_local.idpForm?.cert_expires_at}}" class="sso-text-muted">$t:sirsoft-sso.admin.settings.idp.cert_expires_at</span>
           <span data-if="{{!!_local.idpForm?.cert_expires_at}}" class="sso:col-span-2 sso:text-gray-800 sso:dark:text-gray-200">{{_local.idpForm?.cert_expires_at | datetime | default('-')}}</span>
         </div>
         <div data-ref="recent_attempts">
@@ -666,12 +666,12 @@
           <p data-if="{{(_local.idpForm?.recent_attempts ?? []).length === 0}}" class="sso-text-hint">$t:sirsoft-sso.admin.logs.empty</p>
           <ul data-if="{{(_local.idpForm?.recent_attempts ?? []).length > 0}}" class="sso:divide-y sso:divide-gray-100 sso:dark:divide-gray-700">
             <li data-each="attempt in _local.idpForm?.recent_attempts ?? []" data-key="{{attempt.id}}" class="sso:py-2 sso:flex sso:flex-wrap sso:items-center sso:gap-2 sso:text-xs">
-              <span class="sso:text-gray-500 sso:dark:text-gray-400 sso:whitespace-nowrap">{{attempt.created_at | datetime | default('-')}}</span>
+              <span class="sso-text-muted sso:whitespace-nowrap">{{attempt.created_at | datetime | default('-')}}</span>
               <span class="sso:text-gray-800 sso:dark:text-gray-200">{{$t('sirsoft-sso.admin.logs.intents.' + attempt.intent)}}</span>
               <span class="{{attempt.outcome === 'failed' || attempt.outcome === 'denied' ? 'sso:text-red-700 sso:dark:text-red-300' : 'sso:text-green-700 sso:dark:text-green-300'}}">{{$t('sirsoft-sso.admin.logs.outcomes.' + attempt.outcome)}}</span>
               <span data-if="{{!!attempt.reason_code}}" class="sso:font-mono sso:text-gray-600 sso:dark:text-gray-300">{{attempt.reason_code}}</span>
               <!-- 실패한 IdP 응답 요약(§7 L-3) — 서명이 붙었는지, 어설션 유효 시각, 대상. 서명 없음·시계 차이·SP 엔티티 ID 불일치를 가려 본다(원문은 저장하지 않는다) -->
-              <span data-if="{{!!attempt.response_summary}}" data-ref="attempt_response_summary_{{attempt.id}}" class="sso:basis-full sso:text-gray-500 sso:dark:text-gray-400 sso:break-all sso-break-all">{{[(attempt.response_summary?.signed ? $t('sirsoft-sso.admin.settings.idp.response_summary.signed') : $t('sirsoft-sso.admin.settings.idp.response_summary.unsigned')), $t('sirsoft-sso.admin.settings.idp.response_summary.not_on_or_after') + ' ' + (attempt.response_summary?.not_on_or_after ?? '-'), $t('sirsoft-sso.admin.settings.idp.response_summary.audiences') + ' ' + ((attempt.response_summary?.audiences ?? []).join(', ') || '-')].join(' · ')}}</span>
+              <span data-if="{{!!attempt.response_summary}}" data-ref="attempt_response_summary_{{attempt.id}}" class="sso:basis-full sso-text-muted sso:break-all sso-break-all">{{[(attempt.response_summary?.signed ? $t('sirsoft-sso.admin.settings.idp.response_summary.signed') : $t('sirsoft-sso.admin.settings.idp.response_summary.unsigned')), $t('sirsoft-sso.admin.settings.idp.response_summary.not_on_or_after') + ' ' + (attempt.response_summary?.not_on_or_after ?? '-'), $t('sirsoft-sso.admin.settings.idp.response_summary.audiences') + ' ' + ((attempt.response_summary?.audiences ?? []).join(', ') || '-')].join(' · ')}}</span>
             </li>
           </ul>
         </div>

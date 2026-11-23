@@ -35,7 +35,7 @@ export function periodStatus(period: string, active: boolean, start: string, end
   return 'active';
 }
 
-/** 미리보기 구좌 틀의 상자 하나 — 서버가 활성 사용자 템플릿 레이아웃에서 꺼낸 정적 클래스와 반응형 덮어쓰기(className 만). */
+/** 미리보기 구좌 틀의 상자 하나 — 서버가 활성 사용자 템플릿 레이아웃에서 꺼낸 정적 클래스와 반응형 덮어쓰기(구간 className·classMerge 를 합친 실효 클래스). */
 export interface FrameBox {
   className: string;
   responsive?: Record<string, string>;
@@ -76,7 +76,12 @@ export function matchResponsiveKey(responsive: Record<string, unknown>, width: n
   return matched[0]?.key ?? null;
 }
 
-/** 그 폭에서 상자가 쓰는 클래스 — 반응형 덮어쓰기는 기본 클래스를 통째로 바꾼다(엔진과 같다). */
+/**
+ * 그 폭에서 상자가 쓰는 클래스 — 구간 값이 있으면 그 값을 쓴다.
+ *
+ * 서버(PreviewFrameResolver)가 구간 className(통째 교체)과 구간 classMerge(바뀐 클래스만 덧붙이기, 코어 7.2.1)를 엔진과
+ * 같은 규칙으로 합친 실효 클래스를 구간 값으로 보내므로, 여기서는 맞는 구간 값을 그대로 고른다.
+ */
 export function frameClass(box: FrameBox, width: number): string {
   const key = matchResponsiveKey(box.responsive ?? {}, width);
   return key !== null ? (box.responsive ?? {})[key] : box.className;

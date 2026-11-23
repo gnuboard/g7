@@ -75,9 +75,7 @@
                             "if": "{{_global.identityChallenge?.purpose !== 'nhnkcp.adult_verification'}}",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "verificationnhnkcp:text-sm verificationnhnkcp:text-gray-600 verificationnhnkcp:dark:text-gray-400 verificationnhnkcp:hidden verification-nhnkcp-hidden"
-                                    }
+                                    "classMerge": "verificationnhnkcp:hidden verification-nhnkcp-hidden"
                                 }
                             },
                             "props": {

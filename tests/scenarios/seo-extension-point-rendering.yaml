@@ -166,6 +166,8 @@ test_files:
   - tests/Unit/Seo/PipeRegistryTest.php
   - tests/Unit/Seo/SeoLayoutDataSourceDeclarationTest.php
   - tests/Unit/Upgrades/ClearSeoPageCacheAfterRendererParityFixTest.php
+  # #399 (7.2.1) — classMerge·구간 classMap 봇 렌더 도입 뒤 페이지 캐시 1회 무효화
+  - tests/Unit/Upgrades/ClearSeoPageCacheAfterClassMergeRendererTest.php
   - tests/Playwright/specs/seo-bot-rendering.spec.ts
 
   - tests/Unit/Seo/SeoSwitchValueParityTest.php

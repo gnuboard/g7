@@ -10,7 +10,7 @@
       <p class="board-text-error-soft">$t:sirsoft-board.admin.settings.notification_definitions.reset_modal.warning_message</p>
     </div>
     <footer>
-      <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed" disabled="{{_global.isResettingNotification}}">
+      <button type="button" class="board-btn board-btn-secondary" disabled="{{_global.isResettingNotification}}">
         <on type="click">
           <close-modal target="modal_board_notification_definition_reset"/>
         </on>

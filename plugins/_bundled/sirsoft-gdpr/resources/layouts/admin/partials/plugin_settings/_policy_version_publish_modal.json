@@ -112,7 +112,7 @@
                 "props": {
                     "type": "button",
                     "disabled": "{{$parent._computed.isPluginReadOnly || (!(_local.publishMemo ?? '').trim() || _local.isPublishing)}}",
-                    "className": "gdpr:px-4 gdpr:py-2 gdpr:bg-gray-900 gdpr:dark:bg-white gdpr:text-white gdpr:dark:text-gray-900 gdpr:rounded-lg gdpr:text-sm gdpr:font-medium gdpr:hover:bg-gray-800 gdpr:dark:hover:bg-gray-100 gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed gdpr:inline-flex gdpr:items-center"
+                    "className": "gdpr-btn gdpr-btn-primary"
                 },
                 "children": [
                     {

@@ -343,7 +343,7 @@
         <div data-ref="search_buttons" class="board:flex board:justify-center board:gap-2 board:mt-4">
           <responsive on="portable" class="board:grid board:grid-cols-2 board:gap-2 board:mt-4"/>
           <button type="button" data-ref="reset_button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board-text-body board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors board:font-medium">
-            <responsive on="portable" class="board:w-full board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board-text-body board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors board:font-medium"/>
+            <responsive on="portable" class-merge="board:w-full"/>
             <on type="click">
               <!-- 초기화 ①  검색 대상과 검색어를 지역 상태에서 비운다 -->
               <set-state searchField="all" searchQuery=""/>
@@ -359,7 +359,7 @@
             <span>$t:sirsoft-board.admin.reports.reset</span>
           </button>
           <button type="button" data-ref="search_button" class="board:px-4 board:py-2 board:bg-gray-800 board:dark:bg-gray-600 board:text-white board:rounded-lg board:hover:bg-gray-900 board:dark:hover:bg-gray-500 board:transition-colors board:text-sm board:font-medium">
-            <responsive on="portable" class="board:w-full board:px-4 board:py-2 board:bg-gray-800 board:dark:bg-gray-600 board:text-white board:rounded-lg board:hover:bg-gray-900 board:dark:hover:bg-gray-500 board:transition-colors board:text-sm board:font-medium"/>
+            <responsive on="portable" class-merge="board:w-full"/>
             <on type="click">
               <!-- 검색 실행 — 조립은 명명 액션 한 자리에 있고 여기서는 그것을 부르기만 한다(엔터 입력 두 자리와 같은 규칙을 쓰기 위해서다) -->
               <action-ref name="searchBoardReports"/>
@@ -369,7 +369,7 @@
         </div>
       </div>
       <div data-ref="bulk_actions_area" class="board-bulk-actions-bar">
-        <responsive on="portable" class="board-bulk-actions-bar">
+        <responsive on="portable">
           <span data-ref="mobile_selected_count" class="board-text-body board:font-medium">$t:sirsoft-board.admin.reports.selected_count|count={{(_global.selectedIds || []).length}}</span>
           <!-- 좁은 화면 일괄 처리 메뉴 — 항목은 데스크톱 일괄 버튼 4개와 같은 조건으로 잠근다: 관리 권한이 없거나 고른 신고가 없으면 누를 수 없다(선택 없이 누르면 서버가 ids 필수로 거절한다) -->
           <dropdown data-type="composite" data-ref="mobile_bulk_action_dropdown" label="$t:sirsoft-board.admin.reports.bulk_action_select" position="bottom-right" class="board:ml-auto">
@@ -441,7 +441,7 @@
         <span data-ref="selected_count" class="board-text-body board:font-medium">$t:sirsoft-board.admin.reports.selected_count|count={{(_global.selectedIds || []).length}}</span>
         <span data-ref="status_change_label" class="board-text-label-subtle">$t:sirsoft-board.admin.reports.status_change_label</span>
         <div data-ref="bulk_buttons" class="board:flex board:gap-2">
-          <button type="button" data-ref="bulk_review" class="board:px-3 board:py-1.5 board:bg-blue-600 board:text-white board:rounded board:hover:bg-blue-700 board:dark:bg-blue-600 board:dark:hover:bg-blue-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed board:text-sm board:font-medium board:transition-colors" disabled="{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}">
+          <button type="button" data-ref="bulk_review" class="board-btn board-btn-primary board-btn-sm board:rounded" disabled="{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}">
             <on type="click">
               <!-- 「검토중으로」 ①  갈래를 정하고 앞서 적어 둔 사유·집계를 비운다(남겨 두면 직전 갈래의 값이 그대로 실린다) -->
               <set-state target="global" bulkActionType="review" bulkActionReason="" :statusCountsData="null" :statusCountsLoading="true"/>
@@ -530,7 +530,7 @@
             <div class="board-stack-flush board:gap-0.5">
               <span class="board:text-sm board:text-gray-900 board:dark:text-white">{{row.last_reported_at ?? row.created_at}}</span>
               <div data-if="{{row.created_at &amp;&amp; (row.report_count ?? 0) > 1}}" class="board:flex board:items-center board:gap-1">
-                <span class="board:text-xs board:text-gray-500 board:dark:text-gray-400">$t:sirsoft-board.admin.reports.columns.first_reported_at_label</span>
+                <span class="board:text-xs board-text-muted">$t:sirsoft-board.admin.reports.columns.first_reported_at_label</span>
                 <span class="board-text-tertiary">{{row.created_at}}</span>
               </div>
             </div>
@@ -693,7 +693,7 @@
         </textarea>
       </div>
       <footer>
-        <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
+        <button type="button" class="board-btn board-btn-secondary">
           <on type="click">
             <close-modal/>
           </on>

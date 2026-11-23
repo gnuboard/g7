@@ -8,6 +8,7 @@
 
 import { describe, it, expect } from 'vitest';
 import adminEcommerceSettingsLayout from '../../../layouts/admin/admin_ecommerce_settings.json';
+import { applyResponsiveClassMerge } from '@core/template-engine/helpers/StyleHelpers';
 
 /** 레이아웃 트리에서 주어진 id 의 노드를 찾는다. */
 function findById(node: unknown, id: string): Record<string, unknown> | undefined {
@@ -45,11 +46,20 @@ describe('admin_ecommerce_settings 환경설정 sticky 고정', () => {
     const className = classNameOf(tabNav);
     expect(className).toContain('ecommerce:sticky');
     expect(className).toContain('ecommerce:top-0');
-    const responsive = (tabNav?.responsive ?? {}) as Record<string, { props?: { className?: string } }>;
+    // 구간 실효값 = 구간 class(있으면 통째 교체) 위에 구간 class-merge 를 엔진 규칙으로 덧붙인 값 (engine-v1.98.0)
+    const responsive = (tabNav?.responsive ?? {}) as Record<string, { props?: { className?: string }; classMerge?: string }>;
     expect(Object.keys(responsive).length).toBeGreaterThan(0);
-    for (const range of Object.values(responsive)) {
-      expect(range.props?.className).toContain('ecommerce:sticky');
-      expect(range.props?.className).toContain('ecommerce:top-0');
+    const w = window as unknown as { G7Config?: Record<string, unknown> };
+    const prev = w.G7Config;
+    w.G7Config = { ...(prev ?? {}), extensionClassPrefixes: ['ecommerce'] };
+    try {
+      for (const range of Object.values(responsive)) {
+        const words = applyResponsiveClassMerge(range.props?.className ?? className, range.classMerge).split(/\s+/);
+        expect(words).toContain('ecommerce:sticky');
+        expect(words).toContain('ecommerce:top-0');
+      }
+    } finally {
+      w.G7Config = prev;
     }
   });
 

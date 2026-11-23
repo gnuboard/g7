@@ -10,7 +10,7 @@
 <partial description="언어팩 관리 본문 SSoT — 카드형 UI (모듈/플러그인/템플릿 관리와 일관 수준). PageHeader + 모바일 액션 영역 + 검색/필터 + CardGrid + 페이지네이션. 확장 컨텍스트 wrapper(partials/admin_extension_language_packs/_content.json) 가 back 버튼/배너만 추가하여 재사용.">
   <div data-ref="lang_pack_content">
     <page-header data-type="composite" data-ref="lp_page_header" title="$t:admin.language_packs.title" description="$t:admin.language_packs.description">
-      <button data-ref="lp_btn_check_updates" data-if="{{language_packs?.data?.abilities?.can_check_updates}}" type="button" disabled="{{_global.isLanguagePackCheckingUpdates}}" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+      <button data-ref="lp_btn_check_updates" data-if="{{language_packs?.data?.abilities?.can_check_updates}}" type="button" disabled="{{_global.isLanguagePackCheckingUpdates}}" class="flex-center btn btn-secondary">
         <responsive on="portable" class="hidden"/>
         <on type="click">
           <!-- 등록된 팩들의 새 판본을 원격에서 확인해 표시만 갱신한다 — 받거나 깔지는 않는다.
@@ -37,7 +37,7 @@
         <icon data-if="{{_global.isLanguagePackCheckingUpdates}}" name="fas fa-spinner" size="sm" class="animate-spin"/>
         <span>$t:admin.language_packs.actions.check_updates</span>
       </button>
-      <button data-ref="lp_btn_refresh_cache" data-if="{{language_packs?.data?.abilities?.can_refresh_cache}}" type="button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+      <button data-ref="lp_btn_refresh_cache" data-if="{{language_packs?.data?.abilities?.can_refresh_cache}}" type="button" class="flex-center btn btn-secondary">
         <responsive on="portable" class="hidden"/>
         <on type="click">
           <open-modal target="language_pack_refresh_cache_modal"/>
@@ -45,7 +45,7 @@
         <icon name="fas fa-broom" size="sm"/>
         <span>$t:admin.language_packs.actions.refresh_cache</span>
       </button>
-      <button data-ref="lp_btn_install" data-if="{{language_packs?.data?.abilities?.can_install}}" type="button" disabled="{{_global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}" class="disabled:opacity-50 disabled:cursor-not-allowed flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+      <button data-ref="lp_btn_install" data-if="{{language_packs?.data?.abilities?.can_install}}" type="button" disabled="{{_global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}" class="btn btn-primary flex-center">
         <responsive on="portable" class="hidden"/>
         <on type="click">
           <open-modal target="language_pack_install_modal"/>
@@ -87,7 +87,7 @@
         <icon name="fas fa-broom" size="sm"/>
         <span>$t:admin.language_packs.actions.refresh_cache</span>
       </button>
-      <button data-if="{{language_packs?.data?.abilities?.can_install}}" type="button" disabled="{{_global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}" class="disabled:opacity-50 disabled:cursor-not-allowed flex-center flex-1 justify-center gap-2 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors text-sm">
+      <button data-if="{{language_packs?.data?.abilities?.can_install}}" type="button" disabled="{{_global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}" class="btn btn-primary flex-center flex-1 px-3">
         <on type="click">
           <open-modal target="language_pack_install_modal"/>
         </on>
@@ -144,7 +144,7 @@
       </div>
       <div data-ref="lp_filter_group" class="flex-center gap-3 flex-wrap">
       <select data-ref="lp_filter_scope" aria-label="$t:admin.language_packs.columns.scope" data-if="{{!_local.scopeLocked}}" value="{{query.scope ?? ''}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100">
-        <responsive on="640-" class="w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100"/>
+        <responsive on="640-" class-merge="w-40"/>
         <options>
           <option value="">$t:admin.language_packs.filter.all_scopes</option>
           <option value="core">$t:admin.language_packs.scope.core</option>
@@ -164,7 +164,7 @@
         </on>
       </select>
       <select data-ref="lp_filter_status" aria-label="$t:admin.language_packs.columns.status" value="{{query.status ?? ''}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100">
-        <responsive on="640-" class="w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100"/>
+        <responsive on="640-" class-merge="w-40"/>
         <options>
           <option value="">$t:admin.language_packs.filter.all_statuses</option>
           <option value="active">$t:admin.language_packs.status.active</option>
@@ -184,7 +184,7 @@
           </navigate>
         </on>
       </select>
-      <button data-ref="lp_filter_reset" data-if="{{(query.search ?? '') !== '' || (query.scope ?? '') !== '' || (query.status ?? '') !== '' || (query.locale ?? '') !== '' || query.exclude_protected === '0' || query.exclude_protected === 0 || query.exclude_protected === false}}" type="button" title="$t:admin.language_packs.filter.reset" class="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200">
+      <button data-ref="lp_filter_reset" data-if="{{(query.search ?? '') !== '' || (query.scope ?? '') !== '' || (query.status ?? '') !== '' || (query.locale ?? '') !== '' || query.exclude_protected === '0' || query.exclude_protected === 0 || query.exclude_protected === false}}" type="button" title="$t:admin.language_packs.filter.reset" class="btn btn-secondary px-3 rounded-md">
         <on event="onClick">
           <!-- 초기화가 범위만은 건드리지 않을 수 있다 — 확장 상세에서 들어온 화면에서 범위를 지우면 남의 확장 팩까지 보이게 되므로 그 자리는 그대로 둔다. -->
           <set-state target="local" filterScope="{{_local.scopeLocked ? _local.filterScope : ''}}" filterStatus="" filterLocale="" filterSearch=""/>
@@ -225,7 +225,7 @@
       </div>
     </div>
     <div data-ref="lp_content_area" class="admin-card">
-      <div data-ref="lp_empty" data-if="{{language_packs !== undefined &amp;&amp; (language_packs?.data?.data?.length ?? 0) === 0}}" class="p-8 text-center text-gray-500 dark:text-gray-400">$t:admin.language_packs.messages.empty</div>
+      <div data-ref="lp_empty" data-if="{{language_packs !== undefined &amp;&amp; (language_packs?.data?.data?.length ?? 0) === 0}}" class="p-8 text-center text-muted">$t:admin.language_packs.messages.empty</div>
       <!-- 언어팩 목록 — 갤러리(카드)와 목록(행)은 서로 다른 DOM 이다.
            보기 분기는 `viewMode` prop 으로 넘긴다: 카드 셀의 렌더 컨텍스트에는 `_global` 이
            없어 카드 안쪽에서는 보기 상태를 볼 수 없기 때문이다.

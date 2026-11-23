@@ -81,7 +81,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "{{ch.icon ?? 'bell'}}",
-                                        "className": "koreaexim:text-gray-500 koreaexim:dark:text-gray-400"
+                                        "className": "koreaexim-text-muted"
                                     }
                                 },
                                 {
@@ -237,7 +237,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "koreaexim-btn koreaexim-btn-primary koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed",
+                                "className": "koreaexim-btn koreaexim-btn-primary",
                                 "disabled": "{{_computed.isNotificationReadOnly || _local.koreaeximSavingChannels !== null && _local.koreaeximSavingChannels !== undefined || !(JSON.stringify([...(_local.koreaeximChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())) || (_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).length === 0}}"
                             },
                             "children": [
@@ -287,7 +287,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "koreaexim-btn koreaexim-btn-secondary koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed",
+                                "className": "koreaexim-btn koreaexim-btn-secondary",
                                 "disabled": "{{_local.koreaeximSavingChannels !== null && _local.koreaeximSavingChannels !== undefined}}"
                             },
                             "children": [

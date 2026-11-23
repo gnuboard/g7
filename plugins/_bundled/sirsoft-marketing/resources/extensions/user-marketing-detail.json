@@ -32,6 +32,7 @@
                     },
                     "children": [
                         {
+                            "comment": "audit:allow layout-inline-semantic-duplicate reason: 회원 수정 화면 확장 탭에 주입하는 마케팅 동의 구역 상자, 그 화면의 다른 구역과 맞춘 여백 p-6 이라 카드(p-4)와 다름",
                             "id": "section_marketing_consent",
                             "type": "basic",
                             "name": "Div",
@@ -102,7 +103,7 @@
                                             "name": "Div",
                                             "if": "{{user !== undefined && user !== null && (!user?.data?.consent_histories || user?.data?.consent_histories?.length === 0)}}",
                                             "props": {
-                                                "className": "marketing:text-sm marketing:text-gray-500 marketing:dark:text-gray-400 marketing:py-4 marketing:text-center"
+                                                "className": "marketing:text-sm marketing-text-muted marketing:py-4 marketing:text-center"
                                             },
                                             "text": "$t:sirsoft-marketing.no_consent_history"
                                         },
@@ -222,7 +223,7 @@
                                                                             "type": "basic",
                                                                             "name": "Td",
                                                                             "props": {
-                                                                                "className": "marketing:px-2 marketing:py-1.5 marketing:text-xs marketing:text-gray-500 marketing:dark:text-gray-400"
+                                                                                "className": "marketing:px-2 marketing:py-1.5 marketing:text-xs marketing-text-muted"
                                                                             },
                                                                             "text": "{{history?.source === 'register' ? '$t:sirsoft-marketing.source_register' : history?.source === 'admin' ? '$t:sirsoft-marketing.source_admin' : '$t:sirsoft-marketing.source_profile'}}"
                                                                         }

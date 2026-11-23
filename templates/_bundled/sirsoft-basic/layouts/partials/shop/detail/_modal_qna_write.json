@@ -148,7 +148,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "lock",
-                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                        "className": "text-xs text-muted"
                                     }
                                 },
                                 {
@@ -206,7 +206,7 @@
                             "name": "Span",
                             "if": "{{_global.qnaErrors?.category}}",
                             "props": {
-                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
+                                "className": "form-error"
                             },
                             "text": "{{(_global.qnaErrors?.category ?? [])[0] ?? ''}}"
                         }
@@ -258,7 +258,7 @@
                             "name": "Span",
                             "if": "{{_global.qnaErrors?.title}}",
                             "props": {
-                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
+                                "className": "form-error"
                             },
                             "text": "{{(_global.qnaErrors?.title ?? [])[0] ?? ''}}"
                         }
@@ -310,7 +310,7 @@
                             "name": "Span",
                             "if": "{{_global.qnaErrors?.content}}",
                             "props": {
-                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
+                                "className": "form-error"
                             },
                             "text": "{{(_global.qnaErrors?.content ?? [])[0] ?? ''}}"
                         }

@@ -207,7 +207,7 @@
                 "responsive": {
                     "640-1023": {
                         "props": {
-                            "className": "koreaexim:p-6 koreaexim:min-h-screen koreaexim:bg-gray-50 koreaexim:dark:bg-gray-900"
+                            "className": "koreaexim-admin-page-content"
                         }
                     },
                     "1024-": {
@@ -267,14 +267,10 @@
                         "name": "TabNavigation",
                         "responsive": {
                             "640-1023": {
-                                "props": {
-                                    "className": "koreaexim:sticky koreaexim:top-0 koreaexim:z-40 koreaexim:-mx-6 koreaexim:px-6 koreaexim:border-b koreaexim:bg-gray-50 koreaexim:border-gray-200 koreaexim:dark:bg-gray-900 koreaexim:dark:border-gray-700"
-                                }
+                                "classMerge": "koreaexim:-mx-6 koreaexim:px-6"
                             },
                             "1024-": {
-                                "props": {
-                                    "className": "koreaexim:sticky koreaexim:top-0 koreaexim:z-40 koreaexim:-mx-8 koreaexim:px-8 koreaexim:border-b koreaexim:bg-gray-50 koreaexim:border-gray-200 koreaexim:dark:bg-gray-900 koreaexim:dark:border-gray-700"
-                                }
+                                "classMerge": "koreaexim:-mx-8 koreaexim:px-8"
                             }
                         },
                         "actions": [
@@ -502,7 +498,7 @@
                                 "props": {
                                     "type": "button",
                                     "disabled": "{{_computed.isSettingsReadOnly || !_local.hasChanges || _local.isSaving}}",
-                                    "className": "koreaexim-btn koreaexim-btn-primary koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed"
+                                    "className": "koreaexim-btn koreaexim-btn-primary"
                                 },
                                 "children": [
                                     {

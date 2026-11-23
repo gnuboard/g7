@@ -40,7 +40,7 @@
       </div>
       <div data-ref="toolbar_section" class="ecommerce-flex-between">
         <div class="ecommerce-flex-center ecommerce:gap-2">
-          <button type="button" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-sm ecommerce-btn-primary ecommerce:gap-1 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{$parent._local.isAddingTemplate === true || $parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_create !== true}}">
+          <button type="button" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-sm ecommerce-btn-primary ecommerce:gap-1" disabled="{{$parent._local.isAddingTemplate === true || $parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_create !== true}}">
             <on type="click">
               <!-- 새 템플릿 줄 열기 — 편집 중이던 줄을 함께 닫는다(둘이 `templateForm` 한 칸을 돌려 쓰므로 동시에 열리면 입력이 섞인다). 금액 기본값 3000 은 여기서 정해진다. -->
               <set-state target="$parent._local" :isAddingTemplate="true" :editingTemplate="null" templateForm="{{({ zipcode: '', fee: 3000, region: '', description: '' })}}"/>
@@ -48,7 +48,7 @@
             <icon name="plus" class="ecommerce:text-xs"/>
             <span>$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.add_btn</span>
           </button>
-          <button data-if="{{($parent._local.selectedTemplateIds ?? []).length > 0}}" type="button" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-sm ecommerce-btn-danger ecommerce:gap-1 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isTemplateDeleting || $parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_delete !== true}}">
+          <button data-if="{{($parent._local.selectedTemplateIds ?? []).length > 0}}" type="button" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-sm ecommerce-btn-danger ecommerce:gap-1" disabled="{{_global.isTemplateDeleting || $parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_delete !== true}}">
             <on type="click">
               <!-- 체크한 템플릿 일괄 삭제 — 확인 문구를 액션에 달아 별도 창 없이 묻고, 문구에 건수를 실어 몇 건이 사라지는지 보인다. **템플릿 자체를 지우는 것**이라 이 정책만이 아니라 다른 정책의 불러오기에도 영향이 간다. -->
               <sequence confirm="$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.bulk_delete_confirm|count={{($parent._local.selectedTemplateIds ?? []).length}}">
@@ -76,7 +76,7 @@
           <span data-if="{{($parent._local.selectedTemplateIds ?? []).length > 0}}" class="ecommerce-text-label">$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.selected_count|count={{($parent._local.selectedTemplateIds ?? []).length}}</span>
         </div>
         <div data-if="{{(extra_fee_templates?.data?.data ?? []).length > 0}}" class="ecommerce-flex-center ecommerce:gap-2">
-          <button type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-outline ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{$parent._computed?.isReadOnly !== false}}">
+          <button type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-outline" disabled="{{$parent._computed?.isReadOnly !== false}}">
             <on type="click">
               <!-- [전체 적용] — **사용 중인 템플릿만** 골라 지금 국가 탭의 추가배송비 목록으로 복사해 넣고 창을 닫는다. 정책을 저장하지는 않으므로 폼의 [저장]을 눌러야 남는다. -->
               <sequence confirm="$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.apply_confirm">
@@ -86,7 +86,7 @@
             </on>
             $t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.apply_all
           </button>
-          <button data-if="{{($parent._local.selectedTemplateIds ?? []).length > 0}}" type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-primary ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{$parent._computed?.isReadOnly !== false}}">
+          <button data-if="{{($parent._local.selectedTemplateIds ?? []).length > 0}}" type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-primary" disabled="{{$parent._computed?.isReadOnly !== false}}">
             <on type="click">
               <!-- [선택 적용] — 위와 같은 동작이나 대상이 체크한 줄이다. **여기서는 사용 여부를 보지 않는다** — 관리자가 직접 고른 것이므로 중지된 템플릿도 적용된다. -->
               <sequence confirm="$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.apply_confirm">
@@ -200,7 +200,7 @@
                       <icon data-if="{{_global.isTemplateSaving}}" name="spinner" class="ecommerce:text-sm ecommerce:animate-spin"/>
                       <icon data-if="{{!_global.isTemplateSaving}}" name="check" class="ecommerce:text-sm"/>
                     </button>
-                    <button type="button" class="ecommerce-btn-icon ecommerce:text-gray-500 ecommerce:hover:text-gray-700 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-gray-300" aria-label="$t:common.cancel">
+                    <button type="button" class="ecommerce-btn-icon ecommerce-text-muted ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300" aria-label="$t:common.cancel">
                       <on type="click">
                         <!-- 새 줄 취소 — 줄을 닫으면서 폼과 오류를 초깃값으로 되세운다. 남겨 두면 다음에 [추가]를 눌렀을 때 지난 입력이 그대로 뜬다. -->
                         <set-state target="$parent._local" :isAddingTemplate="false" templateForm="{{({ zipcode: '', fee: 3000, region: '', description: '' })}}" templateFormErrors="{{({})}}"/>
@@ -320,7 +320,7 @@
                       <icon data-if="{{_global.isTemplateSaving}}" name="spinner" class="ecommerce:text-sm ecommerce:animate-spin"/>
                       <icon data-if="{{!_global.isTemplateSaving}}" name="check" class="ecommerce:text-sm"/>
                     </button>
-                    <button type="button" class="ecommerce-btn-icon ecommerce:text-gray-500 ecommerce:hover:text-gray-700 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-gray-300" aria-label="$t:common.cancel">
+                    <button type="button" class="ecommerce-btn-icon ecommerce-text-muted ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300" aria-label="$t:common.cancel">
                       <on type="click">
                         <!-- 편집 취소 — 편집 줄을 닫고 폼·오류를 초깃값으로 되세운다(새 줄 취소와 같은 규약이고 닫는 대상만 다르다). -->
                         <set-state target="$parent._local" :editingTemplate="null" templateForm="{{({ zipcode: '', fee: 3000, region: '', description: '' })}}" templateFormErrors="{{({})}}"/>
@@ -338,7 +338,7 @@
       <!-- 받기 실패 안내 — 다시 받기 실패는 데이터소스 오류 처리가 남긴 표시로 가른다(엔진이 실패 값을 null 로 두지 않던 판에서는 처음이면 「받는 중」, 다시 열었으면 앞 목록이 남았다). 실패한 채 「등록된 템플릿이 없습니다」를 보이면 템플릿을 새로 만들게 된다 -->
       <p data-ref="extra_fee_templates_load_failed" data-if="{{_global.extraFeeTemplatesLoadFailed === true &amp;&amp; $parent._local.isAddingTemplate !== true}}" role="alert" class="ecommerce:py-6 ecommerce:text-center ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</p>
       <!-- 빈 목록 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다 -->
-      <div data-ref="empty_state" data-if="{{extra_fee_templates !== undefined &amp;&amp; extra_fee_templates !== null &amp;&amp; _global.extraFeeTemplatesLoadFailed !== true &amp;&amp; (extra_fee_templates?.data?.data ?? []).length === 0 &amp;&amp; $parent._local.isAddingTemplate !== true}}" class="ecommerce:flex ecommerce:flex-col ecommerce:items-center ecommerce:gap-3 ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400">
+      <div data-ref="empty_state" data-if="{{extra_fee_templates !== undefined &amp;&amp; extra_fee_templates !== null &amp;&amp; _global.extraFeeTemplatesLoadFailed !== true &amp;&amp; (extra_fee_templates?.data?.data ?? []).length === 0 &amp;&amp; $parent._local.isAddingTemplate !== true}}" class="ecommerce:flex ecommerce:flex-col ecommerce:items-center ecommerce:gap-3 ecommerce:text-center ecommerce-text-muted">
         <icon name="inbox" class="ecommerce:text-4xl"/>
         <span class="ecommerce:text-sm">$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.no_templates</span>
       </div>

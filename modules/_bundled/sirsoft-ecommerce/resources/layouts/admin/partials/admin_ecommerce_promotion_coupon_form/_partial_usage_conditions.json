@@ -148,7 +148,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:hover:bg-blue-700 ecommerce:dark:bg-blue-600 ecommerce:dark:hover:bg-blue-700 ecommerce:text-white ecommerce:rounded-lg ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm"
+                                        "className": "ecommerce-btn ecommerce-btn-primary ecommerce-flex-center"
                                     },
                                     "children": [
                                         {
@@ -592,7 +592,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:hover:bg-blue-700 ecommerce:dark:bg-blue-600 ecommerce:dark:hover:bg-blue-700 ecommerce:text-white ecommerce:rounded-lg ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm"
+                                        "className": "ecommerce-btn ecommerce-btn-primary ecommerce-flex-center"
                                     },
                                     "children": [
                                         {

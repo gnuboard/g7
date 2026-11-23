@@ -312,7 +312,7 @@ export const FileTreePicker: React.FC<FileTreePickerProps> = ({
         </Div>
 
         {searchFileCount > 0 && (
-          <Span className="text-xs text-gray-500 dark:text-gray-400" data-testid="file-tree-search-summary">
+          <Span className="text-xs text-muted" data-testid="file-tree-search-summary">
             {t('admin.templates.layout_edit.search.result_summary', {
               files: searchFileCount,
               matches: searchMatchCount,

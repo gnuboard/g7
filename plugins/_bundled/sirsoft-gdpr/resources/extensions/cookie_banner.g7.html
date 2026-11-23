@@ -26,7 +26,7 @@
         </div>
         <div class="gdpr:flex gdpr:flex-wrap gdpr:items-center gdpr:justify-end gdpr:gap-2">
           <!-- 동의하지 않고 계속하기 (거부, 이슈 #430) — 텍스트/링크형(배경 없음). required 카테고리만 true 로 저장 + intent:'reject' 신호로 선택형 미동의 항목을 is_rejected=true 로 기록 후 배너 닫기. 기존 '필수만 사용'(reject_all) 버튼을 대체. 식별자 reject 로 정리. -->
-          <button type="button" disabled="{{!!_global.gdprBannerSubmittingAction}}" class="gdpr:px-2 gdpr:py-2 gdpr:text-sm gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:underline gdpr:hover:no-underline gdpr:hover:text-gray-700 gdpr:dark:hover:text-gray-200 gdpr:font-medium gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed gdpr:inline-flex gdpr:items-center gdpr:bg-transparent">
+          <button type="button" disabled="{{!!_global.gdprBannerSubmittingAction}}" class="gdpr:px-2 gdpr:py-2 gdpr:text-sm gdpr-text-muted gdpr:underline gdpr:hover:no-underline gdpr:hover:text-gray-700 gdpr:dark:hover:text-gray-200 gdpr:font-medium gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed gdpr:inline-flex gdpr:items-center gdpr:bg-transparent">
             <on type="click">
               <set-state target="global" gdprBannerSubmittingAction="reject"/>
               <api-call auth_mode="optional" target="/api/plugins/sirsoft-gdpr/consent/cookie" method="POST" body="{{{ consents: (gdprPublicSettings?.data?.cookie_categories ?? []).reduce((acc, c) => ({ ...acc, ['cookie_' + c.key]: c.required === true }), {}), source: 'banner', intent: 'reject' }}}">
@@ -100,7 +100,7 @@
         </div>
       </div>
       <!-- 운영 주체 + 데이터 저장 위치 푸터 라인 — EDPB Guidelines 05/2020 'controller identity must be apparent from the first information layer' 충족 + GDPR Art.13(1)(f) 저장 위치 고지. 3-case 분기로 자연어 한 줄 표현: (1) 둘 다 / (2) 운영자만 / (3) 저장위치만. 둘 다 비면 라인 전체 숨김 (어색한 빈 라벨 회피). -->
-      <div data-ref="gdpr_banner_operator_footer" data-if="{{!!gdprPublicSettings?.data?.legal_entity_name || !!gdprPublicSettings?.data?.data_storage_location}}" class="gdpr:mt-3 gdpr:pt-2 gdpr:border-t gdpr:border-gray-100 gdpr:dark:border-gray-700 gdpr:text-xs gdpr:text-gray-500 gdpr:dark:text-gray-400">
+      <div data-ref="gdpr_banner_operator_footer" data-if="{{!!gdprPublicSettings?.data?.legal_entity_name || !!gdprPublicSettings?.data?.data_storage_location}}" class="gdpr:mt-3 gdpr:pt-2 gdpr:border-t gdpr:border-gray-100 gdpr:dark:border-gray-700 gdpr:text-xs gdpr-text-muted">
         <span data-if="{{!!gdprPublicSettings?.data?.legal_entity_name &amp;&amp; !!gdprPublicSettings?.data?.data_storage_location}}">$t:sirsoft-gdpr.banner.operator_and_storage_line|entity={{gdprPublicSettings?.data?.legal_entity_name ?? ''}}|location={{gdprPublicSettings?.data?.data_storage_location ?? ''}}</span>
         <span data-if="{{!!gdprPublicSettings?.data?.legal_entity_name &amp;&amp; !gdprPublicSettings?.data?.data_storage_location}}">$t:sirsoft-gdpr.banner.operator_only_line|entity={{gdprPublicSettings?.data?.legal_entity_name ?? ''}}</span>
         <span data-if="{{!gdprPublicSettings?.data?.legal_entity_name &amp;&amp; !!gdprPublicSettings?.data?.data_storage_location}}">$t:sirsoft-gdpr.banner.storage_only_line|location={{gdprPublicSettings?.data?.data_storage_location ?? ''}}</span>
@@ -118,7 +118,7 @@
                 <span data-if="{{category?.required === true}}" class="gdpr:inline-flex gdpr:items-center gdpr:px-1.5 gdpr:py-0.5 gdpr:rounded gdpr:text-xs gdpr:font-medium gdpr:bg-red-100 gdpr:dark:bg-red-900/40 gdpr:text-red-700 gdpr:dark:text-red-300">$t:sirsoft-gdpr.banner.category_required_badge</span>
               </div>
               <!-- 카테고리 description — 사용자 친화 한 줄 (시더의 user_info 표현 사용. 이전 자세히 보기 펼침 영역과 중복되어 펼침 영역 통째 제거). 라벨과 같이 현재 로케일 우선 -->
-              <p data-if="{{!!$localized(category?.description)}}" class="gdpr:mt-1 gdpr:text-xs gdpr:leading-relaxed gdpr:text-gray-500 gdpr:dark:text-gray-400">{{$localized(category?.description)}}</p>
+              <p data-if="{{!!$localized(category?.description)}}" class="gdpr:mt-1 gdpr:text-xs gdpr:leading-relaxed gdpr-text-muted">{{$localized(category?.description)}}</p>
             </div>
             <checkbox aria-label="{{$localized(category?.label) || category?.key || ''}}" checked="{{(_global.gdprConsent ?? {})[category?.key] === true || category?.required === true}}" disabled="{{category?.required === true}}" class="gdpr:h-5 gdpr:w-5 gdpr:cursor-pointer gdpr:disabled:cursor-not-allowed gdpr:disabled:opacity-50">
               <on type="change">

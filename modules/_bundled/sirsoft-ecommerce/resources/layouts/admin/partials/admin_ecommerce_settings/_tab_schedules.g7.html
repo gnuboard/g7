@@ -41,8 +41,8 @@
           <cell>
             <div class="ecommerce:min-w-0">
               <span class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white">{{row.label_localized}}</span>
-              <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:font-mono ecommerce:mt-0.5">{{row.name}}</span>
-              <span data-if="{{row.description_localized}}" class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5">{{row.description_localized}}</span>
+              <span class="ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:font-mono ecommerce:mt-0.5">{{row.name}}</span>
+              <span data-if="{{row.description_localized}}" class="ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5">{{row.description_localized}}</span>
               <!-- 실행 조건 미충족 — 그 설정이 꺼져 있어 예약 실행이 건너뛰어진다. 마우스를 올리면 조건 키가 보인다. -->
               <span data-if="{{(row.unmet_conditions ?? []).length &gt; 0}}" title="{{(row.unmet_conditions ?? []).map(c => c.key).join(', ')}}" class="ecommerce:block ecommerce:mt-1">
                 <badge data-type="composite" color="yellow" icon="triangle-exclamation" text="$t:sirsoft-ecommerce.admin.settings.schedules.condition_unmet" size="sm"/>
@@ -53,7 +53,7 @@
         <column field="frequency" header="$t:sirsoft-ecommerce.admin.settings.schedules.columns.frequency" :sortable="false">
           <cell>
             <span class="ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-white">{{row.frequency_label}}</span>
-            <span data-if="{{row.frequency !== 'everyThirtySeconds'}}" class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:font-mono ecommerce:mt-0.5">{{row.expression}}</span>
+            <span data-if="{{row.frequency !== 'everyThirtySeconds'}}" class="ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:font-mono ecommerce:mt-0.5">{{row.expression}}</span>
           </cell>
         </column>
         <column field="next_run_at" header="$t:sirsoft-ecommerce.admin.settings.schedules.columns.next_run" :sortable="false">

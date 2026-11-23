@@ -50,6 +50,14 @@
     color: oklch(87.2% .01 258.338);
   }
 
+  .gdpr-text-muted {
+    color: oklch(55.1% .027 264.364);
+  }
+
+  .gdpr-text-muted:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(70.7% .022 261.325);
+  }
+
   .gdpr-text-tertiary {
     font-size: .75rem;
     line-height: var(--tw-leading,calc(1 / .75));

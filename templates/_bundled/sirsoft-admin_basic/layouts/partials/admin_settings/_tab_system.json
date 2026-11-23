@@ -992,7 +992,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                                                                        "className": "text-xs text-muted whitespace-nowrap"
                                                                     },
                                                                     "text": "{{String(entry.started_at ?? '').replace('T', ' ').slice(0, 19) + ' · ' + $t('admin.settings.system.cron_history_duration', { seconds: entry.duration ?? 0 })}}"
                                                                 },

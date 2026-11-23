@@ -218,6 +218,7 @@ return [
         'nested_action_debounce_ignored' => ':handler 액션에 단 debounce 는 적용되지 않습니다 — 조건·순서·결과 처리 안쪽이나 이벤트 받기·실패 처리·첫 진입 동작의 액션은 매번 바로 실행됩니다. 화면에서 직접 누르는 동작(<on type> 바로 아래 액션, 예: <sequence :debounce>)에 다세요.',
         'mixed_debounce_flushed' => ':name 의 :event 에 debounce 를 단 액션과 바로 실행하는 액션이 함께 있습니다 — 바로 실행하는 액션이 돌 때마다 대기 중인 debounce 액션도 즉시 실행되어 매 입력 실행됩니다. 기다리게 하려면 이 이벤트의 액션을 모두 debounce 로 맞추세요.',
         'entry_only_key_ignored' => ':key 는 화면에서 바로 누르는 동작에만 적용됩니다. 이 자리(이벤트 받기·실패 처리·첫 진입 동작·안쪽 동작)의 :handler 액션에서는 무시됩니다.',
+        'class_merge_breakpoint_variant' => ':name 의 :key 구간 class-merge 에 폭 변형 클래스(:tokens)가 있습니다. 구간이 이미 폭 조건이므로 폭 변형 없이 적거나 다른 구간으로 나눠 적으세요.',
     ],
 
     // 설정 관련 예외

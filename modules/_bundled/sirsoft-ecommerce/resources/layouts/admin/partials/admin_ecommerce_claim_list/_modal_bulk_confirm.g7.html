@@ -5,27 +5,27 @@
       <p data-ref="cbc_001_message" class="ecommerce-text-label">$t:sirsoft-ecommerce.admin.claim.bulk.confirm_message|count={{(_global.claimBulkConfirmData?.ids ?? []).length}}</p>
       <div class="ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:rounded-lg ecommerce:space-y-2">
         <div class="ecommerce-flex-center ecommerce:text-sm">
-          <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:w-28 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.claim.bulk.confirm_type_label</span>
+          <span class="ecommerce-text-muted ecommerce:w-28 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.claim.bulk.confirm_type_label</span>
           <span data-ref="cbc_002_type_value" class="ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{({'exchange':'$t:sirsoft-ecommerce.admin.claim.subtab.exchange','return':'$t:sirsoft-ecommerce.admin.claim.subtab.return','refund':'$t:sirsoft-ecommerce.admin.claim.subtab.refund'})[_global.claimBulkConfirmData?.claimType] ?? _global.claimBulkConfirmData?.claimType}}</span>
         </div>
         <div class="ecommerce-flex-center ecommerce:text-sm">
-          <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:w-28 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.claim.bulk.confirm_status_label</span>
+          <span class="ecommerce-text-muted ecommerce:w-28 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.claim.bulk.confirm_status_label</span>
           <!-- 라벨은 핸들러가 어휘 표에서 골라 실어 준다 — 모달이 유형×상태 조합을 다시 표로 들고 있으면 Enum 이 늘 때 두 벌이 조용히 낡는다. -->
           <span data-ref="cbc_003_status_value" class="ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{_global.claimBulkConfirmData?.statusLabel ?? _global.claimBulkConfirmData?.status}}</span>
         </div>
         <div class="ecommerce-flex-center ecommerce:text-sm">
-          <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:w-28 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.claim.bulk.confirm_count_label</span>
+          <span class="ecommerce-text-muted ecommerce:w-28 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.claim.bulk.confirm_count_label</span>
           <span data-ref="cbc_004_count_value" class="ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100">$t:sirsoft-ecommerce.admin.claim.bulk.confirm_count_value|count={{(_global.claimBulkConfirmData?.ids ?? []).length}}</span>
         </div>
         <!-- 반려면 고른 신청서 전부에 들어갈 사유를 한 번 더 보여 준다 — 구매자 화면에 그대로 나가는 문구다. -->
         <div data-if="{{_global.claimBulkConfirmData?.status === 'rejected'}}" class="ecommerce:flex ecommerce:items-start ecommerce:text-sm">
-          <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:w-28 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.claim.detail.reason.reject_reason_label</span>
+          <span class="ecommerce-text-muted ecommerce:w-28 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.claim.detail.reason.reject_reason_label</span>
           <span data-ref="cbc_007_reject_reason_value" class="ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:whitespace-pre-line ecommerce:break-all ecommerce-break-all">{{_global.claimBulkConfirmData?.rejectReason ?? ''}}</span>
         </div>
       </div>
       <!-- 회수중·발송중이면 신청서마다 택배사·운송장을 받는다 (#599 후속 운영 결정) — 송장은 신청서마다 달라 한 쌍을 여러 건에 나눠 쓸 수 없다. 저장된 송장은 핸들러가 미리 채운다. 한 건이라도 비면 [변경] 이 잠긴다(서버도 422). 선택지는 목록 응답이 나른다 — 배송사 엔드포인트는 `settings.read` 게이트다. -->
       <div data-ref="cbc_008_trackings" data-if="{{(_global.claimBulkConfirmData?.trackings ?? []).length > 0}}" class="ecommerce:space-y-2">
-        <p data-ref="cbc_009_tracking_hint" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_incomplete</p>
+        <p data-ref="cbc_009_tracking_hint" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_incomplete</p>
         <div class="ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:divide-y ecommerce:divide-gray-200 ecommerce:dark:divide-gray-700">
           <div data-each="trackRow, trackIdx in {{_global.claimBulkConfirmData?.trackings ?? []}}" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:p-3">
             <span class="ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:flex-1 ecommerce:min-w-[8rem] ecommerce:truncate">{{[trackRow.claim_number, trackRow.requester_name].filter(Boolean).join(' · ')}}</span>
@@ -53,7 +53,7 @@
         <span>$t:sirsoft-ecommerce.admin.claim.bulk.confirm_cancel</span>
       </button>
       <!-- [변경] — 고른 신청서를 한꺼번에 전이한다. 부분 성공 계약이라 게이트에 막힌 건은 건너뛰고 성공·결제 요청으로 돌려진 건·건너뛴 건을 나눠 알린 뒤, 목록의 선택과 상태 셀렉트를 비우고 목록을 다시 부른다. -->
-      <button data-ref="cbc_006_apply_button" type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{!_global.claimBulkConfirmData?.status || (_global.claimBulkConfirmData?.ids ?? []).length === 0 || _global.isProcessing || (_global.claimBulkConfirmData?.trackings ?? []).some(r => !r.carrier_id || !(r.tracking_number ?? '').trim())}}">
+      <button data-ref="cbc_006_apply_button" type="button" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-primary" disabled="{{!_global.claimBulkConfirmData?.status || (_global.claimBulkConfirmData?.ids ?? []).length === 0 || _global.isProcessing || (_global.claimBulkConfirmData?.trackings ?? []).some(r => !r.carrier_id || !(r.tracking_number ?? '').trim())}}">
         <on type="click">
           <set-state target="global" :isProcessing="true"/>
           <!-- onError 는 진행 상태만 되돌린다 — 사유 토스트는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). 여기서 한 번 더 띄우면 같은 문구가 두 번 뜬다. -->

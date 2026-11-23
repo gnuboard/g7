@@ -3,7 +3,7 @@
   <div data-ref="post_form_fields">
     <div data-ref="main_form_card" class="board-admin-card">
       <div class="board-row-stack">
-        <div data-ref="author_section" data-if="{{route?.id &amp;&amp; form_meta?.data?.author}}" class="">
+        <div data-ref="author_section" data-if="{{route?.id &amp;&amp; form_meta?.data?.author}}">
           <div class="board:grid board:grid-cols-1 board:gap-4">
             <responsive on="768-" class="board:grid board:grid-cols-2 board:gap-4"/>
             <div data-ref="field_author_name">
@@ -21,7 +21,7 @@
             </div>
           </div>
         </div>
-        <div data-ref="post_options_section" data-if="{{form_meta?.data?.board?.user_abilities?.can_write_notice || form_meta?.data?.board?.secret_mode !== 'disabled'}}" class="">
+        <div data-ref="post_options_section" data-if="{{form_meta?.data?.board?.user_abilities?.can_write_notice || form_meta?.data?.board?.secret_mode !== 'disabled'}}">
           <h3 class="board-text-label-subtle board:font-medium board:mb-3">$t:sirsoft-board.admin.posts.form.post_options</h3>
           <div class="board:grid board:grid-cols-1 board:gap-4">
             <responsive on="768-" class="board:grid board:grid-cols-2 board:gap-4"/>
@@ -55,11 +55,11 @@
       <div data-ref="category_section" data-if="{{form_meta?.data?.board?.categories &amp;&amp; form_meta.data.board.categories.length > 0}}" class="board:pb-6">
         <label class="board-form-label">$t:sirsoft-board.admin.posts.form.category</label>
         <select name="category" aria-label="$t:sirsoft-board.admin.posts.form.category" value="{{_local.form?.category ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-board.admin.posts.form.select_category') }].concat((form_meta?.data?.board?.categories ?? []).map(category => ({ value: category, label: category })))}}" disabled="{{_computed.isReadOnly || !!_local.form?.parent_id}}" class="board:block board:w-full board:rounded-lg board:border board:border-gray-300 board:dark:border-gray-600 board:bg-white board:dark:bg-gray-800 board:px-3 board:py-2 board:focus:border-blue-500 board:focus:outline-none board:focus:ring-1 board:focus:ring-blue-500 board:dark:focus:ring-blue-400 board:disabled:opacity-50 board:disabled:cursor-not-allowed">
-          <responsive on="640-" class="board:block board:w-64 board:rounded-lg board:border board:border-gray-300 board:dark:border-gray-600 board:bg-white board:dark:bg-gray-800 board:px-3 board:py-2 board:focus:border-blue-500 board:focus:outline-none board:focus:ring-1 board:focus:ring-blue-500 board:dark:focus:ring-blue-400 board:disabled:opacity-50 board:disabled:cursor-not-allowed"/>
+          <responsive on="640-" class-merge="board:w-64"/>
         </select>
       </div>
       <div class="board-row-stack">
-        <div data-ref="title_section" class="">
+        <div data-ref="title_section">
           <div>
             <label class="board-text-label-subtle board:block board:font-medium">$t:sirsoft-board.admin.posts.form.title</label>
             <input type="text" name="title" value="{{_local.form?.title ?? ''}}" disabled="{{_computed.isReadOnly}}" placeholder="$t:sirsoft-board.admin.posts.form.title_placeholder" class="board:block board:focus:ring-1 board:dark:focus:ring-blue-400"/>

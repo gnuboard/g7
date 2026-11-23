@@ -297,7 +297,7 @@
                     "name": "Div",
                     "if": "{{privacyTargets !== undefined && privacyTargets !== null && _global.privacyTargets?.loadFailed !== true && (privacyTargets?.data?.data ?? []).length === 0}}",
                     "props": {
-                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:items-center ecommerce:gap-3 ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:py-6"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:items-center ecommerce:gap-3 ecommerce:text-center ecommerce-text-muted ecommerce:py-6"
                     },
                     "children": [
                         {

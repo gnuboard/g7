@@ -6,13 +6,13 @@
       <p data-ref="cem_002_standard_message" data-if="{{_global.claimExchangeModeContext?.mode === 'standard'}}" class="ecommerce-text-label">$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.confirm_standard</p>
     </div>
     <footer>
-      <button data-ref="cem_003_cancel" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors">
+      <button data-ref="cem_003_cancel" type="button" class="ecommerce-btn ecommerce-btn-secondary">
         <on type="click">
           <close-modal/>
         </on>
         $t:common.cancel
       </button>
-      <button data-ref="cem_004_confirm" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isSettingExchangeMode === true}}">
+      <button data-ref="cem_004_confirm" type="button" class="ecommerce-btn ecommerce-btn-primary" disabled="{{_global.isSettingExchangeMode === true}}">
         <on type="click">
           <!-- 확인하면 교환 진행 방식을 실제로 바꾼다 — 대상·방식은 창을 연 핸들러가 _global 문맥에 둔 값이다 -->
           <action handler="sirsoft-ecommerce.setClaimExchangeMode" claimId="{{_global.claimExchangeModeContext?.claimId ?? null}}" mode="{{_global.claimExchangeModeContext?.mode ?? ''}}">

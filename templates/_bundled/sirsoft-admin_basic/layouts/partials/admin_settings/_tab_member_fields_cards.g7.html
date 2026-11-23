@@ -12,10 +12,10 @@
           <div class="flex-start justify-between gap-3">
             <div class="flex-start gap-3 min-w-0 flex-1">
               <div class="flex-shrink-0 pt-0.5">
-                <div data-if="{{!_computed.memberFieldsReadOnly &amp;&amp; !_global.memberFieldBusy}}" data-testid="{{'member-field-card-handle-' + row.key}}" :data-drag-handle="true" role="button" aria-label="$t:admin.settings.member.fields.drag_handle|name={{row.label ?? row.key}}" title="$t:admin.settings.member.fields.drag_hint" class="inline-flex items-center justify-center cursor-grab text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <div data-if="{{!_computed.memberFieldsReadOnly &amp;&amp; !_global.memberFieldBusy}}" data-testid="{{'member-field-card-handle-' + row.key}}" :data-drag-handle="true" role="button" aria-label="$t:admin.settings.member.fields.drag_handle|name={{row.label ?? row.key}}" title="$t:admin.settings.member.fields.drag_hint" class="inline-flex items-center justify-center cursor-grab text-muted hover:text-gray-700 dark:hover:text-gray-200">
                   <icon name="grip-vertical" class="text-sm"/>
                 </div>
-                <button data-if="{{_computed.memberFieldsReadOnly || !!_global.memberFieldBusy}}" data-testid="{{'member-field-card-handle-disabled-' + row.key}}" type="button" :disabled="true" aria-label="$t:admin.settings.member.fields.drag_handle|name={{row.label ?? row.key}}" class="inline-flex items-center justify-center text-gray-500 dark:text-gray-400 opacity-50 cursor-not-allowed disabled:opacity-50 disabled:cursor-not-allowed">
+                <button data-if="{{_computed.memberFieldsReadOnly || !!_global.memberFieldBusy}}" data-testid="{{'member-field-card-handle-disabled-' + row.key}}" type="button" :disabled="true" aria-label="$t:admin.settings.member.fields.drag_handle|name={{row.label ?? row.key}}" class="inline-flex items-center justify-center text-muted opacity-50 cursor-not-allowed disabled:opacity-50 disabled:cursor-not-allowed">
                   <icon name="grip-vertical" class="text-sm"/>
                 </button>
               </div>
@@ -23,7 +23,7 @@
                 <div class="text-primary font-medium break-words">{{row.label ?? row.key}}</div>
                 <div class="form-hint break-words">
                   <span>{{row.type_label ?? row.type ?? ''}}</span>
-                  <span class="mx-1.5 text-gray-500 dark:text-gray-400">/</span>
+                  <span class="mx-1.5 text-muted">/</span>
                   <span>$t:admin.settings.member.fields.scope.{{row.edit_scope ?? 'self'}}</span>
                 </div>
                 <p data-each="reason in {{[...new Set(Object.values(row.locks ?? {}).filter(v =&gt; typeof v === 'string' &amp;&amp; v !== ''))]}}" class="form-hint break-words">
@@ -70,7 +70,7 @@
                   </sequence>
                 </on>
               </toggle>
-              <span data-if="{{!!row.locks?.enabled}}" role="img" aria-label="{{row.locks?.enabled ?? ''}}" title="{{row.locks?.enabled ?? ''}}" class="text-gray-500 dark:text-gray-400">
+              <span data-if="{{!!row.locks?.enabled}}" role="img" aria-label="{{row.locks?.enabled ?? ''}}" title="{{row.locks?.enabled ?? ''}}" class="text-muted">
                 <icon name="lock" class="text-xs"/>
               </span>
             </div>
@@ -143,7 +143,7 @@
                   </conditions>
                 </on>
               </toggle>
-              <span data-if="{{!!row.locks?.required}}" role="img" aria-label="{{row.locks?.required ?? ''}}" title="{{row.locks?.required ?? ''}}" class="text-gray-500 dark:text-gray-400">
+              <span data-if="{{!!row.locks?.required}}" role="img" aria-label="{{row.locks?.required ?? ''}}" title="{{row.locks?.required ?? ''}}" class="text-muted">
                 <icon name="lock" class="text-xs"/>
               </span>
             </div>
@@ -169,7 +169,7 @@
                   </sequence>
                 </on>
               </toggle>
-              <span data-if="{{!!row.locks?.show_on_signup}}" role="img" aria-label="{{row.locks?.show_on_signup ?? ''}}" title="{{row.locks?.show_on_signup ?? ''}}" class="text-gray-500 dark:text-gray-400">
+              <span data-if="{{!!row.locks?.show_on_signup}}" role="img" aria-label="{{row.locks?.show_on_signup ?? ''}}" title="{{row.locks?.show_on_signup ?? ''}}" class="text-muted">
                 <icon name="lock" class="text-xs"/>
               </span>
             </div>
@@ -177,7 +177,7 @@
           </div>
           <div class="flex-center justify-between gap-2">
             <div class="flex-center gap-1">
-              <button data-testid="{{'member-field-card-up-' + row.key}}" type="button" aria-label="$t:admin.settings.member.fields.move_up|name={{row.label ?? row.key}}" title="$t:admin.settings.member.fields.move_up_short" class="p-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.memberFieldsReadOnly || !!_global.memberFieldBusy || _global.memberFieldMoving === 'up:' + row.id || rowIdx === 0}}">
+              <button data-testid="{{'member-field-card-up-' + row.key}}" type="button" aria-label="$t:admin.settings.member.fields.move_up|name={{row.label ?? row.key}}" title="$t:admin.settings.member.fields.move_up_short" class="p-2 rounded-md btn btn-secondary" disabled="{{_computed.memberFieldsReadOnly || !!_global.memberFieldBusy || _global.memberFieldMoving === 'up:' + row.id || rowIdx === 0}}">
                 <on type="click">
                   <!-- 위로(U5). 바로 위 항목과 자리를 바꾼 순서를 저장한다. 끌기와 같은 순서 API 를 쓴다. 누른 단추에는 응답이 올 때까지 진행 표시가 돈다. -->
                   <sequence>
@@ -201,7 +201,7 @@
                 <icon data-if="{{_global.memberFieldMoving === 'up:' + row.id}}" name="spinner" class="spinner-sm"/>
               <icon data-if="{{!(_global.memberFieldMoving === 'up:' + row.id)}}" name="arrow-up" class="text-sm"/>
               </button>
-              <button data-testid="{{'member-field-card-down-' + row.key}}" type="button" aria-label="$t:admin.settings.member.fields.move_down|name={{row.label ?? row.key}}" title="$t:admin.settings.member.fields.move_down_short" class="p-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.memberFieldsReadOnly || !!_global.memberFieldBusy || _global.memberFieldMoving === 'down:' + row.id || rowIdx === _computed.memberFields.length - 1}}">
+              <button data-testid="{{'member-field-card-down-' + row.key}}" type="button" aria-label="$t:admin.settings.member.fields.move_down|name={{row.label ?? row.key}}" title="$t:admin.settings.member.fields.move_down_short" class="p-2 rounded-md btn btn-secondary" disabled="{{_computed.memberFieldsReadOnly || !!_global.memberFieldBusy || _global.memberFieldMoving === 'down:' + row.id || rowIdx === _computed.memberFields.length - 1}}">
                 <on type="click">
                   <!-- 아래로(U5). 바로 아래 항목과 자리를 바꾼 순서를 저장한다. -->
                   <sequence>

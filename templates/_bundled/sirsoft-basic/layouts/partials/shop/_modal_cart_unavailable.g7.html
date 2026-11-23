@@ -20,7 +20,7 @@
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{unavailableItem.name}}</p>
-              <p data-if="{{unavailableItem.option}}" class="text-xs text-gray-500 dark:text-gray-400">{{unavailableItem.option}}</p>
+              <p data-if="{{unavailableItem.option}}" class="text-xs text-muted">{{unavailableItem.option}}</p>
               <!-- 재고부족 표시 -->
               <p data-if="{{unavailableItem.reason === 'stock'}}" class="text-xs text-red-600 dark:text-red-400">$t:shop.cart.insufficient_stock_item|name={{unavailableItem.name}}|option={{unavailableItem.option}}|stock={{unavailableItem.stock}}|quantity={{unavailableItem.quantity}}</p>
               <!-- 판매중지 표시 -->

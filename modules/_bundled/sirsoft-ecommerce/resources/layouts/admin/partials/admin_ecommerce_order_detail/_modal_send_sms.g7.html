@@ -36,7 +36,7 @@
         </on>
         <span>$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.cancel</span>
       </button>
-      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isSending}}">
+      <button type="button" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-primary" disabled="{{_global.isSending}}">
         <icon data-if="{{_global.isSending}}" name="spinner" class="ecommerce-spinner-sm"/>
         <span>{{_global.isSending ? '$t:common.sending' : '$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.send'}}</span>
       </button>

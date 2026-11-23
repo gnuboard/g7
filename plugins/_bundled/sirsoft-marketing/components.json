@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "identifier": "sirsoft-marketing",
-    "version": "1.1.4",
+    "version": "1.1.5",
     "components": {
         "basic": [],
         "composite": [],

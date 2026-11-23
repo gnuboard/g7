@@ -6,6 +6,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { load, flatten, pluginKeys, missingKeys, byId, text } from './p4-layout-helpers';
+import { applyResponsiveClassMerge } from '@core/template-engine/helpers/StyleHelpers';
 
 const shell = load('resources/layouts/admin/plugin_settings');
 const list = load('resources/layouts/admin/partials/plugin_settings/_idp_list');
@@ -183,6 +184,22 @@ describe('SSO IdP 편집 — 화면 폭에 따라 바뀌는 칸', () => {
   const nodes = flatten(edit);
   const tokens = (cls: unknown): string[] => (typeof cls === 'string' ? cls.split(/\s+/).filter(Boolean) : []);
   const byLabel = (key: string): any[] => nodes.filter((n) => n?.props?.['aria-label'] === `$t:sirsoft-sso.${key}`);
+  /**
+   * 폭 구간의 실효 클래스 토큰 — 구간 class(있으면 통째 교체) 위에 구간 class-merge 를 엔진 규칙으로 덧붙인 값 (engine-v1.98.0).
+   * 접두 토큰(`sso:py-3`)끼리 충돌 교체가 되도록 서버가 내려 주는 접두 목록을 잠시 세운다.
+   */
+  const rangeTokens = (node: any, key: string): string[] => {
+    const range = node?.responsive?.[key];
+    if (!range) return [];
+    const w = window as any;
+    const prev = w.G7Config;
+    w.G7Config = { ...(prev ?? {}), extensionClassPrefixes: ['sso'] };
+    try {
+      return tokens(applyResponsiveClassMerge(range.props?.className ?? node?.props?.className, range.classMerge));
+    } finally {
+      w.G7Config = prev;
+    }
+  };
 
   /**
    * @scenario screen=plugin_settings, tab=connection
@@ -193,7 +210,7 @@ describe('SSO IdP 편집 — 화면 폭에 따라 바뀌는 칸', () => {
     expect(labels.length).toBeGreaterThanOrEqual(1);
     for (const label of labels) {
       expect(tokens(label.props?.className)).toContain('sso:hidden');
-      const wide = tokens(label.responsive?.['640-']?.props?.className);
+      const wide = rangeTokens(label, '640-');
       expect(wide).toContain('sso:inline');
       expect(wide).not.toContain('sso:hidden');
     }
@@ -209,7 +226,7 @@ describe('SSO IdP 편집 — 화면 폭에 따라 바뀌는 칸', () => {
     for (const input of inputs) {
       expect(tokens(input.props?.className)).toContain('sso-input');
       expect(tokens(input.props?.className)).not.toContain('sso:w-48');
-      const wide = tokens(input.responsive?.['768-']?.props?.className);
+      const wide = rangeTokens(input, '768-');
       expect(wide).toContain('sso-input');
       expect(wide).toContain('sso:w-48');
     }
@@ -225,7 +242,7 @@ describe('SSO IdP 편집 — 화면 폭에 따라 바뀌는 칸', () => {
     for (const input of inputs) {
       expect(tokens(input.props?.className)).toContain('sso-input');
       expect(tokens(input.props?.className)).not.toContain('sso:w-1/3');
-      const wide = tokens(input.responsive?.['640-']?.props?.className);
+      const wide = rangeTokens(input, '640-');
       expect(wide).toContain('sso-input');
       expect(wide).toContain('sso:w-1/3');
     }

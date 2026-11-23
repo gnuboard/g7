@@ -128,7 +128,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                "className": "text-xs text-muted mt-0.5"
                             },
                             "text": "$t:board.created_at: {{form_data?.data?.created_at}}"
                         }
@@ -152,7 +152,7 @@
                     "props": {
                         "name": "user",
                         "size": "sm",
-                        "className": "mt-0.5 shrink-0 text-gray-500 dark:text-gray-400"
+                        "className": "mt-0.5 shrink-0 text-muted"
                     }
                 },
                 {
@@ -191,7 +191,7 @@
                             "name": "Label",
                             "if": "{{(form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.user_abilities?.can_write_notice) && !_local.form?.parent_id}}",
                             "props": {
-                                "className": "block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                "className": "block card-plain p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             },
                             "children": [
                                 {
@@ -263,7 +263,7 @@
                             "name": "Label",
                             "if": "{{form_meta?.data?.board?.secret_mode === 'enabled'}}",
                             "props": {
-                                "className": "block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                "className": "block card-plain p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             },
                             "children": [
                                 {
@@ -441,7 +441,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "form-label"
                             },
                             "children": [
                                 {
@@ -494,7 +494,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "form-label"
                             },
                             "children": [
                                 {
@@ -565,7 +565,7 @@
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                        "className": "form-label"
                     },
                     "text": "$t:board.form.category"
                 },
@@ -605,7 +605,7 @@
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                        "className": "form-label"
                     },
                     "children": [
                         {
@@ -722,7 +722,7 @@
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                        "className": "form-label"
                     },
                     "children": [
                         {
@@ -745,7 +745,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400 mb-2"
+                        "className": "text-xs text-muted mb-2"
                     },
                     "text": "$t:board.form.attachments_desc|count={{form_meta?.data?.board?.max_file_count ?? 5}}|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}"
                 },

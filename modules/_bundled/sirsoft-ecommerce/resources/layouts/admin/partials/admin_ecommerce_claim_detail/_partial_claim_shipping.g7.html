@@ -15,7 +15,7 @@
           <div data-each="addr, addrIdx in {{(claim?.data?.claim?.return_addresses ?? []).length > 0 ? claim.data.claim.return_addresses : [{ address_snapshot: claim?.data?.claim?.return_address_snapshot ?? {}, claim_item_ids: [] }]}}" class="ecommerce:text-sm ecommerce-text-secondary">
             <span>$t:sirsoft-ecommerce.admin.claim.detail.shipping.return_address_label</span>
             <span class="ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:ml-2">{{[addr.address_snapshot?.recipient_name, addr.address_snapshot?.phone, addr.address_snapshot?.zipcode, addr.address_snapshot?.address1, addr.address_snapshot?.address2].filter(Boolean).join(' ') || '-'}}</span>
-            <span data-if="{{(claim?.data?.claim?.return_addresses ?? []).length > 1}}" class="ecommerce:ml-2 ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{(claim?.data?.claim?.items ?? []).filter(i => (addr.claim_item_ids ?? []).includes(i.id)).map(i => i.product_name).join(', ')}}</span>
+            <span data-if="{{(claim?.data?.claim?.return_addresses ?? []).length > 1}}" class="ecommerce:ml-2 ecommerce:text-xs ecommerce-text-muted">{{(claim?.data?.claim?.items ?? []).filter(i => (addr.claim_item_ids ?? []).includes(i.id)).map(i => i.product_name).join(', ')}}</span>
           </div>
         </div>
         <!-- 회수 운송장 묶음 — 같은 (택배사, 운송장)을 가진 행이 한 상자다. 송장 없이 도착한 행은 「송장 없이 도착」 묶음으로 따로 선다. -->
@@ -32,7 +32,7 @@
               </div>
               <div data-if="{{group.no_tracking !== true}}" class="ecommerce-flex-center ecommerce:gap-2">
                 <!-- 막힌 이유는 버튼 옆에 적는다 — 꺼진 버튼만 두면 운영자는 권한 문제로 읽는다. -->
-                <span data-if="{{group.can_deliver !== true &amp;&amp; !!group.blocked_reason}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{group.blocked_reason}}</span>
+                <span data-if="{{group.can_deliver !== true &amp;&amp; !!group.blocked_reason}}" class="ecommerce:text-xs ecommerce-text-muted">{{group.blocked_reason}}</span>
                 <button data-ref="cs_006b_collection_deliver_{{groupIdx}}" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm" disabled="{{claim?.data?.abilities?.can_update_status !== true || group.can_deliver !== true || _local.isDeliveringTracking === true}}">
                   <on type="click">
                     <!-- 운송장 한 개에 묶인 행을 한꺼번에 도착 처리한다(R9). 일반 흐름은 회수도착으로 옮기고, 선교환 회수는 상태를 두고 도착 시각만 찍는다 — 판정은 서버가 한다. -->
@@ -89,7 +89,7 @@
                 <badge data-type="composite" data-if="{{group.all_arrived === true}}" variant="success">$t:sirsoft-ecommerce.admin.claim.detail.shipping.arrived</badge>
               </div>
               <div data-if="{{group.no_tracking !== true}}" class="ecommerce-flex-center ecommerce:gap-2">
-                <span data-if="{{group.can_deliver !== true &amp;&amp; !!group.blocked_reason}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{group.blocked_reason}}</span>
+                <span data-if="{{group.can_deliver !== true &amp;&amp; !!group.blocked_reason}}" class="ecommerce:text-xs ecommerce-text-muted">{{group.blocked_reason}}</span>
                 <button data-ref="cs_015b_redelivery_deliver_{{groupIdx}}" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm" disabled="{{claim?.data?.abilities?.can_update_status !== true || group.can_deliver !== true || _local.isDeliveringTracking === true}}">
                   <on type="click">
                     <!-- 재발송 묶음을 배송완료로 바꾼다 — 묶음의 택배사·송장을 함께 넘기고, 실패 안내는 핸들러가 띄운다 -->

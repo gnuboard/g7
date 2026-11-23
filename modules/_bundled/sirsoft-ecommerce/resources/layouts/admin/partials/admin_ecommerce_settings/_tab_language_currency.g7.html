@@ -33,7 +33,7 @@
           <h3 data-ref="exchange_settings_title" class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.title</h3>
           <div data-ref="exchange_settings_description" class="ecommerce-card-description">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.description</div>
         </div>
-        <button data-ref="add_currency_button" type="button" class="ecommerce-btn ecommerce-btn-secondary ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || _local.isAddingCurrency === true}}">
+        <button data-ref="add_currency_button" type="button" class="ecommerce-btn ecommerce-btn-secondary" disabled="{{_computed.isReadOnly || _local.isAddingCurrency === true}}">
           <on type="click">
             <!-- 통화 추가 시작. 여기서는 빈 입력줄을 여는 것뿐이고 실제 추가는 그 줄의 확인 버튼이 한다.
               앞서 연 추가 줄을 먼저 null 로 덮고, 통화 이름은 빈 객체 `{}` 가 아니라 **사이트 언어마다 빈 문자열**로 세운다.

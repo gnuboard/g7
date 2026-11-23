@@ -239,7 +239,7 @@
                                 "type": "basic",
                                 "name": "P",
                                 "props": {
-                                    "className": "text-sm text-gray-500 dark:text-gray-400 mb-8"
+                                    "className": "text-sm text-muted mb-8"
                                 },
                                 "text": "$t:error.503.contact_admin"
                             },

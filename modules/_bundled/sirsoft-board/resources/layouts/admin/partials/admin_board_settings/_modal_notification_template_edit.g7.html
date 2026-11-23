@@ -39,13 +39,14 @@
           <span class="board-text-label-subtle board:font-medium">$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.type_label</span>
           <span class="board-text-primary board:text-sm board:font-semibold">$t:sirsoft-board.admin.settings.notification_definitions.types.{{_global.board_notification_template_form_modal?.definition?.type ?? ''}}</span>
           <span class="board-text-body board:font-mono board:px-1.5 board:py-0.5 board:bg-gray-100 board:dark:bg-gray-700 board:rounded">{{_global.board_notification_template_form_modal?.definition?.type ?? ''}}</span>
-          <span class="board:text-sm board:text-gray-500 board:dark:text-gray-400">·</span>
+          <span class="board:text-sm board-text-muted">·</span>
           <span class="board-text-label-subtle">$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.channel_label</span>
           <span class="board:text-sm board:font-medium board:text-indigo-600 board:dark:text-indigo-400">{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.name ?? _global.board_notification_template_form_modal?.template?.channel ?? ''}}</span>
         </div>
         <div data-ref="board_template_recipients_section" class="board:bg-purple-50 board:dark:bg-purple-900/20 board:border board:border-purple-200 board:dark:border-purple-700 board:rounded-lg board:p-4 board:space-y-3">
           <h4 class="board:text-sm board:font-medium board:text-purple-800 board:dark:text-purple-200">$t:admin.settings.notification_definitions.recipients.title</h4>
           <div class="board-stack-tight">
+            <!-- audit:allow layout-inline-semantic-duplicate reason: 게시판 알림 템플릿 편집 창의 수신자 규칙 한 건 상자, 보라 테두리에 여백 p-3 space-y-2 라 카드 여백(p-4 mb-6)과 다름 -->
             <div data-each="rcpt, rcptIdx in {{_global.board_notification_template_form_modal?.recipients ?? []}}" class="board:bg-white board:dark:bg-gray-800 board:border board:border-purple-200 board:dark:border-purple-600 board:rounded-lg board:p-3 board:space-y-2">
               <div class="board-flex-between">
                 <span class="board:text-xs board:font-medium board:text-purple-700 board:dark:text-purple-300">$t:admin.settings.notification_definitions.recipients.rule_label|index={{rcptIdx + 1}}</span>
@@ -169,7 +170,7 @@
                   </div>
                 </div>
                 <!-- 사이트 관리자 이메일(#888) — 값 칸이 없다. 환경설정 > 일반의 관리자 이메일 한 곳으로 메일만 가므로 그 사실과 빈 값의 결과를 밝힌다(코어 편집 창과 같은 규칙). -->
-                <p data-ref="rcpt_site_admin_email_hint_{{rcptIdx}}" data-if="{{rcpt.type === 'site_admin_email'}}" class="board:text-xs board:text-gray-500 board:dark:text-gray-400">$t:admin.settings.notification_definitions.recipients.site_admin_email_hint</p>
+                <p data-ref="rcpt_site_admin_email_hint_{{rcptIdx}}" data-if="{{rcpt.type === 'site_admin_email'}}" class="board:text-xs board-text-muted">$t:admin.settings.notification_definitions.recipients.site_admin_email_hint</p>
                 <div data-if="{{rcpt.type === 'role' || rcpt.type === 'specific_users'}}" class="board-flex-center board:gap-2">
                   <!-- 스위치 이름은 label 로 준다 — 옆에 따로 둔 글자(span)는 스위치와 이어지지 않아 화면 읽기 프로그램에
                        이름 없는 스위치로 읽혔다(7.1.0 실측 P-5). label 이 스위치 옆 글자도 함께 그린다. -->
@@ -194,7 +195,7 @@
         <!-- 알림 템플릿 편집 모달 본문 확장 슬롯(범용). 채널을 소유한 확장이 그 채널 전용 편집 UI(예: 외부 발송 채널의 템플릿 작성·발송 설정)를 이 자리에 주입한다. 채널 메타 template_editor='none'(종전 hidden_template_editor=true 와 같은 뜻) 인 채널은 아래 코어 제목/본문 입력이 숨겨지고 이 슬롯이 본문 편집을 대신한다. 특정 확장을 알지 못하며, 미주입 시 빈 자리로 남는다. -->
         <extension-point name="notification_template_form_sections" data-ref="board_template_form_sections_ext" definition="{{_global.board_notification_template_form_modal?.definition}}" template="{{_global.board_notification_template_form_modal?.template}}" channel="{{_global.board_notification_template_form_modal?.template?.channel ?? ''}}" modalId="modal_board_notification_template_edit" stateKey="board_notification_template_form_modal" saveEndpoint="{{'/api/admin/notification-templates/' + _global.board_notification_template_form_modal?.template?.id}}" refetchDataSourceId="boardNotificationDefinitions"/>
         <div data-ref="board_template_lang_tabs" data-if="{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" class="board:flex board:border-b board:border-gray-200 board:dark:border-gray-700">
-          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.board_notification_template_form_modal?.editLang ?? $locale) === loc ? 'board:border-b-2 board:border-indigo-500 board:dark:border-indigo-400 board:text-indigo-600 board:dark:text-indigo-400' : 'board:text-gray-500 board:dark:text-gray-400 board:hover:text-gray-700 board:dark:hover:text-gray-300'}} board:px-4 board:py-2 board:text-sm board:font-medium board:focus:outline-none">
+          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.board_notification_template_form_modal?.editLang ?? $locale) === loc ? 'board:border-b-2 board:border-indigo-500 board:dark:border-indigo-400 board:text-indigo-600 board:dark:text-indigo-400' : 'board-text-muted board:hover:text-gray-700 board:dark:hover:text-gray-300'}} board:px-4 board:py-2 board:text-sm board:font-medium board:focus:outline-none">
             <on type="click">
               <!-- 언어 탭 — 설치된 언어만큼 버튼이 생긴다. 값을 나르지 않고 아래 제목·본문 칸이 어느 언어를 보여줄지만 가른다 -->
               <set-state target="global" board_notification_template_form_modal.editLang="{{loc}}"/>
@@ -208,7 +209,7 @@
               <span>$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.subject</span>
               <span class="board-text-required">*</span>
             </label>
-            <input type="text" value="{{_global.board_notification_template_form_modal?.template?.subject?.[_global.board_notification_template_form_modal?.editLang ?? $locale] ?? ''}}" class="">
+            <input type="text" value="{{_global.board_notification_template_form_modal?.template?.subject?.[_global.board_notification_template_form_modal?.editLang ?? $locale] ?? ''}}">
               <on type="change">
                 <!-- 제목 — 언어별 값 묶음을 통째로 다시 지으면서 지금 탭의 언어 자리만 바꾼다(그래야 다른 언어에 적어 둔 제목이 지워지지 않는다) -->
                 <set-state target="global" board_notification_template_form_modal.template.subject="{{Object.assign({}, _global.board_notification_template_form_modal?.template?.subject, {[_global.board_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"/>

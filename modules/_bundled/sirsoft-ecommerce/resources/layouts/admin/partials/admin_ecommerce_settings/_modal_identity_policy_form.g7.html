@@ -74,7 +74,7 @@
           </div>
           <div>
             <label class="ecommerce-form-label">$t:admin.identity.policies.form.provider_id</label>
-            <select value="{{_global.identity_policy_form_modal?.form?.provider_id ?? ''}}" class="" options="{{[{value: '', label: '$t:admin.identity.policies.form.use_default_provider'}].concat((identityProviders?.data ?? []).map(function(p) { return {value: p.id, label: p.label}; }))}}">
+            <select value="{{_global.identity_policy_form_modal?.form?.provider_id ?? ''}}" options="{{[{value: '', label: '$t:admin.identity.policies.form.use_default_provider'}].concat((identityProviders?.data ?? []).map(function(p) { return {value: p.id, label: p.label}; }))}}">
               <on type="change">
                 <!-- 인증 수단. 비워 두면 활성화된 수단 중 기본이 쓰인다. -->
                 <set-state target="global" identity_policy_form_modal.form.provider_id="{{$event.target.value}}"/>
@@ -152,7 +152,7 @@
         </div>
         <div data-if="{{_global.identity_policy_form_modal?.form?.purpose === 'signup'}}">
           <label class="ecommerce-form-label">$t:admin.identity.policies.form.signup_stage</label>
-          <select value="{{_global.identity_policy_form_modal?.form?.conditions?.signup_stage ?? ''}}" class="">
+          <select value="{{_global.identity_policy_form_modal?.form?.conditions?.signup_stage ?? ''}}">
             <options>
               <option value="">$t:admin.identity.policies.form.signup_stage_unset</option>
               <option value="before_submit">$t:admin.identity.policies.form.signup_stage_before_submit</option>
@@ -169,7 +169,7 @@
       </div>
     </div>
     <footer>
-      <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving ?? false}}" class="ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
+      <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving ?? false}}" class="ecommerce-btn ecommerce-btn-secondary">
         <on type="click">
           <close-modal target="identity_policy_form_modal"/>
         </on>

@@ -830,9 +830,7 @@
                                 "name": "Div",
                                 "responsive": {
                                     "desktop": {
-                                        "props": {
-                                            "className": "col-span-2 space-y-3"
-                                        }
+                                        "classMerge": "col-span-2"
                                     }
                                 },
                                 "props": {
@@ -965,9 +963,7 @@
                                                         "name": "Div",
                                                         "responsive": {
                                                             "640-": {
-                                                                "props": {
-                                                                    "className": "kv-list grid-cols-[max-content_minmax(0,1fr)_max-content_minmax(0,1fr)] text-sm pb-2 border-b border-dashed border-gray-200 dark:border-gray-700"
-                                                                }
+                                                                "classMerge": "grid-cols-[max-content_minmax(0,1fr)_max-content_minmax(0,1fr)]"
                                                             }
                                                         },
                                                         "props": {

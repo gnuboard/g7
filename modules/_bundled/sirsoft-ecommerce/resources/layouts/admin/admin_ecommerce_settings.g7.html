@@ -267,7 +267,7 @@
   </init>
   <slot name="content">
     <div data-ref="settings_content" data-key="form" data-track-changes class="ecommerce:p-4 ecommerce:min-h-screen ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900">
-      <responsive on="640-1023" class="ecommerce:p-6 ecommerce:min-h-screen ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900"/>
+      <responsive on="640-1023" class="ecommerce-admin-page-content"/>
       <responsive on="1024-" class="ecommerce:p-8 ecommerce:min-h-screen ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-ecommerce.admin.settings.title" description="$t:sirsoft-ecommerce.admin.settings.description"/>
       <div data-ref="read_only_banner" data-if="{{settings !== undefined &amp;&amp; (_computed.isReadOnly)}}" class="ecommerce-alert-warning">
@@ -276,8 +276,8 @@
       </div>
       <!-- 탭 막대의 좌우 bleed(-mx-*)와 안쪽 여백(px-*)은 콘텐츠 래퍼의 좌우 여백과 같아야 한다 — 래퍼가 엔진 구간마다 16/24/32px 라 이 노드도 기본 -mx-4 px-4, 640-1023 -mx-6 px-6, 1024- -mx-8 px-8 로 맞춘다. 한 값으로 고정하면 좁은 화면에서 콘텐츠 영역을 넘친다. -->
       <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}}" variant="default" class="ecommerce:sticky ecommerce:top-0 ecommerce:z-40 ecommerce:-mx-4 ecommerce:px-4 ecommerce:border-b ecommerce:bg-gray-50 ecommerce:border-gray-200 ecommerce:dark:bg-gray-900 ecommerce:dark:border-gray-700">
-        <responsive on="640-1023" class="ecommerce:sticky ecommerce:top-0 ecommerce:z-40 ecommerce:-mx-6 ecommerce:px-6 ecommerce:border-b ecommerce:bg-gray-50 ecommerce:border-gray-200 ecommerce:dark:bg-gray-900 ecommerce:dark:border-gray-700"/>
-        <responsive on="1024-" class="ecommerce:sticky ecommerce:top-0 ecommerce:z-40 ecommerce:-mx-8 ecommerce:px-8 ecommerce:border-b ecommerce:bg-gray-50 ecommerce:border-gray-200 ecommerce:dark:bg-gray-900 ecommerce:dark:border-gray-700"/>
+        <responsive on="640-1023" class-merge="ecommerce:-mx-6 ecommerce:px-6"/>
+        <responsive on="1024-" class-merge="ecommerce:-mx-8 ecommerce:px-8"/>
         <prop name="tabs">
           <item id="basic_info" href="/admin/ecommerce/settings?tab=basic_info" label="$t:sirsoft-ecommerce.admin.settings.tabs.basic_info"/>
           <item id="language_currency" href="/admin/ecommerce/settings?tab=language_currency" label="$t:sirsoft-ecommerce.admin.settings.tabs.language_currency"/>

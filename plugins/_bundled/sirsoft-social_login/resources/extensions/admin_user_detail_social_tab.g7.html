@@ -44,7 +44,7 @@
           <responsive on="mobile" data-if="{{false}}"/>
           <table data-ref="admin_user_social_table" class="sl:w-full sl:text-sm">
             <thead>
-              <tr class="sl:text-left sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:border-b sl:border-gray-200 sl:dark:border-gray-700">
+              <tr class="sl:text-left sl:text-xs sl-text-muted sl:border-b sl:border-gray-200 sl:dark:border-gray-700">
                 <th class="sl:py-2 sl:pr-3">$t:sirsoft-social_login.admin.users.col.provider</th>
                 <th class="sl:py-2 sl:pr-3">$t:sirsoft-social_login.admin.users.col.provider_user_id</th>
                 <th class="sl:py-2 sl:pr-3">$t:sirsoft-social_login.admin.users.col.email</th>
@@ -110,13 +110,13 @@
                 <span>$t:sirsoft-social_login.admin.users.unlink</span>
               </button>
             </div>
-            <div class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.admin.users.col.provider_user_id</div>
+            <div class="sl:text-xs sl-text-muted">$t:sirsoft-social_login.admin.users.col.provider_user_id</div>
             <div class="sl:font-mono sl:text-xs sl:text-gray-700 sl:dark:text-gray-300">{{account.provider_user_id_prefix + '…'}}</div>
-            <div class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.admin.users.col.email</div>
+            <div class="sl:text-xs sl-text-muted">$t:sirsoft-social_login.admin.users.col.email</div>
             <div class="sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:break-all sl-break-all">{{account.email ?? '-'}}</div>
-            <div class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.admin.users.col.linked_at</div>
+            <div class="sl:text-xs sl-text-muted">$t:sirsoft-social_login.admin.users.col.linked_at</div>
             <div class="sl:text-sm sl:text-gray-700 sl:dark:text-gray-300">{{account.linked_at ?? '-'}}</div>
-            <div class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.admin.users.col.last_login_at</div>
+            <div class="sl:text-xs sl-text-muted">$t:sirsoft-social_login.admin.users.col.last_login_at</div>
             <div class="sl:text-sm sl:text-gray-700 sl:dark:text-gray-300">{{account.last_login_at ?? '-'}}</div>
           </div>
         </div>

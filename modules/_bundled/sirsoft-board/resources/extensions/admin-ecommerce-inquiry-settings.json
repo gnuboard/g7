@@ -90,7 +90,7 @@
                             "name": "P",
                             "if": "{{!!board_list_for_inquiry?.data?.load_failed}}",
                             "props": {
-                                "className": "board:text-xs board:text-gray-500 board:dark:text-gray-400"
+                                "className": "board:text-xs board-text-muted"
                             },
                             "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.board_list_unavailable"
                         },
@@ -100,7 +100,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['inquiry.board_slug']}}",
                             "props": {
-                                "className": "board:block board:text-xs board:text-red-600 board:mt-1 board:dark:text-red-400"
+                                "className": "board-form-error"
                             },
                             "text": "{{_local.errors?.['inquiry.board_slug']?.[0] ?? ''}}"
                         }
@@ -119,7 +119,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "board:text-xs board:text-gray-500 board:dark:text-gray-400"
+                                "className": "board:text-xs board-text-muted"
                             },
                             "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_secret"
                         },
@@ -128,7 +128,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "board:text-xs board:text-gray-500 board:dark:text-gray-400"
+                                "className": "board:text-xs board-text-muted"
                             },
                             "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_category"
                         },
@@ -160,7 +160,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "board:flex board:items-start board:gap-1.5 board:text-xs board:text-gray-500 board:dark:text-gray-400"
+                                                "className": "board:flex board:items-start board:gap-1.5 board:text-xs board-text-muted"
                                             },
                                             "children": [
                                                 {
@@ -222,7 +222,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "board:flex board:items-start board:gap-1.5 board:text-xs board:text-gray-500 board:dark:text-gray-400"
+                                                "className": "board:flex board:items-start board:gap-1.5 board:text-xs board-text-muted"
                                             },
                                             "children": [
                                                 {

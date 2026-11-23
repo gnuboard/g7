@@ -882,7 +882,7 @@ const Header: React.FC<HeaderProps> = ({
                         />
                         <Div className="min-w-0">
                           <Div className="text-sm font-medium text-gray-900 dark:text-white truncate">{userShownName}</Div>
-                          <Div className="text-xs text-gray-500 dark:text-gray-400">{t('common.member')}</Div>
+                          <Div className="text-xs text-muted">{t('common.member')}</Div>
                         </Div>
                       </Div>
                     </Div>

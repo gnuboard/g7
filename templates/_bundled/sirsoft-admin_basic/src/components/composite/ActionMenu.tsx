@@ -430,7 +430,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
                   <span className="flex flex-col">
                     <span className="text-sm font-medium">{item.label}</span>
                     {item.disabled && item.disabledReason && (
-                      <span className="text-xs font-normal text-gray-500 dark:text-gray-400">{item.disabledReason}</span>
+                      <span className="text-xs font-normal text-muted">{item.disabledReason}</span>
                     )}
                   </span>
                 </a>
@@ -455,7 +455,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
                 <span className="flex flex-col">
                   <span className="text-sm font-medium">{item.label}</span>
                   {item.disabled && item.disabledReason && (
-                    <span className="text-xs font-normal text-gray-500 dark:text-gray-400">{item.disabledReason}</span>
+                    <span className="text-xs font-normal text-muted">{item.disabledReason}</span>
                   )}
                 </span>
               </button>
@@ -500,7 +500,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
             </Span>
           )}
           {triggerIconName && (
-            <Icon name={triggerIconName} className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <Icon name={triggerIconName} className="w-4 h-4 text-muted" />
           )}
         </Button>
       )}

@@ -11,7 +11,7 @@
         </div>
       </div>
       <div data-ref="no_boards_notice" data-if="{{boards_list !== undefined &amp;&amp; (!(boards_list?.data?.data ?? []).length)}}" class="board-flex-center board:p-4 board:bg-gray-50 board:dark:bg-gray-700/50 board:border board:border-gray-200 board:dark:border-gray-600 board:rounded-lg board:gap-3">
-        <icon name="circle-info" class="board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0" size="sm"/>
+        <icon name="circle-info" class="board-text-muted board:flex-shrink-0" size="sm"/>
         <p class="board:text-sm board:text-gray-600 board:dark:text-gray-300">$t:sirsoft-board.admin.settings.bulk_apply.no_boards_notice</p>
       </div>
       <div data-ref="bulk_apply_target" data-if="{{(boards_list?.data?.data ?? []).length > 0}}" class="board:mt-6">

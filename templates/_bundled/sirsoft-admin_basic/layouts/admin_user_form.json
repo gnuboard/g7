@@ -293,7 +293,7 @@
                 "responsive": {
                     "640-1023": {
                         "props": {
-                            "className": "p-6 min-h-screen bg-gray-50 dark:bg-gray-900"
+                            "className": "admin-page-content"
                         }
                     },
                     "1024-": {
@@ -321,14 +321,10 @@
                         "name": "Div",
                         "responsive": {
                             "640-1023": {
-                                "props": {
-                                    "className": "sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
-                                }
+                                "classMerge": "-mx-6 px-6"
                             },
                             "1024-": {
-                                "props": {
-                                    "className": "sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
-                                }
+                                "classMerge": "-mx-8 px-8"
                             }
                         },
                         "props": {
@@ -673,7 +669,7 @@
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                                    "className": "text-xs text-muted mt-1"
                                                                 },
                                                                 "text": "$t:admin.users.member_fields.status.display_name_kind_hint"
                                                             }
@@ -795,7 +791,7 @@
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                                    "className": "text-xs text-muted mt-1"
                                                                 },
                                                                 "text": "$t:admin.users.member_fields.status.nickname_next_changeable_hint"
                                                             }
@@ -904,7 +900,7 @@
                                                         "name": "Span",
                                                         "if": "{{_local.errors?.role_ids || _local.errors?.roles}}",
                                                         "props": {
-                                                            "className": "text-red-600 dark:text-red-400 text-xs mt-1"
+                                                            "className": "form-error"
                                                         },
                                                         "text": "{{_local.errors?.role_ids?.[0] ?? _local.errors?.roles?.[0] ?? ''}}"
                                                     },
@@ -913,7 +909,7 @@
                                                         "name": "P",
                                                         "if": "{{!route?.id}}",
                                                         "props": {
-                                                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                            "className": "text-xs text-muted mt-1"
                                                         },
                                                         "text": "$t:admin.users.form.fields.role_default_hint"
                                                     }
@@ -1095,7 +1091,7 @@
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                    "className": "text-xs text-muted"
                                                                 },
                                                                 "text": "$t:admin.users.form.fields.create_without_password_hint"
                                                             }
@@ -1174,8 +1170,7 @@
                                                                 "props": {
                                                                     "type": "password",
                                                                     "name": "password",
-                                                                    "placeholder": "{{route?.id ? '$t:admin.users.form.fields.password_hint' : '$t:admin.users.form.fields.password'}}",
-                                                                    "className": ""
+                                                                    "placeholder": "{{route?.id ? '$t:admin.users.form.fields.password_hint' : '$t:admin.users.form.fields.password'}}"
                                                                 }
                                                             },
                                                             {
@@ -1183,7 +1178,7 @@
                                                                 "name": "Span",
                                                                 "if": "{{_local.errors?.password}}",
                                                                 "props": {
-                                                                    "className": "text-red-600 dark:text-red-400 text-xs mt-1"
+                                                                    "className": "form-error"
                                                                 },
                                                                 "text": "{{_local.errors?.password?.[0] ?? ''}}"
                                                             }
@@ -1223,8 +1218,7 @@
                                                                 "props": {
                                                                     "type": "password",
                                                                     "name": "password_confirmation",
-                                                                    "placeholder": "$t:admin.users.form.fields.password_confirmation",
-                                                                    "className": ""
+                                                                    "placeholder": "$t:admin.users.form.fields.password_confirmation"
                                                                 }
                                                             }
                                                         ]
@@ -1238,7 +1232,7 @@
                                                 "name": "P",
                                                 "if": "{{!!route?.id ? (user !== undefined && user?.data?.password_status?.can_set !== false) : (_local.form !== undefined && !_local.form?.create_without_password)}}",
                                                 "props": {
-                                                    "className": "flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400 -mt-2"
+                                                    "className": "flex flex-wrap gap-x-1 text-xs text-muted -mt-2"
                                                 },
                                                 "children": [
                                                     {
@@ -1349,7 +1343,7 @@
                                                         "name": "Span",
                                                         "if": "{{_local.errors?.current_password}}",
                                                         "props": {
-                                                            "className": "text-red-600 dark:text-red-400 text-xs mt-1"
+                                                            "className": "form-error"
                                                         },
                                                         "text": "{{_local.errors?.current_password?.[0] ?? ''}}"
                                                     },
@@ -1357,7 +1351,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                            "className": "text-xs text-muted mt-1"
                                                         },
                                                         "text": "$t:admin.users.form.password_policy.current_password_hint"
                                                     }
@@ -1379,7 +1373,7 @@
                                                         "name": "P",
                                                         "if": "{{(user?.data?.email_deliverable ?? current_user?.data?.email_deliverable) !== false}}",
                                                         "props": {
-                                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            "className": "text-xs text-muted"
                                                         },
                                                         "text": "$t:admin.users.form.password_policy.reauth_notice"
                                                     },
@@ -1388,7 +1382,7 @@
                                                         "name": "P",
                                                         "if": "{{(user?.data?.email_deliverable ?? current_user?.data?.email_deliverable) === false}}",
                                                         "props": {
-                                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            "className": "text-xs text-muted"
                                                         },
                                                         "text": "$t:admin.users.form.password_policy.reauth_notice_other"
                                                     },
@@ -1605,7 +1599,7 @@
                                                         "name": "Span",
                                                         "if": "{{_local.errors?.verification_token}}",
                                                         "props": {
-                                                            "className": "text-red-500 dark:text-red-400 text-xs"
+                                                            "className": "form-error"
                                                         },
                                                         "text": "{{_local.errors?.verification_token?.[0] ?? ''}}"
                                                     }
@@ -1687,8 +1681,7 @@
                                                                     "type": "email",
                                                                     "name": "email",
                                                                     "placeholder": "$t:admin.users.form.fields.email",
-                                                                    "disabled": "{{!!route?.id}}",
-                                                                    "className": ""
+                                                                    "disabled": "{{!!route?.id}}"
                                                                 }
                                                             },
                                                             {
@@ -1697,7 +1690,7 @@
                                                                 "name": "P",
                                                                 "if": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('email')}}",
                                                                 "props": {
-                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                                    "className": "text-xs text-muted mt-1"
                                                                 },
                                                                 "text": "$t:admin.users.form.fields.locked_by_company"
                                                             },
@@ -1706,7 +1699,7 @@
                                                                 "name": "Span",
                                                                 "if": "{{_local.errors?.email}}",
                                                                 "props": {
-                                                                    "className": "text-red-600 dark:text-red-400 text-xs mt-1"
+                                                                    "className": "form-error"
                                                                 },
                                                                 "text": "{{_local.errors?.email?.[0] ?? ''}}"
                                                             }
@@ -2339,7 +2332,7 @@
                                                 "type": "basic",
                                                 "name": "P",
                                                 "props": {
-                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                    "className": "text-xs text-muted mt-1"
                                                 },
                                                 "text": "$t:admin.users.form.password_policy.expiry_hint"
                                             },
@@ -2693,7 +2686,7 @@
                                                         "name": "Div",
                                                         "if": "{{!!user?.data?.search_history && ((user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []).length === 0}}",
                                                         "props": {
-                                                            "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                                            "className": "text-muted text-sm"
                                                         },
                                                         "text": "$t:admin.users.detail.search_history.empty"
                                                     },
@@ -2721,7 +2714,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-gray-500 dark:text-gray-400 text-sm break-all"
+                                                                            "className": "text-muted text-sm break-all"
                                                                         },
                                                                         "text": "{{history.keyword}}"
                                                                     },
@@ -2729,7 +2722,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                                                                            "className": "text-xs text-muted whitespace-nowrap"
                                                                         },
                                                                         "text": "{{history.searched_at ?? '-'}}"
                                                                     }
@@ -2927,7 +2920,7 @@
                                 "props": {
                                     "type": "button",
                                     "disabled": "{{_global.isSaving || (route?.id && !_local.form?.email)}}",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "flex-center btn btn-primary"
                                 },
                                 "children": [
                                     {

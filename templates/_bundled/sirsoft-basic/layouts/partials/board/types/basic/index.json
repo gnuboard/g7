@@ -83,9 +83,7 @@
                     "if": "{{posts?.data?.board?.categories && posts?.data?.board?.categories.length > 0}}",
                     "responsive": {
                         "640-": {
-                            "props": {
-                                "className": "w-auto min-w-48 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm"
-                            }
+                            "classMerge": "w-auto min-w-48"
                         }
                     },
                     "actions": [
@@ -427,7 +425,7 @@
                                                             "props": {
                                                                 "name": "turn-up",
                                                                 "size": "sm",
-                                                                "className": "fa-rotate-90 text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                "className": "fa-rotate-90 text-muted flex-shrink-0"
                                                             }
                                                         },
                                                         {
@@ -448,7 +446,7 @@
                                                             "props": {
                                                                 "name": "lock",
                                                                 "size": "sm",
-                                                                "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                "className": "text-muted flex-shrink-0"
                                                             }
                                                         },
                                                         {
@@ -491,7 +489,7 @@
                                                             "props": {
                                                                 "name": "paperclip",
                                                                 "size": "sm",
-                                                                "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                "className": "text-muted flex-shrink-0"
                                                             }
                                                         },
                                                         {
@@ -604,9 +602,7 @@
                                             "name": "Div",
                                             "responsive": {
                                                 "desktop": {
-                                                    "props": {
-                                                        "className": "flex-col gap-2 px-4 py-3 hidden"
-                                                    }
+                                                    "classMerge": "hidden"
                                                 }
                                             },
                                             "props": {
@@ -683,7 +679,7 @@
                                                                             "props": {
                                                                                 "name": "turn-up",
                                                                                 "size": "sm",
-                                                                                "className": "fa-rotate-90 text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                                "className": "fa-rotate-90 text-muted flex-shrink-0"
                                                                             }
                                                                         },
                                                                         {
@@ -704,7 +700,7 @@
                                                                             "props": {
                                                                                 "name": "lock",
                                                                                 "size": "sm",
-                                                                                "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                                "className": "text-muted flex-shrink-0"
                                                                             }
                                                                         },
                                                                         {
@@ -748,7 +744,7 @@
                                                                             "props": {
                                                                                 "name": "paperclip",
                                                                                 "size": "sm",
-                                                                                "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                                "className": "text-muted flex-shrink-0"
                                                                             }
                                                                         },
                                                                         {

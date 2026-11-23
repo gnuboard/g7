@@ -249,9 +249,7 @@
                                                 "name": "Span",
                                                 "responsive": {
                                                     "768-": {
-                                                        "props": {
-                                                            "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
-                                                        }
+                                                        "classMerge": "mb-0 shrink-0 flex items-center"
                                                     }
                                                 },
                                                 "props": {
@@ -314,9 +312,7 @@
                                                 "name": "Span",
                                                 "responsive": {
                                                     "768-": {
-                                                        "props": {
-                                                            "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
-                                                        }
+                                                        "classMerge": "mb-0 shrink-0 flex items-center"
                                                     }
                                                 },
                                                 "props": {
@@ -394,9 +390,7 @@
                                                 "name": "Span",
                                                 "responsive": {
                                                     "768-": {
-                                                        "props": {
-                                                            "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
-                                                        }
+                                                        "classMerge": "mb-0 shrink-0 flex items-center"
                                                     }
                                                 },
                                                 "props": {
@@ -437,7 +431,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-gray-500 dark:text-gray-400"
+                                                            "className": "text-muted"
                                                         },
                                                         "text": "~"
                                                     },

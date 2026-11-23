@@ -30,7 +30,7 @@
         <span>$t:common.cancel</span>
       </button>
       <!-- 발행 확정 — isPublishing 플래그로 발행 동안 스피너 노출 + 양쪽 버튼 disabled. closeModal 을 sequence 마지막에서 onSuccess 로 이동 (이전: 클릭 즉시 닫혀서 사용자가 발행 진행 상태 파악 불가). 발행 실패 시 모달 유지 → memo 수정 후 재시도 가능. -->
-      <button type="button" disabled="{{$parent._computed.isPluginReadOnly || (!(_local.publishMemo ?? '').trim() || _local.isPublishing)}}" class="gdpr:px-4 gdpr:py-2 gdpr:bg-gray-900 gdpr:dark:bg-white gdpr:text-white gdpr:dark:text-gray-900 gdpr:rounded-lg gdpr:text-sm gdpr:font-medium gdpr:hover:bg-gray-800 gdpr:dark:hover:bg-gray-100 gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed gdpr:inline-flex gdpr:items-center">
+      <button type="button" disabled="{{$parent._computed.isPluginReadOnly || (!(_local.publishMemo ?? '').trim() || _local.isPublishing)}}" class="gdpr-btn gdpr-btn-primary">
         <on type="click">
           <sequence>
             <set-state target="local" :isPublishing="true"/>

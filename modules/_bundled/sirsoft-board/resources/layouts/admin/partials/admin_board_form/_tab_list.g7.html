@@ -4,7 +4,7 @@
     <h3 data-ref="section_list" class="board-card-title">$t:sirsoft-board.admin.form.tabs.list</h3>
     <div data-ref="section_list_fields" class="board-row-stack">
       <div data-ref="list_sort_group" class="board-grid-2col">
-        <div data-ref="order_by_field" class="">
+        <div data-ref="order_by_field">
           <label data-ref="order_by_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.order_by.label</span>
           </label>
@@ -17,7 +17,7 @@
             </options>
           </select>
         </div>
-        <div data-ref="order_direction_field" class="">
+        <div data-ref="order_direction_field">
           <label data-ref="order_direction_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.order_direction.label</span>
           </label>
@@ -30,19 +30,19 @@
         </div>
       </div>
       <div data-ref="list_per_page_group" class="board-grid-2col">
-        <div data-ref="per_page_field" class="">
+        <div data-ref="per_page_field">
           <label data-ref="per_page_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.per_page.label</span>
           </label>
-          <input data-ref="per_page_input" type="number" name="per_page" min="{{_local?.form?._meta?.limits?.per_page_min ?? 5}}" max="{{_local?.form?._meta?.limits?.per_page_max ?? 100}}" :required="true" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input data-ref="per_page_input" type="number" name="per_page" min="{{_local?.form?._meta?.limits?.per_page_min ?? 5}}" max="{{_local?.form?._meta?.limits?.per_page_max ?? 100}}" :required="true" disabled="{{_computed.isReadOnly}}"/>
           <p data-ref="per_page_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.per_page.hint|min={{board_config?.data?.limits?.per_page_min ?? 5}}|max={{board_config?.data?.limits?.per_page_max ?? 100}}</p>
           <span data-if="{{_local.errors?.per_page}}" class="board-form-error-xs board:mt-1">{{_local.errors?.per_page?.[0] ?? ''}}</span>
         </div>
-        <div data-ref="per_page_mobile_field" class="">
+        <div data-ref="per_page_mobile_field">
           <label data-ref="per_page_mobile_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.per_page_mobile.label</span>
           </label>
-          <input data-ref="per_page_mobile_input" type="number" name="per_page_mobile" min="{{_local?.form?._meta?.limits?.per_page_min ?? 5}}" max="{{_local?.form?._meta?.limits?.per_page_max ?? 100}}" :required="true" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input data-ref="per_page_mobile_input" type="number" name="per_page_mobile" min="{{_local?.form?._meta?.limits?.per_page_min ?? 5}}" max="{{_local?.form?._meta?.limits?.per_page_max ?? 100}}" :required="true" disabled="{{_computed.isReadOnly}}"/>
           <p data-ref="per_page_mobile_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.per_page_mobile.hint|min={{board_config?.data?.limits?.per_page_min ?? 5}}|max={{board_config?.data?.limits?.per_page_max ?? 100}}</p>
           <span data-if="{{_local.errors?.per_page_mobile}}" class="board-form-error-xs board:mt-1">{{_local.errors?.per_page_mobile?.[0] ?? ''}}</span>
         </div>

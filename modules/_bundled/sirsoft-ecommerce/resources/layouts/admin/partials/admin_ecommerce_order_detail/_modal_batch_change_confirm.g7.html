@@ -35,7 +35,7 @@
           </div>
           <div class="ecommerce-divider-list">
             <div data-each="confirmItem, confirmIdx in $parent._local.bulkConfirmItems" class="ecommerce:grid ecommerce:grid-cols-12 ecommerce:gap-2 ecommerce:px-3 ecommerce:py-2 ecommerce:items-center">
-              <responsive on="portable" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-2 ecommerce:px-3 ecommerce:py-2 ecommerce:items-center"/>
+              <responsive on="portable" class-merge="ecommerce:grid-cols-1"/>
               <div class="ecommerce:col-span-5 ecommerce-flex-center ecommerce:gap-2 ecommerce:min-w-0">
                 <responsive on="portable" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:min-w-0"/>
                 <img data-if="{{confirmItem.thumbnail_url}}" src="{{confirmItem.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:object-cover ecommerce:flex-shrink-0" alt=""/>
@@ -74,15 +74,15 @@
         <p class="ecommerce-text-tertiary ecommerce:italic">$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.quantity_note</p>
         <div data-if="{{$parent._local.batchOrderStatus || $parent._local.batchCarrierId || $parent._local.batchTrackingNumber}}" class="ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:rounded-lg ecommerce:space-y-2">
           <div data-if="{{$parent._local.batchOrderStatus}}" class="ecommerce-flex-center ecommerce:text-sm">
-            <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:w-28 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.status_label</span>
+            <span class="ecommerce-text-muted ecommerce:w-28 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.status_label</span>
             <span class="ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{({'pending_order':'$t:sirsoft-ecommerce.admin.order.status.waiting','pending_payment':'$t:sirsoft-ecommerce.admin.order.status.payment_pending','payment_complete':'$t:sirsoft-ecommerce.admin.order.status.payment_complete','shipping_hold':'$t:sirsoft-ecommerce.admin.order.status.shipping_hold','preparing':'$t:sirsoft-ecommerce.admin.order.status.preparing','shipping_ready':'$t:sirsoft-ecommerce.admin.order.status.shipping_ready','shipping':'$t:sirsoft-ecommerce.admin.order.status.shipping','delivered':'$t:sirsoft-ecommerce.admin.order.status.delivered','cancelled':'$t:sirsoft-ecommerce.admin.order.status.cancelled','confirmed':'$t:sirsoft-ecommerce.admin.order.status.confirmed'})[$parent._local.batchOrderStatus] ?? $parent._local.batchOrderStatus}}</span>
           </div>
           <div data-if="{{$parent._local.batchCarrierId}}" class="ecommerce-flex-center ecommerce:text-sm">
-            <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:w-28 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.carrier_label</span>
+            <span class="ecommerce-text-muted ecommerce:w-28 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.carrier_label</span>
             <span class="ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{(active_carriers?.data ?? []).find(c => String(c.value) === String($parent._local.batchCarrierId))?.label ?? $parent._local.batchCarrierId}}</span>
           </div>
           <div data-if="{{$parent._local.batchTrackingNumber}}" class="ecommerce-flex-center ecommerce:text-sm">
-            <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:w-28 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.tracking_label</span>
+            <span class="ecommerce-text-muted ecommerce:w-28 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.tracking_label</span>
             <span class="ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{$parent._local.batchTrackingNumber}}</span>
           </div>
         </div>
@@ -167,7 +167,7 @@
         </on>
         <span>$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.cancel</span>
       </button>
-      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{(!$parent._local.batchOrderStatus &amp;&amp; !$parent._local.batchCarrierId &amp;&amp; !$parent._local.batchTrackingNumber) || (($parent._local.batchOrderStatus === 'shipping_ready' || $parent._local.batchOrderStatus === 'shipping' || $parent._local.batchOrderStatus === 'delivered') &amp;&amp; (!$parent._local.batchCarrierId || !$parent._local.batchTrackingNumber)) || _global.manualPaidPreviewLoading === true || !!_global.manualPaidPreviewError || (_global.manualPaidPreview?.orders?.[0]?.restoration?.coupon_conflicts ?? []).length > 0 || _global.isProcessing}}">
+      <button type="button" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-primary" disabled="{{(!$parent._local.batchOrderStatus &amp;&amp; !$parent._local.batchCarrierId &amp;&amp; !$parent._local.batchTrackingNumber) || (($parent._local.batchOrderStatus === 'shipping_ready' || $parent._local.batchOrderStatus === 'shipping' || $parent._local.batchOrderStatus === 'delivered') &amp;&amp; (!$parent._local.batchCarrierId || !$parent._local.batchTrackingNumber)) || _global.manualPaidPreviewLoading === true || !!_global.manualPaidPreviewError || (_global.manualPaidPreview?.orders?.[0]?.restoration?.coupon_conflicts ?? []).length > 0 || _global.isProcessing}}">
         <on type="click">
           <!-- 일괄 변경 실행. 부모가 들고 있던 값들을 여기서 한 번에 모아 핸들러로 넘긴다 — 재고·
             마일리지·알림까지 얽히는 처리라 화면에서 조립하지 않는다.

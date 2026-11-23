@@ -37,7 +37,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400 line-through"
+                                "className": "text-sm text-muted line-through"
                             },
                             "text": "{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.list_price_formatted}}"
                         }
@@ -256,7 +256,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "flex-shrink-0 inline-flex items-center px-2.5 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                                "className": "flex-shrink-0 inline-flex items-center px-2.5 py-1 text-xs text-muted hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                             },
                             "text": "+{{(productDownloadableCoupons.data?.data ?? []).length - 3}}"
                         },
@@ -406,7 +406,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 w-16 shrink-0 truncate"
+                                        "className": "text-sm text-muted w-16 shrink-0 truncate"
                                     },
                                     "text": "{{group.name_localized ?? group.name}}"
                                 },
@@ -444,7 +444,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400 w-20"
+                                "className": "text-sm text-muted w-20"
                             },
                             "text": "$t:shop.product.brand"
                         },
@@ -495,7 +495,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 w-20"
+                                        "className": "text-sm text-muted w-20"
                                     },
                                     "text": "$t:shop.product.shipping_policy_label"
                                 },
@@ -520,7 +520,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 w-20"
+                                        "className": "text-sm text-muted w-20"
                                     },
                                     "text": "$t:shop.product.shipping_fee"
                                 },
@@ -546,7 +546,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 w-20"
+                                        "className": "text-sm text-muted w-20"
                                     },
                                     "text": "$t:shop.product.free_shipping_threshold"
                                 },

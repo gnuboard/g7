@@ -40,9 +40,6 @@
                                     "id": "field_min_title_length",
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": ""
-                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -125,7 +122,7 @@
                                                             "name": "Span",
                                                             "if": "{{_local.errors?.['basic_defaults.min_title_length']}}",
                                                             "props": {
-                                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
+                                                                "className": "board-form-error"
                                                             },
                                                             "text": "{{(Array.isArray(_local.errors?.['basic_defaults.min_title_length']) ? _local.errors['basic_defaults.min_title_length'][0] : _local.errors?.['basic_defaults.min_title_length']) ?? ''}}"
                                                         }
@@ -139,9 +136,6 @@
                                     "id": "field_max_title_length",
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": ""
-                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -224,7 +218,7 @@
                                                             "name": "Span",
                                                             "if": "{{_local.errors?.['basic_defaults.max_title_length']}}",
                                                             "props": {
-                                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
+                                                                "className": "board-form-error"
                                                             },
                                                             "text": "{{(Array.isArray(_local.errors?.['basic_defaults.max_title_length']) ? _local.errors['basic_defaults.max_title_length'][0] : _local.errors?.['basic_defaults.max_title_length']) ?? ''}}"
                                                         }
@@ -238,9 +232,6 @@
                                     "id": "field_min_content_length",
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": ""
-                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -323,7 +314,7 @@
                                                             "name": "Span",
                                                             "if": "{{_local.errors?.['basic_defaults.min_content_length']}}",
                                                             "props": {
-                                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
+                                                                "className": "board-form-error"
                                                             },
                                                             "text": "{{(Array.isArray(_local.errors?.['basic_defaults.min_content_length']) ? _local.errors['basic_defaults.min_content_length'][0] : _local.errors?.['basic_defaults.min_content_length']) ?? ''}}"
                                                         }
@@ -337,9 +328,6 @@
                                     "id": "field_max_content_length",
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": ""
-                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -422,7 +410,7 @@
                                                             "name": "Span",
                                                             "if": "{{_local.errors?.['basic_defaults.max_content_length']}}",
                                                             "props": {
-                                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
+                                                                "className": "board-form-error"
                                                             },
                                                             "text": "{{(Array.isArray(_local.errors?.['basic_defaults.max_content_length']) ? _local.errors['basic_defaults.max_content_length'][0] : _local.errors?.['basic_defaults.max_content_length']) ?? ''}}"
                                                         }
@@ -436,9 +424,6 @@
                                     "id": "field_blocked_keywords",
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": ""
-                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -516,9 +501,6 @@
                                     "id": "field_new_display_hours",
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": ""
-                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -601,7 +583,7 @@
                                                             "name": "Span",
                                                             "if": "{{_local.errors?.['basic_defaults.new_display_hours']}}",
                                                             "props": {
-                                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
+                                                                "className": "board-form-error"
                                                             },
                                                             "text": "{{(Array.isArray(_local.errors?.['basic_defaults.new_display_hours']) ? _local.errors['basic_defaults.new_display_hours'][0] : _local.errors?.['basic_defaults.new_display_hours']) ?? ''}}"
                                                         }
@@ -637,9 +619,6 @@
                             "id": "default_guest_author_fields_field",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "id": "default_guest_author_fields_label",
@@ -947,7 +926,7 @@
                                                                                     "if": "{{row.fixed === true}}",
                                                                                     "props": {
                                                                                         "name": "lock",
-                                                                                        "className": "board:text-xs board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"
+                                                                                        "className": "board:text-xs board-text-muted board:flex-shrink-0"
                                                                                     }
                                                                                 },
                                                                                 {

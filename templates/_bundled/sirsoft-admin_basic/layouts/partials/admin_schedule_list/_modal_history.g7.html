@@ -16,13 +16,13 @@
     </data-source>
     <div data-ref="history_target" class="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
       <span class="text-primary font-medium break-all">{{_global.selectedSchedule?.label_localized ?? _global.selectedSchedule?.name}}</span>
-      <span class="block text-xs font-mono text-gray-500 dark:text-gray-400 mt-0.5 break-all">{{_global.selectedSchedule?.name}}</span>
+      <span class="block text-xs font-mono text-muted mt-0.5 break-all">{{_global.selectedSchedule?.name}}</span>
     </div>
     <div data-ref="history_loading" data-if="{{!_global.scheduleHistory}}" class="flex-center justify-center gap-2 py-8">
       <icon name="spinner" class="spinner-sm"/>
       <span class="text-tertiary">$t:common.loading</span>
     </div>
-    <div data-if="{{_global.scheduleHistory &amp;&amp; (!_global.scheduleHistory?.data || _global.scheduleHistory?.data?.length === 0)}}" class="py-8 text-center text-gray-500 dark:text-gray-400">
+    <div data-if="{{_global.scheduleHistory &amp;&amp; (!_global.scheduleHistory?.data || _global.scheduleHistory?.data?.length === 0)}}" class="py-8 text-center text-muted">
       <icon name="clock" class="text-5xl mx-auto mb-2 text-gray-500 dark:text-gray-500"/>
       <p>$t:admin.schedules.modals.no_history</p>
     </div>

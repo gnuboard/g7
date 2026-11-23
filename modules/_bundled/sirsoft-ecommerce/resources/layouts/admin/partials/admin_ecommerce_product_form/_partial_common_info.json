@@ -36,7 +36,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "file-alt",
-                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                        "className": "ecommerce-text-muted"
                     }
                 },
                 {
@@ -52,7 +52,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.commonInfoExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
+                        "className": "ecommerce-admin-card-accordion-icon ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.commonInfoExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
                     }
                 }
             ]
@@ -392,7 +392,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "chevron-down",
-                                        "className": "ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.commonInfoDetailExpanded ? 'ecommerce:rotate-180' : ''}}"
+                                        "className": "ecommerce:text-xl ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.commonInfoDetailExpanded ? 'ecommerce:rotate-180' : ''}}"
                                     }
                                 }
                             ]
@@ -495,7 +495,7 @@
                     "name": "Div",
                     "if": "{{common_infos !== undefined && (common_infos?.data?.unavailable !== true && !(common_infos?.data?.data ?? []).length)}}",
                     "props": {
-                        "className": "ecommerce:text-center ecommerce:py-8 ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                        "className": "ecommerce:text-center ecommerce:py-8 ecommerce-text-muted"
                     },
                     "children": [
                         {

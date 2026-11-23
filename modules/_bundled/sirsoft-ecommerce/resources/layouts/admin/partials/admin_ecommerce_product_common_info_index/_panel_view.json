@@ -180,7 +180,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "globe",
-                                        "className": "ecommerce:text-base ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce:text-base ecommerce-text-muted"
                                     }
                                 },
                                 {

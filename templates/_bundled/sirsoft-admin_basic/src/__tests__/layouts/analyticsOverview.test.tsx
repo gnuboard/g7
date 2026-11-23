@@ -17,6 +17,7 @@ import {
 import { ANALYTICS_PERIOD_PRESETS } from '../../handlers/setAnalyticsPeriodHandler';
 import { createLayoutTest, type LayoutJson } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
+import { rangeClassName } from '../../../__tests__/layouts/support/responsiveClass';
 
 type ProbeNode = NonNullable<LayoutJson['components']>[number];
 type ProbeSource = NonNullable<LayoutJson['data_sources']>[number];
@@ -176,7 +177,10 @@ describe('기간 바 조각', () => {
     const csvClass = String(nodeById(periodBar, 'csv_download_button')?.props?.className ?? '');
     expect(csvClass).toContain('w-full');
     expect(csvClass).not.toContain('sm:');
-    expect(nodeById(periodBar, 'csv_download_button')?.responsive?.['640-']?.props?.className).toContain('w-auto');
+    // 640 이상 구간 실효값(기본 className 위에 구간 class-merge, #399) — 전폭이 자기 폭으로 교체된다
+    const csvWide = rangeClassName(nodeById(periodBar, 'csv_download_button'), '640-').split(/\s+/);
+    expect(csvWide).toContain('w-auto');
+    expect(csvWide).not.toContain('w-full');
     const refetch = actionsWithHandler(periodBar, 'refetchDataSource')[0];
     expect(refetch?.params?.dataSourceId).toBe('{{_local.periodSource}}');
   });
@@ -191,14 +195,14 @@ describe('기간 바 — 달력 두 칸', () => {
     expect(dates?.props?.className).toContain('w-full');
     // 640 이상 폭 분기는 엔진 responsive 구간 값이다(Tailwind 반응형 접두 없음)
     expect(dates?.props?.className).not.toContain('sm:');
-    expect(dates?.responsive?.['640-']?.props?.className).toContain('w-auto');
+    expect(rangeClassName(dates, '640-')).toContain('w-auto');
     for (const id of ['period_from', 'period_to']) {
       const node = nodeById(periodBar, id);
       const cls: string = node?.props?.className ?? '';
       expect(cls, id).toContain('flex-1');
       expect(cls, id).toContain('min-w-0');
       expect(cls, id).not.toContain('sm:');
-      const wide: string = node?.responsive?.['640-']?.props?.className ?? '';
+      const wide: string = rangeClassName(node, '640-');
       expect(wide, id).toContain('w-40');
       expect(wide, id).toContain('flex-none');
     }

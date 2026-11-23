@@ -40,7 +40,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors"
+                    "className": "ecommerce-btn ecommerce-btn-secondary"
                 },
                 "text": "$t:common.cancel"
             },
@@ -64,7 +64,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "className": "ecommerce-btn ecommerce-btn-primary",
                     "disabled": "{{_global.adminClaimRequest?.submitting === true || (_global.adminClaimRequest?.reasonCode ?? '') === ''}}"
                 },
                 "children": [
@@ -345,9 +345,7 @@
                             "name": "Span",
                             "responsive": {
                                 "768-": {
-                                    "props": {
-                                        "className": "ecommerce-form-label ecommerce:col-span-2"
-                                    }
+                                    "classMerge": "ecommerce:col-span-2"
                                 }
                             },
                             "props": {
@@ -444,9 +442,7 @@
                             "name": "Input",
                             "responsive": {
                                 "768-": {
-                                    "props": {
-                                        "className": "ecommerce:col-span-2 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg"
-                                    }
+                                    "classMerge": "ecommerce:col-span-2"
                                 }
                             },
                             "actions": [
@@ -656,7 +652,7 @@
                             "name": "Span",
                             "if": "{{(order.data?.total_points_used_amount ?? 0) <= 0}}",
                             "props": {
-                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:block ecommerce:mb-2"
+                                "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:block ecommerce:mb-2"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_no_points_hint"
                         },
@@ -849,7 +845,7 @@
                             "name": "P",
                             "if": "{{(_global.adminClaimRequest?.reasonCode ?? '') === ''}}",
                             "props": {
-                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                "className": "ecommerce:text-xs ecommerce-text-muted"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.claim_request.preview_needs_reason"
                         }
@@ -906,7 +902,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                        "className": "ecommerce:text-xs ecommerce-text-muted"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.order.claim_request.customer_notice"
                 }

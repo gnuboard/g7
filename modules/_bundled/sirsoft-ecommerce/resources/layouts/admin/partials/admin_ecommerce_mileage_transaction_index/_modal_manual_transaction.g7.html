@@ -26,7 +26,7 @@
         </div>
       </div>
       <div data-ref="member_search_block" data-if="{{!_global.mileageManual?.selectedMember}}" class="ecommerce:relative">
-        <label class="ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.member_search</label>
+        <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.member_search</label>
         <input type="text" value="{{_global.mileageManual?.memberSearchKeyword ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.member_search_placeholder" class="{{_global.mileageManual?.errors?.errors?.user_id ? 'ecommerce-input ecommerce:w-full ecommerce-input-error ecommerce:focus:ring-2 ecommerce:focus:ring-red-500 ecommerce:focus:border-red-500' : 'ecommerce-input ecommerce:w-full'}}">
           <prop name="debounce">250</prop>
           <on type="input">
@@ -63,13 +63,13 @@
               <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-300 ecommerce:truncate">{{member.email}}</span>
             </span>
           </button>
-          <div data-if="{{(_global.mileageManual?.memberSearchResults ?? []).length === 0}}" class="ecommerce:p-3 ecommerce:text-sm ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.no_results</div>
+          <div data-if="{{(_global.mileageManual?.memberSearchResults ?? []).length === 0}}" class="ecommerce:p-3 ecommerce:text-sm ecommerce:text-center ecommerce-text-muted">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.no_results</div>
         </div>
       </div>
       <div data-ref="selected_member_block" data-if="{{!!_global.mileageManual?.selectedMember}}" class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:rounded-lg">
         <div>
           <span class="ecommerce:block ecommerce:font-medium ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-white">{{_global.mileageManual?.selectedMember?.name}}</span>
-          <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.current_balance|balance={{_global.mileageManual?.selectedMember?.balance ?? '-'}}</span>
+          <span class="ecommerce:block ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.current_balance|balance={{_global.mileageManual?.selectedMember?.balance ?? '-'}}</span>
         </div>
         <button type="button" disabled="{{_global.mileageManual?.isSaving ?? false}}" class="ecommerce:text-xs ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
           <on type="click">
@@ -107,7 +107,7 @@
               <set-state target="global" mileageManual.amount="{{$event.target.value}}"/>
             </on>
           </input>
-          <span class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800">{{_global.mileageManual?.currency ?? 'KRW'}}</span>
+          <span class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce-text-muted ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800">{{_global.mileageManual?.currency ?? 'KRW'}}</span>
         </div>
         <span data-if="{{_global.mileageManual?.errors?.errors?.amount}}" class="ecommerce-form-error">{{_global.mileageManual?.errors?.errors?.amount?.[0] ?? ''}}</span>
       </div>
@@ -116,7 +116,7 @@
         <span>$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.exceed_warning|balance={{_global.mileageManual?.selectedMember?.balance ?? 0}}</span>
       </div>
       <div data-ref="earn_expiry_block" data-if="{{(_global.mileageManual?.action ?? 'earn') === 'earn'}}" class="ecommerce:space-y-2">
-        <label class="ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.expiry</label>
+        <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.expiry</label>
         <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-4">
           <label class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:cursor-pointer">
             <input type="radio" name="mileageManualExpiry" checked="{{(_global.mileageManual?.useDefaultExpiry ?? true) === true}}">
@@ -145,7 +145,7 @@
         </input>
       </div>
       <div>
-        <label class="ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.reason</label>
+        <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.reason</label>
         <input type="text" value="{{_global.mileageManual?.reason ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.reason_placeholder" class="{{_global.mileageManual?.errors?.errors?.memo ? 'ecommerce-input ecommerce:w-full ecommerce-input-error ecommerce:focus:ring-2 ecommerce:focus:ring-red-500 ecommerce:focus:border-red-500' : 'ecommerce-input ecommerce:w-full'}}">
           <on type="input">
             <!-- 사유 — 필수다(공백만 있으면 실행 버튼이 잠긴다). 화면 이름은 '사유' 이지만 서버로는 `memo` 로 나가고, 오류 표시도 그 이름으로 돌아온다. -->
@@ -156,7 +156,7 @@
       </div>
     </div>
     <footer>
-      <button type="button" disabled="{{_global.mileageManual?.isSaving ?? false}}" class="ecommerce-btn ecommerce-btn-secondary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
+      <button type="button" disabled="{{_global.mileageManual?.isSaving ?? false}}" class="ecommerce-btn ecommerce-btn-secondary ecommerce:text-sm">
         <on type="click">
           <!-- 취소 — 창을 닫은 뒤 창 이름 공간의 개인정보를 비운다(닫기보다 먼저 비우면 닫히기 전 한 번 빈 칸이 그려진다) -->
           <sequence>
@@ -166,7 +166,7 @@
         </on>
         <span>$t:sirsoft-ecommerce.admin.mileage_transactions.cancel</span>
       </button>
-      <button data-ref="manual_submit_button" type="button" disabled="{{_global.mileageManual?.isSaving || !_global.mileageManual?.selectedMember || !(Number(_global.mileageManual?.amount ?? 0) > 0) || !(_global.mileageManual?.reason ?? '').trim() || (_global.mileageManual?.action === 'deduct' &amp;&amp; _global.mileageManual?.selectedMember?.balance !== null &amp;&amp; Number(_global.mileageManual?.amount ?? 0) > Number(_global.mileageManual?.selectedMember?.balance ?? 0))}}" class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce-btn ecommerce:text-sm ecommerce:bg-red-600 ecommerce:dark:bg-red-600 ecommerce:text-white ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
+      <button data-ref="manual_submit_button" type="button" disabled="{{_global.mileageManual?.isSaving || !_global.mileageManual?.selectedMember || !(Number(_global.mileageManual?.amount ?? 0) > 0) || !(_global.mileageManual?.reason ?? '').trim() || (_global.mileageManual?.action === 'deduct' &amp;&amp; _global.mileageManual?.selectedMember?.balance !== null &amp;&amp; Number(_global.mileageManual?.amount ?? 0) > Number(_global.mileageManual?.selectedMember?.balance ?? 0))}}" class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce-btn ecommerce:text-sm ecommerce:bg-red-600 ecommerce:dark:bg-red-600 ecommerce:text-white ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-700">
         <on type="click">
           <!-- 지급·차감 실행. 화면에 흩어져 있던 값들을 여기서 서버 형태로 맞춘다 — 금액은 숫자로,
             사유는 `memo` 로, 만료일은 '직접 지정' 일 때만 실어 보내고 아니면 비운다.

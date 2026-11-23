@@ -70,7 +70,7 @@
         <icon name="layer-group" class="text-xl text-blue-500"/>
       </div>
       <div data-if="{{schedule_status?.data?.queue?.measurable}}" class="text-page-heading mt-2">$t:admin.schedules.status_card.pending_count|count={{schedule_status?.data?.queue?.pending_count ?? 0}}</div>
-      <div data-if="{{schedule_status !== undefined &amp;&amp; (!schedule_status?.data?.queue?.measurable)}}" class="mt-2 text-lg font-semibold text-gray-500 dark:text-gray-400">$t:admin.schedules.status_card.pending_unmeasurable</div>
+      <div data-if="{{schedule_status !== undefined &amp;&amp; (!schedule_status?.data?.queue?.measurable)}}" class="mt-2 text-lg font-semibold text-muted">$t:admin.schedules.status_card.pending_unmeasurable</div>
       <p class="text-tertiary mt-1"><blur-until-loaded sources="schedule_status"/>$t:admin.schedules.status_card.queue_detail|failed={{schedule_status?.data?.queue?.failed_count ?? 0}}|alive={{schedule_status?.data?.queue?.workers?.alive ?? 0}}|registered={{schedule_status?.data?.queue?.workers?.registered ?? 0}}</p>
     </div>
   </div>

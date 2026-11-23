@@ -27,6 +27,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { rangeClassName } from './support/responsiveClass';
 
 const layoutsDir = path.resolve(__dirname, '../../layouts');
 
@@ -253,7 +254,8 @@ describe('게시글 상단 네비 — 긴 게시판명이 좌우 버튼을 압�
     // portable(0~1023) 이 아니라 mobile(0~767). 버튼 3개 고정폭 261px + 21자 제목 자연폭
     // 323px = 584px 이므로 태블릿(콘텐츠 735px)은 한 줄로 충분하다.
     expect(layout.responsive?.portable).toBeUndefined();
-    const mobile: string = layout.responsive?.mobile?.props?.className ?? '';
+    // 구간 실효 className(구간 class-merge 를 기본 className 위에 엔진 규칙으로 덧붙인 값, #399)
+    const mobile: string = rangeClassName(layout, 'mobile');
     expect(mobile).toContain('flex-wrap');
     expect(mobile).toContain('justify-between');
     // 줄바꿈 시 두 행이 붙지 않도록 세로 gap 이 필요하다
@@ -269,7 +271,8 @@ describe('게시글 상단 네비 — 긴 게시판명이 좌우 버튼을 압�
     );
     expect(title).toBeTruthy();
 
-    const mobile: string = title.responsive?.mobile?.props?.className ?? '';
+    // 구간 실효 className(구간 class-merge 를 기본 className 위에 엔진 규칙으로 덧붙인 값, #399)
+    const mobile: string = rangeClassName(title, 'mobile');
     const tokens = mobile.split(/\s+/);
     expect(tokens).toContain('order-first');
     expect(tokens).toContain('w-full');

@@ -219,6 +219,7 @@ return [
         'nested_action_debounce_ignored' => 'The debounce on the :handler action has no effect — actions nested inside conditions, sequences or result callbacks, and actions in event listeners, failure handlers or initial actions, run immediately every time. Put debounce on the action the user triggers directly (the action right under <on type>, e.g. <sequence :debounce>).',
         'mixed_debounce_flushed' => ':event on :name mixes debounced actions with immediate ones — every time an immediate action runs, the waiting debounced actions run right away, so they run on every input. To keep the delay, debounce every action on this event.',
         'entry_only_key_ignored' => ':key applies only to actions triggered directly by a user event. It is ignored on the :handler action here (event listeners, failure handlers, init actions, nested actions).',
+        'class_merge_breakpoint_variant' => 'The class-merge of the :key range on :name has width variant classes (:tokens). The range is already a width condition, so write them without width variants or split them into another range.',
     ],
 
     // Settings related exceptions

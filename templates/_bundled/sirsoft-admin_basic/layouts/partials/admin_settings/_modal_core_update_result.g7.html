@@ -31,7 +31,7 @@
               <tr data-each="conflict in {{$parent._local.coreUpdateInfo?.custom_preflight?.conflicts ?? []}}" class="border-t border-gray-200 dark:border-gray-700 align-top">
                 <td class="px-3 py-2">
                   <span class="block font-mono text-gray-900 dark:text-white">{{conflict.package}}</span>
-                  <span class="block text-xs text-gray-500 dark:text-gray-400">$t:admin.settings.info.custom_conflict_installed|version={{conflict.installed}}</span>
+                  <span class="block text-xs text-muted">$t:admin.settings.info.custom_conflict_installed|version={{conflict.installed}}</span>
                 </td>
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300">
                   <span data-if="{{conflict.type === 'duplicate'}}">$t:admin.settings.info.custom_conflict_duplicate</span>
@@ -62,7 +62,7 @@
           <p class="text-success-soft">$t:admin.settings.info.update_available_message</p>
         </div>
       </div>
-      <div data-ref="no_update_section" data-if="{{!$parent._local.coreUpdateInfo?.update_available}}" class="">
+      <div data-ref="no_update_section" data-if="{{!$parent._local.coreUpdateInfo?.update_available}}">
         <div class="alert-info">
           <p class="text-info-soft">$t:admin.settings.info.no_update_message</p>
         </div>
@@ -70,7 +70,7 @@
     </div>
     <footer>
       <!-- 변경 이력 보기와 업데이트 단추는 새 버전이 있을 때만 그린다. 둘 다 빠지면 Modal 이 빈 바닥 줄을 숨긴다(#869 C1) -->
-      <button data-if="{{$parent._local.coreUpdateInfo?.update_available}}" type="button" class="px-3 py-1.5 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors" disabled="{{_local.loadingChangelog}}">
+      <button data-if="{{$parent._local.coreUpdateInfo?.update_available}}" type="button" class="btn btn-primary btn-sm rounded-md" disabled="{{_local.loadingChangelog}}">
         <on type="click">
           <!-- 변경 이력 보기 — 현재↔최신 두 버전 사이의 이력을 받아 이력 창을 연다. 실패해도 빈 이력으로
  창을 연다(이력이 없다고 안내 자체를 막지 않는다). 받은 값은 **부모 화면의 상태**로 담기고
@@ -96,7 +96,7 @@
         <icon data-if="{{_local.loadingChangelog}}" name="spinner" class="spinner-sm"/>
         <span>$t:admin.settings.info.view_changelog</span>
       </button>
-      <button data-if="{{$parent._local.coreUpdateInfo?.update_available}}" type="button" class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+      <button data-if="{{$parent._local.coreUpdateInfo?.update_available}}" type="button" class="btn btn-secondary btn-sm rounded-md">
         <on type="click">
           <open-modal target="core_update_guide_modal"/>
         </on>

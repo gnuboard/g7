@@ -36,7 +36,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "ellipsis-h",
-                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                        "className": "ecommerce-text-muted"
                     }
                 },
                 {
@@ -52,7 +52,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.otherInfoExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
+                        "className": "ecommerce-admin-card-accordion-icon ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.otherInfoExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
                     }
                 }
             ]
@@ -268,7 +268,7 @@
                                                     "name": "Span",
                                                     "if": "{{!(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at}}",
                                                     "props": {
-                                                        "className": "ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:italic"
+                                                        "className": "ecommerce:text-sm ecommerce-text-muted ecommerce:italic"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.labels.no_period"
                                                 }
@@ -526,7 +526,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce-text-muted"
                                                     },
                                                     "text": "~"
                                                 },
@@ -894,7 +894,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.allowed_roles}}",
                                     "props": {
-                                        "className": "ecommerce:block ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:text-xs ecommerce:mt-1"
+                                        "className": "ecommerce-form-error"
                                     },
                                     "text": "{{_local.errors?.allowed_roles?.[0] ?? ''}}"
                                 }

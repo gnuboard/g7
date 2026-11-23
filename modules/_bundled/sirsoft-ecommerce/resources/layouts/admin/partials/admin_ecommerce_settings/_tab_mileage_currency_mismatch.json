@@ -64,7 +64,7 @@
             "props": {
                 "type": "button",
                 "data-testid": "mileage-currency-align",
-                "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:shrink-0 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:shrink-0",
                 "disabled": "{{_computed.isReadOnly}}"
             },
             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.align_button|base={{String(_local.form?.language_currency?.default_currency ?? '').toUpperCase()}}"

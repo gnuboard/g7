@@ -8,10 +8,10 @@
         <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.noticeExpanded="{{!_local.ui.noticeExpanded}}"/>
       </on>
-      <icon name="clipboard-list" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+      <icon name="clipboard-list" class="ecommerce-text-muted"/>
       <span class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.product.sections.notice</span>
       <span class="ecommerce-text-label-subtle ecommerce:ml-2">({{(_local.form.notice_items ?? []).length}}$t:sirsoft-ecommerce.admin.product.notice.items_count_suffix)</span>
-      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.noticeExpanded !== false ? 'ecommerce:rotate-180' : ''}}"/>
+      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.noticeExpanded !== false ? 'ecommerce:rotate-180' : ''}}"/>
     </button>
     <div data-ref="notice_body" data-if="{{_local.ui.noticeExpanded !== false}}" class="ecommerce-row-stack">
       <div data-ref="notice_existing_template_mode">
@@ -51,8 +51,9 @@
             </div>
             <div class="ecommerce-flex-center ecommerce:gap-2">
               <responsive on="portable" class="ecommerce-row-stack ecommerce:w-full"/>
-              <button type="button" class="ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
-                <responsive on="portable" class="ecommerce-flex-center ecommerce:justify-center ecommerce:w-full ecommerce:px-4 ecommerce:py-2 ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"/>
+              <button type="button" class="ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm ecommerce:text-xs" disabled="{{_computed.isReadOnly}}">
+                <!-- audit:allow layout-inline-semantic-duplicate reason: row-stack 의 유일한 자식이라 `.ecommerce-row-stack>:first-child` padding 0 이 .ecommerce-btn 패딩을 이긴다 — 유틸리티 py-2 로 세로 여백을 지킨다(#399 지문 X2) -->
+                <responsive on="portable" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-secondary ecommerce:w-full ecommerce:py-2 ecommerce:text-xs"/>
                 <on type="click">
                   <!-- 「상세설명 참조」로 일괄 채우기 — 확인 창이 미리보기를 보여 줘야 해서 지금 폼을 통째로 전역에 옮겨 담고 연다 -->
                   <sequence>
@@ -64,7 +65,7 @@
               </button>
             </div>
           </div>
-          <multilingual-tab-panel data-type="composite" data-ref="notice_locale_panel" variant="underline" class="">
+          <multilingual-tab-panel data-type="composite" data-ref="notice_locale_panel" variant="underline">
             <dynamic-field-list data-type="composite" data-ref="notice_items_editor" name="notice_items" items="{{_local.form.notice_items ?? []}}" itemIdKey="key" errors="{{_local.errors}}" :enableDrag="true" :showIndex="true" :minItems="0" addLabel="$t:sirsoft-ecommerce.admin.product.notice.add_item" emptyMessage="$t:sirsoft-ecommerce.admin.product.notice.empty_message" disabled="{{_computed.isReadOnly}}" readOnly="{{_computed.isReadOnly}}">
               <prop name="columns">
                 <item key="name" type="multilingual" label="$t:sirsoft-ecommerce.admin.product.notice.col_name"/>

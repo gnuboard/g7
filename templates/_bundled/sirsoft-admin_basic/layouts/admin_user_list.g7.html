@@ -247,7 +247,7 @@
       </page-header>
       <include src="partials/admin_user_list/_partial_filter_section.g7.html"/>
       <div data-ref="bulk_actions_area" data-if="{{users?.data?.abilities?.can_update === true}}" class="bulk-actions-bar">
-        <responsive on="portable" class="bulk-actions-bar">
+        <responsive on="portable">
           <span data-ref="mobile_selected_count" class="text-body font-medium">$t:admin.users.selected_count|count={{(_global.selectedIds_admin_users || []).length}}</span>
           <dropdown data-type="composite" data-ref="mobile_bulk_action_dropdown" label="$t:admin.users.bulk_action_select" position="bottom-right" class="ml-auto">
             <prop name="items">

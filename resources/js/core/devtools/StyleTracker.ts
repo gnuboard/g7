@@ -355,7 +355,7 @@ export class StyleTracker {
           severity: 'info',
           description: '폭 조건 없이 hidden이 설정되어 있습니다',
           // Tailwind 폭 접두(sm: md: lg: …)는 금지 규정이다 — 폭 판정은 엔진 responsive 하나로 모은다(docs/frontend/responsive-layout.md 2절)
-          suggestion: '폭에 따라 표시하려면 엔진 responsive(<responsive on="desktop" class="…"/> 등)로 그 구간의 className 을 통째로 바꾸세요. Tailwind 폭 접두는 쓰지 않습니다',
+          suggestion: '폭에 따라 표시하려면 엔진 responsive(<responsive on="desktop" class-merge="flex"/> 등)로 그 구간에서 바뀐 클래스만 덧붙이세요. Tailwind 폭 접두는 쓰지 않습니다',
         });
       }
     }

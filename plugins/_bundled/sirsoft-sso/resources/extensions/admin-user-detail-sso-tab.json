@@ -154,7 +154,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
+                                                                "className": "sso:text-xs sso-text-muted"
                                                             },
                                                             "text": "{{account.idp?.protocol ? $t('sirsoft-sso.admin.protocols.' + account.idp.protocol) : ''}}"
                                                         },
@@ -189,7 +189,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "sso:text-gray-500 sso:dark:text-gray-400"
+                                                                "className": "sso-text-muted"
                                                             },
                                                             "text": "$t:sirsoft-sso.admin.accounts.col.via"
                                                         },
@@ -205,7 +205,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "sso:text-gray-500 sso:dark:text-gray-400"
+                                                                "className": "sso-text-muted"
                                                             },
                                                             "text": "$t:sirsoft-sso.admin.accounts.col.linked_at"
                                                         },
@@ -221,7 +221,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "sso:text-gray-500 sso:dark:text-gray-400"
+                                                                "className": "sso-text-muted"
                                                             },
                                                             "text": "$t:sirsoft-sso.admin.accounts.col.last_login_at"
                                                         },
@@ -238,7 +238,7 @@
                                                             "name": "Span",
                                                             "if": "{{!account.active}}",
                                                             "props": {
-                                                                "className": "sso:text-gray-500 sso:dark:text-gray-400"
+                                                                "className": "sso-text-muted"
                                                             },
                                                             "text": "$t:sirsoft-sso.admin.accounts.col.deprovisioned_at"
                                                         },
@@ -321,7 +321,7 @@
                                                                     "type": "basic",
                                                                     "name": "Tr",
                                                                     "props": {
-                                                                        "className": "sso:text-left sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:border-b sso:border-gray-200 sso:dark:border-gray-700"
+                                                                        "className": "sso:text-left sso:text-xs sso-text-muted sso:border-b sso:border-gray-200 sso:dark:border-gray-700"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -388,7 +388,7 @@
                                                                             "type": "basic",
                                                                             "name": "Td",
                                                                             "props": {
-                                                                                "className": "sso:py-2 sso:pr-3 sso:whitespace-nowrap sso:text-gray-500 sso:dark:text-gray-400"
+                                                                                "className": "sso:py-2 sso:pr-3 sso:whitespace-nowrap sso-text-muted"
                                                                             },
                                                                             "text": "{{attribute.idp_label}}"
                                                                         }

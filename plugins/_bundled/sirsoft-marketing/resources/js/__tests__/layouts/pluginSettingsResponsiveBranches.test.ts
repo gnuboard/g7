@@ -13,12 +13,13 @@
 
 import { describe, it, expect } from 'vitest';
 import pluginSettingsLayout from '../../../layouts/admin/plugin_settings.json';
+import { applyResponsiveClassMerge } from '@core/template-engine/helpers/StyleHelpers';
 
 type LayoutNode = {
     id?: string;
     name?: string;
     props?: { className?: string };
-    responsive?: Record<string, { props?: { className?: string } }>;
+    responsive?: Record<string, { props?: { className?: string }; classMerge?: string }>;
     children?: LayoutNode[];
 };
 
@@ -47,7 +48,25 @@ function flatten(node: unknown): LayoutNode[] {
 const nodes = flatten(pluginSettingsLayout).filter((n) => typeof n.name === 'string');
 const tokens = (c: unknown): string[] => (typeof c === 'string' ? c.split(/\s+/) : []);
 const base = (n: LayoutNode | undefined) => tokens(n?.props?.className);
-const branch = (n: LayoutNode | undefined, on: string) => tokens(n?.responsive?.[on]?.props?.className);
+/**
+ * 폭 갈래의 실효 클래스 토큰 — 갈래 class(있으면 통째 교체) 위에 갈래 class-merge 를 엔진 규칙으로 덧붙인 값 (engine-v1.98.0).
+ * 접두 토큰(`marketing:grid-cols-1`)끼리 충돌 교체가 되도록 서버가 내려 주는 접두 목록을 잠시 세운다.
+ */
+const branch = (n: LayoutNode | undefined, on: string): string[] => {
+    const range = n?.responsive?.[on];
+    if (!range) return [];
+    const g = globalThis as { window?: { G7Config?: Record<string, unknown> } };
+    const created = g.window === undefined;
+    if (created) g.window = {};
+    const prev = g.window!.G7Config;
+    g.window!.G7Config = { ...(prev ?? {}), extensionClassPrefixes: ['marketing'] };
+    try {
+        return tokens(applyResponsiveClassMerge(range.props?.className ?? n?.props?.className, range.classMerge));
+    } finally {
+        if (created) delete g.window;
+        else g.window!.G7Config = prev;
+    }
+};
 
 const CONSENT_ROWS = ['field_marketing_consent_enabled', 'field_third_party_consent_enabled', 'field_info_disclosure_enabled'];
 

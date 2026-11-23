@@ -17,7 +17,7 @@
           <span data-ref="crm_003_points_amount" class="ecommerce:text-purple-600 ecommerce:dark:text-purple-400">{{_global.claimRefundExecuteContext?.refundPointsAmountFormatted ?? ''}}</span>
         </div>
         <!-- 사용 마일리지를 차감하지 않은 주문(수동 결제완료에서 「마일리지 차감」을 끈 주문 등)은 그 마일리지가 고객이 낸 적 없는 돈이라 돌려주지 않는다(Q15) — 반환액 0 의 이유를 말하지 않으면 마일리지를 썼는데 왜 0 인지 알 수 없다. -->
-        <p data-ref="crm_012_points_not_deducted" data-if="{{_global.claimRefundExecuteContext?.pointsNotDeducted === true}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_not_deducted</p>
+        <p data-ref="crm_012_points_not_deducted" data-if="{{_global.claimRefundExecuteContext?.pointsNotDeducted === true}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_not_deducted</p>
         <div class="ecommerce:flex ecommerce:justify-between ecommerce:text-sm">
           <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method</span>
           <span data-ref="crm_004_method" class="ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{_global.claimRefundExecuteContext?.refundMethodLabel ?? '-'}}</span>

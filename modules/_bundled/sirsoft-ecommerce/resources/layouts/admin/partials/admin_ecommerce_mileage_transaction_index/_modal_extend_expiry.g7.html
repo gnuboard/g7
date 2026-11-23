@@ -35,13 +35,13 @@
       </div>
     </div>
     <footer>
-      <button type="button" disabled="{{_global.mileageExtend?.isSaving ?? false}}" class="ecommerce-btn ecommerce-btn-secondary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
+      <button type="button" disabled="{{_global.mileageExtend?.isSaving ?? false}}" class="ecommerce-btn ecommerce-btn-secondary ecommerce:text-sm">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:sirsoft-ecommerce.admin.mileage_transactions.cancel</span>
       </button>
-      <button data-ref="extend_submit_button" type="button" disabled="{{_global.mileageExtend?.isSaving || !(Number(_global.mileageExtend?.days ?? 0) > 0) || (_global.mileageExtend?.lotIds ?? []).length === 0}}" class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce-btn ecommerce-btn-primary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
+      <button data-ref="extend_submit_button" type="button" disabled="{{_global.mileageExtend?.isSaving || !(Number(_global.mileageExtend?.days ?? 0) > 0) || (_global.mileageExtend?.lotIds ?? []).length === 0}}" class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce-btn ecommerce-btn-primary ecommerce:text-sm">
         <on type="click">
           <!-- 일괄 연장 실행. 적립건 묶음·일수 둘을 그대로 보낸다(회원은 서버가 적립건에서 찾는다).
             성공 갈래에서 `mileageExtend` 와 목록 화면의 표 선택(`$parent._local.selectedItems`)을 함께

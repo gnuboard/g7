@@ -415,7 +415,7 @@ const MemberFieldInput: React.FC<MemberFieldInputProps> = ({
           aria-label={t('member.fields.range_start', { label })}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => emit({ start: e.target.value, end: range.end ?? '' })}
         />
-        <Span className="shrink-0 text-gray-500 dark:text-gray-400">~</Span>
+        <Span className="shrink-0 text-muted">~</Span>
         <Input
           type="date"
           className={`${inputClass} min-w-0`}

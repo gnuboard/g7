@@ -22,7 +22,7 @@
         "url": "https://sirsoft.com"
     },
     "release_date": "2026-11-15",
-    "g7_version": ">=7.2.0",
+    "g7_version": ">=7.2.1",
     "dependencies": {
         "modules": {},
         "plugins": {}
@@ -176,6 +176,11 @@
             "id": "pretendard",
             "type": "webfont",
             "asset": "vendor/pretendard/1.3.9/pretendard-variable.css"
+        },
+        {
+            "id": "flag-icons",
+            "type": "style",
+            "asset": "vendor/flag-icons/7.2.3/css/flag-icons.min.css"
         }
     ],
     "state_contracts": {

@@ -156,7 +156,7 @@
                                             "props": {
                                                 "name": "lock",
                                                 "size": "sm",
-                                                "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                "className": "text-muted flex-shrink-0"
                                             }
                                         },
                                         {
@@ -264,7 +264,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400"
+                                        "className": "flex items-center gap-4 text-sm text-muted"
                                     },
                                     "children": [
                                         {
@@ -363,7 +363,7 @@
                                             "props": {
                                                 "name": "message-square",
                                                 "size": "sm",
-                                                "className": "text-gray-500 dark:text-gray-400"
+                                                "className": "text-muted"
                                             }
                                         },
                                         {
@@ -388,7 +388,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-500 dark:text-gray-400"
+                                                "className": "text-muted"
                                             },
                                             "text": "{{post?.data?.parent?.author?.name || $t('board.unknown_author')}}"
                                         },
@@ -396,7 +396,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-500 dark:text-gray-400",
+                                                "className": "text-muted",
                                                 "title": "{{post?.data?.parent?.created_at ?? ''}}"
                                             },
                                             "text": "{{post?.data?.parent?.created_at_formatted ?? ''}}"
@@ -421,7 +421,7 @@
                                     "props": {
                                         "name": "lock",
                                         "size": "sm",
-                                        "className": "text-gray-500 dark:text-gray-400"
+                                        "className": "text-muted"
                                     }
                                 },
                                 {
@@ -481,7 +481,7 @@
                                     "name": "Span",
                                     "if": "{{post?.data?.parent?.status !== 'blinded' && post?.data?.parent?.is_secret && post?.data?.parent?.content === null}}",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 italic"
+                                        "className": "text-muted italic"
                                     },
                                     "text": "$t:board.posts.detail.reply_secret_content"
                                 },
@@ -535,7 +535,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-transparent border-0 p-0 cursor-pointer flex items-center gap-1"
+                                        "className": "text-sm text-muted hover:text-gray-700 dark:hover:text-gray-200 bg-transparent border-0 p-0 cursor-pointer flex items-center gap-1"
                                     },
                                     "children": [
                                         {
@@ -649,7 +649,7 @@
                             "name": "Div",
                             "if": "{{post?.data?.status === 'blinded' && _local?.showBlindedPostContent && post?.data?.content}}",
                             "props": {
-                                "className": "mt-4 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                                "className": "mt-4 p-4 card-plain"
                             },
                             "children": [
                                 {
@@ -665,7 +665,7 @@
                                             "props": {
                                                 "name": "file-lines",
                                                 "size": "sm",
-                                                "className": "text-gray-500 dark:text-gray-400"
+                                                "className": "text-muted"
                                             }
                                         },
                                         {
@@ -1725,7 +1725,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:board.no_comment_read_permission"
                         }

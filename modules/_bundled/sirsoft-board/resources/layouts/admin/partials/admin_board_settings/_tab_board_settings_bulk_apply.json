@@ -76,7 +76,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "circle-info",
-                                "className": "board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0",
+                                "className": "board-text-muted board:flex-shrink-0",
                                 "size": "sm"
                             }
                         },

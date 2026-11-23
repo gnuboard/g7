@@ -195,7 +195,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "{{_global.queueConfirm?.action === 'delete' ? 'btn btn-danger flex-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed' : 'btn btn-info flex-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed'}}",
+                    "className": "{{_global.queueConfirm?.action === 'delete' ? 'btn btn-danger flex-center gap-2' : 'btn btn-info flex-center gap-2'}}",
                     "disabled": "{{_global.queueConfirmBusy || !(_global.queueConfirm?.uuids ?? []).length}}"
                 },
                 "children": [
@@ -313,7 +313,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "block text-xs font-mono text-gray-500 dark:text-gray-400 break-all"
+                                                "className": "block text-xs font-mono text-muted break-all"
                                             },
                                             "text": "{{result.uuid}}"
                                         },

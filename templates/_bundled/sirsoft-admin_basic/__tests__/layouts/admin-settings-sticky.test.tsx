@@ -18,6 +18,7 @@ import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import adminSettingsLayout from '../../layouts/admin_settings.json';
 import { TabNavigation } from '../../src/components/composite/TabNavigation';
+import { applyResponsiveClassMerge } from '@core/template-engine/helpers/StyleHelpers';
 
 /** 레이아웃 트리에서 주어진 id 의 노드를 찾는다. */
 function findById(node: unknown, id: string): Record<string, unknown> | undefined {
@@ -52,8 +53,11 @@ describe('admin_settings 환경설정 sticky 고정', () => {
     const stickyHeader = findById(adminSettingsLayout, 'sticky_header');
     expect(stickyHeader, 'sticky_header 래퍼 미존재').toBeDefined();
 
-    const ranges = Object.values((stickyHeader?.responsive ?? {}) as Record<string, { props?: { className?: string } }>);
-    for (const className of [classNameOf(stickyHeader), ...ranges.map((r) => String(r.props?.className ?? ''))]) {
+    // 구간 실효값 = 구간 class(있으면 통째 교체) 위에 구간 class-merge 를 엔진 규칙으로 덧붙인 값 (engine-v1.98.0)
+    const base = classNameOf(stickyHeader);
+    const ranges = Object.values((stickyHeader?.responsive ?? {}) as Record<string, { props?: { className?: string }; classMerge?: string }>);
+    const effective = ranges.map((r) => applyResponsiveClassMerge(r.props?.className ?? base, r.classMerge));
+    for (const className of [base, ...effective]) {
       const words = className.split(/\s+/);
       expect(words, className).toEqual(expect.arrayContaining(['sticky', 'top-0', 'z-40']));
     }

@@ -8,9 +8,9 @@
         <!-- 구획 접기/펼치기. 편 상태를 폼 상태에 두어 다른 구획과 함께 기억한다 -->
         <set-state target="local" ui.descriptionExpanded="{{!_local.ui.descriptionExpanded}}"/>
       </on>
-      <icon name="file-lines" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+      <icon name="file-lines" class="ecommerce-text-muted"/>
       <span class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.product.sections.description</span>
-      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.descriptionExpanded !== false ? 'ecommerce:rotate-180' : ''}}"/>
+      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.descriptionExpanded !== false ? 'ecommerce:rotate-180' : ''}}"/>
     </button>
     <div data-ref="description_body" data-if="{{_local.ui.descriptionExpanded !== false}}" class="ecommerce-row-stack">
       <div data-ref="description_editor_wrapper" class="{{_local.errors?.description ? 'ecommerce:border ecommerce:border-red-500 ecommerce:dark:border-red-500 ecommerce:rounded-lg ecommerce:overflow-hidden' : ''}}">

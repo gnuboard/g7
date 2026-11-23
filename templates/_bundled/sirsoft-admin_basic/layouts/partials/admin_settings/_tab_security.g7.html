@@ -69,38 +69,38 @@
           </div>
           <toggle data-type="composite" name="security.login_attempt_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
         </div>
-        <div data-ref="field_auth_token_lifetime" class="">
+        <div data-ref="field_auth_token_lifetime">
           <label class="form-label">$t:admin.settings.security.auth_token_lifetime</label>
           <input type="number" name="security.auth_token_lifetime" placeholder="30" min="{{_local?.form?._meta?.limits?.security_auth_token_lifetime_min ?? 0}}" max="{{_local?.form?._meta?.limits?.security_auth_token_lifetime_max ?? 3600}}" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['security.auth_token_lifetime'] ? 'input-error' : ''}}"/>
           <span data-if="{{_local.errors?.['security.auth_token_lifetime']}}" class="form-error">{{_local.errors?.['security.auth_token_lifetime']?.[0] ?? ''}}</span>
           <p class="text-hint mt-1">$t:admin.settings.security.zero_means_unlimited</p>
         </div>
-        <div data-ref="field_max_login_attempts" class="">
+        <div data-ref="field_max_login_attempts">
           <label class="form-label">$t:admin.settings.security.max_login_attempts</label>
           <input type="number" name="security.max_login_attempts" placeholder="5" min="{{_local?.form?._meta?.limits?.security_max_login_attempts_min ?? 0}}" max="{{_local?.form?._meta?.limits?.security_max_login_attempts_max ?? 100}}" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['security.max_login_attempts'] ? 'input-error' : ''}}"/>
           <span data-if="{{_local.errors?.['security.max_login_attempts']}}" class="form-error">{{_local.errors?.['security.max_login_attempts']?.[0] ?? ''}}</span>
           <p class="text-hint mt-1">$t:admin.settings.security.zero_means_unlimited</p>
           <p class="text-hint mt-1">$t:admin.settings.security.ip_throttle_floor_hint</p>
         </div>
-        <div data-ref="field_login_lockout_time" class="">
+        <div data-ref="field_login_lockout_time">
           <label class="form-label">$t:admin.settings.security.login_lockout_time_full</label>
           <input type="number" name="security.login_lockout_time" placeholder="5" min="{{_local?.form?._meta?.limits?.security_login_lockout_time_min ?? 0}}" max="{{_local?.form?._meta?.limits?.security_login_lockout_time_max ?? 1440}}" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['security.login_lockout_time'] ? 'input-error' : ''}}"/>
           <span data-if="{{_local.errors?.['security.login_lockout_time']}}" class="form-error">{{_local.errors?.['security.login_lockout_time']?.[0] ?? ''}}</span>
           <p class="text-hint mt-1">$t:admin.settings.security.zero_means_unlimited</p>
         </div>
-        <div data-ref="field_password_reset_rate_limit_per_minute" class="">
+        <div data-ref="field_password_reset_rate_limit_per_minute">
           <label class="form-label">$t:admin.settings.security.password_reset_rate_limit_per_minute</label>
           <input type="number" name="security.password_reset_rate_limit_per_minute" placeholder="10" min="{{_local?.form?._meta?.limits?.security_password_reset_rate_limit_per_minute_min ?? 1}}" max="{{_local?.form?._meta?.limits?.security_password_reset_rate_limit_per_minute_max ?? 1000}}" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['security.password_reset_rate_limit_per_minute'] ? 'input-error' : ''}}"/>
           <span data-if="{{_local.errors?.['security.password_reset_rate_limit_per_minute']}}" class="form-error">{{_local.errors?.['security.password_reset_rate_limit_per_minute']?.[0] ?? ''}}</span>
           <p class="text-hint mt-1">$t:admin.settings.security.rate_limit_per_minute_hint</p>
         </div>
-        <div data-ref="field_register_rate_limit_per_minute" class="">
+        <div data-ref="field_register_rate_limit_per_minute">
           <label class="form-label">$t:admin.settings.security.register_rate_limit_per_minute</label>
           <input type="number" name="security.register_rate_limit_per_minute" placeholder="10" min="{{_local?.form?._meta?.limits?.security_register_rate_limit_per_minute_min ?? 1}}" max="{{_local?.form?._meta?.limits?.security_register_rate_limit_per_minute_max ?? 1000}}" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['security.register_rate_limit_per_minute'] ? 'input-error' : ''}}"/>
           <span data-if="{{_local.errors?.['security.register_rate_limit_per_minute']}}" class="form-error">{{_local.errors?.['security.register_rate_limit_per_minute']?.[0] ?? ''}}</span>
           <p class="text-hint mt-1">$t:admin.settings.security.rate_limit_per_minute_hint</p>
         </div>
-        <div data-ref="field_two_factor_auth" class="">
+        <div data-ref="field_two_factor_auth">
           <label class="form-label">$t:admin.settings.security.two_factor_auth</label>
           <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
             <!-- 같은 이유로 자동 바인딩을 끄고 직접 담는다 — 이 값이 빈 문자열로 굳으면 아래 「적용 범위」 칸이

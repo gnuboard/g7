@@ -104,7 +104,7 @@
                     "props": {
                         "type": "button",
                         "disabled": "{{_global.isLanguagePackCheckingUpdates}}",
-                        "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        "className": "flex-center btn btn-secondary"
                     },
                     "children": [
                         {
@@ -154,7 +154,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        "className": "flex-center btn btn-secondary"
                     },
                     "children": [
                         {
@@ -195,7 +195,7 @@
                         "type": "button",
                         "disabled": "{{_global.appConfig?.runtime_role === 'stage'}}",
                         "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}",
-                        "className": "disabled:opacity-50 disabled:cursor-not-allowed flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                        "className": "btn btn-primary flex-center"
                     },
                     "children": [
                         {
@@ -384,7 +384,7 @@
                         "type": "button",
                         "disabled": "{{_global.appConfig?.runtime_role === 'stage'}}",
                         "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}",
-                        "className": "disabled:opacity-50 disabled:cursor-not-allowed flex-center flex-1 justify-center gap-2 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors text-sm"
+                        "className": "btn btn-primary flex-center flex-1 px-3"
                     },
                     "children": [
                         {
@@ -587,9 +587,7 @@
                             "if": "{{!_local.scopeLocked}}",
                             "responsive": {
                                 "640-": {
-                                    "props": {
-                                        "className": "w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100"
-                                    }
+                                    "classMerge": "w-40"
                                 }
                             },
                             "actions": [
@@ -650,9 +648,7 @@
                             "name": "Select",
                             "responsive": {
                                 "640-": {
-                                    "props": {
-                                        "className": "w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100"
-                                    }
+                                    "classMerge": "w-40"
                                 }
                             },
                             "actions": [
@@ -750,7 +746,7 @@
                             "props": {
                                 "type": "button",
                                 "title": "$t:admin.language_packs.filter.reset",
-                                "className": "inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200"
+                                "className": "btn btn-secondary px-3 rounded-md"
                             },
                             "children": [
                                 {
@@ -868,7 +864,7 @@
                     "name": "Div",
                     "if": "{{language_packs !== undefined && (language_packs?.data?.data?.length ?? 0) === 0}}",
                     "props": {
-                        "className": "p-8 text-center text-gray-500 dark:text-gray-400"
+                        "className": "p-8 text-center text-muted"
                     },
                     "text": "$t:admin.language_packs.messages.empty"
                 },

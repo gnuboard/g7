@@ -17,7 +17,7 @@
       <div class="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
         <img data-if="{{item.product.thumbnail_url}}" src="{{item.product.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{item.product.name}}" class="w-full h-full object-cover"/>
         <div data-if="{{!item.product.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
-          <icon name="image" size="lg" class="text-gray-500 dark:text-gray-400"/>
+          <icon name="image" size="lg" class="text-muted"/>
         </div>
       </div>
     </a>
@@ -28,16 +28,16 @@
         <h3 class="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 truncate">{{item.product.name}}</h3>
       </a>
       <!-- 상품 옵션 값 (옵션이 있을 때만 표시) -->
-      <p data-if="{{item.product_option &amp;&amp; Object.keys(item.product_option.option_values_localized ?? {}).length > 0}}" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{Object.entries(item.product_option?.option_values_localized ?? {}).map(([k, v]) => k + ': ' + v).join(', ')}}</p>
+      <p data-if="{{item.product_option &amp;&amp; Object.keys(item.product_option.option_values_localized ?? {}).length > 0}}" class="text-sm text-muted mt-1">{{Object.entries(item.product_option?.option_values_localized ?? {}).map(([k, v]) => k + ': ' + v).join(', ')}}</p>
       <!-- 선택된 추가옵션 (그룹명: 선택지명 +추가금) — 옵션 라인 바로 아래 -->
       <div data-if="{{item.additional_options?.length > 0}}" data-each="addOpt in {{item.additional_options ?? []}}" class="mt-1 space-y-0.5">
-        <p data-testid="cart-item-additional-option" class="text-xs text-gray-500 dark:text-gray-400">{{addOpt.group_name}}: {{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}</p>
+        <p data-testid="cart-item-additional-option" class="text-xs text-muted">{{addOpt.group_name}}: {{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}</p>
       </div>
       <!-- 배송정책 및 배송비 -->
       <div data-if="{{cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy}}" class="flex items-center gap-2 mt-1">
         <icon name="truck" size="xs" class="text-gray-500 dark:text-gray-500"/>
-        <span class="text-xs text-gray-500 dark:text-gray-400">{{cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.policy_name}}</span>
-        <span class="text-xs text-gray-500 dark:text-gray-400">/</span>
+        <span class="text-xs text-muted">{{cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.policy_name}}</span>
+        <span class="text-xs text-muted">/</span>
         <!-- 단독 구매 시 배송비 > 0 -->
         <span data-if="{{(cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.standalone_shipping_amount ?? 0) > 0}}" class="text-xs text-gray-600 dark:text-gray-300">{{cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.standalone_shipping_amount_formatted ?? ''}}</span>
         <!-- 단독 구매 시 무료배송 -->
@@ -47,19 +47,19 @@
         <!-- 정가 취소선 + 할인율 (할인 있을 때만, U4) -->
         <div data-if="{{(item.product_option?.discount_rate ?? 0) > 0}}" class="flex items-center gap-2">
           <!-- 정가 취소선 - 주 통화 -->
-          <span class="text-xs text-gray-500 dark:text-gray-400 line-through">{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.list_price_formatted ?? ''}}</span>
+          <span class="text-xs text-muted line-through">{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.list_price_formatted ?? ''}}</span>
           <!-- 할인율 칩 -->
           <span class="text-xs font-bold text-red-600 dark:text-red-400">{{item.product_option?.discount_rate}}%</span>
         </div>
         <!-- 정가 취소선 - 보조 통화들 (할인 있을 때, 선택 통화 제외) -->
         <div data-if="{{(item.product_option?.discount_rate ?? 0) > 0}}" data-each="currency in {{Object.entries(item.product_option?.multi_currency_list_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2">
-          <span class="text-xs text-gray-500 dark:text-gray-400 line-through">{{currency[1]?.formatted}}</span>
+          <span class="text-xs text-muted line-through">{{currency[1]?.formatted}}</span>
         </div>
         <!-- 주 통화 -->
         <div class="text-sm font-medium text-gray-900 dark:text-white">{{item.product_option?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.selling_price_formatted ?? ''}}</div>
         <!-- 보조 통화들 (선택된 통화 제외) -->
         <div data-each="currency in {{Object.entries(item.product_option?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2">
-          <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
+          <span class="text-xs text-muted">{{currency[1]?.formatted}}</span>
         </div>
       </div>
       <div class="flex items-center gap-2 mt-2">
@@ -130,7 +130,7 @@
           <icon name="settings" size="md"/>
         </button>
         <!-- 삭제 버튼 -->
-        <button type="button" aria-label="$t:shop.cart.delete_item" class="p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer">
+        <button type="button" aria-label="$t:shop.cart.delete_item" class="p-1 text-muted hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer">
           <on type="click">
             <set-state target="local">
               <field name="deleteModal">
@@ -148,11 +148,11 @@
     </div>
     <!-- 소계 -->
     <div class="flex flex-col items-end justify-center">
-      <span class="text-xs text-gray-500 dark:text-gray-400">$t:shop.cart.subtotal</span>
+      <span class="text-xs text-muted">$t:shop.cart.subtotal</span>
       <div class="font-bold text-gray-900 dark:text-white">{{item.multi_currency_subtotal?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_formatted}}</div>
       <!-- 보조 통화들 -->
       <div data-each="currency in {{Object.entries(item.multi_currency_subtotal ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
-        <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
+        <span class="text-xs text-muted">{{currency[1]?.formatted}}</span>
       </div>
     </div>
   </div>

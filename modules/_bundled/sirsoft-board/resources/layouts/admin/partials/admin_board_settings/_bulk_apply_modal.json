@@ -23,7 +23,7 @@
                 "props": {
                     "type": "button",
                     "disabled": "{{$parent._local.isBulkApplying}}",
-                    "className": "board-btn board-btn-secondary board:disabled:opacity-50 board:disabled:cursor-not-allowed"
+                    "className": "board-btn board-btn-secondary"
                 },
                 "children": [
                     {
@@ -294,7 +294,7 @@
                                     "props": {
                                         "name": "list-check",
                                         "size": "sm",
-                                        "className": "board:text-gray-500 board:dark:text-gray-400"
+                                        "className": "board-text-muted"
                                     }
                                 },
                                 {
@@ -327,7 +327,7 @@
                                     "name": "Span",
                                     "if": "{{!(_global.bulkApplySnapshot?.fields ?? []).length}}",
                                     "props": {
-                                        "className": "board:block board:p-3 board:text-sm board:text-gray-500 board:dark:text-gray-400 board:italic"
+                                        "className": "board:block board:p-3 board:text-sm board-text-muted board:italic"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.no_fields"
                                 },
@@ -421,7 +421,7 @@
                                     "props": {
                                         "name": "table-columns",
                                         "size": "sm",
-                                        "className": "board:text-gray-500 board:dark:text-gray-400"
+                                        "className": "board-text-muted"
                                     }
                                 },
                                 {
@@ -465,7 +465,7 @@
                                     "name": "Span",
                                     "if": "{{_global.bulkApplySnapshot?.applyAll === false && !(_global.bulkApplySnapshot?.boardIds ?? []).length}}",
                                     "props": {
-                                        "className": "board:text-sm board:text-gray-500 board:dark:text-gray-400 board:italic"
+                                        "className": "board:text-sm board-text-muted board:italic"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.no_boards"
                                 },

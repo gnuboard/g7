@@ -102,7 +102,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "className": "ecommerce-flex-center ecommerce-btn ecommerce-btn-primary",
                     "disabled": "{{_global.isSettingDefault}}"
                 },
                 "children": [

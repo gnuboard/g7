@@ -24,7 +24,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "ecommerce-btn ecommerce-btn-primary ecommerce:w-full ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "className": "ecommerce-btn ecommerce-btn-primary ecommerce:w-full",
                     "disabled": "{{products?.data?.abilities?.can_update !== true}}"
                 },
                 "text": "$t:sirsoft-ecommerce.admin.product.modal.preset_manage.add_new"
@@ -51,7 +51,7 @@
             "name": "Div",
             "if": "{{presets !== undefined && presets !== null && (!presets.data || presets.data.length === 0)}}",
             "props": {
-                "className": "ecommerce:text-center ecommerce:py-8 ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                "className": "ecommerce:text-center ecommerce:py-8 ecommerce-text-muted"
             },
             "text": "$t:sirsoft-ecommerce.admin.product.modal.preset_manage.empty"
         },

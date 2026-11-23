@@ -300,7 +300,7 @@
       <responsive on="desktop" class="py-8"/>
       <!-- 뒤로가기 버튼 -->
       <a href="{{_global.shopBase}}/products" :mergeQuery="true" class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 cursor-pointer">
-        <responsive on="desktop" class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6 cursor-pointer"/>
+        <responsive on="desktop" class-merge="mb-6"/>
         <on type="click">
           <navigate :mergeQuery="true">
             <query/>
@@ -338,7 +338,7 @@
           <include src="partials/shop/detail/_purchase_card.g7.html"/>
           <!-- 판매상태 안내 (품절/판매중지/출시예정) -->
           <div data-if="{{product.data?.sales_status !== 'on_sale'}}" class="flex items-center gap-3 px-4 py-3 rounded-lg border {{product.data?.sales_status === 'sold_out' ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800' : product.data?.sales_status === 'suspended' ? 'bg-gray-100 border-gray-300 dark:bg-gray-700/50 dark:border-gray-600' : 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800'}}">
-            <icon name="{{product.data?.sales_status === 'sold_out' ? 'box-open' : product.data?.sales_status === 'suspended' ? 'ban' : 'clock'}}" size="lg" class="{{product.data?.sales_status === 'sold_out' ? 'text-red-500 dark:text-red-400' : product.data?.sales_status === 'suspended' ? 'text-gray-500 dark:text-gray-400' : 'text-blue-500 dark:text-blue-400'}} shrink-0"/>
+            <icon name="{{product.data?.sales_status === 'sold_out' ? 'box-open' : product.data?.sales_status === 'suspended' ? 'ban' : 'clock'}}" size="lg" class="{{product.data?.sales_status === 'sold_out' ? 'text-red-500 dark:text-red-400' : product.data?.sales_status === 'suspended' ? 'text-muted' : 'text-blue-500 dark:text-blue-400'}} shrink-0"/>
             <span class="text-sm font-medium {{product.data?.sales_status === 'sold_out' ? 'text-red-700 dark:text-red-300' : product.data?.sales_status === 'suspended' ? 'text-gray-700 dark:text-gray-300' : 'text-blue-700 dark:text-blue-300'}}">{{product.data?.sales_status === 'sold_out' ? $t('shop.product.status_message_sold_out') : product.data?.sales_status === 'suspended' ? $t('shop.product.status_message_suspended') : $t('shop.product.status_message_coming_soon')}}</span>
           </div>
         </div>

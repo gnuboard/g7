@@ -528,7 +528,7 @@
                                     "props": {
                                         "type": "button",
                                         "disabled": "{{_computed.isReadOnly}}",
-                                        "className": "flex-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                        "className": "flex-center gap-1.5 btn btn-secondary btn-sm"
                                     },
                                     "children": [
                                         {
@@ -675,7 +675,7 @@
                                                     "props": {
                                                         "type": "button",
                                                         "disabled": "{{_computed.isReadOnly}}",
-                                                        "className": "text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700"
+                                                        "className": "btn btn-primary btn-sm rounded-md"
                                                     },
                                                     "children": [
                                                         {

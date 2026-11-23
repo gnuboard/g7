@@ -96,7 +96,7 @@ export const VersionList: React.FC<VersionListProps> = ({
 }) => {
   if (versions.length === 0) {
     return (
-      <Div className="p-4 text-center text-gray-500 dark:text-gray-400">
+      <Div className="p-4 text-center text-muted">
         버전이 없습니다.
       </Div>
     );

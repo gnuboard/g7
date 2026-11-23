@@ -349,7 +349,7 @@
                                     "if": "{{item.type === 'module'}}",
                                     "props": {
                                         "name": "cube",
-                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                        "className": "text-base text-muted",
                                         "aria-hidden": "true"
                                     }
                                 },
@@ -359,7 +359,7 @@
                                     "if": "{{item.type === 'plugin'}}",
                                     "props": {
                                         "name": "puzzle-piece",
-                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                        "className": "text-base text-muted",
                                         "aria-hidden": "true"
                                     }
                                 },
@@ -369,7 +369,7 @@
                                     "if": "{{item.type === 'template'}}",
                                     "props": {
                                         "name": "palette",
-                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                        "className": "text-base text-muted",
                                         "aria-hidden": "true"
                                     }
                                 },
@@ -562,6 +562,7 @@
                             ]
                         },
                         {
+                            "comment": "audit:allow layout-inline-semantic-duplicate reason: 모듈 삭제 창에서 지워질 확장 디렉토리 경로 한 줄을 보이는 상자, 제목 아이콘 폭만큼 들여쓰고(ml-6) 안쪽 여백은 줄(px-3 py-1.5)이 가져 카드 여백과 다름",
                             "type": "basic",
                             "name": "Div",
                             "props": {
@@ -699,6 +700,7 @@
                                     "text": "$t:admin.modules.modals.no_tables"
                                 },
                                 {
+                                    "comment": "audit:allow layout-inline-semantic-duplicate reason: 모듈 삭제 창의 삭제될 DB 테이블 목록 상자, 줄마다 구분선을 긋는 목록이라 상자 자체 여백 없이 ml-6 들여쓰기만 둠",
                                     "type": "basic",
                                     "name": "Div",
                                     "if": "{{_global.moduleUninstallInfo.tables && _global.moduleUninstallInfo.tables.length > 0}}",
@@ -770,6 +772,7 @@
                                     ]
                                 },
                                 {
+                                    "comment": "audit:allow layout-inline-semantic-duplicate reason: 모듈 삭제 창의 공유 테이블 레코드 건수 목록 상자, 구분선 있는 줄 목록이라 상자 여백이 없고 ml-6 로 들여씀",
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
@@ -857,6 +860,7 @@
                                     "text": "$t:admin.modules.modals.no_storage"
                                 },
                                 {
+                                    "comment": "audit:allow layout-inline-semantic-duplicate reason: 모듈 삭제 창의 스토리지 디렉토리 목록 상자, 디렉토리 이름과 크기를 줄로 나열하며 여백은 줄이 갖고 상자는 ml-6 들여쓰기뿐",
                                     "type": "basic",
                                     "name": "Div",
                                     "if": "{{_global.moduleUninstallInfo.storage_directories && _global.moduleUninstallInfo.storage_directories.length > 0}}",
@@ -936,6 +940,7 @@
                                     ]
                                 },
                                 {
+                                    "comment": "audit:allow layout-inline-semantic-duplicate reason: 모듈 삭제 창의 vendor 디렉토리 항목 목록 상자, 항목 줄이 px-3 py-1.5 를 갖고 상자는 여백 없이 ml-6 만 써서 카드와 다름",
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
@@ -1000,7 +1005,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "folder-open",
-                                "className": "text-base text-gray-500 dark:text-gray-400"
+                                "className": "text-base text-muted"
                             }
                         },
                         {
@@ -1022,6 +1027,7 @@
                     "text": "$t:admin.modules.modals.preserved_desc"
                 },
                 {
+                    "comment": "audit:allow layout-inline-semantic-duplicate reason: 모듈 삭제 창의 남겨 둔 백업 파일 이름 목록 상자, 회색 안내 상자 안에 들어가 위 간격 mt-3 만 두고 여백은 줄이 가짐",
                     "type": "basic",
                     "name": "Div",
                     "props": {

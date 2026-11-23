@@ -17,6 +17,7 @@
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
+import { rangeClassName } from './support/responsiveClass';
 
 const LAYOUTS_BASE = path.resolve(__dirname, '../../layouts');
 
@@ -370,7 +371,8 @@ describe('코드 편집기 — 휴대폰 폭에서 위쪽 정보 접기 (7.1.0 P
     // 폭 분기는 Tailwind 반응형 접두가 아니라 엔진 responsive 로 한다 — 768 이상 구간에서만 hidden
     expect(toggle.props.className.split(/\s+/)).not.toContain('hidden');
     expect(toggle.props.className).not.toMatch(/(^|\s)md:/);
-    expect(toggle.responsive?.['768-']?.props?.className.split(/\s+/)).toContain('hidden');
+    // 구간 실효값(기본 className 위에 구간 class-merge, #399)에 hidden 이 있다
+    expect(rangeClassName(toggle, '768-').split(/\s+/)).toContain('hidden');
     expect(toggle.props['aria-expanded']).toBe("{{_global.codeEditorInfoOpen ? 'true' : 'false'}}");
     expect(toggle.props['aria-controls']).toBe('code_editor_file_desc code_editor_file_meta code_editor_inline_notice');
     const flip = flattenActions(toggle.actions).find((a: any) => a.handler === 'setState');

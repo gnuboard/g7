@@ -44,7 +44,7 @@
                 "props": {
                     "data-testid": "member-field-form-close-keep",
                     "type": "button",
-                    "className": "px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    "className": "btn btn-secondary"
                 },
                 "children": [
                     {
@@ -129,7 +129,7 @@
                     "data-testid": "member-field-form-cancel",
                     "type": "button",
                     "disabled": "{{_global.member_field_form_modal?.isSaving === true}}",
-                    "className": "px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    "className": "btn btn-secondary"
                 },
                 "children": [
                     {
@@ -641,7 +641,7 @@
                                     "props": {
                                         "data-testid": "member-field-form-change-type",
                                         "type": "button",
-                                        "className": "px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap",
+                                        "className": "btn btn-secondary btn-sm whitespace-nowrap",
                                         "disabled": "{{_global.member_field_form_modal?.isSaving === true}}"
                                     },
                                     "children": [
@@ -2403,7 +2403,7 @@
                                                             "props": {
                                                                 "data-testid": "member-field-form-options-paste-open",
                                                                 "type": "button",
-                                                                "className": "px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap",
+                                                                "className": "btn btn-secondary btn-sm whitespace-nowrap",
                                                                 "disabled": "{{(_global.member_field_form_modal?.readOnly === true || _global.member_field_form_modal?.isSaving === true)}}"
                                                             },
                                                             "children": [
@@ -2432,7 +2432,7 @@
                                                             "props": {
                                                                 "data-testid": "member-field-form-options-add",
                                                                 "type": "button",
-                                                                "className": "px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap",
+                                                                "className": "btn btn-secondary btn-sm whitespace-nowrap",
                                                                 "disabled": "{{(_global.member_field_form_modal?.readOnly === true || _global.member_field_form_modal?.isSaving === true) || (_global.member_field_form_modal?.form?.options ?? []).length >= 50}}"
                                                             },
                                                             "children": [
@@ -2528,7 +2528,7 @@
                                                             "props": {
                                                                 "data-testid": "member-field-form-options-paste-cancel",
                                                                 "type": "button",
-                                                                "className": "px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                                                "className": "btn btn-secondary btn-sm whitespace-nowrap"
                                                             },
                                                             "children": [
                                                                 {
@@ -2558,7 +2558,7 @@
                                                             "props": {
                                                                 "data-testid": "member-field-form-options-paste-apply",
                                                                 "type": "button",
-                                                                "className": "px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap",
+                                                                "className": "btn btn-secondary btn-sm whitespace-nowrap",
                                                                 "disabled": "{{String(_global.member_field_form_modal?.pasteText ?? '').trim() === ''}}"
                                                             },
                                                             "children": [
@@ -2648,7 +2648,7 @@
                                                             "props": {
                                                                 "data-testid": "{{'member-field-form-option-restore-' + oi}}",
                                                                 "type": "button",
-                                                                "className": "px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap",
+                                                                "className": "btn btn-secondary btn-sm whitespace-nowrap",
                                                                 "disabled": "{{(_global.member_field_form_modal?.readOnly === true || _global.member_field_form_modal?.isSaving === true)}}"
                                                             },
                                                             "children": [
@@ -2790,7 +2790,7 @@
                                                                 "data-testid": "{{'member-field-form-option-remove-' + oi}}",
                                                                 "type": "button",
                                                                 "aria-label": "$t:common.row_cell|row={{oi + 1}}|column={{$t('common.delete')}}",
-                                                                "className": "p-1.5 rounded text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                "className": "p-1.5 rounded text-muted hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                                                 "disabled": "{{(_global.member_field_form_modal?.readOnly === true || _global.member_field_form_modal?.isSaving === true)}}"
                                                             },
                                                             "children": [

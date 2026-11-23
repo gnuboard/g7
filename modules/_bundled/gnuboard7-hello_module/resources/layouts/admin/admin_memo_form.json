@@ -149,7 +149,6 @@
                                         "props": {
                                             "type": "text",
                                             "name": "title",
-                                            "className": "",
                                             "disabled": "{{_computed.isReadOnly}}"
                                         }
                                     }
@@ -177,7 +176,6 @@
                                         "props": {
                                             "name": "content",
                                             "rows": 6,
-                                            "className": "",
                                             "disabled": "{{_computed.isReadOnly}}"
                                         }
                                     }

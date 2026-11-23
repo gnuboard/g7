@@ -11,7 +11,7 @@
         <responsive on="portable" class="text-lg font-semibold text-gray-900 dark:text-white"/>
         $t:mypage.inquiries.title
       </h2>
-      <span class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.inquiries.count|count={{myInquiries.data.meta.total ?? 0}}</span>
+      <span class="text-sm text-muted">$t:mypage.inquiries.count|count={{myInquiries.data.meta.total ?? 0}}</span>
     </div>
     <!-- 필터 탭 버튼 (전체 / 답변 대기 / 답변 완료) -->
     <div class="flex items-center gap-2">
@@ -52,7 +52,7 @@
       <div data-if="{{myInquiries.data.items &amp;&amp; myInquiries.data.items.length > 0}}" class="space-y-3">
         <div data-each="item, idx in {{myInquiries.data.items ?? []}}">
           <!-- 개별 카드 -->
-          <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer">
+          <div class="card-plain overflow-hidden cursor-pointer">
             <on type="click">
               <set-state target="local" openedInquiryId="{{_local.openedInquiryId === item.id ? null : item.id}}"/>
             </on>
@@ -68,12 +68,12 @@
               </a>
               <!-- 썸네일 없을 때 placeholder -->
               <div data-if="{{!item.product?.thumbnail_url}}" class="shrink-0 w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                <icon name="box" class="text-xl text-gray-500 dark:text-gray-400"/>
+                <icon name="box" class="text-xl text-muted"/>
               </div>
               <!-- 중앙: 상품명 + 제목 + 메타줄 -->
               <div class="flex-1 min-w-0">
                 <!-- 상품명 - 클릭 시 상품 상세 이동 -->
-                <a href="{{item.product?.url ?? '/'}}" data-if="{{!!item.product?.url}}" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5 truncate max-w-full hover:underline hover:text-gray-700 dark:hover:text-gray-200 text-left">
+                <a href="{{item.product?.url ?? '/'}}" data-if="{{!!item.product?.url}}" class="block text-xs font-medium text-muted mb-0.5 truncate max-w-full hover:underline hover:text-gray-700 dark:hover:text-gray-200 text-left">
                   <on type="click">
                     <!-- audit:allow layout-list-context-navigate-merge-query 문의 대상 상품으로 이동 — 문의 목록과 다른 클러스터(상품 상세)로 나가는 이동이다. -->
                     <navigate/>
@@ -81,7 +81,7 @@
                   {{item.product_name ?? ''}}
                 </a>
                 <!-- 상품명 (URL 없을 때) - 일반 텍스트 -->
-                <span data-if="{{!item.product?.url}}" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5 truncate">{{item.product_name ?? ''}}</span>
+                <span data-if="{{!item.product?.url}}" class="block text-xs font-medium text-muted mb-0.5 truncate">{{item.product_name ?? ''}}</span>
                 <!-- 🔒 비공개 아이콘 + 분류태그 + 문의 제목 -->
                 <div class="flex items-center gap-1.5 mb-1">
                   <icon data-if="{{!!item.is_secret}}" name="lock" class="text-xs text-gray-500 dark:text-gray-500 shrink-0"/>
@@ -91,9 +91,9 @@
                 </div>
                 <!-- 메타줄: 날짜 · 수정됨 -->
                 <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="text-xs text-gray-500 dark:text-gray-400">{{item.created_at | datetime}}</span>
+                  <span class="text-xs text-muted">{{item.created_at | datetime}}</span>
                   <!-- 수정됨 + 수정일시 -->
-                  <span data-if="{{!!item.updated_at &amp;&amp; item.updated_at !== item.created_at}}" class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.inquiries.updated_label_at|value={{item.updated_at | datetime}}</span>
+                  <span data-if="{{!!item.updated_at &amp;&amp; item.updated_at !== item.created_at}}" class="text-xs text-muted">$t:mypage.inquiries.updated_label_at|value={{item.updated_at | datetime}}</span>
                 </div>
               </div>
               <!-- 우측: 배지 -->
@@ -189,7 +189,7 @@
               <div data-if="{{!item.reply}}" class="px-4 py-4 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
                 <!-- A 레이블 - 답변 대기 -->
                 <div class="flex items-center gap-2 mb-2">
-                  <icon name="clock" class="text-sm text-gray-500 dark:text-gray-400"/>
+                  <icon name="clock" class="text-sm text-muted"/>
                   <span class="text-sm font-semibold text-gray-600 dark:text-gray-300">$t:mypage.inquiries.seller_reply</span>
                 </div>
                 <span class="text-sm text-gray-500 dark:text-gray-300">$t:mypage.inquiries.no_reply_yet</span>
@@ -200,9 +200,9 @@
       </div>
       <!-- 문의 없음 -->
       <div data-if="{{myInquiries !== undefined &amp;&amp; (!myInquiries.data.items || myInquiries.data.items.length === 0)}}" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
-        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center"/>
+        <responsive on="portable" class-merge="p-6"/>
         <icon name="comment" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
-        <p class="text-gray-500 dark:text-gray-400">$t:mypage.inquiries.empty</p>
+        <p class="text-muted">$t:mypage.inquiries.empty</p>
         <a href="{{_global.shopBase ?? '/shop'}}/products" class="text-center inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg cursor-pointer">
           <on type="click">
             <navigate/>

@@ -446,7 +446,7 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
                   <Span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-16">
                     {getLocaleNameByCode(locale)}
                   </Span>
-                  <Span className="text-xs text-gray-500 dark:text-gray-400">
+                  <Span className="text-xs text-muted">
                     ({locale.toUpperCase()})
                   </Span>
                 </Div>

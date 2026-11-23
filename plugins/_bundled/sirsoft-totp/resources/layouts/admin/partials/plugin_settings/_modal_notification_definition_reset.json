@@ -81,7 +81,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "totp:px-4 totp:py-2 totp:bg-white totp:dark:bg-gray-800 totp:text-gray-700 totp:dark:text-gray-300 totp:border totp:border-gray-300 totp:dark:border-gray-600 totp:rounded-lg totp:hover:bg-gray-50 totp:dark:hover:bg-gray-700 totp:disabled:opacity-50 totp:disabled:cursor-not-allowed",
+                        "className": "totp-btn totp-btn-secondary",
                         "disabled": "{{_global.totpResettingNotification}}"
                     },
                     "text": "$t:common.cancel"

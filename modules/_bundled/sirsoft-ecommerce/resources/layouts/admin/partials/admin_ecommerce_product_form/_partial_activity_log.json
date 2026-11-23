@@ -36,7 +36,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "history",
-                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                        "className": "ecommerce-text-muted"
                     }
                 },
                 {
@@ -61,7 +61,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.activityLogExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
+                        "className": "ecommerce-admin-card-accordion-icon ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.activityLogExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
                     }
                 }
             ]
@@ -121,9 +121,7 @@
                                     "name": "Div",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:w-full"
-                                            }
+                                            "classMerge": "ecommerce:w-full"
                                         }
                                     },
                                     "props": {
@@ -193,9 +191,7 @@
                                     "name": "Div",
                                     "responsive": {
                                         "portable": {
-                                            "props": {
-                                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:w-full"
-                                            }
+                                            "classMerge": "ecommerce:w-full"
                                         }
                                     },
                                     "props": {
@@ -686,7 +682,7 @@
                                                     "name": "Td",
                                                     "props": {
                                                         "colSpan": 3,
-                                                        "className": "ecommerce:px-4 ecommerce:py-12 ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce:px-4 ecommerce:py-12 ecommerce:text-center ecommerce-text-muted"
                                                     },
                                                     "children": [
                                                         {
@@ -1055,7 +1051,7 @@
                             "name": "Div",
                             "if": "{{activity_logs !== undefined && activity_logs !== null && (activity_logs.data?.data ?? []).length === 0}}",
                             "props": {
-                                "className": "ecommerce:p-8 ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                "className": "ecommerce:p-8 ecommerce:text-center ecommerce-text-muted"
                             },
                             "children": [
                                 {

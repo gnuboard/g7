@@ -5,6 +5,7 @@ import {fireEvent, waitFor} from '@testing-library/react';
 import {createLayoutTest} from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import {ComponentRegistry} from '@core/template-engine/ComponentRegistry';
 import {actionsOf, asArray} from '@core/template-engine/__tests__/utils/layoutShapeUtils';
+import {applyResponsiveClassMerge} from '@core/template-engine/helpers/StyleHelpers';
 import filters from '../../../layouts/admin/partials/plugin_settings/_history_filter.json';
 import notifications from '../../../layouts/admin/partials/plugin_settings/_notifications_card.json';
 import form from '../../../layouts/admin/partials/plugin_settings/_settings_form.json';
@@ -274,8 +275,21 @@ describe('Exchange rate history controls', () => {
     const block=nodes(form).find((n:any)=>n.id==='koreaexim_schedule_block');
     // 768px 이상에서 두 칸을 차지한다 — 엔진 responsive 의 768 이상 구간 클래스로 적는다(Tailwind 반응형 접두를 쓰지 않는다).
     expect(String(block.props?.className)).not.toMatch(/col-span-2/);
+    // 구간의 실효 className 은 엔진 규칙(구간 class 가 있으면 통째 교체, 없으면 기본 class) 위에 구간 class-merge 를 덧붙인 값이다 (#399, engine-v1.98.0).
+    // 접두 토큰끼리 충돌 교체가 되도록 서버가 내려 주는 확장 접두 목록을 계산하는 동안만 세운다.
     const wide=Object.entries(block.responsive??{}).find(([k])=>/^768-$/.test(k)) as [string, any]|undefined;
-    expect(String(wide?.[1]?.props?.className)).toMatch(/(^|\s)koreaexim:col-span-2(\s|$)/);
+    const g7Window=window as unknown as {G7Config?: Record<string, unknown>};
+    const prevConfig=g7Window.G7Config;
+    g7Window.G7Config={...(prevConfig ?? {}), extensionClassPrefixes:['koreaexim']};
+    let wideClassName='';
+    try {
+      wideClassName=wide ? applyResponsiveClassMerge(wide[1]?.props?.className ?? block.props?.className, wide[1]?.classMerge) : '';
+    } finally {
+      g7Window.G7Config=prevConfig;
+    }
+    expect(wideClassName).toMatch(/(^|\s)koreaexim:col-span-2(\s|$)/);
+    // 넓은 폭에서도 기본 칸 모양(공통 폼 그룹)은 유지된다
+    expect(wideClassName.split(/\s+/)).toContain('koreaexim-form-group');
     const notice=nodes(block).find((n:any)=>n.id==='koreaexim_schedule_notice');
     expect(notice).toBeTruthy();
     expect(notice.props.className).toContain('alert-info');

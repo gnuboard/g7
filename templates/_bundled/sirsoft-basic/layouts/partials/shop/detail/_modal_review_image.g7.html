@@ -19,7 +19,7 @@
                 <icon name="star" size="sm" class="{{star <= (_global.reviewForModal?.rating ?? 0) ? 'text-yellow-700 dark:text-yellow-600' : 'text-gray-500 dark:text-gray-500'}}"/>
               </span>
             </div>
-            <span class="text-xs text-gray-500 dark:text-gray-400">{{_global.reviewForModal?.createdAt ?? ''}}</span>
+            <span class="text-xs text-muted">{{_global.reviewForModal?.createdAt ?? ''}}</span>
           </div>
         </div>
         <!-- 옵션 배지 (있을 때만) -->
@@ -53,7 +53,7 @@
           </button>
         </div>
         <!-- 이미지 카운터 (이미지 2장 이상일 때만) -->
-        <div data-if="{{(_global.reviewForModal?.images?.length ?? 0) > 1}}" class="text-sm text-gray-500 dark:text-gray-400">{{(Number(_global.reviewImageIndex) + 1) + ' / ' + (_global.reviewForModal?.images?.length ?? 1)}}</div>
+        <div data-if="{{(_global.reviewForModal?.images?.length ?? 0) > 1}}" class="text-sm text-muted">{{(Number(_global.reviewImageIndex) + 1) + ' / ' + (_global.reviewForModal?.images?.length ?? 1)}}</div>
       </div>
     </div>
   </modal>

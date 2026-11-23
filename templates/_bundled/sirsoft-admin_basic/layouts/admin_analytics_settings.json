@@ -238,7 +238,7 @@
                 "responsive": {
                     "640-1023": {
                         "props": {
-                            "className": "p-6 min-h-screen bg-gray-50 dark:bg-gray-900"
+                            "className": "admin-page-content"
                         }
                     },
                     "1024-": {
@@ -403,14 +403,10 @@
                         "name": "Div",
                         "responsive": {
                             "640-1023": {
-                                "props": {
-                                    "className": "sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
-                                }
+                                "classMerge": "-mx-6 px-6"
                             },
                             "1024-": {
-                                "props": {
-                                    "className": "sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
-                                }
+                                "classMerge": "-mx-8 px-8"
                             }
                         },
                         "props": {
@@ -423,14 +419,10 @@
                                 "name": "TabNavigation",
                                 "responsive": {
                                     "640-1023": {
-                                        "props": {
-                                            "className": "sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
-                                        }
+                                        "classMerge": "-mx-6 px-6"
                                     },
                                     "1024-": {
-                                        "props": {
-                                            "className": "sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
-                                        }
+                                        "classMerge": "-mx-8 px-8"
                                     }
                                 },
                                 "actions": [

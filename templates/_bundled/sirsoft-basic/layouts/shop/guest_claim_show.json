@@ -304,7 +304,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                                                            "className": "text-sm text-muted mt-1"
                                                         },
                                                         "text": "{{claim.data?.claim?.claim_number ?? ''}}"
                                                     },
@@ -313,7 +313,7 @@
                                                         "name": "P",
                                                         "if": "{{!!claim.data?.claim?.requested_at_formatted}}",
                                                         "props": {
-                                                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                                            "className": "text-xs text-muted mt-0.5"
                                                         },
                                                         "text": "$t:claim.list.requested_at|at={{claim.data?.claim?.requested_at_formatted ?? ''}}"
                                                     },

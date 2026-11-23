@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import extension from '../../../extensions/mypage_privacy_tab.json';
-import { findById, type AnyNode, serializeForSearch } from './helpers';
+import { findById, type AnyNode, serializeForSearch, pluginClassTextColors, TAILWIND_GRAY_400, TAILWIND_GRAY_500 } from './helpers';
 
 interface Modal extends AnyNode {
     id?: string;
@@ -172,9 +172,12 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
         it('시각적 무게 최소화 — 작은 보조 텍스트 (공통 Tailwind 코어 클래스)', () => {
             // 이슈 #430 — 이 카드는 user 페이지(sirsoft-basic)에 렌더되므로 admin 전용 시맨틱(.text-tertiary)은
             // CSS 미해석. 동등한 공통 Tailwind 코어 클래스로 치환 (회귀 수정).
+            // #399 R-2 — 인라인 짝(gray-500 / 다크 gray-400)이 플러그인 의미 클래스 사본 `gdpr-text-muted` 로 묶였다.
+            // 이름만 보지 않고 플러그인 생성 CSS 가 같은 두 색을 정의하는지까지 확인한다.
             const className = (meta?.props as { className?: string })?.className ?? '';
             expect(className).toContain('text-xs');
-            expect(className).toContain('text-gray-500');
+            expect(className.split(/\s+/)).toContain('gdpr-text-muted');
+            expect(pluginClassTextColors('gdpr-text-muted')).toEqual({ light: TAILWIND_GRAY_500, dark: TAILWIND_GRAY_400 });
             expect(className).not.toContain('text-tertiary');
         });
     });

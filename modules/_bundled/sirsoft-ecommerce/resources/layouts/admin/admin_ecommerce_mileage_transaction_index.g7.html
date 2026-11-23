@@ -110,7 +110,7 @@
     <set-state target="global" :ecommerceExportTracking="null" :ecommerceExportTrackingDownloading="false"/>
   </init>
   <slot name="content">
-    <div data-ref="mileage_transactions_content" class="ecommerce:p-6 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:min-h-screen">
+    <div data-ref="mileage_transactions_content" class="ecommerce-admin-page-content">
       <div data-ref="page_header" class="ecommerce:flex ecommerce:justify-between ecommerce:mb-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4">
         <responsive on="641-" class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-6"/>
         <div data-ref="page_header_left">
@@ -119,7 +119,7 @@
         </div>
         <div data-ref="page_header_actions" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3 ecommerce:justify-start ecommerce:w-full">
           <responsive on="641-" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3"/>
-          <button data-ref="manual_action_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true}}" class="ecommerce-btn ecommerce-btn-primary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:shrink-0 ecommerce:whitespace-nowrap">
+          <button data-ref="manual_action_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true}}" class="ecommerce-btn ecommerce-btn-primary ecommerce:text-sm ecommerce:shrink-0 ecommerce:whitespace-nowrap">
             <on type="click">
               <!-- 수동 지급/회수 창을 연다. 창이 지난번 입력을 물고 뜨지 않도록 열기 전에 입력값 전체를 처음 상태로 깔아 둔다(창은 별도 컨텍스트라 이 값들이 _global 이어야 한다).
                    모달 진입 시 설정의 기본 통화로 채운다 — 특정 통화를 박으면 그 통화 원장이 없는 상점에서 잘못된 통화로 적립된다 -->
@@ -151,7 +151,7 @@
       <include src="partials/admin_ecommerce_mileage_transaction_index/_filters.g7.html"/>
       <div data-ref="bulk_action_bar" class="ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700/50 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:p-3 ecommerce:mb-4 ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-between ecommerce:gap-3">
         <span class="ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:whitespace-nowrap">$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.selected|count={{(_local.selectedItems ?? []).length}}</span>
-        <button data-ref="bulk_extend_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}" class="ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
+        <button data-ref="bulk_extend_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}" class="ecommerce-btn ecommerce-btn-primary">
           <on type="click">
             <!-- 선택한 적립 건들의 만료일 연장 창을 연다. 적립건만 넘기고 회원은 지정하지 않는다 — 여러 회원의 적립건을 함께 골라도 서버가 전부 연장한다(첫 건의 회원만 보내면 나머지 회원 적립건이 조용히 빠졌다) -->
             <sequence>

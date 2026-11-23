@@ -36,7 +36,7 @@
     <div data-if="{{_global.modulePreviewResult}}" class="mt-4 space-y-3">
       <div data-if="{{_global.modulePreviewResult?.manifest}}" class="p-3 bg-gray-50 dark:bg-gray-900 rounded text-sm">
         <span class="font-semibold text-gray-700 dark:text-gray-300">{{_global.modulePreviewResult?.manifest?.identifier}} v{{_global.modulePreviewResult?.manifest?.version}}</span>
-        <span class="ml-2 text-gray-500 dark:text-gray-400">({{_global.modulePreviewResult?.manifest?.vendor}})</span>
+        <span class="ml-2 text-muted">({{_global.modulePreviewResult?.manifest?.vendor}})</span>
       </div>
       <div data-ref="module_preview_icon" data-if="{{_global.modulePreviewResult?.icon}}" class="p-3 bg-gray-50 dark:bg-gray-900 rounded text-sm flex items-start gap-3">
         <div class="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">

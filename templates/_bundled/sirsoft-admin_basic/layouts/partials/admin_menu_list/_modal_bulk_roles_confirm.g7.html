@@ -11,13 +11,13 @@
       <div data-ref="confirm_error" data-if="{{!!_global.menuBulkError}}" class="mt-3 alert-danger text-sm">{{_global.menuBulkError}}</div>
     </div>
     <footer>
-      <button type="button" disabled="{{_global.isProcessing}}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+      <button type="button" disabled="{{_global.isProcessing}}" class="btn btn-secondary">
         <on type="click">
           <close-modal target="bulk_roles_confirm_modal"/>
         </on>
         $t:common.cancel
       </button>
-      <button data-ref="confirm_apply_button" type="button" disabled="{{_global.isProcessing}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+      <button data-ref="confirm_apply_button" type="button" disabled="{{_global.isProcessing}}" class="flex-center btn btn-primary">
         <on type="click">
           <!-- 일괄 적용 실행. 진행 표시는 성공·실패·403 어느 갈래에서든 끈다(빠뜨리면 버튼이 잠긴 채 남는다). 연타는
                버튼 잠금만으로는 같은 틱의 두 번째 클릭을 못 막아(실측: 더블클릭에 요청 2건) 300ms 디바운스로 연타를 한 번으로 모은다.

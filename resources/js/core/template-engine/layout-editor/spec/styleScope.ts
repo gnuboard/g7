@@ -29,6 +29,7 @@ import { clonePropsWithStyle } from './recipeEngine';
 import type { RecipeApply } from './recipeEngine';
 import type { PreviewDevice } from '../LayoutEditorContext';
 import { resolveDeviceWidth, DEFAULT_PREVIEW_CUSTOM_WIDTH } from './deviceList';
+import { applyResponsiveClassMerge } from '../../helpers/StyleHelpers';
 
 /** 색 모드 — base = 라이트(공통), dark = 다크 variant */
 export type ColorScheme = 'base' | 'dark';
@@ -249,10 +250,76 @@ export function breakpointKeyLabel(key: string): { i18nKey: string | null; raw: 
   }
 }
 
+/** 노드 기본(base) className 문자열 (없으면 빈 문자열) */
+function baseClassNameOf(node: EditorNode): string {
+  const className = (node.props as Record<string, unknown> | undefined)?.className;
+  return typeof className === 'string' ? className : '';
+}
+
+/**
+ * 구간의 className 저장 방식이 「통째 교체」(`responsive[bp].props.className`)인지.
+ *
+ * engine-v1.98.0 전 편집기·손작성 구간은 기본 className 전체를 구간 props 에 복사해 두었다. 그런 구간은 그 값을
+ * 기준으로 계속 고치고 결과도 같은 자리에 쓴다(두 방식을 한 구간에 섞지 않는다). 기본 className 에 바인딩(`{{ }}`)이
+ * 있으면 토큰 차이를 계산할 수 없어 통째 교체로 다룬다.
+ *
+ * @param node 대상 노드
+ * @param branch responsive 구간 값
+ * @return 통째 교체 방식이면 true
+ */
+function isFullReplaceBranch(node: EditorNode, branch: Record<string, unknown> | undefined): boolean {
+  const branchProps = branch?.props as Record<string, unknown> | undefined;
+  return typeof branchProps?.className === 'string' || baseClassNameOf(node).includes('{{');
+}
+
+/**
+ * 구간에서 실제로 쓰이는 className — 엔진 적용 순서(구간 props 얕은 병합 → classMerge)와 같다.
+ *
+ * @param node 대상 노드
+ * @param branch responsive 구간 값
+ * @return 실효 className (구간이 className 을 건드리지 않으면 undefined — 기본값 상속)
+ */
+function branchEffectiveClassName(node: EditorNode, branch: Record<string, unknown> | undefined): string | undefined {
+  if (!branch) return undefined;
+  const branchProps = branch.props as Record<string, unknown> | undefined;
+  const classMerge = typeof branch.classMerge === 'string' ? branch.classMerge : undefined;
+  if (typeof branchProps?.className === 'string') {
+    return classMerge ? applyResponsiveClassMerge(branchProps.className, classMerge) : branchProps.className;
+  }
+  if (classMerge && classMerge.trim() !== '') {
+    return applyResponsiveClassMerge(baseClassNameOf(node), classMerge);
+  }
+  return undefined;
+}
+
+/**
+ * 기본 className 위에 덧붙여 `target` 을 만드는 classMerge 값을 구한다.
+ *
+ * `target` 토큰 중 기본에 없는 것만 고르고, 그것을 엔진 규칙으로 덧붙인 결과의 토큰 집합이 `target` 과 같을 때만
+ * 쓴다. 기본 토큰을 지우기만 한 편집(같은 축의 다른 값으로 바꾸지 않은 삭제)은 덧붙이기로 나타낼 수 없어 null 이다.
+ *
+ * @param base 기본 className
+ * @param target 편집 뒤 구간 실효 className
+ * @return classMerge 값(바뀐 것이 없으면 빈 문자열), 나타낼 수 없으면 null
+ * @since engine-v1.98.0
+ */
+export function computeClassMergeDiff(base: string, target: string): string | null {
+  const baseSet = new Set(toTokens(base));
+  const targetTokens = Array.from(new Set(toTokens(target)));
+  const diff = targetTokens.filter((token) => !baseSet.has(token));
+  const merged = new Set(toTokens(applyResponsiveClassMerge(base, diff.join(' '))));
+  if (merged.size !== targetTokens.length || targetTokens.some((token) => !merged.has(token))) {
+    return null;
+  }
+  return diff.join(' ');
+}
+
 /**
  * 스코프 props 읽기 컨테이너.
  *  - base → `node.props`
- *  - 그 외 → `node.responsive?.[breakpoint]?.props`  (없으면 {})
+ *  - 그 외 → `node.responsive?.[breakpoint]?.props` (없으면 {}). 구간에 `classMerge` 가 있으면 className 자리에
+ *    「기본 className + classMerge」 병합 결과를 보여 준다 — 편집 화면이 그 폭에서 실제로 쓰이는 클래스를 본다
+ *    (engine-v1.98.0).
  *
  * @param node 대상 노드
  * @param scope 활성 scope
@@ -262,14 +329,26 @@ export function getScopedProps(node: EditorNode, scope: StyleScope): Record<stri
   if (scope.breakpoint === 'base') {
     return (node.props ?? {}) as Record<string, unknown>;
   }
-  const branch = node.responsive?.[scope.breakpoint];
-  return (branch?.props ?? {}) as Record<string, unknown>;
+  const branch = node.responsive?.[scope.breakpoint] as Record<string, unknown> | undefined;
+  const props = (branch?.props ?? {}) as Record<string, unknown>;
+  if (branch && typeof branch.classMerge === 'string') {
+    const effective = branchEffectiveClassName(node, branch);
+    return effective === undefined ? props : { ...props, className: effective };
+  }
+  return props;
 }
 
 /**
  * 스코프 props 쓰기(+prune, 불변). mutator 에 클론된 props·style 을 전달 →
  * 변형 → 빈 style 제거, bp≠base 면 빈 `responsive[bp].props`/`responsive[bp]`/
  * `responsive` 까지 정리(코드 작성 `children/text/if/iteration` 남은 브랜치는 보존).
+ *
+ * 디바이스 scope 의 className (engine-v1.98.0, 종전 「B안 시드」 대체):
+ *  - mutator 는 그 폭의 실효 className(기본 + classMerge)을 받아 고친다.
+ *  - 덧붙이기 방식 구간은 기본 대비 **바뀐 토큰만** `responsive[bp].classMerge` 에 쓴다. 기본 className 을 나중에
+ *    바꿔도 구간은 바뀐 부분만 들고 있어 함께 따라간다(종전 시드는 편집 시점 복사본에 묶였다).
+ *  - 덧붙이기로 나타낼 수 없는 편집(기본 토큰을 지우기만 함)은 종전처럼 `props.className` 에 전체를 쓴다.
+ *  - 이미 `props.className` 을 가진 구간(통째 교체 방식)은 그 값을 기준으로 고치고 같은 자리에 쓴다.
  *
  * @param node 대상 노드 (변경되지 않음)
  * @param scope 활성 scope
@@ -298,9 +377,46 @@ export function withScopedProps(
     branch.props as Record<string, unknown> | undefined,
   );
 
+  const fullReplace = isFullReplaceBranch(node, responsive[bp]);
+  const baseClassName = baseClassNameOf(node);
+  // 편집 보기 — 그 폭의 실효 className. 구간이 className 을 건드리지 않으면 기본값을 그대로 보여 준다.
+  const effectiveBefore = branchEffectiveClassName(node, responsive[bp]) ?? (baseClassName !== '' ? baseClassName : undefined);
+  if (effectiveBefore !== undefined) {
+    props.className = effectiveBefore;
+  }
+
   mutator(props, style);
 
   if (Object.keys(style).length === 0) delete props.style;
+
+  const edited = typeof props.className === 'string' ? props.className.trim() : '';
+  const classNameChanged = edited !== (effectiveBefore ?? '').trim();
+  const hadOwnClassName = typeof (responsive[bp]?.props as Record<string, unknown> | undefined)?.className === 'string';
+  if (fullReplace) {
+    if (!hadOwnClassName && !classNameChanged) {
+      // 기본 className 에 바인딩이 있어 통째 교체로 다루지만 className 은 고치지 않았다 — 보기용 값을 남기지 않는다.
+      delete props.className;
+    } else {
+      // 통째 교체 구간 — 결과를 같은 자리에 쓰고, 함께 있던 classMerge 는 그 결과에 접어 넣었으므로 지운다.
+      if (edited === '') delete props.className;
+      else props.className = edited;
+      delete branch.classMerge;
+    }
+  } else {
+    delete props.className;
+    if (classNameChanged) {
+      const diff = computeClassMergeDiff(baseClassName, edited);
+      if (diff === null) {
+        // 덧붙이기로 나타낼 수 없음 → 통째 교체(종전 방식). 빈 결과는 기본값 상속으로 둔다.
+        if (edited !== '') props.className = edited;
+        delete branch.classMerge;
+      } else if (diff === '') {
+        delete branch.classMerge;
+      } else {
+        branch.classMerge = diff;
+      }
+    }
+  }
 
   // prune — 빈 props → 브랜치에서 제거
   if (Object.keys(props).length === 0) {
@@ -474,8 +590,8 @@ function toTokens(className: unknown): string[] {
  *  - 다크 scope(breakpoint=base): `node.props.className` 의 `dark:` 토큰 전부 제거.
  *  - 다크 + 디바이스: `responsive[bp].props.className` 의 `dark:` 토큰 제거(라이트 토큰은 보존).
  *
- * B안 시드로 디바이스 override 가 base 복사본을 들고 있을 때, 사용자가 "기본값으로 초기화"를
- * 누르면 그 복사본을 비워 다시 기본값을 상속하게 만든다(stale 해소 수단).
+ * 통째 교체 구간(engine-v1.98.0 전 시드 복사본)이 base 복사본을 들고 있을 때, 사용자가 "기본값으로 초기화"를
+ * 누르면 그 복사본을 비워 다시 기본값을 상속하게 만든다(stale 해소 수단). 덧붙이기 구간은 `classMerge` 도 지운다.
  *
  * @param node 대상 노드 (변경되지 않음)
  * @param scope 활성 scope
@@ -485,13 +601,36 @@ export function clearScopeOverride(node: EditorNode, scope: StyleScope): EditorN
   const dark = scope.colorScheme === 'dark';
 
   // 다크 색 모드 — className 의 dark: 토큰만 제거(해당 컨테이너에서). breakpoint 가 base 면
-  // node.props, 그 외면 responsive[bp].props.
+  // node.props, 그 외면 responsive[bp].props.className 과 responsive[bp].classMerge(실효값 보기를 거치지 않고
+  // 구간이 직접 가진 값에서 — 기본 className 의 dark: 토큰은 기본값이라 지우지 않는다).
   if (dark) {
-    return withScopedProps(node, scope, (props) => {
-      const kept = toTokens(props.className).filter((t) => !hasDarkPrefix(t));
-      if (kept.length === 0) delete props.className;
-      else props.className = kept.join(' ');
-    });
+    if (scope.breakpoint === 'base') {
+      return withScopedProps(node, scope, (props) => {
+        const kept = toTokens(props.className).filter((t) => !hasDarkPrefix(t));
+        if (kept.length === 0) delete props.className;
+        else props.className = kept.join(' ');
+      });
+    }
+    const bp = scope.breakpoint;
+    const current = node.responsive?.[bp] as Record<string, unknown> | undefined;
+    if (!current) return node;
+    const branch: Record<string, unknown> = { ...current };
+    const branchProps = branch.props ? { ...(branch.props as Record<string, unknown>) } : undefined;
+    if (branchProps && typeof branchProps.className === 'string') {
+      const kept = toTokens(branchProps.className).filter((t) => !hasDarkPrefix(t));
+      if (kept.length === 0) delete branchProps.className;
+      else branchProps.className = kept.join(' ');
+    }
+    if (branchProps) {
+      if (Object.keys(branchProps).length === 0) delete branch.props;
+      else branch.props = branchProps;
+    }
+    if (typeof branch.classMerge === 'string') {
+      const kept = toTokens(branch.classMerge).filter((t) => !hasDarkPrefix(t));
+      if (kept.length === 0) delete branch.classMerge;
+      else branch.classMerge = kept.join(' ');
+    }
+    return replaceBranch(node, bp, branch);
   }
 
   // 라이트 디바이스 scope — responsive[bp].props 전체 제거.
@@ -502,11 +641,24 @@ export function clearScopeOverride(node: EditorNode, scope: StyleScope): EditorN
   const bp = scope.breakpoint;
   if (!node.responsive?.[bp]) return node;
 
-  const responsive: Record<string, Record<string, unknown>> = {
-    ...(node.responsive as Record<string, Record<string, unknown>>),
-  };
-  const branch: Record<string, unknown> = { ...responsive[bp] };
+  const branch: Record<string, unknown> = { ...(node.responsive[bp] as Record<string, unknown>) };
   delete branch.props;
+  delete branch.classMerge;
+  return replaceBranch(node, bp, branch);
+}
+
+/**
+ * responsive 구간 하나를 바꾼 노드 사본(불변). 구간이 비면 지우고, responsive 가 비면 키도 지운다.
+ *
+ * @param node 대상 노드
+ * @param bp 구간 키
+ * @param branch 새 구간 값
+ * @return 노드 사본
+ */
+function replaceBranch(node: EditorNode, bp: string, branch: Record<string, unknown>): EditorNode {
+  const responsive: Record<string, Record<string, unknown>> = {
+    ...((node.responsive ?? {}) as Record<string, Record<string, unknown>>),
+  };
   if (Object.keys(branch).length === 0) {
     delete responsive[bp];
   } else {
@@ -524,13 +676,14 @@ export function clearScopeOverride(node: EditorNode, scope: StyleScope): EditorN
 /**
  * 활성 scope 에 "기본값과 다른 명시 설정"이 있는지 — 디바이스/커스텀/다크 탭의 표시점(●) 판정.
  *
- * B안 시드로 디바이스 override 가 base className 을 복사만 한 경우는 표시점을 띄우지 않는다
- * (사용자가 실제로 바꾼 게 없으므로). 즉 "scope className 토큰 집합이 base 와 다른가"로 본다.
+ * 통째 교체 구간이 base className 을 복사만 한 경우는 표시점을 띄우지 않는다
+ * (사용자가 실제로 바꾼 게 없으므로). 즉 "그 폭의 실효 className 토큰 집합이 base 와 다른가"로 본다.
  *
- *  - 디바이스 scope(라이트): `responsive[bp].props.className` 의 비-dark 토큰 집합이 base 의
- *    비-dark 토큰 집합과 다르면 true(시드만이면 동일 → false). props 에 className 외 다른 키가
+ *  - 디바이스 scope(라이트): 구간 실효 className(`props.className` 또는 base + `classMerge`)의 비-dark 토큰
+ *    집합이 base 의 비-dark 토큰 집합과 다르면 true(복사만이면 동일 → false). props 에 className 외 다른 키가
  *    있어도 true(스타일 외 오버라이드).
- *  - 다크 scope: 해당 컨테이너 className 에 `dark:` 토큰이 하나라도 있으면 true.
+ *  - 다크 scope: base 면 node className 에 `dark:` 토큰이 있으면 true. 디바이스면 구간이 직접 가진 값
+ *    (`props.className`·`classMerge`)에 `dark:` 토큰이 있으면 true.
  *
  * @param node 대상 노드
  * @param scope 활성 scope
@@ -540,24 +693,29 @@ export function hasScopeOverride(node: EditorNode, scope: StyleScope): boolean {
   const dark = scope.colorScheme === 'dark';
 
   if (dark) {
-    const container = scope.breakpoint === 'base' ? node.props : node.responsive?.[scope.breakpoint]?.props;
-    return toTokens((container as Record<string, unknown> | undefined)?.className).some(hasDarkPrefix);
+    if (scope.breakpoint === 'base') {
+      return toTokens((node.props as Record<string, unknown> | undefined)?.className).some(hasDarkPrefix);
+    }
+    const darkBranch = node.responsive?.[scope.breakpoint] as Record<string, unknown> | undefined;
+    const darkBranchProps = darkBranch?.props as Record<string, unknown> | undefined;
+    return toTokens(darkBranchProps?.className).some(hasDarkPrefix) || toTokens(darkBranch?.classMerge).some(hasDarkPrefix);
   }
 
   if (scope.breakpoint === 'base') return false; // 기본값 탭은 표시점 없음
-  const branch = node.responsive?.[scope.breakpoint];
+  const branch = node.responsive?.[scope.breakpoint] as Record<string, unknown> | undefined;
   if (!branch) return false;
-  // props 외 코드 작성 키(children/text/if/iteration)만 있어도 override 로 본다.
+  // props·classMerge 외 코드 작성 키(children/text/if/iteration/classMap)만 있어도 override 로 본다.
   const branchProps = branch.props as Record<string, unknown> | undefined;
-  const otherKeys = Object.keys(branch).filter((k) => k !== 'props');
+  const otherKeys = Object.keys(branch).filter((k) => k !== 'props' && k !== 'classMerge');
   if (otherKeys.length > 0) return true;
-  if (!branchProps) return false;
   // className 외 다른 props 키가 있으면 override.
-  const propKeys = Object.keys(branchProps).filter((k) => k !== 'className');
+  const propKeys = Object.keys(branchProps ?? {}).filter((k) => k !== 'className');
   if (propKeys.length > 0) return true;
-  // className 비-dark 토큰 집합을 base 와 비교 — 다르면 명시 변경(시드만이면 동일).
+  const effective = branchEffectiveClassName(node, branch);
+  if (effective === undefined) return false;
+  // 실효 className 비-dark 토큰 집합을 base 와 비교 — 다르면 명시 변경(복사만이면 동일).
   const baseSet = new Set(toTokens((node.props as Record<string, unknown> | undefined)?.className).filter((t) => !hasDarkPrefix(t)));
-  const scopeSet = toTokens(branchProps.className).filter((t) => !hasDarkPrefix(t));
-  if (scopeSet.length !== baseSet.size) return true;
-  return scopeSet.some((t) => !baseSet.has(t));
+  const scopeSet = new Set(toTokens(effective).filter((t) => !hasDarkPrefix(t)));
+  if (scopeSet.size !== baseSet.size) return true;
+  return Array.from(scopeSet).some((t) => !baseSet.has(t));
 }

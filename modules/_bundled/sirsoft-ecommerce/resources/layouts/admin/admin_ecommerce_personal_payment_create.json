@@ -67,9 +67,7 @@
                                         "name": "H1",
                                         "responsive": {
                                             "640-": {
-                                                "props": {
-                                                    "className": "ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-1"
-                                                }
+                                                "classMerge": "ecommerce:text-2xl"
                                             }
                                         },
                                         "props": {
@@ -438,9 +436,7 @@
                                         "name": "Input",
                                         "responsive": {
                                             "768-": {
-                                                "props": {
-                                                    "className": "ecommerce-input ecommerce:w-80"
-                                                }
+                                                "classMerge": "ecommerce:w-80"
                                             }
                                         },
                                         "props": {
@@ -754,7 +750,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-text-muted"
                                                         },
                                                         "children": [
                                                             {
@@ -815,7 +811,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:ml-1"
+                                                    "className": "ecommerce-text-muted ecommerce:ml-1"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.order_link_optional"
                                             }
@@ -848,7 +844,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "search",
-                                                            "className": "ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce:text-xl ecommerce-text-muted"
                                                         }
                                                     },
                                                     {
@@ -906,7 +902,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:ml-1"
+                                                    "className": "ecommerce-text-muted ecommerce:ml-1"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.linked_order_optional"
                                             }
@@ -1084,7 +1080,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:ml-1"
+                                                    "className": "ecommerce-text-muted ecommerce:ml-1"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.memo_optional"
                                             }
@@ -1114,10 +1110,7 @@
                         "children": [
                             {
                                 "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                    "className": ""
-                                }
+                                "name": "Div"
                             },
                             {
                                 "type": "basic",
@@ -1154,7 +1147,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "ecommerce-flex-center ecommerce:gap-1.5 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:font-medium ecommerce:transition-colors"
+                                            "className": "ecommerce-flex-center ecommerce:gap-1.5 ecommerce-btn ecommerce-btn-primary"
                                         },
                                         "children": [
                                             {

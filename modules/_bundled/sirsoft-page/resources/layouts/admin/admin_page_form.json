@@ -610,7 +610,6 @@
                                                         "props": {
                                                             "value": "{{String(_local.form?.published ?? false)}}",
                                                             "disabled": "{{_computed.isReadOnly}}",
-                                                            "className": "",
                                                             "options": [
                                                                 {
                                                                     "value": "true",
@@ -1038,8 +1037,7 @@
                                                     "type": "text",
                                                     "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_title_placeholder",
                                                     "value": "{{_local.form?.seo_meta?.title ?? ''}}",
-                                                    "disabled": "{{_computed.isReadOnly}}",
-                                                    "className": ""
+                                                    "disabled": "{{_computed.isReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -1081,8 +1079,7 @@
                                                     "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_description_placeholder",
                                                     "value": "{{_local.form?.seo_meta?.description ?? ''}}",
                                                     "disabled": "{{_computed.isReadOnly}}",
-                                                    "rows": 3,
-                                                    "className": ""
+                                                    "rows": 3
                                                 }
                                             }
                                         ]
@@ -1124,8 +1121,7 @@
                                                     "type": "text",
                                                     "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_keywords_placeholder",
                                                     "value": "{{_local.form?.seo_meta?.keywords ?? ''}}",
-                                                    "disabled": "{{_computed.isReadOnly}}",
-                                                    "className": ""
+                                                    "disabled": "{{_computed.isReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -1309,7 +1305,7 @@
                                 "props": {
                                     "type": "button",
                                     "disabled": "{{_local.saving}}",
-                                    "className": "page-btn page-btn-primary page-flex-center page:gap-1.5 page:disabled:opacity-50 page:disabled:cursor-not-allowed"
+                                    "className": "page-btn page-btn-primary page-flex-center page:gap-1.5"
                                 },
                                 "children": [
                                     {

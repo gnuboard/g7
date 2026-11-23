@@ -40,9 +40,6 @@
                                     "id": "field_use_reply",
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": ""
-                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -118,9 +115,6 @@
                                     "id": "field_max_reply_depth",
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": ""
-                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -203,7 +197,7 @@
                                                             "name": "Span",
                                                             "if": "{{_local.errors?.['basic_defaults.max_reply_depth']}}",
                                                             "props": {
-                                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
+                                                                "className": "board-form-error"
                                                             },
                                                             "text": "{{(Array.isArray(_local.errors?.['basic_defaults.max_reply_depth']) ? _local.errors['basic_defaults.max_reply_depth'][0] : _local.errors?.['basic_defaults.max_reply_depth']) ?? ''}}"
                                                         }
@@ -217,9 +211,6 @@
                                     "id": "field_reply_delete_policy",
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": ""
-                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -305,9 +296,6 @@
                                     "id": "field_secret_reply_visibility",
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": ""
-                                    },
                                     "children": [
                                         {
                                             "type": "basic",

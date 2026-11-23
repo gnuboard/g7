@@ -57,7 +57,7 @@
             "name": "P",
             "if": "{{_local.claimEditMode !== true}}",
             "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700"
+                "className": "text-sm text-muted mb-4 pb-4 border-b border-gray-200 dark:border-gray-700"
             },
             "text": "$t:claim.apply.refund_account_hint"
         },
@@ -83,7 +83,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                        "className": "text-sm text-muted mt-1"
                     },
                     "text": "$t:claim.edit.refund_account_hint"
                 }
@@ -95,7 +95,7 @@
             "name": "P",
             "if": "{{_local.claimRefundAccountMasked === true}}",
             "props": {
-                "className": "text-xs text-gray-500 dark:text-gray-400 mb-3"
+                "className": "text-xs text-muted mb-3"
             },
             "text": "$t:claim.apply.refund_account_masked_hint"
         },
@@ -120,9 +120,7 @@
                     "name": "Select",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                            }
+                            "classMerge": "px-3 text-sm"
                         }
                     },
                     "actions": [
@@ -148,9 +146,7 @@
                     "name": "Input",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                            }
+                            "classMerge": "px-3 text-sm"
                         }
                     },
                     "actions": [
@@ -178,9 +174,7 @@
             "name": "Input",
             "responsive": {
                 "portable": {
-                    "props": {
-                        "className": "w-full mt-3 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                    }
+                    "classMerge": "px-3 text-sm"
                 }
             },
             "actions": [
@@ -205,7 +199,7 @@
             "type": "basic",
             "name": "P",
             "props": {
-                "className": "text-xs text-gray-500 dark:text-gray-400 mt-2"
+                "className": "text-xs text-muted mt-2"
             },
             "text": "$t:claim.apply.refund_account_all_required"
         },

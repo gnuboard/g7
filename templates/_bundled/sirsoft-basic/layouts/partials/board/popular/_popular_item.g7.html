@@ -20,7 +20,7 @@
         </div>
         <div class="flex items-center gap-2 shrink-0">
           <span data-if="{{post.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-600 dark:bg-red-600 text-white rounded flex-shrink-0">N</span>
-          <span class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0" title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
+          <span class="text-sm text-muted flex-shrink-0" title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
         </div>
       </div>
       <!-- 작성자 줄 — 작성자 묶음은 줄어들고(min-w-0, 이름은 UserInfo 가 한 줄 … 로 자른다) 조회·댓글 수는 제 폭을 지킨다. 줄어들 수 없던 때 320px 에서 작성자·「비회원」 배지가 글자 단위로 접혔다(7.1.1). -->

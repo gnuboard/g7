@@ -189,7 +189,7 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
           {/* 펼치기/접기 토글 */}
           {hasChildren ? (
             <Div
-              className={`flex-shrink-0 w-5 h-5 flex items-center justify-center text-gray-500 dark:text-gray-400 rounded ${FOCUS_VISIBLE_RING}`}
+              className={`flex-shrink-0 w-5 h-5 flex items-center justify-center text-muted rounded ${FOCUS_VISIBLE_RING}`}
               onClick={() => handleToggle(node.id)}
               // 키보드로도 펼치고 접는다 — 이름 칸은 같은 동작의 마우스 지름길이라 따로 Tab 을 받지 않는다(#869 키보드 접근)
               {...keyboardActivationProps(() => handleToggle(node.id))}
@@ -227,7 +227,7 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
             className={`flex-shrink-0 text-sm ${
               hasChildren
                 ? 'text-yellow-700 dark:text-yellow-400'
-                : 'text-gray-500 dark:text-gray-400'
+                : 'text-muted'
             }`}
           />
 
@@ -262,7 +262,7 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
     // (모든 렌더 분기 패리티: 빈 데이터로 추가 시 이 분기로 진입)
     return (
       <Div
-        className={`text-sm text-gray-500 dark:text-gray-400 py-4 text-center ${className}`}
+        className={`text-sm text-muted py-4 text-center ${className}`}
         id={id}
         {...editorAttrs}
       >

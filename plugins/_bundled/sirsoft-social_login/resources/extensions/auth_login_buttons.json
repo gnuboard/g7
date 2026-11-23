@@ -49,9 +49,7 @@
                     "name": "A",
                     "responsive": {
                         "640-": {
-                            "props": {
-                                "className": "sl:mt-3 sl:inline-flex sl:items-center sl:justify-center sl:w-full sl:px-4 sl:py-2 sl:text-sm sl:font-medium sl:rounded-lg sl:bg-amber-600 sl:hover:bg-amber-700 sl:text-white sl:dark:bg-amber-500 sl:dark:hover:bg-amber-600 sl:dark:text-gray-900"
-                            }
+                            "classMerge": "sl:py-2"
                         }
                     },
                     "props": {
@@ -89,7 +87,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                "className": "sl:text-xs sl-text-muted"
                             },
                             "text": "$t:sirsoft-social_login.divider.or"
                         },

@@ -206,7 +206,7 @@
                         "if": "{{stats === undefined}}",
                         "props": {
                             "role": "status",
-                            "className": "sl:text-sm sl:text-gray-500 sl:dark:text-gray-400 sl:mb-3"
+                            "className": "sl:text-sm sl-text-muted sl:mb-3"
                         },
                         "text": "$t:common.loading"
                     },
@@ -227,7 +227,7 @@
                         "name": "P",
                         "if": "{{!!stats?.data}}",
                         "props": {
-                            "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:mb-3"
+                            "className": "sl:text-xs sl-text-muted sl:mb-3"
                         },
                         "text": "$t:sirsoft-social_login.admin.stats.since|since={{stats?.data?.since ?? '-'}}"
                     },

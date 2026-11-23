@@ -49,7 +49,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                "className": "sl:text-xs sl-text-muted"
                             },
                             "text": "$t:sirsoft-social_login.admin.providers.impact_social_only"
                         },
@@ -75,7 +75,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                "className": "sl:text-xs sl-text-muted"
                             },
                             "text": "$t:sirsoft-social_login.admin.providers.impact_linked"
                         },

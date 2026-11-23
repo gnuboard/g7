@@ -889,7 +889,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   if (!primed) {
     return (
       <div className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden">
-        <div className="p-4 text-sm text-gray-500 dark:text-gray-400">{t('common.code_editor_loading')}</div>
+        <div className="p-4 text-sm text-muted">{t('common.code_editor_loading')}</div>
       </div>
     );
   }
@@ -908,7 +908,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         theme={resolvedTheme}
         onChange={handleChange}
         onMount={handleEditorDidMount}
-        loading={<div className="p-4 text-sm text-gray-500 dark:text-gray-400">{t('common.code_editor_loading')}</div>}
+        loading={<div className="p-4 text-sm text-muted">{t('common.code_editor_loading')}</div>}
         beforeMount={() => {
           if (!loaderConfigured) {
             loaderConfigured = configureMonacoLoader();

@@ -50,7 +50,7 @@
                         "type": "basic",
                         "name": "P",
                         "props": {
-                            "className": "text-gray-500 dark:text-gray-400 mb-8 max-w-md"
+                            "className": "text-muted mb-8 max-w-md"
                         },
                         "text": "$t:errors.403.message"
                     },
