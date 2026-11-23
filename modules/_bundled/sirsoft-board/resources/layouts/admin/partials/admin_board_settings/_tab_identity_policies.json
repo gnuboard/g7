@@ -622,7 +622,22 @@
                                                             "props": {
                                                                 "className": "board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300"
                                                             },
-                                                            "text": "$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}"
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{policy.scope === 'custom' && policy.checkpoint_registered === false}}",
+                                                                    "props": {
+                                                                        "className": "board:ml-1 board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-amber-100 board:text-amber-800 board:dark:bg-amber-900/30 board:dark:text-amber-300"
+                                                                    },
+                                                                    "text": "$t:admin.identity.policies.checkpoint_missing"
+                                                                }
+                                                            ]
                                                         },
                                                         {
                                                             "type": "basic",
@@ -914,6 +929,15 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "text": "$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{policy.scope === 'custom' && policy.checkpoint_registered === false}}",
+                                                                    "props": {
+                                                                        "className": "board:ml-1 board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-amber-100 board:text-amber-800 board:dark:bg-amber-900/30 board:dark:text-amber-300"
+                                                                    },
+                                                                    "text": "$t:admin.identity.policies.checkpoint_missing"
                                                                 },
                                                                 {
                                                                     "type": "basic",

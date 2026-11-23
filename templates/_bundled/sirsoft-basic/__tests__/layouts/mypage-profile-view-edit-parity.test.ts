@@ -35,6 +35,9 @@ const keysIn = (source: string) => [...new Set(source.match(/mypage\.[a-z_0-9.]+
  * 회원 탈퇴는 **일부러** 보기 화면에만 둔다. 되돌릴 수 없는 행위라 편집 중인 폼 옆에 두면
  * 저장하려던 손이 그 버튼에 닿는다 — 항목(고칠 값)이 아니라 행위이고, 그 행위의 확인 절차는
  * `_modal_withdraw` 가 따로 소유한다.
+ *
+ * 보안 카드(#952)의 「모든 기기에서 로그아웃」도 같은 이유로 보기 화면에만 둔다 — 고칠 값이 아니라 즉시 일어나는
+ * 행위이고, 확인 절차는 `_modal_logout_all_devices` 가 소유한다.
  */
 const VIEW_ONLY = [
   'mypage.profile.view_title',
@@ -44,6 +47,10 @@ const VIEW_ONLY = [
   'mypage.profile.withdraw_button',
   'mypage.profile.withdraw_warning',
   'mypage.profile.admin_cannot_withdraw',
+  'mypage.security.title',
+  'mypage.security.logout_all.label',
+  'mypage.security.logout_all.description',
+  'mypage.security.logout_all.button',
 ];
 
 /** 본 레이아웃(데이터소스와 computed 를 가진 쪽) */

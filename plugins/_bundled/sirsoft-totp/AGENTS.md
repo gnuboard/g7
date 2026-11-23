@@ -153,7 +153,7 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 | 발행 훅 | 4개 | [발행 훅](docs/extension-points.md#발행-훅) |
 | 구독 훅 | 10개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 9개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
-| 레이아웃 확장 | 1개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
+| 레이아웃 확장 | 2개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 0개 | [스케줄](docs/extension-points.md#스케줄) |
@@ -227,10 +227,10 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 18개 | `plugins/_bundled/sirsoft-totp/tests` |
-| Vitest | 19개 | `vitest.config.ts` |
+| PHPUnit | 19개 | `plugins/_bundled/sirsoft-totp/tests` |
+| Vitest | 20개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 21개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 22개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

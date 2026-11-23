@@ -189,7 +189,7 @@
             <tbody>
               <tr data-each="policy in policies?.data?.data ?? []" class="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs">{{policy.key ?? ''}}</td>
-                <td class="px-3 py-2 text-gray-700 dark:text-gray-300">$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</td>
+                <td class="px-3 py-2 text-gray-700 dark:text-gray-300"><span>$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</span><span data-if="{{policy.scope === 'custom' &amp;&amp; policy.checkpoint_registered === false}}" class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">$t:admin.identity.policies.checkpoint_missing</span></td>
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs truncate max-w-xs">{{policy.target ?? ''}}</td>
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300">{{(identityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}</td>
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300 text-right">{{policy.grace_minutes ?? 0}}</td>
@@ -281,7 +281,7 @@
               <div class="flex-1 min-w-0">
                 <div class="text-primary font-mono text-xs break-all">{{policy.key ?? ''}}</div>
                 <div class="form-hint">
-                  <span>$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</span>
+                  <span>$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</span><span data-if="{{policy.scope === 'custom' &amp;&amp; policy.checkpoint_registered === false}}" class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">$t:admin.identity.policies.checkpoint_missing</span>
                   <span class="mx-1.5 text-muted">·</span>
                   <span class="font-mono break-all">{{policy.target ?? ''}}</span>
                 </div>

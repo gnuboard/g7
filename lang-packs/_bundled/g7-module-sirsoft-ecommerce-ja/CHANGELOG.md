@@ -4,6 +4,17 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.3.1] - 2026-11-23
+
+### Added
+
+- 쇼핑몰 1.4.1 의 쿠폰 자동발급(발급 시점·생일 항목 안내)·쿠폰 발급 알림·쿠폰 탭·만료 임박 알림·새 회원 알림 4종(기본 문구 포함)·쿠폰존·내 리뷰 API 문구의 일본어 번역을 추가했습니다.
+- 쿠폰 자동발급·첫구매 쿠폰 회수 활동 로그의 작업 이름(`activity_log.action.auto_issue`·`auto_issue_revoke` — 「自動発行」·「自動発行の回収」) 일본어 번역을 추가했습니다.
+
+### Removed
+
+- 지운 관리자 시안 화면(메인 배너·할인 코드)의 번역을 뺐습니다.
+
 ## [1.3.0] - 2026-11-20
 
 ### Added

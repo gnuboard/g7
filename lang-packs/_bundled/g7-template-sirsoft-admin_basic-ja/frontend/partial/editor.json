@@ -1422,6 +1422,7 @@
       "review_settings": "レビュー設定タブ",
       "product_display": "商品陳列タブ",
       "mileage": "マイレージタブ",
+      "promotion": "クーポンタブ",
       "deposit": "デポジットタブ",
       "template_user": "ユーザーテンプレートタブ",
       "template_admin": "管理者テンプレートタブ",
@@ -1714,7 +1715,8 @@
     "memberFieldDefs": "会員項目定義",
     "memberFields": "会員項目",
     "memberNicknameRecompute": "ニックネーム重複チェックの準備状態",
-    "extensionTrustKeys": "拡張信頼鍵"
+    "extensionTrustKeys": "拡張信頼鍵",
+    "identityCheckpoints": "本人認証の拡張ポイント"
   },
   "array_group": {
     "chart_labels": "項目ラベル",

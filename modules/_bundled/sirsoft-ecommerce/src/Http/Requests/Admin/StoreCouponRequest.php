@@ -15,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponIssueMethod;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\Concerns\ValidatesCouponIssueRules;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\Concerns\ValidatesCouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\Concerns\ValidatesCouponValidityPair;
 use Modules\Sirsoft\Ecommerce\Models\Category;
@@ -25,6 +26,7 @@ use Modules\Sirsoft\Ecommerce\Models\Product;
  */
 class StoreCouponRequest extends FormRequest
 {
+    use ValidatesCouponIssueRules;
     use ValidatesCouponTargetScope;
     use ValidatesCouponValidityPair;
 
@@ -48,6 +50,7 @@ class StoreCouponRequest extends FormRequest
     {
         $this->validateTargetScopeSelection($validator);
         $this->validateValidityPair($validator);
+        $this->validateIssueRules($validator);
     }
 
     /**
@@ -82,6 +85,9 @@ class StoreCouponRequest extends FormRequest
                 $merge['is_combinable'] = $normalized;
             }
         }
+
+        // 발급방법·조건·알림 규칙 정규화 (#952)
+        $merge = array_merge($merge, $this->normalizeIssueRuleInput(true));
 
         if ($merge) {
             $this->merge($merge);
@@ -140,6 +146,9 @@ class StoreCouponRequest extends FormRequest
             'categories.*.id' => ['required', 'integer', Rule::exists(Category::class, 'id')],
             'categories.*.type' => 'required|string|in:include,exclude',
         ];
+
+        // 첫구매 발급 시점·발급 알림 (#952)
+        $rules = array_merge($rules, $this->issueRuleRules());
 
         // 훅을 통한 동적 규칙 확장
         return HookManager::applyFilters('sirsoft-ecommerce.coupon.create_validation_rules', $rules, $this);

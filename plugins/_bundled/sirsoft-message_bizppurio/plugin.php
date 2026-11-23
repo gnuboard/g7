@@ -18,6 +18,7 @@ use Plugins\Sirsoft\MessageBizppurio\Http\Middleware\BizppurioWebhookIpWhitelist
 use Plugins\Sirsoft\MessageBizppurio\Listeners\BalanceLowNotificationDataListener;
 use Plugins\Sirsoft\MessageBizppurio\Listeners\InvalidateTokenOnSettingsSaveListener;
 use Plugins\Sirsoft\MessageBizppurio\Listeners\LinkNotificationLogListener;
+use Plugins\Sirsoft\MessageBizppurio\Listeners\PurgeTemplateOnDefinitionDeleteListener;
 use Plugins\Sirsoft\MessageBizppurio\Listeners\RegisterNotificationChannelsListener;
 use Plugins\Sirsoft\MessageBizppurio\Listeners\SeedChannelTemplatesListener;
 use Plugins\Sirsoft\MessageBizppurio\Listeners\ValidateBizppurioSettingsListener;
@@ -548,6 +549,8 @@ class Plugin extends AbstractPlugin
             LinkNotificationLogListener::class,
             ValidateBizppurioSettingsListener::class,
             InvalidateTokenOnSettingsSaveListener::class,
+            // 알림 종류가 지워지면 그 종류의 문자·알림톡 템플릿 행도 지운다 (7.2.1, 이커머스 쿠폰별 발급 알림)
+            PurgeTemplateOnDefinitionDeleteListener::class,
         ];
     }
 

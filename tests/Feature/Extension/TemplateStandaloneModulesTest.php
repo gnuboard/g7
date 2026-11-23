@@ -116,14 +116,15 @@ class TemplateStandaloneModulesTest extends TestCase
 
         $this->assertSame([
             'sirsoft-board' => '>=1.2.1',
-            'sirsoft-ecommerce' => '>=1.4.0',
+            // 쿠폰존·쿠폰함·내 리뷰 화면이 쇼핑몰 1.4.1 의 API 를 쓴다(#952)
+            'sirsoft-ecommerce' => '>=1.4.1',
             'sirsoft-page' => '>=1.2.0',
         ], $this->manifest['integrations']['modules'] ?? null);
         $this->assertSame(['sirsoft-daum_postcode' => '>=1.2.0'], $this->manifest['integrations']['plugins'] ?? null);
 
-        // 7.2.0 계열 sirsoft-basic 의 코어 요구 판(7.1.x 계열 develop 판은 쇼핑몰 공용 기능(#898)이 올린 `>=7.1.5`). 단독 사용 판정 키가
-        // 없는 코어에서 「모두 켜짐」으로 보는 규칙(P5)은 그대로다.
-        $this->assertSame('>=7.2.0', $this->manifest['g7_version']);
+        // sirsoft-basic 1.4.1 의 코어 요구 판 — 마이페이지 활동 기록의 쪽 이동·기간 조회가 코어 7.2.1 API 를 쓴다(#952).
+        // 단독 사용 판정 키가 없는 코어에서 「모두 켜짐」으로 보는 규칙은 그대로다.
+        $this->assertSame('>=7.2.1', $this->manifest['g7_version']);
     }
 
     /**

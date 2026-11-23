@@ -607,6 +607,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
             ->middleware('permission:admin,core.admin.identity.logs.purge')
             ->name('api.admin.identity.logs.purge');
 
+        // 「사용자 지정」 범위의 확장 지점 목록 (7.2.1, #952) — 정책 목록과 같은 권한
+        Route::get('checkpoints', [AdminIdentityPolicyController::class, 'checkpoints'])
+            ->middleware('permission:admin,core.admin.identity.policies.read')
+            ->name('api.admin.identity.checkpoints.index');
+
         Route::prefix('policies')->group(function () {
             Route::get('/', [AdminIdentityPolicyController::class, 'index'])
                 ->middleware('permission:admin,core.admin.identity.policies.read')

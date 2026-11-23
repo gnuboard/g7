@@ -1,0 +1,16 @@
+feature: 쇼핑몰 설정 본인인증 정책 창 — 사용자 지정 범위 (#952 F)
+
+description: |
+  확장 지점이 있을 때만 사용자 지정을 고를 수 있고, 대상 칸이 확장 지점 목록이 되는지 잰다.
+
+axes:
+  case:
+    - identity_policy_modal_custom_option
+    - identity_policy_modal_checkpoint_target
+
+effects:
+  - identity_custom_scope_offered_only_with_checkpoints
+  - identity_custom_target_is_checkpoint_select
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/identity-policy-custom-checkpoint.test.ts

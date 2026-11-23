@@ -123,6 +123,9 @@ return [
         'expiry_days_max' => 3650,
         'expiry_notification_days_before_min' => 1,
         'expiry_notification_days_before_max' => 365,
+        // 쿠폰 만료 임박 알림 시점(일 전, #952)
+        'coupon_expiry_notification_days_before_min' => 1,
+        'coupon_expiry_notification_days_before_max' => 30,
 
         // 마일리지 (통화별 규칙 행)
         'point_value_min' => 0.001,

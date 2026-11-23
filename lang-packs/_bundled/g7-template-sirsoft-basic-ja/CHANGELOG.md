@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.3.1] - 2026-11-23
+
+### Added
+
+- 쿠폰존·마이페이지 쿠폰함·내 리뷰·활동 기록·보안 카드(모든 기기 로그아웃)·헤더 메뉴 「쿠폰존」 문구의 일본어 번역을 추가했습니다.
+
 ## [1.3.0] - 2026-11-20
 
 ### Added

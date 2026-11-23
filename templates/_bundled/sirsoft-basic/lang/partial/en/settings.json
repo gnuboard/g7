@@ -69,6 +69,10 @@
         "boards": {
           "label": "All boards (auto)",
           "hint": "New boards are added here automatically. At the top level it shows as many boards as \"Board menu count\" and puts the rest under \"More\"; as a sub-menu it lists every board in that dropdown."
+        },
+        "coupons": {
+          "label": "Coupon Zone",
+          "hint": "Coupons members can get (shown only when the shop module is on)"
         }
       }
     }

@@ -267,10 +267,40 @@
                     ]
                 },
                 {
-                    "comment": "재발급 (중복 다운로드)",
+                    "comment": "자동발급 쿠폰의 횟수 안내 — 회원당 한도 대신 「조건마다 1회, 생일은 해마다 1회」를 서버가 발급 키로 지킨다(#952)",
+                    "id": "auto_issue_limit_guide",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.form?.issue_method === 'auto'}}",
+                    "props": {
+                        "className": "ecommerce:flex ecommerce:items-start ecommerce:gap-2 ecommerce:p-3 ecommerce:rounded-lg ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/20 ecommerce:border ecommerce:border-blue-100 ecommerce:dark:border-blue-800"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-info",
+                                "size": "sm",
+                                "className": "ecommerce:text-blue-500 ecommerce:dark:text-blue-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "ecommerce:text-sm ecommerce:text-blue-700 ecommerce:dark:text-blue-300"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.auto_issue_limit"
+                        }
+                    ]
+                },
+                {
+                    "comment": "재발급 (중복 다운로드) — 자동발급이면 숨긴다(회원당 한도를 쓰지 않는다)",
                     "id": "field_reissue",
                     "type": "composite",
                     "name": "FormField",
+                    "if": "{{_local.form?.issue_method !== 'auto'}}",
                     "props": {
                         "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.reissue",
                         "error": "{{_local.errors?.per_user_limit?.[0] ?? ''}}"

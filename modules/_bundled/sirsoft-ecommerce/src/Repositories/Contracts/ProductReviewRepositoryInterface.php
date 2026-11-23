@@ -206,4 +206,15 @@ interface ProductReviewRepositoryInterface
      * @return Collection 리뷰 컬렉션 (images 관계 로드됨, 휴지통 포함)
      */
     public function getWithTrashedByProductId(int $productId): Collection;
+
+    /**
+     * 회원이 쓴 리뷰를 최신순으로 페이지 조회합니다. (마이페이지 내 리뷰, #952)
+     *
+     * 삭제된 리뷰는 빠진다(소프트 삭제 기본 범위). 상품·이미지·사용 주문 옵션을 함께 읽는다.
+     *
+     * @param  int  $userId  회원 ID
+     * @param  int  $perPage  페이지당 항목 수
+     * @return LengthAwarePaginator 리뷰 페이지네이터
+     */
+    public function paginateByUser(int $userId, int $perPage = 10): LengthAwarePaginator;
 }

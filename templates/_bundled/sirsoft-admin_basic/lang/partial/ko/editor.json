@@ -1496,6 +1496,7 @@
       "review_settings": "리뷰 설정 탭",
       "product_display": "상품 진열 탭",
       "mileage": "마일리지 탭",
+      "promotion": "쿠폰 탭",
       "deposit": "예치금 탭",
       "template_user": "사용자 템플릿 탭",
       "template_admin": "관리자 템플릿 탭",
@@ -1792,6 +1793,7 @@
     "memberFieldDefs": "회원 항목 정의",
     "memberFields": "회원 항목",
     "memberNicknameRecompute": "닉네임 중복 검사 준비 상태",
-    "extensionTrustKeys": "확장 신뢰 키"
+    "extensionTrustKeys": "확장 신뢰 키",
+    "identityCheckpoints": "본인인증 확장 지점"
   }
 }

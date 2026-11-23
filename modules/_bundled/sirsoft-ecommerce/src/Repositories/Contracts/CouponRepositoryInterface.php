@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Sirsoft\Ecommerce\Enums\CouponIssueCondition;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 
 /**
@@ -160,4 +161,24 @@ interface CouponRepositoryInterface
      * @return int 삭제된 연결 행 수
      */
     public function detachCategoryFromAll(int $categoryId): int;
+
+    /**
+     * 지금 자동발급할 수 있는 쿠폰 ID 목록을 반환합니다. (#952)
+     *
+     * 발급방법 자동 + 그 조건 + 발급중 + 발급기간 안 + 수량 남음 + 기간형 유효기간(valid_to) 미경과. 오래된 순(ID 순)이다.
+     *
+     * @param  CouponIssueCondition  $condition  발급 조건 (signup·first_purchase·birthday)
+     * @return array<int, int> 쿠폰 ID 목록
+     */
+    public function getAutoIssueCouponIds(CouponIssueCondition $condition): array;
+
+    /**
+     * 발급 알림을 켠(또는 알림 종류가 이미 만들어진) 삭제되지 않은 쿠폰을 반환합니다. (#952)
+     *
+     * 모듈의 알림 정의 선언(`getNotificationDefinitions()`)이 쿠폰별 알림 종류를 함께 선언할 때 쓴다.
+     *
+     * @param  array<int, int>  $alsoIncludeIds  알림을 꺼도 함께 돌려줄 쿠폰 ID (정의가 이미 있는 쿠폰)
+     * @return Collection<int, Coupon> 쿠폰 목록
+     */
+    public function getNotificationCoupons(array $alsoIncludeIds = []): Collection;
 }

@@ -17,163 +17,29 @@
             "id": "idp_edit_header",
             "type": "basic",
             "name": "Div",
-            "props": {
-                "className": "sso:flex sso:flex-wrap sso:items-center sso:justify-between sso:gap-2"
-            },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "sso:flex sso:items-center sso:gap-3 sso:min-w-0"
+                        "className": "sso:min-w-0"
                     },
                     "children": [
                         {
-                            "id": "idp_back_button",
                             "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "목록 보기로 돌아간다 — 저장하지 않은 편집은 버린다",
-                                    "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/admin/plugins/sirsoft-sso/settings",
-                                        "query": {
-                                            "tab": "idps"
-                                        }
-                                    }
-                                }
-                            ],
+                            "name": "H2",
                             "props": {
-                                "type": "button",
-                                "className": "sso-btn-icon",
-                                "title": "$t:sirsoft-sso.admin.settings.idp.back",
-                                "aria-label": "$t:sirsoft-sso.admin.settings.idp.back"
+                                "className": "sso:text-lg sso:font-semibold sso:text-gray-900 sso:dark:text-white sso:truncate"
                             },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "props": {
-                                        "name": "fa-solid fa-arrow-left",
-                                        "className": "sso:text-lg"
-                                    }
-                                }
-                            ]
+                            "text": "{{_local.idpForm?.display_label ?? ''}}"
                         },
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "P",
                             "props": {
-                                "className": "sso:min-w-0"
+                                "className": "sso:text-xs sso-text-muted"
                             },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "H2",
-                                    "props": {
-                                        "className": "sso:text-lg sso:font-semibold sso:text-gray-900 sso:dark:text-white sso:truncate"
-                                    },
-                                    "text": "{{_local.idpForm?.display_label ?? ''}}"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "P",
-                                    "props": {
-                                        "className": "sso:text-xs sso-text-muted"
-                                    },
-                                    "text": "{{(_local.idpForm?.key ?? '') + ' · ' + (_local.idpForm?.protocol_label ?? '')}}"
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "sso:flex sso:flex-wrap sso:gap-2"
-                    },
-                    "children": [
-                        {
-                            "id": "idp_save_button",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "actionRef": "saveIdp"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "sso-btn sso-btn-primary sso:text-sm",
-                                "disabled": "{{!_computed.canUpdate || _local.isSavingIdp}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.save"
-                                }
-                            ]
-                        },
-                        {
-                            "id": "idp_delete_button",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "연결 회원이 없는 IdP 만 지울 수 있다(서버도 409 로 막는다)",
-                                    "type": "click",
-                                    "handler": "apiCall",
-                                    "target": "/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "DELETE"
-                                    },
-                                    "confirm": "$t:sirsoft-sso.admin.settings.idp.delete_confirm",
-                                    "onSuccess": [
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:sirsoft-sso.admin.settings.idp.deleted"
-                                            }
-                                        },
-                                        {
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/admin/plugins/sirsoft-sso/settings",
-                                                "query": {
-                                                    "tab": "idps"
-                                                }
-                                            }
-                                        }
-                                    ],
-                                    "onError": {
-                                        "handler": "toast",
-                                        "params": {
-                                            "type": "error",
-                                            "message": "{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"
-                                        }
-                                    }
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "sso-btn sso-btn-danger sso:text-sm",
-                                "disabled": "{{!_computed.canUpdate || (_local.idpForm?.accounts_total ?? 0) > 0}}",
-                                "title": "$t:sirsoft-sso.admin.settings.idp.delete_hint"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.delete"
-                                }
-                            ]
+                            "text": "{{(_local.idpForm?.key ?? '') + ' · ' + (_local.idpForm?.protocol_label ?? '')}}"
                         }
                     ]
                 }
@@ -3512,6 +3378,125 @@
                                     ]
                                 }
                             ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "목록·삭제·저장은 화면 아래 고정 줄 — 다른 설정·등록 화면과 같은 자리다",
+            "id": "idp_footer_buttons",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "sso-sticky-footer-buttons"
+            },
+            "children": [
+                {
+                    "id": "idp_list_button",
+                    "type": "basic",
+                    "name": "A",
+                    "actions": [
+                        {
+                            "comment": "IdP 목록으로 돌아간다 — 저장하지 않은 편집은 버린다",
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/admin/plugins/sirsoft-sso/settings",
+                                "query": {
+                                    "tab": "idps"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "href": "/admin/plugins/sirsoft-sso/settings?tab=idps",
+                        "className": "sso-btn sso-btn-secondary sso:text-sm"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.list"
+                        }
+                    ]
+                },
+                {
+                    "id": "idp_delete_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "연결 회원이 없는 IdP 만 지울 수 있다(서버도 409 로 막는다)",
+                            "type": "click",
+                            "handler": "apiCall",
+                            "target": "/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}",
+                            "auth_required": true,
+                            "params": {
+                                "method": "DELETE"
+                            },
+                            "confirm": "$t:sirsoft-sso.admin.settings.idp.delete_confirm",
+                            "onSuccess": [
+                                {
+                                    "handler": "toast",
+                                    "params": {
+                                        "type": "success",
+                                        "message": "$t:sirsoft-sso.admin.settings.idp.deleted"
+                                    }
+                                },
+                                {
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/plugins/sirsoft-sso/settings",
+                                        "query": {
+                                            "tab": "idps"
+                                        }
+                                    }
+                                }
+                            ],
+                            "onError": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "sso-btn sso-btn-danger sso:text-sm",
+                        "disabled": "{{!_computed.canUpdate || (_local.idpForm?.accounts_total ?? 0) > 0}}",
+                        "title": "$t:sirsoft-sso.admin.settings.idp.delete_hint"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.delete"
+                        }
+                    ]
+                },
+                {
+                    "id": "idp_save_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "actionRef": "saveIdp"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "sso-btn sso-btn-primary sso:text-sm",
+                        "disabled": "{{!_computed.canUpdate || _local.isSavingIdp}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.save"
                         }
                     ]
                 }

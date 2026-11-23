@@ -18,7 +18,10 @@
     "notifications": "通知",
     "inquiries": "商品問い合わせ",
     "mileage": "マイレージ",
-    "claims": "キャンセル·返品·交換"
+    "claims": "キャンセル·返品·交換",
+    "coupons": "クーポン",
+    "reviews": "レビュー",
+    "activity": "アクティビティ"
   },
   "currency_settings": {
     "save_button": "保存",
@@ -538,5 +541,71 @@
     "confirm_checkbox": "上記の内容を確認し、退会に同意します。",
     "confirm_button": "退会する",
     "success": "会員退会が完了しました。"
+  },
+  "coupons": {
+    "tabs": {
+      "available": "使用可能",
+      "used": "使用済み",
+      "expired": "期限切れ"
+    },
+    "total": "合計{{count}}枚",
+    "deleted_coupon": "削除されたクーポン",
+    "min_order": "最低注文 {{amount}}",
+    "no_min_order": "なし",
+    "scope_all": "全商品",
+    "scope_products": "特定商品: {{names}}",
+    "scope_categories": "特定カテゴリ: {{names}}",
+    "and_more": "ほか{{count}}件",
+    "combinable": "併用可能",
+    "expires_until": "有効期限 {{date}} まで",
+    "no_expiry": "期限なし",
+    "used_info": "使用日 {{date}} · 注文番号 {{order}}",
+    "dday_today": "本日まで",
+    "empty": {
+      "available": "使用できるクーポンはありません",
+      "used": "使用したクーポンはありません",
+      "expired": "期限切れのクーポンはありません"
+    },
+    "go_coupon_zone": "クーポンゾーンへ"
+  },
+  "reviews": {
+    "total": "合計{{count}}件",
+    "deleted_product": "販売終了した商品",
+    "rating_label": "評価 {{rating}}点",
+    "delete": "削除",
+    "seller_reply": "販売者の返信",
+    "empty": "書いたレビューはありません",
+    "delete_modal": {
+      "title": "レビューの削除",
+      "message": "「{{product}}」のレビューを削除しますか?",
+      "warning": "削除すると添付した写真も一緒に削除され、元に戻せません。",
+      "success": "レビューを削除しました。",
+      "failed": "レビューを削除できませんでした。"
+    }
+  },
+  "activity": {
+    "date_from": "開始日",
+    "date_to": "終了日",
+    "search": "照会",
+    "total": "合計{{count}}件",
+    "table": {
+      "date": "日時",
+      "action": "アクティビティ",
+      "description": "内容"
+    },
+    "empty": "アクティビティの記録はありません"
+  },
+  "security": {
+    "title": "セキュリティ",
+    "logout_all": {
+      "label": "すべての端末からログアウト",
+      "description": "この端末を含め、ログインしているすべての端末からログアウトします。",
+      "button": "すべての端末からログアウト",
+      "modal_title": "すべての端末からログアウト",
+      "confirm_message": "この端末を含むすべての端末からログアウトします。続けますか?",
+      "confirm_button": "ログアウト",
+      "success": "すべての端末からログアウトしました。",
+      "failed": "ログアウトできませんでした。しばらくしてからもう一度お試しください。"
+    }
   }
 }

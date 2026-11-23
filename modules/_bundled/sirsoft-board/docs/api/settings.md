@@ -43,7 +43,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | basic_defaults | object | `{"type":"basic","per_page":20,"per_page_mobile":15,"order…` | 게시판 생성 시 적용되는 기본 설정 카테고리. 게시판 타입, 페이지당 글 수(PC/모바일), 정렬 기준/방향, 댓글·답글 사용 여부와 깊이, 답글 삭제 방식(reply_delete_policy: block/cascade), 비밀 답변 열람 범위(secret_reply_visibility: thread_path/descendants_only/per_post, 기본 thread_path), 제목·내용·댓글 길이 제한, 파일 업로드 허용/용량/개수/확장자, 새 글 표시 시간, 게시판 기본 권한(default_board_permissions) 등을 포함합니다. |
-| report_policy | object | `{"auto_hide_threshold":5,"auto_hide_target":"both","daily…` | 신고 정책 카테고리. 자동 숨김 임계치(auto_hide_threshold)와 대상(auto_hide_target: post/comment/both), 사용자별 일일 신고 한도, 신고 거부 누적 제한(횟수/기간), 관리자·작성자 신고 알림 발송 여부와 채널을 포함합니다. |
+| report_policy | object | `{"auto_hide_threshold":5,"auto_hide_target":"both","daily…` | 신고 정책 카테고리. 자동 숨김 임계치(auto_hide_threshold)와 대상(auto_hide_target: post/comment/both), 사용자별 일일 신고 한도, 신고 거부 누적 제한(횟수/기간), 관리자·작성자 신고 알림 발송 여부를 포함합니다(발송 수단은 알림 템플릿이 정한다). |
 | spam_security | object | `{"post_cooldown_seconds":0,"comment_cooldown_seconds":0,"…` | 스팸·보안 카테고리. 글·댓글·신고 작성 사이의 도배 방지 쿨다운 시간(초)과 조회수 캐시 TTL을 포함합니다. |
 | display | object | `{"date_display_format":"standard"}` | 표시 설정 카테고리. 날짜 표시 형식(date_display_format: standard 절대 표기 / relative 상대 표기)을 포함합니다. |
 | seo | object | `{"meta_boards_title":"{site_name}","meta_boards_descripti…` | SEO 메타 태그 설정 카테고리. 게시판 목록/개별 게시판/글 상세 페이지의 메타 제목·설명 템플릿과 각 페이지의 SEO 생성 활성화 여부(seo_boards, seo_board, seo_post_detail)를 포함합니다. |
@@ -253,15 +253,7 @@ HTTP/1.1 200
             "rejection_limit_days": 30,
             "notify_admin_on_report": true,
             "notify_admin_on_report_scope": "per_case",
-            "notify_admin_on_report_channels": [
-                "mail",
-                "database"
-            ],
-            "notify_author_on_report_action": true,
-            "notify_author_on_report_action_channels": [
-                "mail",
-                "database"
-            ]
+            "notify_author_on_report_action": true
         },
         "spam_security": {
             "post_cooldown_seconds": 0,
@@ -410,9 +402,7 @@ HTTP/1.1 200
 | report_policy.rejection_limit_days | body | integer | 아니오 | min 1, max 365 | 신고 기각 한도 산정 기간(일) |
 | report_policy.notify_admin_on_report | body | boolean | 아니오 | — | 신고 접수 시 관리자 알림 발송 여부 |
 | report_policy.notify_admin_on_report_scope | body | string | 아니오 | `per_case`, `per_report` | 관리자 신고 알림 발송 단위 (신고 대상 건별 / 개별 신고마다) |
-| report_policy.notify_admin_on_report_channels | body | array | 아니오 | — | 관리자 신고 알림 발송 채널 목록 |
 | report_policy.notify_author_on_report_action | body | boolean | 아니오 | — | 신고 처리 결과를 작성자에게 알릴지 여부 |
-| report_policy.notify_author_on_report_action_channels | body | array | 아니오 | — | 작성자 신고 처리 알림 발송 채널 목록 |
 | report_permissions | body | array | 아니오 | — | 신고 관리 권한 역할. `view_roles`(조회 역할)와 `manage_roles`(관리 역할)의 역할 식별자 배열이며, 포함 시 설정 저장과 별개로 DB 권한 역할이 동기화됩니다. |
 | report_permissions.view_roles | body | array | 아니오 | min 1 | 신고 조회 권한 역할 목록 (`report_permissions` 포함 시 필수, 최소 1개) |
 | report_permissions.manage_roles | body | array | 아니오 | min 1 | 신고 처리 권한 역할 목록 (`report_permissions` 포함 시 필수, 최소 1개) |
@@ -508,13 +498,7 @@ Content-Type: application/json
     "report_policy.rejection_limit_days": 1,
     "report_policy.notify_admin_on_report": true,
     "report_policy.notify_admin_on_report_scope": "per_case",
-    "report_policy.notify_admin_on_report_channels": [
-        "예시값"
-    ],
     "report_policy.notify_author_on_report_action": true,
-    "report_policy.notify_author_on_report_action_channels": [
-        "예시값"
-    ],
     "report_permissions": [
         "예시값"
     ],
@@ -557,7 +541,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | basic_defaults | object | `{"type":"basic","per_page":20,"per_page_mobile":15,"order…` | 저장 후 갱신된 기본 설정 카테고리. 게시판 타입, 페이지당 글 수(PC/모바일), 정렬 기준/방향, 댓글·답글 사용 여부와 깊이, 답글 삭제 방식(reply_delete_policy: block/cascade), 비밀 답변 열람 범위(secret_reply_visibility: thread_path/descendants_only/per_post, 기본 thread_path), 제목·내용·댓글 길이 제한, 파일 업로드 허용/용량/개수/확장자, 새 글 표시 시간, 게시판 기본 권한(default_board_permissions) 등을 포함합니다. |
-| report_policy | object | `{"auto_hide_threshold":5,"auto_hide_target":"both","daily…` | 저장 후 갱신된 신고 정책 카테고리. 자동 숨김 임계치(auto_hide_threshold)와 대상(auto_hide_target: post/comment/both), 사용자별 일일 신고 한도, 신고 거부 누적 제한(횟수/기간), 관리자·작성자 신고 알림 발송 여부와 채널을 포함합니다. |
+| report_policy | object | `{"auto_hide_threshold":5,"auto_hide_target":"both","daily…` | 저장 후 갱신된 신고 정책 카테고리. 자동 숨김 임계치(auto_hide_threshold)와 대상(auto_hide_target: post/comment/both), 사용자별 일일 신고 한도, 신고 거부 누적 제한(횟수/기간), 관리자·작성자 신고 알림 발송 여부를 포함합니다(발송 수단은 알림 템플릿이 정한다). |
 | spam_security | object | `{"post_cooldown_seconds":0,"comment_cooldown_seconds":0,"…` | 저장 후 갱신된 스팸·보안 카테고리. 글·댓글·신고 작성 사이의 도배 방지 쿨다운 시간(초)과 조회수 캐시 TTL을 포함합니다. |
 | display | object | `{"date_display_format":"standard"}` | 저장 후 갱신된 표시 설정 카테고리. 날짜 표시 형식(date_display_format: standard 절대 표기 / relative 상대 표기)을 포함합니다. |
 | seo | object | `{"meta_boards_title":"{site_name}","meta_boards_descripti…` | 저장 후 갱신된 SEO 메타 태그 설정 카테고리. 게시판 목록/개별 게시판/글 상세 페이지의 메타 제목·설명 템플릿과 각 페이지의 SEO 생성 활성화 여부(seo_boards, seo_board, seo_post_detail)를 포함합니다. |
@@ -765,15 +749,7 @@ HTTP/1.1 200
             "rejection_limit_days": 30,
             "notify_admin_on_report": true,
             "notify_admin_on_report_scope": "per_case",
-            "notify_admin_on_report_channels": [
-                "mail",
-                "database"
-            ],
-            "notify_author_on_report_action": true,
-            "notify_author_on_report_action_channels": [
-                "mail",
-                "database"
-            ]
+            "notify_author_on_report_action": true
         },
         "spam_security": {
             "post_cooldown_seconds": 0,

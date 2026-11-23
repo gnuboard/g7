@@ -171,6 +171,32 @@
       <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700 break-words">{{memberFieldGroup.title}}</h3>
       <include src="partials/member/_member_fields_view.g7.html"/>
     </div>
+    <!-- 보안 카드 (#952) — 모든 기기에서 로그아웃. 늘 보인다. 2단계 인증 플러그인(TOTP)이 이 카드 안에 등록·해제 칸을 끼워 넣는 자리이기도 하다(data-ref 앵커). -->
+    <div data-ref="profile_security_card" data-if="{{user.data?.status !== 'withdrawn'}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <responsive on="portable" class-merge="p-4"/>
+      <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.security.title</h3>
+      <div data-ref="profile_security_logout_all" class="flex flex-wrap items-center justify-between gap-3">
+        <div class="min-w-0">
+          <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.security.logout_all.label</span>
+          <span class="block text-xs text-muted mt-0.5">$t:mypage.security.logout_all.description</span>
+        </div>
+        <!-- [모든 기기에서 로그아웃] — 바로 로그아웃하지 않고 확인 창부터 연다(이 기기 토큰까지 지워지므로) -->
+        <button data-ref="logout_all_devices_button" type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <!-- 확인 창 상태(처리 중)는 창 고유 전역 이름 공간에 두고 열 때마다 비운다(탈퇴 창과 같은 방식) -->
+            <set-state target="global" :logoutAllDevicesModal="null"/>
+            <set-state target="global">
+              <field name="logoutAllDevicesModal">
+                <field name="isProcessing" :value="false"/>
+              </field>
+            </set-state>
+            <open-modal target="logoutAllDevicesModal"/>
+          </on>
+          <icon name="right-from-bracket" size="sm"/>
+          <span>$t:mypage.security.logout_all.button</span>
+        </button>
+      </div>
+    </div>
     <!-- 회원 탈퇴 섹션 - 탈퇴 상태가 아닌 경우만 표시 -->
     <div data-if="{{user.data?.status !== 'withdrawn'}}" class="bg-red-50 dark:bg-gray-800 rounded-lg shadow-sm border border-red-200 dark:border-red-900/50 p-6">
       <responsive on="portable" class-merge="p-4"/>

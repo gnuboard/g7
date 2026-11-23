@@ -12,6 +12,19 @@
   "sampleData": {
     "comment": "실제 ID(admin): boards/posts/post/reports/report_detail + 사용자 게시판 페이지 byEndpointPattern(api/modules/sirsoft-board/boards/*). 계획서 추정(board_activity/user_comments 등 미존재) 정정.",
     "byDataSourceId": {
+      "identityCheckpoints": {
+        "data": {
+          "checkpoints": [
+            {
+              "key": "vendor-sample.withdraw",
+              "name": "회원 탈퇴",
+              "description": "탈퇴 직전 본인인증",
+              "source_type": "module",
+              "source_identifier": "vendor-sample"
+            }
+          ]
+        }
+      },
       "reactionTypes": {
         "data": {
           "reaction_types": [

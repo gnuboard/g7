@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Marketing;
 
 use App\Extension\AbstractPlugin;
 use Plugins\Sirsoft\Marketing\Fields\MarketingConsentFields;
+use Plugins\Sirsoft\Marketing\Listeners\ConsentQueryListener;
 use Plugins\Sirsoft\Marketing\Listeners\MarketingConsentListener;
 
 class Plugin extends AbstractPlugin
@@ -69,6 +70,21 @@ class Plugin extends AbstractPlugin
                     'source' => 'string - 변경 경로 (register, admin, profile 등)',
                 ],
                 'return' => 'array - 필터링된 동의 데이터',
+            ],
+            [
+                'name' => 'sirsoft-marketing.consent.is_consented',
+                'type' => 'filter',
+                'description' => [
+                    'ko' => '회원이 동의 항목에 동의했는지 묻는 필터 훅 — 다른 확장이 이 플러그인을 직접 참조하지 않고 동의 여부를 확인할 때 쓴다',
+                    'en' => 'Filter hook that answers whether a member consented to a consent item — lets other extensions check consent without referencing this plugin',
+                    'ja' => '会員が同意項目に同意したかを問い合わせるフィルターフック — 他の拡張がこのプラグインを直接参照せずに同意状況を確認するときに使う',
+                ],
+                'parameters' => [
+                    'default' => 'bool|null - 기본 답 (플러그인이 없으면 이 값이 그대로 돌아온다, 보통 null)',
+                    'user_id' => 'int - 회원 ID',
+                    'consent_key' => 'string - 동의 키 (marketing_consent, email_subscription 등)',
+                ],
+                'return' => 'bool|null - 동의 여부',
             ],
         ];
     }
@@ -223,6 +239,7 @@ class Plugin extends AbstractPlugin
     {
         return [
             MarketingConsentListener::class,
+            ConsentQueryListener::class,
         ];
     }
 }

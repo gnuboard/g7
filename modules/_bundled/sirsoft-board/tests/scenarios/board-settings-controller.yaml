@@ -20,7 +20,7 @@ axes:
     - admin_can_save_notification_channels
     - notification_channels_included_in_settings_response
     - report_notification_enable_flags_are_forced_true_on_save
-    - save_rejects_invalid_notification_channel
+    - removed_report_channel_keys_are_not_saved
     - store_ignores_invalid_categories
     - unauthenticated_user_cannot_save_settings
     - admin_can_bulk_apply_settings_to_all_boards
@@ -58,7 +58,7 @@ effects:
   - admin_can_save_notification_channels
   - notification_channels_included_in_settings_response
   - report_notification_enable_flags_are_forced_true_on_save
-  - save_rejects_invalid_notification_channel
+  - removed_report_channel_keys_are_not_saved
   - store_ignores_invalid_categories
   - unauthenticated_user_cannot_save_settings
   - admin_can_bulk_apply_settings_to_all_boards

@@ -20,7 +20,8 @@
     "identity_policies": "본인인증 정책",
     "mileage": "마일리지",
     "privacy_retention": "개인정보 보유기간",
-    "schedules": "스케줄"
+    "schedules": "스케줄",
+    "promotion": "쿠폰"
   },
   "save_success": "설정이 저장되었습니다.",
   "save_error": "설정 저장에 실패했습니다.",
@@ -927,5 +928,22 @@
     "effective": "지금 적용: {{kind}}",
     "effective_with_source": "지금 적용: {{kind}} ({{source}} 설정 기준)",
     "requires_nickname_hint": "닉네임이 필요한 종류입니다. 저장하면 회원 항목의 닉네임이 사용, 필수로 고정될 수 있습니다."
+  },
+  "promotion": {
+    "birthday": {
+      "title": "생일 쿠폰",
+      "field_label": "생일로 쓸 회원 항목",
+      "none": "사용 안 함",
+      "field_hint": "날짜 유형 회원 항목만 고를 수 있습니다. 지정하지 않으면 생일 쿠폰이 발급되지 않습니다.",
+      "no_candidates": "날짜 유형 회원 항목이 없습니다. 회원 항목에 날짜 유형 항목을 먼저 추가하세요.",
+      "go_member_fields": "회원 항목 설정 열기"
+    },
+    "expiry": {
+      "title": "쿠폰 만료 임박 알림",
+      "enabled": "만료 임박 알림 사용",
+      "enabled_hint": "보유 쿠폰의 사용 기한이 다가오면 회원에게 알립니다(발급 건마다 한 번).",
+      "days_before": "알림 시점",
+      "template_hint": "알림 문구와 채널은 알림 탭의 「쿠폰 만료 임박」에서 고칩니다."
+    }
   }
 }

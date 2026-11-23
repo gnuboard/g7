@@ -1,0 +1,119 @@
+feature: 쿠폰 자동발급 — 가입·첫구매·생일, 발급 한도 공유, 만료 임박 알림, 폼·설정 탭 (#952 A)
+
+description: |
+  가입(활성 가입·활성화 시점)·첫구매(발급 시점 5종·회수·재발급)·생일(사이트 날짜·2/29) 자동발급과 직접발급 한도 공유,
+  만료 임박 알림 명령, 발급 규칙 검증, 쇼핑몰 설정 쿠폰 탭, 마이그레이션·1.4.1 업그레이드, 관리자 폼과 가입 브라우저 흐름을 잰다.
+
+axes:
+  case:
+    - register_active
+    - register_then_activate_pending_verification
+    - admin_create
+    - not_issuable
+    - multiple_coupons
+    - filter_rejects
+    - direct_then_auto
+    - rejoin
+    - each
+    - earlier_order_or_guest
+    - revoke_and_reissue
+    - used_or_confirmed
+    - hook_chain
+    - enum_sets
+    - issue_birthday_coupons_today
+    - issue_birthday_coupons_feb29
+    - issue_birthday_coupons_not_configured
+    - issue_birthday_coupons_utc_boundary
+    - schedules
+    - notify_expiring_coupons
+    - method_condition_pair
+    - first_purchase_trigger
+    - partial_update_inherits
+    - normalize
+    - notify_fields
+    - promotion_candidates
+    - promotion_save
+    - auto_issue_columns_round_trip
+    - auto_issue_columns_constraints
+    - auto_issue_columns_v1_safe
+    - 1_4_1_remove_keys
+    - 1_4_1_no_file
+    - admin_coupon_form_condition_fields
+    - admin_coupon_form_first_purchase_trigger
+    - admin_coupon_form_condition_change_resets_trigger
+    - admin_coupon_form_birthday_warning
+    - admin_coupon_form_auto_limit
+    - admin_coupon_form_notification_section
+    - admin_coupon_form_notification_card
+    - admin_coupon_form_channel_toggle
+    - admin_ecommerce_settings_promotion
+    - admin_ecommerce_settings_promotion_candidates
+    - admin_ecommerce_settings_promotion_no_candidates
+    - admin_ecommerce_settings_promotion_expiry
+    - admin_coupon_form_browser
+    - register_browser
+    - activity_log_old_values
+    - unique_violation_absorbed
+    - per_user_limit_ignored
+    - exhausted_register_http
+    - issue_failure_register_http
+    - pg_payment_complete_hook
+    - purchase_confirmed_hook
+    - two_orders_at_once
+    - revoke_on_return
+    - partial_cancel_cumulative_revoke
+    - issue_birthday_coupons_column_field
+    - issue_birthday_coupons_withdrawn
+    - notify_text_not_from_coupon_request
+
+effects:
+  - signup_coupon_issued
+  - signup_coupon_issued_on_activation
+  - signup_coupon_not_issued
+  - issue_limit_shared
+  - first_purchase_issued_at_trigger
+  - first_purchase_not_issued
+  - first_purchase_revoked_and_reissued
+  - first_purchase_not_revoked
+  - trigger_status_sets
+  - birthday_coupon_issued_once_a_year
+  - birthday_feb29_on_feb28_in_common_years
+  - birthday_coupon_not_issued
+  - birthday_coupon_uses_site_timezone
+  - coupon_commands_scheduled
+  - coupon_expiry_notified_once
+  - coupon_issue_rule_rejected
+  - coupon_first_purchase_trigger_defaulted
+  - coupon_issue_rule_inherits_stored
+  - coupon_issue_rule_normalized
+  - coupon_notify_fields_saved
+  - promotion_birthday_candidates
+  - promotion_settings_validated
+  - migration_round_trip_idempotent
+  - auto_issue_key_unique
+  - unused_shipping_keys_removed
+  - coupon_form_auto_condition_fields
+  - coupon_form_first_purchase_trigger
+  - coupon_form_birthday_field_warning
+  - coupon_form_auto_limit_hidden
+  - coupon_form_notification_section
+  - coupon_form_notification_card_after_save
+  - coupon_form_notification_channel_toggle
+  - promotion_tab_registered
+  - promotion_birthday_no_candidates_hint
+  - promotion_expiry_notification_fields
+  - coupon_activity_log_keeps_hidden_old_values
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Coupon/AutoIssue/SignupCouponIssueTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Coupon/AutoIssue/FirstPurchaseCouponIssueTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Console/IssueBirthdayCouponsCommandTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Console/NotifyExpiringCouponsCommandTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/CouponAutoIssueValidationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Settings/PromotionSettingsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Migrations/CouponAutoIssueColumnsMigrationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Upgrade/Upgrade141Test.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/couponAutoIssueForm.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminSettingsPromotionTab.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/coupon-auto-issue-form.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/signup-coupon-issued.spec.ts

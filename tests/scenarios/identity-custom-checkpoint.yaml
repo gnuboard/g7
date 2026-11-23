@@ -1,0 +1,20 @@
+feature: 본인인증 사용자 지정 체크포인트 — 선언 수집·목록 API·정책 검증·강제 (7.2.1, #952 F)
+
+description: |
+  활성 확장의 getIdentityCheckpoints() 선언과 필터를 모으고, 사용자 지정 정책 대상 검증과 enforceCheckpoint 를 잰다.
+
+axes:
+  case:
+    - identity_checkpoint_collect
+    - identity_checkpoint_list_api
+    - identity_checkpoint_policy_validation
+    - identity_checkpoint_enforce
+
+effects:
+  - identity_checkpoints_collected
+  - identity_checkpoints_listed
+  - identity_custom_policy_target_validated
+  - identity_checkpoint_enforced
+
+test_files:
+  - tests/Feature/Identity/IdentityCheckpointTest.php

@@ -54,6 +54,8 @@ class ScheduleDeclarationTest extends ModuleTestCase
             'earn-mileage' => ['sirsoft-ecommerce:earn-mileage', '0 * * * *', null, ['module_setting:mileage.enabled']],
             'expire-mileage' => ['sirsoft-ecommerce:expire-mileage', '0 0 * * *', null, ['module_setting:mileage.expiry_enabled']],
             'notify-expiring-mileage' => ['sirsoft-ecommerce:notify-expiring-mileage', '0 0 * * *', null, ['module_setting:mileage.expiry_notification_enabled']],
+            'issue-birthday-coupons' => ['sirsoft-ecommerce:issue-birthday-coupons', '5 0 * * *', null, ['module_setting:promotion.birthday_field_key']],
+            'notify-expiring-coupons' => ['sirsoft-ecommerce:notify-expiring-coupons', '10 0 * * *', null, ['module_setting:promotion.coupon_expiry_notification_enabled']],
             'reconcile-mileage-balance' => ['sirsoft-ecommerce:reconcile-mileage-balance', '0 0 * * *', null, ['module_setting:mileage.enabled']],
             'aggregate-stats' => ['sirsoft-ecommerce:aggregate-stats', '0 * * * *', null, []],
             'prune-pending-claim-images' => ['sirsoft-ecommerce:prune-pending-claim-images', '0 0 * * *', null, []],

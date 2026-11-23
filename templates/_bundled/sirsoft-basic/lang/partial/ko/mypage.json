@@ -18,7 +18,10 @@
         "notifications": "알림",
         "inquiries": "상품 문의",
         "mileage": "마일리지",
-        "claims": "취소·반품·교환"
+        "claims": "취소·반품·교환",
+        "coupons": "쿠폰",
+        "reviews": "리뷰",
+        "activity": "활동기록"
     },
     "currency_settings": {
         "save_button": "저장",
@@ -538,5 +541,71 @@
         "confirm_checkbox": "위 내용을 확인하였으며, 탈퇴에 동의합니다.",
         "confirm_button": "탈퇴하기",
         "success": "회원 탈퇴가 완료되었습니다."
+    },
+    "coupons": {
+        "tabs": {
+            "available": "사용가능",
+            "used": "사용완료",
+            "expired": "만료"
+        },
+        "total": "총 {{count}}장",
+        "deleted_coupon": "삭제된 쿠폰",
+        "min_order": "최소주문 {{amount}}",
+        "no_min_order": "없음",
+        "scope_all": "전체 상품",
+        "scope_products": "특정 상품: {{names}}",
+        "scope_categories": "특정 분류: {{names}}",
+        "and_more": "외 {{count}}",
+        "combinable": "중복사용 가능",
+        "expires_until": "사용기한 {{date}} 까지",
+        "no_expiry": "기한 없음",
+        "used_info": "사용일 {{date}} · 주문번호 {{order}}",
+        "dday_today": "오늘까지",
+        "empty": {
+            "available": "사용할 수 있는 쿠폰이 없습니다",
+            "used": "사용한 쿠폰이 없습니다",
+            "expired": "만료된 쿠폰이 없습니다"
+        },
+        "go_coupon_zone": "쿠폰존 가기"
+    },
+    "reviews": {
+        "total": "총 {{count}}개",
+        "deleted_product": "판매가 끝난 상품",
+        "rating_label": "별점 {{rating}}점",
+        "delete": "삭제",
+        "seller_reply": "판매자 답글",
+        "empty": "작성한 리뷰가 없습니다",
+        "delete_modal": {
+            "title": "리뷰 삭제",
+            "message": "「{{product}}」 리뷰를 삭제할까요?",
+            "warning": "삭제하면 첨부한 사진도 함께 지워지고 되돌릴 수 없습니다.",
+            "success": "리뷰를 삭제했습니다.",
+            "failed": "리뷰를 삭제하지 못했습니다."
+        }
+    },
+    "activity": {
+        "date_from": "시작일",
+        "date_to": "종료일",
+        "search": "조회",
+        "total": "총 {{count}}건",
+        "table": {
+            "date": "일시",
+            "action": "활동",
+            "description": "내용"
+        },
+        "empty": "활동 기록이 없습니다"
+    },
+    "security": {
+        "title": "보안",
+        "logout_all": {
+            "label": "모든 기기에서 로그아웃",
+            "description": "이 기기를 포함해 로그인된 모든 기기에서 로그아웃합니다.",
+            "button": "모든 기기에서 로그아웃",
+            "modal_title": "모든 기기에서 로그아웃",
+            "confirm_message": "이 기기를 포함해 로그인된 모든 기기에서 로그아웃합니다. 계속할까요?",
+            "confirm_button": "로그아웃",
+            "success": "모든 기기에서 로그아웃했습니다.",
+            "failed": "로그아웃하지 못했습니다. 잠시 후 다시 시도하세요."
+        }
     }
 }

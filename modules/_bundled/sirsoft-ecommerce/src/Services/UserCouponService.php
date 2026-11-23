@@ -5,7 +5,9 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\UserStatus;
 use App\Extension\HookManager;
+use App\Helpers\TimezoneHelper;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -13,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueCondition;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueMethod;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
+use Modules\Sirsoft\Ecommerce\Enums\CouponIssueSource;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Exceptions\CouponNotIssuableException;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
@@ -299,39 +302,76 @@ class UserCouponService
         $coupons = $this->couponRepository->getDownloadableCoupons($perPage);
 
         // 각 쿠폰에 사용자별 다운로드 정보 추가
-        $coupons->getCollection()->transform(function ($coupon) use ($userId) {
-            $userIssuedCount = $this->couponIssueRepository->getUserIssuedCountForCoupon($userId, $coupon->id);
-            $coupon->is_downloaded = $userIssuedCount > 0;
-            $coupon->user_issued_count = $userIssuedCount;
-            $coupon->coupon_id = $coupon->id;
-            $coupon->localized_name = $coupon->getLocalizedName();
-            $coupon->target_type_short_label = $coupon->target_type?->shortLabel();
-            $coupon->valid_period_formatted = $coupon->valid_period_formatted;
-            $coupon->min_order_amount_formatted = ecommerce_format_price($coupon->min_order_amount ?? 0);
-            // 선택 통화 표시값 — 상품 상세 목록·CouponResource 와 같은 모양({통화: {price, formatted, is_default}}).
-            // 주문서 쿠폰 받기 창이 읽는다(없으면 다른 통화로 보는 회원에게도 기본 통화 숫자 + 「원」, 7.1.1).
-            $coupon->multi_currency_benefit_formatted = $coupon->buildMultiCurrencyBenefitFormatted($this->currencyConverter);
-            $coupon->multi_currency_discount_value = $coupon->discount_type === CouponDiscountType::FIXED
-                ? $this->currencyConverter->convertToMultiCurrency((int) ($coupon->discount_value ?? 0))
-                : null;
-            $coupon->multi_currency_min_order_amount = ($coupon->min_order_amount ?? 0) > 0
-                ? $this->currencyConverter->convertToMultiCurrency((int) $coupon->min_order_amount)
-                : null;
-            $coupon->multi_currency_discount_max_amount = ($coupon->discount_max_amount ?? 0) > 0
-                ? $this->currencyConverter->convertToMultiCurrency((int) $coupon->discount_max_amount)
-                : null;
-            $coupon->remaining_quantity = $coupon->total_quantity !== null
-                ? max(0, $coupon->total_quantity - $coupon->issued_count)
-                : null;
-
-            return $coupon;
-        });
+        $coupons->getCollection()->transform(fn (Coupon $coupon) => $this->decorateDownloadableCoupon($coupon, $userId));
 
         $coupons = HookManager::applyFilters('sirsoft-ecommerce.user_coupon.filter_downloadable_result', $coupons, $userId);
 
         HookManager::doAction('sirsoft-ecommerce.user_coupon.after_downloadable_list', $coupons, $userId);
 
         return $coupons;
+    }
+
+    /**
+     * 비로그인 방문자도 볼 수 있는 쿠폰존 목록을 조회합니다. (#952)
+     *
+     * 회원용 목록과 같은 쿠폰·같은 정렬이다. 로그인한 회원이 부르면(토큰이 있으면) 받은 여부를 함께 채우고, 비로그인이면 채우지 않는다
+     * (응답은 허용 목록 리소스가 정한다). 쿠폰존 화면이 로그인 확인 전후로 주소를 바꾸지 않게 한 주소로 둘 다 답한다.
+     *
+     * @param  int  $perPage  페이지당 항목 수
+     * @param  int|null  $userId  로그인 회원 ID (비로그인이면 null)
+     * @return LengthAwarePaginator 받을 수 있는 쿠폰 페이지네이터
+     */
+    public function getPublicDownloadableCoupons(int $perPage = 12, ?int $userId = null): LengthAwarePaginator
+    {
+        HookManager::doAction('sirsoft-ecommerce.user_coupon.before_public_downloadable_list', $perPage);
+
+        $coupons = $this->couponRepository->getDownloadableCoupons($perPage);
+        $coupons->getCollection()->transform(fn (Coupon $coupon) => $this->decorateDownloadableCoupon($coupon, $userId));
+
+        $coupons = HookManager::applyFilters('sirsoft-ecommerce.user_coupon.filter_public_downloadable_result', $coupons);
+
+        HookManager::doAction('sirsoft-ecommerce.user_coupon.after_public_downloadable_list', $coupons);
+
+        return $coupons;
+    }
+
+    /**
+     * 받기 목록의 쿠폰 1장에 화면 표시값을 채웁니다. 회원용·공개용 목록이 함께 씁니다. (#952)
+     *
+     * @param  Coupon  $coupon  쿠폰 (포함·제외 상품·분류 관계 로드)
+     * @param  int|null  $userId  회원 ID (비로그인이면 null — 받은 여부를 계산하지 않는다)
+     * @return Coupon 표시값을 채운 쿠폰
+     */
+    public function decorateDownloadableCoupon(Coupon $coupon, ?int $userId): Coupon
+    {
+        $userIssuedCount = $userId !== null
+            ? $this->couponIssueRepository->getUserIssuedCountForCoupon($userId, $coupon->id)
+            : 0;
+        $coupon->is_downloaded = $userIssuedCount > 0;
+        $coupon->user_issued_count = $userIssuedCount;
+        $coupon->coupon_id = $coupon->id;
+        $coupon->localized_name = $coupon->getLocalizedName();
+        $coupon->localized_description = $coupon->getLocalizedDescription();
+        $coupon->target_type_short_label = $coupon->target_type?->shortLabel();
+        $coupon->valid_period_formatted = $coupon->valid_period_formatted;
+        $coupon->min_order_amount_formatted = ecommerce_format_price($coupon->min_order_amount ?? 0);
+        // 선택 통화 표시값 — 상품 상세 목록·CouponResource 와 같은 모양({통화: {price, formatted, is_default}}).
+        // 주문서 쿠폰 받기 창이 읽는다(없으면 다른 통화로 보는 회원에게도 기본 통화 숫자 + 「원」, 7.1.1).
+        $coupon->multi_currency_benefit_formatted = $coupon->buildMultiCurrencyBenefitFormatted($this->currencyConverter);
+        $coupon->multi_currency_discount_value = $coupon->discount_type === CouponDiscountType::FIXED
+            ? $this->currencyConverter->convertToMultiCurrency((int) ($coupon->discount_value ?? 0))
+            : null;
+        $coupon->multi_currency_min_order_amount = ($coupon->min_order_amount ?? 0) > 0
+            ? $this->currencyConverter->convertToMultiCurrency((int) $coupon->min_order_amount)
+            : null;
+        $coupon->multi_currency_discount_max_amount = ($coupon->discount_max_amount ?? 0) > 0
+            ? $this->currencyConverter->convertToMultiCurrency((int) $coupon->discount_max_amount)
+            : null;
+        $coupon->remaining_quantity = $coupon->total_quantity !== null
+            ? max(0, $coupon->total_quantity - $coupon->issued_count)
+            : null;
+
+        return $coupon;
     }
 
     /**
@@ -363,7 +403,9 @@ class UserCouponService
             $this->assertWithinUserLimit($coupon, $userId);
 
             // 발급 내역 생성 (코드 접두사 DL = 다운로드)
-            $couponIssue = $this->createIssueRecord($coupon, $userId, 'DL');
+            $couponIssue = $this->createIssueRecord($coupon, $userId, CouponIssueSource::DOWNLOAD->codePrefix(), [
+                'issue_source' => CouponIssueSource::DOWNLOAD->value,
+            ]);
 
             HookManager::doAction('sirsoft-ecommerce.user_coupon.after_download', $couponIssue, $userId, $couponId);
 
@@ -526,9 +568,94 @@ class UserCouponService
             throw new CouponNotIssuableException('user_withdrawn');
         }
 
+        // 자동발급 쿠폰의 직접발급은 자동발급과 한도를 공유한다(#952) — 같은 발급 키로 기록해, 직접 받은 회원이
+        // 같은 조건으로 자동으로 다시 받지 않게 한다. 회원당 횟수는 발급 키와 DB 유니크가 정한다(per_user_limit 은 0 고정).
+        $autoKey = $this->autoIssueKeyFor($coupon);
+        if ($autoKey !== null) {
+            if ($this->couponIssueRepository->existsByAutoIssueKey($coupon->id, $userId, $autoKey)) {
+                throw new CouponNotIssuableException('auto_issue_already_issued');
+            }
+
+            try {
+                return $this->createIssueRecord($coupon, $userId, CouponIssueSource::DIRECT->codePrefix(), [
+                    'issue_source' => CouponIssueSource::DIRECT->value,
+                    'auto_issue_key' => $autoKey,
+                ]);
+            } catch (UniqueConstraintViolationException) {
+                throw new CouponNotIssuableException('auto_issue_already_issued');
+            }
+        }
+
         $this->assertWithinUserLimit($coupon, $userId);
 
-        return $this->createIssueRecord($coupon, $userId, 'DR');
+        return $this->createIssueRecord($coupon, $userId, CouponIssueSource::DIRECT->codePrefix(), [
+            'issue_source' => CouponIssueSource::DIRECT->value,
+        ]);
+    }
+
+    /**
+     * 자동발급 쿠폰 1건을 회원에게 발급합니다. (#952)
+     *
+     * 쿠폰 잠금·발급 가능 판정·발급 키 중복 확인은 호출 측(`CouponAutoIssueService::issueOne`)이 한 트랜잭션 안에서 먼저 한다.
+     * 활성 회원만 받는다 — 탈퇴·차단·본인인증 대기 회원은 예외로 거절한다.
+     *
+     * @param  Coupon  $coupon  발급 대상 쿠폰(잠금 조회된 인스턴스)
+     * @param  int  $userId  회원 ID
+     * @param  CouponIssueSource  $source  자동발급 경로 (가입·첫구매·생일)
+     * @param  string  $autoIssueKey  발급 키 (signup·first_purchase·birthday:YYYY)
+     * @param  int|null  $sourceOrderId  첫구매 쿠폰을 발급하게 한 주문 ID
+     * @return CouponIssue 생성된 발급 레코드
+     *
+     * @throws CouponNotIssuableException 회원이 활성 상태가 아닐 때(user_inactive)
+     */
+    public function issueAutomaticallyToUser(Coupon $coupon, int $userId, CouponIssueSource $source, string $autoIssueKey, ?int $sourceOrderId = null): CouponIssue
+    {
+        $user = $this->userRepository->findById($userId);
+        $status = $user?->status;
+        $status = $status instanceof \BackedEnum ? $status->value : (string) $status;
+
+        if ($user === null || $status !== UserStatus::Active->value) {
+            throw new CouponNotIssuableException('user_inactive');
+        }
+
+        return $this->createIssueRecord($coupon, $userId, $source->codePrefix(), [
+            'issue_source' => $source->value,
+            'auto_issue_key' => $autoIssueKey,
+            'source_order_id' => $sourceOrderId,
+        ]);
+    }
+
+    /**
+     * 자동발급 쿠폰의 발급 키를 반환합니다. 자동발급 쿠폰이 아니면 null 입니다. (#952)
+     *
+     * 생일 쿠폰은 사이트 시간대의 올해로 「해마다 1회」 를 나눈다.
+     *
+     * @param  Coupon  $coupon  쿠폰
+     * @return string|null 발급 키
+     */
+    public function autoIssueKeyFor(Coupon $coupon): ?string
+    {
+        if ($coupon->issue_method !== CouponIssueMethod::AUTO) {
+            return null;
+        }
+
+        return match ($coupon->issue_condition) {
+            CouponIssueCondition::SIGNUP => 'signup',
+            CouponIssueCondition::FIRST_PURCHASE => 'first_purchase',
+            CouponIssueCondition::BIRTHDAY => self::birthdayIssueKey((int) now(TimezoneHelper::getSiteTimezone())->year),
+            default => null,
+        };
+    }
+
+    /**
+     * 생일 쿠폰의 연도별 발급 키를 반환합니다.
+     *
+     * @param  int  $year  사이트 시간대 기준 연도
+     * @return string 발급 키 (birthday:YYYY)
+     */
+    public static function birthdayIssueKey(int $year): string
+    {
+        return 'birthday:'.$year;
     }
 
     /**
@@ -539,10 +666,11 @@ class UserCouponService
      *
      * @param  Coupon  $coupon  발급 대상 쿠폰(잠금 조회된 인스턴스)
      * @param  int  $userId  발급 대상 회원 ID
-     * @param  string  $codePrefix  쿠폰 코드 접두사 (DL=다운로드, DR=직접발급)
+     * @param  string  $codePrefix  쿠폰 코드 접두사 (DL=다운로드, DR=직접발급, AU=자동발급)
+     * @param  array<string, mixed>  $extra  발급 행에 더할 값 (issue_source·auto_issue_key·source_order_id, #952)
      * @return CouponIssue 생성된 발급 레코드
      */
-    protected function createIssueRecord(Coupon $coupon, int $userId, string $codePrefix): CouponIssue
+    protected function createIssueRecord(Coupon $coupon, int $userId, string $codePrefix, array $extra = []): CouponIssue
     {
         // 쿠폰 코드 생성
         $couponCode = $codePrefix.'-'.strtoupper(Str::random(8));
@@ -563,14 +691,14 @@ class UserCouponService
         }
 
         // CouponIssue 생성
-        $couponIssue = $this->couponIssueRepository->create([
+        $couponIssue = $this->couponIssueRepository->create(array_merge($extra, [
             'coupon_id' => $coupon->id,
             'user_id' => $userId,
             'coupon_code' => $couponCode,
             'status' => CouponIssueRecordStatus::AVAILABLE->value,
             'issued_at' => now(),
             'expired_at' => $expiredAt,
-        ]);
+        ]));
 
         // issued_count 증가
         $this->couponRepository->incrementIssuedCount($coupon->id);

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
+use Modules\Sirsoft\Ecommerce\Enums\CouponIssueSource;
 
 /**
  * 쿠폰 발급 내역 모델
@@ -22,10 +23,14 @@ class CouponIssue extends Model
         'coupon_id',
         'user_id',
         'coupon_code',
+        'issue_source',
+        'auto_issue_key',
+        'source_order_id',
         'status',
         'issued_at',
         'expired_at',
         'used_at',
+        'expiry_notified_at',
         'order_id',
         'discount_amount',
     ];
@@ -35,6 +40,8 @@ class CouponIssue extends Model
         'issued_at' => 'datetime',
         'expired_at' => 'datetime',
         'used_at' => 'datetime',
+        'expiry_notified_at' => 'datetime',
+        'source_order_id' => 'integer',
         'discount_amount' => 'decimal:2',
     ];
 
@@ -58,6 +65,29 @@ class CouponIssue extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * 첫구매 쿠폰을 발급하게 한 주문 관계 (#952)
+     *
+     * 사용 주문(`order()`)과 다르다 — 이 주문이 전부 취소·반품완료되면 미사용 첫구매 쿠폰을 회수한다.
+     *
+     * @return BelongsTo 주문 모델과의 관계
+     */
+    public function sourceOrder(): BelongsTo
+    {
+        return $this->belongsTo(Order::class, 'source_order_id');
+    }
+
+    /**
+     * 발급 경로를 반환합니다. 경로 컬럼이 비어 있는 옛 발급 건은 코드 접두로 추정합니다. (#952)
+     *
+     * @return CouponIssueSource|null 발급 경로 (추정할 수 없으면 null)
+     */
+    public function resolveIssueSource(): ?CouponIssueSource
+    {
+        return CouponIssueSource::tryFrom((string) $this->issue_source)
+            ?? CouponIssueSource::fromLegacyCode($this->coupon_code);
     }
 
     /**

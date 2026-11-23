@@ -135,12 +135,6 @@
     "notify_admin_on_report_scope": "알림 발송 범위",
     "notify_admin_on_report_scope_per_case": "게시글/댓글당 최초 1회만",
     "notify_admin_on_report_scope_per_report": "신고가 접수될 때마다",
-    "notify_admin_on_report_channels": "알림 채널",
-    "notify_admin_on_report_channels_placeholder": "채널 선택",
-    "notify_admin_on_report_channels_help": "선택한 채널로 관리자 알림이 발송됩니다",
-    "notify_author_on_report_action_channels": "알림 채널",
-    "notify_author_on_report_action_channels_placeholder": "채널 선택",
-    "notify_author_on_report_action_channels_help": "선택한 채널로 작성자 알림이 발송됩니다",
     "notification_channels": {
       "mail": "이메일",
       "database": "사이트 알림"

@@ -17,7 +17,8 @@
         "plugins": {}
     },
     "integrations": {
-        "modules": ["sirsoft-board"]
+        "modules": ["sirsoft-board"],
+        "plugins": ["sirsoft-marketing"]
     },
     "public_api": {
         "version": 1,

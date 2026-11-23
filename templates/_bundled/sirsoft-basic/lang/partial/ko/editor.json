@@ -1230,6 +1230,10 @@
     "claims": "클레임 신청내역",
     "claim": "클레임 신청서",
     "relatedProducts": "이 상품은 어떠세요?",
-    "reviewFeed": "전체 후기"
+    "reviewFeed": "전체 후기",
+    "user_coupons": "쿠폰함 목록",
+    "couponZone": "쿠폰존 목록",
+    "myReviews": "내 리뷰 목록",
+    "myActivity": "내 활동 기록"
   }
 }

@@ -6,6 +6,7 @@ use App\Contracts\Extension\HookListenerInterface;
 use App\Helpers\TimezoneHelper;
 use App\Models\User;
 use App\Support\LocalizedValue;
+use App\Support\ScreenUrl;
 use App\Support\SiteUrl;
 use Illuminate\Support\Carbon;
 use Plugins\Sirsoft\Totp\Plugin;
@@ -87,7 +88,7 @@ class TotpNotificationDataListener implements HookListenerInterface
                 ->format('Y-m-d H:i'),
             'ip_address' => (string) ($context['ip_address'] ?? '-'),
             'actor_label' => $this->actorLabel($context),
-            'security_url' => SiteUrl::absolute('/admin/plugins/sirsoft-totp/settings'),
+            'security_url' => $this->securityUrl($user),
         ];
         $data['context'] = [
             'trigger_user_id' => $user->id,
@@ -95,6 +96,24 @@ class TotpNotificationDataListener implements HookListenerInterface
         ];
 
         return $data;
+    }
+
+    /**
+     * 받는 사람이 들어갈 수 있는 보안 설정 화면 주소를 반환합니다. (1.1.1, #952)
+     *
+     * 받는 사람은 언제나 대상 회원 자신이다. 관리자면 플러그인 설정 화면, 일반 회원이면 회원 화면의 내 정보(보안 카드)다 —
+     * 종전에는 관리자 주소로 고정돼 일반 회원이 링크를 열 수 없었다.
+     *
+     * @param  User  $user  받는 회원
+     * @return string 절대 URL
+     */
+    private function securityUrl(User $user): string
+    {
+        if ($user->isAdmin()) {
+            return SiteUrl::absolute('/admin/plugins/sirsoft-totp/settings');
+        }
+
+        return ScreenUrl::absoluteForLinks('mypage.profile', '/mypage/profile');
     }
 
     /**

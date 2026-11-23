@@ -23,6 +23,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreBanksRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreEcommerceSettingsRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateSettingRequest;
 use Modules\Sirsoft\Ecommerce\Privacy\OrderRetentionHandler;
+use Modules\Sirsoft\Ecommerce\Services\BirthdayFieldResolver;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceDisplayNameSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsAdminService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
@@ -42,11 +43,13 @@ class EcommerceSettingsController extends AdminBaseController
      * @param  EcommerceSettingsService  $settingsService  환경설정 서비스
      * @param  EcommerceSettingsAdminService  $adminSettingsService  관리자 설정 저장·조회 조립 서비스
      * @param  EcommerceDisplayNameSettingsService  $displayNames  기능별 작성자 표시 이름 설정 서비스
+     * @param  BirthdayFieldResolver  $birthdayField  생일 쿠폰 회원 항목 해석기 (#952)
      */
     public function __construct(
         private EcommerceSettingsService $settingsService,
         private EcommerceSettingsAdminService $adminSettingsService,
         private EcommerceDisplayNameSettingsService $displayNames,
+        private BirthdayFieldResolver $birthdayField,
     ) {}
 
     /**
@@ -67,7 +70,11 @@ class EcommerceSettingsController extends AdminBaseController
 
             // 화면의 숫자 입력 경계값 — 저장 규칙과 같은 출처를 내려준다.
             // 화면이 리터럴을 들면 규칙이 바뀔 때 따라오지 못해 "화면은 받는데 저장은 422" 가 된다.
-            $settings['_meta'] = ['limits' => config('sirsoft-ecommerce.limits', [])];
+            $settings['_meta'] = [
+                'limits' => config('sirsoft-ecommerce.limits', []),
+                // 쿠폰 탭 「생일로 쓸 회원 항목」 후보 — 날짜 유형 + 값 테이블 저장 회원 항목 (#952)
+                'birthday_field_candidates' => $this->birthdayField->candidateOptions(),
+            ];
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',

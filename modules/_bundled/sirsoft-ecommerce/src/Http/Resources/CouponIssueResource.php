@@ -36,6 +36,10 @@ class CouponIssueResource extends BaseApiResource
             'user_id' => $this->user?->uuid,
             'coupon_code' => $this->coupon_code,
 
+            // 발급 경로 (#952) — 경로 컬럼 이전 행은 코드 접두(DL/DR)로 추정한다
+            'issue_source' => $this->resource->resolveIssueSource()?->value,
+            'issue_source_label' => $this->resource->resolveIssueSource()?->label(),
+
             // 상태 — status 는 저장된 원시값, *_label/badge 는 유효기간을 반영한 표시값
             'status' => $this->status?->value,
             'status_label' => $displayStatus?->label(),

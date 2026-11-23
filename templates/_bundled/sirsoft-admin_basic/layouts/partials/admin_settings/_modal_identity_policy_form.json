@@ -290,8 +290,10 @@
                                             "text": "$t:admin.identity.policies.form.scope"
                                         },
                                         {
+                                            "comment": "「사용자 지정」은 활성 확장이 본인인증 확장 지점을 선언했을 때만 고를 수 있다(7.2.1, #952) — 선언이 없으면 그 정책은 어디서도 강제되지 않는다. 이미 사용자 지정인 정책은 그대로 보인다",
                                             "type": "basic",
                                             "name": "Select",
+                                            "if": "{{(identityCheckpoints?.data?.checkpoints ?? []).length > 0 || _global.identity_policy_form_modal?.form?.scope === 'custom'}}",
                                             "actions": [
                                                 {
                                                     "comment": "걸리는 자리의 종류(라우트/훅/직접) — 아래 대상 칸이 무엇을 적는 자리인지 정한다.\n                     키와 함께 잠기는 칸이다.",
@@ -304,6 +306,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "$t:admin.identity.policies.form.scope",
                                                 "value": "{{_global.identity_policy_form_modal?.form?.scope ?? 'route'}}",
                                                 "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
                                                 "className": "{{_global.identity_policy_form_modal?.errors?.errors?.scope ? 'input-error disabled:bg-gray-100 dark:disabled:bg-gray-900' : ' disabled:bg-gray-100 dark:disabled:bg-gray-900'}}",
@@ -319,6 +322,38 @@
                                                     {
                                                         "value": "custom",
                                                         "label": "$t:admin.identity.policies.scope.custom"
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "if": "{{!((identityCheckpoints?.data?.checkpoints ?? []).length > 0) && _global.identity_policy_form_modal?.form?.scope !== 'custom'}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "걸리는 자리의 종류(라우트/훅/직접) — 아래 대상 칸이 무엇을 적는 자리인지 정한다.\n                     키와 함께 잠기는 칸이다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_policy_form_modal.form.scope": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "aria-label": "$t:admin.identity.policies.form.scope",
+                                                "value": "{{_global.identity_policy_form_modal?.form?.scope ?? 'route'}}",
+                                                "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.scope ? 'input-error disabled:bg-gray-100 dark:disabled:bg-gray-900' : ' disabled:bg-gray-100 dark:disabled:bg-gray-900'}}",
+                                                "options": [
+                                                    {
+                                                        "value": "route",
+                                                        "label": "$t:admin.identity.policies.scope.route"
+                                                    },
+                                                    {
+                                                        "value": "hook",
+                                                        "label": "$t:admin.identity.policies.scope.hook"
                                                     }
                                                 ]
                                             }
@@ -349,6 +384,7 @@
                                         {
                                             "type": "basic",
                                             "name": "Input",
+                                            "if": "{{_global.identity_policy_form_modal?.form?.scope !== 'custom'}}",
                                             "actions": [
                                                 {
                                                     "comment": "실제 대상(라우트 이름·훅 이름 등) — 위 종류가 무엇을 적을지 정한다. 셋째 잠김 칸이다.",
@@ -361,8 +397,33 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "$t:admin.identity.policies.form.target",
                                                 "type": "text",
                                                 "value": "{{_global.identity_policy_form_modal?.form?.target ?? ''}}",
+                                                "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.target ? 'input-error font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900' : 'font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900'}}"
+                                            }
+                                        },
+                                        {
+                                            "comment": "사용자 지정이면 대상은 확장 지점 키만 — 서버도 등록되지 않은 키를 422 로 거절한다",
+                                            "id": "identity_policy_checkpoint_select",
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "if": "{{_global.identity_policy_form_modal?.form?.scope === 'custom'}}",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_policy_form_modal.form.target": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "aria-label": "$t:admin.identity.policies.form.target",
+                                                "value": "{{_global.identity_policy_form_modal?.form?.target ?? ''}}",
+                                                "options": "{{[{ value: '', label: $t('admin.identity.policies.form.checkpoint_placeholder') }, ...(identityCheckpoints?.data?.checkpoints ?? []).map(c => ({ value: c.key, label: c.name + ' (' + c.key + ')' }))]}}",
                                                 "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
                                                 "className": "{{_global.identity_policy_form_modal?.errors?.errors?.target ? 'input-error font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900' : 'font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900'}}"
                                             }

@@ -528,9 +528,6 @@ describe('라우트 정의와 골격 화면 권한은 실재 식별자다', () =
         ['admin_ecommerce_personal_payment_detail.json', 'sirsoft-ecommerce.orders.read'],
         ['admin_ecommerce_payment_failure_history.json', 'sirsoft-ecommerce.orders.read'],
         ['admin_ecommerce_excel_download_index.json', 'sirsoft-ecommerce.orders.read'],
-        ['admin_ecommerce_main_banner_index.json', 'sirsoft-ecommerce.settings.read'],
-        ['admin_ecommerce_promotion_discount_code_index.json', 'sirsoft-ecommerce.promotion-coupon.read'],
-        ['admin_ecommerce_promotion_discount_code_create.json', 'sirsoft-ecommerce.promotion-coupon.create'],
         ['admin_ecommerce_deposit_index.json', 'sirsoft-ecommerce.mileage.read'],
     ])('%s 의 화면 permissions 가 %s 다', (file, permission) => {
         expect(layout(file).permissions).toEqual([permission]);

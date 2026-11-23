@@ -7,20 +7,20 @@
  *     - _tab_language_currency.json: default_language picker 의 value fallback
  *
  * (2) 정적 ko/en/ja 3버튼 구조: 새 언어팩(ja/zh 등) 추가 시 미반영
- *     - _partial_banner_form.json / _partial_banner_detail.json
  *     - _partial_common_info_form.json / _partial_common_info_detail.json
+ *       (메인 배너 시안 화면의 같은 가드는 그 화면을 지우며 함께 뺐다 — #952)
  *     → $locales iteration 으로 동적 그리도록 재구조화 (참조: sirsoft-page admin_page_detail unified_lang_tabs)
  */
 
 import { describe, it, expect } from 'vitest';
 
 import tabLanguageCurrency from '../../../layouts/admin/partials/admin_ecommerce_settings/_tab_language_currency.json';
-import bannerForm from '../../../layouts/admin/partials/admin_ecommerce_main_banner_index/_partial_banner_form.json';
-import bannerDetail from '../../../layouts/admin/partials/admin_ecommerce_main_banner_index/_partial_banner_detail.json';
 import commonInfoForm from '../../../layouts/admin/partials/admin_ecommerce_product_common_info_index/_partial_common_info_form.json';
 import commonInfoDetail from '../../../layouts/admin/partials/admin_ecommerce_product_common_info_index/_partial_common_info_detail.json';
 
 describe('이커머스 모듈 — 단순 locale fallback 회귀 가드 (#263 후속)', () => {
+    // @scenario case=default_language_fallback
+    // @effects locale_fallback_uses_active_locale
     it("default_language picker 의 fallback 이 정적 'ko' 가 아닌 $locale 을 우선 사용함", () => {
         const layoutStr = JSON.stringify(tabLanguageCurrency);
         // 활성 ja 환경에서 환경설정 첫 진입 시에도 ko 가 기본 선택되던 회귀 차단
@@ -30,12 +30,12 @@ describe('이커머스 모듈 — 단순 locale fallback 회귀 가드 (#263 후
 
 describe('이커머스 모듈 — 정적 ko/en/ja 언어 탭 → $locales iteration 회귀 가드 (#263 후속)', () => {
     const dynamicTabLayouts: Array<[string, unknown]> = [
-        ['_partial_banner_form.json', bannerForm],
-        ['_partial_banner_detail.json', bannerDetail],
         ['_partial_common_info_form.json', commonInfoForm],
         ['_partial_common_info_detail.json', commonInfoDetail],
     ];
 
+    // @scenario case=static_tab_branches
+    // @effects language_tabs_follow_locales
     it.each(dynamicTabLayouts)(
         '%s — 정적 activeLanguageTab === ko/en/ja 분기를 사용하지 않음 (iteration 으로 그려야 함)',
         (_name, layout) => {
@@ -47,6 +47,8 @@ describe('이커머스 모듈 — 정적 ko/en/ja 언어 탭 → $locales iterat
         }
     );
 
+    // @scenario case=locales_iteration
+    // @effects language_tabs_follow_locales
     it.each(dynamicTabLayouts)(
         '%s — 언어 탭 버튼이 $locales iteration 으로 그려짐',
         (_name, layout) => {

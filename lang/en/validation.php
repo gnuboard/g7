@@ -3,6 +3,9 @@
 // changelog:allow 숨김 파일 서빙 거부 문구 — 무CLI·고정 문서루트 축의 신규 키. 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재
 
 return [
+    'activity_log' => [
+        'date_range_invalid' => 'The end date must be on or after the start date.',
+    ],
     /*
     |--------------------------------------------------------------------------
     | Laravel Default Validation Messages
@@ -1353,6 +1356,7 @@ return [
         'scope_invalid' => 'Scope must be one of route, hook, custom.',
         'target_required' => 'Please enter the target (route or hook name).',
         'target_max' => 'Target may not be longer than 255 characters.',
+        'custom_target_unregistered' => 'For the custom scope, the target must be a checkpoint declared by an active extension.',
         'purpose_required' => 'Please select a purpose.',
         'purpose_max' => 'Purpose may not be longer than 64 characters.',
         'provider_id_max' => 'Provider identifier may not be longer than 64 characters.',
@@ -1445,6 +1449,9 @@ return [
     'summary_more_errors' => '(and :count more errors)',
 
     'attributes' => [
+        // 회원 활동 기록 기간 조회 (7.2.1, #952)
+        'date_from' => 'start date',
+        'date_to' => 'end date',
         // 환경설정 「본문 콘텐츠」 저장 항목 (#883)
         'content_settings' => 'content settings',
         'content_allow_figure_caption' => 'allow image captions',

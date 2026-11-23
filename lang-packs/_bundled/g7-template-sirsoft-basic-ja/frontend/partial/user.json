@@ -30,7 +30,8 @@
     "products": "商品",
     "cart": "カート",
     "mypage": "マイページ",
-    "reviews": "レビュー"
+    "reviews": "レビュー",
+    "coupons": "クーポン"
   },
   "footer": {
     "info": "情報",
@@ -75,7 +76,10 @@
     "claims_description": "交換·返品·返金·キャンセル申請履歴を確認し、編集または取り消します。",
     "claim_detail_title": "申請詳細",
     "claim_detail_description": "申請書の商品·配送·金額·理由を確認します。",
-    "claim_edit_title": "申請内容編集"
+    "claim_edit_title": "申請内容編集",
+    "coupons_title": "クーポンボックス",
+    "reviews_title": "マイレビュー",
+    "activity_title": "アクティビティ"
   },
   "identity": {
     "challenge": {
@@ -134,7 +138,8 @@
     "order_complete_title": "注文完了",
     "guest_order_form_title": "非会員注文照会",
     "guest_order_show_title": "非会員注文詳細",
-    "reviews_title": "レビュー一覧"
+    "reviews_title": "レビュー一覧",
+    "coupons_title": "クーポンゾーン"
   },
   "search": {
     "page_title": "検索"
@@ -190,7 +195,8 @@
       "modal_write_review": "レビュー作成"
     },
     "mypage_profile": {
-      "withdrawModal": "会員退会確認"
+      "withdrawModal": "会員退会確認",
+      "logoutAllDevicesModal": "すべての端末からログアウトの確認"
     },
     "identity_challenge_modal": "本人認証",
     "notification_delete_all_confirm_modal": "通知全削除確認",
@@ -215,6 +221,9 @@
       "detail_progress": "進行段階",
       "detail_reason": "申請理由",
       "image_viewer_modal": "添付写真を表示"
+    },
+    "mypage_reviews": {
+      "reviewDeleteModal": "レビュー削除の確認"
     }
   },
   "visitor_counter": {

@@ -69,6 +69,21 @@ describe('방문자 상세', () => {
   });
 
   // @scenario screen=visitor_detail, state=normal, viewport=1440, locale=ko
+  // @effects visitor_detail_back_button_on_right
+  it('목록으로 버튼은 제목 왼쪽 아이콘이 아니라 오른쪽 버튼 줄 첫 자리에 글자와 함께 있다', () => {
+    const header = nodeById(detail, 'page_header');
+    expect(header).toBeDefined();
+    const [titleCol, actions] = header!.children;
+    expect(stringify(titleCol)).not.toContain('back_button');
+    expect(stringify(titleCol)).toContain('admin.analytics.visitor_detail.title');
+    const back = actions.children[0];
+    expect(back.id).toBe('back_button');
+    expect(back.props?.href).toBe('/admin/analytics/visitors');
+    expect(back.props?.mergeQuery).toBe(true);
+    expect(stringify(back)).toContain('$t:admin.analytics.visitor_detail.back');
+  });
+
+  // @scenario screen=visitor_detail, state=normal, viewport=1440, locale=ko
   // @effects visitor_timeline_shows_action_types
   it('방문 아코디언은 방문 id 로 열고 타임라인 배지 유형이 다섯 종 이상이다', () => {
     expect(stringify(detail)).toContain('openVisits');

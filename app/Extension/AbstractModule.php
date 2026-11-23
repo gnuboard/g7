@@ -784,6 +784,21 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      */
 
     /**
+     * 이 확장이 강제하는 본인인증 「사용자 지정」 확장 지점(체크포인트)을 선언합니다. (7.2.1)
+     *
+     * 관리자가 본인인증 정책의 범위를 「사용자 지정」으로 고르면 대상은 활성 확장이 선언한 키 중에서만 고른다.
+     * 선언한 확장의 코드는 그 지점에서 `app(IdentityPolicyService::class)->enforceCheckpoint($key, $user)` 를 부른다.
+     * 선언하는 확장이 없으면 정책 창에 「사용자 지정」 옵션이 보이지 않는다.
+     *
+     * @return array<int, array{key: string, name: array<string, string>|string, description?: array<string, string>|string}> 선언 목록
+     *                                                                                                                        (키는 `vendor-ext.domain.action` 처럼 점으로 나눈 소문자)
+     */
+    public function getIdentityCheckpoints(): array
+    {
+        return [];
+    }
+
+    /**
      * 이 모듈이 등록할 IDV(본인인증) 정책 선언을 반환합니다.
      *
      * 반환된 정책은 `ModuleManager` 가 activate/update 시

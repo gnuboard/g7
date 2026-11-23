@@ -49,14 +49,6 @@
     "professional_plan_1y": "プロフェッショナルプラン 1年",
     "general_product_notice": "一般商品のご案内"
   },
-  "codes": {
-    "new_member_10": "新規会員10%割引コード",
-    "first_purchase_5000": "初回購入5千ウォン割引"
-  },
-  "banners": {
-    "winter_sale": "冬の新商品 最大50%オフ",
-    "spring_semester": "春の新学期準備"
-  },
   "banks": {
     "woori": "ウリィ銀行",
     "kakaobank": "カカオバンク",
@@ -77,24 +69,15 @@
     "register_payment_request": "個人決済リクエスト登録",
     "vbank_issued_waiting": "バーチャル口座発行完了 - 入金待ち",
     "order_not_found_msg": "注文番号が存在しません",
-    "order_not_found_api": "注文が見つかりません",
-    "select_banner_hint": "左側でバナーを選択してください",
-    "banner_title_placeholder": "バナータイトル(韓国語)",
-    "banner_content_placeholder": "バナー内容(韓国語)",
-    "won_unit": "ウォン",
-    "max_label": "最大"
+    "order_not_found_api": "注文が見つかりません"
   },
   "fmt": {
     "times": "{{count}}回",
     "items": "{{count}}個",
     "per_page": "{{count}}件ずつ表示",
-    "digits": "{{count}}桁",
     "total_count": "全{{count}}件",
     "selected_count": "{{count}}件選択",
     "select_all_count": "すべて選択 ({{selected}}/{{total}})",
-    "issued_used": "発行 {{issued}}件 / 使用 {{used}}件",
-    "percent_max": "{{percent}}% (最大₩{{max}})",
-    "max_amount": "(最大₩{{amount}})",
     "member_with_id": "{{name}} ({{id}})",
     "member_guest": "{{name}} (非会員)",
     "product_and_more": "{{product}} 他{{count}}件",
@@ -105,7 +88,6 @@
     "name_product": "{{name}} · {{product}}",
     "payment_shipping": "{{payment}} / {{shipping}}",
     "auto_matched": "注文番号 {{order}} と自動マッチング完了",
-    "orders_found": "{{count}}件の注文が見つかりました",
-    "slider_summary": "全{{count}}件のバナー · 3秒間隔で自動切替"
+    "orders_found": "{{count}}件の注文が見つかりました"
   }
 }

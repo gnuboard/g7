@@ -150,4 +150,42 @@ interface CouponIssueRepositoryInterface
      * @return int 삭제된 행 수
      */
     public function deleteByUserId(int $userId): int;
+
+    /**
+     * 회원이 그 쿠폰을 그 발급 키로 이미 받았는지 확인합니다. (#952)
+     *
+     * @param  int  $couponId  쿠폰 ID
+     * @param  int  $userId  회원 ID
+     * @param  string  $autoIssueKey  발급 키 (signup·first_purchase·birthday:YYYY)
+     * @return bool 이미 있으면 true
+     */
+    public function existsByAutoIssueKey(int $couponId, int $userId, string $autoIssueKey): bool;
+
+    /**
+     * 그 주문이 원천인 미사용 첫구매 발급 건을 반환합니다. (#952)
+     *
+     * @param  int  $orderId  원천 주문 ID
+     * @return Collection<int, CouponIssue> 사용가능 상태의 발급 건 (쿠폰 관계 로드)
+     */
+    public function getAvailableAutoIssuesBySourceOrder(int $orderId): Collection;
+
+    /**
+     * 만료 임박 알림 대상 발급 건을 반환합니다. (#952)
+     *
+     * 사용가능 상태 + 만료일이 구간 안 + 아직 알리지 않은 건이다. 회원 ID·만료일 순이다.
+     *
+     * @param  \DateTimeInterface  $from  구간 시작 (포함)
+     * @param  \DateTimeInterface  $to  구간 끝 (포함)
+     * @param  int  $limit  최대 건수
+     * @return Collection<int, CouponIssue> 발급 건 (쿠폰·회원 관계 로드)
+     */
+    public function getExpiringUnnotifiedIssues(\DateTimeInterface $from, \DateTimeInterface $to, int $limit = 5000): Collection;
+
+    /**
+     * 발급 건에 만료 임박 알림 시각을 기록합니다. (#952)
+     *
+     * @param  array<int, int>  $issueIds  발급 건 ID
+     * @return int 갱신한 행 수
+     */
+    public function markExpiryNotified(array $issueIds): int;
 }

@@ -1,0 +1,16 @@
+feature: 쇼핑몰 관리자 등록·수정 화면의 버튼 자리
+
+description: |
+  등록·수정 화면은 머리에 제목·설명만 두고, 취소·저장을 하단 고정 줄에 둔다. 쿠폰 등록 화면만
+  제목 왼쪽 뒤로가기 아이콘과 위쪽 취소·저장으로 다른 등록 화면(상품·배송정책·개인결제·코어 사용자 등록)과 달랐다.
+  모집단은 관리자 레이아웃 디렉터리의 *_form·*_create 화면 전부다.
+
+axes:
+  area:
+    - admin_form_layout
+
+effects:
+  - admin_form_buttons_in_sticky_footer # 머리에 뒤로가기 아이콘·저장/취소가 없고 하단 고정 줄에 저장 버튼이 있다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminFormFooterButtons.test.ts

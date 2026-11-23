@@ -51,6 +51,21 @@ describe('SSO 설정 화면', () => {
   });
 
   /**
+   * @scenario tab=idps, view=list|edit
+   * @effects idp_edit_buttons_in_sticky_footer
+   */
+  it('IdP 편집 머리에는 제목만 있고, 목록·삭제·저장은 하단 고정 줄에 있다', () => {
+    const header = byId(edit, 'idp_edit_header');
+    const headerNodes = flatten(header);
+    expect(headerNodes.filter((n: any) => n.name === 'Button' || n.name === 'A' || n.name === 'Icon')).toEqual([]);
+    const footer = byId(edit, 'idp_footer_buttons');
+    expect(footer?.props?.className).toContain('sso-sticky-footer-buttons');
+    const ids = flatten(footer).map((n: any) => n.id).filter(Boolean);
+    expect(ids).toEqual(expect.arrayContaining(['idp_list_button', 'idp_delete_button', 'idp_save_button']));
+    expect(byId(footer, 'idp_list_button')?.props?.href).toBe('/admin/plugins/sirsoft-sso/settings?tab=idps');
+  });
+
+  /**
    * @scenario tab=idps, subtabs=8
    * @effects eight_subtabs
    */

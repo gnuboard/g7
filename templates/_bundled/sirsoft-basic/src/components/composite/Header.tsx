@@ -382,6 +382,12 @@ const Header: React.FC<HeaderProps> = ({
     return currentPath.startsWith(`${base}/reviews`);
   };
 
+  // 쿠폰존 화면인지 (#952)
+  const isCouponsActive = (): boolean => {
+    const base = shopBase === '/' ? '' : shopBase;
+    return currentPath.startsWith(`${base}/coupons`);
+  };
+
   // 네비게이션 버튼 스타일
   const getNavButtonClass = (isActive: boolean): string => {
     const baseClass = 'px-3 py-2 text-sm font-medium whitespace-nowrap cursor-pointer rounded-lg transition-colors';
@@ -436,6 +442,7 @@ const Header: React.FC<HeaderProps> = ({
   const navMenu: HeaderMenuItem[] = Array.isArray(menu) ? menu : DEFAULT_HEADER_MENU;
   const shopProductsPath = `${shopBase === '/' ? '' : shopBase}/products`;
   const shopReviewsPath = `${shopBase === '/' ? '' : shopBase}/reviews`;
+  const shopCouponsPath = `${shopBase === '/' ? '' : shopBase}/coupons`;
   const dropdownItemClass = (active: boolean) =>
     `block w-full text-left px-4 py-2 text-sm cursor-pointer ${active ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`;
   const isInternalPath = (url: string) => url.startsWith('/') && !url.startsWith('//');
@@ -468,7 +475,7 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   /**
-   * 자동 항목 하나 — 홈·인기글·쇼핑·게시판 전체. 해당 모듈이 꺼져 있으면 그리지 않는다.
+   * 자동 항목 하나 — 홈·인기글·쇼핑·쿠폰존·게시판 전체. 해당 모듈이 꺼져 있으면 그리지 않는다.
    * 게시판 전체는 상위에서는 「게시판 메뉴 개수」만큼 탭으로 펴고 나머지를 더보기로, 펼침 메뉴 안에서는 전부 나열한다.
    */
   const renderAuto = (item: HeaderMenuItem, key: string, inDropdown: boolean): React.ReactNode => {
@@ -500,6 +507,13 @@ const Header: React.FC<HeaderProps> = ({
               {t('nav.reviews')}
             </LinkButton>
           </React.Fragment>
+        ) : null;
+      case 'coupons':
+        // 쿠폰존(#952) — 헤더 메뉴 편집기에서 운영자가 넣을 때만 보인다(기본 메뉴에는 없다). 쇼핑몰 모듈이 꺼져 있으면 숨긴다
+        return shopEnabled ? (
+          <LinkButton key={key} href={shopCouponsPath} onNavigate={() => { navigate(shopCouponsPath); close(); }} className={inDropdown ? dropdownItemClass(isCouponsActive()) : `flex items-center gap-1 ${getNavButtonClass(isCouponsActive())}`} data-testid="nav-coupons" aria-current={isCouponsActive() ? 'page' : undefined}>
+            {autoLabel(item, 'nav.coupons')}
+          </LinkButton>
         ) : null;
       case 'boards': {
         const list = inDropdown ? navBoards : visibleBoards;

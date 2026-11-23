@@ -30,9 +30,6 @@
     "order": {
       "$partial": "partial/admin/order.json"
     },
-    "main_banner": {
-      "$partial": "partial/admin/main_banner.json"
-    },
     "product_review": {
       "$partial": "partial/admin/product_review.json"
     },
@@ -56,9 +53,6 @@
     },
     "deposit": {
       "$partial": "partial/admin/deposit.json"
-    },
-    "promotion_discount_code": {
-      "$partial": "partial/admin/promotion_discount_code.json"
     },
     "sample": {
       "$partial": "partial/admin/sample.json"
@@ -478,7 +472,8 @@
       "exports": "エクスポート一覧",
       "ecommerceExportCatalog": "エクスポート設定(カタログ)",
       "exportDownloads": "エクスポートダウンロード履歴",
-      "ecommerceExportEstimateSource": "エクスポート予想件数"
+      "ecommerceExportEstimateSource": "エクスポート予想件数",
+      "identityCheckpoints": "本人認証の拡張ポイント"
     },
     "action": {
       "request_pg_payment": {

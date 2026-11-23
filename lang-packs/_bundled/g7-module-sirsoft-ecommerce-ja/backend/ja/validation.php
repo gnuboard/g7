@@ -14,6 +14,7 @@ return [
         ],
     ],
     'settings' => [
+        'birthday_field_invalid' => '誕生日として使う会員項目は、日付タイプの会員項目から選んでください。',
         'key_required' => '設定キーは必須です。',
         'value_present' => '設定値は必須です。',
         'key_unknown' => '保存できない設定キーです: :key',
@@ -509,6 +510,9 @@ return [
         'field_content_max' => '内容は最大2000文字まで入力可能です。',
     ],
     'coupon' => [
+        'auto_condition_invalid' => '自動発行は会員登録・初回購入・誕生日のいずれかを選んでください。',
+        'manual_condition_required' => '直接発行・ダウンロードクーポンの発行条件は手動発行である必要があります。',
+        'first_purchase_trigger_required' => '初回購入クーポンは発行タイミングを選んでください。',
         'name' => [
             'required' => 'クーポン名を入力してください。',
         ],
@@ -1807,13 +1811,6 @@ return [
             ],
             'free_shipping_enabled' => [
                 'boolean' => '送料無料の使用の可否は真偽値である必要があります。',
-            ],
-            'address_validation_enabled' => [
-                'boolean' => '住所検証の使用の可否は真偽値である必要があります。',
-            ],
-            'address_api_provider' => [
-                'string' => '住所検証APIプロバイダーは文字列である必要があります。',
-                'max' => '住所検証APIプロバイダーは最大50文字まで入力可能です。',
             ],
             'types' => [
                 'duplicate_code' => '重複した配送タイプのコードが存在します。',

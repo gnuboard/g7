@@ -5,10 +5,11 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 4종 / 호출 지점 3곳. 훅 이름이 상수·변수로 조립된 호출이 1곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
+발행 훅 5종 / 호출 지점 3곳. 훅 이름이 상수·변수로 조립된 호출이 1곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
+| `sirsoft-marketing.consent.is_consented` | filter | 회원이 동의 항목에 동의했는지 묻는 필터 훅 — 다른 확장이 이 플러그인을 직접 참조하지 않고 동의 여부를 확인할 때 쓴다 | 선언 (호출 위치 미확인) |
 | `sirsoft-marketing.filter_consent_data` | filter | 동의 항목을 일괄 저장하기 전에 동의 데이터를 가공하는 필터 훅 | `src/Services/MarketingConsentService.php:382` |
 | `sirsoft-marketing.user.consent_changed` | action | 사용자 마케팅 동의 변경 시 실행되는 액션 훅 | `src/Services/MarketingConsentService.php:364` |
 | `sirsoft-marketing.user.subscribed` | action | 사용자 마케팅 동의 필드가 동의(granted)로 변경될 때 실행되는 액션 훅 | 선언 (호출 위치 미확인) |
@@ -45,6 +46,7 @@
 | `core.plugin_settings.filter_save_data` | filter | `MarketingConsentListener` | `normalizeChannelsSaveData` | 10 |
 | `core.user.before_delete` | action (미선언) | `MarketingConsentListener` | `beforeDelete` | 10 |
 | `core.user.filter_resource_data` | filter | `MarketingConsentListener` | `filterResourceData` | 10 |
+| `sirsoft-marketing.consent.is_consented` | filter | `ConsentQueryListener` | `isConsented` | 10 |
 <!-- @generated:hooks-subscribed END -->
 
 <!-- @intent START -->
@@ -76,6 +78,7 @@
 <!-- @generated:listeners START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
 |---|---|---|---|---|
+| `ConsentQueryListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ConsentQueryListener.php` |
 | `MarketingConsentListener` | 6개 | 명시 등록 | ✅ | `src/Listeners/MarketingConsentListener.php` |
 <!-- @generated:listeners END -->
 

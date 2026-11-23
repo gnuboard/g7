@@ -31,7 +31,8 @@
         "products": "Products",
         "cart": "Cart",
         "mypage": "My Page",
-        "reviews": "Reviews"
+        "reviews": "Reviews",
+        "coupons": "Coupons"
     },
     "footer": {
         "info": "Info",
@@ -76,7 +77,10 @@
         "claims_description": "Review, edit or withdraw your exchange, return, refund and cancellation requests.",
         "claim_detail_title": "Request details",
         "claim_detail_description": "Review the items, shipping, amounts and reason of the request.",
-        "claim_edit_title": "Edit request"
+        "claim_edit_title": "Edit request",
+        "coupons_title": "My Coupons",
+        "reviews_title": "My Reviews",
+        "activity_title": "Activity"
     },
     "identity": {
         "challenge": {
@@ -142,7 +146,8 @@
         "order_complete_title": "Order Complete",
         "guest_order_form_title": "Guest Order Lookup",
         "guest_order_show_title": "Guest Order Detail",
-        "reviews_title": "All Reviews"
+        "reviews_title": "All Reviews",
+        "coupons_title": "Coupon Zone"
     },
     "search": {
         "page_title": "Search"
@@ -198,7 +203,8 @@
             "modal_write_review": "Write Review"
         },
         "mypage_profile": {
-            "withdrawModal": "Withdraw Membership"
+            "withdrawModal": "Withdraw Membership",
+            "logoutAllDevicesModal": "Log out of all devices"
         },
         "identity_challenge_modal": "Identity Verification",
         "notification_delete_all_confirm_modal": "Delete All Notifications",
@@ -223,6 +229,9 @@
             "detail_progress": "Progress",
             "detail_reason": "Reason",
             "image_viewer_modal": "Photo viewer"
+        },
+        "mypage_reviews": {
+            "reviewDeleteModal": "Delete review"
         }
     }
 }

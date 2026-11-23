@@ -15,6 +15,7 @@ use App\Http\Requests\User\CompleteRequiredFieldsRequest;
 use App\Http\Requests\User\ProfileFieldsRequest;
 use App\Http\Requests\User\UpdateProfileRequest;
 use App\Http\Requests\User\UploadAvatarRequest;
+use App\Http\Requests\User\UserActivityLogRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\AttachmentService;
@@ -227,9 +228,13 @@ class ProfileController extends AuthBaseController
     /**
      * 사용자의 활동 기록을 조회합니다.
      *
+     * 7.2.1(#952) 부터 쪽·기간 필터를 받고 회원 본인의 활동(`log_type=user`)만 싣는다. 응답은 종전의 `data.activities[]` 에
+     * `data.pagination` 이 더해진다. 인자 없이 부르면 1쪽 50건이다.
+     *
+     * @param  UserActivityLogRequest  $request  조회 요청 (page·per_page·date_from·date_to)
      * @return JsonResponse 사용자 활동 기록을 포함한 JSON 응답
      */
-    public function activityLog(): JsonResponse
+    public function activityLog(UserActivityLogRequest $request): JsonResponse
     {
         try {
             $user = $this->getCurrentUser();
@@ -238,13 +243,30 @@ class ProfileController extends AuthBaseController
                 return $this->unauthorized('auth.unauthenticated');
             }
 
-            $activities = $this->userService->getUserActivityLogs($user->id);
+            $validated = $request->validated();
+            $page = $this->userService->getUserActivityLogPage(
+                (int) $user->id,
+                (int) ($validated['per_page'] ?? 50),
+                $validated['date_from'] ?? null,
+                $validated['date_to'] ?? null,
+            );
 
             $this->logUserActivity('profile.activity_log');
 
             return $this->success(
                 'user.activity_log_success',
-                ['activities' => $activities]
+                [
+                    'activities' => $page->items(),
+                    'pagination' => [
+                        'current_page' => $page->currentPage(),
+                        'last_page' => $page->lastPage(),
+                        'per_page' => $page->perPage(),
+                        'total' => $page->total(),
+                        'from' => $page->firstItem(),
+                        'to' => $page->lastItem(),
+                        'has_more_pages' => $page->hasMorePages(),
+                    ],
+                ]
             );
         } catch (\Exception $e) {
             return $this->error('user.activity_log_failed', 500, null, ['error' => $e->getMessage()]);

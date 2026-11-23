@@ -11,9 +11,7 @@
  *   boolean false)하고, 수정 화면에서 저장값 반영 + "가능" 재선택 저장(PUT 200)
  *   까지 왕복한다. 생성한 쿠폰은 API 로 정리한다.
  *
- * @scenario issue97-coupon-combinable-boolean
- * @axes request=store,update surface=browser_form
- * @effects radio_click_saves_boolean_state, edit_screen_reflects_saved_value
+ * 매니페스트: tests/scenarios/issue97-coupon-combinable-boolean.yaml — 효과 표식은 아래 시험 바로 앞에 둔다.
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 
@@ -33,7 +31,7 @@ async function fillDebounced(
 
 test.describe('쿠폰 중복 사용 라디오 boolean 저장 (#97)', () => {
   // @scenario request=store, surface=browser_form
-  // @effects radio_click_saves_boolean_state
+  // @effects radio_click_saves_boolean_state, edit_screen_reflects_saved_value
   test('등록: "불가능" 클릭 후 저장하면 boolean false 로 201 저장되고, 수정 화면 반영 + "가능" 재저장까지 왕복한다', async ({
     page,
     couponManageToken,
@@ -69,7 +67,7 @@ test.describe('쿠폰 중복 사용 라디오 boolean 저장 (#97)', () => {
         (res) => res.url().includes(API_BASE) && res.request().method() === 'POST',
         { timeout: 30_000 },
       ),
-      page.locator('#save_button_top').click(),
+      page.locator('#footer_save_button').click(),
     ]);
 
     const body = request.postDataJSON() as Record<string, unknown>;
@@ -105,7 +103,7 @@ test.describe('쿠폰 중복 사용 라디오 boolean 저장 (#97)', () => {
             res.url().includes(`${API_BASE}/${couponId}`) && res.request().method() === 'PUT',
           { timeout: 30_000 },
         ),
-        page.locator('#save_button_top').click(),
+        page.locator('#footer_save_button').click(),
       ]);
 
       const putBody = putRequest.postDataJSON() as Record<string, unknown>;

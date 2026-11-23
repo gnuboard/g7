@@ -5,7 +5,9 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
+use Modules\Sirsoft\Ecommerce\Enums\CouponIssueCondition;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
+use Modules\Sirsoft\Ecommerce\Services\BirthdayFieldResolver;
 use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
@@ -28,6 +30,16 @@ class CouponResource extends BaseApiResource
         $fields['created_by_name'] ??= '-';
 
         return $fields;
+    }
+
+    /**
+     * 생일 항목이 지정되어 있는지 반환합니다. (항목 정의는 코어 레지스트리가 캐시한다)
+     *
+     * @return bool 지정되어 있으면 true
+     */
+    private static function birthdayFieldConfigured(): bool
+    {
+        return app(BirthdayFieldResolver::class)->isConfigured();
     }
 
     /**
@@ -107,6 +119,19 @@ class CouponResource extends BaseApiResource
             'is_combinable' => $this->is_combinable,
             'target_scope' => $this->target_scope?->value,
             'target_scope_label' => $this->target_scope?->label(),
+
+            // 자동발급·발급 알림 (#952) — 모델은 이 세 칸을 직렬화에서 숨기고, 관리자 응답만 여기서 싣는다
+            'first_purchase_trigger_status' => $this->issue_condition === CouponIssueCondition::FIRST_PURCHASE
+                ? $this->resource->firstPurchaseTrigger()->value
+                : null,
+            'first_purchase_trigger_label' => $this->issue_condition === CouponIssueCondition::FIRST_PURCHASE
+                ? $this->resource->firstPurchaseTrigger()->label()
+                : null,
+            'notify_enabled' => (bool) $this->notify_enabled,
+            'notify_marketing_only' => (bool) $this->notify_marketing_only,
+            'notification_type' => $this->id ? $this->resource->notificationType() : null,
+            // 「생일로 쓸 회원 항목」 지정 여부 — 폼 경고(조건을 생일로 바꿀 때도)·목록 배지(생일 쿠폰만) 근거
+            'birthday_field_configured' => self::birthdayFieldConfigured(),
 
             // 상태
             'is_issuable' => $this->isIssuable(),

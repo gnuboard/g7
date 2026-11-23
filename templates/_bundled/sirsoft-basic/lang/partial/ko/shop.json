@@ -673,5 +673,10 @@
   "quick_option": {
     "title": "옵션 선택",
     "view_detail": "상세 보기"
+  },
+  "coupon_zone": {
+    "title": "쿠폰존",
+    "login_hint": "로그인하면 쿠폰을 받을 수 있어요",
+    "count": "받을 수 있는 쿠폰 {{count}}장"
   }
 }

@@ -101,7 +101,7 @@ interface Specimen {
 /** 실물 레이아웃 3곳 — 폼 감싸개 속성·저장 단추 동작은 JSON 그대로, 입력칸은 그 화면의 실제 칸 이름 */
 const SPECIMENS: Specimen[] = [
     { label: 'product_list_price', layout: productForm, saveButtonId: 'footer_save_button', field: 'list_price', route: { itemCode: 'P-5' }, form: { list_price: 10000, name: { ko: '상품' } }, typed: ['100001', '1000012', '10000123'] },
-    { label: 'coupon_min_order_amount', layout: couponForm, saveButtonId: 'save_button_top', field: 'min_order_amount', route: { id: '50' }, form: { min_order_amount: 1000, name: { ko: '쿠폰' } }, typed: ['10001', '100012', '1000123'] },
+    { label: 'coupon_min_order_amount', layout: couponForm, saveButtonId: 'footer_save_button', field: 'min_order_amount', route: { id: '50' }, form: { min_order_amount: 1000, name: { ko: '쿠폰' } }, typed: ['10001', '100012', '1000123'] },
     { label: 'shipping_policy_base_fee', layout: shippingPolicyForm, saveButtonId: 'footer_save_button', field: 'base_fee', route: { id: '3' }, form: { base_fee: 3000, name: { ko: '정책' } }, typed: ['30001', '300012', '3000123'] },
 ];
 

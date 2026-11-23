@@ -73,6 +73,20 @@ class AdminIdentityPolicyController extends AdminBaseController
     }
 
     /**
+     * 「사용자 지정」 범위에서 고를 수 있는 확장 지점 목록을 조회합니다. (7.2.1, #952)
+     *
+     * 활성 모듈·플러그인이 `getIdentityCheckpoints()` 로 선언한 키다. 비어 있으면 정책 창이 「사용자 지정」 옵션을 숨긴다.
+     *
+     * @return JsonResponse 확장 지점 목록 (키·이름·설명·출처 확장)
+     */
+    public function checkpoints(): JsonResponse
+    {
+        return $this->success('common.success', [
+            'checkpoints' => $this->policyService->listCheckpoints(),
+        ]);
+    }
+
+    /**
      * 정책을 신규 생성합니다 (source_type='admin' 고정).
      *
      * @param  AdminIdentityPolicyStoreRequest  $request  검증된 요청

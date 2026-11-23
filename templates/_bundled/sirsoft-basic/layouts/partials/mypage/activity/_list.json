@@ -1,0 +1,354 @@
+{
+    "comment": "내 활동 기록 본체 (#952) — 상단 기간(시작·끝) + [조회], 목록(PC 표·모바일 카드), 쪽 넘김. 기간은 `_local` 에 입력하고\n     [조회]가 URL 쿼리로 옮긴다(목록은 쿼리를 읽는 `myActivity` 가 다시 받는다). 끝 날짜가 시작보다 앞서면 서버가 422 로 거절한다.",
+    "meta": {
+        "is_partial": true,
+        "description": "마이페이지 내 활동 기록 목록"
+    },
+    "type": "basic",
+    "name": "Div",
+    "blur_until_loaded": {
+        "enabled": true,
+        "data_sources": "myActivity"
+    },
+    "responsive": {
+        "portable": {
+            "props": {
+                "className": "mt-4"
+            }
+        }
+    },
+    "props": {
+        "className": "mt-6"
+    },
+    "children": [
+        {
+            "comment": "기간 필터",
+            "id": "activity_filter",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-wrap items-end gap-3 mb-4 card-plain p-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "htmlFor": "activity_date_from",
+                                "className": "block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1"
+                            },
+                            "text": "$t:mypage.activity.date_from"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "id": "activity_date_from",
+                                "type": "date",
+                                "name": "activityFrom",
+                                "value": "{{_local.activityFrom ?? ''}}",
+                                "className": "h-9 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "htmlFor": "activity_date_to",
+                                "className": "block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1"
+                            },
+                            "text": "$t:mypage.activity.date_to"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "id": "activity_date_to",
+                                "type": "date",
+                                "name": "activityTo",
+                                "value": "{{_local.activityTo ?? ''}}",
+                                "className": "h-9 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "activity_search_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "기간을 쿼리로 옮기고 1쪽으로 — 쿼리가 바뀌면 목록을 다시 받는다",
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/mypage/activity",
+                                "mergeQuery": true,
+                                "query": {
+                                    "date_from": "{{_local.activityFrom ?? ''}}",
+                                    "date_to": "{{_local.activityTo ?? ''}}",
+                                    "page": "1"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "h-9 px-4 text-sm font-medium rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100"
+                    },
+                    "text": "$t:mypage.activity.search"
+                }
+            ]
+        },
+        {
+            "id": "activity_total",
+            "type": "basic",
+            "name": "P",
+            "if": "{{myActivity !== undefined}}",
+            "props": {
+                "className": "text-sm text-muted mb-3"
+            },
+            "text": "$t:mypage.activity.total|count={{myActivity?.data?.pagination?.total ?? 0}}"
+        },
+        {
+            "comment": "목록 (PC 표)",
+            "id": "activity_table",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(myActivity?.data?.activities ?? []).length > 0}}",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "hidden"
+                    }
+                }
+            },
+            "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Table",
+                    "props": {
+                        "className": "w-full text-sm"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Thead",
+                            "props": {
+                                "className": "bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Tr",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "px-4 py-3 text-left font-medium text-muted w-48"
+                                            },
+                                            "text": "$t:mypage.activity.table.date"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "px-4 py-3 text-left font-medium text-muted w-48"
+                                            },
+                                            "text": "$t:mypage.activity.table.action"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "px-4 py-3 text-left font-medium text-muted"
+                                            },
+                                            "text": "$t:mypage.activity.table.description"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Tbody",
+                            "iteration": {
+                                "source": "{{myActivity?.data?.activities ?? []}}",
+                                "item_var": "log"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Tr",
+                                    "props": {
+                                        "className": "border-b border-gray-100 dark:border-gray-700/50"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3 text-muted whitespace-nowrap"
+                                            },
+                                            "text": "{{log.created_at | datetime}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3 text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "{{log.action_label ?? log.action}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3 text-gray-700 dark:text-gray-300 break-words"
+                                            },
+                                            "text": "{{log.description ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "목록 (모바일 카드)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(myActivity?.data?.activities ?? []).length > 0}}",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "space-y-3"
+                    }
+                }
+            },
+            "props": {
+                "className": "hidden"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{myActivity?.data?.activities ?? []}}",
+                        "item_var": "log"
+                    },
+                    "props": {
+                        "className": "card-plain p-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center justify-between gap-2 mb-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                    },
+                                    "text": "{{log.action_label ?? log.action}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-xs text-muted whitespace-nowrap"
+                                    },
+                                    "text": "{{log.created_at | datetime}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-gray-700 dark:text-gray-300 break-words"
+                            },
+                            "text": "{{log.description ?? ''}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "빈 상태",
+            "id": "activity_empty",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{myActivity !== undefined && (myActivity?.data?.activities ?? []).length === 0}}",
+            "props": {
+                "className": "card-plain p-8 text-center"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "clock-rotate-left",
+                        "size": "3x",
+                        "className": "mx-auto text-gray-500 dark:text-gray-500 mb-3"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-muted"
+                    },
+                    "text": "$t:mypage.activity.empty"
+                }
+            ]
+        },
+        {
+            "comment": "페이지네이션",
+            "type": "composite",
+            "name": "Pagination",
+            "if": "{{((myActivity?.data?.pagination?.last_page ?? 0) > 1) || (myActivity?.data?.pagination?.has_more_pages === true) || ((myActivity?.data?.pagination?.current_page ?? 1) > 1)}}",
+            "actions": [
+                {
+                    "event": "onPageChange",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/mypage/activity",
+                        "mergeQuery": true,
+                        "query": {
+                            "page": "{{$args[0]}}"
+                        }
+                    }
+                }
+            ],
+            "props": {
+                "pageHref": "/mypage/activity?page={page}",
+                "pageHrefMergeQuery": true,
+                "currentPage": "{{myActivity?.data?.pagination?.current_page}}",
+                "totalPages": "{{myActivity?.data?.pagination?.last_page ?? null}}",
+                "hasMorePages": "{{myActivity?.data?.pagination?.has_more_pages ?? false}}",
+                "className": "mt-4"
+            }
+        }
+    ]
+}

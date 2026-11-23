@@ -1,0 +1,242 @@
+<!-- 마이페이지 «내 정보» 보안 카드에 2단계 인증(인증 앱) 칸을 끼워 넣는 조각 (#952).
+  기본 템플릿의 보안 카드(`profile_security_card`)가 이 조각의 앵커다 — 템플릿을 고치지 않으므로 이 플러그인을 끄면 칸도 사라진다.
+  등록·확정·해제·백업 코드 재발급 흐름은 관리자 「내 보안」 화면과 같은 API·같은 마크업이다(이 파일은 그 화면의 카드들을 옮긴 것).
+  비밀번호가 없는 회원(소셜 로그인 전용)은 등록 시작에 현재 비밀번호를 요구하므로 등록할 수 없다 — 「비밀번호를 먼저 설정하세요」 안내와
+  비밀번호 설정 화면 링크만 보인다. 상태 값은 호스트 화면의 `user.data.has_password` 와 이 조각의 `totpEnrollment` 다. -->
+<extension target-layout="mypage/profile" priority="110">
+  <!-- 내 등록 상태 — 실패해도 화면은 미등록으로 그린다 -->
+  <data-source id="totpEnrollment" label_key="$t:sirsoft-totp.editor.data_source.totpEnrollment" type="api" endpoint="/api/plugins/sirsoft-totp/enrollment" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data">
+        <field name="enrolled" :value="false"/>
+        <field name="pending" :value="false"/>
+        <field name="confirmed_at" :value="null"/>
+        <field name="backup_codes_remaining" :value="0"/>
+      </field>
+    </fallback>
+  </data-source>
+  <inject target-id="profile_security_card" position="append_child">
+    <div data-ref="mypage_totp_section" class="totp:mt-6 totp:pt-6 totp:border-t totp:border-gray-200 totp:dark:border-gray-700">
+      <div class="totp:flex totp:flex-wrap totp:items-center totp:justify-between totp:gap-2 totp:mb-3">
+        <span class="totp:text-sm totp:font-medium totp:text-gray-900 totp:dark:text-white">$t:sirsoft-totp.user.security.section_title</span>
+        <span data-ref="mypage_totp_status" class="{{totpEnrollment?.data?.enrolled ? 'totp:bg-green-100 totp:text-green-800 totp:dark:bg-green-900/30 totp:dark:text-green-300' : 'totp:bg-gray-100 totp:text-gray-700 totp:dark:bg-gray-700 totp:dark:text-gray-300'}} totp:inline-flex totp:items-center totp:px-2.5 totp:py-0.5 totp:rounded-full totp:text-xs totp:font-medium">{{totpEnrollment?.data?.enrolled ? '$t:sirsoft-totp.user.security.status_enabled' : '$t:sirsoft-totp.user.security.status_disabled'}}</span>
+      </div>
+      <!-- 비밀번호가 없는 회원 — 등록할 수 없다 -->
+      <div data-ref="mypage_totp_no_password" data-if="{{user !== undefined &amp;&amp; totpEnrollment !== undefined &amp;&amp; user?.data?.has_password === false &amp;&amp; !totpEnrollment?.data?.enrolled}}" class="totp:flex totp:flex-wrap totp:items-center totp:gap-2 totp:p-3 totp:rounded-lg totp:bg-amber-50 totp:dark:bg-amber-900/20 totp:border totp:border-amber-200 totp:dark:border-amber-800">
+        <span class="totp:text-sm totp:text-amber-800 totp:dark:text-amber-200">$t:sirsoft-totp.user.security.password_required</span>
+        <a data-ref="mypage_totp_set_password_link" href="/mypage/change-password" class="totp:text-sm totp:font-medium totp:text-amber-900 totp:dark:text-amber-100 totp:underline">
+          <on type="click">
+            <navigate path="/mypage/change-password"/>
+          </on>
+          $t:sirsoft-totp.user.security.set_password
+        </a>
+      </div>
+      <div data-ref="mypage_totp_body" data-if="{{user !== undefined &amp;&amp; totpEnrollment !== undefined &amp;&amp; (user?.data?.has_password !== false || !!totpEnrollment?.data?.enrolled)}}">
+        <div data-ref="mypage_totp_error" data-if="{{_local.totpError}}" class="totp-alert-danger totp:mb-4" role="alert">
+          <p data-ref="mypage_totp_error_text" class="totp:text-sm totp:text-red-700 totp:dark:text-red-400">{{_local.totpError ?? ''}}</p>
+      </div>
+        <!-- 이미 등록을 마친 상태 — 해제와 백업 코드 재발급만 남는다. -->
+        <div data-ref="mypage_totp_enrolled_card" data-if="{{totpEnrollment?.data?.enrolled && !_local.totpBackupCodes}}" class="totp:mt-4">
+          <h3 data-ref="mypage_totp_enrolled_title" class="totp-card-title">$t:sirsoft-totp.admin.security.enrolled.title</h3>
+          <div data-ref="mypage_totp_enrolled_desc" class="totp-card-description">$t:sirsoft-totp.admin.security.enrolled.description</div>
+          <p data-ref="mypage_totp_enrolled_since" data-if="{{totpEnrollment?.data?.confirmed_at}}" class="totp-text-hint">$t:sirsoft-totp.admin.security.enrolled.since|at={{totpEnrollment?.data?.confirmed_at | datetime}}</p>
+          <p data-ref="mypage_totp_backup_remaining" class="totp-text-hint totp:mt-1">$t:sirsoft-totp.admin.security.enrolled.backup_remaining|count={{totpEnrollment?.data?.backup_codes_remaining ?? 0}}</p>
+          <div data-ref="mypage_totp_enrolled_field" class="totp:mt-4">
+            <label data-ref="mypage_totp_enrolled_label" for="mypage_totp_manage_code" class="totp-form-label">$t:sirsoft-totp.admin.security.enrolled.code_label</label>
+            <input data-ref="mypage_totp_enrolled_input" id="mypage_totp_manage_code" type="text" name="mypage_totp_manage_code" value="{{_local.totpCode ?? ''}}" inputMode="numeric" autoComplete="one-time-code" maxLength="16" placeholder="$t:sirsoft-totp.admin.security.enrolled.code_placeholder" class="totp-input totp:font-mono" disabled="{{_local.totpBusy}}">
+              <on event="onChange">
+                <!-- 해제·재발급에 쓸 현재 앱 코드(또는 백업 코드)를 담는다 — 입력을 고치는 순간 이전 실패 문구를 지운다 -->
+                <set-state target="local" totpCode="{{$event.target.value}}" :totpError="null"/>
+              </on>
+            </input>
+            <p data-ref="mypage_totp_enrolled_hint" class="totp-text-hint totp:mt-1">$t:sirsoft-totp.admin.security.enrolled.code_hint</p>
+          </div>
+          <div data-ref="mypage_totp_enrolled_actions" class="totp:flex totp:flex-col totp:gap-2 totp:mt-4">
+            <responsive on="640-" class="totp:flex totp:flex-row totp:gap-2 totp:mt-4"/>
+            <button data-ref="mypage_totp_regenerate" type="button" class="totp:px-4 totp:py-2 totp:bg-white totp:dark:bg-gray-700 totp-text-body totp:border totp:border-gray-300 totp:dark:border-gray-600 totp:rounded-lg totp:hover:bg-gray-50 totp:dark:hover:bg-gray-600 totp:font-medium totp:transition-colors totp:cursor-pointer totp:disabled:opacity-50 totp:disabled:cursor-not-allowed" disabled="{{String(_local.totpCode ?? '').trim().length &lt; 6 || _local.totpBusy}}">
+              <on type="click">
+                <!-- 백업 코드 재발급 — 성공하면 새 코드를 1회 노출 화면으로 띄우고 입력값을 비운다. 서버가 6자 이상만 받으므로(앞뒤 공백 제외) 그 전에는 버튼이 잠긴다(해제 버튼도 같다). -->
+                <sequence>
+                  <set-state target="local" :totpBusy="true" :totpError="null"/>
+                  <api-call :auth_required="true" method="POST" target="/api/plugins/sirsoft-totp/backup-codes/regenerate">
+                    <success>
+                      <set-state target="local" :totpBusy="false" totpCode="" totpBackupCodes="{{response.data.backup_codes}}"/>
+                      <refetch-data-source dataSourceId="totpEnrollment"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" :totpBusy="false" totpError="{{error.message}}"/>
+                    </fail>
+                    <body code="{{_local.totpCode}}"/>
+                  </api-call>
+                </sequence>
+              </on>
+              <span data-ref="mypage_totp_regenerate_text">$t:sirsoft-totp.admin.security.enrolled.regenerate</span>
+            </button>
+            <button data-ref="mypage_totp_disable" type="button" class="totp:px-4 totp:py-2 totp:bg-red-600 totp:hover:bg-red-700 totp:dark:bg-red-600 totp:dark:hover:bg-red-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer totp:disabled:opacity-50 totp:disabled:cursor-not-allowed" disabled="{{String(_local.totpCode ?? '').trim().length &lt; 6 || _local.totpBusy}}">
+              <on type="click">
+                <!-- 해제 — 해제에도 현재 코드를 요구한다(열린 세션만으로 2단계 인증을 끄지 못하게). -->
+                <sequence>
+                  <set-state target="local" :totpBusy="true" :totpError="null"/>
+                  <api-call :auth_required="true" method="DELETE" target="/api/plugins/sirsoft-totp/enrollment">
+                    <success>
+                      <set-state target="local" :totpBusy="false" totpCode="" :totpSecret="null" :totpOtpauthUri="null" :totpBackupCodes="null"/>
+                      <toast type="success" message="{{response.message}}"/>
+                      <refetch-data-source dataSourceId="totpEnrollment"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" :totpBusy="false" totpError="{{error.message}}"/>
+                    </fail>
+                    <body code="{{_local.totpCode}}"/>
+                  </api-call>
+                </sequence>
+              </on>
+              <span data-ref="mypage_totp_disable_text">$t:sirsoft-totp.admin.security.enrolled.disable</span>
+            </button>
+          </div>
+      </div>
+        <!-- 등록 시작 전 — 안내와 시작 버튼만. -->
+        <div data-ref="mypage_totp_intro_card" data-if="{{totpEnrollment !== undefined && !totpEnrollment?.data?.enrolled && !_local.totpSecret && !_local.totpBackupCodes}}" class="totp:mt-4">
+          <h3 data-ref="mypage_totp_intro_title" class="totp-card-title">$t:sirsoft-totp.admin.security.intro.title</h3>
+          <div data-ref="mypage_totp_intro_desc" class="totp-card-description">$t:sirsoft-totp.admin.security.intro.description</div>
+          <ol data-ref="mypage_totp_intro_steps" class="totp:list-decimal totp:list-inside totp:text-sm totp:text-gray-700 totp:dark:text-gray-300 totp:space-y-1 totp:mt-3">
+            <li data-ref="mypage_totp_intro_step1">$t:sirsoft-totp.admin.security.intro.step_install</li>
+            <li data-ref="mypage_totp_intro_step2">$t:sirsoft-totp.admin.security.intro.step_scan</li>
+            <li data-ref="mypage_totp_intro_step3">$t:sirsoft-totp.admin.security.intro.step_confirm</li>
+          </ol>
+          <div data-ref="mypage_totp_intro_password_field" class="totp:mt-4">
+            <label data-ref="mypage_totp_intro_password_label" for="mypage_totp_current_password" class="totp-form-label">$t:sirsoft-totp.admin.security.intro.password_label</label>
+            <input data-ref="mypage_totp_intro_password_input" id="mypage_totp_current_password" type="password" name="mypage_totp_current_password" value="{{_local.totpCurrentPassword ?? ''}}" autoComplete="current-password" maxLength="255" placeholder="$t:sirsoft-totp.admin.security.intro.password_placeholder" class="totp-input" disabled="{{_local.totpBusy}}">
+              <on event="onChange">
+                <!-- 등록 시작에 쓸 현재 비밀번호를 담는다(1.0.3 — 열린 세션만으로 인증 앱을 바꾸지 못하게) — 입력을 고치는 순간 이전 실패 문구를 지운다 -->
+                <set-state target="local" totpCurrentPassword="{{$event.target.value}}" :totpError="null" :totpPasswordError="null"/>
+              </on>
+            </input>
+            <!-- 비밀번호가 틀리면(422) 칸 바로 아래에 서버 문구를 보인다 — 입력값은 남겨 오타만 고쳐 다시 누를 수 있게 한다 -->
+            <p data-ref="mypage_totp_intro_password_error" data-if="{{_local.totpPasswordError}}" class="totp:text-sm totp:text-red-600 totp:dark:text-red-400 totp:mt-1" role="alert">{{_local.totpPasswordError ?? ''}}</p>
+            <p data-ref="mypage_totp_intro_password_hint" class="totp-text-hint totp:mt-1">$t:sirsoft-totp.admin.security.intro.password_hint</p>
+          </div>
+          <button data-ref="mypage_totp_start" type="button" class="totp:mt-4 totp:px-4 totp:py-2 totp:bg-blue-600 totp:hover:bg-blue-700 totp:dark:bg-blue-600 totp:dark:hover:bg-blue-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer totp:disabled:opacity-50 totp:disabled:cursor-not-allowed" disabled="{{!_local.totpCurrentPassword || _local.totpBusy || _local.totpStartLocked}}">
+            <on type="click">
+              <!-- 시크릿 발급 — 응답의 평문은 이 시점에만 받는다. 현재 비밀번호를 함께 보내고, 성공하면 화면 상태에서 곧바로 비운다. -->
+              <sequence>
+                <set-state target="local" :totpBusy="true" :totpError="null" :totpPasswordError="null"/>
+                <api-call :auth_required="true" method="POST" target="/api/plugins/sirsoft-totp/enrollment">
+                  <success>
+                    <set-state target="local" :totpBusy="false" totpSecret="{{response.data.secret}}" totpOtpauthUri="{{response.data.otpauth_uri}}" totpCode="" totpCurrentPassword=""/>
+                  </success>
+                  <fail>
+                    <!-- 비밀번호 틀림(422)은 칸 아래, 그 밖(429 등)은 상단 상자. 회원별 횟수 초과(429)면 남은 대기 시간 동안 시작 버튼을 잠근다 -->
+                    <set-state target="local" :totpBusy="false" totpError="{{error.status === 422 ? null : error.message}}" totpPasswordError="{{error.status === 422 ? (error.errors?.current_password?.[0] ?? error.message) : null}}" totpStartLocked="{{error.status === 429}}"/>
+                    <!-- 잠금 해제는 1회 타이머 — 틱이 화면 상태를 읽지 않게(등록 시점 문맥으로 돈다) 해제·정지만 한다 -->
+                    <start-interval if="{{error.status === 429}}" id="mypage_totp_start_unlock" intervalMs="{{Math.max(1, Number(error.errors?.retry_after ?? 60)) * 1000}}">
+                      <actions>
+                        <set-state target="local" :totpStartLocked="false"/>
+                        <stop-interval id="mypage_totp_start_unlock"/>
+                      </actions>
+                    </start-interval>
+                  </fail>
+                  <body current_password="{{_local.totpCurrentPassword}}"/>
+                </api-call>
+              </sequence>
+            </on>
+            <span data-ref="mypage_totp_start_text">$t:sirsoft-totp.admin.security.intro.start</span>
+          </button>
+      </div>
+        <!-- 등록 진행 중 — QR 과 수동 입력 키를 나란히 두고 확인 코드를 받는다.
+             데스크톱 2열, md 이하 1열(§디자인 C). -->
+        <div data-ref="mypage_totp_enroll_card" data-if="{{_local.totpSecret && !_local.totpBackupCodes}}" class="totp:mt-4">
+          <h3 data-ref="mypage_totp_enroll_title" class="totp-card-title">$t:sirsoft-totp.admin.security.enroll.title</h3>
+          <div data-ref="mypage_totp_enroll_grid" class="totp:grid totp:grid-cols-2 totp:gap-6 totp:mt-4">
+            <responsive on="tablet" class="totp:grid totp:grid-cols-1 totp:gap-6 totp:mt-4"/>
+            <responsive on="mobile" class="totp:grid totp:grid-cols-1 totp:gap-6 totp:mt-4"/>
+            <div data-ref="mypage_totp_qr_column">
+              <!-- QR 은 플러그인 번들의 인코더가 그린다 — 시크릿을 외부로 보내지 않는다. -->
+              <div data-ref="mypage_totp_qr" class="totp-flex-center totp:p-4 totp:bg-white totp:rounded-lg totp:border totp:border-gray-200 totp:dark:border-gray-700" data-totp-qr="{{_local.totpOtpauthUri}}"/>
+              <p data-ref="mypage_totp_qr_hint" class="totp-text-hint totp:mt-2">$t:sirsoft-totp.admin.security.enroll.qr_hint</p>
+              <div data-ref="mypage_totp_manual" class="totp:mt-4">
+                <label data-ref="mypage_totp_manual_label" class="totp-form-label">$t:sirsoft-totp.admin.security.enroll.manual_label</label>
+                <input data-ref="mypage_totp_manual_key" type="text" value="{{_local.totpSecret ?? ''}}" :disabled="true" class="totp-input totp:font-mono totp:text-center totp:tracking-widest"/>
+                <p data-ref="mypage_totp_manual_hint" class="totp-text-hint totp:mt-1">$t:sirsoft-totp.admin.security.enroll.manual_hint</p>
+              </div>
+            </div>
+            <div data-ref="mypage_totp_confirm_column">
+              <p data-ref="mypage_totp_enroll_desc" class="totp:text-sm totp:text-gray-700 totp:dark:text-gray-300">$t:sirsoft-totp.admin.security.enroll.description</p>
+              <div data-ref="mypage_totp_confirm_field" class="totp:mt-4">
+                <label data-ref="mypage_totp_confirm_label" for="mypage_totp_confirm_code" class="totp-form-label">$t:sirsoft-totp.admin.security.enroll.code_label</label>
+                <input data-ref="mypage_totp_confirm_input" id="mypage_totp_confirm_code" type="text" name="mypage_totp_confirm_code" value="{{_local.totpCode ?? ''}}" inputMode="numeric" autoComplete="one-time-code" maxLength="6" placeholder="$t:sirsoft-totp.admin.security.enroll.code_placeholder" class="totp-input totp:py-3 totp:text-center totp:text-xl totp:tracking-widest totp:font-mono" disabled="{{_local.totpBusy}}">
+                  <on event="onChange">
+                    <!-- 등록 확정에 쓸 6자리 코드를 담는다 — 입력을 고치는 순간 이전 실패 문구를 지운다 -->
+                    <set-state target="local" totpCode="{{$event.target.value}}" :totpError="null"/>
+                  </on>
+                </input>
+              </div>
+              <div data-ref="mypage_totp_enroll_actions" class="totp:flex totp:flex-col totp:gap-2 totp:mt-4">
+                <responsive on="640-" class="totp:flex totp:flex-row totp:gap-2 totp:mt-4"/>
+                <button data-ref="mypage_totp_confirm" type="button" class="totp:flex-1 totp:px-4 totp:py-3 totp:bg-blue-600 totp:hover:bg-blue-700 totp:dark:bg-blue-600 totp:dark:hover:bg-blue-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer totp:disabled:opacity-50 totp:disabled:cursor-not-allowed" disabled="{{!_local.totpCode || _local.totpCode.length < 6 || _local.totpBusy}}">
+                  <on type="click">
+                    <!-- 확정 — 성공하면 백업 코드 10개를 1회 노출 화면으로 넘긴다. -->
+                    <sequence>
+                      <set-state target="local" :totpBusy="true" :totpError="null"/>
+                      <api-call :auth_required="true" method="POST" target="/api/plugins/sirsoft-totp/enrollment/confirm">
+                        <success>
+                          <set-state target="local" :totpBusy="false" totpCode="" :totpSecret="null" :totpOtpauthUri="null" totpBackupCodes="{{response.data.backup_codes}}"/>
+                          <refetch-data-source dataSourceId="totpEnrollment"/>
+                        </success>
+                        <fail>
+                          <set-state target="local" :totpBusy="false" totpError="{{error.message}}"/>
+                        </fail>
+                        <body code="{{_local.totpCode}}"/>
+                      </api-call>
+                    </sequence>
+                  </on>
+                  <span data-ref="mypage_totp_confirm_text">$t:sirsoft-totp.admin.security.enroll.confirm</span>
+                </button>
+                <button data-ref="mypage_totp_cancel" type="button" class="totp:flex-1 totp:px-4 totp:py-3 totp:border totp:border-gray-300 totp:dark:border-gray-600 totp:text-gray-700 totp:dark:text-gray-300 totp:rounded-lg totp:font-medium totp:hover:bg-gray-50 totp:dark:hover:bg-gray-700 totp:transition-colors totp:cursor-pointer" disabled="{{_local.totpBusy}}">
+                  <on type="click">
+                    <!-- 등록 취소 — 받아 둔 시크릿·QR 주소를 화면 상태에서 버려 시작 전 카드로 돌아간다. 서버에는 요청하지 않는다 -->
+                    <set-state target="local" :totpSecret="null" :totpOtpauthUri="null" totpCode="" totpCurrentPassword="" :totpError="null"/>
+                  </on>
+                  <span data-ref="mypage_totp_cancel_text">$t:sirsoft-totp.admin.security.enroll.cancel</span>
+                </button>
+              </div>
+            </div>
+          </div>
+      </div>
+        <!-- 백업 코드 1회 노출 — 확정 직후와 재발급 직후에만 뜬다. 새로고침하면 다시 볼 수 없다. -->
+        <div data-ref="mypage_totp_backup_card" data-if="{{_local.totpBackupCodes}}" class="totp:mt-4">
+          <h3 data-ref="mypage_totp_backup_title" class="totp-card-title">$t:sirsoft-totp.admin.security.backup.title</h3>
+          <div data-ref="mypage_totp_backup_warning" class="totp:p-4 totp:rounded-lg totp:bg-amber-50 totp:dark:bg-amber-900/20 totp:border totp:border-amber-200 totp:dark:border-amber-800" role="status" aria-live="polite">
+            <p data-ref="mypage_totp_backup_warning_text" class="totp:text-sm totp:text-amber-800 totp:dark:text-amber-200">$t:sirsoft-totp.admin.security.backup.warning</p>
+          </div>
+          <div data-ref="mypage_totp_backup_grid" class="totp:grid totp:grid-cols-5 totp:gap-2 totp:mt-4">
+            <responsive on="tablet" class="totp:grid totp:grid-cols-3 totp:gap-2 totp:mt-4"/>
+            <responsive on="mobile" class="totp:grid totp:grid-cols-2 totp:gap-2 totp:mt-4"/>
+            <div data-ref="mypage_totp_backup_item_{{$idx}}" data-each="backupCode, $idx in {{_local.totpBackupCodes ?? []}}" class="totp:px-3 totp:py-2 totp:rounded-lg totp:bg-gray-50 totp:dark:bg-gray-800 totp:border totp:border-gray-200 totp:dark:border-gray-700 totp:text-center totp:font-mono totp:text-sm totp:text-gray-900 totp:dark:text-gray-100">{{backupCode}}</div>
+          </div>
+          <div data-ref="mypage_totp_backup_actions" class="totp:flex totp:flex-col totp:gap-2 totp:mt-4">
+            <responsive on="640-" class="totp:flex totp:flex-row totp:gap-2 totp:mt-4"/>
+            <!-- 복사 먼저, 보관 확인은 그 다음 — 이 화면을 벗어나면 코드를 다시 볼 수 없으므로
+                 「보관했습니다」를 누르기 전에 가져갈 수단이 눈에 먼저 들어와야 한다.
+                 엔진에는 클립보드 액션이 없어 플러그인이 named action 으로 내준다(resources/js/handlers). -->
+            <button data-ref="mypage_totp_backup_copy" type="button" class="totp:px-4 totp:py-2 totp:bg-white totp:dark:bg-gray-700 totp-text-body totp:border totp:border-gray-300 totp:dark:border-gray-600 totp:rounded-lg totp:hover:bg-gray-50 totp:dark:hover:bg-gray-600 totp:font-medium totp:transition-colors totp:cursor-pointer">
+              <on type="click">
+                <sequence>
+                  <action handler="sirsoft-totp.copyToClipboard" text="{{(_local.totpBackupCodes ?? []).join('\n')}}"/>
+                  <toast type="success" message="$t:sirsoft-totp.admin.security.backup.copied"/>
+                </sequence>
+              </on>
+              <span data-ref="mypage_totp_backup_copy_text">$t:sirsoft-totp.admin.security.backup.copy</span>
+            </button>
+            <button data-ref="mypage_totp_backup_done" type="button" class="totp:px-4 totp:py-2 totp:bg-blue-600 totp:hover:bg-blue-700 totp:dark:bg-blue-600 totp:dark:hover:bg-blue-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer">
+              <on type="click">
+                <!-- 「보관했습니다」 — 백업 코드 평문을 화면 상태에서 지워 등록됨 카드로 돌아간다. 다시 볼 방법은 재발급뿐이다 -->
+                <set-state target="local" :totpBackupCodes="null"/>
+              </on>
+              <span data-ref="mypage_totp_backup_done_text">$t:sirsoft-totp.admin.security.backup.done</span>
+            </button>
+          </div>
+      </div>
+      </div>
+    </div>
+  </inject>
+</extension>

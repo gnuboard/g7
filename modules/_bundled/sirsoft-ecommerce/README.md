@@ -265,6 +265,7 @@ _별도의 관리자 설정 항목이 없습니다._
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
 | `sirsoft-board` | 모듈 | `*` | ✅ |
+| `sirsoft-marketing` | 플러그인 | `*` | ✅ |
 
 **이 확장과 연동하는 확장** (이 확장이 있으면 기능을 더합니다 — 이 확장의 화면·훅 이름을 바꿀 때 함께 확인)
 
@@ -273,7 +274,7 @@ _별도의 관리자 설정 항목이 없습니다._
 | `sirsoft-board` | 모듈 | `*` |
 | `sirsoft-hero_section` | 플러그인 | `>=1.4.0` |
 | `sirsoft-message_bizppurio` | 플러그인 | `*` |
-| `sirsoft-basic` | 템플릿 | `>=1.4.0` |
+| `sirsoft-basic` | 템플릿 | `>=1.4.1` |
 <!-- @generated:integrations END -->
 
 ## 문서

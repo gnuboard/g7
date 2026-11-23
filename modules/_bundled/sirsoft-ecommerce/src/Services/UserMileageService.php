@@ -12,6 +12,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\DTO\MileageAdminDeductDto;
 use Modules\Sirsoft\Ecommerce\DTO\MileageAdminEarnDto;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
@@ -452,7 +453,11 @@ class UserMileageService
         // 취소 회수(findEarnLotForOption 단일 lot 가정)·유효기간 정합을 위해 신규 lot 을 늘리지 않는다.
         if ($type === MileageTransactionTypeEnum::PURCHASE_EARN
             && $this->ledger->findEarnLotForOption($option->id) !== null) {
-            return $this->applyDeltaToExistingEarnLot($order, $option, $currency, $target - $chainEarned);
+            $increased = $this->applyDeltaToExistingEarnLot($order, $option, $currency, $target - $chainEarned);
+            // 증액 경로는 이번에 늘어난 **증액분**만 알린다 (#952)
+            $this->notifyEarned((int) $order->user_id, $amount, $currency, 'purchase', $increased);
+
+            return $increased;
         }
 
         $expiresAt = $this->resolveEarnExpiry();
@@ -478,7 +483,10 @@ class UserMileageService
                 throw $e;
             }
 
-            return $this->applyDeltaToExistingEarnLot($order, $option, $currency, $target - $chainEarned);
+            $increased = $this->applyDeltaToExistingEarnLot($order, $option, $currency, $target - $chainEarned);
+            $this->notifyEarned((int) $order->user_id, $amount, $currency, 'purchase', $increased);
+
+            return $increased;
         }
 
         $this->cache->recalculateForUser($order->user_id, $currency);
@@ -492,6 +500,10 @@ class UserMileageService
         ]);
 
         $this->forfeitIfWithdrawn($tx);
+
+        if ($type === MileageTransactionTypeEnum::PURCHASE_EARN) {
+            $this->notifyEarned((int) $order->user_id, $amount, $currency, 'purchase', $tx);
+        }
 
         return $tx;
     }
@@ -844,7 +856,7 @@ class UserMileageService
             throw new MileageValidationException(__('sirsoft-ecommerce::validation.mileage.user_withdrawn'));
         }
 
-        return DB::transaction(function () use ($userId, $dto) {
+        $tx = DB::transaction(function () use ($userId, $dto) {
             $tx = $this->recordEarnLot(
                 $userId,
                 $dto->currency,
@@ -866,6 +878,10 @@ class UserMileageService
 
             return $tx;
         });
+
+        $this->notifyEarned($userId, (float) $dto->amount, $dto->currency, 'admin', $tx);
+
+        return $tx;
     }
 
     /**
@@ -936,7 +952,7 @@ class UserMileageService
             return null;
         }
 
-        return DB::transaction(function () use ($userId, $amount) {
+        $tx = DB::transaction(function () use ($userId, $amount) {
             if ($this->ledger->existsForUserByTypeForUpdate($userId, MileageTransactionTypeEnum::SIGNUP_EARN->value)) {
                 return null;
             }
@@ -948,6 +964,12 @@ class UserMileageService
                 __('sirsoft-ecommerce::enums.mileage_transaction_type.signup_earn')
             );
         });
+
+        if ($tx !== null) {
+            $this->notifyEarned($userId, (float) $amount, (string) $tx->currency, 'signup', $tx);
+        }
+
+        return $tx;
     }
 
     /**
@@ -1004,7 +1026,7 @@ class UserMileageService
     {
         $this->assertMemberWithinManageScope($userId);
 
-        return $this->consumeFifo(
+        $tx = $this->consumeFifo(
             $userId,
             $dto->amount,
             $dto->currency,
@@ -1014,6 +1036,70 @@ class UserMileageService
             $dto->memo,
             'deduct_exceeds_balance',
         );
+
+        // 관리자 차감 알림 (#952) — 금액은 양수로 넘긴다
+        try {
+            $user = $this->userRepository->findById($userId);
+            if ($user !== null) {
+                HookManager::doAction(
+                    'sirsoft-ecommerce.mileage.after_admin_deduct',
+                    $user,
+                    (float) $dto->amount,
+                    $dto->currency,
+                    (float) $this->ledger->getBalanceByCurrency($userId, $dto->currency),
+                    (string) ($dto->memo ?? ''),
+                    $tx,
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('마일리지 차감 알림 훅 실패', ['user_id' => $userId, 'message' => $e->getMessage()]);
+        }
+
+        return $tx;
+    }
+
+    /**
+     * 마일리지 적립 알림 훅을 발화합니다. (#952)
+     *
+     * 탈퇴 즉시 소멸(forfeit)된 적립·0원 적립·회원이 없는 적립에서는 발화하지 않는다. 기존 `mileage.earn`(결제완료 시점의
+     * 「적립 예정」)과는 다른 사건이다. 알림 실패가 적립을 막지 않는다.
+     *
+     * @param  int  $userId  회원 ID
+     * @param  float  $amount  이번에 적립된 금액 (증액이면 증액분)
+     * @param  string  $currency  통화 코드
+     * @param  string  $reason  적립 사유 (purchase·admin·signup)
+     * @param  MileageTransaction|null  $tx  적립 거래
+     * @return void 반환값 없음
+     */
+    private function notifyEarned(int $userId, float $amount, string $currency, string $reason, ?MileageTransaction $tx): void
+    {
+        if ($tx === null || $amount <= 0) {
+            return;
+        }
+
+        try {
+            if ($this->isWithdrawnUser($userId)) {
+                return;
+            }
+
+            $user = $this->userRepository->findById($userId);
+            if ($user === null) {
+                return;
+            }
+
+            HookManager::doAction(
+                'sirsoft-ecommerce.mileage.after_earn',
+                $user,
+                $amount,
+                $currency,
+                (float) $this->ledger->getBalanceByCurrency($userId, $currency),
+                $reason,
+                $tx->expires_at !== null ? (TimezoneHelper::toSiteDateString($tx->expires_at) ?? '') : '',
+                $tx,
+            );
+        } catch (\Throwable $e) {
+            Log::warning('마일리지 적립 알림 훅 실패', ['user_id' => $userId, 'message' => $e->getMessage()]);
+        }
     }
 
     /**

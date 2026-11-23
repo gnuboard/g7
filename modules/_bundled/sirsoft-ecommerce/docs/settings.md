@@ -16,7 +16,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 
 | 키 | 역할 |
 |---|---|
-| `_meta.categories` | 설정 그룹 10개의 목록과 순서 (`basic_info` · `language_currency` · `order_settings` · `claim` · `shipping` · `seo` · `review_settings` · `inquiry` · `notifications` · `mileage`) |
+| `_meta.categories` | 설정 그룹 13개의 목록과 순서 (`basic_info` · `language_currency` · `order_settings` · `claim` · `shipping` · `seo` · `review_settings` · `product_display` · `inquiry` · `notifications` · `mileage` · `promotion` · `privacy_retention`) |
 | `defaults` | 그룹별 기본값. 설치 시 `storage/app/settings/` 로 동기화되어 `module_setting()` 이 읽는 값이 됩니다 |
 | `frontend_schema` | 관리자 화면이 자동으로 그리는 입력 폼 정의. 칸마다 `expose` 로 사용자 화면(페이지 소스의 설정 묶음)에 내려보낼지를 정합니다 |
 | `public_api_schema` | 비회원도 부르는 공개 설정 API(`settings/shipping`·`payment`·`review`·`checkout`)가 돌려줄 칸 목록. 여기에 없는 칸은 저장돼 있어도 응답에 싣지 않습니다. 페이지 소스 노출(`frontend_schema` 의 `expose`)과는 따로 관리합니다 — 화면이 API 로만 읽는 칸을 페이지 소스에까지 싣지 않기 위해서입니다 |
@@ -308,6 +308,20 @@ inquiry: {mode, kind} }` 를 함께 싣습니다. 서버는 이 값을 설정 �
   모두 지웁니다(파일을 못 지우면 제거를 멈춥니다 — 기록이 남아 있어 다시 제거하면 다시 지웁니다).
 <!-- @intent END -->
 
+### 쿠폰 (`promotion`, 1.4.1 · 이슈 #952)
+
+관리자 환경설정의 「쿠폰」 탭이 읽고 저장합니다.
+
+| 키 | 기본값 | 의미 |
+| --- | --- | --- |
+| `promotion.birthday_field_key` | `null` | 생일 쿠폰이 생일로 읽을 회원 항목 키. 코어 회원 항목 중 날짜 유형·값 저장 항목만 고를 수 있고(후보는 설정 조회 응답 `_meta.birthday_field_candidates`), 후보 밖 키는 422(`validation.settings.birthday_field_invalid`). `null` 이면 생일 쿠폰을 발급하지 않고 일일 명령 `sirsoft-ecommerce:issue-birthday-coupons` 스케줄도 꺼진다 |
+| `promotion.coupon_expiry_notification_enabled` | `true` | 쿠폰 만료 임박 알림(`coupon_expiring_soon`) 사용. 끄면 일일 명령 `sirsoft-ecommerce:notify-expiring-coupons` 스케줄이 꺼진다 |
+| `promotion.coupon_expiry_notification_days_before` | `7` | 만료 며칠 전에 알릴지(정수 1~30). 한 발급 건에 한 번만 알린다(`expiry_notified_at`) |
+
+생일 항목을 지정하지 않아도 생일 쿠폰 저장은 허용되며, 쿠폰 폼과 목록이 경고로 알린다.
+
+1.4.1 에서 화면 없이 저장만 되던 배송 키 `shipping.address_validation_enabled`·`shipping.address_api_provider` 를 기본값·저장 검증에서 뺐고, 업그레이드 단계(`upgrades/Upgrade_1_4_1.php`)가 저장된 값도 지운다.
+
 ## 권한
 
 <!-- @generated:permissions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
@@ -467,6 +481,7 @@ IDV 정책의 라우트명 인덱스가 그 라우트를 찾지 못해, 보호�
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
 | `sirsoft-board` | 모듈 | `*` | ✅ |
+| `sirsoft-marketing` | 플러그인 | `*` | ✅ |
 
 **이 확장과 연동하는 확장** (이 확장이 있으면 기능을 더합니다 — 이 확장의 화면·훅 이름을 바꿀 때 함께 확인)
 
@@ -475,7 +490,7 @@ IDV 정책의 라우트명 인덱스가 그 라우트를 찾지 못해, 보호�
 | `sirsoft-board` | 모듈 | `*` |
 | `sirsoft-hero_section` | 플러그인 | `>=1.4.0` |
 | `sirsoft-message_bizppurio` | 플러그인 | `*` |
-| `sirsoft-basic` | 템플릿 | `>=1.4.0` |
+| `sirsoft-basic` | 템플릿 | `>=1.4.1` |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->

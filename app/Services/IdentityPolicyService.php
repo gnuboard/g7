@@ -7,14 +7,17 @@ use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Enums\IdentityOriginType;
 use App\Enums\IdentityPolicyAppliesTo;
 use App\Enums\IdentityPolicyFailMode;
+use App\Enums\IdentityPolicyScope;
 use App\Enums\IdentityPolicySourceType;
 use App\Enums\IdentityVerificationStatus;
+use App\Exceptions\IdentityCheckpointNotRegisteredException;
 use App\Exceptions\IdentityPolicyProviderUnavailableException;
 use App\Exceptions\IdentityVerificationRequiredException;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use App\Identity\IdentityCheckpointRegistry;
 use App\Models\Concerns\UserOverrideValueComparator;
 use App\Models\IdentityPolicy;
 use App\Models\User;
@@ -151,6 +154,46 @@ class IdentityPolicyService
         }
 
         return $filtered;
+    }
+
+    /**
+     * 활성 확장이 선언한 「사용자 지정」 확장 지점 목록을 지금 언어로 반환합니다. (7.2.1, #952)
+     *
+     * @return array<int, array{key: string, name: string, description: string, source_type: string, source_identifier: string}> 목록
+     */
+    public function listCheckpoints(): array
+    {
+        return app(IdentityCheckpointRegistry::class)->toList();
+    }
+
+    /**
+     * 확장이 선언한 「사용자 지정」 확장 지점에서 본인인증 정책을 강제합니다. (7.2.1, #952)
+     *
+     * `resolve('custom', $key, $context)` 로 그 지점에 연결된 정책을 찾고, 있으면 {@see self::enforce()} 와 같은 규칙으로 강제한다.
+     * 연결된 정책이 없으면 아무 일도 하지 않는다. 등록되지 않은 키는 개발자 오류라 예외를 던진다 — 오타 난 키로 부르면
+     * 정책이 영영 강제되지 않는데 아무도 모르기 때문이다.
+     *
+     * @param  string  $key  체크포인트 키 (`getIdentityCheckpoints()` 로 선언한 키)
+     * @param  User|null  $user  현재 사용자
+     * @param  array<string, mixed>  $context  요청 컨텍스트 (enforce 와 같다)
+     * @return void 반환값 없음
+     *
+     * @throws IdentityCheckpointNotRegisteredException 등록되지 않은 키일 때
+     * @throws IdentityVerificationRequiredException 정책이 인증을 요구할 때
+     * @throws IdentityPolicyProviderUnavailableException 정책이 지정한 수단을 지금 쓸 수 없을 때
+     */
+    public function enforceCheckpoint(string $key, ?User $user, array $context = []): void
+    {
+        if (! app(IdentityCheckpointRegistry::class)->has($key)) {
+            throw new IdentityCheckpointNotRegisteredException($key);
+        }
+
+        $policy = $this->resolve(IdentityPolicyScope::Custom->value, $key, $context);
+        if ($policy === null) {
+            return;
+        }
+
+        $this->enforce($policy, $user, $context);
     }
 
     /**
@@ -651,8 +694,7 @@ class IdentityPolicyService
         if ($policy->source_type === IdentityPolicySourceType::Module) {
             try {
                 $manager = app(ModuleManager::class);
-                $module = $manager->getModuleByIdentifier($policy->source_identifier)
-                    ?? $manager->getModule($policy->source_identifier);
+                $module = $manager->getModule($policy->source_identifier);
                 if ($module && method_exists($module, 'getIdentityPolicies')) {
                     foreach ($module->getIdentityPolicies() as $data) {
                         if (($data['key'] ?? null) === $policy->key) {

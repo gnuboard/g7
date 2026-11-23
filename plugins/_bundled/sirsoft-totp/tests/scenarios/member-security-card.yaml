@@ -1,0 +1,22 @@
+feature: 2단계 인증 — 회원 보안 카드·알림 보안 주소 (1.1.1, #952 E)
+
+description: |
+  마이페이지 보안 카드에 끼우는 등록 칸(비밀번호 없는 회원 안내·등록 API)과 알림의 보안 설정 주소가 받는 사람에 맞는지 잰다.
+
+axes:
+  case:
+    - totp_enrolled_member
+    - totp_enrolled_admin
+    - mypage_totp_card_injection
+    - mypage_totp_card_no_password
+    - mypage_totp_card_same_api
+
+effects:
+  - totp_security_url_matches_recipient
+  - totp_card_injected_into_security_card
+  - totp_card_requires_password
+  - totp_card_uses_enrollment_api
+
+test_files:
+  - plugins/_bundled/sirsoft-totp/tests/Feature/Notifications/SecurityUrlTest.php
+  - plugins/_bundled/sirsoft-totp/resources/js/__tests__/layouts/mypageTotpCard.test.ts

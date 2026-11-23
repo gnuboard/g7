@@ -14,6 +14,7 @@
             "inquiry",
             "notifications",
             "mileage",
+            "promotion",
             "privacy_retention"
         ]
     },
@@ -523,9 +524,7 @@
             ],
             "international_shipping_enabled": false,
             "free_shipping_threshold": 50000,
-            "free_shipping_enabled": true,
-            "address_validation_enabled": false,
-            "address_api_provider": "kakao"
+            "free_shipping_enabled": true
         },
         "seo": {
             "meta_category_title": "{category_name}",
@@ -596,6 +595,11 @@
             "no_earn_when_points_used": false,
             "min_product_total_for_use_enabled": false,
             "min_product_total_for_use": 0
+        },
+        "promotion": {
+            "birthday_field_key": null,
+            "coupon_expiry_notification_enabled": true,
+            "coupon_expiry_notification_days_before": 7
         },
         "privacy_retention": {
             "enabled": false,
@@ -785,12 +789,6 @@
                 },
                 "free_shipping_enabled": {
                     "expose": false
-                },
-                "address_validation_enabled": {
-                    "expose": false
-                },
-                "address_api_provider": {
-                    "expose": false
                 }
             }
         },
@@ -841,6 +839,21 @@
         "notifications": {
             "expose": true,
             "fields": {}
+        },
+        "promotion": {
+            "expose": true,
+            "_comment": "생일 항목 지정 여부만 공개한다 — 관리자 쿠폰 폼의 생일 쿠폰 경고 판정용(#952). 만료 임박 알림 설정은 서버 사이드 전용",
+            "fields": {
+                "birthday_field_key": {
+                    "expose": true
+                },
+                "coupon_expiry_notification_enabled": {
+                    "expose": false
+                },
+                "coupon_expiry_notification_days_before": {
+                    "expose": false
+                }
+            }
         },
         "privacy_retention": {
             "expose": false

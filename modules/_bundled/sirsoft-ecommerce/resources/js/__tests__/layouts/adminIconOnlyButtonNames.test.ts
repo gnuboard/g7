@@ -1,6 +1,6 @@
 /**
  * @file adminIconOnlyButtonNames.test.ts
- * @description 관리자 설정·카탈로그·판촉·배송정책·배너·회원 배송지 화면의 아이콘만 있는 버튼이 읽을 수 있는 이름을 갖는지
+ * @description 관리자 설정·카탈로그·판촉·배송정책·회원 배송지 화면의 아이콘만 있는 버튼이 읽을 수 있는 이름을 갖는지
  *
  * 글자 없이 아이콘만 그리는 버튼(휴지통·연필·×·체크·새로고침·뒤로·이전/다음·펼침)은 aria-label 이 없으면 화면 낭독기가
  * 아이콘 이름(「trash」·「xmark」·「pencil」 등)으로 읽거나 그냥 「버튼」 이라고만 읽는다(이커머스 전수 실측 S5, 2026-10-07 —
@@ -20,10 +20,8 @@ import { resolve } from 'node:path';
 const LAYOUTS = resolve(__dirname, '../../../layouts/admin');
 
 const FILES = [
-    'admin_ecommerce_main_banner_index',
     'admin_ecommerce_product_list',
     'admin_ecommerce_promotion_coupon_form',
-    'partials/admin_ecommerce_main_banner_index/_partial_preview_slider',
     'partials/admin_ecommerce_product_form/_partial_basic_info',
     'partials/admin_ecommerce_product_form/_partial_product_options',
     'partials/admin_ecommerce_product_list/_modal_preset_manage',
