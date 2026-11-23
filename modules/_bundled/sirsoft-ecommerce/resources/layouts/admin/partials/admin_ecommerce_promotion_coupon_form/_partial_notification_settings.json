@@ -51,7 +51,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5"
+                                        "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notify_enabled"
                                 }
@@ -94,7 +94,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5"
+                                        "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notify_marketing_only"
                                 }
@@ -277,7 +277,7 @@
                                                     "props": {
                                                         "name": "{{tpl.channel === 'mail' ? 'envelope' : (tpl.channel === 'database' ? 'bell' : 'comment-sms')}}",
                                                         "size": "sm",
-                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:flex-shrink-0"
+                                                        "className": "ecommerce-text-muted ecommerce:flex-shrink-0"
                                                     }
                                                 },
                                                 {
@@ -291,7 +291,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                "className": "ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted"
                                                             },
                                                             "text": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === tpl.channel)?.name ?? tpl.channel}}"
                                                         },
@@ -415,7 +415,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "ecommerce:mt-3 ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                "className": "ecommerce:mt-3 ecommerce:text-xs ecommerce-text-muted"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notification_card"
                         }

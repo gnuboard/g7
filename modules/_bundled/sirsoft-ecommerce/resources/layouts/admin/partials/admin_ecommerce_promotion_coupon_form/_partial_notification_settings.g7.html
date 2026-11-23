@@ -10,14 +10,14 @@
       <div data-ref="field_notify_enabled" class="ecommerce-flex-between ecommerce:gap-4">
         <div>
           <span class="ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.notify_enabled</span>
-          <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notify_enabled</span>
+          <span class="ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notify_enabled</span>
         </div>
         <toggle data-type="composite" name="notify_enabled" ariaLabel="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.notify_enabled" value="{{_local.form?.notify_enabled ?? false}}" disabled="{{_computed.isReadOnly}}"/>
       </div>
       <div data-ref="field_notify_marketing_only" data-if="{{_local.form?.notify_enabled === true}}" class="ecommerce-flex-between ecommerce:gap-4">
         <div>
           <span class="ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.notify_marketing_only</span>
-          <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notify_marketing_only</span>
+          <span class="ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notify_marketing_only</span>
         </div>
         <toggle data-type="composite" name="notify_marketing_only" ariaLabel="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.notify_marketing_only" value="{{_local.form?.notify_marketing_only ?? false}}" disabled="{{_computed.isReadOnly}}"/>
       </div>
@@ -51,9 +51,9 @@
         <div data-ref="coupon_notification_channels" class="ecommerce:space-y-2">
           <div data-ref="coupon_notification_channel_{{tpl.channel}}" data-each="tpl, tplIndex in (((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'coupon_issued.' + route.id)?.templates) ?? []).filter(t => (availableChannels?.data?.channels ?? []).some(c => c.id === t.channel))" class="ecommerce-flex-between ecommerce:gap-2 ecommerce:px-3 ecommerce:py-2 ecommerce:rounded-lg ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700/40">
             <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:min-w-0">
-              <icon name="{{tpl.channel === 'mail' ? 'envelope' : (tpl.channel === 'database' ? 'bell' : 'comment-sms')}}" size="sm" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:flex-shrink-0"/>
+              <icon name="{{tpl.channel === 'mail' ? 'envelope' : (tpl.channel === 'database' ? 'bell' : 'comment-sms')}}" size="sm" class="ecommerce-text-muted ecommerce:flex-shrink-0"/>
               <div class="ecommerce:min-w-0">
-                <span class="ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{(availableChannels?.data?.channels ?? []).find(c => c.id === tpl.channel)?.name ?? tpl.channel}}</span>
+                <span class="ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted">{{(availableChannels?.data?.channels ?? []).find(c => c.id === tpl.channel)?.name ?? tpl.channel}}</span>
                 <span class="ecommerce:block ecommerce:text-sm ecommerce:text-gray-800 ecommerce:dark:text-gray-200 ecommerce:truncate">{{$localized(tpl.subject) || '$t:sirsoft-ecommerce.admin.mileage_settings.notification.template_status_empty'}}</span>
               </div>
             </div>
@@ -97,7 +97,7 @@
             </div>
           </div>
         </div>
-        <p class="ecommerce:mt-3 ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notification_card</p>
+        <p class="ecommerce:mt-3 ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notification_card</p>
       </div>
     </div>
   </div>

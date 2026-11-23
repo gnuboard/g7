@@ -8,7 +8,7 @@
       <div class="ecommerce:space-y-3">
         <label for="promotion_birthday_field_key" class="ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.settings.promotion.birthday.field_label</label>
         <select id="promotion_birthday_field_key" data-ref="promotion_birthday_field_select" name="promotion.birthday_field_key" aria-label="$t:sirsoft-ecommerce.admin.settings.promotion.birthday.field_label" value="{{_local.form?.promotion?.birthday_field_key ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.settings.promotion.birthday.none') }, ...((_local.form?._meta?.birthday_field_candidates ?? settings?.data?._meta?.birthday_field_candidates ?? []).map(c => ({ value: c.value, label: c.label })))]}}" class="ecommerce-input ecommerce:w-72" disabled="{{_computed.isReadOnly}}"/>
-        <p class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.settings.promotion.birthday.field_hint</p>
+        <p class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.settings.promotion.birthday.field_hint</p>
         <!-- 후보가 없다 — 회원 항목에 날짜 유형 항목을 먼저 만들어야 한다 -->
         <div data-ref="promotion_birthday_no_candidates" data-if="{{settings !== undefined &amp;&amp; (_local.form?._meta?.birthday_field_candidates ?? settings?.data?._meta?.birthday_field_candidates ?? []).length === 0}}" class="ecommerce:flex ecommerce:items-start ecommerce:gap-2 ecommerce:p-3 ecommerce:rounded-lg ecommerce:bg-amber-50 ecommerce:dark:bg-amber-900/20 ecommerce:border ecommerce:border-amber-200 ecommerce:dark:border-amber-800">
           <icon name="triangle-exclamation" size="sm" class="ecommerce:text-amber-500 ecommerce:dark:text-amber-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5"/>
@@ -24,7 +24,7 @@
       <div class="ecommerce-flex-between ecommerce:py-3">
         <div>
           <span class="ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.settings.promotion.expiry.enabled</span>
-          <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5">$t:sirsoft-ecommerce.admin.settings.promotion.expiry.enabled_hint</span>
+          <span class="ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5">$t:sirsoft-ecommerce.admin.settings.promotion.expiry.enabled_hint</span>
         </div>
         <toggle data-type="composite" name="promotion.coupon_expiry_notification_enabled" ariaLabel="$t:sirsoft-ecommerce.admin.settings.promotion.expiry.enabled" value="{{_local.form?.promotion?.coupon_expiry_notification_enabled ?? true}}" disabled="{{_computed.isReadOnly}}"/>
       </div>
@@ -35,7 +35,7 @@
           <input type="number" name="promotion.coupon_expiry_notification_days_before" aria-label="$t:sirsoft-ecommerce.admin.settings.promotion.expiry.days_before" value="{{_local.form?.promotion?.coupon_expiry_notification_days_before ?? 7}}" min="{{_local?.form?._meta?.limits?.coupon_expiry_notification_days_before_min ?? 1}}" max="{{_local?.form?._meta?.limits?.coupon_expiry_notification_days_before_max ?? 30}}" class="ecommerce-input ecommerce:w-20 ecommerce:text-center" disabled="{{_computed.isReadOnly}}"/>
           <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.notification.days_before_suffix|count={{_local.form?.promotion?.coupon_expiry_notification_days_before ?? 7}}</span>
         </div>
-        <p class="ecommerce:mt-3 ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.settings.promotion.expiry.template_hint</p>
+        <p class="ecommerce:mt-3 ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.settings.promotion.expiry.template_hint</p>
       </div>
     </div>
   </div>

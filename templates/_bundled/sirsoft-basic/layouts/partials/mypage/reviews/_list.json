@@ -27,7 +27,7 @@
             "name": "P",
             "if": "{{myReviews !== undefined}}",
             "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400 mb-3"
+                "className": "text-sm text-muted mb-3"
             },
             "text": "$t:mypage.reviews.total|count={{myReviews?.data?.pagination?.total ?? 0}}"
         },
@@ -51,9 +51,7 @@
                     },
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm"
-                            }
+                            "classMerge": "p-4"
                         }
                     },
                     "props": {
@@ -108,7 +106,7 @@
                                             "name": "P",
                                             "if": "{{review.option_snapshot_label}}",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                                "className": "text-xs text-muted mt-0.5"
                                             },
                                             "text": "{{review.option_snapshot_label}}"
                                         },
@@ -147,7 +145,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-muted"
                                                     },
                                                     "text": "{{review.created_at ?? ''}}"
                                                 }
@@ -289,7 +287,7 @@
             "name": "Div",
             "if": "{{myReviews !== undefined && (myReviews?.data?.data ?? []).length === 0}}",
             "props": {
-                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center"
+                "className": "card-plain p-8 text-center"
             },
             "children": [
                 {
@@ -305,7 +303,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-gray-500 dark:text-gray-400"
+                        "className": "text-muted"
                     },
                     "text": "$t:mypage.reviews.empty"
                 }

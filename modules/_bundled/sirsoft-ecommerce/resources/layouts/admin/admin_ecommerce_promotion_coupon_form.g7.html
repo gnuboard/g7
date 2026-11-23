@@ -185,6 +185,7 @@
         <div data-ref="footer_buttons" class="ecommerce-sticky-footer-buttons">
           <a href="/admin/ecommerce/promotion-coupons" :mergeQuery="true" data-ref="footer_cancel_button" class="ecommerce-button ecommerce-btn ecommerce-btn-outline">
             <on type="click">
+              <!-- 취소하고 목록으로 — 보던 검색·필터·페이지를 이고 가므로 폼을 열었다 닫아도 목록이 되감기지 않는다 -->
               <navigate :bypassLeaveGuard="true" :mergeQuery="true">
                 <query/>
               </navigate>

@@ -10,8 +10,8 @@
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
 | `core.module_settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:189` 외 1곳 |
-| `core.notification_definition.after_delete` | action | — | `src/Services/CouponNotificationDefinitionService.php:217` |
-| `core.notification_definition.before_delete` | action | — | `src/Services/CouponNotificationDefinitionService.php:208` |
+| `core.notification_definition.after_delete` | action | — | `src/Services/CouponNotificationDefinitionService.php:221` |
+| `core.notification_definition.before_delete` | action | — | `src/Services/CouponNotificationDefinitionService.php:212` |
 | `sirsoft-ecommerce.adjustment.filter_restore_promotions` | filter | — | `src/Services/OrderAdjustmentService.php:940` |
 | `sirsoft-ecommerce.admin.user_currency.changed` | action | — | `src/Services/UserCurrencyService.php:72` |
 | `sirsoft-ecommerce.admin.user_shipping_country.changed` | action | — | `src/Services/UserShippingCountryService.php:74` |

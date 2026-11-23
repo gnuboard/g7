@@ -4,7 +4,7 @@
   <div data-ref="coupon_zone_toolbar" class="flex flex-wrap items-center justify-between gap-3 mb-6">
     <div>
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">$t:shop.coupon_zone.title</h1>
-      <p data-ref="coupon_zone_login_hint" data-if="{{_global.currentUser !== undefined &amp;&amp; !_global.currentUser?.uuid}}" class="mt-1 text-sm text-gray-500 dark:text-gray-400">$t:shop.coupon_zone.login_hint</p>
+      <p data-ref="coupon_zone_login_hint" data-if="{{_global.currentUser !== undefined &amp;&amp; !_global.currentUser?.uuid}}" class="mt-1 text-sm text-muted">$t:shop.coupon_zone.login_hint</p>
     </div>
     <div class="flex items-center gap-3">
       <span data-ref="coupon_zone_count" class="text-sm text-gray-600 dark:text-gray-400"><blur-until-loaded sources="couponZone"/>$t:shop.coupon_zone.count|count={{couponZone?.data?.total ?? 0}}</span>

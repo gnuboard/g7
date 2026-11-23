@@ -682,9 +682,7 @@
             "if": "{{user.data?.status !== 'withdrawn'}}",
             "responsive": {
                 "portable": {
-                    "props": {
-                        "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
-                    }
+                    "classMerge": "p-4"
                 }
             },
             "props": {
@@ -726,7 +724,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                        "className": "block text-xs text-muted mt-0.5"
                                     },
                                     "text": "$t:mypage.security.logout_all.description"
                                 }

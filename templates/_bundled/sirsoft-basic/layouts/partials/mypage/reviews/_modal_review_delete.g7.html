@@ -4,7 +4,7 @@
   <modal data-type="composite" data-ref="reviewDeleteModal" title="$t:mypage.reviews.delete_modal.title" size="sm">
     <div class="py-2">
       <p class="text-sm text-gray-700 dark:text-gray-300">$t:mypage.reviews.delete_modal.message|product={{_global.reviewDeleteModal?.productName ?? ''}}</p>
-      <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">$t:mypage.reviews.delete_modal.warning</p>
+      <p class="mt-2 text-xs text-muted">$t:mypage.reviews.delete_modal.warning</p>
     </div>
     <footer>
       <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" disabled="{{_global.reviewDeleteModal?.isDeleting === true}}">

@@ -27,7 +27,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex flex-wrap items-end gap-3 mb-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                "className": "flex flex-wrap items-end gap-3 mb-4 card-plain p-4"
             },
             "children": [
                 {
@@ -116,7 +116,7 @@
             "name": "P",
             "if": "{{myActivity !== undefined}}",
             "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400 mb-3"
+                "className": "text-sm text-muted mb-3"
             },
             "text": "$t:mypage.activity.total|count={{myActivity?.data?.pagination?.total ?? 0}}"
         },
@@ -159,7 +159,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 w-48"
+                                                "className": "px-4 py-3 text-left font-medium text-muted w-48"
                                             },
                                             "text": "$t:mypage.activity.table.date"
                                         },
@@ -167,7 +167,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 w-48"
+                                                "className": "px-4 py-3 text-left font-medium text-muted w-48"
                                             },
                                             "text": "$t:mypage.activity.table.action"
                                         },
@@ -175,7 +175,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400"
+                                                "className": "px-4 py-3 text-left font-medium text-muted"
                                             },
                                             "text": "$t:mypage.activity.table.description"
                                         }
@@ -202,7 +202,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                                                "className": "px-4 py-3 text-muted whitespace-nowrap"
                                             },
                                             "text": "{{log.created_at | datetime}}"
                                         },
@@ -254,7 +254,7 @@
                         "item_var": "log"
                     },
                     "props": {
-                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                        "className": "card-plain p-3"
                     },
                     "children": [
                         {
@@ -276,7 +276,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                                        "className": "text-xs text-muted whitespace-nowrap"
                                     },
                                     "text": "{{log.created_at | datetime}}"
                                 }
@@ -301,7 +301,7 @@
             "name": "Div",
             "if": "{{myActivity !== undefined && (myActivity?.data?.activities ?? []).length === 0}}",
             "props": {
-                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center"
+                "className": "card-plain p-8 text-center"
             },
             "children": [
                 {
@@ -317,7 +317,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-gray-500 dark:text-gray-400"
+                        "className": "text-muted"
                     },
                     "text": "$t:mypage.activity.empty"
                 }

@@ -29,7 +29,7 @@
                     "name": "P",
                     "if": "{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}",
                     "props": {
-                        "className": "mt-1 text-sm text-gray-500 dark:text-gray-400"
+                        "className": "mt-1 text-sm text-muted"
                     },
                     "text": "$t:shop.coupon_zone.login_hint"
                 }

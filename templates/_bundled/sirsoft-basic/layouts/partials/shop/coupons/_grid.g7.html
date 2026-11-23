@@ -17,12 +17,12 @@
         <!-- 쿠폰명 -->
         <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1 line-clamp-2">{{coupon.localized_name ?? ''}}</p>
         <!-- 적용 대상·최소 주문 -->
-        <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
+        <p class="text-xs text-muted mb-1">
           <span>{{coupon.target_type_short_label ?? ''}}</span>
           <span data-if="{{coupon.min_order_amount > 0}}"> · $t:shop.coupon_download.min_order_amount {{coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? (Number(coupon.min_order_amount).toLocaleString() + $t('shop.coupon_download.currency_unit'))}}</span>
         </p>
         <!-- 유효기간 -->
-        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">{{coupon.valid_to ? '$t:shop.coupon_download.valid_until ' + coupon.valid_to.split('T')[0] : (coupon.valid_period_formatted &amp;&amp; coupon.valid_period_formatted !== '-' ? coupon.valid_period_formatted : '$t:shop.coupon_download.no_expiry')}}</p>
+        <p class="text-xs text-muted mb-4">{{coupon.valid_to ? '$t:shop.coupon_download.valid_until ' + coupon.valid_to.split('T')[0] : (coupon.valid_period_formatted &amp;&amp; coupon.valid_period_formatted !== '-' ? coupon.valid_period_formatted : '$t:shop.coupon_download.no_expiry')}}</p>
         <div class="mt-auto">
           <!-- 받음 -->
           <button data-ref="coupon_zone_downloaded_{{couponIdx}}" data-if="{{coupon.is_downloaded || (_local.downloadedIds ?? []).includes(coupon.coupon_id)}}" type="button" :disabled="true" class="w-full py-2 text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded-md cursor-not-allowed">$t:shop.coupon_download.already_downloaded</button>
@@ -61,9 +61,9 @@
       </div>
     </div>
     <!-- 빈 상태 -->
-    <div data-ref="coupon_zone_empty" data-if="{{couponZone !== undefined &amp;&amp; (couponZone?.data?.data ?? []).length === 0}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+    <div data-ref="coupon_zone_empty" data-if="{{couponZone !== undefined &amp;&amp; (couponZone?.data?.data ?? []).length === 0}}" class="card-plain p-8 text-center">
       <icon name="ticket" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
-      <p class="text-gray-500 dark:text-gray-400">$t:shop.coupon_download.empty</p>
+      <p class="text-muted">$t:shop.coupon_download.empty</p>
     </div>
     <!-- 쪽 넘김 -->
     <pagination pageHref="{{route.path + '?page={page}'}}" :pageHrefMergeQuery="true" data-type="composite" data-if="{{((couponZone?.data?.last_page ?? 0) > 1) || ((couponZone?.data?.current_page ?? 1) > 1) || !!couponZone?.data?.next_page_url}}" currentPage="{{couponZone?.data?.current_page}}" totalPages="{{couponZone?.data?.last_page ?? null}}" hasMorePages="{{!!couponZone?.data?.next_page_url}}" class="mt-6">

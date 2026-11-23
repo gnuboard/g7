@@ -139,7 +139,7 @@
             "name": "P",
             "if": "{{user_coupons !== undefined}}",
             "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400 mb-3"
+                "className": "text-sm text-muted mb-3"
             },
             "text": "$t:mypage.coupons.total|count={{user_coupons?.data?.coupons?.pagination?.total ?? 0}}"
         },
@@ -164,9 +164,7 @@
                     },
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm"
-                            }
+                            "classMerge": "p-4"
                         }
                     },
                     "props": {
@@ -275,7 +273,7 @@
                                             "name": "P",
                                             "if": "{{_computed.couponStatus !== 'used'}}",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                "className": "text-xs text-muted mt-1"
                                             },
                                             "text": "{{issue.expired_at ? $t('mypage.coupons.expires_until', {date: issue.expired_at}) : $t('mypage.coupons.no_expiry')}}"
                                         },
@@ -286,7 +284,7 @@
                                             "name": "P",
                                             "if": "{{_computed.couponStatus === 'used'}}",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                "className": "text-xs text-muted mt-1"
                                             },
                                             "text": "$t:mypage.coupons.used_info|date={{issue.used_at ?? '-'}}|order={{issue.order_number ?? '-'}}"
                                         }
@@ -349,12 +347,12 @@
             "responsive": {
                 "portable": {
                     "props": {
-                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center"
+                        "className": "card-plain p-6 text-center"
                     }
                 }
             },
             "props": {
-                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center"
+                "className": "card-plain p-8 text-center"
             },
             "children": [
                 {
@@ -370,7 +368,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-gray-500 dark:text-gray-400"
+                        "className": "text-muted"
                     },
                     "text": "{{_computed.couponStatus === 'used' ? $t('mypage.coupons.empty.used') : (_computed.couponStatus === 'expired' ? $t('mypage.coupons.empty.expired') : $t('mypage.coupons.empty.available'))}}"
                 },

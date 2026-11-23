@@ -434,6 +434,7 @@
                                         "name": "A",
                                         "actions": [
                                             {
+                                                "comment": "취소하고 목록으로 — 보던 검색·필터·페이지를 이고 가므로 폼을 열었다 닫아도 목록이 되감기지 않는다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {

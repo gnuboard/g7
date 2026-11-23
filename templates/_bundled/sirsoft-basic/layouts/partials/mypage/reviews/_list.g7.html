@@ -4,10 +4,10 @@
   <div class="mt-6">
     <responsive on="portable" class="mt-4"/>
     <blur-until-loaded sources="myReviews"/>
-    <p data-ref="review_total" data-if="{{myReviews !== undefined}}" class="text-sm text-gray-500 dark:text-gray-400 mb-3">$t:mypage.reviews.total|count={{myReviews?.data?.pagination?.total ?? 0}}</p>
+    <p data-ref="review_total" data-if="{{myReviews !== undefined}}" class="text-sm text-muted mb-3">$t:mypage.reviews.total|count={{myReviews?.data?.pagination?.total ?? 0}}</p>
     <div data-ref="review_card_list" data-if="{{(myReviews?.data?.data ?? []).length > 0}}" class="space-y-3">
       <div data-ref="review_card_{{reviewIdx}}" data-each="review, reviewIdx in {{myReviews?.data?.data ?? []}}" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm"/>
+        <responsive on="portable" class-merge="p-4"/>
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
             <a data-if="{{review.product?.product_code}}" href="{{_global.shopBase + '/products/' + review.product?.product_code}}" class="font-semibold text-gray-900 dark:text-white hover:underline break-all">
@@ -18,12 +18,12 @@
               {{review.product?.name ?? ''}}
             </a>
             <span data-if="{{!review.product?.product_code}}" class="font-semibold text-gray-900 dark:text-white">{{review.product?.name ?? '$t:mypage.reviews.deleted_product'}}</span>
-            <p data-if="{{review.option_snapshot_label}}" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{review.option_snapshot_label}}</p>
+            <p data-if="{{review.option_snapshot_label}}" class="text-xs text-muted mt-0.5">{{review.option_snapshot_label}}</p>
             <div class="flex items-center gap-2 mt-1">
               <span data-ref="review_rating_{{reviewIdx}}" aria-label="$t:mypage.reviews.rating_label|rating={{review.rating}}" class="flex items-center">
                 <icon data-each="star in {{[1,2,3,4,5]}}" name="star" size="sm" class="{{star <= review.rating ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"/>
               </span>
-              <span class="text-xs text-gray-500 dark:text-gray-400">{{review.created_at ?? ''}}</span>
+              <span class="text-xs text-muted">{{review.created_at ?? ''}}</span>
             </div>
           </div>
           <!-- [삭제] — 지울 리뷰를 창 상태에 담고 삭제 확인 창을 연다(삭제할 수 있는 리뷰만 보인다) -->
@@ -56,9 +56,9 @@
       </div>
     </div>
     <!-- 빈 상태 -->
-    <div data-ref="review_empty" data-if="{{myReviews !== undefined &amp;&amp; (myReviews?.data?.data ?? []).length === 0}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+    <div data-ref="review_empty" data-if="{{myReviews !== undefined &amp;&amp; (myReviews?.data?.data ?? []).length === 0}}" class="card-plain p-8 text-center">
       <icon name="star" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
-      <p class="text-gray-500 dark:text-gray-400">$t:mypage.reviews.empty</p>
+      <p class="text-muted">$t:mypage.reviews.empty</p>
     </div>
     <!-- 페이지네이션 -->
     <pagination pageHref="/mypage/reviews?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-if="{{((myReviews?.data?.pagination?.last_page ?? 0) > 1) || (myReviews?.data?.pagination?.has_more_pages === true) || ((myReviews?.data?.pagination?.current_page ?? 1) > 1)}}" currentPage="{{myReviews?.data?.pagination?.current_page}}" totalPages="{{myReviews?.data?.pagination?.last_page ?? null}}" hasMorePages="{{myReviews?.data?.pagination?.has_more_pages ?? false}}" class="mt-4">
