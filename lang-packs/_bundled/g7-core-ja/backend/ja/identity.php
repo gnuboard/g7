@@ -23,6 +23,7 @@ return [
         'invalid_verification_token' => '無効な本人認証トークンです。',
         'provider_policy_mismatch' => 'この操作は指定された認証手段でのみ確認できます。',
         'policy_provider_unavailable' => 'この操作に必要な本人認証手段は現在利用できません。サイト管理者にお問い合わせください。',
+        'checkpoint_not_registered' => '登録されていない本人認証の拡張ポイントです: :key',
         'purpose_unknown' => '不明な認証目的です。',
         'missing_target' => '認証対象 (メール·電話番号) が必要です。',
         'claim_denied' => '本人確認の結果を受け取れません。認証をやり直してください。',

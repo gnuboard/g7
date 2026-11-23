@@ -24,6 +24,9 @@ return [
         'order_updated' => 'カテゴリの順序が変更されました。',
     ],
     'settings' => [
+        'promotion' => [
+            'field_disabled_suffix' => '(オフ)',
+        ],
         'fetch_success' => '設定を閲覧しました。',
         'fetch_failed' => '設定の取得に失敗しました。',
         'save_success' => '設定が保存されました。',
@@ -318,6 +321,28 @@ return [
         'free_shipping' => '送料無料',
     ],
     'coupon' => [
+        'auto_issue_already_issued' => 'すでに同じ条件で受け取った会員です。',
+        'user_inactive' => '有効な会員にのみ発行できます。',
+        'zone_fetched' => 'クーポンゾーンを読み込みました。',
+        'zone_fetch_failed' => 'クーポンゾーンを読み込めませんでした。',
+        'notification' => [
+            'definition_name' => 'クーポン発行 – :coupon',
+            'definition_description' => 'このクーポンが会員に発行されると送信します(クーポン編集画面で編集)。',
+            'mail_subject' => '{ad_prefix}[{app_name}] {coupon_name} クーポンが発行されました',
+            'mail_heading' => 'クーポン発行のお知らせ',
+            'mail_intro' => '{name}様、クーポンが発行されました。クーポンボックスでご確認ください。',
+            'label_coupon' => 'クーポン',
+            'label_benefit' => '特典',
+            'label_min_order' => '最低注文金額',
+            'label_expires' => '有効期限',
+            'mail_button' => 'クーポンボックスを見る',
+            'mail_footer' => '本メールは {app_name} から送信されました。',
+            'database_subject' => '{ad_prefix}クーポン発行',
+            'database_body' => '{coupon_name} クーポン({coupon_benefit})が発行されました。有効期限: {coupon_expires_date}',
+            'ad_prefix' => '【広告】',
+            'no_expiry' => '期限なし',
+            'no_min_order' => 'なし',
+        ],
         'list_fetched' => 'クーポン一覧を閲覧しました。',
         'list_fetch_failed' => 'クーポン一覧の閲覧に失敗しました。',
         'available_fetched' => '使用可能なクーポン一覧を閲覧しました。',
@@ -346,6 +371,13 @@ return [
         'operation_failed' => '処理中にエラーが発生したため受け取れませんでした。',
     ],
     'mileage' => [
+        'notification' => [
+            'reason' => [
+                'purchase' => '購入ポイント',
+                'admin' => '管理者付与',
+                'signup' => '会員登録ポイント',
+            ],
+        ],
         'balance_fetched' => 'マイレージ残高を閲覧しました。',
         'balance_fetch_failed' => 'マイレージ残高の閲覧に失敗しました。',
         'max_usable_fetched' => '使用可能な最大マイレージを閲覧しました。',
@@ -1062,6 +1094,8 @@ return [
         'option_not_found' => '商品オプションが見つかりません。(オプション ID: :option_id)',
     ],
     'reviews' => [
+        'user_list_fetched' => 'マイレビュー一覧を読み込みました。',
+        'user_list_fetch_failed' => 'マイレビュー一覧を読み込めませんでした。',
         'fetch_success' => 'レビュー一覧を閲覧しました。',
         'fetch_failed' => 'レビュー一覧の閲覧に失敗しました。',
         'created' => 'レビューが作成されました。',
@@ -1337,6 +1371,33 @@ return [
             'message' => '管理者が入力した本文（改行を保持）',
         ],
         'by_type' => [
+            'coupon_expiring_soon' => [
+                'count' => 'まもなく期限切れになるクーポン数',
+                'earliest_expires_date' => '最も早い有効期限',
+                'coupon_names' => 'クーポン名(カンマ区切り)',
+                'coupons_url' => 'クーポンボックスURL',
+                'coupons_path' => 'クーポンボックスのパス(サイトアドレスなし)',
+            ],
+            'mileage_earned' => [
+                'amount' => 'マイレージ',
+                'reason_label' => '付与理由(購入・管理者付与・会員登録)',
+                'expires_date' => '失効予定日(なければ空)',
+                'mileage_path' => 'マイレージ履歴のパス(サイトアドレスなし)',
+            ],
+            'mileage_deducted' => [
+                'amount' => 'マイレージ',
+                'memo' => '差し引き理由(管理者メモ)',
+                'mileage_path' => 'マイレージ履歴のパス(サイトアドレスなし)',
+            ],
+            'order_partially_cancelled' => [
+                'cancelled_items' => 'キャンセルされた商品(カンマ区切り)',
+                'refund_amount' => '返金予定額',
+            ],
+            'review_replied' => [
+                'reply_excerpt' => '返信の冒頭',
+                'reviews_url' => 'マイレビューURL',
+                'reviews_path' => 'マイレビューのパス(サイトアドレスなし)',
+            ],
             'new_order_admin' => [
                 'name' => '受信者（管理者）名',
                 'order_url' => '注文管理URL',
@@ -1385,6 +1446,18 @@ return [
         ],
     ],
     'console' => [
+        'issue_birthday_coupons' => [
+            'field_not_configured' => '誕生日として使う会員項目が指定されていないため、誕生日クーポンを発行しません。(ショップ設定 → クーポン)',
+            'invalid_date' => '--date は YYYY-MM-DD 形式で指定してください。',
+            'no_coupons' => '発行する誕生日クーポンがありません。',
+            'done' => ':date 誕生日の会員 :targets名、クーポン :issued枚を発行',
+        ],
+        'notify_expiring_coupons' => [
+            'notification_disabled' => 'クーポン期限間近の通知がオフになっています。',
+            'no_targets' => '期限間近の通知対象はありません。',
+            'targets' => '期限間近の通知対象会員 :count名',
+            'done' => ':count名にクーポン期限間近の通知を送りました。',
+        ],
         'mileage' => [
             'disabled' => 'マイレージ機能が無効になっています。',
         ],

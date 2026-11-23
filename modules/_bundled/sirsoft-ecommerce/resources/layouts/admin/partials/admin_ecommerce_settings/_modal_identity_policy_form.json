@@ -291,8 +291,10 @@
                                             "text": "$t:admin.identity.policies.form.scope"
                                         },
                                         {
+                                            "comment": "「사용자 지정」은 활성 확장이 본인인증 확장 지점을 선언했을 때만 고를 수 있다(7.2.1, #952) — 선언이 없으면 그 정책은 어디서도 강제되지 않는다. 이미 사용자 지정인 정책은 그대로 보인다",
                                             "type": "basic",
                                             "name": "Select",
+                                            "if": "{{(identityCheckpoints?.data?.checkpoints ?? []).length > 0 || _global.identity_policy_form_modal?.form?.scope === 'custom'}}",
                                             "actions": [
                                                 {
                                                     "comment": "적용 범위. 어느 층(코어·모듈)의 정책인지를 가른다.",
@@ -305,6 +307,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "$t:admin.identity.policies.form.scope",
                                                 "value": "{{_global.identity_policy_form_modal?.form?.scope ?? 'route'}}",
                                                 "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
                                                 "className": "{{_global.identity_policy_form_modal?.errors?.errors?.scope ? 'ecommerce:border-red-500 ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900' : ' ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900'}}",
@@ -320,6 +323,38 @@
                                                     {
                                                         "value": "custom",
                                                         "label": "$t:admin.identity.policies.scope.custom"
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "if": "{{!((identityCheckpoints?.data?.checkpoints ?? []).length > 0) && _global.identity_policy_form_modal?.form?.scope !== 'custom'}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "적용 범위. 어느 층(코어·모듈)의 정책인지를 가른다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_policy_form_modal.form.scope": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "aria-label": "$t:admin.identity.policies.form.scope",
+                                                "value": "{{_global.identity_policy_form_modal?.form?.scope ?? 'route'}}",
+                                                "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.scope ? 'ecommerce:border-red-500 ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900' : ' ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900'}}",
+                                                "options": [
+                                                    {
+                                                        "value": "route",
+                                                        "label": "$t:admin.identity.policies.scope.route"
+                                                    },
+                                                    {
+                                                        "value": "hook",
+                                                        "label": "$t:admin.identity.policies.scope.hook"
                                                     }
                                                 ]
                                             }
@@ -350,6 +385,7 @@
                                         {
                                             "type": "basic",
                                             "name": "Input",
+                                            "if": "{{_global.identity_policy_form_modal?.form?.scope !== 'custom'}}",
                                             "actions": [
                                                 {
                                                     "comment": "대상. 범위 안에서 구체적으로 무엇에 걸리는지다.",
@@ -362,8 +398,33 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "$t:admin.identity.policies.form.target",
                                                 "type": "text",
                                                 "value": "{{_global.identity_policy_form_modal?.form?.target ?? ''}}",
+                                                "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.target ? 'ecommerce-input-error ecommerce:font-mono ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900' : 'ecommerce:font-mono ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900'}}"
+                                            }
+                                        },
+                                        {
+                                            "comment": "사용자 지정이면 대상은 확장 지점 키만 — 서버도 등록되지 않은 키를 422 로 거절한다",
+                                            "id": "identity_policy_checkpoint_select",
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "if": "{{_global.identity_policy_form_modal?.form?.scope === 'custom'}}",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_policy_form_modal.form.target": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "aria-label": "$t:admin.identity.policies.form.target",
+                                                "value": "{{_global.identity_policy_form_modal?.form?.target ?? ''}}",
+                                                "options": "{{[{ value: '', label: $t('admin.identity.policies.form.checkpoint_placeholder') }, ...(identityCheckpoints?.data?.checkpoints ?? []).map(c => ({ value: c.key, label: c.name + ' (' + c.key + ')' }))]}}",
                                                 "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
                                                 "className": "{{_global.identity_policy_form_modal?.errors?.errors?.target ? 'ecommerce-input-error ecommerce:font-mono ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900' : 'ecommerce:font-mono ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900'}}"
                                             }

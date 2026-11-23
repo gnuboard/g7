@@ -136,6 +136,10 @@
       "creator": "등록자",
       "created_by": "등록자",
       "actions": "작업"
+    },
+    "badge": {
+      "birthday_field_missing": "생일 항목 없음",
+      "notify_enabled": "알림 켬"
     }
   },
   "modal": {
@@ -279,7 +283,8 @@
       "basic_info": "기본 정보",
       "benefit_settings": "혜택 설정",
       "issue_settings": "발급 설정",
-      "usage_conditions": "사용 조건 설정"
+      "usage_conditions": "사용 조건 설정",
+      "notification": "발급 알림"
     },
     "field": {
       "target_type": "적용대상",
@@ -297,7 +302,10 @@
       "reissue": "재발급 (중복 다운로드)",
       "coupon_overlap": "타 쿠폰과 중복 사용",
       "apply_target": "적용 대상",
-      "per_user_limit_label": "회원당 발급 한도"
+      "per_user_limit_label": "회원당 발급 한도",
+      "first_purchase_trigger": "발급 시점",
+      "notify_enabled": "발급 알림 사용",
+      "notify_marketing_only": "광고성 안내"
     },
     "option": {
       "target_type_product_amount": "상품금액",
@@ -322,7 +330,12 @@
       "combinable_no": "불가능",
       "target_scope_all": "제한 없음",
       "target_scope_products": "특정 상품",
-      "target_scope_categories": "특정 카테고리"
+      "target_scope_categories": "특정 카테고리",
+      "first_purchase_trigger_payment_complete": "결제완료",
+      "first_purchase_trigger_preparing": "상품준비중",
+      "first_purchase_trigger_shipping": "배송중",
+      "first_purchase_trigger_delivered": "배송완료",
+      "first_purchase_trigger_confirmed": "구매확정"
     },
     "placeholder": {
       "coupon_name": "쿠폰명을 입력하세요",
@@ -337,7 +350,16 @@
       "unit_quantity": "장",
       "per_user": "회원당",
       "unit_times": "회",
-      "direct_issue_guide": "직접발급 쿠폰은 등록 후 쿠폰 목록에서 해당 쿠폰의 [직접발급] 버튼을 눌러 특정 회원에게 발급할 수 있습니다."
+      "direct_issue_guide": "직접발급 쿠폰은 등록 후 쿠폰 목록에서 해당 쿠폰의 [직접발급] 버튼을 눌러 특정 회원에게 발급할 수 있습니다.",
+      "first_purchase_trigger": "회원 주문 중 처음으로 이 상태 이상에 도달한 주문 1건에 발급합니다. 구매확정보다 이른 시점이면 그 주문이 전부 취소·반품될 때 사용하지 않은 쿠폰을 회수합니다.",
+      "signup_issue_guide": "스스로 가입한 회원에게 한 번 발급합니다. 본인인증 대기로 가입하면 활성화될 때 발급하고, 관리자가 만든 회원은 받지 않습니다.",
+      "birthday_field_missing": "생일로 쓸 회원 항목이 지정되지 않아 이 쿠폰은 발급되지 않습니다.",
+      "birthday_issue_guide": "생일 당일(사이트 시간대)에 해마다 한 번 발급합니다. 2월 29일생은 평년에 2월 28일에 받습니다.",
+      "auto_issue_limit": "자동발급 쿠폰은 조건마다 한 번(생일은 해마다 한 번) 발급되므로 회원당 재발급 제한을 쓰지 않습니다.",
+      "notify_enabled": "쿠폰이 발급되면 회원에게 알립니다. 채널과 문구는 저장 뒤 아래 카드에서 고칩니다.",
+      "notify_marketing_only": "켜면 메일·문자·알림톡은 마케팅 수신동의자에게만 보내고, 미동의자에게는 사이트 알림만 보냅니다. 기본 제목의 {ad_prefix} 자리에 「(광고)」가 붙습니다.",
+      "notification_save_first": "저장하면 이 쿠폰의 알림 문구를 편집할 수 있습니다.",
+      "notification_card": "채널을 켜고 끄면 바로 반영됩니다. 문구는 [편집]에서 고칩니다."
     },
     "search": {
       "products": "상품 검색",
@@ -368,7 +390,8 @@
     "button": {
       "cancel": "취소",
       "save": "저장",
-      "saving": "저장 중..."
+      "saving": "저장 중...",
+      "open_coupon_settings": "쿠폰 설정 열기"
     }
   }
 }

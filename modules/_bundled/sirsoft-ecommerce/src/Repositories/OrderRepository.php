@@ -1305,4 +1305,25 @@ class OrderRepository implements OrderRepositoryInterface
             ->where('invoice_status', TaxInvoiceStatusEnum::ISSUED->value)
             ->get(['id', 'invoice_number', 'total_amount']);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findEarliestOrderReachingStatuses(int $userId, array $statuses, bool $orConfirmedAt = false): ?Order
+    {
+        $excluded = [OrderStatusEnum::CANCELLED->value, OrderStatusEnum::RETURNED->value];
+
+        return Order::query()
+            ->where('user_id', $userId)
+            ->whereNotIn('order_status', $excluded)
+            ->where(function ($q) use ($statuses, $orConfirmedAt) {
+                $q->whereIn('order_status', $statuses);
+                if ($orConfirmedAt) {
+                    $q->orWhereNotNull('confirmed_at');
+                }
+            })
+            ->orderBy('ordered_at')
+            ->orderBy('id')
+            ->first();
+    }
 }

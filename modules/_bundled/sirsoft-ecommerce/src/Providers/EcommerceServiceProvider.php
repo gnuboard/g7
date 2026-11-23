@@ -19,6 +19,8 @@ use Modules\Sirsoft\Ecommerce\Console\Commands\CancelOrphanClaimPaymentsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\CancelPendingPaymentOrdersCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\EarnMileageCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\ExpireMileageCommand;
+use Modules\Sirsoft\Ecommerce\Console\Commands\IssueBirthdayCouponsCommand;
+use Modules\Sirsoft\Ecommerce\Console\Commands\NotifyExpiringCouponsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\NotifyExpiringMileageCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\NotifyOverdueCollectionsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PlaywrightSeedClaimDetail;
@@ -51,6 +53,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
+use Modules\Sirsoft\Ecommerce\Repositories\BirthdayMemberRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\BrandRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\CartRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\CategoryImageRepository;
@@ -60,6 +63,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\ClaimImageRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ClaimPaymentRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ClaimReasonRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ContentMediaRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\BirthdayMemberRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\BrandRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInterface;
@@ -241,6 +245,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
      * @var array<class-string, class-string>
      */
     protected array $repositories = [
+        BirthdayMemberRepositoryInterface::class => BirthdayMemberRepository::class,
         BrandRepositoryInterface::class => BrandRepository::class,
         CartRepositoryInterface::class => CartRepository::class,
         CategoryRepositoryInterface::class => CategoryRepository::class,
@@ -307,6 +312,8 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         CancelPendingPaymentOrdersCommand::class,
         EarnMileageCommand::class,
         ExpireMileageCommand::class,
+        IssueBirthdayCouponsCommand::class,
+        NotifyExpiringCouponsCommand::class,
         NotifyExpiringMileageCommand::class,
         NotifyOverdueCollectionsCommand::class,
         // E2E·실측 시드 — 3중 가드(CLI · G7_PLAYWRIGHT_BYPASS · APP_DEBUG)가 커맨드 안에 있다.
@@ -463,6 +470,8 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
             'sirsoft-ecommerce.guest-claims' => 120,
             // 비회원 첨부 업로드 — 블록에서 유일한 파일 쓰기라 블록 상한 위에 좁은 상한을 겹친다
             'sirsoft-ecommerce.guest-claim-uploads' => 20,
+            // 비회원 쿠폰존 목록 — 로그인 없이 부르는 공개 목록이라 IP 단위로 센다 (#952)
+            'sirsoft-ecommerce.public-coupons' => 60,
         ];
 
         foreach ($limits as $name => $perMinute) {

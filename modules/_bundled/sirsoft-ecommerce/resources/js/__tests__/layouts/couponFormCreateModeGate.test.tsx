@@ -78,7 +78,7 @@ function dataSource(id: string): Node {
   return found;
 }
 
-const SAVE = must(shell, (n) => n.id === 'save_button_top', 'save_button_top');
+const SAVE = must(shell, (n) => n.id === 'footer_save_button', 'footer_save_button');
 
 /**
  * [저장] 하나만 담은 프로브 레이아웃. 데이터 소스와 computed 는 셸에서 그대로 가져온다.

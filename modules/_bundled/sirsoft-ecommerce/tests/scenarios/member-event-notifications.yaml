@@ -1,0 +1,45 @@
+feature: 쿠폰별 발급 알림·회원 사건 알림 4종 (#952 B·D)
+
+description: |
+  쿠폰별 알림 정의(coupon_issued.{id}) 수명·광고성 동의 게이트·쿠폰별 훅과, 마일리지 적립·차감·부분 취소·리뷰 답글 알림 데이터를 잰다.
+
+axes:
+  case:
+    - sync_create
+    - sync_update_toggle
+    - remove
+    - module_declaration
+    - per_coupon_hook
+    - marketing_gate
+    - direct_issue
+    - hidden_in_list
+    - mileage_earned_admin
+    - mileage_earned_signup
+    - mileage_earned_withdrawn
+    - mileage_deducted
+    - order_partially_cancelled
+    - review_replied
+    - member_benefit_hooks_declared
+    - cache_invalidated_same_request
+    - inactive_channel_not_sent
+    - mileage_earned_purchase
+
+effects:
+  - coupon_notification_definition_created
+  - coupon_notification_definition_preserves_overrides
+  - coupon_notification_definition_removed
+  - coupon_notification_definition_survives_update
+  - coupon_notification_hook_per_coupon
+  - coupon_notification_marketing_consent
+  - coupon_notification_hidden_from_list
+  - mileage_earned_notified
+  - mileage_earned_not_notified_for_forfeit
+  - mileage_deducted_notified
+  - order_partially_cancelled_recipient
+  - review_replied_first_only
+  - hooks_declared
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Notification/CouponIssuedNotificationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Notification/MemberEventNotificationsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/MemberBenefitHookDeclarationTest.php

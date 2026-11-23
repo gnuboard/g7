@@ -65,6 +65,29 @@
     </field>
     <fallback :data="null"/>
   </data-source>
+  <!-- 이 쿠폰의 발급 알림 종류(`coupon_issued.{id}`, #952). 알림 설정 목록에서는 숨긴 종류라 `include_hidden` 으로 받는다.
+    이름은 쇼핑몰 설정 알림 화면과 같게 둔다 — 함께 include 한 편집·복원 창이 저장 뒤 이 이름으로 다시 받는다.
+    알림 설정 읽기 권한이 없는 운영자는 받지 못하고, 그때는 카드가 비어 보일 뿐 폼은 그대로 쓴다. -->
+  <data-source id="ecommerceNotificationDefinitions" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerceNotificationDefinitions" type="api" endpoint="/api/admin/notification-definitions" method="GET" if="{{!!route.id}}" :auto_fetch="true" auth_mode="required" loading_strategy="progressive">
+    <params extension_type="module" extension_identifier="sirsoft-ecommerce" :include_hidden="1" template_channel="all" search="{{'coupon_issued.' + route.id}}"/>
+    <error-handling>
+      <default>
+        <!-- 알림 카드는 부가 정보다 — 받지 못해도 폼은 막지 않고 표시만 남긴다 -->
+        <set-state target="local" :couponNotificationLoadFailed="true"/>
+      </default>
+    </error-handling>
+    <fallback :data="null"/>
+  </data-source>
+  <!-- 발송 수단 목록(메일·사이트 알림·문자·알림톡) — 카드의 채널 이름과 편집 창의 편집기 종류가 읽는다 -->
+  <data-source id="availableChannels" label_key="$t:sirsoft-ecommerce.editor.data_source.availableChannels" type="api" endpoint="/api/admin/notification-channels" method="GET" if="{{!!route.id}}" :auto_fetch="true" auth_mode="required" loading_strategy="progressive">
+    <error-handling>
+      <default>
+        <!-- 채널 이름을 받지 못하면 카드가 채널 키를 그대로 쓴다 -->
+        <set-state target="local" :couponNotificationLoadFailed="true"/>
+      </default>
+    </error-handling>
+    <fallback :data="null"/>
+  </data-source>
   <!-- 적용 분류를 고르는 트리. 폼 저장과 무관해 화면을 먼저 띄우고 뒤늦게 채운다 -->
   <data-source id="categories" label_key="$t:sirsoft-ecommerce.editor.data_source.categories" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/categories/tree" method="GET" :auto_fetch="true" auth_mode="required" loading_strategy="progressive"/>
   <init-local>
@@ -72,6 +95,9 @@
       <field name="target_type" value="product_amount"/>
       <field name="issue_method" value="direct"/>
       <field name="issue_condition" value="manual"/>
+      <field name="first_purchase_trigger_status" :value="null"/>
+      <field name="notify_enabled" :value="false"/>
+      <field name="notify_marketing_only" :value="false"/>
       <field name="name">
         <field name="ko" value=""/>
         <field name="en" value=""/>
@@ -132,60 +158,12 @@
   </init>
   <slot name="content">
     <div data-ref="coupon_form_container" class="ecommerce-admin-page-content">
-      <div data-ref="page_header_section" class="ecommerce:mb-6">
-        <div data-ref="page_header" class="ecommerce:flex ecommerce:justify-between ecommerce:mb-6 ecommerce:px-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4">
-          <responsive on="641-" class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-6 ecommerce:px-6"/>
-          <div class="ecommerce-flex-center ecommerce:gap-3">
-            <a href="/admin/ecommerce/promotion-coupons" :mergeQuery="true" data-ref="back_button" class="ecommerce-button ecommerce:p-1.5 ecommerce:rounded-lg ecommerce:hover:bg-gray-200 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors" aria-label="$t:common.back">
-              <on type="click">
-                <!-- 목록으로. 보던 검색·필터·페이지를 이고 가므로 폼을 열었다 닫아도 목록이 되감기지 않는다 -->
-                <navigate :mergeQuery="true">
-                  <query/>
-                </navigate>
-              </on>
-              <icon name="arrow-left" size="sm"/>
-            </a>
-            <div>
-              <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"/>{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_edit' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_create'}}</h1>
-              <p data-if="{{!!route.id}}" class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.promotion_coupon.form.description_edit|id={{route.id}}</p>
-              <p data-if="{{!route.id}}" class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.promotion_coupon.form.description_create</p>
-            </div>
-          </div>
-          <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3 ecommerce:justify-start ecommerce:w-full">
-            <responsive on="641-" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3"/>
-            <!-- 취소하고 목록으로. 위 뒤로가기 버튼과 같은 이동이며 화면 위아래 어디서든 빠져나갈 수 있게 둘 다 둔다 -->
-            <a href="/admin/ecommerce/promotion-coupons" :mergeQuery="true" data-ref="cancel_button_top" class="ecommerce-button ecommerce-btn ecommerce-btn-outline ecommerce:shrink-0 ecommerce:whitespace-nowrap">
-              <on type="click">
-                <navigate :bypassLeaveGuard="true" :mergeQuery="true">
-                  <query/>
-                </navigate>
-              </on>
-              $t:sirsoft-ecommerce.admin.promotion_coupon.form.button.cancel
-            </a>
-            <button data-ref="save_button_top" type="button" disabled="{{_local.isSaving || _computed.isReadOnly}}" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-primary ecommerce:gap-1.5 ecommerce:shrink-0 ecommerce:whitespace-nowrap">
-              <on type="click">
-                <!-- 저장 — 등록/수정 구분은 `route.id` 하나로 엔드포인트와 메서드를 함께 가른다. 성공하면 목록으로 돌아가므로 폼을 되받지 않고, 실패하면 서버 오류를 폼 위 배너로 넘긴다 -->
-                <sequence>
-                  <set-state target="_local" :isSaving="true" :errors="null"/>
-                  <api-call auth_mode="required" target="{{route.id ? '/api/modules/sirsoft-ecommerce/admin/promotion-coupons/' + route.id : '/api/modules/sirsoft-ecommerce/admin/promotion-coupons'}}" method="{{route.id ? 'PUT' : 'POST'}}" body="{{_local.form}}">
-                    <success>
-                      <set-state target="_local" :isSaving="false"/>
-                      <toast type="success" message="{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.messages.updated' : '$t:sirsoft-ecommerce.admin.promotion_coupon.messages.created'}}"/>
-                      <navigate :bypassLeaveGuard="true" path="/admin/ecommerce/promotion-coupons" :mergeQuery="true">
-                        <query/>
-                      </navigate>
-                    </success>
-                    <fail>
-                      <set-state target="_local" :isSaving="false" errors="{{error.errors}}"/>
-                      <toast type="error" message="{{error.message || '$t:common.validation_error'}}"/>
-                    </fail>
-                  </api-call>
-                </sequence>
-              </on>
-              <icon data-if="{{_local.isSaving}}" name="spinner" class="ecommerce:animate-spin"/>
-              <span>{{_local.isSaving ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.button.saving' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.button.save'}}</span>
-            </button>
-          </div>
+      <div data-ref="page_header" class="ecommerce:flex ecommerce:justify-between ecommerce:mb-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4">
+        <responsive on="641-" class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-6"/>
+        <div>
+          <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"/>{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_edit' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_create'}}</h1>
+          <p data-if="{{!!route.id}}" class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.promotion_coupon.form.description_edit|id={{route.id}}</p>
+          <p data-if="{{!route.id}}" class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.promotion_coupon.form.description_create</p>
         </div>
       </div>
       <div data-ref="validation_error_banner" data-if="{{_local.errors}}" class="ecommerce-alert-danger">
@@ -201,8 +179,49 @@
         <include src="partials/admin_ecommerce_promotion_coupon_form/_partial_basic_info.g7.html"/>
         <include src="partials/admin_ecommerce_promotion_coupon_form/_partial_benefit_settings.g7.html"/>
         <include src="partials/admin_ecommerce_promotion_coupon_form/_partial_issue_settings.g7.html"/>
+        <include src="partials/admin_ecommerce_promotion_coupon_form/_partial_notification_settings.g7.html"/>
         <include src="partials/admin_ecommerce_promotion_coupon_form/_partial_usage_conditions.g7.html"/>
+        <!-- 취소·저장은 화면 아래 고정 줄 — 상품·배송정책 등 다른 등록 화면과 같은 자리다. 목록으로 돌아가기는 [취소] 가 맡는다 -->
+        <div data-ref="footer_buttons" class="ecommerce-sticky-footer-buttons">
+          <a href="/admin/ecommerce/promotion-coupons" :mergeQuery="true" data-ref="footer_cancel_button" class="ecommerce-button ecommerce-btn ecommerce-btn-outline">
+            <on type="click">
+              <navigate :bypassLeaveGuard="true" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            $t:sirsoft-ecommerce.admin.promotion_coupon.form.button.cancel
+          </a>
+          <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || _computed.isReadOnly}}" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-primary ecommerce:gap-1.5">
+            <on type="click">
+              <!-- 저장 — 등록/수정 구분은 `route.id` 하나로 엔드포인트와 메서드를 함께 가른다. 성공하면 목록으로 돌아가므로 폼을 되받지 않고, 실패하면 서버 오류를 폼 위 배너로 넘긴다 -->
+              <sequence>
+                <set-state target="_local" :isSaving="true" :errors="null"/>
+                <api-call auth_mode="required" target="{{route.id ? '/api/modules/sirsoft-ecommerce/admin/promotion-coupons/' + route.id : '/api/modules/sirsoft-ecommerce/admin/promotion-coupons'}}" method="{{route.id ? 'PUT' : 'POST'}}" body="{{_local.form}}">
+                  <success>
+                    <set-state target="_local" :isSaving="false"/>
+                    <toast type="success" message="{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.messages.updated' : '$t:sirsoft-ecommerce.admin.promotion_coupon.messages.created'}}"/>
+                    <navigate :bypassLeaveGuard="true" path="/admin/ecommerce/promotion-coupons" :mergeQuery="true">
+                      <query/>
+                    </navigate>
+                  </success>
+                  <fail>
+                    <set-state target="_local" :isSaving="false" errors="{{error.errors}}"/>
+                    <toast type="error" message="{{error.message || '$t:common.validation_error'}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{_local.isSaving}}" name="spinner" class="ecommerce:animate-spin"/>
+            <span>{{_local.isSaving ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.button.saving' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.button.save'}}</span>
+          </button>
+        </div>
       </div>
     </div>
   </slot>
+  <!-- 쿠폰별 발급 알림의 [템플릿 편집] 창 — 쇼핑몰 설정 알림 화면의 창을 복사하지 않고 그대로 include 한다 -->
+  <modal src="partials/admin_ecommerce_settings/_modal_notification_template_edit.g7.html"/>
+  <!-- 같은 알림 카드의 [미리보기] 창 — 편집 중인 제목·본문을 받는 사람 기준으로 그려 본다 -->
+  <modal src="partials/admin_ecommerce_settings/_modal_notification_template_preview.g7.html"/>
+  <!-- 같은 알림 카드의 [기본값 복원] 확인 창 — 운영자가 고친 문구를 이 쿠폰 알림의 기본 문구로 되돌린다 -->
+  <modal src="partials/admin_ecommerce_settings/_modal_notification_definition_reset.g7.html"/>
 </layout>

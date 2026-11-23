@@ -14,7 +14,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\User\DownloadCouponRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\UserCouponAvailableRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\UserCouponDownloadableRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\UserCouponListRequest;
-use Modules\Sirsoft\Ecommerce\Http\Resources\CouponIssueCollection;
+use Modules\Sirsoft\Ecommerce\Http\Resources\UserCouponIssueCollection;
 use Modules\Sirsoft\Ecommerce\Services\UserCouponService;
 
 /**
@@ -52,7 +52,8 @@ class UserCouponController extends AuthBaseController
             $coupons = $this->userCouponService->getUserCoupons($userId, $status, $perPage);
 
             return ResponseHelper::success('sirsoft-ecommerce::messages.coupon.list_fetched', [
-                'coupons' => new CouponIssueCollection($coupons),
+                // 쿠폰함 화면 카드용 쿠폰 블록을 더한 리소스 (#952)
+                'coupons' => new UserCouponIssueCollection($coupons),
             ]);
         } catch (Exception $e) {
             return ResponseHelper::moduleError(

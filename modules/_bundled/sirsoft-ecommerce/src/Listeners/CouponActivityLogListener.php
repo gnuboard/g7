@@ -42,6 +42,9 @@ class CouponActivityLogListener implements HookListenerInterface
             'sirsoft-ecommerce.coupon.after_bulk_status' => ['method' => 'handleAfterBulkStatus', 'priority' => 20],
             'sirsoft-ecommerce.coupon.after_direct_issue' => ['method' => 'handleAfterDirectIssue', 'priority' => 20],
             'sirsoft-ecommerce.coupon.after_issue_cancel' => ['method' => 'handleAfterIssueCancel', 'priority' => 20],
+            // 자동발급(#952) — 가입·첫구매·생일 발급과 첫구매 회수
+            'sirsoft-ecommerce.coupon.after_auto_issue' => ['method' => 'handleAfterAutoIssue', 'priority' => 20],
+            'sirsoft-ecommerce.coupon.after_auto_issue_revoke' => ['method' => 'handleAfterAutoIssueRevoke', 'priority' => 20],
         ];
     }
 
@@ -158,6 +161,61 @@ class CouponActivityLogListener implements HookListenerInterface
                 'coupon_id' => $couponIssue->coupon_id,
                 'user_id' => $couponIssue->user_id,
                 'coupon_code' => $couponIssue->coupon_code,
+            ],
+        ]);
+    }
+
+    /**
+     * 쿠폰 자동발급 후 로그 기록 (#952)
+     *
+     * @param  CouponIssue  $couponIssue  생성된 발급 레코드
+     * @param  string  $source  발급 경로 (signup·first_purchase·birthday)
+     * @param  array  $context  발급 문맥
+     * @return void 반환값 없음
+     */
+    public function handleAfterAutoIssue(CouponIssue $couponIssue, string $source = '', array $context = []): void
+    {
+        $this->logActivity('coupon.auto_issue', [
+            'loggable' => $couponIssue,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.coupon_auto_issue',
+            'description_params' => [
+                'coupon_id' => $couponIssue->coupon_id,
+                'user_id' => $couponIssue->user_id,
+                'source' => $source,
+            ],
+            'properties' => [
+                'coupon_id' => $couponIssue->coupon_id,
+                'user_id' => $couponIssue->user_id,
+                'coupon_code' => $couponIssue->coupon_code,
+                'issue_source' => $source,
+                'auto_issue_key' => $couponIssue->auto_issue_key,
+                'source_order_id' => $couponIssue->source_order_id,
+            ],
+        ]);
+    }
+
+    /**
+     * 첫구매 쿠폰 회수 후 로그 기록 (#952)
+     *
+     * @param  CouponIssue  $couponIssue  회수된 발급 레코드
+     * @param  int  $orderId  전부 취소·반품완료된 원천 주문 ID
+     * @return void 반환값 없음
+     */
+    public function handleAfterAutoIssueRevoke(CouponIssue $couponIssue, int $orderId = 0): void
+    {
+        $this->logActivity('coupon.auto_issue_revoke', [
+            'loggable' => $couponIssue,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.coupon_auto_issue_revoke',
+            'description_params' => [
+                'coupon_id' => $couponIssue->coupon_id,
+                'user_id' => $couponIssue->user_id,
+                'order_id' => $orderId,
+            ],
+            'properties' => [
+                'coupon_id' => $couponIssue->coupon_id,
+                'user_id' => $couponIssue->user_id,
+                'coupon_code' => $couponIssue->coupon_code,
+                'source_order_id' => $orderId,
             ],
         ]);
     }

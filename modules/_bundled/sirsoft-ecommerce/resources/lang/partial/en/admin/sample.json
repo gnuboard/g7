@@ -49,14 +49,6 @@
     "professional_plan_1y": "Professional Plan (1 year)",
     "general_product_notice": "General Product Information"
   },
-  "codes": {
-    "new_member_10": "New Member 10% Off Code",
-    "first_purchase_5000": "First Purchase ₩5,000 Off"
-  },
-  "banners": {
-    "winter_sale": "Winter New Arrivals Up to 50% Off",
-    "spring_semester": "Get Ready for the Spring Semester"
-  },
   "banks": {
     "woori": "Woori Bank",
     "kakaobank": "KakaoBank",
@@ -77,24 +69,15 @@
     "register_payment_request": "Personal payment request registered",
     "vbank_issued_waiting": "Virtual account issued - awaiting deposit",
     "order_not_found_msg": "The order number does not exist",
-    "order_not_found_api": "Order not found",
-    "select_banner_hint": "Select a banner on the left",
-    "banner_title_placeholder": "Banner title (Korean)",
-    "banner_content_placeholder": "Banner content (Korean)",
-    "won_unit": "KRW",
-    "max_label": "Max"
+    "order_not_found_api": "Order not found"
   },
   "fmt": {
     "times": "{{count}} times",
     "items": "{{count}}",
     "per_page": "Show {{count}}",
-    "digits": "{{count}} digits",
     "total_count": "Total {{count}}",
     "selected_count": "{{count}} selected",
     "select_all_count": "Select all ({{selected}}/{{total}})",
-    "issued_used": "Issued {{issued}} / Used {{used}}",
-    "percent_max": "{{percent}}% (up to ₩{{max}})",
-    "max_amount": "(up to ₩{{amount}})",
     "member_with_id": "{{name}} ({{id}})",
     "member_guest": "{{name}} (Guest)",
     "product_and_more": "{{product}} and {{count}} more",
@@ -106,7 +89,6 @@
     "payment_shipping": "{{payment}} / {{shipping}}",
     "auto_matched": "Automatically matched with order {{order}}",
     "orders_found": "{{count}} orders found",
-    "slider_summary": "{{count}} banners · auto-rotates every 3 seconds",
     "times_one": "{{count}} time",
     "digits_one": "{{count}} digit",
     "orders_found_one": "{{count}} order found",

@@ -1,0 +1,25 @@
+feature: 쿠폰 활동 로그 리스너 — 구독 훅과 기록
+
+description: |
+  쿠폰 생성·수정·삭제·일괄 상태 변경의 활동 로그 기록, 기록 실패 삼킴, 구독 훅 선언(자동발급·회수 2종 포함, #952)을 잰다.
+
+axes:
+  case:
+    - subscribed_hooks
+    - after_create
+    - after_update_with_changes
+    - after_update_without_snapshot
+    - after_delete
+    - bulk_status_backed_enum
+    - bulk_status_plain_value
+    - log_failure
+    - handle_noop
+
+effects:
+  - coupon_activity_hooks_declared
+  - coupon_activity_logged
+  - coupon_activity_failure_swallowed
+  - coupon_activity_handle_noop
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/CouponActivityLogListenerTest.php

@@ -258,9 +258,9 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
          *
          * @effects settings_tabs_include_privacy_retention
          */
-        it('13개 탭이 정의되어야 한다 (마일리지·개인정보 보유기간·상품 진열·스케줄 탭 포함)', () => {
+        it('14개 탭이 정의되어야 한다 (마일리지·쿠폰·개인정보 보유기간·상품 진열·스케줄 탭 포함)', () => {
             const tabs = tabNav.props.tabs;
-            expect(tabs).toHaveLength(13);
+            expect(tabs).toHaveLength(14);
 
             const tabIds = tabs.map((t: any) => t.id);
             expect(tabIds).toEqual([
@@ -276,6 +276,8 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
                 'notification_definitions',
                 'identity_policies',
                 'mileage',
+                // #952 — 생일 쿠폰 회원 항목·쿠폰 만료 임박 알림. 저장은 기본 분기를 그대로 탄다
+                'promotion',
                 // 이슈 #636 — 저장은 기본 분기(`{ _tab: tab, [tab]: form[tab] }`)를 그대로 탄다
                 'privacy_retention',
                 // 7.2.0(#17, D15) — 이 모듈이 선언한 예약 작업을 켜고 끄는 탭. 저장 버튼을 쓰지 않는다(그 자리에서 코어 bulk-status)

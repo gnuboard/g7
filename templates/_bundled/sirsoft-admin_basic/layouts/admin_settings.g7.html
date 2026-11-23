@@ -476,6 +476,14 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 본인인증 「사용자 지정」 범위의 확장 지점 목록 (7.2.1, #952) — 정책 창이 「사용자 지정」 옵션과 대상 select 를 이 목록으로 그린다. 받지 못하면 빈 목록(옵션 숨김) -->
+  <data-source id="identityCheckpoints" label_key="$t:editor.data_source.identityCheckpoints" type="api" endpoint="/api/admin/identity/checkpoints" method="GET" if="{{['identity', 'notification_definitions'].includes(query.tab || _global.activeSettingsTab || 'general')}}" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <fallback>
+      <field name="data">
+        <field name="checkpoints" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
   <!-- 관리자 화면용 인증 정책만 따로 받는다(기본 하위 탭과 알림 설정 탭의 「정책별 문구 추가」 창이 쓴다).
        아래 `policies` 와 **같은 주소를 다른 조건으로** 부르는 것이라, 둘을 합치면 한쪽 필터가
        다른 쪽 목록을 흔든다. 100건까지 한 번에 받아 페이지를 두지 않는다. -->

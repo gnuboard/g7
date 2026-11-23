@@ -26,6 +26,12 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
     private array $expectedTypes = [
         'order_pending_deposit',
         'mileage_expiring_soon',
+        // 회원 알림 (1.4.1) — 쿠폰 만료 임박·마일리지 적립/차감·부분 취소·리뷰 답글
+        'coupon_expiring_soon',
+        'mileage_earned',
+        'mileage_deducted',
+        'order_partially_cancelled',
+        'review_replied',
         'order_confirmed',
         'order_shipped',
         'order_delivered',

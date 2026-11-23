@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Scout\Searchable;
 use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
+use Modules\Sirsoft\Ecommerce\Enums\CouponFirstPurchaseTrigger;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueCondition;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueMethod;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueStatus;
@@ -53,7 +54,13 @@ class Coupon extends Model implements FulltextSearchable
         'issue_from' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.issue_from', 'type' => 'datetime'],
         'issue_to' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.issue_to', 'type' => 'datetime'],
         'is_combinable' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.is_combinable', 'type' => 'boolean'],
+        'first_purchase_trigger_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.first_purchase_trigger_status', 'type' => 'enum', 'enum' => CouponFirstPurchaseTrigger::class],
+        'notify_enabled' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.notify_enabled', 'type' => 'boolean'],
+        'notify_marketing_only' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.notify_marketing_only', 'type' => 'boolean'],
     ];
+
+    /** 쿠폰별 발급 알림 종류의 접두 (#952) */
+    public const NOTIFICATION_TYPE_PREFIX = 'coupon_issued.';
 
     protected $table = 'ecommerce_promotion_coupons';
 
@@ -67,6 +74,7 @@ class Coupon extends Model implements FulltextSearchable
         'min_order_amount',
         'issue_method',
         'issue_condition',
+        'first_purchase_trigger_status',
         'issue_status',
         'total_quantity',
         'issued_count',
@@ -79,7 +87,23 @@ class Coupon extends Model implements FulltextSearchable
         'issue_to',
         'is_combinable',
         'target_scope',
+        'notify_enabled',
+        'notify_marketing_only',
         'created_by',
+    ];
+
+    /**
+     * 직렬화에서 숨기는 컬럼 (#952)
+     *
+     * 회원 받기 목록(`UserCouponService::getDownloadableCoupons()`)이 모델을 그대로 회원에게 직렬화하므로
+     * 운영 설정(첫구매 발급 시점·알림 사용·광고성 여부)을 내보내지 않는다. 관리자 응답은 `CouponResource` 가 명시해 싣는다.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'first_purchase_trigger_status',
+        'notify_enabled',
+        'notify_marketing_only',
     ];
 
     protected $casts = [
@@ -103,6 +127,8 @@ class Coupon extends Model implements FulltextSearchable
         'issue_to' => 'datetime',
         'is_combinable' => 'boolean',
         'target_scope' => CouponTargetScope::class,
+        'notify_enabled' => 'boolean',
+        'notify_marketing_only' => 'boolean',
     ];
 
     /**
@@ -200,6 +226,50 @@ class Coupon extends Model implements FulltextSearchable
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    // ==================== Auto issue / Notification (#952) ====================
+
+    /**
+     * 첫구매 쿠폰의 발급 시점을 반환합니다. 저장값이 비어 있으면 구매확정입니다.
+     *
+     * @return CouponFirstPurchaseTrigger 발급 시점
+     */
+    public function firstPurchaseTrigger(): CouponFirstPurchaseTrigger
+    {
+        return CouponFirstPurchaseTrigger::fromStored($this->first_purchase_trigger_status);
+    }
+
+    /**
+     * 활동 로그 변경 비교용 스냅샷을 반환합니다. 응답에서 숨긴 칸(`$hidden`)도 담는다.
+     *
+     * `toArray()` 는 `$hidden` 을 빼므로 그대로 쓰면 발급 시점·발급 알림 칸의 이전 값이 null 로 기록된다(#952 실측).
+     *
+     * @return array<string, mixed> 스냅샷
+     */
+    public function toActivitySnapshot(): array
+    {
+        return (clone $this)->makeVisible($this->getHidden())->toArray();
+    }
+
+    /**
+     * 이 쿠폰 전용 발급 알림 종류(type)를 반환합니다.
+     *
+     * @return string 알림 종류 (`coupon_issued.{쿠폰ID}`)
+     */
+    public function notificationType(): string
+    {
+        return self::NOTIFICATION_TYPE_PREFIX.$this->id;
+    }
+
+    /**
+     * 이 쿠폰 전용 발급 알림 훅 이름을 반환합니다. 쿠폰마다 훅을 나눠 발급 1건에 큐 작업이 1건만 생기게 한다.
+     *
+     * @return string 훅 이름
+     */
+    public function notificationHook(): string
+    {
+        return 'sirsoft-ecommerce.coupon.notify_issued.'.$this->id;
     }
 
     // ==================== Accessors ====================

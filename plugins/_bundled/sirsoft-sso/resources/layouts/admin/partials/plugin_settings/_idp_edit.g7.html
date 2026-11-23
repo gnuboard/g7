@@ -4,46 +4,10 @@
      관리자 역할 대상 규칙과, 연결 회원 중 관리자가 있는 IdP 의 역할 동기화 방식, 그룹 출처는 최고관리자가 아니면 잠근다(abilities.role_rules_locked — W14, W35). -->
 <partial name="partials/plugin_settings/_idp_edit" description="IdP 편집">
   <div data-ref="idp_edit_view" data-if="{{!!query.idp}}" class="sso:mt-6 sso:space-y-4">
-    <div data-ref="idp_edit_header" class="sso:flex sso:flex-wrap sso:items-center sso:justify-between sso:gap-2">
-      <div class="sso:flex sso:items-center sso:gap-3 sso:min-w-0">
-        <button data-ref="idp_back_button" type="button" class="sso-btn-icon" title="$t:sirsoft-sso.admin.settings.idp.back" aria-label="$t:sirsoft-sso.admin.settings.idp.back">
-          <on type="click">
-            <!-- 목록 보기로 돌아간다 — 저장하지 않은 편집은 버린다 -->
-            <navigate path="/admin/plugins/sirsoft-sso/settings">
-              <query tab="idps"/>
-            </navigate>
-          </on>
-          <icon name="fa-solid fa-arrow-left" class="sso:text-lg"/>
-        </button>
-        <div class="sso:min-w-0">
-          <h2 class="sso:text-lg sso:font-semibold sso:text-gray-900 sso:dark:text-white sso:truncate">{{_local.idpForm?.display_label ?? ''}}</h2>
-          <p class="sso:text-xs sso-text-muted">{{(_local.idpForm?.key ?? '') + ' · ' + (_local.idpForm?.protocol_label ?? '')}}</p>
-        </div>
-      </div>
-      <div class="sso:flex sso:flex-wrap sso:gap-2">
-        <button data-ref="idp_save_button" type="button" class="sso-btn sso-btn-primary sso:text-sm" disabled="{{!_computed.canUpdate || _local.isSavingIdp}}">
-          <on type="click">
-            <action-ref name="saveIdp"/>
-          </on>
-          <span>$t:common.save</span>
-        </button>
-        <button data-ref="idp_delete_button" type="button" class="sso-btn sso-btn-danger sso:text-sm" disabled="{{!_computed.canUpdate || (_local.idpForm?.accounts_total ?? 0) > 0}}" title="$t:sirsoft-sso.admin.settings.idp.delete_hint">
-          <on type="click">
-            <!-- 연결 회원이 없는 IdP 만 지울 수 있다(서버도 409 로 막는다) -->
-            <api-call :auth_required="true" target="/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}" method="DELETE" confirm="$t:sirsoft-sso.admin.settings.idp.delete_confirm">
-              <success>
-                <toast type="success" message="$t:sirsoft-sso.admin.settings.idp.deleted"/>
-                <navigate path="/admin/plugins/sirsoft-sso/settings">
-                  <query tab="idps"/>
-                </navigate>
-              </success>
-              <fail>
-                <toast type="error" message="{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"/>
-              </fail>
-            </api-call>
-          </on>
-          <span>$t:common.delete</span>
-        </button>
+    <div data-ref="idp_edit_header">
+      <div class="sso:min-w-0">
+        <h2 class="sso:text-lg sso:font-semibold sso:text-gray-900 sso:dark:text-white sso:truncate">{{_local.idpForm?.display_label ?? ''}}</h2>
+        <p class="sso:text-xs sso-text-muted">{{(_local.idpForm?.key ?? '') + ' · ' + (_local.idpForm?.protocol_label ?? '')}}</p>
       </div>
     </div>
     <div data-ref="idp_unavailable_alert" data-if="{{!!_local.idpForm &amp;&amp; _local.idpForm?.available === false}}" role="alert" class="sso-alert-warning">
@@ -676,6 +640,41 @@
           </ul>
         </div>
       </div>
+    </div>
+    <!-- 목록·삭제·저장은 화면 아래 고정 줄 — 다른 설정·등록 화면과 같은 자리다 -->
+    <div data-ref="idp_footer_buttons" class="sso-sticky-footer-buttons">
+      <a data-ref="idp_list_button" href="/admin/plugins/sirsoft-sso/settings?tab=idps" class="sso-btn sso-btn-secondary sso:text-sm">
+        <on type="click">
+          <!-- IdP 목록으로 돌아간다 — 저장하지 않은 편집은 버린다 -->
+          <navigate path="/admin/plugins/sirsoft-sso/settings">
+            <query tab="idps"/>
+          </navigate>
+        </on>
+        <span>$t:common.list</span>
+      </a>
+      <button data-ref="idp_delete_button" type="button" class="sso-btn sso-btn-danger sso:text-sm" disabled="{{!_computed.canUpdate || (_local.idpForm?.accounts_total ?? 0) > 0}}" title="$t:sirsoft-sso.admin.settings.idp.delete_hint">
+        <on type="click">
+          <!-- 연결 회원이 없는 IdP 만 지울 수 있다(서버도 409 로 막는다) -->
+          <api-call :auth_required="true" target="/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}" method="DELETE" confirm="$t:sirsoft-sso.admin.settings.idp.delete_confirm">
+            <success>
+              <toast type="success" message="$t:sirsoft-sso.admin.settings.idp.deleted"/>
+              <navigate path="/admin/plugins/sirsoft-sso/settings">
+                <query tab="idps"/>
+              </navigate>
+            </success>
+            <fail>
+              <toast type="error" message="{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"/>
+            </fail>
+          </api-call>
+        </on>
+        <span>$t:common.delete</span>
+      </button>
+      <button data-ref="idp_save_button" type="button" class="sso-btn sso-btn-primary sso:text-sm" disabled="{{!_computed.canUpdate || _local.isSavingIdp}}">
+        <on type="click">
+          <action-ref name="saveIdp"/>
+        </on>
+        <span>$t:common.save</span>
+      </button>
     </div>
   </div>
 </partial>

@@ -26,7 +26,8 @@
             "reactionTypes": "Reaction Types",
             "reactions": "Reaction list",
             "privacyTargets": "Retention processing targets (author IP and guest)",
-            "privacyManualRuns": "Privacy action manual run status"
+            "privacyManualRuns": "Privacy action manual run status",
+            "identityCheckpoints": "Identity checkpoints"
         }
     },
     "common": {

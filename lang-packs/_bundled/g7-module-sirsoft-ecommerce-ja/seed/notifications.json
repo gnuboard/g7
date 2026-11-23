@@ -1350,5 +1350,125 @@
         "body": "{type_label}エクスポートを作成できませんでした。理由：{error_message}"
       }
     }
+  },
+  "coupon_expiring_soon": {
+    "definition": {
+      "name": "クーポン期限間近",
+      "description": "保有クーポンの使用期限が迫った会員に送信"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] クーポン{count}枚の使用期限がまもなく終了します",
+        "body": "<div style=\"font-family:'Malgun Gothic',Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">クーポン期限間近のお知らせ</h2><p style=\"color:#555;line-height:1.6\">{name}様、お持ちのクーポン{count}枚の使用期限がまもなく終了します。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>クーポン:</strong> {coupon_names}</p><p style=\"margin:5px 0\"><strong>最も早い有効期限:</strong> {earliest_expires_date}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{coupons_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">クーポンボックスを見る</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
+      },
+      "database": {
+        "subject": "クーポン期限間近のお知らせ",
+        "body": "{name}様、クーポン{count}枚の使用期限が {earliest_expires_date} から終了します。"
+      },
+      "sms": {
+        "subject": "クーポン期限間近のお知らせ",
+        "body": "{name}様、クーポン{count}枚の使用期限が {earliest_expires_date} から終了します。"
+      },
+      "alimtalk": {
+        "subject": "クーポン期限間近のお知らせ",
+        "body": "{name}様、クーポン{count}枚の使用期限が {earliest_expires_date} から終了します。"
+      }
+    }
+  },
+  "mileage_earned": {
+    "definition": {
+      "name": "マイレージ付与",
+      "description": "購入・管理者付与・会員登録でマイレージが付与された会員に送信"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] {amount}ポイントのマイレージが付与されました",
+        "body": "<div style=\"font-family:'Malgun Gothic',Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">マイレージ付与のお知らせ</h2><p style=\"color:#555;line-height:1.6\">{name}様、マイレージが付与されました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>付与理由:</strong> {reason_label}</p><p style=\"margin:5px 0\"><strong>付与マイレージ:</strong> {amount}ポイント</p><p style=\"margin:5px 0\"><strong>現在の残高:</strong> {balance}ポイント</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{mileage_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">マイレージ履歴を見る</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
+      },
+      "database": {
+        "subject": "マイレージ付与",
+        "body": "{reason_label}でマイレージ{amount}ポイントが付与されました。残高 {balance}ポイント"
+      },
+      "sms": {
+        "subject": "マイレージ付与",
+        "body": "{reason_label}でマイレージ{amount}ポイントが付与されました。残高 {balance}ポイント"
+      },
+      "alimtalk": {
+        "subject": "マイレージ付与",
+        "body": "{reason_label}でマイレージ{amount}ポイントが付与されました。残高 {balance}ポイント"
+      }
+    }
+  },
+  "mileage_deducted": {
+    "definition": {
+      "name": "マイレージ差し引き",
+      "description": "管理者がマイレージを差し引いた会員に送信"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] {amount}ポイントのマイレージが差し引かれました",
+        "body": "<div style=\"font-family:'Malgun Gothic',Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">マイレージ差し引きのお知らせ</h2><p style=\"color:#555;line-height:1.6\">{name}様、マイレージが差し引かれました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>差し引きマイレージ:</strong> {amount}ポイント</p><p style=\"margin:5px 0\"><strong>理由:</strong> {memo}</p><p style=\"margin:5px 0\"><strong>現在の残高:</strong> {balance}ポイント</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{mileage_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">マイレージ履歴を見る</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
+      },
+      "database": {
+        "subject": "マイレージ差し引き",
+        "body": "マイレージ{amount}ポイントが差し引かれました。残高 {balance}ポイント"
+      },
+      "sms": {
+        "subject": "マイレージ差し引き",
+        "body": "マイレージ{amount}ポイントが差し引かれました。残高 {balance}ポイント"
+      },
+      "alimtalk": {
+        "subject": "マイレージ差し引き",
+        "body": "マイレージ{amount}ポイントが差し引かれました。残高 {balance}ポイント"
+      }
+    }
+  },
+  "order_partially_cancelled": {
+    "definition": {
+      "name": "注文の一部キャンセル",
+      "description": "注文商品の一部がキャンセルされると注文者に送信"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 注文 {order_number} の一部商品がキャンセルされました",
+        "body": "<div style=\"font-family:'Malgun Gothic',Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">注文一部キャンセルのお知らせ</h2><p style=\"color:#555;line-height:1.6\">{name}様、ご注文の商品のうち一部がキャンセルされました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>キャンセル商品:</strong> {cancelled_items}</p><p style=\"margin:5px 0\"><strong>返金予定金額:</strong> {refund_amount}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{order_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">注文詳細を見る</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
+      },
+      "database": {
+        "subject": "注文の一部キャンセル",
+        "body": "注文 {order_number} の一部商品({cancelled_items})がキャンセルされました。"
+      },
+      "sms": {
+        "subject": "注文の一部キャンセル",
+        "body": "注文 {order_number} の一部商品({cancelled_items})がキャンセルされました。"
+      },
+      "alimtalk": {
+        "subject": "注文の一部キャンセル",
+        "body": "注文 {order_number} の一部商品({cancelled_items})がキャンセルされました。"
+      }
+    }
+  },
+  "review_replied": {
+    "definition": {
+      "name": "レビューへの返信",
+      "description": "書いた商品レビューに販売者の返信が付くと作成者に送信"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] お書きになったレビューに返信が付きました",
+        "body": "<div style=\"font-family:'Malgun Gothic',Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">レビュー返信のお知らせ</h2><p style=\"color:#555;line-height:1.6\">{name}様、お書きになったレビューに販売者の返信が付きました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>商品:</strong> {product_name}</p><p style=\"margin:5px 0\"><strong>返信:</strong> {reply_excerpt}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{reviews_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">マイレビューを見る</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
+      },
+      "database": {
+        "subject": "レビューへの返信",
+        "body": "{product_name} のレビューに販売者の返信が付きました。"
+      },
+      "sms": {
+        "subject": "レビューへの返信",
+        "body": "{product_name} のレビューに販売者の返信が付きました。"
+      },
+      "alimtalk": {
+        "subject": "レビューへの返信",
+        "body": "{product_name} のレビューに販売者の返信が付きました。"
+      }
+    }
   }
 }

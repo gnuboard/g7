@@ -20,7 +20,8 @@
     "identity_policies": "本人認証ポリシー",
     "mileage": "マイレージ",
     "privacy_retention": "個人情報の保有期間",
-    "schedules": "スケジュール"
+    "schedules": "スケジュール",
+    "promotion": "クーポン"
   },
   "save_success": "設定が保存されました。",
   "save_error": "設定の保存に失敗しました。",
@@ -927,5 +928,22 @@
     "effective": "現在は{{kind}}で表示されます。",
     "effective_with_source": "現在は{{kind}}で表示されます。({{source}}の設定に基づく)",
     "requires_nickname_hint": "ニックネームが必要な種類です。保存すると、会員項目のニックネームが使用、必須に固定されることがあります。"
+  },
+  "promotion": {
+    "birthday": {
+      "title": "誕生日クーポン",
+      "field_label": "誕生日として使う会員項目",
+      "none": "使用しない",
+      "field_hint": "日付タイプの会員項目のみ選択できます。指定しないと誕生日クーポンは発行されません。",
+      "no_candidates": "日付タイプの会員項目がありません。先に会員項目に日付タイプの項目を追加してください。",
+      "go_member_fields": "会員項目の設定を開く"
+    },
+    "expiry": {
+      "title": "クーポン期限間近の通知",
+      "enabled": "期限間近の通知を使用",
+      "enabled_hint": "保有クーポンの使用期限が近づくと会員に通知します(発行1件につき1回)。",
+      "days_before": "通知タイミング",
+      "template_hint": "通知の文言とチャネルは通知タブの「クーポン期限間近」で編集します。"
+    }
   }
 }

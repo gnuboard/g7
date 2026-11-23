@@ -9,7 +9,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Ecommerce\Exceptions\ReviewNotWritableException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\StoreReviewRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\User\UserReviewListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ProductReviewResource;
+use Modules\Sirsoft\Ecommerce\Http\Resources\UserProductReviewResource;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewService;
 
@@ -20,6 +22,11 @@ use Modules\Sirsoft\Ecommerce\Services\ProductReviewService;
  */
 class ProductReviewController extends AuthBaseController
 {
+    /**
+     * 리뷰 서비스를 주입받습니다.
+     *
+     * @param  ProductReviewService  $reviewService  리뷰 서비스
+     */
     public function __construct(
         private ProductReviewService $reviewService
     ) {}
@@ -85,6 +92,45 @@ class ProductReviewController extends AuthBaseController
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.reviews.create_failed',
+                500
+            );
+        }
+    }
+
+    /**
+     * 내 리뷰 목록 (마이페이지 내 리뷰, #952)
+     *
+     * @param  UserReviewListRequest  $request  목록 요청
+     * @return JsonResponse 리뷰 목록 (data + pagination)
+     */
+    public function index(UserReviewListRequest $request): JsonResponse
+    {
+        try {
+            $this->logApiUsage('review.user_list');
+
+            $perPage = (int) ($request->validated('per_page') ?? 10);
+            $reviews = $this->reviewService->getUserReviews((int) Auth::id(), $perPage);
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.reviews.user_list_fetched',
+                [
+                    'data' => UserProductReviewResource::collection($reviews->getCollection())->resolve($request),
+                    'pagination' => [
+                        'current_page' => $reviews->currentPage(),
+                        'last_page' => $reviews->lastPage(),
+                        'per_page' => $reviews->perPage(),
+                        'total' => $reviews->total(),
+                        'from' => $reviews->firstItem(),
+                        'to' => $reviews->lastItem(),
+                        'has_more_pages' => $reviews->hasMorePages(),
+                    ],
+                ]
+            );
+        } catch (Exception $e) {
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.reviews.user_list_fetch_failed',
                 500
             );
         }

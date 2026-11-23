@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'activity_log' => [
+        'date_range_invalid' => '終了日は開始日と同じかそれ以降である必要があります。',
+    ],
     'accepted' => ':attribute フィールドを承認する必要があります。',
     'accepted_if' => ':other が :value の場合、:attribute フィールドを承認する必要があります。',
     'active_url' => ':attribute フィールドは有効なURLである必要があります。',
@@ -1211,6 +1214,7 @@ return [
         'scope_invalid' => 'スコープはroute、hook、customのいずれかである必要があります。',
         'target_required' => 'ターゲット(ルート名またはフック名)を入力してください。',
         'target_max' => 'ターゲットは255文字を超えることはできません。',
+        'custom_target_unregistered' => '「カスタム」範囲の対象は、有効な拡張機能が宣言したチェックポイントである必要があります。',
         'purpose_required' => '認証目的(Purpose)を選択してください。',
         'purpose_max' => '認証目的は64文字を超えることはできません。',
         'provider_id_max' => 'プロバイダー識別子は64文字を超えることはできません。',
@@ -1245,6 +1249,9 @@ return [
     'summary_more_error' => '(他 :count 件のエラー)',
     'summary_more_errors' => '(他 :count 件のエラー)',
     'attributes' => [
+        // 회원 활동 기록 기간 조회 (7.2.1, #952)
+        'date_from' => '開始日',
+        'date_to' => '終了日',
         'system.execution_mode' => '実行方式',
         'system.cron_mode' => 'スケジュール実行方式',
         'system.cron_allowed_ips' => 'スケジュール許可アドレス',

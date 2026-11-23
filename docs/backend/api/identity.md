@@ -36,6 +36,51 @@ Laravel 의 기본 키가 경로와 무관하게 `sha1(domain|ip)` 하나로 만
 ---
 
 
+### GET /api/admin/identity/checkpoints
+
+- **라우트명**: `api.admin.identity.checkpoints.index`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController@checkpoints`
+- **인증/권한**: `auth:sanctum` + `permission:core.admin.identity.policies.read` (정책 목록과 같다)
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| checkpoints | array | `[{...}]` | 활성 확장이 `getIdentityCheckpoints()` 로 선언한 「사용자 지정」 확장 지점 목록 (키 순) |
+| checkpoints[].key | string | `vendor-module.withdraw` | 지점 키 — 정책 `scope=custom` 의 `target` 에 쓰는 값 |
+| checkpoints[].name | string | `회원 탈퇴` | 지점 이름 (현재 로케일) |
+| checkpoints[].description | string | `탈퇴 직전 본인인증` | 지점 설명 (현재 로케일, 없으면 빈 문자열) |
+| checkpoints[].source_type | string | `module` | 선언한 확장 유형 (`module`·`plugin`, 필터로 더한 항목은 그 값) |
+| checkpoints[].source_identifier | string | `vendor-module` | 선언한 확장 식별자 |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "성공",
+    "data": {
+        "checkpoints": [
+            {
+                "key": "vendor-module.withdraw",
+                "name": "회원 탈퇴",
+                "description": "탈퇴 직전 본인인증",
+                "source_type": "module",
+                "source_identifier": "vendor-module"
+            }
+        ]
+    }
+}
+```
+
+**설명**
+
+본인인증 정책 창이 「사용자 지정」 범위의 대상으로 고를 수 있는 확장 지점을 돌려준다(7.2.1). 확장은 모듈·플러그인 클래스의 `getIdentityCheckpoints()` 로 지점을 선언하고 그 자리에서 `IdentityPolicyService::enforceCheckpoint($key, $user, $context)` 를 부른다. 필터 `core.identity.filter_checkpoints` 로 지점을 더하거나 뺄 수 있다. 같은 키를 두 확장이 선언하면 먼저 선언한 확장을 둔다. 「사용자 지정」 정책을 저장할 때 대상이 이 목록에 없으면 422(`validation.identity_policy.custom_target_unregistered`)다.
+
 ### GET /api/admin/identity/logs
 <!-- @generated:start:api.admin.identity.logs.index -->
 - **라우트명**: `api.admin.identity.logs.index`
@@ -330,6 +375,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | applies_to | string | `admin` | 적용 대상 사용자 (self: 일반 사용자 / admin: 관리자 / both: 모두, IdentityPolicyAppliesTo) |
 | fail_mode | string | `block` | 실패 시 동작 (block: HTTP 428 차단 / log_only: 감사 로그만 남기고 통과, IdentityPolicyFailMode) |
 | user_overrides | array | `[]` | 운영자가 선언 기본값에서 재정의한 필드 목록 (선언형 정책만 의미, 시더 재실행 시 보존) |
+| checkpoint_registered | boolean\|null | `null` | 범위가 「사용자 지정」(custom)이면 대상이 활성 확장이 선언한 확장 지점인지(아니면 어디서도 강제되지 않는다), 다른 범위면 null (7.2.1) |
 | created_at | string | `2026-07-31 00:15:09` | 생성 일시 |
 | updated_at | string | `2026-07-31 00:15:09` | 최종 수정 일시 |
 | abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
@@ -497,6 +543,7 @@ _단건 응답: `data` 객체의 필드 (생성된 정책을 `PolicyResource` �
 | applies_to | string | `both` | 적용 대상 사용자 (self / admin / both) |
 | fail_mode | string | `block` | 실패 시 동작 (block: HTTP 428 차단 / log_only: 감사 로그만) |
 | user_overrides | array | `[]` | 운영자가 선언 기본값에서 재정의한 필드 목록 (admin 정책은 빈 배열) |
+| checkpoint_registered | boolean\|null | `null` | 범위가 「사용자 지정」(custom)이면 대상이 활성 확장이 선언한 확장 지점인지(아니면 어디서도 강제되지 않는다), 다른 범위면 null (7.2.1) |
 | created_at | string | `2026-07-08 10:44:35` | 생성 일시 |
 | updated_at | string | `2026-07-08 10:44:35` | 최종 수정 일시 |
 | abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 |
@@ -681,6 +728,7 @@ _단건 응답: `data` 객체의 필드 (수정 후 `refresh()` 한 정책을 `P
 | applies_to | string | `self` | 적용 대상 사용자 (수정 반영) |
 | fail_mode | string | `block` | 실패 시 동작 (수정 반영) |
 | user_overrides | array | `["enabled","grace_minutes"]` | 이번 수정으로 append 된 운영자 재정의 필드 목록 (시더 재실행 시 보존) |
+| checkpoint_registered | boolean\|null | `null` | 범위가 「사용자 지정」(custom)이면 대상이 활성 확장이 선언한 확장 지점인지(아니면 어디서도 강제되지 않는다), 다른 범위면 null (7.2.1) |
 | created_at | string | `2026-07-08 10:44:35` | 생성 일시 |
 | updated_at | string | `2026-07-08 12:14:36` | 최종 수정 일시 |
 | abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 |
@@ -791,6 +839,7 @@ _단건 응답: `data` 객체의 필드 (복원 후 `fresh()` 한 정책을 `Pol
 | applies_to | string | `self` | 적용 대상 사용자 |
 | fail_mode | string | `block` | 실패 시 동작 |
 | user_overrides | array | `[]` | 남아 있는 운영자 재정의 필드 목록 (요청한 `field` 가 제거된 상태) |
+| checkpoint_registered | boolean\|null | `null` | 범위가 「사용자 지정」(custom)이면 대상이 활성 확장이 선언한 확장 지점인지(아니면 어디서도 강제되지 않는다), 다른 범위면 null (7.2.1) |
 | created_at | string | `2026-07-08 10:44:35` | 생성 일시 |
 | updated_at | string | `2026-07-08 12:20:11` | 최종 수정 일시 |
 | abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 |

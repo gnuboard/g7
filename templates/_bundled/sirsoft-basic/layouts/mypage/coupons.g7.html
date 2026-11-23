@@ -1,0 +1,32 @@
+<!-- 마이페이지 «쿠폰» 탭 (#952) — 받은 쿠폰을 사용가능·사용완료·만료로 나눠 본다. 탭 상태는 URL 쿼리(`?status=`)에 두어
+     새로고침과 공유 링크에서도 같은 탭이 열린다. 기본은 사용가능이다. -->
+<layout name="mypage/coupons" version="1.0.0" extends="_user_base">
+  <!-- 쿠폰함 목록 — 탭·쪽이 URL 쿼리에 있어 바뀌면 다시 받는다. 카드가 그리는 쿠폰 정보는 서버가 `coupon` 블록으로 싣는다 -->
+  <data-source id="user_coupons" label_key="$t:editor.data_source.user_coupons" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/coupons" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" :blur_until_loaded="true">
+    <params status="{{['available', 'used', 'expired'].includes(query.status) ? query.status : 'available'}}" page="{{query.page ?? 1}}" per_page="{{query.per_page ?? 10}}"/>
+  </data-source>
+  <computed name="currentTab">coupons</computed>
+  <computed name="couponStatus">{{['available', 'used', 'expired'].includes(query.status) ? query.status : 'available'}}</computed>
+  <permissions/>
+  <transition-overlay enabled style="spinner" target="mypage_tab_content" fallback-target="main_content_area">
+    <spinner component="PageLoading"/>
+  </transition-overlay>
+  <slot name="content">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <container data-type="layout" class="py-8">
+        <responsive on="portable" class="py-4"/>
+        <!-- 페이지 제목 -->
+        <div class="flex items-center gap-2 mb-6">
+          <icon name="user" size="xl" class="text-gray-900 dark:text-white"/>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">$t:mypage.title</h1>
+        </div>
+        <!-- 탭 네비게이션 -->
+        <include src="partials/mypage/_tab_navigation.g7.html"/>
+        <!-- 탭 컨텐츠 영역 (스켈레톤 타겟) -->
+        <div data-ref="mypage_tab_content">
+          <include src="partials/mypage/coupons/_list.g7.html"/>
+        </div>
+      </container>
+    </div>
+  </slot>
+</layout>

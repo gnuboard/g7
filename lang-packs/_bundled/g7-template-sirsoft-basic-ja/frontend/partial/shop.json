@@ -673,5 +673,10 @@
   "quick_option": {
     "title": "オプション選択",
     "view_detail": "詳細表示"
+  },
+  "coupon_zone": {
+    "title": "クーポンゾーン",
+    "login_hint": "ログインするとクーポンを受け取れます",
+    "count": "受け取れるクーポン {{count}}枚"
   }
 }

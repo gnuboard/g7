@@ -1,0 +1,43 @@
+<!-- 모든 기기에서 로그아웃 확인 창 (#952) — 이 기기를 포함한 모든 로그인(토큰)을 끊는다. 상태는 창 고유 전역 이름 공간
+     `_global.logoutAllDevicesModal`(isProcessing)에 있고 여는 쪽이 매번 비운다(탈퇴 창과 같은 방식).
+     성공하면 이 기기의 세션도 끊겼으므로 알림 뒤 엔진 로그아웃으로 정리한다. -->
+<partial description="모든 기기 로그아웃 확인 모달" editor_label="$t:user.modal_label.mypage_profile.logoutAllDevicesModal">
+  <modal data-type="composite" data-ref="logoutAllDevicesModal" title="$t:mypage.security.logout_all.modal_title" size="sm">
+    <div class="text-center py-4">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+        <icon name="right-from-bracket" size="2x" class="text-gray-600 dark:text-gray-300"/>
+      </div>
+      <p class="text-sm text-gray-600 dark:text-gray-400">$t:mypage.security.logout_all.confirm_message</p>
+    </div>
+    <footer>
+      <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" disabled="{{_global.logoutAllDevicesModal?.isProcessing === true}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:common.cancel
+      </button>
+      <button data-ref="logout_all_devices_confirm" type="button" class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.logoutAllDevicesModal?.isProcessing === true}}">
+        <on type="click">
+          <!-- 모든 기기 로그아웃 — 버튼을 잠그고, 성공하면 알린 뒤 이 기기도 로그아웃 처리한다(실패하면 잠금을 푼다) -->
+          <sequence>
+            <set-state target="global" :logoutAllDevicesModal.isProcessing="true"/>
+            <api-call :auth_required="true" target="/api/user/auth/logout-all-devices" method="POST">
+              <success>
+                <set-state target="global" :logoutAllDevicesModal.isProcessing="false"/>
+                <close-modal/>
+                <toast type="success" message="$t:mypage.security.logout_all.success"/>
+                <logout/>
+              </success>
+              <fail>
+                <set-state target="global" :logoutAllDevicesModal.isProcessing="false"/>
+                <toast type="error" message="{{error.message ?? '$t:mypage.security.logout_all.failed'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.logoutAllDevicesModal?.isProcessing === true}}" name="spinner" size="sm" class="animate-spin"/>
+        <span>$t:mypage.security.logout_all.confirm_button</span>
+      </button>
+    </footer>
+  </modal>
+</partial>

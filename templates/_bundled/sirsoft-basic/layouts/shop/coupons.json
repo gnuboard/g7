@@ -1,0 +1,76 @@
+{
+    "comment": "쿠폰존 (#952) — 지금 받을 수 있는 다운로드 쿠폰 목록. 비회원도 목록을 보고, [받기]·[모두 받기]를 누르면 로그인 안내 창이 뜬다.\n     목록은 공개 주소 하나로 받는다(auth_mode=optional) — 로그인 회원이면 토큰이 실려 서버가 받은 여부를 채우고, 비회원이면 받은 여부 없이 준다.\n     로그인 확인 전후로 주소를 바꾸면 첫 요청이 공개 목록으로 나가 회원에게도 받은 여부가 빠졌다(#952 실측).\n     받은 쿠폰은 `_local.downloadedIds` 에 곧바로 반영하고 목록을 다시 받는다(화면이 응답을 기다리지 않고 「받음」으로 바뀐다).",
+    "version": "1.0.0",
+    "layout_name": "shop/coupons",
+    "extends": "_user_base",
+    "meta": [],
+    "data_sources": [
+        {
+            "id": "couponZone",
+            "label_key": "$t:editor.data_source.couponZone",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/coupons/downloadable",
+            "method": "GET",
+            "auth_mode": "optional",
+            "auto_fetch": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page ?? 1}}",
+                "per_page": 12
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "쿠폰 목록. 쪽은 URL 쿼리에 있어 쪽을 넘기면 다시 받는다"
+        }
+    ],
+    "permissions": [],
+    "transition_overlay": {
+        "wait_for": [
+            "couponZone"
+        ]
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "downloadedIds": [],
+                "downloadingId": null,
+                "downloadingAll": false
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "type": "layout",
+                "name": "Container",
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "py-4"
+                        }
+                    }
+                },
+                "props": {
+                    "className": "py-8"
+                },
+                "children": [
+                    {
+                        "partial": "partials/shop/coupons/_toolbar.json"
+                    },
+                    {
+                        "partial": "partials/shop/coupons/_grid.json"
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "comment": "비회원이 받기를 누르면 여는 안내 창 — 상품 상세와 같은 창이다",
+            "partial": "partials/shop/detail/_modal_login_required.json"
+        }
+    ]
+}

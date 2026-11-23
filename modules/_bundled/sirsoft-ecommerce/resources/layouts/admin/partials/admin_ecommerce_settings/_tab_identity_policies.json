@@ -623,7 +623,22 @@
                                                             "props": {
                                                                 "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                                             },
-                                                            "text": "$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}"
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{policy.scope === 'custom' && policy.checkpoint_registered === false}}",
+                                                                    "props": {
+                                                                        "className": "ecommerce:ml-1 ecommerce:inline-flex ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-amber-100 ecommerce:text-amber-800 ecommerce:dark:bg-amber-900/30 ecommerce:dark:text-amber-300"
+                                                                    },
+                                                                    "text": "$t:admin.identity.policies.checkpoint_missing"
+                                                                }
+                                                            ]
                                                         },
                                                         {
                                                             "type": "basic",
@@ -915,6 +930,15 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "text": "$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{policy.scope === 'custom' && policy.checkpoint_registered === false}}",
+                                                                    "props": {
+                                                                        "className": "ecommerce:ml-1 ecommerce:inline-flex ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-amber-100 ecommerce:text-amber-800 ecommerce:dark:bg-amber-900/30 ecommerce:dark:text-amber-300"
+                                                                    },
+                                                                    "text": "$t:admin.identity.policies.checkpoint_missing"
                                                                 },
                                                                 {
                                                                     "type": "basic",

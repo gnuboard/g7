@@ -166,6 +166,12 @@ php artisan plugin:update sirsoft-marketing --force
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
 | `sirsoft-page` | 모듈 | `>=1.0.0` | ✅ |
+
+**이 확장과 연동하는 확장** (이 확장이 있으면 기능을 더합니다 — 이 확장의 화면·훅 이름을 바꿀 때 함께 확인)
+
+| 확장 | 유형 | 요구 버전 |
+|---|---|---|
+| `sirsoft-ecommerce` | 모듈 | `*` |
 <!-- @generated:integrations END -->
 
 ## 문서

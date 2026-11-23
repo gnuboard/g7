@@ -138,6 +138,8 @@ class SeedChannelTemplatesListener implements HookListenerInterface
                 'recipients' => $recipients,
                 'subject' => $baseSubject,
                 'body' => $baseBody,
+                // 메일을 꺼진 채로 선언한 알림(코어 7.2.1 이후 새 회원 대상 알림)은 문자·알림톡도 꺼진 채로 들인다 — 바깥 채널 기본값을 맞춘다
+                'is_active' => $this->externalChannelDefaultActive($templates),
             ];
         }
 
@@ -145,6 +147,22 @@ class SeedChannelTemplatesListener implements HookListenerInterface
         $definition['templates'] = $templates;
 
         return $definition;
+    }
+
+    /**
+     * 증강할 문자·알림톡 템플릿의 기본 켜짐 여부를 정합니다.
+     *
+     * 선언이 메일 템플릿을 `is_active => false` 로 적었으면 바깥 채널을 기본으로 끈 알림이다(새 회원 대상 알림은 사이트 알림만
+     * 켜진 채로 들어온다 — 이커머스 1.4.1 등). 그때는 문자·알림톡도 끈다. 그 밖(종전 선언)은 종전처럼 켠다.
+     *
+     * @param  array<int, array<string, mixed>>  $templates  선언된 template 목록
+     * @return bool 켜면 true
+     */
+    private function externalChannelDefaultActive(array $templates): bool
+    {
+        $mail = $this->findTemplate($templates, 'mail');
+
+        return ! ($mail !== null && array_key_exists('is_active', $mail) && $mail['is_active'] === false);
     }
 
     /**

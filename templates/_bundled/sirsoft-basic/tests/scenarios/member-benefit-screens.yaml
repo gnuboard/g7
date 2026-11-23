@@ -1,0 +1,60 @@
+feature: 회원 화면 — 쿠폰존·쿠폰함·내 리뷰·활동 기록·보안 카드·헤더 쿠폰존 (#952 C·E)
+
+description: |
+  레이아웃 식을 바인딩 엔진으로 평가하고, 쿠폰존·쿠폰함은 브라우저(page.route 고정)로 비로그인·로그인·좁은 화면·SPA 이동을 잰다.
+
+axes:
+  case:
+    - coupon_zone_endpoint
+    - coupon_zone_card_buttons
+    - coupon_zone_guest_download
+    - coupon_zone_empty_and_paging
+    - mypage_coupons_data_source
+    - mypage_coupons_dday
+    - mypage_coupons_empty
+    - mypage_coupons_tab_hidden
+    - header_menu_coupons
+    - mypage_reviews_data_source
+    - mypage_reviews_delete_button
+    - mypage_reviews_delete_modal
+    - mypage_reviews_empty_and_reply
+    - mypage_activity_data_source
+    - mypage_activity_rows
+    - mypage_activity_paging
+    - mypage_profile_security_card
+    - mypage_profile_logout_all
+    - guest_browser
+    - member_browser
+    - guest_mobile_browser
+    - mypage_coupons_browser
+    - mypage_coupons_empty_browser
+
+effects:
+  - coupon_zone_endpoint_by_login
+  - coupon_zone_card_download_state
+  - coupon_zone_guest_login_prompt
+  - coupon_zone_empty_and_pagination
+  - coupon_box_lists_my_coupons
+  - coupon_box_card_block
+  - coupon_box_empty_links_zone
+  - mypage_tabs_hidden_without_shop
+  - header_menu_coupons_auto_item
+  - user_reviews_own_only
+  - mypage_review_delete_only_deletable
+  - mypage_review_delete_refetches
+  - mypage_review_empty_and_reply
+  - user_activity_log_paginated
+  - mypage_activity_rows
+  - profile_security_card_visible
+  - logout_all_devices_logs_out
+  - coupon_zone_mobile_no_overflow
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/shop-coupon-zone.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypage-coupons.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/header-menu-coupons-auto-item.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypage-reviews.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypage-activity.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/profile-security-card.test.tsx
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/shop-coupon-zone.spec.ts
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/mypage-coupons.spec.ts

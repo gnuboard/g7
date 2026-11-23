@@ -1,0 +1,73 @@
+<!-- 내 활동 기록 본체 (#952) — 상단 기간(시작·끝) + [조회], 목록(PC 표·모바일 카드), 쪽 넘김. 기간은 `_local` 에 입력하고
+     [조회]가 URL 쿼리로 옮긴다(목록은 쿼리를 읽는 `myActivity` 가 다시 받는다). 끝 날짜가 시작보다 앞서면 서버가 422 로 거절한다. -->
+<partial description="마이페이지 내 활동 기록 목록">
+  <div class="mt-6">
+    <responsive on="portable" class="mt-4"/>
+    <!-- 기간 필터 -->
+    <div data-ref="activity_filter" class="flex flex-wrap items-end gap-3 mb-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div>
+        <label for="activity_date_from" class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">$t:mypage.activity.date_from</label>
+        <input id="activity_date_from" type="date" name="activityFrom" value="{{_local.activityFrom ?? ''}}" class="h-9 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"/>
+      </div>
+      <div>
+        <label for="activity_date_to" class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">$t:mypage.activity.date_to</label>
+        <input id="activity_date_to" type="date" name="activityTo" value="{{_local.activityTo ?? ''}}" class="h-9 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"/>
+      </div>
+      <button data-ref="activity_search_button" type="button" class="h-9 px-4 text-sm font-medium rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100">
+        <on type="click">
+          <!-- 기간을 쿼리로 옮기고 1쪽으로 — 쿼리가 바뀌면 목록을 다시 받는다 -->
+          <navigate path="/mypage/activity" :mergeQuery="true">
+            <query date_from="{{_local.activityFrom ?? ''}}" date_to="{{_local.activityTo ?? ''}}" page="1"/>
+          </navigate>
+        </on>
+        $t:mypage.activity.search
+      </button>
+    </div>
+    <blur-until-loaded sources="myActivity"/>
+    <p data-ref="activity_total" data-if="{{myActivity !== undefined}}" class="text-sm text-gray-500 dark:text-gray-400 mb-3">$t:mypage.activity.total|count={{myActivity?.data?.pagination?.total ?? 0}}</p>
+    <!-- 목록 (PC 표) -->
+    <div data-ref="activity_table" data-if="{{(myActivity?.data?.activities ?? []).length > 0}}" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+      <responsive on="portable" class="hidden"/>
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
+          <tr>
+            <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 w-48">$t:mypage.activity.table.date</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 w-48">$t:mypage.activity.table.action</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">$t:mypage.activity.table.description</th>
+          </tr>
+        </thead>
+        <tbody data-each="log in {{myActivity?.data?.activities ?? []}}">
+          <tr class="border-b border-gray-100 dark:border-gray-700/50">
+            <td class="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{{log.created_at | datetime}}</td>
+            <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{log.action_label ?? log.action}}</td>
+            <td class="px-4 py-3 text-gray-700 dark:text-gray-300 break-words">{{log.description ?? ''}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- 목록 (모바일 카드) -->
+    <div data-if="{{(myActivity?.data?.activities ?? []).length > 0}}" class="hidden">
+      <responsive on="portable" class="space-y-3"/>
+      <div data-each="log in {{myActivity?.data?.activities ?? []}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+        <div class="flex items-center justify-between gap-2 mb-1">
+          <span class="text-sm font-medium text-gray-900 dark:text-white">{{log.action_label ?? log.action}}</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{log.created_at | datetime}}</span>
+        </div>
+        <p class="text-sm text-gray-700 dark:text-gray-300 break-words">{{log.description ?? ''}}</p>
+      </div>
+    </div>
+    <!-- 빈 상태 -->
+    <div data-ref="activity_empty" data-if="{{myActivity !== undefined &amp;&amp; (myActivity?.data?.activities ?? []).length === 0}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+      <icon name="clock-rotate-left" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
+      <p class="text-gray-500 dark:text-gray-400">$t:mypage.activity.empty</p>
+    </div>
+    <!-- 페이지네이션 -->
+    <pagination pageHref="/mypage/activity?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-if="{{((myActivity?.data?.pagination?.last_page ?? 0) > 1) || (myActivity?.data?.pagination?.has_more_pages === true) || ((myActivity?.data?.pagination?.current_page ?? 1) > 1)}}" currentPage="{{myActivity?.data?.pagination?.current_page}}" totalPages="{{myActivity?.data?.pagination?.last_page ?? null}}" hasMorePages="{{myActivity?.data?.pagination?.has_more_pages ?? false}}" class="mt-4">
+      <on event="onPageChange">
+        <navigate path="/mypage/activity" :mergeQuery="true">
+          <query page="{{$args[0]}}"/>
+        </navigate>
+      </on>
+    </pagination>
+  </div>
+</partial>

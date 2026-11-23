@@ -11,14 +11,20 @@ use App\Services\NotificationRecipientCapability;
 use App\Support\LocalizedValue;
 use App\Support\ScreenUrl;
 use App\Support\SiteUrl;
+use Modules\Sirsoft\Ecommerce\Enums\CouponIssueSource;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Models\Coupon;
+use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
+use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Module;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Support\CountryNames;
 use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
+use Modules\Sirsoft\Ecommerce\Support\MarketingConsentGate;
 use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
 
@@ -98,6 +104,12 @@ class EcommerceNotificationDataListener implements HookListenerInterface
                 'priority' => 20,
                 'type' => 'filter',
             ],
+            // 쿠폰별 발급 알림(#952)은 쿠폰 화면에서만 편집한다 — 알림 설정 목록에서 뺀다
+            'core.notification_definition.filter_hidden_type_prefixes' => [
+                'method' => 'hideCouponIssuedTypes',
+                'priority' => 20,
+                'type' => 'filter',
+            ],
         ];
     }
 
@@ -137,6 +149,20 @@ class EcommerceNotificationDataListener implements HookListenerInterface
     }
 
     /**
+     * 알림 설정 목록에서 쿠폰별 발급 알림 종류를 숨깁니다. (#952)
+     *
+     * @param  array<int, string>  $prefixes  앞선 구독자가 모은 숨길 접두
+     * @param  array  $filters  목록 조회 조건
+     * @return array<int, string> 숨길 접두
+     */
+    public function hideCouponIssuedTypes(array $prefixes = [], array $filters = []): array
+    {
+        $prefixes[] = Coupon::NOTIFICATION_TYPE_PREFIX;
+
+        return array_values(array_unique($prefixes));
+    }
+
+    /**
      * 알림 유형에 따라 데이터와 컨텍스트를 추출합니다.
      *
      * @param  array  $default  기본 extract_data 구조
@@ -159,7 +185,13 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             'inquiry_received' => $this->extractInquiryReceived($args),
             'inquiry_replied' => $this->extractInquiryReplied($args),
             'mileage_expiring_soon' => $this->extractMileageExpiringSoon($args),
-            default => $default,
+            // #952
+            'coupon_expiring_soon' => $this->extractCouponExpiringSoon($args),
+            'mileage_earned' => $this->extractMileageChange($args, true),
+            'mileage_deducted' => $this->extractMileageChange($args, false),
+            'order_partially_cancelled' => $this->extractOrderPartiallyCancelled($args),
+            'review_replied' => $this->extractReviewReplied($args),
+            default => str_starts_with($type, Coupon::NOTIFICATION_TYPE_PREFIX) ? $this->extractCouponIssued($args) : $default,
         };
     }
 
@@ -723,6 +755,258 @@ class EcommerceNotificationDataListener implements HookListenerInterface
                 'trigger_user' => $user,
             ],
         ];
+    }
+
+    // ──────────────────────────────────────────────
+    // #952 — 쿠폰 발급·만료 임박, 마일리지 적립·차감, 부분 취소, 리뷰 답글
+    // ──────────────────────────────────────────────
+
+    /**
+     * 쿠폰 발급 알림(`coupon_issued.{쿠폰ID}`) 데이터를 추출합니다.
+     *
+     * 광고성 쿠폰이면 제목 앞 `{ad_prefix}` 에 「(광고) 」 를 싣고, 회원이 수신동의하지 않은 바깥 채널(메일·문자·알림톡)은
+     * 빼고 사이트 알림만 남긴다. 광고성이 아니면 채널을 제한하지 않는다 — 켜고 끄기는 템플릿이 정한다.
+     *
+     * @param  array  $args  훅 인수 [$user, $issue, $source]
+     * @return array 추출 결과
+     */
+    private function extractCouponIssued(array $args): array
+    {
+        $user = $args[0] ?? null;
+        $issue = $args[1] ?? null;
+        if (! $user instanceof User || ! $issue instanceof CouponIssue) {
+            return $this->emptyResult();
+        }
+
+        $coupon = $issue->coupon;
+        if ($coupon === null) {
+            return $this->emptyResult();
+        }
+
+        $locale = $this->recipientLocale($user);
+        $source = CouponIssueSource::tryFrom((string) ($args[2] ?? '')) ?? $issue->resolveIssueSource();
+        $marketingOnly = (bool) $coupon->notify_marketing_only;
+        $expires = $issue->expired_at !== null
+            ? (TimezoneHelper::toSiteDateString($issue->expired_at) ?? '')
+            : (string) __('sirsoft-ecommerce::messages.coupon.notification.no_expiry', [], $locale);
+
+        $context = [
+            'trigger_user_id' => $user->id,
+            'trigger_user' => $user,
+        ];
+
+        if ($marketingOnly) {
+            $context['channels'] = MarketingConsentGate::allowedChannels((int) $user->id, ['mail', 'database', 'sms', 'alimtalk']);
+        }
+
+        return [
+            'notifiable' => null,
+            'notifiables' => null,
+            'data' => [
+                'name' => '{recipient_name}',
+                'app_name' => config('app.name'),
+                'ad_prefix' => $marketingOnly ? (string) __('sirsoft-ecommerce::messages.coupon.notification.ad_prefix', [], $locale) : '',
+                'coupon_name' => $coupon->getLocalizedName($locale),
+                'coupon_benefit' => $coupon->benefit_formatted,
+                'coupon_min_order_amount' => (float) ($coupon->min_order_amount ?? 0) > 0
+                    ? ecommerce_format_price($coupon->min_order_amount)
+                    : (string) __('sirsoft-ecommerce::messages.coupon.notification.no_min_order', [], $locale),
+                'coupon_expires_date' => $expires,
+                'coupon_code' => (string) $issue->coupon_code,
+                'issue_source_label' => $source?->label() ?? '',
+                'coupons_url' => ScreenUrl::toAbsoluteForLinks(EcommerceScreenUrl::mypageCoupons()),
+                'coupons_path' => EcommerceScreenUrl::mypageCoupons(),
+                'site_url' => ScreenUrl::userLinkBase(),
+            ],
+            'context' => $context,
+        ];
+    }
+
+    /**
+     * 쿠폰 만료 임박 알림 데이터를 추출합니다.
+     *
+     * @param  array  $args  훅 인수 [$user, $count, $earliestExpiresDate, $couponNames]
+     * @return array 추출 결과
+     */
+    private function extractCouponExpiringSoon(array $args): array
+    {
+        $user = $args[0] ?? null;
+        if (! $user instanceof User) {
+            return $this->emptyResult();
+        }
+
+        $names = array_values(array_filter((array) ($args[3] ?? []), 'is_string'));
+
+        return [
+            'notifiable' => null,
+            'notifiables' => null,
+            'data' => [
+                'name' => '{recipient_name}',
+                'app_name' => config('app.name'),
+                'count' => (string) (int) ($args[1] ?? 0),
+                'earliest_expires_date' => (string) ($args[2] ?? ''),
+                'coupon_names' => implode(', ', $names),
+                'coupons_url' => ScreenUrl::toAbsoluteForLinks(EcommerceScreenUrl::mypageCoupons()),
+                'coupons_path' => EcommerceScreenUrl::mypageCoupons(),
+                'site_url' => ScreenUrl::userLinkBase(),
+            ],
+            'context' => [
+                'trigger_user_id' => $user->id,
+                'trigger_user' => $user,
+            ],
+        ];
+    }
+
+    /**
+     * 마일리지 적립·차감 알림 데이터를 추출합니다.
+     *
+     * 적립 훅 인수: [$user, $amount, $currency, $balance, $type, $expiresDate, $tx]
+     * 차감 훅 인수: [$user, $amount, $currency, $balance, $memo, $tx]
+     *
+     * @param  array  $args  훅 인수
+     * @param  bool  $earned  적립이면 true, 관리자 차감이면 false
+     * @return array 추출 결과
+     */
+    private function extractMileageChange(array $args, bool $earned): array
+    {
+        $user = $args[0] ?? null;
+        if (! $user instanceof User) {
+            return $this->emptyResult();
+        }
+
+        $locale = $this->recipientLocale($user);
+        $data = [
+            'name' => '{recipient_name}',
+            'app_name' => config('app.name'),
+            'amount' => number_format((float) ($args[1] ?? 0)),
+            'currency' => (string) ($args[2] ?? 'KRW'),
+            'balance' => number_format((float) ($args[3] ?? 0)),
+            'mileage_url' => ScreenUrl::toAbsoluteForLinks(EcommerceScreenUrl::mypageMileage()),
+            'mileage_path' => EcommerceScreenUrl::mypageMileage(),
+            'site_url' => ScreenUrl::userLinkBase(),
+        ];
+
+        if ($earned) {
+            $reason = (string) ($args[4] ?? '');
+            $data['reason_label'] = (string) __('sirsoft-ecommerce::messages.mileage.notification.reason.'.($reason !== '' ? $reason : 'purchase'), [], $locale);
+            $data['expires_date'] = (string) ($args[5] ?? '');
+        } else {
+            $data['memo'] = (string) ($args[4] ?? '');
+        }
+
+        return [
+            'notifiable' => null,
+            'notifiables' => null,
+            'data' => $data,
+            'context' => [
+                'trigger_user_id' => $user->id,
+                'trigger_user' => $user,
+            ],
+        ];
+    }
+
+    /**
+     * 주문 부분 취소 알림 데이터를 추출합니다.
+     *
+     * 회원 주문은 회원에게, 비회원 주문은 주문서의 연락처(guest_recipient)로 보낸다 — 주문 알림 공용 데이터·컨텍스트를 쓴다.
+     *
+     * @param  array  $args  훅 인수 [$order, {cancel_type, cancel_items}, $snapshot, $cancel]
+     * @return array 추출 결과
+     */
+    private function extractOrderPartiallyCancelled(array $args): array
+    {
+        $order = $args[0] ?? null;
+        if (! $order instanceof Order) {
+            return $this->emptyResult();
+        }
+
+        $cancel = $args[3] ?? null;
+        $locale = app()->getLocale();
+        $items = [];
+        $refundAmount = '';
+
+        if ($cancel instanceof OrderCancel) {
+            foreach ($cancel->cancelOptions()->with('orderOption')->get() as $cancelOption) {
+                $option = $cancelOption->orderOption;
+                $productName = LocalizedValue::pick($option?->product_name, $locale) ?? '';
+                if ($productName === '') {
+                    continue;
+                }
+                $items[] = $productName.' x'.(int) $cancelOption->cancel_quantity;
+            }
+
+            $refund = $cancel->refund;
+            if ($refund !== null) {
+                $refundAmount = $this->formatOrderChargeAmount($order, (float) $refund->refund_amount);
+            }
+        }
+
+        return [
+            'notifiable' => null,
+            'notifiables' => null,
+            'data' => $this->buildOrderData($order, [
+                'cancelled_items' => implode(', ', $items),
+                'refund_amount' => $refundAmount,
+            ]),
+            'context' => $this->buildOrderContext($order),
+        ];
+    }
+
+    /**
+     * 리뷰 답글 알림 데이터를 추출합니다. 첫 답글이고 작성자가 회원일 때만 보낸다.
+     *
+     * @param  array  $args  훅 인수 [$review, $isFirst]
+     * @return array 추출 결과
+     */
+    private function extractReviewReplied(array $args): array
+    {
+        $review = $args[0] ?? null;
+        $isFirst = (bool) ($args[1] ?? false);
+        if (! $review instanceof ProductReview || ! $isFirst || $review->user_id === null) {
+            return $this->emptyResult();
+        }
+
+        $author = $review->user;
+        if (! $author instanceof User) {
+            return $this->emptyResult();
+        }
+
+        $product = $review->product;
+
+        return [
+            'notifiable' => null,
+            'notifiables' => null,
+            'data' => [
+                'name' => '{recipient_name}',
+                'app_name' => config('app.name'),
+                'product_name' => $product?->getLocalizedName() ?? '',
+                'reply_excerpt' => mb_substr(strip_tags((string) ($review->reply_content ?? '')), 0, 200),
+                'reviews_url' => ScreenUrl::toAbsoluteForLinks(EcommerceScreenUrl::mypageReviews()),
+                'reviews_path' => EcommerceScreenUrl::mypageReviews(),
+                'site_url' => ScreenUrl::userLinkBase(),
+            ],
+            'context' => [
+                'trigger_user_id' => $author->id,
+                'trigger_user' => $author,
+                'related_users' => [
+                    'author' => $author,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 받는 회원의 언어를 반환합니다. 회원 언어가 지원 언어가 아니면 지금 요청 언어입니다.
+     *
+     * @param  User  $user  회원
+     * @return string 언어 코드
+     */
+    private function recipientLocale(User $user): string
+    {
+        $language = (string) ($user->language ?? '');
+        $supported = (array) config('app.supported_locales', []);
+
+        return $language !== '' && in_array($language, $supported, true) ? $language : app()->getLocale();
     }
 
     /**

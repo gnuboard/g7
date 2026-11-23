@@ -1,0 +1,427 @@
+{
+    "comment": "쿠폰 폼의 발급 알림 구역 (#952) — 알림을 켠 쿠폰마다 알림 종류 `coupon_issued.{쿠폰ID}` 가 G7 알림 템플릿 시스템에 생긴다.\n  이 구역은 켜기/끄기와 광고성 여부만 폼(`_local.form`)에 담고, 채널별 켜기/끄기·문구 편집·미리보기·기본값 복원은 쇼핑몰 설정의\n  알림 화면과 **같은 편집 창**(이 폼 레이아웃이 `<modal src>` 로 include)을 그대로 연다. 창들이 다시 받는 데이터소스 이름\n  (`ecommerceNotificationDefinitions`·`availableChannels`)도 설정 화면과 같게 둔다.\n  다운로드 쿠폰은 회원이 직접 받으므로 이 구역 전체를 숨긴다. 등록 화면(저장 전)에는 정의가 아직 없어 안내만 보인다.",
+    "meta": {
+        "is_partial": true,
+        "description": "쿠폰 폼 - 발급 알림 (쿠폰별 알림 종류 카드)"
+    },
+    "id": "notification_settings_section",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_local.form?.issue_method !== 'download'}}",
+    "props": {
+        "className": "ecommerce-admin-card"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "H2",
+            "props": {
+                "className": "ecommerce-card-title"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.notification"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "ecommerce:space-y-5"
+            },
+            "children": [
+                {
+                    "id": "field_notify_enabled",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "ecommerce-flex-between ecommerce:gap-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.notify_enabled"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notify_enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "props": {
+                                "name": "notify_enabled",
+                                "ariaLabel": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.notify_enabled",
+                                "value": "{{_local.form?.notify_enabled ?? false}}",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "field_notify_marketing_only",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.form?.notify_enabled === true}}",
+                    "props": {
+                        "className": "ecommerce-flex-between ecommerce:gap-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.notify_marketing_only"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notify_marketing_only"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "props": {
+                                "name": "notify_marketing_only",
+                                "ariaLabel": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.notify_marketing_only",
+                                "value": "{{_local.form?.notify_marketing_only ?? false}}",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "등록 화면 — 알림 종류는 저장할 때 생긴다",
+                    "id": "notification_create_hint",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!route.id && _local.form?.notify_enabled === true}}",
+                    "props": {
+                        "className": "ecommerce:flex ecommerce:items-start ecommerce:gap-2 ecommerce:p-3 ecommerce:rounded-lg ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/20 ecommerce:border ecommerce:border-blue-100 ecommerce:dark:border-blue-800"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-info",
+                                "size": "sm",
+                                "className": "ecommerce:text-blue-500 ecommerce:dark:text-blue-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "ecommerce:text-sm ecommerce:text-blue-700 ecommerce:dark:text-blue-300"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notification_save_first"
+                        }
+                    ]
+                },
+                {
+                    "comment": "수정 화면 — 저장한 알림을 켰지만 아직 저장하지 않은 상태",
+                    "id": "notification_unsaved_hint",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!route.id && _local.form?.notify_enabled === true && coupon?.data?.notify_enabled !== true}}",
+                    "props": {
+                        "className": "ecommerce:flex ecommerce:items-start ecommerce:gap-2 ecommerce:p-3 ecommerce:rounded-lg ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/20 ecommerce:border ecommerce:border-blue-100 ecommerce:dark:border-blue-800"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-info",
+                                "size": "sm",
+                                "className": "ecommerce:text-blue-500 ecommerce:dark:text-blue-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "ecommerce:text-sm ecommerce:text-blue-700 ecommerce:dark:text-blue-300"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notification_save_first"
+                        }
+                    ]
+                },
+                {
+                    "comment": "수정 화면 + 저장된 알림 켬 — 이 쿠폰의 알림 종류 카드. 마일리지 알림 카드와 같은 모양이다",
+                    "id": "coupon_notification_card",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!route.id && coupon?.data?.notify_enabled === true && _local.form?.notify_enabled === true}}",
+                    "props": {
+                        "className": "ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "ecommerce-flex-between ecommerce:gap-2 ecommerce:flex-wrap ecommerce:mb-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "blur_until_loaded": {
+                                        "enabled": true,
+                                        "data_sources": "ecommerceNotificationDefinitions"
+                                    },
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white"
+                                    },
+                                    "text": "{{$localized((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'coupon_issued.' + route.id)?.name) || ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "기본값 복원 — 설정 화면의 복원 창을 그대로 연다(대상은 전역으로 넘긴다). 되돌릴 것이 없으면 버튼을 그리지 않는다",
+                                            "id": "coupon_notification_reset_button",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "if": "{{(ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'coupon_issued.' + route.id)?.has_customized_templates === true}}",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "resetTargetId": "{{(ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'coupon_issued.' + route.id)?.id}}",
+                                                                "resetTargetName": "{{$localized((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'coupon_issued.' + route.id)?.name) || ''}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "modal_ecommerce_notification_definition_reset"
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "className": "ecommerce:text-sm ecommerce:px-3 ecommerce:py-1.5 ecommerce:rounded-md ecommerce:border ecommerce:border-orange-300 ecommerce:dark:border-orange-600 ecommerce:text-orange-700 ecommerce:dark:text-orange-400 ecommerce:hover:bg-orange-50 ecommerce:dark:hover:bg-orange-900/30 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.btn_reset"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "coupon_notification_channels",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "ecommerce:space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "id": "coupon_notification_channel_{{tpl.channel}}",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "(((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'coupon_issued.' + route.id)?.templates) ?? []).filter(t => (availableChannels?.data?.channels ?? []).some(c => c.id === t.channel))",
+                                        "item_var": "tpl",
+                                        "index_var": "tplIndex"
+                                    },
+                                    "props": {
+                                        "className": "ecommerce-flex-between ecommerce:gap-2 ecommerce:px-3 ecommerce:py-2 ecommerce:rounded-lg ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700/40"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:min-w-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "{{tpl.channel === 'mail' ? 'envelope' : (tpl.channel === 'database' ? 'bell' : 'comment-sms')}}",
+                                                        "size": "sm",
+                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:flex-shrink-0"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "ecommerce:min-w-0"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            },
+                                                            "text": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === tpl.channel)?.name ?? tpl.channel}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "ecommerce:block ecommerce:text-sm ecommerce:text-gray-800 ecommerce:dark:text-gray-200 ecommerce:truncate"
+                                                            },
+                                                            "text": "{{$localized(tpl.subject) || '$t:sirsoft-ecommerce.admin.mileage_settings.notification.template_status_empty'}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "ecommerce-flex-center ecommerce:gap-3 ecommerce:flex-shrink-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Toggle",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "채널 켜기/끄기 — 폼에 담지 않고 바로 서버로 나간다(설정 화면과 같다)",
+                                                            "type": "change",
+                                                            "handler": "apiCall",
+                                                            "target": "{{'/api/admin/notification-templates/' + tpl.id + '/toggle-active'}}",
+                                                            "auth_required": true,
+                                                            "params": {
+                                                                "method": "PATCH"
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "ecommerceNotificationDefinitions"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "message": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.toggle_success",
+                                                                        "type": "success"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "ecommerceNotificationDefinitions"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "ariaLabel": "$t:common.row_cell|row={{(availableChannels?.data?.channels ?? []).find(c => c.id === tpl.channel)?.name ?? tpl.channel}}|column={{$t('sirsoft-ecommerce.admin.settings.notification_definitions.active')}}",
+                                                        "checked": "{{tpl.is_active ?? false}}",
+                                                        "disabled": "{{_computed.isReadOnly}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "템플릿 편집 — 편집 창은 모달이라 이 화면의 상태를 읽지 못하므로 대상 정의·템플릿을 전역 이름 공간에 옮겨 담은 뒤 연다(설정 화면과 같은 이름 공간)",
+                                                    "id": "coupon_notification_edit_{{tpl.channel}}",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "ecommerce_notification_template_form_modal": {
+                                                                            "template": "{{tpl}}",
+                                                                            "definition": "{{(ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'coupon_issued.' + route.id)}}",
+                                                                            "recipients": "{{JSON.parse(JSON.stringify(tpl.recipients ?? []))}}",
+                                                                            "editLang": "{{$locale}}",
+                                                                            "errors": null,
+                                                                            "isSaving": false,
+                                                                            "roleSearchResults": [],
+                                                                            "userSearchResults": []
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "modal_ecommerce_notification_template_edit"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "className": "ecommerce:text-sm ecommerce:px-3 ecommerce:py-1.5 ecommerce:rounded-md ecommerce:bg-indigo-600 ecommerce:text-white ecommerce:hover:bg-indigo-700 ecommerce:dark:bg-indigo-500 ecommerce:dark:hover:bg-indigo-600 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.btn_edit"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "ecommerce:mt-3 ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notification_card"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -37,6 +37,7 @@ effects:
   - no_core_settings_save
   - list_hidden_while_editing
   - edit_view_by_query
+  - idp_edit_buttons_in_sticky_footer # IdP 편집 머리에 아이콘 뒤로가기·버튼이 없고 목록·삭제·저장이 하단 고정 줄에 있다
   - eight_subtabs
   - schema_driven_fields
   - secrets_separate

@@ -1,0 +1,45 @@
+<!-- 쿠폰존 머리 줄 (#952) — 제목·받을 수 있는 쿠폰 수·[모두 받기]. 비회원에게는 로그인 안내 문구를 함께 보이고,
+     [모두 받기]는 로그인 안내 창을 연다. 회원의 [모두 받기]는 번호 없이 보내 서버가 받을 수 있는 전부(최대 50장)를 발급한다. -->
+<partial description="쿠폰존 - 머리 줄 (제목·건수·모두 받기)">
+  <div data-ref="coupon_zone_toolbar" class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">$t:shop.coupon_zone.title</h1>
+      <p data-ref="coupon_zone_login_hint" data-if="{{_global.currentUser !== undefined &amp;&amp; !_global.currentUser?.uuid}}" class="mt-1 text-sm text-gray-500 dark:text-gray-400">$t:shop.coupon_zone.login_hint</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <span data-ref="coupon_zone_count" class="text-sm text-gray-600 dark:text-gray-400"><blur-until-loaded sources="couponZone"/>$t:shop.coupon_zone.count|count={{couponZone?.data?.total ?? 0}}</span>
+      <!-- [모두 받기] — 비회원은 로그인 안내 창, 회원은 받을 수 있는 쿠폰을 한 번에 받는다(받는 중에는 잠겨 중복 요청이 없다) -->
+      <button data-ref="coupon_zone_download_all" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!!_local.downloadingAll || (!!_global.currentUser?.uuid &amp;&amp; !(couponZone?.data?.data ?? []).some(c => !c.is_downloaded &amp;&amp; !(_local.downloadedIds ?? []).includes(c.coupon_id)))}}">
+        <on type="click">
+          <conditions>
+            <when if="{{!_global.currentUser?.uuid}}">
+              <open-modal target="login_required_modal"/>
+            </when>
+            <else>
+              <!-- 진행 표시 → 일괄 받기 → 받은 쿠폰·이미 받은 쿠폰을 「받음」으로, 목록 다시 받기(실패해도 진행 표시는 푼다) -->
+              <sequence>
+                <set-state target="local" :downloadingAll="true"/>
+                <api-call target="/api/modules/sirsoft-ecommerce/user/coupons/bulk-download" auth_mode="required" method="POST" body="{{({})}}">
+                  <success>
+                    <set-state target="local" :downloadingAll="false" downloadedIds="{{[...(_local.downloadedIds ?? []), ...(response.data?.results ?? []).filter(r => r.status === 'issued' || r.reason_code === 'already_downloaded').map(r => r.coupon_id)]}}"/>
+                    <refetch-data-source dataSourceId="couponZone"/>
+                    <toast type="success" message="{{response.message}}"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :downloadingAll="false"/>
+                    <!-- 추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다 -->
+                    <open-modal if="{{error.error_code === 'required_fields_pending'}}" target="required_info_pending_modal"/>
+                    <toast if="{{error.error_code !== 'required_fields_pending'}}" type="error" message="{{error.message ?? '$t:shop.coupon_download.download_failed'}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </else>
+          </conditions>
+        </on>
+        <icon data-if="{{!_local.downloadingAll}}" name="download" size="sm"/>
+        <icon data-if="{{!!_local.downloadingAll}}" name="spinner" size="sm" class="animate-spin"/>
+        <span>$t:shop.coupon_download.download_all</span>
+      </button>
+    </div>
+  </div>
+</partial>

@@ -675,6 +675,122 @@
             ]
         },
         {
+            "comment": "보안 카드 (#952) — 모든 기기에서 로그아웃. 늘 보인다. 2단계 인증 플러그인(TOTP)이 이 카드 안에 등록·해제 칸을 끼워 넣는 자리이기도 하다(data-ref 앵커).",
+            "id": "profile_security_card",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{user.data?.status !== 'withdrawn'}}",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+                    }
+                }
+            },
+            "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
+                    },
+                    "text": "$t:mypage.security.title"
+                },
+                {
+                    "id": "profile_security_logout_all",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex flex-wrap items-center justify-between gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "min-w-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                                    },
+                                    "text": "$t:mypage.security.logout_all.label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                    },
+                                    "text": "$t:mypage.security.logout_all.description"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "[모든 기기에서 로그아웃] — 바로 로그아웃하지 않고 확인 창부터 연다(이 기기 토큰까지 지워지므로)",
+                            "id": "logout_all_devices_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "comment": "확인 창 상태(처리 중)는 창 고유 전역 이름 공간에 두고 열 때마다 비운다(탈퇴 창과 같은 방식)",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "logoutAllDevicesModal": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "logoutAllDevicesModal": {
+                                                    "isProcessing": false
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "logoutAllDevicesModal"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "right-from-bracket",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:mypage.security.logout_all.button"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "comment": "회원 탈퇴 섹션 - 탈퇴 상태가 아닌 경우만 표시",
             "type": "basic",
             "name": "Div",

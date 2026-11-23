@@ -170,7 +170,7 @@
             <tbody>
               <tr data-each="policy in boardIdentityPolicies?.data?.data ?? []" class="board:border-t board:border-gray-200 board:dark:border-gray-700 board:hover:bg-gray-50 board:dark:hover:bg-gray-700/30">
                 <td class="board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300 board:font-mono board:text-xs">{{policy.key ?? ''}}</td>
-                <td class="board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300">$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</td>
+                <td class="board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300"><span>$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</span><span data-if="{{policy.scope === 'custom' &amp;&amp; policy.checkpoint_registered === false}}" class="board:ml-1 board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-amber-100 board:text-amber-800 board:dark:bg-amber-900/30 board:dark:text-amber-300">$t:admin.identity.policies.checkpoint_missing</span></td>
                 <td class="board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300 board:font-mono board:text-xs board:truncate board:max-w-xs">{{policy.target ?? ''}}</td>
                 <td class="board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300">{{(boardIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}</td>
                 <td class="board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300 board:text-right">{{policy.grace_minutes ?? 0}}</td>
@@ -261,7 +261,7 @@
               <div class="board:flex-1 board:min-w-0">
                 <div class="board-text-primary board:font-mono board:text-xs board:break-all board-break-all">{{policy.key ?? ''}}</div>
                 <div class="board-form-hint">
-                  <span>$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</span>
+                  <span>$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</span><span data-if="{{policy.scope === 'custom' &amp;&amp; policy.checkpoint_registered === false}}" class="board:ml-1 board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-amber-100 board:text-amber-800 board:dark:bg-amber-900/30 board:dark:text-amber-300">$t:admin.identity.policies.checkpoint_missing</span>
                   <span class="board:mx-1.5 board-text-muted">·</span>
                   <span class="board:font-mono board:break-all board-break-all">{{policy.target ?? ''}}</span>
                 </div>

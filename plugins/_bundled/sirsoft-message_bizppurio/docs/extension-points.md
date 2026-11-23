@@ -52,6 +52,7 @@ HookManager::addAction(
 | `core.notification.filter_available_channels` | filter | `RegisterNotificationChannelsListener` | `addChannels` | 20 |
 | `core.notification.filter_default_definitions` | filter | `SeedChannelTemplatesListener` | `augment` | 50 |
 | `core.notification.filter_seed_definitions` | filter | `SeedChannelTemplatesListener` | `augment` | 50 |
+| `core.notification_definition.after_delete` | action (미선언) | `PurgeTemplateOnDefinitionDeleteListener` | `purge` | 20 |
 | `core.notification_log.after_log_failed` | action (미선언) | `LinkNotificationLogListener` | `linkLog` | 15 |
 | `core.notification_log.after_log_sent` | action (미선언) | `LinkNotificationLogListener` | `linkLog` | 15 |
 | `core.plugin_settings.after_save` | action | `InvalidateTokenOnSettingsSaveListener` | `invalidateToken` | 10 |
@@ -87,6 +88,7 @@ HookManager::addAction(
 | `BalanceLowNotificationDataListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/BalanceLowNotificationDataListener.php` |
 | `InvalidateTokenOnSettingsSaveListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/InvalidateTokenOnSettingsSaveListener.php` |
 | `LinkNotificationLogListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/LinkNotificationLogListener.php` |
+| `PurgeTemplateOnDefinitionDeleteListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/PurgeTemplateOnDefinitionDeleteListener.php` |
 | `RegisterNotificationChannelsListener` | 4개 | 명시 등록 | ✅ | `src/Listeners/RegisterNotificationChannelsListener.php` |
 | `SeedChannelTemplatesListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/SeedChannelTemplatesListener.php` |
 | `ValidateBizppurioSettingsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ValidateBizppurioSettingsListener.php` |

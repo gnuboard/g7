@@ -167,6 +167,39 @@ final class EcommerceScreenUrl
     }
 
     /**
+     * 마이페이지 쿠폰함 — `/mypage/coupons`. (#952)
+     *
+     * @param  bool  $absolute  절대 URL 여부
+     * @return string 주소
+     */
+    public static function mypageCoupons(bool $absolute = false): string
+    {
+        return self::make('mypage.coupons', '/mypage/coupons', [], $absolute);
+    }
+
+    /**
+     * 마이페이지 내 리뷰 — `/mypage/reviews`. (#952)
+     *
+     * @param  bool  $absolute  절대 URL 여부
+     * @return string 주소
+     */
+    public static function mypageReviews(bool $absolute = false): string
+    {
+        return self::make('mypage.reviews', '/mypage/reviews', [], $absolute);
+    }
+
+    /**
+     * 쿠폰존 — 상점 주소 하위 `coupons`. (#952)
+     *
+     * @param  bool  $absolute  절대 URL 여부
+     * @return string 주소
+     */
+    public static function couponZone(bool $absolute = false): string
+    {
+        return self::make('ecommerce.coupons', ShopPathResolver::path('coupons'), [], $absolute);
+    }
+
+    /**
      * 관리자 화면 주소 (관리자 범위 — 베이스는 사이트 주소).
      *
      * @param  string  $key  화면 키

@@ -137,6 +137,10 @@
       "creator": "Creator",
       "created_by": "Created By",
       "actions": "Actions"
+    },
+    "badge": {
+      "birthday_field_missing": "No birthday field",
+      "notify_enabled": "Notify on"
     }
   },
   "modal": {
@@ -283,7 +287,8 @@
       "basic_info": "Basic Info",
       "benefit_settings": "Benefit Settings",
       "issue_settings": "Issue Settings",
-      "usage_conditions": "Usage Conditions"
+      "usage_conditions": "Usage Conditions",
+      "notification": "Issue Notification"
     },
     "field": {
       "target_type": "Target Type",
@@ -301,7 +306,10 @@
       "reissue": "Reissue (Duplicate Download)",
       "coupon_overlap": "Coupon Stacking",
       "apply_target": "Apply Target",
-      "per_user_limit_label": "Issue limit per member"
+      "per_user_limit_label": "Issue limit per member",
+      "first_purchase_trigger": "Issue timing",
+      "notify_enabled": "Send issue notification",
+      "notify_marketing_only": "Promotional notice"
     },
     "option": {
       "target_type_product_amount": "Product Amount",
@@ -326,7 +334,12 @@
       "combinable_no": "Not Allowed",
       "target_scope_all": "No Limit",
       "target_scope_products": "Specific Products",
-      "target_scope_categories": "Specific Categories"
+      "target_scope_categories": "Specific Categories",
+      "first_purchase_trigger_payment_complete": "Payment complete",
+      "first_purchase_trigger_preparing": "Preparing",
+      "first_purchase_trigger_shipping": "Shipping",
+      "first_purchase_trigger_delivered": "Delivered",
+      "first_purchase_trigger_confirmed": "Purchase confirmed"
     },
     "placeholder": {
       "coupon_name": "Enter coupon name",
@@ -341,7 +354,16 @@
       "unit_quantity": "coupons",
       "per_user": "Per user",
       "unit_times": "times",
-      "direct_issue_guide": "After saving, you can issue this direct-issue coupon to specific members using the [Direct Issue] button in the coupon list."
+      "direct_issue_guide": "After saving, you can issue this direct-issue coupon to specific members using the [Direct Issue] button in the coupon list.",
+      "first_purchase_trigger": "Issued for the member's first order that reaches this status or later. If the timing is earlier than purchase confirmation, the unused coupon is revoked when that order is fully cancelled or returned.",
+      "signup_issue_guide": "Issued once to members who sign up themselves. Members pending identity verification receive it when activated; members created by administrators do not.",
+      "birthday_field_missing": "No member field is set as the birthday, so this coupon is not issued.",
+      "birthday_issue_guide": "Issued once a year on the birthday (site time zone). Members born on February 29 receive it on February 28 in non-leap years.",
+      "auto_issue_limit": "Automatic coupons are issued once per condition (once a year for birthdays), so the per-member reissue limit is not used.",
+      "notify_enabled": "Notify members when this coupon is issued. Edit channels and messages in the card below after saving.",
+      "notify_marketing_only": "When on, email, SMS and KakaoTalk are sent only to members who consented to marketing; others receive the site notification only. \"[AD]\" is added at {ad_prefix} in the default subject.",
+      "notification_save_first": "Save the coupon to edit this coupon's notification messages.",
+      "notification_card": "Channel switches take effect immediately. Edit the messages with [Edit]."
     },
     "search": {
       "products": "Product Search",
@@ -372,7 +394,8 @@
     "button": {
       "cancel": "Cancel",
       "save": "Save",
-      "saving": "Saving..."
+      "saving": "Saving...",
+      "open_coupon_settings": "Open coupon settings"
     }
   }
 }

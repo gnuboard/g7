@@ -1,0 +1,104 @@
+<!-- 쿠폰 폼의 발급 알림 구역 (#952) — 알림을 켠 쿠폰마다 알림 종류 `coupon_issued.{쿠폰ID}` 가 G7 알림 템플릿 시스템에 생긴다.
+  이 구역은 켜기/끄기와 광고성 여부만 폼(`_local.form`)에 담고, 채널별 켜기/끄기·문구 편집·미리보기·기본값 복원은 쇼핑몰 설정의
+  알림 화면과 **같은 편집 창**(이 폼 레이아웃이 `<modal src>` 로 include)을 그대로 연다. 창들이 다시 받는 데이터소스 이름
+  (`ecommerceNotificationDefinitions`·`availableChannels`)도 설정 화면과 같게 둔다.
+  다운로드 쿠폰은 회원이 직접 받으므로 이 구역 전체를 숨긴다. 등록 화면(저장 전)에는 정의가 아직 없어 안내만 보인다. -->
+<partial description="쿠폰 폼 - 발급 알림 (쿠폰별 알림 종류 카드)">
+  <div data-ref="notification_settings_section" data-if="{{_local.form?.issue_method !== 'download'}}" class="ecommerce-admin-card">
+    <h2 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.notification</h2>
+    <div class="ecommerce:space-y-5">
+      <div data-ref="field_notify_enabled" class="ecommerce-flex-between ecommerce:gap-4">
+        <div>
+          <span class="ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.notify_enabled</span>
+          <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notify_enabled</span>
+        </div>
+        <toggle data-type="composite" name="notify_enabled" ariaLabel="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.notify_enabled" value="{{_local.form?.notify_enabled ?? false}}" disabled="{{_computed.isReadOnly}}"/>
+      </div>
+      <div data-ref="field_notify_marketing_only" data-if="{{_local.form?.notify_enabled === true}}" class="ecommerce-flex-between ecommerce:gap-4">
+        <div>
+          <span class="ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.notify_marketing_only</span>
+          <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notify_marketing_only</span>
+        </div>
+        <toggle data-type="composite" name="notify_marketing_only" ariaLabel="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.notify_marketing_only" value="{{_local.form?.notify_marketing_only ?? false}}" disabled="{{_computed.isReadOnly}}"/>
+      </div>
+      <!-- 등록 화면 — 알림 종류는 저장할 때 생긴다 -->
+      <div data-ref="notification_create_hint" data-if="{{!route.id &amp;&amp; _local.form?.notify_enabled === true}}" class="ecommerce:flex ecommerce:items-start ecommerce:gap-2 ecommerce:p-3 ecommerce:rounded-lg ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/20 ecommerce:border ecommerce:border-blue-100 ecommerce:dark:border-blue-800">
+        <icon name="circle-info" size="sm" class="ecommerce:text-blue-500 ecommerce:dark:text-blue-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5"/>
+        <span class="ecommerce:text-sm ecommerce:text-blue-700 ecommerce:dark:text-blue-300">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notification_save_first</span>
+      </div>
+      <!-- 수정 화면 — 저장한 알림을 켰지만 아직 저장하지 않은 상태 -->
+      <div data-ref="notification_unsaved_hint" data-if="{{!!route.id &amp;&amp; _local.form?.notify_enabled === true &amp;&amp; coupon?.data?.notify_enabled !== true}}" class="ecommerce:flex ecommerce:items-start ecommerce:gap-2 ecommerce:p-3 ecommerce:rounded-lg ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/20 ecommerce:border ecommerce:border-blue-100 ecommerce:dark:border-blue-800">
+        <icon name="circle-info" size="sm" class="ecommerce:text-blue-500 ecommerce:dark:text-blue-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5"/>
+        <span class="ecommerce:text-sm ecommerce:text-blue-700 ecommerce:dark:text-blue-300">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notification_save_first</span>
+      </div>
+      <!-- 수정 화면 + 저장된 알림 켬 — 이 쿠폰의 알림 종류 카드. 마일리지 알림 카드와 같은 모양이다 -->
+      <div data-ref="coupon_notification_card" data-if="{{!!route.id &amp;&amp; coupon?.data?.notify_enabled === true &amp;&amp; _local.form?.notify_enabled === true}}" class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-4">
+        <div class="ecommerce-flex-between ecommerce:gap-2 ecommerce:flex-wrap ecommerce:mb-3">
+          <span class="ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white"><blur-until-loaded sources="ecommerceNotificationDefinitions"/>{{$localized((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'coupon_issued.' + route.id)?.name) || ''}}</span>
+          <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-2">
+            <!-- 기본값 복원 — 설정 화면의 복원 창을 그대로 연다(대상은 전역으로 넘긴다). 되돌릴 것이 없으면 버튼을 그리지 않는다 -->
+            <button data-ref="coupon_notification_reset_button" data-if="{{(ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'coupon_issued.' + route.id)?.has_customized_templates === true}}" type="button" disabled="{{_computed.isReadOnly}}" class="ecommerce:text-sm ecommerce:px-3 ecommerce:py-1.5 ecommerce:rounded-md ecommerce:border ecommerce:border-orange-300 ecommerce:dark:border-orange-600 ecommerce:text-orange-700 ecommerce:dark:text-orange-400 ecommerce:hover:bg-orange-50 ecommerce:dark:hover:bg-orange-900/30 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
+              <on type="click">
+                <sequence>
+                  <set-state target="global" resetTargetId="{{(ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'coupon_issued.' + route.id)?.id}}" resetTargetName="{{$localized((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'coupon_issued.' + route.id)?.name) || ''}}"/>
+                  <open-modal target="modal_ecommerce_notification_definition_reset"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.admin.settings.notification_definitions.btn_reset
+            </button>
+          </div>
+        </div>
+        <div data-ref="coupon_notification_channels" class="ecommerce:space-y-2">
+          <div data-ref="coupon_notification_channel_{{tpl.channel}}" data-each="tpl, tplIndex in (((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'coupon_issued.' + route.id)?.templates) ?? []).filter(t => (availableChannels?.data?.channels ?? []).some(c => c.id === t.channel))" class="ecommerce-flex-between ecommerce:gap-2 ecommerce:px-3 ecommerce:py-2 ecommerce:rounded-lg ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700/40">
+            <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:min-w-0">
+              <icon name="{{tpl.channel === 'mail' ? 'envelope' : (tpl.channel === 'database' ? 'bell' : 'comment-sms')}}" size="sm" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:flex-shrink-0"/>
+              <div class="ecommerce:min-w-0">
+                <span class="ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{(availableChannels?.data?.channels ?? []).find(c => c.id === tpl.channel)?.name ?? tpl.channel}}</span>
+                <span class="ecommerce:block ecommerce:text-sm ecommerce:text-gray-800 ecommerce:dark:text-gray-200 ecommerce:truncate">{{$localized(tpl.subject) || '$t:sirsoft-ecommerce.admin.mileage_settings.notification.template_status_empty'}}</span>
+              </div>
+            </div>
+            <div class="ecommerce-flex-center ecommerce:gap-3 ecommerce:flex-shrink-0">
+              <toggle data-type="composite" ariaLabel="$t:common.row_cell|row={{(availableChannels?.data?.channels ?? []).find(c => c.id === tpl.channel)?.name ?? tpl.channel}}|column={{$t('sirsoft-ecommerce.admin.settings.notification_definitions.active')}}" checked="{{tpl.is_active ?? false}}" disabled="{{_computed.isReadOnly}}">
+                <on type="change">
+                  <!-- 채널 켜기/끄기 — 폼에 담지 않고 바로 서버로 나간다(설정 화면과 같다) -->
+                  <api-call :auth_required="true" target="{{'/api/admin/notification-templates/' + tpl.id + '/toggle-active'}}" method="PATCH">
+                    <success>
+                      <refetch-data-source dataSourceId="ecommerceNotificationDefinitions"/>
+                      <toast message="$t:sirsoft-ecommerce.admin.settings.notification_definitions.toggle_success" type="success"/>
+                    </success>
+                    <fail>
+                      <toast type="error" message="{{error.message}}"/>
+                      <refetch-data-source dataSourceId="ecommerceNotificationDefinitions"/>
+                    </fail>
+                  </api-call>
+                </on>
+              </toggle>
+              <!-- 템플릿 편집 — 편집 창은 모달이라 이 화면의 상태를 읽지 못하므로 대상 정의·템플릿을 전역 이름 공간에 옮겨 담은 뒤 연다(설정 화면과 같은 이름 공간) -->
+              <button data-ref="coupon_notification_edit_{{tpl.channel}}" type="button" disabled="{{_computed.isReadOnly}}" class="ecommerce:text-sm ecommerce:px-3 ecommerce:py-1.5 ecommerce:rounded-md ecommerce:bg-indigo-600 ecommerce:text-white ecommerce:hover:bg-indigo-700 ecommerce:dark:bg-indigo-500 ecommerce:dark:hover:bg-indigo-600 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
+                <on type="click">
+                  <sequence>
+                    <set-state target="global">
+                      <field name="ecommerce_notification_template_form_modal">
+                        <field name="template" value="{{tpl}}"/>
+                        <field name="definition" value="{{(ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'coupon_issued.' + route.id)}}"/>
+                        <field name="recipients" value="{{JSON.parse(JSON.stringify(tpl.recipients ?? []))}}"/>
+                        <field name="editLang" value="{{$locale}}"/>
+                        <field name="errors" :value="null"/>
+                        <field name="isSaving" :value="false"/>
+                        <field name="roleSearchResults" :value="[]"/>
+                        <field name="userSearchResults" :value="[]"/>
+                      </field>
+                    </set-state>
+                    <open-modal target="modal_ecommerce_notification_template_edit"/>
+                  </sequence>
+                </on>
+                $t:sirsoft-ecommerce.admin.settings.notification_definitions.btn_edit
+              </button>
+            </div>
+          </div>
+        </div>
+        <p class="ecommerce:mt-3 ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.notification_card</p>
+      </div>
+    </div>
+  </div>
+</partial>

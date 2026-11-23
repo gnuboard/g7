@@ -3,6 +3,9 @@
 // changelog:allow 숨김 파일 서빙 거부 문구 — 무CLI·고정 문서루트 축의 신규 키. 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재
 
 return [
+    'activity_log' => [
+        'date_range_invalid' => '끝 날짜는 시작 날짜와 같거나 뒤여야 합니다.',
+    ],
     /*
     |--------------------------------------------------------------------------
     | Laravel 기본 검증 메시지
@@ -1346,6 +1349,7 @@ return [
         'scope_invalid' => 'Scope는 route, hook, custom 중 하나여야 합니다.',
         'target_required' => 'Target(라우트 또는 훅 이름)을 입력해주세요.',
         'target_max' => 'Target은 255자를 초과할 수 없습니다.',
+        'custom_target_unregistered' => '「사용자 지정」 범위의 대상은 활성 확장이 선언한 확장 지점이어야 합니다.',
         'purpose_required' => '인증 목적(Purpose)을 선택해주세요.',
         'purpose_max' => '인증 목적은 64자를 초과할 수 없습니다.',
         'provider_id_max' => '프로바이더 식별자는 64자를 초과할 수 없습니다.',
@@ -1438,6 +1442,9 @@ return [
 
     // 검증 속성명 (validation.attributes)
     'attributes' => [
+        // 회원 활동 기록 기간 조회 (7.2.1, #952)
+        'date_from' => '시작일',
+        'date_to' => '종료일',
         // 환경설정 「본문 콘텐츠」 저장 항목 (#883)
         'content_settings' => '본문 콘텐츠 설정',
         'content_allow_figure_caption' => '그림 설명 허용',

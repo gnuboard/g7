@@ -31,6 +31,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingCarrierRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Rules\ClaimReasonCodeFormat;
+use Modules\Sirsoft\Ecommerce\Services\BirthdayFieldResolver;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Support\AuthorNameMasker;
@@ -49,7 +50,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      *
      * @var array<int, string>
      */
-    private const SECTIONS = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'product_display', 'notification_definitions', 'notifications', 'inquiry', 'mileage', 'privacy_retention'];
+    private const SECTIONS = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'product_display', 'notification_definitions', 'notifications', 'inquiry', 'mileage', 'promotion', 'privacy_retention'];
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
@@ -630,6 +631,16 @@ class StoreEcommerceSettingsRequest extends FormRequest
             // 공개 후기 작성자 이름 가림 방식 (가운데 가림 / 가리지 않음)
             'review_settings.author_name_masking' => ['nullable', 'string', 'in:'.AuthorNameMasker::MODE_MIDDLE.','.AuthorNameMasker::MODE_NONE],
 
+            // promotion 섹션 — 쿠폰 탭(#952): 생일로 쓸 회원 항목·쿠폰 만료 임박 알림
+            'promotion' => ['sometimes', 'array'],
+            'promotion.birthday_field_key' => ['nullable', 'string', 'max:100', function (string $attribute, mixed $value, \Closure $fail) {
+                if ($value !== null && $value !== '' && ! app(BirthdayFieldResolver::class)->isCandidate((string) $value)) {
+                    $fail(__('sirsoft-ecommerce::validation.settings.birthday_field_invalid'));
+                }
+            }],
+            'promotion.coupon_expiry_notification_enabled' => ['nullable', 'boolean'],
+            'promotion.coupon_expiry_notification_days_before' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.coupon_expiry_notification_days_before_min', 1), 'max:'.config('sirsoft-ecommerce.limits.coupon_expiry_notification_days_before_max', 30)],
+
             // mileage 섹션
             'mileage' => ['sometimes', 'array'],
             'mileage.enabled' => ['required_with:mileage', 'boolean'],
@@ -675,8 +686,6 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'shipping.international_shipping_enabled' => ['nullable', 'boolean'],
             'shipping.free_shipping_threshold' => ['nullable', 'integer', 'min:0'],
             'shipping.free_shipping_enabled' => ['nullable', 'boolean'],
-            'shipping.address_validation_enabled' => ['nullable', 'boolean'],
-            'shipping.address_api_provider' => ['nullable', 'string', 'max:50'],
 
             // shipping.carriers 섹션 (DB 동기화 대상)
             'shipping.carriers' => ['nullable', 'array'],
@@ -2156,9 +2165,6 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'shipping.free_shipping_threshold.integer' => __('sirsoft-ecommerce::validation.custom.shipping.free_shipping_threshold.integer'),
             'shipping.free_shipping_threshold.min' => __('sirsoft-ecommerce::validation.custom.shipping.free_shipping_threshold.min'),
             'shipping.free_shipping_enabled.boolean' => __('sirsoft-ecommerce::validation.custom.shipping.free_shipping_enabled.boolean'),
-            'shipping.address_validation_enabled.boolean' => __('sirsoft-ecommerce::validation.custom.shipping.address_validation_enabled.boolean'),
-            'shipping.address_api_provider.string' => __('sirsoft-ecommerce::validation.custom.shipping.address_api_provider.string'),
-            'shipping.address_api_provider.max' => __('sirsoft-ecommerce::validation.custom.shipping.address_api_provider.max'),
 
             // shipping.carriers 섹션
             'shipping.carriers.*.code.required_with' => __('sirsoft-ecommerce::validation.custom.shipping.carriers.code.required_with'),
@@ -2197,7 +2203,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
     public function validatedSettings(): array
     {
         $validated = $this->validated();
-        $validCategories = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'product_display', 'inquiry', 'notifications', 'mileage', 'privacy_retention'];
+        $validCategories = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'product_display', 'inquiry', 'notifications', 'mileage', 'promotion', 'privacy_retention'];
 
         return array_filter(
             $validated,

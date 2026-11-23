@@ -410,6 +410,26 @@ class ProductReviewService
     }
 
     /**
+     * 회원이 쓴 리뷰 목록을 조회합니다. (마이페이지 내 리뷰, #952)
+     *
+     * @param  int  $userId  회원 ID
+     * @param  int  $perPage  페이지당 항목 수
+     * @return LengthAwarePaginator 리뷰 페이지네이터
+     */
+    public function getUserReviews(int $userId, int $perPage = 10): LengthAwarePaginator
+    {
+        HookManager::doAction('sirsoft-ecommerce.product-review.before_user_list', $userId, $perPage);
+
+        $reviews = $this->repository->paginateByUser($userId, $perPage);
+
+        $reviews = HookManager::applyFilters('sirsoft-ecommerce.product-review.filter_user_list_result', $reviews, $userId);
+
+        HookManager::doAction('sirsoft-ecommerce.product-review.after_user_list', $reviews, $userId);
+
+        return $reviews;
+    }
+
+    /**
      * 판매자 답변 저장 (등록/수정)
      *
      * @param  ProductReview  $review  리뷰 모델
@@ -419,15 +439,23 @@ class ProductReviewService
      */
     public function saveReply(ProductReview $review, int $adminId, array $data): ProductReview
     {
+        // 같은 서비스의 상태 변경·답변 삭제와 같은 권한 범위 — 범위 밖 운영자가 답변을 다는 것을 막는다 (#952 W8)
+        $this->assertWithinScope($review, 'sirsoft-ecommerce.reviews.update');
+
         $isUpdate = ! is_null($review->replied_at);
 
-        return $this->repository->update($review, [
+        $saved = $this->repository->update($review, [
             'reply_content' => $data['reply_content'],
             'reply_content_mode' => $data['reply_content_mode'] ?? 'text',
             'reply_admin_id' => $adminId,
             'replied_at' => $isUpdate ? $review->replied_at : now(),
             'reply_updated_at' => $isUpdate ? now() : null,
         ]);
+
+        // 답변 알림 (#952) — 두 번째 인자가 첫 등록 여부다. 알림은 첫 등록이고 작성자가 회원일 때만 나간다
+        HookManager::doAction('sirsoft-ecommerce.product-review.after_reply', $saved, ! $isUpdate);
+
+        return $saved;
     }
 
     /**

@@ -333,4 +333,17 @@ interface OrderRepositoryInterface
      * @return Collection<int, OrderTaxInvoice> 발급 완료 계산서 (id · invoice_number · total_amount)
      */
     public function listIssuedTaxInvoices(int $orderId): Collection;
+
+    /**
+     * 회원 주문 중 고른 상태 이상에 도달한 가장 이른 주문을 반환합니다. (#952 첫구매 쿠폰)
+     *
+     * 주문일(`ordered_at`)·ID 순 첫 건이다. 취소·반품완료 주문은 대상이 아니다. `$orConfirmedAt` 이면 확정 이력
+     * (`confirmed_at`)이 있는 주문도 도달로 본다(구매확정 시점).
+     *
+     * @param  int  $userId  회원 ID
+     * @param  array<int, string>  $statuses  도달로 보는 주문 상태 값
+     * @param  bool  $orConfirmedAt  확정 이력이 있는 주문도 포함할지
+     * @return Order|null 주문 (없으면 null)
+     */
+    public function findEarliestOrderReachingStatuses(int $userId, array $statuses, bool $orConfirmedAt = false): ?Order;
 }

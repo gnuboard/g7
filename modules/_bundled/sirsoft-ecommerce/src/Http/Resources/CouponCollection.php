@@ -6,6 +6,7 @@ use App\Http\Resources\BaseApiCollection;
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Modules\Sirsoft\Ecommerce\Services\BirthdayFieldResolver;
 use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
@@ -50,6 +51,8 @@ class CouponCollection extends BaseApiCollection
         $result = [
             'data' => $this->collection,
             'abilities' => $this->resolveAbilitiesFromMap($this->abilityMap(), $request->user()),
+            // 「생일로 쓸 회원 항목」 지정 여부 — 등록 폼(쿠폰 응답이 없는 진입)의 생일 쿠폰 경고 근거 (#952)
+            'birthday_field_configured' => app(BirthdayFieldResolver::class)->isConfigured(),
         ];
 
         if ($this->resource instanceof LengthAwarePaginator) {

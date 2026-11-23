@@ -24,6 +24,7 @@ return [
         'invalid_verification_token' => 'Invalid verification token.',
         'provider_policy_mismatch' => 'This action can only be verified with the designated verification method.',
         'policy_provider_unavailable' => 'The verification method required for this action is currently unavailable. Please contact the site administrator.',
+        'checkpoint_not_registered' => 'Identity checkpoint is not registered: :key',
         'purpose_unknown' => 'Unknown verification purpose.',
         'missing_target' => 'A verification target (email or phone) is required.',
         'claim_denied' => 'The verification result cannot be retrieved. Please start verification again.',

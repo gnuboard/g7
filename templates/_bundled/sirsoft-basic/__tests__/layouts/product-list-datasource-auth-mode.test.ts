@@ -61,8 +61,8 @@ describe('상품 API 데이터소스의 로그인 정보 전달', () => {
 
   // @scenario case=c15
   // @effects ecommerce_requirement_is_1_4_0
-  it('이커머스 연동 요구 버전이 1.4.0 이상이다 — 목록 응답 보강(1.3.5)과 사업자 정보 푸터 조각(1.4.0, 기본 푸터는 더 그리지 않는다)', () => {
+  it('이커머스 연동 요구 버전이 1.4.1 이상이다 — 목록 응답 보강(1.3.5)·사업자 정보 푸터 조각(1.4.0)에 더해 쿠폰존·쿠폰함·내 리뷰 API(1.4.1)를 쓴다', () => {
     const manifest = JSON.parse(fs.readFileSync(path.join(templateDir, 'template.json'), 'utf-8'));
-    expect(manifest.integrations.modules['sirsoft-ecommerce']).toBe('>=1.4.0');
+    expect(manifest.integrations.modules['sirsoft-ecommerce']).toBe('>=1.4.1');
   });
 });

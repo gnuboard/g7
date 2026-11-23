@@ -168,6 +168,19 @@
   "sampleData": {
     "comment": "실제 모듈 레이아웃 data_source ID(admin: products/categories/orders/order/reviews 등) + 사용자 페이지(템플릿이 렌더, /api/modules/sirsoft-ecommerce/* 호출) byEndpointPattern. 계획서 추정과 실제 ID 차이 반영(데이터소스가 SSoT).",
     "byDataSourceId": {
+      "identityCheckpoints": {
+        "data": {
+          "checkpoints": [
+            {
+              "key": "vendor-sample.withdraw",
+              "name": "회원 탈퇴",
+              "description": "탈퇴 직전 본인인증",
+              "source_type": "module",
+              "source_identifier": "vendor-sample"
+            }
+          ]
+        }
+      },
       "contentMediaTarget": {
         "data": {
           "data": {
@@ -10320,6 +10333,18 @@
               },
               "global": {
                 "activeEcommerceSettingsTab": "mileage"
+              }
+            }
+          },
+          {
+            "id": "tab_promotion",
+            "label": "$t:editor.state.tab.promotion",
+            "initialState": {
+              "query": {
+                "tab": "promotion"
+              },
+              "global": {
+                "activeEcommerceSettingsTab": "promotion"
               }
             }
           },

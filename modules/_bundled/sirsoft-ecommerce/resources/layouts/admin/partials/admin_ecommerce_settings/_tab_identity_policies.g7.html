@@ -186,7 +186,7 @@
             <tbody>
               <tr data-each="policy in ecommerceIdentityPolicies?.data?.data ?? []" class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700/30">
                 <td class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:font-mono ecommerce:text-xs">{{policy.key ?? ''}}</td>
-                <td class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300">$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</td>
+                <td class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300"><span>$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</span><span data-if="{{policy.scope === 'custom' &amp;&amp; policy.checkpoint_registered === false}}" class="ecommerce:ml-1 ecommerce:inline-flex ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-amber-100 ecommerce:text-amber-800 ecommerce:dark:bg-amber-900/30 ecommerce:dark:text-amber-300">$t:admin.identity.policies.checkpoint_missing</span></td>
                 <td class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:font-mono ecommerce:text-xs ecommerce:truncate ecommerce:max-w-xs">{{policy.target ?? ''}}</td>
                 <td class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{(ecommerceIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}</td>
                 <td class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:text-right">{{policy.grace_minutes ?? 0}}</td>
@@ -277,7 +277,7 @@
               <div class="ecommerce:flex-1 ecommerce:min-w-0">
                 <div class="ecommerce-text-primary ecommerce:font-mono ecommerce:text-xs ecommerce:break-all ecommerce-break-all">{{policy.key ?? ''}}</div>
                 <div class="ecommerce-form-hint">
-                  <span>$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</span>
+                  <span>$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</span><span data-if="{{policy.scope === 'custom' &amp;&amp; policy.checkpoint_registered === false}}" class="ecommerce:ml-1 ecommerce:inline-flex ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-amber-100 ecommerce:text-amber-800 ecommerce:dark:bg-amber-900/30 ecommerce:dark:text-amber-300">$t:admin.identity.policies.checkpoint_missing</span>
                   <span class="ecommerce:mx-1.5 ecommerce-text-muted">·</span>
                   <span class="ecommerce:font-mono ecommerce:break-all ecommerce-break-all">{{policy.target ?? ''}}</span>
                 </div>

@@ -206,6 +206,9 @@ HTTP/1.1 200
 | min_order_amount | body | number | 아니오 | min 0 | 쿠폰 적용 최소 주문금액 (미입력 시 0=제한 없음) |
 | issue_method | body | string | 예 | `direct`, `download`, `auto` | 발급방법: direct(직접발급), download(다운로드), auto(자동발급) |
 | issue_condition | body | string | 예 | `manual`, `signup`, `first_purchase`, `birthday` | 발급조건: manual(수동), signup(회원가입), first_purchase(첫구매), birthday(생일) |
+| first_purchase_trigger_status | body | string | 아니오 | `payment_complete`, `preparing`, `shipping`, `delivered`, `confirmed` | 첫구매 쿠폰의 발급 시점 주문 상태(1.4.1). `issue_condition=first_purchase` 일 때만 의미가 있고, 등록에서 비우면 `confirmed` 로 채운다. 다른 조건이면 null 로 바뀐다 |
+| notify_enabled | body | boolean | 아니오 | — | 발급 알림 사용(1.4.1). 켜면 이 쿠폰 전용 알림 종류 `coupon_issued.{id}` 를 만든다. `issue_method=download` 면 false 로 바뀐다. 문자열 `"true"`/`"1"` 도 수용 |
+| notify_marketing_only | body | boolean | 아니오 | — | 광고성 안내(1.4.1). 켜면 제목에 「(광고) 」가 붙고 메일·문자·알림톡은 마케팅 수신 동의 회원에게만 간다(미동의 회원은 사이트 알림만) |
 | issue_status | body | string | 예 | `issuing`, `stopped` | 발급상태: issuing(발급중), stopped(발급중단) |
 | total_quantity | body | integer | 아니오 | min 1 | 총 발급 수량 (미입력 시 무제한) |
 | per_user_limit | body | integer | 예 | min 0 | 회원 1인당 발급 제한 수량 (0=무제한) |
@@ -422,7 +425,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 관리자가 새 프로모션 쿠폰(정의)을 생성합니다. `permission:sirsoft-ecommerce.promotion-coupon.create` 권한이 필요하며, 다국어 쿠폰명(`name`), 적용대상·혜택유형·혜택값, 발급방법/조건/상태, 유효기간·발급기간, 회원당 한도, 적용 범위(`target_scope`: all·products·categories)와 그에 따른 상품/카테고리 배열을 받아 `CouponService::createCoupon()`이 저장하고 생성된 쿠폰을 201로 반환합니다. `target_scope` 가 products/categories 일 때만 각 배열이 의미를 가지며, 확장은 `sirsoft-ecommerce.coupon.create_validation_rules` 필터로 검증 규칙을 추가할 수 있습니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「쿠폰명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Coupon Name field is required.").
+**설명** 관리자가 새 프로모션 쿠폰(정의)을 생성합니다. `permission:sirsoft-ecommerce.promotion-coupon.create` 권한이 필요하며, 다국어 쿠폰명(`name`), 적용대상·혜택유형·혜택값, 발급방법/조건/상태, 유효기간·발급기간, 회원당 한도, 적용 범위(`target_scope`: all·products·categories)와 그에 따른 상품/카테고리 배열을 받아 `CouponService::createCoupon()`이 저장하고 생성된 쿠폰을 201로 반환합니다. `target_scope` 가 products/categories 일 때만 각 배열이 의미를 가지며, 확장은 `sirsoft-ecommerce.coupon.create_validation_rules` 필터로 검증 규칙을 추가할 수 있습니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「쿠폰명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Coupon Name field is required."). 자동발급(`issue_method=auto`)은 조건이 `signup`·`first_purchase`·`birthday` 여야 하고 직접·다운로드는 `manual` 이어야 하며(어긋나면 422), 자동발급의 `per_user_limit` 은 0 으로 고정된다(1.4.1). 응답에는 `first_purchase_trigger_status`·`notify_enabled`·`notify_marketing_only`·`notification_type`(`coupon_issued.{id}`)·`birthday_field_configured`(생일 항목 지정 여부)가 실린다 — 회원용 응답에는 이 칸들이 실리지 않는다.
 
 
 ### PATCH /api/modules/sirsoft-ecommerce/admin/promotion-coupons/bulk-status
@@ -636,6 +639,9 @@ _예시는 대표 필드만 발췌한 축약본입니다. 전체 필드는 생�
 | min_order_amount | body | number | 아니오 | min 0 | 쿠폰 적용 최소 주문금액 (미입력 시 0=제한 없음) |
 | issue_method | body | string | 예 | `direct`, `download`, `auto` | 발급방법: direct(직접발급), download(다운로드), auto(자동발급) |
 | issue_condition | body | string | 예 | `manual`, `signup`, `first_purchase`, `birthday` | 발급조건: manual(수동), signup(회원가입), first_purchase(첫구매), birthday(생일) |
+| first_purchase_trigger_status | body | string | 아니오 | `payment_complete`, `preparing`, `shipping`, `delivered`, `confirmed` | 첫구매 쿠폰의 발급 시점 주문 상태(1.4.1). `issue_condition=first_purchase` 일 때만 의미가 있고, 등록에서 비우면 `confirmed` 로 채운다. 다른 조건이면 null 로 바뀐다 |
+| notify_enabled | body | boolean | 아니오 | — | 발급 알림 사용(1.4.1). 켜면 이 쿠폰 전용 알림 종류 `coupon_issued.{id}` 를 만든다. `issue_method=download` 면 false 로 바뀐다. 문자열 `"true"`/`"1"` 도 수용 |
+| notify_marketing_only | body | boolean | 아니오 | — | 광고성 안내(1.4.1). 켜면 제목에 「(광고) 」가 붙고 메일·문자·알림톡은 마케팅 수신 동의 회원에게만 간다(미동의 회원은 사이트 알림만) |
 | issue_status | body | string | 예 | `issuing`, `stopped` | 발급상태: issuing(발급중), stopped(발급중단) |
 | total_quantity | body | integer | 아니오 | min 1 | 총 발급 수량 (미입력 시 무제한) |
 | per_user_limit | body | integer | 예 | min 0 | 회원 1인당 발급 제한 수량 (0=무제한) |
@@ -855,7 +861,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자가 기존 프로모션 쿠폰(정의)의 내용을 수정합니다. `permission:sirsoft-ecommerce.promotion-coupon.update` 권한이 필요하며, 생성과 동일한 필드 집합(쿠폰명·혜택·발급 조건·유효/발급 기간·적용 범위 등)을 받아 `CouponService::updateCoupon()`이 전체 갱신합니다. `target_scope` 변경 시 그에 맞는 상품/카테고리 배열을 함께 보내야 하며, 대상 쿠폰이 없으면 404, 갱신 실패 시 400 을 반환합니다. 확장은 `sirsoft-ecommerce.coupon.update_validation_rules` 필터로 검증 규칙을 추가할 수 있습니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「쿠폰명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Coupon Name field is required.").
+**설명** 관리자가 기존 프로모션 쿠폰(정의)의 내용을 수정합니다. `permission:sirsoft-ecommerce.promotion-coupon.update` 권한이 필요하며, 생성과 동일한 필드 집합(쿠폰명·혜택·발급 조건·유효/발급 기간·적용 범위 등)을 받아 `CouponService::updateCoupon()`이 전체 갱신합니다. `target_scope` 변경 시 그에 맞는 상품/카테고리 배열을 함께 보내야 하며, 대상 쿠폰이 없으면 404, 갱신 실패 시 400 을 반환합니다. 확장은 `sirsoft-ecommerce.coupon.update_validation_rules` 필터로 검증 규칙을 추가할 수 있습니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「쿠폰명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Coupon Name field is required."). 자동발급(`issue_method=auto`)은 조건이 `signup`·`first_purchase`·`birthday` 여야 하고 직접·다운로드는 `manual` 이어야 하며(어긋나면 422), 자동발급의 `per_user_limit` 은 0 으로 고정된다(1.4.1). 응답에는 `first_purchase_trigger_status`·`notify_enabled`·`notify_marketing_only`·`notification_type`(`coupon_issued.{id}`)·`birthday_field_configured`(생일 항목 지정 여부)가 실린다 — 회원용 응답에는 이 칸들이 실리지 않는다.
 
 
 ### POST /api/modules/sirsoft-ecommerce/admin/promotion-coupons/{id}/issue-direct

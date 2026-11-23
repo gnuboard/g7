@@ -6,6 +6,20 @@
  * Enum 값의 다국어 라벨
  */
 return [
+    'coupon_issue_source' => [
+        'download' => '다운로드',
+        'direct' => '직접발급',
+        'signup' => '가입',
+        'first_purchase' => '첫구매',
+        'birthday' => '생일',
+    ],
+    'coupon_first_purchase_trigger' => [
+        'payment_complete' => '결제완료',
+        'preparing' => '상품준비중',
+        'shipping' => '배송중',
+        'delivered' => '배송완료',
+        'confirmed' => '구매확정',
+    ],
     // 마일리지 거래 유형 (MileageTransactionTypeEnum 값과 일치)
     'mileage_transaction_type' => [
         'purchase_earn' => '구매 적립',

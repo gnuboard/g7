@@ -36,6 +36,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\ClaimNotificationDataListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ClaimStatusNotificationListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CloseUnpaidVbankOnCancelListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponActivityLogListener;
+use Modules\Sirsoft\Ecommerce\Listeners\CouponIssueNotificationListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponRestoreListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponUseListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceAdminActivityLogListener;
@@ -46,6 +47,8 @@ use Modules\Sirsoft\Ecommerce\Listeners\ExemptRequiredFieldsRoutesListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ExportActivityLogDescriptionResolver;
 use Modules\Sirsoft\Ecommerce\Listeners\ExportActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ExportNotificationDataListener;
+use Modules\Sirsoft\Ecommerce\Listeners\FirstPurchaseCouponListener;
+use Modules\Sirsoft\Ecommerce\Listeners\GrantSignupCouponListener;
 use Modules\Sirsoft\Ecommerce\Listeners\GrantSignupMileageListener;
 use Modules\Sirsoft\Ecommerce\Listeners\InjectAppConfigDeviceListener;
 use Modules\Sirsoft\Ecommerce\Listeners\IssueCashReceiptOnDepositListener;
@@ -80,6 +83,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\UserMileageInfoListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserPreferenceFieldDefinitionListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserShippingCountryInfoListener;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderRepository;
+use Modules\Sirsoft\Ecommerce\Services\CouponNotificationDefinitionService;
 use Modules\Sirsoft\Ecommerce\Services\ExportService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimNotificationHooks;
 use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
@@ -109,6 +113,60 @@ class Module extends AbstractModule
                 'parameters' => ['methodIds' => 'array - 후보 결제수단 id', 'currency' => 'string - 결제 통화 (ISO 4217)'],
                 'return' => 'array'],
             ...$this->exportHooks(),
+            ...$this->memberBenefitHooks(),
+        ];
+    }
+
+    /**
+     * 회원 혜택(#952)의 공개 훅 계약 — 쿠폰 자동발급·발급 알림·만료 임박 알림, 마일리지 적립·차감 알림, 리뷰 답글, 주문 취소의 취소 기록 인자.
+     *
+     * @return array 회원 혜택 훅 정의
+     */
+    private function memberBenefitHooks(): array
+    {
+        $issue = 'Modules\Sirsoft\Ecommerce\Models\CouponIssue - 발급 건';
+        $orderCancelParams = [
+            'order' => 'Modules\Sirsoft\Ecommerce\Models\Order - 취소 뒤 주문',
+            'cancel' => 'array - cancel_type(full|partial)·cancel_items',
+            'snapshot' => 'array - 취소 전 주문 스냅샷',
+            'orderCancel' => 'Modules\Sirsoft\Ecommerce\Models\OrderCancel - 이번 취소 기록 (취소 상품·환불액, 1.4.1 에서 추가된 4번째 인자)',
+        ];
+
+        return [
+            ['name' => 'sirsoft-ecommerce.coupon.filter_auto_issue_eligible', 'type' => 'filter',
+                'description' => ['ko' => '자동발급 직전 대상 판정 (true 가 아니면 발급하지 않음)', 'en' => 'Decide eligibility right before an automatic issue (anything but true skips it)'],
+                'parameters' => ['eligible' => 'bool - 기본 true', 'coupon' => 'Coupon - 자동발급 쿠폰', 'userId' => 'int - 회원 ID', 'source' => 'string - signup|first_purchase|birthday', 'context' => 'array - 발급 맥락(주문 ID 등)'],
+                'return' => 'bool'],
+            ['name' => 'sirsoft-ecommerce.coupon.after_auto_issue', 'type' => 'action',
+                'description' => ['ko' => '쿠폰 자동발급 후 (커밋 뒤)', 'en' => 'After a coupon is issued automatically (after commit)'],
+                'parameters' => ['issue' => $issue, 'source' => 'string - signup|first_purchase|birthday', 'context' => 'array - 발급 맥락']],
+            ['name' => 'sirsoft-ecommerce.coupon.after_auto_issue_revoke', 'type' => 'action',
+                'description' => ['ko' => '첫구매 쿠폰 회수 후 (원천 주문 전체 취소·반품)', 'en' => 'After a first-purchase coupon is revoked (source order fully cancelled or returned)'],
+                'parameters' => ['issue' => $issue.'(발급 취소됨)', 'orderId' => 'int - 원천 주문 ID']],
+            ['name' => 'sirsoft-ecommerce.coupon.after_direct_issue', 'type' => 'action',
+                'description' => ['ko' => '관리자 직접발급 1건 후 (회원별 트랜잭션 안)', 'en' => 'After one admin direct issue (inside the per-member transaction)'],
+                'parameters' => ['coupon' => 'Coupon - 쿠폰', 'issue' => $issue, 'userId' => 'int - 받은 회원 ID']],
+            ['name' => 'sirsoft-ecommerce.coupon.notify_issued.{쿠폰ID}', 'type' => 'action',
+                'description' => ['ko' => '쿠폰 발급 알림 발송 (쿠폰마다 따로 있는 훅 — 알림 종류 coupon_issued.{쿠폰ID} 가 구독)', 'en' => 'Send a coupon-issued notification (one hook per coupon, subscribed by the coupon_issued.{couponId} notification type)'],
+                'parameters' => ['user' => 'App\Models\User - 받는 회원', 'issue' => $issue, 'source' => 'string - download|direct|signup|first_purchase|birthday']],
+            ['name' => 'sirsoft-ecommerce.coupon.notify_expiring', 'type' => 'action',
+                'description' => ['ko' => '쿠폰 만료 임박 알림 발송 (회원별 1회)', 'en' => 'Send a coupon-expiring-soon notification (once per member)'],
+                'parameters' => ['user' => 'App\Models\User - 회원', 'count' => 'int - 곧 만료되는 쿠폰 수', 'earliestExpiresDate' => 'string - 가장 이른 만료일(사이트 날짜)', 'couponNames' => 'array<string> - 쿠폰명']],
+            ['name' => 'sirsoft-ecommerce.mileage.after_earn', 'type' => 'action',
+                'description' => ['ko' => '마일리지 적립 확정 후 (구매·관리자 지급·가입, 탈퇴 소멸 경로 제외)', 'en' => 'After mileage is credited (purchase, admin grant, signup; not on withdrawal forfeit)'],
+                'parameters' => ['user' => 'App\Models\User - 회원', 'amount' => 'float - 이번 적립액(증액이면 증액분)', 'currency' => 'string - 통화', 'balance' => 'float - 적립 뒤 잔액', 'reason' => 'string - purchase|admin|signup', 'expiresDate' => 'string - 소멸 예정일(사이트 날짜, 없으면 빈 문자열)', 'transaction' => 'MileageTransaction - 적립 거래']],
+            ['name' => 'sirsoft-ecommerce.mileage.after_admin_deduct', 'type' => 'action',
+                'description' => ['ko' => '관리자 마일리지 차감 후', 'en' => 'After an admin deducts mileage'],
+                'parameters' => ['user' => 'App\Models\User - 회원', 'amount' => 'float - 차감액', 'currency' => 'string - 통화', 'balance' => 'float - 차감 뒤 잔액', 'memo' => 'string - 관리자 메모', 'transaction' => 'MileageTransaction - 차감 거래']],
+            ['name' => 'sirsoft-ecommerce.product-review.after_reply', 'type' => 'action',
+                'description' => ['ko' => '관리자 리뷰 답글 저장 후 (등록·수정 모두)', 'en' => 'After an admin saves a review reply (create or update)'],
+                'parameters' => ['review' => 'ProductReview - 답글이 저장된 리뷰', 'isFirst' => 'bool - 첫 등록이면 true']],
+            ['name' => 'sirsoft-ecommerce.order.after_cancel', 'type' => 'action',
+                'description' => ['ko' => '주문 전체 취소 확정 후', 'en' => 'After a full order cancellation is confirmed'],
+                'parameters' => $orderCancelParams],
+            ['name' => 'sirsoft-ecommerce.order.after_partial_cancel', 'type' => 'action',
+                'description' => ['ko' => '주문 부분 취소 확정 후', 'en' => 'After a partial order cancellation is confirmed'],
+                'parameters' => $orderCancelParams],
         ];
     }
 
@@ -1700,10 +1758,44 @@ class Module extends AbstractModule
             $this->inquiryReceivedDefinition(),
             $this->inquiryRepliedDefinition(),
             $this->mileageExpiringSoonDefinition(),
+            // #952 — 쿠폰 만료 임박·마일리지 적립/차감·부분 취소·리뷰 답글 (새 회원 대상 알림은 사이트 알림만 켜짐)
+            $this->couponExpiringSoonDefinition(),
+            $this->mileageEarnedDefinition(),
+            $this->mileageDeductedDefinition(),
+            $this->orderPartiallyCancelledDefinition(),
+            $this->reviewRepliedDefinition(),
             $this->orderCustomEmailDefinition(),
             $this->checkoutVerificationIdentityDefinition(),
             ...$this->exportNotificationDefinitions(),
-        ], $this->claimNotificationDefinitions());
+        ], $this->claimNotificationDefinitions(), $this->couponIssuedNotificationDefinitions());
+    }
+
+    /**
+     * 쿠폰별 발급 알림 정의 (#952) — 발급 알림을 켠(또는 정의가 이미 있는) 쿠폰마다 `coupon_issued.{쿠폰ID}`.
+     *
+     * 런타임에 쿠폰 화면이 만든 정의를 선언에도 싣는다. 그래야 확장 업데이트의 「선언에 없는 정의 정리」 가 지우지 않는다.
+     * 테이블이 없는 설치 전 시점에는 빈 배열이다.
+     *
+     * @return array<int, array<string, mixed>> 알림 정의 목록
+     */
+    private function couponIssuedNotificationDefinitions(): array
+    {
+        // 선언을 앱 밖(언어팩 검사 도구 등)에서 읽을 때는 컨테이너가 없다 — 쿠폰 정의 없이 고정 정의만 돌려준다
+        if (! function_exists('app') || ! app()->bound('db')) {
+            return [];
+        }
+
+        try {
+            return app(CouponNotificationDefinitionService::class)->declaredDefinitions();
+        } catch (\Throwable $e) {
+            try {
+                Log::warning('쿠폰 알림 정의 선언 실패', ['message' => $e->getMessage()]);
+            } catch (\Throwable) {
+                // 로그도 쓸 수 없는 실행 문맥 — 선언 수집을 막지 않는다
+            }
+
+            return [];
+        }
     }
 
     /**
@@ -2087,6 +2179,352 @@ class Module extends AbstractModule
                 ],
             ],
         ];
+    }
+
+    /**
+     * 쿠폰 만료 임박 알림 정의 (#952).
+     *
+     * 마일리지 소멸 예정 알림과 같은 방식이다. 새 회원 대상 알림이라 사이트 알림만 켠 채로 들어온다.
+     *
+     * @return array<string, mixed> 알림 정의
+     */
+    private function couponExpiringSoonDefinition(): array
+    {
+        return [
+            'type' => 'coupon_expiring_soon',
+            'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'customer',
+            'name' => ['ko' => '쿠폰 만료 임박', 'en' => 'Coupons Expiring Soon'],
+            'description' => ['ko' => '보유 쿠폰의 사용 기한이 임박한 회원에게 발송', 'en' => 'Sent to members whose coupons are about to expire'],
+            'channels' => ['mail', 'database'],
+            'hooks' => ['sirsoft-ecommerce.coupon.notify_expiring'],
+            'variables' => [
+                ['key' => 'name', 'description' => '수신자 이름'],
+                ['key' => 'app_name', 'description' => '사이트 이름'],
+                ['key' => 'count', 'description' => '곧 만료되는 쿠폰 수'],
+                ['key' => 'earliest_expires_date', 'description' => '가장 이른 만료일'],
+                ['key' => 'coupon_names', 'description' => '쿠폰명 (쉼표로 이음)'],
+                ['key' => 'coupons_url', 'description' => '쿠폰함 URL'],
+                ['key' => 'coupons_path', 'description' => '쿠폰함 경로 (사이트 주소 없이)'],
+                ['key' => 'site_url', 'description' => '사이트 URL'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'is_active' => false,
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => [
+                        'ko' => '[{app_name}] 쿠폰 {count}장의 사용 기한이 곧 끝납니다',
+                        'en' => '[{app_name}] {count} of your coupons are expiring soon',
+                    ],
+                    'body' => [
+                        'ko' => $this->simpleMailBody('쿠폰 만료 임박 안내', '{name}님, 보유하신 쿠폰 {count}장의 사용 기한이 곧 끝납니다.', [
+                            '쿠폰' => '{coupon_names}',
+                            '가장 이른 만료일' => '{earliest_expires_date}',
+                        ], '쿠폰함 보기', '{coupons_url}', '본 메일은 {app_name}에서 발송되었습니다.'),
+                        'en' => $this->simpleMailBody('Coupons Expiring Soon', 'Dear {name}, {count} of your coupons are about to expire.', [
+                            'Coupons' => '{coupon_names}',
+                            'Earliest Expiry' => '{earliest_expires_date}',
+                        ], 'View My Coupons', '{coupons_url}', 'This email was sent from {app_name}.'),
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'is_active' => true,
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '쿠폰 만료 임박 안내', 'en' => 'Coupons Expiring Soon'],
+                    'body' => [
+                        'ko' => '{name}님, 쿠폰 {count}장의 사용 기한이 {earliest_expires_date}부터 끝납니다.',
+                        'en' => '{name}, {count} coupons start expiring on {earliest_expires_date}.',
+                    ],
+                    'click_url' => '{coupons_path}',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 마일리지 적립 알림 정의 (#952 — 구매 적립·관리자 지급·가입 적립).
+     *
+     * @return array<string, mixed> 알림 정의
+     */
+    private function mileageEarnedDefinition(): array
+    {
+        return [
+            'type' => 'mileage_earned',
+            'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'customer',
+            'name' => ['ko' => '마일리지 적립', 'en' => 'Mileage Earned'],
+            'description' => ['ko' => '구매 적립·관리자 지급·가입 적립으로 마일리지가 들어온 회원에게 발송', 'en' => 'Sent when mileage is credited by a purchase, an administrator or signup'],
+            'channels' => ['mail', 'database'],
+            'hooks' => ['sirsoft-ecommerce.mileage.after_earn'],
+            'variables' => $this->mileageNotificationVariables([
+                ['key' => 'reason_label', 'description' => '적립 사유 (구매·관리자 지급·가입)'],
+                ['key' => 'expires_date', 'description' => '소멸 예정일 (없으면 빈 값)'],
+            ]),
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'is_active' => false,
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => [
+                        'ko' => '[{app_name}] 마일리지 {amount}점이 적립되었습니다',
+                        'en' => '[{app_name}] {amount} mileage points have been credited',
+                    ],
+                    'body' => [
+                        'ko' => $this->simpleMailBody('마일리지 적립 안내', '{name}님, 마일리지가 적립되었습니다.', [
+                            '적립 사유' => '{reason_label}',
+                            '적립 마일리지' => '{amount}점',
+                            '현재 잔액' => '{balance}점',
+                        ], '마일리지 내역 보기', '{mileage_url}', '본 메일은 {app_name}에서 발송되었습니다.'),
+                        'en' => $this->simpleMailBody('Mileage Credited', 'Dear {name}, mileage has been credited to your account.', [
+                            'Reason' => '{reason_label}',
+                            'Credited' => '{amount}',
+                            'Balance' => '{balance}',
+                        ], 'View Mileage', '{mileage_url}', 'This email was sent from {app_name}.'),
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'is_active' => true,
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '마일리지 적립', 'en' => 'Mileage Credited'],
+                    'body' => [
+                        'ko' => '{reason_label}(으)로 마일리지 {amount}점이 적립되었습니다. 잔액 {balance}점',
+                        'en' => '{amount} mileage points credited ({reason_label}). Balance: {balance}',
+                    ],
+                    'click_url' => '{mileage_path}',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 마일리지 관리자 차감 알림 정의 (#952).
+     *
+     * @return array<string, mixed> 알림 정의
+     */
+    private function mileageDeductedDefinition(): array
+    {
+        return [
+            'type' => 'mileage_deducted',
+            'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'customer',
+            'name' => ['ko' => '마일리지 차감', 'en' => 'Mileage Deducted'],
+            'description' => ['ko' => '관리자가 마일리지를 차감한 회원에게 발송', 'en' => 'Sent when an administrator deducts mileage'],
+            'channels' => ['mail', 'database'],
+            'hooks' => ['sirsoft-ecommerce.mileage.after_admin_deduct'],
+            'variables' => $this->mileageNotificationVariables([
+                ['key' => 'memo', 'description' => '차감 사유 (관리자 메모)'],
+            ]),
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'is_active' => false,
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => [
+                        'ko' => '[{app_name}] 마일리지 {amount}점이 차감되었습니다',
+                        'en' => '[{app_name}] {amount} mileage points have been deducted',
+                    ],
+                    'body' => [
+                        'ko' => $this->simpleMailBody('마일리지 차감 안내', '{name}님, 마일리지가 차감되었습니다.', [
+                            '차감 마일리지' => '{amount}점',
+                            '사유' => '{memo}',
+                            '현재 잔액' => '{balance}점',
+                        ], '마일리지 내역 보기', '{mileage_url}', '본 메일은 {app_name}에서 발송되었습니다.'),
+                        'en' => $this->simpleMailBody('Mileage Deducted', 'Dear {name}, mileage has been deducted from your account.', [
+                            'Deducted' => '{amount}',
+                            'Reason' => '{memo}',
+                            'Balance' => '{balance}',
+                        ], 'View Mileage', '{mileage_url}', 'This email was sent from {app_name}.'),
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'is_active' => true,
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '마일리지 차감', 'en' => 'Mileage Deducted'],
+                    'body' => [
+                        'ko' => '마일리지 {amount}점이 차감되었습니다. 잔액 {balance}점',
+                        'en' => '{amount} mileage points deducted. Balance: {balance}',
+                    ],
+                    'click_url' => '{mileage_path}',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 마일리지 알림 공통 변수에 추가 변수를 더해 반환합니다.
+     *
+     * @param  array<int, array{key: string, description: string}>  $extra  추가 변수
+     * @return array<int, array{key: string, description: string}> 변수 목록
+     */
+    private function mileageNotificationVariables(array $extra): array
+    {
+        return [
+            ['key' => 'name', 'description' => '수신자 이름'],
+            ['key' => 'app_name', 'description' => '사이트 이름'],
+            ['key' => 'amount', 'description' => '마일리지'],
+            ['key' => 'currency', 'description' => '통화 코드'],
+            ['key' => 'balance', 'description' => '현재 사용 가능 잔액'],
+            ...$extra,
+            ['key' => 'mileage_url', 'description' => '마일리지 내역 URL'],
+            ['key' => 'mileage_path', 'description' => '마일리지 내역 경로 (사이트 주소 없이)'],
+            ['key' => 'site_url', 'description' => '사이트 URL'],
+        ];
+    }
+
+    /**
+     * 부분 취소 알림 정의 (#952).
+     *
+     * 전체 취소(`order_cancelled`)와 문구가 달라 따로 둔다. 비회원 주문은 주문서의 연락처로 보낸다(guest_recipient).
+     *
+     * @return array<string, mixed> 알림 정의
+     */
+    private function orderPartiallyCancelledDefinition(): array
+    {
+        return [
+            'type' => 'order_partially_cancelled',
+            'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'customer',
+            'name' => ['ko' => '주문 부분 취소', 'en' => 'Order Partially Cancelled'],
+            'description' => ['ko' => '주문 상품 일부가 취소되면 주문자에게 발송', 'en' => 'Sent to the orderer when part of an order is cancelled'],
+            'channels' => ['mail', 'database'],
+            'hooks' => ['sirsoft-ecommerce.order.after_partial_cancel'],
+            'variables' => [
+                ['key' => 'name', 'description' => '수신자 이름'],
+                ['key' => 'app_name', 'description' => '사이트 이름'],
+                ['key' => 'order_number', 'description' => '주문번호'],
+                ['key' => 'cancelled_items', 'description' => '취소된 상품 (쉼표로 이음)'],
+                ['key' => 'refund_amount', 'description' => '환불 예정 금액'],
+                ['key' => 'order_url', 'description' => '주문 상세 URL'],
+                ['key' => 'site_url', 'description' => '사이트 URL'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'is_active' => false,
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => [
+                        'ko' => '[{app_name}] 주문 {order_number}의 일부 상품이 취소되었습니다',
+                        'en' => '[{app_name}] Some items in order {order_number} have been cancelled',
+                    ],
+                    'body' => [
+                        'ko' => $this->simpleMailBody('주문 부분 취소 안내', '{name}님, 주문하신 상품 중 일부가 취소되었습니다.', [
+                            '주문번호' => '{order_number}',
+                            '취소 상품' => '{cancelled_items}',
+                            '환불 예정 금액' => '{refund_amount}',
+                        ], '주문 상세 보기', '{order_url}', '본 메일은 {app_name}에서 발송되었습니다.'),
+                        'en' => $this->simpleMailBody('Order Partially Cancelled', 'Dear {name}, some items in your order have been cancelled.', [
+                            'Order Number' => '{order_number}',
+                            'Cancelled Items' => '{cancelled_items}',
+                            'Refund Amount' => '{refund_amount}',
+                        ], 'View Order', '{order_url}', 'This email was sent from {app_name}.'),
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'is_active' => true,
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '주문 부분 취소', 'en' => 'Order Partially Cancelled'],
+                    'body' => [
+                        'ko' => '주문 {order_number}의 일부 상품({cancelled_items})이 취소되었습니다.',
+                        'en' => 'Some items ({cancelled_items}) in order {order_number} have been cancelled.',
+                    ],
+                    'click_url' => '{order_url}',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 리뷰 답글 알림 정의 (#952).
+     *
+     * 관리자가 리뷰에 처음 답글을 달 때 리뷰를 쓴 회원에게 보낸다(수정에는 보내지 않는다). 선례: 문의 답변 `inquiry_replied`.
+     *
+     * @return array<string, mixed> 알림 정의
+     */
+    private function reviewRepliedDefinition(): array
+    {
+        return [
+            'type' => 'review_replied',
+            'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'customer',
+            'name' => ['ko' => '리뷰 답글', 'en' => 'Review Replied'],
+            'description' => ['ko' => '작성한 상품 리뷰에 판매자 답글이 달리면 작성자에게 발송', 'en' => 'Sent to the reviewer when the seller replies to their product review'],
+            'channels' => ['mail', 'database'],
+            'hooks' => ['sirsoft-ecommerce.product-review.after_reply'],
+            'variables' => [
+                ['key' => 'name', 'description' => '수신자 이름'],
+                ['key' => 'app_name', 'description' => '사이트 이름'],
+                ['key' => 'product_name', 'description' => '상품명'],
+                ['key' => 'reply_excerpt', 'description' => '답글 앞부분'],
+                ['key' => 'reviews_url', 'description' => '내 리뷰 URL'],
+                ['key' => 'reviews_path', 'description' => '내 리뷰 경로 (사이트 주소 없이)'],
+                ['key' => 'site_url', 'description' => '사이트 URL'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'is_active' => false,
+                    'recipients' => [['type' => 'related_user', 'relation' => 'author']],
+                    'subject' => [
+                        'ko' => '[{app_name}] 작성하신 리뷰에 답글이 달렸습니다',
+                        'en' => '[{app_name}] Your review has a new reply',
+                    ],
+                    'body' => [
+                        'ko' => $this->simpleMailBody('리뷰 답글 안내', '{name}님, 작성하신 리뷰에 판매자 답글이 달렸습니다.', [
+                            '상품' => '{product_name}',
+                            '답글' => '{reply_excerpt}',
+                        ], '내 리뷰 보기', '{reviews_url}', '본 메일은 {app_name}에서 발송되었습니다.'),
+                        'en' => $this->simpleMailBody('Review Reply', 'Dear {name}, the seller replied to your review.', [
+                            'Product' => '{product_name}',
+                            'Reply' => '{reply_excerpt}',
+                        ], 'View My Reviews', '{reviews_url}', 'This email was sent from {app_name}.'),
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'is_active' => true,
+                    'recipients' => [['type' => 'related_user', 'relation' => 'author']],
+                    'subject' => ['ko' => '리뷰 답글', 'en' => 'Review Reply'],
+                    'body' => [
+                        'ko' => '{product_name} 리뷰에 판매자 답글이 달렸습니다.',
+                        'en' => 'The seller replied to your review of {product_name}.',
+                    ],
+                    'click_url' => '{reviews_path}',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 항목 몇 줄과 버튼 하나로 된 알림 메일 본문을 만듭니다. (#952 새 알림 공용)
+     *
+     * @param  string  $heading  제목
+     * @param  string  $intro  첫 문단
+     * @param  array<string, string>  $rows  항목 이름 => 값(변수)
+     * @param  string  $buttonText  버튼 글자
+     * @param  string  $buttonUrl  버튼 링크(변수)
+     * @param  string  $footer  맺음 문구
+     * @return string HTML 본문
+     */
+    private function simpleMailBody(string $heading, string $intro, array $rows, string $buttonText, string $buttonUrl, string $footer): string
+    {
+        $lines = '';
+        foreach ($rows as $label => $value) {
+            $lines .= '<p style="margin:5px 0"><strong>'.$label.':</strong> '.$value.'</p>';
+        }
+
+        return '<div style="font-family:\'Malgun Gothic\',Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">'
+            .'<h2 style="color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px">'.$heading.'</h2>'
+            .'<p style="color:#555;line-height:1.6">'.$intro.'</p>'
+            .'<div style="background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0">'.$lines.'</div>'
+            .$this->notificationButton($buttonText, $buttonUrl)
+            .'<hr style="border:none;border-top:1px solid #eee;margin:20px 0">'
+            .'<p style="color:#999;font-size:12px">'.$footer.'</p>'
+            .'</div>';
     }
 
     /**
@@ -4111,6 +4549,10 @@ class Module extends AbstractModule
     {
         return [
             GrantSignupMileageListener::class,
+            // 쿠폰 자동발급(#952) — 가입(sync)·첫구매(큐) 발급과 첫구매 회수
+            GrantSignupCouponListener::class,
+            FirstPurchaseCouponListener::class,
+            CouponIssueNotificationListener::class,
             StripBusinessInfoWhenHiddenListener::class,
             SyncProductFromOptionListener::class,
             SyncOptionGroupsListener::class,
@@ -4275,6 +4717,27 @@ class Module extends AbstractModule
                 'frequency' => 'daily',
                 'expression' => '0 0 * * *',
                 'enabled_condition' => $setting('mileage.expiry_notification_enabled'),
+            ],
+            [
+                'name' => 'issue-birthday-coupons',
+                'type' => 'artisan',
+                'label' => ['ko' => '생일 쿠폰 발급', 'en' => 'Issue birthday coupons'],
+                // 생일 항목을 지정하지 않으면 돌지 않는다. 같은 날 다시 돌아도 발급 키 유니크로 1회다 (#952)
+                'description' => ['ko' => '생일인 회원에게 생일 쿠폰을 발급합니다(쿠폰 설정에서 생일 항목을 지정한 경우만).', 'en' => 'Issues birthday coupons to members whose birthday is today (only when a birthday field is set in coupon settings).'],
+                'command' => 'sirsoft-ecommerce:issue-birthday-coupons',
+                'frequency' => 'daily',
+                'expression' => '5 0 * * *',
+                'enabled_condition' => $setting('promotion.birthday_field_key'),
+            ],
+            [
+                'name' => 'notify-expiring-coupons',
+                'type' => 'artisan',
+                'label' => ['ko' => '쿠폰 만료 임박 알림', 'en' => 'Notify expiring coupons'],
+                'description' => ['ko' => '곧 만료되는 쿠폰을 회원에게 알립니다(만료 임박 알림을 켠 경우만).', 'en' => 'Notifies members of coupons about to expire (only when expiry notices are enabled).'],
+                'command' => 'sirsoft-ecommerce:notify-expiring-coupons',
+                'frequency' => 'daily',
+                'expression' => '10 0 * * *',
+                'enabled_condition' => $setting('promotion.coupon_expiry_notification_enabled'),
             ],
             [
                 'name' => 'reconcile-mileage-balance',

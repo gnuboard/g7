@@ -122,4 +122,16 @@ describe('봇 화면 메뉴 링크 (#434)', () => {
     expect(links[1].label).toBe('공지');
     expect(links[2].label).toBe('자유');
   });
+
+  // @scenario case=header_menu
+  // @effects header_menu_seo_links
+  it('자동 항목 「쿠폰존」도 쇼핑 주소 아래 쿠폰존 링크로 펴진다 (#952)', () => {
+    const seoExpr = String(header.props.seoMenuLinks).replace(/^\{\{/, '').replace(/\}\}$/, '');
+    const links = dataBindingEngine.evaluateExpression(seoExpr, {
+      _computed: { siteMenu: [{ id: 'coupons', kind: 'coupons', label: { ko: '이달의 쿠폰' }, children: [] }] },
+      _global: { shopBase: '/store' },
+    } as any) as Array<{ href: string; label: string }>;
+
+    expect(links).toEqual([{ href: '/store/coupons', label: '이달의 쿠폰' }]);
+  });
 });

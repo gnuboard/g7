@@ -569,4 +569,19 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
             ->where('product_id', $productId)
             ->get();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function paginateByUser(int $userId, int $perPage = 10): LengthAwarePaginator
+    {
+        return $this->model->newQuery()
+            ->with(['product', 'images', 'orderOption.order'])
+            ->withCount('images as image_count')
+            ->where('user_id', $userId)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            // audit:allow repository-paginate-column-pruning reason: 회원 한 명이 쓴 리뷰만 고른다 — 행 수가 그 회원의 작성 행위에 묶여 OFFSET 이 깊어지지 않고, 카드가 리뷰 본문·옵션·답글을 모두 그린다
+            ->paginate($perPage);
+    }
 }

@@ -173,6 +173,10 @@
         {
             "comment": "회원 탈퇴 확인 창 — 되돌릴 수 없는 동작이라 별도 창에서 한 번 더 받는다",
             "partial": "partials/mypage/profile/_modal_withdraw.json"
+        },
+        {
+            "comment": "모든 기기에서 로그아웃 확인 (#952)",
+            "partial": "partials/mypage/profile/_modal_logout_all_devices.json"
         }
     ]
 }

@@ -18,7 +18,10 @@
         "notifications": "Notifications",
         "inquiries": "Inquiries",
         "mileage": "Mileage",
-        "claims": "Claims"
+        "claims": "Claims",
+        "coupons": "Coupons",
+        "reviews": "Reviews",
+        "activity": "Activity"
     },
     "currency_settings": {
         "save_button": "Save",
@@ -545,5 +548,74 @@
         "confirm_checkbox": "I understand and agree to delete my account.",
         "confirm_button": "Delete Account",
         "success": "Account has been deleted."
+    },
+    "coupons": {
+        "tabs": {
+            "available": "Available",
+            "used": "Used",
+            "expired": "Expired"
+        },
+        "total": "{{count}} coupons",
+        "total_one": "{{count}} coupon",
+        "deleted_coupon": "Deleted coupon",
+        "min_order": "Min. order {{amount}}",
+        "no_min_order": "none",
+        "scope_all": "All products",
+        "scope_products": "Products: {{names}}",
+        "scope_categories": "Categories: {{names}}",
+        "and_more": "and {{count}} more",
+        "combinable": "Combinable",
+        "expires_until": "Valid until {{date}}",
+        "no_expiry": "No expiry",
+        "used_info": "Used {{date}} · Order {{order}}",
+        "dday_today": "Today",
+        "empty": {
+            "available": "No coupons available",
+            "used": "No used coupons",
+            "expired": "No expired coupons"
+        },
+        "go_coupon_zone": "Go to Coupon Zone"
+    },
+    "reviews": {
+        "total": "{{count}} reviews",
+        "total_one": "{{count}} review",
+        "deleted_product": "Discontinued product",
+        "rating_label": "Rated {{rating}}",
+        "delete": "Delete",
+        "seller_reply": "Seller reply",
+        "empty": "You haven't written any reviews",
+        "delete_modal": {
+            "title": "Delete review",
+            "message": "Delete your review of \"{{product}}\"?",
+            "warning": "Attached photos are deleted too. This cannot be undone.",
+            "success": "Review deleted.",
+            "failed": "Failed to delete the review."
+        }
+    },
+    "activity": {
+        "date_from": "From",
+        "date_to": "To",
+        "search": "Search",
+        "total": "{{count}} records",
+        "total_one": "{{count}} record",
+        "table": {
+            "date": "Date",
+            "action": "Activity",
+            "description": "Details"
+        },
+        "empty": "No activity yet"
+    },
+    "security": {
+        "title": "Security",
+        "logout_all": {
+            "label": "Log out of all devices",
+            "description": "Log out of every device where you are signed in, including this one.",
+            "button": "Log out of all devices",
+            "modal_title": "Log out of all devices",
+            "confirm_message": "You will be logged out of every device, including this one. Continue?",
+            "confirm_button": "Log out",
+            "success": "Logged out of all devices.",
+            "failed": "Could not log out. Please try again later."
+        }
     }
 }

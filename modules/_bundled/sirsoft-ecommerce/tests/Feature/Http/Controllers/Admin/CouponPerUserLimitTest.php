@@ -22,6 +22,11 @@ class CouponPerUserLimitTest extends ModuleTestCase
 {
     protected User $adminUser;
 
+    /**
+     * 쿠폰 조회·등록·수정 권한 관리자를 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -38,8 +43,8 @@ class CouponPerUserLimitTest extends ModuleTestCase
     /**
      * 쿠폰 생성 시 필요한 기본 데이터
      *
-     * @param array $overrides 오버라이드할 속성
-     * @return array
+     * @param  array<string, mixed>  $overrides  덮어쓸 속성
+     * @return array<string, mixed> 쿠폰 등록 입력
      */
     private function validCouponData(array $overrides = []): array
     {
@@ -51,8 +56,10 @@ class CouponPerUserLimitTest extends ModuleTestCase
             'discount_value' => 10,
             'min_order_amount' => 1000,
             'discount_max_amount' => 5000,
-            'issue_method' => CouponIssueMethod::AUTO->value,
-            'issue_condition' => CouponIssueCondition::FIRST_PURCHASE->value,
+            // 회원당 한도 칸 검증은 직접발급 쿠폰으로 본다 — 자동발급은 한도를 0 으로 고정한다(#952 §4.5,
+            // CouponAutoIssueValidationTest 가 따로 지킨다)
+            'issue_method' => CouponIssueMethod::DIRECT->value,
+            'issue_condition' => CouponIssueCondition::MANUAL->value,
             'issue_status' => CouponIssueStatus::ISSUING->value,
             'total_quantity' => 100,
             'per_user_limit' => 1,
@@ -70,6 +77,12 @@ class CouponPerUserLimitTest extends ModuleTestCase
 
     /**
      * per_user_limit=0(무제한)으로 쿠폰을 생성할 수 있습니다.
+     *
+     * @scenario case=limit_zero
+     *
+     * @effects per_user_limit_zero_saved
+     *
+     * @return void 반환값 없음
      */
     public function test_store_coupon_with_per_user_limit_zero(): void
     {
@@ -86,6 +99,12 @@ class CouponPerUserLimitTest extends ModuleTestCase
 
     /**
      * per_user_limit=양수로 쿠폰을 생성할 수 있습니다.
+     *
+     * @scenario case=limit_positive
+     *
+     * @effects per_user_limit_positive_saved
+     *
+     * @return void 반환값 없음
      */
     public function test_store_coupon_with_per_user_limit_positive(): void
     {
@@ -106,6 +125,12 @@ class CouponPerUserLimitTest extends ModuleTestCase
 
     /**
      * per_user_limit가 누락되면 검증 실패합니다.
+     *
+     * @scenario case=limit_missing
+     *
+     * @effects per_user_limit_required
+     *
+     * @return void 반환값 없음
      */
     public function test_store_coupon_fails_without_per_user_limit(): void
     {
@@ -121,6 +146,12 @@ class CouponPerUserLimitTest extends ModuleTestCase
 
     /**
      * per_user_limit가 null이면 검증 실패합니다.
+     *
+     * @scenario case=limit_null
+     *
+     * @effects per_user_limit_required
+     *
+     * @return void 반환값 없음
      */
     public function test_store_coupon_fails_with_null_per_user_limit(): void
     {
@@ -135,6 +166,12 @@ class CouponPerUserLimitTest extends ModuleTestCase
 
     /**
      * per_user_limit가 음수이면 검증 실패합니다.
+     *
+     * @scenario case=limit_negative
+     *
+     * @effects per_user_limit_non_negative
+     *
+     * @return void 반환값 없음
      */
     public function test_store_coupon_fails_with_negative_per_user_limit(): void
     {

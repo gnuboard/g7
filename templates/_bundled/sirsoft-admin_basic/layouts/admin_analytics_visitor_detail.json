@@ -121,17 +121,46 @@
                             {
                                 "type": "basic",
                                 "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "text-2xl font-semibold text-gray-900 dark:text-white"
+                                                }
+                                            }
+                                        },
+                                        "props": {
+                                            "className": "text-xl font-semibold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:admin.analytics.visitor_detail.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-label-subtle mt-1 font-mono break-all"
+                                        },
+                                        "text": "{{route?.key ?? ''}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-3"
+                                    "className": "flex-center gap-2"
                                 },
                                 "children": [
                                     {
+                                        "comment": "목록으로 — 다른 상세 화면(사용자·페이지 상세)처럼 오른쪽 버튼 줄 첫 자리. 질의를 병합해 돌아가므로\n               목록에서 들고 온 기간·검색어·유형·쪽이 그대로 살아난다.",
                                         "id": "back_button",
                                         "type": "basic",
                                         "name": "A",
                                         "actions": [
                                             {
-                                                "comment": "목록으로 — 질의를 병합해 돌아가므로 목록에서 들고 온 기간·검색어·유형·쪽이 그대로 살아난다.",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
@@ -143,8 +172,7 @@
                                         "props": {
                                             "href": "/admin/analytics/visitors",
                                             "mergeQuery": true,
-                                            "className": "button btn-icon",
-                                            "aria-label": "$t:admin.analytics.visitor_detail.back"
+                                            "className": "button btn btn-secondary btn-sm flex-center gap-1.5"
                                         },
                                         "children": [
                                             {
@@ -152,49 +180,16 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "arrow-left",
-                                                    "className": "text-xl"
+                                                    "size": "sm"
                                                 }
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "type": "basic",
-                                        "name": "Div",
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "H1",
-                                                "responsive": {
-                                                    "640-": {
-                                                        "props": {
-                                                            "className": "text-2xl font-semibold text-gray-900 dark:text-white"
-                                                        }
-                                                    }
-                                                },
-                                                "props": {
-                                                    "className": "text-xl font-semibold text-gray-900 dark:text-white"
-                                                },
-                                                "text": "$t:admin.analytics.visitor_detail.title"
                                             },
                                             {
                                                 "type": "basic",
-                                                "name": "P",
-                                                "props": {
-                                                    "className": "text-label-subtle mt-1 font-mono break-all"
-                                                },
-                                                "text": "{{route?.key ?? ''}}"
+                                                "name": "Span",
+                                                "text": "$t:admin.analytics.visitor_detail.back"
                                             }
                                         ]
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                    "className": "flex-center gap-2"
-                                },
-                                "children": [
+                                    },
                                     {
                                         "comment": "blob 저장은 응답 헤더의 파일명을 쓰지 못해 화면이 준 이름이 이긴다 — 서버 규약\n               (`analytics-visitor-{key}-{from}_{to}.csv`, 기간이 없으면 접미 없음)을 주소와 같은 값으로\n               따르는 `csvFilename` 을 넘긴다. 기간을 빼면 같은 사람을 두 기간으로 받은 파일이 같은 이름이\n               된다(#682 S3 라운드 13).",
                                         "id": "visitor_csv_button",

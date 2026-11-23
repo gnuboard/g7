@@ -108,6 +108,7 @@ use App\Extension\TemplateManager;
 use App\Fields\FieldRegistry;
 use App\Fields\FieldSetRegistry;
 use App\Fields\FieldTypeRegistry;
+use App\Identity\IdentityCheckpointRegistry;
 use App\Listeners\ExtensionCompatibilityAlertListener;
 use App\Listeners\Identity\EnforceIdentityPolicyListener;
 use App\Models\User;
@@ -507,6 +508,8 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->scoped(FieldSetRegistry::class);
         $this->app->scoped(FieldTypeRegistry::class);
         $this->app->scoped(FieldRegistry::class);
+        // 본인인증 「사용자 지정」 확장 지점 — 활성 확장 선언을 요청 단위로 한 번만 모은다 (7.2.1, #952)
+        $this->app->scoped(IdentityCheckpointRegistry::class);
 
         // 표시 이름 — 종류와 영역 등록소는 확장 활성 상태를, 계산기와 값 메모는 요청 안에서 읽어 둔 값을 가지므로 요청 단위다.
         $this->app->scoped(DisplayNameKindRegistry::class);

@@ -684,5 +684,11 @@
   "quick_option": {
     "title": "Choose options",
     "view_detail": "View details"
+  },
+  "coupon_zone": {
+    "title": "Coupon Zone",
+    "login_hint": "Log in to get coupons",
+    "count": "{{count}} coupons available",
+    "count_one": "{{count}} coupon available"
   }
 }

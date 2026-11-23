@@ -2,7 +2,9 @@
 
 namespace App\Http\Resources\Identity;
 
+use App\Enums\IdentityPolicyScope;
 use App\Http\Resources\BaseApiResource;
+use App\Identity\IdentityCheckpointRegistry;
 use Illuminate\Http\Request;
 
 /**
@@ -23,6 +25,18 @@ class PolicyResource extends BaseApiResource
             'can_update' => 'core.admin.identity.policies.update',
             'can_delete' => 'core.admin.identity.policies.update',
         ];
+    }
+
+    /**
+     * 범위 값을 문자열로 반환합니다. (캐스트 여부와 무관하게)
+     *
+     * @return string 범위 값
+     */
+    private function scopeValue(): string
+    {
+        $scope = $this->scope;
+
+        return $scope instanceof \BackedEnum ? (string) $scope->value : (string) $scope;
     }
 
     /**
@@ -49,6 +63,10 @@ class PolicyResource extends BaseApiResource
             'applies_to' => $this->applies_to,
             'fail_mode' => $this->fail_mode,
             'user_overrides' => $this->user_overrides ?? [],
+            // 범위가 「사용자 지정」일 때 대상이 활성 확장이 선언한 확장 지점인지 (아니면 어디서도 강제되지 않는다, 7.2.1)
+            'checkpoint_registered' => $this->scopeValue() === IdentityPolicyScope::Custom->value
+                ? app(IdentityCheckpointRegistry::class)->has((string) $this->target)
+                : null,
             ...$this->formatTimestamps(),
             ...$this->resourceMeta($request),
         ];

@@ -151,6 +151,7 @@ database-guide 규정입니다. 자격증명 파기 경로를 새로 만든다�
 | 대상 | 설명 |
 |---|---|
 | `resources/extensions/admin_user_totp_card.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_user_detail` |
+| `resources/extensions/mypage_totp_card.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `mypage/profile` |
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->

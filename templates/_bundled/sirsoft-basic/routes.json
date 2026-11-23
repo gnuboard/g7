@@ -142,6 +142,16 @@
       }
     },
     {
+      "_comment": "쿠폰존 — 받을 수 있는 쿠폰 목록(#952). 비회원도 보고, 받기는 로그인 안내 창",
+      "path": "/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/coupons",
+      "layout": "shop/coupons",
+      "requires": {"modules": ["sirsoft-ecommerce"]},
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.shop.coupons_title"
+      }
+    },
+    {
       "path": "/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/category/:slug",
       "layout": "shop/category",
       "requires": {"modules": ["sirsoft-ecommerce"]},
@@ -354,6 +364,32 @@
       "auth_required": true,
       "meta": {
         "title": "$t:user.mypage.mileage_title"
+      }
+    },
+    {
+      "path": "/mypage/coupons",
+      "layout": "mypage/coupons",
+      "requires": {"modules": ["sirsoft-ecommerce"]},
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.coupons_title"
+      }
+    },
+    {
+      "path": "/mypage/reviews",
+      "layout": "mypage/reviews",
+      "requires": {"modules": ["sirsoft-ecommerce"]},
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.reviews_title"
+      }
+    },
+    {
+      "path": "/mypage/activity",
+      "layout": "mypage/activity",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.activity_title"
       }
     },
     {

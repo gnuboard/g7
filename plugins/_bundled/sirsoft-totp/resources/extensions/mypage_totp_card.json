@@ -1,0 +1,1094 @@
+{
+    "comment": "마이페이지 «내 정보» 보안 카드에 2단계 인증(인증 앱) 칸을 끼워 넣는 조각 (#952).\n  기본 템플릿의 보안 카드(`profile_security_card`)가 이 조각의 앵커다 — 템플릿을 고치지 않으므로 이 플러그인을 끄면 칸도 사라진다.\n  등록·확정·해제·백업 코드 재발급 흐름은 관리자 「내 보안」 화면과 같은 API·같은 마크업이다(이 파일은 그 화면의 카드들을 옮긴 것).\n  비밀번호가 없는 회원(소셜 로그인 전용)은 등록 시작에 현재 비밀번호를 요구하므로 등록할 수 없다 — 「비밀번호를 먼저 설정하세요」 안내와\n  비밀번호 설정 화면 링크만 보인다. 상태 값은 호스트 화면의 `user.data.has_password` 와 이 조각의 `totpEnrollment` 다.",
+    "target_layout": "mypage/profile",
+    "priority": 110,
+    "data_sources": [
+        {
+            "id": "totpEnrollment",
+            "label_key": "$t:sirsoft-totp.editor.data_source.totpEnrollment",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-totp/enrollment",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": {
+                    "enrolled": false,
+                    "pending": false,
+                    "confirmed_at": null,
+                    "backup_codes_remaining": 0
+                }
+            },
+            "comment": "내 등록 상태 — 실패해도 화면은 미등록으로 그린다"
+        }
+    ],
+    "injections": [
+        {
+            "target_id": "profile_security_card",
+            "position": "append_child",
+            "components": [
+                {
+                    "id": "mypage_totp_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "totp:mt-6 totp:pt-6 totp:border-t totp:border-gray-200 totp:dark:border-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "totp:flex totp:flex-wrap totp:items-center totp:justify-between totp:gap-2 totp:mb-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "totp:text-sm totp:font-medium totp:text-gray-900 totp:dark:text-white"
+                                    },
+                                    "text": "$t:sirsoft-totp.user.security.section_title"
+                                },
+                                {
+                                    "id": "mypage_totp_status",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "{{totpEnrollment?.data?.enrolled ? 'totp:bg-green-100 totp:text-green-800 totp:dark:bg-green-900/30 totp:dark:text-green-300' : 'totp:bg-gray-100 totp:text-gray-700 totp:dark:bg-gray-700 totp:dark:text-gray-300'}} totp:inline-flex totp:items-center totp:px-2.5 totp:py-0.5 totp:rounded-full totp:text-xs totp:font-medium"
+                                    },
+                                    "text": "{{totpEnrollment?.data?.enrolled ? '$t:sirsoft-totp.user.security.status_enabled' : '$t:sirsoft-totp.user.security.status_disabled'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "비밀번호가 없는 회원 — 등록할 수 없다",
+                            "id": "mypage_totp_no_password",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{user !== undefined && totpEnrollment !== undefined && user?.data?.has_password === false && !totpEnrollment?.data?.enrolled}}",
+                            "props": {
+                                "className": "totp:flex totp:flex-wrap totp:items-center totp:gap-2 totp:p-3 totp:rounded-lg totp:bg-amber-50 totp:dark:bg-amber-900/20 totp:border totp:border-amber-200 totp:dark:border-amber-800"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "totp:text-sm totp:text-amber-800 totp:dark:text-amber-200"
+                                    },
+                                    "text": "$t:sirsoft-totp.user.security.password_required"
+                                },
+                                {
+                                    "id": "mypage_totp_set_password_link",
+                                    "type": "basic",
+                                    "name": "A",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/mypage/change-password"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "href": "/mypage/change-password",
+                                        "className": "totp:text-sm totp:font-medium totp:text-amber-900 totp:dark:text-amber-100 totp:underline"
+                                    },
+                                    "text": "$t:sirsoft-totp.user.security.set_password"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "mypage_totp_body",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{user !== undefined && totpEnrollment !== undefined && (user?.data?.has_password !== false || !!totpEnrollment?.data?.enrolled)}}",
+                            "children": [
+                                {
+                                    "id": "mypage_totp_error",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_local.totpError}}",
+                                    "props": {
+                                        "className": "totp-alert-danger totp:mb-4",
+                                        "role": "alert"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "mypage_totp_error_text",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "totp:text-sm totp:text-red-700 totp:dark:text-red-400"
+                                            },
+                                            "text": "{{_local.totpError ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "이미 등록을 마친 상태 — 해제와 백업 코드 재발급만 남는다.",
+                                    "id": "mypage_totp_enrolled_card",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{totpEnrollment?.data?.enrolled && !_local.totpBackupCodes}}",
+                                    "props": {
+                                        "className": "totp:mt-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "mypage_totp_enrolled_title",
+                                            "type": "basic",
+                                            "name": "H3",
+                                            "props": {
+                                                "className": "totp-card-title"
+                                            },
+                                            "text": "$t:sirsoft-totp.admin.security.enrolled.title"
+                                        },
+                                        {
+                                            "id": "mypage_totp_enrolled_desc",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "totp-card-description"
+                                            },
+                                            "text": "$t:sirsoft-totp.admin.security.enrolled.description"
+                                        },
+                                        {
+                                            "id": "mypage_totp_enrolled_since",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{totpEnrollment?.data?.confirmed_at}}",
+                                            "props": {
+                                                "className": "totp-text-hint"
+                                            },
+                                            "text": "$t:sirsoft-totp.admin.security.enrolled.since|at={{totpEnrollment?.data?.confirmed_at | datetime}}"
+                                        },
+                                        {
+                                            "id": "mypage_totp_backup_remaining",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "totp-text-hint totp:mt-1"
+                                            },
+                                            "text": "$t:sirsoft-totp.admin.security.enrolled.backup_remaining|count={{totpEnrollment?.data?.backup_codes_remaining ?? 0}}"
+                                        },
+                                        {
+                                            "id": "mypage_totp_enrolled_field",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "totp:mt-4"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "mypage_totp_enrolled_label",
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "htmlFor": "mypage_totp_manage_code",
+                                                        "className": "totp-form-label"
+                                                    },
+                                                    "text": "$t:sirsoft-totp.admin.security.enrolled.code_label"
+                                                },
+                                                {
+                                                    "id": "mypage_totp_enrolled_input",
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "해제·재발급에 쓸 현재 앱 코드(또는 백업 코드)를 담는다 — 입력을 고치는 순간 이전 실패 문구를 지운다",
+                                                            "event": "onChange",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "totpCode": "{{$event.target.value}}",
+                                                                "totpError": null
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "id": "mypage_totp_manage_code",
+                                                        "type": "text",
+                                                        "name": "mypage_totp_manage_code",
+                                                        "value": "{{_local.totpCode ?? ''}}",
+                                                        "inputMode": "numeric",
+                                                        "autoComplete": "one-time-code",
+                                                        "maxLength": "16",
+                                                        "placeholder": "$t:sirsoft-totp.admin.security.enrolled.code_placeholder",
+                                                        "className": "totp-input totp:font-mono",
+                                                        "disabled": "{{_local.totpBusy}}"
+                                                    }
+                                                },
+                                                {
+                                                    "id": "mypage_totp_enrolled_hint",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "totp-text-hint totp:mt-1"
+                                                    },
+                                                    "text": "$t:sirsoft-totp.admin.security.enrolled.code_hint"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "mypage_totp_enrolled_actions",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "totp:flex totp:flex-row totp:gap-2 totp:mt-4"
+                                                    }
+                                                }
+                                            },
+                                            "props": {
+                                                "className": "totp:flex totp:flex-col totp:gap-2 totp:mt-4"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "mypage_totp_regenerate",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "백업 코드 재발급 — 성공하면 새 코드를 1회 노출 화면으로 띄우고 입력값을 비운다. 서버가 6자 이상만 받으므로(앞뒤 공백 제외) 그 전에는 버튼이 잠긴다(해제 버튼도 같다).",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "totpBusy": true,
+                                                                        "totpError": null
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "apiCall",
+                                                                    "target": "/api/plugins/sirsoft-totp/backup-codes/regenerate",
+                                                                    "auth_required": true,
+                                                                    "params": {
+                                                                        "method": "POST",
+                                                                        "body": {
+                                                                            "code": "{{_local.totpCode}}"
+                                                                        }
+                                                                    },
+                                                                    "onSuccess": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "totpBusy": false,
+                                                                                "totpCode": "",
+                                                                                "totpBackupCodes": "{{response.data.backup_codes}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "refetchDataSource",
+                                                                            "params": {
+                                                                                "dataSourceId": "totpEnrollment"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "onError": {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "totpBusy": false,
+                                                                            "totpError": "{{error.message}}"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "totp:px-4 totp:py-2 totp:bg-white totp:dark:bg-gray-700 totp-text-body totp:border totp:border-gray-300 totp:dark:border-gray-600 totp:rounded-lg totp:hover:bg-gray-50 totp:dark:hover:bg-gray-600 totp:font-medium totp:transition-colors totp:cursor-pointer totp:disabled:opacity-50 totp:disabled:cursor-not-allowed",
+                                                        "disabled": "{{String(_local.totpCode ?? '').trim().length < 6 || _local.totpBusy}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "id": "mypage_totp_regenerate_text",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-totp.admin.security.enrolled.regenerate"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "mypage_totp_disable",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "해제 — 해제에도 현재 코드를 요구한다(열린 세션만으로 2단계 인증을 끄지 못하게).",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "totpBusy": true,
+                                                                        "totpError": null
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "apiCall",
+                                                                    "target": "/api/plugins/sirsoft-totp/enrollment",
+                                                                    "auth_required": true,
+                                                                    "params": {
+                                                                        "method": "DELETE",
+                                                                        "body": {
+                                                                            "code": "{{_local.totpCode}}"
+                                                                        }
+                                                                    },
+                                                                    "onSuccess": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "totpBusy": false,
+                                                                                "totpCode": "",
+                                                                                "totpSecret": null,
+                                                                                "totpOtpauthUri": null,
+                                                                                "totpBackupCodes": null
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "toast",
+                                                                            "params": {
+                                                                                "type": "success",
+                                                                                "message": "{{response.message}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "refetchDataSource",
+                                                                            "params": {
+                                                                                "dataSourceId": "totpEnrollment"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "onError": {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "totpBusy": false,
+                                                                            "totpError": "{{error.message}}"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "totp:px-4 totp:py-2 totp:bg-red-600 totp:hover:bg-red-700 totp:dark:bg-red-600 totp:dark:hover:bg-red-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer totp:disabled:opacity-50 totp:disabled:cursor-not-allowed",
+                                                        "disabled": "{{String(_local.totpCode ?? '').trim().length < 6 || _local.totpBusy}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "id": "mypage_totp_disable_text",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-totp.admin.security.enrolled.disable"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "등록 시작 전 — 안내와 시작 버튼만.",
+                                    "id": "mypage_totp_intro_card",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{totpEnrollment !== undefined && !totpEnrollment?.data?.enrolled && !_local.totpSecret && !_local.totpBackupCodes}}",
+                                    "props": {
+                                        "className": "totp:mt-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "mypage_totp_intro_title",
+                                            "type": "basic",
+                                            "name": "H3",
+                                            "props": {
+                                                "className": "totp-card-title"
+                                            },
+                                            "text": "$t:sirsoft-totp.admin.security.intro.title"
+                                        },
+                                        {
+                                            "id": "mypage_totp_intro_desc",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "totp-card-description"
+                                            },
+                                            "text": "$t:sirsoft-totp.admin.security.intro.description"
+                                        },
+                                        {
+                                            "id": "mypage_totp_intro_steps",
+                                            "type": "basic",
+                                            "name": "Ol",
+                                            "props": {
+                                                "className": "totp:list-decimal totp:list-inside totp:text-sm totp:text-gray-700 totp:dark:text-gray-300 totp:space-y-1 totp:mt-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "mypage_totp_intro_step1",
+                                                    "type": "basic",
+                                                    "name": "Li",
+                                                    "text": "$t:sirsoft-totp.admin.security.intro.step_install"
+                                                },
+                                                {
+                                                    "id": "mypage_totp_intro_step2",
+                                                    "type": "basic",
+                                                    "name": "Li",
+                                                    "text": "$t:sirsoft-totp.admin.security.intro.step_scan"
+                                                },
+                                                {
+                                                    "id": "mypage_totp_intro_step3",
+                                                    "type": "basic",
+                                                    "name": "Li",
+                                                    "text": "$t:sirsoft-totp.admin.security.intro.step_confirm"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "mypage_totp_intro_password_field",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "totp:mt-4"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "mypage_totp_intro_password_label",
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "htmlFor": "mypage_totp_current_password",
+                                                        "className": "totp-form-label"
+                                                    },
+                                                    "text": "$t:sirsoft-totp.admin.security.intro.password_label"
+                                                },
+                                                {
+                                                    "id": "mypage_totp_intro_password_input",
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "등록 시작에 쓸 현재 비밀번호를 담는다(1.0.3 — 열린 세션만으로 인증 앱을 바꾸지 못하게) — 입력을 고치는 순간 이전 실패 문구를 지운다",
+                                                            "event": "onChange",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "totpCurrentPassword": "{{$event.target.value}}",
+                                                                "totpError": null,
+                                                                "totpPasswordError": null
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "id": "mypage_totp_current_password",
+                                                        "type": "password",
+                                                        "name": "mypage_totp_current_password",
+                                                        "value": "{{_local.totpCurrentPassword ?? ''}}",
+                                                        "autoComplete": "current-password",
+                                                        "maxLength": "255",
+                                                        "placeholder": "$t:sirsoft-totp.admin.security.intro.password_placeholder",
+                                                        "className": "totp-input",
+                                                        "disabled": "{{_local.totpBusy}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "비밀번호가 틀리면(422) 칸 바로 아래에 서버 문구를 보인다 — 입력값은 남겨 오타만 고쳐 다시 누를 수 있게 한다",
+                                                    "id": "mypage_totp_intro_password_error",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{_local.totpPasswordError}}",
+                                                    "props": {
+                                                        "className": "totp:text-sm totp:text-red-600 totp:dark:text-red-400 totp:mt-1",
+                                                        "role": "alert"
+                                                    },
+                                                    "text": "{{_local.totpPasswordError ?? ''}}"
+                                                },
+                                                {
+                                                    "id": "mypage_totp_intro_password_hint",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "totp-text-hint totp:mt-1"
+                                                    },
+                                                    "text": "$t:sirsoft-totp.admin.security.intro.password_hint"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "mypage_totp_start",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "시크릿 발급 — 응답의 평문은 이 시점에만 받는다. 현재 비밀번호를 함께 보내고, 성공하면 화면 상태에서 곧바로 비운다.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "totpBusy": true,
+                                                                "totpError": null,
+                                                                "totpPasswordError": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "target": "/api/plugins/sirsoft-totp/enrollment",
+                                                            "auth_required": true,
+                                                            "params": {
+                                                                "method": "POST",
+                                                                "body": {
+                                                                    "current_password": "{{_local.totpCurrentPassword}}"
+                                                                }
+                                                            },
+                                                            "onSuccess": {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "totpBusy": false,
+                                                                    "totpSecret": "{{response.data.secret}}",
+                                                                    "totpOtpauthUri": "{{response.data.otpauth_uri}}",
+                                                                    "totpCode": "",
+                                                                    "totpCurrentPassword": ""
+                                                                }
+                                                            },
+                                                            "onError": [
+                                                                {
+                                                                    "comment": "비밀번호 틀림(422)은 칸 아래, 그 밖(429 등)은 상단 상자. 회원별 횟수 초과(429)면 남은 대기 시간 동안 시작 버튼을 잠근다",
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "totpBusy": false,
+                                                                        "totpError": "{{error.status === 422 ? null : error.message}}",
+                                                                        "totpPasswordError": "{{error.status === 422 ? (error.errors?.current_password?.[0] ?? error.message) : null}}",
+                                                                        "totpStartLocked": "{{error.status === 429}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "comment": "잠금 해제는 1회 타이머 — 틱이 화면 상태를 읽지 않게(등록 시점 문맥으로 돈다) 해제·정지만 한다",
+                                                                    "handler": "startInterval",
+                                                                    "if": "{{error.status === 429}}",
+                                                                    "params": {
+                                                                        "id": "mypage_totp_start_unlock",
+                                                                        "intervalMs": "{{Math.max(1, Number(error.errors?.retry_after ?? 60)) * 1000}}",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "totpStartLocked": false
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "stopInterval",
+                                                                                "params": {
+                                                                                    "id": "mypage_totp_start_unlock"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "totp:mt-4 totp:px-4 totp:py-2 totp:bg-blue-600 totp:hover:bg-blue-700 totp:dark:bg-blue-600 totp:dark:hover:bg-blue-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer totp:disabled:opacity-50 totp:disabled:cursor-not-allowed",
+                                                "disabled": "{{!_local.totpCurrentPassword || _local.totpBusy || _local.totpStartLocked}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "mypage_totp_start_text",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-totp.admin.security.intro.start"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "등록 진행 중 — QR 과 수동 입력 키를 나란히 두고 확인 코드를 받는다.\n             데스크톱 2열, md 이하 1열(§디자인 C).",
+                                    "id": "mypage_totp_enroll_card",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_local.totpSecret && !_local.totpBackupCodes}}",
+                                    "props": {
+                                        "className": "totp:mt-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "mypage_totp_enroll_title",
+                                            "type": "basic",
+                                            "name": "H3",
+                                            "props": {
+                                                "className": "totp-card-title"
+                                            },
+                                            "text": "$t:sirsoft-totp.admin.security.enroll.title"
+                                        },
+                                        {
+                                            "id": "mypage_totp_enroll_grid",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "responsive": {
+                                                "tablet": {
+                                                    "props": {
+                                                        "className": "totp:grid totp:grid-cols-1 totp:gap-6 totp:mt-4"
+                                                    }
+                                                },
+                                                "mobile": {
+                                                    "props": {
+                                                        "className": "totp:grid totp:grid-cols-1 totp:gap-6 totp:mt-4"
+                                                    }
+                                                }
+                                            },
+                                            "props": {
+                                                "className": "totp:grid totp:grid-cols-2 totp:gap-6 totp:mt-4"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "mypage_totp_qr_column",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "comment": "QR 은 플러그인 번들의 인코더가 그린다 — 시크릿을 외부로 보내지 않는다.",
+                                                            "id": "mypage_totp_qr",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "totp-flex-center totp:p-4 totp:bg-white totp:rounded-lg totp:border totp:border-gray-200 totp:dark:border-gray-700",
+                                                                "data-totp-qr": "{{_local.totpOtpauthUri}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "id": "mypage_totp_qr_hint",
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "totp-text-hint totp:mt-2"
+                                                            },
+                                                            "text": "$t:sirsoft-totp.admin.security.enroll.qr_hint"
+                                                        },
+                                                        {
+                                                            "id": "mypage_totp_manual",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "totp:mt-4"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "id": "mypage_totp_manual_label",
+                                                                    "type": "basic",
+                                                                    "name": "Label",
+                                                                    "props": {
+                                                                        "className": "totp-form-label"
+                                                                    },
+                                                                    "text": "$t:sirsoft-totp.admin.security.enroll.manual_label"
+                                                                },
+                                                                {
+                                                                    "id": "mypage_totp_manual_key",
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "props": {
+                                                                        "type": "text",
+                                                                        "value": "{{_local.totpSecret ?? ''}}",
+                                                                        "disabled": true,
+                                                                        "className": "totp-input totp:font-mono totp:text-center totp:tracking-widest"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "id": "mypage_totp_manual_hint",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "props": {
+                                                                        "className": "totp-text-hint totp:mt-1"
+                                                                    },
+                                                                    "text": "$t:sirsoft-totp.admin.security.enroll.manual_hint"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "mypage_totp_confirm_column",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "id": "mypage_totp_enroll_desc",
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "totp:text-sm totp:text-gray-700 totp:dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:sirsoft-totp.admin.security.enroll.description"
+                                                        },
+                                                        {
+                                                            "id": "mypage_totp_confirm_field",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "totp:mt-4"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "id": "mypage_totp_confirm_label",
+                                                                    "type": "basic",
+                                                                    "name": "Label",
+                                                                    "props": {
+                                                                        "htmlFor": "mypage_totp_confirm_code",
+                                                                        "className": "totp-form-label"
+                                                                    },
+                                                                    "text": "$t:sirsoft-totp.admin.security.enroll.code_label"
+                                                                },
+                                                                {
+                                                                    "id": "mypage_totp_confirm_input",
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "등록 확정에 쓸 6자리 코드를 담는다 — 입력을 고치는 순간 이전 실패 문구를 지운다",
+                                                                            "event": "onChange",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "totpCode": "{{$event.target.value}}",
+                                                                                "totpError": null
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "id": "mypage_totp_confirm_code",
+                                                                        "type": "text",
+                                                                        "name": "mypage_totp_confirm_code",
+                                                                        "value": "{{_local.totpCode ?? ''}}",
+                                                                        "inputMode": "numeric",
+                                                                        "autoComplete": "one-time-code",
+                                                                        "maxLength": "6",
+                                                                        "placeholder": "$t:sirsoft-totp.admin.security.enroll.code_placeholder",
+                                                                        "className": "totp-input totp:py-3 totp:text-center totp:text-xl totp:tracking-widest totp:font-mono",
+                                                                        "disabled": "{{_local.totpBusy}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "id": "mypage_totp_enroll_actions",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "responsive": {
+                                                                "640-": {
+                                                                    "props": {
+                                                                        "className": "totp:flex totp:flex-row totp:gap-2 totp:mt-4"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "props": {
+                                                                "className": "totp:flex totp:flex-col totp:gap-2 totp:mt-4"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "id": "mypage_totp_confirm",
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "확정 — 성공하면 백업 코드 10개를 1회 노출 화면으로 넘긴다.",
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "totpBusy": true,
+                                                                                        "totpError": null
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "apiCall",
+                                                                                    "target": "/api/plugins/sirsoft-totp/enrollment/confirm",
+                                                                                    "auth_required": true,
+                                                                                    "params": {
+                                                                                        "method": "POST",
+                                                                                        "body": {
+                                                                                            "code": "{{_local.totpCode}}"
+                                                                                        }
+                                                                                    },
+                                                                                    "onSuccess": [
+                                                                                        {
+                                                                                            "handler": "setState",
+                                                                                            "params": {
+                                                                                                "target": "local",
+                                                                                                "totpBusy": false,
+                                                                                                "totpCode": "",
+                                                                                                "totpSecret": null,
+                                                                                                "totpOtpauthUri": null,
+                                                                                                "totpBackupCodes": "{{response.data.backup_codes}}"
+                                                                                            }
+                                                                                        },
+                                                                                        {
+                                                                                            "handler": "refetchDataSource",
+                                                                                            "params": {
+                                                                                                "dataSourceId": "totpEnrollment"
+                                                                                            }
+                                                                                        }
+                                                                                    ],
+                                                                                    "onError": {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "totpBusy": false,
+                                                                                            "totpError": "{{error.message}}"
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "totp:flex-1 totp:px-4 totp:py-3 totp:bg-blue-600 totp:hover:bg-blue-700 totp:dark:bg-blue-600 totp:dark:hover:bg-blue-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer totp:disabled:opacity-50 totp:disabled:cursor-not-allowed",
+                                                                        "disabled": "{{!_local.totpCode || _local.totpCode.length < 6 || _local.totpBusy}}"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "id": "mypage_totp_confirm_text",
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "text": "$t:sirsoft-totp.admin.security.enroll.confirm"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "id": "mypage_totp_cancel",
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "등록 취소 — 받아 둔 시크릿·QR 주소를 화면 상태에서 버려 시작 전 카드로 돌아간다. 서버에는 요청하지 않는다",
+                                                                            "type": "click",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "totpSecret": null,
+                                                                                "totpOtpauthUri": null,
+                                                                                "totpCode": "",
+                                                                                "totpCurrentPassword": "",
+                                                                                "totpError": null
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "totp:flex-1 totp:px-4 totp:py-3 totp:border totp:border-gray-300 totp:dark:border-gray-600 totp:text-gray-700 totp:dark:text-gray-300 totp:rounded-lg totp:font-medium totp:hover:bg-gray-50 totp:dark:hover:bg-gray-700 totp:transition-colors totp:cursor-pointer",
+                                                                        "disabled": "{{_local.totpBusy}}"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "id": "mypage_totp_cancel_text",
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "text": "$t:sirsoft-totp.admin.security.enroll.cancel"
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "백업 코드 1회 노출 — 확정 직후와 재발급 직후에만 뜬다. 새로고침하면 다시 볼 수 없다.",
+                                    "id": "mypage_totp_backup_card",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_local.totpBackupCodes}}",
+                                    "props": {
+                                        "className": "totp:mt-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "mypage_totp_backup_title",
+                                            "type": "basic",
+                                            "name": "H3",
+                                            "props": {
+                                                "className": "totp-card-title"
+                                            },
+                                            "text": "$t:sirsoft-totp.admin.security.backup.title"
+                                        },
+                                        {
+                                            "id": "mypage_totp_backup_warning",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "totp:p-4 totp:rounded-lg totp:bg-amber-50 totp:dark:bg-amber-900/20 totp:border totp:border-amber-200 totp:dark:border-amber-800",
+                                                "role": "status",
+                                                "aria-live": "polite"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "mypage_totp_backup_warning_text",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "totp:text-sm totp:text-amber-800 totp:dark:text-amber-200"
+                                                    },
+                                                    "text": "$t:sirsoft-totp.admin.security.backup.warning"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "mypage_totp_backup_grid",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "responsive": {
+                                                "tablet": {
+                                                    "props": {
+                                                        "className": "totp:grid totp:grid-cols-3 totp:gap-2 totp:mt-4"
+                                                    }
+                                                },
+                                                "mobile": {
+                                                    "props": {
+                                                        "className": "totp:grid totp:grid-cols-2 totp:gap-2 totp:mt-4"
+                                                    }
+                                                }
+                                            },
+                                            "props": {
+                                                "className": "totp:grid totp:grid-cols-5 totp:gap-2 totp:mt-4"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "mypage_totp_backup_item_{{$idx}}",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "{{_local.totpBackupCodes ?? []}}",
+                                                        "item_var": "backupCode",
+                                                        "index_var": "$idx"
+                                                    },
+                                                    "props": {
+                                                        "className": "totp:px-3 totp:py-2 totp:rounded-lg totp:bg-gray-50 totp:dark:bg-gray-800 totp:border totp:border-gray-200 totp:dark:border-gray-700 totp:text-center totp:font-mono totp:text-sm totp:text-gray-900 totp:dark:text-gray-100"
+                                                    },
+                                                    "text": "{{backupCode}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "mypage_totp_backup_actions",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "totp:flex totp:flex-row totp:gap-2 totp:mt-4"
+                                                    }
+                                                }
+                                            },
+                                            "props": {
+                                                "className": "totp:flex totp:flex-col totp:gap-2 totp:mt-4"
+                                            },
+                                            "children": [
+                                                {
+                                                    "comment": "복사 먼저, 보관 확인은 그 다음 — 이 화면을 벗어나면 코드를 다시 볼 수 없으므로\n                 「보관했습니다」를 누르기 전에 가져갈 수단이 눈에 먼저 들어와야 한다.\n                 엔진에는 클립보드 액션이 없어 플러그인이 named action 으로 내준다(resources/js/handlers).",
+                                                    "id": "mypage_totp_backup_copy",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "sirsoft-totp.copyToClipboard",
+                                                                    "params": {
+                                                                        "text": "{{(_local.totpBackupCodes ?? []).join('\\n')}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "$t:sirsoft-totp.admin.security.backup.copied"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "totp:px-4 totp:py-2 totp:bg-white totp:dark:bg-gray-700 totp-text-body totp:border totp:border-gray-300 totp:dark:border-gray-600 totp:rounded-lg totp:hover:bg-gray-50 totp:dark:hover:bg-gray-600 totp:font-medium totp:transition-colors totp:cursor-pointer"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "id": "mypage_totp_backup_copy_text",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-totp.admin.security.backup.copy"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "mypage_totp_backup_done",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "「보관했습니다」 — 백업 코드 평문을 화면 상태에서 지워 등록됨 카드로 돌아간다. 다시 볼 방법은 재발급뿐이다",
+                                                            "type": "click",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "totpBackupCodes": null
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "totp:px-4 totp:py-2 totp:bg-blue-600 totp:hover:bg-blue-700 totp:dark:bg-blue-600 totp:dark:hover:bg-blue-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "id": "mypage_totp_backup_done_text",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-totp.admin.security.backup.done"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

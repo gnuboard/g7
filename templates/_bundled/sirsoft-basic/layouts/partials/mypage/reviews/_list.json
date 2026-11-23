@@ -1,0 +1,342 @@
+{
+    "comment": "내 리뷰 목록 본체 (#952) — PC 는 카드형 목록, 모바일도 같은 카드(좁은 여백). 카드: 상품명·별점·작성일·본문(태그를 걷은 한 줄)·\n     사진 썸네일·판매자 답글. [삭제]는 확인 창을 연다 — 창이 읽을 대상은 창 고유 전역 이름 공간에 넣는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "마이페이지 내 리뷰 목록"
+    },
+    "type": "basic",
+    "name": "Div",
+    "blur_until_loaded": {
+        "enabled": true,
+        "data_sources": "myReviews"
+    },
+    "responsive": {
+        "portable": {
+            "props": {
+                "className": "mt-4"
+            }
+        }
+    },
+    "props": {
+        "className": "mt-6"
+    },
+    "children": [
+        {
+            "id": "review_total",
+            "type": "basic",
+            "name": "P",
+            "if": "{{myReviews !== undefined}}",
+            "props": {
+                "className": "text-sm text-gray-500 dark:text-gray-400 mb-3"
+            },
+            "text": "$t:mypage.reviews.total|count={{myReviews?.data?.pagination?.total ?? 0}}"
+        },
+        {
+            "id": "review_card_list",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(myReviews?.data?.data ?? []).length > 0}}",
+            "props": {
+                "className": "space-y-3"
+            },
+            "children": [
+                {
+                    "id": "review_card_{{reviewIdx}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{myReviews?.data?.data ?? []}}",
+                        "item_var": "review",
+                        "index_var": "reviewIdx"
+                    },
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-start justify-between gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "A",
+                                            "if": "{{review.product?.product_code}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "audit:allow layout-list-context-navigate-merge-query 다른 화면(상품 상세)으로 가는 이동 — 목록 쪽 번호를 물려주지 않는다",
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "{{_global.shopBase + '/products/' + review.product?.product_code}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "href": "{{_global.shopBase + '/products/' + review.product?.product_code}}",
+                                                "className": "font-semibold text-gray-900 dark:text-white hover:underline break-all"
+                                            },
+                                            "text": "{{review.product?.name ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!review.product?.product_code}}",
+                                            "props": {
+                                                "className": "font-semibold text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{review.product?.name ?? '$t:mypage.reviews.deleted_product'}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{review.option_snapshot_label}}",
+                                            "props": {
+                                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                            },
+                                            "text": "{{review.option_snapshot_label}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-2 mt-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "review_rating_{{reviewIdx}}",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "aria-label": "$t:mypage.reviews.rating_label|rating={{review.rating}}",
+                                                        "className": "flex items-center"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "iteration": {
+                                                                "source": "{{[1,2,3,4,5]}}",
+                                                                "item_var": "star"
+                                                            },
+                                                            "props": {
+                                                                "name": "star",
+                                                                "size": "sm",
+                                                                "className": "{{star <= review.rating ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{review.created_at ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "[삭제] — 지울 리뷰를 창 상태에 담고 삭제 확인 창을 연다(삭제할 수 있는 리뷰만 보인다)",
+                                    "id": "review_delete_button_{{reviewIdx}}",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{review.is_deletable}}",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "reviewDeleteModal": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "reviewDeleteModal": {
+                                                            "reviewId": "{{review.id}}",
+                                                            "productName": "{{review.product?.name ?? ''}}",
+                                                            "isDeleting": false
+                                                        }
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "reviewDeleteModal"
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "shrink-0 inline-flex items-center gap-1 px-3 py-1.5 text-sm text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20",
+                                        "aria-label": "{{$t('mypage.reviews.delete') + ' ' + (review.product?.name ?? '')}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "trash-can",
+                                                "size": "sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:mypage.reviews.delete"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "mt-3 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line break-words"
+                            },
+                            "text": "{{review.content_plain ?? ''}}"
+                        },
+                        {
+                            "comment": "사진",
+                            "id": "review_images_{{reviewIdx}}",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(review.images ?? []).length > 0}}",
+                            "props": {
+                                "className": "flex flex-wrap gap-2 mt-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Img",
+                                    "iteration": {
+                                        "source": "{{review.images ?? []}}",
+                                        "item_var": "image"
+                                    },
+                                    "props": {
+                                        "src": "{{image.preview_url ?? image.url ?? image.download_url}}",
+                                        "thumbPreset": "sm",
+                                        "loading": "lazy",
+                                        "decoding": "async",
+                                        "alt": "{{image.alt_text ?? ''}}",
+                                        "className": "w-16 h-16 object-cover rounded-md border border-gray-200 dark:border-gray-700"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "판매자 답글",
+                            "id": "review_reply_{{reviewIdx}}",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{review.has_reply}}",
+                            "props": {
+                                "className": "mt-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/40"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1"
+                                    },
+                                    "text": "$t:mypage.reviews.seller_reply"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line break-words"
+                                    },
+                                    "text": "{{review.reply_content ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "빈 상태",
+            "id": "review_empty",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{myReviews !== undefined && (myReviews?.data?.data ?? []).length === 0}}",
+            "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "star",
+                        "size": "3x",
+                        "className": "mx-auto text-gray-500 dark:text-gray-500 mb-3"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:mypage.reviews.empty"
+                }
+            ]
+        },
+        {
+            "comment": "페이지네이션",
+            "type": "composite",
+            "name": "Pagination",
+            "if": "{{((myReviews?.data?.pagination?.last_page ?? 0) > 1) || (myReviews?.data?.pagination?.has_more_pages === true) || ((myReviews?.data?.pagination?.current_page ?? 1) > 1)}}",
+            "actions": [
+                {
+                    "event": "onPageChange",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/mypage/reviews",
+                        "mergeQuery": true,
+                        "query": {
+                            "page": "{{$args[0]}}"
+                        }
+                    }
+                }
+            ],
+            "props": {
+                "pageHref": "/mypage/reviews?page={page}",
+                "pageHrefMergeQuery": true,
+                "currentPage": "{{myReviews?.data?.pagination?.current_page}}",
+                "totalPages": "{{myReviews?.data?.pagination?.last_page ?? null}}",
+                "hasMorePages": "{{myReviews?.data?.pagination?.has_more_pages ?? false}}",
+                "className": "mt-4"
+            }
+        }
+    ]
+}

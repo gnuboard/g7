@@ -33,6 +33,9 @@ return [
         'order_updated' => '카테고리 순서가 변경되었습니다.',
     ],
     'settings' => [
+        'promotion' => [
+            'field_disabled_suffix' => '(꺼짐)',
+        ],
         'fetch_success' => '설정을 조회했습니다.',
         'fetch_failed' => '설정 조회에 실패했습니다.',
         'save_success' => '설정이 저장되었습니다.',
@@ -354,6 +357,28 @@ return [
 
     // 사용자 쿠폰 메시지
     'coupon' => [
+        'auto_issue_already_issued' => '이미 같은 조건으로 받은 회원입니다.',
+        'user_inactive' => '활성 상태인 회원에게만 발급할 수 있습니다.',
+        'zone_fetched' => '쿠폰존 목록을 불러왔습니다.',
+        'zone_fetch_failed' => '쿠폰존 목록을 불러오지 못했습니다.',
+        'notification' => [
+            'definition_name' => '쿠폰 발급 – :coupon',
+            'definition_description' => '이 쿠폰이 회원에게 발급되면 발송합니다(쿠폰 수정 화면에서 편집).',
+            'mail_subject' => '{ad_prefix}[{app_name}] {coupon_name} 쿠폰이 발급되었습니다',
+            'mail_heading' => '쿠폰 발급 안내',
+            'mail_intro' => '{name}님, 쿠폰이 발급되었습니다. 쿠폰함에서 확인해 보세요.',
+            'label_coupon' => '쿠폰',
+            'label_benefit' => '혜택',
+            'label_min_order' => '최소 주문 금액',
+            'label_expires' => '사용 기한',
+            'mail_button' => '쿠폰함 보기',
+            'mail_footer' => '본 메일은 {app_name}에서 발송되었습니다.',
+            'database_subject' => '{ad_prefix}쿠폰 발급',
+            'database_body' => '{coupon_name} 쿠폰({coupon_benefit})이 발급되었습니다. 사용 기한: {coupon_expires_date}',
+            'ad_prefix' => '(광고) ',
+            'no_expiry' => '기한 없음',
+            'no_min_order' => '없음',
+        ],
         'list_fetched' => '쿠폰 목록을 조회했습니다.',
         'list_fetch_failed' => '쿠폰 목록 조회에 실패했습니다.',
         'available_fetched' => '사용 가능한 쿠폰 목록을 조회했습니다.',
@@ -385,6 +410,13 @@ return [
 
     // 마일리지 메시지
     'mileage' => [
+        'notification' => [
+            'reason' => [
+                'purchase' => '구매 적립',
+                'admin' => '관리자 지급',
+                'signup' => '가입 적립',
+            ],
+        ],
         'balance_fetched' => '마일리지 잔액을 조회했습니다.',
         'balance_fetch_failed' => '마일리지 잔액 조회에 실패했습니다.',
         'max_usable_fetched' => '사용 가능한 최대 마일리지를 조회했습니다.',
@@ -1241,6 +1273,8 @@ return [
 
     // 상품 리뷰 메시지
     'reviews' => [
+        'user_list_fetched' => '내 리뷰 목록을 불러왔습니다.',
+        'user_list_fetch_failed' => '내 리뷰 목록을 불러오지 못했습니다.',
         'fetch_success' => '리뷰 목록을 조회했습니다.',
         'fetch_failed' => '리뷰 목록 조회에 실패했습니다.',
         'created' => '리뷰가 작성되었습니다.',
@@ -1466,6 +1500,33 @@ return [
             'message' => '관리자가 입력한 본문 (줄바꿈 유지)',
         ],
         'by_type' => [
+            'coupon_expiring_soon' => [
+                'count' => '곧 만료되는 쿠폰 수',
+                'earliest_expires_date' => '가장 이른 만료일',
+                'coupon_names' => '쿠폰명 (쉼표로 이음)',
+                'coupons_url' => '쿠폰함 URL',
+                'coupons_path' => '쿠폰함 경로 (사이트 주소 없이)',
+            ],
+            'mileage_earned' => [
+                'amount' => '마일리지',
+                'reason_label' => '적립 사유 (구매·관리자 지급·가입)',
+                'expires_date' => '소멸 예정일 (없으면 빈 값)',
+                'mileage_path' => '마일리지 내역 경로 (사이트 주소 없이)',
+            ],
+            'mileage_deducted' => [
+                'amount' => '마일리지',
+                'memo' => '차감 사유 (관리자 메모)',
+                'mileage_path' => '마일리지 내역 경로 (사이트 주소 없이)',
+            ],
+            'order_partially_cancelled' => [
+                'cancelled_items' => '취소된 상품 (쉼표로 이음)',
+                'refund_amount' => '환불 예정 금액',
+            ],
+            'review_replied' => [
+                'reply_excerpt' => '답글 앞부분',
+                'reviews_url' => '내 리뷰 URL',
+                'reviews_path' => '내 리뷰 경로 (사이트 주소 없이)',
+            ],
             'new_order_admin' => [
                 'name' => '수신자(관리자) 이름',
                 'order_url' => '주문 관리 URL',
@@ -1516,6 +1577,18 @@ return [
     ],
     // 콘솔 명령 출력
     'console' => [
+        'issue_birthday_coupons' => [
+            'field_not_configured' => '생일로 쓸 회원 항목이 지정되지 않아 생일 쿠폰을 발급하지 않습니다. (쇼핑몰 환경설정 → 쿠폰)',
+            'invalid_date' => '--date 는 YYYY-MM-DD 형식이어야 합니다.',
+            'no_coupons' => '발급할 생일 쿠폰이 없습니다.',
+            'done' => ':date 생일 회원 :targets명, 쿠폰 :issued장 발급',
+        ],
+        'notify_expiring_coupons' => [
+            'notification_disabled' => '쿠폰 만료 임박 알림이 꺼져 있습니다.',
+            'no_targets' => '만료 임박 알림 대상이 없습니다.',
+            'targets' => '만료 임박 알림 대상 회원 :count명',
+            'done' => ':count명에게 쿠폰 만료 임박 알림을 보냈습니다.',
+        ],
         'prune_exports' => [
             'done' => '만료 처리 :expired건, 시간 초과 실패 처리 :failed건',
         ],

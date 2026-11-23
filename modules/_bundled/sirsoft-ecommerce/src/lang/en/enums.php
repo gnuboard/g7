@@ -6,6 +6,20 @@
  * Multilingual labels for enum values
  */
 return [
+    'coupon_issue_source' => [
+        'download' => 'Download',
+        'direct' => 'Direct issue',
+        'signup' => 'Signup',
+        'first_purchase' => 'First purchase',
+        'birthday' => 'Birthday',
+    ],
+    'coupon_first_purchase_trigger' => [
+        'payment_complete' => 'Payment complete',
+        'preparing' => 'Preparing',
+        'shipping' => 'Shipping',
+        'delivered' => 'Delivered',
+        'confirmed' => 'Purchase confirmed',
+    ],
     // Mileage transaction type (matches MileageTransactionTypeEnum values)
     'mileage_transaction_type' => [
         'purchase_earn' => 'Purchase Earn',

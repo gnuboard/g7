@@ -128,12 +128,6 @@
     "notify_admin_on_report_scope": "通知発送範囲",
     "notify_admin_on_report_scope_per_case": "投稿/コメントごとに初回1回のみ",
     "notify_admin_on_report_scope_per_report": "通報が受理されるたびに",
-    "notify_admin_on_report_channels": "通知チャネル",
-    "notify_admin_on_report_channels_placeholder": "チャネルを選択",
-    "notify_admin_on_report_channels_help": "選択されたチャネルで管理者通知が発送されます",
-    "notify_author_on_report_action_channels": "通知チャネル",
-    "notify_author_on_report_action_channels_placeholder": "チャネルを選択",
-    "notify_author_on_report_action_channels_help": "選択されたチャネルで作成者通知が発送されます",
     "notification_channels": {
       "mail": "メール",
       "database": "サイト通知"

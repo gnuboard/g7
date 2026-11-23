@@ -64,20 +64,20 @@
       <responsive on="640-1023" class="p-6 bg-gray-50 dark:bg-gray-900"/>
       <responsive on="1024-" class="p-8 bg-gray-50 dark:bg-gray-900"/>
       <div data-ref="page_header" class="flex-between flex-wrap gap-3 mb-4">
-        <div class="flex-center gap-3">
-          <a data-ref="back_button" href="/admin/analytics/visitors" :mergeQuery="true" class="button btn-icon" aria-label="$t:admin.analytics.visitor_detail.back">
-            <on type="click">
-              <!-- 목록으로 — 질의를 병합해 돌아가므로 목록에서 들고 온 기간·검색어·유형·쪽이 그대로 살아난다. -->
-              <navigate :mergeQuery="true"><query/></navigate>
-            </on>
-            <icon name="arrow-left" class="text-xl"/>
-          </a>
-          <div>
-            <h1 class="text-xl font-semibold text-gray-900 dark:text-white"><responsive on="640-" class="text-2xl font-semibold text-gray-900 dark:text-white"/>$t:admin.analytics.visitor_detail.title</h1>
-            <p class="text-label-subtle mt-1 font-mono break-all">{{route?.key ?? ''}}</p>
-          </div>
+        <div>
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-white"><responsive on="640-" class="text-2xl font-semibold text-gray-900 dark:text-white"/>$t:admin.analytics.visitor_detail.title</h1>
+          <p class="text-label-subtle mt-1 font-mono break-all">{{route?.key ?? ''}}</p>
         </div>
         <div class="flex-center gap-2">
+          <!-- 목록으로 — 다른 상세 화면(사용자·페이지 상세)처럼 오른쪽 버튼 줄 첫 자리. 질의를 병합해 돌아가므로
+               목록에서 들고 온 기간·검색어·유형·쪽이 그대로 살아난다. -->
+          <a data-ref="back_button" href="/admin/analytics/visitors" :mergeQuery="true" class="button btn btn-secondary btn-sm flex-center gap-1.5">
+            <on type="click">
+              <navigate :mergeQuery="true"><query/></navigate>
+            </on>
+            <icon name="arrow-left" size="sm"/>
+            <span>$t:admin.analytics.visitor_detail.back</span>
+          </a>
           <!-- blob 저장은 응답 헤더의 파일명을 쓰지 못해 화면이 준 이름이 이긴다 — 서버 규약
                (`analytics-visitor-{key}-{from}_{to}.csv`, 기간이 없으면 접미 없음)을 주소와 같은 값으로
                따르는 `csvFilename` 을 넘긴다. 기간을 빼면 같은 사람을 두 기간으로 받은 파일이 같은 이름이

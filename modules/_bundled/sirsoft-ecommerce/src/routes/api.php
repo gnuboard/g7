@@ -151,6 +151,12 @@ Route::prefix('products')->middleware(['optional.sanctum', 'permission:user,sirs
         ->name('products.inquiries.store');
 });
 
+// 쿠폰존 — 받을 수 있는 쿠폰 목록 (비로그인 공개, #952)
+// GET /api/modules/sirsoft-ecommerce/coupons/downloadable
+Route::get('coupons/downloadable', [PublicCouponController::class, 'zone'])
+    ->middleware(['optional.sanctum', 'throttle:sirsoft-ecommerce.public-coupons', 'permission:user,sirsoft-ecommerce.user-products.read'])
+    ->name('coupons.downloadable');
+
 // 전체 공개 후기 목록 (리뷰 모아보기)
 // GET /api/modules/sirsoft-ecommerce/reviews - 전시 중인 모든 상품의 노출 후기
 // (products 그룹 밖 — 상품 와일드카드 `products/{product}` 에 먹히지 않게)
@@ -696,6 +702,10 @@ Route::prefix('user')->middleware('auth:sanctum')->group(function () {
     // POST   /api/modules/sirsoft-ecommerce/user/reviews/{review}/images - 이미지 업로드
     // DELETE /api/modules/sirsoft-ecommerce/user/reviews/{review}/images/{image} - 이미지 삭제
     Route::prefix('reviews')->group(function () {
+        // GET /api/modules/sirsoft-ecommerce/user/reviews - 내 리뷰 목록 (마이페이지 내 리뷰, #952) — 문의 목록과 같게 별도 권한 없이 인증만
+        Route::get('/', [UserProductReviewController::class, 'index'])
+            ->name('user.reviews.index');
+
         // 작성 가능 여부 확인 - 와일드카드보다 먼저 정의
         Route::get('/can-write/{orderOptionId}', [UserProductReviewController::class, 'canWrite'])
             ->whereNumber('orderOptionId')

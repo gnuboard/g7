@@ -1,0 +1,34 @@
+<!-- 마이페이지 «활동 기록» 탭 (#952) — 내가 한 일(로그인·정보 수정·주문 등)의 기록. 관리자 화면에서 한 작업은 싣지 않는다(코어 API 가 거른다).
+     기간·쪽은 URL 쿼리에 있다 — [조회]는 입력해 둔 기간을 쿼리로 옮기고 1쪽으로 돌아간다. -->
+<layout name="mypage/activity" version="1.0.0" extends="_user_base">
+  <!-- 활동 기록 — 응답은 `data.activities[]` + `data.pagination` -->
+  <data-source id="myActivity" label_key="$t:editor.data_source.myActivity" type="api" endpoint="/api/user/profile/activity-log" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" :blur_until_loaded="true">
+    <params page="{{query.page ?? 1}}" :per_page="20" date_from="{{query.date_from ?? ''}}" date_to="{{query.date_to ?? ''}}"/>
+  </data-source>
+  <computed name="currentTab">activity</computed>
+  <permissions/>
+  <transition-overlay enabled style="spinner" target="mypage_tab_content" fallback-target="main_content_area">
+    <spinner component="PageLoading"/>
+  </transition-overlay>
+  <init>
+    <set-state target="local" activityFrom="{{query.date_from ?? ''}}" activityTo="{{query.date_to ?? ''}}"/>
+  </init>
+  <slot name="content">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <container data-type="layout" class="py-8">
+        <responsive on="portable" class="py-4"/>
+        <!-- 페이지 제목 -->
+        <div class="flex items-center gap-2 mb-6">
+          <icon name="user" size="xl" class="text-gray-900 dark:text-white"/>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">$t:mypage.title</h1>
+        </div>
+        <!-- 탭 네비게이션 -->
+        <include src="partials/mypage/_tab_navigation.g7.html"/>
+        <!-- 탭 컨텐츠 영역 (스켈레톤 타겟) -->
+        <div data-ref="mypage_tab_content">
+          <include src="partials/mypage/activity/_list.g7.html"/>
+        </div>
+      </container>
+    </div>
+  </slot>
+</layout>

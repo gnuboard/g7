@@ -1094,16 +1094,57 @@ class UserService
             ->latest()
             ->limit($limit)
             ->get()
-            ->map(fn (ActivityLog $log) => [
-                'id' => $log->id,
-                'action' => $log->action,
-                'action_label' => $log->action_label,
-                'description' => $log->localized_description,
-                // 접속 IP 는 관리자 응답에만 싣는다(UserResource 의 withAdminInfo 와 같은 기준).
-                // 이 목록은 본인 전용이지만 응답 필드를 관리자 전용 값의 통로로 두지 않는다 — 키는 호환을 위해 유지.
-                'ip_address' => null,
-                'created_at' => $log->created_at?->toIso8601String(),
-            ]);
+            ->map(fn (ActivityLog $log) => $this->presentUserActivityLog($log));
+    }
+
+    /**
+     * 회원 본인의 활동 기록을 페이지 단위로 조회합니다. (마이페이지 내 활동 기록, 7.2.1 #952)
+     *
+     * 회원이 한 일(`log_type=user`)만 고른다 — 그 회원이 관리자이기도 하면 관리자 화면에서 한 작업은 빠진다.
+     * 기간은 사이트 날짜로 받아 그날 0시~23시 59분 59초로 자른다.
+     *
+     * @param  int  $userId  회원 ID
+     * @param  int  $perPage  페이지당 항목 수 (최대 50)
+     * @param  string|null  $dateFrom  시작 날짜 (YYYY-MM-DD, 사이트 날짜)
+     * @param  string|null  $dateTo  끝 날짜 (YYYY-MM-DD, 사이트 날짜)
+     * @return LengthAwarePaginator 활동 기록 페이지네이터 (행은 요약 배열)
+     */
+    public function getUserActivityLogPage(int $userId, int $perPage = 50, ?string $dateFrom = null, ?string $dateTo = null): LengthAwarePaginator
+    {
+        $query = ActivityLog::byUser($userId)->userLog()->latest();
+
+        if ($dateFrom !== null && $dateFrom !== '') {
+            $query->where('created_at', '>=', TimezoneHelper::fromSiteDateStartOfDay($dateFrom));
+        }
+        if ($dateTo !== null && $dateTo !== '') {
+            $query->where('created_at', '<=', TimezoneHelper::fromSiteDateEndOfDay($dateTo));
+        }
+
+        // audit:allow repository-paginate-column-pruning reason: 회원 한 명의 본인 활동만 고른다 — 행 수가 그 회원의 행위에 묶인다
+        $paginator = $query->paginate(max(1, min(50, $perPage)));
+        $paginator->setCollection($paginator->getCollection()->map(fn (ActivityLog $log) => $this->presentUserActivityLog($log)));
+
+        return $paginator;
+    }
+
+    /**
+     * 활동 기록 1건을 회원 응답 모양으로 바꿉니다.
+     *
+     * @param  ActivityLog  $log  활동 기록
+     * @return array<string, mixed> 요약 (id·action·action_label·description·ip_address(null)·created_at)
+     */
+    private function presentUserActivityLog(ActivityLog $log): array
+    {
+        return [
+            'id' => $log->id,
+            'action' => $log->action,
+            'action_label' => $log->action_label,
+            'description' => $log->localized_description,
+            // 접속 IP 는 관리자 응답에만 싣는다(UserResource 의 withAdminInfo 와 같은 기준).
+            // 이 목록은 본인 전용이지만 응답 필드를 관리자 전용 값의 통로로 두지 않는다 — 키는 호환을 위해 유지.
+            'ip_address' => null,
+            'created_at' => $log->created_at?->toIso8601String(),
+        ];
     }
 
     /**

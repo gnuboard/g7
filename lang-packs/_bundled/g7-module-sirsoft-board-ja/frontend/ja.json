@@ -26,7 +26,8 @@
       "reactions": "リアクション一覧",
       "boardPrivacyRetentionPreview": "掲示板 個人情報保有期間 対象件数",
       "privacyTargets": "保有期間処理対象リスト (作成IP·非会員)",
-      "privacyManualRuns": "個人情報措置職権実行状態"
+      "privacyManualRuns": "個人情報措置職権実行状態",
+      "identityCheckpoints": "本人認証の拡張ポイント"
     }
   },
   "common": {

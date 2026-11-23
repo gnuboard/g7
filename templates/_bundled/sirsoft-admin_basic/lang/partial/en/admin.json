@@ -4733,8 +4733,10 @@
         "signup_stage_desc": "For signup policies, choose which stage requires verification.",
         "declared_policy_notice": "This is a default policy provided by core/module/plugin. The Policy key, Enforcement timing, and Enforcement location cannot be changed; all other fields (Purpose, Applies to, Verification method, Re-prompt window, On-failure, Active, etc.) are freely editable, and your overrides are preserved across updates.",
         "reset_to_default": "Reset to default",
-        "reset_success": "Restored to default."
-      }
+        "reset_success": "Restored to default.",
+        "checkpoint_placeholder": "Select a checkpoint"
+      },
+      "checkpoint_missing": "No checkpoint"
     },
     "logs": {
       "page_title": "Identity Verification Logs",

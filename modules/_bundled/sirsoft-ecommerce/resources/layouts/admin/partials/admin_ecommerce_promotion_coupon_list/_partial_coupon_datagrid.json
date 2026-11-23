@@ -578,12 +578,43 @@
                         "width": "80px",
                         "cellChildren": [
                             {
-                                "type": "composite",
-                                "name": "Badge",
+                                "type": "basic",
+                                "name": "Div",
                                 "props": {
-                                    "color": "{{row.issue_condition_badge_color}}",
-                                    "text": "{{row.issue_condition_label}}"
-                                }
+                                    "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-1"
+                                },
+                                "children": [
+                                    {
+                                        "type": "composite",
+                                        "name": "Badge",
+                                        "props": {
+                                            "color": "{{row.issue_condition_badge_color}}",
+                                            "text": "{{row.issue_condition_label}}"
+                                        }
+                                    },
+                                    {
+                                        "comment": "생일 쿠폰인데 생일로 쓸 회원 항목이 지정되지 않았다 — 발급되지 않는다(#952)",
+                                        "id": "birthday_field_missing_badge",
+                                        "type": "composite",
+                                        "name": "Badge",
+                                        "if": "{{row.issue_condition === 'birthday' && row.birthday_field_configured === false}}",
+                                        "props": {
+                                            "color": "yellow",
+                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.badge.birthday_field_missing"
+                                        }
+                                    },
+                                    {
+                                        "comment": "발급 알림을 켠 쿠폰(#952)",
+                                        "id": "notify_enabled_badge",
+                                        "type": "composite",
+                                        "name": "Badge",
+                                        "if": "{{row.notify_enabled === true}}",
+                                        "props": {
+                                            "color": "purple",
+                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.badge.notify_enabled"
+                                        }
+                                    }
+                                ]
                             }
                         ]
                     },
