@@ -511,7 +511,7 @@ describe('FlexEditor', () => {
 
   // @scenario area=flex_editor
   // @effects flex_editor_device_scope_enable_writes_branch
-  it('mobile scope + base flex → 모바일 해제 시 responsive.mobile.props.className 에 off 토큰(block) (D7)', () => {
+  it('mobile scope + base flex → 상속된 flex 를 켜짐으로 보고 해제 시 모바일 실효값이 off 토큰(block) (D7, engine-v1.99.1)', () => {
     const onPatch = vi.fn();
     render(
       <FlexEditor
@@ -523,18 +523,18 @@ describe('FlexEditor', () => {
         scope={{ colorScheme: 'base', breakpoint: 'mobile' }}
       />,
     );
-    // mobile scope 에 명시 override 없음 → base flex 상속 미인정(D8) → "정렬 박스로 만들기" 버튼.
-    // 클릭하면 mobile scope 에 flex 토큰 적용.
-    fireEvent.click(screen.getByTestId('g7le-flex-enable'));
+    // 모바일 구간에 className 이 없으면 그 폭의 실효값은 기본(flex)이다 — 「정렬 박스로 만들기」 가 아니라 「해제」 가 보여야
+    // 한다. 종전(D8)에는 켜기 단추만 보였고, classMerge 가 기본과 같은 토큰을 쓰지 않아 눌러도 아무것도 기록되지 않았다.
+    expect(screen.queryByTestId('g7le-flex-enable')).toBeNull();
+    fireEvent.click(screen.getByTestId('g7le-flex-disable'));
     const patched = onPatch.mock.calls[0][0] as EditorNode;
-    // engine-v1.98.0 classMerge: 구간에는 기본 대비 바뀐 토큰만 쓴다. 기본이 이미 flex 라 모바일 실효값도 flex 이고
-    // 구간 기록은 없어도 된다 — 단언은 그 폭의 실효 className(기본 + 구간 classMerge)으로 한다.
-    const mobileEffective = applyResponsiveClassMerge(
+    const branch = patched.responsive?.mobile as { classMerge?: string; props?: { className?: string } } | undefined;
+    const mobileEffective = (branch?.props?.className ?? applyResponsiveClassMerge(
       String(patched.props?.className ?? ''),
-      patched.responsive?.mobile?.classMerge as string | undefined,
-    ).split(/\s+/);
-    expect(mobileEffective).toContain('flex');
-    expect(patched.responsive?.mobile?.props?.className).toBeUndefined(); // 기본 className 통째 복사(시드) 없음
+      branch?.classMerge,
+    )).split(/\s+/);
+    expect(mobileEffective).toContain('block');
+    expect(mobileEffective).not.toContain('flex');
     expect(patched.props?.className).toBe('flex'); // base 불변
   });
 

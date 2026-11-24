@@ -169,9 +169,25 @@ describe('scope', () => {
   const baseScope = { colorScheme: 'base', breakpoint: 'base' } as const;
 
   /** @effects scope_flex_judgment_uses_node_derivation_not_computed_style */
-  it('isNodeFlexEnabled — base flex 가 mobile scope 에서는 false(상속 미인정)', () => {
+  it('isNodeFlexEnabled — 구간 className 이 없으면 mobile scope 는 base flex 를 이어받아 true (engine-v1.99.1)', () => {
+    // 종전(D8)에는 false 였다. classMerge 가 기본과 같은 토큰을 구간에 쓰지 않으므로 false 로 두면 공통이 flex 인 노드는
+    // 디바이스 탭에서 영영 「해제」 단추를 보이지 못했다.
     const node = { name: 'Div', props: { className: 'flex' } };
     expect(isNodeFlexEnabled(node, ENABLE_ONOFF, baseScope)).toBe(true);
+    expect(isNodeFlexEnabled(node, ENABLE_ONOFF, mobileScope)).toBe(true);
+  });
+
+  /** @effects device_flex_disable_writes_explicit_off_token_breaking_base_inheritance */
+  it('isNodeFlexEnabled — 구간 실효값에 off 토큰이 있으면 base flex 여도 mobile scope 는 false', () => {
+    const merged = { name: 'Div', props: { className: 'flex' }, responsive: { mobile: { classMerge: 'block' } } };
+    expect(isNodeFlexEnabled(merged, ENABLE_ONOFF, mobileScope)).toBe(false);
+    const replaced = { name: 'Div', props: { className: 'flex' }, responsive: { mobile: { props: { className: 'block' } } } };
+    expect(isNodeFlexEnabled(replaced, ENABLE_ONOFF, mobileScope)).toBe(false);
+  });
+
+  /** @effects scope_flex_judgment_uses_node_derivation_not_computed_style */
+  it('isNodeFlexEnabled — base 가 flex 가 아니고 구간 className 도 없으면 mobile scope 는 false', () => {
+    const node = { name: 'Div', props: { className: 'p-4' } };
     expect(isNodeFlexEnabled(node, ENABLE_ONOFF, mobileScope)).toBe(false);
   });
 
