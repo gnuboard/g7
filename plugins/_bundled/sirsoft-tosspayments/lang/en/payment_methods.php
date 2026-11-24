@@ -37,4 +37,17 @@ return [
         'name' => 'Samsung Pay (TossPayments)',
         'description' => 'Samsung Pay easy payment — processed via TossPayments',
     ],
+    'toss_applepay' => [
+        'name' => 'Apple Pay (TossPayments)',
+        'description' => 'Apple Pay easy payment — processed via TossPayments · shown on iPhone/iPad only',
+    ],
+    'toss_lpay' => [
+        // A zero-width space (U+200B) keeps "L.pay" from being auto-linked as a URL (same as NicePayments)
+        'name' => 'L.'."\u{200B}".'pay (TossPayments)',
+        'description' => 'L.'."\u{200B}".'pay easy payment — processed via TossPayments',
+    ],
+    'toss_ssgpay' => [
+        'name' => 'SSG Pay (TossPayments)',
+        'description' => 'SSG Pay easy payment — processed via TossPayments',
+    ],
 ];

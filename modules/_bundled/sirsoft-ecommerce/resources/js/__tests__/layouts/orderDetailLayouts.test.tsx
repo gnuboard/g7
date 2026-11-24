@@ -1185,11 +1185,12 @@ describe('Partial 레이아웃 구조 검증', () => {
 
         /**
          * @scenario surface=payment_info
-         * @effects payment_info_payment_only_fields_keep_payment_path
+         * @effects payment_info_payment_only_fields_keep_payment_path, order_detail_screens_prefer_display_label
          */
         it('결제 고유 필드는 payment 경로를 유지한다', () => {
             const json = JSON.stringify(paymentInfoPartial);
-            expect(json).toContain('payment.payment_method_label');
+            // 결제수단 칸 — 간편결제 표시 이름을 먼저, 없으면 기본 이름 (#933 S5, 주문 목록과 같은 식)
+            expect(json).toContain('{{payment.payment_method_display_label ?? payment.payment_method_label}}');
             expect(json).toContain('payment.paid_at_formatted');
             expect(json).toContain('payment.payment_status_label');
         });

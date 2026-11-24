@@ -41,6 +41,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderReturnOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\OrderTaxInvoice;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\PaymentMethodFilterClause;
 
 /**
  * 주문 Repository 구현체
@@ -905,6 +906,41 @@ class OrderRepository implements OrderRepositoryInterface
     }
 
     /**
+     * 결제수단 필터 조건 묶음 하나를 결제 행 쿼리에 겁니다. (#933)
+     *
+     * `NOT_EASY(pg, 목록) = (pg_provider <> pg OR embedded_pg_provider IS NULL OR embedded_pg_provider NOT IN 목록)` —
+     * 활성 간편결제 별칭이 찾는 주문을 코어 값·비간편결제 별칭 결과에서 뺀다. `pg_provider` 는 NOT NULL 컬럼이다.
+     *
+     * @param  Builder  $query  결제 행 쿼리 (orWhere 그룹 안)
+     * @param  PaymentMethodFilterClause  $clause  조건 묶음
+     * @return void 반환값 없음 (쿼리에 직접 조건을 건다)
+     */
+    private function applyPaymentMethodClause($query, PaymentMethodFilterClause $clause): void
+    {
+        $query->where('payment_method', $clause->paymentMethod);
+
+        if ($clause->pgProvider !== null) {
+            $query->where('pg_provider', $clause->pgProvider);
+        }
+
+        if ($clause->embeddedIn !== null) {
+            $query->whereIn('embedded_pg_provider', $clause->embeddedIn);
+        }
+
+        foreach ($clause->excludeEmbeddedByPg as $pg => $providers) {
+            if ($providers === []) {
+                continue;
+            }
+
+            $query->where(function ($notEasy) use ($pg, $providers) {
+                $notEasy->where('pg_provider', '<>', $pg)
+                    ->orWhereNull('embedded_pg_provider')
+                    ->orWhereNotIn('embedded_pg_provider', $providers);
+            });
+        }
+    }
+
+    /**
      * 목록 필터를 쿼리에 적용합니다. (목록·엑셀 내려받기 공용 단일 출처)
      *
      * 목록 조회(`getListWithFilters`)·엑셀 내려받기(`getForExport`)·내보내기 원천 쿼리(`newExportQuery`)가 같은 메서드를 부른다.
@@ -1059,7 +1095,26 @@ class OrderRepository implements OrderRepositoryInterface
         $this->applyClaimCriteriaFilters($query, $filters);
 
         // 결제수단 필터
-        if (! empty($filters['payment_method'])) {
+        //
+        // 서비스·내보내기 유형이 선택 id 를 결제 행 조건 묶음(`_payment_method_clauses`, PaymentMethodResolver::orderListFilterClauses)으로
+        // 풀어 넘기면 그 묶음의 OR 로 찾는다 — PG 별칭(toss_kakaopay)은 코어 값(card)으로 저장돼 id 로는 찾을 수 없다 (#933).
+        // 묶음이 없으면(대시보드 등 서비스를 거치지 않는 경로) 종전처럼 id 를 그대로 찾는다.
+        $clauses = array_values(array_filter(
+            is_array($filters['_payment_method_clauses'] ?? null) ? $filters['_payment_method_clauses'] : [],
+            static fn ($clause) => $clause instanceof PaymentMethodFilterClause,
+        ));
+
+        if ($clauses !== []) {
+            $query->whereHas('payment', function ($q) use ($clauses) {
+                $q->where(function ($any) use ($clauses) {
+                    foreach ($clauses as $clause) {
+                        $any->orWhere(function ($c) use ($clause) {
+                            $this->applyPaymentMethodClause($c, $clause);
+                        });
+                    }
+                });
+            });
+        } elseif (! empty($filters['payment_method'])) {
             $methods = is_array($filters['payment_method'])
                 ? $filters['payment_method']
                 : [$filters['payment_method']];

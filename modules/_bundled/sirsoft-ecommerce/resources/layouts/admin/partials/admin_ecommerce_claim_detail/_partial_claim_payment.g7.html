@@ -22,7 +22,8 @@
                 <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
                 <div>
                   <span class="ecommerce-text-tertiary ecommerce:block">$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_method</span>
-                  <span class="ecommerce:text-sm ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:block">{{payment.payment_method_label}}</span>
+                  <!-- 결제수단 — 간편결제는 PG 플러그인이 채운 표시 이름(「카카오페이 (토스페이먼츠)」)을 먼저 보인다. 주문상세와 같은 식이다. -->
+                  <span data-ref="cp_payment_method_{{payIdx}}" class="ecommerce:text-sm ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:block">{{payment.payment_method_display_label ?? payment.payment_method_label}}</span>
                   <span data-if="{{payment.account_info}}" class="ecommerce-text-tertiary ecommerce:block">{{payment.account_info}}</span>
                   <!-- 결제 통화(order_currency) — 유저가 선택·결제한 통화. base 통화와 다를 때 함께 표기한다. -->
                   <span data-if="{{payment.is_cross_currency}}" class="ecommerce-text-tertiary ecommerce:block">$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_currency|currency={{payment.payment_currency}}</span>

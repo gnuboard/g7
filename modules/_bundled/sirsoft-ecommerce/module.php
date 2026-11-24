@@ -105,7 +105,7 @@ class Module extends AbstractModule
                 'description' => ['ko' => '환율 적용 후', 'en' => 'After applying exchange rates'],
                 'parameters' => ['result' => 'array - 환율 적용 결과', 'source' => 'string - 환율 제공자 식별자']],
             ['name' => 'sirsoft-ecommerce.order.filter_payment_method_display_label', 'type' => 'filter',
-                'description' => ['ko' => '관리자 주문 목록 결제수단 표시 라벨', 'en' => 'Admin order list payment method display label'],
+                'description' => ['ko' => '주문 결제수단 표시 라벨 (관리자 주문 목록·주문 상세·마이페이지 주문 상세)', 'en' => 'Order payment method display label (admin list, order detail, mypage)'],
                 'parameters' => ['label' => 'string|null - 앞선 구독자가 채운 표시 라벨', 'payment' => 'OrderPayment - 주문 결제 레코드'],
                 'return' => 'string|null'],
             ['name' => 'sirsoft-ecommerce.checkout.filter_payment_methods_for_currency', 'type' => 'filter',

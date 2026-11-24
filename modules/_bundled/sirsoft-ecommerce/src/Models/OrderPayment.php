@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Models;
 
+use App\Extension\HookManager;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,6 +22,11 @@ class OrderPayment extends Model
 {
     use HasFactory;
 
+    /**
+     * 이 모델의 팩토리를 반환합니다.
+     *
+     * @return OrderPaymentFactory 결제 레코드 팩토리
+     */
     protected static function newFactory()
     {
         return OrderPaymentFactory::new();
@@ -233,6 +239,31 @@ class OrderPayment extends Model
     public function paymentMethodLabel(): string
     {
         return $this->resolver()->label($this->paymentMethodId());
+    }
+
+    /**
+     * 결제수단의 화면 표시용 라벨을 해석합니다 (간편결제 원 수단 이름).
+     *
+     * 간편결제(PAYCO·카카오페이 등)처럼 원 결제수단을 PG 만 아는 경우, 그 PG 플러그인이 필터 훅
+     * `sirsoft-ecommerce.order.filter_payment_method_display_label` 로 라벨을 채운다. 이 모듈은 PG 를 모르므로
+     * 직접 조립하지 않는다. 한 목록에 여러 PG 의 주문이 섞이므로 구독자는 자기 결제(`pg_provider`)가 아니면
+     * 받은 값을 그대로 돌려줘야 한다. 아무도 채우지 않거나 문자열이 아니면 null 이고, 화면은 기본 라벨
+     * (`payment_method_label`)을 쓴다.
+     *
+     * 관리자 주문 목록(`OrderListResource`)과 주문 상세 결제 리소스(`OrderPaymentResource` — 관리자 주문 상세·
+     * 관리자 클레임 상세의 주문 결제 카드·마이페이지 주문 상세)가 이 한 곳을 공유한다.
+     *
+     * @return string|null 표시용 라벨 (없으면 null)
+     */
+    public function paymentMethodDisplayLabel(): ?string
+    {
+        $label = HookManager::applyFilters(
+            'sirsoft-ecommerce.order.filter_payment_method_display_label',
+            null,
+            $this
+        );
+
+        return is_string($label) && $label !== '' ? $label : null;
     }
 
     /**

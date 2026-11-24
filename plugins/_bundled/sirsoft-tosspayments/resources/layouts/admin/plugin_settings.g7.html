@@ -244,6 +244,36 @@
                 </checkbox>
                 <span>$t:sirsoft-tosspayments.settings.method_samsungpay</span>
               </label>
+              <div>
+                <label class="paytosspayments:flex paytosspayments:items-center paytosspayments:gap-2 paytosspayments:cursor-pointer paytosspayments:text-sm paytosspayments:text-gray-700 paytosspayments:dark:text-gray-300">
+                  <!-- 애플페이. 아이폰·아이패드(iOS) 주문서에서만 보인다(카탈로그 requires_ios) -->
+                  <checkbox name="method_applepay" :autoBinding="false" checked="{{!!_local.form?.method_applepay}}" disabled="{{_computed.isPluginReadOnly}}">
+                    <on type="change">
+                      <set-state if="{{!_computed.isPluginReadOnly}}" target="local" form.method_applepay="{{$event.target.checked}}" :hasChanges="true"/>
+                    </on>
+                  </checkbox>
+                  <span>$t:sirsoft-tosspayments.settings.method_applepay</span>
+                </label>
+                <span class="pay-tosspayments-form-hint">$t:sirsoft-tosspayments.settings.method_applepay_hint</span>
+              </div>
+              <label class="paytosspayments:flex paytosspayments:items-center paytosspayments:gap-2 paytosspayments:cursor-pointer paytosspayments:text-sm paytosspayments:text-gray-700 paytosspayments:dark:text-gray-300">
+                <!-- L.pay(엘페이) -->
+                <checkbox name="method_lpay" :autoBinding="false" checked="{{!!_local.form?.method_lpay}}" disabled="{{_computed.isPluginReadOnly}}">
+                  <on type="change">
+                    <set-state if="{{!_computed.isPluginReadOnly}}" target="local" form.method_lpay="{{$event.target.checked}}" :hasChanges="true"/>
+                  </on>
+                </checkbox>
+                <span>$t:sirsoft-tosspayments.settings.method_lpay</span>
+              </label>
+              <label class="paytosspayments:flex paytosspayments:items-center paytosspayments:gap-2 paytosspayments:cursor-pointer paytosspayments:text-sm paytosspayments:text-gray-700 paytosspayments:dark:text-gray-300">
+                <!-- SSG페이 -->
+                <checkbox name="method_ssgpay" :autoBinding="false" checked="{{!!_local.form?.method_ssgpay}}" disabled="{{_computed.isPluginReadOnly}}">
+                  <on type="change">
+                    <set-state if="{{!_computed.isPluginReadOnly}}" target="local" form.method_ssgpay="{{$event.target.checked}}" :hasChanges="true"/>
+                  </on>
+                </checkbox>
+                <span>$t:sirsoft-tosspayments.settings.method_ssgpay</span>
+              </label>
             </div>
             <p class="pay-tosspayments-form-hint">$t:sirsoft-tosspayments.errors.non_krw_method</p>
           </div>

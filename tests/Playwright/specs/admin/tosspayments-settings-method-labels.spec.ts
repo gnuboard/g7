@@ -1,17 +1,16 @@
 /**
  * E2E: 토스페이먼츠 설정 — 주문서형 결제수단 체크박스 라벨 렌더 (#454)
  *
- * @scenario toss_payment_methods_vbank_escrow
- * @effects enabled_methods_persisted
+ * @scenario-manifest tests/scenarios/tosspayments-settings-method-labels.yaml
  *
  * 배경(회귀):
  *   Checkbox 컴포넌트는 `label` prop 을 받지만 렌더하지 않는다 (부모 Label 이 표시를 담당).
- *   레이아웃이 `label` prop 에만 의존하면 체크박스만 9개 뜨고 이름이 전부 빈 칸이 된다.
+ *   레이아웃이 `label` prop 에만 의존하면 체크박스만 12개 뜨고 이름이 전부 빈 칸이 된다.
  *   레이아웃 구조 테스트(JSON walk)는 이를 잡지 못했고 브라우저에서만 드러났다 —
  *   따라서 "라벨 텍스트가 실제로 화면에 보이는가" 는 E2E 로 고정한다.
  *
  * 검증:
- *  1. 주문서형 결제 토글을 켜면 결제수단 9종이 노출되고, 각 체크박스에 라벨 텍스트가 보인다
+ *  1. 주문서형 결제 토글을 켜면 결제수단 12종(#933 애플페이·L.pay·SSG페이 추가)이 노출되고, 각 체크박스에 라벨 텍스트가 보인다
  *  2. 라벨 클릭으로 체크 상태가 토글된다 (Label 래핑이 input 과 연결됨)
  *  3. 체크 해제 → 저장 → 재진입 시 상태가 유지된다 (폼 자동바인딩 회귀 가드)
  */
@@ -19,7 +18,7 @@ import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth'
 
 const SETTINGS_PATH = '/admin/plugins/sirsoft-tosspayments/settings';
 
-/** 결제수단 체크박스 9종의 name (레이아웃의 method_* 와 1:1) */
+/** 결제수단 체크박스 12종의 name (레이아웃의 method_* 와 1:1) */
 const METHOD_NAMES = [
   'method_card',
   'method_virtual_account',
@@ -30,6 +29,9 @@ const METHOD_NAMES = [
   'method_naverpay',
   'method_payco',
   'method_samsungpay',
+  'method_applepay',
+  'method_lpay',
+  'method_ssgpay',
 ] as const;
 
 /** 설정 화면 진입 + 결제수단 그룹이 마운트될 때까지 대기 */
@@ -79,9 +81,9 @@ async function gotoSettings(page: import('@playwright/test').Page): Promise<void
     .toBe(true);
 }
 
-// @scenario order_sheet_mode=on, method_labels=rendered
-// @effects enabled_methods_persisted
-test('@smoke #454 - 결제수단 9종 체크박스에 라벨 텍스트가 표시된다', async ({ page }) => {
+// @scenario step=labels_rendered
+// @effects method_toggles_render_label_text
+test('@smoke #454 - 결제수단 12종 체크박스에 라벨 텍스트가 표시된다', async ({ page }) => {
   const token = issueToken('core.plugins.update');
   await authenticatePage(page, token);
 
@@ -100,7 +102,8 @@ test('@smoke #454 - 결제수단 9종 체크박스에 라벨 텍스트가 표시
   }
 });
 
-// @scenario label_click=toggles_checkbox
+// @scenario step=label_click
+// @effects label_click_toggles_method_checkbox
 test('#454 - 라벨을 클릭하면 체크 상태가 토글된다', async ({ page }) => {
   const token = issueToken('core.plugins.update');
   await authenticatePage(page, token);
@@ -119,8 +122,8 @@ test('#454 - 라벨을 클릭하면 체크 상태가 토글된다', async ({ pag
   await expect(checkbox).toBeChecked({ checked: before });
 });
 
-// @scenario save=enabled_methods, payload=boolean
-// @effects enabled_methods_persisted
+// @scenario step=save_payload
+// @effects method_toggles_saved_as_boolean
 test('#454 - 결제수단 저장 페이로드가 boolean 으로 전송된다 (빈 문자열 회귀 가드)', async ({ page }) => {
   const token = issueToken('core.plugins.update');
   await authenticatePage(page, token);
@@ -172,7 +175,7 @@ test('#454 - 결제수단 저장 페이로드가 boolean 으로 전송된다 (�
   }
 });
 
-// @scenario save=enabled_methods, reload=persisted
+// @scenario step=reload_persisted
 // @effects enabled_methods_persisted
 test('#454 - 결제수단 체크 해제 후 저장하면 재진입 시 유지된다', async ({ page }) => {
   const token = issueToken('core.plugins.update');

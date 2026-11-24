@@ -1,0 +1,38 @@
+feature: 관리자 주문 목록 결제수단 필터 — PG 별칭 결제수단 (#933 S6·D8)
+
+description: |
+  토스 결제수단(`toss_*`)은 주문 생성 때 코어 값(`card`·`vbank`)으로 저장되고, 결제 결과 간편결제사는
+  `embedded_pg_provider`(예: 「카카오페이」)에 남는다. 그래서 필터에서 `toss_kakaopay` 를 고르면
+  `payment_method IN ('toss_kakaopay')` 가 되어 0건이었고, 「신용카드」(`card`)에는 토스 간편결제 주문이 섞였다.
+
+  계약:
+    - 별칭 = 카탈로그에 있고 `core_payment_method` 가 id 와 다르며 `pg_provider` 가 있는 항목.
+    - 활성 간편결제 별칭 = 별칭 + `embedded_pg_provider` 선언 + `is_active === true` (화면 필터 선택지와 같은 범위).
+    - 간편결제 별칭 → `payment_method = core AND pg_provider = P AND embedded_pg_provider = E`.
+    - 비간편결제 별칭 → `payment_method = core AND pg_provider = P AND NOT_EASY(P, 같은 core 의 활성 간편결제 목록)`.
+    - 그 밖(코어 값·확장 자기 id) → `payment_method = id AND 각 PG 별 NOT_EASY`.
+    - 여러 선택지는 OR. 목록·건수·엑셀 내보내기(OrderService::getList/getForExport, OrderExportType::query)가 같은 조건.
+    - 요청·필터 훅이 실어 온 `_payment_method_clauses` 는 버린다(주입 차단).
+  알려진 한계: 결제 결과 기준이라 통합결제창에서 카카오페이로 결제한 `toss_card` 주문은 `toss_kakaopay` 에 잡힌다.
+
+axes:
+  selected_kind: [builtin, easy_pay_alias, plain_alias, own_extension_id]
+  alias_active: [true, false]
+
+exclusions:
+  - { selected_kind: own_extension_id, alias_active: false, reason: "확장 자기 id 는 별칭이 아니다 — 활성 여부가 조건에 들어가지 않는다" }
+  - { selected_kind: easy_pay_alias, alias_active: false, reason: "비활성 별칭은 화면 선택지에 없다 — 그 주문은 builtin 축(inactive_alias_rows_reachable_via_core)이 잰다" }
+  - { selected_kind: plain_alias, alias_active: false, reason: "비간편결제 별칭의 활성 여부는 조건에 들어가지 않는다 — 활성 간편결제 목록만 본다" }
+
+effects:
+  - core_filter_excludes_active_easy_pay_alias   # 코어 값·비간편결제 별칭 결과에서 활성 간편결제 별칭이 찾는 주문을 뺀다
+  - alias_filter_matches_core_pg_embedded        # 별칭은 core + PG (+ 간편결제사)로 찾는다, 확장 자기 id 는 종전대로
+  - inactive_alias_rows_reachable_via_core       # 비활성 별칭의 주문은 코어 값 필터에 남는다
+  - export_matches_list                          # 엑셀 내보내기 원천 쿼리가 목록과 같은 결과
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/OrderListPaymentMethodAliasFilterTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/PaymentMethodResolverTest.php
+
+limitations:
+  - "인덱스·마이그레이션은 추가하지 않는다 — 결제 행 조건은 주문 1건당 결제 행 whereHas 서브쿼리 안이다(EXPLAIN 은 구현 이력에 기록)."

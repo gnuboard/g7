@@ -204,7 +204,7 @@
       </div>
       <!-- 구분선 -->
       <div class="border-t border-gray-200 dark:border-gray-700 my-3"/>
-      <!-- 결제 방법 — id 는 PG 플러그인과의 약속이다. 간편결제 이름(예: 카카오페이)을 이 행의 값에 덧붙이려고 이 id 로만 찾는다(행 이름 글자는 언어마다 다르다). -->
+      <!-- 결제 방법 — 간편결제 주문은 PG 플러그인이 쇼핑몰 표시 라벨 훅으로 채운 이름(예: 「카카오페이 (토스페이먼츠)」, payment_method_display_label)을 먼저 보이고, 없으면 기본 결제수단 이름을 보인다(관리자 주문 목록·상세와 같은 값). id 는 PG 플러그인 조각과의 약속이라 유지한다. -->
       <div data-ref="order_payment_method_row" class="flex items-center justify-between">
         <span class="text-muted">
           <responsive on="portable" class-merge="text-sm"/>
@@ -212,7 +212,7 @@
         </span>
         <span class="text-gray-900 dark:text-white">
           <responsive on="portable" class-merge="text-sm"/>
-          {{order.data.payment?.payment_method_label ?? ''}}
+          {{order.data.payment?.payment_method_display_label ?? order.data.payment?.payment_method_label ?? ''}}
         </span>
       </div>
       <!-- 현금영수증 카드 확장 슬롯 — 이커머스 모듈이 resources/extensions/mypage_order_cash_receipt.json 으로 주입한다. 결제수단/프로바이더/발급상태에 따른 표시 분기는 주입 측이 if 로 처리한다(무통장이 아니거나 프로바이더 미설정이면 카드 자체 미렌더). -->

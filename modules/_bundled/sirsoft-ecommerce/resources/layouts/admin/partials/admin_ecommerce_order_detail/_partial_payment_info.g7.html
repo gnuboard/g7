@@ -32,10 +32,10 @@
           <div class="ecommerce-row-stack">
             <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
               <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
-              <!-- 결제수단 칸 — id 는 PG 플러그인과의 약속이다. 간편결제 이름을 값에 덧붙이려고 이 id 로만 찾는다(칸 이름 글자는 관리자 언어마다 다르다). 첫 칸이 이름, 다음 칸이 값이다. -->
+              <!-- 결제수단 칸 — 값은 PG 플러그인이 쇼핑몰 표시 라벨 훅으로 채운 간편결제 이름(「카카오페이 (토스페이먼츠)」, payment_method_display_label)을 먼저, 없으면 기본 결제수단 이름이다(주문 목록과 같은 값). id 는 PG 플러그인 조각과의 약속이라 유지한다. 첫 칸이 이름, 다음 칸이 값이다. -->
               <div data-ref="payment_method_block_{{payIdx}}">
                 <span class="ecommerce-text-tertiary ecommerce:block">$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_method</span>
-                <span class="ecommerce:text-sm ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:block">{{payment.payment_method_label}}</span>
+                <span class="ecommerce:text-sm ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:block">{{payment.payment_method_display_label ?? payment.payment_method_label}}</span>
                 <span data-if="{{payment.account_info}}" class="ecommerce-text-tertiary ecommerce:block">{{payment.account_info}}</span>
                 <!-- 결제 통화(order_currency) — 유저가 선택·결제한 통화. base 통화와 다를 때 함께 표기. -->
                 <span data-if="{{payment.is_cross_currency}}" class="ecommerce-text-tertiary ecommerce:block">$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_currency|currency={{payment.payment_currency}}</span>

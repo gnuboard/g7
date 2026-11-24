@@ -269,7 +269,7 @@
 | `sirsoft-ecommerce.export.filter_row` | filter | 파일 한 행의 셀 가공 | `src/Services/ExportService.php:663` |
 | `sirsoft-ecommerce.export.list_validation_rules` | filter | 관리 목록 검증 규칙 | `src/Http/Requests/Admin/ExportListRequest.php:69` |
 | `sirsoft-ecommerce.export.mileage.fields` | filter | 마일리지 내역 내보내기 필드 추가 | `src/Exports/Types/MileageExportType.php:125` |
-| `sirsoft-ecommerce.export.orders.fields` | filter | 주문내역 내보내기 필드 추가 | `src/Exports/Types/OrderExportType.php:167` |
+| `sirsoft-ecommerce.export.orders.fields` | filter | 주문내역 내보내기 필드 추가 | `src/Exports/Types/OrderExportType.php:170` |
 | `sirsoft-ecommerce.export.products.fields` | filter | 상품내역 내보내기 필드 추가 | `src/Exports/Types/ProductExportType.php:158` |
 | `sirsoft-ecommerce.export.registered_formats` | filter | 파일 형식 추가 (예: XLSX 플러그인) | `src/Exports/ExportFormatRegistry.php:38` |
 | `sirsoft-ecommerce.export.registered_types` | filter | 내보내기 유형 추가 | `src/Exports/ExportTypeRegistry.php:44` |
@@ -341,12 +341,12 @@
 | `sirsoft-ecommerce.option.bulk_update_validation_rules` | filter | — | `src/Http/Requests/Admin/BulkUpdateOptionsRequest.php:73` |
 | `sirsoft-ecommerce.option.filter_bulk_update_data` | filter | — | `src/Services/ProductOptionService.php:247` |
 | `sirsoft-ecommerce.order-option.after_confirm` | action | — | `src/Services/OrderOptionService.php:362` 외 1곳 |
-| `sirsoft-ecommerce.order-option.before_confirm` | action | — | `src/Services/OrderService.php:1283` |
+| `sirsoft-ecommerce.order-option.before_confirm` | action | — | `src/Services/OrderService.php:1300` |
 | `sirsoft-ecommerce.order.after_admin_notify` | action | — | `src/Services/OrderProcessingService.php:318` 외 2곳 |
 | `sirsoft-ecommerce.order.after_anonymize` | action | — | `src/Services/OrderPrivacyRetentionService.php:96` |
-| `sirsoft-ecommerce.order.after_bulk_shipping_update` | action | — | `src/Services/OrderService.php:1017` |
-| `sirsoft-ecommerce.order.after_bulk_status_update` | action | — | `src/Services/OrderService.php:826` |
-| `sirsoft-ecommerce.order.after_bulk_update` | action | — | `src/Services/OrderService.php:740` |
+| `sirsoft-ecommerce.order.after_bulk_shipping_update` | action | — | `src/Services/OrderService.php:1031` |
+| `sirsoft-ecommerce.order.after_bulk_status_update` | action | — | `src/Services/OrderService.php:840` |
+| `sirsoft-ecommerce.order.after_bulk_update` | action | — | `src/Services/OrderService.php:754` |
 | `sirsoft-ecommerce.order.after_cancel` | action | 주문 전체 취소 확정 후 | 선언 (호출 위치 미확인) |
 | `sirsoft-ecommerce.order.after_confirm` | action | — | `src/Services/OrderProcessingService.php:424` 외 1곳 |
 | `sirsoft-ecommerce.order.after_create` | action | — | `src/Services/OrderProcessingService.php:310` |
@@ -358,31 +358,31 @@
 | `sirsoft-ecommerce.order.after_prune` | action | — | `src/Privacy/OrderRetentionHandler.php:259` |
 | `sirsoft-ecommerce.order.after_purchase_confirmed` | action | — | `src/Services/OrderOptionService.php:1404` 외 1곳 |
 | `sirsoft-ecommerce.order.after_reactivation_restored` | action | — | `src/Services/OrderOptionService.php:885` 외 1곳 |
-| `sirsoft-ecommerce.order.after_read` | action | — | `src/Services/OrderService.php:232` 외 1곳 |
-| `sirsoft-ecommerce.order.after_reset_guest_password` | action | — | `src/Services/OrderService.php:1366` |
-| `sirsoft-ecommerce.order.after_send_email` | action | — | `src/Services/OrderService.php:1080` |
+| `sirsoft-ecommerce.order.after_read` | action | — | `src/Services/OrderService.php:246` 외 1곳 |
+| `sirsoft-ecommerce.order.after_reset_guest_password` | action | — | `src/Services/OrderService.php:1383` |
+| `sirsoft-ecommerce.order.after_send_email` | action | — | `src/Services/OrderService.php:1094` |
 | `sirsoft-ecommerce.order.after_status_change` | action | — | `src/Services/OrderOptionService.php:1393` 외 4곳 |
 | `sirsoft-ecommerce.order.after_status_sync` | action | — | `src/Services/OrderOptionService.php:1398` 외 1곳 |
-| `sirsoft-ecommerce.order.after_update` | action | — | `src/Services/OrderService.php:457` |
-| `sirsoft-ecommerce.order.after_update_shipping_address` | action | — | `src/Services/OrderService.php:468` 외 1곳 |
-| `sirsoft-ecommerce.order.before_bulk_shipping_update` | action | — | `src/Services/OrderService.php:1009` |
-| `sirsoft-ecommerce.order.before_bulk_status_update` | action | — | `src/Services/OrderService.php:804` |
-| `sirsoft-ecommerce.order.before_bulk_update` | action | — | `src/Services/OrderService.php:671` |
+| `sirsoft-ecommerce.order.after_update` | action | — | `src/Services/OrderService.php:471` |
+| `sirsoft-ecommerce.order.after_update_shipping_address` | action | — | `src/Services/OrderService.php:482` 외 1곳 |
+| `sirsoft-ecommerce.order.before_bulk_shipping_update` | action | — | `src/Services/OrderService.php:1023` |
+| `sirsoft-ecommerce.order.before_bulk_status_update` | action | — | `src/Services/OrderService.php:818` |
+| `sirsoft-ecommerce.order.before_bulk_update` | action | — | `src/Services/OrderService.php:685` |
 | `sirsoft-ecommerce.order.before_cancel` | action | — | `src/Services/OrderCancellationService.php:350` |
 | `sirsoft-ecommerce.order.before_create` | action | — | `src/Services/OrderProcessingService.php:155` |
-| `sirsoft-ecommerce.order.before_delete` | action | — | `src/Services/OrderService.php:500` |
+| `sirsoft-ecommerce.order.before_delete` | action | — | `src/Services/OrderService.php:514` |
 | `sirsoft-ecommerce.order.before_payment_complete` | action | — | `src/Services/OrderProcessingService.php:412` 외 1곳 |
 | `sirsoft-ecommerce.order.before_prune` | action | — | `src/Privacy/OrderRetentionHandler.php:235` |
-| `sirsoft-ecommerce.order.before_reset_guest_password` | action | — | `src/Services/OrderService.php:1360` |
-| `sirsoft-ecommerce.order.before_update` | action | — | `src/Services/OrderService.php:273` |
-| `sirsoft-ecommerce.order.before_update_shipping_address` | action | — | `src/Services/OrderService.php:1181` |
+| `sirsoft-ecommerce.order.before_reset_guest_password` | action | — | `src/Services/OrderService.php:1377` |
+| `sirsoft-ecommerce.order.before_update` | action | — | `src/Services/OrderService.php:287` |
+| `sirsoft-ecommerce.order.before_update_shipping_address` | action | — | `src/Services/OrderService.php:1198` |
 | `sirsoft-ecommerce.order.create_validation_rules` | filter | — | `src/Http/Requests/Public/CreateOrderRequest.php:187` |
 | `sirsoft-ecommerce.order.deposit_after_cancel` | action | — | `src/Services/DepositAfterCancelRecorder.php:80` |
 | `sirsoft-ecommerce.order.filter_create_data` | filter | — | `src/Services/OrderProcessingService.php:749` |
-| `sirsoft-ecommerce.order.filter_export_params` | filter | — | `src/Services/OrderService.php:1123` |
-| `sirsoft-ecommerce.order.filter_list_params` | filter | — | `src/Services/OrderService.php:156` |
-| `sirsoft-ecommerce.order.filter_payment_method_display_label` | filter | 관리자 주문 목록 결제수단 표시 라벨 | `src/Http/Resources/OrderListResource.php:287` |
-| `sirsoft-ecommerce.order.filter_update_data` | filter | — | `src/Services/OrderService.php:279` |
+| `sirsoft-ecommerce.order.filter_export_params` | filter | — | `src/Services/OrderService.php:1137` |
+| `sirsoft-ecommerce.order.filter_list_params` | filter | — | `src/Services/OrderService.php:166` |
+| `sirsoft-ecommerce.order.filter_payment_method_display_label` | filter | 주문 결제수단 표시 라벨 (관리자 주문 목록·주문 상세·마이페이지 주문 상세) | `src/Models/OrderPayment.php:260` |
+| `sirsoft-ecommerce.order.filter_update_data` | filter | — | `src/Services/OrderService.php:293` |
 | `sirsoft-ecommerce.order.list_validation_messages` | filter | — | `src/Http/Requests/Admin/OrderListRequest.php:227` |
 | `sirsoft-ecommerce.order.list_validation_rules` | filter | — | `src/Http/Requests/Admin/OrderListRequest.php:135` |
 | `sirsoft-ecommerce.order.payment_failed` | action | — | `src/Services/OrderProcessingService.php:2386` |
@@ -396,14 +396,14 @@
 | `sirsoft-ecommerce.order_option.before_bulk_status_change` | action | — | `src/Services/OrderOptionService.php:681` |
 | `sirsoft-ecommerce.order_option.before_status_change` | action | — | `src/Services/OrderOptionService.php:160` |
 | `sirsoft-ecommerce.order_shipping.tracking_updated` | action | — | `src/Services/OrderOptionService.php:579` |
-| `sirsoft-ecommerce.payment.before_approve` | action | — | `src/Services/OrderService.php:677` 외 1곳 |
+| `sirsoft-ecommerce.payment.before_approve` | action | — | `src/Services/OrderService.php:691` 외 1곳 |
 | `sirsoft-ecommerce.payment.before_cancel` | action | — | `src/Services/OrderCancellationService.php:349` |
 | `sirsoft-ecommerce.payment.before_confirm_deposit` | action | — | `src/Services/OrderProcessingService.php:2103` |
 | `sirsoft-ecommerce.payment.close_vbank` | filter | — | `src/Services/UnpaidVbankCloser.php:74` |
 | `sirsoft-ecommerce.payment.get_client_config` | filter | — | `src/Http/Controllers/Shop/PaymentConfigController.php:26` |
 | `sirsoft-ecommerce.payment.refund` | filter | — | `src/Services/RefundExecutionService.php:678` |
 | `sirsoft-ecommerce.payment.registered_pg_providers` | filter | — | `src/Services/Bridge/EcommercePaymentGatewayBridge.php:1224` 외 2곳 |
-| `sirsoft-ecommerce.payment.supports_partial_cancel` | filter | — | `src/Services/PaymentMethodResolver.php:72` |
+| `sirsoft-ecommerce.payment.supports_partial_cancel` | filter | — | `src/Services/PaymentMethodResolver.php:73` |
 | `sirsoft-ecommerce.preset.after_create` | action | — | `src/Services/SearchPresetService.php:60` |
 | `sirsoft-ecommerce.preset.after_delete` | action | — | `src/Services/SearchPresetService.php:118` |
 | `sirsoft-ecommerce.preset.after_update` | action | — | `src/Services/SearchPresetService.php:93` |
@@ -854,6 +854,7 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 | `customer_selectable` | 고객이 주문서에서 직접 고를 수 있는가 | `point`·`deposit`·`free` 외 `true` |
 | `cash_equivalent` | 현금영수증 발급 대상인가 | enum 규칙 |
 | `auto_approve_refund` | **사람의 개입 없이 환불이 집행되는가** | `false` |
+| `embedded_pg_provider` | 이 결제수단으로 결제하면 결제 행 `embedded_pg_provider` 에 남는 **간편결제사 이름** (문자열, 예: `카카오페이`). 결제수단 칸이 코어 값으로 저장되는 PG 별칭(`core_payment_method` 선언 수단)의 간편결제에만 선언 | 없음 (1.4.1) |
 
 **결제할 것이 없는 주문의 결제수단** — 남은 결제액이 0 이고 적립금으로 충당한 것도 없는 주문(0원 상품·전액
 할인)은 주문서가 보낸 수단(기본 선택 카드 등)과 무관하게 서버가 `free` 로 기록합니다(1.3.5). 적립금으로 전액
@@ -870,6 +871,15 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 의 `claim.auto_approve_refund_payment_methods` 참조). 선언하지 않으면 그 수단의 환불은 결제완료
 상품이라도 `requested` 에서 멈춰 운영자 승인을 기다립니다 — 돈이 새지는 않지만 자동 전이가 없으므로,
 즉시 환불이 가능한 수단이라면 반드시 선언합니다.
+
+**관리자 주문 목록 결제수단 필터와 PG 별칭 (1.4.1)** — PG 별칭(카탈로그에 있고 `core_payment_method` 가 id 와 다르며
+`pg_provider` 가 있는 수단, 예: `toss_kakaopay`)은 주문 생성 때 코어 값(`card`)으로 저장되므로 id 로는 찾을 수 없습니다.
+`PaymentMethodResolver::orderListFilterClauses()` 가 선택 id 를 결제 행 조건으로 풉니다 — 간편결제 별칭은
+`payment_method = core AND pg_provider = P AND embedded_pg_provider = E`, 비간편결제 별칭은 `payment_method = core AND
+pg_provider = P` 에서 같은 코어의 **활성** 간편결제 별칭이 찾는 주문을 빼고, 코어 값·확장 자기 id 는 `payment_method = id`
+에서 같은 방식으로 뺍니다. 비활성 별칭의 주문은 코어 값 필터에 남아 반드시 어느 선택지로든 찾을 수 있습니다. 목록·건수·엑셀
+내보내기가 같은 조건입니다. 간편결제 구분은 실제 결제 결과 기준이라, 통합결제창에서 카카오페이로 결제한 카드 별칭 주문도
+카카오페이 별칭으로 찾아집니다.
 
 `claim.cancel.*` 3종은 활동 로그 리스너에만 등록합니다. **알림 리스너에는 등록하지 않습니다** —
 같은 사건을 환불 알림이 이미 대표하므로, 등록하면 한 건에 알림이 두 번 갑니다.
@@ -896,7 +906,7 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 | 접합면 | 종류 | 쓰임 |
 |---|---|---|
 | `admin_order_list_payment_method_badges` | 레이아웃 확장점 (셀 템플릿 안) | 라벨 아래 덧붙이는 표시(테스트 결제 배지). 주입 컴포넌트는 `row` 를 읽고 자기 주문에만 보이게 조건을 건다 |
-| `sirsoft-ecommerce.order.filter_payment_method_display_label` | filter (`?string $label, OrderPayment $payment`) | 간편결제 원 수단처럼 PG 만 아는 결제수단 이름. 주문 목록 응답 `payment.payment_method_display_label` 이 되고, 화면은 없으면 `payment_method_label` 을 쓴다 |
+| `sirsoft-ecommerce.order.filter_payment_method_display_label` | filter (`?string $label, OrderPayment $payment`) | 간편결제 원 수단처럼 PG 만 아는 결제수단 이름. 주문 목록 응답과 주문 상세 결제 응답(관리자 주문 상세·관리자 클레임 상세의 주문 결제 카드·마이페이지 주문 상세, 1.4.1)의 `payment_method_display_label` 이 되고, 화면은 없으면 `payment_method_label` 을 쓴다. 해석은 `OrderPayment::paymentMethodDisplayLabel()` 한 곳 |
 
 필터 구독자는 자기 결제(`pg_provider`)가 아니거나 앞선 구독자가 이미 채운 값이면 받은 값을 그대로
 돌려줘야 합니다 — 한 목록에 여러 PG 의 주문이 섞입니다.
@@ -1601,10 +1611,12 @@ scoped 인스턴스만 비우므로 싱글톤이면 재시작 전까지 옛 값�
   `id="order_complete_payment_summary"` 를 단다. 영수증·매출전표·가상계좌 안내 조각은 이 id 에 `append_child` 로 붙이고,
   화면 주소(`/shop/orders/…/complete`)를 글자로 맞춰 끼우는 스크립트를 쓰지 않는다 — 쇼핑몰 경로를 바꾼 설치본에서 조용히
   빠진다(#639 에서 번들 PG 세 플러그인이 조각으로 옮김).
-- **결제 방법 행도 id 로만 찾는다.** 간편결제 이름(예: 카카오페이)을 결제 방법 값에 덧붙일 때, 사용자 화면은 템플릿이 단
-  `id="order_payment_method_row"`(같은 `_payment` 조각의 결제 방법 행 — 주문 완료 화면에 그 행을 두는 템플릿도 같은 id 를 쓴다),
-  관리자 주문 상세는 이 모듈이 단 `id="payment_method_block_{결제 순번}"`(`admin_ecommerce_order_detail/_partial_payment_info` —
-  첫 칸이 이름, 다음 칸이 값)로만 찾는다. 행 이름 글자(「결제 방법」「결제수단」)로 찾지 않는다. id 가 없으면 건드리지 않는다.
+- **결제 방법 행의 간편결제 이름은 표시 라벨 훅으로 채운다(1.4.1).** 결제 방법 값은 주문 결제 응답의
+  `payment_method_display_label ?? payment_method_label` 이다 — 사용자 화면은 템플릿이 단 `id="order_payment_method_row"`(같은
+  `_payment` 조각의 결제 방법 행), 관리자 주문 상세는 이 모듈이 단 `id="payment_method_block_{결제 순번}"`, 관리자 클레임 상세 주문 결제
+  카드는 `id="cp_payment_method_{결제 순번}"` 이 그 값을 그린다. 플러그인은 필터 `sirsoft-ecommerce.order.filter_payment_method_display_label`
+  로 자기 결제에만 이름(「카카오페이 (토스페이먼츠)」)을 채우고, 행 글자를 DOM 으로 고쳐 쓰지 않는다. 두 id 는 플러그인 조각이 별도 줄을
+  붙이는 자리로 남겨 둔다 — 행 이름 글자(「결제 방법」「결제수단」)로 찾지 않고, id 가 없으면 붙이지 않는다.
 - **날짜는 표시용 값을 그대로 쓴다.** 결제 정보의 입금 기한은 `vbank_due_at_formatted`(사용자 언어·시간대로 서식을 입힌 값)를
   보여 주고, 원시 값(`vbank_due_at`, ISO8601)에 플러그인이 다시 서식을 입히지 않는다. 날짜 서식은 이 모듈(서버)의 책임이다.
   번들 PG 세 플러그인은 모두 표시용 값만 쓴다(나이스페이먼츠 마이페이지 입금 안내도 레이아웃 조각이 `vbank_due_at_formatted` 를 쓴다).

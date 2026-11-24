@@ -277,6 +277,7 @@ effects:
 
   # 부수 복구
   - kg_user_order_show_injection_restored         # order_payment_info_panel id 부여
+  - mypage_cash_receipt_slot_at_payment_panel_end  # 현금영수증·결제 플러그인 확장 슬롯이 결제 정보 목록 말단(결제수단 행 아래)에 모여 있다 — 마이페이지 결제 패널 구조 잠금(#933 에서 표식 부여)
 
 test_files:
   # 백엔드

@@ -168,6 +168,7 @@
   },
   "payment": {
     "error": {
+      "applepay_ios_only": "Apple PayはiOSデバイス(iPhone・iPad)でのみ決済できます。",
       "sdk_url_untrusted": "決済モジュールのアドレスが正しくないため、決済を進めることができません。管理者にお問い合わせください。",
       "sdk_load_failed": "Nice Payments SDKを読み込むことができません。しばらく後に再度試してください。",
       "request_failed": "決済中にエラーが発生しました。しばらく後に再度試してください。"

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\MasksRefundBankAccount;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Services\RefundExecutionService;
@@ -34,6 +35,9 @@ class OrderPaymentResource extends BaseApiResource
             'payment_status_variant' => $this->payment_status ? $this->payment_status->variant() : null,
             'payment_method' => $this->payment_method,
             'payment_method_label' => $this->payment_method ? $this->paymentMethodLabel() : null,
+            // 화면 표시용 결제수단 이름 — 간편결제 원 수단을 PG 플러그인이 필터 훅으로 채운다(「카카오페이 (토스페이먼츠)」).
+            // 관리자 주문 목록과 같은 해석(`OrderPayment::paymentMethodDisplayLabel()`). 없으면 null — 화면은 기본 라벨을 쓴다.
+            'payment_method_display_label' => $this->resource instanceof OrderPayment ? $this->resource->paymentMethodDisplayLabel() : null,
             'payment_type_label' => $this->payment_method ? $this->paymentMethodLabel() : null,
             // PG 환불(취소)이 필요한 결제수단인지 — 취소 모달의 'PG 함께 취소' 체크박스·'환불 우선순위' 라디오
             // 노출 여부 SSoT(무통장/포인트/예치금/무료는 false → 두 UI 숨김). U1·A28 공유 플래그.

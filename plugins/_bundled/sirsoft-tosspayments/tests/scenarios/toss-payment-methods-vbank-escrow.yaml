@@ -35,7 +35,7 @@ coverage_strategy: pairwise
 # 입력 axis — 결제수단 등록 / SDK 매핑 / 웹훅 / 에스크로에 영향을 주는 변수
 axes:
   order_sheet_mode: [false, true]
-  payment_method: [toss_card, toss_virtual_account, toss_transfer, toss_mobile_phone, toss_tosspay, toss_kakaopay, toss_naverpay, toss_payco, toss_samsungpay]
+  payment_method: [toss_card, toss_virtual_account, toss_transfer, toss_mobile_phone, toss_tosspay, toss_kakaopay, toss_naverpay, toss_payco, toss_samsungpay, toss_applepay, toss_lpay, toss_ssgpay]
   currency: [krw, non_krw]
   use_escrow: [off, on, buyer_choice]
   webhook_status: [done, canceled]
@@ -48,6 +48,8 @@ axes:
   webhook_case: [deposit_done_keeps_payment_key]
   # 관리자 설정 저장 서버측 범위 검증 (UI max 는 클라 힌트일 뿐 — API 직접 호출 우회 차단)
   settings_range: [valid, out_of_range]
+  # 애플페이는 iOS 기기에서만 결제된다 — 주문서 노출(requires_ios)과 결제 순간 확인 두 겹 (#933)
+  device: [ios, non_ios]
 
 axis_notes:
   order_sheet_mode: OFF 이면 결제수단 미주입(통합결제창 카드). ON 일 때만 payment_method axis 유효.
@@ -64,6 +66,10 @@ axis_notes:
     translated = toss_* 선택 시 그 결제수단의 core_payment_method(vbank/bank/phone/card)를 payment_method 로 전송.
     raw_fallback = core_payment_method 미선언 결제수단(dbank·KG 등)은 raw id 를 그대로 전송(기존 동작 보존).
     코어 PaymentMethodEnum 은 toss_* 를 거부하므로 미번역 전송 시 422 (본 이슈에서 수정).
+  device: >-
+    ios = 아이폰·아이패드(UA 또는 Mac UA + 터치 포인트 2 이상). non_ios = 그 밖. toss_applepay 는 non_ios 에서 주문서에
+    보이지 않고(requires_ios), 화면 상태를 조작해 고르더라도 결제 순간 결제 설정 조회·SDK 호출 없이 오류 모달로 멈춘다.
+    다른 결제수단은 device 와 무관하다.
   settings_range: >-
     out_of_range = vbank_valid_hours 가 1~2160(90일) 밖이거나 use_escrow 가 3-상태 밖 → 422 로 저장 차단.
     valid = 범위 내 → 200 저장. UI input[max] 는 클라이언트 힌트라 API 직접 호출을 막지 못한다.
@@ -81,6 +87,9 @@ exclusions:
   - { currency: non_krw, payment_method: toss_mobile_phone, reason: "비KRW 는 휴대폰 차단" }
   - { payment_method: toss_card, use_escrow: on, reason: "카드는 에스크로 SDK 플래그 대상 아님(E1)" }
   - { webhook_status: canceled, replay: duplicate, reason: "취소 통보는 리플레이 가드 대상 아님(PAID 아님)" }
+  - { currency: non_krw, payment_method: toss_applepay, reason: "간편결제는 국내 전용 — 비KRW 차단" }
+  - { currency: non_krw, payment_method: toss_lpay, reason: "간편결제는 국내 전용 — 비KRW 차단" }
+  - { currency: non_krw, payment_method: toss_ssgpay, reason: "간편결제는 국내 전용 — 비KRW 차단" }
 
 # 후속 효과 체인
 effects:
@@ -92,7 +101,10 @@ effects:
   - user_cancel_reported_and_notice_shown       # 사용자 취소 → 취소 기록 API(비회원 토큰 헤더)·로딩 해제·안내 모달
   - claim_cancel_returns_to_claim_detail        # 클레임 추가결제 취소 → 주문 취소 API 없이 서버가 준 복귀 주소
   - tax_free_amount_sent_with_payment           # 면세 금액 있으면 taxFreeAmount(카드·가상계좌), 없으면 키 없음
-  - payment_method_from_action_argument_only    # 결제수단 = 액션 인자 → 서버 저장값, 화면 상태로 채우지 않음
+  - payment_method_from_action_argument_only    # 결제수단 = 액션 인자 → (주문서·클레임 아님) 화면 toss_* 선택 → 서버 저장값 (#933 에서 화면 선택 단계 추가)
+  - checkout_selected_easy_pay_opens_direct_window  # 주문서에서 고른 toss_* 간편결제(서버 값 card)로 자체창(flowMode DIRECT·easyPay) — 서버 값과 어긋나면 서버 우선, 클레임은 화면 상태 무시 (#933 A0)
+  - apple_pay_blocked_off_ios_before_sdk        # iOS 가 아니면 toss_applepay 결제를 결제 설정 조회·SDK 호출 전에 오류 모달로 멈춤 (#933)
+  - easy_pay_methods_declare_embedded_pg_provider # 간편결제 8종은 카탈로그 defaults.embedded_pg_provider 에 결제 결과 간편결제사 이름(「카카오페이」)을 선언, 카드·가상계좌·계좌이체·휴대폰은 키 없음 — 이커머스 결제수단 필터가 쓴다 (#933)
   - sdk_host_allowlisted                        # SDK 주입 호스트 게이트 = manifest trusted_script_hosts
   - vbank_due_at_stored_in_app_timezone   # 가상계좌 dueDate(+09:00)를 앱 시간대(UTC)로 바꿔 저장 — 9시간 어긋남 방지(S4-D5 후속)
   - toss_provider_registered_with_payment_handler

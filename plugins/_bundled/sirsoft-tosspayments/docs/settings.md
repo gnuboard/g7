@@ -24,6 +24,9 @@
 | `method_naverpay` | `boolean` | `false` | 네이버페이 |
 | `method_payco` | `boolean` | `false` | 페이코 |
 | `method_samsungpay` | `boolean` | `false` | 삼성페이 |
+| `method_applepay` | `boolean` | `false` | 애플페이 |
+| `method_lpay` | `boolean` | `false` | L.pay |
+| `method_ssgpay` | `boolean` | `false` | SSG페이 |
 | `vbank_valid_hours` | `integer` | `24` | 가상계좌 입금기한(시간) |
 | `vbank_cash_receipt_type` | `string` | - | 가상계좌 현금영수증 유형 |
 | `use_escrow` | `string` | `off` | 에스크로 사용 |

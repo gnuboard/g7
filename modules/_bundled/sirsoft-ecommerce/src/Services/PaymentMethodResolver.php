@@ -7,6 +7,7 @@ use App\Support\LocalizedValue;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Support\PaymentMethodFilterClause;
 
 /**
  * 결제수단 능력(capability) 해석기
@@ -410,6 +411,143 @@ class PaymentMethodResolver
         }
 
         return in_array($methodId, $this->autoApproveRefundMethodIds(), true);
+    }
+
+    /**
+     * 관리자 주문 목록 결제수단 필터의 선택 id 를 결제 행 조건 묶음으로 바꿉니다. (#933 S6·D8)
+     *
+     * PG 별칭(카탈로그에 있고 `core_payment_method` 가 id 와 다르며 `pg_provider` 가 있는 항목, 예: `toss_kakaopay`)은 주문 생성 때
+     * 코어 값으로 저장되므로 `payment_method IN (별칭)` 으로는 찾을 수 없다. 선택 id 별 조건(여러 id 는 OR):
+     *
+     * | 선택 id | 조건 |
+     * |---|---|
+     * | 간편결제 별칭 | `payment_method = core AND pg_provider = P AND embedded_pg_provider = E` |
+     * | 비간편결제 별칭 | `payment_method = core AND pg_provider = P AND NOT_EASY(P, 같은 core 의 활성 간편결제 목록)` |
+     * | 그 밖(코어 값·확장 자기 id) | `payment_method = id AND 각 PG 별 NOT_EASY(PG, core=id 인 활성 간편결제 목록)` |
+     *
+     * 「활성 간편결제 별칭」 은 `embedded_pg_provider` 를 선언하고 `is_active === true` 인 별칭이다 — 화면 필터 선택지
+     * (`availablePaymentMethods`, is_active)와 같은 범위라, 코어 값에서 빠진 주문은 반드시 다른 선택지로 찾을 수 있다.
+     * 비활성 별칭의 주문은 코어 값 필터에 남는다.
+     *
+     * 알려진 한계: 간편결제 구분은 실제 결제 결과(`embedded_pg_provider`) 기준이다. 통합결제창에서 카카오페이로 결제한 토스 카드
+     * 주문도 `toss_kakaopay` 에 잡힌다.
+     *
+     * @param  array<int, string>  $ids  선택 결제수단 id
+     * @return array<int, PaymentMethodFilterClause> 조건 묶음 (선택 id 순서)
+     */
+    public function orderListFilterClauses(array $ids): array
+    {
+        $catalog = $this->catalog();
+        $clauses = [];
+
+        foreach ($ids as $id) {
+            if (! is_string($id) || $id === '') {
+                continue;
+            }
+
+            $entry = $catalog[$id] ?? null;
+
+            if ($entry !== null && $this->isPgAlias($id, $entry)) {
+                $core = (string) $entry['core_payment_method'];
+                $pg = (string) $entry['pg_provider'];
+                $embedded = $this->stringOrNull($entry['embedded_pg_provider'] ?? null);
+
+                if ($embedded !== null) {
+                    $clauses[] = new PaymentMethodFilterClause($core, $pg, [$embedded]);
+
+                    continue;
+                }
+
+                $exclude = $this->activeEasyPayProvidersByPg($core)[$pg] ?? [];
+                $clauses[] = new PaymentMethodFilterClause($core, $pg, null, $exclude === [] ? [] : [$pg => $exclude]);
+
+                continue;
+            }
+
+            $clauses[] = new PaymentMethodFilterClause($id, null, null, $this->activeEasyPayProvidersByPg($id));
+        }
+
+        return $clauses;
+    }
+
+    /**
+     * 목록·내보내기 필터 배열에 결제수단 조건 묶음(`_payment_method_clauses`)을 채웁니다. (#933 S6)
+     *
+     * 들어온 `_payment_method_clauses` 는 먼저 버린다 — 요청 인자·필터 훅으로 바깥에서 조건을 주입할 수 없다.
+     * `payment_method` 가 있을 때만 채우고, 없으면 저장소가 결제수단 조건을 걸지 않는다.
+     *
+     * @param  array<string, mixed>  $filters  목록 필터
+     * @return array<string, mixed> 조건 묶음을 채운 필터
+     */
+    public function expandOrderListPaymentFilter(array $filters): array
+    {
+        unset($filters['_payment_method_clauses']);
+
+        if (empty($filters['payment_method'])) {
+            return $filters;
+        }
+
+        $ids = is_array($filters['payment_method']) ? $filters['payment_method'] : [$filters['payment_method']];
+        $filters['_payment_method_clauses'] = $this->orderListFilterClauses(array_values($ids));
+
+        return $filters;
+    }
+
+    /**
+     * 코어 값이 같은 **활성** 간편결제 별칭의 간편결제사 이름을 PG 별로 모읍니다.
+     *
+     * @param  string  $core  코어 결제수단 값 (card 등)
+     * @return array<string, array<int, string>> PG => 간편결제사 이름 목록
+     */
+    private function activeEasyPayProvidersByPg(string $core): array
+    {
+        $byPg = [];
+
+        foreach ($this->catalog() as $id => $entry) {
+            if (! $this->isPgAlias($id, $entry) || ($entry['core_payment_method'] ?? null) !== $core) {
+                continue;
+            }
+
+            $embedded = $this->stringOrNull($entry['embedded_pg_provider'] ?? null);
+            if ($embedded === null || ($entry['is_active'] ?? false) !== true) {
+                continue;
+            }
+
+            $byPg[(string) $entry['pg_provider']][] = $embedded;
+        }
+
+        return array_map(static fn (array $list) => array_values(array_unique($list)), $byPg);
+    }
+
+    /**
+     * 카탈로그 항목이 PG 별칭(코어 값으로 저장되는 PG 고정 결제수단)인지 판정합니다.
+     *
+     * @param  string  $id  결제수단 id
+     * @param  array<string, mixed>  $entry  카탈로그 항목
+     * @return bool 별칭이면 true
+     */
+    private function isPgAlias(string $id, array $entry): bool
+    {
+        $core = $this->stringOrNull($entry['core_payment_method'] ?? null);
+
+        return $core !== null && $core !== $id && $this->stringOrNull($entry['pg_provider'] ?? null) !== null;
+    }
+
+    /**
+     * 공백을 지운 비어 있지 않은 문자열이면 그 값을, 아니면 null 을 반환합니다.
+     *
+     * @param  mixed  $value  검사할 값
+     * @return string|null 문자열 또는 null
+     */
+    private function stringOrNull(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = trim($value);
+
+        return $value === '' ? null : $value;
     }
 
     /**

@@ -44,6 +44,7 @@
 | `sirsoft-ecommerce.claim_payment.approve` | filter | `ClaimPaymentApproveListener` | `processApprove` | 10 |
 | `sirsoft-ecommerce.claim_payment.refund` | filter | `ClaimPaymentRefundListener` | `processRefund` | 10 |
 | `sirsoft-ecommerce.claim_payment.void_approval` | filter | `ClaimPaymentApproveListener` | `voidApproval` | 10 |
+| `sirsoft-ecommerce.order.filter_payment_method_display_label` | filter | `ProvidePaymentMethodDisplayLabelListener` | `provideDisplayLabel` | 10 |
 | `sirsoft-ecommerce.payment.close_vbank` | filter | `VbankCloseListener` | `closeVbank` | 10 |
 | `sirsoft-ecommerce.payment.get_client_config` | filter | `RegisterPgProviderListener` | `getClientConfig` | 10 |
 | `sirsoft-ecommerce.payment.refund` | filter | `PaymentRefundListener` | `processRefund` | 10 |
@@ -66,9 +67,19 @@ ko·en 만 실으면 일본어 화면에 번역이 있는데도 한국어 이름
 `RegisterCashReceiptProviderListener` 하나가 처리합니다 — PG 선택과 현금영수증 발급사
 선택이 이커머스에서 독립적인 개념이라 별도 등록입니다.
 
+간편결제 8종(토스페이·카카오페이·네이버페이·페이코·삼성페이·애플페이·엘페이·SSG페이)은 결제 결과 간편결제사 이름을
+`defaults.embedded_pg_provider`(토스 간편결제사 코드와 같은 한글, 예: `카카오페이`)로 선언합니다 — 결제수단 칸이 코어 값
+`card` 로 저장되므로 쇼핑몰 1.4.1 의 관리자 주문 목록 결제수단 필터가 이 값으로 간편결제 주문을 가릅니다. 애플페이(`toss_applepay`)는
+엔트리 최상위에 `requires_ios: true` 를 달아 iOS 주문서에서만 보입니다(나이스·KCP 애플페이와 같은 장치).
+
+`ProvidePaymentMethodDisplayLabelListener` 는 쇼핑몰 필터 `sirsoft-ecommerce.order.filter_payment_method_display_label` 로
+토스 간편결제 결제의 표시 이름을 채웁니다. 승인 콜백이 남긴 `embedded_pg_provider` 를 `TOSS_METHOD_MAP` 으로 거꾸로 찾아
+카탈로그 이름(「카카오페이 (토스페이먼츠)」)을 돌려주고, 옛 표기 「토스결제」 는 토스페이로, 맵에 없는 간편결제사는
+「{원문} (토스페이먼츠)」 로 보입니다. 다른 PG 의 결제, 간편결제사가 없는 카드·가상계좌, 앞선 구독자가 채운 값은 건드리지 않습니다.
+
 주입하는 `toss_*` 항목은 이커머스의 결제수단 **능력 키**를 함께 선언합니다. 그중
 `auto_approve_refund` 는 "사람의 개입 없이 환불이 집행되는가" 이고, **카드 계열
-(`toss_card` + 간편결제 5종)만 `true`** 입니다 — 토스 결제취소 API 가 그 자리에서 환불을
+(`toss_card` + 간편결제 8종)만 `true`** 입니다 — 토스 결제취소 API 가 그 자리에서 환불을
 끝냅니다. `toss_virtual_account`·`toss_transfer`·`toss_mobile_phone` 은 고객 환불계좌를 받아
 사람이 확인해야 끝나므로 `false` 입니다. `true` 로 잘못 선언하면 코어가 환불신청서를 완료까지
 보내 고객에게 "환불 완료" 알림이 가는데 돈은 아직 나가지 않은 상태가 되고, 반대로 카드 계열에서
@@ -108,6 +119,7 @@ ko·en 만 실으면 일본어 화면에 번역이 있는데도 한국어 이름
 | `ExemptRequiredFieldsRoutesListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ExemptRequiredFieldsRoutesListener.php` |
 | `PaymentRefundListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/PaymentRefundListener.php` |
 | `ProvideNecessaryStorageKeysListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ProvideNecessaryStorageKeysListener.php` |
+| `ProvidePaymentMethodDisplayLabelListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ProvidePaymentMethodDisplayLabelListener.php` |
 | `RegisterCashReceiptProviderListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/RegisterCashReceiptProviderListener.php` |
 | `RegisterPgProviderListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/RegisterPgProviderListener.php` |
 | `RegisterTossPaymentMethodsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterTossPaymentMethodsListener.php` |

@@ -1217,6 +1217,131 @@
                                                                 "text": "$t:sirsoft-tosspayments.settings.method_samsungpay"
                                                             }
                                                         ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "paytosspayments:flex paytosspayments:items-center paytosspayments:gap-2 paytosspayments:cursor-pointer paytosspayments:text-sm paytosspayments:text-gray-700 paytosspayments:dark:text-gray-300"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "comment": "애플페이. 아이폰·아이패드(iOS) 주문서에서만 보인다(카탈로그 requires_ios)",
+                                                                        "type": "basic",
+                                                                        "name": "Checkbox",
+                                                                        "actions": [
+                                                                            {
+                                                                                "type": "change",
+                                                                                "handler": "setState",
+                                                                                "if": "{{!_computed.isPluginReadOnly}}",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form.method_applepay": "{{$event.target.checked}}",
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "props": {
+                                                                            "name": "method_applepay",
+                                                                            "autoBinding": false,
+                                                                            "checked": "{{!!_local.form?.method_applepay}}",
+                                                                            "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-tosspayments.settings.method_applepay"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "pay-tosspayments-form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-tosspayments.settings.method_applepay_hint"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "paytosspayments:flex paytosspayments:items-center paytosspayments:gap-2 paytosspayments:cursor-pointer paytosspayments:text-sm paytosspayments:text-gray-700 paytosspayments:dark:text-gray-300"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "comment": "L.pay(엘페이)",
+                                                                "type": "basic",
+                                                                "name": "Checkbox",
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "if": "{{!_computed.isPluginReadOnly}}",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.method_lpay": "{{$event.target.checked}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "name": "method_lpay",
+                                                                    "autoBinding": false,
+                                                                    "checked": "{{!!_local.form?.method_lpay}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-tosspayments.settings.method_lpay"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "paytosspayments:flex paytosspayments:items-center paytosspayments:gap-2 paytosspayments:cursor-pointer paytosspayments:text-sm paytosspayments:text-gray-700 paytosspayments:dark:text-gray-300"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "comment": "SSG페이",
+                                                                "type": "basic",
+                                                                "name": "Checkbox",
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "if": "{{!_computed.isPluginReadOnly}}",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.method_ssgpay": "{{$event.target.checked}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "name": "method_ssgpay",
+                                                                    "autoBinding": false,
+                                                                    "checked": "{{!!_local.form?.method_ssgpay}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-tosspayments.settings.method_ssgpay"
+                                                            }
+                                                        ]
                                                     }
                                                 ]
                                             },

@@ -21,6 +21,9 @@
           "method_naverpay": false,
           "method_payco": false,
           "method_samsungpay": false,
+          "method_applepay": false,
+          "method_lpay": false,
+          "method_ssgpay": false,
           "abilities": {
             "can_update": true
           }
@@ -64,7 +67,10 @@
                   "method_kakaopay": true,
                   "method_naverpay": false,
                   "method_payco": false,
-                  "method_samsungpay": false
+                  "method_samsungpay": false,
+                  "method_applepay": false,
+                  "method_lpay": false,
+                  "method_ssgpay": false
                 },
                 "webhookInfo": {
                   "url": "https://example.com/plugins/sirsoft-tosspayments/webhook/deposit"
@@ -94,7 +100,10 @@
                   "method_kakaopay": true,
                   "method_naverpay": false,
                   "method_payco": false,
-                  "method_samsungpay": false
+                  "method_samsungpay": false,
+                  "method_applepay": false,
+                  "method_lpay": false,
+                  "method_ssgpay": false
                 },
                 "webhookInfo": {
                   "url": "https://example.com/plugins/sirsoft-tosspayments/webhook/deposit"
@@ -122,7 +131,10 @@
                   "method_kakaopay": true,
                   "method_naverpay": false,
                   "method_payco": false,
-                  "method_samsungpay": false
+                  "method_samsungpay": false,
+                  "method_applepay": false,
+                  "method_lpay": false,
+                  "method_ssgpay": false
                 },
                 "webhookInfo": {
                   "url": "https://example.com/plugins/sirsoft-tosspayments/webhook/deposit"

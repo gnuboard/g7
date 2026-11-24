@@ -443,8 +443,10 @@ SDK 주소도 원본과 같은 카카오 주소(`t1.kakaocdn.net`)를 쓰고, �
 
 `partials/mypage/orders/_payment` 의 `id="order_payment_info_panel"` 은 지우거나 바꾸지 않는다. PG 플러그인(KG이니시스·NHN KCP·
 나이스페이먼츠)이 영수증 버튼·가상계좌 입금 안내를 붙일 카드를 이 id 로만 찾는다 — 화면 제목 글자는 언어마다 달라 기준이 되지 않는다.
-id 가 사라지면 오류 없이 그 안내들만 빠진다. 같은 조각의 결제 방법 행 `id="order_payment_method_row"` 도 같은 약속이다 — PG 플러그인이
-간편결제 이름(예: 카카오페이)을 이 행의 값(마지막 `span`)에 덧붙인다. 주문 완료 화면에 결제 방법 행을 두는 템플릿은 같은 id 를 단다.
+id 가 사라지면 오류 없이 그 안내들만 빠진다. 같은 조각의 결제 방법 행 `id="order_payment_method_row"` 도 같은 약속이다 — 주문 완료 화면에
+결제 방법 행을 두는 템플릿은 같은 id 를 단다. 이 행의 값은 `order.data.payment?.payment_method_display_label ?? payment_method_label` 이다 —
+간편결제 주문은 PG 플러그인이 쇼핑몰 표시 라벨 훅으로 채운 이름(「카카오페이 (토스페이먼츠)」)을, 아니면 기본 결제수단 이름을 보인다(쇼핑몰 1.4.1,
+관리자 주문 목록·상세와 같은 값). 행 글자를 DOM 으로 고쳐 쓰던 옛 방식은 쓰지 않는다.
 약속 원문: `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` 「PG 플러그인이 결제 정보 카드에 붙일 때의 약속」.
 
 ### 주문서 결제수단 칸의 id·버튼 표식도 PG 플러그인과의 약속

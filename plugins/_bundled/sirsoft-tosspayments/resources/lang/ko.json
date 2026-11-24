@@ -42,6 +42,10 @@
         "method_naverpay": "네이버페이",
         "method_payco": "페이코",
         "method_samsungpay": "삼성페이",
+        "method_applepay": "애플페이",
+        "method_applepay_hint": "아이폰·아이패드(iOS) 주문서에서만 보입니다.",
+        "method_lpay": "L.pay",
+        "method_ssgpay": "SSG페이",
         "section_virtual_account": "가상계좌",
         "vbank_valid_hours": "입금기한(시간)",
         "vbank_valid_hours_hint": "가상계좌 발급 후 입금 가능한 시간입니다. 최대 2160시간(90일).",
@@ -101,7 +105,8 @@
     },
     "payment": {
         "error": {
-            "sdk_url_untrusted": "결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요."
+            "sdk_url_untrusted": "결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요.",
+            "applepay_ios_only": "애플페이는 iOS 기기(아이폰·아이패드)에서만 결제할 수 있습니다."
         }
     },
     "plugin_read_only": "이 플러그인 설정을 수정할 권한이 없어 읽기 전용으로 표시됩니다."

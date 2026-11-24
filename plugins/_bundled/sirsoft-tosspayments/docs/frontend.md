@@ -41,9 +41,20 @@
 결제 핸들러가 `requestPayment` 하나뿐인 이유는 이 플러그인이 통합결제창 SDK 호출 이후를 전부 브라우저
 리다이렉트에 위임하기 때문입니다(§AGENTS.md "1. 이 확장은 무엇인가") — 다른 PG처럼 결제
 수단 선택 UI를 DOM으로 직접 조작할 필요가 없습니다. `order_sheet_mode`에 따라 통합결제창
-하나(카드 한 장)를 열지, 사용자가 고른 개별 토스 결제수단(`params.paymentMethodId`)을
-지정해 열지가 갈리지만(`params.paymentMethod`, 미지정 시 `_local.paymentMethod` 참조) 그
+하나(카드 한 장)를 열지, 사용자가 고른 개별 토스 결제수단을 지정해 열지가 갈리지만 그
 분기도 이 핸들러 하나 안에서 처리합니다.
+
+결제수단 id 는 ① 액션 인자 `params.paymentMethod` ② (클레임 추가결제가 아니고) 주문서 화면의
+`_local.paymentMethod` 가 `toss_` 로 시작하면 그 값 ③ 서버가 저장한 `pg_payment_data.payment_method`
+순서로 정합니다. 서버는 `toss_kakaopay` 같은 선택을 코어 값(`card`)으로 바꿔 저장하므로, 서버 값만 보면
+간편결제 종류가 사라져 카드 통합결제창이 열립니다 — 주문서 선택을 먼저 보는 이유입니다. 화면 값이 서버 값과
+맞지 않으면(예: 화면은 카카오페이, 서버는 `vbank`) 서버 값으로 다시 찾습니다. 클레임 추가결제 화면의 상태는
+주문서 선택이 아니므로 보지 않습니다.
+
+애플페이(`toss_applepay`)는 iOS 기기에서만 결제됩니다. 주문서는 카탈로그 `requires_ios` 로 iOS 가 아니면
+항목을 숨기고, 이 핸들러는 결제 순간에 한 번 더 확인해 iOS 가 아니면 결제 설정 조회·SDK 호출 없이 오류
+모달(「애플페이는 iOS 기기(아이폰·아이패드)에서만 결제할 수 있습니다.」)을 띄웁니다
+(`resources/js/support/applePayDevice.ts`, KCP 와 같은 판정).
 
 구매자가 결제창을 닫으면(`USER_CANCEL`) 이 핸들러가 이커머스 모듈의 결제 취소 기록
 엔드포인트(`orders/{orderNumber}/cancel-payment`)를 부릅니다. 이 엔드포인트는 회원과

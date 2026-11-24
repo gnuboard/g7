@@ -3,6 +3,7 @@ import { sitePath } from '../apiUrl';
 import { buildGuestOrderTokenHeaders } from '../guestOrderToken';
 import { reportPaymentWindowClosed } from '../paymentCloseReport';
 import { translateNicepay as t } from '../translate';
+import { applePayUnsupportedMessage, isIosMobileDevice, isNicepayApplePayMethod } from '../support/applePayDevice';
 
 interface G7ApiResponse {
     data?: unknown;
@@ -426,6 +427,13 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
     if (typeof paymentMethod !== 'string' || paymentMethod === '') {
         console.error('[sirsoft-pay_nicepayments] payment method is required (paymentMethod or pgPaymentData.payment_method)');
         reportPaymentError(G7Core, pgPaymentData, t('payment.error.request_failed', '결제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'));
+        return;
+    }
+
+    // 애플페이는 iOS 기기에서만 결제된다. 주문서가 `requires_ios` 로 숨기지만 화면 상태를 조작해 골랐다면 결제 설정 조회 전에
+    // 멈춘다(NHN KCP 와 같은 결제 시점 확인, #933).
+    if (isNicepayApplePayMethod(paymentMethod) && !isIosMobileDevice()) {
+        reportPaymentError(G7Core, pgPaymentData, applePayUnsupportedMessage(), paymentMethod);
         return;
     }
 

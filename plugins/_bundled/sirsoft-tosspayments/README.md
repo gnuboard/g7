@@ -40,7 +40,7 @@ URL로 돌려보내고, 서버가 그 파라미터로 승인 확인 API를 호�
 |---|---|
 | 승인 방식 | 통합결제창 SDK + 브라우저 리다이렉트 콜백 + 서버 승인 확인 |
 | UI 모드 | 결제창형(단일 카드) / 주문서형(개별 결제수단 버튼) 전환 |
-| 결제수단 | 카드, 가상계좌, 계좌이체, 휴대폰, 토스페이, 카카오페이, 네이버페이, 페이코, 삼성페이 |
+| 결제수단 | 카드, 가상계좌, 계좌이체, 휴대폰, 토스페이, 카카오페이, 네이버페이, 페이코, 삼성페이, 애플페이(아이폰·아이패드 전용), L.pay, SSG페이 |
 | 가상계좌 | 발급 + 웹훅 입금통보(secret 대조로 위조 방지) |
 | 에스크로 | 3-상태(끔/켬/구매자선택) |
 | 현금영수증 | 카드/계좌이체 발급·취소 프로바이더 등록 |
@@ -117,6 +117,9 @@ php artisan plugin:update sirsoft-tosspayments --force
 | `method_naverpay` | 네이버페이 | `false` |
 | `method_payco` | 페이코 | `false` |
 | `method_samsungpay` | 삼성페이 | `false` |
+| `method_applepay` | 애플페이 | `false` |
+| `method_lpay` | L.pay | `false` |
+| `method_ssgpay` | SSG페이 | `false` |
 | `vbank_valid_hours` | 가상계좌 입금기한(시간) | `24` |
 | `vbank_cash_receipt_type` | 가상계좌 현금영수증 유형 | - |
 | `use_escrow` | 에스크로 사용 | `off` |
