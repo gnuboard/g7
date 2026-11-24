@@ -1,0 +1,44 @@
+feature: 화면 단위 DOM id 유일성 — 확장점 조각 엔진 스코프와 디버그 모드 중복 경고 (engine-v1.99.0, #408)
+
+description: |
+  한 화면에 같은 DOM id 가 둘 이상이면 getElementById·label for·aria-* 와 확장 주입(target_id)이 첫 요소에만 걸린다.
+  2026-11-23 실측: 관리자 게시글 상세 ckeditor5_content_css_injector ×4(본문 + 답글 3), 알림 정의 탭 비즈뿌리오 행 표시 6종
+  ×행 수, 회원 항목 주소 검색 버튼 ×주소형 항목 수. 같은 확장 조각이 여러 확장점에 주입되면 조각 안 정적 노드 id 가 호스트마다
+  같은 값으로 나갔다.
+
+  엔진 스코프(결정 D2·D3): 확장점 호스트 아래의 보간 없는 정적 노드 id 는 DOM 에 `{원래 id}__{가장 가까운 호스트 DOM id}` 로
+  출력한다. 보간 id·명시 props.id·내부 식별(findById·slot·DevTools·editorPath·서버 target_id)은 그대로다. 셀 경로
+  (renderItemChildren) 확장점 호스트는 React 트리의 scope 를 상속하는 CellExtensionHost 로 그린다.
+
+  디버그 모드 경고(결정 D5): G7Config.debug 일 때만 문서 body 를 감시해 변화가 멈추고 1000ms 뒤 중복 id 를 console.warn 한다.
+  (pathname, id) 쌍마다 1회, 경로가 바뀌면 초기화. 운영에서는 observer 를 만들지 않는다.
+
+  전 화면 크롤 E2E(결정 D6)는 별도 매니페스트 dom-id-uniqueness-all-routes.yaml 이 소유한다.
+
+axes:
+  # 엔진 스코프 9종 + 디버그 경고 6종 — 서로 다른 기능의 케이스라 축을 나눠 곱하지 않고 한 축에 둔다
+  case: [static_single_host, interpolated_id, explicit_props_id, nested_hosts, missing_host_id, repeated_hosts, slot_scoped, cell_path, scope_function, monitor_duplicate_insert, monitor_repeat_insert, monitor_route_change, monitor_stop, monitor_debug_off, monitor_debug_on_wiring]
+
+effects:
+  # 엔진 스코프
+  - static_fragment_id_scoped_with_host_id                # 호스트 아래 정적 id 가 {id}__{호스트 id}, 호스트 자신은 그대로
+  - interpolated_id_not_scoped                            # 보간 id 는 해석값 그대로
+  - explicit_props_id_not_scoped                          # 명시 props.id(ckeditor5-content 등)는 그대로
+  - nearest_host_wins_and_host_id_scoped_by_outer         # 중첩 호스트는 가까운 호스트가 이기고 호스트 id 도 바깥 scope 로 스코프
+  - missing_host_id_leaves_id_unscoped_without_error      # 호스트 id 가 없으면 스코프 없이 오류 없음
+  - same_fragment_in_three_hosts_yields_three_distinct_ids
+  - slot_scope_and_extension_scope_chain                  # SlotContainer 스코프와 겹치면 {id}__{slot}__{host}
+  - cell_path_extension_host_inherits_scope               # 셀 경로 확장점 호스트가 상속 scope 를 받음
+  - scope_function_contract                               # scopeExtensionNodeId 입력 모양별 계약
+  # 디버그 모드 경고
+  - duplicate_dom_id_warns_once_after_settle
+  - same_pathname_and_id_warns_only_once
+  - pathname_change_resets_reported_pairs
+  - stop_function_disconnects_observer
+  - production_mode_creates_no_observer
+  - debug_mode_starts_monitor_once_and_destroy_stops_it
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ExtensionIdScope.test.tsx
+  - resources/js/core/template-engine/__tests__/devDuplicateIdMonitor.test.ts
+

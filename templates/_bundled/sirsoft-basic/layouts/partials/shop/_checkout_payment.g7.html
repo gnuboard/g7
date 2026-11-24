@@ -200,7 +200,7 @@
         <p class="text-xs text-muted mt-2">$t:shop.checkout.refund_bank_partial_notice</p>
       </div>
       <!-- 현금영수증 신청 폼 확장 슬롯 — 이커머스 모듈이 resources/extensions/checkout_cash_receipt.json 으로 주입한다. 슬롯이 dbank 블록 내부에 있으므로 결제수단이 무통장일 때만 렌더되며 별도 if 가 필요 없다. 발급 프로바이더는 PG 플러그인이 담당하지만 신청 폼 자체는 PG 비종속이라 모듈이 소유한다(플러그인이 주입하면 두 PG 동시 활성 시 폼이 2개 렌더된다). 주입된 폼은 _local.checkoutExtraPayload 에 자기 필드를 써야 주문 생성 payload 에 실린다 — _checkout_summary.json 의 body 확장 병합 칸 참조. -->
-      <extension-point name="shop_checkout_cash_receipt_slot">
+      <extension-point name="shop_checkout_cash_receipt_slot" data-ref="ext_shop_checkout_cash_receipt_slot">
         <default/>
       </extension-point>
       <!-- 입금 기한 안내 — 가상계좌 안내와 동일 규칙(서버 resolveAutoCancelDays 일치). 빈 문자열/0/음수/비숫자는 기본치 3 으로 되돌린다. -->

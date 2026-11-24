@@ -262,18 +262,18 @@
           </icon>
           <span class="text-center leading-tight">$t:admin.dashboard.quick_menu.modules</span>
         </a>
-        <extension-point name="admin_dashboard_quick_menu" class="contents">
+        <extension-point name="admin_dashboard_quick_menu" data-ref="ext_admin_dashboard_quick_menu" class="contents">
           <default/>
         </extension-point>
       </div>
-      <extension-point name="admin_dashboard_commerce">
+      <extension-point name="admin_dashboard_commerce" data-ref="ext_admin_dashboard_commerce">
         <default/>
       </extension-point>
-      <extension-point name="admin_dashboard_community">
+      <extension-point name="admin_dashboard_community" data-ref="ext_admin_dashboard_community">
         <default/>
       </extension-point>
       <!-- 방문자 통계 카드 — 확장이 카드 안팎에 자기 지표를 덧붙일 수 있게 확장 지점으로 감싼다. -->
-      <extension-point name="admin_dashboard_analytics" class="contents">
+      <extension-point name="admin_dashboard_analytics" data-ref="ext_admin_dashboard_analytics" class="contents">
         <default>
           <include src="partials/admin_dashboard/_analytics_widget.g7.html"/>
         </default>

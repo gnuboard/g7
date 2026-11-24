@@ -262,6 +262,7 @@ function resolveTranslationsInValue(
 import { responsiveManager } from './ResponsiveManager';
 import { FormProvider, FormContextValue, useFormContext, getNestedValue, setNestedValue } from './FormContext';
 import { SlotContext } from './SlotContext';
+import { ExtensionIdScopeContext, scopeExtensionNodeId } from './ExtensionIdScope';
 import { IsolatedStateProvider, useIsolatedState } from './IsolatedStateContext';
 import { SortableContainer, SortableItemWrapper, useSortableContext, type SortableStrategy } from './sortable';
 import { useParentContext } from './ParentContextProvider';
@@ -1551,6 +1552,10 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     // 단, 첫 렌더 패스에는 전역 값이 아직 없다(SlotProvider 가 useLayoutEffect 로 연다) — 렌더 시점 「제자리 건너뛰기」 판정만
     // React 문맥 값도 함께 본다(engine-v1.81.1, 7.1.1). 훅은 최상위에 무조건 둔다.
     const slotContextForRender = useContext(SlotContext);
+
+    // 가장 가까운 확장점 호스트의 DOM id — 주입 조각의 정적 노드 id 를 DOM 에서 구분하는 데 쓴다 (engine-v1.99.0, #408).
+    // 훅은 최상위에 무조건 둔다.
+    const extensionIdScope = useContext(ExtensionIdScopeContext);
 
     // 컴포넌트 동적 상태 관리 (loadingActions, apiError, 기타 동적 속성)
     const [localDynamicState, setLocalDynamicState] = useState<Record<string, any>>({
@@ -3434,15 +3439,18 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * `{{` 가 포함된 경우에만 extendedDataContext($idx 등 iteration 변수 포함)로
      * 문자열 보간한다. 표현식이 없는 정적 id 는 원본을 그대로 반환하여 비용을 회피한다.
      * 이 값은 DOM 출력 전용이며, slot 등록·DevTools 등 내부 식별에는 원본 id 를 계속 사용한다.
+     *
+     * 확장점 호스트 아래의 정적 id 는 `{id}__{호스트 DOM id}` 로 스코프한다 (engine-v1.99.0, #408 D2·D3).
+     * 같은 조각이 호스트 여러 곳에 주입돼도 DOM id 가 겹치지 않는다. 보간 id 와 명시 props.id 는 그대로다.
      */
     const resolvedComponentId = useMemo(() => {
       const rawId = effectiveComponentDef.id;
       if (typeof rawId !== 'string' || !rawId.includes('{{')) {
-        return rawId;
+        return scopeExtensionNodeId(rawId, extensionIdScope) as typeof rawId;
       }
       const resolved = bindingEngine.resolveBindings(rawId, extendedDataContext, { skipCache: true });
       return typeof resolved === 'string' ? resolved : rawId;
-    }, [effectiveComponentDef.id, extendedDataContext, bindingEngine]);
+    }, [effectiveComponentDef.id, extendedDataContext, bindingEngine, extensionIdScope]);
 
     /**
      * 자식에게 전달할 FormContext
@@ -5105,13 +5113,19 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         // className·data-*·aria-* 의 `{{…}}` 가 식 원문 그대로 붙었다(게시판 관리자 글 상세 본문 래퍼, engine-v1.94.0).
         const host = buildExtensionPointHostProps(stableResolvedProps);
 
+        // 주입 조각의 정적 노드 id 는 이 호스트 id 로 스코프한다 (engine-v1.99.0, #408).
+        // 호스트 id 가 없으면 Provider 를 두지 않아 바깥 scope 를 그대로 물려준다. 중첩 확장점은 가장 가까운 호스트가 이긴다.
         return (
           <div
             id={resolvedComponentId}
             className={host.className}
             {...host.attrs}
           >
-            {renderChildren}
+            {resolvedComponentId ? (
+              <ExtensionIdScopeContext.Provider value={resolvedComponentId}>
+                {renderChildren}
+              </ExtensionIdScopeContext.Provider>
+            ) : renderChildren}
           </div>
         );
       }
@@ -5347,6 +5361,8 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       effectiveComponentDef.type,
       effectiveComponentDef.name,
       effectiveComponentDef.id,
+      // DOM id (보간·확장점 scope 반영) — scope 가 바뀌면 다시 그린다 (engine-v1.99.0, #408)
+      resolvedComponentId,
       effectiveComponentDef.props,
       effectiveComponentDef.isolatedState,
       effectiveComponentDef.isolatedScopeId,

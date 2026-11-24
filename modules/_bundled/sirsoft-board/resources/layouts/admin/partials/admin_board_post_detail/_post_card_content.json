@@ -1014,6 +1014,7 @@
                         },
                         {
                             "comment": "일반 글인 경우 - 내용",
+                            "id": "ext_html_content_parent_post",
                             "type": "extension_point",
                             "name": "html_content",
                             "if": "{{!(post?.data?.parent?.is_secret && post?.data?.parent?.content === null)}}",
@@ -1225,6 +1226,7 @@
                                     ]
                                 },
                                 {
+                                    "id": "ext_html_content_blinded",
                                     "type": "extension_point",
                                     "name": "html_content",
                                     "props": {

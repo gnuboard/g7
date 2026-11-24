@@ -58,7 +58,8 @@ test.describe('알림톡 템플릿 초안·검수 신청·삭제 안내', () => 
           .filter({ has: page.getByRole('button', { name: '편집', exact: true }) }).last();
         await card.getByRole('button', { name: '편집', exact: true }).first().click();
         const dialog = page.getByRole('dialog');
-        await expect(dialog.locator('#bizppurio_tpl_sections')).toBeVisible({ timeout: 15_000 });
+        // #408 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+        await expect(dialog.locator('[id^="bizppurio_tpl_sections__"]')).toBeVisible({ timeout: 15_000 });
         return dialog;
       };
 

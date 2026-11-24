@@ -29,8 +29,9 @@ import type { Page } from '@playwright/test';
 
 const CART_LOCALE = 'ko';
 
-const TOGGLE = '#ext_checkout_cash_receipt_toggle';
-const IDENTIFIER = '#ext_checkout_cash_receipt_identifier';
+// #408 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+const TOGGLE = '[id^="ext_checkout_cash_receipt_toggle__"]';
+const IDENTIFIER = '[id^="ext_checkout_cash_receipt_identifier__"]';
 
 type ApiResult = { status: number; body: string };
 

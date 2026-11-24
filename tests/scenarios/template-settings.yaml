@@ -50,6 +50,7 @@ effects:
   - plugin_settings_readable_with_view_permission
   - template_settings_bound_text_shows_owner_notice
   - field_type_controls_rendered
+  - settings_toggle_input_id_unique_per_instance   # 설정 화면 스위치(boolean 칸)가 같은 name 으로 여럿이어도 안쪽 checkbox id 가 겹치지 않는다 (#408)
   - multilingual_field_language_tabs
   - admin_logo_prefers_template_setting
   - accent_palette_defined_per_option
@@ -86,6 +87,7 @@ test_files:
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/template-settings-layout.test.ts
   - templates/_bundled/sirsoft-admin_basic/src/settings/__tests__/TemplateSettingsFields.test.tsx
   - templates/_bundled/sirsoft-basic/src/settings/__tests__/TemplateSettingsFields.test.tsx
+  - templates/_bundled/sirsoft-basic/src/settings/parts/__tests__/Toggle.test.tsx
   - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/TemplateSettingsProps.test.tsx
   - templates/_bundled/sirsoft-basic/__tests__/layouts/template-settings-bindings.test.ts
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-branding-template-settings.test.ts

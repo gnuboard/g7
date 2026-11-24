@@ -16,7 +16,7 @@
 import type { ComponentCapabilitySpec, EditorControlSpec } from './specTypes';
 import type { EditorNode } from '../utils/layoutTreeUtils';
 import { reverseResolve } from './recipeEngine';
-import { BASE_SCOPE, type StyleScope } from './styleScope';
+import { BASE_SCOPE, getScopedProps, type StyleScope } from './styleScope';
 
 /** flexEditor 역할 — capability.flexEditor 값 */
 export type FlexEditorRole = 'container' | 'item' | 'auto';
@@ -89,10 +89,12 @@ export function isRenderedAsFlex(el: Element | null | undefined): boolean {
  * content 가 패치마다 재마운트되며 `liveElement` 가 패치 직전 DOM 으로 고정(stale)되는
  * 경로(§항목A)에서도 정확하다. 토글 즉시 정렬 박스 ON/OFF 가 모달에 반영된다.
  *
- * **scope**: scope≠base 면 그 scope 컨테이너(`responsive[bp].props`)
- * 에서 enable 레시피를 역해석한다 — 디바이스별 flex on/off 판정. base fallback 은 보지
- * 않는다(scope 자체에 명시 설정이 있어야 그 디바이스에서 flex 로 본다. flexEnable off
- * 레시피 D7 가 명시 해제 토큰을 쓰는 이유).
+ * **scope**: scope≠base 면 그 폭에서 실제로 쓰이는 className 으로 판정한다(engine-v1.99.1). 구간 컨테이너에
+ * className 이 있으면(통째 교체 값 또는 기본 + `classMerge` 실효값) 그 값을 역해석하고, 없으면 그 폭은 기본
+ * className 을 그대로 이어받으므로 기본값으로 판정한다. 종전에는 구간에 명시 설정이 있어야만 켜짐으로 봤는데
+ * (D8), classMerge 가 기본과 같은 토큰을 저장하지 않으므로 공통이 flex 인 노드는 디바이스 탭에서 늘 「꺼짐」 으로
+ * 보이고 「정렬 박스로 만들기」 를 눌러도 아무것도 기록되지 않아 그 폭에서만 해제할 길이 없었다. 해제는 여전히
+ * off 레시피(D7)의 명시 해제 토큰(block)으로 기록되어 기본 상속을 끊는다.
  *
  * @param node 대상 노드
  * @param enableControl flexEnable 컨트롤 (미선언 시 null → false)
@@ -127,7 +129,13 @@ export function isNodeFlexEnabled(
   // flex 로 인정해야 한다(B안 placeholder 보정의 scopedValue 는 base 동일값을 undefined 로
   // 흐리므로 부적합). off 는 명시 해제 토큰(block)으로 기록되어 onValue 불일치로 구분된다(D7/D8).
   if (scope.breakpoint !== 'base') {
-    return isEnabledValue(r.scopedRawValue);
+    const scopedClassName = getScopedProps(node, scope).className;
+    if (typeof scopedClassName === 'string' && scopedClassName.trim() !== '') {
+      return isEnabledValue(r.scopedRawValue);
+    }
+    // 구간이 className 을 갖지 않으면 그 폭의 실효 className 은 기본값이다 — 기본값의 켜짐을 이어받는다.
+    const baseResolved = reverseResolve(node, enableControl, BASE_SCOPE);
+    return baseResolved.matched && isEnabledValue(baseResolved.value);
   }
   return r.matched && isEnabledValue(r.value);
 }

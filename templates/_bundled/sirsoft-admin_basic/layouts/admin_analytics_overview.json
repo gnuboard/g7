@@ -1072,6 +1072,7 @@
                     },
                     {
                         "comment": "확장이 개요에 자기 위젯(전환 요약 등)을 덧붙이는 자리",
+                        "id": "ext_analytics_overview_widgets",
                         "type": "extension_point",
                         "name": "analytics_overview_widgets",
                         "props": {

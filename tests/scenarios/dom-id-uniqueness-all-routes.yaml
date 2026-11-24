@@ -1,0 +1,26 @@
+feature: 관리자·사용자 전 화면의 실제 DOM 에서 같은 id 가 두 번 이상 나오지 않는다 (#408)
+
+description: |
+  HTML id 는 한 문서에 하나여야 한다. 같은 id 가 둘 이상이면 getElementById, label for, aria-* 연결과
+  확장 주입(target_id)이 첫 요소에만 걸린다. 레이아웃 노드 id(.g7.html 의 data-ref)는 대부분 DOM id 로
+  그대로 나가므로 탭 partial, 형제 partial, 확장점 조각 반복 주입, 같은 name 의 Toggle 반복에서 중복이 생겼다.
+
+  전 화면 크롤 E2E 는 실행 중 서버의 활성 확장 병합 라우트(routes.json) 전부와 화면별 ?tab= 변종을
+  두 폭으로 열어 중복 id 와 보간 잔재({{ 가 남은 id)를 센다. G7_E2E_ID_CRAWL=1 일 때만 돈다(결정 D6).
+  모달, 시트처럼 조작으로 열리는 영역은 열지 않는다 — 그 부분은 계획서 8절 Chrome MCP 시나리오가 맡는다.
+
+  축
+    - width: desktop_1440(데스크톱 분기), mobile_390(휴대폰 분기). responsive 분기마다 그려지는 노드가 다르다.
+    - route_kind: admin(sirsoft-admin_basic 병합 라우트, #main_content 마운트 대기), user(sirsoft-basic 병합 라우트, #app 마운트 대기)
+
+test_files:
+  - tests/Playwright/specs/id-duplicate/all-routes-dom-id-unique.spec.ts
+
+axes:
+  width: [desktop_1440, mobile_390]
+  route_kind: [admin, user]
+
+effects:
+  - dom_id_unique_all_routes        # 모든 화면, 모든 폭에서 같은 id 를 가진 요소가 2개 이상인 id 가 0건이다
+  - no_uninterpolated_id_literal    # {{ 가 남은 id 가 0건이다
+  - skipped_routes_have_reason      # 열지 못한 동적 라우트는 모두 사유가 있고, 규칙 없는 동적 경로는 실패한다

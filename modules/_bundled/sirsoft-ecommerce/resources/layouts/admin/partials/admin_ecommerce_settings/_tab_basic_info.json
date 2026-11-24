@@ -1494,6 +1494,7 @@
                     "name": "Div",
                     "children": [
                         {
+                            "id": "ext_inquiry_board_setting",
                             "type": "extension_point",
                             "name": "inquiry_board_setting",
                             "default": [

@@ -113,7 +113,7 @@
             <div class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:contents">
               <td class="ecommerce:px-2 ecommerce:py-2 ecommerce:text-center">
                 <!-- 드래그 손잡이 — 읽기 전용(설정 수정 권한 없음)이면 숨긴다. 손잡이가 없으면 순서를 끌어 바꿀 수 없다(엔진 sortable 은 비활성 옵션이 없다). -->
-                <div data-ref="shipping_type_drag_handle" data-if="{{!_computed.isReadOnly}}" :data-drag-handle="true" class="ecommerce:cursor-grab ecommerce:text-gray-500 ecommerce:hover:text-gray-600 ecommerce:dark:text-gray-500 ecommerce:dark:hover:text-gray-300">
+                <div data-ref="shipping_type_drag_handle_{{$tIdx}}" data-if="{{!_computed.isReadOnly}}" :data-drag-handle="true" class="ecommerce:cursor-grab ecommerce:text-gray-500 ecommerce:hover:text-gray-600 ecommerce:dark:text-gray-500 ecommerce:dark:hover:text-gray-300">
                   <icon name="fa-solid fa-grip-vertical" class="ecommerce:text-sm"/>
                 </div>
               </td>

@@ -228,7 +228,7 @@
               · 표시 자리: 라벨 아래 덧붙이는 표시(테스트 결제 등). 여러 플러그인이 같이 붙고, 각자 자기 주문에만 보인다. -->
             <div data-ref="payment_method_cell" class="ecommerce-stack-flush">
               <span data-ref="payment_method_label">{{row.payment?.payment_method_display_label ?? row.payment?.payment_method_label}}</span>
-              <extension-point name="admin_order_list_payment_method_badges"/>
+              <extension-point name="admin_order_list_payment_method_badges" data-ref="ext_admin_order_list_payment_method_badges_{{row.id}}"/>
             </div>
           </cell>
         </column>

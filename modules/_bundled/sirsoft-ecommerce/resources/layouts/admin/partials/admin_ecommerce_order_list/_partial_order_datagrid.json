@@ -944,6 +944,7 @@
                                                 "text": "{{row.payment?.payment_method_display_label ?? row.payment?.payment_method_label}}"
                                             },
                                             {
+                                                "id": "ext_admin_order_list_payment_method_badges_{{row.id}}",
                                                 "type": "extension_point",
                                                 "name": "admin_order_list_payment_method_badges"
                                             }

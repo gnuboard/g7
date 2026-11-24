@@ -68,7 +68,8 @@ async function openSocialTab(page: Page, token: string): Promise<void> {
 test('signup source filter narrows the list and survives reload', async ({ page }) => {
   await gotoUsers(page, admin);
   await page.click('#detail_search_toggle');
-  const select = page.locator('#social_login_provider_filter');
+  // #408 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+  const select = page.locator('[id^="social_login_provider_filter__"]');
   await expect(select).toBeVisible();
   await expect(select.locator('option[value="facebook"]')).toHaveCount(1);
   await select.selectOption('facebook');
@@ -83,7 +84,7 @@ test('signup source filter narrows the list and survives reload', async ({ page 
 
   await page.reload();
   await page.waitForSelector('#filter_card');
-  await expect(page.locator('#social_login_provider_filter')).toHaveValue('facebook', { timeout: 15_000 });
+  await expect(page.locator('[id^="social_login_provider_filter__"]')).toHaveValue('facebook', { timeout: 15_000 });
 });
 
 /**
@@ -180,7 +181,7 @@ test('admins without account view permission see no filter and a notice', async 
   await gotoUsers(page, reader);
   await page.click('#detail_search_toggle');
   await expect(page.locator('#detail_filters_section')).toBeVisible();
-  await expect(page.locator('#social_login_provider_filter')).toHaveCount(0);
+  await expect(page.locator('[id^="social_login_provider_filter__"]')).toHaveCount(0);
 
   await openSocialTab(page, reader);
   await expect(page.locator('#admin_user_social_forbidden')).toBeVisible();

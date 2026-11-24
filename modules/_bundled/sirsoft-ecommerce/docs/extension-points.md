@@ -2014,7 +2014,6 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `exchange_redelivery_tracking_registered` | `mail`, `database` |
 | `return_collection_tracking_registered` | `mail`, `database` |
 | `exchange_collection_overdue` | `mail`, `database` |
-| `coupon_issued.309` | `mail`, `database` |
 <!-- @generated:notifications END -->
 
 <!-- @intent START -->

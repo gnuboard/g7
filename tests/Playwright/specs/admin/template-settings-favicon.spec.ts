@@ -121,7 +121,8 @@ test('#434 - 템플릿 → 일반 탭 → 번들 순으로 파비콘이 내려�
   };
   const openGeneralTab = async () => {
     await page.goto('/admin/settings');
-    await page.locator('#site_favicon_uploader input[type=file]').waitFor({ state: 'attached', timeout: 30_000 });
+    // #408 엔진 스코프: 확장점 호스트 아래(기본 내용 포함)의 정적 노드 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+    await page.locator('[id^="site_favicon_uploader__"] input[type=file]').waitFor({ state: 'attached', timeout: 30_000 });
     await expect(page.locator('input[name="general.site_name"]')).not.toHaveValue('', { timeout: 20_000 });
   };
   const templatePath = /^\/api\/admin\/templates\/sirsoft-basic\/settings$/;
@@ -135,8 +136,8 @@ test('#434 - 템플릿 → 일반 탭 → 번들 순으로 파비콘이 내려�
   expect(templateIcon).toMatch(/\/api\/favicon\//);
 
   await openGeneralTab();
-  await clear('#site_favicon_uploader');
-  await pick('#site_favicon_uploader', 'e2e-core-favicon.png');
+  await clear('[id^="site_favicon_uploader__"]');
+  await pick('[id^="site_favicon_uploader__"]', 'e2e-core-favicon.png');
   await save(settingsPath, 'POST');
   expect(await userIcon(), '템플릿 계층이 일반 탭보다 우선한다').toBe(templateIcon);
 
@@ -148,7 +149,7 @@ test('#434 - 템플릿 → 일반 탭 → 번들 순으로 파비콘이 내려�
   expect(coreIcon, '템플릿을 비우면 일반 탭 파비콘으로 내려간다').not.toBe(templateIcon);
 
   await openGeneralTab();
-  await clear('#site_favicon_uploader');
+  await clear('[id^="site_favicon_uploader__"]');
   await save(settingsPath, 'POST');
   expect(await userIcon(), '둘 다 비우면 번들 아이콘').toMatch(/\/assets\/core\/favicon\/favicon\.(ico|svg)/);
 });

@@ -91,7 +91,7 @@
                     "text": "$t:sirsoft-ecommerce.admin.settings.identity.purposes_section_description"
                 },
                 {
-                    "id": "page_header",
+                    "id": "identity_policies_header",
                     "type": "basic",
                     "name": "Div",
                     "responsive": {

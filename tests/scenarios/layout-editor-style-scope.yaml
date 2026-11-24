@@ -65,6 +65,7 @@ effects:
   # 표시조건
   - device_visibility_if_writes_responsive_breakpoint_if
   - base_if_unchanged_when_device_if_edited
+  - visibility_tab_shows_device_subtabs_only_without_color_scheme_row   # 표시조건 탭에는 디바이스 세부탭만 있고 색 모드 줄은 없다(D9)
   # 스냅샷 독립
   - modal_scope_snapshots_toolbar_on_open
   - modal_scope_independent_after_toolbar_change

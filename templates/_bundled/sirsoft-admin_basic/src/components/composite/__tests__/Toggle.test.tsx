@@ -349,4 +349,30 @@ describe('Toggle', () => {
     await user.click(toggle);
     expect(onChange).toHaveBeenCalledTimes(2);
   });
+
+  /**
+   * #408 — 게시판 관리 목록처럼 같은 name(is_active)의 스위치가 행마다 있으면 name 을 그대로 id 로 쓰던 종전 코드는
+   * 화면에 같은 id 를 행 수만큼 냈다(실측 is_active ×10). ExtensionCardGrid 는 확장 표시 이름(공백·한글)이 name 이다.
+   *
+   * @scenario component=toggle
+   * @effects toggle_input_id_unique_per_instance
+   */
+  it('같은 name 의 스위치 3개는 input id 3개가 모두 다르고, 공백·한글 name 은 id 에서 걷힌다', () => {
+    const { container } = render(
+      <>
+        <Toggle name="is_active" ariaLabel="a" />
+        <Toggle name="is_active" ariaLabel="b" />
+        <Toggle name="is_active" ariaLabel="c" />
+        <Toggle name="게시판 확장 v2" ariaLabel="d" />
+      </>
+    );
+    const inputs = Array.from(container.querySelectorAll('input[type="checkbox"]')) as HTMLInputElement[];
+    const ids = inputs.map((el) => el.id);
+    expect(new Set(ids.slice(0, 3)).size).toBe(3);
+    ids.forEach((id) => expect(id).toMatch(/^[A-Za-z0-9_-]+$/));
+    expect(ids[0].endsWith('-is_active')).toBe(true);
+    expect(ids[3].endsWith('-v2')).toBe(true);
+    // name 은 폼 필드명이라 그대로다
+    expect(inputs.map((el) => el.name)).toEqual(['is_active', 'is_active', 'is_active', '게시판 확장 v2']);
+  });
 });

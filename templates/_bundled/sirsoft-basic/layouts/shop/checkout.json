@@ -514,6 +514,7 @@
                         ]
                     },
                     {
+                        "id": "ext_shop_checkout_extensions",
                         "type": "extension_point",
                         "name": "shop_checkout_extensions",
                         "default": []

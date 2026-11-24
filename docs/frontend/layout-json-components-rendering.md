@@ -735,6 +735,16 @@ iteration 내부에서 상태를 관리하는 컴포넌트(Input, Select, TagInp
 - 특히 내부 상태를 관리하는 컴포넌트(TagInput, Select, Input 등)에서 중요
 
 > **iteration id 표현식 보간** (engine-v1.50.0+): 노드의 최상위 `id` 필드에 쓴 표현식(`id: "item_{{$idx}}"`, `id: "row_{{item.id}}"` 등)은 일반 렌더 경로(DynamicRenderer)에서 iteration 컨텍스트로 보간되어 행마다 고유 DOM id 가 된다. `index_var`(예 `"index_var": "$idx"`) 또는 `item_var` 의 필드를 활용한다. 정적 id 를 iteration 안에 그대로 두면 모든 행이 같은 HTML id 를 갖게 되어 W3C id 유일성을 위반하므로(렌더 누락까지 유발), 반복 항목 노드와 그 자식의 id 는 반드시 동적화한다. 내부 식별(slot 등록·React key)에는 원본 id 가 쓰이므로 보간은 DOM 출력에만 적용된다.
+>
+> **sortable 도 반복이다**: `sortable` 의 `itemTemplate` 은 항목마다 DynamicRenderer 로 그려지므로 같은 규칙이 적용된다. 항목 노드와 그 자식(드래그 손잡이 등)의 id 는 그 sortable 이 선언한 `itemVar`·`indexVar`(마크업 `item-var`·`index-var`, 생략 시 `$item`·`$index`)로 보간한다. 예: `<sortable ... index-var="$tIdx">` 안의 손잡이 → `data-ref="shipping_type_drag_handle_{{$tIdx}}"`. 드래그 동작은 `[data-drag-handle]` 로 잡으므로 id 보간과 무관하다.
+>
+> **확장점 주입 조각의 엔진 스코프** (engine-v1.99.0+): 확장점(`extension_point`) 호스트 아래에서 그려지는 노드(주입 조각, 그리고 주입이 없을 때 그려지는 기본 내용 `default` 모두)의 **보간 없는 정적 id** 는 DOM 에 `{원래 id}__{가장 가까운 호스트 확장점의 DOM id}` 로 출력된다. 같은 조각이 본문과 답글, 행마다의 확장점처럼 여러 호스트에 주입돼도 DOM id 가 겹치지 않게 하는 장치다.
+>
+> - 중첩 확장점은 가장 가까운 호스트가 이긴다. 호스트 자신의 id 도 바깥 scope 로 스코프된 값이 기준이다(`leaf__ext_inner__ext_outer`).
+> - SlotContainer 스코프(`{id}__{슬롯 컨테이너 id}`)와 겹치면 이어 붙는다(`{id}__{slot}__{host}`).
+> - 셀 경로(DataGrid·CardGrid 셀 안의 확장점) 호스트도 바깥 scope 를 상속한다. 셀 안 노드 id 는 원래 DOM 에 나가지 않는다.
+> - **바뀌지 않는 것**: `{{…}}` 로 보간한 id, 명시 `props.id`(마크업 `id="…"` 속성), 엔진 내부 식별(findById·slot 등록·DevTools·편집기 경로)과 서버의 `target_id` 주입은 원본 id 를 쓴다.
+> - 호스트 id 가 없으면 스코프 기준이 없어 스코프되지 않는다. 그래서 확장점 호스트에는 id 가 필수다([layout-json.md 「화면 단위 id 유일성」](layout-json.md#화면-단위-id-유일성)).
 
 ---
 

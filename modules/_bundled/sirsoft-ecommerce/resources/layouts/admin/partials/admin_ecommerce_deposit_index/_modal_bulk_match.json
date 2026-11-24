@@ -75,7 +75,7 @@
                     },
                     "children": [
                         {
-                            "id": "mobile_card_list",
+                            "id": "bulk_match_mobile_card_list",
                             "type": "basic",
                             "name": "Div",
                             "props": {
@@ -83,7 +83,7 @@
                             },
                             "children": [
                                 {
-                                    "id": "mobile_card_1",
+                                    "id": "bulk_match_mobile_card_1",
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
@@ -239,7 +239,7 @@
                                     ]
                                 },
                                 {
-                                    "id": "mobile_card_2",
+                                    "id": "bulk_match_mobile_card_2",
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {

@@ -642,7 +642,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 ```html
 <layout name="admin_user_form" version="1.0.0">
   <div data-ref="user_form_container">
-    <extension-point name="user_form_additional_fields">
+    <extension-point name="user_form_additional_fields" data-ref="ext_user_form_additional_fields">
       <prop name="readOnlyFields">
         <item>zipcode</item>
         <item>address</item>
@@ -668,6 +668,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
       "name": "Div",
       "children": [
         {
+          "id": "ext_user_form_additional_fields",
           "type": "extension_point",
           "name": "user_form_additional_fields",
           "default": [],
@@ -734,6 +735,18 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
   "priority": 100
 }
 ```
+
+#### 확장점 호스트 id 와 조각의 DOM id (engine-v1.99.0+)
+
+확장점 호스트에는 비어 있지 않은 노드 id(`data-ref`)를 반드시 답니다. 반복 안의 확장점이면 그 반복의 변수로 보간합니다(`data-ref="ext_board_post_row_badges_{{post.id}}"`). 감사 규칙이 호스트 id 누락을 오류로 막습니다.
+
+같은 조각이 한 화면의 여러 확장점에 주입될 수 있으므로(게시글 본문과 답글마다의 확장점, 목록 행마다의 확장점), 엔진은 **조각의 정적 노드 id 를 DOM 에서 `{원래 id}__{호스트 id}` 로 출력합니다.** 위 예시의 `custom_field_section` 은 DOM 에서 `custom_field_section__ext_user_form_additional_fields` 가 됩니다.
+
+- 보간한 노드 id(`{{…}}`)와 조각이 직접 지정한 `id` 속성(마크업 `id="…"`)은 바뀌지 않습니다.
+- 서버의 `target_id` 주입, 슬롯 등록, 레이아웃 편집기는 원본 id 를 씁니다.
+- 조각 요소를 DOM 으로 찾아야 하면 접두어 셀렉터(`[id^="custom_field_section__"]`)를 쓰거나, 화면에 한 번만 나오는 요소라면 조각이 `id` 속성을 직접 지정합니다. 예: 팝업 플러그인이 위치를 재는 GDPR 쿠키 배너는 `id="gdpr_cookie_banner"` 를 직접 답니다.
+- `target_layout` 조각(Overlay 주입·모달)은 확장점 호스트 아래가 아니므로 바뀌지 않습니다.
+- 확장점의 기본 내용(`default`, 주입이 없을 때 그려지는 레이아웃 쪽 노드)도 호스트 아래에서 그려지므로 같은 규칙이 적용됩니다. 예: 첨부 업로더 확장점 기본 내용의 `pc_image_uploader` 는 DOM 에서 `pc_image_uploader__pc_image_uploader_slot` 입니다.
 
 ### JSON 스키마
 

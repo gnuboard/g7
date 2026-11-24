@@ -54,7 +54,7 @@ async function findBasicBoardWithPosts(page: Page): Promise<string | null> {
 test.describe('게시판 확장점 — 글 행 자리', () => {
   /**
    * @scenario surface=board_list_basic, locale=ko, site_name=empty
-   * @effects basic_list_and_scrap_have_pc_and_mobile_slots, slot_hosts_have_no_node_id_and_use_contents_marker
+   * @effects basic_list_and_scrap_have_pc_and_mobile_slots, slot_hosts_have_unique_node_id_and_use_contents_marker
    */
   test('basic 목록의 글 행마다 PC·모바일 두 자리가 생기고 콘솔 오류가 없다', async ({ page }) => {
     const errors: string[] = [];
@@ -76,6 +76,11 @@ test.describe('게시판 확장점 — 글 행 자리', () => {
     const slots = page.locator('[data-extension-point="board_post_row_badges"]');
     expect(await slots.count()).toBe(rows * 2);
 
+    // 호스트 DOM id 가 행·PC/모바일 자리마다 모두 다르다 (#408 — 확장점 호스트 id 의무, 반복 안은 행 변수 보간)
+    const hostIds = await slots.evaluateAll((els) => els.map((el) => el.id));
+    expect(hostIds.every((id) => id !== '')).toBe(true);
+    expect(new Set(hostIds).size).toBe(hostIds.length);
+
     // 빈 호스트는 display:contents 라 상자를 만들지 않는다(제목 줄 흐름을 깨지 않음)
     const display = await slots.first().evaluate((el) => getComputedStyle(el).display);
     expect(display).toBe('contents');
@@ -91,15 +96,10 @@ test.describe('홈 환영 배지 — 화면 언어', () => {
     ['ja', 'ようこそ'],
   ] as const;
 
-  /**
-   * @scenario surface=home_welcome, locale=en, site_name=set
-   * @effects welcome_badge_follows_screen_locale
-   */
-  /**
-   * @scenario surface=home_welcome, locale=ja, site_name=set
-   * @effects welcome_badge_follows_screen_locale
-   */
   for (const [locale, badge] of CASES) {
+    // 이 반복이 CASES 의 언어마다 아래 시험을 만든다 — docblock 은 @scenario 를 1건만 읽으므로 나머지 언어는 라인 주석으로 병기
+    // @scenario surface=home_welcome, locale=en, site_name=set
+    // @scenario surface=home_welcome, locale=ja, site_name=set
     /**
      * @scenario surface=home_welcome, locale=ko, site_name=set
      * @effects welcome_badge_follows_screen_locale

@@ -437,6 +437,7 @@
                                             "children": [
                                                 {
                                                     "comment": "본문은 공통정보 관리 화면의 보기 패널과 같은 표시기로 그린다 — HTML 은 정화해 그리고, 텍스트는 줄바꿈을 살린다",
+                                                    "id": "ext_html_content",
                                                     "type": "extension_point",
                                                     "name": "html_content",
                                                     "props": {

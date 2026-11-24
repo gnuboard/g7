@@ -14,13 +14,15 @@
  * 본 spec 은 실제 브라우저 DOM 에서 중복 id 0 + 미보간 리터럴 0 을 잠근다(단위/시뮬레이션은
  * 보간 부재로 인한 reconciliation 합쳐짐을 포착하지 못해 실측이 필수 — feedback #238 계열).
  *
+ * @scenario-manifest tests/scenarios/iteration-id-unique.yaml
  * 축 요약(마커 아님 — 평문): admin_dashboard_render, layout_editor_core_id_chip.
  * 효과 요약(마커 아님 — 평문): html_id_unique_no_duplicates, no_uninterpolated_literal_id, core_id_chip_affordance.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
 test.describe('@layout-editor iteration id 유일성', () => {
-  /** @effects html_id_unique_no_duplicates, no_uninterpolated_literal_id */
+  // @scenario surface=admin_dashboard_render
+  // @effects html_id_unique_no_duplicates, no_uninterpolated_literal_id
   test('관리자 대시보드 렌더 시 HTML id 중복 0 + 미보간 리터럴 0', async ({ page }) => {
     const token = issueToken(
       'core.dashboard.read',
@@ -34,7 +36,8 @@ test.describe('@layout-editor iteration id 유일성', () => {
     await authenticatePage(page, token);
 
     await page.goto('/admin/dashboard');
-    await page.waitForLoadState('networkidle', { timeout: 40_000 });
+    // 대시보드는 주기 요청이 있어 networkidle 에 이르지 않는다 — 문서 로드 뒤 아래 반복 항목 마커로 준비를 판정한다.
+    await page.waitForLoadState('domcontentloaded', { timeout: 40_000 });
     // 반복 목록(모듈 등)이 채워질 때까지 대기 — 로케일 무관 구조 마커(반복 항목 DOM id).
     // 보간이 동작하면 module_item_0 같은 고유 id 가 생기고, 깨졌으면 module_item_{{$idx}} 가 됨.
     await page.waitForFunction(
@@ -68,7 +71,8 @@ test.describe('@layout-editor iteration id 유일성', () => {
     expect(report.duplicates, `중복 HTML id: ${report.duplicates.join(', ')}`).toEqual([]);
   });
 
-  /** @effects core_id_chip_affordance */
+  // @scenario surface=layout_editor_core_id_chip
+  // @effects core_id_chip_affordance
   test('레이아웃 편집기 요소 ID 칸에 데이터 칩 진입점(BindingChipTextInput) 노출', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);

@@ -1,0 +1,23 @@
+feature: 반복 안 노드 id 보간과 화면 HTML id 유일성, 레이아웃 편집기 요소 ID 칸의 데이터 칩 진입점 (engine-v1.50.0)
+
+description: |
+  반복 안 노드 id 가 식(`item_{{$idx}}`)이어도 일반 렌더 경로에서 보간되지 않으면 리터럴 그대로 나가, 행마다 같은
+  HTML id 가 생기고 React 가 같은 key 로 행을 합쳐 렌더가 빠졌다. 엔진이 반복 문맥으로 id 를 보간하고(resolvedComponentId),
+  슬롯 주입 컴포넌트의 루트 id 를 컨테이너 id 로 스코프한 뒤로는 실제 브라우저 DOM 에서 중복 id 0, 미보간 리터럴 0 이어야 한다.
+  단위 시험은 보간이 빠질 때의 행 합쳐짐을 잡지 못해 실제 대시보드 렌더로 잰다.
+
+  편집기 쪽은 요소 ID 칸이 데이터 칩 입력(BindingChipTextInput)이라 반복 문맥 id 식을 칩으로 넣을 수 있어야 한다.
+
+  축
+    - surface: admin_dashboard_render(관리자 대시보드 실제 렌더), layout_editor_core_id_chip(편집기 Props 탭 요소 ID 칸)
+
+test_files:
+  - tests/Playwright/specs/layout-editor/iteration-id-unique.spec.ts
+
+axes:
+  surface: [admin_dashboard_render, layout_editor_core_id_chip]
+
+effects:
+  - html_id_unique_no_duplicates    # 대시보드 렌더 DOM 에서 같은 id 를 가진 요소가 2개 이상인 id 가 0건이다
+  - no_uninterpolated_literal_id    # {{ 또는 }} 가 남은 id 가 0건이다
+  - core_id_chip_affordance         # 요소 ID 칸에 데이터 칩 진입점이 보인다
