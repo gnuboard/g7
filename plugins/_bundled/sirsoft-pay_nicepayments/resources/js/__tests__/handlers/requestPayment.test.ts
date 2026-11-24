@@ -66,6 +66,26 @@ describe('requestPaymentHandler', () => {
         expect(setLocalSpy).not.toHaveBeenCalled();
     });
 
+    /**
+     * 애플페이는 iOS 기기에서만 결제된다 — 데스크톱이면 결제 설정 조회 전에 토스트로 멈춘다 (#933).
+     */
+    // @scenario concern=payment_entry
+    // @effects apple_pay_blocked_off_ios_before_config
+    it('iOS 가 아니면 애플페이 결제를 결제 설정 조회 없이 토스트로 멈춘다', async () => {
+        vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+        );
+        (window as any).G7Core.t = vi.fn((key: string) => key === 'sirsoft-pay_nicepayments.payment.error.applepay_ios_only'
+            ? '애플페이는 iOS 기기(아이폰·아이패드)에서만 결제할 수 있습니다.'
+            : key);
+
+        await requestPaymentHandler({ params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'nicepay_applepay' } });
+
+        expect(apiGet).not.toHaveBeenCalled();
+        expect(toastErrorSpy).toHaveBeenCalledWith('애플페이는 iOS 기기(아이폰·아이패드)에서만 결제할 수 있습니다.');
+        expect(setLocalSpy).toHaveBeenCalledWith({ isSubmittingOrder: false, paymentMethod: 'nicepay_applepay' });
+    });
+
     // @scenario concern=payment_entry
     // @effects payment_method_from_action_argument_only
     it('결제수단이 액션 인자에 없으면 결제를 시작하지 않는다 — 화면 상태나 card 로 추측하지 않는다', async () => {
@@ -289,6 +309,26 @@ describe('requestPaymentHandler', () => {
             expect(submitSpy).toHaveBeenCalledTimes(1);
             expect(getSubmittedField('PayMethod')).toBe('VBANK');
             expect(getSubmittedFormAction()).toContain(NICEPAY_MOBILE_HOST);
+        });
+
+        /**
+         * 아이폰에서는 애플페이 결제 시점 확인을 통과해 애플페이 직결 코드(E025)로 결제창을 연다 (#933).
+         *
+         * @scenario concern=pay_method_mapping
+         * @effects apple_pay_blocked_off_ios_before_config
+         */
+        it("iPhone 에서 애플페이(nicepay_applepay)는 DirectEasyPay='E025' 로 결제창을 연다", async () => {
+            vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
+                'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+            );
+
+            await requestPaymentHandler({
+                params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'nicepay_applepay' },
+            });
+
+            expect(submitSpy).toHaveBeenCalledTimes(1);
+            expect(getSubmittedField('DirectEasyPay')).toBe('E025');
+            expect(toastErrorSpy).not.toHaveBeenCalled();
         });
 
         /**

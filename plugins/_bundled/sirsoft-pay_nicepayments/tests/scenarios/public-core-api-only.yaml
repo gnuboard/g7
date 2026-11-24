@@ -33,6 +33,7 @@ effects:
   - close_report_via_core_api                       # 닫힘 보고는 G7Core.api + 플러그인 API 상대 경로
   - close_report_failure_is_swallowed               # 보고 실패는 예외로 흘리지 않음
   - selected_method_saved_unchanged                 # 고른 결제수단 ID 를 그대로 저장
+  - apple_pay_blocked_off_ios_before_config         # iOS 가 아니면 애플페이(nicepay_applepay)를 고를 때 저장하지 않고, 결제 순간에는 결제 설정 조회 전에 토스트로 멈춤 — 아이폰은 DirectEasyPay=E025 (#933)
   - easy_pay_rendered_by_payment_method_catalog_only # 주입 대상 없던 주문서 간편결제 조각을 다시 두지 않음
   - no_locale_dependent_dom_lookup                  # 결제수단 선택이 화면 문구로 DOM 을 찾지 않음
   - payment_entry_guarded                           # 입력·설정·서명 실패 시 결제 폼을 제출하지 않음

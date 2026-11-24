@@ -72,6 +72,16 @@ class OrderService
     }
 
     /**
+     * 결제수단 능력 해석기를 해석합니다. (요청 범위 scoped 인스턴스 — 설정 저장 뒤 새 카탈로그를 읽도록 보관하지 않는다)
+     *
+     * @return PaymentMethodResolver 결제수단 해석기
+     */
+    private function paymentMethodResolver(): PaymentMethodResolver
+    {
+        return app(PaymentMethodResolver::class);
+    }
+
+    /**
      * 리뷰 서비스를 늦게 해석합니다. (주문 삭제 시 주문옵션 리뷰 정리용 — 기존 생성 호출부 호환)
      *
      * @return ProductReviewService 리뷰 서비스
@@ -154,6 +164,10 @@ class OrderService
     {
         // 필터 데이터 가공 훅
         $filters = HookManager::applyFilters('sirsoft-ecommerce.order.filter_list_params', $filters);
+
+        // 결제수단 선택지를 결제 행 조건으로 푼다 — PG 별칭(toss_kakaopay 등)은 코어 값으로 저장돼 id 로는 찾을 수 없다 (#933).
+        // 훅 뒤에서 풀어 훅이 내부 조건 키를 주입하지 못하게 한다.
+        $filters = $this->paymentMethodResolver()->expandOrderListPaymentFilter($filters);
 
         $perPage = (int) ($filters['per_page'] ?? 20);
 
@@ -1121,6 +1135,9 @@ class OrderService
     {
         // 필터 데이터 가공 훅
         $filters = HookManager::applyFilters('sirsoft-ecommerce.order.filter_export_params', $filters);
+
+        // 목록과 같은 결제수단 조건 (#933)
+        $filters = $this->paymentMethodResolver()->expandOrderListPaymentFilter($filters);
 
         return $this->repository->getForExport($filters, $ids);
     }

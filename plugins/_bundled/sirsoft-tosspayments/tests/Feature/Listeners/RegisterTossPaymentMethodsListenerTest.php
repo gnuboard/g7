@@ -273,6 +273,9 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
             'method_naverpay' => true,
             'method_payco' => true,
             'method_samsungpay' => true,
+            'method_applepay' => true,
+            'method_lpay' => true,
+            'method_ssgpay' => true,
         ]);
 
         $injected = collect($this->listener->injectTossMethods($this->builtinMethods()))
@@ -321,6 +324,9 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
             'method_naverpay' => true,
             'method_payco' => true,
             'method_samsungpay' => true,
+            'method_applepay' => true,
+            'method_lpay' => true,
+            'method_ssgpay' => true,
         ]);
 
         $injected = collect($this->listener->injectTossMethods($this->builtinMethods()))
@@ -336,6 +342,9 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
             'toss_naverpay' => true,
             'toss_payco' => true,
             'toss_samsungpay' => true,
+            'toss_applepay' => true,
+            'toss_lpay' => true,
+            'toss_ssgpay' => true,
             'toss_virtual_account' => false,
             'toss_transfer' => false,
             'toss_mobile_phone' => false,
@@ -376,6 +385,9 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
             'method_naverpay' => true,
             'method_payco' => true,
             'method_samsungpay' => true,
+            'method_applepay' => true,
+            'method_lpay' => true,
+            'method_ssgpay' => true,
         ]);
 
         $byId = collect($this->listener->injectTossMethods($this->builtinMethods()))->keyBy('id');
@@ -387,6 +399,10 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
             'toss_samsungpay' => ['text' => 'S', 'class' => 'bg-blue-600 text-white'],
             'toss_payco' => ['text' => 'P', 'class' => 'bg-red-600 text-white'],
             'toss_tosspay' => ['text' => 'T', 'class' => 'bg-blue-700 text-white'],
+            // #933 — 나이스페이먼츠 applepay·lpay·ssgpay 와 같은 배지
+            'toss_applepay' => ['text' => 'A', 'class' => 'bg-gray-900 text-white'],
+            'toss_lpay' => ['text' => 'L', 'class' => 'bg-purple-600 text-white'],
+            'toss_ssgpay' => ['text' => 'SSG', 'class' => 'bg-red-700 text-white'],
         ];
 
         foreach ($expected as $id => $mark) {
@@ -404,6 +420,95 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
                 $actual,
                 "{$id} 의 브랜드 마크가 다른 PG 와 다르다 — 같은 브랜드가 PG 마다 달라 보인다"
             );
+        }
+    }
+
+    /**
+     * 모든 토글을 켠 설정 (12종).
+     *
+     * @return array<string, bool> 플러그인 설정 값
+     */
+    private function allMethodsOn(): array
+    {
+        return [
+            'order_sheet_mode' => true,
+            'method_card' => true,
+            'method_virtual_account' => true,
+            'method_transfer' => true,
+            'method_mobile_phone' => true,
+            'method_tosspay' => true,
+            'method_kakaopay' => true,
+            'method_naverpay' => true,
+            'method_payco' => true,
+            'method_samsungpay' => true,
+            'method_applepay' => true,
+            'method_lpay' => true,
+            'method_ssgpay' => true,
+        ];
+    }
+
+    /**
+     * 애플페이만 iOS 전용(`requires_ios: true`, 엔트리 최상위)을 선언하고 나머지 11종은 키가 없다 (#933).
+     *
+     * 체크아웃은 `(!m.requires_ios || _global.appConfig?.isIos)` 로 거른다 — 나이스·KCP 애플페이와 같은 장치다.
+     *
+     * @scenario order_sheet_mode=true, payment_method=toss_applepay, device=non_ios
+     *
+     * @effects apple_pay_blocked_off_ios_before_sdk
+     *
+     * @return void 반환값 없음
+     */
+    public function test_only_apple_pay_declares_requires_ios(): void
+    {
+        $this->mockSettings($this->allMethodsOn());
+
+        $byId = collect($this->listener->injectTossMethods($this->builtinMethods()))
+            ->filter(fn ($m) => str_starts_with($m['id'] ?? '', 'toss_'))
+            ->keyBy('id');
+
+        $this->assertCount(12, $byId);
+        $this->assertTrue($byId['toss_applepay']['requires_ios'] ?? null);
+        $this->assertArrayNotHasKey('requires_ios', $byId['toss_applepay']['defaults']);
+
+        foreach ($byId->except('toss_applepay') as $id => $entry) {
+            $this->assertArrayNotHasKey('requires_ios', $entry, "{$id} 는 iOS 전용이 아니다");
+        }
+    }
+
+    /**
+     * 간편결제 8종은 결제 결과 간편결제사 이름을 `defaults.embedded_pg_provider` 로 선언하고, 카드·가상계좌·계좌이체·휴대폰은 키가 없다 (#933).
+     *
+     * 이커머스 관리자 주문 목록 결제수단 필터가 이 값으로 토스 간편결제 주문(결제수단 칸은 card)을 가른다.
+     *
+     * @scenario order_sheet_mode=true, payment_method=toss_kakaopay
+     *
+     * @effects easy_pay_methods_declare_embedded_pg_provider
+     *
+     * @return void 반환값 없음
+     */
+    public function test_easy_pay_methods_declare_embedded_pg_provider(): void
+    {
+        $this->mockSettings($this->allMethodsOn());
+
+        $byId = collect($this->listener->injectTossMethods($this->builtinMethods()))->keyBy('id');
+
+        $expected = [
+            'toss_tosspay' => '토스페이',
+            'toss_kakaopay' => '카카오페이',
+            'toss_naverpay' => '네이버페이',
+            'toss_payco' => '페이코',
+            'toss_samsungpay' => '삼성페이',
+            'toss_applepay' => '애플페이',
+            'toss_lpay' => '엘페이',
+            'toss_ssgpay' => 'SSG페이',
+        ];
+
+        foreach ($expected as $id => $provider) {
+            $this->assertSame($provider, $byId[$id]['defaults']['embedded_pg_provider'] ?? null, $id);
+        }
+
+        foreach (['toss_card', 'toss_virtual_account', 'toss_transfer', 'toss_mobile_phone'] as $id) {
+            $this->assertArrayNotHasKey('embedded_pg_provider', $byId[$id]['defaults'], "{$id} 는 간편결제가 아니다");
         }
     }
 

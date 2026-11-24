@@ -147,12 +147,14 @@
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_method"
                                                                 },
                                                                 {
+                                                                    "comment": "결제수단 — 간편결제는 PG 플러그인이 채운 표시 이름(「카카오페이 (토스페이먼츠)」)을 먼저 보인다. 주문상세와 같은 식이다.",
+                                                                    "id": "cp_payment_method_{{payIdx}}",
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
                                                                         "className": "ecommerce:text-sm ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:block"
                                                                     },
-                                                                    "text": "{{payment.payment_method_label}}"
+                                                                    "text": "{{payment.payment_method_display_label ?? payment.payment_method_label}}"
                                                                 },
                                                                 {
                                                                     "type": "basic",

@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.6] - 2026-11-24
+
+### Added
+
+- 토스페이먼츠에 추가된 결제수단 애플페이·L.pay·SSG페이의 이름과 설명(`toss_applepay`·`toss_lpay`·`toss_ssgpay` 「Apple Pay (Toss Payments)」 등), 환경설정 토글 이름·애플페이 안내(「iPhone・iPad(iOS)の注文書でのみ表示されます。」), iOS 가 아닌 기기에서 애플페이를 고를 때의 안내(`payment.error.applepay_ios_only`) 일본어 번역을 추가했습니다.
+
 ## [1.0.5] - 2026-11-20
 
 ### Added

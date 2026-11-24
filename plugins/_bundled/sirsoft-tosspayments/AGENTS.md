@@ -25,7 +25,7 @@
 이 플러그인은 **결제창형**과 **주문서형**(`order_sheet_mode`) 두 UI 모드를 지원합니다.
 결제창형은 통합결제창이 결제수단을 전부 처리하는 카드 하나로 노출되고, 주문서형은
 `method_*` 설정으로 활성화한 개별 토스 결제수단(카드/가상계좌/계좌이체/휴대폰/토스페이/
-카카오페이/네이버페이/페이코/삼성페이)이 체크아웃 화면에 개별 버튼으로 뜹니다 — 어느
+카카오페이/네이버페이/페이코/삼성페이/애플페이(iOS 전용)/L.pay/SSG페이)이 체크아웃 화면에 개별 버튼으로 뜹니다 — 어느
 쪽이든 최종 처리는 토스 결제창 하나로 귀결되므로 각 수단은 `pg_provider` 를 이 플러그인
 자신으로 고정(`pg_locked`)합니다(§AGENTS.md "4. 확장점").
 
@@ -112,8 +112,8 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 4개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 16개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 11개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 17개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 12개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 3개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -173,7 +173,7 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 33개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
+| PHPUnit | 34개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
 | Vitest | 15개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
 | 시나리오 매니페스트 | 29개 | `tests/scenarios` |

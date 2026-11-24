@@ -66,7 +66,31 @@ class RegisterTossPaymentMethodsListener implements HookListenerInterface
             'icon' => 'mobile-screen-button',
             'brand_mark' => ['text' => 'S', 'class' => 'paytosspayments:bg-blue-600 paytosspayments:text-white'],
         ],
+        // 애플페이 A/검정, 엘페이 L/보라, SSG페이 SSG/진한 빨강 — 나이스페이먼츠와 같은 배지 (#933)
+        'toss_applepay' => [
+            'icon' => 'mobile-screen-button',
+            'brand_mark' => ['text' => 'A', 'class' => 'paytosspayments:bg-gray-900 paytosspayments:text-white'],
+        ],
+        'toss_lpay' => [
+            'icon' => 'wallet',
+            'brand_mark' => ['text' => 'L', 'class' => 'paytosspayments:bg-purple-600 paytosspayments:text-white'],
+        ],
+        'toss_ssgpay' => [
+            'icon' => 'wallet',
+            'brand_mark' => ['text' => 'SSG', 'class' => 'paytosspayments:bg-red-700 paytosspayments:text-white'],
+        ],
     ];
+
+    /**
+     * iOS 기기(아이폰·아이패드)에서만 주문서에 보이는 결제수단.
+     *
+     * 애플페이 자체창은 iOS·Safari 밖에서 토스가 「지원되지 않는 간편결제 수단」 으로 거절한다. 엔트리 최상위
+     * `requires_ios: true` 를 이커머스가 능력으로 넘기고 체크아웃이 `appConfig.isIos` 로 거른다 — 나이스·KCP 애플페이와
+     * 같은 장치다. Mac Safari 는 토스가 허용하지만 기존 게이트가 iOS 기준이라 G5·다른 PG 와 같은 범위로 둔다.
+     *
+     * @var list<string>
+     */
+    private const IOS_ONLY_IDS = ['toss_applepay'];
 
     /**
      * 구독할 훅 매핑 반환.
@@ -184,6 +208,18 @@ class RegisterTossPaymentMethodsListener implements HookListenerInterface
         // 키 유무가 곧 "브랜드 수단인가" 의 선언이라 다른 PG 플러그인과 형식을 맞춘다.
         if (isset(self::METHOD_PRESENTATION[$id]['brand_mark'])) {
             $entry['brand_mark'] = self::METHOD_PRESENTATION[$id]['brand_mark'];
+        }
+
+        // 간편결제 수단은 결제 결과에 남는 간편결제사 이름(승인 응답 `easyPay.provider` → 결제 행 `embedded_pg_provider`)을
+        // 선언한다. 토스 간편결제 주문은 결제수단 칸이 코어 값 `card` 라, 이커머스 관리자 주문 목록 결제수단 필터가
+        // 이 값으로 간편결제 주문을 가른다(쇼핑몰 1.4.1). 카드·가상계좌·계좌이체·휴대폰은 키를 두지 않는다.
+        $easyPay = self::TOSS_METHOD_MAP[$id]['easy_pay'];
+        if ($easyPay !== null) {
+            $entry['defaults']['embedded_pg_provider'] = $easyPay;
+        }
+
+        if (in_array($id, self::IOS_ONLY_IDS, true)) {
+            $entry['requires_ios'] = true;
         }
 
         return $entry;

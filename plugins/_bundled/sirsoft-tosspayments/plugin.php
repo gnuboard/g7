@@ -154,6 +154,25 @@ class Plugin extends AbstractPlugin
                 'default' => false,
                 'label' => ['ko' => '삼성페이', 'en' => 'Samsung Pay'],
             ],
+            'method_applepay' => [
+                'type' => 'boolean',
+                'default' => false,
+                'label' => ['ko' => '애플페이', 'en' => 'Apple Pay'],
+                'hint' => [
+                    'ko' => '아이폰·아이패드(iOS) 주문서에서만 보입니다.',
+                    'en' => 'Shown at checkout on iPhone/iPad (iOS) only.',
+                ],
+            ],
+            'method_lpay' => [
+                'type' => 'boolean',
+                'default' => false,
+                'label' => ['ko' => 'L.pay', 'en' => 'L.pay'],
+            ],
+            'method_ssgpay' => [
+                'type' => 'boolean',
+                'default' => false,
+                'label' => ['ko' => 'SSG페이', 'en' => 'SSG Pay'],
+            ],
 
             // 가상계좌 옵션
             'vbank_valid_hours' => [
@@ -224,6 +243,9 @@ class Plugin extends AbstractPlugin
             'method_naverpay' => false,
             'method_payco' => false,
             'method_samsungpay' => false,
+            'method_applepay' => false,
+            'method_lpay' => false,
+            'method_ssgpay' => false,
             'vbank_valid_hours' => 24,
             'vbank_cash_receipt_type' => '',
             'use_escrow' => 'off',
@@ -242,6 +264,8 @@ class Plugin extends AbstractPlugin
             Listeners\ValidateRedirectUrlSettingsListener::class,
             Listeners\RegisterPgProviderListener::class,
             Listeners\RegisterTossPaymentMethodsListener::class,
+            // 주문 결제수단 표시 라벨 — 토스 간편결제 주문을 「카카오페이 (토스페이먼츠)」 로 (sirsoft-ecommerce.order.filter_payment_method_display_label 필터)
+            Listeners\ProvidePaymentMethodDisplayLabelListener::class,
             Listeners\RegisterCashReceiptProviderListener::class,
             Listeners\PaymentRefundListener::class,
             Listeners\VbankCloseListener::class,

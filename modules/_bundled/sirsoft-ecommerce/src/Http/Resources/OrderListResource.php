@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
-use App\Extension\HookManager;
 use App\Http\Resources\BaseApiResource;
 use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
@@ -11,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\Concerns\LocalizesCountryName;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\SummarizesAdditionalOptions;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\SummarizesClaims;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
@@ -275,22 +275,16 @@ class OrderListResource extends BaseApiResource
     /**
      * 결제수단의 화면 표시용 라벨을 해석합니다.
      *
-     * 간편결제(PAYCO·네이버페이 등)처럼 원 결제수단을 PG 만 아는 경우, 그 PG 플러그인이 필터 훅
-     * `sirsoft-ecommerce.order.filter_payment_method_display_label` 로 라벨을 채운다. 이 모듈은 PG 를 모르므로
-     * 직접 조립하지 않는다. 한 목록에 여러 PG 의 주문이 섞이므로 구독자는 자기 결제(`pg_provider`)가 아니면
-     * 받은 값을 그대로 돌려줘야 한다. 아무도 채우지 않으면 null 이고 화면은 기본 라벨(`payment_method_label`)을 쓴다.
+     * 해석 규칙은 결제 행의 `OrderPayment::paymentMethodDisplayLabel()` 한 곳에 있다 — 주문 상세 결제 리소스와 같은
+     * 훅·같은 규칙을 쓴다. 결제 행이 없으면 null 이고 화면은 기본 라벨(`payment_method_label`)을 쓴다.
      *
      * @return string|null 표시용 라벨 (없으면 null)
      */
     private function resolvePaymentMethodDisplayLabel(): ?string
     {
-        $label = HookManager::applyFilters(
-            'sirsoft-ecommerce.order.filter_payment_method_display_label',
-            null,
-            $this->payment
-        );
+        $payment = $this->payment;
 
-        return is_string($label) && $label !== '' ? $label : null;
+        return $payment instanceof OrderPayment ? $payment->paymentMethodDisplayLabel() : null;
     }
 
     /**

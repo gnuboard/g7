@@ -36,7 +36,44 @@ trait MapsTossPaymentMethods
         'toss_naverpay' => ['setting' => 'method_naverpay', 'method' => 'CARD', 'easy_pay' => '네이버페이', 'core' => 'card'],
         'toss_payco' => ['setting' => 'method_payco', 'method' => 'CARD', 'easy_pay' => '페이코', 'core' => 'card'],
         'toss_samsungpay' => ['setting' => 'method_samsungpay', 'method' => 'CARD', 'easy_pay' => '삼성페이', 'core' => 'card'],
+        // 토스 공식 간편결제사 코드(한글) — 「L.pay」 는 화면 표기일 뿐 SDK 코드는 「엘페이」다 (#933)
+        'toss_applepay' => ['setting' => 'method_applepay', 'method' => 'CARD', 'easy_pay' => '애플페이', 'core' => 'card'],
+        'toss_lpay' => ['setting' => 'method_lpay', 'method' => 'CARD', 'easy_pay' => '엘페이', 'core' => 'card'],
+        'toss_ssgpay' => ['setting' => 'method_ssgpay', 'method' => 'CARD', 'easy_pay' => 'SSG페이', 'core' => 'card'],
     ];
+
+    /**
+     * 승인 응답 `easyPay.provider` 의 옛 표기 → toss_* id.
+     *
+     * 토스는 토스페이를 과거 「토스결제」 로 내려줬다 — 그 시기 결제 행도 같은 이름으로 보여야 한다.
+     *
+     * @var array<string, string>
+     */
+    private const TOSS_EASY_PAY_ALIASES = [
+        '토스결제' => 'toss_tosspay',
+    ];
+
+    /**
+     * 결제 결과의 간편결제사 이름(`easyPay.provider`)으로 toss_* 결제수단 id 를 찾습니다.
+     *
+     * @param  string  $provider  간편결제사 이름 (예: 「카카오페이」)
+     * @return string|null toss_* id (모르는 간편결제사면 null)
+     */
+    protected function tossMethodIdForEasyPayProvider(string $provider): ?string
+    {
+        $provider = trim($provider);
+        if ($provider === '') {
+            return null;
+        }
+
+        foreach (self::TOSS_METHOD_MAP as $id => $meta) {
+            if ($meta['easy_pay'] === $provider) {
+                return $id;
+            }
+        }
+
+        return self::TOSS_EASY_PAY_ALIASES[$provider] ?? null;
+    }
 
     /**
      * 등록 가능한 전체 toss_* 결제수단 id 목록을 선언 순서대로 반환합니다 (활성 토글 무관).

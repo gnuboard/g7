@@ -494,6 +494,164 @@ describe('requestPaymentHandler', () => {
             expect(capturedPayload.card.flowMode).toBe('DIRECT');
         });
 
+        /**
+         * 주문서 결제 액션은 `pgPaymentData` 만 넘기고, 서버는 코어 값 `card` 를 저장한다 (#933 A0).
+         * 화면에서 고른 toss_* 간편결제를 보지 않으면 `card` 의 첫 항목 toss_card 로 풀려 카드 통합결제창이 열린다.
+         */
+        // @scenario payment_method=toss_kakaopay
+        // @effects checkout_selected_easy_pay_opens_direct_window
+        it('액션 인자가 없어도 주문서에서 고른 toss_* 간편결제로 자체창을 연다 (서버 값 card)', async () => {
+            setupSdk(baseConfig());
+            (mockG7Core.state as any).getLocal = vi.fn().mockReturnValue({ paymentMethod: 'toss_kakaopay' });
+
+            await requestPaymentHandler({ params: { pgPaymentData: pgData({ payment_method: 'card' }) } });
+
+            expect(capturedPayload.method).toBe('CARD');
+            expect(capturedPayload.card.flowMode).toBe('DIRECT');
+            expect(capturedPayload.card.easyPay).toBe('카카오페이');
+        });
+
+        // @scenario payment_method=toss_kakaopay
+        // @effects checkout_selected_easy_pay_opens_direct_window
+        it('화면 상태가 toss_kakaopay 여도 서버가 vbank 면 가상계좌 결제창을 연다 (서버 우선)', async () => {
+            setupSdk(baseConfig());
+            (mockG7Core.state as any).getLocal = vi.fn().mockReturnValue({ paymentMethod: 'toss_kakaopay' });
+
+            await requestPaymentHandler({ params: { pgPaymentData: pgData({ payment_method: 'vbank' }) } });
+
+            expect(capturedPayload.method).toBe('VIRTUAL_ACCOUNT');
+            expect(capturedPayload.card).toBeUndefined();
+        });
+
+        // @scenario payment_method=toss_kakaopay
+        // @effects checkout_selected_easy_pay_opens_direct_window
+        it('클레임 추가결제는 화면 상태(_local.paymentMethod)를 보지 않는다', async () => {
+            setupSdk(baseConfig());
+            (mockG7Core.state as any).getLocal = vi.fn().mockReturnValue({ paymentMethod: 'toss_kakaopay' });
+
+            await requestPaymentHandler({
+                params: {
+                    pgPaymentData: pgData({
+                        payment_method: 'card',
+                        claim_cancel_return_url: '/mypage/claims/EX-1?claim_payment=cancelled',
+                    }),
+                },
+            });
+
+            expect(capturedPayload.method).toBe('CARD');
+            expect(capturedPayload.card.flowMode).toBe('DEFAULT');
+            expect('easyPay' in capturedPayload.card).toBe(false);
+        });
+
+        describe('#933 추가 간편결제 3종 · 애플페이 결제 시점 iOS 확인', () => {
+            const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
+            const DESKTOP_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+
+            const configWithNewMethods = () => baseConfig({
+                enabled_methods: [
+                    { id: 'toss_card', method: 'CARD', easy_pay_provider: null, core_payment_method: 'card' },
+                    { id: 'toss_applepay', method: 'CARD', easy_pay_provider: '애플페이', core_payment_method: 'card' },
+                    { id: 'toss_lpay', method: 'CARD', easy_pay_provider: '엘페이', core_payment_method: 'card' },
+                    { id: 'toss_ssgpay', method: 'CARD', easy_pay_provider: 'SSG페이', core_payment_method: 'card' },
+                ],
+            });
+
+            const useUserAgent = (ua: string, touchPoints = 0) => {
+                vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue(ua);
+                vi.spyOn(window.navigator, 'platform', 'get').mockReturnValue('');
+                // jsdom 에는 maxTouchPoints 가 없다 — 테스트마다 정의하고 끝나면 지운다.
+                Object.defineProperty(window.navigator, 'maxTouchPoints', { value: touchPoints, configurable: true });
+            };
+
+            afterEach(() => {
+                vi.restoreAllMocks();
+                delete (window.navigator as any).maxTouchPoints;
+            });
+
+            // @scenario payment_method=toss_lpay, device=non_ios
+            // @effects sdk_method_mapped_from_enabled_methods
+            it.each([
+                ['toss_applepay', '애플페이', IPHONE_UA],
+                ['toss_lpay', '엘페이', DESKTOP_UA],
+                ['toss_ssgpay', 'SSG페이', DESKTOP_UA],
+            ])('%s 는 토스 간편결제 코드 %s 로 자체창(DIRECT)을 연다', async (id, easyPay, ua) => {
+                useUserAgent(ua);
+                setupSdk(configWithNewMethods());
+
+                await requestPaymentHandler({ params: { pgPaymentData: pgData({ payment_method: 'card' }), paymentMethod: id } });
+
+                expect(capturedPayload.method).toBe('CARD');
+                expect(capturedPayload.card.flowMode).toBe('DIRECT');
+                expect(capturedPayload.card.easyPay).toBe(easyPay);
+            });
+
+            // @scenario payment_method=toss_applepay, device=non_ios
+            // @effects apple_pay_blocked_off_ios_before_sdk
+            it('iOS 가 아니면 애플페이 결제를 결제 설정 조회·SDK 호출 없이 오류 모달로 멈춘다', async () => {
+                useUserAgent(DESKTOP_UA);
+                setupSdk(configWithNewMethods());
+                (mockG7Core as any).t = vi.fn((key: string) => key === 'sirsoft-tosspayments.payment.error.applepay_ios_only'
+                    ? '애플페이는 iOS 기기(아이폰·아이패드)에서만 결제할 수 있습니다.'
+                    : key);
+                (mockG7Core.state as any).getLocal = vi.fn().mockReturnValue({ paymentMethod: 'toss_applepay' });
+
+                await requestPaymentHandler({ params: { pgPaymentData: pgData({ payment_method: 'card' }) } });
+
+                expect(mockG7Core.api.get).not.toHaveBeenCalled();
+                expect((window as any).TossPayments).not.toHaveBeenCalled();
+                expect(capturedPayload).toBeUndefined();
+                expect(mockG7Core.state.setLocal).toHaveBeenCalledWith({
+                    paymentErrorMessage: '애플페이는 iOS 기기(아이폰·아이패드)에서만 결제할 수 있습니다.',
+                    isSubmittingOrder: false,
+                });
+                expect(mockG7Core.modal.open).toHaveBeenCalledWith('tosspayments_payment_error_modal');
+            });
+
+            // @scenario payment_method=toss_applepay, device=ios
+            // @effects apple_pay_blocked_off_ios_before_sdk
+            it('iPadOS 데스크톱 모드(Mac UA + 터치 2 이상)는 iOS 로 보고 애플페이 자체창을 연다', async () => {
+                useUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15', 5);
+                setupSdk(configWithNewMethods());
+
+                await requestPaymentHandler({ params: { pgPaymentData: pgData({ payment_method: 'card' }), paymentMethod: 'toss_applepay' } });
+
+                expect(capturedPayload.card.easyPay).toBe('애플페이');
+            });
+
+            // @scenario payment_method=toss_applepay, device=non_ios
+            // @effects apple_pay_blocked_off_ios_before_sdk, claim_payment_entry_failure_is_handed_to_the_claim_screen
+            it('클레임 추가결제에서 iOS 가 아니면 애플페이 안내 문구를 담아 던진다', async () => {
+                useUserAgent(DESKTOP_UA);
+                setupSdk(configWithNewMethods());
+
+                await expect(requestPaymentHandler({
+                    params: {
+                        pgPaymentData: pgData({ payment_method: 'card', claim_cancel_return_url: '/mypage/claims/EX-1' }),
+                        paymentMethod: 'toss_applepay',
+                    },
+                })).rejects.toThrow('애플페이는 iOS 기기(아이폰·아이패드)에서만 결제할 수 있습니다.');
+
+                expect(mockG7Core.api.get).not.toHaveBeenCalled();
+                expect(mockG7Core.modal.open).not.toHaveBeenCalled();
+            });
+
+            // @scenario payment_method=toss_applepay, device=non_ios
+            // @effects apple_pay_blocked_off_ios_before_sdk
+            it('서버 값이 card 가 아니면(가상계좌) 애플페이 확인 없이 서버 수단으로 연다', async () => {
+                useUserAgent(DESKTOP_UA);
+                setupSdk(baseConfig({
+                    enabled_methods: [
+                        { id: 'toss_virtual_account', method: 'VIRTUAL_ACCOUNT', easy_pay_provider: null, core_payment_method: 'vbank' },
+                        { id: 'toss_applepay', method: 'CARD', easy_pay_provider: '애플페이', core_payment_method: 'card' },
+                    ],
+                }));
+
+                await requestPaymentHandler({ params: { pgPaymentData: pgData({ payment_method: 'vbank' }), paymentMethod: 'toss_applepay' } });
+
+                expect(capturedPayload.method).toBe('VIRTUAL_ACCOUNT');
+            });
+        });
+
         // @scenario payment_method=toss_card
         // @effects tax_free_amount_sent_with_payment
         it('면세 금액이 있으면 승인 요청에 taxFreeAmount 를 싣는다 (S1-D12)', async () => {
@@ -726,11 +884,25 @@ describe('requestPaymentHandler', () => {
  * 사각이 되므로 두 목록의 일치도 함께 고정한다.
  */
 /**
- * 결제수단 id 결정 순서 — 액션 인자, 서버가 저장한 payment_method. 화면 상태는 보지 않는다.
+ * 결제수단 id 결정 순서 — 액션 인자 → (클레임이 아니면) 주문서 화면의 toss_* 선택 → 서버가 저장한 payment_method.
  *
- * 화면 상태는 주문서가 아닌 화면(클레임 추가결제 등)에서 비거나 서버와 다른 값일 수 있다 — 서버가 저장한 값이 단일 출처다.
+ * 서버는 toss_* 를 코어 값(card·vbank)으로 바꿔 저장하므로 간편결제 종류는 화면 선택에만 남는다 (#933 A0).
+ * 클레임 추가결제 화면의 상태는 주문서 선택이 아니므로 보지 않는다. 화면 값과 서버 값이 어긋나면 결제창 결정에서 서버가 이긴다.
  */
 describe('resolveSelectedMethodId', () => {
+    // @scenario payment_method=toss_kakaopay
+    // @effects checkout_selected_easy_pay_opens_direct_window
+    it('액션 인자가 없으면 주문서 화면의 toss_* 선택을 서버 값보다 먼저 쓴다', () => {
+        expect(resolveSelectedMethodId(undefined, 'card', 'toss_kakaopay')).toBe('toss_kakaopay');
+    });
+
+    // @scenario payment_method=toss_kakaopay
+    // @effects checkout_selected_easy_pay_opens_direct_window
+    it('클레임 추가결제이거나 화면 값이 toss_* 가 아니면 서버 값을 쓴다', () => {
+        expect(resolveSelectedMethodId(undefined, 'card', 'toss_kakaopay', true)).toBe('card');
+        expect(resolveSelectedMethodId(undefined, 'card', 'dbank')).toBe('card');
+    });
+
     // @scenario payment_method=toss_card
     // @effects payment_method_from_action_argument_only
     it('액션 인자가 있으면 그 값을 쓴다', () => {
@@ -745,8 +917,9 @@ describe('resolveSelectedMethodId', () => {
 
     // @scenario payment_method=toss_card
     // @effects payment_method_from_action_argument_only
-    it('둘 다 없으면 정하지 않는다(화면 상태로 채우지 않는다)', () => {
+    it('인자·화면 toss_* 선택·서버 값이 모두 없으면 정하지 않는다', () => {
         expect(resolveSelectedMethodId(undefined, null)).toBeUndefined();
+        expect(resolveSelectedMethodId(undefined, null, '')).toBeUndefined();
     });
 });
 

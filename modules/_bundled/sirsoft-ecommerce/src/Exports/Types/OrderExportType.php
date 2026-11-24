@@ -19,6 +19,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 
 /**
  * 주문내역 내보내기
@@ -43,9 +44,11 @@ class OrderExportType extends AbstractExportType
 
     /**
      * @param  OrderRepositoryInterface  $orders  주문 저장소 — 내보내기 원천 쿼리(목록과 같은 조건·요청자 범위)
+     * @param  PaymentMethodResolver  $paymentMethods  결제수단 해석기 — 결제수단 필터를 목록과 같은 조건으로 푼다(레지스트리와 같은 scoped 수명)
      */
     public function __construct(
         private readonly OrderRepositoryInterface $orders,
+        private readonly PaymentMethodResolver $paymentMethods,
     ) {}
 
     /**
@@ -266,6 +269,9 @@ class OrderExportType extends AbstractExportType
      */
     public function query(array $filters, ?array $ids, User $requester, ?CarbonInterface $cutoff): Builder
     {
+        // 결제수단 선택지를 목록과 같은 결제 행 조건으로 푼다 — PG 별칭(toss_kakaopay 등)은 코어 값으로 저장된다 (#933).
+        $filters = $this->paymentMethods->expandOrderListPaymentFilter($filters);
+
         $query = $this->orders->newExportQuery($filters, $ids, $requester);
 
         if ($cutoff !== null) {

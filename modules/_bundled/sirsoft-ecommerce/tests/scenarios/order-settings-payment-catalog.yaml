@@ -28,6 +28,7 @@ effects:
   - payment_method_display_metadata_cached
   - plugin_payment_method_merged_via_filter
   - plugin_core_payment_method_preserved_through_merge_and_save
+  - plugin_embedded_pg_provider_preserved_through_merge_and_save  # 간편결제 별칭의 defaults.embedded_pg_provider 를 병합·저장 스냅샷에 보존 (#933 — 결제수단 필터가 쓴다)
   - saved_settings_override_payment_method_defaults
   - orphaned_payment_method_flagged_in_admin_settings
   - orphaned_payment_method_excluded_from_public_payment_and_checkout

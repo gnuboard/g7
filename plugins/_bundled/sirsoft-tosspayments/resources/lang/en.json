@@ -42,6 +42,10 @@
         "method_naverpay": "NaverPay",
         "method_payco": "PAYCO",
         "method_samsungpay": "Samsung Pay",
+        "method_applepay": "Apple Pay",
+        "method_applepay_hint": "Shown at checkout on iPhone/iPad (iOS) only.",
+        "method_lpay": "L.pay",
+        "method_ssgpay": "SSG Pay",
         "section_virtual_account": "Virtual Account",
         "vbank_valid_hours": "Valid Hours",
         "vbank_valid_hours_hint": "Hours available for deposit after issuing a virtual account. Max 2160 (90 days).",
@@ -101,7 +105,8 @@
     },
     "payment": {
         "error": {
-            "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator."
+            "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator.",
+            "applepay_ios_only": "Apple Pay is available only on iOS devices (iPhone, iPad)."
         }
     },
     "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."

@@ -79,6 +79,9 @@ class RegisterPgProviderClientConfigTest extends PluginTestCase
             'method_card' => true,
             'method_virtual_account' => true,
             'method_kakaopay' => true,
+            'method_applepay' => true,
+            'method_lpay' => true,
+            'method_ssgpay' => true,
         ]);
 
         $config = $this->listener->getClientConfig([], 'tosspayments');
@@ -93,6 +96,14 @@ class RegisterPgProviderClientConfigTest extends PluginTestCase
         $this->assertSame('CARD', $byId['toss_kakaopay']['method']);
         $this->assertSame('카카오페이', $byId['toss_kakaopay']['easy_pay_provider']);
         $this->assertSame('card', $byId['toss_kakaopay']['core_payment_method']);
+        // #933 추가 3종 — 토스 공식 간편결제사 코드(한글)로 자체창을 연다
+        $this->assertSame('애플페이', $byId['toss_applepay']['easy_pay_provider']);
+        $this->assertSame('엘페이', $byId['toss_lpay']['easy_pay_provider']);
+        $this->assertSame('SSG페이', $byId['toss_ssgpay']['easy_pay_provider']);
+        foreach (['toss_applepay', 'toss_lpay', 'toss_ssgpay'] as $id) {
+            $this->assertSame('CARD', $byId[$id]['method']);
+            $this->assertSame('card', $byId[$id]['core_payment_method']);
+        }
     }
 
     /**

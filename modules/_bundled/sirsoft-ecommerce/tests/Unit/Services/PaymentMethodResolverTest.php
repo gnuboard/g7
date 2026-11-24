@@ -23,12 +23,22 @@ use PHPUnit\Framework\Attributes\Test;
  */
 class PaymentMethodResolverTest extends ModuleTestCase
 {
+    /**
+     * 테스트마다 등록한 훅을 모두 초기화하고 부모 정리를 수행합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         HookManager::resetAll();
         parent::tearDown();
     }
 
+    /**
+     * 컨테이너에서 결제수단 해석기 인스턴스를 가져옵니다.
+     *
+     * @return PaymentMethodResolver 결제수단 해석기
+     */
     private function resolver(): PaymentMethodResolver
     {
         return app(PaymentMethodResolver::class);
@@ -37,7 +47,9 @@ class PaymentMethodResolverTest extends ModuleTestCase
     /**
      * 확장 결제수단을 카탈로그에 등록합니다 (PG 플러그인이 하는 것과 동일).
      *
+     * @param  string  $id  등록할 결제수단 ID
      * @param  array<string, mixed>  $defaults  선언할 능력 키
+     * @return void 반환값 없음
      */
     private function registerMethod(string $id, array $defaults): void
     {
@@ -62,9 +74,13 @@ class PaymentMethodResolverTest extends ModuleTestCase
     // ─────────────────────────────────────────────
 
     /**
+     * 카탈로그가 needs_pg 를 선언하면 enum 판정보다 그 값이 이긴다.
+     *
      * @scenario method_kind=builtin, capability_declared=declared, capability=needs_pg
      *
      * @effects builtin_capability_unchanged
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function catalog_declaration_wins_over_enum_for_needs_pg(): void
@@ -76,9 +92,15 @@ class PaymentMethodResolverTest extends ModuleTestCase
     }
 
     /**
+     * 카탈로그에 needs_pg 선언이 없으면 builtin 결제수단은 enum 판정을 그대로 따른다.
+     *
      * @scenario method_kind=builtin, capability_declared=declared, capability=needs_pg
      *
      * @effects builtin_capability_unchanged
+     *
+     * @param  string  $methodId  검사할 builtin 결제수단 ID
+     * @param  bool  $expected  기대하는 PG 필요 여부
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('builtinNeedsPgProvider')]
@@ -89,7 +111,9 @@ class PaymentMethodResolverTest extends ModuleTestCase
     }
 
     /**
-     * @return array<string, array{string, bool}>
+     * builtin 결제수단별 enum 상 PG 필요 여부 사례를 제공합니다.
+     *
+     * @return array<string, array{string, bool}> 결제수단 ID 와 기대 PG 필요 여부 쌍 목록
      */
     public static function builtinNeedsPgProvider(): array
     {
@@ -106,9 +130,13 @@ class PaymentMethodResolverTest extends ModuleTestCase
     }
 
     /**
+     * 미등록 확장 결제수단 ID 는 안전한 쪽인 PG 필요로 판정된다.
+     *
      * @scenario method_kind=extension, capability_declared=undeclared, capability=needs_pg
      *
      * @effects pg_provider_resolved_not_none
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function unregistered_extension_id_defaults_to_requiring_pg(): void
@@ -119,9 +147,13 @@ class PaymentMethodResolverTest extends ModuleTestCase
     }
 
     /**
+     * 확장 결제수단이 needs_pg=false 를 명시적으로 선언하면 그 값을 존중한다.
+     *
      * @scenario method_kind=extension, capability_declared=declared, capability=needs_pg
      *
      * @effects pg_provider_resolved_not_none
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function extension_method_declaring_needs_pg_false_is_respected(): void
@@ -137,9 +169,15 @@ class PaymentMethodResolverTest extends ModuleTestCase
     // ─────────────────────────────────────────────
 
     /**
+     * builtin 결제수단의 환불수단이 enum 분류와 일치한다.
+     *
      * @scenario method_kind=builtin, capability_declared=declared, capability=refund_method
      *
      * @effects builtin_capability_unchanged
+     *
+     * @param  string  $methodId  검사할 builtin 결제수단 ID
+     * @param  RefundMethodEnum  $expected  기대하는 환불수단
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('builtinRefundMethodProvider')]
@@ -149,7 +187,9 @@ class PaymentMethodResolverTest extends ModuleTestCase
     }
 
     /**
-     * @return array<string, array{string, RefundMethodEnum}>
+     * builtin 결제수단별 enum 상 환불수단 사례를 제공합니다.
+     *
+     * @return array<string, array{string, RefundMethodEnum}> 결제수단 ID 와 기대 환불수단 쌍 목록
      */
     public static function builtinRefundMethodProvider(): array
     {
@@ -164,9 +204,13 @@ class PaymentMethodResolverTest extends ModuleTestCase
     }
 
     /**
+     * 카탈로그가 refund_method 를 선언하면 enum 분류보다 그 값이 이긴다.
+     *
      * @scenario method_kind=builtin, capability_declared=declared, capability=refund_method
      *
      * @effects builtin_capability_unchanged
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function catalog_declaration_wins_over_enum_for_refund_method(): void
@@ -177,9 +221,13 @@ class PaymentMethodResolverTest extends ModuleTestCase
     }
 
     /**
+     * 확장 결제수단이 PG 환불을 선언하면 환불수단이 PG 로 판정된다.
+     *
      * @scenario method_kind=extension, capability_declared=declared, capability=refund_method
      *
      * @effects refund_method_is_pg
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function extension_method_declaring_pg_refund_is_respected(): void
@@ -193,9 +241,13 @@ class PaymentMethodResolverTest extends ModuleTestCase
     }
 
     /**
+     * refund_method 를 선언하지 않은 확장 결제수단은 PG 결제 여부를 따라 PG 환불로 판정된다.
+     *
      * @scenario method_kind=extension, capability_declared=undeclared, capability=refund_method
      *
      * @effects refund_method_is_pg
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function undeclared_extension_method_refund_follows_pg_capability(): void
@@ -209,9 +261,13 @@ class PaymentMethodResolverTest extends ModuleTestCase
     }
 
     /**
+     * 카탈로그에 유효하지 않은 refund_method 가 선언되면 enum 분류로 폴백한다.
+     *
      * @scenario method_kind=builtin, capability_declared=declared, capability=refund_method
      *
      * @effects builtin_capability_unchanged
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function invalid_refund_method_declaration_falls_back_to_enum(): void
@@ -227,9 +283,13 @@ class PaymentMethodResolverTest extends ModuleTestCase
     // ─────────────────────────────────────────────
 
     /**
+     * 확장 결제수단 라벨은 카탈로그의 다국어 이름을 현재 로케일로 가져온다.
+     *
      * @scenario method_kind=extension, capability_declared=declared, capability=label
      *
      * @effects extension_id_persisted_as_is
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function extension_method_label_comes_from_catalog_in_current_locale(): void
@@ -244,9 +304,13 @@ class PaymentMethodResolverTest extends ModuleTestCase
     }
 
     /**
+     * builtin 결제수단 라벨은 enum 의 다국어 라벨로 폴백한다.
+     *
      * @scenario method_kind=builtin, capability_declared=declared, capability=label
      *
      * @effects builtin_capability_unchanged
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function builtin_label_falls_back_to_enum_label(): void
@@ -259,9 +323,13 @@ class PaymentMethodResolverTest extends ModuleTestCase
     }
 
     /**
+     * 카탈로그와 enum 어디에도 없는 결제수단 라벨은 raw ID 로 폴백한다.
+     *
      * @scenario method_kind=extension, capability_declared=undeclared, capability=label
      *
      * @effects extension_id_persisted_as_is
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function unknown_method_label_falls_back_to_raw_id(): void
@@ -275,9 +343,13 @@ class PaymentMethodResolverTest extends ModuleTestCase
     // ─────────────────────────────────────────────
 
     /**
+     * 확장 결제수단은 pg_locked 를 선언해 PG 고정 수단이 될 수 있다.
+     *
      * @scenario method_kind=extension, capability_declared=declared, capability=pg_locked
      *
      * @effects admin_shows_pg_locked_badge, admin_hides_pg_select_for_locked
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function extension_method_can_declare_pg_locked(): void
@@ -292,9 +364,13 @@ class PaymentMethodResolverTest extends ModuleTestCase
     }
 
     /**
+     * builtin 결제수단은 PG 고정이 아니어서 관리자가 PG 를 자유롭게 고를 수 있다.
+     *
      * @scenario method_kind=builtin, capability_declared=declared, capability=pg_locked
      *
      * @effects admin_shows_pg_select_for_unlocked
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function builtin_methods_are_not_pg_locked(): void
@@ -305,9 +381,13 @@ class PaymentMethodResolverTest extends ModuleTestCase
     }
 
     /**
+     * isBuiltin 은 코어 결제수단과 확장 결제수단 ID 를 구분한다.
+     *
      * @scenario method_kind=extension, capability_declared=undeclared, capability=pg_locked
      *
      * @effects admin_shows_pg_select_for_unlocked
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function is_builtin_distinguishes_core_methods_from_extension_ids(): void
@@ -321,6 +401,15 @@ class PaymentMethodResolverTest extends ModuleTestCase
     // allValidIds — 검증 화이트리스트
     // ─────────────────────────────────────────────
 
+    /**
+     * 검증 화이트리스트에 builtin 결제수단이 모두 포함된다.
+     *
+     * @scenario method_kind=builtin, capability_declared=declared, capability=needs_pg
+     *
+     * @effects builtin_capability_unchanged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function all_valid_ids_contains_every_builtin_method(): void
     {
@@ -332,9 +421,13 @@ class PaymentMethodResolverTest extends ModuleTestCase
     }
 
     /**
+     * 카탈로그에 등록된 확장 결제수단이 builtin 을 밀어내지 않고 검증 화이트리스트에 포함된다.
+     *
      * @scenario method_kind=extension, capability_declared=declared, capability=needs_pg
      *
      * @effects extension_id_passes_validation
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function all_valid_ids_includes_registered_extension_methods(): void
@@ -348,9 +441,13 @@ class PaymentMethodResolverTest extends ModuleTestCase
     }
 
     /**
+     * 등록되지 않은 임의 결제수단 ID 는 검증 화이트리스트에서 여전히 배제된다.
+     *
      * @scenario method_kind=extension, capability_declared=undeclared, capability=needs_pg
      *
      * @effects unregistered_id_still_rejected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function all_valid_ids_excludes_unregistered_ids(): void
@@ -359,6 +456,15 @@ class PaymentMethodResolverTest extends ModuleTestCase
         $this->assertNotContains('totally_unknown_method', $this->resolver()->allValidIds());
     }
 
+    /**
+     * 확장이 builtin ID 를 덮어쓰는 형태로 등록해도 검증 화이트리스트에 중복이 생기지 않는다.
+     *
+     * @scenario method_kind=extension, capability_declared=declared, capability=needs_pg
+     *
+     * @effects extension_id_passes_validation
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function all_valid_ids_has_no_duplicates(): void
     {
@@ -375,9 +481,13 @@ class PaymentMethodResolverTest extends ModuleTestCase
     // ─────────────────────────────────────────────
 
     /**
+     * 저장된 pg_provider null 이 PG 고정 수단의 정의를 덮어쓰지 못하고 정의의 PG 로 자가 치유된다.
+     *
      * @scenario method_kind=extension, capability_declared=declared, capability=pg_locked
      *
      * @effects saved_null_pg_provider_self_healed
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function saved_null_pg_provider_does_not_override_pg_locked_declaration(): void
@@ -426,6 +536,8 @@ class PaymentMethodResolverTest extends ModuleTestCase
      * @scenario gate_case=default_allow_list
      *
      * @effects auto_approve_default_list_is_card_point_free
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_default_allow_list_covers_only_the_methods_that_settle_themselves(): void
@@ -452,6 +564,8 @@ class PaymentMethodResolverTest extends ModuleTestCase
      * @scenario gate_case=plugin_declared_method_joins
      *
      * @effects plugin_declared_method_joins_until_operator_decides
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_plugin_declared_method_joins_the_allow_list_until_the_operator_decides(): void
@@ -477,6 +591,8 @@ class PaymentMethodResolverTest extends ModuleTestCase
      * @scenario gate_case=plugin_undeclared_method_stops
      *
      * @effects undeclared_extension_method_does_not_join
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function an_undeclared_extension_method_does_not_join_the_allow_list(): void
@@ -499,6 +615,8 @@ class PaymentMethodResolverTest extends ModuleTestCase
      * @scenario gate_case=operator_removed_declared_method
      *
      * @effects operator_decision_history_beats_plugin_declaration
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_operator_decision_history_beats_the_plugin_declaration(): void
@@ -526,5 +644,105 @@ class PaymentMethodResolverTest extends ModuleTestCase
             $this->resolver()->autoApprovesRefund('card'),
             '같은 저장에서 남긴 수단은 그대로 자동 승인 대상이다',
         );
+    }
+
+    // ─────────────────────────────────────────────
+    // orderListFilterClauses — 관리자 주문 목록 결제수단 필터 (#933)
+    // ─────────────────────────────────────────────
+
+    /**
+     * 토스 별칭 둘(카카오페이 간편결제·카드)을 활성으로 등록합니다.
+     *
+     * @return void 없음
+     */
+    private function registerTossAliases(): void
+    {
+        HookManager::addFilter(
+            'sirsoft-ecommerce.settings.filter_available_payment_methods',
+            fn (array $methods) => array_merge($methods, [
+                [
+                    'id' => 'toss_kakaopay', 'name' => ['ko' => '카카오페이', 'en' => 'KakaoPay'], 'description' => ['ko' => '', 'en' => ''],
+                    'icon' => 'wallet', 'source' => 'plugin:test',
+                    'defaults' => ['pg_provider' => 'tosspayments', 'is_active' => true, 'core_payment_method' => 'card', 'embedded_pg_provider' => '카카오페이'],
+                ],
+                [
+                    'id' => 'toss_card', 'name' => ['ko' => '카드', 'en' => 'Card'], 'description' => ['ko' => '', 'en' => ''],
+                    'icon' => 'credit-card', 'source' => 'plugin:test',
+                    'defaults' => ['pg_provider' => 'tosspayments', 'is_active' => true, 'core_payment_method' => 'card'],
+                ],
+            ])
+        );
+        $this->app->forgetInstance(PaymentMethodResolver::class);
+    }
+
+    /**
+     * 간편결제 별칭은 코어 값 + PG + 간편결제사 조건이다.
+     *
+     * @scenario selected_kind=easy_pay_alias, alias_active=true
+     *
+     * @effects alias_filter_matches_core_pg_embedded
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function easy_pay_alias_resolves_to_core_pg_and_embedded_clause(): void
+    {
+        $this->registerTossAliases();
+
+        $clauses = $this->resolver()->orderListFilterClauses(['toss_kakaopay']);
+
+        $this->assertCount(1, $clauses);
+        $this->assertSame('card', $clauses[0]->paymentMethod);
+        $this->assertSame('tosspayments', $clauses[0]->pgProvider);
+        $this->assertSame(['카카오페이'], $clauses[0]->embeddedIn);
+        $this->assertSame([], $clauses[0]->excludeEmbeddedByPg);
+    }
+
+    /**
+     * 코어 값·비간편결제 별칭은 같은 코어의 활성 간편결제 별칭이 찾는 주문을 뺀다.
+     *
+     * @scenario selected_kind=plain_alias, alias_active=true
+     *
+     * @effects core_filter_excludes_active_easy_pay_alias
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function core_and_plain_alias_exclude_active_easy_pay_providers(): void
+    {
+        $this->registerTossAliases();
+
+        [$core, $plain] = $this->resolver()->orderListFilterClauses(['card', 'toss_card']);
+
+        $this->assertSame('card', $core->paymentMethod);
+        $this->assertNull($core->pgProvider);
+        $this->assertSame(['tosspayments' => ['카카오페이']], $core->excludeEmbeddedByPg);
+
+        $this->assertSame('card', $plain->paymentMethod);
+        $this->assertSame('tosspayments', $plain->pgProvider);
+        $this->assertNull($plain->embeddedIn);
+        $this->assertSame(['tosspayments' => ['카카오페이']], $plain->excludeEmbeddedByPg);
+    }
+
+    /**
+     * 필터 배열에 들어온 내부 조건 키는 버리고, 결제수단 선택이 없으면 조건을 만들지 않는다.
+     *
+     * @scenario selected_kind=builtin, alias_active=true
+     *
+     * @effects core_filter_excludes_active_easy_pay_alias
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function expand_drops_injected_clauses_and_skips_without_selection(): void
+    {
+        $this->registerTossAliases();
+
+        $none = $this->resolver()->expandOrderListPaymentFilter(['_payment_method_clauses' => ['x'], 'per_page' => 20]);
+        $this->assertArrayNotHasKey('_payment_method_clauses', $none);
+
+        $expanded = $this->resolver()->expandOrderListPaymentFilter(['payment_method' => 'toss_kakaopay', '_payment_method_clauses' => ['x']]);
+        $this->assertCount(1, $expanded['_payment_method_clauses']);
+        $this->assertSame(['카카오페이'], $expanded['_payment_method_clauses'][0]->embeddedIn);
     }
 }

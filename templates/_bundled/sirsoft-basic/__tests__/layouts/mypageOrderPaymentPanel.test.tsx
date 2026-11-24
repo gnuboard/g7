@@ -66,10 +66,14 @@ function flatten(node: any, out: any[] = []): any[] {
 }
 
 describe('유저 주문상세 결제 패널 — 확장 앵커', () => {
+  // @scenario surface=mypage_order
+  // @effects kg_user_order_show_injection_restored
   it('루트 Div 에 KG 가 기대하는 id 가 부여되어야 한다 (R1 no-op 주입 복구)', () => {
     expect(paymentPartialJson.id).toBe('order_payment_info_panel');
   });
 
+  // @scenario surface=mypage_order
+  // @effects kg_user_order_show_injection_restored
   it('KG 확장은 이 카드에 실제로 있는 슬롯을 가리켜야 한다', () => {
     // 2026-09-01 이후 이 확장은 레이아웃 이름이 아니라 슬롯을 가리킨다. 가리키는 이름이
     // 이 카드에 없으면 코어가 등록 자체를 하지 않아, 오류 없이 주입만 사라진다.
@@ -86,6 +90,8 @@ describe('유저 주문상세 결제 패널 — 확장 앵커', () => {
     expect(slotNames).toContain(ext.extension_point);
   });
 
+  // @scenario surface=mypage_order
+  // @effects mypage_cash_receipt_slot_at_payment_panel_end
   it('현금영수증 확장 슬롯이 패널 말단에 존재해야 한다', () => {
     const slots = flatten(paymentPartialJson).filter((n) => n.type === 'extension_point');
     expect(slots.map((s) => s.name)).toContain('mypage_order_cash_receipt_slot');
@@ -94,6 +100,8 @@ describe('유저 주문상세 결제 패널 — 확장 앵커', () => {
     expect(slot.default).toEqual([]);
   });
 
+  // @scenario surface=mypage_order
+  // @effects mypage_cash_receipt_slot_at_payment_panel_end
   it('슬롯은 결제 정보 목록의 말단에 모여 있어야 한다 (결제수단 행 아래)', () => {
     // 재는 것은 "금액 줄이 확장 슬롯 뒤로 밀리지 않았는가" 다 — 밀리면 확장이 주입한 카드와
     // 금액 줄의 순서가 뒤집혀 결제 정보가 두 덩이로 갈라진다. 슬롯이 둘로 늘었으므로
@@ -119,6 +127,8 @@ describe('유저 주문상세 결제 패널 — 확장 앵커', () => {
     expect(slotCount).toBe(trailing.length);
   });
 
+  // @scenario surface=mypage_order
+  // @effects kg_user_order_show_injection_restored
   it('결제 정보 카드를 겨냥하는 확장은 전부 같은 슬롯을 가리킨다 (한 곳만 남으면 그 PG 만 뜬다)', () => {
     const files = paymentCardExtensionFiles();
 
@@ -133,6 +143,8 @@ describe('유저 주문상세 결제 패널 — 확장 앵커', () => {
     }
   });
 
+  // @scenario surface=mypage_order
+  // @effects template_leaves_cash_receipt_fields_to_module
   it('템플릿은 현금영수증 도메인 필드를 직접 그리지 않는다 (모듈 소유)', () => {
     // 슬롯 이름/주석에는 'cash_receipt' 가 들어간다(정상). 금지 대상은 도메인 값 바인딩이다.
     const bindings = flatten(paymentPartialJson)
@@ -145,6 +157,33 @@ describe('유저 주문상세 결제 패널 — 확장 앵커', () => {
     }
   });
 
+  /**
+   * 결제 방법 행은 간편결제 표시 이름(「카카오페이 (토스페이먼츠)」)을 먼저, 없으면 기본 결제수단 이름을 보인다 (#933 S5).
+   * 관리자 주문 목록·상세와 같은 값(payment_method_display_label)이다.
+   *
+   * @scenario payment_plugin=tosspayments
+   * @effects order_detail_screens_prefer_display_label
+   */
+  it('결제 방법 행은 payment_method_display_label 이 있으면 그 값, 없으면 기본 라벨을 보인다', () => {
+    const row = flatten(paymentPartialJson).find((n) => n?.id === 'order_payment_method_row');
+    expect(row, '결제 방법 행(order_payment_method_row)이 없다').toBeDefined();
+
+    const valueSpan = (row.children as any[])[1];
+    const text = String(valueSpan.text ?? '');
+    const match = text.match(/^\{\{(.+)\}\}$/s);
+    expect(match, `결제 방법 값이 바인딩식이 아니다 → ${text}`).not.toBeNull();
+
+    // 바인딩식을 그대로 평가해 의미를 잰다 — 표시 이름 우선, 없으면 기본 이름, 결제 정보가 없으면 빈 문자열.
+    const evaluate = new Function('order', `return (${match![1]});`) as (order: unknown) => string;
+    const payment = { payment_method_label: '신용카드' };
+
+    expect(evaluate({ data: { payment: { ...payment, payment_method_display_label: '카카오페이 (토스페이먼츠)' } } })).toBe('카카오페이 (토스페이먼츠)');
+    expect(evaluate({ data: { payment: { ...payment, payment_method_display_label: null } } })).toBe('신용카드');
+    expect(evaluate({ data: { payment: null } })).toBe('');
+  });
+
+  // @scenario surface=mypage_order, responsive=portable
+  // @effects new_ui_uses_portable_only
   it('id 부여가 기존 responsive.portable 규약을 깨지 않는다', () => {
     expect(Object.keys(paymentPartialJson.responsive)).toEqual(['portable']);
   });
