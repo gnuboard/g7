@@ -555,6 +555,7 @@
                                                                 },
                                                                 {
                                                                     "comment": "알림 정의 행 하단 확장 슬롯(범용). 각 소유 확장이 알림별 부가 UI(예: 채널 연동)를 이 자리에 주입한다. 특정 확장을 알지 못하며, 확장 미설치 시 빈 자리로 남는다. def·현재 채널을 extensionPointProps 로 전달한다.",
+                                                                    "id": "ext_notification_definition_row_footer_{{defIdx}}",
                                                                     "type": "extension_point",
                                                                     "name": "notification_definition_row_footer",
                                                                     "props": {

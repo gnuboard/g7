@@ -182,7 +182,8 @@ test('처음 비밀번호 저장의 본인 확인은 연결한 제공자로 가�
   await approveMock(page, { subject: pwSubject });
   await page.waitForURL((url) => url.pathname === '/mypage/change-password', { timeout: 15_000 });
   expect(new URL(page.url()).searchParams.has('social_reauth')).toBe(true);
-  await expect(page.locator('#social_change_password_reauth_done')).toBeVisible({ timeout: 15_000 });
+  // #408 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+  await expect(page.locator('[id^="social_change_password_reauth_done__"]')).toBeVisible({ timeout: 15_000 });
   // 돌아온 화면도 새로 열린 화면이라 회원 정보를 다시 받는다 — 받고 반영된 뒤에 다시 저장한다
   await expectPasswordFormReady(page, returnedMemberInfo);
 
@@ -205,17 +206,17 @@ test('회사 계정과 소셜을 둘 다 연결한 회원에게는 소셜 다시
 
   await page.goto('/mypage/change-password');
   await dismissCookieBanner(page);
-  await expect(page.locator('#social_change_password_reauth_other')).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('[id^="social_change_password_reauth_other__"]')).toBeVisible({ timeout: 15_000 });
   await expect(page.locator('body')).not.toContainText('연결한 소셜 계정으로');
-  await expect(page.locator('#social_change_password_reauth_buttons')).toHaveCount(0);
+  await expect(page.locator('[id^="social_change_password_reauth_buttons__"]')).toHaveCount(0);
 
   await page.goto('/mypage/profile/edit');
   await dismissCookieBanner(page);
   const continueButton = page.locator('#reauth_continue_button');
   await expect(continueButton).toBeVisible({ timeout: 15_000 });
-  await expect(page.locator('#social_reauth_not_eligible')).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('[id^="social_reauth_not_eligible__"]')).toBeVisible({ timeout: 15_000 });
   await expect(page.locator('#reauth_alternative_section')).not.toContainText('연결한 소셜 계정으로');
-  await expect(page.locator('#social_reauth_buttons')).toHaveCount(0);
+  await expect(page.locator('[id^="social_reauth_buttons__"]')).toHaveCount(0);
 
   await Promise.all([page.waitForURL(/\/mock\/oidc\/authorize\?/, { timeout: 15_000 }), continueButton.click()]);
   expect(challenges).toHaveLength(1);

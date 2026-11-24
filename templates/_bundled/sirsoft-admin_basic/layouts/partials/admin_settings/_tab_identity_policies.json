@@ -55,7 +55,7 @@
                     "text": "$t:admin.identity.policies.purposes_section_description"
                 },
                 {
-                    "id": "page_header",
+                    "id": "identity_policies_header",
                     "type": "basic",
                     "name": "Div",
                     "responsive": {

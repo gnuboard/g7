@@ -29,6 +29,9 @@ export type ClaimDetailSeed = {
   return_order_number: string;
   refund_number: string;
   refund_order_number: string;
+  /** 수량 2, 헤더·상품 행 모두 신청인 환불신청서 (부분 승인 왕복용) */
+  refund_requested_number: string;
+  refund_requested_order_number: string;
 };
 
 /** 시드 신청서 번호의 표식 — 커맨드의 `CLAIM_MARK` 와 같은 문자열 */

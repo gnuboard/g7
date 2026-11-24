@@ -218,11 +218,11 @@ describe('드래그 손잡이는 읽기 전용이면 숨는다', () => {
      * @effects admin_drag_handles_hidden
      */
     it.each([
-        ['partials/admin_ecommerce_settings/_payment_methods_list.json', 'payment_method_drag_handle_list', '_computed.isReadOnly'],
-        ['partials/admin_ecommerce_settings/_payment_methods_cards.json', 'payment_method_drag_handle_card', '_computed.isReadOnly'],
-        ['partials/admin_ecommerce_settings/_shipping_type_section.json', 'shipping_type_drag_handle', '_computed.isReadOnly'],
-        ['partials/admin_ecommerce_settings/_shipping_carrier_section.json', 'shipping_carrier_drag_handle', '_computed.isReadOnly'],
-        ['partials/admin_ecommerce_product_form/_partial_product_options.json', 'additional_option_drag_handle', '!_computed.isReadOnly'],
+        ['partials/admin_ecommerce_settings/_payment_methods_list.json', 'payment_method_drag_handle_list_{{$methodIndex}}', '_computed.isReadOnly'],
+        ['partials/admin_ecommerce_settings/_payment_methods_cards.json', 'payment_method_drag_handle_card_{{$methodIndex}}', '_computed.isReadOnly'],
+        ['partials/admin_ecommerce_settings/_shipping_type_section.json', 'shipping_type_drag_handle_{{$tIdx}}', '_computed.isReadOnly'],
+        ['partials/admin_ecommerce_settings/_shipping_carrier_section.json', 'shipping_carrier_drag_handle_{{$cIdx}}', '_computed.isReadOnly'],
+        ['partials/admin_ecommerce_product_form/_partial_product_options.json', 'additional_option_drag_handle_{{addIdx}}', '!_computed.isReadOnly'],
     ])('%s', (file, id, expr) => {
         const handle = byId(layout(file), id);
         expect(handle).not.toBeNull();

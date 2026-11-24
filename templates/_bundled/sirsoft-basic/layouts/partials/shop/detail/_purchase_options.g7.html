@@ -5,7 +5,7 @@
     <!-- === 옵션 선택 안내 텍스트 (2개 이상 옵션 있고, 아직 선택 안 했을 때만, 판매중일 때만) === -->
     <div data-if="{{product.data?.sales_status === 'on_sale' &amp;&amp; product.data?.has_options &amp;&amp; product.data?.option_groups?.length > 0 &amp;&amp; (product.data?.options?.length ?? 0) > 1 &amp;&amp; (!_local.selectedOptionItems || _local.selectedOptionItems.length === 0)}}" class="border-b border-gray-200 dark:border-gray-700 pb-4 text-green-700 dark:text-green-400 text-sm font-medium mb-4">$t:shop.product.select_options_guide</div>
     <!-- === 옵션 선택 섹션 (옵션 그룹이 있고 선택할 옵션이 2개 이상일 때만, 판매중일 때만) === -->
-    <div data-ref="option-select" data-if="{{product.data?.sales_status === 'on_sale' &amp;&amp; product.data?.has_options &amp;&amp; product.data?.option_groups?.length > 0 &amp;&amp; (product.data?.options?.length ?? 0) > 1}}" class="mb-4 space-y-3">
+    <div data-testid="option-select" data-if="{{product.data?.sales_status === 'on_sale' &amp;&amp; product.data?.has_options &amp;&amp; product.data?.option_groups?.length > 0 &amp;&amp; (product.data?.options?.length ?? 0) > 1}}" class="mb-4 space-y-3">
       <!-- 옵션 그룹별 Select -->
       <div data-each="group, groupIndex in {{product.data?.option_groups ?? []}}">
         <div class="mb-3">

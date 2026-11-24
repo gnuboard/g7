@@ -67,7 +67,9 @@ test('승인하면 ACS 가 응답을 받아 동의 모달로 보내고, 동의�
   ]);
   expect(acs.status()).toBe(302);
   await expect(page).toHaveURL(/\/login\?sso_pending=/, { timeout: 15_000 });
-  await expect(page.locator('#sso_consent_form')).toContainText('SAML 직원');
+  // 사용자 템플릿 판본의 동의 창은 회사 계정이 준 이름을 회원 항목 입력 칸의 초기값으로 받는다(글자가 아니라 칸 값).
+  await expect(page.locator('#sso_consent_form')).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('#sso_field_name input').first()).toHaveValue('SAML 직원');
   expect(await completeConsent(page)).toEqual({ complete: 200, handoff: 200 });
   await page.waitForFunction(() => !location.pathname.startsWith('/login'), undefined, { timeout: 15_000 });
 

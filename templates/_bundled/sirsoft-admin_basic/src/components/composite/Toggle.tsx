@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
 import { Icon } from '../basic/Icon';
 import { linkAdjacentLabel } from '../../hooks/useAdjacentLabel';
 import type { EditorAttrs } from '../../types';
@@ -89,6 +89,13 @@ export const Toggle: React.FC<ToggleProps> = ({
 }) => {
   // 진행 중이면 누를 수 없다 — 같은 스위치의 연속 클릭이 같은 작업을 거듭 보내지 않게 한다
   const locked = disabled || pending;
+
+  // 안쪽 checkbox 의 DOM id — 같은 name 의 스위치가 화면에 여럿이면(목록 행마다 is_active 등) name 을 그대로 쓰면 id 가 겹친다(#408).
+  // 인스턴스마다 다른 useId 를 앞에 붙이고, name 에 섞인 공백·한글(확장 표시 이름 등)은 id 에서 걷어 낸다. 짝 참조(label for)는 없다.
+  const reactId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
+  const safeName = name ? name.replace(/[^a-zA-Z0-9_-]/g, '') : '';
+  const inputId = name ? (safeName ? `${reactId}-${safeName}` : reactId) : undefined;
+
   // 내부 상태로 관리
   const [checked, setChecked] = useState(() => checkedProp ?? valueProp ?? false);
 
@@ -223,7 +230,7 @@ export const Toggle: React.FC<ToggleProps> = ({
       >
         <input
           type="checkbox"
-          id={name}
+          id={inputId}
           name={name}
           checked={checked}
           onChange={handleChange}

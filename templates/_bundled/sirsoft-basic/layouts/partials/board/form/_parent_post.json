@@ -124,6 +124,7 @@
             },
             "children": [
                 {
+                    "id": "ext_html_content",
                     "type": "extension_point",
                     "name": "html_content",
                     "props": {

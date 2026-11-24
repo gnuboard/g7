@@ -27,6 +27,7 @@
 import { test, expect, authenticatePage } from '../../fixtures/bizppurio-auth';
 import type { Page } from '@playwright/test';
 
+// #408 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
 const SETTINGS_URL = '/admin/settings?tab=notification_definitions&channel=alimtalk';
 const MANAGE_URL = '/admin/plugins/sirsoft-message_bizppurio/settings?tab=templates';
 const BOARD_URL = '/admin/boards/settings?tab=notification_definitions&channel=alimtalk';
@@ -291,7 +292,7 @@ async function openEditModal(page: Page, type?: string) {
     const edit = type ? rowEditButton(page, type) : page.getByRole('button', { name: '편집', exact: true }).first();
     await expect(edit).toBeVisible({ timeout: 30_000 });
     await edit.click();
-    const modal = dialog(page).locator('#bizppurio_tpl_sections');
+    const modal = dialog(page).locator('[id^="bizppurio_tpl_sections__"]');
     await expect(modal).toBeVisible({ timeout: 15_000 });
     // 작성 폼은 draft/rejected 에서만 열린다 — 시드 행은 draft 이므로 본문 textarea 가 보여야 한다
     await expect(modal.locator('textarea[name="bz_template_content"]')).toBeVisible({ timeout: 15_000 });
@@ -438,8 +439,8 @@ test.describe('T2·T3 입력', () => {
             subjectInputs: await dialog(page).locator('#template_subject_input').count(),
             bodyInputs: await dialog(page).locator('#template_body_input').count(),
             previewButtons: await dialog(page).getByRole('button', { name: '미리보기', exact: true }).count(),
-            alimtalkSection: await dialog(page).locator('#bizppurio_tpl_alimtalk_section').count(),
-            smsSection: await dialog(page).locator('#bizppurio_tpl_sms_section').count(),
+            alimtalkSection: await dialog(page).locator('[id^="bizppurio_tpl_alimtalk_section__"]').count(),
+            smsSection: await dialog(page).locator('[id^="bizppurio_tpl_sms_section__"]').count(),
             saveButtons: await dialog(page).getByRole('button', { name: '저장', exact: true }).count(),
         };
         evidence('2c 코어 입력 숨김 / 섹션 2종 / 저장 버튼 수', coreHidden);
@@ -688,7 +689,7 @@ test.describe('T6·T7 영속성·컨텍스트 격리', () => {
         const beforeSave = await page.evaluate(() => {
             const g = (window as any).G7Core?.state?.get?.() ?? {};
             const m = g.bz_tpl_modal ?? {};
-            return { id: m.id ?? null, len: (m.content?.templateContent ?? '').length, modals: document.querySelectorAll('#bizppurio_tpl_sections').length };
+            return { id: m.id ?? null, len: (m.content?.templateContent ?? '').length, modals: document.querySelectorAll('[id^="bizppurio_tpl_sections__"]').length };
         });
         evidence('6a 저장 직전 전역 상태', beforeSave);
 
@@ -757,7 +758,7 @@ test.describe('T6·T7 영속성·컨텍스트 격리', () => {
 
         // 7b: 모달에 값을 넣고 저장 없이 닫은 뒤 다시 열면 이전 입력이 남지 않는다(마운트 시 재시딩)
         await seedTemplate(page, 'welcome');
-        const modal = dialog(page).locator('#bizppurio_tpl_sections');
+        const modal = dialog(page).locator('[id^="bizppurio_tpl_sections__"]');
         await rowEditButton(page, 'welcome').click();
         await expect(modal).toBeVisible({ timeout: 15_000 });
         await modal.locator('textarea[name="bz_template_content"]').fill('이월되면 안 되는 값');
@@ -816,12 +817,12 @@ test.describe('T8 3면 패리티·다크·로케일', () => {
             // 8c: 그 면의 코어 [편집] 모달에도 섹션 2종이 주입되고 코어 본문 입력은 숨는다(3면 공유 1본)
             if (rows > 0) {
                 await page.getByRole('button', { name: '편집', exact: true }).first().click();
-                const sections = dialog(page).locator('#bizppurio_tpl_sections');
+                const sections = dialog(page).locator('[id^="bizppurio_tpl_sections__"]');
                 await expect(sections).toBeVisible({ timeout: 15_000 });
                 const prefix = url.includes('/boards/') ? 'board_' : 'ecommerce_';
                 const measured = {
-                    alimtalk: await dialog(page).locator('#bizppurio_tpl_alimtalk_section').count(),
-                    sms: await dialog(page).locator('#bizppurio_tpl_sms_section').count(),
+                    alimtalk: await dialog(page).locator('[id^="bizppurio_tpl_alimtalk_section__"]').count(),
+                    sms: await dialog(page).locator('[id^="bizppurio_tpl_sms_section__"]').count(),
                     coreBody: await dialog(page).locator(`#${prefix}template_body_input`).count(),
                     saveButtons: await dialog(page).getByRole('button', { name: '저장', exact: true }).count(),
                 };
@@ -966,6 +967,7 @@ test.describe('라운드5 신규 축 — 업로드 가드·관리 라벨·SMS �
         const smsBtn = page.getByRole('button', { name: 'SMS 본문', exact: false }).first();
         if (await smsBtn.count() > 0) {
             await smsBtn.click();
+            // #408 엔진 스코프 비대상: 이 탭은 플러그인 설정 레이아웃 modals 의 노드라(확장점 조각 아님) 정확 일치를 유지한다.
             const tabs = page.locator('#bz_sms_lang_tabs');
             await expect(tabs).toBeVisible({ timeout: 15_000 });
             const langs = (await tabs.locator('button').allInnerTexts()).map((t) => t.trim());

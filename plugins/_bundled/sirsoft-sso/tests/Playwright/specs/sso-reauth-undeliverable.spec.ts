@@ -177,7 +177,8 @@ test('비밀번호를 허용하는 IdP 면 처음 비밀번호 저장의 본인 
   // 회원 정보를 받기 전에 채우고 누르면 저장이 나가지 않는다 — 받고 화면이 반영할 때까지 기다린다
   await expectPasswordFormReady(page, memberInfo);
   // 안내는 실제 수단(회사 계정)과 맞아야 한다 — 소셜 안내도, 「관리자에게 문의」 도 아니다
-  await expect(page.locator('#password_reauth_other_notice, #social_change_password_reauth_other').first()).toBeVisible({ timeout: 15_000 });
+  // #408 엔진 스코프: 확장점 호스트 아래(기본 내용 포함)의 정적 노드 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+  await expect(page.locator('[id^="password_reauth_other_notice__"], [id^="social_change_password_reauth_other__"]').first()).toBeVisible({ timeout: 15_000 });
   await expect(page.locator('body')).not.toContainText('연결한 소셜 계정으로');
   await expect(page.locator('#password_set_unavailable')).toHaveCount(0);
 

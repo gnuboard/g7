@@ -8,17 +8,25 @@
  * 첨부도 같다 — 올리고 지우는 것은 공용 업로더가 하고, 그 결과가 모듈이 소유한 출처
  * 스트립과 활동 로그에 닿는지는 왕복해 봐야 안다.
  *
- * @effects claim_refund_and_attachment_flow_live_measurement
+ * 효과 요약(마커 아님, 평문): claim_refund_and_attachment_flow_live_measurement — 두 test 의 주석이 각각 잰다
  */
-import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
+import { test, expect, authenticatePage, type ClaimDetailSeed } from '../../fixtures/claim-detail-seed';
 
 const API = '/api/modules/sirsoft-ecommerce/admin';
 
-/** §9-0 절차로 만든 **소모성** 신청서 — 두 축 모두 상태를 바꾼다. */
-const FIXTURES = {
-  refundFlow: { claim: 'RF20260914-1134139668', segment: 'refunds' },
-  attachment: { claim: 'RT20260914-1134483868', segment: 'returns' },
-} as const;
+/**
+ * 두 축 모두 신청서 상태를 바꾸는 **소모성** 신청서를 쓴다 — 워커 시드(`claimDetailSeed`)가 워커마다 새로 세우고
+ * 끝나면 지운다. 고정 번호를 쓰면 그 번호가 없는 DB 에서 404 로 끝나고, 한 번 돌면 상태가 바뀌어 다시 돌 수 없다.
+ *
+ * @param seed 워커 시드 결과
+ * @return 축별 신청서 번호와 경로 조각
+ */
+function fixturesFrom(seed: ClaimDetailSeed) {
+  return {
+    refundFlow: { claim: seed.refund_requested_number, segment: 'refunds' },
+    attachment: { claim: seed.return_number, segment: 'returns' },
+  } as const;
+}
 
 /** 측정값을 한 줄 JSON 으로 남긴다. */
 function record(axis: string, value: unknown): void {
@@ -161,9 +169,10 @@ async function refundButtonState(
 test('환불 — 부분 승인 중에는 [환불하기]가 잠기고, 잔여를 마저 승인하면 풀린다', async ({
   page,
   claimsManageToken,
+  claimDetailSeed,
 }) => {
   await authenticatePage(page, claimsManageToken);
-  const fixture = FIXTURES.refundFlow;
+  const fixture = fixturesFrom(claimDetailSeed).refundFlow;
 
   const status = await openDetail(page, fixture.claim);
   const atRequested = await refundButtonState(page, fixture.claim);
@@ -201,9 +210,10 @@ test('환불 — 부분 승인 중에는 [환불하기]가 잠기고, 잔여를 
 test('첨부 — 2장을 올리면 격자·출처 스트립이 2행이 되고, 1장을 지우면 1행이 된다', async ({
   page,
   claimsManageToken,
+  claimDetailSeed,
 }) => {
   await authenticatePage(page, claimsManageToken);
-  const fixture = FIXTURES.attachment;
+  const fixture = fixturesFrom(claimDetailSeed).attachment;
 
   const status = await openDetail(page, fixture.claim);
 
@@ -226,7 +236,8 @@ test('첨부 — 2장을 올리면 격자·출처 스트립이 2행이 되고, 1
   const before = await counts();
 
   // 파일 입력은 업로더 안에 숨어 있다 — 보이지 않아도 `setInputFiles` 는 붙는다.
-  const fileInput = page.locator('#cr_006_images_uploader input[type="file"]').first();
+  // #408 엔진 스코프: 확장점 호스트 아래(기본 내용 포함)의 정적 노드 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+  const fileInput = page.locator('[id^="cr_006_images_uploader__"] input[type="file"]').first();
   await fileInput.waitFor({ state: 'attached', timeout: 15_000 });
 
   const png = Buffer.from(

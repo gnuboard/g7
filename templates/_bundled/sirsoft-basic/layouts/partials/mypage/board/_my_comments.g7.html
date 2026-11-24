@@ -105,7 +105,7 @@
               <!-- 원글 제목 -->
               <span class="text-base font-medium text-gray-900 dark:text-white truncate">{{comment.post_title}}</span>
               <!-- 확장 자리 — 확장이 댓글마다 배지를 붙인다(#149). 이 목록의 원글 id 는 comment.post_id_val 이다 -->
-              <extension-point name="board_comment_row_badges" class="contents" data-extension-point="board_comment_row_badges" commentData="{{comment}}" commentId="{{comment.id}}" postId="{{comment.post_id_val}}" boardSlug="{{comment.board_slug}}" context="mypage_comments"/>
+              <extension-point name="board_comment_row_badges" data-ref="ext_board_comment_row_badges_{{comment.id}}" class="contents" data-extension-point="board_comment_row_badges" commentData="{{comment}}" commentId="{{comment.id}}" postId="{{comment.post_id_val}}" boardSlug="{{comment.board_slug}}" context="mypage_comments"/>
             </div>
             <!-- 댓글 작성일시 -->
             <span class="text-xs text-muted flex-shrink-0 whitespace-nowrap" title="{{comment.created_at ?? ''}}">{{comment.created_at_formatted ?? ''}}</span>

@@ -1,0 +1,19 @@
+feature: 게시판 관리자 화면 DOM id 유일성 — 환경설정 본인인증 탭 머리 id (#408)
+
+description: |
+  HTML id 는 한 문서에 하나여야 한다. 게시판 환경설정 「본인인증 정책」 탭 조각의 머리 노드가 `page_header` 였는데,
+  메인 화면의 PageHeader 도 같은 id 를 DOM 에 출력해 그 탭을 연 화면에서 `#page_header` 가 둘이 됐다.
+  탭 머리를 `identity_policies_header` 로 바꾼다. 레이아웃 게이트는 굽기 산출 `.json` 을 정적으로 대조하고,
+  화면 DOM 중복 0 은 코어 크롤 E2E 와 Chrome MCP 실측이 잰다.
+
+# axis 의미:
+#   screen — id 를 대조하는 화면 조합(메인 레이아웃 + 그 화면에 포함되는 조각)
+axes:
+  screen: [board_settings_identity_tab]
+
+effects:
+  - identity_tab_header_id_renamed   # 탭 조각 머리 노드 id 가 identity_policies_header 이고 page_header 가 없다
+  - main_and_tab_node_ids_unique     # 메인 화면과 탭 조각을 합친 노드 id 에 겹침이 없다
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-identity-policies-header-id.test.ts

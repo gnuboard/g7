@@ -86,9 +86,9 @@
                 <span data-ref="board_type" class="board-text-label-subtle">({{row.type}})</span>
               </div>
               <div data-ref="header_right" class="board:flex board:items-center board:gap-3">
-                <toggle data-type="composite" data-ref="active_toggle" checked="{{row.is_active}}" name="is_active" ariaLabel="$t:defer:common.item_enabled|name={{row.name}}" size="sm" disabled="{{row.abilities?.can_update !== true}}">
+                <toggle data-type="composite" data-ref="active_toggle" checked="{{row.is_active}}" name="is_active" ariaLabel="$t:defer:common.item_enabled|name={{row.name}}" size="sm" :awaitConfirmation="true" disabled="{{row.abilities?.can_update !== true}}">
                   <on type="change">
-                    <!-- 카드에서 바로 활성/비활성을 뒤집는다. 보내는 값은 «지금의 반대」이고 토스트 문구도 뒤집기 «전» 값으로 고르므로 둘의 기준이 같다. 성공 후 목록을 동기로 다시 읽어 화면의 토글이 서버 값과 어긋난 채 남지 않게 한다 -->
+                    <!-- 카드에서 바로 활성/비활성을 뒤집는다. 보내는 값은 «지금의 반대」이고 토스트 문구도 뒤집기 «전» 값으로 고르므로 둘의 기준이 같다. 성공 후 목록을 동기로 다시 읽어 화면의 토글이 서버 값과 어긋난 채 남지 않게 한다. 스위치는 누른다고 스스로 바뀌지 않고(awaitConfirmation) 다시 받은 서버 값으로만 바뀐다 — 실패(500 등)하면 원래 모양 그대로다(#408 브라우저 실측: 종전에는 눌린 쪽으로 남아 DB 와 어긋났다) -->
                     <sequence>
                       <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/boards/{{row.slug}}" method="PUT">
                         <success>

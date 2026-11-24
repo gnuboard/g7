@@ -82,7 +82,7 @@
                     },
                     "children": [
                         {
-                            "id": "field_product_code",
+                            "id": "field_identification_product_code",
                             "type": "basic",
                             "name": "Div",
                             "props": {

@@ -10,7 +10,8 @@
  * 잠그는 것:
  *   - 파일마다 확장점 이름·개수(계획 §6.1 표 19곳)와 반복(iteration) 노드 안에 있는지
  *   - 정규화 props(postId·boardSlug·context 등)와 context 값 — 확장이 화면을 구분하는 계약
- *   - 호스트 className `contents`, 표지 `data-extension-point`, 노드 id 없음(행·3중 include 마다 DOM id 중복 방지)
+ *   - 호스트 className `contents`, 표지 `data-extension-point`, 노드 id 필수(#408 — 엔진이 조각 id 를 호스트 id 로 스코프한다).
+ *     반복 안 자리는 행 변수로 보간해 행마다 다르다. 반복 밖 자리의 정적 id 는 3중 include 갈래가 서로 배타적인 data-if 라 DOM 에 동시에 하나뿐이다
  *   - 서빙 등가: board/index·board/form·board/show 레이아웃을 partial 까지 펼쳤을 때의 노드 수
  *
  * 검증 방식: 굽기 산출 `.json` 정적 대조(DOM 비의존).
@@ -103,92 +104,44 @@ const FORM_PROPS = {
 };
 
 const CASES: FileCase[] = [
-  /**
-   * @scenario surface=board_list_basic, locale=ko, site_name=empty
-   * @effects every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values, basic_list_and_scrap_have_pc_and_mobile_slots
-   */
+  // board_list_basic — 잰다: every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values, basic_list_and_scrap_have_pc_and_mobile_slots
   { surface: 'board_list_basic', file: 'partials/board/types/basic/index.json', name: 'board_post_row_badges', count: 2, inIteration: true, props: ROW('post?.id', 'route?.slug', 'board_list') },
-  /**
-   * @scenario surface=board_list_card, locale=ko, site_name=empty
-   * @effects every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
-   */
+  // board_list_card — 잰다: every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
   { surface: 'board_list_card', file: 'partials/board/types/card/index.json', name: 'board_post_row_badges', count: 1, inIteration: true, props: ROW('post?.id', 'route?.slug', 'board_list') },
-  /**
-   * @scenario surface=board_list_gallery, locale=ko, site_name=empty
-   * @effects every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
-   */
+  // board_list_gallery — 잰다: every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
   { surface: 'board_list_gallery', file: 'partials/board/types/gallery/index.json', name: 'board_post_row_badges', count: 1, inIteration: true, props: ROW('post?.id', 'route?.slug', 'board_list') },
   // 인기글 한 줄은 부르는 쪽(_popular_list)의 반복 안에서 include 된다 — 이 파일 단독으로는 반복 밖
-  /**
-   * @scenario surface=popular, locale=ko, site_name=empty
-   * @effects every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
-   */
+  // popular — 잰다: every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
   { surface: 'popular', file: 'partials/board/popular/_popular_item.json', name: 'board_post_row_badges', count: 1, inIteration: false, props: ROW('post.id', 'post.board_slug', 'popular') },
-  /**
-   * @scenario surface=home_recent, locale=ko, site_name=empty
-   * @effects every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
-   */
+  // home_recent — 잰다: every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
   { surface: 'home_recent', file: 'partials/home/_recent_posts.json', name: 'board_post_row_badges', count: 1, inIteration: true, props: ROW('post.id', 'post.board_slug', 'home_recent') },
-  /**
-   * @scenario surface=home_board_summary, locale=ko, site_name=empty
-   * @effects every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
-   */
+  // home_board_summary — 잰다: every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
   { surface: 'home_board_summary', file: 'partials/home/_board_summary.json', name: 'board_post_row_badges', count: 1, inIteration: true, props: ROW('post.id', 'item.slug', 'home_board_summary') },
-  /**
-   * @scenario surface=user_posts, locale=ko, site_name=empty
-   * @effects every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
-   */
+  // user_posts — 잰다: every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
   { surface: 'user_posts', file: 'users/posts.json', name: 'board_post_row_badges', count: 1, inIteration: true, props: ROW('post.id', 'post.board_slug', 'user_posts') },
-  /**
-   * @scenario surface=user_profile_recent, locale=ko, site_name=empty
-   * @effects every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
-   */
+  // user_profile_recent — 잰다: every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
   { surface: 'user_profile_recent', file: 'users/show.json', name: 'board_post_row_badges', count: 1, inIteration: true, props: ROW('post.id', 'post.board_slug', 'user_profile_recent') },
-  /**
-   * @scenario surface=mypage_posts, locale=ko, site_name=empty
-   * @effects every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
-   */
+  // mypage_posts — 잰다: every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
   { surface: 'mypage_posts', file: 'partials/mypage/board/_my_posts.json', name: 'board_post_row_badges', count: 1, inIteration: true, props: ROW('post.id', 'post.board_slug', 'mypage_posts') },
-  /**
-   * @scenario surface=mypage_scrap, locale=ko, site_name=empty
-   * @effects every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values, basic_list_and_scrap_have_pc_and_mobile_slots
-   */
+  // mypage_scrap — 잰다: every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values, basic_list_and_scrap_have_pc_and_mobile_slots
   { surface: 'mypage_scrap', file: 'partials/mypage/scrap/_list.json', name: 'board_post_row_badges', count: 2, inIteration: true, props: ROW('item.post_id', 'item.board_slug', 'mypage_scrap', '{{item}}') },
-  /**
-   * @scenario surface=search_all, locale=ko, site_name=empty
-   * @effects every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
-   */
+  // search_all — 잰다: every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
   { surface: 'search_all', file: 'partials/search/posts/_section.json', name: 'board_post_row_badges', count: 1, inIteration: true, props: ROW('post?.id', 'post?.board_slug', 'search_all') },
-  /**
-   * @scenario surface=search_posts, locale=ko, site_name=empty
-   * @effects every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
-   */
+  // search_posts — 잰다: every_post_list_row_has_board_post_row_badges, slot_props_follow_normalized_contract_and_context_values
   { surface: 'search_posts', file: 'partials/search/posts/_list.json', name: 'board_post_row_badges', count: 1, inIteration: true, props: ROW('post?.id', 'post?.board_slug', 'search_posts') },
-  /**
-   * @scenario surface=board_show, locale=ko, site_name=empty
-   * @effects show_header_and_comment_slots_reach_all_three_type_branches, slot_props_follow_normalized_contract_and_context_values
-   */
+  // board_show — 잰다: show_header_and_comment_slots_reach_all_three_type_branches, slot_props_follow_normalized_contract_and_context_values
   { surface: 'board_show', file: 'partials/board/types/basic/show.json', name: 'board_post_header_badges', count: 1, inIteration: false, props: ROW('post?.data?.id', 'route?.slug', 'board_show', '{{post?.data}}') },
-  /**
-   * @scenario surface=board_show_comment, locale=ko, site_name=empty
-   * @effects show_header_and_comment_slots_reach_all_three_type_branches, slot_props_follow_normalized_contract_and_context_values
-   */
+  // board_show_comment — 잰다: show_header_and_comment_slots_reach_all_three_type_branches, slot_props_follow_normalized_contract_and_context_values
   { surface: 'board_show_comment', 
     file: 'partials/board/show/_comment_item.json', name: 'board_comment_row_badges', count: 1, inIteration: false,
     props: { commentData: '{{comment}}', commentId: '{{comment?.id}}', postId: '{{post?.data?.id}}', boardSlug: '{{route?.slug}}', context: 'board_show_comment' },
   },
-  /**
-   * @scenario surface=mypage_comments, locale=ko, site_name=empty
-   * @effects show_header_and_comment_slots_reach_all_three_type_branches, slot_props_follow_normalized_contract_and_context_values
-   */
+  // mypage_comments — 잰다: show_header_and_comment_slots_reach_all_three_type_branches, slot_props_follow_normalized_contract_and_context_values
   { surface: 'mypage_comments', 
     file: 'partials/mypage/board/_my_comments.json', name: 'board_comment_row_badges', count: 1, inIteration: true,
     props: { commentData: '{{comment}}', commentId: '{{comment.id}}', postId: '{{comment.post_id_val}}', boardSlug: '{{comment.board_slug}}', context: 'mypage_comments' },
   },
-  /**
-   * @scenario surface=board_form, locale=ko, site_name=empty
-   * @effects form_top_and_bottom_slots_reach_all_three_type_branches, slot_props_follow_normalized_contract_and_context_values
-   */
+  // board_form — 잰다: form_top_and_bottom_slots_reach_all_three_type_branches, slot_props_follow_normalized_contract_and_context_values
   { surface: 'board_form', file: 'partials/board/form/_post_form.json', name: 'board_post_form_top', count: 1, inIteration: false, props: FORM_PROPS },
   { surface: 'board_form', file: 'partials/board/form/_post_form.json', name: 'board_post_form_bottom', count: 1, inIteration: false, props: FORM_PROPS },
 ];
@@ -222,6 +175,22 @@ describe('게시판 확장점 — 파일별 자리 (#149 §6.1)', () => {
         for (const s of slots) expect(s.inIteration).toBe(c.inIteration);
       });
 
+      // 이 반복이 CASES 의 화면마다 아래 시험을 만든다 — docblock 은 @scenario 를 1건만 읽으므로 나머지 화면은 라인 주석으로 병기
+      // @scenario surface=board_list_card, locale=ko, site_name=empty
+      // @scenario surface=board_list_gallery, locale=ko, site_name=empty
+      // @scenario surface=popular, locale=ko, site_name=empty
+      // @scenario surface=home_recent, locale=ko, site_name=empty
+      // @scenario surface=home_board_summary, locale=ko, site_name=empty
+      // @scenario surface=user_posts, locale=ko, site_name=empty
+      // @scenario surface=user_profile_recent, locale=ko, site_name=empty
+      // @scenario surface=mypage_posts, locale=ko, site_name=empty
+      // @scenario surface=mypage_scrap, locale=ko, site_name=empty
+      // @scenario surface=search_all, locale=ko, site_name=empty
+      // @scenario surface=search_posts, locale=ko, site_name=empty
+      // @scenario surface=board_show, locale=ko, site_name=empty
+      // @scenario surface=board_show_comment, locale=ko, site_name=empty
+      // @scenario surface=mypage_comments, locale=ko, site_name=empty
+      // @scenario surface=board_form, locale=ko, site_name=empty
       /**
        * @scenario surface=board_list_basic, locale=ko, site_name=empty
        * @effects slot_props_follow_normalized_contract_and_context_values
@@ -234,13 +203,16 @@ describe('게시판 확장점 — 파일별 자리 (#149 §6.1)', () => {
 
       /**
        * @scenario surface=board_list_basic, locale=ko, site_name=empty
-       * @effects slot_hosts_have_no_node_id_and_use_contents_marker
+       * @effects slot_hosts_have_unique_node_id_and_use_contents_marker
        */
-      it('호스트는 contents·data-extension-point 표지를 갖고 노드 id 가 없다', () => {
+      it('호스트는 contents·data-extension-point 표지와 노드 id 를 갖고, 반복 안이면 id 를 보간한다', () => {
         for (const s of slots) {
           expect(s.node.props?.className).toBe('contents');
           expect(s.node.props?.['data-extension-point']).toBe(c.name);
-          expect(s.node.id).toBeUndefined();
+          expect(typeof s.node.id).toBe('string');
+          expect(s.node.id.startsWith('ext_')).toBe(true);
+          // 반복 안 자리(또는 반복 문맥으로 include 되는 행 partial)는 행마다 다른 DOM id 여야 한다
+          if (c.inIteration || c.surface === 'popular' || c.surface === 'board_show_comment') expect(s.node.id).toContain('{{');
           // data-slot 은 슬롯 시스템 지시어(노드 slot)라 쓰면 호스트가 SlotContainer 로 옮겨진다
           expect(s.node.slot).toBeUndefined();
         }
@@ -290,11 +262,14 @@ describe('게시판 확장점 — 서빙 등가(레이아웃을 partial 까지 �
 
   /**
    * @scenario surface=board_list_card, locale=ko, site_name=empty
-   * @effects slot_hosts_have_no_node_id_and_use_contents_marker
+   * @effects slot_hosts_have_unique_node_id_and_use_contents_marker
    */
-  it('펼친 트리의 다섯 자리 모두 노드 id 가 없다(3중 include 에서 id 중복이 생기지 않는다)', () => {
+  it('펼친 트리의 다섯 자리 모두 노드 id 가 있다 — 같은 정적 id 는 서로 배타적인 유형 갈래에만 되풀이된다', () => {
     for (const layout of ['board/index.json', 'board/form.json', 'board/show.json']) {
-      for (const s of collectSlots(inlineFile(layout), SLOT_NAMES)) expect(s.node.id, layout).toBeUndefined();
+      for (const s of collectSlots(inlineFile(layout), SLOT_NAMES)) {
+        expect(typeof s.node.id, layout).toBe('string');
+        expect(s.node.id.length, layout).toBeGreaterThan(0);
+      }
     }
   });
 });

@@ -487,7 +487,7 @@
         </div>
       </div>
       <!-- 확장이 자기 수집 상태를 붙이는 자리 — 값은 진단 응답의 `extensions.{식별자}`(서버 필터 `core.analytics.diagnostics_sections`)로 온다. -->
-      <extension-point name="analytics_diagnostics_widgets" class="space-y-4 mt-4">
+      <extension-point name="analytics_diagnostics_widgets" data-ref="ext_analytics_diagnostics_widgets" class="space-y-4 mt-4">
         <default/>
       </extension-point>
     </div>

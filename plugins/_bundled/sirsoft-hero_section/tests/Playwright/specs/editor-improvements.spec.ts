@@ -44,12 +44,13 @@ test('모바일 업로드 지연·실패는 저장을 막고 파일 제거 후 �
     await route.fulfill({ status: 422, contentType: 'application/json', body: JSON.stringify({ success: false, message: '검수용 업로드 실패' }) });
   });
   try {
-    await page.locator('#mobile_image_uploader input[type=file]').setInputFiles(await mobilePng(page));
+    // #408 엔진 스코프: 확장점 호스트 아래(기본 내용 포함)의 정적 노드 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+    await page.locator('[id^="mobile_image_uploader__"] input[type=file]').setInputFiles(await mobilePng(page));
     await expect(page.locator('#footer_save_button')).toBeDisabled();
     release();
-    await expect(page.locator('#mobile_image_uploader').getByRole('button', { name: '재시도', exact: true })).toBeVisible();
+    await expect(page.locator('[id^="mobile_image_uploader__"]').getByRole('button', { name: '재시도', exact: true })).toBeVisible();
     await expect(page.locator('#footer_save_button')).toBeDisabled();
-    await page.locator('#mobile_image_uploader').getByRole('button', { name: '삭제', exact: true }).click();
+    await page.locator('[id^="mobile_image_uploader__"]').getByRole('button', { name: '삭제', exact: true }).click();
     await expect(page.locator('#footer_save_button')).toBeEnabled();
   } finally {
     release();
@@ -87,9 +88,12 @@ test('기기·콘텐츠 언어·확대·초점 설정을 저장하고 새로고�
   const response = await save;
   expect(response.status()).toBe(200);
   expect((await response.json()).data.presentation.mobile_x).toBe(100);
+  // 다시 연 화면도 edit() 와 같은 기준(저장 단추 활성, 30초)으로 준비를 기다린다 — 기본 5초는 「로딩 중」 에서 끝난다.
   await page.goto(`${ADMIN_LIST}/${id}/edit`);
+  await expect(page.locator('#footer_save_button')).toBeEnabled({ timeout: 30_000 });
   await expect(page.locator('#hero_focus_mobile_x')).toHaveValue('100');
   await page.reload();
+  await expect(page.locator('#footer_save_button')).toBeEnabled({ timeout: 30_000 });
   await expect(page.locator('#hero_focus_mobile_x')).toHaveValue('100');
   await expect(page.locator('[data-period-status]')).toContainText('사이트 시간대:');
 });

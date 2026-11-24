@@ -438,7 +438,7 @@
                 <div class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
                   <responsive on="640-" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-end"/>
                   <!-- 추가 옵션 드래그 손잡이 — 폼이 읽기 전용(수정 진입은 수정 권한, 등록·복사 진입은 등록 권한 없음)이면 숨긴다(형제 삭제 버튼과 같은 조건). -->
-                  <div data-ref="additional_option_drag_handle" data-if="{{!_computed.isReadOnly}}" class="ecommerce-text-muted ecommerce:hover:text-gray-600 ecommerce:dark:hover:text-gray-300 ecommerce:select-none" :data-drag-handle="true">
+                  <div data-ref="additional_option_drag_handle_{{addIdx}}" data-if="{{!_computed.isReadOnly}}" class="ecommerce-text-muted ecommerce:hover:text-gray-600 ecommerce:dark:hover:text-gray-300 ecommerce:select-none" :data-drag-handle="true">
                     <icon name="grip-vertical" class="ecommerce:text-xl"/>
                   </div>
                   <div class="ecommerce:flex-1">

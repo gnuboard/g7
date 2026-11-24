@@ -19,11 +19,11 @@
         },
         {
             "comment": "=== 옵션 선택 섹션 (옵션 그룹이 있고 선택할 옵션이 2개 이상일 때만, 판매중일 때만) ===",
-            "id": "option-select",
             "type": "basic",
             "name": "Div",
             "if": "{{product.data?.sales_status === 'on_sale' && product.data?.has_options && product.data?.option_groups?.length > 0 && (product.data?.options?.length ?? 0) > 1}}",
             "props": {
+                "data-testid": "option-select",
                 "className": "mb-4 space-y-3"
             },
             "children": [

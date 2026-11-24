@@ -4,6 +4,9 @@
  * DataGrid의 cellChildren, ul의 li 등 반복 컨텍스트에서
  * 자식 컴포넌트를 렌더링할 때 사용하는 헬퍼 함수들을 제공합니다.
  *
+ * audit:allow seo-renderer-parity-sync engine-v1.99.0 은 셀 경로 확장점 호스트의 DOM id 출력(확장점 scope 상속)만 바꿨다 —
+ * 봇 렌더러(ComponentHtmlMapper)는 노드 id 를 DOM 에 내지 않고 props 의 id 만 내므로 노드 키·컨텍스트 해석·봇 렌더 표면은 변경 없음
+ *
  * @packageDocumentation
  */
 
@@ -25,6 +28,7 @@ import {
 import type { G7DevToolsInterface } from '../G7CoreGlobals';
 import { resolveRenderEnvironment } from './RenderEnvironment';
 import { applyResponsiveClassMerge } from './StyleHelpers';
+import { CellExtensionHost } from '../ExtensionIdScope';
 import type { RenderEnvironment } from './RenderEnvironment';
 import {
   evaluateConditionExpression,
@@ -1243,10 +1247,18 @@ export function renderItemChildren(
         ? renderItemChildren(childDef.children as ComponentDefinition[], effectiveContext, componentMap, key, childOptions)
         : null;
 
+      // 호스트는 React 트리의 확장점 scope 를 상속하는 컴포넌트로 그린다 — 정적 호스트 id 에 바깥 scope 를 붙이고,
+      // 자기 id 로 주입 조각에 새 scope 를 연다. 셀을 그리는 컴포넌트(DataGrid 등)는 scope 를 알 수 없어서다 (engine-v1.99.0, #408)
       return [
         React.createElement(
-          'div',
-          { key, id: resolvedId, className: host.className, ...stripRawDeep(host.attrs) },
+          CellExtensionHost,
+          {
+            key,
+            hostId: resolvedId,
+            isStaticId: typeof childDef.id === 'string' && !childDef.id.includes('{{'),
+            className: host.className,
+            attrs: stripRawDeep(host.attrs),
+          },
           injected
         ),
       ];

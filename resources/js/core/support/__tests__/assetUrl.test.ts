@@ -1222,7 +1222,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             for (const [container, floor] of Object.entries(TRANSPORT_FLOORS)) {
                 expect(transportFilesScanned[container] ?? 0, `전송 통로 모집단이 비었다: ${container}`).toBeGreaterThanOrEqual(floor);
             }
-        });
+        // 코어와 확장 소스 전부를 읽는 시험이라 전체 병렬 실행에서는 기본 5초를 넘는다(실측 12.9초). 판정과 무관한 실행 시간 한도다.
+        }, 30_000);
 
         // @scenario base_path=subpath, fetch_origin=extension_bundle, navigation_direction=request
         // @effects base_path_gate_population_includes_bundled_extensions

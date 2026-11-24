@@ -5,6 +5,16 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.99.0] - 2026-11-23
+
+### Added
+
+- (engine-v1.99.0) 디버그 모드(`G7Config.debug`)에서 같은 DOM id 가 화면에 여러 개 생기면 콘솔에 `[G7] 같은 DOM id 가 화면에 여러 개 있습니다` 경고를 냅니다(`{id, count, pathname}`). 문서 body 의 DOM 변화를 지켜보다 변화가 멈추고 1초 뒤 한 번 세고, 같은 경로·같은 id 는 한 번만 알리며 경로가 바뀌면 다시 셉니다. 디버그 모드가 꺼져 있으면 감시 자체를 만들지 않습니다. 정적 감사와 전 화면 크롤이 모달·시트 열림 같은 상호작용 상태를 다 보지 못해서 넣었습니다(#408). 회귀 잠금: `devDuplicateIdMonitor.test.ts`(6건) (devDuplicateIdMonitor.ts, template-engine.ts)
+
+### Fixed
+
+- (engine-v1.99.0) 같은 확장 조각이 한 화면의 확장점 여러 곳에 주입되면 조각 안 노드의 정적 id 가 DOM id 로 그대로 나가 같은 id 가 여러 개 생기던 문제를 고쳤습니다. 관리자 게시글 상세의 `ckeditor5_content_css_injector` 가 본문과 답글 수만큼(실측 4개), 알림 정의 탭의 비즈뿌리오 행 표시가 행 수만큼, 회원 항목의 주소 검색 버튼이 주소형 항목 수만큼 겹쳤습니다. 이제 확장점 호스트 아래에서 그려지는 노드(주입 조각과, 주입이 없을 때 그려지는 기본 내용 `default` 모두)의 **보간 없는 정적 노드 id** 는 DOM 에 `{원래 id}__{가장 가까운 호스트 확장점의 DOM id}` 로 나갑니다(새 `ExtensionIdScopeContext`·`scopeExtensionNodeId`). 중첩 확장점은 가장 가까운 호스트가 이기고 호스트 자신의 id 도 바깥 scope 로 스코프됩니다. 셀·반복 항목 렌더(`renderItemChildren`)의 확장점 호스트는 React 트리의 scope 를 상속하는 `CellExtensionHost` 로 그립니다. **바뀌지 않는 것**: `{{…}}` 로 보간한 id, 명시한 `props.id`(g7.html 의 `id="…"`), 엔진 내부 식별(findById·slot 등록·DevTools·편집기 editorPath, 서버의 target_id 주입)은 원본 id 그대로입니다. 조각 노드를 DOM 으로 정확히 찾아야 하면 조각이 `id` 속성을 직접 지정하거나 접두어 셀렉터(`[id^="원래id__"]`)를 씁니다. 발생 시점: 확장점 주입 도입 이래 계속(엔진 버전 특정 불가). 회귀 잠금: `ExtensionIdScope.test.tsx`(9건, 수정 전 엔진에서 5건 실패 확인) (ExtensionIdScope.tsx, DynamicRenderer.tsx, helpers/RenderHelpers.ts)
+
 ## [engine-v1.98.0] - 2026-11-21
 
 ### Added

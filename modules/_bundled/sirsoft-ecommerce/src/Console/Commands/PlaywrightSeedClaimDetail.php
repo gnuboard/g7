@@ -52,6 +52,8 @@ use Modules\Sirsoft\Ecommerce\Services\OrderPrivacyRetentionService;
  *                송장은 비워 둔다(미리 채움이 빈 값으로 서는지까지 잰다).
  *   - refund   — 환불 계좌가 비어 있는 `approved` 환불신청서(입금된 가상계좌 주문, 현금 29,000).
  *                확인 창 계좌 칸의 수단별 판정(`refund_account_by_method.bank.required_if_cash`)이 참이 된다.
+ *   - refund_requested — 수량 2, 헤더·상품 행 모두 `requested` 인 환불신청서. 환불·첨부 spec
+ *                (`claim-refund-and-attachment-flow.spec.ts`)이 한 개만 승인해 신청 잔여를 남기는 부분 승인 왕복을 잰다.
  *
  * **주문은 실제 계산 경로로 만든다.** 상세 응답의 정산 미리보기는 주문을 다시 계산하므로, 금액을 손으로 박은
  * 주문은 재계산과 어긋나 500 이 되거나 엉뚱한 값을 낸다. 그래서 모듈 PHPUnit 의 클레임 조립 헬퍼
@@ -191,6 +193,7 @@ class PlaywrightSeedClaimDetail extends Command
         $exchange = $this->exchange($calculator, $tag, $product, $baseOption, $targetOption);
         $return = $this->returnClaim($calculator, $tag, $product, $baseOption);
         $refund = $this->refund($calculator, $tag, $product, $baseOption);
+        $requestedRefund = $this->requestedRefund($calculator, $tag, $product, $baseOption);
 
         return [
             'tag' => $tag,
@@ -201,6 +204,8 @@ class PlaywrightSeedClaimDetail extends Command
             'return_order_number' => $return->order->order_number,
             'refund_number' => $refund->refund_number,
             'refund_order_number' => $refund->order->order_number,
+            'refund_requested_number' => $requestedRefund->refund_number,
+            'refund_requested_order_number' => $requestedRefund->order->order_number,
         ];
     }
 
@@ -466,6 +471,58 @@ class PlaywrightSeedClaimDetail extends Command
             'quantity' => 1,
             'unit_price' => $unitPrice,
             'subtotal_amount' => $unitPrice,
+            'discount_amount' => 0,
+            'refund_amount' => $cash,
+        ]);
+
+        return $refund->fresh(['order']);
+    }
+
+    /**
+     * 부분 승인 왕복용 신청 환불신청서(수량 2, 헤더·상품 행 모두 신청)를 만듭니다.
+     *
+     * 환불·첨부 spec 이 한 개만 승인해 신청 잔여를 남긴 뒤 나머지를 승인하며 [환불하기] 잠금을 잰다 — 수량 2 여야
+     * 부분 승인이 성립한다. 결제는 팩토리 기본(카드)이라 계좌 판정 축은 서지 않는다.
+     *
+     * @param  OrderCalculationService  $calculator  주문 계산 서비스
+     * @param  string  $tag  워커별 꼬리표
+     * @param  Product  $product  시드 상품
+     * @param  ProductOption  $option  주문한 옵션
+     * @return OrderRefund 환불신청서
+     */
+    private function requestedRefund(
+        OrderCalculationService $calculator,
+        string $tag,
+        Product $product,
+        ProductOption $option,
+    ): OrderRefund {
+        $quantity = 2;
+        $order = $this->order($calculator, $tag, 'RQ', $product, $option, $quantity, OrderStatusEnum::PAYMENT_COMPLETE);
+        $orderOption = $order->options->first();
+        $unitPrice = (float) $orderOption->unit_price;
+        $cash = (float) $order->total_paid_amount;
+
+        $refund = OrderRefund::create([
+            'order_id' => $order->id,
+            'refund_source_type' => RefundSourceTypeEnum::DIRECT,
+            'refund_number' => 'RF-'.self::CLAIM_MARK.'-'.$tag.'-RQ',
+            'refund_status' => RefundStatusEnum::REQUESTED,
+            'refund_method' => RefundMethodEnum::BANK,
+            'reason_code' => 'changed_mind',
+            'fault_type' => ClaimReasonFaultTypeEnum::CUSTOMER,
+            'refund_amount' => $cash,
+            'refund_points_amount' => 0,
+            'refund_shipping_amount' => 0,
+        ]);
+
+        OrderRefundOption::create([
+            'order_refund_id' => $refund->id,
+            'order_id' => $order->id,
+            'order_option_id' => $orderOption->id,
+            'option_status' => RefundStatusEnum::REQUESTED,
+            'quantity' => $quantity,
+            'unit_price' => $unitPrice,
+            'subtotal_amount' => $unitPrice * $quantity,
             'discount_amount' => 0,
             'refund_amount' => $cash,
         ]);

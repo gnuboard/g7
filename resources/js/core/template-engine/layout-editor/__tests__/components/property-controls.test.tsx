@@ -883,7 +883,7 @@ describe('ControlRenderer', () => {
 
   // @scenario device=tablet, apply_type=classToken, scope_override_state=has_scope_override
   // @effects device_scope_writes_responsive_breakpoint_props_base_unchanged
-  it('tablet scope 값 변경 → applyRecipe(tablet scope) → responsive.tablet.props', () => {
+  it('tablet scope 값 변경 → applyRecipe(tablet scope) → responsive.tablet.classMerge', () => {
     const onPatch = vi.fn();
     render(
       <ControlRenderer
@@ -897,7 +897,9 @@ describe('ControlRenderer', () => {
     );
     fireEvent.click(screen.getByTestId('g7le-segment-center'));
     const patched = onPatch.mock.calls.at(-1)![0] as EditorNode;
-    expect(patched.responsive?.tablet?.props?.className).toBe('text-center');
+    // engine-v1.98.0 classMerge: 구간에는 기본 대비 바뀐 토큰만 `responsive.tablet.classMerge` 로 쓴다.
+    expect(patched.responsive?.tablet?.classMerge).toBe('text-center');
+    expect(patched.responsive?.tablet?.props?.className).toBeUndefined();
     expect(patched.props?.className).toBeUndefined();
   });
 

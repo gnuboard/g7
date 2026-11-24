@@ -19,7 +19,7 @@
       <span>{{form_meta?.data?.parent_post?.created_at}}</span>
     </div>
     <div data-if="{{form_meta?.data?.parent_post?.content}}" class="board:bg-gray-50 board:dark:bg-gray-800 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded board:p-3">
-      <extension-point name="html_content" content="{{form_meta?.data?.parent_post?.content}}" isHtml="{{(form_meta?.data?.parent_post?.content_mode ?? 'text') === 'html'}}" class="{{_local.parentPostExpanded ? '' : 'board:line-clamp-3'}} board:text-sm board:text-gray-600 board:dark:text-gray-300 board:mb-2">
+      <extension-point name="html_content" data-ref="ext_html_content" content="{{form_meta?.data?.parent_post?.content}}" isHtml="{{(form_meta?.data?.parent_post?.content_mode ?? 'text') === 'html'}}" class="{{_local.parentPostExpanded ? '' : 'board:line-clamp-3'}} board:text-sm board:text-gray-600 board:dark:text-gray-300 board:mb-2">
         <default>
           <html-content data-type="composite" content="{{form_meta?.data?.parent_post?.content}}" isHtml="{{(form_meta?.data?.parent_post?.content_mode ?? 'text') === 'html'}}" class="{{_local.parentPostExpanded ? '' : 'board:line-clamp-3'}} board:text-sm board:text-gray-600 board:dark:text-gray-300 board:mb-2"/>
         </default>

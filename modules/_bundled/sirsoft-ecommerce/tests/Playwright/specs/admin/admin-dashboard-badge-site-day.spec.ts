@@ -20,10 +20,10 @@
  * 관리자 계정 시간대는 그 계정 본인의 프로필 API(`PUT /api/me`)로 UTC 로 바꾼다.
  *
  * 소유 시나리오: `admin-order-list-site-day-basis`, `admin-dashboard-badge-order-count` (축 매핑은 각 테스트에 있다)
- * @effects dashboard_badge_links_carry_site_basis, order_list_forwards_date_basis_to_api,
- *          order_list_site_basis_filters_by_site_day, order_list_shows_site_basis_notice,
- *          order_list_non_date_search_keeps_site_basis, order_list_date_change_drops_site_basis,
- *          dashboard_badge_counts_orders_not_option_quantities, dashboard_badge_equals_linked_order_list_total
+ * 효과 요약(마커 아님, 평문): dashboard_badge_links_carry_site_basis, order_list_forwards_date_basis_to_api,
+ *   order_list_site_basis_filters_by_site_day, order_list_shows_site_basis_notice,
+ *   order_list_non_date_search_keeps_site_basis, order_list_date_change_drops_site_basis,
+ *   dashboard_badge_counts_orders_not_option_quantities, dashboard_badge_equals_linked_order_list_total
  */
 import { execSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
@@ -35,7 +35,8 @@ import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 const DASHBOARD_URL = '/admin/dashboard';
 const ORDERS_API_PATH = '/api/modules/sirsoft-ecommerce/admin/orders';
 const OVERVIEW_API_PATH = '/api/modules/sirsoft-ecommerce/admin/dashboard/overview';
-const BADGE = '#today_payment_complete_badge';
+// #408 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+const BADGE = '[id^="today_payment_complete_badge__"]';
 const NOTICE = '#date_site_basis_notice';
 
 /** 관리자 계정에 둘 시간대 — 사이트(Asia/Seoul 등)와 달라야 배지 1건 → 목록 0건 회귀가 재현된다. */
@@ -255,8 +256,15 @@ test.describe('대시보드 배지로 연 주문 목록 — 사이트 하루 기
   // @effects dashboard_badge_equals_linked_order_list_total
   // @scenario entry=list_date_change, basis=viewer
   // @effects order_list_date_change_drops_site_basis
-  test('영어 화면 — 배지로 연 목록에 안내가 보이고, 시작일을 바꿔 검색하면 보는 사람 하루로 돌아간다', async ({ page }) => {
+  test('영어 화면 — 배지로 연 목록에 안내가 보이고, 시작일을 바꿔 검색하면 보는 사람 하루로 돌아간다', async ({ page, request }) => {
     test.setTimeout(120_000);
+    // 로그인 상태의 화면 언어는 회원 언어(users.language)가 브라우저 저장값보다 우선한다(engine-v1.79.0).
+    // 토큰 회원은 이 spec 만 쓰는 새 회원이라 그 회원의 언어를 영어로 바꾼다.
+    const language = await request.patch('/api/admin/users/me/language', {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      data: { language: 'en' },
+    });
+    expect(language.status()).toBe(200);
     await page.addInitScript(() => localStorage.setItem('g7_locale', 'en'));
     await authenticatePage(page, token);
 

@@ -1745,6 +1745,7 @@
                     },
                     {
                         "comment": "확장이 자기 수집 상태를 붙이는 자리 — 값은 진단 응답의 `extensions.{식별자}`(서버 필터 `core.analytics.diagnostics_sections`)로 온다.",
+                        "id": "ext_analytics_diagnostics_widgets",
                         "type": "extension_point",
                         "name": "analytics_diagnostics_widgets",
                         "props": {

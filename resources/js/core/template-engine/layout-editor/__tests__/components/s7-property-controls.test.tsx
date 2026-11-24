@@ -45,6 +45,7 @@ import { FlexEditor } from '../../components/property-controls/FlexEditor';
 import { registerCoreWidgets } from '../../spec/registerCoreWidgets';
 import type { EditorSpec } from '../../spec/specTypes';
 import type { EditorNode } from '../../utils/layoutTreeUtils';
+import { applyResponsiveClassMerge } from '../../../helpers/StyleHelpers';
 
 const t = (k: string) => k;
 afterEach(() => cleanup());
@@ -526,7 +527,14 @@ describe('FlexEditor', () => {
     // 클릭하면 mobile scope 에 flex 토큰 적용.
     fireEvent.click(screen.getByTestId('g7le-flex-enable'));
     const patched = onPatch.mock.calls[0][0] as EditorNode;
-    expect(patched.responsive?.mobile?.props?.className).toContain('flex');
+    // engine-v1.98.0 classMerge: 구간에는 기본 대비 바뀐 토큰만 쓴다. 기본이 이미 flex 라 모바일 실효값도 flex 이고
+    // 구간 기록은 없어도 된다 — 단언은 그 폭의 실효 className(기본 + 구간 classMerge)으로 한다.
+    const mobileEffective = applyResponsiveClassMerge(
+      String(patched.props?.className ?? ''),
+      patched.responsive?.mobile?.classMerge as string | undefined,
+    ).split(/\s+/);
+    expect(mobileEffective).toContain('flex');
+    expect(patched.responsive?.mobile?.props?.className).toBeUndefined(); // 기본 className 통째 복사(시드) 없음
     expect(patched.props?.className).toBe('flex'); // base 불변
   });
 

@@ -94,7 +94,7 @@
             </on>
             <div data-ref="common_info_content_display" class="ecommerce:p-4 ecommerce:max-h-96 ecommerce:overflow-y-auto">
               <!-- 본문은 공통정보 관리 화면의 보기 패널과 같은 표시기로 그린다 — HTML 은 정화해 그리고, 텍스트는 줄바꿈을 살린다 -->
-              <extension-point name="html_content" content="{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[_local.ui.commonInfoLocale ?? $locale] ?? ''}}" isHtml="{{((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content_mode ?? 'text') === 'html'}}" class="ecommerce:prose ecommerce:prose-sm ecommerce:dark:prose-invert ecommerce:max-w-none">
+              <extension-point name="html_content" data-ref="ext_html_content" content="{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[_local.ui.commonInfoLocale ?? $locale] ?? ''}}" isHtml="{{((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content_mode ?? 'text') === 'html'}}" class="ecommerce:prose ecommerce:prose-sm ecommerce:dark:prose-invert ecommerce:max-w-none">
                 <default>
                   <html-content data-type="composite" content="{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[_local.ui.commonInfoLocale ?? $locale] ?? ''}}" isHtml="{{((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content_mode ?? 'text') === 'html'}}" class="ecommerce:prose ecommerce:prose-sm ecommerce:dark:prose-invert ecommerce:max-w-none"/>
                 </default>

@@ -827,6 +827,7 @@
                                 ]
                             },
                             {
+                                "id": "ext_admin_dashboard_quick_menu",
                                 "type": "extension_point",
                                 "name": "admin_dashboard_quick_menu",
                                 "props": {
@@ -837,17 +838,20 @@
                         ]
                     },
                     {
+                        "id": "ext_admin_dashboard_commerce",
                         "type": "extension_point",
                         "name": "admin_dashboard_commerce",
                         "default": []
                     },
                     {
+                        "id": "ext_admin_dashboard_community",
                         "type": "extension_point",
                         "name": "admin_dashboard_community",
                         "default": []
                     },
                     {
                         "comment": "방문자 통계 카드 — 확장이 카드 안팎에 자기 지표를 덧붙일 수 있게 확장 지점으로 감싼다.",
+                        "id": "ext_admin_dashboard_analytics",
                         "type": "extension_point",
                         "name": "admin_dashboard_analytics",
                         "props": {

@@ -1323,6 +1323,38 @@ const renderChildren = useMemo(() => {
 
 ---
 
+## 화면 단위 id 유일성
+
+레이아웃 노드 id(마크업 `data-ref`, JSON `id`)는 대부분 그대로 DOM `id` 로 출력됩니다. HTML 의 `id` 는 한 문서에 하나여야 하므로, 한 화면에 동시에 그려지는 DOM 에 같은 `id` 가 두 번 나오면 안 됩니다. 겹치면 `getElementById`·`<label for>`·`aria-*` 연결과 확장 주입(`target_id`)이 첫 요소에만 걸립니다.
+
+```text
+✅ 한 화면(메인 레이아웃 + include 되는 partial + 열린 모달)에 같은 노드 id 를 두지 않는다
+✅ 탭 partial·형제 partial·모달은 부모 화면의 id 를 다시 쓰지 않는다
+   예: 탭 partial 머리 → identity_policies_header (메인의 page_header 와 구분)
+   예: 모달 안 카드 목록 → bulk_match_mobile_card_list (본문의 mobile_card_list 와 구분)
+✅ 반복(iteration)·정렬 목록(sortable itemTemplate) 안의 노드 id 는 그 반복이 선언한 변수로 보간한다
+   예: <sortable ... index-var="$tIdx"> 안 → data-ref="shipping_type_drag_handle_{{$tIdx}}"
+✅ 확장점(extension-point) 호스트에는 비어 있지 않은 노드 id 를 반드시 단다
+   한 번이면 data-ref="ext_{확장점 name}", 같은 화면에 두 번 이상이면 위치 의미를 붙이고,
+   반복 안이면 반복 변수로 보간한다 → data-ref="ext_board_post_row_badges_{{post.id}}"
+✅ 같은 partial 을 두 곳에서 include 하면 partial 안 노드에는 id 대신 data-testid 를 쓴다
+   (include 는 매개변수를 받지 않아 id 를 다르게 만들 수 없다)
+```
+
+확장점 호스트 id 가 필요한 이유: 엔진은 확장점에 주입된 조각 안의 정적 노드 id 를 DOM 에 `{원래 id}__{호스트 DOM id}` 로 출력합니다(engine-v1.99.0). 같은 조각이 여러 호스트에 들어가도 겹치지 않게 하는 장치이고, 호스트 id 가 기준이므로 호스트 id 가 없으면 스코프되지 않습니다. 자세한 규칙은 [layout-json-components-rendering.md](layout-json-components-rendering.md) 의 iteration id 보간 절을 봅니다.
+
+정적 검사는 감사 규칙 두 개가 맡습니다(반복·sortable 안 정적 id, 확장점 호스트 id 누락). 모달·시트 열림처럼 상호작용으로만 생기는 상태는 정적 검사가 보지 못하므로, 디버그 모드(환경설정 > 고급 > 디버그 모드)에서 같은 DOM id 가 생기면 콘솔에 `[G7] 같은 DOM id 가 화면에 여러 개 있습니다` 경고가 뜹니다.
+
+전 화면 DOM 크롤 E2E 는 활성 라우트 전체를 1440px·390px 로 열어 중복 id 와 보간 잔재(`{{` 가 남은 id)를 셉니다. 기본 Playwright 실행에는 끼지 않고 환경 변수로만 돕니다.
+
+```powershell
+$env:G7_E2E_ID_CRAWL='1'; npx playwright test tests/Playwright/specs/id-duplicate/all-routes-dom-id-unique.spec.ts
+```
+
+결과는 화면, 폭, 중복 목록, 건너뜀과 사유를 담은 JSON 보고서로 남습니다.
+
+---
+
 ## Deprecated 속성
 
 하위 호환성을 위해 별칭이 유지되는 속성입니다. 새 코드에서는 권장 속성을 사용하세요.

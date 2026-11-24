@@ -75,8 +75,11 @@ function findNode(x: any, pred: (n: Node) => boolean): Node | null {
     return null;
 }
 
-/** 실물 옵션 선택 섹션(옵션 그룹별 Select 반복) */
-const optionSection = findNode(purchaseCard, (n) => n.id === 'option-select')!;
+/**
+ * 실물 옵션 선택 섹션(옵션 그룹별 Select 반복).
+ * 구매 카드와 바텀시트가 같은 조각을 함께 포함하므로 노드 id 대신 `data-testid` 로 찾는다(#408 — 같은 화면 DOM id 중복 제거).
+ */
+const optionSection = findNode(purchaseCard, (n) => n.props?.['data-testid'] === 'option-select')!;
 
 /** 실물 「선택한 상품」 줄 목록(줄 삭제·추가옵션·수량 조절) — 구매 카드에서 `selectedOptionItems.length > 0` 일 때 서는 블록 */
 const selectedItemsSection = (purchaseCard as any).children

@@ -1,0 +1,24 @@
+feature: 이커머스 관리자 화면 DOM id 유일성 — 본인인증 탭 머리, 식별코드 상품코드 칸, 일괄 매칭 창 카드 목록 (#408)
+
+description: |
+  HTML id 는 한 문서에 하나여야 한다. 노드 id(`data-ref`)는 대부분 DOM id 로 그대로 나가므로, 한 화면에 같이 그려지는
+  메인 레이아웃과 조각이 같은 id 를 쓰면 `getElementById`·`<label for>`·확장 주입이 첫 요소에만 걸린다.
+    - 환경설정 「본인인증 정책」 탭 머리 `page_header` 가 메인 PageHeader 와 겹쳤다 → `identity_policies_header`
+    - 상품 등록/수정의 식별코드 구획 `field_product_code` 가 기본정보 칸과 겹쳤다(둘 다 기본 펼침) → `field_identification_product_code`
+    - 무통장 입금 일괄 매칭 창의 `mobile_card_list`·`mobile_card_1`·`mobile_card_2` 가 본문 카드 목록과 겹쳤다(휴대폰 폭 + 창 열림)
+      → `bulk_match_` 접두. 본문 쪽은 그대로 둔다.
+  `_modal_manual_match` 와 `_modal_process_history` 의 `deposit_info_card` 는 두 창이 서로를 여는 경로가 없어 함께 열리지 않으므로
+  결함이 아니다. 레이아웃 게이트는 굽기 산출 `.json` 을 정적으로 대조하고, 화면 DOM 중복 0 은 코어 크롤 E2E 와 Chrome MCP 실측이 잰다.
+
+# axis 의미:
+#   screen — id 를 대조하는 화면 조합(메인 레이아웃 + 그 화면에 포함되는 조각)
+axes:
+  screen: [ecommerce_settings_identity_tab, product_form, deposit_index]
+
+effects:
+  - identity_tab_header_id_renamed      # 탭 조각 머리 노드 id 가 identity_policies_header 이고 page_header 가 없다
+  - sibling_partial_id_renamed          # 겹치던 조각 쪽 id 만 새 이름이고 원래 쪽은 그대로다
+  - main_and_partial_node_ids_unique    # 메인 화면과 함께 그려지는 조각을 합친 노드 id 에 겹침이 없다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-screen-dom-id-unique-408.test.ts
