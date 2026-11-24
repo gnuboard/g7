@@ -4,6 +4,7 @@ namespace App\Services\Core;
 
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Extension\Helpers\ZipEntryIndex;
 use App\Support\PhpExtensionProbe;
 use Illuminate\Support\Facades\Log;
 
@@ -68,26 +69,15 @@ class PhpRequirementPreflight
         }
 
         try {
-            $prefix = null;
-            for ($i = 0; $i < $zip->numFiles; $i++) {
-                $name = str_replace('\\', '/', (string) $zip->getNameIndex($i));
-                if (preg_match('#^((?:[^/]+/)?)config/app\.php$#', $name, $m)) {
-                    $prefix = $m[1];
-                    if ($prefix === '') {
-                        break;
-                    }
-                }
-            }
+            // 역슬래시 이름 zip 도 읽도록 정규화한 이름을 원본 인덱스로 읽는다(`ZipEntryIndex`).
+            $index = ZipEntryIndex::fromArchive($zip);
+            $prefix = $index->prefixFor('config/app.php');
 
             if ($prefix === null) {
                 return null;
             }
 
-            return $this->inspect(function (string $relative) use ($zip, $prefix): ?string {
-                $content = $zip->getFromName($prefix.$relative);
-
-                return is_string($content) ? $content : null;
-            });
+            return $this->inspect(fn (string $relative): ?string => $index->read($prefix.$relative));
         } finally {
             $zip->close();
         }

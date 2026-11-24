@@ -22,8 +22,13 @@ description: |
   먼저 놓이면 모든 요청이 `public/` 으로 위임되어 이 파일 자신이 브라우저에서 사라지고,
   그 순간 재개가 불가능해진다.
 
+  압축 파일 모양(#971): GitHub 소스 ZIP 은 감싼 폴더의 **폴더 항목**(`g7-7.2.0/`)을 맨 앞에 두고, Mac 재압축은
+  `__MACOSX/` 부속 폴더를, Windows 압축 도구는 역슬래시 구분자를 쓴다. 셋 다 감싼 폴더를 벗겨 풀어야 한다.
+  인증 규약: 맞는 번호로 인증한 요청은 그 뒤 판정이 실패해도 세션을 돌려준다 — 번호는 첫 인증에서 지워지므로,
+  세션을 버리면 압축 파일만 바꿔 다시 시도할 길이 없다.
+
 axes:
-  archive: [g7_payload, traversal, foreign, absent]   # 대상 압축 파일의 성격
+  archive: [g7_payload, github_dir_entries, backslash_dir_entries, macosx, traversal, foreign, absent]   # 대상 압축 파일의 성격·모양
   token: [valid, invalid, exhausted, session]         # 인증 수단과 그 상태
   entry: [fresh, resume, completed_site]              # 진입 상황
 
@@ -38,17 +43,32 @@ exclusions:
   # 압축 파일이 없으면 번호도 발급하지 않는다 — 인증·재개 축이 성립하지 않는다.
   - { archive: absent, token: invalid, reason: "번호를 발급하지 않으므로 오입력이 성립하지 않는다" }
   - { archive: absent, token: exhausted, reason: "동일" }
-  - { archive: absent, token: session, reason: "동일 — 세션은 해제 성공에서만 발급된다" }
+  - { archive: absent, token: session, reason: "동일 — 번호를 발급하지 않으므로 인증 세션도 생기지 않는다" }
   - { archive: absent, entry: resume, reason: "해제가 시작된 적이 없어 재개 상태가 없다" }
   # 거부되는 압축은 계획 단계에서 멈춘다 — 진행 인덱스가 생기지 않아 재개·시도 제한 축 밖이다.
   - { archive: traversal, token: invalid, reason: "인증 실패는 압축을 열기 전이라 내용 축과 무관" }
   - { archive: traversal, token: exhausted, reason: "동일" }
-  - { archive: traversal, token: session, reason: "세션은 해제 성공에서만 발급된다" }
+  - { archive: traversal, token: session, reason: "인증에 성공한 요청은 판정이 실패해도 세션을 돌려준다 — 그 세션으로 다시 보내는 축은 foreign × session 이 같은 실패 응답 함수(g7setup_fail)로 덮는다" }
   - { archive: traversal, entry: resume, reason: "계획 단계에서 멈춰 진행 인덱스가 생기지 않는다" }
   - { archive: foreign, token: invalid, reason: "인증 실패는 압축을 열기 전이라 내용 축과 무관" }
   - { archive: foreign, token: exhausted, reason: "동일" }
-  - { archive: foreign, token: session, reason: "세션은 해제 성공에서만 발급된다" }
   - { archive: foreign, entry: resume, reason: "계획 단계에서 멈춰 진행 인덱스가 생기지 않는다" }
+  # 압축 모양 변종 — 이름 판정(감싼 폴더·폴더 항목·부속 폴더)만 다르고 인증·재개 규칙은 g7_payload 와 같은 경로다.
+  - { archive: github_dir_entries, token: invalid, reason: "인증 실패는 압축을 열기 전이라 모양 축과 무관" }
+  - { archive: github_dir_entries, token: exhausted, reason: "동일" }
+  - { archive: github_dir_entries, token: session, reason: "세션 재개는 g7_payload × session 이 덮는다 — 이름 판정은 매 요청 같은 함수" }
+  - { archive: github_dir_entries, entry: resume, reason: "동일 — 분할 재개 규칙은 모양과 무관" }
+  - { archive: github_dir_entries, entry: completed_site, reason: "완료 판정이 압축을 열기 전에 차단한다" }
+  - { archive: backslash_dir_entries, token: invalid, reason: "인증 실패는 압축을 열기 전이라 모양 축과 무관" }
+  - { archive: backslash_dir_entries, token: exhausted, reason: "동일" }
+  - { archive: backslash_dir_entries, token: session, reason: "세션 재개는 g7_payload × session 이 덮는다" }
+  - { archive: backslash_dir_entries, entry: resume, reason: "분할 재개 규칙은 모양과 무관" }
+  - { archive: backslash_dir_entries, entry: completed_site, reason: "완료 판정이 압축을 열기 전에 차단한다" }
+  - { archive: macosx, token: invalid, reason: "인증 실패는 압축을 열기 전이라 모양 축과 무관" }
+  - { archive: macosx, token: exhausted, reason: "동일" }
+  - { archive: macosx, token: session, reason: "세션 재개는 g7_payload × session 이 덮는다" }
+  - { archive: macosx, entry: resume, reason: "분할 재개 규칙은 모양과 무관" }
+  - { archive: macosx, entry: completed_site, reason: "완료 판정이 압축을 열기 전에 차단한다" }
   # 인증 실패 축은 최초 진입에서 판정된다 — 재개는 이미 인증을 통과한 상태다.
   - { archive: g7_payload, token: invalid, entry: resume, reason: "재개는 인증을 통과한 뒤의 상태" }
   - { archive: g7_payload, token: exhausted, entry: resume, reason: "동일" }
@@ -61,6 +81,10 @@ effects:
   - zip_bootstrap_defers_routing_root_files_to_final_request
   - zip_bootstrap_refresh_preserves_progress_and_session
   - zip_bootstrap_self_deletes_entry_archive_and_state
+  # 압축 파일 모양 (#971)
+  - zip_bootstrap_strips_wrapper_with_directory_entries
+  - zip_bootstrap_backslash_directory_entries_become_directories
+  - zip_bootstrap_skips_macosx_resource_forks
   # 확인 번호 (원격 대입 표면)
   - zip_bootstrap_rejects_wrong_confirmation_number_without_writing
   - zip_bootstrap_empty_number_is_not_counted_as_attempt
@@ -70,6 +94,8 @@ effects:
   - zip_bootstrap_reissues_number_after_browser_session_loss
   - zip_bootstrap_forgets_number_hash_after_first_auth
   - zip_bootstrap_serializes_attempt_judgment_under_state_lock
+  - zip_bootstrap_keeps_session_after_post_auth_failure
+  - zip_bootstrap_screen_keeps_session_from_failure_response
   # 압축 내용 판정
   - zip_bootstrap_rejects_path_traversal_entries
   - zip_bootstrap_rejects_non_g7_archive

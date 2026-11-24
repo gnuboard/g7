@@ -111,6 +111,32 @@ class CoreUpdatePhpRequirementPreflightTest extends TestCase
     }
 
     /**
+     * 항목 이름을 역슬래시로 저장한 zip(Windows 압축 도구)도 요구 목록을 읽어 같은 자리에서 실패로 끝납니다.
+     *
+     * 정규화한 이름으로 `getFromName()` 하면 원본 이름(`config\…`)과 달라 목록을 못 읽고, 사전 점검이
+     * 「목록 없음」으로 조용히 생략돼 필수 확장이 빠진 서버에서 업데이트가 진행됐다(#971).
+     *
+     * @scenario source_kind=zip, core_extension=missing
+     *
+     * @effects zip_preflight_blocks_before_maintenance
+     *
+     * @return void 반환값 없음
+     */
+    public function test_backslash_zip_missing_core_extension_fails_before_maintenance(): void
+    {
+        $this->useProbe(missing: ['pdo_mysql']);
+        $service = $this->mockService();
+        $service->shouldReceive('checkSystemRequirements')->andReturn(['valid' => true, 'errors' => [], 'available_methods' => ['ZipArchive']]);
+        $service->shouldNotReceive('enableMaintenanceMode');
+        $service->shouldNotReceive('extractZipToPending');
+
+        $this->artisan('core:update', ['--zip' => $this->zipRelease('\\'), '--bundled-sources' => 'none'])
+            ->expectsQuestion($this->confirmQuestion(), 'yes')
+            ->expectsOutputToContain(__('settings.core_update.console.php_extension_core_missing', ['extensions' => 'pdo_mysql']))
+            ->assertExitCode(1);
+    }
+
+    /**
      * GitHub 다운로드 경로는 받은 직후 판정해, 받은 배포본을 지우고 유지보수를 풀고 실패로 끝냅니다(백업 전).
      *
      * @scenario source_kind=github, core_extension=missing
@@ -299,9 +325,10 @@ class CoreUpdatePhpRequirementPreflightTest extends TestCase
     /**
      * 배포본을 zip 으로 묶습니다.
      *
+     * @param  string  $separator  항목 이름에 저장할 경로 구분자 (`\` 면 Windows 압축 도구 모양)
      * @return string zip 경로
      */
-    private function zipRelease(): string
+    private function zipRelease(string $separator = '/'): string
     {
         $zipPath = $this->root.DIRECTORY_SEPARATOR.'release.zip';
         $zip = new \ZipArchive;
@@ -309,7 +336,7 @@ class CoreUpdatePhpRequirementPreflightTest extends TestCase
         $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->release, \RecursiveDirectoryIterator::SKIP_DOTS));
         foreach ($files as $file) {
             $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($this->release) + 1));
-            $zip->addFile($file->getPathname(), $relative);
+            $zip->addFile($file->getPathname(), str_replace('/', $separator, $relative));
         }
         $zip->close();
 

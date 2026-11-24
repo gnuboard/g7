@@ -371,15 +371,21 @@ class BundledSourcePlannerTest extends TestCase
     /**
      * zip 인벤토리는 래퍼 폴더 접두사를 config/app.php 위치로 판정하고 평탄한 zip 도 읽습니다.
      *
+     * 항목 이름을 역슬래시로 저장한 zip(Windows 압축 도구)도 같다 — 정규화한 이름으로 `getFromName()` 하면
+     * 원본 이름과 달라 manifest·`config/app.php` 를 못 읽고 번들 목록·코어 버전이 비었다(#971). Mac 재압축 zip 의
+     * `__MACOSX/` 부속 항목은 접두사 판정·목록에 끼지 않는다.
+     *
      * @scenario source_kind=zip
      *
      * @effects zip_inventory_reads_names_without_extracting
      *
      * @param  string  $prefix  zip 내부 접두사
+     * @param  string  $separator  항목 이름에 저장할 경로 구분자
+     * @param  bool  $macosx  `__MACOSX/` 부속 항목을 덧붙일지
      * @return void 반환값 없음
      */
     #[DataProvider('zipPrefixProvider')]
-    public function test_reads_inventory_from_zip(string $prefix): void
+    public function test_reads_inventory_from_zip(string $prefix, string $separator = '/', bool $macosx = false): void
     {
         if (! class_exists(\ZipArchive::class)) {
             $this->markTestSkipped('ZipArchive 확장이 없는 환경');
@@ -389,7 +395,11 @@ class BundledSourcePlannerTest extends TestCase
         $zip = new \ZipArchive;
         $zip->open($zipPath, \ZipArchive::CREATE);
         foreach (File::allFiles($this->release) as $file) {
-            $zip->addFile($file->getPathname(), $prefix.str_replace('\\', '/', $file->getRelativePathname()));
+            $relative = str_replace('\\', '/', $file->getRelativePathname());
+            $zip->addFile($file->getPathname(), str_replace('/', $separator, $prefix.$relative));
+            if ($macosx) {
+                $zip->addFromString('__MACOSX/'.$prefix.dirname($relative).'/._'.basename($relative), 'AppleDouble');
+            }
         }
         $zip->close();
 
@@ -407,13 +417,16 @@ class BundledSourcePlannerTest extends TestCase
     /**
      * zip 접두사 변종을 돌려줍니다.
      *
-     * @return array<string, array{0: string}> 데이터셋
+     * @return array<string, array<int, string|bool>> 데이터셋 (접두사, 구분자, 부속 항목 여부)
      */
     public static function zipPrefixProvider(): array
     {
         return [
             'wrapper' => ['g7-7.1.2/'],
             'flat' => [''],
+            'wrapper 역슬래시' => ['g7-7.1.2/', '\\'],
+            'flat 역슬래시' => ['', '\\'],
+            'wrapper + __MACOSX' => ['g7-7.1.2/', '/', true],
         ];
     }
 

@@ -2,11 +2,15 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\BuildsZipFixtures;
 use ZipArchive;
 
 /**
  * ZIP 부트스트랩(`g7-setup.php`)의 실제 해제 흐름을 하위 프로세스로 실측한다 (G4 · B-7).
+ *
+ * 트러블슈팅 `[case:backend-75]` 의 회귀 그물이다(GitHub·Finder·역슬래시 모양, 실패 뒤 세션 유지).
  *
  * ## 왜 하위 프로세스인가
  *
@@ -21,11 +25,16 @@ use ZipArchive;
  * ① 완료 후에도 진입 파일이 남아 임의 파일 쓰기 입구가 되고 ② 라우팅을 가로채는 루트 파일이
  * 먼저 놓여 재개 호출이 통째로 끊긴다. 둘 다 오류를 남기지 않으므로 여기서 잰다.
  *
- * 커버 축: entry fresh·resume·completed_site / token valid·invalid·exhausted / archive
- * g7_payload·traversal·foreign / outcome extracted·refused·self_deleted
+ * 커버 축: entry fresh·resume·completed_site / token valid·invalid·exhausted·session / archive
+ * g7_payload·github_dir_entries·backslash_dir_entries·macosx·traversal·foreign / outcome extracted·refused·self_deleted
+ *
+ * ZIP 모양은 `BuildsZipFixtures` 로 실제 배포 도구 모양(GitHub 폴더 항목·Mac `__MACOSX`·Windows 역슬래시)을 만든다 —
+ * 파일 항목만 넣던 픽스처가 GitHub 소스 ZIP 거부 결함을 놓쳤다(#971).
  */
 class ZipBootstrapFlowTest extends TestCase
 {
+    use BuildsZipFixtures;
+
     private string $workDir = '';
 
     /**
@@ -116,30 +125,34 @@ class ZipBootstrapFlowTest extends TestCase
     /**
      * G7 배포본 형태의 ZIP 을 만든다.
      *
+     * 기본 모양(파일 항목만)은 기존 테스트가 쓰던 그대로다. 실제 배포 도구가 만드는 모양은 `$shape` 로 고른다 —
+     * GitHub 소스 ZIP 은 `directoryEntries`, Mac 재압축은 `macosx`, Windows 압축은 `backslash`(`BuildsZipFixtures`).
+     *
      * @param  string  $path  만들 ZIP 경로
      * @param  int  $filler  채움 파일 개수 (분할 해제를 강제하기 위한 축)
      * @param  string  $prefix  감싼 최상위 폴더 (빈 문자열이면 감싸지 않는다)
+     * @param  array{directoryEntries?: bool, macosx?: bool, backslash?: bool}  $shape  ZIP 모양 옵션
      * @return void 반환값 없음
      */
-    private function makePayloadZip(string $path, int $filler = 0, string $prefix = 'g7-9.9.9/'): void
+    private function makePayloadZip(string $path, int $filler = 0, string $prefix = 'g7-9.9.9/', array $shape = []): void
     {
-        $zip = new ZipArchive;
-        $this->assertTrue($zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true);
-
-        $zip->addFromString($prefix.'artisan', "#!/usr/bin/env php\n");
-        $zip->addFromString($prefix.'composer.json', "{}\n");
-        $zip->addFromString($prefix.'public/index.php', "<?php // front controller\n");
-        // 라우팅을 가로채는 루트 파일 — 계획상 맨 마지막에 놓여야 한다.
-        $zip->addFromString($prefix.'.htaccess', "# BEGIN G7\n# END G7\n");
-        $zip->addFromString($prefix.'index.php', "<?php // root shim\n");
-        // 배포본에 들어 있는 부트스트랩 사본 — 풀지 않아야 한다.
-        $zip->addFromString($prefix.'g7-setup.php', "<?php // payload copy\n");
+        $files = [
+            'artisan' => "#!/usr/bin/env php\n",
+            'composer.json' => "{}\n",
+            'public/index.php' => "<?php // front controller\n",
+            // 라우팅을 가로채는 루트 파일 — 계획상 맨 마지막에 놓여야 한다.
+            '.htaccess' => "# BEGIN G7\n# END G7\n",
+            'index.php' => "<?php // root shim\n",
+            // 배포본에 들어 있는 부트스트랩 사본 — 풀지 않아야 한다.
+            'g7-setup.php' => "<?php // payload copy\n",
+        ];
 
         for ($i = 0; $i < $filler; $i++) {
-            $zip->addFromString($prefix.'filler/f'.$i.'.txt', 'x');
+            $files['filler/f'.$i.'.txt'] = 'x';
         }
 
-        $zip->close();
+        $this->makeZipFixture($path, $files, ['wrapper' => rtrim($prefix, '/')] + $shape);
+        $this->assertFileExists($path);
     }
 
     /**
@@ -829,6 +842,226 @@ class ZipBootstrapFlowTest extends TestCase
         $this->assertSame('root_file_conflict', $result['json']['code'] ?? null, $result['raw']);
         $this->assertSame($operator, (string) file_get_contents($site.'/web.config'), '운영자 web.config 가 바뀌었다');
         $this->assertFileDoesNotExist($site.'/artisan', '합칠 수 없는 파일이 있는데 해제를 시작했다');
+    }
+
+    /**
+     * GitHub 소스 ZIP 처럼 감싼 폴더의 폴더 항목(`g7-9.9.9/`)이 맨 앞에 있어도 감싼 폴더를 벗겨 문서 루트에 푸는지 확인한다.
+     *
+     * 폴더 항목은 끝 `/` 를 떼면 `/` 가 없는 이름이 되어 「최상위에 파일이 있다」로 오판됐다. 그러면 감싼 폴더를
+     * 벗기지 못해 배포본 표식(`artisan`·`composer.json`·`public/index.php`)을 못 찾고 `not_a_g7_payload` 가 났다(#971).
+     *
+     * @scenario archive=github_dir_entries, token=valid, entry=fresh
+     *
+     * @effects zip_bootstrap_strips_wrapper_with_directory_entries, zip_bootstrap_strips_wrapper_directory
+     *
+     * @return void 반환값 없음
+     */
+    public function test_폴더_항목이_있는_GitHub_모양_압축을_감싼_폴더를_벗겨_푼다(): void
+    {
+        $site = $this->makeSite();
+        $this->makePayloadZip($site.'/g7-9.9.9.zip', 0, 'g7-9.9.9/', ['directoryEntries' => true]);
+        $token = $this->issueToken($site);
+
+        $result = $this->call($site, ['action' => 'extract', 'token' => $token]);
+
+        $this->assertIsArray($result['json'], $result['raw']);
+        $this->assertTrue($result['json']['ok'] ?? false, $result['raw']);
+        $this->assertTrue($result['json']['finished'] ?? false, $result['raw']);
+        $this->assertFileExists($site.'/artisan');
+        $this->assertFileExists($site.'/public/index.php');
+        $this->assertDirectoryDoesNotExist($site.'/g7-9.9.9', '감싼 폴더가 벗겨지지 않았다');
+    }
+
+    /**
+     * 감싸지 않은 압축에 폴더 항목이 있어도 접두사 없이 그대로 푸는지 확인한다 (폴더 항목 판정이 평탄 ZIP 을 감싼 것으로 오판하지 않는다).
+     *
+     * @scenario archive=github_dir_entries, token=valid, entry=fresh
+     *
+     * @effects zip_bootstrap_strips_wrapper_with_directory_entries
+     *
+     * @return void 반환값 없음
+     */
+    public function test_감싸지_않은_압축에_폴더_항목이_있어도_그대로_푼다(): void
+    {
+        $site = $this->makeSite();
+        $this->makePayloadZip($site.'/g7-9.9.9.zip', 0, '', ['directoryEntries' => true]);
+        $token = $this->issueToken($site);
+
+        $result = $this->call($site, ['action' => 'extract', 'token' => $token]);
+
+        $this->assertTrue($result['json']['finished'] ?? false, $result['raw']);
+        $this->assertFileExists($site.'/artisan');
+        $this->assertFileExists($site.'/public/index.php');
+        $this->assertDirectoryDoesNotExist($site.'/public/public', '평탄 ZIP 을 감싼 것으로 보고 한 겹 벗겼다');
+    }
+
+    /**
+     * Windows 압축 도구가 만든 역슬래시 폴더 항목(`g7-9.9.9\public\`)을 0바이트 파일이 아니라 폴더로 만드는지 확인한다.
+     *
+     * 폴더 판정이 원본 이름의 끝 `/` 만 보면 `public` 이 빈 파일로 먼저 쓰이고, 그 아래 `public/index.php` 가
+     * 폴더를 만들지 못해 `write_failed` 가 된다.
+     *
+     * @scenario archive=backslash_dir_entries, token=valid, entry=fresh
+     *
+     * @effects zip_bootstrap_backslash_directory_entries_become_directories
+     *
+     * @return void 반환값 없음
+     */
+    public function test_역슬래시_폴더_항목을_폴더로_만든다(): void
+    {
+        $site = $this->makeSite();
+        $this->makePayloadZip($site.'/g7-9.9.9.zip', 0, 'g7-9.9.9/', ['directoryEntries' => true, 'backslash' => true]);
+        $token = $this->issueToken($site);
+
+        $result = $this->call($site, ['action' => 'extract', 'token' => $token]);
+
+        $this->assertTrue($result['json']['finished'] ?? false, $result['raw']);
+        $this->assertDirectoryExists($site.'/public', '역슬래시 폴더 항목이 폴더가 아니다');
+        $this->assertFileExists($site.'/public/index.php');
+        $this->assertFileExists($site.'/artisan');
+        $this->assertDirectoryDoesNotExist($site.'/g7-9.9.9');
+    }
+
+    /**
+     * Mac 에서 다시 압축한 ZIP 의 `__MACOSX/` 부속 항목이 감싼 폴더 판정을 깨지 않고, 풀리지도 진행 개수에 세지도 않는지 확인한다.
+     *
+     * @scenario archive=macosx, token=valid, entry=fresh
+     *
+     * @effects zip_bootstrap_skips_macosx_resource_forks, zip_bootstrap_strips_wrapper_directory
+     *
+     * @return void 반환값 없음
+     */
+    public function test_MACOSX_부속_폴더는_판정과_해제에서_빠진다(): void
+    {
+        $plain = $this->makeSite('plain');
+        $this->makePayloadZip($plain.'/g7-9.9.9.zip', 0, 'g7-9.9.9/', ['directoryEntries' => true]);
+        $plainResult = $this->call($plain, ['action' => 'extract', 'token' => $this->issueToken($plain)]);
+        $this->assertTrue($plainResult['json']['finished'] ?? false, '전제: 부속 항목 없는 같은 ZIP 이 풀려야 한다 — '.$plainResult['raw']);
+
+        $site = $this->makeSite('mac');
+        $this->makePayloadZip($site.'/g7-9.9.9.zip', 0, 'g7-9.9.9/', ['directoryEntries' => true, 'macosx' => true]);
+        $result = $this->call($site, ['action' => 'extract', 'token' => $this->issueToken($site)]);
+
+        $this->assertTrue($result['json']['finished'] ?? false, $result['raw']);
+        $this->assertFileExists($site.'/artisan');
+        $this->assertDirectoryDoesNotExist($site.'/__MACOSX', '부속 폴더가 풀렸다');
+        $this->assertDirectoryDoesNotExist($site.'/g7-9.9.9');
+        $this->assertSame($plainResult['json']['total'], $result['json']['total'], '부속 항목이 진행 개수에 들어갔다');
+    }
+
+    /**
+     * 맞는 번호로 인증한 뒤 압축 판정이 실패해도 응답이 세션 키를 돌려주는지 확인한다.
+     *
+     * 번호는 첫 인증 성공에서 지워진다. 실패 응답이 세션을 싣지 않으면 화면은 지워진 번호를 다시 보내
+     * `invalid_token` 과 시도 차감을 받고, 복구는 새로고침(번호 재발급)뿐이었다(#971).
+     *
+     * @scenario archive=foreign, token=valid, entry=fresh
+     *
+     * @effects zip_bootstrap_keeps_session_after_post_auth_failure, zip_bootstrap_rejects_non_g7_archive
+     *
+     * @return void 반환값 없음
+     */
+    public function test_판정이_실패해도_인증된_세션을_돌려준다(): void
+    {
+        $site = $this->makeSite();
+        $this->makeZipFixture($site.'/other.zip', ['notes/readme.txt' => 'hello']);
+        $token = $this->issueToken($site);
+
+        $result = $this->call($site, ['action' => 'extract', 'token' => $token, 'zip' => 'other.zip']);
+
+        $this->assertSame('not_a_g7_payload', (string) ($result['json']['code'] ?? ''), $result['raw']);
+        $this->assertNotSame('', (string) ($result['json']['session'] ?? ''), '판정 실패 응답에 세션이 없다 — 번호만 소모된다');
+        $this->assertFileDoesNotExist($site.'/g7-setup-token.txt', '전제: 번호는 첫 인증에서 지워진다');
+        $this->assertSame(0, (int) ($this->readState($site)['attempts'] ?? -1));
+    }
+
+    /**
+     * 판정 실패 응답으로 받은 세션으로, 압축 파일을 바꾼 뒤 번호 없이 이어서 푸는지 확인한다.
+     *
+     * @scenario archive=foreign, token=session, entry=fresh
+     *
+     * @effects zip_bootstrap_keeps_session_after_post_auth_failure
+     *
+     * @return void 반환값 없음
+     */
+    public function test_실패_뒤_압축을_바꾸면_번호_없이_세션으로_이어_푼다(): void
+    {
+        $site = $this->makeSite();
+        $this->makeZipFixture($site.'/g7-9.9.9.zip', ['notes/readme.txt' => 'hello']);
+        $token = $this->issueToken($site);
+
+        $failed = $this->call($site, ['action' => 'extract', 'token' => $token]);
+        $this->assertSame('not_a_g7_payload', (string) ($failed['json']['code'] ?? ''), $failed['raw']);
+        $session = (string) ($failed['json']['session'] ?? '');
+        $this->assertNotSame('', $session, '판정 실패 응답에 세션이 없다: '.$failed['raw']);
+
+        // FTP 로 올바른 배포본을 같은 이름으로 다시 올린다 — 크기가 달라 진행 인덱스는 처음부터다.
+        $this->makePayloadZip($site.'/g7-9.9.9.zip', 0, 'g7-9.9.9/', ['directoryEntries' => true]);
+
+        $next = $this->call($site, ['action' => 'extract', 'session' => $session]);
+
+        $this->assertTrue($next['json']['ok'] ?? false, $next['raw']);
+        $this->assertTrue($next['json']['finished'] ?? false, $next['raw']);
+        $this->assertFileExists($site.'/artisan');
+    }
+
+    /**
+     * 인증 뒤에 나는 실패 응답 종류.
+     *
+     * @return array<string, array{0: string}> 실패 코드 목록
+     */
+    public static function postAuthFailureProvider(): array
+    {
+        return [
+            '압축 파일 없음' => ['no_zip'],
+            '압축 파일 열기 실패' => ['zip_open_failed'],
+            '경로 순회 항목' => ['unsafe_entry'],
+            '배포본 아님' => ['not_a_g7_payload'],
+            '합칠 수 없는 운영자 루트 파일' => ['root_file_conflict'],
+        ];
+    }
+
+    /**
+     * 맞는 번호로 인증한 요청이면 어느 실패 응답이든 세션 키를 싣는지 확인한다.
+     *
+     * @scenario archive=traversal, token=valid, entry=fresh
+     *
+     * @effects zip_bootstrap_keeps_session_after_post_auth_failure
+     *
+     * @param  string  $code  기대 실패 코드
+     * @return void 반환값 없음
+     */
+    #[DataProvider('postAuthFailureProvider')]
+    public function test_인증_뒤_실패_응답은_모두_세션을_싣는다(string $code): void
+    {
+        $site = $this->makeSite();
+        $this->makePayloadZip($site.'/g7-9.9.9.zip');
+        $token = $this->issueToken($site);
+
+        switch ($code) {
+            case 'no_zip':
+                unlink($site.'/g7-9.9.9.zip');
+                break;
+            case 'zip_open_failed':
+                file_put_contents($site.'/g7-9.9.9.zip', 'not a zip archive');
+                break;
+            case 'unsafe_entry':
+                $this->addZipEntry($site.'/g7-9.9.9.zip', '../outside.txt', 'pwned');
+                break;
+            case 'not_a_g7_payload':
+                $this->makeZipFixture($site.'/g7-9.9.9.zip', ['notes/readme.txt' => 'hello']);
+                break;
+            case 'root_file_conflict':
+                file_put_contents($site.'/web.config', "<?xml version=\"1.0\"?>\n<configuration />\n");
+                $this->addZipEntry($site.'/g7-9.9.9.zip', 'g7-9.9.9/web.config', "<?xml version=\"1.0\"?>\n<configuration>\n<!-- BEGIN G7 -->\n<!-- END G7 -->\n</configuration>\n");
+                break;
+        }
+
+        $result = $this->call($site, ['action' => 'extract', 'token' => $token]);
+
+        $this->assertFalse($result['json']['ok'] ?? true, $result['raw']);
+        $this->assertSame($code, (string) ($result['json']['code'] ?? ''), $result['raw']);
+        $this->assertNotSame('', (string) ($result['json']['session'] ?? ''), $code.' 응답에 세션이 없다 — 번호만 소모된다');
     }
 
     /**

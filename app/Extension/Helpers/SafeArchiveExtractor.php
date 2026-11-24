@@ -59,6 +59,10 @@ class SafeArchiveExtractor
      * 일이라 싸고, 앞 호출의 판정을 믿지 않으면 호출 사이에 바뀐 파일도 거른다. 하나라도 거부되면
      * 이번 호출은 아무것도 쓰지 않는다.
      *
+     * Mac Finder 압축이 붙이는 최상위 `__MACOSX/` 부속 항목은 계획에 넣지 않는다(쓰지도 세지도 않음) —
+     * 내용은 리소스 포크 메타데이터이고, 풀면 최상위 폴더가 둘이 되어 감싼 폴더 판정(`resolveExtractedRoot`)이
+     * 깨진다. 안전 검사는 그 항목에도 똑같이 한다. 이어 풀기 순번은 이 계획 기준이라 매 호출 같다.
+     *
      * @param  string  $zipPath  ZIP 파일 경로
      * @param  string  $destination  풀 대상 디렉터리 (없으면 만든다)
      * @param  int  $from  이어 풀 항목 순번 (처음이면 0)
@@ -103,7 +107,7 @@ class SafeArchiveExtractor
                 }
 
                 $normalized = self::normalizeEntryName($name);
-                if ($normalized === '') {
+                if ($normalized === '' || self::isJunkEntry($normalized)) {
                     continue;
                 }
 
@@ -111,7 +115,7 @@ class SafeArchiveExtractor
                     $normalizedCount++;
                 }
 
-                $isDir = str_ends_with(str_replace('\\', '/', $name), '/');
+                $isDir = self::isDirectoryEntry($name);
                 $plan[] = ['index' => $i, 'path' => $normalized, 'dir' => $isDir];
             }
 
@@ -302,6 +306,30 @@ class SafeArchiveExtractor
         }
 
         return implode('/', $segments);
+    }
+
+    /**
+     * 풀지도 세지도 않을 부속 항목인지 판정합니다 — Mac Finder 압축이 붙이는 최상위 `__MACOSX/`.
+     *
+     * 최상위가 아닌 같은 이름(`pkg/__MACOSX`)과 다른 숨김 파일(`.DS_Store`)은 그대로 둔다.
+     *
+     * @param  string  $normalized  `normalizeEntryName()` 을 지난 경로
+     * @return bool 부속 항목이면 true
+     */
+    public static function isJunkEntry(string $normalized): bool
+    {
+        return $normalized === '__MACOSX' || str_starts_with($normalized, '__MACOSX/');
+    }
+
+    /**
+     * 원본 항목 이름이 폴더 항목(구분자로 끝남)인지 판정합니다 — `\` 로 끝나는 Windows 모양도 폴더다.
+     *
+     * @param  string  $name  압축 안의 원본 항목 이름
+     * @return bool 폴더 항목이면 true
+     */
+    public static function isDirectoryEntry(string $name): bool
+    {
+        return str_ends_with(str_replace('\\', '/', $name), '/');
     }
 
     /**

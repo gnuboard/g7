@@ -208,8 +208,9 @@ GitHub 소스 업데이트 시 아카이브 URL 해석 → 다운로드 → 압�
 | 추출 방식 | `ZipArchive` (PHP zip 확장) **필수** — 없으면 추출 실패. `unzip` 명령 폴백 없음(7.1.3 에서 제거) |
 | 경로 정규화 | 항목 이름의 `\` 를 `/` 로 바꾼 뒤 판정 (Windows 에서 만든 zip 의 `dir\file.php` 항목 대응) |
 | 거부 항목 | `..` 로 압축 밖을 가리키는 경로, 절대 경로, 드라이브 문자(`C:`), UNC 경로, 널 문자, 심볼릭 링크 — **하나라도 있으면 아무것도 풀지 않고 전체 거부** |
+| 건너뛰는 항목 | `__MACOSX/` 와 그 아래 항목(macOS Finder 로 압축할 때 생기는 부산물)은 풀지 않음 (7.2.1+) |
 
-**GitHub 아카이브 디렉토리 구조**: GitHub zipball은 `owner-repo-hash/` 형태의 루트 디렉토리를 포함합니다. `ZipInstallHelper::findAndValidateManifest()`가 1단계 하위 디렉토리까지 자동 검색하여 매니페스트 파일을 찾습니다.
+**GitHub 아카이브 디렉토리 구조**: GitHub zipball은 `owner-repo-hash/` 형태의 루트 디렉토리를 포함합니다. `ZipInstallHelper::findAndValidateManifest()`가 1단계 하위 디렉토리까지 자동 검색하여 매니페스트 파일을 찾습니다. GitHub 소스로 받은 업데이트는 풀린 결과가 폴더 하나뿐이고 파일이 없을 때 그 폴더를 루트로 씁니다 — macOS 부산물 폴더나 이름순으로 앞선 다른 폴더를 루트로 잘못 고르지 않습니다 (7.2.1+).
 
 ---
 
