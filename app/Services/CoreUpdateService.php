@@ -1493,6 +1493,7 @@ class CoreUpdateService
      *
      * - 하위에 디렉토리 1개, 파일 0개 → 래퍼 디렉토리(GitHub zipball 등) → 하위 반환
      * - 그 외 → extractDir 자체를 반환 (composer.json 등이 루트에 있다고 가정)
+     * - Mac 압축의 `__MACOSX/` 부속 폴더는 해제 단계(`SafeArchiveExtractor`)에서 빠지므로 여기서 세지 않는다
      *
      * @param  string  $extractDir  추출 대상 디렉토리
      * @return string 확장 소스 디렉토리 경로

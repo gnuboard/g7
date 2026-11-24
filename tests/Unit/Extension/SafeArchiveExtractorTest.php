@@ -9,6 +9,7 @@ use App\Extension\Support\LifecycleWarnings;
 use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\BuildsZipFixtures;
 use Tests\TestCase;
 
 /**
@@ -22,6 +23,8 @@ use Tests\TestCase;
  */
 class SafeArchiveExtractorTest extends TestCase
 {
+    use BuildsZipFixtures;
+
     private string $tempDir;
 
     /**
@@ -75,6 +78,36 @@ class SafeArchiveExtractorTest extends TestCase
         $warnings = LifecycleWarnings::current()->all();
         $this->assertCount(1, $warnings);
         $this->assertSame('extract', $warnings[0]['step']);
+    }
+
+    /**
+     * Mac Finder 압축이 붙이는 `__MACOSX/` 부속 항목은 풀지 않고, 나머지 항목은 그대로 푸는지 확인한다.
+     *
+     * 부속 폴더가 풀리면 해제 결과 최상위에 폴더가 둘이 되어, 「폴더 1개·파일 0개면 감싼 폴더」 규칙
+     * (`resolveExtractedRoot`)이 감싼 폴더를 벗기지 못한다 — `--zip` 업데이트가 「잘못된 패키지」가 된다(#971).
+     *
+     * @scenario entry=macosx_resource_fork, caller=safe_extractor
+     *
+     * @effects macosx_entries_are_not_extracted
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function MACOSX_항목은_풀지_않는다(): void
+    {
+        $zipPath = $this->tempDir.'/mac.zip';
+        $this->makeZipFixture($zipPath, ['module.json' => '{}', 'src/a.php' => '<?php // a'], [
+            'wrapper' => 'pkg', 'directoryEntries' => true, 'macosx' => true,
+        ]);
+        $dest = $this->tempDir.'/out';
+
+        $result = SafeArchiveExtractor::extractZipChunk($zipPath, $dest);
+
+        $this->assertDirectoryDoesNotExist($dest.'/__MACOSX', '부속 폴더가 풀렸다');
+        $this->assertSame(['pkg'], array_values(array_diff(scandir($dest) ?: [], ['.', '..'])), '해제 결과 최상위가 감싼 폴더 하나여야 한다');
+        $this->assertFileExists($dest.'/pkg/src/a.php');
+        $this->assertSame(['pkg/module.json', 'pkg/src/a.php'], $result['written']);
+        $this->assertSame(4, $result['total'], '진행 개수(total)에 부속 항목이 들어갔다 — 폴더 항목 2(pkg/·pkg/src/) + 파일 2');
     }
 
     /**

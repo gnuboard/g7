@@ -2327,7 +2327,9 @@ PHP;
                     throw new \RuntimeException(__('settings.core_update.extract_empty'));
                 }
 
-                $sourcePath = $extractedDirs[0];
+                // 첫 폴더를 개수 확인 없이 고르면 감싸지 않은 아카이브에서 manifest 대신 하위 폴더를 고른다 —
+                // `--zip` 경로와 같은 감싼 폴더 판정을 쓴다.
+                $sourcePath = $this->resolveExtractedRoot($extractDir);
 
                 File::delete($archivePath);
 
@@ -2545,6 +2547,7 @@ PHP;
      * - 하위에 파일이 있고 디렉토리가 0개 또는 2개 이상 → extractDir 자체가 소스
      * - 하위에 디렉토리 1개만 있고 파일 없음 → 그 디렉토리가 래퍼 → 하위 반환
      * - 혼합(파일 + 단일 디렉토리)인 경우 → extractDir 자체 반환 (manifest 루트에 있다고 가정)
+     * - Mac 압축의 `__MACOSX/` 부속 폴더는 해제 단계(`SafeArchiveExtractor`)에서 빠지므로 여기서 세지 않는다
      *
      * @param  string  $extractDir  추출 대상 디렉토리
      * @return string 확장 소스 디렉토리 경로

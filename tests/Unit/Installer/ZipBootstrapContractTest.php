@@ -553,6 +553,61 @@ class ZipBootstrapContractTest extends TestCase
     }
 
     /**
+     * 화면 스크립트가 실패 응답(`!data.ok`)에 실린 세션 키를 저장하고 번호 칸을 숨기는지 확인한다.
+     *
+     * 서버는 맞는 번호로 인증한 뒤의 판정 실패에도 세션을 돌려준다. 화면이 그 세션을 버리면 번호 칸에 남은
+     * (이미 지워진) 번호를 다시 보내 `invalid_token` 과 시도 차감을 받는다(#971). 인증 실패 세 코드의 세션 폐기
+     * 분기는 그대로 두고, 그 밖의 실패에서만 세션을 받아 둔다.
+     *
+     * @scenario archive=foreign
+     *
+     * @effects zip_bootstrap_screen_keeps_session_from_failure_response
+     *
+     * @return void 반환값 없음
+     */
+    public function test_실패_응답에서_받은_세션을_저장하고_번호_칸을_숨긴다(): void
+    {
+        $this->assertSame(
+            1,
+            preg_match('~if \(!data\.ok\) \{(.*?)\n                return;\n            \}~s', $this->source, $m),
+            '화면 스크립트의 실패 처리 분기(`if (!data.ok)`)를 찾지 못했다'
+        );
+        $branch = $m[1];
+
+        $this->assertMatchesRegularExpression('~\} else if \(data\.session\) \{~', $branch, '인증 실패 세 코드가 아닌 실패에서 응답의 세션을 받는 분기가 없다');
+        $sessionBranch = (string) substr($branch, (int) strpos($branch, '} else if (data.session) {'));
+
+        $this->assertStringContainsString('sessionKey = data.session', $sessionBranch, '실패 응답의 세션 키를 화면 상태에 넣지 않는다');
+        $this->assertStringContainsString("setItem('g7_setup_session', sessionKey)", $sessionBranch, '실패 응답의 세션 키를 sessionStorage 에 저장하지 않는다 — 새로고침하면 번호를 다시 요구한다');
+        $this->assertStringContainsString("tokenInput.value = ''", $sessionBranch, '소모된 번호를 칸에 남긴다');
+        $this->assertStringContainsString("tokenField.style.display = 'none'", $sessionBranch, '세션을 받고도 번호 칸을 숨기지 않는다');
+    }
+
+    /**
+     * 폴더 항목 판정이 구분자와 상관없이 끝 구분자로 폴더를 알아보는지 확인한다 (해제기 `SafeArchiveExtractor` 와 같은 규칙).
+     *
+     * @scenario archive=backslash_dir_entries
+     *
+     * @effects zip_bootstrap_backslash_directory_entries_become_directories
+     *
+     * @return void 반환값 없음
+     */
+    public function test_폴더_항목_판정은_역슬래시_끝도_폴더로_본다(): void
+    {
+        $this->assertTrue(function_exists('g7setup_is_directory_entry'), '폴더 항목 판정 함수가 없다');
+        $this->assertTrue(g7setup_is_directory_entry('g7-7.2.0/'));
+        $this->assertTrue(g7setup_is_directory_entry('g7-7.2.0\\app\\'));
+        $this->assertFalse(g7setup_is_directory_entry('g7-7.2.0/artisan'));
+        $this->assertFalse(g7setup_is_directory_entry('g7-7.2.0\\app\\Foo.php'));
+
+        $this->assertTrue(function_exists('g7setup_is_junk_entry'), '부속 항목 판정 함수가 없다');
+        $this->assertTrue(g7setup_is_junk_entry('__MACOSX'));
+        $this->assertTrue(g7setup_is_junk_entry('__MACOSX/g7-7.2.0/._artisan'));
+        $this->assertFalse(g7setup_is_junk_entry('g7-7.2.0/__MACOSX'), '최상위가 아닌 같은 이름까지 빼면 배포본 파일이 빠진다');
+        $this->assertFalse(g7setup_is_junk_entry('.DS_Store'), '다른 숨김 파일 규칙은 바꾸지 않는다');
+    }
+
+    /**
      * 픽스처가 만든 임시 폴더를 링크를 따라가지 않고 재귀로 지운다. 없는 폴더면 아무것도 하지 않는다.
      *
      * @param  string  $dir  지울 폴더 절대 경로
