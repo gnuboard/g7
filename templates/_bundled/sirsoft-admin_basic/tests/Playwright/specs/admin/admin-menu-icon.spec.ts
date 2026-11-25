@@ -188,9 +188,9 @@ test.describe('관리자 메뉴 구조형 아이콘 (#381)', () => {
   });
 
   /**
-   * 업로드가 끝나면 파일 칸을 비워 같은 파일을 다시 올릴 수 있고(validate-plan 4차 O7), 업로드로 받은 SVG 는 「SVG 코드」
-   * 칸에 보이며 바꾸기 전 클래스 글자는 「직접 입력」 칸에서 사라진다(O8). 예전 API 로 저장된 비클래스 아이콘값이 남은
-   * 메뉴도 아이콘을 건드리지 않은 수정은 저장된다(C-4a — 수정 전에는 아이콘 칸 422).
+   * 업로드가 끝나면 파일 칸을 비워 같은 파일을 다시 올릴 수 있고, 업로드로 받은 SVG 는 「SVG 코드」
+   * 칸에 보이며 바꾸기 전 클래스 글자는 「직접 입력」 칸에서 사라진다. 예전 API 로 저장된 비클래스 아이콘값이 남은
+   * 메뉴도 아이콘을 건드리지 않은 수정은 저장된다(수정 전에는 아이콘 칸 422).
    *
    * @scenario surface=form_field, icon_type=svg, icon_type=legacy_string
    * @effects upload_input_reset_after_attempt, form_inputs_follow_external_value

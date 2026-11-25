@@ -463,7 +463,7 @@ describe('MenuIconField — 업로드', () => {
   });
 
   /**
-   * 회귀(#381 validate-plan 4차 O7): 업로드가 끝난 뒤(성공·실패)에도 파일 칸이 고른 파일을 쥐고 있어, 거부된 SVG 를
+   * 회귀: 업로드가 끝난 뒤(성공·실패)에도 파일 칸이 고른 파일을 쥐고 있어, 거부된 SVG 를
    * 고쳐 같은 파일을 다시 고르면 브라우저가 change 를 내지 않아 아무 일도 일어나지 않았다.
    *
    * @scenario surface=form_field, icon_type=image
@@ -489,7 +489,7 @@ describe('MenuIconField — 업로드', () => {
   });
 
   /**
-   * 회귀(#381 validate-plan 4차 O8): 업로드·선택으로 값을 바꾸면 그 값은 이 필드가 내보낸 것이라 「메아리」로 보고
+   * 회귀: 업로드·선택으로 값을 바꾸면 그 값은 이 필드가 내보낸 것이라 「메아리」로 보고
    * 칸 동기화를 건너뛰어, 「SVG 코드」·「직접 입력」 칸에 바꾸기 전 글자가 남았다.
    *
    * @scenario surface=form_field, icon_type=svg
