@@ -56,7 +56,7 @@
   `receipt_url` 로 그린다.
 - 주문 완료 조각이 붙는 id `order_complete_payment_summary` 는 템플릿 소유다. 템플릿이 그 id 를 달지 않으면 조각은 오류 없이 나타나지 않는다.
 - 주문 상세(회원·비회원)의 영수증 줄은 조각이 id `kginicis-mp-receipt-row` 로 그린다.
-- [구매결정](에스크로) 링크는 영수증 조회 응답의 `escrow_confirm_url`(본인 에스크로 결제에만 내려 주는 10분 서명 주소)로 열고, 그 주소가
+- 「구매결정」(에스크로) 링크는 영수증 조회 응답의 `escrow_confirm_url`(본인 에스크로 결제에만 내려 주는 10분 서명 주소)로 열고, 그 주소가
   없으면 그리지 않는다. 새 창에는 화면의 토큰 로그인이 실리지 않으므로, 구매결정 창(`UserEscrowConfirmController::show`)은 세션 로그인
   또는 그 서명(`uid`)으로 본인을 확인한다.
 

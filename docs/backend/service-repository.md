@@ -189,7 +189,7 @@ class CoreServiceProvider extends ServiceProvider
 | `ScheduleHistoryRepositoryInterface` | `deleteByScheduleIds(array $scheduleIds): int` 추가 |
 | `LayoutVersionRepositoryInterface` | `getVersions(int $layoutId, ?int $limit = null)` — 선택 인자 `$limit` 추가 |
 | `IdentityVerificationLogRepositoryInterface` | `purgeOlderThan(int $days, ?\Closure $beforeEachBatch = null)` — 배치마다 지우기 직전 그 배치의 로그 ID 목록으로 부르는 선택 콜백 추가 |
-| `AttachmentRepositoryInterface` | [storage-driver.md 「코어 첨부 저장소 계약에 더해진 메서드」](../extension/storage-driver.md#코어-첨부-저장소-계약에-더해진-메서드-720) |
+| `AttachmentRepositoryInterface` | [storage-driver.md 「코어 첨부 저장소 계약에 더해진 메서드」](../extension/storage-driver.md#코어-첨부-저장소-계약에-더해진-메서드-720721) |
 
 동작이 바뀐 메서드도 있다(시그니처는 같다).
 

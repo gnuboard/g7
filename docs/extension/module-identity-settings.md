@@ -170,7 +170,7 @@ Listener 의 모듈 hook 동적 구독은 [app/Listeners/Identity/EnforceIdentit
 
 라우트·훅으로 잡히지 않는 자리(서비스 안의 특정 분기 등)에 운영자가 본인인증 정책을 걸게 하려면 확장 지점(체크포인트)을 선언하고, 그 자리에서 강제 헬퍼를 부릅니다. 관리자 정책 창의 「사용자 지정」 범위는 선언된 체크포인트가 1개 이상일 때만 보이고, 대상은 자유 입력이 아니라 선언 목록에서 고릅니다.
 
-**1) 선언** — 모듈·플러그인 클래스에서 `getIdentityCheckpoints()` 를 덮어씁니다(기본값 `[]`). 키는 `{vendor-ext}.{domain}.{action}` 형식이고, 이름·설명은 다국어 배열입니다.
+**1) 선언** — 모듈·플러그인 클래스에서 `getIdentityCheckpoints()` 를 덮어씁니다(기본값 `[]`). 키는 `{vendor-ext}.{domain}.{action}` 형식(소문자·숫자·`_`·`-` 조각을 점으로 이은 것, 점 1개 이상)이고, 형식에 맞지 않는 키는 목록에 들어가지 않습니다. 이름·설명은 다국어 배열이며 문자열 하나를 주면 모든 로케일에 같은 글을 씁니다. 이름을 비우면 키를 이름으로 보입니다.
 
 ```php
 public function getIdentityCheckpoints(): array
@@ -185,7 +185,7 @@ public function getIdentityCheckpoints(): array
 }
 ```
 
-**2) 강제** — 그 자리에서 한 줄을 부릅니다. 연결된 정책이 없으면 아무 일도 하지 않고, 정책이 인증을 요구하면 `IdentityVerificationRequiredException`(HTTP 428 → 프론트가 인증 창을 연 뒤 원 요청 재실행)이 납니다.
+**2) 강제** — 그 자리에서 한 줄을 부릅니다. 연결된 정책이 없으면 아무 일도 하지 않고, 정책이 인증을 요구하면 `IdentityVerificationRequiredException`(HTTP 428 → 프론트가 인증 창을 연 뒤 원 요청 재실행)이 납니다. 정책이 지정한 인증 수단을 지금 쓸 수 없으면(수단 플러그인을 끈 경우 등) `IdentityPolicyProviderUnavailableException`(HTTP 503)이 납니다(`fail_mode=log_only` 정책은 감사 로그만 남기고 통과).
 
 ```php
 app(IdentityPolicyService::class)->enforceCheckpoint('sirsoft-sample.point.withdraw', $user, ['amount' => $amount]);
@@ -193,7 +193,7 @@ app(IdentityPolicyService::class)->enforceCheckpoint('sirsoft-sample.point.withd
 
 등록되지 않은 키로 부르면 `IdentityCheckpointNotRegisteredException`(`InvalidArgumentException` 하위)이 납니다 — 오타 난 키로 정책이 영영 강제되지 않는 것을 막기 위한 개발자 오류입니다.
 
-**3) 목록과 검증** — 활성 확장의 선언은 `IdentityCheckpointRegistry` 가 요청 단위로 모읍니다(DB 저장 없음). 필터 `core.identity.filter_checkpoints` 로 더하거나 뺄 수 있고, 같은 키를 두 확장이 선언하면 먼저 선언한 쪽을 둡니다. 관리자 API `GET /api/admin/identity/checkpoints` 가 목록을 돌려주고([identity.md](../backend/api/identity.md)), 「사용자 지정」 정책 저장 시 대상이 목록에 없으면 422(`validation.identity_policy.custom_target_unregistered`)입니다. 정책 응답의 `checkpoint_registered` 가 false 면 확장이 꺼져 지점이 사라진 정책이라 목록에 「연결된 확장 지점 없음」 배지가 붙습니다.
+**3) 목록과 검증** — 활성 확장의 선언은 `IdentityCheckpointRegistry` 가 요청 단위로 모읍니다(DB 저장 없음). 필터 `core.identity.filter_checkpoints` 로 더하거나 뺄 수 있습니다(필터로 뺀 키를 확장이 `enforceCheckpoint()` 로 부르면 등록되지 않은 키와 같이 예외가 납니다). 또 같은 키를 두 확장이 선언하면 먼저 선언한 쪽을 둡니다. 관리자 API `GET /api/admin/identity/checkpoints` 가 목록을 돌려주고([identity.md](../backend/api/identity.md)), 「사용자 지정」 정책 저장 시 대상이 목록에 없으면 422(`validation.identity_policy.custom_target_unregistered`)입니다. 이미 저장된 정책을 고칠 때 대상을 그대로 두면 지금 목록에 없어도 저장됩니다. 정책 응답의 `checkpoint_registered` 가 false 면 확장이 꺼져 지점이 사라진 정책이라 목록에 「연결된 확장 지점 없음」 배지가 붙습니다.
 
 **테스트** — 번들 확장은 체크포인트를 선언하지 않으므로, 선언·강제는 테스트용 확장 픽스처로 잽니다(예: [tests/Feature/Identity/IdentityCheckpointTest.php](../../tests/Feature/Identity/IdentityCheckpointTest.php)).
 

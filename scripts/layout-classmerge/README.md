@@ -1,6 +1,6 @@
 # classMerge 변환 도구
 
-responsive 구간에서 기본 className 을 거의 다시 적은 경우(감사 P10), 바뀐 토큰만 `class-merge` 로 남기도록 `.g7.html` 원본을 고치는 도구다. 엔진 문법은 `docs/frontend/responsive-layout.md` 의 classMerge 절을 따른다(노드 `responsive.{key}.classMerge`, 마크업 `<responsive on="portable" class-merge="p-6"/>`).
+responsive 구간에서 기본 className 을 거의 다시 적은 경우(정적 검사 `layout-responsive-class-rewrite` 가 짚는 자리), 바뀐 토큰만 `class-merge` 로 남기도록 `.g7.html` 원본을 고치는 도구다. 엔진 문법은 `docs/frontend/responsive-layout.md` 의 classMerge 절을 따른다(노드 `responsive.{key}.classMerge`, 마크업 `<responsive on="portable" class-merge="p-6"/>`).
 
 ```html
 <!-- 전 -->
@@ -29,7 +29,7 @@ node scripts/layout-classmerge/convert.mjs <루트> [--dry-run] [--report <json>
 | `--verify` | 변환 후 JSON 으로 구간마다 실효 className 을 다시 계산해 변환 전과 대조한다. 쓰기 실행이면 다시 구운 짝 `.json` 을, `--dry-run` 이나 `--no-sync` 면 변환 후 원문을 메모리에서 실제 컴파일한 결과를 쓴다 |
 | `--no-sync` | 바꾼 파일의 짝 `.json` 을 다시 굽지 않는다 |
 | `--jobs N` | 굽기 동시 실행 수(기본 4) |
-| `--min-overlap R` | 기본 토큰 재기재 비율(`overlap`)이 R(0~1) 미만이면 같은 결과여도 바꾸지 않는다. 기본 0(제한 없음). 감사 P10 기준은 0.8 |
+| `--min-overlap R` | 기본 토큰 재기재 비율(`overlap`)이 R(0~1) 미만이면 같은 결과여도 바꾸지 않는다. 기본 0(제한 없음). 위 정적 검사의 기준은 0.8 |
 
 권장 순서는 다음과 같다.
 

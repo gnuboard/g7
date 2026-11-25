@@ -377,6 +377,8 @@ engine-v1.98.0(코어 7.2.1)부터 `<responsive>` 에 `class-merge` 를 쓰면 �
 
 **한계 — 단계 숫자가 없는 색 이름.** `bg-white`, `text-white`, `text-black` 처럼 `-500` 같은 단계가 붙지 않은 색 이름은 색 그룹으로 판정되지 않아 교체되지 않는다. 기본 `bg-white` 에 `class-merge="bg-gray-50"` 를 쓰면 `bg-white bg-gray-50` 이 함께 남고, 어느 색이 보일지는 CSS 선언 순서로 정해진다. 이런 색을 구간에서 바꾸려면 구간 `class` 로 통째로 교체한다.
 
+**한계 — 엔진이 아는 유틸리티와 변형만 교체한다.** 교체는 엔진의 그룹 표에 든 Tailwind v3 기본 유틸리티와 변형 접두사 `dark:` `hover:` `focus:` `active:` `disabled:` `group-hover:` `sm:` `md:` `lg:` `xl:` `2xl:`(과 그 조합)에만 일어난다. 그 밖(`focus-visible:`·`aria-*:` 같은 다른 변형, `size-*` 같은 v4 유틸리티, `text-[13px]` 같은 값 목록 그룹의 임의값, 테마에 더한 `bg-primary-500` 같은 색, 템플릿 고유 클래스)은 기본 클래스를 지우지 않고 덧붙기만 해서 둘 다 남는다. 전체 범위는 [G7Core.style 지원 범위와 한계](g7core-api.md#지원-범위와-한계)를 본다.
+
 #### `class` 와 `class-merge` 고르기
 
 | 구간에서 하려는 일 | 쓸 것 |

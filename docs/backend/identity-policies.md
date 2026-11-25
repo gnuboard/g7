@@ -21,8 +21,8 @@ applies_to 는 permission 기반 admin 판정 (User::isAdmin() — type='admin' 
 | 필드 | 의미 | 값 |
 |------|------|---|
 | `key` | 고유 식별자 (시드 기준) | `core.auth.signup_before_submit` |
-| `scope` | 매칭 단위 | `route` (라우트 미들웨어) / `hook` (action 훅) |
-| `target` | scope 별 대상 식별자 | route name 또는 hook name |
+| `scope` | 매칭 단위 | `route` (라우트 미들웨어) / `hook` (action 훅) / `custom` (확장이 선언한 확장 지점, 7.2.1+ — [module-identity-settings.md](../extension/module-identity-settings.md#커스텀-체크포인트--사용자-지정-범위-721)) |
+| `target` | scope 별 대상 식별자 | route name, hook name 또는 확장 지점 키 |
 | `purpose` | IDV 목적 | `signup` / `password_reset` / `self_update` / `sensitive_action` / `login` 등 |
 | `provider_id` | 강제할 IDV provider | `null` 이면 매니저 default |
 | `applies_to` | 강제 대상 사용자군 | `self` (관리자 제외) / `admin` (관리자만) / `both` |
@@ -374,7 +374,7 @@ public function getIdentityPolicies(): array
 
 ## 9. 관련 코드 진입점
 
-- `app/Services/IdentityPolicyService.php` — `resolve()` / `enforce()` / `isAdminContext()` / `policyMatchesContext()` / `enforceForRequest()`·`enforcePolicyForRequest()`(HTTP 요청 문맥 — `verification_token` 우회 + `user_is_admin` / `target_email` 컨텍스트 주입, 7.1.0)
+- `app/Services/IdentityPolicyService.php` — `resolve()` / `enforce()` / `isAdminContext()` / `policyMatchesContext()` / `enforceForRequest()`·`enforcePolicyForRequest()`(HTTP 요청 문맥 — `verification_token` 우회 + `user_is_admin` / `target_email` 컨텍스트 주입, 7.1.0) / `enforceCheckpoint()`(확장 지점 강제, 7.2.1)
 - `app/Http/Middleware/EnforceIdentityPolicy.php` — 라우트 단계 enforce (판정은 `enforcePolicyForRequest()` 에 위임)
 - `app/Listeners/Identity/EnforceIdentityPolicyListener.php` — 훅 단계 enforce
 - `app/Extension/Helpers/IdentityPolicySyncHelper.php` — Seeder 가 사용하는 upsert + cleanup

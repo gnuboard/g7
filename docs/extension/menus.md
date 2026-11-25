@@ -455,10 +455,11 @@ $role->menus()->wherePivot('permission_type', 'write')->get();
 
 - **클래스**: 스타일까지 적은 완전한 클래스(`fas fa-x`·`fa-solid fa-x`·`far`·`fab`)를 씁니다. 스타일 없는 `fa-x` 는 쓰지 않습니다.
 - **이미지**: 자기 패키지 안 파일만 됩니다. 응답 시점에 확장 자산 주소(버전 쿼리 포함)로 바뀌어 하위 폴더 설치·정적 캐시에서도 그대로 보입니다. `/` 절대경로·`http(s)://`·`//`·`data:`·`..`·역슬래시·`.svg` 는 거부합니다.
-- **SVG**: 32KB 이하, 스크립트·`on*` 속성·외부 `href`·`foreignObject`·`style`·`use`·`image`·애니메이션 요소가 없어야 합니다. 화면은 한 번 더 정제해서 그리며, `fill="currentColor"` 를 쓰면 메뉴 글자색(라이트·다크)을 따릅니다. 같은 SVG 가 여러 메뉴에 있으면 `id` 가 겹쳐 그라디언트 참조가 엉킬 수 있으니 단색·`currentColor` 를 권장합니다.
+- **SVG**: 32KB 이하, 허용한 요소만 쓸 수 있습니다 — `svg`·`g`·`defs`·`title`·`desc`·`rect`·`circle`·`ellipse`·`line`·`polyline`·`polygon`·`path`·`text`·`tspan`·`linearGradient`·`radialGradient`·`stop`·`clipPath`. 그 밖의 요소(`style`·`use`·`image`·`foreignObject`·`mask`·`pattern`·`filter`·`symbol`·애니메이션 등)와 스크립트·`on*` 속성·외부 `href` 는 거부합니다. 화면은 한 번 더 정제해서 기본 도형 속성만 남기고 그리므로(`style`·`class` 같은 속성은 지워짐) 색은 `fill`·`stroke` 속성으로 주세요. `fill="currentColor"` 를 쓰면 메뉴 글자색(라이트·다크)을 따릅니다. 같은 SVG 가 여러 메뉴에 있으면 `id` 가 겹쳐 그라디언트 참조가 엉킬 수 있으니 단색·`currentColor` 를 권장합니다.
 - **잘못된 선언**(없는 파일·금지 경로·위험 SVG·알 수 없는 형)은 설치·업데이트를 막지 않습니다. 그 메뉴만 아이콘 없이 저장하고, 로그(`메뉴 아이콘 선언 무시`)와 라이프사이클 경고 `menu_icon`(관리자 결과 창 「메뉴 아이콘」)으로 알립니다.
 - 운영자가 관리자 화면에서 아이콘을 바꾸면(업로드 포함) `user_overrides` 에 `icon` 이 기록되어 이후 업데이트가 덮지 않습니다.
 - 메뉴 API 는 `icon`(클래스일 때만 문자열, 이미지·SVG 면 null — 외부 관리자 템플릿 호환)과 `icon_spec`(구조형)을 함께 내려 줍니다 — [admin-template-contract.md](admin-template-contract.md).
+- `core.menu.*` 훅이 넘기는 메뉴 모델의 `icon` 값은 클래스 아이콘이면 클래스 문자열, 이미지·SVG 아이콘이면 구조형 JSON 문자열입니다. 서버 코드에서 해석할 때는 `MenuIconSpec::fromStored($menu->icon)` 을 쓰고, 화면에 쓸 값은 메뉴 API 의 `icon_spec` 을 씁니다.
 
 ---
 

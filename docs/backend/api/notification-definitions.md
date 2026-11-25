@@ -132,7 +132,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 등록된 알림 정의 목록을 페이지네이션으로 조회합니다. 인증(`auth:sanctum`)과 `core.settings.read` 권한이 필요합니다. `search`, `extension_type`, `extension_identifier`, `category`, `channel`, `is_active` 로 필터링하고 `sort_by`/`sort_order` 로 정렬하며, 확장이 `core.notification_definition.index_validation_rules` 훅으로 필터를 추가할 수 있습니다. 확장이 자기 화면에서만 다루는 알림 종류(예: 쇼핑몰 쿠폰별 발급 알림 `coupon_issued.{id}`)는 `core.notification_definition.filter_hidden_type_prefixes` 가 돌려준 접두로 목록에서 빠지고, `include_hidden=1` 이면 함께 받습니다(7.2.1). 숨긴 종류도 단건 조회·수정·미리보기·기본값 복원은 그대로 됩니다. 관리자 알림 정의 관리 목록 화면을 렌더링할 때 사용합니다.
+**설명** 등록된 알림 정의 목록을 페이지네이션으로 조회합니다. 인증(`auth:sanctum`)과 `core.settings.read` 권한이 필요합니다. `search`, `extension_type`, `extension_identifier`, `category`, `channel`, `is_active` 로 필터링하고 `sort_by`/`sort_order` 로 정렬하며, 확장이 `core.notification_definition.index_validation_rules` 훅으로 필터를 추가할 수 있습니다. 확장이 자기 화면에서만 다루는 알림 종류(예: 쇼핑몰 쿠폰별 발급 알림 `coupon_issued.{id}`)는 `core.notification_definition.filter_hidden_type_prefixes`(인자: 접두 문자열 배열 — 처음엔 빈 배열, 목록 조회 조건 배열)가 돌려준 접두로 시작하는 종류(`type`)가 목록에서 빠지고, `include_hidden=1` 이면 함께 받습니다(7.2.1). 숨긴 종류도 단건 조회·수정·미리보기·기본값 복원은 그대로 됩니다. 관리자 알림 정의 관리 목록 화면을 렌더링할 때 사용합니다.
 
 
 ### POST /api/admin/notification-definitions

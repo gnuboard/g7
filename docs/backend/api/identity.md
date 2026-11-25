@@ -79,7 +79,7 @@ _요청 파라미터 없음._
 
 **설명**
 
-본인인증 정책 창이 「사용자 지정」 범위의 대상으로 고를 수 있는 확장 지점을 돌려준다(7.2.1). 확장은 모듈·플러그인 클래스의 `getIdentityCheckpoints()` 로 지점을 선언하고 그 자리에서 `IdentityPolicyService::enforceCheckpoint($key, $user, $context)` 를 부른다. 필터 `core.identity.filter_checkpoints` 로 지점을 더하거나 뺄 수 있다. 같은 키를 두 확장이 선언하면 먼저 선언한 확장을 둔다. 「사용자 지정」 정책을 저장할 때 대상이 이 목록에 없으면 422(`validation.identity_policy.custom_target_unregistered`)다.
+본인인증 정책 창이 「사용자 지정」 범위의 대상으로 고를 수 있는 확장 지점을 돌려준다(7.2.1). 확장은 모듈·플러그인 클래스의 `getIdentityCheckpoints()` 로 지점을 선언하고 그 자리에서 `IdentityPolicyService::enforceCheckpoint($key, $user, $context)` 를 부른다. 필터 `core.identity.filter_checkpoints`(인자: 지점 키로 색인한 배열 — 항목은 `key`·`name`·`description`·`source_type`·`source_identifier`, 필터로 더한 항목의 `source_type`·`source_identifier` 기본값은 `custom`)로 지점을 더하거나 뺄 수 있다. 필터로 뺀 지점을 확장이 `enforceCheckpoint()` 로 부르면 등록되지 않은 키와 같이 `IdentityCheckpointNotRegisteredException` 이 난다. 같은 키를 두 확장이 선언하면 먼저 선언한 확장을 둔다. 「사용자 지정」 정책을 저장할 때 대상이 이 목록에 없으면 422(`validation.identity_policy.custom_target_unregistered`)다 — 이미 저장된 정책을 고치면서 대상을 그대로 두면 지금 목록에 없어도 저장된다.
 
 ### GET /api/admin/identity/logs
 <!-- @generated:start:api.admin.identity.logs.index -->
