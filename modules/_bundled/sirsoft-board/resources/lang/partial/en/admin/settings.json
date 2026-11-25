@@ -135,12 +135,6 @@
     "notify_admin_on_report_scope": "Notification Scope",
     "notify_admin_on_report_scope_per_case": "First report only (per post/comment)",
     "notify_admin_on_report_scope_per_report": "Every time a report is submitted",
-    "notify_admin_on_report_channels": "Notification Channels",
-    "notify_admin_on_report_channels_placeholder": "Select channels",
-    "notify_admin_on_report_channels_help": "Admin notifications will be sent through the selected channels",
-    "notify_author_on_report_action_channels": "Notification Channels",
-    "notify_author_on_report_action_channels_placeholder": "Select channels",
-    "notify_author_on_report_action_channels_help": "Author notifications will be sent through the selected channels",
     "notification_channels": {
       "mail": "Email",
       "database": "Site Notification"

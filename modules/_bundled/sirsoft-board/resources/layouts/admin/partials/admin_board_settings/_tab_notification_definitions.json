@@ -89,7 +89,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "{{ch.icon ?? 'fas fa-bell'}}",
-                                                "className": "board:text-gray-500 board:dark:text-gray-400"
+                                                "className": "board-text-muted"
                                             }
                                         },
                                         {
@@ -182,7 +182,7 @@
                         "href": "/admin/boards/settings?channel={{ch.id}}&page=1",
                         "mergeQuery": true,
                         "aria-current": "{{(query.channel ?? 'mail') === ch.id ? 'page' : undefined}}",
-                        "className": "board-button {{(query.channel ?? 'mail') === ch.id ? 'board:border-b-2 board:border-indigo-500 board:dark:border-indigo-400 board:text-indigo-600 board:dark:text-indigo-400' : 'board:text-gray-500 board:dark:text-gray-400 board:hover:text-gray-700 board:dark:hover:text-gray-300'}} board:px-4 board:py-2.5 board:text-sm board:font-medium board:whitespace-nowrap board-flex-center board:gap-2"
+                        "className": "board-button {{(query.channel ?? 'mail') === ch.id ? 'board:border-b-2 board:border-indigo-500 board:dark:border-indigo-400 board:text-indigo-600 board:dark:text-indigo-400' : 'board-text-muted board:hover:text-gray-700 board:dark:hover:text-gray-300'}} board:px-4 board:py-2.5 board:text-sm board:font-medium board:whitespace-nowrap board-flex-center board:gap-2"
                     },
                     "children": [
                         {
@@ -435,7 +435,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}",
                                                                     "props": {
-                                                                        "className": "board:text-sm board:text-gray-500 board:dark:text-gray-400 board:italic"
+                                                                        "className": "board:text-sm board-text-muted board:italic"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.notification_definitions.no_template_for_channel"
                                                                 },
@@ -534,6 +534,7 @@
                                                                     ]
                                                                 },
                                                                 {
+                                                                    "id": "ext_notification_definition_row_footer_{{defIdx}}",
                                                                     "type": "extension_point",
                                                                     "name": "notification_definition_row_footer",
                                                                     "props": {

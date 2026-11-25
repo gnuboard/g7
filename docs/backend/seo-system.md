@@ -1315,6 +1315,7 @@ config에 없는 컴포넌트는 `<div>` fallback으로 렌더링됩니다.
 - `key`: 평가할 표현식
 - `default`: 매칭 없을 때 기본 클래스
 - 기존 `className`과 병합 가능
+- 데스크톱 구간(`responsive.desktop` 등)에 `classMap` 이 있으면 기본 `classMap` 대신 그것을 쓴다(7.2.1). 구간 `classMerge` 는 classMap 까지 해석한 className 에 덧붙인다
 
 ### ComponentHtmlMapper — Extension Point props 해석
 
@@ -1388,7 +1389,9 @@ SEO 렌더링은 `renderComponent()` 진입 시점에 이 값을 해석해 데�
 | `iteration` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::renderIteration` | `item_var` / `index_var` 별칭 포함. 자동 변수 `{item_var}_index` 도 양쪽 동일 주입 (engine-v1.56.0 패리티) |
 | `type: "iterator"` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::normalizeIteratorNode` | `data`/`itemName`/`indexName` → `iteration` 변환 |
 | `classMap` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::resolveClassMap` | |
-| `responsive` | 전체 브레이크포인트 | 데스크톱 폭만 | `app/Seo/ComponentHtmlMapper.php::applyResponsiveOverrides` / `matchingBreakpointKey` | 봇=데스크톱 고정. `props`/`if`/`text`/`children`/`iteration` 오버라이드 반영. 매칭 키가 여럿이면 **하나만** 적용 — 커스텀 범위 > 프리셋, 좁은 범위 > 넓은 범위 (양쪽 동일) |
+| `responsive` | 전체 브레이크포인트 | 데스크톱 폭만 | `app/Seo/ComponentHtmlMapper.php::applyResponsiveOverrides` / `matchingBreakpointKey` | 봇=데스크톱 고정. `props`/`if`/`text`/`children`/`iteration`/`classMap`/`classMerge` 오버라이드 반영. 매칭 키가 여럿이면 **하나만** 적용 — 커스텀 범위 > 프리셋, 좁은 범위 > 넓은 범위 (양쪽 동일) |
+| `responsive.*.classMap` | ✅ | ✅ (데스크톱 구간) | `app/Seo/ComponentHtmlMapper.php::applyResponsiveOverrides` → `resolveClassMap` | 구간 classMap 이 기본 classMap 을 대신한다(양쪽 동일). 7.2.1 전에는 양쪽 모두 무시해 그 구간의 classMap 클래스가 빠졌다. 일반 화면의 셀과 반복 항목 렌더도 7.2.1 부터 같은 순서로 적용한다 |
+| `responsive.*.classMerge` | ✅ | ✅ (데스크톱 구간) | `app/Seo/ComponentHtmlMapper.php::applyResponsiveClassMerge` / `app/Support/Style/ClassMerger.php::applyResponsive` | 7.2.1(engine-v1.98.0). 바인딩과 classMap 을 해석한 className 에 구간에서 바뀐 토큰만 덧붙인다. 교체 규칙(같은 축, 같은 변형, 확장 CSS 앞글자를 떼고 판정, 같은 토큰 한 번)은 엔진 `applyResponsiveClassMerge` 와 같다. 단계 숫자가 없는 색 이름(`bg-white` 등)은 양쪽 모두 교체하지 않는다([반응형 레이아웃](../frontend/responsive-layout.md#바뀐-클래스만-덧붙이기-class-merge)) |
 | `extensionPointProps` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::injectExtensionPointContext` | 자손 상속 |
 | `default` (extension_point 호스트) | ✅ | ✅ | 렌더 전 단계에서 처리 | 확장이 꺼져 있을 때 쓰는 기본 children — 주입 단계에서 교체·전개되어 렌더러에는 남지 않음 |
 | `callbacks` (extension_point 호스트) | ✅ | ❌ (의도) | 미처리 | 주입 단계에서 `extensionPointCallbacks` 로 부착 — 봇 화면에는 액션 실행기가 없음 |

@@ -30,7 +30,6 @@
   --color-danger-500: #ef4444;
   --color-danger-600: #dc2626;
 }
-@plugin "@tailwindcss/typography";
 @custom-variant dark (&:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])));
 /* g7-extension-css:end */
 

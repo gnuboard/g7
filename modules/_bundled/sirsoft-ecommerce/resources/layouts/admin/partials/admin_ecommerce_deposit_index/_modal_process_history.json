@@ -148,7 +148,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "zap",
-                                                        "className": "ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce:text-base ecommerce-icon-muted ecommerce-text-muted"
                                                     }
                                                 }
                                             ]
@@ -234,7 +234,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "code",
-                                                        "className": "ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce:text-base ecommerce-icon-muted ecommerce-text-muted"
                                                     }
                                                 }
                                             ]

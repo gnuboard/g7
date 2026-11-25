@@ -66,7 +66,7 @@
       </div>
     </div>
     <footer>
-      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+      <button type="button" class="ecommerce-btn ecommerce-btn-secondary">
         <on type="click">
           <!-- 취소 — 창을 닫은 뒤 창 이름 공간의 개인정보를 비운다(닫기보다 먼저 비우면 닫히기 전 한 번 빈 칸이 그려진다) -->
           <sequence>
@@ -76,7 +76,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button type="button" disabled="{{(_global.directIssueSelectedUsers ?? []).length === 0 || _global.directIssueSubmitting}}" class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-white ecommerce:bg-blue-600 ecommerce:hover:bg-blue-700 ecommerce:dark:bg-blue-600 ecommerce:dark:hover:bg-blue-700 ecommerce:rounded-lg ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
+      <button type="button" disabled="{{(_global.directIssueSelectedUsers ?? []).length === 0 || _global.directIssueSubmitting}}" class="ecommerce:flex ecommerce-btn ecommerce-btn-primary">
         <on type="click">
           <!-- 발급. 고른 회원이 하나도 없으면 버튼이 잠긴다. 성공하면 창을 닫고 쿠폰 목록을 다시 불러 발급 수를 갱신한다. -->
           <sequence>

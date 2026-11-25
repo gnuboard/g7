@@ -57,7 +57,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "ecommerce-flex-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                "className": "ecommerce-flex-center ecommerce:gap-1.5 ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm",
                                 "disabled": "{{_computed.isReadOnly}}"
                             },
                             "children": [
@@ -362,7 +362,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                "className": "ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm",
                                 "disabled": "{{_computed.isReadOnly}}"
                             },
                             "children": [
@@ -382,7 +382,7 @@
             "name": "Div",
             "if": "{{settings !== undefined && ((_local.form?.shipping?.carriers ?? []).length === 0 && !_local.isAddingCarrier)}}",
             "props": {
-                "className": "ecommerce:p-8 ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                "className": "ecommerce:p-8 ecommerce:text-center ecommerce-text-muted"
             },
             "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.empty"
         },
@@ -509,7 +509,7 @@
                                         "children": [
                                             {
                                                 "comment": "드래그 손잡이 — 읽기 전용(설정 수정 권한 없음)이면 숨긴다. 손잡이가 없으면 순서를 끌어 바꿀 수 없다(엔진 sortable 은 비활성 옵션이 없다).",
-                                                "id": "shipping_carrier_drag_handle",
+                                                "id": "shipping_carrier_drag_handle_{{$cIdx}}",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "if": "{{!_computed.isReadOnly}}",

@@ -18,22 +18,22 @@
     </div>
     <div class="space-y-2">
       <div class="flex items-baseline justify-between gap-3">
-        <span class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">$t:claim.detail.reason_label</span>
+        <span class="text-sm text-muted flex-shrink-0">$t:claim.detail.reason_label</span>
         <span class="text-sm text-gray-900 dark:text-white text-right">{{claim.data?.claim?.reason_label ?? '—'}}</span>
       </div>
       <!-- 귀책 — 배송비를 누가 부담하는지의 근거. 판매자·배송사 귀책이면 청구가 0원이다. -->
       <div data-if="{{!!claim.data?.claim?.fault_type_label}}" class="flex items-baseline justify-between gap-3">
-        <span class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">$t:claim.detail.fault_type</span>
+        <span class="text-sm text-muted flex-shrink-0">$t:claim.detail.fault_type</span>
         <span class="text-sm text-gray-900 dark:text-white text-right">{{claim.data?.claim?.fault_type_label}}</span>
       </div>
       <div data-if="{{!!claim.data?.claim?.reason_detail}}" class="pt-2">
-        <p class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.reason_detail</p>
+        <p class="text-sm text-muted">$t:claim.detail.reason_detail</p>
         <p class="text-sm text-gray-900 dark:text-white mt-1 whitespace-pre-line">{{claim.data?.claim?.reason_detail}}</p>
       </div>
     </div>
     <!-- 첨부 사진 — 클릭하면 확대해서 본다. 취소 이력에는 첨부가 없다(서버가 빈 배열을 내려준다). -->
     <div data-if="{{(claim.data?.claim?.images ?? []).length > 0}}" class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">$t:claim.detail.images</p>
+      <p class="text-sm text-muted mb-2">$t:claim.detail.images</p>
       <!-- 격자는 부모가 한 번만 갖고 사진 버튼이 반복된다 — 반복 노드가 격자를 들면 사진마다 격자가 따로 생겨 한 줄에 하나씩 쌓인다. -->
       <div class="grid grid-cols-5 gap-2">
         <responsive on="portable" class="grid grid-cols-3 gap-2"/>

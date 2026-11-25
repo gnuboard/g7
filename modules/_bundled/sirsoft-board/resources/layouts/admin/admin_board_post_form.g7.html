@@ -96,7 +96,7 @@
           </on>
           <span>$t:sirsoft-board.common.cancel</span>
         </a>
-        <button type="button" data-ref="header_save_button" disabled="{{_computed.isReadOnly || _local.isSaving || (!!route?.id &amp;&amp; !_local.hasChanges)}}" class="board-flex-center board:gap-2 board:px-4 board:py-2 board:bg-blue-600 board:text-white board:rounded-lg board:hover:bg-blue-700 board:dark:bg-blue-600 board:dark:hover:bg-blue-700 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed">
+        <button type="button" data-ref="header_save_button" disabled="{{_computed.isReadOnly || _local.isSaving || (!!route?.id &amp;&amp; !_local.hasChanges)}}" class="board-flex-center board-btn board-btn-primary">
           <on type="click">
             <!-- 저장. 등록과 수정은 글 번호 유무로 갈리며, 성공하면 목록으로 나가므로 폼을 되받지 않는다 -->
             <sequence>
@@ -152,7 +152,7 @@
           <icon name="circle-dot" class="board:text-xs"/>
           <span>$t:sirsoft-board.admin.settings.unsaved_changes</span>
         </div>
-        <div data-if="{{!_local.hasChanges}}" class=""/>
+        <div data-if="{{!_local.hasChanges}}"/>
         <div class="board-flex-center board:gap-3">
           <a href="{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}" :mergeQuery="true" data-ref="footer_cancel_button" class="board-button board-btn board-btn-secondary">
             <on type="click">

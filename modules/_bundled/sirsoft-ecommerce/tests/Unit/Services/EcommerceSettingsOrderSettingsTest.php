@@ -511,6 +511,81 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         $this->assertSame('vbank', $toss['core_payment_method'] ?? null, '저장 스냅샷이 core_payment_method 를 떨궜습니다.');
     }
 
+    /**
+     * 간편결제 별칭이 선언한 결제 결과 간편결제사 이름(defaults.embedded_pg_provider)이 병합 결과에 보존되어야 한다 (#933).
+     *
+     * 토스 간편결제는 결제수단 칸이 코어 값(card)으로 저장되므로, 관리자 주문 목록 결제수단 필터가 이 값으로만 간편결제 주문을 가른다.
+     *
+     * @scenario settings_source=defaults, catalog_origin=plugin
+     *
+     * @effects plugin_embedded_pg_provider_preserved_through_merge_and_save
+     *
+     * @return void 없음
+     */
+    public function test_plugin_payment_method_embedded_pg_provider_preserved_after_merge(): void
+    {
+        $this->addPaymentMethodFilter(fn (array $methods) => array_merge($methods, [$this->tossKakaopayDefinition()]));
+
+        $this->service->clearCache();
+        $settings = $this->service->getSettings('order_settings');
+
+        $toss = collect($settings['payment_methods'])->firstWhere('id', 'toss_kakaopay');
+        $this->assertSame('카카오페이', $toss['embedded_pg_provider'] ?? null, '병합이 embedded_pg_provider 를 떨궜습니다.');
+
+        $dbank = collect($settings['payment_methods'])->firstWhere('id', 'dbank');
+        $this->assertArrayNotHasKey('embedded_pg_provider', $dbank);
+    }
+
+    /**
+     * 저장(snapshot) 후에도 간편결제 별칭의 embedded_pg_provider 가 보존되어야 한다 (#933).
+     *
+     * @scenario settings_source=saved, catalog_origin=plugin
+     *
+     * @effects plugin_embedded_pg_provider_preserved_through_merge_and_save
+     *
+     * @return void 없음
+     */
+    public function test_plugin_payment_method_embedded_pg_provider_preserved_after_save(): void
+    {
+        $this->addPaymentMethodFilter(fn (array $methods) => array_merge($methods, [$this->tossKakaopayDefinition()]));
+
+        $this->saveOrderSettings([
+            'payment_methods' => [
+                ['id' => 'dbank', 'sort_order' => 1, 'is_active' => true, 'min_order_amount' => 0, 'stock_deduction_timing' => 'order_placed'],
+                ['id' => 'toss_kakaopay', 'sort_order' => 2, 'is_active' => true, 'min_order_amount' => 0, 'stock_deduction_timing' => 'payment_complete'],
+            ],
+        ]);
+        $this->service->clearCache();
+
+        $toss = collect($this->service->getSettings('order_settings')['payment_methods'])->firstWhere('id', 'toss_kakaopay');
+        $this->assertSame('카카오페이', $toss['embedded_pg_provider'] ?? null, '저장 스냅샷이 embedded_pg_provider 를 떨궜습니다.');
+        $this->assertSame('card', $toss['core_payment_method'] ?? null);
+    }
+
+    /**
+     * 토스 카카오페이 결제수단 정의 (플러그인이 등록하는 모양).
+     *
+     * @return array<string, mixed> 결제수단 정의
+     */
+    private function tossKakaopayDefinition(): array
+    {
+        return [
+            'id' => 'toss_kakaopay',
+            'name' => ['ko' => '카카오페이 (토스페이먼츠)', 'en' => 'KakaoPay (TossPayments)'],
+            'description' => ['ko' => '', 'en' => ''],
+            'icon' => 'wallet',
+            'source' => 'plugin:sirsoft-tosspayments',
+            'defaults' => [
+                'pg_provider' => 'tosspayments',
+                'is_active' => false,
+                'min_order_amount' => 0,
+                'stock_deduction_timing' => 'payment_complete',
+                'core_payment_method' => 'card',
+                'embedded_pg_provider' => '카카오페이',
+            ],
+        ];
+    }
+
     // ──────────────────────────────────────────────
     // 결제수단 병합 (사용자 저장 설정 오버라이드)
     // ──────────────────────────────────────────────

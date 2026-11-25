@@ -209,6 +209,13 @@ class NotificationDefinitionRepository implements NotificationDefinitionReposito
             $query->where('is_active', $filters['is_active']);
         }
 
+        // 목록에서 숨길 알림 종류 접두 (서비스가 `core.notification_definition.filter_hidden_type_prefixes` 로 모은다)
+        foreach ((array) ($filters['exclude_type_prefixes'] ?? []) as $prefix) {
+            if (is_string($prefix) && $prefix !== '') {
+                $query->where('type', 'not like', addcslashes($prefix, '%_\\').'%');
+            }
+        }
+
         if (! empty($filters['channel'])) {
             $query->whereJsonContains('channels', $filters['channel']);
         }

@@ -1,0 +1,39 @@
+feature: 코어·확장의 ZIP 처리가 실제 배포 도구가 만든 압축 모양을 모두 읽는다 (7.2.1, #971)
+
+description: |
+  브라우저 압축 풀기(`g7-setup.php`)가 GitHub 소스 ZIP 을 「배포본 아님」으로 거부한 결함의 같은 결함군을 코어 쪽에서 정리한다.
+  실제 압축 파일은 세 모양이 섞여 온다 — GitHub 소스 ZIP 은 감싼 폴더의 **폴더 항목**(`g7-7.2.0/`)을 맨 앞에 두고, Mac Finder
+  재압축은 최상위 `__MACOSX/` 부속 폴더를 붙이고, Windows 압축 도구는 역슬래시 구분자를 쓴다.
+
+  - 해제(`SafeArchiveExtractor`)는 `__MACOSX/` 를 풀지 않는다 → 해제 뒤 감싼 폴더 판정(`resolveExtractedRoot`)이 맞게 동작
+    (`--zip` 코어·확장 업데이트). 이 축은 safe-archive-extraction 매니페스트가 소유한다.
+  - 확장 GitHub 내려받기의 소스 루트는 「첫 폴더」가 아니라 `resolveExtractedRoot` 규칙으로 고른다.
+  - 풀지 않고 이름으로 읽는 네 곳(번들 인벤토리·PHP 확장 사전 점검·개발자 예약 자리 사전 점검·예약 자리 판정)은 공용
+    `ZipEntryIndex` 로 정규화 이름을 원본 인덱스로 읽고, 감싼 폴더는 모든 항목이 같은 최상위 폴더를 공유할 때만 벗긴다.
+    번들 인벤토리·두 사전 점검의 역슬래시 축은 기존 매니페스트(core-update-bundled-sources·extension-php-requirements·
+    custom-reserved-paths)의 zip 칸에 데이터셋으로 더했다.
+
+  축 case 는 이 매니페스트가 소유하는 판정 표면이다.
+
+axes:
+  case: [github_extract_root, zip_update_macosx, extract_root, prepare_valid, prepare_rejected, reserved_zip_shape, entry_index_shape]
+
+effects:
+  - github_extract_root_matches_resolve_extracted_root
+  - zip_update_finds_manifest_in_mac_zip
+  - zip_update_extracts_flat_and_wrapped_root
+  - zip_update_returns_version_and_manifest
+  - zip_update_rejects_missing_zip_or_invalid_manifest
+  - reserved_zip_scan_strips_only_shared_wrapper
+  - zip_entry_index_normalizes_and_reads_by_original_index
+
+test_files:
+  - tests/Unit/Extension/ExtensionManagerGithubExtractRootTest.php
+  - tests/Unit/Extension/ExtensionManagerZipTest.php
+  - tests/Unit/Extension/Helpers/UpdateReservedPathsZipTest.php
+  - tests/Unit/Extension/Helpers/ZipEntryIndexTest.php
+
+notes: |
+  공용 픽스처: `tests/Concerns/BuildsZipFixtures.php` — `wrapper`·`directoryEntries`(GitHub)·`macosx`(Mac)·`backslash`(Windows) 옵션.
+  `ExtensionManagerZipTest` 의 기존 평탄·감싼 폴더·manifest 오류 테스트(extract_root·prepare_valid·prepare_rejected)는
+  이 매니페스트가 소유하게 되면서 처음 매핑했다 — 동작은 바꾸지 않았다.

@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'activity_log' => [
+        'date_range_invalid' => '終了日は開始日と同じかそれ以降である必要があります。',
+    ],
     'accepted' => ':attribute フィールドを承認する必要があります。',
     'accepted_if' => ':other が :value の場合、:attribute フィールドを承認する必要があります。',
     'active_url' => ':attribute フィールドは有効なURLである必要があります。',
@@ -571,6 +574,7 @@ return [
     'menu' => [
         'attributes' => [
             'name' => 'メニュー名',
+            'icon_file' => 'アイコンファイル',
         ],
         'roles' => [
             'array' => 'ロール一覧は配列である必要があります。',
@@ -591,6 +595,31 @@ return [
         ],
         'icon' => [
             'max' => 'アイコンは :max文字を超えることはできません。',
+            'format' => 'アイコンには Font Awesome クラス(例: fas fa-house)のみ使用できます。画像・SVG アイコンはアイコン欄の直接入力・アップロード・SVG コードで設定してください。',
+        ],
+        'icon_spec' => [
+            'array' => 'アイコン値の形式が正しくありません。',
+            'invalid_type' => 'アイコンの種類はクラス・画像・SVG のいずれかである必要があります。',
+            'class_invalid' => 'Font Awesome クラスの形式ではありません(例: fas fa-house, fa-solid fa-house)。',
+            'class_max' => 'アイコンクラスは :max文字を超えることはできません。',
+            'image_source_invalid' => '画像アイコンの出所が不明です。',
+            'site_path_invalid' => '画像パスは / で始まるサイト内パスである必要があります(..・バックスラッシュ・疑問符は使用不可)。',
+            'external_url' => '外部アドレスはアイコンに使用できません。サイト内パス(/ で始まる)を使うか、ファイルをアップロードしてください。',
+            'image_extension_invalid' => '画像アイコンには :extensions ファイルのみ使用できます。SVG は SVG コードまたはアップロードで設定してください。',
+            'attachment_invalid' => 'アップロードしたアイコンが見つからないか、このメニューでは使用できません。もう一度アップロードしてください。',
+            'package_readonly' => '拡張機能が指定したアイコン画像は変更できません。別のアイコンを選ぶか削除してください。',
+            'svg_required' => 'SVG コードを入力してください。',
+            'svg_too_large' => 'SVG コードは :maxKB 以下である必要があります。',
+            'svg_unsafe' => '安全でない SVG です: :reasons',
+        ],
+        'icon_upload' => [
+            'file_required' => 'アイコンファイルを選択してください。',
+            'file_invalid' => '正しいファイルではありません。',
+            'file_max' => 'アイコンファイルは :maxKB 以下である必要があります。',
+            'file_type' => 'アイコンには PNG・WebP・JPG・GIF・SVG ファイルのみアップロードできます(ファイル名と内容の形式が一致している必要があります)。',
+            'svg_too_large' => 'SVG ファイルは :maxKB 以下である必要があります。',
+            'svg_unsafe' => '安全でない SVG ファイルです: :reasons',
+            'raster_unreadable' => '画像を読み込めません。',
         ],
         'order' => [
             'integer' => '順序は整数である必要があります。',
@@ -1185,6 +1214,7 @@ return [
         'scope_invalid' => 'スコープはroute、hook、customのいずれかである必要があります。',
         'target_required' => 'ターゲット(ルート名またはフック名)を入力してください。',
         'target_max' => 'ターゲットは255文字を超えることはできません。',
+        'custom_target_unregistered' => '「カスタム」範囲の対象は、有効な拡張機能が宣言したチェックポイントである必要があります。',
         'purpose_required' => '認証目的(Purpose)を選択してください。',
         'purpose_max' => '認証目的は64文字を超えることはできません。',
         'provider_id_max' => 'プロバイダー識別子は64文字を超えることはできません。',
@@ -1219,6 +1249,9 @@ return [
     'summary_more_error' => '(他 :count 件のエラー)',
     'summary_more_errors' => '(他 :count 件のエラー)',
     'attributes' => [
+        // 회원 활동 기록 기간 조회 (7.2.1, #952)
+        'date_from' => '開始日',
+        'date_to' => '終了日',
         'system.execution_mode' => '実行方式',
         'system.cron_mode' => 'スケジュール実行方式',
         'system.cron_allowed_ips' => 'スケジュール許可アドレス',

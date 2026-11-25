@@ -190,7 +190,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex flex-wrap items-center gap-1 text-sm text-gray-500 dark:text-gray-400"
+                                            "className": "flex flex-wrap items-center gap-1 text-sm text-muted"
                                         },
                                         "children": [
                                             {

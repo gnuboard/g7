@@ -267,16 +267,46 @@
     @apply dark:border-gray-700;
   }
 
-  /* 버튼 기본 스타일 */
+  /*
+   * 버튼 기본 스타일 (#399 — 레이아웃 인라인 버튼을 의미 클래스로 모은다)
+   * 여백(px-4 py-2)은 가장 많이 쓰던 모양이다. 레이아웃이 다른 여백 유틸리티를 주면 utilities 층이 이긴다.
+   * 포커스 링은 키보드 포커스(focus-visible)에서만 보인다 — 마우스 클릭으로는 링이 남지 않는다.
+   */
   .btn {
-    @apply inline-flex items-center justify-center font-medium rounded-lg transition-colors;
-    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply inline-flex items-center justify-center px-4 py-2 font-medium rounded-lg transition-colors;
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+
+  /* 주 버튼 — 검정(다크 흰색). 사이트 대부분의 저장·확인 버튼 모양이다(#399 D13) */
   .btn-primary {
+    @apply bg-gray-900 text-white hover:bg-gray-800;
+    @apply dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100;
+  }
+
+  /* 강조 버튼 — 강조색(파랑 변수 묶음, 템플릿 설정 「포인트 색」)을 따른다. 종전 .btn-primary 의 정의다 */
+  .btn-accent {
     @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
     @apply dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-400;
+  }
+
+  /* 테두리 버튼 — 취소·보조 동작 */
+  .btn-outline {
+    @apply border border-gray-300 text-gray-700 hover:bg-gray-50;
+    @apply dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700;
+  }
+
+  .btn-success {
+    @apply bg-green-600 text-white hover:bg-green-700;
+    @apply dark:bg-green-600 dark:hover:bg-green-700;
   }
 
   .btn-secondary {
@@ -308,6 +338,26 @@
   }
 
   /* 카드 스타일 */
+  /* 보조 텍스트 — 설명·날짜·건수 같은 흐린 글자 */
+  .text-muted {
+    @apply text-gray-500 dark:text-gray-400;
+  }
+
+  /* 폼 라벨 */
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+  }
+
+  /* 입력 오류 문구 */
+  .form-error {
+    @apply block mt-1 text-xs text-red-600 dark:text-red-400;
+  }
+
+  /* 테두리 상자(그림자 없음, 여백 없음) — 여백은 레이아웃이 유틸리티로 준다 */
+  .card-plain {
+    @apply bg-white border border-gray-200 rounded-lg dark:bg-gray-800 dark:border-gray-700;
+  }
+
   .card {
     @apply bg-white rounded-lg border border-gray-200 shadow-sm;
     @apply dark:bg-gray-800 dark:border-gray-700;
@@ -366,15 +416,16 @@ html[data-header-overlay-active="light"] .g7-site-header {
   --g7-header-hover: rgba(17, 24, 39, 0.08);
 }
 
-html[data-header-overlay-active] .g7-site-header :is(a, button, span, svg, i):not([class^="bg-"], [class*=" bg-"]):not(.g7-site-header :is([class^="bg-"], [class*=" bg-"]) *):not(form *) {
+/* 배경을 가진 요소는 겹침 글자색 대상에서 뺀다 — 배경을 의미 클래스(.btn-primary 등)로 준 버튼도 같다(#399 F17, 종전에는 `bg-` 이름만 보았다) */
+html[data-header-overlay-active] .g7-site-header :is(a, button, span, svg, i):not([class^="bg-"], [class*=" bg-"], .btn-primary, .btn-accent, .btn-secondary, .btn-danger, .btn-success, .card, .card-plain):not(.g7-site-header :is([class^="bg-"], [class*=" bg-"], .btn-primary, .btn-accent, .btn-secondary, .btn-danger, .btn-success, .card, .card-plain) *):not(form *) {
   color: var(--g7-header-ink) !important;
 }
 
-html[data-header-overlay-active] .g7-site-header :is(a, button):not([class^="bg-"], [class*=" bg-"]):not(.g7-site-header :is([class^="bg-"], [class*=" bg-"]) *):not(form *):hover {
+html[data-header-overlay-active] .g7-site-header :is(a, button):not([class^="bg-"], [class*=" bg-"], .btn-primary, .btn-accent, .btn-secondary, .btn-danger, .btn-success, .card, .card-plain):not(.g7-site-header :is([class^="bg-"], [class*=" bg-"], .btn-primary, .btn-accent, .btn-secondary, .btn-danger, .btn-success, .card, .card-plain) *):not(form *):hover {
   background-color: var(--g7-header-hover) !important;
 }
 
-html[data-header-overlay-active="dark"] .g7-site-header :is(a, button):not([class^="bg-"], [class*=" bg-"]):not(.g7-site-header :is([class^="bg-"], [class*=" bg-"]) *):not(form *) {
+html[data-header-overlay-active="dark"] .g7-site-header :is(a, button):not([class^="bg-"], [class*=" bg-"], .btn-primary, .btn-accent, .btn-secondary, .btn-danger, .btn-success, .card, .card-plain):not(.g7-site-header :is([class^="bg-"], [class*=" bg-"], .btn-primary, .btn-accent, .btn-secondary, .btn-danger, .btn-success, .card, .card-plain) *):not(form *) {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 

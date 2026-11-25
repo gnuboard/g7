@@ -76,6 +76,53 @@ class ProvidePaymentMethodDisplayLabelListenerTest extends PluginTestCase
     }
 
     /**
+     * 나이스 간편결제는 결제수단 칸에 자기 id(`nicepay_kakaopay`)로 저장된다 — 기본 라벨 자리에 원시 id 가 아니라 PG 이름을 쓴다 (#933 S7).
+     *
+     * @scenario payment_plugin=nicepayments
+     *
+     * @effects display_label_uses_pg_name_for_own_easy_pay_method_id
+     *
+     * @return void 없음
+     */
+    public function test_labels_own_easy_pay_id_payment_with_pg_name(): void
+    {
+        app()->setLocale('ko');
+
+        $label = (new ProvidePaymentMethodDisplayLabelListener)->provideDisplayLabel(null, (object) [
+            'pg_provider' => 'nicepayments',
+            'payment_method' => 'nicepay_kakaopay',
+            'embedded_pg_provider' => 'kakaopay',
+            'payment_meta' => [],
+        ]);
+
+        $this->assertSame('카카오페이 (나이스페이먼츠)', $label);
+        $this->assertStringNotContainsString('nicepay_', (string) $label);
+    }
+
+    /**
+     * 결제 meta·간편결제 제공자가 비어도 결제수단 id 로 제공자를 찾아 같은 라벨을 만든다 (#933 S7).
+     *
+     * @scenario payment_plugin=nicepayments
+     *
+     * @effects display_label_uses_pg_name_for_own_easy_pay_method_id
+     *
+     * @return void 없음
+     */
+    public function test_own_easy_pay_id_without_meta_derives_provider_from_method_id(): void
+    {
+        app()->setLocale('ko');
+
+        $label = (new ProvidePaymentMethodDisplayLabelListener)->provideDisplayLabel(null, (object) [
+            'pg_provider' => 'nicepayments',
+            'payment_method' => 'nicepay_kakaopay',
+            'embedded_pg_provider' => null,
+            'payment_meta' => null,
+        ]);
+
+        $this->assertSame('카카오페이 (나이스페이먼츠)', $label);
+    }
+
+    /**
      * 다른 PG 의 결제·자기 결제의 일반 카드 결제는 라벨을 채우지 않는다.
      *
      * @scenario payment_plugin=nicepayments

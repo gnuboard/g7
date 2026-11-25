@@ -29,7 +29,7 @@
                             "if": "{{!!product.data?.category_name}}",
                             "props": {
                                 "aria-label": "$t:shop.product.category_path",
-                                "className": "block min-w-0 truncate text-sm text-gray-500 dark:text-gray-400"
+                                "className": "block min-w-0 truncate text-sm text-muted"
                             },
                             "children": [
                                 {

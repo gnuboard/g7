@@ -75,13 +75,13 @@ export const FormField: React.FC<FormFieldProps> = ({
         {children}
 
         {helperText && !error && (
-          <Div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          <Div className="mt-1 text-xs text-muted">
             {helperText}
           </Div>
         )}
 
         {error && (
-          <Div className="mt-1 text-xs text-red-600 dark:text-red-400">
+          <Div className="form-error">
             {error}
           </Div>
         )}

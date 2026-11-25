@@ -6,7 +6,7 @@
     <div class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:py-3">
       <div>
         <label class="ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.mileage_settings.expiry.enabled</label>
-        <p class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5">$t:sirsoft-ecommerce.admin.mileage_settings.expiry.enabled_hint</p>
+        <p class="ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5">$t:sirsoft-ecommerce.admin.mileage_settings.expiry.enabled_hint</p>
       </div>
       <toggle data-type="composite" name="mileage.expiry_enabled" value="{{_local.form?.mileage?.expiry_enabled ?? true}}" disabled="{{_computed.isReadOnly}}"/>
     </div>
@@ -16,7 +16,7 @@
         <input type="number" name="mileage.expiry_days" value="{{_local.form?.mileage?.expiry_days ?? 365}}" min="{{_local?.form?._meta?.limits?.expiry_days_min ?? 1}}" class="ecommerce-input ecommerce:w-28 ecommerce:text-center" disabled="{{_computed.isReadOnly}}"/>
         <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.expiry.days_suffix|count={{_local.form?.mileage?.expiry_days ?? 365}}</span>
       </div>
-      <span data-if="{{_local.errors?.['mileage.expiry_days']}}" class="ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:text-xs ecommerce:mt-1 ecommerce:block">{{_local.errors?.['mileage.expiry_days']?.[0] ?? ''}}</span>
+      <span data-if="{{_local.errors?.['mileage.expiry_days']}}" class="ecommerce-form-error">{{_local.errors?.['mileage.expiry_days']?.[0] ?? ''}}</span>
     </div>
   </div>
 </partial>

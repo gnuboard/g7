@@ -108,6 +108,16 @@ interface AttachmentRepositoryInterface
     public function update(int $id, array $data): Attachment;
 
     /**
+     * 아직 어디에도 묶이지 않은 첨부만 주어진 엔티티에 묶습니다 (조건부 갱신 한 번 — 동시 요청 중 한쪽만 이긴다).
+     *
+     * @param  int  $id  첨부파일 ID
+     * @param  string  $attachmentableType  연결할 모델 클래스명
+     * @param  int  $attachmentableId  연결할 모델 ID
+     * @return bool 이번 호출이 묶었으면 true, 이미 묶여 있었으면 false
+     */
+    public function bindIfUnbound(int $id, string $attachmentableType, int $attachmentableId): bool;
+
+    /**
      * 첨부파일 삭제 (soft delete)
      *
      * @param  int  $id  첨부파일 ID

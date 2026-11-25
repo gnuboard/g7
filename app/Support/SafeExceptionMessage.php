@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Exceptions\CoreVersionMismatchException;
 use App\Extension\Exceptions\ExtensionSeederFailedException;
 use Illuminate\Support\Facades\Log;
 
@@ -52,7 +53,7 @@ final class SafeExceptionMessage
     /**
      * 원문을 화면에 보이면 안 되는 내부 예외인지 판정합니다.
      *
-     * DB 예외(QueryException 은 PDOException 을 잇는다)·PHP 경고가 승격된 예외·PHP 엔진 오류(TypeError 등)이거나,
+     * DB 예외(QueryException 은 PDOException 을 잇는다)·PHP 경고가 승격된 예외·PHP 엔진 오류(TypeError 등 — 코어 버전 미달 예외는 제외)이거나,
      * 다른 예외가 DB 예외 원문을 문구에 이어 붙여 다시 던진 경우(SQLSTATE 표지)다.
      *
      * @param  \Throwable  $e  판정할 예외
@@ -60,6 +61,11 @@ final class SafeExceptionMessage
      */
     public static function isInternal(\Throwable $e): bool
     {
+        // 코어 버전 미달은 컨트롤러 catch-all 을 지나 글로벌 처리로 가려고 `\Error` 를 잇지만, 확장이 일부러 던진 사용자용 사유다(7.2.1)
+        if ($e instanceof CoreVersionMismatchException) {
+            return false;
+        }
+
         if ($e instanceof \PDOException || $e instanceof \ErrorException || $e instanceof \Error) {
             return true;
         }

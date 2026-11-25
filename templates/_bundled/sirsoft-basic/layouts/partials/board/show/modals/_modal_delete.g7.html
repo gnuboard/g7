@@ -7,7 +7,7 @@
       <!-- 비회원 비밀번호 입력 (비회원만 표시) -->
       <div data-if="{{_global.deleteModal.isGuest}}">
         <div class="flex items-center gap-1.5 mb-1">
-          <icon name="lock" size="xs" class="text-gray-500 dark:text-gray-400"/>
+          <icon name="lock" size="xs" class="text-muted"/>
           <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:board.guest_password</span>
         </div>
         <input aria-label="$t:board.guest_password" type="password" placeholder="$t:board.guest_password_placeholder" value="{{_global.deleteModal.password ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">

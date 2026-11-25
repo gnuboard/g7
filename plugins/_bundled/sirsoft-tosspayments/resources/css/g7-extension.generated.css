@@ -25,6 +25,14 @@
     }
   }
 
+  .pay-tosspayments-text-muted {
+    color: oklch(55.1% .027 264.364);
+  }
+
+  .pay-tosspayments-text-muted:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(70.7% .022 261.325);
+  }
+
   .pay-tosspayments-card-title {
     font-size: 1.125rem;
     line-height: var(--tw-leading,calc(1.75 / 1.125));
@@ -587,6 +595,16 @@
   .pay-tosspayments-sticky-footer-buttons:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
     border-color: oklch(37.3% .034 259.733);
     background-color: oklch(27.8% .033 256.848);
+  }
+
+  .pay-tosspayments-admin-page-content {
+    background-color: oklch(98.5% .002 247.839);
+    min-height: 100vh;
+    padding: calc(.25rem * 6);
+  }
+
+  .pay-tosspayments-admin-page-content:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    background-color: oklch(21% .034 264.665);
   }
 
   .paytosspayments\:\[\&_\.btn\]\:w-full .pay-tosspayments-btn {

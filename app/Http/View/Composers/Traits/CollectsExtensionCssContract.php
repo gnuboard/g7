@@ -6,7 +6,7 @@ use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Support\AssetUrl;
-use App\Support\CssLayerFlattener;
+use App\Support\Style\ExtensionClassPrefixes;
 use App\Support\Template\ColorSchemeDeclaration;
 use App\Support\Template\ExtensionCssOverrideResolver;
 use Illuminate\Support\Facades\Log;
@@ -114,18 +114,8 @@ trait CollectsExtensionCssContract
     private function collectExtensionClassPrefixes(): array
     {
         try {
-            $prefixes = [];
-            foreach ([$this->moduleManager->getActiveModules(), $this->pluginManager->getActivePlugins()] as $extensions) {
-                foreach ($extensions as $extension) {
-                    $namespace = CssLayerFlattener::declaredNamespace($extension->getAssets());
-                    $letters = $namespace === null ? '' : (string) preg_replace('/[^a-z]/', '', $namespace);
-                    if ($letters !== '') {
-                        $prefixes[$letters] = true;
-                    }
-                }
-            }
-
-            return array_keys($prefixes);
+            // SEO 렌더러의 클래스 병합(ClassMerger)과 같은 계산을 쓴다 (7.2.1)
+            return ExtensionClassPrefixes::collect([$this->moduleManager->getActiveModules(), $this->pluginManager->getActivePlugins()]);
         } catch (\Throwable $e) {
             Log::warning('Failed to collect extension class prefixes: '.$e->getMessage());
 

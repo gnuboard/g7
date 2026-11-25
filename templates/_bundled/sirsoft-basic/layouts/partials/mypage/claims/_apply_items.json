@@ -92,7 +92,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "text-sm text-muted"
                             },
                             "text": "$t:claim.apply.select_all"
                         }
@@ -148,7 +148,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "mt-2 text-sm text-gray-500 dark:text-gray-400"
+                        "className": "mt-2 text-sm text-muted"
                     },
                     "text": "$t:claim.apply.no_claimable_items"
                 }
@@ -265,7 +265,7 @@
                                                             "props": {
                                                                 "name": "image",
                                                                 "size": "lg",
-                                                                "className": "text-gray-500 dark:text-gray-400"
+                                                                "className": "text-muted"
                                                             }
                                                         }
                                                     ]
@@ -294,7 +294,7 @@
                                                     "name": "P",
                                                     "if": "{{(claimItem.product_option_name ?? '') !== ''}}",
                                                     "props": {
-                                                        "className": "text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate"
+                                                        "className": "text-sm text-muted mt-0.5 truncate"
                                                     },
                                                     "text": "{{claimItem.product_option_name ?? ''}}"
                                                 },
@@ -332,7 +332,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-muted"
                                                             },
                                                             "text": "{{unitPriceCurrency.formatted ?? ''}}"
                                                         }
@@ -362,7 +362,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-muted"
                                                     },
                                                     "text": "$t:claim.apply.quantity"
                                                 },
@@ -397,7 +397,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-muted"
                                                     },
                                                     "text": "$t:claim.apply.available_quantity|count={{claimItem.available_quantity ?? 0}}"
                                                 },
@@ -449,7 +449,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "block text-xs text-muted"
                                                             },
                                                             "text": "$t:claim.apply.exchange_target_title"
                                                         },
@@ -467,7 +467,7 @@
                                                             "name": "Span",
                                                             "if": "{{(claimItem.new_additional_labels ?? []).length > 0}}",
                                                             "props": {
-                                                                "className": "block text-xs mt-0.5 text-gray-500 dark:text-gray-400 truncate"
+                                                                "className": "block text-xs mt-0.5 text-muted truncate"
                                                             },
                                                             "text": "+ {{(claimItem.new_additional_labels ?? []).join(', ')}}"
                                                         },
@@ -486,7 +486,7 @@
                                                             "name": "Span",
                                                             "if": "{{claimItem.exchange_mode !== 'change' && (claimItem.price_difference ?? 0) === 0}}",
                                                             "props": {
-                                                                "className": "block text-xs mt-0.5 text-gray-500 dark:text-gray-400"
+                                                                "className": "block text-xs mt-0.5 text-muted"
                                                             },
                                                             "text": "$t:claim.apply.no_price_difference"
                                                         }

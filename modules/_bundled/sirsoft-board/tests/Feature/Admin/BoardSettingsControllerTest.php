@@ -297,25 +297,35 @@ class BoardSettingsControllerTest extends ModuleTestCase
     }
 
     /**
-     * 채널 검증 — 허용되지 않는 값은 거부되는지 확인
+     * 저장만 되고 쓰이지 않던 신고 알림 채널 키(1.3.1 에서 제거)는 보내도 저장되지 않는다 (#952 P16)
      *
-     * @scenario case=save_rejects_invalid_notification_channel
+     * 채널은 알림 템플릿이 정한다 — 이 키는 화면도 읽는 코드도 없었다. 종전에는 허용 채널 검증만 있었다.
      *
-     * @effects save_rejects_invalid_notification_channel
+     * @scenario case=removed_report_channel_keys_are_not_saved
+     *
+     * @effects removed_report_channel_keys_are_not_saved
      *
      * @return void 반환값 없음
      */
-    public function test_save_rejects_invalid_notification_channel(): void
+    public function test_removed_report_channel_keys_are_not_saved(): void
     {
         $response = $this->actingAs($this->adminUser)
             ->putJson('/api/modules/sirsoft-board/admin/settings', [
                 '_tab' => 'report_policy',
                 'report_policy' => [
-                    'notify_admin_on_report_channels' => ['mail', 'sms'], // sms 는 미허용
+                    'notify_admin_on_report_channels' => ['mail', 'sms'],
+                    'notify_author_on_report_action_channels' => ['mail'],
                 ],
             ]);
 
-        $response->assertStatus(422);
+        $response->assertStatus(200);
+
+        $settings = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-board/admin/settings/report_policy')
+            ->assertStatus(200)
+            ->json('data.settings');
+        $this->assertArrayNotHasKey('notify_admin_on_report_channels', $settings);
+        $this->assertArrayNotHasKey('notify_author_on_report_action_channels', $settings);
     }
 
     /**

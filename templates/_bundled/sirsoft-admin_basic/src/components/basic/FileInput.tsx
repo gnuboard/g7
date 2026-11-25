@@ -126,7 +126,7 @@ export const FileInput = forwardRef<HTMLInputElement, FileInputProps>(({
         <button
           type="button"
           onClick={handleClear}
-          className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          className="p-1 text-muted hover:text-gray-600 dark:hover:text-gray-200"
           aria-label={tOr('common.file_input.clear', 'Clear file')}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -6,7 +6,9 @@ use App\Extension\HookManager;
 use App\Models\Menu;
 use App\Models\Role;
 use App\Rules\LocaleRequiredTranslatable;
+use App\Rules\MenuIconSpecRule;
 use App\Rules\NotCircularParent;
+use App\Support\MenuIcon\MenuIconSpec;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -39,7 +41,12 @@ class UpdateMenuRequest extends FormRequest
             'name' => ['nullable', new LocaleRequiredTranslatable(maxLength: 255)],
             'slug' => ['required', 'string', 'max:255', Rule::unique(Menu::class, 'slug')->ignore($menuId)],
             'url' => 'nullable|string|max:500',
-            'icon' => 'nullable|string|max:100',
+            // 레거시 icon 문자열은 FA 클래스만 받는다(#381) — 이미지·SVG 는 icon_spec 으로. 클래스가 아닌 문자열은 원래 빈 칸으로 저장되던 값이다.
+            // 단, 현재 저장값을 그대로 되돌려 보내면(아이콘 칸 모르는 템플릿이 예전 비클래스 문자열을 실어 보냄) 형식 검사를 건너뛴다.
+            'icon' => $this->keepsStoredIcon()
+                ? ['nullable', 'string']
+                : ['nullable', 'string', 'max:100', 'regex:'.MenuIconSpec::CLASS_PATTERN],
+            'icon_spec' => ['nullable', 'array', new MenuIconSpecRule($this->route('menu') instanceof Menu ? $this->route('menu') : null)],
             // 순서 변경 엔드포인트(UpdateMenuOrderRequest)와 동일하게 자손 전체를 검사한다.
             // NotCircularParent 생성자는 int non-nullable 이므로 $menuId 가 있을 때만 부착한다.
             'parent_id' => ['nullable', 'integer', Rule::exists(Menu::class, 'id')],
@@ -73,6 +80,9 @@ class UpdateMenuRequest extends FormRequest
             'slug.max' => __('validation.menu.slug.max'),
             'url.max' => __('validation.menu.url.max'),
             'icon.max' => __('validation.menu.icon.max'),
+            'icon.regex' => __('validation.menu.icon.format'),
+            'icon.string' => __('validation.menu.icon.format'),
+            'icon_spec.array' => __('validation.menu.icon_spec.array'),
             'order.integer' => __('validation.menu.order.integer'),
             'order.min' => __('validation.menu.order.min'),
             'parent_id.exists' => __('validation.menu.parent_id.exists'),
@@ -83,6 +93,19 @@ class UpdateMenuRequest extends FormRequest
             'roles.*.integer' => __('validation.menu.roles.integer'),
             'roles.*.exists' => __('validation.menu.roles.exists'),
         ];
+    }
+
+    /**
+     * 요청의 레거시 icon 문자열이 메뉴의 현재 저장값을 그대로 되돌려 보낸 것인지 판정합니다 (#381).
+     *
+     * @return bool 현재 저장값과 같은 아이콘 문자열이면 true
+     */
+    private function keepsStoredIcon(): bool
+    {
+        $menu = $this->route('menu');
+        $icon = $this->input('icon');
+
+        return $menu instanceof Menu && is_string($icon) && MenuIconSpec::isUnchanged($icon, $menu->getRawOriginal('icon'));
     }
 
     /**

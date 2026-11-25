@@ -13,7 +13,7 @@
          없으면, 차단·탈퇴 상태라 저장이 거절되는 사람이 그 이유를 이 화면에서 알 수 없다 —
          보기 화면으로 되돌아 나가야 비로소 읽게 된다. -->
     <div data-if="{{user.data?.status === 'inactive'}}" class="flex items-center gap-3 p-4 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-      <icon name="circle-pause" size="lg" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+      <icon name="circle-pause" size="lg" class="text-muted flex-shrink-0"/>
       <p class="text-sm text-gray-700 dark:text-gray-300">$t:mypage.profile.status_inactive_notice</p>
     </div>
     <div data-if="{{user.data?.status === 'blocked'}}" class="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -36,10 +36,10 @@
       </h2>
       <!-- 버튼 그룹 -->
       <div class="flex items-center gap-2">
-        <responsive on="portable" class="flex items-center gap-2 w-full"/>
+        <responsive on="portable" class-merge="w-full"/>
         <!-- 취소 버튼 -->
-        <a href="/mypage/profile" class="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-          <responsive on="portable" class="inline-flex items-center justify-center gap-2 flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"/>
+        <a href="/mypage/profile" class="btn btn-outline gap-2 text-sm">
+          <responsive on="portable" class-merge="flex-1"/>
           <on type="click">
             <navigate/>
           </on>
@@ -47,8 +47,8 @@
           <span>$t:common.cancel</span>
         </a>
         <!-- 저장 버튼 -->
-        <button type="submit" form="profileEditForm" disabled="{{_local.isSavingProfile}}" class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-          <responsive on="portable" class="inline-flex items-center justify-center gap-2 flex-1 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"/>
+        <button type="submit" form="profileEditForm" disabled="{{_local.isSavingProfile}}" class="btn btn-primary gap-2 text-sm">
+          <responsive on="portable" class-merge="flex-1"/>
           <icon data-if="{{_local.isSavingProfile}}" name="spinner" size="sm" class="animate-spin"/>
           <icon data-if="{{!_local.isSavingProfile}}" name="save" size="sm"/>
           <span>$t:common.save</span>
@@ -92,7 +92,7 @@
       </on>
       <!-- 프로필 카드 - 아바타 + 기본 정보 -->
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+        <responsive on="portable" class-merge="p-4"/>
         <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.profile.section_basic</h3>
         <div class="space-y-4">
           <!-- 아바타 — 보기 화면과 **같은 업로더**를 같은 자리에 세운다. 종전에는 사진을 바꾸려면
@@ -100,7 +100,7 @@
                2026-09-21). 이 컴포넌트는 폼 본문과 무관하게 자기 엔드포인트로 즉시 올리므로
                아래 [저장] 을 누르지 않아도 반영되고, 성공하면 두 데이터소스를 다시 부른다. -->
           <div data-ref="profile_edit_avatar" class="flex items-center gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-            <responsive on="portable" class="flex flex-col items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700"/>
+            <responsive on="portable" class-merge="flex-col gap-3"/>
             <avatar-uploader data-type="composite" src="{{user.data?.avatar}}" fallbackText="{{user.data?.name?.charAt(0) ?? 'U'}}" size="xl" :showDeleteButton="true" :confirmDelete="true">
               <responsive on="portable" size="lg"/>
               <prop name="uploadSuccessActions">
@@ -139,18 +139,18 @@
             <div class="flex-1 space-y-2">
               <responsive on="portable" class="w-full space-y-2 text-center"/>
               <span data-if="{{user.data?.status &amp;&amp; user.data?.status !== 'active'}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', secondary: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', danger: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', warning: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', info: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'})[user.data?.status_variant] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}}">{{user.data?.status_label}}</span>
-              <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
-                <responsive on="portable" class="flex flex-col gap-1 text-sm text-gray-500 dark:text-gray-400"/>
+              <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted">
+                <responsive on="portable" class="flex flex-col gap-1 text-sm text-muted"/>
                 <div>
-                  <span class="text-gray-500 dark:text-gray-400">$t:mypage.profile.joined_at</span>
+                  <span class="text-muted">$t:mypage.profile.joined_at</span>
                   <span class="ml-2 text-purple-600 dark:text-purple-400 font-mono">{{user.data?.created_at ?? '-'}}</span>
                 </div>
                 <div>
-                  <span class="text-gray-500 dark:text-gray-400">$t:mypage.profile.last_login</span>
+                  <span class="text-muted">$t:mypage.profile.last_login</span>
                   <span class="ml-2 text-purple-600 dark:text-purple-400" title="{{user.data?.last_login_at ?? ''}}">{{user.data?.last_login_human ?? '-'}}</span>
                 </div>
                 <div data-if="{{user.data?.status === 'withdrawn' &amp;&amp; user.data?.withdrawn_at}}">
-                  <span class="text-gray-500 dark:text-gray-400">$t:mypage.profile.withdrawn_at</span>
+                  <span class="text-muted">$t:mypage.profile.withdrawn_at</span>
                   <span class="ml-2 text-red-600 dark:text-red-400 font-mono">{{user.data?.withdrawn_at}}</span>
                 </div>
               </div>
@@ -160,12 +160,12 @@
           <div class="space-y-1">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.email</label>
             <div class="relative">
-              <input type="email" aria-label="$t:mypage.profile.email" value="{{user.data?.email}}" :readOnly="true" class="w-full px-4 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"/>
+              <input type="email" aria-label="$t:mypage.profile.email" value="{{user.data?.email}}" :readOnly="true" class="w-full px-4 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-muted cursor-not-allowed"/>
               <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
                 <icon name="lock" size="sm" class="text-gray-500 dark:text-gray-500"/>
               </div>
             </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.profile.email_readonly_hint</p>
+            <p class="text-xs text-muted">$t:mypage.profile.email_readonly_hint</p>
           </div>
           <!-- 기본 묶음(이름, 닉네임) — 넓은 화면에서는 두 칸을 나란히, 좁은 화면에서는 한 줄씩 둔다. 운영자가 두 항목을 모두 끄면 아무것도 그리지 않는다. -->
           <div data-each="memberFieldGroup in {{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'basic'; }).map(function(g) { return Object.assign({}, g, { className: 'grid grid-cols-2 gap-4', portableClassName: 'grid grid-cols-1 gap-3' }); })}}">
@@ -192,8 +192,8 @@
               </on>
             </select>
             <p data-ref="profile_display_name_unavailable" data-if="{{profileFields?.data?.display_name?.value_unavailable === true &amp;&amp; !(profileFields?.data?.display_name?.options ?? []).some(function(o) { return o.value === _local.profileEditForm?.display_name_kind; })}}" role="status" class="text-xs text-yellow-700 dark:text-yellow-400 break-words">{{$t('member.display_name.reselect', { kind: profileFields?.data?.display_name?.unavailable_kind?.label ?? '', fallback: profileFields?.data?.display_name?.default_kind_label ?? '' })}}</p>
-            <p data-ref="profile_display_name_preview" data-if="{{((_local.displayNamePreviews ?? {})[$computed.displayNameSelected?.value] ?? $computed.displayNameSelected?.preview ?? '') !== ''}}" class="text-xs text-gray-500 dark:text-gray-400 break-words">{{$t('member.display_name.preview', { name: ((_local.displayNamePreviews ?? {})[$computed.displayNameSelected?.value] ?? $computed.displayNameSelected?.preview ?? '') })}}</p>
-            <p data-ref="profile_display_name_nickname_required" data-if="{{$computed.displayNameSelected?.requires_nickname === true}}" class="text-xs text-gray-500 dark:text-gray-400 break-words">$t:member.display_name.requires_nickname</p>
+            <p data-ref="profile_display_name_preview" data-if="{{((_local.displayNamePreviews ?? {})[$computed.displayNameSelected?.value] ?? $computed.displayNameSelected?.preview ?? '') !== ''}}" class="text-xs text-muted break-words">{{$t('member.display_name.preview', { name: ((_local.displayNamePreviews ?? {})[$computed.displayNameSelected?.value] ?? $computed.displayNameSelected?.preview ?? '') })}}</p>
+            <p data-ref="profile_display_name_nickname_required" data-if="{{$computed.displayNameSelected?.requires_nickname === true}}" class="text-xs text-muted break-words">$t:member.display_name.requires_nickname</p>
             <span data-if="{{_local.profileErrors?.display_name_kind}}" data-ref="profile_display_name_error" class="text-red-600 dark:text-red-400 text-xs">{{_local.profileErrors?.display_name_kind?.[0] ?? ''}}</span>
           </div>
         </div>
@@ -203,7 +203,7 @@
         <responsive on="portable" class="grid grid-cols-1 gap-4"/>
         <!-- 연락처 정보 카드 (휴대폰, 전화, 홈페이지) -->
         <div data-if="{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'contact'; })}}" data-ref="profile_contact_card" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+          <responsive on="portable" class-merge="p-4"/>
           <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.profile.contact_info</h3>
           <div data-each="memberFieldGroup in {{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'contact'; })}}">
             <include src="partials/member/_member_fields.g7.html"/>
@@ -211,7 +211,7 @@
         </div>
         <!-- 위치 정보 카드 (언어, 국가, 시간대, 주소) -->
         <div data-if="{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'location'; })}}" data-ref="profile_location_card" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+          <responsive on="portable" class-merge="p-4"/>
           <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.profile.location_info</h3>
           <div data-each="memberFieldGroup in {{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'location'; })}}">
             <include src="partials/member/_member_fields.g7.html"/>
@@ -220,7 +220,7 @@
       </div>
       <!-- 추가 정보 카드 — 운영자가 환경설정에서 추가한 항목(파일 항목 포함). 항목이 없으면 그리지 않는다. -->
       <div data-if="{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'extra'; })}}" data-ref="profile_extra_card" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+        <responsive on="portable" class-merge="p-4"/>
         <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:member.fields.section_extra</h3>
         <div data-each="memberFieldGroup in {{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'extra'; })}}">
           <include src="partials/member/_member_fields.g7.html"/>
@@ -228,7 +228,7 @@
       </div>
       <!-- 서명 및 자기소개 카드 — 두 항목이 모두 꺼져 있으면 그리지 않는다. 확장이 이 카드 뒤에 자기 카드를 붙이므로 노드와 이름은 그대로 둔다. -->
       <div data-if="{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'profile'; })}}" data-ref="profile_bio_card" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+        <responsive on="portable" class-merge="p-4"/>
         <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.profile.section_signature_bio</h3>
         <div data-each="memberFieldGroup in {{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'profile'; })}}">
           <include src="partials/member/_member_fields.g7.html"/>
@@ -237,7 +237,7 @@
       <!-- 확장별 카드 — 모듈과 플러그인이 회원 항목으로 선언한 칸(게시판 알림, 결제 통화, 배송 국가, 마케팅 동의 등)을 확장마다 한 카드로 그린다. 카드 제목은 그 확장의 이름이다.
            값은 다른 칸과 같이 폼 상태에 실려 회원정보 저장 요청 한 번에 함께 간다. 선언한 확장이 없거나 꺼져 있으면 카드가 없다. -->
       <div data-each="memberFieldGroup in {{$computed.profileExtensionGroups ?? []}}" data-ref="profile_extension_card_{{memberFieldGroup.key}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+        <responsive on="portable" class-merge="p-4"/>
         <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700 break-words">{{memberFieldGroup.title}}</h3>
         <include src="partials/member/_member_fields.g7.html"/>
       </div>
@@ -245,8 +245,8 @@
       <div class="flex justify-end gap-2">
         <responsive on="portable" class="flex flex-col-reverse gap-2"/>
         <!-- 취소 버튼 -->
-        <a href="/mypage/profile" class="inline-flex items-center justify-center gap-2 px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-          <responsive on="portable" class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-base font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"/>
+        <a href="/mypage/profile" class="btn btn-outline gap-2 px-6 py-2.5 text-sm">
+          <responsive on="portable" class="w-full btn btn-outline gap-2 px-6 py-3 text-base"/>
           <on type="click">
             <navigate/>
           </on>
@@ -254,8 +254,8 @@
           <span>$t:common.cancel</span>
         </a>
         <!-- 저장 버튼 -->
-        <button type="submit" disabled="{{_local.isSavingProfile}}" class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-          <responsive on="portable" type="submit" disabled="{{_local.isSavingProfile}}" class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-base font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"/>
+        <button type="submit" disabled="{{_local.isSavingProfile}}" class="btn btn-primary gap-2 px-6 py-2.5 text-sm">
+          <responsive on="portable" type="submit" disabled="{{_local.isSavingProfile}}" class="w-full btn btn-primary gap-2 px-6 py-3 text-base"/>
           <icon data-if="{{_local.isSavingProfile}}" name="spinner" size="md" class="animate-spin"/>
           <icon data-if="{{!_local.isSavingProfile}}" name="save" size="md"/>
           <span>$t:common.save</span>

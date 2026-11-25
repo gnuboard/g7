@@ -36,9 +36,6 @@
                             "id": "field_use_comment",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -114,9 +111,6 @@
                             "id": "field_max_comment_depth",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -199,7 +193,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.errors?.['basic_defaults.max_comment_depth']}}",
                                                     "props": {
-                                                        "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
+                                                        "className": "board-form-error"
                                                     },
                                                     "text": "{{(Array.isArray(_local.errors?.['basic_defaults.max_comment_depth']) ? _local.errors['basic_defaults.max_comment_depth'][0] : _local.errors?.['basic_defaults.max_comment_depth']) ?? ''}}"
                                                 }
@@ -213,9 +207,6 @@
                             "id": "field_comment_order",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -301,9 +292,6 @@
                             "id": "field_min_comment_length",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -386,7 +374,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.errors?.['basic_defaults.min_comment_length']}}",
                                                     "props": {
-                                                        "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
+                                                        "className": "board-form-error"
                                                     },
                                                     "text": "{{(Array.isArray(_local.errors?.['basic_defaults.min_comment_length']) ? _local.errors['basic_defaults.min_comment_length'][0] : _local.errors?.['basic_defaults.min_comment_length']) ?? ''}}"
                                                 }
@@ -400,9 +388,6 @@
                             "id": "field_max_comment_length",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -485,7 +470,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.errors?.['basic_defaults.max_comment_length']}}",
                                                     "props": {
-                                                        "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
+                                                        "className": "board-form-error"
                                                     },
                                                     "text": "{{(Array.isArray(_local.errors?.['basic_defaults.max_comment_length']) ? _local.errors['basic_defaults.max_comment_length'][0] : _local.errors?.['basic_defaults.max_comment_length']) ?? ''}}"
                                                 }

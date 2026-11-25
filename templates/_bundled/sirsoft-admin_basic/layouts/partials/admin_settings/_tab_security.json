@@ -337,9 +337,6 @@
                             "id": "field_auth_token_lifetime",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -385,9 +382,6 @@
                             "id": "field_max_login_attempts",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -441,9 +435,6 @@
                             "id": "field_login_lockout_time",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -489,9 +480,6 @@
                             "id": "field_password_reset_rate_limit_per_minute",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -537,9 +525,6 @@
                             "id": "field_register_rate_limit_per_minute",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -585,9 +570,6 @@
                             "id": "field_two_factor_auth",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",

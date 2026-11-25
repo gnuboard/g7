@@ -5,7 +5,7 @@ description: |
   글쓰기 폼에 이름이 고정된 확장점 5종(board_post_row_badges·board_post_header_badges·board_comment_row_badges·
   board_post_form_top·board_post_form_bottom)을 연다(#149). overlay(target-id)는 첫 일치 노드 하나에만 주입되어 게시판
   유형 세 갈래 중 basic 에만 닿으므로 확장점으로 연다. 확장점은 정규화 props(postId·boardSlug·context 등)를 넘기고,
-  호스트는 class="contents" + data-extension-point 표지만 남기며 노드 id 를 달지 않는다.
+  호스트는 class="contents" + data-extension-point 표지와 노드 id 를 갖는다(#408 — 확장점 호스트 id 의무, 반복 안이면 행 변수 보간). 유형 세 갈래의 정적 id 는 서로 배타적인 data-if 라 DOM 에 동시에 하나뿐이다.
   홈 환영 카드 배지 「Welcome」 하드코딩과 사이트 이름을 비웠을 때의 「Site」/「그누보드7」 폴백을 화면 언어 키로 바꾼다.
 
 axes:
@@ -37,7 +37,7 @@ effects:
   - show_header_and_comment_slots_reach_all_three_type_branches
   - form_top_and_bottom_slots_reach_all_three_type_branches
   - slot_props_follow_normalized_contract_and_context_values
-  - slot_hosts_have_no_node_id_and_use_contents_marker
+  - slot_hosts_have_unique_node_id_and_use_contents_marker   # 호스트에 노드 id 가 있고 반복 안이면 행 변수로 보간 — DOM 에서 행마다 다르다 (#408, 종전 #149 는 id 없음)
   - welcome_badge_follows_screen_locale
   - empty_site_name_falls_back_to_localized_site_title
   - extension_point_in_repeated_include_branches_and_iteration_is_filled_everywhere

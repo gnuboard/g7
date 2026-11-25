@@ -217,7 +217,7 @@
         }
     ],
     "computed": {
-        "siteMenu": "{{(_global.templateSettings?.header?.menu ?? [{id: 'home', kind: 'home'}, {id: 'popular', kind: 'popular'}, {id: 'shop', kind: 'shop'}, {id: 'boards', kind: 'boards'}]).filter(i => i && i.is_active !== false && (i.kind !== 'shop' || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)) && ((i.kind !== 'boards' && i.kind !== 'popular') || (_global.activeModules?.includes('sirsoft-board') ?? true)) && ((i.visibility ?? 'all') === 'all' || (i.visibility === 'members' && !!_global.currentUser?.uuid) || (i.visibility === 'guests' && !_global.currentUser?.uuid) || (i.visibility === 'roles' && (i.roles ?? []).some(r => (_global.currentUser?.uuid ? (_global.currentUser?.roles ?? []).some(o => o.identifier === r) : r === 'guest'))))).map(i => ({...i, children: (i.children ?? []).filter(c => c && c.is_active !== false && (c.kind !== 'shop' || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)) && ((c.kind !== 'boards' && c.kind !== 'popular') || (_global.activeModules?.includes('sirsoft-board') ?? true)) && ((c.visibility ?? 'all') === 'all' || (c.visibility === 'members' && !!_global.currentUser?.uuid) || (c.visibility === 'guests' && !_global.currentUser?.uuid) || (c.visibility === 'roles' && (c.roles ?? []).some(r => (_global.currentUser?.uuid ? (_global.currentUser?.roles ?? []).some(o => o.identifier === r) : r === 'guest')))))})).filter(i => i.kind !== 'link' || !!i.url || i.children.length > 0)}}"
+        "siteMenu": "{{(_global.templateSettings?.header?.menu ?? [{id: 'home', kind: 'home'}, {id: 'popular', kind: 'popular'}, {id: 'shop', kind: 'shop'}, {id: 'boards', kind: 'boards'}]).filter(i => i && i.is_active !== false && ((i.kind !== 'shop' && i.kind !== 'coupons') || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)) && ((i.kind !== 'boards' && i.kind !== 'popular') || (_global.activeModules?.includes('sirsoft-board') ?? true)) && ((i.visibility ?? 'all') === 'all' || (i.visibility === 'members' && !!_global.currentUser?.uuid) || (i.visibility === 'guests' && !_global.currentUser?.uuid) || (i.visibility === 'roles' && (i.roles ?? []).some(r => (_global.currentUser?.uuid ? (_global.currentUser?.roles ?? []).some(o => o.identifier === r) : r === 'guest'))))).map(i => ({...i, children: (i.children ?? []).filter(c => c && c.is_active !== false && ((c.kind !== 'shop' && c.kind !== 'coupons') || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)) && ((c.kind !== 'boards' && c.kind !== 'popular') || (_global.activeModules?.includes('sirsoft-board') ?? true)) && ((c.visibility ?? 'all') === 'all' || (c.visibility === 'members' && !!_global.currentUser?.uuid) || (c.visibility === 'guests' && !_global.currentUser?.uuid) || (c.visibility === 'roles' && (c.roles ?? []).some(r => (_global.currentUser?.uuid ? (_global.currentUser?.roles ?? []).some(o => o.identifier === r) : r === 'guest')))))})).filter(i => i.kind !== 'link' || !!i.url || i.children.length > 0)}}"
     },
     "globalHeaders": [
         {
@@ -1069,7 +1069,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+                                                        "className": "text-xs font-medium text-muted uppercase"
                                                     },
                                                     "text": "$t:common.language"
                                                 },
@@ -1431,6 +1431,54 @@
                                                     ]
                                                 },
                                                 {
+                                                    "comment": "쿠폰함(#952) — 쇼핑몰 모듈이 꺼져 있으면 숨긴다.",
+                                                    "id": "mobile_drawer_coupons_link",
+                                                    "type": "basic",
+                                                    "name": "A",
+                                                    "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
+                                                    "actions": [
+                                                        {
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "mobileMenuOpen": false,
+                                                                        "mobileUserMenuOpen": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "path": "/mypage/coupons"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "href": "/mypage/coupons",
+                                                        "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "ticket",
+                                                                "size": "sm"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:mypage.tabs.coupons"
+                                                        }
+                                                    ]
+                                                },
+                                                {
                                                     "comment": "로그아웃 버튼",
                                                     "type": "basic",
                                                     "name": "Button",
@@ -1751,6 +1799,53 @@
                                             ]
                                         },
                                         {
+                                            "id": "mobile_drawer_coupons_{{itemIndex}}",
+                                            "type": "basic",
+                                            "name": "A",
+                                            "if": "{{item.kind === 'coupons' && (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "쿠폰존으로(#952) — 앞머리(shopBase)는 상품 목록과 같다",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "mobileMenuOpen": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "navigate",
+                                                            "params": {
+                                                                "path": "{{_global.shopBase}}/coupons"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "href": "{{_global.shopBase}}/coupons",
+                                                "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "ticket",
+                                                        "size": "md"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{$localized(item.label) || $t('user.nav.coupons')}}"
+                                                }
+                                            ]
+                                        },
+                                        {
                                             "id": "mobile_drawer_boards_section_{{itemIndex}}",
                                             "type": "basic",
                                             "name": "Div",
@@ -1760,7 +1855,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-2 mb-2 px-3"
+                                                        "className": "text-xs font-semibold text-muted uppercase tracking-wider mt-2 mb-2 px-3"
                                                     },
                                                     "text": "{{$localized(item.label) || $t('user.nav.boards')}}"
                                                 },
@@ -2177,6 +2272,52 @@
                                                                     ]
                                                                 },
                                                                 {
+                                                                    "type": "basic",
+                                                                    "name": "A",
+                                                                    "if": "{{child.kind === 'coupons' && (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "쿠폰존으로(#952)",
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "mobileMenuOpen": false
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "navigate",
+                                                                                    "params": {
+                                                                                        "path": "{{_global.shopBase}}/coupons"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "href": "{{_global.shopBase}}/coupons",
+                                                                        "className": "w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Icon",
+                                                                            "props": {
+                                                                                "name": "ticket",
+                                                                                "size": "md"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "text": "{{$localized(child.label) || $t('user.nav.coupons')}}"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
                                                                     "id": "mobile_drawer_boards_section_{{itemIndex}}_{{childIndex}}",
                                                                     "type": "basic",
                                                                     "name": "Div",
@@ -2474,7 +2615,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2"
+                                                        "className": "text-xs font-semibold text-muted uppercase tracking-wider mb-2"
                                                     },
                                                     "text": "$t:user.footer.info"
                                                 },
@@ -2581,7 +2722,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2"
+                                                        "className": "text-xs font-semibold text-muted uppercase tracking-wider mb-2"
                                                     },
                                                     "text": "$t:user.footer.policy"
                                                 },
@@ -2980,7 +3121,7 @@
                         "showThemeToggle": "{{_global.templateSettings?.header?.show_theme_toggle ?? true}}",
                         "menu": "{{_computed.siteMenu}}",
                         "seoLegacyNav": "false",
-                        "seoMenuLinks": "{{(_computed.siteMenu ?? []).flatMap(i => [i].concat(i.children ?? [])).flatMap(i => i.kind === 'link' ? (i.url ? [{href: i.url, label: $localized(i.label)}] : []) : i.kind === 'home' ? [{href: '/', label: $t('user.nav.home')}] : i.kind === 'popular' ? [{href: '/boards/popular', label: $t('user.nav.popular')}] : i.kind === 'shop' ? [{href: (_global.shopBase ?? '/shop') + '/products', label: $t('user.nav.shop')}, {href: (_global.shopBase ?? '/shop') + '/reviews', label: $t('user.nav.reviews')}] : i.kind === 'boards' ? (boards?.data ?? []).map(b => ({href: '/board/' + b.slug, label: b.name})) : [])}}",
+                        "seoMenuLinks": "{{(_computed.siteMenu ?? []).flatMap(i => [i].concat(i.children ?? [])).flatMap(i => i.kind === 'link' ? (i.url ? [{href: i.url, label: $localized(i.label)}] : []) : i.kind === 'home' ? [{href: '/', label: $t('user.nav.home')}] : i.kind === 'popular' ? [{href: '/boards/popular', label: $t('user.nav.popular')}] : i.kind === 'shop' ? [{href: (_global.shopBase ?? '/shop') + '/products', label: $t('user.nav.shop')}, {href: (_global.shopBase ?? '/shop') + '/reviews', label: $t('user.nav.reviews')}] : i.kind === 'coupons' ? [{href: (_global.shopBase ?? '/shop') + '/coupons', label: $localized(i.label) || $t('user.nav.coupons')}] : i.kind === 'boards' ? (boards?.data ?? []).map(b => ({href: '/board/' + b.slug, label: b.name})) : [])}}",
                         "siteName": "{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}",
                         "user": "{{_global.currentUser}}",
                         "userLoading": "{{_global.currentUser === undefined}}",

@@ -21,7 +21,7 @@
             "props": {
                 "name": "turn-up",
                 "size": "sm",
-                "className": "fa-rotate-90 text-gray-500 dark:text-gray-400 flex-shrink-0 self-start mt-4"
+                "className": "fa-rotate-90 text-muted flex-shrink-0 self-start mt-4"
             }
         },
         {
@@ -70,6 +70,7 @@
                                 },
                                 {
                                     "comment": "확장 자리 — 확장이 댓글마다 배지를 붙인다(#149). 조각은 extensionPointProps.commentId·postId 로 이 댓글을 읽는다",
+                                    "id": "ext_board_comment_row_badges_{{comment.id}}",
                                     "type": "extension_point",
                                     "name": "board_comment_row_badges",
                                     "props": {
@@ -110,7 +111,7 @@
                                     "props": {
                                         "type": "button",
                                         "aria-label": "$t:common.more",
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 cursor-pointer"
+                                        "className": "text-sm text-muted hover:text-gray-700 dark:hover:text-gray-200 p-1 cursor-pointer"
                                     },
                                     "children": [
                                         {
@@ -434,7 +435,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-center gap-3 text-gray-500 dark:text-gray-400"
+                                "className": "flex items-center gap-3 text-muted"
                             },
                             "children": [
                                 {
@@ -579,7 +580,7 @@
                     "name": "Div",
                     "if": "{{(!comment?.deleted_at || comment?.is_cascade_deleted) && comment?.status !== 'blinded' && comment?.is_secret && comment?.content === null && _global.commentEdit?.editingCommentId !== comment?.id}}",
                     "props": {
-                        "className": "flex items-center gap-2 text-gray-500 dark:text-gray-400"
+                        "className": "flex items-center gap-2 text-muted"
                     },
                     "children": [
                         {

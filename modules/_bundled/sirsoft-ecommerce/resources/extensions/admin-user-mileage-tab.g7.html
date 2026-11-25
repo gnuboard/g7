@@ -27,30 +27,30 @@
           <extension-badge data-type="composite" type="module" identifier="sirsoft-ecommerce" installedModules="{{_global.installedModules}}"/>
         </div>
         <!-- 비활성화 안내 (mileage.enabled=false) -->
-        <div data-if="{{!user?.data?.ecommerce_mileage?.enabled}}" class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:p-4 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">
+        <div data-if="{{!user?.data?.ecommerce_mileage?.enabled}}" class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:p-4 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg ecommerce:text-sm ecommerce-text-muted">
           <icon name="circle-info" class="ecommerce:text-base ecommerce:flex-shrink-0"/>
           <span>$t:sirsoft-ecommerce.admin.user_mileage.disabled_notice</span>
         </div>
         <div data-if="{{user?.data?.ecommerce_mileage?.enabled}}" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4 ecommerce:mb-4">
           <responsive on="desktop" class="ecommerce:grid ecommerce:grid-cols-4 ecommerce:gap-4 ecommerce:mb-4"/>
           <div class="ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg">
-            <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_mileage.available</span>
+            <span class="ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_mileage.available</span>
             <span class="ecommerce:block ecommerce:text-lg ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white">{{(user?.data?.ecommerce_mileage?.available ?? 0).toLocaleString()}} P</span>
           </div>
           <div class="ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg">
-            <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_mileage.pending</span>
-            <span class="ecommerce:block ecommerce:text-lg ecommerce:font-semibold ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{(user?.data?.ecommerce_mileage?.pending ?? 0).toLocaleString()}} P</span>
+            <span class="ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_mileage.pending</span>
+            <span class="ecommerce:block ecommerce:text-lg ecommerce:font-semibold ecommerce-text-muted">{{(user?.data?.ecommerce_mileage?.pending ?? 0).toLocaleString()}} P</span>
           </div>
           <div class="ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg">
-            <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_mileage.total_earned</span>
+            <span class="ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_mileage.total_earned</span>
             <span class="ecommerce:block ecommerce:text-lg ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white">{{(user?.data?.ecommerce_mileage?.total_earned ?? 0).toLocaleString()}} P</span>
           </div>
           <div class="ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg">
-            <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_mileage.expiring_soon</span>
+            <span class="ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_mileage.expiring_soon</span>
             <span class="ecommerce:block ecommerce:text-lg ecommerce:font-semibold ecommerce:text-amber-700 ecommerce:dark:text-amber-400">{{(user?.data?.ecommerce_mileage?.expiring_soon ?? 0).toLocaleString()}} P</span>
           </div>
         </div>
-        <a data-ref="view_member_mileage_history" data-if="{{user?.data?.ecommerce_mileage?.enabled}}" href="{{'/admin/ecommerce/mileage-transactions?search_field=email&amp;search_keyword=' + encodeURIComponent(user?.data?.email ?? '')}}" target="_blank" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+        <a data-ref="view_member_mileage_history" data-if="{{user?.data?.ecommerce_mileage?.enabled}}" href="{{'/admin/ecommerce/mileage-transactions?search_field=email&amp;search_keyword=' + encodeURIComponent(user?.data?.email ?? '')}}" target="_blank" class="ecommerce-btn ecommerce-btn-secondary ecommerce:gap-1.5 ecommerce:px-3">
           <icon name="list" class="ecommerce:text-base"/>
           <span>$t:sirsoft-ecommerce.admin.user_mileage.view_history</span>
         </a>

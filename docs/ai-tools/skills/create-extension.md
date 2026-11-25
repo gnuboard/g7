@@ -1016,7 +1016,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 다크 모드는 `dark:` variant 를 쌍으로. `features.dark_mode`·`responsive` 를 선언하면 그 동작에 필요한 클래스·컴포넌트 패턴까지 골격에 둔다.
 - 빌드 출력은 IIFE(`dist/js/components.iife.js`). build 는 SKILL 5단계(컴포넌트 구현) 뒤에 돌린다 — `components.json` 선언·진입점 export·실제 파일 세 목록이 일치해야 한다. `__tests__/layouts/` 에 레이아웃 렌더링 테스트를 쓴다.
 - 베이스 레이아웃에 전역 호스트(`toast`)를 둔다. 독립 레이아웃도 같은 블록을 직접 둔다.
-- Font Awesome 6.x 는 `fa-solid` 접두사(`fas` 금지). `icon` 등록 시 `externals` Font Awesome style 항목 필수.
+- FA: 레이아웃 `fa-solid`·메뉴 `fas fa-x`(이미지·SVG: menus.md). `icon` 등록 시 `externals` FA style 필수.
 - `CHANGELOG.md` 필수. 작업은 `_bundled` 에서만 하고 활성 디렉토리는 직접 수정하지 않는다.
 - (선택, 코어 7.2.0+) 템플릿 환경설정 — 운영자가 바꿀 테마 옵션이 있으면 `config/settings/defaults.json` 하나를 둔다 — 모듈 설정과 같은 섹션 구조(`_meta.categories`·`sections`·`defaults.{섹션}`·`schema.{섹션}.{키}`·`frontend_schema.{섹션}` 2단 노출). 설정 화면은 템플릿이 공급한다(`templates/{id}/settings/template_settings.g7.html` — `layouts/` 밖 — + 묶음 `dist/settings/*` + `components.settings.json`, `layout:decompile --sync` 짝 `.json`). 칸 종류 13가지(글자·긴 글·숫자·켜기·선택·색·url·link·이메일·언어별·목록·첨부·이미지), 표준 키 `branding.favicon`·`branding.accent`·`branding.color_scheme_default` 는 코어가 읽는다. 레이아웃은 `{{_global.templateSettings?.섹션?.키 ?? 기본값}}`, `templates/{id}/editor-spec/sampleGlobal.json` 에 `templateSettings` 기본값. 사이트 이름·로고·사업자 정보처럼 코어·모듈이 가진 값은 두지 않는다. 라벨은 `$t:settings.*`. 형식·규칙은 `docs/extension/template-settings.md`, 최소 예는 hello 템플릿 2종, 전체 예는 sirsoft-basic.
 - 샘플 `templates/_bundled/gnuboard7-hello_admin_template/`(Basic 8 + 에러 6종), `gnuboard7-hello_user_template/`(홈 + Memo 리스트). 페이지가 N 개면 `layouts/` 를 N 배로 확장한다.

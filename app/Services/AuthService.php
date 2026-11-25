@@ -1657,6 +1657,37 @@ class AuthService
             'user' => $user,
             'token' => $token,
             'token_type' => 'Bearer',
+            // 가입 후 본인인증 정책이 발급한 건 — 화면이 가입 직후 같은 흐름에서 코드 입력 화면을 연다(7.2.1). 없으면 null
+            'identity_challenge' => $this->pendingSignupChallenge($user),
+        ];
+    }
+
+    /**
+     * 가입 후 본인인증 정책으로 인증 대기가 된 회원에게 발급된 인증 건을 화면용 값으로 돌려줍니다.
+     *
+     * 인증 대기가 아니거나 발급된 건이 없으면(발송 실패 포함) null 이다 — 화면은 종전처럼 로그인 화면으로 간다.
+     *
+     * @param  User  $user  방금 가입한 회원
+     * @return array{id: string, purpose: string, render_hint: string|null, provider_id: string|null, expires_at: string|null, max_attempts: int|null}|null 인증 건 요약
+     */
+    private function pendingSignupChallenge(User $user): ?array
+    {
+        if ($user->status !== UserStatus::PendingVerification->value) {
+            return null;
+        }
+
+        $log = $this->identityLogRepository->findLatestPendingForUser((int) $user->id, 'signup');
+        if ($log === null) {
+            return null;
+        }
+
+        return [
+            'id' => (string) $log->id,
+            'purpose' => 'signup',
+            'render_hint' => $log->render_hint,
+            'provider_id' => $log->provider_id,
+            'expires_at' => $log->expires_at?->toIso8601String(),
+            'max_attempts' => $log->max_attempts !== null ? (int) $log->max_attempts : null,
         ];
     }
 

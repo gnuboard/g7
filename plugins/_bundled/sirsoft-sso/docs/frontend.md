@@ -23,7 +23,7 @@
 <!-- @generated:layouts END -->
 
 <!-- @intent START -->
-관리자 화면 셋입니다. 설정 화면(`plugin_settings`)은 코어 「플러그인 관리 → 설정」 경로가 띄우고 탭 셋(`?tab=idps` 기본, `?tab=policy`, `?tab=retention` — 「IdP」, 「정책」, 「보존」)으로 나뉩니다. 탭 내용은 partial 넷(`_idp_list`, `_idp_edit`, `_policy_tab`, `_retention_tab`)으로 나뉩니다. IdP 편집은 같은 화면의 보기 전환이고 `?idp={id}` 쿼리로 새로고침 뒤에도 남습니다. 편집 칸은 드라이버 `configSchema()` 가 준 정의로 그리고, `settings.update` 가 없으면 읽기 전용 안내 띠가 뜹니다. 화면 데이터는 모두 플러그인 API 로 읽고 쓰며 코어 설정 「저장」 단추를 쓰지 않습니다.
+관리자 화면 셋입니다. 설정 화면(`plugin_settings`)은 코어 「플러그인 관리 → 설정」 경로가 띄우고 탭 셋(`?tab=idps` 기본, `?tab=policy`, `?tab=retention` — 「IdP」, 「정책」, 「보존」)으로 나뉩니다. 탭 내용은 partial 넷(`_idp_list`, `_idp_edit`, `_policy_tab`, `_retention_tab`)으로 나뉩니다. IdP 편집은 같은 화면의 보기 전환이고 `?idp={id}` 쿼리로 새로고침 뒤에도 남습니다. 편집 보기의 [목록]·[삭제]·[저장]은 다른 설정·등록 화면과 같이 화면 아래 고정 줄에 있습니다. 편집 칸은 드라이버 `configSchema()` 가 준 정의로 그리고, `settings.update` 가 없으면 읽기 전용 안내 띠가 뜹니다. 화면 데이터는 모두 플러그인 API 로 읽고 쓰며 코어 설정 「저장」 단추를 쓰지 않습니다.
 
 「회원 연결」(`sso_accounts`)과 「이력」(`sso_logs`)은 플러그인 라우트(`routes.json`)로 열리고 관리자 메뉴 「SSO 연동」 아래에 있습니다. 로그인 화면 버튼과 모달, 관리자 회원 화면, 마이페이지 카드는 자기 레이아웃이 아니라 레이아웃 확장입니다([extension-points.md](extension-points.md#레이아웃-확장)).
 

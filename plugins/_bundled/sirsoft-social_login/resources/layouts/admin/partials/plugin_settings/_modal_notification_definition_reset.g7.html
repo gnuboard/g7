@@ -11,7 +11,7 @@
       <p class="sl-text-error-soft">$t:sirsoft-social_login.admin.notifications.reset_modal.warning_message</p>
     </div>
     <footer>
-      <button type="button" class="sl:px-4 sl:py-2 sl:bg-white sl:dark:bg-gray-800 sl:text-gray-700 sl:dark:text-gray-300 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:hover:bg-gray-50 sl:dark:hover:bg-gray-700 sl:disabled:opacity-50 sl:disabled:cursor-not-allowed" disabled="{{_global.isResettingNotification}}">
+      <button type="button" class="sl-btn sl-btn-secondary" disabled="{{_global.isResettingNotification}}">
         <on type="click">
           <close-modal target="modal_sl_notification_definition_reset"/>
         </on>

@@ -32,9 +32,6 @@
                     "id": "permissions_section_managers",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "id": "permissions_managers_label",
@@ -164,9 +161,6 @@
                     "id": "permissions_section_steps",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "id": "permissions_steps_label",
@@ -268,9 +262,6 @@
                     "id": "permissions_role_access_section",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": ""
-                    },
                     "children": [
                         {
                             "type": "basic",

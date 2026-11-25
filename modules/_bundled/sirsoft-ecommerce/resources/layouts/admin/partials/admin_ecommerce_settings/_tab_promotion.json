@@ -1,0 +1,246 @@
+{
+    "comment": "쇼핑몰 설정 — 쿠폰 탭 (#952). 생일 쿠폰이 쓸 회원 항목과 쿠폰 만료 임박 알림을 정한다.\n  생일 항목 후보는 서버가 `_meta.birthday_field_candidates` 로 준다(회원 항목 중 날짜 유형 + 값 테이블 저장, 꺼진 항목은 「(꺼짐)」).\n  값 입력은 폼 자동 바인딩이고 저장은 페이지 [저장]이 이 탭 구획(`promotion`)만 보낸다.",
+    "meta": {
+        "is_partial": true,
+        "description": "쇼핑몰 설정 쿠폰 탭 콘텐츠"
+    },
+    "id": "tab_content_promotion",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'promotion'}}",
+    "props": {
+        "className": "ecommerce:mt-6 ecommerce:space-y-6"
+    },
+    "children": [
+        {
+            "id": "promotion_birthday_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "ecommerce-admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "ecommerce-section-heading ecommerce:mb-4"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.promotion.birthday.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "ecommerce:space-y-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "htmlFor": "promotion_birthday_field_key",
+                                "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.promotion.birthday.field_label"
+                        },
+                        {
+                            "id": "promotion_birthday_field_select",
+                            "type": "basic",
+                            "name": "Select",
+                            "props": {
+                                "id": "promotion_birthday_field_key",
+                                "name": "promotion.birthday_field_key",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.settings.promotion.birthday.field_label",
+                                "value": "{{_local.form?.promotion?.birthday_field_key ?? ''}}",
+                                "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.settings.promotion.birthday.none') }, ...((_local.form?._meta?.birthday_field_candidates ?? settings?.data?._meta?.birthday_field_candidates ?? []).map(c => ({ value: c.value, label: c.label })))]}}",
+                                "className": "ecommerce-input ecommerce:w-72",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "ecommerce:text-xs ecommerce-text-muted"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.promotion.birthday.field_hint"
+                        },
+                        {
+                            "comment": "후보가 없다 — 회원 항목에 날짜 유형 항목을 먼저 만들어야 한다",
+                            "id": "promotion_birthday_no_candidates",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{settings !== undefined && (_local.form?._meta?.birthday_field_candidates ?? settings?.data?._meta?.birthday_field_candidates ?? []).length === 0}}",
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:items-start ecommerce:gap-2 ecommerce:p-3 ecommerce:rounded-lg ecommerce:bg-amber-50 ecommerce:dark:bg-amber-900/20 ecommerce:border ecommerce:border-amber-200 ecommerce:dark:border-amber-800"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "triangle-exclamation",
+                                        "size": "sm",
+                                        "className": "ecommerce:text-amber-500 ecommerce:dark:text-amber-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "ecommerce:text-sm ecommerce:text-amber-800 ecommerce:dark:text-amber-200"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.promotion.birthday.no_candidates"
+                                        },
+                                        {
+                                            "id": "promotion_member_fields_link",
+                                            "type": "basic",
+                                            "name": "A",
+                                            "props": {
+                                                "href": "/admin/settings?tab=member",
+                                                "className": "ecommerce:text-sm ecommerce:font-medium ecommerce:text-amber-900 ecommerce:dark:text-amber-100 ecommerce:underline"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.promotion.birthday.go_member_fields"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "promotion_expiry_notification_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "ecommerce-admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "ecommerce-section-heading ecommerce:mb-4"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.promotion.expiry.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "ecommerce-flex-between ecommerce:py-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.promotion.expiry.enabled"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.promotion.expiry.enabled_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "props": {
+                                "name": "promotion.coupon_expiry_notification_enabled",
+                                "ariaLabel": "$t:sirsoft-ecommerce.admin.settings.promotion.expiry.enabled",
+                                "value": "{{_local.form?.promotion?.coupon_expiry_notification_enabled ?? true}}",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.form !== undefined && (_local.form?.promotion?.coupon_expiry_notification_enabled ?? true)}}",
+                    "props": {
+                        "className": "ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-2"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.promotion.expiry.days_before"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.mileage_settings.notification.days_before_prefix"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "promotion.coupon_expiry_notification_days_before",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.settings.promotion.expiry.days_before",
+                                        "value": "{{_local.form?.promotion?.coupon_expiry_notification_days_before ?? 7}}",
+                                        "min": "{{_local?.form?._meta?.limits?.coupon_expiry_notification_days_before_min ?? 1}}",
+                                        "max": "{{_local?.form?._meta?.limits?.coupon_expiry_notification_days_before_max ?? 30}}",
+                                        "className": "ecommerce-input ecommerce:w-20 ecommerce:text-center",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.mileage_settings.notification.days_before_suffix|count={{_local.form?.promotion?.coupon_expiry_notification_days_before ?? 7}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "ecommerce:mt-3 ecommerce:text-xs ecommerce-text-muted"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.promotion.expiry.template_hint"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

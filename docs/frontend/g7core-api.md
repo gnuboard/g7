@@ -789,6 +789,7 @@ G7Core.style.mergeClasses('dark:text-white dark:bg-gray-800', 'dark:text-gray-10
 | 변형 접두사 `dark:` `hover:` `focus:` `active:` `disabled:` `group-hover:` `sm:` `md:` `lg:` `xl:` `2xl:` 과 그 조합 | 그 밖의 변형 접두사(`focus-visible:`·`aria-*:`·`data-*:`·`peer-*:`·`group-*`(hover 외)·`max-*:` 등) — 접두사를 떼지 못해 그룹을 찾지 못한다 |
 | | **Tailwind v4 신규 유틸리티**(`size-*`·`bg-linear-*`·`shadow-xs`·`rounded-xs`·`inset-shadow-*`·`text-shadow-*` 등)와 v4 에서 바뀐 이름 |
 | | 색 이름 목록 밖의 색 토큰(테마에 추가한 `bg-primary-500` 등) |
+| | 단계 숫자가 없는 색 이름(`bg-white`·`text-white`·`text-black`·`bg-transparent`) — 색 그룹으로 판정하지 않는다 |
 
 판정하지 않는 클래스는 base 와 override 가 **둘 다 남는다**. 그때 어느 쪽이 이기는지는 클래스 순서가 아니라 CSS 출력 순서(레이어·소스 순서)가 정한다 — 원하는 결과가 나오지 않으면 override 를 표에 든 표준 유틸리티로 쓰거나, 템플릿 CSS 에서 우선순위를 정한다([템플릿 고유 CSS 와 기본 컴포넌트 클래스](template-development.md#템플릿-고유-css-와-기본-컴포넌트-클래스)).
 

@@ -96,8 +96,8 @@ const CASES: Case[] = [
             }
         ],
         "bypass": [
-            "cancel_button_top",
-            "success:save_button_top"
+            "footer_cancel_button",
+            "success:footer_save_button"
         ],
         "trackChanges": "form_sections"
     },

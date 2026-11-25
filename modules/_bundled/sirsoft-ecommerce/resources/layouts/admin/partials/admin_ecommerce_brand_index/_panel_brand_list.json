@@ -121,9 +121,7 @@
                                     "name": "Select",
                                     "responsive": {
                                         "768-": {
-                                            "props": {
-                                                "className": "ecommerce:h-9 ecommerce:shrink-0"
-                                            }
+                                            "classMerge": "ecommerce:shrink-0"
                                         }
                                     },
                                     "actions": [

@@ -83,9 +83,7 @@
                     "if": "{{posts?.data?.board?.categories && posts?.data?.board?.categories.length > 0}}",
                     "responsive": {
                         "640-": {
-                            "props": {
-                                "className": "w-auto min-w-48 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm"
-                            }
+                            "classMerge": "w-auto min-w-48"
                         }
                     },
                     "actions": [
@@ -427,7 +425,7 @@
                                                             "props": {
                                                                 "name": "turn-up",
                                                                 "size": "sm",
-                                                                "className": "fa-rotate-90 text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                "className": "fa-rotate-90 text-muted flex-shrink-0"
                                                             }
                                                         },
                                                         {
@@ -448,7 +446,7 @@
                                                             "props": {
                                                                 "name": "lock",
                                                                 "size": "sm",
-                                                                "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                "className": "text-muted flex-shrink-0"
                                                             }
                                                         },
                                                         {
@@ -472,6 +470,7 @@
                                                         },
                                                         {
                                                             "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 데스크톱 행이라 모바일 카드에도 같은 자리가 있다. 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다",
+                                                            "id": "ext_board_post_row_badges_desktop_{{post.id}}",
                                                             "type": "extension_point",
                                                             "name": "board_post_row_badges",
                                                             "props": {
@@ -491,7 +490,7 @@
                                                             "props": {
                                                                 "name": "paperclip",
                                                                 "size": "sm",
-                                                                "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                "className": "text-muted flex-shrink-0"
                                                             }
                                                         },
                                                         {
@@ -604,9 +603,7 @@
                                             "name": "Div",
                                             "responsive": {
                                                 "desktop": {
-                                                    "props": {
-                                                        "className": "flex-col gap-2 px-4 py-3 hidden"
-                                                    }
+                                                    "classMerge": "hidden"
                                                 }
                                             },
                                             "props": {
@@ -683,7 +680,7 @@
                                                                             "props": {
                                                                                 "name": "turn-up",
                                                                                 "size": "sm",
-                                                                                "className": "fa-rotate-90 text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                                "className": "fa-rotate-90 text-muted flex-shrink-0"
                                                                             }
                                                                         },
                                                                         {
@@ -704,7 +701,7 @@
                                                                             "props": {
                                                                                 "name": "lock",
                                                                                 "size": "sm",
-                                                                                "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                                "className": "text-muted flex-shrink-0"
                                                                             }
                                                                         },
                                                                         {
@@ -729,6 +726,7 @@
                                                                         },
                                                                         {
                                                                             "comment": "확장 자리 — 모바일 카드의 글 배지 자리(#149). 데스크톱 행과 같은 이름이라 조각이 두 번 렌더되고 화면 폭에 따라 한쪽만 보인다",
+                                                                            "id": "ext_board_post_row_badges_mobile_{{post.id}}",
                                                                             "type": "extension_point",
                                                                             "name": "board_post_row_badges",
                                                                             "props": {
@@ -748,7 +746,7 @@
                                                                             "props": {
                                                                                 "name": "paperclip",
                                                                                 "size": "sm",
-                                                                                "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                                "className": "text-muted flex-shrink-0"
                                                                             }
                                                                         },
                                                                         {

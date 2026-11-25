@@ -5,13 +5,13 @@
         "ko": "히어로섹션",
         "en": "Hero Section"
     },
-    "version": "1.0.0",
+    "version": "1.0.1",
     "license": "MIT",
     "description": {
         "ko": "사이트 홈·쇼핑몰 메인과 게시판·상품·카테고리 화면 상단의 히어로섹션(메인 배너)을 관리하고 사용자 템플릿 확장점에 슬라이더로 보여 줍니다. 다른 확장이 노출 위치를 더할 수 있습니다.",
         "en": "Manages hero section (main banner) slides and shows them as a slider in user template extension points such as the site home, shop main, board, product and category pages. Other extensions can add display positions."
     },
-    "g7_version": ">=7.2.0",
+    "g7_version": ">=7.2.1",
     "dependencies": {
         "modules": {},
         "plugins": {}

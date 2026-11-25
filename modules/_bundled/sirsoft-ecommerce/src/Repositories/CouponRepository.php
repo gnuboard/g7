@@ -419,4 +419,43 @@ class CouponRepository implements CouponRepositoryInterface
         // audit:allow repository-raw-hardcoded-table reason: 모델이 없는 피벗(쿠폰 적용·제외 카테고리) — Coupon::categories() 관계 선언과 같은 이름
         return (int) DB::table('ecommerce_promotion_coupon_categories')->where('category_id', $categoryId)->delete();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getAutoIssueCouponIds(CouponIssueCondition $condition): array
+    {
+        $now = now();
+
+        // audit:allow query-unbounded-get reason: 지금 발급 중인 한 조건의 자동발급 쿠폰 ID 만 고른다 — 운영자가 만든 쿠폰 정의 수에 묶여 회원·주문 증가에 비례하지 않는다
+        return $this->model->newQuery()
+            ->where('issue_method', CouponIssueMethod::AUTO)
+            ->where('issue_condition', $condition)
+            ->where('issue_status', CouponIssueStatus::ISSUING)
+            ->where(fn ($q) => $q->whereNull('issue_from')->orWhere('issue_from', '<=', $now))
+            ->where(fn ($q) => $q->whereNull('issue_to')->orWhere('issue_to', '>=', $now))
+            ->where(fn ($q) => $q->whereNull('total_quantity')->orWhereColumn('issued_count', '<', 'total_quantity'))
+            ->where(fn ($q) => $q->whereNull('valid_to')->orWhere('valid_to', '>=', $now))
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getNotificationCoupons(array $alsoIncludeIds = []): Collection
+    {
+        return $this->model->newQuery()
+            ->where(function ($q) use ($alsoIncludeIds) {
+                $q->where('notify_enabled', true);
+                if ($alsoIncludeIds !== []) {
+                    $q->orWhereIn('id', array_map('intval', $alsoIncludeIds));
+                }
+            })
+            ->where('issue_method', '!=', CouponIssueMethod::DOWNLOAD)
+            ->orderBy('id')
+            ->get();
+    }
 }

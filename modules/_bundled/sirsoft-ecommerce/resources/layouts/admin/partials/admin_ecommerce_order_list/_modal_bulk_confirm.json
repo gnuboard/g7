@@ -78,7 +78,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "className": "ecommerce-flex-center ecommerce-btn ecommerce-btn-primary",
                     "disabled": "{{(!_global.bulkConfirmData?.orderStatus && !_global.bulkConfirmData?.courierId && !_global.bulkConfirmData?.trackingNumber) || ((_global.bulkConfirmData?.orderStatus === 'shipping_ready' || _global.bulkConfirmData?.orderStatus === 'shipping') && (!_global.bulkConfirmData?.courierId || !_global.bulkConfirmData?.trackingNumber)) || _global.manualPaidPreviewLoading === true || !!_global.manualPaidPreviewError || (_global.manualPaidPreview?.summary?.restoration?.coupon_conflict_order_numbers ?? []).length > 0 || _global.isProcessing}}"
                 },
                 "children": [
@@ -136,7 +136,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:w-28 ecommerce:flex-shrink-0"
+                                                "className": "ecommerce-text-muted ecommerce:w-28 ecommerce:flex-shrink-0"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_status_label"
                                         },
@@ -162,7 +162,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:w-28 ecommerce:flex-shrink-0"
+                                                "className": "ecommerce-text-muted ecommerce:w-28 ecommerce:flex-shrink-0"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_carrier_label"
                                         },
@@ -188,7 +188,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:w-28 ecommerce:flex-shrink-0"
+                                                "className": "ecommerce-text-muted ecommerce:w-28 ecommerce:flex-shrink-0"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_tracking_label"
                                         },

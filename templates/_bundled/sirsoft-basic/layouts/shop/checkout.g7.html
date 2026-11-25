@@ -191,7 +191,7 @@
       <div class="mb-6">
         <responsive on="portable" class="mb-4"/>
         <a href="{{_global.shopBase}}/cart" class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 text-sm cursor-pointer">
-          <responsive on="portable" class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-2 text-sm cursor-pointer"/>
+          <responsive on="portable" class-merge="mb-2"/>
           <on type="click">
             <navigate/>
           </on>
@@ -221,7 +221,7 @@
           <include src="partials/shop/_checkout_summary.g7.html"/>
         </div>
       </grid>
-      <extension-point name="shop_checkout_extensions">
+      <extension-point name="shop_checkout_extensions" data-ref="ext_shop_checkout_extensions">
         <default/>
       </extension-point>
     </container>

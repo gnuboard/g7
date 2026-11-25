@@ -209,6 +209,10 @@
                         "label": "$t:settings.header.menu.auto.shop.label",
                         "hint": "$t:settings.header.menu.auto.shop.hint"
                     },
+                    "coupons": {
+                        "label": "$t:settings.header.menu.auto.coupons.label",
+                        "hint": "$t:settings.header.menu.auto.coupons.hint"
+                    },
                     "boards": {
                         "label": "$t:settings.header.menu.auto.boards.label",
                         "hint": "$t:settings.header.menu.auto.boards.hint"

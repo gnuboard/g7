@@ -175,7 +175,7 @@
                                         "portable": {
                                             "props": {
                                                 "name": "chevron-left",
-                                                "className": "board:w-3.5 board:h-3.5"
+                                                "className": "board:text-sm"
                                             }
                                         }
                                     },
@@ -197,9 +197,7 @@
                             "if": "{{report_detail?.data?.available_actions?.includes('review')}}",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "board-flex-center board:gap-2 board:px-3 board:py-2 board:bg-blue-600 board:dark:bg-blue-600 board:text-white board:rounded-lg board:hover:bg-blue-700 board:dark:hover:bg-blue-700 board:text-xs board:font-medium board:transition-colors"
-                                    }
+                                    "classMerge": "board:text-xs"
                                 }
                             },
                             "actions": [
@@ -222,7 +220,7 @@
                             "props": {
                                 "type": "button",
                                 "disabled": "{{report_detail?.data?.abilities?.can_manage !== true}}",
-                                "className": "board-flex-center board:gap-2 board:px-3 board:py-2 board:bg-blue-600 board:dark:bg-blue-600 board:text-white board:rounded-lg board:hover:bg-blue-700 board:dark:hover:bg-blue-700 board:text-sm board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed"
+                                "className": "board-flex-center board-btn board-btn-primary board:px-3"
                             },
                             "children": [
                                 {
@@ -232,7 +230,7 @@
                                         "portable": {
                                             "props": {
                                                 "name": "{{report_detail?.data?.status === 'pending' ? 'check-circle' : 'clock'}}",
-                                                "className": "board:w-3.5 board:h-3.5"
+                                                "className": "board:text-sm"
                                             }
                                         }
                                     },
@@ -289,7 +287,7 @@
                                         "portable": {
                                             "props": {
                                                 "name": "times-circle",
-                                                "className": "board:w-3.5 board:h-3.5"
+                                                "className": "board:text-sm"
                                             }
                                         }
                                     },
@@ -346,7 +344,7 @@
                                         "portable": {
                                             "props": {
                                                 "name": "exclamation-triangle",
-                                                "className": "board:w-3.5 board:h-3.5"
+                                                "className": "board:text-sm"
                                             }
                                         }
                                     },
@@ -403,7 +401,7 @@
                                         "portable": {
                                             "props": {
                                                 "name": "trash",
-                                                "className": "board:w-3.5 board:h-3.5"
+                                                "className": "board:text-sm"
                                             }
                                         }
                                     },

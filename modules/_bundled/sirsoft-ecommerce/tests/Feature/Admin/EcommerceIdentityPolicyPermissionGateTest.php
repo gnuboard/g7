@@ -346,6 +346,20 @@ class EcommerceIdentityPolicyPermissionGateTest extends ModuleTestCase
     {
         $updater = $this->adminWith(['sirsoft-ecommerce.identity.policies.read', 'sirsoft-ecommerce.identity.policies.update']);
 
+        // 「사용자 지정」 대상은 활성 확장이 선언한 체크포인트여야 한다(코어 7.2.1) — 이커머스가 선언한 지점으로 픽스처를 둔다.
+        $declare = function (array $checkpoints): array {
+            $checkpoints['sirsoft-ecommerce.custom.example'] = [
+                'key' => 'sirsoft-ecommerce.custom.example',
+                'name' => ['ko' => '시험 지점', 'en' => 'Test checkpoint'],
+                'source_type' => 'module',
+                'source_identifier' => 'sirsoft-ecommerce',
+            ];
+
+            return $checkpoints;
+        };
+        \App\Extension\HookManager::addFilter('core.identity.filter_checkpoints', $declare, 10);
+        app(\App\Identity\IdentityCheckpointRegistry::class)->flush();
+
         foreach ([
             ['scope' => 'hook', 'target' => 'sirsoft-ecommerce.payment.before_cancel'],
             ['scope' => 'route', 'target' => 'api.modules.sirsoft-ecommerce.admin.example'],
@@ -358,6 +372,9 @@ class EcommerceIdentityPolicyPermissionGateTest extends ModuleTestCase
                 ->assertCreated()
                 ->assertJsonPath('data.target', $own['target']);
         }
+
+        \App\Extension\HookManager::removeFilter('core.identity.filter_checkpoints', $declare);
+        app(\App\Identity\IdentityCheckpointRegistry::class)->flush();
     }
 
     /**

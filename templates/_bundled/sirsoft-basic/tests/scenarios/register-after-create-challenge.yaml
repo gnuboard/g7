@@ -1,0 +1,16 @@
+feature: 가입 후 본인인증 — 가입 직후 코드 입력 화면 (7.2.1)
+
+description: |
+  운영자가 「가입 후 본인인증」 정책을 켜면 가입 응답이 발급된 인증 건(identity_challenge)을 돌려준다. 가입 폼은 그때 로그인 화면 대신
+  코드 입력 화면(/identity/challenge)으로 가고 확인을 마치면 로그인 화면으로 돌아온다. [코드 다시 받기] 가 쓸 가입 이메일을 이동 전에
+  세션 보관함에 남긴다. 인증 건이 없으면 종전처럼 로그인 화면이다. 서버 쪽은 코어 tests/scenarios/signup-identity-policy.yaml.
+
+axes:
+  case: [register_after_create_challenge, challenge_page_code_input]
+
+effects:
+  - register_opens_code_screen_when_challenge_returned
+  - challenge_page_code_enables_confirm
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/auth-register-after-create-challenge.test.ts

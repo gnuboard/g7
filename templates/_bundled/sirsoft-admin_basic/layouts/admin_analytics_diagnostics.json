@@ -479,7 +479,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "satellite-dish",
-                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                    "className": "text-muted"
                                                 }
                                             },
                                             {
@@ -567,7 +567,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "layer-group",
-                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                    "className": "text-muted"
                                                 }
                                             },
                                             {
@@ -659,7 +659,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "database",
-                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                    "className": "text-muted"
                                                 }
                                             },
                                             {
@@ -832,7 +832,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "btn btn-secondary btn-sm flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            "className": "btn btn-secondary btn-sm flex-center gap-1.5",
                                                             "disabled": "{{!_computed.canUpdate || _local.running !== '' || !!_computed.runningRunId}}"
                                                         },
                                                         "children": [
@@ -949,7 +949,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "btn btn-secondary btn-sm flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            "className": "btn btn-secondary btn-sm flex-center gap-1.5",
                                                             "disabled": "{{!_computed.canUpdate || _local.running !== '' || !!_computed.runningRunId}}"
                                                         },
                                                         "children": [
@@ -1009,7 +1009,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "btn btn-primary btn-sm flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            "className": "btn btn-primary btn-sm flex-center gap-1.5",
                                                             "disabled": "{{!_computed.canUpdate}}"
                                                         },
                                                         "children": [
@@ -1054,7 +1054,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "hard-drive",
-                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                    "className": "text-muted"
                                                 }
                                             },
                                             {
@@ -1745,6 +1745,7 @@
                     },
                     {
                         "comment": "확장이 자기 수집 상태를 붙이는 자리 — 값은 진단 응답의 `extensions.{식별자}`(서버 필터 `core.analytics.diagnostics_sections`)로 온다.",
+                        "id": "ext_analytics_diagnostics_widgets",
                         "type": "extension_point",
                         "name": "analytics_diagnostics_widgets",
                         "props": {

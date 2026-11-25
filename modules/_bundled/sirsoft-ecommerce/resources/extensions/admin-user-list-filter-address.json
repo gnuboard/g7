@@ -81,7 +81,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                "className": "ecommerce:text-sm ecommerce-text-muted"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.user_filter.has_address"
                         },

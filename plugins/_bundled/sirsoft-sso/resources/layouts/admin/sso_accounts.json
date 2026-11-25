@@ -546,7 +546,7 @@
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:break-all sso-break-all"
+                                                                    "className": "sso:text-xs sso-text-muted sso:break-all sso-break-all"
                                                                 },
                                                                 "text": "{{candidate.email ?? ''}}"
                                                             }
@@ -1077,7 +1077,7 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "sso:text-left sso:text-gray-500 sso:dark:text-gray-400 sso:border-b sso:border-gray-200 sso:dark:border-gray-700"
+                                                            "className": "sso:text-left sso-text-muted sso:border-b sso:border-gray-200 sso:dark:border-gray-700"
                                                         },
                                                         "children": [
                                                             {
@@ -1144,7 +1144,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "sso:py-1.5 sso:pr-3 sso:text-gray-500 sso:dark:text-gray-400"
+                                                                    "className": "sso:py-1.5 sso:pr-3 sso-text-muted"
                                                                 },
                                                                 "text": "{{row.line}}"
                                                             },
@@ -1548,7 +1548,7 @@
                                                         "data-testid": "real-name-sub",
                                                         "role": "note",
                                                         "aria-label": "{{$t('sirsoft-sso.admin.common.real_name_sub', { name: row.user?.real_name })}}",
-                                                        "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
+                                                        "className": "sso:text-xs sso-text-muted"
                                                     },
                                                     "text": "{{row.user?.real_name}}"
                                                 },
@@ -1556,7 +1556,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:break-all sso-break-all"
+                                                        "className": "sso:text-xs sso-text-muted sso:break-all sso-break-all"
                                                     },
                                                     "text": "{{row.user?.email ?? ''}}"
                                                 }

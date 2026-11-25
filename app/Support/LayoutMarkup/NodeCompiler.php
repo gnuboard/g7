@@ -66,6 +66,9 @@ final class NodeCompiler
      */
     private const ATTRIBUTE_ALIASES = ['class' => 'className', 'for' => 'htmlFor'];
 
+    /** `<responsive>` 의 덧붙이기 클래스 속성 → 오버라이드 `classMerge` 키 (engine-v1.98.0) */
+    public const CLASS_MERGE_ATTRIBUTE = 'class-merge';
+
     /**
      * HTML5 불리언 속성 — 참은 **존재**, 거짓은 **생략**으로 표기한다(W3C).
      *
@@ -257,7 +260,7 @@ final class NodeCompiler
      */
     private const KEY_ORDER = [
         'comment', 'layout_name', 'id', 'type', 'name', 'if', 'conditions', 'iteration', 'slot', 'slotOrder',
-        'dataKey', 'trackChanges', 'debounce', 'classMap', 'blur_until_loaded',
+        'dataKey', 'trackChanges', 'debounce', 'classMap', 'classMerge', 'blur_until_loaded',
         'isolatedState', 'isolatedScopeId', 'sortable', 'itemTemplate', 'component_layout',
         'responsive', 'lifecycle', 'onComponentEvent', 'actions',
         'props', 'text', 'children', 'default', 'callbacks',
@@ -649,6 +652,17 @@ final class NodeCompiler
 
         foreach ($element->attributes as $attribute) {
             if ($attribute->name === 'on') {
+                continue;
+            }
+
+            // `class-merge` — 구간에서 바뀐 클래스만 기본 className 에 덧붙인다(충돌 교체형, engine-v1.98.0).
+            // props 가 아니라 오버라이드 형제 키라서 구버전 엔진은 무시하고 DOM 으로 새지 않는다.
+            if ($attribute->name === self::CLASS_MERGE_ATTRIBUTE) {
+                if ($attribute->isBoolean() || trim((string) $attribute->value) === '') {
+                    throw $this->attributeError($attribute, LayoutMarkupErrorCode::DirectiveNeedsValue, $path, ['attr' => $attribute->name]);
+                }
+                $override['classMerge'] = (string) $attribute->value;
+
                 continue;
             }
 

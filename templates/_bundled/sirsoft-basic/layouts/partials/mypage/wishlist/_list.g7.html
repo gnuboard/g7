@@ -9,7 +9,7 @@
         <responsive on="portable" class="text-lg font-semibold text-gray-900 dark:text-white"/>
         $t:mypage.wishlist.title
       </h2>
-      <span class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.wishlist.count|count={{wishlist.data.pagination.total ?? 0}}</span>
+      <span class="text-sm text-muted">$t:mypage.wishlist.count|count={{wishlist.data.pagination.total ?? 0}}</span>
     </div>
     <!-- 찜 목록 카드 -->
     <div>
@@ -41,7 +41,7 @@
       <div data-if="{{wishlist !== undefined &amp;&amp; (!wishlist.data.data || wishlist.data.data.length === 0)}}" class="p-8 text-center">
         <responsive on="portable" class="p-6 text-center"/>
         <icon name="heart" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
-        <p class="text-gray-500 dark:text-gray-400">$t:mypage.wishlist.empty</p>
+        <p class="text-muted">$t:mypage.wishlist.empty</p>
         <a href="{{_global.shopBase}}/products" class="text-center inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg cursor-pointer">
           <on type="click">
             <!-- audit:allow layout-list-context-navigate-merge-query 쇼핑하러 가기 — 찜 목록이 비었을 때 상품 목록으로 내보내는 이동이다. -->

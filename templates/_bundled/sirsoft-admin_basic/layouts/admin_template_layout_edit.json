@@ -595,12 +595,12 @@
                 "responsive": {
                     "640-767": {
                         "props": {
-                            "className": "p-6 min-h-screen bg-gray-50 dark:bg-gray-900 pb-24"
+                            "className": "admin-page-content pb-24"
                         }
                     },
                     "768-1023": {
                         "props": {
-                            "className": "p-6 min-h-screen bg-gray-50 dark:bg-gray-900 pb-0"
+                            "className": "admin-page-content pb-0"
                         }
                     },
                     "1024-": {
@@ -653,7 +653,7 @@
                                 "responsive": {
                                     "768-": {
                                         "props": {
-                                            "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                            "className": "flex btn btn-secondary"
                                         }
                                     }
                                 },
@@ -670,7 +670,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "hidden items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                                    "className": "hidden btn btn-secondary",
                                     "data-testid": "layout-download-markup"
                                 },
                                 "children": [
@@ -705,7 +705,7 @@
                                 "responsive": {
                                     "768-": {
                                         "props": {
-                                            "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                            "className": "flex btn btn-secondary"
                                         }
                                     }
                                 },
@@ -723,7 +723,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "hidden items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                                    "className": "hidden btn btn-secondary",
                                     "data-testid": "layout-copy-markup"
                                 },
                                 "children": [
@@ -759,7 +759,7 @@
                                 "responsive": {
                                     "768-": {
                                         "props": {
-                                            "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                            "className": "flex btn btn-secondary"
                                         }
                                     }
                                 },
@@ -771,7 +771,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "hidden items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                                    "className": "hidden btn btn-secondary",
                                     "data-testid": "layout-preview"
                                 },
                                 "children": [
@@ -807,7 +807,7 @@
                                 "responsive": {
                                     "768-": {
                                         "props": {
-                                            "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                            "className": "flex btn btn-secondary"
                                         }
                                     }
                                 },
@@ -819,7 +819,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "hidden items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                                    "className": "hidden btn btn-secondary",
                                     "data-testid": "extension-preview"
                                 },
                                 "children": [
@@ -855,7 +855,7 @@
                                 "responsive": {
                                     "768-": {
                                         "props": {
-                                            "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"
+                                            "className": "flex btn btn-primary"
                                         }
                                     }
                                 },
@@ -867,7 +867,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "hidden items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50",
+                                    "className": "hidden btn btn-primary",
                                     "disabled": "{{_global.isSaving}}",
                                     "data-testid": "layout-save"
                                 },
@@ -904,7 +904,7 @@
                                 "responsive": {
                                     "768-": {
                                         "props": {
-                                            "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"
+                                            "className": "flex btn btn-primary"
                                         }
                                     }
                                 },
@@ -916,7 +916,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "hidden items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50",
+                                    "className": "hidden btn btn-primary",
                                     "disabled": "{{_global.isSaving}}",
                                     "data-testid": "extension-save"
                                 },
@@ -952,9 +952,7 @@
                                 "name": "Div",
                                 "responsive": {
                                     "768-": {
-                                        "props": {
-                                            "className": "relative hidden"
-                                        }
+                                        "classMerge": "hidden"
                                     }
                                 },
                                 "props": {
@@ -977,7 +975,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                                            "className": "flex-center btn btn-secondary px-3",
                                             "aria-label": "$t:common.more_actions",
                                             "aria-haspopup": "menu",
                                             "aria-expanded": "{{!!_global.headerMoreOpen}}",
@@ -1142,9 +1140,7 @@
                         "name": "Div",
                         "responsive": {
                             "768-": {
-                                "props": {
-                                    "className": "hidden fixed bottom-0 inset-x-0 z-30 gap-2 px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700"
-                                }
+                                "classMerge": "hidden"
                             }
                         },
                         "props": {
@@ -1163,7 +1159,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "flex-1 flex-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                                    "className": "flex-1 flex-center btn btn-secondary",
                                     "data-testid": "mobile-preview"
                                 },
                                 "children": [
@@ -1194,7 +1190,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "flex-1 flex-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50",
+                                    "className": "flex-1 flex-center btn btn-primary",
                                     "disabled": "{{_global.isSaving}}",
                                     "data-testid": "mobile-save"
                                 },
@@ -1572,9 +1568,7 @@
                                                                         "name": "Button",
                                                                         "responsive": {
                                                                             "768-": {
-                                                                                "props": {
-                                                                                    "className": "hidden ml-auto flex-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                                                                                }
+                                                                                "classMerge": "hidden"
                                                                             }
                                                                         },
                                                                         "actions": [

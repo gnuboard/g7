@@ -22,7 +22,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
+                    "className": "ecommerce-btn ecommerce-btn-secondary"
                 },
                 "text": "$t:sirsoft-ecommerce.admin.shipping_policy.common.cancel"
             },
@@ -53,7 +53,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700"
+                    "className": "ecommerce-flex-center ecommerce-btn ecommerce-btn-primary"
                 },
                 "children": [
                     {
@@ -194,7 +194,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce-text-muted"
                                                     },
                                                     "text": "|"
                                                 },

@@ -3,8 +3,8 @@
 <partial _e2e_allow="e2e:allow S4-D14 — 결제하기 잠금의 결제수단 판정을 고객 선택 가능 계산값으로 바꿨다. 대체 검증: Vitest 구조·식 평가(checkout-payment-method-selectable) + 전용 Chrome 실측(EXCL 창). 결제수단 설정을 바꾸는 전역 배타 상태가 필요해 공용 Playwright E2E 로 두지 않는다." description="결제 금액 요약 및 결제 버튼 (장바구니 수준 상세 정보, PC/모바일 반응형)">
   <div class="sticky top-4">
     <responsive on="portable" class=""/>
-    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-      <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"/>
+    <div class="card-plain p-6">
+      <responsive on="portable" class="card-plain p-4"/>
       <!-- 섹션 헤더 -->
       <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
         <responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"/>
@@ -32,16 +32,16 @@
           <!-- 세금 상세 (접이식) -->
           <div data-if="{{_local.showTaxDetails}}" class="ml-4 mt-2 space-y-1">
             <div data-if="{{(checkoutData.data.calculation?.summary?.taxable_amount ?? 0) > 0}}" class="flex justify-between text-xs">
-              <span class="text-gray-500 dark:text-gray-400">$t:shop.cart.taxable_amount</span>
+              <span class="text-muted">$t:shop.cart.taxable_amount</span>
               <span class="text-gray-600 dark:text-gray-400">{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.taxable_amount_formatted ?? '-'}}</span>
             </div>
             <div data-if="{{(checkoutData.data.calculation?.summary?.tax_free_amount ?? 0) > 0}}" class="flex justify-between text-xs">
-              <span class="text-gray-500 dark:text-gray-400">$t:shop.cart.tax_free_amount</span>
+              <span class="text-muted">$t:shop.cart.tax_free_amount</span>
               <span class="text-gray-600 dark:text-gray-400">{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.tax_free_amount_formatted ?? '-'}}</span>
             </div>
             <!-- 영세 금액 — 과세 금액에 포함된 세율 0% 몫(부가세 없음), 있을 때만 (#612) -->
             <div data-if="{{(checkoutData.data.calculation?.summary?.zero_rated_amount ?? 0) > 0}}" class="flex justify-between text-xs">
-              <span class="text-gray-500 dark:text-gray-400">$t:shop.cart.zero_rated_amount</span>
+              <span class="text-muted">$t:shop.cart.zero_rated_amount</span>
               <span class="text-gray-600 dark:text-gray-400">{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.zero_rated_amount_formatted ?? '-'}}</span>
             </div>
           </div>
@@ -64,28 +64,28 @@
           <!-- 할인 상세 (접이식) -->
           <div data-if="{{_local.showDiscountDetails}}" class="ml-4 mt-2 space-y-1">
             <div data-if="{{(checkoutData.data.calculation?.summary?.product_coupon_discount ?? 0) > 0}}" class="flex justify-between text-xs">
-              <span class="text-gray-500 dark:text-gray-400">$t:shop.cart.coupon_discount</span>
+              <span class="text-muted">$t:shop.cart.coupon_discount</span>
               <span class="text-red-600 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.product_coupon_discount_formatted ?? '-'}}</span>
             </div>
             <!-- 적용된 상품 쿠폰 상세 리스트 -->
             <div data-if="{{(checkoutData.data.calculation?.promotions?.product_promotions?.coupons ?? []).length > 0}}" class="ml-4 mt-1 space-y-0.5">
               <div data-each="pCoupon in {{checkoutData.data.calculation?.promotions?.product_promotions?.coupons ?? []}}" class="flex justify-between text-xs">
-                <span class="text-gray-500 dark:text-gray-400 truncate mr-2">{{pCoupon.name}}</span>
+                <span class="text-muted truncate mr-2">{{pCoupon.name}}</span>
                 <span class="text-red-600 dark:text-red-400 flex-shrink-0">-{{pCoupon.total_discount_formatted}}</span>
               </div>
             </div>
             <div data-if="{{(checkoutData.data.calculation?.summary?.code_discount ?? 0) > 0}}" class="flex justify-between text-xs">
-              <span class="text-gray-500 dark:text-gray-400">$t:shop.cart.code_discount</span>
+              <span class="text-muted">$t:shop.cart.code_discount</span>
               <span class="text-red-600 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.code_discount_formatted ?? '-'}}</span>
             </div>
             <div data-if="{{(checkoutData.data.calculation?.summary?.order_coupon_discount ?? 0) > 0}}" class="flex justify-between text-xs">
-              <span class="text-gray-500 dark:text-gray-400">$t:shop.cart.order_discount</span>
+              <span class="text-muted">$t:shop.cart.order_discount</span>
               <span class="text-red-600 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.order_coupon_discount_formatted ?? '-'}}</span>
             </div>
             <!-- 적용된 주문 쿠폰 상세 -->
             <div data-if="{{(checkoutData.data.calculation?.promotions?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0}}" class="ml-4 mt-1 space-y-0.5">
               <div data-each="oCoupon in {{(checkoutData.data.calculation?.promotions?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'order_amount')}}" class="flex justify-between text-xs">
-                <span class="text-gray-500 dark:text-gray-400 truncate mr-2">{{oCoupon.name}}</span>
+                <span class="text-muted truncate mr-2">{{oCoupon.name}}</span>
                 <span class="text-red-600 dark:text-red-400 flex-shrink-0">-{{oCoupon.total_discount_formatted}}</span>
               </div>
             </div>
@@ -100,21 +100,21 @@
           <!-- 배송비 상세 (배송비가 있을 때만) -->
           <div data-if="{{(checkoutData.data.calculation?.summary?.total_shipping ?? 0) > 0 || (checkoutData.data.calculation?.summary?.shipping_discount ?? 0) > 0}}" class="ml-4 mt-1 space-y-1">
             <div data-if="{{(checkoutData.data.calculation?.summary?.base_shipping_total ?? 0) > 0}}" class="flex justify-between text-xs">
-              <span class="text-gray-500 dark:text-gray-400">$t:shop.cart.base_shipping</span>
+              <span class="text-muted">$t:shop.cart.base_shipping</span>
               <span class="text-gray-600 dark:text-gray-400">{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.base_shipping_total_formatted ?? '-'}}</span>
             </div>
             <div data-if="{{(checkoutData.data.calculation?.summary?.extra_shipping_total ?? 0) > 0}}" class="flex justify-between text-xs">
-              <span class="text-gray-500 dark:text-gray-400">$t:shop.cart.extra_shipping</span>
+              <span class="text-muted">$t:shop.cart.extra_shipping</span>
               <span class="text-gray-600 dark:text-gray-400">{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.extra_shipping_total_formatted ?? '-'}}</span>
             </div>
             <div data-if="{{(checkoutData.data.calculation?.summary?.shipping_discount ?? 0) > 0}}" class="flex justify-between text-xs">
-              <span class="text-gray-500 dark:text-gray-400">$t:shop.cart.shipping_discount</span>
+              <span class="text-muted">$t:shop.cart.shipping_discount</span>
               <span class="text-red-600 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? '-'}}</span>
             </div>
             <!-- 적용된 배송비 쿠폰 상세 -->
             <div data-if="{{(checkoutData.data.calculation?.promotions?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0}}" class="ml-4 mt-1 space-y-0.5">
               <div data-each="sCoupon in {{(checkoutData.data.calculation?.promotions?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'shipping_fee')}}" class="flex justify-between text-xs">
-                <span class="text-gray-500 dark:text-gray-400 truncate mr-2">{{sCoupon.name}}</span>
+                <span class="text-muted truncate mr-2">{{sCoupon.name}}</span>
                 <span class="text-red-600 dark:text-red-400 flex-shrink-0">-{{sCoupon.total_discount_formatted}}</span>
               </div>
             </div>
@@ -154,7 +154,7 @@
         </div>
         <!-- 보조 통화들 -->
         <div data-each="currency in {{Object.entries(checkoutData.data.calculation?.summary?.multi_currency ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end mt-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.final_amount_formatted}}</span>
+          <span class="text-xs text-muted">{{currency[1]?.final_amount_formatted}}</span>
         </div>
       </div>
       <!-- 배송 불가 안내 (D1 — 혼재 시 전체 차단) -->
@@ -165,7 +165,7 @@
       <!-- 결제 버튼 — 배송지 필수값·처리 중·배송 불가 상품 외에, 고를 결제수단이 하나도 없을 때도 잠근다(무통장입금만 켜져 있고
            입금 계좌가 없으면 서버가 무통장입금을 내려주지 않는다 — 그대로 누르면 「입금 은행 선택」 422 로만 끝났다, #703) -->
       <button data-ref="checkout_pay_button" type="button" class="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold text-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(((_local.shipping?.country_code ?? _local.checkout?.country_code ?? 'KR') === 'KR' ? !_local.shipping?.zipcode : !_local.shipping?.intl_postal_code) || !_local.shipping?.recipient_name || !_local.shipping?.recipient_phone || _local.isSubmittingOrder || checkoutData.data.has_unshippable_items === true || !(_computed.selectablePaymentMethods ?? []).length) || checkoutData.data?.abilities?.can_order !== true}}">
-        <responsive on="portable" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold text-base hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"/>
+        <responsive on="portable" class-merge="py-3 text-base"/>
         <on type="click">
           <sequence>
             <!-- 로딩 상태 시작 -->
@@ -247,8 +247,8 @@
         {{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}} $t:shop.checkout.pay_button
       </button>
       <!-- 결제 동의 문구 -->
-      <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-3">
-        <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400 text-center mt-2"/>
+      <p class="text-xs text-muted text-center mt-3">
+        <responsive on="portable" class="text-xs text-muted text-center mt-2"/>
         $t:shop.checkout.payment_agreement
       </p>
     </div>

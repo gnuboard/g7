@@ -127,7 +127,7 @@
                                             "props": {
                                                 "name": "paperclip",
                                                 "size": "sm",
-                                                "className": "shrink-0 text-gray-500 dark:text-gray-400"
+                                                "className": "shrink-0 text-muted"
                                             }
                                         },
                                         {

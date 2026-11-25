@@ -142,7 +142,7 @@
                   </on>
                   {{row.target_title}}
                 </a>
-                <span data-if="{{row.is_target_deleted || !row.board}}" class="board:font-medium board:truncate board:line-through board:text-gray-500 board:dark:text-gray-400">{{row.target_title}}</span>
+                <span data-if="{{row.is_target_deleted || !row.board}}" class="board:font-medium board:truncate board:line-through board-text-muted">{{row.target_title}}</span>
               </div>
               <!-- 댓글 반응은 어느 댓글이었는지가 제목만으로는 드러나지 않아 발췌를 함께 싣는다 -->
               <span data-if="{{!!row.target_excerpt}}" class="board-text-tertiary board:truncate">{{row.target_excerpt}}</span>
@@ -237,7 +237,7 @@
         <p class="board-text-body">$t:sirsoft-board.admin.reactions.modals.delete_confirm</p>
       </div>
       <footer>
-        <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
+        <button type="button" class="board-btn board-btn-secondary">
           <on type="click">
             <close-modal/>
           </on>
@@ -282,7 +282,7 @@
         <p class="board-text-body">$t:sirsoft-board.admin.reactions.modals.bulk_delete_confirm|count={{(_global.selectedIds || []).length}}</p>
       </div>
       <footer>
-        <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
+        <button type="button" class="board-btn board-btn-secondary">
           <on type="click">
             <close-modal/>
           </on>

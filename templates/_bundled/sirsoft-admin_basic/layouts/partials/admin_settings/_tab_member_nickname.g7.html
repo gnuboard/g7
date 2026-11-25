@@ -68,7 +68,7 @@
             <p class="text-warning-soft break-words mt-1">$t:admin.settings.member.nickname.duplicates_hint</p>
             <div class="flex-center flex-wrap gap-2 mt-3">
               <a data-testid="member-nickname-duplicates-link" href="/admin/users?nickname_duplicate=1" target="_blank" class="text-sm font-medium text-blue-600 dark:text-blue-400 underline">$t:admin.settings.member.nickname.duplicates_view</a>
-              <button data-testid="member-nickname-duplicates-cancel" type="button" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+              <button data-testid="member-nickname-duplicates-cancel" type="button" class="btn btn-secondary btn-sm">
                 <on type="click">
                   <!-- 켜지 않기. 안내 상자만 거두고 폼은 그대로 둔다(스위치는 꺼진 그대로다). -->
                   <set-state target="local" :memberNicknameDuplicates="null"/>

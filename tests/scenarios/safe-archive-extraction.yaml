@@ -8,7 +8,7 @@ description: |
   축 entry 는 항목 모양(압축 밖 경로 6종은 한 시험의 데이터 공급자로 묶음), caller 는 해제를 부르는 쪽이다.
 
 axes:
-  entry: [backslash_path, outside_path, symlink, normal_zip, normal_tar_gz, tar_link]
+  entry: [backslash_path, outside_path, symlink, normal_zip, normal_tar_gz, tar_link, macosx_resource_fork]
   caller: [safe_extractor, zip_install_helper, install_wizard]
 
 exclusions:
@@ -20,12 +20,15 @@ exclusions:
   - { entry: normal_zip, caller: zip_install_helper, reason: "정상 zip 은 기존 ZipInstallHelperTest 가 덮는다" }
   - { entry: normal_zip, caller: install_wizard, reason: "정상 vendor 번들 해제는 기존 VendorBundleInstallerShimTest 가 덮는다" }
   - { entry: symlink, caller: install_wizard, reason: "설치 마법사 역슬래시 시험이 같은 시험 안에서 심볼릭 링크 거부까지 단언한다(g7InstallFindUnsafeZipEntry)" }
+  - { entry: macosx_resource_fork, caller: zip_install_helper, reason: "ZipInstallHelper::extractZip 은 SafeArchiveExtractor::extractZip 한 줄 위임 — safe_extractor 칸이 같은 함수로 덮는다" }
+  - { entry: macosx_resource_fork, caller: install_wizard, reason: "설치 마법사는 배포 파이프라인이 만든 vendor-bundle.zip 만 푼다 — Mac 재압축 경로가 없다 (#971 범위 밖)" }
 
 effects:
   - backslash_entries_extracted_as_directories
   - unsafe_entry_rejects_whole_archive
   - normal_archive_extracted_unchanged
   - backslash_normalization_reported_as_warning
+  - macosx_entries_are_not_extracted
 
 test_files:
   - tests/Unit/Extension/SafeArchiveExtractorTest.php

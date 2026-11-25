@@ -376,7 +376,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary btn-sm flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "btn btn-secondary btn-sm flex-center gap-1.5",
                                 "disabled": "{{_local.archiveNowRunning === true}}"
                             },
                             "children": [
@@ -530,7 +530,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary btn-sm flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "btn btn-secondary btn-sm flex-center gap-1.5",
                                 "disabled": "{{_local.archiveNowRunning === true}}"
                             },
                             "children": [

@@ -60,7 +60,7 @@
       <div data-ref="field_ip_restriction_rules" class="{{_computed.ipRestrictionEnabled ? '' : 'opacity-50 pointer-events-none'}}">
         <div class="flex-between gap-2 mb-2">
           <span class="form-label">$t:admin.settings.security.ip_restriction.rules</span>
-          <button data-ref="ip_restriction_add_rule" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+          <button data-ref="ip_restriction_add_rule" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="flex-center gap-1.5 btn btn-secondary btn-sm">
             <on type="click">
               <!-- 규칙 추가 창 열기 — 창 상태를 통째로 만들어 넣는다(창은 자기 초기값이 없다). 지금 규칙 목록을 함께
                    복사해 넘기는 것은 창이 부모 폼을 직접 읽으면 창이 처음 붙은 시점의 사본을 보기 때문이다. row_index 가
@@ -116,7 +116,7 @@
                   </toggle>
                 </td>
                 <td class="px-3 py-2 text-right whitespace-nowrap">
-                  <button data-ref="ip_rule_edit_{{idx}}" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  <button data-ref="ip_rule_edit_{{idx}}" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="btn btn-primary btn-sm rounded-md">
                     <on type="click">
                       <!-- 편집 창 열기(표 판) — 추가와 같은 창을 쓰되 row_index 에 행 번호를 넣고 그 행 값으로 채운다.
                            규칙 목록 사본을 함께 넘기는 이유는 추가 버튼과 같다. -->
@@ -165,7 +165,7 @@
                 </on>
               </toggle>
               <div class="flex-center gap-2">
-                <button data-ref="ip_rule_edit_m_{{idx}}" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <button data-ref="ip_rule_edit_m_{{idx}}" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="btn btn-primary btn-sm rounded-md">
                   <on type="click">
                     <!-- 편집 창 열기(좁은 화면 카드 판) — 표 판과 같은 배선이다. -->
                     <sequence>

@@ -18,6 +18,7 @@ import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtil
 import formLayout from '../../layouts/board/form.json';
 import postForm from '../../layouts/partials/board/form/_post_form.json';
 import guestFieldsPartial from '../../layouts/partials/board/_guest_fields.json';
+import { expandSemanticTokens } from './support/semanticClasses';
 
 type Node = Record<string, any>;
 
@@ -338,8 +339,9 @@ describe('게시판 글쓰기 폼 — 비회원 칸', () => {
       expect(evaluate(error.if, other)).toBe(false);
       expect(evaluate(input.props.error, other)).toBe('');
       expect(evaluate(error.if, { field: emailField, boardGuestFieldGroup: { key: 'post', errors: {} } })).toBe(false);
-      expect(error.props.className).toContain('text-red-600');
-      expect(error.props.className).toContain('dark:text-red-400');
+      // #399 R-1 — 인라인 묶음이 의미 클래스 `form-error` 로 바뀌었다. 템플릿 CSS 정의까지 펼쳐 같은 색·다크 짝을 확인한다
+      expect(error.props.className.split(/\s+/)).toContain('form-error');
+      expect(expandSemanticTokens(error.props.className)).toEqual(expect.arrayContaining(['text-red-600', 'dark:text-red-400', 'text-xs']));
     });
 
     /**

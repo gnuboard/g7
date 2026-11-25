@@ -27,7 +27,7 @@
       <div data-ref="page_header" class="ecommerce-flex-start ecommerce:justify-between ecommerce:gap-4 ecommerce:mb-6">
         <responsive on="portable" class="ecommerce-row-stack ecommerce:mb-6"/>
         <div data-ref="page_header_left">
-          <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-1"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-1"/>$t:sirsoft-ecommerce.admin.personal_payment_create.title</h1>
+          <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-1"><responsive on="640-" class-merge="ecommerce:text-2xl"/>$t:sirsoft-ecommerce.admin.personal_payment_create.title</h1>
           <p class="ecommerce-text-secondary ecommerce:text-sm">$t:sirsoft-ecommerce.admin.personal_payment_create.description</p>
         </div>
         <div data-ref="page_header_actions" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-shrink-0"/>
@@ -94,7 +94,7 @@
             <span class="ecommerce-text-required">*</span>
           </label>
           <input type="text" name="buyer_name" class="ecommerce-input" placeholder="$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.name_placeholder">
-            <responsive on="768-" class="ecommerce-input ecommerce:w-80"/>
+            <responsive on="768-" class-merge="ecommerce:w-80"/>
           </input>
         </div>
         <div data-ref="buyer_contact_grid" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
@@ -146,7 +146,7 @@
               <span class="ecommerce-text-required">*</span>
             </label>
             <div class="ecommerce:relative">
-              <span class="ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:text-gray-500 ecommerce:dark:text-gray-400">
+              <span class="ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-text-muted">
                 <icon name="calendar" class="ecommerce:text-base"/>
               </span>
               <input type="text" name="expired_at" class="ecommerce-input ecommerce:pl-10" placeholder="2025. 11. 5."/>
@@ -157,14 +157,14 @@
         <div data-ref="order_link_section" class="ecommerce:mb-4">
           <label class="ecommerce-form-label">
             <span>$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.order_link</span>
-            <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:ml-1">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.order_link_optional</span>
+            <span class="ecommerce-text-muted ecommerce:ml-1">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.order_link_optional</span>
           </label>
           <button type="button" class="ecommerce:block ecommerce:w-full ecommerce:text-left ecommerce:border ecommerce:border-dashed ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:p-4 ecommerce:mt-2 ecommerce:cursor-pointer ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors">
             <on type="click">
               <open-modal target="modal_order_search"/>
             </on>
             <span class="ecommerce-flex-center ecommerce:gap-3">
-              <icon name="search" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+              <icon name="search" class="ecommerce:text-xl ecommerce-text-muted"/>
               <span class="ecommerce:block">
                 <span class="ecommerce:block ecommerce:font-medium ecommerce-text-heading">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.search_order</span>
                 <span class="ecommerce:block ecommerce:text-sm ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.search_order_hint</span>
@@ -175,7 +175,7 @@
         <div data-ref="linked_order_section" class="ecommerce:mb-4">
           <label class="ecommerce-form-label">
             <span>$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.linked_order</span>
-            <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:ml-1">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.linked_order_optional</span>
+            <span class="ecommerce-text-muted ecommerce:ml-1">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.linked_order_optional</span>
           </label>
           <div class="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4 ecommerce:mt-2">
             <div class="ecommerce-flex-between">
@@ -207,13 +207,13 @@
         <div data-ref="field_memo" class="ecommerce-form-group">
           <label class="ecommerce-form-label">
             <span>$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.memo</span>
-            <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:ml-1">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.memo_optional</span>
+            <span class="ecommerce-text-muted ecommerce:ml-1">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.memo_optional</span>
           </label>
           <textarea name="memo" class="ecommerce-textarea ecommerce:w-full" :rows="4" placeholder="$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.memo_placeholder"/>
         </div>
       </div>
       <div data-ref="footer_buttons" class="ecommerce-sticky-footer-buttons-between">
-        <div class=""/>
+        <div/>
         <div class="ecommerce-flex-center ecommerce:gap-3">
           <a href="/admin/ecommerce/personal-payment" data-ref="cancel_button" class="ecommerce-btn ecommerce-btn-secondary">
             <on type="click">
@@ -221,7 +221,7 @@
             </on>
             <span>$t:sirsoft-ecommerce.common.cancel</span>
           </a>
-          <button data-ref="save_button" type="button" class="ecommerce-flex-center ecommerce:gap-1.5 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:font-medium ecommerce:transition-colors">
+          <button data-ref="save_button" type="button" class="ecommerce-flex-center ecommerce:gap-1.5 ecommerce-btn ecommerce-btn-primary">
             <span>$t:sirsoft-ecommerce.common.save</span>
           </button>
         </div>

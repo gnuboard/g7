@@ -261,6 +261,8 @@
         "RichSelect",
         "TagSelect",
         "IconSelect",
+        "MenuIcon",
+        "MenuIconField",
         "ChipCheckbox",
         "MultilingualInput",
         "MultilingualTagInput",
@@ -535,6 +537,8 @@
         "SearchableDropdown",
         "RichSelect",
         "IconSelect",
+        "MenuIcon",
+        "MenuIconField",
         "ChipCheckbox",
         "DynamicFieldList"
       ]
@@ -556,7 +560,9 @@
         "TagSelect",
         "SearchableDropdown",
         "RichSelect",
-        "IconSelect"
+        "IconSelect",
+        "MenuIcon",
+        "MenuIconField"
       ]
     },
     "Table": {

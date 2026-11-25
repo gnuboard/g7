@@ -68,9 +68,34 @@ describe('setPaymentMethodHandler', () => {
             ['카카오페이', 'nicepay_kakaopay'],
             ['애플페이', 'nicepay_applepay'],
         ])('%s 는 확장 ID 그대로 저장된다', (_label, method) => {
+            // 애플페이는 iOS 에서만 고를 수 있다(#933) — 아이폰에서 고른 경우를 본다.
+            vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
+                'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+            );
+
             setPaymentMethodHandler({ params: { paymentMethod: method } });
 
             expect(setLocalSpy).toHaveBeenCalledWith({ paymentMethod: method });
+            vi.restoreAllMocks();
+        });
+
+        /**
+         * iOS 가 아닌 기기에서 애플페이를 고르면 저장하지 않고 안내만 띄운다 (#933 — NHN KCP 와 같은 선택 단계 확인).
+         */
+        // @scenario concern=payment_method_selection
+        // @effects apple_pay_blocked_off_ios_before_config
+        it('iOS 가 아니면 애플페이를 저장하지 않고 안내 토스트를 띄운다', () => {
+            const toastError = vi.fn();
+            (window as any).G7Core.toast = { error: toastError };
+            vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+            );
+
+            setPaymentMethodHandler({ params: { paymentMethod: 'nicepay_applepay' } });
+
+            expect(setLocalSpy).not.toHaveBeenCalled();
+            expect(toastError).toHaveBeenCalledTimes(1);
+            vi.restoreAllMocks();
         });
 
         // @scenario concern=payment_method_selection

@@ -21,7 +21,6 @@
                 ],
                 "props": {
                     "type": "button",
-                    "variant": "secondary",
                     "className": "ecommerce-btn ecommerce-btn-outline",
                     "data-testid": "additional-clear-cancel"
                 },
@@ -42,7 +41,6 @@
                 ],
                 "props": {
                     "type": "button",
-                    "variant": "danger",
                     "className": "ecommerce-btn ecommerce-btn-danger",
                     "data-testid": "additional-clear-confirm"
                 },

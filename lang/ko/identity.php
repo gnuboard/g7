@@ -24,6 +24,7 @@ return [
         'invalid_verification_token' => '유효하지 않은 본인인증 토큰입니다.',
         'provider_policy_mismatch' => '이 작업은 지정된 인증 수단으로만 확인할 수 있습니다.',
         'policy_provider_unavailable' => '이 작업에 필요한 본인인증 수단을 지금 사용할 수 없습니다. 사이트 관리자에게 문의해 주세요.',
+        'checkpoint_not_registered' => '등록되지 않은 본인인증 확장 지점입니다: :key',
         'purpose_unknown' => '알 수 없는 인증 목적입니다.',
         'missing_target' => '인증 대상(이메일·전화번호)이 필요합니다.',
         'claim_denied' => '본인 확인 결과를 받을 수 없습니다. 인증을 다시 시작해 주세요.',

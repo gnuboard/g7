@@ -1,0 +1,17 @@
+feature: 게시판 관리 목록 「사용」 스위치 — 서버 확정 대기 (#408 브라우저 실측)
+
+description: |
+  게시판 관리 목록의 사용 스위치를 누르면 PUT 으로 is_active 를 뒤집고, 성공하면 목록(boards)을 동기로 다시 받는다.
+  종전에는 Toggle 이 누르는 즉시 내부 값을 바꿔, PUT 이 실패(500)하면 스위치가 눌린 쪽으로 남아 DB 값과 화면이 어긋났다
+  (새로고침하면 맞게 돌아옴, 2026-11-23 Chrome MCP 실측). 스위치를 `awaitConfirmation` 으로 두어 다시 받은 서버 값으로만
+  바뀌게 한다. 이커머스 주문서 항목 표와 같은 규약이다.
+
+axes:
+  outcome: [success, fail]
+
+effects:
+  - active_toggle_stays_on_server_value_when_put_fails     # 실패하면 스위치가 원래 값 그대로
+  - active_toggle_follows_refetched_value_on_success       # 성공하면 동기 재조회 값으로 바뀐다
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-active-toggle-await.test.ts

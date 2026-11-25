@@ -1,6 +1,19 @@
 {
   "comment": "admin 자체 + 코어 SSoT 도메인. locales/admin_menus/me/installed_modules/active_plugins/users 등. 실제 데이터소스 ID 는 착수 시점 admin 레이아웃 data_sources 로 재검증 — 본 블록은 코어 SSoT/공통 폴백.",
   "byDataSourceId": {
+    "identityCheckpoints": {
+      "data": {
+        "checkpoints": [
+          {
+            "key": "vendor-sample.withdraw",
+            "name": "회원 탈퇴",
+            "description": "탈퇴 직전 본인인증",
+            "source_type": "module",
+            "source_identifier": "vendor-sample"
+          }
+        ]
+      }
+    },
     "core_update_status": {
       "data": {
         "run": null,

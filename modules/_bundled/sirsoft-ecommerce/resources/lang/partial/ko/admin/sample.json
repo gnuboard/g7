@@ -49,14 +49,6 @@
     "professional_plan_1y": "프로페셔널 플랜 1년",
     "general_product_notice": "일반 상품 안내"
   },
-  "codes": {
-    "new_member_10": "신규회원 10% 할인코",
-    "first_purchase_5000": "첫구매 5천원 할인"
-  },
-  "banners": {
-    "winter_sale": "겨울 신상품 최대 50% 할인",
-    "spring_semester": "봄 맞이 새학기 준비"
-  },
   "banks": {
     "woori": "우리은행",
     "kakaobank": "카카오뱅크",
@@ -77,24 +69,15 @@
     "register_payment_request": "개인결제 요청 등록",
     "vbank_issued_waiting": "가상계좌 발급 완료 - 입금 대기중",
     "order_not_found_msg": "주문번호가 존재하지 않습니다",
-    "order_not_found_api": "주문을 찾을 수 없습니다",
-    "select_banner_hint": "좌측에서 배너를 선택하세요",
-    "banner_title_placeholder": "배너 제목 (한국어)",
-    "banner_content_placeholder": "배너 내용 (한국어)",
-    "won_unit": "원",
-    "max_label": "최대"
+    "order_not_found_api": "주문을 찾을 수 없습니다"
   },
   "fmt": {
     "times": "{{count}}회",
     "items": "{{count}}개",
     "per_page": "{{count}}개씩 보기",
-    "digits": "{{count}}자리",
     "total_count": "총 {{count}}개",
     "selected_count": "{{count}}개 선택됨",
     "select_all_count": "전체선택 ({{selected}}/{{total}})",
-    "issued_used": "발급 {{issued}}건 / 사용 {{used}}건",
-    "percent_max": "{{percent}}% (최대 ₩{{max}})",
-    "max_amount": "(최대 ₩{{amount}})",
     "member_with_id": "{{name}} ({{id}})",
     "member_guest": "{{name}} (비회원)",
     "product_and_more": "{{product}} 외 {{count}}건",
@@ -105,7 +88,6 @@
     "name_product": "{{name}} · {{product}}",
     "payment_shipping": "{{payment}} / {{shipping}}",
     "auto_matched": "주문번호 {{order}}과 자동 매칭 완료",
-    "orders_found": "{{count}}개의 주문이 검색되었습니다",
-    "slider_summary": "총 {{count}}개의 배너 · 3초 간격 자동 전환"
+    "orders_found": "{{count}}개의 주문이 검색되었습니다"
   }
 }

@@ -9,6 +9,7 @@ use App\Extension\Traits\ClearsTemplateCaches;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
 use App\Support\AssetUrl;
+use App\Support\Style\ClassMerger;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -17,7 +18,8 @@ use Throwable;
  *
  * 실제 사이트에서 배너는 기기 화면 전체가 아니라 템플릿 본문 상자(여백·최대 폭) 안에 그려진다. 미리보기가 그 차이를
  * 재현하려면 폭을 하드코딩하지 않고 템플릿이 실제로 쓰는 레이아웃을 읽어야 한다 — 확장점을 가진 레이아웃을 찾아 병합본에서
- * 조상 노드의 정적 클래스와 반응형 덮어쓰기(className 만)를 위에서부터 순서대로 낸다. 화면은 이 사슬을 같은 템플릿 CSS 로
+ * 조상 노드의 정적 클래스와 반응형 덮어쓰기(구간 className 과 구간 classMerge 를 엔진 규칙으로 합친 실효 클래스)를
+ * 위에서부터 순서대로 낸다. 화면은 이 사슬을 같은 템플릿 CSS 로
  * 기기 viewport 안에 그려 안쪽 구좌를 얻는다. 템플릿·확장점이 없으면 그 위치는 null 이고 미리보기는 기기 폭 전체를 쓴다.
  * 확장점이 넘기는 본문 상자 클래스(`contentClass`·`contentClassDesktop`)도 `content` 로 함께 낸다 — 표시 폭이 본문 폭이면
  * 슬라이더 바깥, 화면 전체면 문구 층에 같은 상자를 써서 실제 사이트와 같은 폭·정렬을 미리 본다.
@@ -62,7 +64,7 @@ class PreviewFrameResolver
         // 위치 목록이 바뀌면(모듈·확장을 켜고 끔) 키가 바뀐다 — 새 위치의 틀을 캐시 주기까지 기다리지 않게
         $positionsHash = substr(md5(implode(',', $keys)), 0, 12);
 
-        $frame = $this->cache->remember("preview_frame.v3.{$identifier}.v{$version}.{$positionsHash}", function () use ($identifier, $version, $keys) {
+        $frame = $this->cache->remember("preview_frame.v4.{$identifier}.v{$version}.{$positionsHash}", function () use ($identifier, $version, $keys) {
             $template = $this->templates->findByIdentifier($identifier);
             $positions = [];
             foreach ($keys as $key) {
@@ -170,16 +172,27 @@ class PreviewFrameResolver
                 return ['chain' => $path, 'props' => is_array($node['props'] ?? null) ? $node['props'] : []];
             }
 
+            $baseClass = $this->staticClasses((string) ($node['props']['className'] ?? ''));
             $responsive = [];
             foreach ((array) ($node['responsive'] ?? []) as $key => $override) {
-                $class = $override['props']['className'] ?? null;
-                if (is_string($class)) {
-                    $responsive[(string) $key] = $this->staticClasses($class);
+                if (! is_array($override)) {
+                    continue;
                 }
+                $class = $override['props']['className'] ?? null;
+                $merge = is_string($override['classMerge'] ?? null) ? $this->staticClasses($override['classMerge']) : '';
+                if (! is_string($class) && $merge === '') {
+                    continue;
+                }
+                // 구간 className(통째 교체) 위에 구간 classMerge(바뀐 클래스만 덧붙이기)를 엔진과 같은 규칙으로 합친
+                // 실효 클래스를 보낸다 — 화면(editor.ts frameClass)은 구간 값을 그대로 고르므로 미리보기와 실화면이 같다.
+                $responsive[(string) $key] = ClassMerger::applyResponsive(
+                    is_string($class) ? $this->staticClasses($class) : $baseClass,
+                    $merge,
+                );
             }
 
             $found = $this->ancestors($node['children'] ?? null, $point, [...$path, [
-                'className' => $this->staticClasses((string) ($node['props']['className'] ?? '')),
+                'className' => $baseClass,
                 'responsive' => $responsive,
             ]]);
             if ($found !== null) {

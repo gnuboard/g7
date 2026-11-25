@@ -113,7 +113,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "ecommerce:p-6 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:min-h-screen"
+                    "className": "ecommerce-admin-page-content"
                 },
                 "children": [
                     {
@@ -212,7 +212,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
+                                    "className": "ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm"
                                 },
                                 "children": [
                                     {
@@ -225,6 +225,7 @@
                         ]
                     },
                     {
+                        "comment": "audit:allow layout-inline-semantic-duplicate reason: 찜 목록의 검색 필터 상자, 표 위 간격을 mb-4 로 좁히고 세로 쌓기를 쓰지 않아 카드(mb-6 flex-col)로 바꾸면 간격이 벌어짐",
                         "id": "filter_area",
                         "type": "basic",
                         "name": "Div",
@@ -252,7 +253,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce:text-xs ecommerce-text-muted"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.wishlists.filters.search_label"
                                             },
@@ -310,7 +311,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce:text-xs ecommerce-text-muted"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.wishlists.filters.keyword_label"
                                             },
@@ -357,7 +358,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce:text-xs ecommerce-text-muted"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.wishlists.filters.date_label"
                                             },
@@ -396,7 +397,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce-text-muted"
                                                         },
                                                         "text": "~"
                                                     },
@@ -476,7 +477,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
+                                                    "className": "ecommerce-btn ecommerce-btn-secondary"
                                                 },
                                                 "children": [
                                                     {
@@ -859,7 +860,7 @@
                                                             "name": "Span",
                                                             "if": "{{!row.member}}",
                                                             "props": {
-                                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                "className": "ecommerce-text-muted"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.wishlists.badges.guest"
                                                         },
@@ -884,7 +885,7 @@
                                                         "data-testid": "real-name-sub",
                                                         "role": "note",
                                                         "aria-label": "{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.member?.real_name })}}",
-                                                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce-text-muted"
                                                     },
                                                     "text": "{{row.member?.real_name}}"
                                                 },
@@ -893,7 +894,7 @@
                                                     "name": "Span",
                                                     "if": "{{row.member?.email}}",
                                                     "props": {
-                                                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce-text-muted"
                                                     },
                                                     "text": "{{row.member?.email}}"
                                                 }
@@ -981,7 +982,7 @@
                         ],
                         "props": {
                             "type": "button",
-                            "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
+                            "className": "ecommerce-btn ecommerce-btn-secondary"
                         },
                         "children": [
                             {
@@ -1115,7 +1116,7 @@
                         ],
                         "props": {
                             "type": "button",
-                            "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
+                            "className": "ecommerce-btn ecommerce-btn-secondary"
                         },
                         "children": [
                             {

@@ -296,7 +296,7 @@
                                         "name": "P",
                                         "if": "{{!!(order?.data?.order_number ?? _local.claimEditSnapshot?.order_number)}}",
                                         "props": {
-                                            "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                                            "className": "text-sm text-muted mt-1"
                                         },
                                         "text": "$t:claim.apply.order_number|number={{(order.data.order_number ?? _local.claimEditSnapshot?.order_number) ?? ''}}"
                                     },
@@ -306,7 +306,7 @@
                                         "name": "P",
                                         "if": "{{_local.claimEditMode === true}}",
                                         "props": {
-                                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                                            "className": "text-sm text-muted"
                                         },
                                         "text": "{{(_local.claimEditSnapshot?.claim_type_label ?? '')}} {{_local.claimEditSnapshot?.claim_number ?? ''}}"
                                     },
@@ -324,7 +324,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "circle-info",
-                                                    "className": "text-base text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                    "className": "text-base text-muted flex-shrink-0"
                                                 }
                                             },
                                             {

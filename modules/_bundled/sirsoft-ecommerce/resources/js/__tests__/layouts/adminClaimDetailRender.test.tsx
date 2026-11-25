@@ -1339,6 +1339,30 @@ describe('결제 정보 · 환불 실행 섹션 — 유형별 렌더 (S9b · D17
   });
 
   /**
+   * 주문 결제 카드의 결제수단 칸은 간편결제 표시 이름을 먼저 보이고, 없으면 기본 이름이다 — 주문상세와 같은 식 (#933 S5).
+   *
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_payment_reads_detail_envelope_only, order_detail_screens_prefer_display_label
+   */
+  it('결제수단 칸은 payment_method_display_label 이 있으면 그 값, 없으면 기본 라벨을 그린다', async () => {
+    const withDisplay = await renderProbe(
+      paymentSection as Node,
+      exchangeWithPayment({
+        order: {
+          ...ORDER_CONTEXT,
+          payments: [{ ...ORDER_CONTEXT.payments[0], payment_method_display_label: '카카오페이 (토스페이먼츠)' }],
+        },
+      }),
+    );
+    expect(document.querySelector('#cp_payment_method_0')?.textContent).toBe('카카오페이 (토스페이먼츠)');
+    withDisplay.cleanup();
+
+    const withoutDisplay = await renderProbe(paymentSection as Node, exchangeWithPayment());
+    expect(document.querySelector('#cp_payment_method_0')?.textContent).toBe('신용카드');
+    withoutDisplay.cleanup();
+  });
+
+  /**
    * 결제행이 없는 주문(전액 할인 등)에서 카드가 통째로 사라지면 운영자는 "아직 안 불러왔다"
    * 와 "결제 건이 없다" 를 구분할 수 없다.
    *

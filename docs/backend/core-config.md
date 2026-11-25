@@ -224,6 +224,16 @@ permissions
 ],
 ```
 
+`icon` 은 Font Awesome 클래스 문자열(`'fas fa-tachometer-alt'`, `'fa-solid fa-gauge'`) 외에 구조형도 받습니다(7.2.1). 코어 메뉴의 상대경로 기준은 `public/` 입니다.
+
+```php
+'icon' => ['type' => 'image', 'path' => 'images/menu/dashboard.png'],  // public/ 아래 png·webp·jpg·gif
+'icon' => ['type' => 'svg', 'path' => 'images/menu/dashboard.svg'],    // 설치 시 검사해 인라인 SVG 코드로 저장
+'icon' => ['type' => 'svg', 'value' => '<svg viewBox="0 0 24 24">…</svg>'],
+```
+
+규칙과 거부 조건은 [메뉴 아이콘 지정](../extension/menus.md#메뉴-아이콘-지정)을 따릅니다.
+
 ---
 
 ## schedules — 코어 스케줄 카탈로그 (7.2.0)

@@ -23,7 +23,7 @@
             <img data-if="{{row.thumbnail_url}}" src="{{row.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{row.name_localized ?? ''}}" class="ecommerce:w-full ecommerce:h-full ecommerce:aspect-square ecommerce:object-cover ecommerce:rounded">
               <responsive on="0-767" thumbPreset="md"/>
             </img>
-            <icon data-if="{{!row.thumbnail_url}}" name="image" class="ecommerce:text-2xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+            <icon data-if="{{!row.thumbnail_url}}" name="image" class="ecommerce:text-2xl ecommerce-text-muted"/>
           </div>
         </cell>
       </column>
@@ -46,7 +46,7 @@
         <cell>
           <div class="ecommerce-stack-flush ecommerce:gap-0.5">
             <div data-if="{{row.categories_with_path &amp;&amp; row.categories_with_path.length > 0}}" data-each="cat in row.categories_with_path" class="ecommerce:text-xs ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:truncate">{{cat.path_string}}</div>
-            <span data-if="{{!row.categories_with_path || row.categories_with_path.length === 0}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">-</span>
+            <span data-if="{{!row.categories_with_path || row.categories_with_path.length === 0}}" class="ecommerce:text-xs ecommerce-text-muted">-</span>
           </div>
         </cell>
       </column>
@@ -72,7 +72,7 @@
             <span data-if="{{(_local.productFieldErrors || []).some(e => e.productId === String(row.id) &amp;&amp; e.field === 'selling_price')}}" class="ecommerce:text-xs ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:mt-1">$t:sirsoft-ecommerce.admin.product.validation.selling_price_exceeds_list_price</span>
             <!-- 다통화 환산값 (읽기전용 — base 판매가 기준 환율 자동 계산, 장바구니 패턴) -->
             <div data-if="{{(_computed.currencyDisplayColumns ?? []).length > 0}}" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-0.5 ecommerce:mt-1">
-              <span data-each="currencyCol in {{_computed.currencyDisplayColumns}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:whitespace-nowrap">{{row.multi_currency_selling_price?.[currencyCol.currencyCode]?.formatted ?? ''}}</span>
+              <span data-each="currencyCol in {{_computed.currencyDisplayColumns}}" class="ecommerce:text-xs ecommerce-text-muted ecommerce:whitespace-nowrap">{{row.multi_currency_selling_price?.[currencyCol.currencyCode]?.formatted ?? ''}}</span>
             </div>
           </div>
         </cell>
@@ -152,7 +152,7 @@
             </on>
             {{row.shipping_policy_name}}
           </a>
-          <span data-if="{{!row.shipping_policy_id}}" class="ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">-</span>
+          <span data-if="{{!row.shipping_policy_id}}" class="ecommerce:text-sm ecommerce-text-muted">-</span>
         </cell>
       </column>
       <column field="created_at" header="$t:sirsoft-ecommerce.admin.product.table.column.created_at" width="100px" :sortable="true" :required="true">
@@ -181,7 +181,7 @@
       </prop>
       <expand>
         <div class="ecommerce-admin-page-content-fluid-compact">
-          <div data-ref="options_loading_{{row.id}}" data-if="{{(optionsLoadingIds || []).some(id => id + '' === row.id + '')}}" class="ecommerce:text-center ecommerce:py-4 ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.loading</div>
+          <div data-ref="options_loading_{{row.id}}" data-if="{{(optionsLoadingIds || []).some(id => id + '' === row.id + '')}}" class="ecommerce:text-center ecommerce:py-4 ecommerce-text-muted">$t:sirsoft-ecommerce.admin.product.table.options.loading</div>
           <div data-ref="options_error_{{row.id}}" data-if="{{(optionsErrorIds || []).some(id => id + '' === row.id + '')}}" class="ecommerce:flex ecommerce:items-center ecommerce:justify-center ecommerce:gap-3 ecommerce:py-4">
             <span class="ecommerce:text-red-600 ecommerce:dark:text-red-400">$t:sirsoft-ecommerce.admin.product.table.options.load_failed</span>
             <!-- 옵션 목록을 다시 불러온다. 실패한 행만 다시 시도하므로 나머지 행의 펼침 상태는 건드리지 않는다 -->
@@ -352,7 +352,7 @@
                       <span data-if="{{(optionFieldErrors || []).some(e => e.productId === String(row.id) &amp;&amp; e.optionId === String(option.id) &amp;&amp; e.field === 'selling_price')}}" class="ecommerce:text-xs ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:mt-1">$t:sirsoft-ecommerce.admin.product.validation.selling_price_exceeds_list_price</span>
                       <!-- 다통화 환산값 (읽기전용 — base 판매가 기준 환율 자동 계산, 장바구니 패턴) -->
                       <div data-if="{{(currencyDisplayColumns ?? []).length > 0}}" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-0.5 ecommerce:mt-1">
-                        <span data-each="currencyCol in currencyDisplayColumns" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:whitespace-nowrap">{{option.multi_currency_selling_price?.[currencyCol.currencyCode]?.formatted ?? ''}}</span>
+                        <span data-each="currencyCol in currencyDisplayColumns" class="ecommerce:text-xs ecommerce-text-muted ecommerce:whitespace-nowrap">{{option.multi_currency_selling_price?.[currencyCol.currencyCode]?.formatted ?? ''}}</span>
                       </div>
                     </div>
                   </td>
@@ -392,7 +392,7 @@
               </tbody>
             </table>
           </div>
-          <div data-ref="no_options_message_{{row.id}}" data-if="{{Array.isArray(row.options) &amp;&amp; row.options.length === 0}}" class="ecommerce:text-center ecommerce:py-4 ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.no_options</div>
+          <div data-ref="no_options_message_{{row.id}}" data-if="{{Array.isArray(row.options) &amp;&amp; row.options.length === 0}}" class="ecommerce:text-center ecommerce:py-4 ecommerce-text-muted">$t:sirsoft-ecommerce.admin.product.table.options.no_options</div>
         </div>
       </expand>
       <on type="change" event="onSelectionChange">

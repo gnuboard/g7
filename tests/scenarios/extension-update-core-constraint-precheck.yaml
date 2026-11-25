@@ -1,0 +1,15 @@
+feature: 확장 업데이트 코어 버전 사전 검증이 읽는 제약 (7.2.1 출시 전 실측 W5-001)
+
+description: |
+  업데이트 「3.4 코어 버전 호환성 사전 검증」 이 확장 manifest(module.json·plugin.json·template.json)의 g7_version 제약 대신
+  vendor 번들 무결성 파일(vendor-bundle.json)의 g7_version(번들을 만든 코어 판, 연산자 없음)을 읽어, 코어를 7.2.1 로 올린 뒤
+  관리자 화면에서 이커머스·팝업·SSO 를 업데이트하면 「코어 7.2.0 이상 필요(현재 7.2.1)」 로 실패했다.
+
+axes:
+  case: [staged_manifest_constraint, staged_manifest_missing, manager_precheck_wiring]
+
+effects:
+  - update_precheck_reads_extension_manifest
+
+test_files:
+  - tests/Unit/Extension/StagedCoreConstraintTest.php

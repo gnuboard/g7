@@ -68,13 +68,13 @@
         </div>
         <!-- 취소 항목 반복 -->
         <div data-each="cancelItem, cancelIdx in _local.cancelItems ?? []" class="ecommerce:grid ecommerce:grid-cols-12 ecommerce:gap-2 ecommerce:px-3 ecommerce:py-2 ecommerce:border-t ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:items-center">
-          <responsive on="portable" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-2 ecommerce:px-3 ecommerce:py-2 ecommerce:border-t ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:items-center"/>
+          <responsive on="portable" class-merge="ecommerce:grid-cols-1"/>
           <!-- 상품정보 -->
           <div class="ecommerce:col-span-5 ecommerce-flex-center ecommerce:gap-2">
             <responsive on="portable" class="ecommerce-flex-center ecommerce:gap-2"/>
             <img data-if="{{cancelItem.thumbnail_url}}" src="{{cancelItem.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:object-cover ecommerce:flex-shrink-0"/>
             <div data-if="{{!cancelItem.thumbnail_url}}" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:flex-shrink-0 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:flex ecommerce:items-center ecommerce:justify-center">
-              <icon name="image" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+              <icon name="image" class="ecommerce-text-muted"/>
             </div>
             <div class="ecommerce:min-w-0">
               <p class="ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:truncate">{{cancelItem.product_name ?? ''}}</p>
@@ -204,7 +204,7 @@
           </input>
           <div class="ecommerce:flex-1">
             <span class="ecommerce-text-body ecommerce:font-medium ecommerce:block">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_label</span>
-            <span class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:block ecommerce:mt-1">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_hint</span>
+            <span class="ecommerce:text-xs ecommerce-text-muted ecommerce:block ecommerce:mt-1">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_hint</span>
             <span data-ref="cancel_auto_advance_refund_no_permission" data-if="{{order.data?.abilities?.can_execute_refund !== true}}" class="ecommerce:text-xs ecommerce:text-amber-700 ecommerce:dark:text-amber-400 ecommerce:block ecommerce:mt-1">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_no_permission</span>
             <!-- 정지 수단 안내 (P16) — 체크박스는 그대로 두되, 이 주문의 결제수단이 자동 승인 목록 밖이면 체크해도 환불신청에서 멈춘다는 것을 미리 알린다. 판정은 서버가 준 auto_approves_refund 하나를 읽는다 — 레이아웃에서 목록을 다시 비교하면 설정 변경·플러그인 추가 때 안내와 실제 전이가 갈린다. -->
             <span data-if="{{order.data?.payment?.auto_approves_refund === false}}" class="ecommerce:text-xs ecommerce:text-amber-700 ecommerce:dark:text-amber-400 ecommerce:block ecommerce:mt-1">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_blocked_hint</span>
@@ -400,11 +400,11 @@
           <!-- 환불 후 잔액 정보 -->
           <div data-if="{{(_local.refundEstimate?.remaining_pg_balance ?? null) !== null || (_local.refundEstimate?.remaining_points_balance ?? null) !== null}}" class="ecommerce:space-y-1 ecommerce:border-t ecommerce:border-gray-100 ecommerce:dark:border-gray-700">
             <div data-if="{{(_local.refundEstimate?.remaining_pg_balance ?? null) !== null}}" class="ecommerce:flex ecommerce:justify-between ecommerce:text-xs">
-              <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.remaining_pg_balance</span>
+              <span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.remaining_pg_balance</span>
               <span class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{_local.refundEstimate?.refund_formatted?.base?.remaining_pg_balance ?? (_local.refundEstimate?.remaining_pg_balance ?? 0).toLocaleString()}}</span>
             </div>
             <div data-if="{{(_local.refundEstimate?.remaining_points_balance ?? null) !== null}}" class="ecommerce:flex ecommerce:justify-between ecommerce:text-xs">
-              <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.remaining_points_balance</span>
+              <span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.remaining_points_balance</span>
               <span class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{_local.refundEstimate?.refund_formatted?.base?.remaining_points_balance ?? (_local.refundEstimate?.remaining_points_balance ?? 0).toLocaleString()}}</span>
             </div>
           </div>

@@ -412,4 +412,77 @@ describe('상태 의미 토큰 → 글리프 매핑', () => {
     expect(icon?.className).toContain(glyph);
     expect(icon?.className).not.toContain('fa-status-');
   });
+
+  /**
+   * @scenario component=icon
+   * @effects status_tokens_map_to_template_glyphs, style_prefix_tokens_resolved_once
+   */
+  it.each(Object.entries(STATUS_TOKENS))('%s 의 출력은 접두 해석 뒤에도 `fas %s` 그대로다', (token, glyph) => {
+    const { container } = render(<Icon name={token} />);
+
+    expect(container.querySelector('i')?.className).toBe(`fas ${glyph}`);
+  });
+});
+
+/**
+ * 이름 속 스타일 토큰 해석 (#381)
+ *
+ * 종전 Icon 은 FA6 장형(fa-solid …)만 읽어 메뉴·레이아웃이 쓰는 `fas fa-users` 를 `fas fa-fas fa-users` 로 조합했고
+ * (우연히 보였다) `far`·`fab` 는 스타일을 잃어 solid 로 그렸다. 출력 클래스 전체를 정확히 비교해 스타일 토큰이
+ * 한 번만, 올바른 FA 단축형으로 나오는지 잠근다.
+ */
+const PREFIX_TABLE: Array<[string, string | undefined, string]> = [
+  ['users', undefined, 'fas fa-users'],
+  ['fa-users', undefined, 'fas fa-users'],
+  ['fas fa-users', undefined, 'fas fa-users'],
+  ['far fa-star', undefined, 'far fa-star'],
+  ['fab fa-github', undefined, 'fab fa-github'],
+  ['fal fa-x', undefined, 'fal fa-x'],
+  ['fad fa-x', undefined, 'fad fa-x'],
+  ['fa-solid fa-pen', undefined, 'fas fa-pen'],
+  ['fa-regular fa-pen-to-square', undefined, 'far fa-pen-to-square'],
+  ['fas fa-spinner fa-spin', undefined, 'fas fa-spinner fa-spin'],
+  ['  fas   fa-bell ', undefined, 'fas fa-bell'],
+  ['fas fa-star', 'regular', 'fas fa-star'],
+];
+
+/** 출력에 나오면 안 되는 「스타일 토큰에 fa- 를 덧붙인」 클래스 */
+const DOUBLED_STYLE_CLASS = /^fa-(fas|far|fab|fal|fad|solid|regular|brands|light|duotone)$/;
+
+describe('Icon — 이름 속 스타일 토큰 해석 (#381)', () => {
+  /**
+   * @scenario component=icon
+   * @effects style_prefix_tokens_resolved_once
+   */
+  it.each(PREFIX_TABLE)('name=%j iconStyle=%s → className %j', (name, iconStyle, expected) => {
+    const { container } = render(
+      <Icon name={name} {...(iconStyle ? { iconStyle: iconStyle as 'regular' } : {})} />,
+    );
+
+    expect(container.querySelector('i')?.className).toBe(expected);
+  });
+
+  /**
+   * @scenario component=icon
+   * @effects style_prefix_tokens_resolved_once
+   */
+  it.each(PREFIX_TABLE)('name=%j 출력에 fa-fas·fa-far·fa-fab 같은 겹친 스타일 클래스가 없고 스타일 클래스는 하나다', (name, iconStyle) => {
+    const { container } = render(
+      <Icon name={name} {...(iconStyle ? { iconStyle: iconStyle as 'regular' } : {})} />,
+    );
+    const tokens = (container.querySelector('i')?.className ?? '').split(/\s+/).filter(Boolean);
+
+    expect(tokens.filter((token) => DOUBLED_STYLE_CLASS.test(token))).toEqual([]);
+    expect(tokens.filter((token) => ['fas', 'far', 'fab', 'fal', 'fad'].includes(token))).toHaveLength(1);
+  });
+
+  /**
+   * @scenario component=icon
+   * @effects style_prefix_tokens_resolved_once
+   */
+  it('이름 속 스타일이 없으면 iconStyle prop 을 쓰고, size·spin·className 은 뒤에 붙는다', () => {
+    const { container } = render(<Icon name="star" iconStyle="regular" size="lg" spin className="w-4" />);
+
+    expect(container.querySelector('i')?.className).toBe('far fa-star fa-lg fa-spin w-4');
+  });
 });

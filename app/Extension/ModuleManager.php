@@ -5376,9 +5376,9 @@ class ModuleManager implements ModuleManagerInterface
 
                 // 3.4. 코어 버전 호환성 사전 검증 (staging manifest 기준)
                 if ($stagingPath && ! $force && ! CoreServiceProvider::isCoreUpdateInProgress()) {
-                    $stagedManifest = (new Vendor\VendorIntegrityChecker)->readManifest($stagingPath);
+                    // 확장 manifest 의 g7_version 제약 — vendor-bundle.json 의 g7_version 은 번들을 만든 코어 판이라 쓰지 않는다
                     CoreVersionChecker::validateExtension(
-                        $stagedManifest['g7_version'] ?? null,
+                        ExtensionPendingHelper::readStagedCoreConstraint($stagingPath, 'module.json'),
                         $identifier,
                         'module'
                     );

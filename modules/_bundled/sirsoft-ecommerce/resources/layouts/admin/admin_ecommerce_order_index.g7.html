@@ -125,7 +125,7 @@
             <on type="click">
               <open-modal target="modal_preset_manage"/>
             </on>
-            <icon name="list" class="ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+            <icon name="list" class="ecommerce:text-base ecommerce-icon-muted ecommerce-text-muted"/>
             <span class="ecommerce-text-secondary ecommerce:text-sm">$t:sirsoft-ecommerce.admin.order.preset.label</span>
           </button>
           <button type="button" class="ecommerce-text-primary ecommerce:px-4 ecommerce:py-1.5 ecommerce:rounded-full ecommerce:text-sm ecommerce:font-bold ecommerce:border ecommerce:border-gray-900 ecommerce:dark:border-white">$t:sirsoft-ecommerce.admin.order.preset.today_payment</button>
@@ -153,7 +153,7 @@
                 <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
               </on>
             </input>
-            <icon name="search" class="ecommerce:text-base ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:pointer-events-none"/>
+            <icon name="search" class="ecommerce:text-base ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce-text-muted ecommerce:pointer-events-none"/>
           </div>
           <button type="button" class="ecommerce-btn ecommerce-btn-outline">
             <icon name="gear" class="ecommerce:text-base"/>
@@ -547,7 +547,7 @@
           </input>
         </div>
         <!-- 시안 화면(라우트 미연결)의 [일괄 변경]은 처리기가 없다 — 나중에 연결될 때 권한 게이트 없이 열리지 않도록 잠가 둔다(실제 화면은 주문 목록 admin_ecommerce_order_list 의 일괄 처리 바). -->
-        <button data-ref="mockup_batch_change_button" type="button" class="ecommerce-btn ecommerce-btn-info ecommerce:font-bold ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" :disabled="true">$t:sirsoft-ecommerce.admin.order.batch.batch_change</button>
+        <button data-ref="mockup_batch_change_button" type="button" class="ecommerce-btn ecommerce-btn-info ecommerce:font-bold" :disabled="true">$t:sirsoft-ecommerce.admin.order.batch.batch_change</button>
       </div>
       <div data-ref="table_card" class="ecommerce-admin-card">
         <div data-ref="table_header" class="ecommerce-flex-between ecommerce:flex-wrap ecommerce:gap-4 ecommerce:mb-6">

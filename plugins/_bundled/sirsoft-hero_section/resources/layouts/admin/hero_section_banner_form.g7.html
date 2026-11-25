@@ -253,7 +253,7 @@
       <div data-ref="hero_form_columns" class="hs:grid hs:grid-cols-1 hs:gap-6">
         <responsive on="desktop" class="hs:grid hs:grid-cols-3 hs:gap-6"/>
         <div data-ref="form_sections" data-key="form" data-track-changes data-debounce="0" class="hs:flex hs:flex-col hs:gap-6">
-          <responsive on="desktop" class="hs:col-span-2 hs:flex hs:flex-col hs:gap-6"/>
+          <responsive on="desktop" class-merge="hs:col-span-2"/>
           <!-- 기본 정보 — 노출 위치는 템플릿이 열어 둔 히어로섹션 자리(확장점) 이름과 같다 -->
           <section data-ref="basic_card" class="hs-admin-card">
             <h2 class="hs-card-title">$t:sirsoft-hero_section.admin.form.section.basic</h2>
@@ -1128,7 +1128,7 @@
           </sirsoft-hero_section.hero-preview-language>
           <!-- 적용 설정 요약 — 이 배너가 나갈 자리(위치, 동적 위치면 그 대상)의 최종 슬라이더 설정. 배너 저장과 따로이며, 바꾸려면 목록의 슬라이더 설정에서.
             대상을 고른 동적 위치는 대상 설정이 와야 요약·미리보기를 그리고(받지 못하면 다시 받기), 대상을 고르기 전에는 받을 것이 없어 위치 기본값으로 그린다 -->
-          <p data-ref="form_target_settings_loading" data-if="{{_computed.formDynamic &amp;&amp; !!_local.form?.target_key &amp;&amp; !_computed.formSettingsReady &amp;&amp; !_computed.formTargetSettingsFailed}}" role="status" class="hs:text-sm hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.target_settings.loading</p>
+          <p data-ref="form_target_settings_loading" data-if="{{_computed.formDynamic &amp;&amp; !!_local.form?.target_key &amp;&amp; !_computed.formSettingsReady &amp;&amp; !_computed.formTargetSettingsFailed}}" role="status" class="hs:text-sm hs-text-muted">$t:sirsoft-hero_section.admin.target_settings.loading</p>
           <div data-ref="form_target_settings_failed" data-if="{{_computed.formTargetSettingsFailed}}" role="alert" class="hs-alert-warning">
             <p>$t:sirsoft-hero_section.admin.target_settings.load_failed</p>
             <button type="button" data-ref="form_target_settings_retry" class="hs-btn hs-btn-secondary">

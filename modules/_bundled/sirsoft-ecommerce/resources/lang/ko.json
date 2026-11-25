@@ -70,7 +70,8 @@
             "exports": "내보내기 목록",
             "ecommerceExportCatalog": "내보내기 설정(카탈로그)",
             "exportDownloads": "내보내기 다운로드 이력",
-            "ecommerceExportEstimateSource": "내보내기 예상 건수"
+            "ecommerceExportEstimateSource": "내보내기 예상 건수",
+            "identityCheckpoints": "본인인증 확장 지점"
         }
     },
     "common": {
@@ -106,9 +107,6 @@
         },
         "order": {
             "$partial": "partial/ko/admin/order.json"
-        },
-        "main_banner": {
-            "$partial": "partial/ko/admin/main_banner.json"
         },
         "product_review": {
             "$partial": "partial/ko/admin/product_review.json"
@@ -166,9 +164,6 @@
         },
         "deposit": {
             "$partial": "partial/ko/admin/deposit.json"
-        },
-        "promotion_discount_code": {
-            "$partial": "partial/ko/admin/promotion_discount_code.json"
         },
         "sample": {
             "$partial": "partial/ko/admin/sample.json"

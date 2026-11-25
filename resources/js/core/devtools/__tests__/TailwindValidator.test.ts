@@ -23,6 +23,7 @@ describe('TailwindValidator 폭 접두 경고', () => {
     expect(Object.keys(byClass).sort()).toEqual(['!xl:block', 'dark:lg:hidden', 'desktop:flex', 'ecommerce:md:w-20', 'max-[600px]:p-2', 'max-md:hidden', 'md:flex', 'min-[900px]:grid'].sort());
     expect(result.valid).toBe(false);
     expect(byClass['md:flex'].suggestion).toContain('<responsive on="768-"');
+    expect(byClass['md:flex'].suggestion).toContain('class-merge=');
     expect(byClass['dark:lg:hidden'].suggestion).toContain('<responsive on="desktop"');
     expect(byClass['!xl:block'].suggestion).toContain('<responsive on="1280-"');
     expect(byClass['max-md:hidden'].suggestion).toContain('<responsive on="mobile"');

@@ -84,7 +84,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "{{ch.icon ?? 'fas fa-bell'}}",
-                                        "className": "totp:text-gray-500 totp:dark:text-gray-400"
+                                        "className": "totp-text-muted"
                                     }
                                 },
                                 {
@@ -230,7 +230,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "totp-btn totp-btn-primary totp:disabled:opacity-50 totp:disabled:cursor-not-allowed",
+                                "className": "totp-btn totp-btn-primary",
                                 "disabled": "{{_computed.isNotificationReadOnly || _local.totpSavingChannels !== null && _local.totpSavingChannels !== undefined || !(JSON.stringify([...(_local.totpChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())) || (_local.totpChannels?.[def.id] ?? def.channels ?? []).length === 0}}"
                             },
                             "children": [
@@ -280,7 +280,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "totp-btn totp-btn-secondary totp:disabled:opacity-50 totp:disabled:cursor-not-allowed",
+                                "className": "totp-btn totp-btn-secondary",
                                 "disabled": "{{_local.totpSavingChannels !== null && _local.totpSavingChannels !== undefined}}"
                             },
                             "children": [

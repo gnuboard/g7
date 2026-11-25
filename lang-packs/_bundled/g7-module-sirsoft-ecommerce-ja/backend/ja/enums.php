@@ -1,6 +1,20 @@
 <?php
 
 return [
+    'coupon_issue_source' => [
+        'download' => 'ダウンロード',
+        'direct' => '直接発行',
+        'signup' => '会員登録',
+        'first_purchase' => '初回購入',
+        'birthday' => '誕生日',
+    ],
+    'coupon_first_purchase_trigger' => [
+        'payment_complete' => '決済完了',
+        'preparing' => '商品準備中',
+        'shipping' => '配送中',
+        'delivered' => '配送完了',
+        'confirmed' => '購入確定',
+    ],
     'sales_status' => [
         'on_sale' => '販売中',
         'suspended' => '販売停止',

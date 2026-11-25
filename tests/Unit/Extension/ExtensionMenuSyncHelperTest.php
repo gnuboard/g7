@@ -6,7 +6,9 @@ use App\Contracts\Repositories\MenuRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
+use App\Extension\Support\LifecycleWarnings;
 use App\Models\Menu;
+use App\Support\MenuIcon\MenuIconDeclaration;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Mockery;
@@ -1053,5 +1055,123 @@ class ExtensionMenuSyncHelperTest extends TestCase
 
         $this->assertCount(1, $slugs);
         $this->assertEquals('Board Management', $slugs[0]);
+    }
+
+    // ========== 메뉴 아이콘 선언 정규화 (#381) ==========
+
+    /**
+     * 기존 메뉴를 운영자 수정 없이 동기화할 때 저장소 update 로 넘어간 icon 값을 돌려줍니다.
+     *
+     * @param  mixed  $declaredIcon  선언 아이콘
+     * @return mixed update 데이터의 icon 값 (키가 없으면 '__missing__')
+     */
+    private function syncedIconForExistingMenu(mixed $declaredIcon): mixed
+    {
+        $existingMenu = $this->createModelMock(Menu::class, [
+            'id' => 1,
+            'name' => ['ko' => '게시판', 'en' => 'Board'],
+            'icon' => 'fas fa-list',
+            'order' => 10,
+            'url' => '/admin/boards',
+            'user_overrides' => [],
+        ]);
+
+        $this->menuRepository->shouldReceive('findBySlugAndExtension')->once()->andReturn($existingMenu);
+
+        $captured = '__missing__';
+        $this->menuRepository
+            ->shouldReceive('update')
+            ->once()
+            ->with($existingMenu, Mockery::on(function (array $data) use (&$captured): bool {
+                $captured = array_key_exists('icon', $data) ? $data['icon'] : '__missing__';
+
+                return true;
+            }))
+            ->andReturn(true);
+        $existingMenu->shouldReceive('fresh')->once()->andReturn($existingMenu);
+
+        $this->helper->syncMenu(
+            slug: 'board-management',
+            extensionType: ExtensionOwnerType::Module,
+            extensionIdentifier: 'sirsoft-board',
+            newAttributes: ['name' => ['ko' => '게시판', 'en' => 'Board'], 'icon' => $declaredIcon, 'order' => 10, 'url' => '/admin/boards'],
+        );
+
+        return $captured;
+    }
+
+    /**
+     * FA 클래스 문자열 선언은 공백만 정규화돼 그대로 동기화된다(기존 확장 선언 호환).
+     *
+     * @scenario icon_type=legacy_string, entry=extension_sync
+     *
+     * @effects canonical_storage, extension_menu_sync_respects_operator_edits
+     *
+     * @return void 반환값 없음
+     */
+    public function test_sync_menu_passes_declared_class_string(): void
+    {
+        $this->assertSame('fas fa-clipboard-list', $this->syncedIconForExistingMenu('  fas   fa-clipboard-list '));
+    }
+
+    /**
+     * 구조형 class 선언은 클래스 평문으로 동기화된다.
+     *
+     * @scenario icon_type=class, entry=extension_sync
+     *
+     * @effects canonical_storage, extension_menu_sync_respects_operator_edits
+     *
+     * @return void 반환값 없음
+     */
+    public function test_sync_menu_normalizes_structured_class_declaration(): void
+    {
+        $this->assertSame('fa-solid fa-star', $this->syncedIconForExistingMenu(['type' => 'class', 'value' => 'fa-solid fa-star']));
+    }
+
+    /**
+     * svg path 선언은 확장 패키지 파일을 읽어 인라인 svg JSON 으로 동기화된다.
+     *
+     * @scenario icon_type=svg, entry=extension_sync
+     *
+     * @effects canonical_storage, extension_menu_sync_respects_operator_edits
+     *
+     * @return void 반환값 없음
+     */
+    public function test_sync_menu_inlines_declared_svg_path(): void
+    {
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2 2 22h20z"/></svg>';
+        $root = storage_path('framework/testing/menu-icon-sync-helper');
+        @mkdir($root.'/assets', 0777, true);
+        file_put_contents($root.'/assets/menu.svg', $svg);
+        MenuIconDeclaration::resolveRootUsing(static fn (): string => $root);
+
+        try {
+            $icon = $this->syncedIconForExistingMenu(['type' => 'svg', 'path' => 'assets/menu.svg']);
+        } finally {
+            MenuIconDeclaration::resolveRootUsing(null);
+            @unlink($root.'/assets/menu.svg');
+            @rmdir($root.'/assets');
+            @rmdir($root);
+        }
+
+        $this->assertSame(['type' => 'svg', 'value' => $svg], json_decode((string) $icon, true));
+    }
+
+    /**
+     * 잘못된 아이콘 선언은 동기화를 막지 않는다 — icon 은 null 로 넘어가고 라이프사이클 경고가 남는다.
+     *
+     * @effects invalid_declaration_ignored_with_warning, extension_menu_sync_respects_operator_edits
+     *
+     * @return void 반환값 없음
+     */
+    public function test_sync_menu_drops_invalid_icon_declaration_with_warning(): void
+    {
+        LifecycleWarnings::current()->clear();
+
+        $this->assertNull($this->syncedIconForExistingMenu(['type' => 'image', 'path' => 'https://example.com/menu.png']));
+
+        $warnings = array_values(array_filter(LifecycleWarnings::current()->all(), static fn (array $item): bool => $item['step'] === 'menu_icon'));
+        $this->assertCount(1, $warnings);
+        $this->assertSame('sirsoft-board', $warnings[0]['target']);
     }
 }

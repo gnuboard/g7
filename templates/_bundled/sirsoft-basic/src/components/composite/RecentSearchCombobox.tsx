@@ -109,7 +109,7 @@ const DEFAULT_INPUT_CLASS =
 
 /** 검색 단추 기본 모양 */
 const DEFAULT_BUTTON_CLASS =
-  'px-6 py-3 min-h-[44px] bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 active:scale-95 active:bg-gray-700 dark:active:bg-gray-200 transition-all cursor-pointer whitespace-nowrap';
+  'px-6 py-3 min-h-[44px] btn-primary rounded-lg font-medium active:scale-95 active:bg-gray-700 dark:active:bg-gray-200 transition-all cursor-pointer whitespace-nowrap';
 
 export interface RecentSearchComboboxProps {
   /** 최근 검색어 범위 (코어 통합검색 `core.site`, 확장은 `{확장ID}.{이름}`) — 같은 범위끼리 목록을 공유한다 */
@@ -390,7 +390,7 @@ export const RecentSearchCombobox: React.FC<RecentSearchComboboxProps> = ({
           {showIcon && (
             <Icon
               name="search"
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400 pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none"
             />
           )}
           <Input
@@ -439,7 +439,7 @@ export const RecentSearchCombobox: React.FC<RecentSearchComboboxProps> = ({
         >
           {autoSave ? (
             <>
-              <Div className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-500 dark:text-gray-400">{listLabel}</Div>
+              <Div className="px-4 pt-3 pb-1 text-xs font-semibold text-muted">{listLabel}</Div>
               {itemCount > 0 ? (
                 <Ul id={listboxId} role="listbox" aria-label={listLabel} className="max-h-72 overflow-y-auto py-1">
                   {items.map((item, index) => (
@@ -473,7 +473,7 @@ export const RecentSearchCombobox: React.FC<RecentSearchComboboxProps> = ({
                   ))}
                 </Ul>
               ) : (
-                <Div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400" role="status">
+                <Div className="px-4 py-3 text-sm text-muted" role="status">
                   {loading ? t('search.history.loading') : t('search.history.empty')}
                 </Div>
               )}
@@ -481,7 +481,7 @@ export const RecentSearchCombobox: React.FC<RecentSearchComboboxProps> = ({
                 {itemCount > 0 ? (
                   <Button
                     type="button"
-                    className="min-h-[44px] px-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 cursor-pointer"
+                    className="min-h-[44px] px-2 text-xs text-muted hover:text-gray-800 dark:hover:text-gray-100 cursor-pointer"
                     onClick={clearAll}
                   >
                     {t('search.history.clear_all')}
@@ -491,7 +491,7 @@ export const RecentSearchCombobox: React.FC<RecentSearchComboboxProps> = ({
                 )}
                 <Button
                   type="button"
-                  className="min-h-[44px] px-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 cursor-pointer"
+                  className="min-h-[44px] px-2 text-xs text-muted hover:text-gray-800 dark:hover:text-gray-100 cursor-pointer"
                   onClick={() => toggleAutoSave(false)}
                 >
                   {t('search.history.auto_save_off')}

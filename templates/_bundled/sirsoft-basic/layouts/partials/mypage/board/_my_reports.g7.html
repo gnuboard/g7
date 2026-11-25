@@ -113,7 +113,7 @@
     </div>
     <!-- 신고 목록 -->
     <div class="space-y-3">
-      <div data-testid="my-report-row-{{report.id}}" data-each="report in {{myReports?.data?.data ?? []}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 {{report.target_deleted ? 'opacity-75' : ''}}">
+      <div data-testid="my-report-row-{{report.id}}" data-each="report in {{myReports?.data?.data ?? []}}" class="card-plain p-4 {{report.target_deleted ? 'opacity-75' : ''}}">
         <div class="flex items-start justify-between gap-3">
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap mb-1">
@@ -164,11 +164,11 @@
         </div>
       </div>
       <!-- 신고 없음 -->
-      <div data-testid="my-reports-empty" data-if="{{myReports !== undefined &amp;&amp; (myReports?.data?.data ?? []).length === 0}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+      <div data-testid="my-reports-empty" data-if="{{myReports !== undefined &amp;&amp; (myReports?.data?.data ?? []).length === 0}}" class="card-plain p-8 text-center">
         <icon name="flag" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
         <!-- 검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다 -->
-        <p data-if="{{!(!!_global.myReportsSearchApplied || !!_global.myReportsBoard || !!_global.myReportsStatus || !!_global.myReportsTargetType)}}" class="text-gray-500 dark:text-gray-400">$t:mypage.board_activities.reports.empty</p>
-        <p data-if="{{!!_global.myReportsSearchApplied || !!_global.myReportsBoard || !!_global.myReportsStatus || !!_global.myReportsTargetType}}" class="text-gray-500 dark:text-gray-400">$t:board.no_search_results</p>
+        <p data-if="{{!(!!_global.myReportsSearchApplied || !!_global.myReportsBoard || !!_global.myReportsStatus || !!_global.myReportsTargetType)}}" class="text-muted">$t:mypage.board_activities.reports.empty</p>
+        <p data-if="{{!!_global.myReportsSearchApplied || !!_global.myReportsBoard || !!_global.myReportsStatus || !!_global.myReportsTargetType}}" class="text-muted">$t:board.no_search_results</p>
       </div>
     </div>
     <!-- 페이지네이션 -->

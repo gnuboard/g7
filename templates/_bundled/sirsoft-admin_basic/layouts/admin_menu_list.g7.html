@@ -41,7 +41,10 @@
       </field>
       <field name="slug" value=""/>
       <field name="url" value=""/>
-      <field name="icon" value="fas fa-home"/>
+      <field name="icon_spec">
+        <field name="type" value="class"/>
+        <field name="value" value="fas fa-home"/>
+      </field>
       <field name="parent_id" :value="null"/>
       <field name="extension_type" :value="null"/>
       <field name="extension_identifier" :value="null"/>
@@ -66,7 +69,7 @@
   </transition-overlay>
   <slot name="content">
     <div data-ref="menu_list_content" class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900">
-      <responsive on="640-1023" class="p-6 min-h-screen bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="640-1023" class="admin-page-content"/>
       <responsive on="1024-" class="p-8 min-h-screen bg-gray-50 dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:admin.menus.title" description="$t:admin.menus.description">
         <icon-button type="button" data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
@@ -83,7 +86,7 @@
           <icon name="{{_global.menuBulkMode === true ? 'check' : 'list'}}" size="md"/>
           <span>{{_global.menuBulkMode === true ? $t:admin.menus.bulk.exit : $t:admin.menus.bulk.enter}}</span>
         </button>
-        <button type="button" data-ref="add_menu_button" disabled="{{menus?.data?.abilities?.can_create !== true || _global.menuBulkMode === true}}" class="flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button type="button" data-ref="add_menu_button" disabled="{{menus?.data?.abilities?.can_create !== true || _global.menuBulkMode === true}}" class="flex-center btn btn-primary h-10">
           <on type="click">
             <!-- 새 메뉴 — 오른쪽 판을 등록 모드로 돌리면서 **선택을 비우고 입력값을 전부 초기화한다**.
                  한 벌뿐인 폼을 수정과 함께 쓰므로, 안 비우면 직전에 보던 메뉴의 값이 새 메뉴에 실린다. -->
@@ -95,7 +98,10 @@
                 </field>
                 <field name="slug" value=""/>
                 <field name="url" value=""/>
-                <field name="icon" value="fas fa-home"/>
+                <field name="icon_spec">
+                  <field name="type" value="class"/>
+                  <field name="value" value="fas fa-home"/>
+                </field>
                 <field name="parent_id" :value="null"/>
                 <field name="extension_type" :value="null"/>
                 <field name="extension_identifier" :value="null"/>

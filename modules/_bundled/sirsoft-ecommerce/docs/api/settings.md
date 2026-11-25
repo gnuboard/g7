@@ -647,8 +647,6 @@ HTTP/1.1 200
 | shipping.international_shipping_enabled | body | boolean | 아니오 | — | 해외배송 기능 사용 여부 |
 | shipping.free_shipping_threshold | body | integer | 아니오 | min 0 | 무료배송 기준 금액 (이 금액 이상 주문 시 무료배송) |
 | shipping.free_shipping_enabled | body | boolean | 아니오 | — | 무료배송 기준금액 적용 여부 |
-| shipping.address_validation_enabled | body | boolean | 아니오 | — | 주소 검증(주소찾기 API) 사용 여부 |
-| shipping.address_api_provider | body | string | 아니오 | max 50 | 주소찾기 API 제공자 식별자 (기본값 `kakao`) |
 | shipping.carriers | body | array | 아니오 | — | 배송사 목록(DB 동기화 대상). 항목별 `id`·`code`(소문자/숫자/하이픈, 필수)·`name`(다국어 배열 — **신규 행**은 현재 로케일 필수, `id` 가 있는 기존 행은 길이·형식만 검사한다: 다른 로케일에서 만든 행 때문에 탭 전체가 막히지 않게 하기 위함)·`type`(`domestic`\|`international`, 필수)·`tracking_url`(`{tracking_number}` 치환)·`is_active`·`sort_order`. 코드 중복 불가. **기존 배송사끼리 코드를 맞바꾸는 저장은 422**(`shipping.carriers.N.code` — `code_swap`): 파일 쓰기 뒤 DB unique 에서 죽어 반쪽 상태가 남는 것을 막는다. 같은 저장에서 지워지는 배송사의 코드를 물려받는 것은 허용 |
 | shipping.types | body | array | 아니오 | — | 배송유형 목록(DB 동기화 대상). 항목별 `id`·`code`(소문자/숫자/하이픈, 필수)·`name`(다국어 배열 — **신규 행**은 현재 로케일 필수, `id` 가 있는 기존 행은 길이·형식만 검사한다: 다른 로케일에서 만든 행 때문에 탭 전체가 막히지 않게 하기 위함)·`category`(`domestic`\|`international`\|`other`, 필수)·`is_active`·`sort_order`. 코드 중복 불가. **기존 배송유형끼리 코드를 맞바꾸는 저장은 422**(`shipping.types.N.code` — `code_swap`): 파일 쓰기 뒤 DB unique 에서 죽어 반쪽 상태가 남는 것을 막는다. 같은 저장에서 지워지는 배송유형의 코드를 물려받는 것은 허용 |
 
@@ -831,8 +829,6 @@ Content-Type: application/json
     "shipping.international_shipping_enabled": true,
     "shipping.free_shipping_threshold": 1,
     "shipping.free_shipping_enabled": true,
-    "shipping.address_validation_enabled": true,
-    "shipping.address_api_provider": "서울특별시 강남구 테헤란로 1",
     "shipping.carriers": [
         "예시값"
     ],
@@ -2231,9 +2227,7 @@ HTTP/1.1 200
             ],
             "international_shipping_enabled": true,
             "free_shipping_threshold": 50000,
-            "free_shipping_enabled": true,
-            "address_validation_enabled": false,
-            "address_api_provider": "kakao"
+            "free_shipping_enabled": true
         }
     }
 }

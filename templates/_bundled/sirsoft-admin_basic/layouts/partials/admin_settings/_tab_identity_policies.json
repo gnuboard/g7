@@ -55,7 +55,7 @@
                     "text": "$t:admin.identity.policies.purposes_section_description"
                 },
                 {
-                    "id": "page_header",
+                    "id": "identity_policies_header",
                     "type": "basic",
                     "name": "Div",
                     "responsive": {
@@ -225,9 +225,7 @@
                     "name": "Div",
                     "responsive": {
                         "768-": {
-                            "props": {
-                                "className": "bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex gap-2 flex-row items-center"
-                            }
+                            "classMerge": "flex-row items-center"
                         }
                     },
                     "props": {
@@ -240,9 +238,7 @@
                             "name": "Select",
                             "responsive": {
                                 "768-": {
-                                    "props": {
-                                        "className": "text-primary w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
-                                    }
+                                    "classMerge": "w-40"
                                 }
                             },
                             "actions": [
@@ -301,9 +297,7 @@
                             "name": "Select",
                             "responsive": {
                                 "768-": {
-                                    "props": {
-                                        "className": "text-primary w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
-                                    }
+                                    "classMerge": "w-40"
                                 }
                             },
                             "actions": [
@@ -367,9 +361,7 @@
                             "name": "Input",
                             "responsive": {
                                 "768-": {
-                                    "props": {
-                                        "className": "input flex-1 min-w-[200px]"
-                                    }
+                                    "classMerge": "flex-1 min-w-[200px]"
                                 }
                             },
                             "actions": [
@@ -446,7 +438,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
+                                "className": "btn btn-primary"
                             },
                             "children": [
                                 {
@@ -494,7 +486,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                "className": "btn btn-secondary"
                             },
                             "children": [
                                 {
@@ -650,7 +642,22 @@
                                                             "props": {
                                                                 "className": "px-3 py-2 text-gray-700 dark:text-gray-300"
                                                             },
-                                                            "text": "$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}"
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{policy.scope === 'custom' && policy.checkpoint_registered === false}}",
+                                                                    "props": {
+                                                                        "className": "ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                                                                    },
+                                                                    "text": "$t:admin.identity.policies.checkpoint_missing"
+                                                                }
+                                                            ]
                                                         },
                                                         {
                                                             "type": "basic",
@@ -945,8 +952,17 @@
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
+                                                                    "if": "{{policy.scope === 'custom' && policy.checkpoint_registered === false}}",
                                                                     "props": {
-                                                                        "className": "mx-1.5 text-gray-500 dark:text-gray-400"
+                                                                        "className": "ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                                                                    },
+                                                                    "text": "$t:admin.identity.policies.checkpoint_missing"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "mx-1.5 text-muted"
                                                                     },
                                                                     "text": "·"
                                                                 },
@@ -995,7 +1011,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "mx-1.5 text-gray-500 dark:text-gray-400"
+                                                                "className": "mx-1.5 text-muted"
                                                             },
                                                             "text": "·"
                                                         },
@@ -1016,7 +1032,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "mx-1.5 text-gray-500 dark:text-gray-400"
+                                                                "className": "mx-1.5 text-muted"
                                                             },
                                                             "text": "·"
                                                         },

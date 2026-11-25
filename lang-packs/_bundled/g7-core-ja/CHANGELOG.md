@@ -4,6 +4,19 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.2.1] - 2026-11-25
+
+### Added
+
+- 관리자 메뉴 아이콘(이미지·SVG·업로드) 저장 검증 문구(`validation.menu.icon.format`·`validation.menu.icon_spec.*`·`validation.menu.icon_upload.*`·항목 이름 `validation.menu.attributes.icon_file`)와 업로드 결과·확장 선언 경고 문구(`menu.icon_uploaded`·`menu.icon_upload_failed`·`menu.icon_declaration_invalid`)의 일본어 번역을 추가했습니다.
+- 레이아웃 마크업 경고 「폭별 덧붙이기 클래스(`class-merge`)에 폭 변형 클래스가 있음」(`layout_markup_lint.class_merge_breakpoint_variant`)의 일본어 번역을 추가했습니다.
+- 본인인증 정책의 등록되지 않은 확장 지점 검증 문구(`validation.identity_policy.custom_target_unregistered`)와 활동 기록 기간 검증 문구(`validation.activity_log.date_range_invalid`)·기간 항목 이름(`validation.attributes.date_from`·`date_to`)의 일본어 번역을 추가했습니다.
+- 등록되지 않은 본인인증 확장 지점을 강제하려 할 때의 예외 문구(`identity.errors.checkpoint_not_registered`)의 일본어 번역을 추가했습니다.
+
+### Changed
+
+- 코어 버전 조건을 만족하지 않는 확장의 거절 문구(`extensions.errors.core_version_mismatch`)를 코어 7.2.1 문구에 맞춰 「コアバージョンの条件 >=7.2.1 が必要です」로 바꿨습니다(조건 뒤에 「以上」가 겹쳐 붙던 표현).
+
 ## [1.2.0] - 2026-11-20
 
 ### Added

@@ -268,7 +268,7 @@
               <!-- 레이블 행: clock 아이콘 + 회색 레이블 + 안내문구 or 등록 버튼 -->
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
-                  <icon name="clock" class="text-sm text-gray-500 dark:text-gray-400"/>
+                  <icon name="clock" class="text-sm text-muted"/>
                   <span class="text-sm font-semibold text-gray-600 dark:text-gray-300">$t:shop.qna.seller_reply</span>
                 </div>
                 <!-- 답변 등록 버튼 (can_update + 입력 폼 닫혀있을 때) -->
@@ -329,7 +329,7 @@
       <!-- 문의 없음 -->
       <div data-if="{{qna !== undefined &amp;&amp; (!qna.data.items || qna.data.items.length === 0)}}" class="py-12 text-center">
         <icon name="comment" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
-        <p class="text-gray-500 dark:text-gray-400">$t:shop.qna.empty</p>
+        <p class="text-muted">$t:shop.qna.empty</p>
       </div>
     </div>
     <!-- 페이지네이션 -->

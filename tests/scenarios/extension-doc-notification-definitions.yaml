@@ -1,0 +1,16 @@
+feature: 확장 문서 생성기의 알림 정의 수집 — 레코드마다 생기는 정의 제외 (7.2.1 출시 전 실측 L0-003)
+
+description: |
+  쇼핑몰 1.4.1 은 발급 알림을 켠 쿠폰마다 coupon_issued.{쿠폰ID} 정의를 선언에 싣는다. 문서 생성기(ext:docgen)가 그 값을
+  그대로 쓰면 개발 DB 의 쿠폰 수에 따라 생성 문서가 바뀌고 데이터 id 가 커밋 문서에 남는다. 수집 단계에서 레코드별 정의를 뺀다.
+
+axes:
+  surface: [collector, bundled_ecommerce]
+
+effects:
+  - per_record_notification_types_excluded
+  - list_shape_preserved
+  - bundled_docs_free_of_per_record_types
+
+test_files:
+  - tests/Feature/Documentation/ExtensionDocNotificationDefinitionsTest.php

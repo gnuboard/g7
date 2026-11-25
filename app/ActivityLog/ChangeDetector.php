@@ -15,8 +15,8 @@ class ChangeDetector
     /**
      * 모델의 현재 상태와 스냅샷을 비교하여 변경 사항을 감지합니다.
      *
-     * @param Model $model 현재 모델 상태
-     * @param array|null $snapshot 변경 전 스냅샷 (toArray() 결과)
+     * @param  Model  $model  현재 모델 상태
+     * @param  array|null  $snapshot  변경 전 스냅샷 (toArray() 결과)
      * @return array|null 변경 사항 배열 또는 변경 없으면 null
      */
     public static function detect(Model $model, ?array $snapshot): ?array
@@ -60,6 +60,13 @@ class ChangeDetector
                     $change['new_label_key'] = $new !== null ? $enumClass::tryFrom($new)?->labelKey() : null;
                 }
 
+                // 표시 요약 — 비교는 원값으로 끝낸 뒤 기록 값만 요약값으로 바꾼다.
+                // 큰 값(예: 메뉴 아이콘 SVG 코드 최대 32KB)이 활동 로그에 통째로 쌓이지 않게 한다.
+                if (isset($meta['display']) && is_callable($meta['display'])) {
+                    $change['old'] = ($meta['display'])($old);
+                    $change['new'] = ($meta['display'])($new);
+                }
+
                 $changes[] = $change;
             }
         }
@@ -70,7 +77,7 @@ class ChangeDetector
     /**
      * 모델의 $activityLogFields 메타데이터를 반환합니다.
      *
-     * @param Model $model 대상 모델
+     * @param  Model  $model  대상 모델
      * @return array 필드 메타데이터 배열
      */
     private static function getActivityLogFields(Model $model): array

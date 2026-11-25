@@ -10,13 +10,16 @@
  *   `form_meta.data.board.max_file_count/max_file_size` 를 파라미터로 받아야 한다.
  *   유저 폼(`_post_form.json` 의 `board.form.attachments_desc`)이 이미 그 형태다.
  *
- * @scenario surface=admin_post_form, source=board_settings
- * @effects admin_attachment_hint_renders_board_limits
+ * 소유 매니페스트: modules/_bundled/sirsoft-board/tests/scenarios/board-post-form-attachments-desc.yaml
+ * 효과 요약(마커 아님, 평문): 관리자 게시글 폼의 첨부 안내가 게시판 설정의 개수와 용량으로 렌더된다.
+ * 이 파일은 안내 노드만 떼어 재고, form_meta 가 도착한 실제 폼에서의 치환은 그 매니페스트의 브라우저 spec 이 잰다.
  *
  * @vitest-environment jsdom
  */
 
 import { describe, it, expect, afterEach } from 'vitest';
+import fs from 'fs';
+import path from 'path';
 
 import {
     createLayoutTest,
@@ -48,6 +51,9 @@ function findById(node: any, id: string): any | null {
 }
 
 describe('관리자 첨부 안내 — 선언 (#81 L-01)', () => {
+    /**
+     * @effects admin_attachment_hint_node_passes_board_limit_params
+     */
     it('안내 노드가 존재하고 게시판 설정값을 파라미터로 넘긴다', () => {
         const node = findById(attachmentsPartial, DESC_ID);
 
@@ -57,13 +63,28 @@ describe('관리자 첨부 안내 — 선언 (#81 L-01)', () => {
         expect(node.text).toContain('maxSize={{form_meta?.data?.board?.max_file_size');
     });
 
+    /**
+     * @effects admin_attachment_hint_pairs_dark_color
+     */
     it('다크 모드 variant 를 함께 지정한다', () => {
         const node = findById(attachmentsPartial, DESC_ID);
+        const tokens = String(node.props.className ?? '').split(/\s+/);
 
+        // 인라인 회색 쌍(text-gray-500 + dark:text-gray-400)은 확장 사본 의미 클래스 board-text-muted 로 묶였다(#399 R-1 P1).
+        // 그 클래스가 다크 짝을 갖는지는 확장 생성 CSS 에서 직접 확인한다.
+        if (tokens.includes('board-text-muted')) {
+            const css = fs.readFileSync(path.resolve(__dirname, '../../../css/g7-extension.generated.css'), 'utf8');
+            expect(css).toMatch(/\.board-text-muted\s*\{[^}]*color:/);
+            expect(css).toMatch(/\.board-text-muted:is\(\[data-g7-color-scheme="dark"\][^{]*\{[^}]*color:/);
+            return;
+        }
         expect(node.props.className).toMatch(/text-gray-\d+/);
         expect(node.props.className).toMatch(/dark:text-gray-\d+/);
     });
 
+    /**
+     * @effects admin_attachment_hint_lang_key_has_limit_placeholders
+     */
     it('lang 키가 ko 에 정의되어 있고 파라미터를 포함한다', () => {
         const value = (koPosts as any).form?.attachments_desc;
 
@@ -72,6 +93,9 @@ describe('관리자 첨부 안내 — 선언 (#81 L-01)', () => {
         expect(value).toContain('{{maxSize}}');
     });
 
+    /**
+     * @effects admin_attachment_legacy_fixed_hint_keys_removed
+     */
     it('사장된 고정 숫자 안내 키가 남아 있지 않다', () => {
         expect((koPosts as any).form?.attachments_limit).toBeUndefined();
         expect((koPosts as any).form?.max_10mb).toBeUndefined();
@@ -118,6 +142,9 @@ describe('관리자 첨부 안내 — 렌더 결과 (#81 L-01)', () => {
         return utils;
     }
 
+    /**
+     * @effects admin_attachment_hint_isolated_render_shows_board_limits
+     */
     it('게시판이 3개·50MB 로 설정되어 있으면 그 값이 안내에 나온다', async () => {
         const utils = await renderDesc({ max_file_count: 3, max_file_size: 50 });
 
@@ -129,6 +156,9 @@ describe('관리자 첨부 안내 — 렌더 결과 (#81 L-01)', () => {
         utils.cleanup();
     });
 
+    /**
+     * @effects admin_attachment_hint_isolated_render_shows_board_limits
+     */
     it('게시판 설정이 바뀌면 안내도 따라 바뀐다 (고정 문구가 아니다)', async () => {
         const utils = await renderDesc({ max_file_count: 10, max_file_size: 2 });
 

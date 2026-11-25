@@ -15,14 +15,14 @@
       <responsive on="portable" class="ecommerce-admin-page-content-compact"/>
       <div data-ref="page_header" class="ecommerce-flex-start ecommerce:justify-between ecommerce:gap-4 ecommerce:mb-6">
         <div data-ref="page_header_left">
-          <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-2"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-2"/>$t:sirsoft-ecommerce.admin.personal_payment_detail.title</h1>
+          <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-2"><responsive on="640-" class-merge="ecommerce:text-2xl"/>$t:sirsoft-ecommerce.admin.personal_payment_detail.title</h1>
           <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary">
             <span>$t:sirsoft-ecommerce.admin.personal_payment_detail.meta.payment_number:</span>
             <span class="ecommerce:font-medium ecommerce-text-primary">PP20251028-005</span>
-            <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">|</span>
+            <span class="ecommerce-text-muted">|</span>
             <span>$t:sirsoft-ecommerce.admin.personal_payment_detail.meta.created_at:</span>
             <span class="ecommerce:font-medium ecommerce-text-primary">2025-10-28 09:15:30</span>
-            <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">|</span>
+            <span class="ecommerce-text-muted">|</span>
             <span>$t:sirsoft-ecommerce.admin.personal_payment_detail.meta.status:</span>
             <span class="ecommerce-badge ecommerce-badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
           </div>
@@ -80,7 +80,7 @@
         <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4 ecommerce:mb-6"/>
         <div data-ref="member_info_card" class="ecommerce-admin-card">
           <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4">
-            <icon name="user" class="ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+            <icon name="user" class="ecommerce:text-xl ecommerce-icon-muted ecommerce-text-muted"/>
             <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.personal_payment_detail.member_info.title</h3>
           </div>
           <div class="ecommerce-grid-2col">
@@ -107,7 +107,7 @@
         </div>
         <div data-ref="payment_detail_card" class="ecommerce-admin-card">
           <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4">
-            <icon name="globe" class="ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+            <icon name="globe" class="ecommerce:text-xl ecommerce-icon-muted ecommerce-text-muted"/>
             <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_detail.title</h3>
           </div>
           <div class="ecommerce-grid-2col">
@@ -137,7 +137,7 @@
         <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4 ecommerce:mb-6"/>
         <div data-ref="payment_link_card" class="ecommerce-admin-card">
           <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4">
-            <icon name="link" class="ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+            <icon name="link" class="ecommerce:text-xl ecommerce-icon-muted ecommerce-text-muted"/>
             <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.title</h3>
           </div>
           <div class="ecommerce-flex-center ecommerce:gap-2">
@@ -153,7 +153,7 @@
         <div data-ref="memo_card" class="ecommerce-admin-card">
           <div class="ecommerce-flex-between ecommerce:mb-4">
             <div class="ecommerce-flex-center ecommerce:gap-2">
-              <icon name="file-text" class="ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+              <icon name="file-text" class="ecommerce:text-xl ecommerce-icon-muted ecommerce-text-muted"/>
               <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.personal_payment_detail.memo.title</h3>
             </div>
             <button type="button" class="ecommerce-flex-center ecommerce:text-sm ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline ecommerce:gap-1">
@@ -167,7 +167,7 @@
       <div data-ref="log_section" class="ecommerce-admin-card">
         <div data-ref="log_header" class="ecommerce-flex-between ecommerce:cursor-pointer">
           <div class="ecommerce-flex-center ecommerce:gap-3">
-            <icon name="calendar" class="ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+            <icon name="calendar" class="ecommerce:text-xl ecommerce-icon-muted ecommerce-text-muted"/>
             <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.personal_payment_detail.log.title</h3>
             <span class="ecommerce-badge ecommerce-badge-gray">$t:sirsoft-ecommerce.admin.sample.fmt.items|count=5</span>
           </div>
@@ -261,7 +261,7 @@
             <button aria-label="$t:common.prev_page" type="button" class="ecommerce-btn ecommerce-btn-icon" :disabled="true">
               <icon name="chevron-left" class="ecommerce:text-base"/>
             </button>
-            <button type="button" class="ecommerce-flex-center ecommerce:w-8 ecommerce:h-8 ecommerce:justify-center ecommerce:rounded-md ecommerce:text-sm ecommerce:font-medium ecommerce:bg-gray-900 ecommerce:text-white ecommerce:dark:bg-white ecommerce:dark:text-gray-900">1</button>
+            <button type="button" class="ecommerce-flex-center ecommerce:w-8 ecommerce:h-8 ecommerce-btn ecommerce-btn-primary ecommerce:rounded-md">1</button>
             <button aria-label="$t:common.next_page" type="button" class="ecommerce-btn ecommerce-btn-icon">
               <icon name="chevron-right" class="ecommerce:text-base"/>
             </button>

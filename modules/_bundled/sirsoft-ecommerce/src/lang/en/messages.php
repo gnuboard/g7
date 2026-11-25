@@ -33,6 +33,9 @@ return [
         'order_updated' => 'Category order has been changed.',
     ],
     'settings' => [
+        'promotion' => [
+            'field_disabled_suffix' => '(disabled)',
+        ],
         'fetch_success' => 'Settings retrieved successfully.',
         'fetch_failed' => 'Failed to retrieve settings.',
         'save_success' => 'Settings have been saved.',
@@ -350,6 +353,28 @@ return [
 
     // User Coupon Messages (마이페이지/체크아웃용)
     'coupon' => [
+        'auto_issue_already_issued' => 'This member has already received the coupon under the same condition.',
+        'user_inactive' => 'Coupons can only be issued to active members.',
+        'zone_fetched' => 'Coupon zone loaded.',
+        'zone_fetch_failed' => 'Failed to load the coupon zone.',
+        'notification' => [
+            'definition_name' => 'Coupon Issued – :coupon',
+            'definition_description' => 'Sent when this coupon is issued to a member (edit on the coupon edit screen).',
+            'mail_subject' => '{ad_prefix}[{app_name}] Your {coupon_name} coupon has been issued',
+            'mail_heading' => 'Coupon Issued',
+            'mail_intro' => 'Dear {name}, a coupon has been issued to you. Check it in My Coupons.',
+            'label_coupon' => 'Coupon',
+            'label_benefit' => 'Benefit',
+            'label_min_order' => 'Minimum order',
+            'label_expires' => 'Valid until',
+            'mail_button' => 'View My Coupons',
+            'mail_footer' => 'This email was sent from {app_name}.',
+            'database_subject' => '{ad_prefix}Coupon Issued',
+            'database_body' => 'Your {coupon_name} coupon ({coupon_benefit}) has been issued. Valid until: {coupon_expires_date}',
+            'ad_prefix' => '[AD] ',
+            'no_expiry' => 'No expiry',
+            'no_min_order' => 'None',
+        ],
         'list_fetched' => 'Coupon list retrieved successfully.',
         'list_fetch_failed' => 'Failed to retrieve coupon list.',
         'available_fetched' => 'Available coupons retrieved successfully.',
@@ -381,6 +406,13 @@ return [
 
     // User Mileage Messages (마이페이지/체크아웃용)
     'mileage' => [
+        'notification' => [
+            'reason' => [
+                'purchase' => 'Purchase reward',
+                'admin' => 'Granted by administrator',
+                'signup' => 'Signup reward',
+            ],
+        ],
         'balance_fetched' => 'Mileage balance retrieved successfully.',
         'balance_fetch_failed' => 'Failed to retrieve mileage balance.',
         'max_usable_fetched' => 'Maximum usable mileage retrieved successfully.',
@@ -1252,6 +1284,8 @@ return [
 
     // Product Review Messages
     'reviews' => [
+        'user_list_fetched' => 'Your reviews have been loaded.',
+        'user_list_fetch_failed' => 'Failed to load your reviews.',
         'fetch_success' => 'Reviews retrieved successfully.',
         'fetch_failed' => 'Failed to retrieve reviews.',
         'created' => 'Review has been created.',
@@ -1477,6 +1511,33 @@ return [
             'message' => 'Body entered by the administrator (line breaks preserved)',
         ],
         'by_type' => [
+            'coupon_expiring_soon' => [
+                'count' => 'Number of coupons expiring soon',
+                'earliest_expires_date' => 'Earliest expiry date',
+                'coupon_names' => 'Coupon names (comma-separated)',
+                'coupons_url' => 'Coupon box URL',
+                'coupons_path' => 'Coupon box path (without the site address)',
+            ],
+            'mileage_earned' => [
+                'amount' => 'Mileage',
+                'reason_label' => 'Earning reason (purchase, admin grant, sign-up)',
+                'expires_date' => 'Expiry date (empty if none)',
+                'mileage_path' => 'Mileage history path (without the site address)',
+            ],
+            'mileage_deducted' => [
+                'amount' => 'Mileage',
+                'memo' => 'Deduction reason (admin memo)',
+                'mileage_path' => 'Mileage history path (without the site address)',
+            ],
+            'order_partially_cancelled' => [
+                'cancelled_items' => 'Cancelled items (comma-separated)',
+                'refund_amount' => 'Expected refund amount',
+            ],
+            'review_replied' => [
+                'reply_excerpt' => 'Reply excerpt',
+                'reviews_url' => 'My reviews URL',
+                'reviews_path' => 'My reviews path (without the site address)',
+            ],
             'new_order_admin' => [
                 'name' => 'Recipient (administrator) name',
                 'order_url' => 'Order management URL',
@@ -1527,6 +1588,18 @@ return [
     ],
     // Console command output
     'console' => [
+        'issue_birthday_coupons' => [
+            'field_not_configured' => 'No member field is set as the birthday, so birthday coupons are not issued. (Shop settings → Coupons)',
+            'invalid_date' => '--date must be in YYYY-MM-DD format.',
+            'no_coupons' => 'There are no birthday coupons to issue.',
+            'done' => ':date — :targets birthday members, :issued coupons issued',
+        ],
+        'notify_expiring_coupons' => [
+            'notification_disabled' => 'Coupon expiry notices are disabled.',
+            'no_targets' => 'No members to notify about expiring coupons.',
+            'targets' => ':count members to notify about expiring coupons',
+            'done' => 'Sent coupon expiry notices to :count members.',
+        ],
         'prune_exports' => [
             'done' => 'Expired exports: :expired, timed-out exports marked as failed: :failed.',
         ],

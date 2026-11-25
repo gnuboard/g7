@@ -25,7 +25,7 @@
                 <!-- 대표 계좌 지정. 배열 전체를 다시 만들면서 고른 것만 참으로 둔다 — 대표는 하나뿐이라 끄는 동작이 없다. -->
                 <set-state target="local" form.order_settings.bank_accounts="{{(_local.form?.order_settings?.bank_accounts ?? []).map((a, i) => ({...a, is_default: i === account._idx}))}}" :hasChanges="true"/>
               </on>
-              <icon name="{{account.is_default ? 'circle-dot' : 'circle'}}" class="{{account.is_default ? 'ecommerce:text-blue-600 ecommerce:dark:text-blue-400' : 'ecommerce:text-gray-500 ecommerce:dark:text-gray-400'}}"/>
+              <icon name="{{account.is_default ? 'circle-dot' : 'circle'}}" class="{{account.is_default ? 'ecommerce:text-blue-600 ecommerce:dark:text-blue-400' : 'ecommerce-text-muted'}}"/>
             </button>
           </td>
           <td>

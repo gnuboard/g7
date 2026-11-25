@@ -110,7 +110,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:user.identity.challenge.remaining_attempts|count={{Math.max(0, (_global.identityChallenge?.maxAttempts ?? 0) - (_global.identityChallenge?.attempts ?? 0))}}"
                         }
@@ -156,7 +156,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                        "className": "text-xs text-muted"
                     },
                     "text": "$t:user.identity.challenge.check_spam"
                 }

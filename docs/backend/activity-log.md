@@ -293,6 +293,8 @@ $this->logActivity('schedule.auto_run', [
 
 > **예약 작업 실행 기록 (7.2.0~)**: 예약 작업의 실행 결과는 스케줄 실행 이력에 남고, 활동 로그 `schedule.run` 은 관리자가 화면에서 누른 **수동 실행만** 남깁니다. 스케줄러가 돌린 예약 실행과 큐 워커가 처리한 실행은 활동 로그에 남기지 않습니다 — 30초 주기 작업이 있으면 활동 로그가 실행 기록으로 덮이기 때문입니다. 실행 이력·실패는 [예약 작업(스케줄) 시스템](scheduling.md)을 봅니다.
 
+**회원 본인 활동 기록 (7.2.1~)**: 회원이 마이페이지에서 보는 자기 활동 기록(`GET /api/user/profile/activity-log`)은 그 회원이 행위자이고 `log_type` 이 `User` 인 기록만 돌려줍니다 — 같은 회원 계정으로 남았더라도 관리자 화면에서 한 작업(`Admin`)과 시스템 기록은 보이지 않습니다. 회원 화면에 보여야 하는 작업이라면 `log_type` 을 `Admin` 으로 명시하지 마세요. 쪽 나누기·기간 조건은 [프로필 API](api/profile.md)를 봅니다.
+
 ### 핵심 규칙
 
 | 규칙 | 설명 |
@@ -374,6 +376,19 @@ class Product extends Model
 | `enum` | Enum 값 | `enum` 키에 Backed Enum 클래스 지정 필수 |
 | `boolean` | 참/거짓 | true/false |
 | `json` | JSON 데이터 | 객체/배열 |
+
+### 표시 요약 (`display`, 선택)
+
+값이 커서 변경 이력에 통째로 남기면 안 되는 필드는 `display` 에 callable 을 둡니다. ChangeDetector 는 **원값으로 비교를 끝낸 뒤** 기록하는 `old`·`new` 만 callable 의 반환값으로 바꿉니다(값이 같으면 항목 자체가 없다).
+
+```php
+'icon' => [
+    'label_key' => 'activity_log.fields.icon',
+    'type' => 'text',
+    // SVG 아이콘 코드(최대 32KB) 대신 `svg:1a2b3c4d(812B)` 같은 요약을 기록
+    'display' => [MenuIconSpec::class, 'activityLogSummary'],
+],
+```
 
 ### ChangeDetector 사용법
 

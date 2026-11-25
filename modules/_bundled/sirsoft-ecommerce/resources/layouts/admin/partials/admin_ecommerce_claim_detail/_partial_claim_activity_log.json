@@ -170,9 +170,7 @@
                     "name": "Div",
                     "responsive": {
                         "768-": {
-                            "props": {
-                                "className": "ecommerce:block ecommerce:py-3 ecommerce:px-2 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
-                            }
+                            "classMerge": "ecommerce:block"
                         }
                     },
                     "props": {
@@ -233,7 +231,7 @@
                     "name": "Div",
                     "if": "{{claim_logs !== undefined && claim_logs !== null && (claim_logs.data?.data ?? []).length === 0}}",
                     "props": {
-                        "className": "ecommerce:py-12 ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                        "className": "ecommerce:py-12 ecommerce:text-center ecommerce-text-muted"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.activity_log.empty"
                 },
@@ -252,9 +250,7 @@
                             "name": "Div",
                             "responsive": {
                                 "768-": {
-                                    "props": {
-                                        "className": "ecommerce:block ecommerce:py-3 ecommerce:px-2 ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-800"
-                                    }
+                                    "classMerge": "ecommerce:block"
                                 }
                             },
                             "props": {
@@ -577,9 +573,7 @@
                             "name": "Div",
                             "responsive": {
                                 "768-": {
-                                    "props": {
-                                        "className": "ecommerce:hidden ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-800 ecommerce:py-3 ecommerce:px-2 ecommerce:space-y-1"
-                                    }
+                                    "classMerge": "ecommerce:hidden"
                                 }
                             },
                             "props": {

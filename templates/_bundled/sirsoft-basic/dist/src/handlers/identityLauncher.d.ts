@@ -70,6 +70,25 @@ export declare function rememberIdentityClaimHandler(action?: {
  */
 export declare function restoreIdentityTargetHandler(_action?: unknown, _context?: unknown): IdentityVerificationTarget | null;
 /**
+ * 전체화면 본인인증으로 넘어가기 전에 인증 대상을 세션 보관함에 남깁니다(7.2.1 가입 후 본인인증).
+ *
+ * 가입 폼은 가입 응답이 인증 건을 돌려주면 코드 입력 화면(`/identity/challenge`)으로 간다. 그 화면은 페이지를 새로 읽고
+ * 비회원이라 로그인 세션에서 대상을 얻을 수 없으므로, [코드 다시 받기] 가 가입 이메일을 싣도록 launcher 와 같은 보관함·모양
+ * (`{ payload: { purpose, target }, stashed_at }`)으로 남긴다. 이메일·전화번호만 보관하고, 둘 다 없으면 남기지 않는다.
+ *
+ * @param action 액션 정의 — `params.target`(email·phone) 또는 `params.email`·`params.phone`, 그리고 `params.purpose`
+ * @param _context 실행 컨텍스트 (미사용)
+ * @return 보관했으면 true
+ */
+export declare function stashIdentityTargetHandler(action?: {
+    params?: {
+        target?: Record<string, unknown> | null;
+        email?: string;
+        phone?: string;
+        purpose?: string;
+    };
+}, _context?: unknown): boolean;
+/**
  * 부트스트랩 시 코어 인터셉터에 launcher 를 등록합니다.
  *
  * `initTemplate()` 의 핸들러 등록 직후에 호출 — `window.G7Core.identity.setLauncher` 를 사용해

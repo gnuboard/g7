@@ -10,7 +10,7 @@ import { setThemeHandler, initThemeHandler } from './setThemeHandler';
 import { redirectToLoginWithReturnHandler } from './redirectToLoginWithReturn';
 import { downloadAttachmentHandler } from './downloadAttachment';
 import { markLocalOnceHandler } from './markLocalOnce';
-import { rememberIdentityClaimHandler, restoreIdentityTargetHandler } from './identityLauncher';
+import { rememberIdentityClaimHandler, restoreIdentityTargetHandler, stashIdentityTargetHandler } from './identityLauncher';
 /**
  * sirsoft-basic 템플릿의 모든 커스텀 핸들러
  *
@@ -46,6 +46,7 @@ export declare const handlers: {
     'sirsoft-basic.markLocalOnce': typeof markLocalOnceHandler;
     'sirsoft-basic.rememberIdentityClaim': typeof rememberIdentityClaimHandler;
     'sirsoft-basic.restoreIdentityTarget': typeof restoreIdentityTargetHandler;
+    'sirsoft-basic.stashIdentityTarget': typeof stashIdentityTargetHandler;
     toggleCartItemSelection: typeof toggleCartItemSelectionHandler;
     selectAllCartItems: typeof selectAllCartItemsHandler;
     setCartOption: typeof setCartOptionHandler;
@@ -96,6 +97,7 @@ export declare const handlerMap: {
     'sirsoft-basic.markLocalOnce': typeof markLocalOnceHandler;
     'sirsoft-basic.rememberIdentityClaim': typeof rememberIdentityClaimHandler;
     'sirsoft-basic.restoreIdentityTarget': typeof restoreIdentityTargetHandler;
+    'sirsoft-basic.stashIdentityTarget': typeof stashIdentityTargetHandler;
     toggleCartItemSelection: typeof toggleCartItemSelectionHandler;
     selectAllCartItems: typeof selectAllCartItemsHandler;
     setCartOption: typeof setCartOptionHandler;

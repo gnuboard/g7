@@ -33,7 +33,7 @@
   </permissions>
   <slot name="content">
     <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="paynhnkcp:p-4 paynhnkcp:min-h-screen paynhnkcp:bg-gray-50 paynhnkcp:dark:bg-gray-900">
-      <responsive on="640-1023" class="paynhnkcp:p-6 paynhnkcp:min-h-screen paynhnkcp:bg-gray-50 paynhnkcp:dark:bg-gray-900"/>
+      <responsive on="640-1023" class="pay-nhnkcp-admin-page-content"/>
       <responsive on="1024-" class="paynhnkcp:p-8 paynhnkcp:min-h-screen paynhnkcp:bg-gray-50 paynhnkcp:dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-pay_nhnkcp.settings.title" description="$t:sirsoft-pay_nhnkcp.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="pay-nhnkcp-alert-warning paynhnkcp:mt-6">
@@ -63,7 +63,7 @@
         </div>
         <!-- PC/모바일 카드/모바일 가상계좌 결제 가능 여부 요약 배지 -->
         <div class="paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:gap-3 paynhnkcp:p-4 paynhnkcp:border-b paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700">
-          <responsive on="640-" class="paynhnkcp:grid paynhnkcp:grid-cols-3 paynhnkcp:gap-3 paynhnkcp:p-4 paynhnkcp:border-b paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700"/>
+          <responsive on="640-" class-merge="paynhnkcp:grid-cols-3"/>
           <div class="{{health.data.summary.pc_payment_ready ? 'paynhnkcp:p-3 paynhnkcp:rounded paynhnkcp:border paynhnkcp:border-green-200 paynhnkcp:bg-green-50 paynhnkcp:dark:bg-green-900/20 paynhnkcp:dark:border-green-800' : 'paynhnkcp:p-3 paynhnkcp:rounded paynhnkcp:border paynhnkcp:border-red-200 paynhnkcp:bg-red-50 paynhnkcp:dark:bg-red-900/20 paynhnkcp:dark:border-red-800'}}">
             <div class="pay-nhnkcp-flex-center paynhnkcp:gap-2">
               <icon name="{{health.data.summary.pc_payment_ready ? 'circle-check' : 'circle-xmark'}}" class="paynhnkcp:leading-none {{health.data.summary.pc_payment_ready ? 'paynhnkcp:text-base paynhnkcp:text-green-700 paynhnkcp:dark:text-green-400' : 'paynhnkcp:text-base paynhnkcp:text-red-600 paynhnkcp:dark:text-red-400'}}"/>

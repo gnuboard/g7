@@ -183,8 +183,9 @@ class CouponIssueRepository implements CouponIssueRepositoryInterface
             // coupon 관계를 직렬화하지 않지만, 이 목록은 훅
             // `sirsoft-ecommerce.user_coupon.filter_list_result` 로 확장에 그대로 전달된다.
             // 제3자 확장이 쿠폰 원본 정의(쿠폰명·할인율·사용조건)를 읽고 있을 수 있어 현행 유지
-            // (프로젝트 결정 2026-08-04). 번들 템플릿에는 아직 대응 마이페이지 화면이 없다.
-            relations: ['coupon'],
+            // (프로젝트 결정 2026-08-04). 번들 템플릿의 마이페이지 쿠폰함(#952)이 쿠폰 블록을 그린다.
+            // 쿠폰함 카드(#952)가 적용 대상 이름(3개)과 사용 주문번호를 그린다
+            relations: ['coupon', 'coupon.includedProducts', 'coupon.includedCategories', 'order:id,order_number'],
             resultCap: PaginationLimits::resultCap('ecommerce.coupon_issues'),
         );
     }
@@ -318,5 +319,65 @@ class CouponIssueRepository implements CouponIssueRepositoryInterface
     public function deleteByUserId(int $userId): int
     {
         return (int) $this->model->newQuery()->where('user_id', $userId)->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function existsByAutoIssueKey(int $couponId, int $userId, string $autoIssueKey): bool
+    {
+        return $this->model->newQuery()
+            ->where('coupon_id', $couponId)
+            ->where('user_id', $userId)
+            ->where('auto_issue_key', $autoIssueKey)
+            ->exists();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getAvailableAutoIssuesBySourceOrder(int $orderId): Collection
+    {
+        // audit:allow query-unbounded-get reason: 한 주문이 원천인 첫구매 자동발급 건만 고른다 — 행 수가 운영자가 만든 첫구매 자동 쿠폰 수에 묶여 데이터 증가에 비례하지 않는다
+        return $this->model->newQuery()
+            ->with('coupon')
+            ->where('source_order_id', $orderId)
+            ->where('auto_issue_key', 'first_purchase')
+            ->where('status', CouponIssueRecordStatus::AVAILABLE->value)
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getExpiringUnnotifiedIssues(\DateTimeInterface $from, \DateTimeInterface $to, int $limit = 5000): Collection
+    {
+        return $this->model->newQuery()
+            ->with(['coupon', 'user'])
+            ->where('status', CouponIssueRecordStatus::AVAILABLE->value)
+            ->whereNotNull('expired_at')
+            ->where('expired_at', '>=', $from)
+            ->where('expired_at', '<=', $to)
+            ->whereNull('expiry_notified_at')
+            ->orderBy('user_id')
+            ->orderBy('expired_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function markExpiryNotified(array $issueIds): int
+    {
+        if ($issueIds === []) {
+            return 0;
+        }
+
+        return $this->model->newQuery()
+            ->whereIn('id', array_map('intval', $issueIds))
+            ->whereNull('expiry_notified_at')
+            ->update(['expiry_notified_at' => now()]);
     }
 }

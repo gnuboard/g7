@@ -772,11 +772,13 @@ class OrderCancellationService
             ? 'sirsoft-ecommerce.order.after_cancel'
             : 'sirsoft-ecommerce.order.after_partial_cancel';
 
+        // 4번째 인자 `OrderCancel` 은 부분 취소 알림(#952)이 취소 상품·환불액을 싣는 데 쓴다 — 앞 세 인자는 그대로다
         HookManager::doAction(
             $hookName,
             $order->fresh(),
             ['cancel_type' => $cancelType->value, 'cancel_items' => $cancelItems],
             $orderSnapshot,
+            $cancel->fresh() ?? $cancel,
         );
 
         return $cancel->fresh();

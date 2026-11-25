@@ -21,7 +21,7 @@ return [
     'stuck_update_unfinished_hint' => 'この更新(:from → :to)は完了していません — ファイルは新しいバージョンに替わっている可能性があるため、記録バージョンを :from に戻しました。更新をもう一度実行すると、終わっていない段階だけを続けて完了します: :command',
     'errors' => [
         'state_contract_conflict' => '\':name\' 状態契約は :owner が所有しています。:extension は同じ名前を宣言できません。',
-        'core_version_mismatch' => ':extension (:type)はグヌボード7コアバージョン :required 以上が必要です。(現在: :installed)',
+        'core_version_mismatch' => ':extension (:type)にはグヌボード7コアバージョンの条件 :required が必要です。(現在: :installed)',
         'php_extension_missing' => ':name 拡張を使用するには、サーバーに PHP 拡張 :extensions が必要です。インストール後にもう一度お試しください。',
         'version_check_failed' => 'バージョン検証に失敗しました。',
         'operation_in_progress' => '":name"に対して進行中の処理(:status)があるため、リクエストを処理できません。',

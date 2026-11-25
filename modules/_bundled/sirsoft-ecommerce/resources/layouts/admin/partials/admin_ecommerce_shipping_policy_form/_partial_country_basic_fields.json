@@ -106,9 +106,6 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "if": "{{_computed.activeCountrySetting?.shipping_method === 'custom'}}",
-                                            "props": {
-                                                "className": ""
-                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",

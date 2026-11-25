@@ -1,0 +1,22 @@
+feature: 게시판 1.3.1 — 저장만 되던 신고 채널 키 정리·본인인증 정책 창 사용자 지정 (#952 F·G)
+
+description: |
+  업그레이드 스텝이 두 키만 지우고 멱등인지, 정책 창의 사용자 지정 노출 조건을 잰다.
+
+axes:
+  case:
+    - 1_3_1_remove_keys
+    - 1_3_1_no_file
+    - identity_policy_modal_custom_option
+    - identity_policy_modal_checkpoint_target
+    - identity_policy_modal_unregistered_target
+
+effects:
+  - unused_report_channel_keys_removed
+  - identity_custom_scope_offered_only_with_checkpoints
+  - identity_custom_target_is_checkpoint_select
+  - identity_custom_unregistered_target_visible
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Upgrade/Upgrade131Test.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/identity-policy-custom-checkpoint.test.ts

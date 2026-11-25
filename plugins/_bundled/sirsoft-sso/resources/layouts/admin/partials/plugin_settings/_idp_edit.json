@@ -17,163 +17,29 @@
             "id": "idp_edit_header",
             "type": "basic",
             "name": "Div",
-            "props": {
-                "className": "sso:flex sso:flex-wrap sso:items-center sso:justify-between sso:gap-2"
-            },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "sso:flex sso:items-center sso:gap-3 sso:min-w-0"
+                        "className": "sso:min-w-0"
                     },
                     "children": [
                         {
-                            "id": "idp_back_button",
                             "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "목록 보기로 돌아간다 — 저장하지 않은 편집은 버린다",
-                                    "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/admin/plugins/sirsoft-sso/settings",
-                                        "query": {
-                                            "tab": "idps"
-                                        }
-                                    }
-                                }
-                            ],
+                            "name": "H2",
                             "props": {
-                                "type": "button",
-                                "className": "sso-btn-icon",
-                                "title": "$t:sirsoft-sso.admin.settings.idp.back",
-                                "aria-label": "$t:sirsoft-sso.admin.settings.idp.back"
+                                "className": "sso:text-lg sso:font-semibold sso:text-gray-900 sso:dark:text-white sso:truncate"
                             },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "props": {
-                                        "name": "fa-solid fa-arrow-left",
-                                        "className": "sso:text-lg"
-                                    }
-                                }
-                            ]
+                            "text": "{{_local.idpForm?.display_label ?? ''}}"
                         },
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "P",
                             "props": {
-                                "className": "sso:min-w-0"
+                                "className": "sso:text-xs sso-text-muted"
                             },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "H2",
-                                    "props": {
-                                        "className": "sso:text-lg sso:font-semibold sso:text-gray-900 sso:dark:text-white sso:truncate"
-                                    },
-                                    "text": "{{_local.idpForm?.display_label ?? ''}}"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "P",
-                                    "props": {
-                                        "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
-                                    },
-                                    "text": "{{(_local.idpForm?.key ?? '') + ' · ' + (_local.idpForm?.protocol_label ?? '')}}"
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "sso:flex sso:flex-wrap sso:gap-2"
-                    },
-                    "children": [
-                        {
-                            "id": "idp_save_button",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "actionRef": "saveIdp"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "sso-btn sso-btn-primary sso:text-sm",
-                                "disabled": "{{!_computed.canUpdate || _local.isSavingIdp}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.save"
-                                }
-                            ]
-                        },
-                        {
-                            "id": "idp_delete_button",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "연결 회원이 없는 IdP 만 지울 수 있다(서버도 409 로 막는다)",
-                                    "type": "click",
-                                    "handler": "apiCall",
-                                    "target": "/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "DELETE"
-                                    },
-                                    "confirm": "$t:sirsoft-sso.admin.settings.idp.delete_confirm",
-                                    "onSuccess": [
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:sirsoft-sso.admin.settings.idp.deleted"
-                                            }
-                                        },
-                                        {
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/admin/plugins/sirsoft-sso/settings",
-                                                "query": {
-                                                    "tab": "idps"
-                                                }
-                                            }
-                                        }
-                                    ],
-                                    "onError": {
-                                        "handler": "toast",
-                                        "params": {
-                                            "type": "error",
-                                            "message": "{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"
-                                        }
-                                    }
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "sso-btn sso-btn-danger sso:text-sm",
-                                "disabled": "{{!_computed.canUpdate || (_local.idpForm?.accounts_total ?? 0) > 0}}",
-                                "title": "$t:sirsoft-sso.admin.settings.idp.delete_hint"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.delete"
-                                }
-                            ]
+                            "text": "{{(_local.idpForm?.key ?? '') + ' · ' + (_local.idpForm?.protocol_label ?? '')}}"
                         }
                     ]
                 }
@@ -825,13 +691,11 @@
                                             "name": "Span",
                                             "responsive": {
                                                 "640-": {
-                                                    "props": {
-                                                        "className": "sso:text-xs sso:font-medium sso:text-gray-500 sso:dark:text-gray-400 sso:w-40 sso:flex-shrink-0"
-                                                    }
+                                                    "classMerge": "sso:w-40"
                                                 }
                                             },
                                             "props": {
-                                                "className": "sso:text-xs sso:font-medium sso:text-gray-500 sso:dark:text-gray-400 sso:flex-shrink-0"
+                                                "className": "sso:text-xs sso:font-medium sso-text-muted sso:flex-shrink-0"
                                             },
                                             "text": "{{row.label}}"
                                         },
@@ -899,9 +763,7 @@
                             "if": "{{_local.idpForm?.protocol === 'saml'}}",
                             "responsive": {
                                 "640-": {
-                                    "props": {
-                                        "className": "sso:pt-4 sso:border-t sso:border-gray-200 sso:dark:border-gray-700 sso:flex sso:flex-row sso:items-center sso:gap-2"
-                                    }
+                                    "classMerge": "sso:flex-row sso:items-center"
                                 }
                             },
                             "props": {
@@ -1115,9 +977,7 @@
                                     "name": "Div",
                                     "responsive": {
                                         "desktop": {
-                                            "props": {
-                                                "className": "sso:col-span-2 sso:space-y-2"
-                                            }
+                                            "classMerge": "sso:col-span-2"
                                         }
                                     },
                                     "props": {
@@ -1544,9 +1404,7 @@
                                     "name": "Input",
                                     "responsive": {
                                         "768-": {
-                                            "props": {
-                                                "className": "sso-input sso:w-48"
-                                            }
+                                            "classMerge": "sso:w-48"
                                         }
                                     },
                                     "actions": [
@@ -1574,9 +1432,7 @@
                                     "name": "Input",
                                     "responsive": {
                                         "768-": {
-                                            "props": {
-                                                "className": "sso-input sso:w-48"
-                                            }
+                                            "classMerge": "sso:w-48"
                                         }
                                     },
                                     "actions": [
@@ -2002,9 +1858,7 @@
                                     "name": "Input",
                                     "responsive": {
                                         "768-": {
-                                            "props": {
-                                                "className": "sso-input sso:flex-1"
-                                            }
+                                            "classMerge": "sso:flex-1"
                                         }
                                     },
                                     "actions": [
@@ -2032,9 +1886,7 @@
                                     "name": "Input",
                                     "responsive": {
                                         "768-": {
-                                            "props": {
-                                                "className": "sso-input sso:w-48"
-                                            }
+                                            "classMerge": "sso:w-48"
                                         }
                                     },
                                     "actions": [
@@ -2643,7 +2495,7 @@
                                                             "name": "P",
                                                             "if": "{{!!_local.idpForm?.scim?.has_token}}",
                                                             "props": {
-                                                                "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
+                                                                "className": "sso:text-xs sso-text-muted"
                                                             },
                                                             "text": "{{$t('sirsoft-sso.admin.settings.idp.scim_token_issued_at')}}: {{_local.idpForm?.scim?.token_issued_at | datetime | default('-')}}"
                                                         },
@@ -2652,7 +2504,7 @@
                                                             "name": "P",
                                                             "if": "{{!_local.idpForm?.scim?.has_token}}",
                                                             "props": {
-                                                                "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
+                                                                "className": "sso:text-xs sso-text-muted"
                                                             },
                                                             "text": "$t:sirsoft-sso.admin.settings.idp.scim_token_none"
                                                         },
@@ -3183,9 +3035,7 @@
                                             "name": "Input",
                                             "responsive": {
                                                 "640-": {
-                                                    "props": {
-                                                        "className": "sso-input sso:w-1/3"
-                                                    }
+                                                    "classMerge": "sso:w-1/3"
                                                 }
                                             },
                                             "actions": [
@@ -3212,9 +3062,7 @@
                                             "name": "Input",
                                             "responsive": {
                                                 "640-": {
-                                                    "props": {
-                                                        "className": "sso-input sso:w-1/3"
-                                                    }
+                                                    "classMerge": "sso:w-1/3"
                                                 }
                                             },
                                             "actions": [
@@ -3375,7 +3223,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "sso:text-gray-500 sso:dark:text-gray-400"
+                                        "className": "sso-text-muted"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.idp.last_success"
                                 },
@@ -3391,7 +3239,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "sso:text-gray-500 sso:dark:text-gray-400"
+                                        "className": "sso-text-muted"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.idp.last_error"
                                 },
@@ -3407,7 +3255,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "sso:text-gray-500 sso:dark:text-gray-400"
+                                        "className": "sso-text-muted"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.idp.periodic_checked_at"
                                 },
@@ -3424,7 +3272,7 @@
                                     "name": "Span",
                                     "if": "{{!!_local.idpForm?.cert_expires_at}}",
                                     "props": {
-                                        "className": "sso:text-gray-500 sso:dark:text-gray-400"
+                                        "className": "sso-text-muted"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.idp.cert_expires_at"
                                 },
@@ -3485,7 +3333,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "sso:text-gray-500 sso:dark:text-gray-400 sso:whitespace-nowrap"
+                                                        "className": "sso-text-muted sso:whitespace-nowrap"
                                                     },
                                                     "text": "{{attempt.created_at | datetime | default('-')}}"
                                                 },
@@ -3521,7 +3369,7 @@
                                                     "name": "Span",
                                                     "if": "{{!!attempt.response_summary}}",
                                                     "props": {
-                                                        "className": "sso:basis-full sso:text-gray-500 sso:dark:text-gray-400 sso:break-all sso-break-all"
+                                                        "className": "sso:basis-full sso-text-muted sso:break-all sso-break-all"
                                                     },
                                                     "text": "{{[(attempt.response_summary?.signed ? $t('sirsoft-sso.admin.settings.idp.response_summary.signed') : $t('sirsoft-sso.admin.settings.idp.response_summary.unsigned')), $t('sirsoft-sso.admin.settings.idp.response_summary.not_on_or_after') + ' ' + (attempt.response_summary?.not_on_or_after ?? '-'), $t('sirsoft-sso.admin.settings.idp.response_summary.audiences') + ' ' + ((attempt.response_summary?.audiences ?? []).join(', ') || '-')].join(' · ')}}"
                                                 }
@@ -3530,6 +3378,125 @@
                                     ]
                                 }
                             ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "목록·삭제·저장은 화면 아래 고정 줄 — 다른 설정·등록 화면과 같은 자리다",
+            "id": "idp_footer_buttons",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "sso-sticky-footer-buttons"
+            },
+            "children": [
+                {
+                    "id": "idp_list_button",
+                    "type": "basic",
+                    "name": "A",
+                    "actions": [
+                        {
+                            "comment": "IdP 목록으로 돌아간다 — 저장하지 않은 편집은 버린다",
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/admin/plugins/sirsoft-sso/settings",
+                                "query": {
+                                    "tab": "idps"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "href": "/admin/plugins/sirsoft-sso/settings?tab=idps",
+                        "className": "sso-btn sso-btn-secondary sso:text-sm"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.list"
+                        }
+                    ]
+                },
+                {
+                    "id": "idp_delete_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "연결 회원이 없는 IdP 만 지울 수 있다(서버도 409 로 막는다)",
+                            "type": "click",
+                            "handler": "apiCall",
+                            "target": "/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}",
+                            "auth_required": true,
+                            "params": {
+                                "method": "DELETE"
+                            },
+                            "confirm": "$t:sirsoft-sso.admin.settings.idp.delete_confirm",
+                            "onSuccess": [
+                                {
+                                    "handler": "toast",
+                                    "params": {
+                                        "type": "success",
+                                        "message": "$t:sirsoft-sso.admin.settings.idp.deleted"
+                                    }
+                                },
+                                {
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/plugins/sirsoft-sso/settings",
+                                        "query": {
+                                            "tab": "idps"
+                                        }
+                                    }
+                                }
+                            ],
+                            "onError": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "sso-btn sso-btn-danger sso:text-sm",
+                        "disabled": "{{!_computed.canUpdate || (_local.idpForm?.accounts_total ?? 0) > 0}}",
+                        "title": "$t:sirsoft-sso.admin.settings.idp.delete_hint"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.delete"
+                        }
+                    ]
+                },
+                {
+                    "id": "idp_save_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "actionRef": "saveIdp"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "sso-btn sso-btn-primary sso:text-sm",
+                        "disabled": "{{!_computed.canUpdate || _local.isSavingIdp}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.save"
                         }
                     ]
                 }

@@ -7,7 +7,7 @@
 회원·비회원 주문상세의 클레임 신청 버튼은 상품 목록 바로 아래에서 환불 빨강·반품 주황·교환 파랑으로 표시한다. 공통 클레임 목록의 탭·페이지는 로컬 상태와 `replaceUrl`을 갱신한 뒤 `claims` 데이터소스만 동기 재조회하여 스크롤을 유지한다. 탭 대기 중에는 스피너와 `aria-disabled`·액션 가드를 함께 사용해 포커스와 중복 클릭 방지를 유지한다. 다른 비동기 신청·저장 버튼은 기존 `Icon` 스피너와 `disabled` 패턴을 따른다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 204개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 215개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
@@ -15,11 +15,11 @@
 | `auth` | 6개 |
 | `board` | 5개 |
 | `errors` | 7개 |
-| `mypage` | 16개 |
+| `mypage` | 19개 |
 | `page` | 1개 |
-| `partials` | 152개 |
+| `partials` | 159개 |
 | `search` | 1개 |
-| `shop` | 12개 |
+| `shop` | 13개 |
 | `users` | 2개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
@@ -44,12 +44,14 @@
 | `default` | `errors` | 화면 | `_user_base` |
 | `maintenance` | `errors` | 화면 | `_user_base` |
 | `home` | `(root)` | 화면 | `_user_base` |
+| `activity` | `mypage` | 화면 | `_user_base` |
 | `addresses` | `mypage` | 화면 | `_user_base` |
 | `board` | `mypage` | 화면 | `_user_base` |
 | `change-password` | `mypage` | 화면 | `_user_base` |
 | `claims` | `mypage` | 화면 | `_user_base` |
 | `apply` | `mypage` | 화면 | `_user_base` |
 | `show` | `mypage` | 화면 | `_user_base` |
+| `coupons` | `mypage` | 화면 | `_user_base` |
 | `inquiries` | `mypage` | 화면 | `_user_base` |
 | `mileage` | `mypage` | 화면 | `_user_base` |
 | `notifications` | `mypage` | 화면 | `_user_base` |
@@ -58,6 +60,7 @@
 | `profile-edit` | `mypage` | 화면 | `_user_base` |
 | `profile` | `mypage` | 화면 | `_user_base` |
 | `required-info` | `mypage` | 화면 | `_user_base` |
+| `reviews` | `mypage` | 화면 | `_user_base` |
 | `scrap` | `mypage` | 화면 | `_user_base` |
 | `wishlist` | `mypage` | 화면 | `_user_base` |
 | `show` | `page` | 화면 | `_user_base` |
@@ -114,6 +117,7 @@
 | `_member_fields_view` | `partials` | partial | - |
 | `_tab_navigation` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
+| `_list` | `partials` | partial | - |
 | `_modal_address` | `partials` | partial | - |
 | `_modal_confirm_delete` | `partials` | partial | - |
 | `_modal_confirm_overwrite` | `partials` | partial | - |
@@ -143,6 +147,7 @@
 | `_list` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
+| `_list` | `partials` | partial | - |
 | `_history` | `partials` | partial | - |
 | `_items` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
@@ -154,9 +159,12 @@
 | `_shipping` | `partials` | partial | - |
 | `_status_header` | `partials` | partial | - |
 | `_edit` | `partials` | partial | - |
+| `_modal_logout_all_devices` | `partials` | partial | - |
 | `_modal_withdraw` | `partials` | partial | - |
 | `_password_verify_section` | `partials` | partial | - |
 | `_view` | `partials` | partial | - |
+| `_list` | `partials` | partial | - |
+| `_modal_review_delete` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
 | `_modal_scrap_bulk_delete` | `partials` | partial | - |
 | `_modal_scrap_delete` | `partials` | partial | - |
@@ -189,6 +197,8 @@
 | `_modal_coupon_download` | `partials` | partial | - |
 | `_modal_quick_option` | `partials` | partial | - |
 | `_modal_temp_order_not_found` | `partials` | partial | - |
+| `_grid` | `partials` | partial | - |
+| `_toolbar` | `partials` | partial | - |
 | `_admin_edit_link` | `partials` | partial | - |
 | `_header` | `partials` | partial | - |
 | `_info_summary` | `partials` | partial | - |
@@ -217,6 +227,7 @@
 | `cart` | `shop` | 화면 | `_user_base` |
 | `category` | `shop` | 화면 | `_user_base` |
 | `checkout` | `shop` | 화면 | `_user_base` |
+| `coupons` | `shop` | 화면 | `_user_base` |
 | `guest_claim_apply` | `shop` | 화면 | `_user_base` |
 | `guest_claim_show` | `shop` | 화면 | `_user_base` |
 | `guest_order_form` | `shop` | 화면 | `_user_base` |
@@ -319,6 +330,7 @@
 | `/board/:slug/:id/edit` | `board/form` | - |
 | `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/products` | `shop/index` | - |
 | `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/reviews` | `shop/reviews` | - |
+| `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/coupons` | `shop/coupons` | - |
 | `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/category/:slug` | `shop/category` | - |
 | `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/products/:product_code` | `shop/show` | - |
 | `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/cart` | `shop/cart` | - |
@@ -342,6 +354,9 @@
 | `/mypage/claims/:claim_number/edit` | `mypage/claims/apply` | - |
 | `/mypage/claims/:claim_number` | `mypage/claims/show` | - |
 | `/mypage/mileage` | `mypage/mileage` | - |
+| `/mypage/coupons` | `mypage/coupons` | - |
+| `/mypage/reviews` | `mypage/reviews` | - |
+| `/mypage/activity` | `mypage/activity` | - |
 | `/mypage/wishlist` | `mypage/wishlist` | - |
 | `/mypage/addresses` | `mypage/addresses` | - |
 | `/mypage/notifications` | `mypage/notifications` | - |
@@ -428,8 +443,10 @@ SDK 주소도 원본과 같은 카카오 주소(`t1.kakaocdn.net`)를 쓰고, �
 
 `partials/mypage/orders/_payment` 의 `id="order_payment_info_panel"` 은 지우거나 바꾸지 않는다. PG 플러그인(KG이니시스·NHN KCP·
 나이스페이먼츠)이 영수증 버튼·가상계좌 입금 안내를 붙일 카드를 이 id 로만 찾는다 — 화면 제목 글자는 언어마다 달라 기준이 되지 않는다.
-id 가 사라지면 오류 없이 그 안내들만 빠진다. 같은 조각의 결제 방법 행 `id="order_payment_method_row"` 도 같은 약속이다 — PG 플러그인이
-간편결제 이름(예: 카카오페이)을 이 행의 값(마지막 `span`)에 덧붙인다. 주문 완료 화면에 결제 방법 행을 두는 템플릿은 같은 id 를 단다.
+id 가 사라지면 오류 없이 그 안내들만 빠진다. 같은 조각의 결제 방법 행 `id="order_payment_method_row"` 도 같은 약속이다 — 주문 완료 화면에
+결제 방법 행을 두는 템플릿은 같은 id 를 단다. 이 행의 값은 `order.data.payment?.payment_method_display_label ?? payment_method_label` 이다 —
+간편결제 주문은 PG 플러그인이 쇼핑몰 표시 라벨 훅으로 채운 이름(「카카오페이 (토스페이먼츠)」)을, 아니면 기본 결제수단 이름을 보인다(쇼핑몰 1.4.1,
+관리자 주문 목록·상세와 같은 값). 행 글자를 DOM 으로 고쳐 쓰던 옛 방식은 쓰지 않는다.
 약속 원문: `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` 「PG 플러그인이 결제 정보 카드에 붙일 때의 약속」.
 
 ### 주문서 결제수단 칸의 id·버튼 표식도 PG 플러그인과의 약속
@@ -645,6 +662,10 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       └── _search_filter_bar.g7.html (검색/필터 바)
 │   ├── category.g7.html (카테고리 상품)
 │   ├── reviews.g7.html (리뷰 모아보기 — 전체 상품 후기, 조건은 주소 쿼리)
+│   ├── coupons.g7.html (쿠폰존 — 받을 수 있는 쿠폰, 비회원도 열람·받기는 로그인)
+│   │   └── partials/shop/coupons/
+│   │       ├── _toolbar.g7.html (혜택 유형 탭·정렬·[모두 받기])
+│   │       └── _grid.g7.html (쿠폰 카드 그리드·[받기])
 │   ├── show.g7.html (상품 상세)
 │   │   └── partials/shop/detail/
 │   │       ├── _header.g7.html (상품 헤더)
@@ -703,7 +724,8 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       ├── _view.g7.html (프로필 보기 섹션 — 국가는 응답의 country_name 으로 이름 표시)
 │   │       ├── _edit.g7.html (프로필 수정 섹션 — 국가 선택은 profile-edit 의 countryList define)
 │   │       ├── _password_verify_section.g7.html (비밀번호 확인)
-│   │       └── _modal_withdraw.g7.html (회원 탈퇴)
+│   │       ├── _modal_withdraw.g7.html (회원 탈퇴)
+│   │       └── _modal_logout_all_devices.g7.html (모든 기기에서 로그아웃 확인 — 내 정보 보안 카드)
 │   ├── orders.g7.html (주문 내역)
 │   │   └── partials/mypage/orders/
 │   │       ├── _list.g7.html (주문 목록)
@@ -755,6 +777,16 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       ├── _modal_address.g7.html (배송지 추가/수정)
 │   │       ├── _modal_confirm_delete.g7.html (삭제 확인)
 │   │       └── _modal_confirm_overwrite.g7.html (덮어쓰기 확인)
+│   ├── coupons.g7.html (쿠폰함 — 상태별 탭)
+│   │   └── partials/mypage/coupons/
+│   │       └── _list.g7.html (쿠폰 목록 — 혜택·적용 대상·발급 경로·남은 날)
+│   ├── reviews.g7.html (내 리뷰)
+│   │   └── partials/mypage/reviews/
+│   │       ├── _list.g7.html (리뷰 목록)
+│   │       └── _modal_review_delete.g7.html (리뷰 삭제 확인)
+│   ├── activity.g7.html (활동 기록 — 기간 조회·쪽 이동)
+│   │   └── partials/mypage/activity/
+│   │       └── _list.g7.html (활동 기록 목록 — 날짜 칸 change 가 _local.activityFrom/To 에 담고 [조회]가 쿼리로 옮긴다)
 │   ├── notifications.g7.html (알림)
 │   │   └── partials/mypage/notifications/
 │   │       └── _list.g7.html (알림 목록)

@@ -286,7 +286,7 @@ const Footer: React.FC<FooterProps> = ({
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    className="text-muted hover:text-gray-700 dark:hover:text-gray-200"
                     aria-label={icon.label}
                   >
                     <Icon name={icon.name} iconStyle={icon.style} className="w-5 h-5" />
@@ -324,7 +324,7 @@ const Footer: React.FC<FooterProps> = ({
         {businessLines.length > 0 && (
           <Div
             data-footer-business=""
-            className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400"
+            className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted"
           >
             {businessLines.map((line) => (
               <Span key={line.key} data-footer-business-item={line.key} className="min-w-0 wrap-anywhere">
@@ -340,11 +340,11 @@ const Footer: React.FC<FooterProps> = ({
           style={{ flexDirection: isMobile ? 'column' : 'row' }}
         >
           {/* 저작권 줄은 「Powered by」 와 같은 flex 줄이라 줄어들 수 있게 하고 아무 데서나 줄을 바꾼다(#143). */}
-          <P className="text-sm text-gray-500 dark:text-gray-400 min-w-0 wrap-anywhere">
+          <P className="text-sm text-muted min-w-0 wrap-anywhere">
             {copyrightText || defaultCopyrightText || `© ${currentYear} ${siteName}. All rights reserved.`}
           </P>
           {showPoweredBy && (
-            <P className="text-sm text-gray-500 dark:text-gray-400" data-testid="footer-powered-by">
+            <P className="text-sm text-muted" data-testid="footer-powered-by">
               {t('footer.powered_by')}
             </P>
           )}

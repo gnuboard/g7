@@ -22,7 +22,7 @@
       <responsive on="640-" class="flex flex-row items-center justify-between gap-3 mb-4"/>
       <!-- 카테고리 필터 (카테고리가 있을 때만 표시) -->
       <select data-if="{{posts?.data?.board?.categories &amp;&amp; posts?.data?.board?.categories.length > 0}}" aria-label="$t:board.form.category" value="{{query.category || 'all'}}" class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" options="{{[{value:'all', label:'$t:board.filter.category_all'},{value:'unclassified', label:'$t:board.filter.category_unclassified'}].concat((posts?.data?.board?.categories ?? []).map(function(c){return{value:c,label:c};}))}}">
-        <responsive on="640-" class="w-auto min-w-48 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm"/>
+        <responsive on="640-" class-merge="w-auto min-w-48"/>
         <on type="change">
           <navigate path="/board/{{route.slug}}" :mergeQuery="true">
             <query category="{{$event.target.value === 'all' ? '' : $event.target.value}}" :page="1"/>
@@ -110,18 +110,18 @@
                   <field name="marginLeft" value="{{Math.min(post?.depth ?? 0, 10) * 1}}rem"/>
                 </prop>
                 <!-- 답글 화살표 아이콘 -->
-                <icon data-if="{{post?.row_type === 'reply'}}" name="turn-up" size="sm" class="fa-rotate-90 text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+                <icon data-if="{{post?.row_type === 'reply'}}" name="turn-up" size="sm" class="fa-rotate-90 text-muted flex-shrink-0"/>
                 <!-- 카테고리 배지 -->
                 <span data-if="{{post?.category}}" class="inline-block truncate max-w-32 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 flex-shrink-0">{{post?.category}}</span>
                 <!-- 비밀글 아이콘 -->
-                <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+                <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-muted flex-shrink-0"/>
                 <!-- 블라인드 아이콘 -->
                 <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-600 dark:text-orange-400 flex-shrink-0"/>
                 <span class="text-sm font-medium min-w-0 truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-600 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}}">{{post?.title}}</span>
                 <!-- 확장 자리 — 확장이 글마다 배지를 붙인다(#149). 데스크톱 행이라 모바일 카드에도 같은 자리가 있다. 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다 -->
-                <extension-point name="board_post_row_badges" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post?.id}}" boardSlug="{{route?.slug}}" context="board_list"/>
+                <extension-point name="board_post_row_badges" data-ref="ext_board_post_row_badges_desktop_{{post.id}}" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post?.id}}" boardSlug="{{route?.slug}}" context="board_list"/>
                 <!-- 첨부파일 아이콘 -->
-                <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+                <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-muted flex-shrink-0"/>
                 <span data-if="{{posts?.data?.board?.settings?.use_comment &amp;&amp; post?.comment_count > 0}}" class="text-blue-600 dark:text-blue-400 text-sm font-medium flex-shrink-0">[{{post?.comment_count}}]</span>
                 <span data-if="{{posts?.data?.board?.settings?.use_reaction !== false &amp;&amp; (post?.reaction_total ?? 0) > 0}}" class="text-rose-700 dark:text-rose-300 text-xs font-medium flex-shrink-0 inline-flex items-center gap-0.5"><icon name="fa-solid fa-thumbs-up" class="text-xs"/><span>{{post?.reaction_total}}</span></span>
                 <!-- 삭제됨 배지 -->
@@ -140,7 +140,7 @@
             </div>
             <!-- 모바일: 카드 형태 -->
             <div class="flex flex-col gap-2 px-4 py-3">
-              <responsive on="desktop" class="flex-col gap-2 px-4 py-3 hidden"/>
+              <responsive on="desktop" class-merge="hidden"/>
               <!-- 상단: 순번 + 제목 -->
               <div class="flex items-start gap-2">
                 <!-- 공지 배지 -->
@@ -158,19 +158,19 @@
                   </prop>
                   <div class="flex items-center gap-2">
                     <!-- 답글 화살표 아이콘 -->
-                    <icon data-if="{{post?.row_type === 'reply'}}" name="turn-up" size="sm" class="fa-rotate-90 text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+                    <icon data-if="{{post?.row_type === 'reply'}}" name="turn-up" size="sm" class="fa-rotate-90 text-muted flex-shrink-0"/>
                     <!-- 카테고리 배지 -->
                     <span data-if="{{post?.category}}" class="inline-block truncate max-w-32 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 flex-shrink-0">{{post?.category}}</span>
                     <!-- 비밀글 아이콘 -->
-                    <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+                    <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-muted flex-shrink-0"/>
                     <!-- 블라인드 아이콘 -->
                     <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-600 dark:text-orange-400 flex-shrink-0"/>
                     <!-- 제목은 한 줄 … — 공백 없는 긴 제목이 N 배지·댓글 수를 화면 밖으로 밀었다(#143) -->
                     <span class="text-sm font-medium min-w-0 truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-600 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}}">{{post?.title}}</span>
                     <!-- 확장 자리 — 모바일 카드의 글 배지 자리(#149). 데스크톱 행과 같은 이름이라 조각이 두 번 렌더되고 화면 폭에 따라 한쪽만 보인다 -->
-                    <extension-point name="board_post_row_badges" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post?.id}}" boardSlug="{{route?.slug}}" context="board_list"/>
+                    <extension-point name="board_post_row_badges" data-ref="ext_board_post_row_badges_mobile_{{post.id}}" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post?.id}}" boardSlug="{{route?.slug}}" context="board_list"/>
                     <!-- 첨부파일 아이콘 -->
-                    <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+                    <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-muted flex-shrink-0"/>
                     <span data-if="{{posts?.data?.board?.settings?.use_comment &amp;&amp; post?.comment_count > 0}}" class="text-blue-600 dark:text-blue-400 text-sm font-medium flex-shrink-0">[{{post?.comment_count}}]</span>
                 <span data-if="{{posts?.data?.board?.settings?.use_reaction !== false &amp;&amp; (post?.reaction_total ?? 0) > 0}}" class="text-rose-700 dark:text-rose-300 text-xs font-medium flex-shrink-0 inline-flex items-center gap-0.5"><icon name="fa-solid fa-thumbs-up" class="text-xs"/><span>{{post?.reaction_total}}</span></span>
                     <!-- 삭제됨 배지 -->

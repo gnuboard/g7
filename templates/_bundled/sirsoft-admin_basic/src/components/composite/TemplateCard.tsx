@@ -191,7 +191,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
         {/* 의존성 정보 */}
         {dependencies.length > 0 && (
           <Div className="mb-3">
-            <P className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('common.dependencies')}:</P>
+            <P className="text-xs text-muted mb-1">{t('common.dependencies')}:</P>
             <Div className="flex flex-wrap gap-1">
               {dependencies.map((dep, index) => (
                 <Span

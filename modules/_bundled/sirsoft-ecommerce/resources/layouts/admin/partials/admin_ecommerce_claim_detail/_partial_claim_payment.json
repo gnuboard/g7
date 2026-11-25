@@ -147,12 +147,14 @@
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_method"
                                                                 },
                                                                 {
+                                                                    "comment": "결제수단 — 간편결제는 PG 플러그인이 채운 표시 이름(「카카오페이 (토스페이먼츠)」)을 먼저 보인다. 주문상세와 같은 식이다.",
+                                                                    "id": "cp_payment_method_{{payIdx}}",
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
                                                                         "className": "ecommerce:text-sm ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:block"
                                                                     },
-                                                                    "text": "{{payment.payment_method_label}}"
+                                                                    "text": "{{payment.payment_method_display_label ?? payment.payment_method_label}}"
                                                                 },
                                                                 {
                                                                     "type": "basic",
@@ -367,7 +369,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                        "className": "ecommerce-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.coupon"
                                                                 },
@@ -375,7 +377,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                        "className": "ecommerce-text-muted"
                                                                     },
                                                                     "text": "-{{claim?.data?.order?.total_product_coupon_discount_amount_formatted}}"
                                                                 }
@@ -393,7 +395,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                        "className": "ecommerce-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.discount_code"
                                                                 },
@@ -401,7 +403,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                        "className": "ecommerce-text-muted"
                                                                     },
                                                                     "text": "-{{claim?.data?.order?.total_code_discount_amount_formatted}}"
                                                                 }
@@ -419,7 +421,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                        "className": "ecommerce-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.event"
                                                                 },
@@ -427,7 +429,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                        "className": "ecommerce-text-muted"
                                                                     },
                                                                     "text": "-{{payment.event_discount_amount_formatted}}"
                                                                 }
@@ -445,7 +447,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                        "className": "ecommerce-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.referral"
                                                                 },
@@ -453,7 +455,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                        "className": "ecommerce-text-muted"
                                                                     },
                                                                     "text": "-{{payment.referral_discount_amount_formatted}}"
                                                                 }
@@ -662,7 +664,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                        "className": "ecommerce-text-muted"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.refund_mileage_credit_amount"
                                                                 },
@@ -696,7 +698,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                "className": "ecommerce-text-muted"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.taxable_amount"
                                                         },
@@ -721,7 +723,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                "className": "ecommerce-text-muted"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.vat"
                                                         },
@@ -966,7 +968,7 @@
                                     "name": "Div",
                                     "if": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') && ((claim?.data?.claim?.shipping_fee_snapshot?.reason ?? '') === 'no_shipping_policy' || (claim?.data?.claim?.shipping_fee_snapshot?.groups ?? []).some(g => g.api_fallback === true || g.policy_source === 'live_policy'))}}",
                                     "props": {
-                                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-right"
+                                        "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:text-right"
                                     },
                                     "children": [
                                         {
@@ -1538,7 +1540,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce-text-muted"
                                                     },
                                                     "text": "{{linkedRefund.refunded_at_formatted || linkedRefund.requested_at_formatted || ''}}"
                                                 }
@@ -1924,7 +1926,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce-text-muted"
                                                     },
                                                     "text": "{{capacity.method_label ?? ''}}"
                                                 },
@@ -1932,7 +1934,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce-text-muted"
                                                     },
                                                     "text": "{{capacity.currency === (claim?.data?.cancellable?.currency ?? '') ? (capacity.remaining_base_formatted ?? '') : ((capacity.remaining_base_formatted ?? '') + ' (' + (capacity.remaining_local_formatted ?? '') + ')')}}"
                                                 }
@@ -1982,7 +1984,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce-text-muted"
                                                     },
                                                     "text": "{{(reservedClaim.type_label ?? '') + ' ' + (reservedClaim.number ?? '')}}"
                                                 },
@@ -1990,7 +1992,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce-text-muted"
                                                     },
                                                     "text": "{{reservedClaim.amount_formatted ?? ''}}"
                                                 }
@@ -2027,7 +2029,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:pt-1"
+                                                "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:pt-1"
                                             },
                                             "text": "{{claim?.data?.cancellable?.binding_label ?? ''}}"
                                         }
@@ -2126,7 +2128,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "ecommerce:text-xs ecommerce:text-right ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce:text-right ecommerce-text-muted"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.limit_hint|amount={{claim?.data?.cancellable?.amount_formatted ?? ''}}"
                                                 },
@@ -2141,7 +2143,7 @@
                                                         "index_var": "pgIdx"
                                                     },
                                                     "props": {
-                                                        "className": "ecommerce:text-xs ecommerce:text-right ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce:text-right ecommerce-text-muted"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method_limit_hint|method={{pgCapacity.method_label ?? ''}}|amount={{pgCapacity.currency === (claim?.data?.cancellable?.currency ?? '') ? (pgCapacity.remaining_base_formatted ?? '') : ((pgCapacity.remaining_base_formatted ?? '') + ' (' + (pgCapacity.remaining_local_formatted ?? '') + ')')}}"
                                                 }
@@ -2214,7 +2216,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "ecommerce:text-xs ecommerce:text-right ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce:text-right ecommerce-text-muted"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_hint"
                                                 },
@@ -2229,7 +2231,7 @@
                                                         "index_var": "ptIdx"
                                                     },
                                                     "props": {
-                                                        "className": "ecommerce:text-xs ecommerce:text-right ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce:text-right ecommerce-text-muted"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method_limit_hint|method={{ptCapacity.method_label ?? ''}}|amount={{ptCapacity.remaining_base_formatted ?? ''}}"
                                                 }

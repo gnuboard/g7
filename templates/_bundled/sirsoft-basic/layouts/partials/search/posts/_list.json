@@ -8,7 +8,7 @@
     "name": "Div",
     "if": "{{searchResults?.data?.posts?.items && searchResults?.data?.posts?.items?.length > 0}}",
     "props": {
-        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+        "className": "card-plain overflow-hidden"
     },
     "children": [
         {
@@ -83,6 +83,7 @@
                                 },
                                 {
                                     "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 조각은 extensionPointProps.postId 등으로 이 결과의 글을 읽는다",
+                                    "id": "ext_board_post_row_badges_search_posts_{{post.id}}",
                                     "type": "extension_point",
                                     "name": "board_post_row_badges",
                                     "props": {
@@ -112,7 +113,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400"
+                                "className": "flex items-center gap-3 text-xs text-muted"
                             },
                             "children": [
                                 {

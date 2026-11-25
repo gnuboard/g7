@@ -1,0 +1,440 @@
+{
+    "comment": "쿠폰함 탭 본체 (#952). 사용가능·사용완료·만료 세 칸 탭은 URL 쿼리(`status`)를 바꾸는 링크다 — 목록은 그 쿼리를 읽는\n     `user_coupons` 가 다시 받는다. 탭을 옮기면 쪽을 1로 되돌린다(보던 쪽이 다른 탭의 범위를 벗어난다).\n     카드: 쿠폰명·혜택·최소주문·적용대상(이름 3개 + 「외 N」)·기한(D-n)·발급 경로 배지. 사용완료 탭은 사용일·주문번호를 더한다.\n     사용가능 탭이 비면 쿠폰존으로 가는 링크를 둔다.",
+    "meta": {
+        "is_partial": true,
+        "description": "마이페이지 쿠폰함 목록"
+    },
+    "type": "basic",
+    "name": "Div",
+    "blur_until_loaded": {
+        "enabled": true,
+        "data_sources": "user_coupons"
+    },
+    "responsive": {
+        "portable": {
+            "props": {
+                "className": "mt-4"
+            }
+        }
+    },
+    "props": {
+        "className": "mt-6"
+    },
+    "children": [
+        {
+            "comment": "상태 탭",
+            "id": "coupon_status_tabs",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "role": "tablist",
+                "className": "flex gap-2 mb-4"
+            },
+            "children": [
+                {
+                    "id": "coupon_tab_available",
+                    "type": "basic",
+                    "name": "A",
+                    "classMap": {
+                        "base": "inline-flex items-center px-4 py-2 text-sm rounded-lg border transition-colors",
+                        "key": "{{_computed.couponStatus}}",
+                        "variants": {
+                            "available": "border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+                        },
+                        "default": "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    },
+                    "actions": [
+                        {
+                            "comment": "audit:allow layout-list-context-navigate-merge-query 상태 탭 전환 — 탭마다 목록 범위가 달라 이전 탭의 쪽 번호를 물려받으면 빈 쪽이 된다",
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/mypage/coupons",
+                                "query": {
+                                    "status": "available",
+                                    "page": "1"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "role": "tab",
+                        "aria-selected": "{{_computed.couponStatus === 'available' ? 'true' : 'false'}}",
+                        "href": "/mypage/coupons?status=available&page=1"
+                    },
+                    "text": "$t:mypage.coupons.tabs.available"
+                },
+                {
+                    "id": "coupon_tab_used",
+                    "type": "basic",
+                    "name": "A",
+                    "classMap": {
+                        "base": "inline-flex items-center px-4 py-2 text-sm rounded-lg border transition-colors",
+                        "key": "{{_computed.couponStatus}}",
+                        "variants": {
+                            "used": "border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+                        },
+                        "default": "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    },
+                    "actions": [
+                        {
+                            "comment": "audit:allow layout-list-context-navigate-merge-query 상태 탭 전환 — 위와 같다",
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/mypage/coupons",
+                                "query": {
+                                    "status": "used",
+                                    "page": "1"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "role": "tab",
+                        "aria-selected": "{{_computed.couponStatus === 'used' ? 'true' : 'false'}}",
+                        "href": "/mypage/coupons?status=used&page=1"
+                    },
+                    "text": "$t:mypage.coupons.tabs.used"
+                },
+                {
+                    "id": "coupon_tab_expired",
+                    "type": "basic",
+                    "name": "A",
+                    "classMap": {
+                        "base": "inline-flex items-center px-4 py-2 text-sm rounded-lg border transition-colors",
+                        "key": "{{_computed.couponStatus}}",
+                        "variants": {
+                            "expired": "border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+                        },
+                        "default": "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    },
+                    "actions": [
+                        {
+                            "comment": "audit:allow layout-list-context-navigate-merge-query 상태 탭 전환 — 위와 같다",
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/mypage/coupons",
+                                "query": {
+                                    "status": "expired",
+                                    "page": "1"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "role": "tab",
+                        "aria-selected": "{{_computed.couponStatus === 'expired' ? 'true' : 'false'}}",
+                        "href": "/mypage/coupons?status=expired&page=1"
+                    },
+                    "text": "$t:mypage.coupons.tabs.expired"
+                }
+            ]
+        },
+        {
+            "comment": "전체 건수",
+            "id": "coupon_total",
+            "type": "basic",
+            "name": "P",
+            "if": "{{user_coupons !== undefined}}",
+            "props": {
+                "className": "text-sm text-muted mb-3"
+            },
+            "text": "$t:mypage.coupons.total|count={{user_coupons?.data?.coupons?.pagination?.total ?? 0}}"
+        },
+        {
+            "comment": "쿠폰 카드 목록",
+            "id": "coupon_card_list",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(user_coupons?.data?.coupons?.data ?? []).length > 0}}",
+            "props": {
+                "className": "space-y-3"
+            },
+            "children": [
+                {
+                    "id": "coupon_card_{{issueIdx}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{user_coupons?.data?.coupons?.data ?? []}}",
+                        "item_var": "issue",
+                        "index_var": "issueIdx"
+                    },
+                    "responsive": {
+                        "portable": {
+                            "classMerge": "p-4"
+                        }
+                    },
+                    "props": {
+                        "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-start justify-between gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-wrap items-center gap-2 mb-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "comment": "발급 경로 배지 (가입·첫구매·생일·직접발급·다운로드)",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{issue.issue_source_label}}",
+                                                    "props": {
+                                                        "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
+                                                    },
+                                                    "text": "{{issue.issue_source_label}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-semibold text-gray-900 dark:text-white break-all"
+                                                    },
+                                                    "text": "{{issue.coupon?.localized_name ?? '$t:mypage.coupons.deleted_coupon'}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:mypage.coupons.min_order|amount={{(issue.coupon?.min_order_amount ?? 0) > 0 ? (issue.coupon?.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? issue.coupon?.min_order_amount_formatted) : $t('mypage.coupons.no_min_order')}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "mx-1 text-gray-300 dark:text-gray-600"
+                                                    },
+                                                    "text": "·"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{issue.coupon?.target_type_label ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "mx-1 text-gray-300 dark:text-gray-600"
+                                                    },
+                                                    "text": "·"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{issue.coupon?.target_scope === 'products' ? $t('mypage.coupons.scope_products', {names: (issue.coupon?.included_product_names ?? []).join(', ')}) + ((issue.coupon?.included_product_count ?? 0) > 3 ? ' ' + $t('mypage.coupons.and_more', {count: (issue.coupon?.included_product_count ?? 0) - 3}) : '') : (issue.coupon?.target_scope === 'categories' ? $t('mypage.coupons.scope_categories', {names: (issue.coupon?.included_category_names ?? []).join(', ')}) + ((issue.coupon?.included_category_count ?? 0) > 3 ? ' ' + $t('mypage.coupons.and_more', {count: (issue.coupon?.included_category_count ?? 0) - 3}) : '') : $t('mypage.coupons.scope_all'))}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{issue.coupon?.is_combinable}}",
+                                                    "props": {
+                                                        "className": "mx-1 text-gray-300 dark:text-gray-600"
+                                                    },
+                                                    "text": "·"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{issue.coupon?.is_combinable}}",
+                                                    "text": "$t:mypage.coupons.combinable"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "사용 기한",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{_computed.couponStatus !== 'used'}}",
+                                            "props": {
+                                                "className": "text-xs text-muted mt-1"
+                                            },
+                                            "text": "{{issue.expired_at ? $t('mypage.coupons.expires_until', {date: issue.expired_at}) : $t('mypage.coupons.no_expiry')}}"
+                                        },
+                                        {
+                                            "comment": "사용완료: 사용일·주문번호",
+                                            "id": "coupon_used_info_{{issueIdx}}",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{_computed.couponStatus === 'used'}}",
+                                            "props": {
+                                                "className": "text-xs text-muted mt-1"
+                                            },
+                                            "text": "$t:mypage.coupons.used_info|date={{issue.used_at ?? '-'}}|order={{issue.order_number ?? '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right shrink-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "block text-lg font-bold text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{issue.coupon?.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? issue.coupon?.benefit_formatted ?? ''}}"
+                                        },
+                                        {
+                                            "comment": "D-n (사용가능 탭)",
+                                            "id": "coupon_dday_{{issueIdx}}",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_computed.couponStatus === 'available' && issue.expires_in_days !== null && issue.expires_in_days !== undefined}}",
+                                            "classMap": {
+                                                "base": "inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium",
+                                                "key": "{{issue.expires_in_days <= 7 ? 'soon' : 'normal'}}",
+                                                "variants": {
+                                                    "soon": "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                                                },
+                                                "default": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "{{issue.expires_in_days === 0 ? $t('mypage.coupons.dday_today') : 'D-' + issue.expires_in_days}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_computed.couponStatus === 'available' && (issue.expires_in_days === null || issue.expires_in_days === undefined)}}",
+                                            "props": {
+                                                "className": "inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:mypage.coupons.no_expiry"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "빈 상태 — 탭마다 문구가 다르고, 사용가능 탭에는 쿠폰존 링크를 둔다",
+            "id": "coupon_empty",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{user_coupons !== undefined && (user_coupons?.data?.coupons?.data ?? []).length === 0}}",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "card-plain p-6 text-center"
+                    }
+                }
+            },
+            "props": {
+                "className": "card-plain p-8 text-center"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "ticket",
+                        "size": "3x",
+                        "className": "mx-auto text-gray-500 dark:text-gray-500 mb-3"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-muted"
+                    },
+                    "text": "{{_computed.couponStatus === 'used' ? $t('mypage.coupons.empty.used') : (_computed.couponStatus === 'expired' ? $t('mypage.coupons.empty.expired') : $t('mypage.coupons.empty.available'))}}"
+                },
+                {
+                    "id": "coupon_zone_link",
+                    "type": "basic",
+                    "name": "A",
+                    "if": "{{_computed.couponStatus === 'available'}}",
+                    "actions": [
+                        {
+                            "comment": "audit:allow layout-list-context-navigate-merge-query 다른 화면(쿠폰존)으로 가는 이동이다 — 쿠폰함의 탭·쪽을 물려주지 않는다",
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "{{'/' + (_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : ((_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop') + '/')) + 'coupons'}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "href": "{{'/' + (_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : ((_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop') + '/')) + 'coupons'}}",
+                        "className": "inline-flex items-center gap-1.5 mt-4 px-4 py-2 text-sm font-medium rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "ticket",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:mypage.coupons.go_coupon_zone"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "페이지네이션",
+            "type": "composite",
+            "name": "Pagination",
+            "if": "{{((user_coupons?.data?.coupons?.pagination?.last_page ?? 0) > 1) || (user_coupons?.data?.coupons?.pagination?.has_more_pages === true) || ((user_coupons?.data?.coupons?.pagination?.current_page ?? 1) > 1)}}",
+            "actions": [
+                {
+                    "event": "onPageChange",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/mypage/coupons",
+                        "mergeQuery": true,
+                        "query": {
+                            "page": "{{$args[0]}}"
+                        }
+                    }
+                }
+            ],
+            "props": {
+                "pageHref": "/mypage/coupons?page={page}",
+                "pageHrefMergeQuery": true,
+                "currentPage": "{{user_coupons?.data?.coupons?.pagination?.current_page}}",
+                "totalPages": "{{user_coupons?.data?.coupons?.pagination?.last_page ?? null}}",
+                "hasMorePages": "{{user_coupons?.data?.coupons?.pagination?.has_more_pages ?? false}}",
+                "className": "mt-4"
+            }
+        }
+    ]
+}

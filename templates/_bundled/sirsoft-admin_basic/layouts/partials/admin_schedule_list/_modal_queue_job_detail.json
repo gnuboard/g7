@@ -66,7 +66,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed",
+                    "className": "btn btn-danger",
                     "disabled": "{{_global.queueJobDetail?.abilities?.can_delete !== true}}"
                 },
                 "text": "$t:common.delete"
@@ -109,7 +109,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "btn btn-info disabled:opacity-50 disabled:cursor-not-allowed",
+                    "className": "btn btn-info",
                     "disabled": "{{_global.queueJobDetail?.abilities?.can_retry !== true}}"
                 },
                 "text": "$t:admin.schedules.queue.action.retry"
@@ -162,7 +162,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400 font-mono break-all"
+                                        "className": "text-xs text-muted font-mono break-all"
                                     },
                                     "text": "{{_global.queueJobDetail?.job_class ?? ''}}"
                                 }

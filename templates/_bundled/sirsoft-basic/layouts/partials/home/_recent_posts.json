@@ -30,7 +30,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "clock",
-                                "className": "text-xl text-gray-500 dark:text-gray-400"
+                                "className": "text-xl text-muted"
                             }
                         },
                         {
@@ -125,7 +125,7 @@
                                             "if": "{{post.is_secret}}",
                                             "props": {
                                                 "name": "lock",
-                                                "className": "text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                                                "className": "text-sm text-muted shrink-0"
                                             }
                                         },
                                         {
@@ -138,6 +138,7 @@
                                         },
                                         {
                                             "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다",
+                                            "id": "ext_board_post_row_badges_home_recent_{{post.id}}",
                                             "type": "extension_point",
                                             "name": "board_post_row_badges",
                                             "props": {
@@ -196,7 +197,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400 shrink-0",
+                                        "className": "text-xs text-muted shrink-0",
                                         "title": "{{post.created_at ?? ''}}"
                                     },
                                     "text": "{{post.created_at_formatted ?? ''}}"

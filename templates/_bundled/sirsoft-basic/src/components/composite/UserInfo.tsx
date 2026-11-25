@@ -218,7 +218,7 @@ const createDefaultMenuItems = (): MenuItemConfig[] => [
 const SubText: React.FC<{ text?: string; title?: string }> = ({ text, title }) => {
   if (!text) return null;
   return (
-    <Span className="text-sm text-gray-500 dark:text-gray-400" title={title}>
+    <Span className="text-sm text-muted" title={title}>
       {text}
     </Span>
   );
@@ -392,7 +392,7 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   if ((actualIsGuest || !actualUserId) && !accountGone) {
     return (
       <Div className={containerClass} id={id} {...editorAttrs}>
-        <Div className="flex items-center gap-1.5 min-w-0 text-gray-500 dark:text-gray-400">
+        <Div className="flex items-center gap-1.5 min-w-0 text-muted">
           <Span className="min-w-0 truncate max-w-32" title={actualName}>{actualName}</Span>
           <Span className="shrink-0 whitespace-nowrap text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">
             {t('userinfo.guest_badge')}
@@ -407,7 +407,7 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   if (actualIsWithdrawn) {
     return (
       <Div className={containerClass} id={id} {...editorAttrs}>
-        <Span className="text-gray-500 dark:text-gray-400 line-through">
+        <Span className="text-muted line-through">
           {actualName}
         </Span>
         <SubText text={subText} title={subTextTitle} />

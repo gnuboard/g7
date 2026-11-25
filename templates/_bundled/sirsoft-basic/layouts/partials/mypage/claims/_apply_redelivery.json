@@ -99,7 +99,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-sm text-muted"
                     },
                     "text": "{{'(' + (_local.claimRedelivery?.zipcode ?? (order.data.shipping_address?.zipcode || order.data.shipping_address?.intl_postal_code || '')) + ') ' + [_local.claimRedelivery?.address1 ?? (order.data.shipping_address?.address || order.data.shipping_address?.address_line_1), _local.claimRedelivery?.address2 ?? (order.data.shipping_address?.address_detail || order.data.shipping_address?.address_line_2)].filter(Boolean).join(' ') + [_local.claimRedelivery ? _local.claimRedelivery.city : order.data.shipping_address?.intl_city, _local.claimRedelivery ? _local.claimRedelivery.state : order.data.shipping_address?.intl_state].filter(Boolean).map(part => ', ' + part).join('')}}"
                 },
@@ -130,7 +130,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "mt-2 text-sm text-gray-500 dark:text-gray-400 hover:underline cursor-pointer"
+                        "className": "mt-2 text-sm text-muted hover:underline cursor-pointer"
                     },
                     "text": "$t:claim.apply.redelivery_reset"
                 }
@@ -435,7 +435,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                        "className": "text-xs text-muted"
                     },
                     "text": "$t:claim.apply.redelivery_country_locked|country={{$localized(order.data.shipping_address?.recipient_country_name) || order.data.shipping_address?.recipient_country_code || ''}}"
                 },

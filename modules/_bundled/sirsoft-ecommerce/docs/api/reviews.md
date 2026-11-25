@@ -803,6 +803,34 @@ HTTP/1.1 200
 **설명** 관리자가 리뷰의 전시 상태를 변경합니다. `sirsoft-ecommerce.reviews.update` 권한이 필요하며, `ProductReviewService::updateStatus()` 가 `status` 값(예: visible/hidden)으로 리뷰를 전시하거나 숨기고 갱신된 리뷰 리소스를 반환합니다. 신고되었거나 부적절한 리뷰를 노출에서 제외하거나 다시 노출할 때 사용합니다.
 
 
+### GET /api/modules/sirsoft-ecommerce/user/reviews
+
+- **라우트명**: `api.modules.sirsoft-ecommerce.user.reviews.index`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ProductReviewController@index`
+- **인증/권한**: `auth:sanctum`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| page | query | integer | 아니오 | min 1 | 쪽 번호 |
+| per_page | query | integer | 아니오 | min 1, max 50 | 쪽당 항목 수 (기본 10) |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.product-review.user_list_validation_rules`).
+
+**응답 필드** (`data` 내부)
+
+_목록 응답: `data.data[]` 는 공개 리뷰 응답과 같은 리뷰 항목에 `is_deletable` 을 더한 것이고, `data.pagination` 이 함께 온다._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| data[].is_deletable | boolean | `true` | 지금 회원이 지울 수 있는 리뷰인지 (본인 리뷰면 true) |
+| pagination | object | `{"current_page":1,"last_page":1,…}` | 쪽 정보 |
+
+**설명**
+
+마이페이지 「내 리뷰」 화면이 쓰는 목록(1.4.1). 로그인 회원 본인이 쓴 리뷰만 최신순으로 주고, 지운 리뷰는 빠진다. 리뷰 수정 API 는 없다 — 삭제는 `DELETE user/reviews/{review}`.
+
 ### POST /api/modules/sirsoft-ecommerce/user/reviews
 <!-- @generated:start:api.modules.sirsoft-ecommerce.user.reviews.store -->
 - **라우트명**: `api.modules.sirsoft-ecommerce.user.reviews.store`

@@ -187,9 +187,7 @@
                     "if": "{{!!socialAccounts?.data}}",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "sl:bg-white sl:dark:bg-gray-800 sl:rounded-lg sl:shadow-sm sl:border sl:border-gray-200 sl:dark:border-gray-700 sl:p-4"
-                            }
+                            "classMerge": "sl:p-4"
                         }
                     },
                     "props": {
@@ -221,9 +219,7 @@
                             "if": "{{socialAccounts?.data?.has_password === false}}",
                             "responsive": {
                                 "640-": {
-                                    "props": {
-                                        "className": "sl:mb-4 sl:p-3 sl:rounded-lg sl:bg-blue-50 sl:dark:bg-blue-900/20 sl:border sl:border-blue-200 sl:dark:border-blue-800 sl:flex sl:gap-2 sl:flex-row sl:items-center"
-                                    }
+                                    "classMerge": "sl:flex-row sl:items-center"
                                 }
                             },
                             "props": {
@@ -264,7 +260,7 @@
                             "name": "P",
                             "if": "{{(socialAccounts?.data?.accounts ?? []).length === 0}}",
                             "props": {
-                                "className": "sl:py-4 sl:text-sm sl:text-gray-500 sl:dark:text-gray-400"
+                                "className": "sl:py-4 sl:text-sm sl-text-muted"
                             },
                             "text": "$t:sirsoft-social_login.mypage.empty"
                         },
@@ -317,7 +313,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:truncate"
+                                                        "className": "sl:text-xs sl-text-muted sl:truncate"
                                                     },
                                                     "text": "{{account.email ?? ''}}"
                                                 },
@@ -387,9 +383,7 @@
                             "if": "{{_global.socialLoginUnlinkLastMethod === true}}",
                             "responsive": {
                                 "640-": {
-                                    "props": {
-                                        "className": "sl:mt-3 sl:p-3 sl:rounded-lg sl:bg-yellow-50 sl:dark:bg-yellow-900/20 sl:border sl:border-yellow-200 sl:dark:border-yellow-800 sl:flex sl:gap-2 sl:flex-row sl:items-center"
-                                    }
+                                    "classMerge": "sl:flex-row sl:items-center"
                                 }
                             },
                             "props": {

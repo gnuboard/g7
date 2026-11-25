@@ -190,6 +190,10 @@ export type { SortableMenuItemProps, MenuItemData } from './SortableMenuItem';
 
 export { IconSelect } from './IconSelect';
 export type { IconSelectProps } from './IconSelect';
+export { MenuIcon } from './MenuIcon';
+export type { MenuIconProps, MenuIconSpecData } from './MenuIcon';
+export { MenuIconField } from './MenuIconField';
+export type { MenuIconFieldProps } from './MenuIconField';
 
 export { Accordion } from './Accordion';
 export type { AccordionProps } from './Accordion';

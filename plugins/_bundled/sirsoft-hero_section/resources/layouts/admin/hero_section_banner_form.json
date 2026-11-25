@@ -516,9 +516,7 @@
                                 "debounce": 0,
                                 "responsive": {
                                     "desktop": {
-                                        "props": {
-                                            "className": "hs:col-span-2 hs:flex hs:flex-col hs:gap-6"
-                                        }
+                                        "classMerge": "hs:col-span-2"
                                     }
                                 },
                                 "props": {
@@ -4019,7 +4017,7 @@
                                         "if": "{{_computed.formDynamic && !!_local.form?.target_key && !_computed.formSettingsReady && !_computed.formTargetSettingsFailed}}",
                                         "props": {
                                             "role": "status",
-                                            "className": "hs:text-sm hs:text-gray-500 hs:dark:text-gray-400"
+                                            "className": "hs:text-sm hs-text-muted"
                                         },
                                         "text": "$t:sirsoft-hero_section.admin.target_settings.loading"
                                     },

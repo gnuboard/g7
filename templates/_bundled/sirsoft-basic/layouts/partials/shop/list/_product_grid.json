@@ -70,7 +70,7 @@
                             "props": {
                                 "name": "search",
                                 "size": "2x",
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             }
                         }
                     ]
@@ -87,7 +87,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-sm text-muted"
                     },
                     "text": "$t:shop.no_search_results"
                 }

@@ -11,7 +11,7 @@
   감추면 "배송지를 여기서 관리한다" 는 사실 자체가 화면에서 사라진다. -->
 <extension target-layout="mypage/profile" priority="321">
   <inject target-id="mypage_tab_content" position="append_child">
-    <div data-ref="ext_my_default_address_card" class="ecommerce:mt-4 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-5">
+    <div data-ref="ext_my_default_address_card" class="ecommerce:mt-4 ecommerce-card-plain ecommerce:p-5">
       <div class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-3">
         <h3 class="ecommerce:text-base ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:flex ecommerce:items-center ecommerce:gap-2">
           <icon name="map-pin" class="ecommerce:text-base ecommerce:text-gray-600 ecommerce:dark:text-gray-400"/>
@@ -25,16 +25,16 @@
           <icon name="arrow-right" class="ecommerce:text-sm"/>
         </a>
       </div>
-      <span data-if="{{user !== undefined &amp;&amp; user !== null &amp;&amp; (!user?.data?.ecommerce_default_address)}}" class="ecommerce:block ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.user_address_card.empty_notice</span>
+      <span data-if="{{user !== undefined &amp;&amp; user !== null &amp;&amp; (!user?.data?.ecommerce_default_address)}}" class="ecommerce:block ecommerce:text-sm ecommerce-text-muted">$t:sirsoft-ecommerce.user_address_card.empty_notice</span>
       <div data-ref="ext_my_default_address_body" data-if="{{!!user?.data?.ecommerce_default_address}}">
         <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap">
           <span class="ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white">{{user?.data?.ecommerce_default_address?.recipient_name}}</span>
           <!-- 「기본」 배지 — 사용자 템플릿에는 Badge 컴포넌트가 없다(관리자 템플릿 전용). 등록된 Span 으로 배지 모양을 그린다. -->
           <span class="ecommerce:inline-flex ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded ecommerce:text-xs ecommerce:font-medium ecommerce:bg-blue-100 ecommerce:dark:bg-blue-900/30 ecommerce:text-blue-700 ecommerce:dark:text-blue-300">$t:sirsoft-ecommerce.user_address_card.default_badge</span>
-          <span data-if="{{user?.data?.ecommerce_default_address?.label}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{user?.data?.ecommerce_default_address?.label}}</span>
+          <span data-if="{{user?.data?.ecommerce_default_address?.label}}" class="ecommerce:text-xs ecommerce-text-muted">{{user?.data?.ecommerce_default_address?.label}}</span>
         </div>
         <span class="ecommerce:block ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mt-1">{{user?.data?.ecommerce_default_address?.address_summary}}</span>
-        <span data-if="{{user?.data?.ecommerce_default_address?.recipient_phone}}" class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5">{{user?.data?.ecommerce_default_address?.recipient_phone}}</span>
+        <span data-if="{{user?.data?.ecommerce_default_address?.recipient_phone}}" class="ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5">{{user?.data?.ecommerce_default_address?.recipient_phone}}</span>
       </div>
     </div>
   </inject>

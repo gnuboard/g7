@@ -176,7 +176,7 @@
                                 "props": {
                                     "data-testid": "board-reorder-button",
                                     "type": "button",
-                                    "className": "board-flex-center board:gap-2 board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                                    "className": "board-flex-center board-btn board-btn-secondary",
                                     "disabled": "{{_global.reorderLoading}}"
                                 },
                                 "children": [
@@ -386,7 +386,7 @@
                                                                     "name": "Toggle",
                                                                     "actions": [
                                                                         {
-                                                                            "comment": "카드에서 바로 활성/비활성을 뒤집는다. 보내는 값은 «지금의 반대」이고 토스트 문구도 뒤집기 «전» 값으로 고르므로 둘의 기준이 같다. 성공 후 목록을 동기로 다시 읽어 화면의 토글이 서버 값과 어긋난 채 남지 않게 한다",
+                                                                            "comment": "카드에서 바로 활성/비활성을 뒤집는다. 보내는 값은 «지금의 반대」이고 토스트 문구도 뒤집기 «전» 값으로 고르므로 둘의 기준이 같다. 성공 후 목록을 동기로 다시 읽어 화면의 토글이 서버 값과 어긋난 채 남지 않게 한다. 스위치는 누른다고 스스로 바뀌지 않고(awaitConfirmation) 다시 받은 서버 값으로만 바뀐다 — 실패(500 등)하면 원래 모양 그대로다(#408 브라우저 실측: 종전에는 눌린 쪽으로 남아 DB 와 어긋났다)",
                                                                             "type": "change",
                                                                             "handler": "sequence",
                                                                             "actions": [
@@ -432,6 +432,7 @@
                                                                         "name": "is_active",
                                                                         "ariaLabel": "$t:defer:common.item_enabled|name={{row.name}}",
                                                                         "size": "sm",
+                                                                        "awaitConfirmation": true,
                                                                         "disabled": "{{row.abilities?.can_update !== true}}"
                                                                     }
                                                                 },
@@ -670,7 +671,7 @@
                         ],
                         "props": {
                             "type": "button",
-                            "className": "board:px-4 board:py-2 board:text-sm board:font-medium board:text-white board:bg-blue-600 board:dark:bg-blue-600 board:rounded-lg board:hover:bg-blue-700 board:dark:hover:bg-blue-700 board:focus:outline-none board:focus:ring-2 board:focus:ring-offset-2 board:focus:ring-blue-500 board:dark:focus:ring-blue-400"
+                            "className": "board-btn board-btn-primary board:focus:outline-none board:focus:ring-2 board:focus:ring-offset-2 board:focus:ring-blue-500 board:dark:focus:ring-blue-400"
                         },
                         "text": "$t:sirsoft-board.admin.board.actions.copy"
                     }
@@ -797,7 +798,7 @@
                         ],
                         "props": {
                             "type": "button",
-                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                            "className": "board-btn board-btn-secondary",
                             "disabled": "{{_global.isDeleting}}"
                         },
                         "children": [
@@ -1026,7 +1027,7 @@
                         "props": {
                             "data-testid": "board-reorder-cancel",
                             "type": "button",
-                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                            "className": "board-btn board-btn-secondary",
                             "disabled": "{{_global.reorderSaving}}"
                         },
                         "children": [
@@ -1135,7 +1136,7 @@
                             "data-testid": "board-reorder-save",
                             "type": "button",
                             "lockRepeatClick": true,
-                            "className": "board-flex-center board:gap-2 board:px-4 board:py-2 board:text-sm board:font-medium board:text-white board:bg-blue-600 board:dark:bg-blue-500 board:rounded-lg board:hover:bg-blue-700 board:dark:hover:bg-blue-600 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                            "className": "board-flex-center board-btn board-btn-primary",
                             "disabled": "{{_global.reorderSaving || (_global.reorderItems ?? []).map(i => i.id).join(',') === (_global.reorderOriginal ?? []).map(i => i.id).join(',')}}"
                         },
                         "children": [
@@ -1238,7 +1239,7 @@
                                                 "name": "Span",
                                                 "props": {
                                                     "data-testid": "board-reorder-index-{{row.slug}}",
-                                                    "className": "board:w-6 board:text-right board:text-sm board:tabular-nums board:text-gray-500 board:dark:text-gray-400"
+                                                    "className": "board:w-6 board:text-right board:text-sm board:tabular-nums board-text-muted"
                                                 },
                                                 "text": "{{row._idx + 1}}"
                                             },
@@ -1288,7 +1289,7 @@
                                                                 "if": "{{!row.is_active}}",
                                                                 "props": {
                                                                     "data-testid": "board-reorder-inactive-{{row.slug}}",
-                                                                    "className": "board:px-1.5 board:py-0.5 board:text-xs board:rounded board:bg-gray-100 board:dark:bg-gray-700 board:text-gray-500 board:dark:text-gray-400"
+                                                                    "className": "board:px-1.5 board:py-0.5 board:text-xs board:rounded board:bg-gray-100 board:dark:bg-gray-700 board-text-muted"
                                                                 },
                                                                 "text": "$t:sirsoft-board.admin.board.index.reorder.inactive"
                                                             }
@@ -1315,7 +1316,7 @@
                                                     "data-testid": "board-reorder-up-{{row.slug}}",
                                                     "type": "button",
                                                     "aria-label": "{{$t('sirsoft-board.admin.board.index.reorder.move_up', { name: row.name })}}",
-                                                    "className": "board-flex-center board:w-10 board:h-10 board:shrink-0 board:text-gray-500 board:hover:text-gray-800 board:dark:text-gray-400 board:dark:hover:text-gray-100 board:rounded board:hover:bg-gray-100 board:dark:hover:bg-gray-700 board:transition-colors board-move-button board:disabled:cursor-not-allowed",
+                                                    "className": "board-flex-center board:w-10 board:h-10 board:shrink-0 board-text-muted board:hover:text-gray-800 board:dark:hover:text-gray-100 board:rounded board:hover:bg-gray-100 board:dark:hover:bg-gray-700 board:transition-colors board-move-button board:disabled:cursor-not-allowed",
                                                     "disabled": "{{_global.reorderSaving || row._idx === 0}}"
                                                 },
                                                 "children": [
@@ -1348,7 +1349,7 @@
                                                     "data-testid": "board-reorder-down-{{row.slug}}",
                                                     "type": "button",
                                                     "aria-label": "{{$t('sirsoft-board.admin.board.index.reorder.move_down', { name: row.name })}}",
-                                                    "className": "board-flex-center board:w-10 board:h-10 board:shrink-0 board:text-gray-500 board:hover:text-gray-800 board:dark:text-gray-400 board:dark:hover:text-gray-100 board:rounded board:hover:bg-gray-100 board:dark:hover:bg-gray-700 board:transition-colors board-move-button board:disabled:cursor-not-allowed",
+                                                    "className": "board-flex-center board:w-10 board:h-10 board:shrink-0 board-text-muted board:hover:text-gray-800 board:dark:hover:text-gray-100 board:rounded board:hover:bg-gray-100 board:dark:hover:bg-gray-700 board:transition-colors board-move-button board:disabled:cursor-not-allowed",
                                                     "disabled": "{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}"
                                                 },
                                                 "children": [

@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { restoreIdentityTargetHandler } from '../identityLauncher';
+import { restoreIdentityTargetHandler, stashIdentityTargetHandler } from '../identityLauncher';
 
 const STASH_KEY = 'g7.identity.redirectStash';
 
@@ -85,5 +85,42 @@ describe('restoreIdentityTargetHandler', () => {
     expect(restoreIdentityTargetHandler()).toBeNull();
 
     expect(local.identity_target).toBeUndefined();
+  });
+});
+
+describe('stashIdentityTargetHandler (7.2.1 가입 후 본인인증)', () => {
+  /**
+   * 가입 폼이 코드 입력 화면으로 넘어가기 전에 가입 이메일을 같은 보관함에 남기면, 그 화면의 [코드 다시 받기]가 되살려 싣는다.
+   *
+   * @scenario surface=fullpage_guest_target
+   * @effects fullpage_resend_restores_guest_target
+   */
+  it('넘겨받은 대상의 이메일·전화번호만 보관하고 restore 가 그 값을 되살린다', () => {
+    const stored = stashIdentityTargetHandler({ params: { target: { email: 'new@example.test', password: 'x' }, purpose: 'signup' } });
+
+    expect(stored).toBe(true);
+    const raw = JSON.parse(window.sessionStorage.getItem(STASH_KEY) ?? '{}');
+    expect(raw.payload.target).toEqual({ email: 'new@example.test' });
+    expect(raw.payload.purpose).toBe('signup');
+    expect(typeof raw.stashed_at).toBe('number');
+    expect(restoreIdentityTargetHandler()).toEqual({ email: 'new@example.test' });
+  });
+
+  /**
+   * @scenario surface=fullpage_guest_target
+   * @effects fullpage_resend_restores_guest_target
+   */
+  it('레이아웃이 평평한 email 속성으로 넘겨도 같은 모양으로 보관한다', () => {
+    expect(stashIdentityTargetHandler({ params: { email: 'flat@example.test', purpose: 'signup' } })).toBe(true);
+    expect(restoreIdentityTargetHandler()).toEqual({ email: 'flat@example.test' });
+  });
+
+  /**
+   * @scenario surface=fullpage_guest_target
+   * @effects fullpage_resend_restores_guest_target
+   */
+  it('대상이 비면 보관하지 않는다', () => {
+    expect(stashIdentityTargetHandler({ params: { target: { email: '' } } })).toBe(false);
+    expect(window.sessionStorage.getItem(STASH_KEY)).toBeNull();
   });
 });

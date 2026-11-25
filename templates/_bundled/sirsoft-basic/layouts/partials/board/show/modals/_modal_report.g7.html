@@ -14,7 +14,7 @@
       </div>
       <!-- 신고 대상 댓글 내용 표시 (댓글 신고 시에만) -->
       <div data-if="{{_global.reportModal.type === 'comment' &amp;&amp; _global.reportModal.comment_content}}" class="p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">$t:board.post.report_target_comment</p>
+        <p class="text-xs font-medium text-muted mb-2">$t:board.post.report_target_comment</p>
         <div data-if="{{_global.reportModal.comment_author_name}}" class="flex items-center gap-2 mb-2">
           <avatar data-type="composite" name="{{_global.reportModal.comment_author_name}}" avatar="{{_global.reportModal.comment_author_avatar}}" size="xs"/>
           <span class="text-xs font-medium text-gray-600 dark:text-gray-400">{{_global.reportModal.comment_author_name}}</span>

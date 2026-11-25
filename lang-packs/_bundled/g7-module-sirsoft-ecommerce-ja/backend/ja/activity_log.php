@@ -56,6 +56,8 @@ return [
         'refund_credit' => '返金付与',
         'direct_issue' => '直接発行',
         'issue_cancel' => '発行キャンセル',
+        'auto_issue' => '自動発行',
+        'auto_issue_revoke' => '自動発行の回収',
         'change' => '変更',
         'request' => '申請受付',
         'option_status_change' => '商品単位のステータス変更',
@@ -82,6 +84,8 @@ return [
         'signup_earn' => '会員登録積立',
     ],
     'description' => [
+        'coupon_auto_issue' => 'クーポン自動発行(クーポン #:coupon_id → 会員 #:user_id、:source)',
+        'coupon_auto_issue_revoke' => '初回購入クーポンの回収(クーポン #:coupon_id、会員 #:user_id、注文 #:order_id の全件キャンセル・返品)',
         'product_index' => '商品 目録 閲覧',
         'product_show' => '商品 詳細 閲覧 (ID: :product_id)',
         'product_create' => '商品 作成 (:product_name)',
@@ -288,6 +292,9 @@ return [
         'none' => '-',
     ],
     'fields' => [
+        'first_purchase_trigger_status' => '初回購入の発行タイミング',
+        'notify_enabled' => '発行通知の使用',
+        'notify_marketing_only' => '広告性のお知らせ',
         'website' => 'ウェブサイト',
         'is_active' => '有効化否か',
         'is_default' => 'デフォルト',

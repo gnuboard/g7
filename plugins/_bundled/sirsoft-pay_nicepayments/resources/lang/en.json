@@ -168,6 +168,7 @@
     },
     "payment": {
         "error": {
+            "applepay_ios_only": "Apple Pay is available only on iOS devices (iPhone, iPad).",
             "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator.",
             "sdk_load_failed": "Could not load the NicePayments SDK. Please try again later.",
             "request_failed": "An error occurred during payment. Please try again later."

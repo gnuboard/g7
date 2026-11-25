@@ -77,7 +77,7 @@
                 "responsive": {
                     "640-1023": {
                         "props": {
-                            "className": "paynicepayments:p-6 paynicepayments:min-h-screen paynicepayments:bg-gray-50 paynicepayments:dark:bg-gray-900"
+                            "className": "pay-nicepayments-admin-page-content"
                         }
                     },
                     "1024-": {

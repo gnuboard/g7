@@ -33,7 +33,7 @@
       </div>
       <div data-ref="content_section" class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-4">
         <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-3">
-          <icon name="globe" class="ecommerce:text-base ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+          <icon name="globe" class="ecommerce:text-base ecommerce-text-muted"/>
           <span class="ecommerce-text-heading">$t:sirsoft-ecommerce.admin.common_info.detail.content</span>
         </div>
         <tab-navigation data-type="composite" data-ref="language_tabs" tabs="{{($locales ?? []).map(l => ({ id: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}" activeTabId="{{_local.viewLocale ?? $locale}}" variant="underline" class="ecommerce:mb-4">

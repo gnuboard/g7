@@ -115,7 +115,7 @@
       <toast type="info" message="{{$args[0].subject ?? '$t:mypage.notifications.new_notification_received'}}" :duration="5000"/>
     </on-receive>
   </data-source>
-  <computed name="siteMenu">{{(_global.templateSettings?.header?.menu ?? [{id: 'home', kind: 'home'}, {id: 'popular', kind: 'popular'}, {id: 'shop', kind: 'shop'}, {id: 'boards', kind: 'boards'}]).filter(i => i &amp;&amp; i.is_active !== false &amp;&amp; (i.kind !== 'shop' || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)) &amp;&amp; ((i.kind !== 'boards' &amp;&amp; i.kind !== 'popular') || (_global.activeModules?.includes('sirsoft-board') ?? true)) &amp;&amp; ((i.visibility ?? 'all') === 'all' || (i.visibility === 'members' &amp;&amp; !!_global.currentUser?.uuid) || (i.visibility === 'guests' &amp;&amp; !_global.currentUser?.uuid) || (i.visibility === 'roles' &amp;&amp; (i.roles ?? []).some(r => (_global.currentUser?.uuid ? (_global.currentUser?.roles ?? []).some(o => o.identifier === r) : r === 'guest'))))).map(i => ({...i, children: (i.children ?? []).filter(c => c &amp;&amp; c.is_active !== false &amp;&amp; (c.kind !== 'shop' || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)) &amp;&amp; ((c.kind !== 'boards' &amp;&amp; c.kind !== 'popular') || (_global.activeModules?.includes('sirsoft-board') ?? true)) &amp;&amp; ((c.visibility ?? 'all') === 'all' || (c.visibility === 'members' &amp;&amp; !!_global.currentUser?.uuid) || (c.visibility === 'guests' &amp;&amp; !_global.currentUser?.uuid) || (c.visibility === 'roles' &amp;&amp; (c.roles ?? []).some(r => (_global.currentUser?.uuid ? (_global.currentUser?.roles ?? []).some(o => o.identifier === r) : r === 'guest')))))})).filter(i => i.kind !== 'link' || !!i.url || i.children.length > 0)}}</computed>
+  <computed name="siteMenu">{{(_global.templateSettings?.header?.menu ?? [{id: 'home', kind: 'home'}, {id: 'popular', kind: 'popular'}, {id: 'shop', kind: 'shop'}, {id: 'boards', kind: 'boards'}]).filter(i => i &amp;&amp; i.is_active !== false &amp;&amp; ((i.kind !== 'shop' &amp;&amp; i.kind !== 'coupons') || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)) &amp;&amp; ((i.kind !== 'boards' &amp;&amp; i.kind !== 'popular') || (_global.activeModules?.includes('sirsoft-board') ?? true)) &amp;&amp; ((i.visibility ?? 'all') === 'all' || (i.visibility === 'members' &amp;&amp; !!_global.currentUser?.uuid) || (i.visibility === 'guests' &amp;&amp; !_global.currentUser?.uuid) || (i.visibility === 'roles' &amp;&amp; (i.roles ?? []).some(r => (_global.currentUser?.uuid ? (_global.currentUser?.roles ?? []).some(o => o.identifier === r) : r === 'guest'))))).map(i => ({...i, children: (i.children ?? []).filter(c => c &amp;&amp; c.is_active !== false &amp;&amp; ((c.kind !== 'shop' &amp;&amp; c.kind !== 'coupons') || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)) &amp;&amp; ((c.kind !== 'boards' &amp;&amp; c.kind !== 'popular') || (_global.activeModules?.includes('sirsoft-board') ?? true)) &amp;&amp; ((c.visibility ?? 'all') === 'all' || (c.visibility === 'members' &amp;&amp; !!_global.currentUser?.uuid) || (c.visibility === 'guests' &amp;&amp; !_global.currentUser?.uuid) || (c.visibility === 'roles' &amp;&amp; (c.roles ?? []).some(r => (_global.currentUser?.uuid ? (_global.currentUser?.roles ?? []).some(o => o.identifier === r) : r === 'guest')))))})).filter(i => i.kind !== 'link' || !!i.url || i.children.length > 0)}}</computed>
   <global-headers>
     <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}" X-Currency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" X-Shipping-Country="{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
     <match pattern="/api/auth/*" X-Cart-Key="{{_global.cartKey}}"/>
@@ -353,7 +353,7 @@
             <on type="click">
               <set-state target="global" mobileLanguageOpen="{{!_global.mobileLanguageOpen}}"/>
             </on>
-            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">$t:common.language</span>
+            <span class="text-xs font-medium text-muted uppercase">$t:common.language</span>
             <span class="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
               <!-- 접힘 상태 요약 = 현재 언어명 -->
               <span class="font-medium">{{_global.appConfig?.localeNames?.[$locale] ?? $locale}}</span>
@@ -426,6 +426,15 @@
               </on>
               <icon name="heart" size="sm"/>
               <span>$t:mypage.tabs.wishlist</span>
+            </a>
+            <!-- 쿠폰함(#952) — 쇼핑몰 모듈이 꺼져 있으면 숨긴다. -->
+            <a href="/mypage/coupons" data-ref="mobile_drawer_coupons_link" data-if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer">
+              <on type="click">
+                <set-state target="global" :mobileMenuOpen="false" :mobileUserMenuOpen="false"/>
+                <navigate path="/mypage/coupons"/>
+              </on>
+              <icon name="ticket" size="sm"/>
+              <span>$t:mypage.tabs.coupons</span>
             </a>
             <!-- 로그아웃 버튼 -->
             <button type="button" class="justify-start w-full flex items-center gap-3 px-4 py-2.5 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer">
@@ -514,8 +523,19 @@
             <icon name="shopping-bag" size="md"/>
             <span>{{$localized(item.label) || $t('user.nav.shop')}}</span>
           </a>
+          <a data-if="{{item.kind === 'coupons' &amp;&amp; (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}" data-ref="mobile_drawer_coupons_{{itemIndex}}" href="{{_global.shopBase}}/coupons" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+            <on type="click">
+              <!-- 쿠폰존으로(#952) — 앞머리(shopBase)는 상품 목록과 같다 -->
+              <sequence>
+                <set-state target="global" :mobileMenuOpen="false"/>
+                <navigate path="{{_global.shopBase}}/coupons"/>
+              </sequence>
+            </on>
+            <icon name="ticket" size="md"/>
+            <span>{{$localized(item.label) || $t('user.nav.coupons')}}</span>
+          </a>
           <div data-if="{{item.kind === 'boards' &amp;&amp; (_global.activeModules?.includes('sirsoft-board') ?? true)}}" data-ref="mobile_drawer_boards_section_{{itemIndex}}">
-            <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-2 mb-2 px-3">{{$localized(item.label) || $t('user.nav.boards')}}</div>
+            <div class="text-xs font-semibold text-muted uppercase tracking-wider mt-2 mb-2 px-3">{{$localized(item.label) || $t('user.nav.boards')}}</div>
             <div data-each="board in {{boards.data ?? []}}">
               <a href="/board/{{board.slug}}" class="w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
                 <on type="click">
@@ -606,6 +626,17 @@
                   <icon name="shopping-bag" size="md"/>
                   <span>{{$localized(child.label) || $t('user.nav.shop')}}</span>
                 </a>
+                <a data-if="{{child.kind === 'coupons' &amp;&amp; (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}" href="{{_global.shopBase}}/coupons" class="w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+                  <on type="click">
+                    <!-- 쿠폰존으로(#952) -->
+                    <sequence>
+                      <set-state target="global" :mobileMenuOpen="false"/>
+                      <navigate path="{{_global.shopBase}}/coupons"/>
+                    </sequence>
+                  </on>
+                  <icon name="ticket" size="md"/>
+                  <span>{{$localized(child.label) || $t('user.nav.coupons')}}</span>
+                </a>
                 <div data-if="{{child.kind === 'boards' &amp;&amp; (_global.activeModules?.includes('sirsoft-board') ?? true)}}" data-ref="mobile_drawer_boards_section_{{itemIndex}}_{{childIndex}}">
                   <div data-each="board in {{boards.data ?? []}}">
                     <a href="/board/{{board.slug}}" class="w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
@@ -674,7 +705,7 @@
       <div data-ref="mobile_drawer_info_section" data-if="{{_global.activeModules?.includes('sirsoft-page') ?? true}}" class="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
         <div class="grid grid-cols-2 gap-x-4">
           <div>
-            <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">$t:user.footer.info</div>
+            <div class="text-xs font-semibold text-muted uppercase tracking-wider mb-2">$t:user.footer.info</div>
             <a href="/page/about" class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
               <on type="click">
                 <!-- 소개 문서로 — /page/* 는 페이지 모듈이 슬러그로 서빙하므로 관리자가 그 슬러그의 문서를 만들지 않았으면 빈 화면이 된다. -->
@@ -707,7 +738,7 @@
             </a>
           </div>
           <div>
-            <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">$t:user.footer.policy</div>
+            <div class="text-xs font-semibold text-muted uppercase tracking-wider mb-2">$t:user.footer.policy</div>
             <a href="/page/terms" class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
               <on type="click">
                 <!-- 이용약관 문서로 — 회원가입 폼의 약관 모달과 다른 경로다(그쪽은 가입 화면 안에서 띄우는 조각). -->
@@ -745,7 +776,7 @@
     <!-- === 데스크톱 헤더 (Header 컴포넌트) - 모바일에서 숨김 ===
          shopProductsHref 는 봇 화면(seo-config header_nav)의 「쇼핑」 링크 전용이다 — 값과 글자가 섞인 attrs 패턴({shopBase}/products)을
          옛 코어(7.1.3 이하)의 봇 렌더가 치환하지 못해 완성된 주소 하나를 prop 으로 넘긴다. 컴포넌트는 이 prop 을 읽지 않는다. -->
-    <header data-type="composite" data-ref="desktop_header" registrationEnabled="{{(_global.appConfig?.auth?.registration_open ?? _global.settings?.security?.registration_enabled) !== false}}" logo="{{_global.settings?.general?.site_logo_url | thumb('md')}}" logoDark="{{_global.templateSettings?.branding?.logo_dark_url ?? ''}}" showThemeToggle="{{_global.templateSettings?.header?.show_theme_toggle ?? true}}" menu="{{_computed.siteMenu}}" seoLegacyNav="false" seoMenuLinks="{{(_computed.siteMenu ?? []).flatMap(i => [i].concat(i.children ?? [])).flatMap(i => i.kind === 'link' ? (i.url ? [{href: i.url, label: $localized(i.label)}] : []) : i.kind === 'home' ? [{href: '/', label: $t('user.nav.home')}] : i.kind === 'popular' ? [{href: '/boards/popular', label: $t('user.nav.popular')}] : i.kind === 'shop' ? [{href: (_global.shopBase ?? '/shop') + '/products', label: $t('user.nav.shop')}, {href: (_global.shopBase ?? '/shop') + '/reviews', label: $t('user.nav.reviews')}] : i.kind === 'boards' ? (boards?.data ?? []).map(b => ({href: '/board/' + b.slug, label: b.name})) : [])}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" user="{{_global.currentUser}}" userLoading="{{_global.currentUser === undefined}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" shopProductsHref="{{_global.shopBase ?? '/shop'}}/products" shopReviewsHref="{{_global.shopBase ?? '/shop'}}/reviews" boards="{{boards.data ?? []}}" maxVisibleBoards="{{_global.templateSettings?.header?.max_boards ?? 5}}" boardEnabled="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" shopEnabled="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" searchEnabled="{{(_global.activeModules?.includes('sirsoft-board') ?? true) || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true) || (_global.activeModules?.includes('sirsoft-page') ?? true)}}" searchHistoryScope="core.site" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}" notificationCanUpdate="{{notifications?.data?.abilities?.can_update === true}}" notificationCanDelete="{{notifications?.data?.abilities?.can_delete === true}}">
+    <header data-type="composite" data-ref="desktop_header" registrationEnabled="{{(_global.appConfig?.auth?.registration_open ?? _global.settings?.security?.registration_enabled) !== false}}" logo="{{_global.settings?.general?.site_logo_url | thumb('md')}}" logoDark="{{_global.templateSettings?.branding?.logo_dark_url ?? ''}}" showThemeToggle="{{_global.templateSettings?.header?.show_theme_toggle ?? true}}" menu="{{_computed.siteMenu}}" seoLegacyNav="false" seoMenuLinks="{{(_computed.siteMenu ?? []).flatMap(i => [i].concat(i.children ?? [])).flatMap(i => i.kind === 'link' ? (i.url ? [{href: i.url, label: $localized(i.label)}] : []) : i.kind === 'home' ? [{href: '/', label: $t('user.nav.home')}] : i.kind === 'popular' ? [{href: '/boards/popular', label: $t('user.nav.popular')}] : i.kind === 'shop' ? [{href: (_global.shopBase ?? '/shop') + '/products', label: $t('user.nav.shop')}, {href: (_global.shopBase ?? '/shop') + '/reviews', label: $t('user.nav.reviews')}] : i.kind === 'coupons' ? [{href: (_global.shopBase ?? '/shop') + '/coupons', label: $localized(i.label) || $t('user.nav.coupons')}] : i.kind === 'boards' ? (boards?.data ?? []).map(b => ({href: '/board/' + b.slug, label: b.name})) : [])}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" user="{{_global.currentUser}}" userLoading="{{_global.currentUser === undefined}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" shopProductsHref="{{_global.shopBase ?? '/shop'}}/products" shopReviewsHref="{{_global.shopBase ?? '/shop'}}/reviews" boards="{{boards.data ?? []}}" maxVisibleBoards="{{_global.templateSettings?.header?.max_boards ?? 5}}" boardEnabled="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" shopEnabled="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" searchEnabled="{{(_global.activeModules?.includes('sirsoft-board') ?? true) || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true) || (_global.activeModules?.includes('sirsoft-page') ?? true)}}" searchHistoryScope="core.site" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}" notificationCanUpdate="{{notifications?.data?.abilities?.can_update === true}}" notificationCanDelete="{{notifications?.data?.abilities?.can_delete === true}}">
       <responsive on="desktop" class="block"/>
       <on event="onNotificationClose">
         <!-- 데스크톱 드롭다운을 닫을 때 노출된 알림 일괄 읽음 — 드롭다운이 닫혀도 목록 데이터는 남아 다음에 열 때 그대로 쓰이므로, 배지뿐 아니라 목록도 처음부터 다시 받아 읽음 상태를 맞춘다. -->

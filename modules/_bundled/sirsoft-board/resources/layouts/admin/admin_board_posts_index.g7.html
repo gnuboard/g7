@@ -154,7 +154,7 @@
         <div data-ref="search_buttons" class="board:flex board:justify-center board:gap-2 board:mt-4">
           <responsive on="portable" class="board:grid board:grid-cols-2 board:gap-2 board:mt-4"/>
           <button type="button" data-ref="reset_button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board-text-body board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors board:font-medium">
-            <responsive on="portable" class="board:w-full board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board-text-body board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors board:font-medium"/>
+            <responsive on="portable" class-merge="board:w-full"/>
             <on type="click">
               <!-- 초기화 ①  손에 들고 있던 검색·필터 값을 먼저 비운다 — 아래 이동이 URL 만 털기 때문에, 이것을 빼면 화면의 입력칸에 지운 값이 남는다 -->
               <set-state target="global" searchField="all" searchQuery="" categoryFilter="" dateFrom="" dateTo=""/>
@@ -166,7 +166,7 @@
             <span>$t:sirsoft-board.admin.posts.reset</span>
           </button>
           <button type="button" data-ref="search_button" class="board:px-4 board:py-2 board:bg-gray-800 board:dark:bg-gray-600 board:text-white board:rounded-lg board:hover:bg-gray-900 board:dark:hover:bg-gray-500 board:transition-colors board:text-sm board:font-medium">
-            <responsive on="portable" class="board:w-full board:px-4 board:py-2 board:bg-gray-800 board:dark:bg-gray-600 board:text-white board:rounded-lg board:hover:bg-gray-900 board:dark:hover:bg-gray-500 board:transition-colors board:text-sm board:font-medium"/>
+            <responsive on="portable" class-merge="board:w-full"/>
             <on type="click">
               <!-- 검색 실행 — 열거한 검색 조건만 덮어쓰고 정렬/페이지당 개수 등 나머지 목록 상태는 유지한다. page 는 새 검색이므로 1페이지로 되돌린다 (#75). -->
               <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" :replace="true" transition_overlay_target="posts_data_grid__body">
@@ -230,7 +230,7 @@
             </on>
             <span>$t:sirsoft-board.admin.posts.bulk.blind</span>
           </button>
-          <button type="button" data-ref="bulk_restore" data-testid="admin-post-bulk-restore" class="board:px-3 board:py-1.5 board:bg-blue-600 board:text-white board:rounded board:hover:bg-blue-700 board:dark:bg-blue-600 board:dark:hover:bg-blue-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed board:text-sm board:font-medium board:transition-colors" disabled="{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}">
+          <button type="button" data-ref="bulk_restore" data-testid="admin-post-bulk-restore" class="board-btn board-btn-primary board-btn-sm board:rounded" disabled="{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}">
             <on type="click">
               <!-- 갈래를 복원으로 정하고 직전 사유를 비운다 — 블라인드 사유가 남아 복원 이력에 실리지 않게 -->
               <set-state target="global" bulkPostAction="restore" bulkPostReason="" :bulkPostLoading="false"/>
@@ -256,14 +256,14 @@
               <prop name="style">
                 <field name="paddingLeft" value="{{(row?.depth ?? 0) > 0 ? (row?.depth * 1) + 'rem' : '0'}}"/>
               </prop>
-              <icon data-if="{{row.is_reply}}" name="level-up-alt" class="board:text-sm board:rotate-90 board:mt-1 board:text-gray-500 board:dark:text-gray-400"/>
+              <icon data-if="{{row.is_reply}}" name="level-up-alt" class="board:text-sm board:rotate-90 board:mt-1 board-text-muted"/>
               <!-- 제목 칸은 줄어들 수 있고 제목은 아무 데서나 줄을 바꾼다 — 공백 없는 긴 제목이 좁은 화면에서 본문을 622px 넘겼다(#143). -->
               <div class="board:flex-1 board:min-w-0">
                 <div class="board-flex-center board:gap-2 board:flex-wrap">
                   <!-- 카테고리 배지 -->
                   <span data-if="{{row.category}}" class="board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-gray-100 board:text-gray-800 board:dark:bg-gray-700 board:dark:text-gray-200">{{row.category}}</span>
                   <!-- 비밀글 아이콘 -->
-                  <icon data-if="{{row.is_secret}}" name="lock" class="board:text-sm board:text-gray-500 board:dark:text-gray-400"/>
+                  <icon data-if="{{row.is_secret}}" name="lock" class="board:text-sm board-text-muted"/>
                   <!-- 블라인드 배지 -->
                   <span data-if="{{row?.status === 'blinded'}}" class="board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-orange-100 board:text-orange-800 board:dark:bg-orange-900 board:dark:text-orange-200">$t:sirsoft-board.admin.posts.status.blinded</span>
                   <!-- 제목 -->
@@ -276,7 +276,7 @@
                     {{row.title}}
                   </a>
                   <!-- 첨부파일 아이콘 -->
-                  <icon data-if="{{row.has_attachment}}" name="paperclip" class="board:text-sm board:text-gray-500 board:dark:text-gray-400"/>
+                  <icon data-if="{{row.has_attachment}}" name="paperclip" class="board:text-sm board-text-muted"/>
                   <!-- 댓글 수 -->
                   <span data-if="{{row?.comment_count &amp;&amp; row?.comment_count > 0}}" class="board:text-xs board:text-blue-600 board:dark:text-blue-400 board:font-medium">[{{row?.comment_count}}]</span>
                   <!-- 신규 배지 -->
@@ -347,7 +347,7 @@
         <p class="board:text-gray-700 board:dark:text-gray-300">$t:sirsoft-board.admin.posts.modals.delete_confirm</p>
       </div>
       <footer>
-        <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
+        <button type="button" class="board-btn board-btn-secondary">
           <on type="click">
             <close-modal/>
           </on>
@@ -401,7 +401,7 @@
         </div>
       </div>
       <footer>
-        <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
+        <button type="button" class="board-btn board-btn-secondary">
           <on type="click">
             <close-modal/>
           </on>
@@ -489,7 +489,7 @@
         <ul class="board:mt-3 board:divide-y board:divide-gray-200 board:dark:divide-gray-700 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-lg board:max-h-80 board:overflow-y-auto">
           <li data-each="skippedPost in {{_global.bulkPostSkipped ?? []}}" data-testid="admin-post-bulk-skipped-row" class="board:px-3 board:py-2 board:flex board:items-start board:justify-between board:gap-3">
             <span class="board:min-w-0 board:text-sm board:text-gray-900 board:dark:text-white board:truncate">#{{skippedPost.id}} {{raw:skippedPost.title ?? ''}}</span>
-            <span class="board:flex-shrink-0 board:text-xs board:text-gray-500 board:dark:text-gray-400 board:text-right">{{skippedPost.reason_label ?? skippedPost.reason}}</span>
+            <span class="board:flex-shrink-0 board:text-xs board-text-muted board:text-right">{{skippedPost.reason_label ?? skippedPost.reason}}</span>
           </li>
         </ul>
       </div>

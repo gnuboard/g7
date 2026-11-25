@@ -87,7 +87,7 @@
                                     "props": {
                                         "name": "image",
                                         "size": "lg",
-                                        "className": "text-gray-500 dark:text-gray-400"
+                                        "className": "text-muted"
                                     }
                                 }
                             ]
@@ -131,7 +131,7 @@
                     "name": "P",
                     "if": "{{item.product_option && Object.keys(item.product_option.option_values_localized ?? {}).length > 0}}",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                        "className": "text-sm text-muted mt-1"
                     },
                     "text": "{{Object.entries(item.product_option?.option_values_localized ?? {}).map(([k, v]) => k + ': ' + v).join(', ')}}"
                 },
@@ -153,7 +153,7 @@
                             "name": "P",
                             "props": {
                                 "data-testid": "cart-item-additional-option",
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "text-xs text-muted"
                             },
                             "text": "{{addOpt.group_name}}: {{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}"
                         }
@@ -181,7 +181,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "text-xs text-muted"
                             },
                             "text": "{{cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.policy_name}}"
                         },
@@ -189,7 +189,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "text-xs text-muted"
                             },
                             "text": "/"
                         },
@@ -236,7 +236,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400 line-through"
+                                        "className": "text-xs text-muted line-through"
                                     },
                                     "text": "{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.list_price_formatted ?? ''}}"
                                 },
@@ -268,7 +268,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400 line-through"
+                                        "className": "text-xs text-muted line-through"
                                     },
                                     "text": "{{currency[1]?.formatted}}"
                                 }
@@ -299,7 +299,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                        "className": "text-xs text-muted"
                                     },
                                     "text": "{{currency[1]?.formatted}}"
                                 }
@@ -535,7 +535,7 @@
                             "props": {
                                 "type": "button",
                                 "aria-label": "$t:shop.cart.delete_item",
-                                "className": "p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer"
+                                "className": "p-1 text-muted hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer"
                             },
                             "children": [
                                 {
@@ -564,7 +564,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                        "className": "text-xs text-muted"
                     },
                     "text": "$t:shop.cart.subtotal"
                 },
@@ -592,7 +592,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "text-xs text-muted"
                             },
                             "text": "{{currency[1]?.formatted}}"
                         }

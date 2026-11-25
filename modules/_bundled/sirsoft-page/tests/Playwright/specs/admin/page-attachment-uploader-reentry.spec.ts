@@ -36,7 +36,8 @@ test.describe('페이지 첨부 업로더 확장점 — 업로드 → 저장 →
     await page.locator('input[name="title[ko]"]').fill('E2E 업로더 재진입');
 
     // 등록 화면에서도 업로더는 하나다
-    await expect(page.locator('[id="file_uploader"]')).toHaveCount(1);
+    // #408 엔진 스코프: 확장점 호스트 아래(기본 내용 포함)의 정적 노드 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+    await expect(page.locator('[id^="file_uploader__"]')).toHaveCount(1);
 
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser'),
@@ -61,7 +62,7 @@ test.describe('페이지 첨부 업로더 확장점 — 업로드 → 저장 →
       // 재진입 — 수정 화면을 새로 연다
       await page.goto(`/admin/pages/${pageId}/edit`, { waitUntil: 'domcontentloaded' });
       // 수정 화면은 상세 데이터를 받은 뒤 그린다 — 첨부 이름이 보일 때까지 기다린 다음 센다
-      const uploader = page.locator('[id="file_uploader"]');
+      const uploader = page.locator('[id^="file_uploader__"]');
       await expect(uploader.getByText(FILE.name, { exact: true })).toBeVisible({ timeout: 45_000 });
       await expect(uploader).toHaveCount(1);
       await expect(uploader.getByText(FILE.name, { exact: true })).toHaveCount(1);

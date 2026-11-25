@@ -53,7 +53,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "file-excel",
-                                            "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                            "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce-text-muted"
                                         }
                                     },
                                     {
@@ -125,7 +125,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "chevron-down",
-                                                            "className": "ecommerce-select-trigger-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce-select-trigger-icon ecommerce-text-muted"
                                                         }
                                                     }
                                                 ]
@@ -488,7 +488,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "calendar",
-                                                            "className": "ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce:text-base ecommerce-icon-muted ecommerce-text-muted"
                                                         }
                                                     },
                                                     {
@@ -535,7 +535,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "calendar",
-                                                            "className": "ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce:text-base ecommerce-icon-muted ecommerce-text-muted"
                                                         }
                                                     },
                                                     {

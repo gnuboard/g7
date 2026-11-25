@@ -110,7 +110,7 @@
                                             "name": "Span",
                                             "if": "{{(claim?.data?.claim?.return_addresses ?? []).length > 1}}",
                                             "props": {
-                                                "className": "ecommerce:ml-2 ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                "className": "ecommerce:ml-2 ecommerce:text-xs ecommerce-text-muted"
                                             },
                                             "text": "{{(claim?.data?.claim?.items ?? []).filter(i => (addr.claim_item_ids ?? []).includes(i.id)).map(i => i.product_name).join(', ')}}"
                                         }
@@ -228,7 +228,7 @@
                                                             "name": "Span",
                                                             "if": "{{group.can_deliver !== true && !!group.blocked_reason}}",
                                                             "props": {
-                                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                "className": "ecommerce:text-xs ecommerce-text-muted"
                                                             },
                                                             "text": "{{group.blocked_reason}}"
                                                         },
@@ -555,7 +555,7 @@
                                                             "name": "Span",
                                                             "if": "{{group.can_deliver !== true && !!group.blocked_reason}}",
                                                             "props": {
-                                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                "className": "ecommerce:text-xs ecommerce-text-muted"
                                                             },
                                                             "text": "{{group.blocked_reason}}"
                                                         },

@@ -23,7 +23,7 @@
           </on>
           $t:common.cancel
         </button>
-        <button type="submit" form="menu_form" disabled="{{_global.isSaving}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button type="submit" form="menu_form" disabled="{{_global.isSaving || _global.menuIconUploading}}" class="flex-center gap-1.5 btn btn-primary btn-sm">
           <icon data-if="{{!_global.isSaving}}" name="save" size="sm"/>
           <icon data-if="{{_global.isSaving}}" name="spinner" size="sm" :spin="true"/>
           <span data-if="{{!_global.isSaving}}">$t:common.save</span>
@@ -64,7 +64,7 @@
             <fail>
               <set-state target="global" :isSaving="false" formErrors="{{error.errors}}"/>
             </fail>
-            <body name="{{_global.formData.name}}" slug="{{_global.formData.slug}}" url="{{_global.formData.url}}" icon="{{_global.formData.icon}}" parent_id="{{_global.formData.parent_id}}" extension_type="{{_global.formData.extension_type}}" extension_identifier="{{_global.formData.extension_identifier}}" is_active="{{_global.formData.is_active}}" roles="{{_global.formData.roles}}"/>
+            <body name="{{_global.formData.name}}" slug="{{_global.formData.slug}}" url="{{_global.formData.url}}" icon_spec="{{_global.formData.icon_spec}}" parent_id="{{_global.formData.parent_id}}" extension_type="{{_global.formData.extension_type}}" extension_identifier="{{_global.formData.extension_identifier}}" is_active="{{_global.formData.is_active}}" roles="{{_global.formData.roles}}"/>
           </api-call>
         </sequence>
       </on>
@@ -86,7 +86,7 @@
               <span class="text-red-600 dark:text-red-400 ml-1">*</span>
             </label>
             <input data-ref="form_slug_input" type="text" name="slug" class="input font-mono"/>
-            <span data-if="{{_global.formErrors?.slug}}" class="text-red-600 dark:text-red-400 text-xs">{{_global.formErrors?.slug?.[0] ?? ''}}</span>
+            <span data-if="{{_global.formErrors?.slug}}" class="form-error">{{_global.formErrors?.slug?.[0] ?? ''}}</span>
             <span data-ref="form_slug_hint" data-if="{{!_global.formErrors?.slug}}" class="text-tertiary">$t:admin.menus.form.slug_hint</span>
           </div>
         </div>
@@ -96,14 +96,14 @@
               <span>$t:admin.menus.form.url</span>
             </label>
             <input data-ref="form_url_input" type="text" name="url" placeholder="$t:admin.menus.form.url_placeholder" class="input font-mono"/>
-            <span data-if="{{_global.formErrors?.url}}" class="text-red-600 dark:text-red-400 text-xs">{{_global.formErrors?.url?.[0] ?? ''}}</span>
+            <span data-if="{{_global.formErrors?.url}}" class="form-error">{{_global.formErrors?.url?.[0] ?? ''}}</span>
             <span data-ref="form_url_hint" data-if="{{!_global.formErrors?.url}}" class="text-tertiary">$t:admin.menus.form.url_hint</span>
           </div>
         </div>
         <div data-ref="form_icon_field">
           <div>
             <label data-ref="form_icon_label" class="form-label">$t:admin.menus.form.icon</label>
-            <icon-select data-type="composite" data-ref="form_icon_select" name="icon" placeholder="$t:admin.menus.form.icon_placeholder" searchPlaceholder="$t:admin.menus.form.icon_search_placeholder" noResultsText="$t:admin.menus.form.icon_no_results"/>
+            <menu-icon-field data-type="composite" data-ref="form_icon_select" name="icon_spec" placeholder="$t:admin.menus.form.icon_placeholder" searchPlaceholder="$t:admin.menus.form.icon_search_placeholder" noResultsText="$t:admin.menus.form.icon_no_results" error="{{_global.formErrors?.icon_spec?.[0] ?? _global.formErrors?.icon?.[0] ?? ''}}"/>
           </div>
         </div>
       </div>
@@ -115,7 +115,7 @@
               <label data-ref="form_parent_label" class="form-label">$t:admin.menus.form.parent</label>
               <!-- 상위 메뉴 — 맨 위(최상위)와 메뉴 목록. 수정 중에는 자기 자신을 후보에서 뺀다(자기 아래로 옮길 수 없다). 값은 종전 브라우저 기본 선택상자처럼 문자열 번호다 -->
               <select data-ref="form_parent_select" name="parent_id" aria-label="$t:admin.menus.form.parent" class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" options="{{[{ value: '', label: $t('admin.menus.form.parent_top_level') }].concat((menus?.data?.data ?? []).filter(m => _global.panelMode === 'create' || m.id !== _global.selectedMenuId).map(parentMenu => ({ value: String(parentMenu.id), label: $localized(parentMenu.name) })))}}"/>
-              <span data-if="{{_global.formErrors?.parent_id}}" class="text-red-600 dark:text-red-400 text-xs">{{_global.formErrors?.parent_id?.[0] ?? ''}}</span>
+              <span data-if="{{_global.formErrors?.parent_id}}" class="form-error">{{_global.formErrors?.parent_id?.[0] ?? ''}}</span>
             </div>
           </div>
         </div>
@@ -169,7 +169,7 @@
           <h4 data-ref="form_meta_title" class="text-table-header">$t:admin.menus.info.meta</h4>
           <div class="space-y-2 text-sm">
             <div class="flex-center gap-3">
-              <span class="text-gray-500 dark:text-gray-400 w-20">$t:admin.menus.info.creator</span>
+              <span class="text-muted w-20">$t:admin.menus.info.creator</span>
               <div>
                 <span class="text-primary font-medium">{{_global.selectedMenu?.creator?.name ?? 'System'}}</span>
                 <!-- 실명 보조 줄. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 real_name 을 싣는다. -->
@@ -178,14 +178,14 @@
               </div>
             </div>
             <div class="flex-center gap-3">
-              <span class="text-gray-500 dark:text-gray-400 w-20">$t:admin.menus.info.created_at</span>
+              <span class="text-muted w-20">$t:admin.menus.info.created_at</span>
               <div class="flex-center text-primary gap-1.5">
                 <icon name="calendar" size="sm" class="text-gray-500 dark:text-gray-500"/>
                 <span>{{_global.selectedMenu?.created_at}}</span>
               </div>
             </div>
             <div class="flex-center gap-3">
-              <span class="text-gray-500 dark:text-gray-400 w-20">$t:admin.menus.info.updated_at</span>
+              <span class="text-muted w-20">$t:admin.menus.info.updated_at</span>
               <div class="flex-center text-primary gap-1.5">
                 <icon name="clock" size="sm" class="text-gray-500 dark:text-gray-500"/>
                 <span>{{_global.selectedMenu?.updated_at}}</span>

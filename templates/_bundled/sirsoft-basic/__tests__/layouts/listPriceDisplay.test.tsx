@@ -19,6 +19,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { expandSemanticClassName } from './support/semanticClasses';
 
 const baseDir = path.resolve(__dirname, '../..');
 
@@ -56,12 +57,18 @@ describe.each([
   const listPriceBlock = findByComment(layout, '정가 취소선 + 할인율');
   const secondaryBlock = findByComment(layout, '정가 취소선 - 보조 통화');
 
+  /**
+   * @effects no_strikethrough_when_no_discount
+   */
   it('정가 취소선 + 할인율 블록이 if=(discount_rate>0) 게이트로 존재한다', () => {
     expect(listPriceBlock).toBeDefined();
     expect(listPriceBlock!.if).toContain('discount_rate');
     expect(listPriceBlock!.if).toContain('> 0');
   });
 
+  /**
+   * @effects cart_shows_strikethrough_list_price, checkout_shows_strikethrough_list_price, fallback_to_default_formatted_when_missing
+   */
   it('정가 취소선은 multi_currency_list_price 선택통화 폴백 패턴을 쓴다', () => {
     const nodes = flatten(listPriceBlock);
     const strikethrough = nodes.find((n) =>
@@ -72,6 +79,9 @@ describe.each([
     expect(strikethrough!.props?.className).toContain('line-through');
   });
 
+  /**
+   * @effects cart_shows_discount_rate_chip, checkout_shows_discount_rate_chip
+   */
   it('할인율 칩은 discount_rate% 텍스트 + 빨강 클래스를 쓴다', () => {
     const nodes = flatten(listPriceBlock);
     const chip = nodes.find((n) => typeof n.text === 'string' && n.text.includes('discount_rate') && n.text.includes('%'));
@@ -79,6 +89,9 @@ describe.each([
     expect(chip!.props?.className).toContain('text-red');
   });
 
+  /**
+   * @effects secondary_currency_list_price_converted
+   */
   it('보조 통화 정가 iteration 은 multi_currency_list_price 를 선택통화 제외 필터로 순회한다', () => {
     expect(secondaryBlock).toBeDefined();
     expect(secondaryBlock!.if).toContain('discount_rate');
@@ -86,13 +99,20 @@ describe.each([
     expect(secondaryBlock!.iteration?.source).toContain("code !== (_global.preferredCurrency ?? _global.defaultCurrency)");
   });
 
+  /**
+   * @effects selling_price_display_kept_alongside_list_price
+   */
   it('판매가 표시(multi_currency_selling_price)는 유지된다(비회귀)', () => {
     expect(text).toContain('multi_currency_selling_price');
   });
 
+  /**
+   * @effects list_price_block_pairs_light_dark_classes
+   */
   it('정가 블록은 라이트/다크 클래스 쌍을 갖는다', () => {
     const nodes = flatten(listPriceBlock);
     const strikethrough = nodes.find((n) => n.props?.className?.includes?.('line-through'));
-    expect(strikethrough!.props!.className).toMatch(/dark:/);
+    // #399 R-1 — 보조 글자색 묶음이 의미 클래스 `text-muted` 로 바뀌었다. 템플릿 CSS 정의(다크 짝 포함)까지 펼쳐 본다
+    expect(expandSemanticClassName(strikethrough!.props!.className)).toMatch(/dark:/);
   });
 });

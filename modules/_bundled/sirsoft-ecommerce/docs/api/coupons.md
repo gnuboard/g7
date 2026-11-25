@@ -17,6 +17,42 @@
 ---
 
 
+### GET /api/modules/sirsoft-ecommerce/coupons/downloadable
+
+- **라우트명**: `api.modules.sirsoft-ecommerce.coupons.downloadable`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\PublicCouponController@zone`
+- **인증/권한**: `optional.sanctum` (비회원도 호출) + `throttle:sirsoft-ecommerce.public-coupons`(분당 60회) + `permission:user,sirsoft-ecommerce.user-products.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| page | query | integer | 아니오 | min 1 | 쪽 번호 |
+| per_page | query | integer | 아니오 | min 1, max 48 | 쪽당 항목 수 (기본 12) |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.coupon.public_zone_validation_rules`).
+
+**응답 필드** (`data` 내부)
+
+_목록 응답(paginator): `data.data[]` 항목은 허용 목록 리소스(`DownloadableCouponResource`)가 정한 표시 칸만 싣는다 — 등록자·발급 수·발급 알림 설정 같은 내부 칸은 없다._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id · coupon_id | integer | `41` | 쿠폰 식별자 (받기 API 에 쓰는 값) |
+| localized_name · localized_description | string | `주말 5% 할인` | 현재 로케일의 쿠폰명·설명 |
+| target_type · target_type_short_label · target_scope | string | `product_amount` · `상품` · `all` | 적용 대상과 범위 |
+| discount_type · discount_value · discount_max_amount | string·number | `rate` · `5` · `5000` | 혜택 |
+| min_order_amount · min_order_amount_formatted | number·string | `0` · `0원` | 최소 주문금액 |
+| benefit_formatted · multi_currency_* | string·object | `5% 할인` | 혜택 문구와 통화별 환산 맵 (회원용 받기 목록과 같은 모양) |
+| is_combinable | boolean | `true` | 다른 쿠폰과 함께 쓸 수 있는지 |
+| valid_type · valid_days · valid_to · valid_period_formatted | string·number | `period` · `null` · `2026-12-31T…` · `~ 2026-12-31` | 사용 기한 |
+| remaining_quantity | integer\|null | `120` | 남은 발급 수량 (무제한이면 null) |
+| is_downloaded · user_issued_count | boolean·integer | `false` · `0` | **토큰을 실은 로그인 회원 응답에만** — 이미 받았는지·받은 수 |
+
+**설명**
+
+쿠폰존 화면이 쓰는 받을 수 있는 쿠폰 목록(1.4.1). 회원용 `user/coupons/downloadable` 과 같은 쿠폰(다운로드·수동 조건·발급중·발급기간 안)·같은 정렬이다. 비회원이면 받은 여부 없이, 토큰을 실은 로그인 회원이면 받은 여부(`is_downloaded`)를 함께 준다 — 쿠폰존 화면은 로그인 확인 전후로 주소를 바꾸지 않고 이 한 주소를 `auth_mode=optional` 로 부른다. 받기는 회원용 `POST user/coupons/{couponId}/download` 다.
+
 ### GET /api/modules/sirsoft-ecommerce/user/coupons
 <!-- @generated:start:api.modules.sirsoft-ecommerce.user.coupons.index -->
 - **라우트명**: `api.modules.sirsoft-ecommerce.user.coupons.index`
@@ -47,7 +83,10 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| coupons | object | `{"data":[{"id":2512,"coupon_id":107,"user_id":"a26219fc-9…` | 회원이 발급받은 쿠폰(발급 내역) 페이지네이션 객체 (`data[]` 발급 건 + `pagination` — CouponIssueCollection 직렬화, 쿠폰 정의가 아닌 회원별 발급 건) |
+| coupons | object | `{"data":[{"id":2512,"coupon_id":107,"user_id":"a26219fc-9…` | 회원이 발급받은 쿠폰(발급 내역) 페이지네이션 객체 (`data[]` 발급 건 + `pagination` — UserCouponIssueCollection 직렬화, 쿠폰 정의가 아닌 회원별 발급 건) |
+| coupons.data[].issue_source · issue_source_label | string\|null | `signup` · `가입` | 발급 경로 (download·direct·signup·first_purchase·birthday, 1.4.1) |
+| coupons.data[].expires_in_days | integer\|null | `5` | 만료까지 남은 날 수 — 사이트 날짜 기준, 오늘 만료면 0, 기한 없으면 null (1.4.1) |
+| coupons.data[].coupon | object\|null | `{"id":31,"localized_name":"가입 축하 쿠폰",…}` | 쿠폰함 카드용 쿠폰 블록 — 혜택·적용 대상·적용 상품/분류 이름(각 3개까지)과 개수·사용 기한. 쿠폰이 지워졌으면 null (1.4.1) |
 
 **응답 예시**
 

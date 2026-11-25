@@ -1230,6 +1230,10 @@
     "claims": "クレーム申請履歴",
     "claim": "クレーム申請書",
     "relatedProducts": "こちらの商品はいかがですか？",
-    "reviewFeed": "すべてのレビュー"
+    "reviewFeed": "すべてのレビュー",
+    "user_coupons": "クーポンボックス一覧",
+    "couponZone": "クーポンゾーン一覧",
+    "myReviews": "マイレビュー一覧",
+    "myActivity": "マイアクティビティ記録"
   }
 }

@@ -314,7 +314,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "{{$localized(_global.thumbnailPregen?.presetLabels?.[preset]) ? 'font-mono text-xs text-gray-500 dark:text-gray-400' : 'font-mono'}}",
+                                                        "className": "{{$localized(_global.thumbnailPregen?.presetLabels?.[preset]) ? 'font-mono text-xs text-muted' : 'font-mono'}}",
                                                         "data-testid": "{{'thumbnail-pregen-preset-ident-' + preset}}"
                                                     },
                                                     "text": "{{preset}}"

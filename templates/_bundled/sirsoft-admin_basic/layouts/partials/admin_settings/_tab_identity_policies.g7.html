@@ -15,7 +15,7 @@
     </div>
     <div data-ref="page_root" data-if="{{current_user !== undefined &amp;&amp; (_computed.canReadIdentityPolicies !== false)}}" class="admin-card">
       <div class="card-description">$t:admin.identity.policies.purposes_section_description</div>
-      <div data-ref="page_header" class="flex flex-col gap-2 mb-6">
+      <div data-ref="identity_policies_header" class="flex flex-col gap-2 mb-6">
         <responsive on="768-" class="flex gap-2 flex-row items-center justify-between mb-6"/>
         <div>
           <h3 class="section-title">$t:admin.identity.policies.page_title</h3>
@@ -68,10 +68,10 @@
         </div>
       </div>
       <div data-ref="filter_card" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex flex-col gap-2">
-        <responsive on="768-" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex gap-2 flex-row items-center"/>
+        <responsive on="768-" class-merge="flex-row items-center"/>
         <!-- 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 실측). 값은 쿼리로만 다룬다. -->
         <select name="filter.scope" aria-label="$t:admin.identity.policies.col.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
-          <responsive on="768-" class="text-primary w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"/>
+          <responsive on="768-" class-merge="w-40"/>
           <options>
             <option value="">$t:admin.identity.policies.all_scopes</option>
             <option value="route">$t:admin.identity.policies.scope.route</option>
@@ -93,7 +93,7 @@
           </on>
         </select>
         <select name="filter.source_type" aria-label="$t:admin.identity.policies.col.source_type" :autoBinding="false" value="{{query.source_type ?? ''}}" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
-          <responsive on="768-" class="text-primary w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"/>
+          <responsive on="768-" class-merge="w-40"/>
           <options>
             <option value="">$t:admin.identity.policies.all_sources</option>
             <option value="core">$t:admin.identity.policies.source.core</option>
@@ -116,7 +116,7 @@
         </select>
         <!-- 검색 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 검색어가 설정 폼 상태(filter.search)에 남아 초기화 후에도 입력창에 되살아나고, 설정 dirty 판정까지 오염시킨다. -->
         <input type="text" name="filter.search" :autoBinding="false" value="{{_local.identityPolicySearch ?? query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="input">
-          <responsive on="768-" class="input flex-1 min-w-[200px]"/>
+          <responsive on="768-" class-merge="flex-1 min-w-[200px]"/>
           <on type="change">
             <!-- 검색어는 로컬 상태에만 담아 둔다(자동바인딩을 끈 대신 직접 받는다) — 실제 조회는 아래 Enter 블록이 이 값을 쿼리로 실을 때 일어난다. -->
             <set-state target="local" identityPolicySearch="{{$event.target.value}}"/>
@@ -134,7 +134,7 @@
             </navigate>
           </on>
         </input>
-        <button type="button" class="px-4 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
+        <button type="button" class="btn btn-primary">
           <on type="click">
             <!-- Enter 키와 동일하게 입력값을 쿼리로 실어 이동한다 — refetch 만 하면 입력 중인 검색어가 반영되지 않는다. -->
             <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="policies">
@@ -149,7 +149,7 @@
           </on>
           <span>$t:common.search</span>
         </button>
-        <button data-if="{{(query.scope ?? '') !== '' || (query.source_type ?? '') !== '' || (query.search ?? '') !== ''}}" type="button" class="px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <button data-if="{{(query.scope ?? '') !== '' || (query.source_type ?? '') !== '' || (query.search ?? '') !== ''}}" type="button" class="btn btn-secondary">
           <on type="click">
             <!-- 입력창의 미제출 검색어도 함께 비운다 — 상태만 남으면 초기화가 안 된 것으로 보인다. -->
             <set-state target="local" identityPolicySearch=""/>
@@ -189,7 +189,7 @@
             <tbody>
               <tr data-each="policy in policies?.data?.data ?? []" class="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs">{{policy.key ?? ''}}</td>
-                <td class="px-3 py-2 text-gray-700 dark:text-gray-300">$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</td>
+                <td class="px-3 py-2 text-gray-700 dark:text-gray-300"><span>$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</span><span data-if="{{policy.scope === 'custom' &amp;&amp; policy.checkpoint_registered === false}}" class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">$t:admin.identity.policies.checkpoint_missing</span></td>
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs truncate max-w-xs">{{policy.target ?? ''}}</td>
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300">{{(identityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}</td>
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300 text-right">{{policy.grace_minutes ?? 0}}</td>
@@ -281,8 +281,8 @@
               <div class="flex-1 min-w-0">
                 <div class="text-primary font-mono text-xs break-all">{{policy.key ?? ''}}</div>
                 <div class="form-hint">
-                  <span>$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</span>
-                  <span class="mx-1.5 text-gray-500 dark:text-gray-400">·</span>
+                  <span>$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</span><span data-if="{{policy.scope === 'custom' &amp;&amp; policy.checkpoint_registered === false}}" class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">$t:admin.identity.policies.checkpoint_missing</span>
+                  <span class="mx-1.5 text-muted">·</span>
                   <span class="font-mono break-all">{{policy.target ?? ''}}</span>
                 </div>
               </div>
@@ -291,10 +291,10 @@
             <div class="flex-between gap-3">
               <div class="text-tertiary">
                 <span>{{(identityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}</span>
-                <span class="mx-1.5 text-gray-500 dark:text-gray-400">·</span>
+                <span class="mx-1.5 text-muted">·</span>
                 <span>$t:admin.identity.policies.col.grace_minutes</span>
                 <span class="ml-1 font-medium text-gray-700 dark:text-gray-300">{{policy.grace_minutes ?? 0}}</span>
-                <span class="mx-1.5 text-gray-500 dark:text-gray-400">·</span>
+                <span class="mx-1.5 text-muted">·</span>
                 <span>$t:admin.identity.policies.col.priority</span>
                 <span class="ml-1 font-medium text-gray-700 dark:text-gray-300 tabular-nums">{{policy.priority ?? 100}}</span>
               </div>

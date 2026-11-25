@@ -44,7 +44,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
+                    "className": "board-btn board-btn-secondary"
                 },
                 "children": [
                     {
@@ -250,7 +250,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "type": "button",
-                                                                        "className": "board:p-1 board:text-gray-500 board:dark:text-gray-400 board:hover:text-blue-600 board:dark:text-blue-400 board:dark:hover:text-blue-400",
+                                                                        "className": "board:p-1 board-text-muted board:hover:text-blue-600 board:dark:text-blue-400 board:dark:hover:text-blue-400",
                                                                         "title": "$t:common.edit",
                                                                         "disabled": "{{$parent._computed.canManageBoardTypes !== true || _global.btSaving}}"
                                                                     },
@@ -357,7 +357,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "type": "button",
-                                                                        "className": "board:p-1 board:text-gray-500 board:dark:text-gray-400 board:hover:text-red-600 board:dark:text-red-400 board:dark:hover:text-red-400 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                                                                        "className": "board:p-1 board-text-muted board:hover:text-red-600 board:dark:text-red-400 board:dark:hover:text-red-400 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
                                                                         "title": "$t:common.delete",
                                                                         "disabled": "{{_global.btDeletingId != null || _global.btSaving}}"
                                                                     },
@@ -687,7 +687,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "board-flex-center board:gap-2 board:px-4 board:py-2 board:bg-blue-600 board:text-white board:text-sm board:rounded-lg board:hover:bg-blue-700 board:dark:bg-blue-600 board:dark:hover:bg-blue-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                                        "className": "board-flex-center board-btn board-btn-primary",
                                         "disabled": "{{$parent._computed.canManageBoardTypes !== true || _global.btSaving || !_global.btFormSlug || !_global.btFormName?.[_global.appConfig?.siteLocale ?? $locale ?? 'ko']}}"
                                     },
                                     "children": [

@@ -696,10 +696,14 @@ const width = G7Core.ResponsiveManager.getWidth();
 // responsive 키 중 주어진 폭에 맞는 것 (프리셋·커스텀 범위 키)
 const key = G7Core.ResponsiveManager.getMatchingKey({ mobile: {}, desktop: {} }, width); // 'mobile' | 'desktop' | null
 
-// 창 폭 변화 구독
+// 창 폭 변화 구독 — 등록 즉시 현재 폭으로 한 번, 그 뒤로는 폭이 바뀔 때만 불린다(같은 폭 resize 에는 불리지 않음)
 const unsubscribe = G7Core.ResponsiveManager.subscribe((w) => { /* ... */ });
 ```
 
+> 폭은 평소 `window.innerWidth` 이고, 휴대폰에서 화면이 축소·확대되어 CSS 폭과 어긋나면 레이아웃 기준 폭
+> (`document.documentElement.clientWidth`)이다. 창 크기 변화·화면이 다시 보일 때(`visibilitychange`)·`pageshow` 에 다시 잰다(7.2.1).
+> 확장이 화면 폭으로 동작을 고를 때는 `window.innerWidth` 대신 이 값을 읽는다([responsive-layout.md](responsive-layout.md) 「확장 코드에서 같은 경계를 판정할 때」).
+>
 > `ResponsiveManager` 는 **브라우저 창 폭**이다. 컴포넌트가 화면 폭으로 형태를 고를 때는 아래 `useResponsive()`
 > 를 쓴다 — 레이아웃 편집기 미리보기에서는 창 폭과 미리보기 기기 폭이 다르다.
 

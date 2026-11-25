@@ -23,7 +23,7 @@
           </on>
           $t:sirsoft-ecommerce.common.cancel
         </button>
-        <button type="submit" form="brand_form" disabled="{{_local?.isSaving || (_global.panelMode === 'edit' &amp;&amp; brands?.data?.abilities?.can_update !== true)}}" class="ecommerce-flex-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
+        <button type="submit" form="brand_form" disabled="{{_local?.isSaving || (_global.panelMode === 'edit' &amp;&amp; brands?.data?.abilities?.can_update !== true)}}" class="ecommerce-flex-center ecommerce:gap-1.5 ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm">
           <icon data-if="{{!_local.isSaving}}" name="save" class="ecommerce:text-base"/>
           <icon data-if="{{_local.isSaving}}" name="spinner" class="ecommerce-spinner-sm"/>
           <span data-if="{{!_local.isSaving}}">$t:sirsoft-ecommerce.common.save</span>
@@ -94,7 +94,7 @@
         <div data-ref="form_website_field">
           <div>
             <label data-ref="form_website_label" class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.brand.form.website</label>
-            <input data-ref="form_website_input" type="url" name="website" placeholder="$t:sirsoft-ecommerce.admin.brand.form.website_placeholder" disabled="{{_global.panelMode === 'edit' &amp;&amp; brands?.data?.abilities?.can_update !== true}}" class=""/>
+            <input data-ref="form_website_input" type="url" name="website" placeholder="$t:sirsoft-ecommerce.admin.brand.form.website_placeholder" disabled="{{_global.panelMode === 'edit' &amp;&amp; brands?.data?.abilities?.can_update !== true}}"/>
             <span data-if="{{_local.errors?.website}}" class="ecommerce-form-error-xs">{{_local.errors?.website?.[0] ?? ''}}</span>
             <span data-ref="form_website_hint" data-if="{{!_local.errors?.website}}" class="ecommerce-text-tertiary">$t:sirsoft-ecommerce.admin.brand.form.website_hint</span>
           </div>

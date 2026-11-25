@@ -181,7 +181,7 @@
                     "name": "Span",
                     "if": "{{_global.quickOptionModal?.detail?.min_purchase_qty > 1}}",
                     "props": {
-                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                        "className": "block text-xs text-muted"
                     },
                     "text": "$t:shop.min_purchase_qty_notice|qty={{_global.quickOptionModal?.detail?.min_purchase_qty}}"
                 },
@@ -190,7 +190,7 @@
                     "name": "Span",
                     "if": "{{_global.quickOptionModal?.detail?.max_purchase_qty > 0}}",
                     "props": {
-                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                        "className": "block text-xs text-muted"
                     },
                     "text": "$t:shop.max_purchase_qty_notice|count={{_global.quickOptionModal?.detail?.max_purchase_qty}}|qty={{_global.quickOptionModal?.detail?.max_purchase_qty}}"
                 }
@@ -288,7 +288,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "aria-label": "$t:common.delete",
-                                                "className": "text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+                                                "className": "text-muted hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
                                             },
                                             "children": [
                                                 {
@@ -456,7 +456,7 @@
                                     "if": "{{(item.additionalOptionsTotal ?? 0) > 0}}",
                                     "props": {
                                         "data-testid": "quick-additional-options-amount",
-                                        "className": "flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2"
+                                        "className": "flex items-center justify-between text-xs text-muted mb-2"
                                     },
                                     "children": [
                                         {

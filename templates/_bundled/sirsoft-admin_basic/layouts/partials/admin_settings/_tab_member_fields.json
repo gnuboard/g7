@@ -365,7 +365,7 @@
                                                     "role": "button",
                                                     "aria-label": "$t:admin.settings.member.fields.drag_handle|name={{row.label ?? row.key}}",
                                                     "title": "$t:admin.settings.member.fields.drag_hint",
-                                                    "className": "inline-flex items-center justify-center cursor-grab text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                                    "className": "inline-flex items-center justify-center cursor-grab text-muted hover:text-gray-700 dark:hover:text-gray-200"
                                                 },
                                                 "children": [
                                                     {
@@ -387,7 +387,7 @@
                                                     "type": "button",
                                                     "disabled": true,
                                                     "aria-label": "$t:admin.settings.member.fields.drag_handle|name={{row.label ?? row.key}}",
-                                                    "className": "inline-flex items-center justify-center text-gray-500 dark:text-gray-400 opacity-50 cursor-not-allowed disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    "className": "inline-flex items-center justify-center text-muted opacity-50 cursor-not-allowed disabled:opacity-50 disabled:cursor-not-allowed"
                                                 },
                                                 "children": [
                                                     {
@@ -645,7 +645,7 @@
                                                             "role": "img",
                                                             "aria-label": "{{row.locks?.enabled ?? ''}}",
                                                             "title": "{{row.locks?.enabled ?? ''}}",
-                                                            "className": "text-gray-500 dark:text-gray-400"
+                                                            "className": "text-muted"
                                                         },
                                                         "children": [
                                                             {
@@ -896,7 +896,7 @@
                                                             "role": "img",
                                                             "aria-label": "{{row.locks?.required ?? ''}}",
                                                             "title": "{{row.locks?.required ?? ''}}",
-                                                            "className": "text-gray-500 dark:text-gray-400"
+                                                            "className": "text-muted"
                                                         },
                                                         "children": [
                                                             {
@@ -1016,7 +1016,7 @@
                                                             "role": "img",
                                                             "aria-label": "{{row.locks?.show_on_signup ?? ''}}",
                                                             "title": "{{row.locks?.show_on_signup ?? ''}}",
-                                                            "className": "text-gray-500 dark:text-gray-400"
+                                                            "className": "text-muted"
                                                         },
                                                         "children": [
                                                             {

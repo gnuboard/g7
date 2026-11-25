@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Menu;
+use App\Support\MenuIcon\MenuIconPresenter;
 use Illuminate\Http\Request;
 
 class MenuResource extends BaseApiResource
@@ -19,7 +21,8 @@ class MenuResource extends BaseApiResource
             'name' => $this->getValue('name'),  // 다국어 객체 그대로 반환 (프론트엔드에서 $localized() 사용)
             'slug' => $this->getValue('slug'),
             'url' => $this->getValue('url'),
-            'icon' => $this->getValue('icon'),
+            // icon 은 class 일 때만 문자열(외부 템플릿 호환), 구조형은 icon_spec (#381)
+            ...$this->presentIcon($this->resource),
             'order' => $this->getValue('order'),
             'is_active' => $this->getValue('is_active', true),
 
@@ -32,7 +35,7 @@ class MenuResource extends BaseApiResource
                     'id' => $this->parent->id,
                     'name' => $this->parent->name,  // 다국어 객체 그대로 반환
                     'url' => $this->parent->url,
-                    'icon' => $this->parent->icon,
+                    ...$this->presentIcon($this->parent),
                 ] : null;
             }),
 
@@ -43,7 +46,7 @@ class MenuResource extends BaseApiResource
                         'name' => $child->name,  // 다국어 객체 그대로 반환
                         'slug' => $child->slug,
                         'url' => $child->url,
-                        'icon' => $child->icon,
+                        ...$this->presentIcon($child),
                         'order' => $child->order,
                         'is_active' => $child->is_active,
                         'parent_id' => $child->parent_id,
@@ -114,6 +117,29 @@ class MenuResource extends BaseApiResource
     }
 
     /**
+     * 메뉴 아이콘 응답 필드(icon 호환 문자열 + icon_spec)를 만듭니다.
+     *
+     * `$menu->icon` 은 저장 원문(구조형 JSON 문자열일 수 있음)이므로 반드시 Presenter 를 거친다.
+     *
+     * @param  mixed  $menu  메뉴 모델(또는 배열 리소스)
+     * @return array{icon: ?string, icon_spec: ?array<string, mixed>} 응답 필드
+     */
+    private function presentIcon(mixed $menu): array
+    {
+        if ($menu instanceof Menu) {
+            $stored = $menu->getAttributes()['icon'] ?? null;
+
+            return MenuIconPresenter::present(is_string($stored) ? $stored : null, $menu->extension_type, $menu->extension_identifier);
+        }
+
+        $stored = is_array($menu) ? ($menu['icon'] ?? null) : ($menu->icon ?? null);
+        $type = is_array($menu) ? ($menu['extension_type'] ?? null) : ($menu->extension_type ?? null);
+        $identifier = is_array($menu) ? ($menu['extension_identifier'] ?? null) : ($menu->extension_identifier ?? null);
+
+        return MenuIconPresenter::present(is_string($stored) ? $stored : null, $type, $identifier);
+    }
+
+    /**
      * 소유자 필드명을 반환합니다.
      *
      * @return string|null 소유자 필드명
@@ -149,7 +175,7 @@ class MenuResource extends BaseApiResource
             'name' => $this->name,  // 다국어 객체 그대로 반환
             'slug' => $this->slug,
             'url' => $this->url,
-            'icon' => $this->icon,
+            ...$this->presentIcon($this->resource),
             'order' => $this->order,
             'is_active' => $this->is_active,
             'children' => $this->whenLoaded('activeChildren', function () {
@@ -161,7 +187,7 @@ class MenuResource extends BaseApiResource
                             'name' => $child->name,  // 다국어 객체 그대로 반환
                             'slug' => $child->slug,
                             'url' => $child->url,
-                            'icon' => $child->icon,
+                            ...$this->presentIcon($child),
                             'order' => $child->order,
                             'is_active' => $child->is_active,
                             'parent_id' => $child->parent_id,

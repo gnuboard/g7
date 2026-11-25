@@ -104,7 +104,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             },
                                             "text": "{{_global.reviewForModal?.createdAt ?? ''}}"
                                         }
@@ -229,7 +229,7 @@
                             "name": "Div",
                             "if": "{{(_global.reviewForModal?.images?.length ?? 0) > 1}}",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "text-sm text-muted"
                             },
                             "text": "{{(Number(_global.reviewImageIndex) + 1) + ' / ' + (_global.reviewForModal?.images?.length ?? 1)}}"
                         }

@@ -460,7 +460,7 @@
                             "props": {
                                 "type": "button",
                                 "disabled": "{{_computed.bulkMembersLocked || (_global.boardBulkMembers?.userUuids ?? []).length === 0 || (_global.boardBulkMembers?.all === false && (_global.boardBulkMembers?.boardIds ?? []).length === 0)}}",
-                                "className": "board-flex-center board:gap-1.5 board:px-4 board:py-2 board:bg-gray-900 board:dark:bg-white board:text-white board:dark:text-gray-900 board:rounded-lg board:hover:bg-gray-800 board:dark:hover:bg-gray-100 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed"
+                                "className": "board-flex-center board:gap-1.5 board-btn board-btn-primary"
                             },
                             "children": [
                                 {

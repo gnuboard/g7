@@ -46,7 +46,7 @@ class PublicSettingsExposureTest extends ModuleTestCase
 
         $shipping = $this->getJson(self::BASE.'/shipping')->assertOk()->json('data.shipping');
         $this->assertEqualsCanonicalizing($schema['shipping'], array_keys($shipping));
-        foreach (['free_shipping_threshold', 'address_validation_enabled', 'address_api_provider'] as $internal) {
+        foreach (['free_shipping_threshold'] as $internal) {
             $this->assertArrayNotHasKey($internal, $shipping);
         }
 

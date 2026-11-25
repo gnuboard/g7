@@ -18,7 +18,7 @@
           </on>
         </select>
         <div class="relative flex-1">
-          <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"/>
+          <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm pointer-events-none"/>
           <input name="search" type="text" placeholder="$t:admin.notification_log.search_placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
             <on type="change">
               <!-- 받는 사람으로 찾을 때는 회원 이름뿐 아니라 비회원에게 보낸 주소·번호도 걸린다(그쪽은 회원 연결 없이 식별자만 남는다). -->
@@ -34,7 +34,7 @@
     <div data-ref="filter_grid" class="filter-grid">
       <div data-ref="status_filter" class="flex flex-col gap-2">
         <responsive on="768-" class="flex flex-row gap-2 items-center"/>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.notification_log.filter.status_label</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.notification_log.filter.status_label</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="inline-clickable">
             <input type="checkbox" class="checkbox" checked="{{!_local.filter.statuses || _local.filter.statuses.length === 0}}">
@@ -79,7 +79,7 @@
       </div>
       <div data-ref="extension_type_filter" class="flex flex-col gap-2">
         <responsive on="768-" class="flex flex-row gap-2 items-center"/>
-        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.notification_log.filter.extension_type_label</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.notification_log.filter.extension_type_label</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="inline-clickable">
             <input type="checkbox" class="checkbox" checked="{{!_local.filter.extensionTypes || _local.filter.extensionTypes.length === 0}}">

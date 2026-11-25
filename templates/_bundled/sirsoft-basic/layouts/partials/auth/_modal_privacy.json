@@ -52,7 +52,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "text-sm text-muted"
                             },
                             "text": "$t:policy.published_at: {{privacyContent?.data?.published_at | date}}"
                         }
@@ -96,7 +96,7 @@
                     "name": "Div",
                     "if": "{{!privacyContent?.data}}",
                     "props": {
-                        "className": "py-8 text-center text-gray-500 dark:text-gray-400"
+                        "className": "py-8 text-center text-muted"
                     },
                     "text": "$t:policy.no_content"
                 }

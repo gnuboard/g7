@@ -8,7 +8,7 @@
       <div class="row-stack">
         <div data-ref="field_meta_title_suffix">
           <label class="form-label">$t:admin.settings.seo.meta_title_suffix</label>
-          <input type="text" name="seo.meta_title_suffix" placeholder="$t:admin.settings.seo.meta_title_suffix_placeholder" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input type="text" name="seo.meta_title_suffix" placeholder="$t:admin.settings.seo.meta_title_suffix_placeholder" disabled="{{_computed.isReadOnly}}"/>
           <p class="form-hint">$t:admin.settings.seo.meta_title_suffix_hint</p>
         </div>
         <div data-ref="field_meta_description">
@@ -18,7 +18,7 @@
         </div>
         <div data-ref="field_meta_keywords">
           <label class="form-label">$t:admin.settings.seo.meta_keywords</label>
-          <input type="text" name="seo.meta_keywords" placeholder="$t:admin.settings.seo.meta_keywords_placeholder" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input type="text" name="seo.meta_keywords" placeholder="$t:admin.settings.seo.meta_keywords_placeholder" disabled="{{_computed.isReadOnly}}"/>
           <p class="form-hint">$t:admin.settings.seo.meta_keywords_hint</p>
         </div>
       </div>
@@ -36,7 +36,7 @@
         </div>
         <div data-ref="field_generator_content" class="{{_local.form?.seo?.generator_enabled ? '' : 'opacity-50'}}">
           <label class="form-label">$t:admin.settings.seo.generator_content</label>
-          <input type="text" name="seo.generator_content" :maxLength="200" placeholder="GnuBoard7 {{_global.appConfig?.version ?? ''}}" disabled="{{_computed.isReadOnly || !_local.form?.seo?.generator_enabled}}" class=""/>
+          <input type="text" name="seo.generator_content" :maxLength="200" placeholder="GnuBoard7 {{_global.appConfig?.version ?? ''}}" disabled="{{_computed.isReadOnly || !_local.form?.seo?.generator_enabled}}"/>
           <p class="form-hint">$t:admin.settings.seo.generator_content_hint</p>
         </div>
       </div>
@@ -47,17 +47,17 @@
       <div class="row-stack">
         <div>
           <label class="form-label">$t:admin.settings.seo.og_default_site_name</label>
-          <input type="text" name="seo.og_default_site_name" placeholder="GNUBOARD.NET" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input type="text" name="seo.og_default_site_name" placeholder="GNUBOARD.NET" disabled="{{_computed.isReadOnly}}"/>
           <p class="form-hint">$t:admin.settings.seo.og_default_site_name_hint</p>
         </div>
         <div class="grid-2col">
           <div>
             <label class="form-label">$t:admin.settings.seo.og_image_default_width</label>
-            <input type="number" name="seo.og_image_default_width" min="{{_local?.form?._meta?.limits?.seo_og_image_default_width_min ?? 0}}" max="{{_local?.form?._meta?.limits?.seo_og_image_default_width_max ?? 8000}}" placeholder="1200" disabled="{{_computed.isReadOnly}}" class=""/>
+            <input type="number" name="seo.og_image_default_width" min="{{_local?.form?._meta?.limits?.seo_og_image_default_width_min ?? 0}}" max="{{_local?.form?._meta?.limits?.seo_og_image_default_width_max ?? 8000}}" placeholder="1200" disabled="{{_computed.isReadOnly}}"/>
           </div>
           <div>
             <label class="form-label">$t:admin.settings.seo.og_image_default_height</label>
-            <input type="number" name="seo.og_image_default_height" min="{{_local?.form?._meta?.limits?.seo_og_image_default_height_min ?? 0}}" max="{{_local?.form?._meta?.limits?.seo_og_image_default_height_max ?? 8000}}" placeholder="630" disabled="{{_computed.isReadOnly}}" class=""/>
+            <input type="number" name="seo.og_image_default_height" min="{{_local?.form?._meta?.limits?.seo_og_image_default_height_min ?? 0}}" max="{{_local?.form?._meta?.limits?.seo_og_image_default_height_max ?? 8000}}" placeholder="630" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
         <p class="text-tertiary">$t:admin.settings.seo.og_image_default_size_hint</p>
@@ -157,7 +157,7 @@
         </div>
         <div>
           <label class="form-label">$t:admin.settings.seo.twitter_default_card</label>
-          <select name="seo.twitter_default_card" disabled="{{_computed.isReadOnly}}" class="">
+          <select name="seo.twitter_default_card" disabled="{{_computed.isReadOnly}}">
             <options>
               <option value="summary_large_image">summary_large_image</option>
               <option value="summary">summary</option>
@@ -169,7 +169,7 @@
         </div>
         <div>
           <label class="form-label">$t:admin.settings.seo.twitter_default_site</label>
-          <input type="text" name="seo.twitter_default_site" placeholder="@gnuboard" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input type="text" name="seo.twitter_default_site" placeholder="@gnuboard" disabled="{{_computed.isReadOnly}}"/>
           <p class="form-hint">$t:admin.settings.seo.twitter_default_site_hint</p>
         </div>
       </div>
@@ -219,7 +219,7 @@
         </div>
         <div data-ref="field_seo_cache_ttl">
           <label class="form-label">$t:admin.settings.seo.cache_ttl</label>
-          <input type="number" name="seo.cache_ttl" disabled="{{_computed.isReadOnly}}" min="{{_local?.form?._meta?.limits?.seo_cache_ttl_min ?? 60}}" max="{{_local?.form?._meta?.limits?.seo_cache_ttl_max ?? 86400}}" placeholder="7200" class=""/>
+          <input type="number" name="seo.cache_ttl" disabled="{{_computed.isReadOnly}}" min="{{_local?.form?._meta?.limits?.seo_cache_ttl_min ?? 60}}" max="{{_local?.form?._meta?.limits?.seo_cache_ttl_max ?? 86400}}" placeholder="7200"/>
           <p class="form-hint">$t:admin.settings.seo.cache_ttl_hint</p>
         </div>
       </div>
@@ -256,12 +256,12 @@
         </div>
         <div data-ref="field_sitemap_cache_ttl">
           <label class="form-label">$t:admin.settings.seo.sitemap_cache_ttl</label>
-          <input type="number" name="seo.sitemap_cache_ttl" disabled="{{_computed.isReadOnly}}" min="{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_min ?? 3600}}" max="{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_max ?? 604800}}" placeholder="86400" class=""/>
+          <input type="number" name="seo.sitemap_cache_ttl" disabled="{{_computed.isReadOnly}}" min="{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_min ?? 3600}}" max="{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_max ?? 604800}}" placeholder="86400"/>
           <p class="form-hint">$t:admin.settings.seo.sitemap_cache_ttl_hint</p>
         </div>
         <div data-ref="field_sitemap_urls_per_file">
           <label class="form-label">$t:admin.settings.seo.sitemap_urls_per_file</label>
-          <input type="number" name="seo.sitemap_urls_per_file" disabled="{{_computed.isReadOnly}}" min="{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_min ?? 1000}}" max="{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_max ?? 50000}}" placeholder="50000" class=""/>
+          <input type="number" name="seo.sitemap_urls_per_file" disabled="{{_computed.isReadOnly}}" min="{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_min ?? 1000}}" max="{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_max ?? 50000}}" placeholder="50000"/>
           <p class="form-hint">$t:admin.settings.seo.sitemap_urls_per_file_hint</p>
         </div>
         <div data-ref="field_sitemap_gzip" class="flex-between">
@@ -302,12 +302,12 @@
           <div class="flex flex-col gap-2">
             <responsive on="768-" class="flex gap-2 flex-row items-center"/>
             <input type="text" :disabled="true" value="{{(sitemap_status?.data?.last_updated_at ?? _local.form?.seo?.sitemap_last_updated_at) | datetime | default('-')}}" class="dark:bg-gray-900 text-gray-700 dark:text-gray-300">
-              <responsive on="768-" class="flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
+              <responsive on="768-" class-merge="flex-1"/>
             </input>
             <!-- 사이트맵 생성 요청. 대기·진행·기록 중인 동안에는 잠겨 있어 같은 작업이 겹쳐 돌지 않는다.
                  즉시 실행(sync) 큐는 요청 안에서 생성을 끝내므로 응답까지 몇 초~수십 초가 걸린다 — 요청 중에도 잠그고 스피너를 보인다 -->
-            <button type="button" disabled="{{_computed.isReadOnly || !!_local.isRegeneratingSitemap || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="w-full px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex-center justify-center gap-2">
-              <responsive on="768-" class="w-auto px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex-center justify-center gap-2"/>
+            <button type="button" disabled="{{_computed.isReadOnly || !!_local.isRegeneratingSitemap || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="w-full btn btn-primary whitespace-nowrap flex-center">
+              <responsive on="768-" class-merge="w-auto"/>
               <on type="click">
                 <sequence>
                   <set-state target="local" :isRegeneratingSitemap="true"/>

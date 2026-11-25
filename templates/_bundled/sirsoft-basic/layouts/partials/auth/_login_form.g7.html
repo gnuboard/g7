@@ -96,8 +96,8 @@
     <!-- 이메일 입력 필드 (1단계) -->
     <div data-if="{{!_global.twoFactor?.required &amp;&amp; !_global.passwordChange?.required}}">
       <!-- 사내 아이디를 받는 외부 자격 증명(디렉터리 로그인)이 켜진 사이트는 이메일 형식을 강제하지 않는다 — 칸 이름은 email 그대로(7.2.0) -->
-      <label data-if="{{_global.appConfig?.auth?.login_identifier?.user !== 'email_or_username'}}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.email</label>
-      <label data-if="{{_global.appConfig?.auth?.login_identifier?.user === 'email_or_username'}}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.external.identifier</label>
+      <label data-if="{{_global.appConfig?.auth?.login_identifier?.user !== 'email_or_username'}}" class="form-label mb-3">$t:auth.email</label>
+      <label data-if="{{_global.appConfig?.auth?.login_identifier?.user === 'email_or_username'}}" class="form-label mb-3">$t:auth.external.identifier</label>
       <input aria-label="{{_global.appConfig?.auth?.login_identifier?.user === 'email_or_username' ? $t('auth.external.identifier') : $t('auth.email')}}" type="{{_global.appConfig?.auth?.login_identifier?.user === 'email_or_username' ? 'text' : 'email'}}" name="email" placeholder="{{_global.appConfig?.auth?.login_identifier?.user === 'email_or_username' ? $t('auth.external.identifier_placeholder') : $t('auth.email_placeholder')}}" class="{{_global.loginErrors?.email ? 'w-full px-4 py-2 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'}}" :required="true" disabled="{{_global.isLoggingIn}}">
         <on event="onBlur">
           <!-- 이메일 먼저 입력(7.2.0) — 칸을 벗어날 때 값이 바뀌었으면 그 식별자의 로그인 수단을 묻는다. 회사 계정 도메인이면 비밀번호 칸 대신
@@ -134,7 +134,7 @@
         <span data-if="{{!!_local.discovery?.label &amp;&amp; !!$localized(_local.discovery.label)}}">$t:auth.external.continue_with|method={{$localized(_local.discovery?.label)}}</span>
         <span data-if="{{!_local.discovery?.label || !$localized(_local.discovery.label)}}">$t:auth.external.continue_with_company</span>
       </button>
-      <button type="button" class="w-full text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer">
+      <button type="button" class="w-full text-sm text-muted hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer">
         <on type="click">
           <!-- 다른 이메일로 — 판정을 지워 비밀번호 칸으로 돌아간다 -->
           <set-state target="local" :discovery="null" :discoveryFor="null"/>
@@ -144,7 +144,7 @@
     </div>
     <!-- 비밀번호 입력 필드 (1단계) -->
     <div data-if="{{!_global.twoFactor?.required &amp;&amp; !_global.passwordChange?.required &amp;&amp; _local.discovery?.method !== 'external'}}">
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.password</label>
+      <label class="form-label mb-3">$t:auth.password</label>
       <password-input aria-label="$t:auth.password" name="password" placeholder="$t:auth.password_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200" :required="true" disabled="{{_global.isLoggingIn}}" :showToggle="true" error="{{_global.loginErrors?.password?.[0] ?? (_global.loginErrors?.password ?? '')}}"/>
     </div>
     <!-- 로그인 버튼 (1단계) -->
@@ -168,8 +168,8 @@
         <p class="text-sm text-red-700 dark:text-red-400">{{_global.twoFactor?.error ?? ''}}</p>
       </div>
       <div>
-        <label data-if="{{_global.twoFactor?.provider_id !== 'totp'}}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.two_factor.code_label</label>
-        <label data-if="{{_global.twoFactor?.provider_id === 'totp'}}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.two_factor.code_label_app</label>
+        <label data-if="{{_global.twoFactor?.provider_id !== 'totp'}}" class="form-label mb-3">$t:auth.two_factor.code_label</label>
+        <label data-if="{{_global.twoFactor?.provider_id === 'totp'}}" class="form-label mb-3">$t:auth.two_factor.code_label_app</label>
         <!-- 자동바인딩을 쓰지 않는다 — 재발송 시 입력값을 비워야 하므로 상태가 값을 소유한다 -->
         <input aria-label="{{_global.twoFactor?.provider_id === 'totp' ? $t('auth.two_factor.code_label_app') : $t('auth.two_factor.code_label')}}" type="text" name="two_factor_code" value="{{_global.twoFactor?.code ?? ''}}" inputMode="numeric" autoComplete="one-time-code" maxLength="{{_global.twoFactor?.provider_id === 'totp' ? 24 : 10}}" placeholder="{{_global.twoFactor?.provider_id === 'totp' ? $t('auth.two_factor.code_placeholder_app') : $t('auth.two_factor.code_placeholder')}}" class="w-full px-4 py-3 text-center text-xl tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200" disabled="{{_global.isLoggingIn}}">
           <on event="onChange">
@@ -177,8 +177,8 @@
           </on>
         </input>
         <!-- 유효시각 정적 표기 — 남은 시간 카운트다운은 SPA 이탈 후에도 타이머가 남아 쓰지 않는다 -->
-        <p data-if="{{_global.twoFactor?.expires_at}}" class="mt-2 text-xs text-gray-500 dark:text-gray-400">$t:auth.two_factor.valid_until|until={{_global.twoFactor?.expires_at | datetime}}</p>
-        <p data-if="{{_global.twoFactor?.provider_id === 'totp'}}" class="mt-2 text-xs text-gray-500 dark:text-gray-400">$t:auth.two_factor.backup_hint</p>
+        <p data-if="{{_global.twoFactor?.expires_at}}" class="mt-2 text-xs text-muted">$t:auth.two_factor.valid_until|until={{_global.twoFactor?.expires_at | datetime}}</p>
+        <p data-if="{{_global.twoFactor?.provider_id === 'totp'}}" class="mt-2 text-xs text-muted">$t:auth.two_factor.backup_hint</p>
       </div>
       <!-- 인증번호 확인 — submit 이라 Enter 키로도 제출된다 -->
       <button type="submit" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{!_global.twoFactor?.code || _global.twoFactor.code.length < 4 || _global.isLoggingIn}}">
@@ -248,7 +248,7 @@
         <p data-if="{{_global.loginErrors?.locked_until}}" class="mt-1 text-sm text-red-700 dark:text-red-400">$t:auth.locked_until|until={{_global.loginErrors?.locked_until | datetime}}</p>
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.password_change.new_password</label>
+        <label class="form-label mb-3">$t:auth.password_change.new_password</label>
         <!-- 새 비밀번호 — 자동바인딩 대신 상태가 값을 소유한다(실패해도 남고, 처음부터 누르면 함께 비워진다). 값은 `_global` 이 아니라
              이 화면의 `_local.passwordChangeInput` 에 둔다 — 비밀번호를 전역 상태에 남기지 않는다(단계 정보만 바깥 화면이 읽어 `_global`). -->
         <password-input aria-label="$t:auth.password_change.new_password" name="password_change_new" value="{{_local.passwordChangeInput?.password ?? ''}}" placeholder="$t:auth.password_change.new_password_placeholder|count={{_global.settings?.security?.password_min_length ?? 8}}" autoComplete="new-password" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200" disabled="{{_global.isLoggingIn}}" :showToggle="true" :showValidation="true" enableRules="{{['minLength:' + (_global.settings?.security?.password_min_length ?? 8)].concat(_global.settings?.security?.require_password_special_char ? ['hasSpecial'] : [], _global.settings?.security?.password_require_char_types ? ['minTypes:2'] : [])}}" error="{{_global.passwordChange?.errors?.password?.[0] ?? ''}}">
@@ -256,17 +256,17 @@
             <set-state target="local" passwordChangeInput.password="{{$event.target.value}}"/>
           </on>
         </password-input>
-        <p data-if="{{!!_global.settings?.security?.password_reuse_prevention_enabled || !!_global.settings?.security?.password_block_identifier || !!_global.settings?.security?.password_block_repeated_chars || !!_global.settings?.security?.password_block_sequential_chars}}" class="mt-2 flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400">
+        <p data-if="{{!!_global.settings?.security?.password_reuse_prevention_enabled || !!_global.settings?.security?.password_block_identifier || !!_global.settings?.security?.password_block_repeated_chars || !!_global.settings?.security?.password_block_sequential_chars}}" class="mt-2 flex flex-wrap gap-x-1 text-xs text-muted">
           <span>$t:auth.password_rules.server_intro</span>
           <span data-if="{{!!_global.settings?.security?.password_reuse_prevention_enabled}}">$t:auth.password_rules.reuse|count={{_global.settings?.security?.password_reuse_count ?? 3}}</span>
           <span data-if="{{!!_global.settings?.security?.password_block_identifier}}">$t:auth.password_rules.identifier</span>
           <span data-if="{{!!_global.settings?.security?.password_block_repeated_chars}}">$t:auth.password_rules.repeated|count={{_global.settings?.security?.password_repeated_chars_length ?? 4}}</span>
           <span data-if="{{!!_global.settings?.security?.password_block_sequential_chars}}">$t:auth.password_rules.sequential|count={{_global.settings?.security?.password_sequential_chars_length ?? 4}}</span>
         </p>
-        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:auth.password_rules.not_current</p>
+        <p class="mt-1 text-xs text-muted">$t:auth.password_rules.not_current</p>
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.password_change.confirm_password</label>
+        <label class="form-label mb-3">$t:auth.password_change.confirm_password</label>
         <!-- 새 비밀번호 확인 — 같은 방식으로 상태가 값을 소유한다. -->
         <password-input aria-label="$t:auth.password_change.confirm_password" name="password_change_confirm" value="{{_local.passwordChangeInput?.password_confirmation ?? ''}}" placeholder="$t:auth.password_confirm_placeholder" autoComplete="new-password" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200" disabled="{{_global.isLoggingIn}}" :showToggle="true" :isConfirmField="true" confirmTarget="{{_local.passwordChangeInput?.password ?? ''}}" error="{{_global.passwordChange?.errors?.password_confirmation?.[0] ?? ''}}">
           <on event="onChange">

@@ -5,6 +5,43 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.99.1] - 2026-11-24
+
+### Fixed
+
+- (engine-v1.99.1) 레이아웃 편집기 스타일 탭에서 공통(기본)이 정렬 박스(flex)인 노드를 태블릿·모바일 같은 화면 폭 탭으로 보면 늘 「정렬 박스로 만들기」 단추만 보였고, 눌러도 아무것도 기록되지 않아 그 폭에서만 정렬 박스를 끌 방법이 없었습니다. 화면 폭 탭의 켜짐 판정(`isNodeFlexEnabled`)이 구간에 명시 설정이 있어야만 켜짐으로 봤는데(D8), engine-v1.98.0 의 classMerge 가 기본과 같은 토큰을 구간에 쓰지 않기 때문입니다. 이제 구간에 className 이 있으면(통째 교체 값 또는 기본 + classMerge 실효값) 그 값으로, 없으면 그 폭이 이어받는 기본값으로 판정합니다. 해제는 종전대로 명시 해제 토큰(`block`)을 그 폭에 기록해 기본 상속을 끊습니다. 발생 시점: engine-v1.98.0(classMerge 도입). 회귀 잠금: `flexModel.test.ts`(상속 true, 구간 off 토큰 false, 기본 비flex false), `s7-property-controls.test.tsx`(상속된 flex 해제 시 모바일 실효값 block). 수정 전 코드에서 2건 실패 확인. E2E `property-editor-scope.spec.ts` T14 (flexModel.ts)
+
+## [engine-v1.99.0] - 2026-11-23
+
+### Added
+
+- (engine-v1.99.0) 디버그 모드(`G7Config.debug`)에서 같은 DOM id 가 화면에 여러 개 생기면 콘솔에 `[G7] 같은 DOM id 가 화면에 여러 개 있습니다` 경고를 냅니다(`{id, count, pathname}`). 문서 body 의 DOM 변화를 지켜보다 변화가 멈추고 1초 뒤 한 번 세고, 같은 경로·같은 id 는 한 번만 알리며 경로가 바뀌면 다시 셉니다. 디버그 모드가 꺼져 있으면 감시 자체를 만들지 않습니다. 정적 감사와 전 화면 크롤이 모달·시트 열림 같은 상호작용 상태를 다 보지 못해서 넣었습니다(#408). 회귀 잠금: `devDuplicateIdMonitor.test.ts`(6건) (devDuplicateIdMonitor.ts, template-engine.ts)
+
+### Fixed
+
+- (engine-v1.99.0) 같은 확장 조각이 한 화면의 확장점 여러 곳에 주입되면 조각 안 노드의 정적 id 가 DOM id 로 그대로 나가 같은 id 가 여러 개 생기던 문제를 고쳤습니다. 관리자 게시글 상세의 `ckeditor5_content_css_injector` 가 본문과 답글 수만큼(실측 4개), 알림 정의 탭의 비즈뿌리오 행 표시가 행 수만큼, 회원 항목의 주소 검색 버튼이 주소형 항목 수만큼 겹쳤습니다. 이제 확장점 호스트 아래에서 그려지는 노드(주입 조각과, 주입이 없을 때 그려지는 기본 내용 `default` 모두)의 **보간 없는 정적 노드 id** 는 DOM 에 `{원래 id}__{가장 가까운 호스트 확장점의 DOM id}` 로 나갑니다(새 `ExtensionIdScopeContext`·`scopeExtensionNodeId`). 중첩 확장점은 가장 가까운 호스트가 이기고 호스트 자신의 id 도 바깥 scope 로 스코프됩니다. 셀·반복 항목 렌더(`renderItemChildren`)의 확장점 호스트는 React 트리의 scope 를 상속하는 `CellExtensionHost` 로 그립니다. **바뀌지 않는 것**: `{{…}}` 로 보간한 id, 명시한 `props.id`(g7.html 의 `id="…"`), 엔진 내부 식별(findById·slot 등록·DevTools·편집기 editorPath, 서버의 target_id 주입)은 원본 id 그대로입니다. 조각 노드를 DOM 으로 정확히 찾아야 하면 조각이 `id` 속성을 직접 지정하거나 접두어 셀렉터(`[id^="원래id__"]`)를 씁니다. 발생 시점: 확장점 주입 도입 이래 계속(엔진 버전 특정 불가). 회귀 잠금: `ExtensionIdScope.test.tsx`(9건, 수정 전 엔진에서 5건 실패 확인) (ExtensionIdScope.tsx, DynamicRenderer.tsx, helpers/RenderHelpers.ts)
+
+## [engine-v1.98.0] - 2026-11-21
+
+### Added
+
+- (engine-v1.98.0) 레이아웃 노드 `responsive.{key}.classMerge` — 그 구간에서 바뀐 클래스만 기본 className 에 덧붙입니다(마크업 `<responsive on="portable" class-merge="p-6"/>`). 종전 구간 `props.className` 은 기본 className 을 통째로 교체해, 패딩 하나만 바꿔도 클래스 전체를 다시 적어야 했습니다(번들 레이아웃 재작성 2,415구간). 병합은 `mergeClasses` 의 충돌 교체 규칙(같은 축·같은 변형 토큰만 교체, 확장 앞글자를 떼고 판정)을 쓰고 같은 토큰은 한 번만 남깁니다(새 공용 함수 `StyleHelpers.applyResponsiveClassMerge`). 적용 순서: 구간 매칭 → props 얕은 병합(구간 `class` 가 있으면 종전대로 교체) → 바인딩 해석 → classMap → classMerge(`RenderHelpers.resolveResponsiveClassMergeValue` 로 바인딩 해석). DynamicRenderer 와 셀·반복 항목 렌더(`renderItemChildren`)가 같은 순서로 적용하고, SEO 봇 렌더(`App\Support\Style\ClassMerger`)와 공용 픽스처 `tests/Fixtures/class-merge/cases.json` 로 같은 결과를 증명합니다. props 의 형제 키라 구버전 엔진은 무시하고 DOM 으로 새지 않습니다. 단계 숫자가 없는 색 이름(`bg-white`·`text-white`)은 종전 규칙대로 색 그룹에 걸리지 않아 교체되지 않습니다. 회귀 잠금: `DynamicRenderer.responsiveClassMerge.test.tsx`(9건), `RenderHelpers.responsiveClassMerge.test.tsx`(4건), `StyleHelpers.classMergeParity.test.ts`(픽스처 30사례) (helpers/StyleHelpers.ts, helpers/RenderHelpers.ts, DynamicRenderer.tsx)
+
+### Changed
+
+- (engine-v1.98.0) 레이아웃 편집기 디바이스 탭의 className 편집이 기본 대비 바뀐 토큰만 `responsive.{bp}.classMerge` 로 저장합니다. 종전 「B안 시드」는 처음 편집할 때 기본 className 전체를 구간 `props.className` 에 복사해, 기본값을 나중에 바꿔도 구간이 따라가지 않았고 운영자 화면에도 같은 문자열 반복이 쌓였습니다. 덧붙이기로 나타낼 수 없는 편집(기본 토큰을 지우기만 함)과 기본 className 에 바인딩이 있는 노드, 이미 구간 `props.className` 을 가진 구간은 종전처럼 통째 교체로 읽고 씁니다(한 구간에 두 방식을 섞지 않음). 표시점·「기본값으로 초기화」도 classMerge 를 인식합니다. 회귀 잠금: `recipeEngine.scope.test.ts`, `styleScope.test.ts` 「classMerge 구간」 (layout-editor/spec/styleScope.ts, layout-editor/spec/recipeEngine.ts)
+- (engine-v1.98.0) DevTools 의 폭 접두 안내(StyleTracker 「폭 조건 없는 hidden」, TailwindValidator 폭 접두 경고)가 구간 className 통째 교체 대신 `<responsive on="…" class-merge="…"/>` 로 바뀐 클래스만 덧붙이라고 권합니다 (devtools/StyleTracker.ts, devtools/TailwindValidator.ts)
+
+### Fixed
+
+- (engine-v1.98.0) 노드 `responsive.{key}.classMap` 이 무시돼 그 구간에서 classMap 클래스가 조용히 빠지던 문제를 고쳤습니다. 이제 구간 classMap 이 기본 classMap 을 대신합니다. 셀·반복 항목 렌더 경로는 classMap 자체를 적용하지 않았는데, 이제 DynamicRenderer 와 같은 순서로 적용합니다(번들 레이아웃의 셀 정의·구간 classMap 사용은 0건이라 기존 화면은 바뀌지 않습니다). 발생 시점: responsive 도입(engine-v1.1.0) 이후 줄곧, 7.2.0 출시본 포함. 회귀 잠금: `DynamicRenderer.responsiveClassMerge.test.tsx` 「구간 classMap」, `RenderHelpers.responsiveClassMerge.test.tsx` 「셀 노드 classMap」 (DynamicRenderer.tsx, helpers/RenderHelpers.ts)
+
+## [engine-v1.97.1] - 2026-11-21
+
+### Fixed
+
+- (engine-v1.97.1) 휴대폰에서 다른 앱(카카오톡 로그인·카드앱 결제·본인확인 앱)을 다녀와 브라우저로 돌아오면 사용자 화면이 PC 모양으로 축소되어 굳고 새로고침해야 풀리던 문제를 고쳤습니다. 원인: 반응형 폭 싱글톤(`ResponsiveManager`)이 모듈을 불러올 때 `window.innerWidth` 를 한 번 읽고 `resize` 때만 다시 읽었습니다. 화면이 가려진 채 페이지를 불러오면 기기 폭이 아닌 값을 읽을 수 있고, PC 화면이 한 번 그려지면 모바일 브라우저가 전체가 보이도록 화면을 축소해 `innerWidth`(보이는 영역 폭)가 부풀어(실측 390 → 909) 다음 `resize` 에서도 그 값을 다시 읽어 태블릿·PC 폭에 머물렀습니다. 발생 시점: 반응형 도입(`e2417c7424`) 이후 줄곧, 7.2.0 출시본 포함. 바뀐 판정: 새 순수 함수 `measureViewportWidth()`(`viewportMeasure.ts`)가 평소에는 `innerWidth` 를 쓰고(PC 세로 스크롤 막대·브라우저 확대·소수 배율 경계 1023/1024 — 종전과 같은 값), CSS 폭(미디어 쿼리)이 `innerWidth` 와 어긋나고 레이아웃 기준 폭(`documentElement.clientWidth`)과 맞으면 레이아웃 기준 폭을 씁니다(±2px). 재측정 계기에 `visibilitychange`(보일 때만 — 즉시 + 250ms 후속 1회)·`pageshow`(즉시 + 250ms 후속)를 더했고, 폭이 같으면 구독자에게 알리지 않습니다(`_setWidthForTesting` 은 종전처럼 늘 알림). `remeasure()` 공개, `destroy()` 가 세 수신기·디바운스·후속 타이머를 모두 걷습니다. 자산 실패 배너의 모바일 배치 판정도 같은 측정을 씁니다. 회귀 잠금: `viewportMeasure.test.ts`(V1~V9), `ResponsiveManager.backgroundReturn.test.ts`(M1~M9 — 수정 전 7건 red), `ResponsiveContext.realManager.backgroundReturn.test.tsx`(C1 — 수정 전 red), `troubleshooting-components.test.ts` 「[사례 2] 앱 전환 복귀 후 PC 배율」, `AssetFailureNotice.test.ts` 「innerWidth 980 · 레이아웃 390 → 세로 배치」, E2E `tests/Playwright/specs/responsive-zoomed-out-return.spec.ts` (viewportMeasure.ts, ResponsiveManager.ts, AssetFailureNotice.ts)
+
 ## [engine-v1.97.0] - 2026-11-19
 
 ### Changed

@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Support;
 
+use App\Exceptions\CoreVersionMismatchException;
 use App\Extension\Exceptions\ExtensionSeederFailedException;
 use App\Support\SafeExceptionMessage;
 use Illuminate\Database\QueryException;
@@ -87,5 +88,32 @@ class SafeExceptionMessageTest extends TestCase
         // 시더가 일부러 던진 사용자용 사유는 그대로
         $domain = new ExtensionSeederFailedException($seeder, '기본 배송 유형 코드가 비어 있습니다');
         $this->assertSame($domain->getMessage(), SafeExceptionMessage::for($domain));
+    }
+
+    /**
+     * 코어 버전 미달은 `\Error` 를 잇지만 확장이 일부러 던진 사용자용 사유라 운영 모드에서도 그대로 보이고, 제약 문자열을 겹쳐 쓰지 않습니다(7.2.1 실측 W5-003).
+     *
+     * @scenario case=core_version_mismatch_kept
+     *
+     * @effects extension_failure_hides_internal_detail
+     *
+     * @return void 반환값 없음
+     */
+    public function test_core_version_mismatch_reason_is_shown_in_production(): void
+    {
+        config()->set('app.debug', false);
+        app()->setLocale('ko');
+
+        $e = new CoreVersionMismatchException('plugin', 'vendor-popup', '>=9.9.9', '7.2.1');
+
+        $this->assertFalse(SafeExceptionMessage::isInternal($e));
+        $shown = SafeExceptionMessage::for($e);
+        $this->assertSame($e->getMessage(), $shown);
+        $this->assertStringContainsString('>=9.9.9', $shown);
+        $this->assertStringContainsString('7.2.1', $shown);
+        $this->assertStringNotContainsString('>=9.9.9 이상', $shown);
+
+        // 진짜 PHP 엔진 오류는 그대로 가린다
+        $this->assertTrue(SafeExceptionMessage::isInternal(new \TypeError('x')));
     }
 }

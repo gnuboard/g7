@@ -1678,6 +1678,12 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                 $entry['core_payment_method'] = $definition['defaults']['core_payment_method'];
             }
 
+            // 간편결제 별칭(toss_kakaopay 등)이 선언한 결제 결과 간편결제사 이름도 보존한다 — 결제수단 칸이 코어 값(card)으로
+            // 저장되는 PG 는 이 값으로만 간편결제 주문을 가를 수 있다(관리자 주문 목록 결제수단 필터, #933).
+            if (isset($definition['defaults']['embedded_pg_provider']) && is_string($definition['defaults']['embedded_pg_provider'])) {
+                $entry['embedded_pg_provider'] = $definition['defaults']['embedded_pg_provider'];
+            }
+
             // 지정된 PG 가 현재 레지스트리에 없으면 런타임 전용 플래그를 단다 (A2).
             // 관리자 화면은 이 플래그로 배지를 띄우고, 공개 응답은 이 항목을 제거한다.
             if ($this->hasOrphanedPgProvider($needsPg, $entry['pg_provider'] ?? null, $defaultPgProvider, $registeredPgIds)) {
@@ -1737,6 +1743,11 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                 // 플러그인 결제수단의 코어 결제수단 매핑도 스냅샷해 재조회 응답(프론트 소비)에 남긴다.
                 if (isset($def['defaults']['core_payment_method'])) {
                     $savedMethods[$index]['core_payment_method'] = $def['defaults']['core_payment_method'];
+                }
+
+                // 간편결제 별칭의 결제 결과 간편결제사 이름도 스냅샷한다 (#933 — 결제수단 필터).
+                if (isset($def['defaults']['embedded_pg_provider']) && is_string($def['defaults']['embedded_pg_provider'])) {
+                    $savedMethods[$index]['embedded_pg_provider'] = $def['defaults']['embedded_pg_provider'];
                 }
             }
             // 고아 항목은 기존 _cached_* 유지

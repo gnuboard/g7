@@ -1299,6 +1299,32 @@
     "menu_info_title": "メニュー情報",
     "new_menu_title": "新しいメニューを追加",
     "edit_menu_title": "メニュー編集",
+    "icon_field": {
+      "tab_pick": "選択",
+      "tab_input": "直接入力",
+      "tab_upload": "アップロード",
+      "tab_svg": "SVG コード",
+      "preview": "アイコンのプレビュー",
+      "none": "アイコンなし",
+      "clear": "アイコンを削除",
+      "input_label": "アイコンを直接入力",
+      "input_placeholder": "fas fa-house または /images/menu.png",
+      "input_hint": "Font Awesome クラス(fas fa-house, fa-solid fa-house)またはサイト内の画像パス(/ で始まる)。外部アドレスは使用できません。",
+      "input_detected_class": "Font Awesome クラスとして保存します。",
+      "input_detected_image": "サイト内の画像パスとして保存します(PNG・WebP・JPG・GIF)。",
+      "input_external_blocked": "外部アドレス(http・https・//)は使用できません。ファイルをアップロードするかサイト内パスを使用してください。",
+      "upload_button": "ファイルを選択",
+      "upload_hint": "PNG・WebP・JPG・GIF(1MB 以下)または SVG(32KB 以下)。SVG ファイルはコードに変換して保存します。Inkscape・Illustrator の編集情報を含む SVG は拒否されるため、「プレーン SVG」・「最適化 SVG」で保存してからアップロードしてください。",
+      "uploading": "アップロード中…",
+      "upload_failed": "アイコンをアップロードできませんでした。",
+      "uploaded_image": "アップロードした画像",
+      "package_image": "拡張機能の画像",
+      "svg_label": "SVG コード",
+      "svg_placeholder": "<svg viewBox=\"0 0 24 24\">…</svg>",
+      "svg_hint": "currentColor を使うとメニューの文字色に従います。スクリプト・外部参照・style 要素は保存できません。エディタで「プレーン SVG」・「最適化 SVG」として保存したコードを貼り付けてください。",
+      "svg_not_svg": "<svg で始まる SVG コードではありません。",
+      "type_svg": "SVG コード"
+    },
     "info": {
       "basic": "基本情報",
       "name": "メニュー名",
@@ -4585,8 +4611,10 @@
         "reset_to_default": "デフォルト値に戻す",
         "reset_success": "デフォルト値に復元しました。",
         "priority": "優先順位",
-        "priority_desc": "同じ位置に複数のポリシーがある場合、数値が大きいほど先に適用されます。同じ位置に同じ数値を設定すると、どのポリシーが先に適用されるかが決定されないため、保存が拒否されます。"
-      }
+        "priority_desc": "同じ位置に複数のポリシーがある場合、数値が大きいほど先に適用されます。同じ位置に同じ数値を設定すると、どのポリシーが先に適用されるかが決定されないため、保存が拒否されます。",
+        "checkpoint_placeholder": "拡張ポイントを選択してください"
+      },
+      "checkpoint_missing": "連携する拡張ポイントなし"
     },
     "logs": {
       "page_title": "本人認証履歴",
@@ -5648,6 +5676,7 @@
         "layout_extension_reregister": "レイアウト拡張の再登録",
         "layout_extension_restore": "レイアウト拡張の復元",
         "layout_extension_unregister": "レイアウト拡張の解除",
+        "menu_icon": "メニューアイコン",
         "menu_role": "メニュー権限",
         "necessary_storage": "必須ブラウザ保存項目",
         "operation_lock": "作業ロック",

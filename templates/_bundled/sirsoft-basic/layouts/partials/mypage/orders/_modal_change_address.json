@@ -18,9 +18,9 @@
                 "name": "Button",
                 "responsive": {
                     "portable": {
+                        "classMerge": "flex-1 py-2.5",
                         "props": {
-                            "type": "button",
-                            "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            "type": "button"
                         }
                     }
                 },
@@ -41,9 +41,9 @@
                 "name": "Button",
                 "responsive": {
                     "portable": {
+                        "classMerge": "flex-1 py-2.5",
                         "props": {
                             "type": "button",
-                            "className": "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                             "disabled": "{{_local.isSubmittingAddress === true || (_global.currentUser?.uuid && (_global.changeAddressMode ?? 'saved') === 'saved' && !_global.selectedAddressId)}}"
                         }
                     }
@@ -61,7 +61,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                    "className": "flex btn btn-primary gap-2",
                     "disabled": "{{_local.isSubmittingAddress === true || (_global.currentUser?.uuid && (_global.changeAddressMode ?? 'saved') === 'saved' && !_global.selectedAddressId)}}"
                 },
                 "children": [
@@ -129,7 +129,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "{{(_global.changeAddressMode ?? 'saved') === 'saved' ? 'px-4 py-2 text-sm font-medium border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}"
+                                "className": "{{(_global.changeAddressMode ?? 'saved') === 'saved' ? 'px-4 py-2 text-sm font-medium border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'px-4 py-2 text-sm font-medium text-muted hover:text-gray-700 dark:hover:text-gray-300'}}"
                             },
                             "text": "$t:mypage.order_detail.saved_addresses"
                         },
@@ -149,7 +149,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "{{(_global.changeAddressMode ?? 'saved') === 'manual' ? 'px-4 py-2 text-sm font-medium border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}"
+                                "className": "{{(_global.changeAddressMode ?? 'saved') === 'manual' ? 'px-4 py-2 text-sm font-medium border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'px-4 py-2 text-sm font-medium text-muted hover:text-gray-700 dark:hover:text-gray-300'}}"
                             },
                             "text": "$t:mypage.order_detail.manual_input"
                         }
@@ -280,7 +280,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                        "className": "text-sm text-muted"
                                     },
                                     "text": "$t:mypage.addresses.empty"
                                 }
@@ -320,7 +320,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                "className": "form-label"
                                             },
                                             "children": [
                                                 {
@@ -372,7 +372,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                "className": "form-label"
                                             },
                                             "children": [
                                                 {
@@ -427,7 +427,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        "className": "form-label"
                                     },
                                     "children": [
                                         {
@@ -545,7 +545,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        "className": "form-label"
                                     },
                                     "text": "$t:mypage.addresses.form.detail_address"
                                 },

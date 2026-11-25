@@ -42,6 +42,10 @@
     "method_naverpay": "Naver Pay",
     "method_payco": "PayCo",
     "method_samsungpay": "Samsung Pay",
+    "method_applepay": "Apple Pay",
+    "method_applepay_hint": "iPhone・iPad(iOS)の注文書でのみ表示されます。",
+    "method_lpay": "L.pay",
+    "method_ssgpay": "SSG Pay",
     "section_virtual_account": "仮想口座",
     "vbank_valid_hours": "入金期限(時間)",
     "vbank_valid_hours_hint": "仮想口座発行後の入金可能時間です。最大2160時間(90日)です。",
@@ -101,7 +105,8 @@
   },
   "payment": {
     "error": {
-      "sdk_url_untrusted": "決済モジュールのアドレスが正しくないため、決済を進めることができません。管理者にお問い合わせください。"
+      "sdk_url_untrusted": "決済モジュールのアドレスが正しくないため、決済を進めることができません。管理者にお問い合わせください。",
+      "applepay_ios_only": "Apple PayはiOSデバイス(iPhone・iPad)でのみ決済できます。"
     }
   },
   "plugin_read_only": "このプラグイン設定を変更する権限がないため、読み取り専用で表示されます。"

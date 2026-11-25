@@ -369,7 +369,7 @@
                             ],
                             "props": {
                                 "href": "/board/{{comment.board_slug}}/{{comment.post_id_val}}",
-                                "className": "w-full text-left block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
+                                "className": "w-full text-left block card-plain p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
                             },
                             "children": [
                                 {
@@ -407,6 +407,7 @@
                                                 },
                                                 {
                                                     "comment": "확장 자리 — 확장이 댓글마다 배지를 붙인다(#149). 이 목록의 원글 id 는 comment.post_id_val 이다",
+                                                    "id": "ext_board_comment_row_badges_{{comment.id}}",
                                                     "type": "extension_point",
                                                     "name": "board_comment_row_badges",
                                                     "props": {
@@ -426,7 +427,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 whitespace-nowrap",
+                                                "className": "text-xs text-muted flex-shrink-0 whitespace-nowrap",
                                                 "title": "{{comment.created_at ?? ''}}"
                                             },
                                             "text": "{{comment.created_at_formatted ?? ''}}"
@@ -453,7 +454,7 @@
                     "name": "Div",
                     "if": "{{myComments !== undefined && (!myComments?.data?.data || myComments.data.data.length === 0)}}",
                     "props": {
-                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center"
+                        "className": "card-plain p-8 text-center"
                     },
                     "children": [
                         {
@@ -471,7 +472,7 @@
                             "name": "P",
                             "if": "{{!(!!_global.myCommentsSearchApplied || !!_global.myCommentsBoard)}}",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:mypage.board_activities.empty_comments"
                         },
@@ -480,7 +481,7 @@
                             "name": "P",
                             "if": "{{!!_global.myCommentsSearchApplied || !!_global.myCommentsBoard}}",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:board.no_search_results"
                         },

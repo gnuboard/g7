@@ -164,7 +164,7 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({
 
       {/* 에러 메시지 */}
       {error && (
-        <Span className="mt-1 text-xs text-red-600 dark:text-red-400">{error}</Span>
+        <Span className="form-error">{error}</Span>
       )}
     </Div>
   );

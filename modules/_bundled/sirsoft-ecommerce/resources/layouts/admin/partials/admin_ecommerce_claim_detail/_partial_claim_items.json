@@ -444,7 +444,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                "className": "ecommerce-btn ecommerce-btn-primary",
                                 "disabled": "{{claim?.data?.abilities?.can_update_status !== true || (_local.claimBulkStatus ?? '') === '' || _local.isTransitioningClaim === true}}"
                             },
                             "children": [
@@ -694,7 +694,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-outline ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                "className": "ecommerce-btn ecommerce-btn-outline",
                                 "disabled": "{{_local.isUpdatingClaimItems === true || (_local.selectedClaimItems ?? []).length === 0 || claim?.data?.abilities?.can_update_status !== true}}"
                             },
                             "children": [
@@ -721,9 +721,7 @@
                             "name": "Button",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "ecommerce:w-full ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
-                                    }
+                                    "classMerge": "ecommerce:w-full"
                                 }
                             },
                             "actions": [
@@ -754,7 +752,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                "className": "ecommerce-btn ecommerce-btn-primary",
                                 "disabled": "{{_local.isUpdatingClaimItems === true || (_local.selectedClaimItems ?? []).length === 0 || claim?.data?.abilities?.can_update_status !== true}}"
                             },
                             "children": [
@@ -849,7 +847,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "image",
-                                                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce-text-muted"
                                                         }
                                                     }
                                                 ]
@@ -989,7 +987,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce-text-muted"
                                                         },
                                                         "text": "$t:defer:sirsoft-ecommerce.admin.claim.detail.items.collection_short"
                                                     },
@@ -1019,7 +1017,7 @@
                                                         "name": "Span",
                                                         "if": "{{!row.collection_tracking_number}}",
                                                         "props": {
-                                                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce-text-muted"
                                                         },
                                                         "text": "-"
                                                     },
@@ -1046,7 +1044,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce-text-muted"
                                                         },
                                                         "text": "$t:defer:sirsoft-ecommerce.admin.claim.detail.items.redelivery_short"
                                                     },
@@ -1076,7 +1074,7 @@
                                                         "name": "Span",
                                                         "if": "{{!row.redelivery_tracking_number}}",
                                                         "props": {
-                                                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce-text-muted"
                                                         },
                                                         "text": "-"
                                                     },
@@ -1332,7 +1330,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "className": "ecommerce-btn ecommerce-btn-primary",
                                         "disabled": "{{claim?.data?.abilities?.can_update_status !== true || ((claim?.data?.completable_item_count ?? 0) === 0 && (claim?.data?.unreturned_eligible_count ?? 0) === 0)}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.completion.action"

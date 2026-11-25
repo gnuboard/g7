@@ -1,6 +1,6 @@
 {
     "name": "@sirsoft/cdn-cloudfront-plugin",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "G7 CloudFront CDN plugin - 화면 스타일 순수 CSS",
     "private": true,
     "type": "module",

@@ -459,7 +459,7 @@
                                                 "if": "{{_local.redirect_url}}",
                                                 "props": {
                                                     "href": "{{_local.redirect_url}}",
-                                                    "className": "inline-block px-4 py-2 text-sm font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg"
+                                                    "className": "inline-block btn btn-secondary"
                                                 },
                                                 "children": [
                                                     {

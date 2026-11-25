@@ -6,6 +6,8 @@ import { Span } from '../basic/Span';
 import { Button } from '../basic/Button';
 import { A } from '../basic/A';
 import { Icon } from '../basic/Icon';
+import { MenuIcon } from './MenuIcon';
+import type { MenuIconSpecData } from './MenuIcon';
 import { Toggle } from './Toggle';
 import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
 import { keyboardActivationProps, FOCUS_VISIBLE_RING } from '../../support/keyboardActivation';
@@ -31,7 +33,10 @@ export interface MenuItemData {
   name: string;
   slug: string;
   url: string;
-  icon: string;
+  /** 호환 문자열 아이콘 — 메뉴는 FA 클래스(이미지·SVG 면 null), 이커머스 브랜드·카테고리는 맨 이름(`tag`·`folder`) */
+  icon: string | null;
+  /** 구조형 아이콘 (#381) — 없으면 icon 을 class 로 그린다 */
+  iconSpec?: MenuIconSpecData | null;
   isActive: boolean;
   isModuleMenu: boolean;
   moduleName?: string;
@@ -98,7 +103,7 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
   className = '',
   selectedClassName = 'bg-blue-50 dark:bg-blue-900/30 border-blue-500',
   defaultClassName = 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600',
-  dragHandleClassName = 'text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300',
+  dragHandleClassName = 'text-muted hover:text-gray-600 dark:hover:text-gray-300',
   iconContainerClassName = 'bg-gray-100 dark:bg-gray-700',
   contentClassName = '',
   enableDrag = true,
@@ -216,7 +221,7 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
 
       {/* 아이콘 */}
       <Div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded ${iconContainerClassName}`}>
-        <Icon name={item.icon || 'file'} className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+        <MenuIcon spec={item.iconSpec} icon={item.icon} fallbackIcon="file" className="w-4 h-4 text-gray-600 dark:text-gray-400" />
       </Div>
 
       {/* 메뉴명 및 URL */}
@@ -247,7 +252,7 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
             <Icon name="cube" className="w-2 h-2 text-gray-500 dark:text-gray-500 ml-2" title={item.moduleName} />
           )}
         </Div>
-        <Span className="text-xs text-gray-500 dark:text-gray-400 truncate block">
+        <Span className="text-xs text-muted truncate block">
           {item.url}
         </Span>
         {Array.isArray(item.roleNames) && (
@@ -271,7 +276,7 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
                   </Span>
                 ))}
                 {hiddenRoleCount > 0 && (
-                  <Span className="text-[11px] leading-none text-gray-500 dark:text-gray-400">
+                  <Span className="text-[11px] leading-none text-muted">
                     {t('admin.menus.list_roles_more', { count: hiddenRoleCount })}
                   </Span>
                 )}

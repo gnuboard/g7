@@ -99,6 +99,8 @@ partial 파일이므로 한쪽만 고치면 다른 화면은 그대로입니다 
 
 정책 창(`_modal_identity_policy_form`)의 「인증 수단」은 **인정할 수단**입니다(코어 7.1.6~) — 지정하면 그 수단으로 받은 본인인증만 인정하고, 비우면 어떤 수단이든 인정합니다. 선택 상자 아래에 관리자 템플릿 키 `admin.identity.policies.form.provider_id_desc` 안내를 두고, 서버가 지원하지 않는 수단을 422 로 거부하면 `_global.identity_policy_form_modal.errors.errors.provider_id[0]` 을 그 아래 `form-error` 로 보입니다(코어 정책 창과 같은 구조).
 
+정책 창의 범위가 「사용자 지정」이면 대상 칸은 확장 지점 선택 목록입니다. 저장된 대상이 지금 선언되지 않은 지점이면 목록 끝에 「연결된 확장 지점 없음 (키)」(관리자 템플릿 키 `admin.identity.policies.checkpoint_missing`)로 남겨 창에서 현재 대상이 보이게 합니다(7.2.1).
+
 반복되는 카드·박스 목록은 **간격을 스스로 갖지 않습니다.** 좁은 화면 카드(`excel-card`)는 바깥 여백이 없고
 테두리 박스에 준 `p-3` 같은 안쪽 여백은 이웃과의 거리가 아니므로, 목록을 감싸는 쪽이 `stack-tight`(세로 gap)를
 주거나 카드가 `mb-3` 을 집니다 — 둘 다 없으면 테두리끼리 맞붙어 한 덩어리로 보입니다(반응 유형 카드, 알림
@@ -135,7 +137,7 @@ partial 파일이므로 한쪽만 고치면 다른 화면은 그대로입니다 
 필드 전체 키 `name` 이나 언어 키 `name.{언어}` 로 돌려주므로 칸의 `error` 는 `name.{사이트 기본 언어}` 를 먼저, `name` 을 다음으로
 읽습니다. 문구는 MultilingualInput 이 칸 아래에 직접 그리므로 같은 문구를 담는 별도 문단을 두지 않습니다.
 
-화면 폭에 따라 배치가 바뀌는 곳은 Tailwind 반응형 접두(`board:md:…` 등) 대신 엔진 `<responsive on="…">` 덮어쓰기로 씁니다. 덮어쓰기는 className 을 통째로 바꾸므로 그 구간에서 살아 있는 클래스를 모두 적습니다.
+화면 폭에 따라 배치가 바뀌는 곳은 Tailwind 반응형 접두(`board:md:…` 등) 대신 엔진 `<responsive on="…">` 구간으로 씁니다. 기본 클래스 일부만 바뀌는 구간은 `class-merge` 로 바뀐 클래스만 적습니다(코어 7.2.1 이상) — 예를 들어 좁은 화면에서 폭만 채우는 칸은 `<responsive on="portable" class-merge="board:w-full"/>` 한 줄입니다. 구간 `class` 는 className 을 통째로 바꾸므로, `class` 를 쓰는 구간에는 그 폭에서 살아 있는 클래스를 모두 적습니다. 기본 클래스를 지우기만 하는 구간, `board:bg-white` 처럼 단계 숫자가 없는 색을 바꾸는 구간, 구성이 기본과 전혀 다른 구간은 `class` 를 씁니다(코어 `docs/frontend/responsive-layout.md` 「바뀐 클래스만 덧붙이기」).
 
 폭 미디어를 품은 의미 클래스 사본(`board-grid-3col-responsive`·`board-grid-2col-responsive`·`board-page-title`·`board-admin-page-content-responsive`·`board-filter-label`·`board-page-header-fullbleed` 등)과 모듈 CSS 의 폭 규칙 클래스(`board-category-select`)도 쓰지 않습니다. 이 사본들의 정의는 사이트에서 직접 고친 레이아웃의 호환을 위해 폭 부분까지 폐지 예정으로 남아 있고 다음 출시 이후 제거됩니다 — 새 레이아웃은 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="board:grid board:grid-cols-1 board:gap-4 board:items-start"` 에 `<responsive on="1024-" class="board:grid board:grid-cols-3 board:gap-4 board:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`board:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->

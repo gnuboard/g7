@@ -318,7 +318,7 @@
                                                 "name": "Span",
                                                 "if": "{{row.requester?.email}}",
                                                 "props": {
-                                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:truncate"
+                                                    "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:truncate"
                                                 },
                                                 "text": "{{row.requester?.email}}"
                                             }
@@ -350,7 +350,7 @@
                                 "name": "Span",
                                 "if": "{{row.requester?.email}}",
                                 "props": {
-                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:truncate"
+                                    "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:truncate"
                                 },
                                 "text": "{{row.requester?.email}}"
                             }
@@ -501,7 +501,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:hover:underline ecommerce:whitespace-nowrap"
+                                    "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:hover:underline ecommerce:whitespace-nowrap"
                                 },
                                 "text": "$t:defer:sirsoft-ecommerce.admin.export.table.download_count|count={{row.download_count ?? 0}}"
                             }
@@ -575,7 +575,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                            "className": "ecommerce:text-xs ecommerce-text-muted"
                                         },
                                         "text": "{{row.progress_percent ?? 0}}%"
                                     }
@@ -586,7 +586,7 @@
                                 "name": "Span",
                                 "if": "{{row.status === 'completed'}}",
                                 "props": {
-                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                    "className": "ecommerce:text-xs ecommerce-text-muted"
                                 },
                                 "text": "$t:defer:sirsoft-ecommerce.admin.export.table.rows|count={{(row.processed_rows ?? 0).toLocaleString()}}"
                             },
@@ -623,7 +623,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                    "className": "ecommerce-text-muted"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.scope"
                             },
@@ -651,7 +651,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                    "className": "ecommerce-text-muted"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.period"
                             },
@@ -673,7 +673,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                    "className": "ecommerce-text-muted"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.row_unit"
                             },
@@ -695,7 +695,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                    "className": "ecommerce-text-muted"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.fields"
                             },
@@ -717,7 +717,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                    "className": "ecommerce-text-muted"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.locale_mode"
                             },
@@ -739,7 +739,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                    "className": "ecommerce-text-muted"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.totals"
                             },
@@ -762,7 +762,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                    "className": "ecommerce-text-muted"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.cutoff_at"
                             },
@@ -785,7 +785,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                    "className": "ecommerce-text-muted"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.completed_at"
                             },
@@ -808,7 +808,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                    "className": "ecommerce-text-muted"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.file_size"
                             },
@@ -831,7 +831,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                    "className": "ecommerce-text-muted"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.expires_at"
                             },
@@ -856,7 +856,7 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:shrink-0"
+                            "className": "ecommerce-text-muted ecommerce:shrink-0"
                         },
                         "text": "$t:sirsoft-ecommerce.admin.export.sub_row.reason"
                     },
@@ -882,7 +882,7 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                            "className": "ecommerce-text-muted"
                         },
                         "text": "$t:sirsoft-ecommerce.admin.export.sub_row.warnings"
                     },
@@ -912,7 +912,7 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:shrink-0"
+                            "className": "ecommerce-text-muted ecommerce:shrink-0"
                         },
                         "text": "$t:sirsoft-ecommerce.admin.export.sub_row.error"
                     },

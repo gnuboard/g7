@@ -25,7 +25,7 @@
     </div>
 
     <footer>
-      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors">
+      <button type="button" class="btn btn-secondary">
         <on type="click">
           <close-modal/>
         </on>
@@ -33,7 +33,7 @@
       </button>
 
       <!-- 새 폴더 — 서버 왕복 없이 트리에만 얹는다. -->
-      <button data-if="{{_global.fileFormMode === 'create_folder'}}" type="button" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm font-medium transition-colors disabled:opacity-50" disabled="{{!_global.fileFormName}}" data-testid="file-form-submit-folder">
+      <button data-if="{{_global.fileFormMode === 'create_folder'}}" type="button" class="flex btn btn-primary" disabled="{{!_global.fileFormName}}" data-testid="file-form-submit-folder">
         <on type="click">
           <sequence>
             <set-state target="global" pendingFolders="{{[...(_global.pendingFolders ?? []), _global.fileFormName].filter((v, i, a) => a.indexOf(v) === i)}}"/>
@@ -47,7 +47,7 @@
 
       <!-- 새 파일 — 본문을 비워 보내면 서버가 곧바로 컴파일되는 최소 골격을 넣어 준다.
            `fileFormContent` 가 실려 있으면 «없는 파일 살리기» 다 — 복원한 편집분을 그대로 새 이름에 옮긴다. -->
-      <button data-if="{{_global.fileFormMode === 'create_file'}}" type="button" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm font-medium transition-colors disabled:opacity-50" disabled="{{!_global.fileFormName}}" data-testid="file-form-submit-file">
+      <button data-if="{{_global.fileFormMode === 'create_file'}}" type="button" class="flex btn btn-primary" disabled="{{!_global.fileFormName}}" data-testid="file-form-submit-file">
         <on type="click">
           <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layouts" method="POST">
             <success>
@@ -72,7 +72,7 @@
       </button>
 
       <!-- 이름변경 — 같은 행의 `name` 을 옮기므로 판본 이력이 그대로 승계된다. -->
-      <button data-if="{{_global.fileFormMode === 'rename'}}" type="button" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm font-medium transition-colors disabled:opacity-50" disabled="{{!_global.fileFormName || _global.fileFormName === _global.fileFormTarget}}" data-testid="file-form-submit-rename">
+      <button data-if="{{_global.fileFormMode === 'rename'}}" type="button" class="flex btn btn-primary" disabled="{{!_global.fileFormName || _global.fileFormName === _global.fileFormTarget}}" data-testid="file-form-submit-rename">
         <on type="click">
           <!-- 잠금 번호는 **대상 파일**의 것이다 — 트리에서 열려 있지 않은 파일을 바꿀 때 열린 파일의 번호를 보내면
                가짜 충돌(409 「다른 사용자가 먼저 저장했습니다」)이 난다. 대상이 열린 파일이면 상세의 최신값을 쓴다. -->

@@ -577,6 +577,16 @@
     background-color: oklch(27.8% .033 256.848);
   }
 
+  .verification-kginicis-admin-page-content {
+    background-color: oklch(98.5% .002 247.839);
+    min-height: 100vh;
+    padding: calc(.25rem * 6);
+  }
+
+  .verification-kginicis-admin-page-content:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    background-color: oklch(21% .034 264.665);
+  }
+
   .verificationkginicis\:\[\&_\.btn\]\:w-full .verification-kginicis-btn {
     width: 100%;
   }
@@ -585,6 +595,14 @@
     justify-content: space-between;
     align-items: center;
     display: flex;
+  }
+
+  .verification-kginicis-text-muted {
+    color: oklch(55.1% .027 264.364);
+  }
+
+  .verification-kginicis-text-muted:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(70.7% .022 261.325);
   }
 }
 

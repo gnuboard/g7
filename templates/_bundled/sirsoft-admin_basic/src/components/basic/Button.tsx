@@ -6,9 +6,41 @@ const G7Core = () => (window as any).G7Core;
 /** 연타 잠금이 `disabled` 를 끝내 받지 못했을 때 스스로 풀리는 시간(ms) */
 const REPEAT_CLICK_LOCK_FALLBACK_MS = 1500;
 
+/** 버튼 모양 — 적으면 `btn btn-{variant}` 의미 클래스를 붙인다 (#399, 7.2.1) */
+export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'ghost' | 'outline';
+
+/** 버튼 크기 — `sm` → `btn-sm`, `lg` → `btn-lg`, `md`·미지정 → 붙이지 않음 */
+export type ButtonSize = 'sm' | 'md' | 'lg';
+
+/**
+ * variant·size 로 붙일 의미 클래스를 계산합니다.
+ *
+ * variant 를 **적었을 때만** `btn btn-{variant}` 를 붙인다 — variant 를 적지 않은 기존 버튼(레이아웃 className 으로
+ * 모양을 내는 버튼)은 바뀌지 않는다. 종전에는 prop 을 받기만 하고 클래스를 붙이지 않아 계약대로 variant 를 써도
+ * 민자 버튼이 나왔다(#399 F12).
+ *
+ * @param variant 버튼 모양
+ * @param size 버튼 크기
+ * @returns 의미 클래스 문자열 (없으면 빈 문자열)
+ */
+export function buttonVariantClasses(variant?: ButtonVariant, size?: ButtonSize): string {
+  const classes: string[] = [];
+  if (variant) {
+    classes.push('btn', `btn-${variant}`);
+  }
+  if (size === 'sm') {
+    classes.push('btn-sm');
+  } else if (size === 'lg') {
+    classes.push('btn-lg');
+  }
+  return classes.join(' ');
+}
+
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'success';
-  size?: 'sm' | 'md' | 'lg';
+  /** 버튼 모양 — 적으면 `btn btn-{variant}` 를 붙인다. 생략하면 className 만 쓴다 */
+  variant?: ButtonVariant;
+  /** 버튼 크기 — sm → btn-sm, lg → btn-lg */
+  size?: ButtonSize;
   /**
    * 연타 잠금 — 첫 클릭 즉시 스스로 잠가, 처리 중 표시(`disabled`)가 화면에 그려지기 전의 두 번째 클릭을 무시한다.
    *
@@ -24,17 +56,17 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   children,
-  variant = 'primary',
-  size = 'md',
+  variant,
+  size,
   className = '',
   lockRepeatClick = false,
   onClick,
   disabled,
   ...props
 }, ref) => {
-  const baseClasses = 'button';
+  const baseClasses = ['button', buttonVariantClasses(variant, size)].filter(Boolean).join(' ');
 
-  // G7Core.style.mergeClasses를 사용하여 충돌하는 Tailwind 클래스 병합
+  // G7Core.style.mergeClasses를 사용하여 충돌하는 Tailwind 클래스 병합 — 호출처 className 이 이긴다
   const mergedClassName = G7Core()?.style?.mergeClasses?.(baseClasses, className)
     ?? `${baseClasses} ${className}`;
 

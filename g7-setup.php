@@ -535,11 +535,43 @@ function g7setup_normalize_entry(string $name): ?string
 }
 
 /**
+ * ZIP 엔트리가 폴더 항목(이름이 구분자로 끝나는 빈 항목)인가.
+ *
+ * Windows 압축 도구는 구분자를 `\` 로 쓰므로 `app\` 도 폴더다. 원본 이름의 끝 `/` 만 보면
+ * 그것을 0바이트 파일로 써서, 그 아래 항목이 폴더를 만들지 못한다. 코어 해제기
+ * (`SafeArchiveExtractor`)와 같은 규칙이다.
+ *
+ * @param  string  $raw  ZIP 안의 원본 엔트리 이름
+ * @return bool 폴더 항목이면 true
+ */
+function g7setup_is_directory_entry(string $raw): bool
+{
+    return substr(str_replace('\\', '/', $raw), -1) === '/';
+}
+
+/**
+ * 풀지도 판정하지도 않을 부속 엔트리인가 — Mac Finder 압축이 붙이는 최상위 `__MACOSX/`.
+ *
+ * 내용은 리소스 포크(AppleDouble) 메타데이터라 쓸모가 없고, 세면 최상위 폴더가 둘이 되어
+ * 감싼 폴더를 벗기지 못한다. 최상위가 아닌 같은 이름과 다른 숨김 파일(`.DS_Store` 등)은 건드리지 않는다.
+ *
+ * @param  string  $normalized  정규화된 엔트리 경로
+ * @return bool 건너뛸 부속 엔트리면 true
+ */
+function g7setup_is_junk_entry(string $normalized): bool
+{
+    return $normalized === '__MACOSX' || strncmp($normalized, '__MACOSX/', 9) === 0;
+}
+
+/**
  * 모든 엔트리가 공유하는 최상위 디렉토리를 구한다.
  *
  * GitHub 릴리즈 ZIP 은 `g7-7.1.0/` 같은 폴더 하나로 감싸여 있다. 그것을 그대로 풀면
  * 문서 루트 아래에 폴더가 하나 더 생겨 사이트가 서지 않는다. 모든 엔트리가 같은 최상위
  * 폴더를 공유할 때만 그 폴더를 벗긴다.
+ *
+ * GitHub 소스 ZIP 은 맨 앞에 감싼 폴더 자신의 폴더 항목(`g7-7.2.0/`)을 둔다. 정규화하면
+ * `/` 가 없는 이름이 되지만 파일이 아니라 폴더이므로 그 이름 전체를 최상위 후보로 친다.
  *
  * @param  ZipArchive  $zip  열린 아카이브
  * @return string 벗길 접두사 (`g7-7.1.0/`) 또는 빈 문자열
@@ -551,17 +583,17 @@ function g7setup_detect_strip_prefix(ZipArchive $zip): string
     for ($i = 0, $n = $zip->numFiles; $i < $n; $i++) {
         $name = (string) $zip->getNameIndex($i);
         $normalized = g7setup_normalize_entry($name);
-        if ($normalized === null) {
+        if ($normalized === null || g7setup_is_junk_entry($normalized)) {
             continue;
         }
 
         $slash = strpos($normalized, '/');
-        if ($slash === false) {
+        if ($slash === false && ! g7setup_is_directory_entry($name)) {
             // 최상위에 파일이 하나라도 있으면 감싼 폴더가 아니다.
             return '';
         }
 
-        $top = substr($normalized, 0, $slash);
+        $top = $slash === false ? $normalized : substr($normalized, 0, $slash);
         if ($prefix === null) {
             $prefix = $top;
         } elseif ($prefix !== $top) {
@@ -638,6 +670,11 @@ function g7setup_build_plan(ZipArchive $zip, string $prefix): array
 
         if ($normalized === null) {
             return ['plan' => [], 'unsafe' => $raw];
+        }
+
+        // Mac 부속 폴더는 풀지 않고 진행 개수에도 넣지 않는다.
+        if (g7setup_is_junk_entry($normalized)) {
+            continue;
         }
 
         $target = g7setup_strip_prefix($normalized, $prefix);
@@ -952,7 +989,7 @@ function g7setup_root_marker_conflict(ZipArchive $zip, array $plan, string $base
 function g7setup_write_entry(ZipArchive $zip, int $index, string $target, string $baseDir): ?string
 {
     $full = $baseDir.'/'.$target;
-    $isDirectory = substr((string) $zip->getNameIndex($index), -1) === '/';
+    $isDirectory = g7setup_is_directory_entry((string) $zip->getNameIndex($index));
 
     // 2차 봉쇄 — 정규화를 통과한 뒤에도 실제 경로가 대상 밖을 가리키지 않는지 다시 본다.
     $parent = $isDirectory ? $full : dirname($full);
@@ -1332,6 +1369,26 @@ function g7setup_handle_reissue(): void
 }
 
 /**
+ * 인증을 통과한 요청의 실패 응답 — 세션 키를 함께 싣는다.
+ *
+ * 번호는 첫 인증 성공에서 지워진다. 그 뒤의 판정(압축 파일 없음·배포본 아님 등)이 실패할 때
+ * 세션을 돌려주지 않으면 화면은 지워진 번호를 다시 보내 「번호가 맞지 않습니다」와 시도 차감을
+ * 받고, 복구 수단은 새로고침(번호 재발급)뿐이다. 세션은 맞는 번호로 인증한 요청에만 실리므로
+ * 번호 대입 면은 넓어지지 않는다.
+ *
+ * @param  array{ok: bool, session: string, error: array<string, mixed>|null}  $auth  인증 결과
+ * @param  string  $code  실패 코드
+ * @param  string  $message  화면에 보일 문구
+ * @param  int  $status  HTTP 상태 코드
+ * @param  array<string, mixed>  $extra  덧붙일 응답 필드
+ * @return void 응답을 보내고 끝낸다
+ */
+function g7setup_fail(array $auth, string $code, string $message, int $status, array $extra = []): void
+{
+    g7setup_json(['ok' => false, 'code' => $code, 'message' => $message] + $extra + ['session' => $auth['session']], $status);
+}
+
+/**
  * 한 요청 분량의 해제를 수행한다 (`action=extract`).
  */
 function g7setup_handle_extract(): void
@@ -1364,8 +1421,9 @@ function g7setup_handle_extract(): void
         $zipName = $candidates[0] ?? '';
     }
 
+    // 여기부터의 실패는 인증을 통과한 뒤다 — 응답에 세션을 실어 번호 없이 다시 시도하게 한다.
     if ($zipName === '') {
-        g7setup_json(['ok' => false, 'code' => 'no_zip', 'message' => g7setup_lang('no_zip')], 400);
+        g7setup_fail($auth, 'no_zip', g7setup_lang('no_zip'), 400);
     }
 
     $zipPath = $baseDir.'/'.$zipName;
@@ -1385,7 +1443,7 @@ function g7setup_handle_extract(): void
 
     $zip = new ZipArchive;
     if ($zip->open($zipPath) !== true) {
-        g7setup_json(['ok' => false, 'code' => 'zip_open_failed', 'message' => g7setup_lang('zip_open_failed')], 400);
+        g7setup_fail($auth, 'zip_open_failed', g7setup_lang('zip_open_failed'), 400);
     }
 
     $prefix = g7setup_detect_strip_prefix($zip);
@@ -1393,29 +1451,21 @@ function g7setup_handle_extract(): void
 
     if ($built['unsafe'] !== null) {
         $zip->close();
-        g7setup_json([
-            'ok' => false,
-            'code' => 'unsafe_entry',
-            'message' => g7setup_lang('unsafe_entry', ['entry' => $built['unsafe']]),
-        ], 400);
+        g7setup_fail($auth, 'unsafe_entry', g7setup_lang('unsafe_entry', ['entry' => $built['unsafe']]), 400);
     }
 
     $plan = $built['plan'];
 
     if (! g7setup_plan_is_g7_payload($plan)) {
         $zip->close();
-        g7setup_json(['ok' => false, 'code' => 'not_a_g7_payload', 'message' => g7setup_lang('not_a_g7_payload')], 400);
+        g7setup_fail($auth, 'not_a_g7_payload', g7setup_lang('not_a_g7_payload'), 400);
     }
 
     // 합칠 수 없는 운영자 루트 파일이 있으면 아무것도 쓰기 전에 멈춘다 — 그 파일을 덮지 않는다.
     $conflict = g7setup_root_marker_conflict($zip, $plan, $baseDir);
     if ($conflict !== null) {
         $zip->close();
-        g7setup_json([
-            'ok' => false,
-            'code' => 'root_file_conflict',
-            'message' => g7setup_lang('root_file_conflict', ['file' => $conflict]),
-        ], 409);
+        g7setup_fail($auth, 'root_file_conflict', g7setup_lang('root_file_conflict', ['file' => $conflict]), 409);
     }
 
     $state['strip_prefix'] = $prefix;
@@ -1437,13 +1487,10 @@ function g7setup_handle_extract(): void
             $state['index'] = $index;
             g7setup_state_write($state);
             $zip->close();
-            g7setup_json([
-                'ok' => false,
-                'code' => 'write_failed',
-                'message' => g7setup_lang('write_failed', ['entry' => $failure]),
+            g7setup_fail($auth, 'write_failed', g7setup_lang('write_failed', ['entry' => $failure]), 500, [
                 'done' => $index,
                 'total' => $state['total'],
-            ], 500);
+            ]);
         }
 
         $index++;
@@ -1477,13 +1524,10 @@ function g7setup_handle_extract(): void
         if (! file_exists($baseDir.'/'.$marker)) {
             $state['index'] = 0;
             g7setup_state_write($state);
-            g7setup_json([
-                'ok' => false,
-                'code' => 'incomplete_payload',
-                'message' => g7setup_lang('incomplete_payload'),
+            g7setup_fail($auth, 'incomplete_payload', g7setup_lang('incomplete_payload'), 500, [
                 'done' => $index,
                 'total' => $state['total'],
-            ], 500);
+            ]);
         }
     }
 
@@ -1957,6 +2001,13 @@ function g7setup_format_size(int $bytes): string
                     try { window.sessionStorage.removeItem('g7_setup_session'); } catch (e) {}
                     tokenInput.value = '';
                     if (tokenField) { tokenField.style.display = ''; }
+                } else if (data.session) {
+                    // 번호는 맞았고 그 뒤 판정(압축 파일 등)이 실패했다 — 번호는 이미 지워졌으니 세션으로
+                    // 이어 간다. 압축 파일만 바꿔 다시 누르면 번호 없이 진행된다.
+                    sessionKey = data.session;
+                    try { window.sessionStorage.setItem('g7_setup_session', sessionKey); } catch (e) {}
+                    tokenInput.value = '';
+                    if (tokenField) { tokenField.style.display = 'none'; }
                 }
                 return;
             }

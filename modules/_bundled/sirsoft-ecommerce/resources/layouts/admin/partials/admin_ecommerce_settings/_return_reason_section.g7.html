@@ -8,7 +8,7 @@
         <div>
           <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.section_title</h3>
         </div>
-        <button data-if="{{!_local.isAddingReturnReason}}" type="button" class="ecommerce-flex-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+        <button data-if="{{!_local.isAddingReturnReason}}" type="button" class="ecommerce-flex-center ecommerce:gap-1.5 ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm" disabled="{{_computed.isReadOnly}}">
           <on type="click">
             <!-- 신규 행의 name 은 활성 언어팩($locales) 전체에 대한 빈 문자열 맵으로 시드한다. [추가] 확정 게이트가 `name[사이트 기본 언어]` 을 요구하므로, ko/en 을 리터럴로 열거하면 그 밖의 로케일 운영자는 그 언어의 입력칸도 언어 추가 버튼(MultilingualInput 은 activeLocales 를 value 의 키에서 뽑고 버튼을 사이트 기본 언어 필드에만 붙인다)도 없어 폼을 영영 확정할 수 없다 — 그동안 페이지 [저장]은 그 폼을 확정하라고 막는다. -->
             <set-state target="local" :isAddingReturnReason="true" returnReasonForm="{{ { code: '', name: Object.fromEntries(($locales ?? []).map(l => [l, ''])), fault_type: 'customer', is_user_selectable: true, is_active: true, sort_order: 0 } }}" :returnReasonFormErrors="null"/>
@@ -76,7 +76,7 @@
           <span>$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.cancel</span>
         </button>
         <!-- 반품 사유 추가 확정. 코드 형식·길이·중복과 현재 언어 문구를 화면에서 먼저 걸러 통과한 것만 목록 끝에 붙이고, 저장 때 서버가 같은 규칙으로 한 번 더 판정한다. -->
-        <button type="button" class="ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+        <button type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm" disabled="{{_computed.isReadOnly}}">
           <on type="click">
             <conditions>
               <when if="{{(_local.returnReasonForm?.code ?? '').trim() &amp;&amp; 'abcdefghijklmnopqrstuvwxyz'.includes((_local.returnReasonForm?.code ?? '').trim().charAt(0)) &amp;&amp; (_local.returnReasonForm?.code ?? '').trim().split('').every(ch => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(ch)) &amp;&amp; !(_local.returnReasonForm?.code ?? '').trim().includes('__') &amp;&amp; (_local.returnReasonForm?.code ?? '').trim().charAt((_local.returnReasonForm?.code ?? '').trim().length - 1) !== '_' &amp;&amp; (_local.returnReasonForm?.code ?? '').trim().length <= 50 &amp;&amp; !(_local.form?.claim?.return_reasons ?? []).some(r => String(r.code ?? '').toLowerCase() === (_local.returnReasonForm?.code ?? '').trim().toLowerCase()) &amp;&amp; (_local.returnReasonForm?.name?.[(_global.appConfig?.siteLocale ?? $locale ?? 'ko')] ?? '').trim()}}">
@@ -96,7 +96,7 @@
         </button>
       </div>
     </div>
-    <div data-if="{{settings !== undefined &amp;&amp; ((_local.form?.claim?.return_reasons ?? []).length === 0 &amp;&amp; !_local.isAddingReturnReason)}}" class="ecommerce:p-8 ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.empty</div>
+    <div data-if="{{settings !== undefined &amp;&amp; ((_local.form?.claim?.return_reasons ?? []).length === 0 &amp;&amp; !_local.isAddingReturnReason)}}" class="ecommerce:p-8 ecommerce:text-center ecommerce-text-muted">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.empty</div>
     <div data-ref="return_reason_list" data-if="{{(_local.form?.claim?.return_reasons ?? []).length > 0}}" class="ecommerce:overflow-x-clip">
       <responsive on="portable" class="">
         <include src="_return_reason_cards.g7.html"/>

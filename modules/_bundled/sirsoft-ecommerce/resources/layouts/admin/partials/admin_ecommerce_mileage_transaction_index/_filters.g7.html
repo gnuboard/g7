@@ -39,7 +39,7 @@
             </set-state>
           </on>
         </input>
-        <icon name="magnifying-glass" size="sm" class="ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:pointer-events-none"/>
+        <icon name="magnifying-glass" size="sm" class="ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce-text-muted ecommerce:pointer-events-none"/>
       </div>
     </div>
     <div data-ref="type_currency_row" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3 ecommerce:mb-4">
@@ -82,7 +82,7 @@
             <set-state target="local" filter.startDate="{{$event.target.value}}" filter.dateQuick=""/>
           </on>
         </input>
-        <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">~</span>
+        <span class="ecommerce-text-muted">~</span>
         <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.mileage_transactions.filter.label_date')}}" type="date" value="{{_local.filter.endDate ?? ''}}" class="ecommerce-input ecommerce:w-36">
           <on type="change">
             <!-- 종료일. 시작일과 같은 이유로 빠른 선택 표시를 푼다. 두 날짜의 앞뒤 관계는 여기서 검사하지 않고 서버가 판단한다. -->
@@ -138,7 +138,7 @@
       <div class="ecommerce:flex ecommerce:items-center ecommerce:justify-center ecommerce:gap-2 ecommerce:flex-1">
         <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:w-full"/>
         <button data-ref="search_submit_button" type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce:text-sm">
-          <responsive on="portable" class="ecommerce-btn ecommerce-btn-primary ecommerce:text-sm ecommerce:flex-1"/>
+          <responsive on="portable" class-merge="ecommerce:flex-1"/>
           <on type="click">
             <!-- 검색 실행 — 열거한 검색 조건만 덮어쓰고 나머지 목록 상태는 유지한다 (#75). -->
             <navigate path="/admin/ecommerce/mileage-transactions" :replace="true" :mergeQuery="true" transition_overlay_target="mileage_transactions_datagrid__body">
@@ -149,7 +149,7 @@
         </button>
         <!-- 검색 조건 초기화. 폼 상태를 비우고 주소도 함께 비운다 — 초기화는 걸린 조건을 없애는 것이므로 지금 조건과 병합하지 않는다 -->
         <button data-ref="search_reset_button" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:text-sm">
-          <responsive on="portable" class="ecommerce-btn ecommerce-btn-outline ecommerce:text-sm ecommerce:flex-1"/>
+          <responsive on="portable" class-merge="ecommerce:flex-1"/>
           <on type="click">
             <set-state target="local">
               <field name="filter">

@@ -3,7 +3,7 @@
   <div data-ref="section_permissions_card" class="board-admin-card">
     <h3 data-ref="section_permissions_header" class="board-card-title">$t:sirsoft-board.admin.form.tabs.permissions</h3>
     <div data-ref="section_permissions_fields" class="board-row-stack">
-      <div data-ref="permissions_section_managers" class="">
+      <div data-ref="permissions_section_managers">
         <label data-ref="permissions_managers_label" class="board-text-heading">
           <span>$t:sirsoft-board.admin.form.permissions.managers_title</span>
         </label>
@@ -39,7 +39,7 @@
         </tag-input>
         <span data-if="{{ !!_local.errors?.board_manager_ids }}" class="board-form-error">{{ _local.errors?.board_manager_ids?.[0] }}</span>
       </div>
-      <div data-ref="permissions_section_steps" class="">
+      <div data-ref="permissions_section_steps">
         <label data-ref="permissions_steps_label" class="board-text-heading">
           <span>$t:sirsoft-board.admin.form.permissions.steps_title</span>
         </label>
@@ -69,7 +69,7 @@
         </tag-input>
         <span data-if="{{ !!_local.errors?.board_step_ids }}" class="board-form-error">{{ _local.errors?.board_step_ids?.[0] }}</span>
       </div>
-      <div data-ref="permissions_role_access_section" class="">
+      <div data-ref="permissions_role_access_section">
         <div class="board:mb-4">
           <h4 class="board-text-heading">$t:sirsoft-board.admin.form.permissions.settings_title</h4>
           <p class="board-form-hint">$t:sirsoft-board.admin.form.permissions.settings_description</p>

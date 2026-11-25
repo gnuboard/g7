@@ -53,13 +53,14 @@
           <span class="gdpr-text-label-subtle gdpr:font-medium">$t:sirsoft-gdpr.notification_definitions.edit_modal.type_label</span>
           <span class="gdpr-text-primary gdpr:text-sm gdpr:font-semibold">{{$localized(_global.gdpr_notification_template_form_modal?.definition?.name)}}</span>
           <span class="gdpr-text-body gdpr:font-mono gdpr:px-1.5 gdpr:py-0.5 gdpr:bg-gray-100 gdpr:dark:bg-gray-700 gdpr:rounded">{{_global.gdpr_notification_template_form_modal?.definition?.type ?? ''}}</span>
-          <span class="gdpr:text-sm gdpr:text-gray-500 gdpr:dark:text-gray-400">·</span>
+          <span class="gdpr:text-sm gdpr-text-muted">·</span>
           <span class="gdpr-text-label-subtle">$t:sirsoft-gdpr.notification_definitions.edit_modal.channel_label</span>
           <span class="gdpr:text-sm gdpr:font-medium gdpr:text-indigo-600 gdpr:dark:text-indigo-400">{{((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.name ?? _global.gdpr_notification_template_form_modal?.template?.channel)}}</span>
         </div>
         <div data-ref="gdpr_template_recipients_section" class="gdpr:bg-purple-50 gdpr:dark:bg-purple-900/20 gdpr:border gdpr:border-purple-200 gdpr:dark:border-purple-700 gdpr:rounded-lg gdpr:p-4 gdpr:space-y-3">
           <h4 class="gdpr:text-sm gdpr:font-medium gdpr:text-purple-800 gdpr:dark:text-purple-200">$t:admin.settings.notification_definitions.recipients.title</h4>
           <div class="gdpr-stack-tight">
+            <!-- audit:allow layout-inline-semantic-duplicate reason: GDPR 알림 템플릿 편집 창의 수신자 규칙 한 건 상자, 보라 테두리에 p-3 space-y-2 를 써서 카드 여백을 따르지 않음 -->
             <div data-each="rcpt, rcptIdx in {{_global.gdpr_notification_template_form_modal?.recipients ?? []}}" class="gdpr:bg-white gdpr:dark:bg-gray-800 gdpr:border gdpr:border-purple-200 gdpr:dark:border-purple-600 gdpr:rounded-lg gdpr:p-3 gdpr:space-y-2">
               <div class="gdpr-flex-between">
                 <span class="gdpr:text-xs gdpr:font-medium gdpr:text-purple-700 gdpr:dark:text-purple-300">$t:admin.settings.notification_definitions.recipients.rule_label|index={{rcptIdx + 1}}</span>
@@ -182,7 +183,7 @@
                   </searchable-dropdown>
                 </div>
                 <!-- 사이트 관리자 이메일(#888) — 값 칸이 없다. 환경설정 > 일반의 관리자 이메일 한 곳으로 메일만 가므로 그 사실과 빈 값의 결과를 밝힌다(코어 편집 창과 같은 규칙). -->
-                <p data-ref="rcpt_site_admin_email_hint_{{rcptIdx}}" data-if="{{rcpt.type === 'site_admin_email'}}" class="gdpr:text-xs gdpr:text-gray-500 gdpr:dark:text-gray-400">$t:admin.settings.notification_definitions.recipients.site_admin_email_hint</p>
+                <p data-ref="rcpt_site_admin_email_hint_{{rcptIdx}}" data-if="{{rcpt.type === 'site_admin_email'}}" class="gdpr:text-xs gdpr-text-muted">$t:admin.settings.notification_definitions.recipients.site_admin_email_hint</p>
                 <div data-if="{{rcpt.type === 'role' || rcpt.type === 'specific_users'}}" class="gdpr-flex-center gdpr:gap-2">
                   <!-- 스위치 이름은 label 로 준다 — 옆에 따로 둔 글자(span)는 스위치와 이어지지 않아 화면 읽기 프로그램에
                        이름 없는 스위치로 읽혔다(7.1.0 실측 M1-O14). label 이 스위치 옆 글자도 함께 그린다. -->
@@ -208,7 +209,7 @@
         <!-- 알림 템플릿 편집 모달 본문 확장 슬롯(범용). 채널을 소유한 확장이 그 채널 전용 편집 UI(예: 외부 발송 채널의 템플릿 작성·발송 설정)를 이 자리에 주입한다. 채널 메타 template_editor='none'(종전 hidden_template_editor=true 와 같은 뜻) 인 채널은 아래 코어 제목/본문 입력이 숨겨지고 이 슬롯이 본문 편집을 대신한다. 특정 확장을 알지 못하며, 미주입 시 빈 자리로 남는다. -->
         <extension-point name="notification_template_form_sections" data-ref="gdpr_template_form_sections_ext" definition="{{_global.gdpr_notification_template_form_modal?.definition}}" template="{{_global.gdpr_notification_template_form_modal?.template}}" channel="{{_global.gdpr_notification_template_form_modal?.template?.channel ?? ''}}" modalId="modal_gdpr_notification_template_edit" stateKey="gdpr_notification_template_form_modal" saveEndpoint="{{'/api/admin/notification-templates/' + _global.gdpr_notification_template_form_modal?.template?.id}}" refetchDataSourceId="gdprNotificationDefinitions"/>
         <div data-ref="gdpr_template_lang_tabs" data-if="{{!((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" class="gdpr:flex gdpr:border-b gdpr:border-gray-200 gdpr:dark:border-gray-700">
-          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.gdpr_notification_template_form_modal?.editLang ?? $locale) === loc ? 'gdpr:border-b-2 gdpr:border-indigo-500 gdpr:dark:border-indigo-400 gdpr:text-indigo-600 gdpr:dark:text-indigo-400' : 'gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:hover:text-gray-700 gdpr:dark:hover:text-gray-300'}} gdpr:px-4 gdpr:py-2 gdpr:text-sm gdpr:font-medium gdpr:focus:outline-none">
+          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.gdpr_notification_template_form_modal?.editLang ?? $locale) === loc ? 'gdpr:border-b-2 gdpr:border-indigo-500 gdpr:dark:border-indigo-400 gdpr:text-indigo-600 gdpr:dark:text-indigo-400' : 'gdpr-text-muted gdpr:hover:text-gray-700 gdpr:dark:hover:text-gray-300'}} gdpr:px-4 gdpr:py-2 gdpr:text-sm gdpr:font-medium gdpr:focus:outline-none">
             <on type="click">
               <!-- 편집 언어 전환 — 아래 제목·본문이 함께 이 로케일을 바라본다.
      값은 언어별 객체에 남으므로 탭을 옮겨도 쓰던 것이 사라지지 않는다. -->
@@ -223,7 +224,7 @@
               <span>$t:sirsoft-gdpr.notification_definitions.edit_modal.subject</span>
               <span class="gdpr-text-required">*</span>
             </label>
-            <input type="text" aria-label="$t:sirsoft-gdpr.notification_definitions.edit_modal.subject" value="{{_global.gdpr_notification_template_form_modal?.template?.subject?.[_global.gdpr_notification_template_form_modal?.editLang ?? $locale] ?? ''}}" class="">
+            <input type="text" aria-label="$t:sirsoft-gdpr.notification_definitions.edit_modal.subject" value="{{_global.gdpr_notification_template_form_modal?.template?.subject?.[_global.gdpr_notification_template_form_modal?.editLang ?? $locale] ?? ''}}">
               <on type="change">
                 <!-- 제목(언어별) — 기존 객체를 복사해 지금 탭의 로케일 키만 갈아 끼운다. -->
                 <set-state target="global" gdpr_notification_template_form_modal.template.subject="{{Object.assign({}, _global.gdpr_notification_template_form_modal?.template?.subject, {[_global.gdpr_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"/>

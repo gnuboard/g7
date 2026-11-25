@@ -202,7 +202,7 @@ export const RichSelect: React.FC<RichSelectProps> = ({
   // 트리거에 표시할 내용 결정
   const renderTriggerContent = () => {
     if (!selectedOption) {
-      return <Span className="text-gray-500 dark:text-gray-400">{resolvedPlaceholder}</Span>;
+      return <Span className="text-muted">{resolvedPlaceholder}</Span>;
     }
 
     // 1. component_layout.selected가 있으면 사용
@@ -283,7 +283,7 @@ export const RichSelect: React.FC<RichSelectProps> = ({
         >
           <Div className="overflow-auto" style={{ maxHeight }}>
             {options.length === 0 ? (
-              <Div className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">
+              <Div className="px-4 py-6 text-center text-muted">
                 {t('common.no_options')}
               </Div>
             ) : (

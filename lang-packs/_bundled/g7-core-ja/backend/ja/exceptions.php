@@ -213,6 +213,7 @@ return [
         'nested_action_debounce_ignored' => ':handler アクションに指定した debounce は適用されません — 条件・順序・結果処理の内側や、イベント受信・失敗処理・初回表示時のアクションは毎回すぐ実行されます。画面で直接操作するアクション(<on type> 直下のアクション、例: <sequence :debounce>)に指定してください。',
         'mixed_debounce_flushed' => ':name の :event に debounce を指定したアクションとすぐ実行するアクションが混在しています — すぐ実行するアクションが動くたびに待機中の debounce アクションも即時実行され、入力のたびに実行されます。待たせるには、このイベントのアクションをすべて debounce に揃えてください。',
         'entry_only_key_ignored' => ':key は画面で直接操作するアクションにのみ適用されます。この位置(イベント受信・失敗処理・初期アクション・内側のアクション)の :handler アクションでは無視されます。',
+        'class_merge_breakpoint_variant' => ':name の :key 区間の class-merge に幅バリアントのクラス(:tokens)があります。区間自体がすでに幅の条件なので、幅バリアントなしで書くか、別の区間に分けて書いてください。',
     ],
     'schedule_extraction' => [
         'not_artisan' => 'Artisan の実行文字列ではありません(php/artisan の接頭辞がありません)。',

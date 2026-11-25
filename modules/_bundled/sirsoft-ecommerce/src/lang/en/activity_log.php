@@ -26,6 +26,8 @@ return [
         'delete_all' => 'All Deleted',
         'direct_issue' => 'Direct Issue',
         'issue_cancel' => 'Issue Cancelled',
+        'auto_issue' => 'Auto Issue',
+        'auto_issue_revoke' => 'Auto Issue Revoked',
         'download' => 'Downloaded',
         'earn' => 'Earned',
         'partial_cancel' => 'Partially Cancelled',
@@ -88,6 +90,8 @@ return [
     ],
 
     'description' => [
+        'coupon_auto_issue' => 'Coupon auto-issued (coupon #:coupon_id → member #:user_id, :source)',
+        'coupon_auto_issue_revoke' => 'First purchase coupon revoked (coupon #:coupon_id, member #:user_id, order #:order_id fully cancelled or returned)',
         // Product management (Admin)
         'product_index' => 'Product list viewed',
         'product_show' => 'Product details viewed (ID: :product_id)',
@@ -340,6 +344,9 @@ return [
     ],
 
     'fields' => [
+        'first_purchase_trigger_status' => 'First purchase issue timing',
+        'notify_enabled' => 'Issue notification',
+        'notify_marketing_only' => 'Promotional notice',
         // Common
         'is_active' => 'Active',
         'is_default' => 'Default',

@@ -831,7 +831,7 @@
                                         "props": {
                                             "type": "button",
                                             "data-testid": "product-bulk-apply",
-                                            "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:dark:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                            "className": "ecommerce-btn ecommerce-btn-primary",
                                             "disabled": "{{((!_local.selectedItems || _local.selectedItems.length === 0) && (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.product.bulk_apply"

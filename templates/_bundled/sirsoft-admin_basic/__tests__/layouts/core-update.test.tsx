@@ -623,7 +623,7 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
       );
       expect(itemIteration).toBeDefined();
       expect(itemIteration.iteration.item_var).toBe('changeItem');
-      expect(itemIteration.text).toBe('{{changeItem}}');
+      expect(String(itemIteration.text)).toContain('changeItem'); // 7.2.1: 표기 기호(** ·백틱)를 빼고 보인다 — changelog-item-plain-text.test.ts
     });
 
     // @scenario surface=changelog_modal

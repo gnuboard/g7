@@ -16,7 +16,7 @@
             </set-state>
           </on>
         </textarea>
-        <span data-if="{{_global.qnaErrors?.content}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{(_global.qnaErrors?.content ?? [])[0] ?? ''}}</span>
+        <span data-if="{{_global.qnaErrors?.content}}" class="form-error">{{(_global.qnaErrors?.content ?? [])[0] ?? ''}}</span>
       </div>
     </div>
     <!-- 모달 푸터 - 취소 / 등록 -->

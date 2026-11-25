@@ -60,7 +60,7 @@
       <!-- 받기 실패 안내 — 다시 받기 실패는 데이터소스 오류 처리가 남긴 표시로 가른다(엔진이 실패 값을 null 로 두지 않던 판에서는 처음이면 「받는 중」, 다시 열었으면 앞 명단이 남았다). 실패한 채 「대상이 없습니다」를 보이면 처리할 주문이 없다고 오해한다 -->
       <p data-ref="privacy_targets_load_failed" data-if="{{_global.privacyTargets?.loadFailed === true}}" role="alert" class="ecommerce:py-6 ecommerce:text-center ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</p>
       <!-- 빈 명단 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다 -->
-      <div data-ref="privacy_targets_empty" data-if="{{privacyTargets !== undefined &amp;&amp; privacyTargets !== null &amp;&amp; _global.privacyTargets?.loadFailed !== true &amp;&amp; (privacyTargets?.data?.data ?? []).length === 0}}" class="ecommerce:flex ecommerce:flex-col ecommerce:items-center ecommerce:gap-3 ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:py-6">
+      <div data-ref="privacy_targets_empty" data-if="{{privacyTargets !== undefined &amp;&amp; privacyTargets !== null &amp;&amp; _global.privacyTargets?.loadFailed !== true &amp;&amp; (privacyTargets?.data?.data ?? []).length === 0}}" class="ecommerce:flex ecommerce:flex-col ecommerce:items-center ecommerce:gap-3 ecommerce:text-center ecommerce-text-muted ecommerce:py-6">
         <icon name="inbox" class="ecommerce:text-4xl"/>
         <span class="ecommerce:text-sm">$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.empty</span>
       </div>

@@ -43,6 +43,8 @@ effects:
   - cart_shows_discount_rate_chip                # 장바구니 할인율 칩
   - no_strikethrough_when_no_discount            # 정가=판매가 → 취소선·칩 미렌더, 판매가만
   - secondary_currency_list_price_converted      # 보조통화(JPY) 정가도 환산 표시
+  - selling_price_display_kept_alongside_list_price  # 정가 블록을 더해도 판매가(multi_currency_selling_price) 표시는 남는다
+  - list_price_block_pairs_light_dark_classes    # 정가 취소선 글자색이 라이트, 다크 짝을 갖는다(의미 클래스는 정의까지 펼쳐 본다)
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Resources/BaseOrderItemResourceListPriceTest.php

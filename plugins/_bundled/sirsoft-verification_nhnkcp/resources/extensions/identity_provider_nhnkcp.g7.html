@@ -15,7 +15,7 @@
       <p data-if="{{_global.identityChallenge?.purpose === 'nhnkcp.adult_verification'}}" class="verificationnhnkcp:text-sm verificationnhnkcp:text-gray-600 verificationnhnkcp:dark:text-gray-400">$t:sirsoft-verification_nhnkcp.modal.adult_description</p>
       <!-- 기본 본인확인 설명 (데스크톱) -->
       <p data-if="{{_global.identityChallenge?.purpose !== 'nhnkcp.adult_verification'}}" class="verificationnhnkcp:text-sm verificationnhnkcp:text-gray-600 verificationnhnkcp:dark:text-gray-400">
-        <responsive on="portable" class="verificationnhnkcp:text-sm verificationnhnkcp:text-gray-600 verificationnhnkcp:dark:text-gray-400 verificationnhnkcp:hidden verification-nhnkcp-hidden"/>
+        <responsive on="portable" class-merge="verificationnhnkcp:hidden verification-nhnkcp-hidden"/>
         $t:sirsoft-verification_nhnkcp.modal.description
       </p>
       <!-- 모바일 전용 안내 — 페이지가 인증 화면으로 이동함을 알린다 -->

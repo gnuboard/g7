@@ -78,7 +78,7 @@
                     "name": "P",
                     "if": "{{!!_global.claimImageViewer?.name}}",
                     "props": {
-                        "className": "mt-2 text-xs text-gray-500 dark:text-gray-400 text-center break-all"
+                        "className": "mt-2 text-xs text-muted text-center break-all"
                     },
                     "text": "{{_global.claimImageViewer?.name}}"
                 }

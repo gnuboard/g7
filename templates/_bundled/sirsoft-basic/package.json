@@ -1,6 +1,6 @@
 {
     "name": "sirsoft-basic",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "description": "Gnuboard7 Basic User Template Components - Nexibase Style",
     "type": "module",
     "main": "dist/components.js",
@@ -11,6 +11,7 @@
     ],
     "scripts": {
         "vendor:font-awesome": "node scripts/vendor-inline-css.mjs node_modules/@fortawesome/fontawesome-free/css/all.min.css dist/vendor/font-awesome/6.4.0/webfonts dist/vendor/font-awesome/6.4.0/css/all.inlined.css",
+        "vendor:flag-icons": "node scripts/vendor-copy.mjs node_modules/flag-icons dist/vendor/flag-icons/7.2.3 css/flag-icons.min.css flags LICENSE",
         "vendor:browser-image-compression": "node scripts/vendor-copy.mjs node_modules/browser-image-compression dist/vendor/browser-image-compression/2.0.2 dist/browser-image-compression.js=browser-image-compression.js LICENSE",
         "vendor:pretendard": "node scripts/vendor-copy.mjs node_modules/pretendard dist/vendor/pretendard/1.3.9 dist/web/variable/pretendardvariable-dynamic-subset.css=pretendard-variable.css dist/web/variable/woff2-dynamic-subset=woff2-dynamic-subset",
         "build": "vite build && vite build --config vite.settings.config.ts",
@@ -56,12 +57,13 @@
         "vitest-axe": "^0.1.0"
     },
     "dependencies": {
-        "@fortawesome/fontawesome-free": "6.4.0",
         "@dnd-kit/core": "^6.3.1",
         "@dnd-kit/sortable": "^10.0.0",
         "@dnd-kit/utilities": "^3.2.2",
+        "@fortawesome/fontawesome-free": "6.4.0",
         "browser-image-compression": "2.0.2",
         "dompurify": "^3.3.1",
+        "flag-icons": "7.2.3",
         "yet-another-react-lightbox": "^3.27.0"
     }
 }

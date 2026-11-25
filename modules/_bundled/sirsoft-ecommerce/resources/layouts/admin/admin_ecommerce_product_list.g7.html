@@ -329,7 +329,7 @@
           </div>
           <div class="ecommerce:flex-1"/>
           <!-- 일괄 적용. 고른 값과 대상(상품·옵션 양쪽)을 전역으로 옮긴 뒤 확인 데이터를 만들고 창을 연다 — 창은 별도 컨텍스트라 이 화면의 폼 상태를 읽지 못한다 -->
-          <button type="button" data-testid="product-bulk-apply" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:dark:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{((!_local.selectedItems || _local.selectedItems.length === 0) &amp;&amp; (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}">
+          <button type="button" data-testid="product-bulk-apply" class="ecommerce-btn ecommerce-btn-primary" disabled="{{((!_local.selectedItems || _local.selectedItems.length === 0) &amp;&amp; (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}">
             <on type="click">
               <set-state target="global" bulkSalesStatus="{{_local.bulkSalesStatus}}" bulkDisplayStatus="{{_local.bulkDisplayStatus}}" bulkSelectedItems="{{_local.selectedItems}}" bulkSelectedOptionIds="{{_local.selectedOptionIds}}"/>
               <action handler="sirsoft-ecommerce.buildConfirmData"/>

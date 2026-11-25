@@ -57,15 +57,15 @@
               </on>
               {{row.display_name}}
             </button>
-            <span class="block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5 break-all">{{row.job_class}}</span>
-            <span data-if="{{row.schedule_id}}" class="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:defer:admin.schedules.queue.schedule_ref|id={{row.schedule_id}}</span>
+            <span class="block text-xs text-muted font-mono mt-0.5 break-all">{{row.job_class}}</span>
+            <span data-if="{{row.schedule_id}}" class="block text-xs text-muted mt-0.5">$t:defer:admin.schedules.queue.schedule_ref|id={{row.schedule_id}}</span>
           </div>
         </cell>
       </column>
       <column field="queue" header="$t:admin.schedules.queue.columns.queue" width="140px" :sortable="false">
         <cell>
           <span class="text-sm font-mono text-gray-900 dark:text-white">{{row.queue}}</span>
-          <span data-if="{{row.connection}}" class="block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">{{row.connection}}</span>
+          <span data-if="{{row.connection}}" class="block text-xs text-muted font-mono mt-0.5">{{row.connection}}</span>
         </cell>
       </column>
       <column field="status" header="$t:admin.schedules.queue.columns.result" :sortable="false">

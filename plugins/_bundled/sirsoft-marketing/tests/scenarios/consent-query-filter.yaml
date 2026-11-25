@@ -1,0 +1,18 @@
+feature: 수신동의 조회 필터 (1.1.5, #952 B)
+
+description: |
+  다른 확장이 묻는 동의 여부 필터의 응답·인수 방어·동기 구독을 잰다.
+
+axes:
+  case:
+    - consent_is_consented_consented_or_not
+    - consent_is_consented_invalid_args
+    - consent_is_consented_subscription
+    - consent_is_consented_revoked_vs_no_record
+
+effects:
+  - consent_query_answers
+  - consent_query_ignores_invalid_args
+
+test_files:
+  - plugins/_bundled/sirsoft-marketing/tests/Unit/Listeners/ConsentQueryListenerTest.php

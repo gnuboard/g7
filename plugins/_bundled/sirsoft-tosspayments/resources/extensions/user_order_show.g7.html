@@ -32,16 +32,16 @@
     </div>
     <div data-if="{{order.data.payment?.pg_provider === 'tosspayments' &amp;&amp; !!order.data.payment?.pg_receipt_url}}" class="paytosspayments:pt-4 paytosspayments:mt-2 paytosspayments:border-t paytosspayments:border-gray-200 paytosspayments:dark:border-gray-700 paytosspayments:space-y-3">
       <div data-if="{{!!order.data.payment?.is_escrow}}" class="pay-tosspayments-user-flex-between">
-        <span class="paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400">$t:sirsoft-tosspayments.user.payment_type_label</span>
+        <span class="paytosspayments:text-sm pay-tosspayments-text-muted">$t:sirsoft-tosspayments.user.payment_type_label</span>
         <span class="paytosspayments:inline-flex paytosspayments:items-center paytosspayments:gap-1 paytosspayments:px-2 paytosspayments:py-0.5 paytosspayments:rounded-full paytosspayments:text-xs paytosspayments:font-semibold paytosspayments:bg-blue-100 paytosspayments:text-blue-800 paytosspayments:dark:bg-blue-900/30 paytosspayments:dark:text-blue-300">$t:sirsoft-tosspayments.user.escrow_yes</span>
       </div>
       <div class="pay-tosspayments-user-flex-between">
-        <span class="paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400">$t:sirsoft-tosspayments.user.receipt_label</span>
+        <span class="paytosspayments:text-sm pay-tosspayments-text-muted">$t:sirsoft-tosspayments.user.receipt_label</span>
         <a href="{{order.data.payment.pg_receipt_url}}" target="_blank" rel="noopener noreferrer" class="paytosspayments:text-sm paytosspayments:text-blue-600 paytosspayments:dark:text-blue-400 paytosspayments:hover:underline">$t:sirsoft-tosspayments.user.receipt_view</a>
       </div>
     </div>
     <div data-if="{{order.data.payment?.pg_provider === 'tosspayments' &amp;&amp; !!order.data.cash_receipt?.receipt_url}}" class="paytosspayments:pt-4 paytosspayments:mt-2 paytosspayments:border-t paytosspayments:border-gray-200 paytosspayments:dark:border-gray-700 pay-tosspayments-user-flex-between">
-      <span class="paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400">$t:sirsoft-tosspayments.user.cash_receipt_label</span>
+      <span class="paytosspayments:text-sm pay-tosspayments-text-muted">$t:sirsoft-tosspayments.user.cash_receipt_label</span>
       <a href="{{order.data.cash_receipt.receipt_url}}" target="_blank" rel="noopener noreferrer" class="paytosspayments:text-sm paytosspayments:text-blue-600 paytosspayments:dark:text-blue-400 paytosspayments:hover:underline">$t:sirsoft-tosspayments.user.cash_receipt_view</a>
     </div>
 </extension>

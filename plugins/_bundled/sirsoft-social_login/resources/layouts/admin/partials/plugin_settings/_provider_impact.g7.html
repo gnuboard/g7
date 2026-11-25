@@ -6,11 +6,11 @@
     <p class="sl:text-sm sl:text-gray-700 sl:dark:text-gray-300">$t:sirsoft-social_login.admin.providers.impact_body|provider={{_local.impact?.label ?? ''}}</p>
     <div class="sl:grid sl:grid-cols-2 sl:gap-3">
       <div class="sl:p-3 sl:rounded-lg sl:bg-white sl:dark:bg-gray-800">
-        <p class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.admin.providers.impact_social_only</p>
+        <p class="sl:text-xs sl-text-muted">$t:sirsoft-social_login.admin.providers.impact_social_only</p>
         <p data-ref="impact_social_only_value_{{provider.key}}" class="sl:text-lg sl:font-semibold sl:text-gray-900 sl:dark:text-white">{{_local.impact?.social_only_users ?? 0}}</p>
       </div>
       <div class="sl:p-3 sl:rounded-lg sl:bg-white sl:dark:bg-gray-800">
-        <p class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.admin.providers.impact_linked</p>
+        <p class="sl:text-xs sl-text-muted">$t:sirsoft-social_login.admin.providers.impact_linked</p>
         <p data-ref="impact_linked_value_{{provider.key}}" class="sl:text-lg sl:font-semibold sl:text-gray-900 sl:dark:text-white">{{_local.impact?.linked_users ?? 0}}</p>
       </div>
     </div>

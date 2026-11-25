@@ -105,7 +105,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "ecommerce-btn ecommerce-btn-danger ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "className": "ecommerce-btn ecommerce-btn-danger",
                     "disabled": "{{$parent._computed?.isReadOnly !== false}}"
                 },
                 "children": [

@@ -11,7 +11,7 @@ PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포�
     <!-- 계산 중 -->
     <div data-if="{{_local.claimEstimateLoading === true}}" class="py-6 text-center">
       <icon name="spinner" class="text-xl text-gray-500 dark:text-gray-500 animate-spin"/>
-      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">$t:claim.apply.estimate_loading</p>
+      <p class="mt-2 text-sm text-muted">$t:claim.apply.estimate_loading</p>
     </div>
     <!-- 미리보기 거절 안내 (P13) — 미리보기는 신청과 같은 자격 가드를 타므로 여기 나온 사유가 곧 신청 거절 사유다. 제출 버튼은 아래에서 함께 잠긴다. -->
     <div data-if="{{_local.claimEstimateLoading !== true &amp;&amp; !!_local.claimEstimateError}}" class="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
@@ -23,65 +23,65 @@ PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포�
     </div>
     <!-- 아직 계산할 수 없는 상태 — 상품과 사유가 모두 정해져야 서버가 금액을 낸다. -->
     <div data-if="{{_local.claimEstimateLoading !== true &amp;&amp; !_local.claimEstimateError &amp;&amp; !_local.claimEstimate}}" class="py-6 text-center">
-      <p class="text-sm text-gray-500 dark:text-gray-400">$t:claim.apply.estimate_pending</p>
+      <p class="text-sm text-muted">$t:claim.apply.estimate_pending</p>
     </div>
     <!-- 금액 요약 — 표기는 주문 시점 기준 통화로 고정한다. -->
     <div data-if="{{_local.claimEstimateLoading !== true &amp;&amp; !!_local.claimEstimate}}" class="space-y-2">
       <!-- 배송비 — 교환은 왕복, 반품은 편도 회수비다. -->
       <div data-if="{{_local.claimType !== 'refund'}}" class="flex items-center justify-between text-sm">
-        <span class="text-gray-500 dark:text-gray-400">{{_local.claimType === 'exchange' ? $t('claim.apply.round_trip_shipping_fee') : $t('claim.apply.one_way_shipping_fee')}}</span>
+        <span class="text-muted">{{_local.claimType === 'exchange' ? $t('claim.apply.round_trip_shipping_fee') : $t('claim.apply.one_way_shipping_fee')}}</span>
         <!-- 기준통화 표기 + 보조통화 병기 — 형제 금액 줄과 같은 규약이다(§5-4). -->
         <div class="text-right">
           <span class="text-gray-900 dark:text-white">{{_local.claimEstimateFormatted?.shipping_fee ?? ''}}</span>
           <div data-each="shippingFeeCurrency in {{_local.claimEstimateFormatted?.mc_shipping_fee ?? []}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
-            <span class="text-xs text-gray-500 dark:text-gray-400">{{shippingFeeCurrency.formatted ?? ''}}</span>
+            <span class="text-xs text-muted">{{shippingFeeCurrency.formatted ?? ''}}</span>
           </div>
         </div>
       </div>
       <!-- 배송비 산출 근거 (§6-3) — 편도 단가 × 왕복 배수(교환 2 · 반품 1) + 도서산간. 서버가 배송정책 그룹마다 내려준 근거를 그대로 옮긴다. 근거가 없으면 구매자는 청구액이 어떻게 나왔는지 확인할 방법이 없고, 배송정책이 여러 개면 그룹마다 한 줄씩 나온다(그 줄 수가 곧 배송 건수다). -->
       <div data-if="{{_local.claimType !== 'refund' &amp;&amp; (_local.claimEstimateFormatted?.shipping_groups ?? []).length > 0}}" class="pl-3 space-y-0.5">
-        <div data-each="shippingGroup in {{_local.claimEstimateFormatted?.shipping_groups ?? []}}" class="text-xs text-gray-500 dark:text-gray-400">
+        <div data-each="shippingGroup in {{_local.claimEstimateFormatted?.shipping_groups ?? []}}" class="text-xs text-muted">
           <span>$t:claim.apply.shipping_fee_basis|unit={{shippingGroup.base_fee ?? ''}}|times={{shippingGroup.multiplier ?? 1}}</span>
           <span data-if="{{shippingGroup.has_extra_fee === true}}">$t:claim.apply.shipping_fee_extra_basis|extra={{shippingGroup.extra_fee ?? ''}}</span>
         </div>
       </div>
       <div data-if="{{_local.claimType === 'exchange' &amp;&amp; (_local.claimEstimate?.price_difference ?? 0) !== 0}}" class="flex items-center justify-between text-sm">
-        <span class="text-gray-500 dark:text-gray-400">$t:claim.apply.option_price_difference</span>
+        <span class="text-muted">$t:claim.apply.option_price_difference</span>
         <!-- 기준통화 표기 + 보조통화 병기 — 바로 위 배송비 줄, 아래 총 청구액 줄과 **같은 규약**이다(§5-4). 이 줄만 기준 통화 하나로 두면 같은 카드 안에서 표기가 갈리고, 접수 뒤 상세는 이 값을 병기하므로 같은 금액이 화면마다 다르게 보인다(S17 트랙 A F-1). -->
         <div class="text-right">
           <span class="{{(_local.claimEstimate?.price_difference ?? 0) > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}}">{{((_local.claimEstimate?.price_difference ?? 0) > 0 ? '+' : '-') + (_local.claimEstimateFormatted?.price_difference ?? '')}}</span>
           <div data-each="priceDifferenceCurrency in {{_local.claimEstimateFormatted?.mc_price_difference ?? []}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
-            <span class="text-xs text-gray-500 dark:text-gray-400">{{priceDifferenceCurrency.formatted ?? ''}}</span>
+            <span class="text-xs text-muted">{{priceDifferenceCurrency.formatted ?? ''}}</span>
           </div>
         </div>
       </div>
       <!-- 옵션 차액의 상품별 분해 (§6-3) — 교환 대상은 상품마다 다르므로(D29) 합계만 보이면 어느 상품이 얼마를 보탰는지 알 수 없다. 상품 행에도 같은 값이 있지만, 여러 상품을 한꺼번에 신청하면 합계와 대조할 수 있는 자리는 요약뿐이다. 차액은 서버 미리보기가 상품마다 돌려준 값을 그 줄에 되붙인 것이라 합계와 출처가 같다. -->
       <div data-if="{{_local.claimType === 'exchange' &amp;&amp; (_local.claimItems ?? []).filter(i => i.selected === true).length > 1}}" class="pl-3 space-y-0.5">
         <div data-each="summaryItem in {{(_local.claimItems ?? []).filter(i => i.selected === true)}}" class="flex items-center justify-between text-xs">
-          <span class="text-gray-500 dark:text-gray-400 truncate pr-2">{{(summaryItem.product_name ?? '') + ' → ' + (summaryItem.exchange_mode === 'change' ? (summaryItem.new_option_label ?? '') : $t('claim.apply.exchange_same_option'))}}</span>
-          <span class="{{(summaryItem.price_difference ?? 0) > 0 ? 'text-blue-600 dark:text-blue-400 flex-shrink-0' : ((summaryItem.price_difference ?? 0) < 0 ? 'text-red-600 dark:text-red-400 flex-shrink-0' : 'text-gray-500 dark:text-gray-400 flex-shrink-0')}}">{{(summaryItem.price_difference ?? 0) === 0 ? $t('claim.apply.no_price_difference') : (((summaryItem.price_difference ?? 0) > 0 ? '+' : '-') + (summaryItem.price_difference_formatted ?? ''))}}</span>
+          <span class="text-muted truncate pr-2">{{(summaryItem.product_name ?? '') + ' → ' + (summaryItem.exchange_mode === 'change' ? (summaryItem.new_option_label ?? '') : $t('claim.apply.exchange_same_option'))}}</span>
+          <span class="{{(summaryItem.price_difference ?? 0) > 0 ? 'text-blue-600 dark:text-blue-400 flex-shrink-0' : ((summaryItem.price_difference ?? 0) < 0 ? 'text-red-600 dark:text-red-400 flex-shrink-0' : 'text-muted flex-shrink-0')}}">{{(summaryItem.price_difference ?? 0) === 0 ? $t('claim.apply.no_price_difference') : (((summaryItem.price_difference ?? 0) > 0 ? '+' : '-') + (summaryItem.price_difference_formatted ?? ''))}}</span>
         </div>
       </div>
       <!-- 환불 예정액 — 반품·취소·환불에서만 그린다. 회수비를 환불금에서 차감하는 방식이면 이 줄은 **차감 전** 금액이고 아래 두 줄(차감·최종)이 이어진다(§6-3). 그 금액은 서버가 따로 낸다(`refund_before_deduction`) — `adjustment.refund_total` 은 이미 차감된 뒤의 값이라 화면이 되더하면 예고와 청구의 근거가 갈린다. 교환의 adjustment 는 대상 상품을 일단 되돌린 뒤 새 옵션을 얹는 형태라 refund_total 이 0 이 아닌데(2026-08-31 실측: 차액 0원 교환에서 15,000원), 그 값은 구매자에게 돌려줄 돈이 아니다. 교환에서 돈이 오가는 축은 옵션 차액과 총 청구액 둘뿐이고 저가 교환의 환불은 차액이 음수로 나른다(§6-3). -->
       <div data-if="{{_local.claimType !== 'exchange' &amp;&amp; ((_local.claimEstimate?.adjustment?.refund_total ?? 0) > 0 || (_local.claimEstimate?.deducted_shipping_fee ?? 0) > 0)}}" class="flex items-center justify-between text-sm">
-        <span class="text-gray-500 dark:text-gray-400">$t:claim.apply.refund_expected</span>
+        <span class="text-muted">$t:claim.apply.refund_expected</span>
         <!-- 기준통화 표기 + 보조통화 병기 — 형제 금액 줄과 같은 규약이다(§5-4). 보조통화는 서버 정산이 낸 포맷 문자열을 그대로 쓴다. -->
         <div class="text-right">
           <span class="text-red-600 dark:text-red-400 font-medium">{{(_local.claimEstimate?.deducted_shipping_fee ?? 0) > 0 ? (_local.claimEstimateFormatted?.refund_before_deduction ?? '') : (_local.claimEstimate?.adjustment?.refund_formatted?.base?.refund_total ?? _local.claimEstimateFormatted?.refund_total ?? '')}}</span>
           <div data-each="refundTotalCurrency in {{((_local.claimEstimate?.deducted_shipping_fee ?? 0) > 0 ? _local.claimEstimateFormatted?.mc_refund_before_deduction : _local.claimEstimateFormatted?.mc_refund_total) ?? []}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
-            <span class="text-xs text-gray-500 dark:text-gray-400">{{refundTotalCurrency.formatted ?? ''}}</span>
+            <span class="text-xs text-muted">{{refundTotalCurrency.formatted ?? ''}}</span>
           </div>
         </div>
       </div>
       <!-- 회수 배송비 차감 (§6-3 반품 요약 3줄) — 청구 방식이 '환불금에서 차감' 일 때만 선다. 별도 결제 방식은 회수비를 환불금에서 빼지 않으므로 서버가 차감액 0 을 낸다 — 그때 이 줄을 그리면 전액 환불되는데도 배송비만큼 덜 받는 것으로 읽힌다. -->
       <div data-if="{{(_local.claimEstimate?.deducted_shipping_fee ?? 0) > 0}}" class="flex items-center justify-between text-sm">
-        <span class="text-gray-500 dark:text-gray-400">$t:claim.apply.collection_fee_deducted</span>
+        <span class="text-muted">$t:claim.apply.collection_fee_deducted</span>
         <!-- 기준통화 표기 + 보조통화 병기 — 위(차감 전 환불액)·아래(최종 환불액) 두 줄과 **같은 규약**이다(§5-4). 가운데 이 줄만 기준 통화 하나로 두면 세 줄의 표기가 갈린다(S17 트랙 A F-1). -->
         <div class="text-right">
           <span class="text-gray-900 dark:text-white">{{'-' + (_local.claimEstimateFormatted?.deducted_shipping_fee ?? '')}}</span>
           <div data-each="deductedFeeCurrency in {{_local.claimEstimateFormatted?.mc_deducted_shipping_fee ?? []}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
             <!-- 보조통화도 기준통화와 **같은 부호**로 적는다 — 기준통화만 '-' 를 붙이면 같은 줄에서 '−3,000원 / $3.00' 처럼 부호가 갈려 차감인지 청구인지 읽히지 않는다(2026-09-21 세션B 실측 S-B-D5). -->
-            <span class="text-xs text-gray-500 dark:text-gray-400">{{'-' + (deductedFeeCurrency.formatted ?? '')}}</span>
+            <span class="text-xs text-muted">{{'-' + (deductedFeeCurrency.formatted ?? '')}}</span>
           </div>
         </div>
       </div>
@@ -91,7 +91,7 @@ PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포�
         <div class="text-right">
           <span class="text-lg font-bold text-red-600 dark:text-red-400">{{_local.claimEstimate?.adjustment?.refund_formatted?.base?.refund_total ?? _local.claimEstimateFormatted?.refund_total ?? ''}}</span>
           <div data-each="refundFinalCurrency in {{_local.claimEstimateFormatted?.mc_refund_total ?? []}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
-            <span class="text-xs text-gray-500 dark:text-gray-400">{{refundFinalCurrency.formatted ?? ''}}</span>
+            <span class="text-xs text-muted">{{refundFinalCurrency.formatted ?? ''}}</span>
           </div>
         </div>
       </div>
@@ -103,7 +103,7 @@ PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포�
         <div class="text-right">
           <span class="text-lg font-bold text-gray-900 dark:text-white">{{_local.claimEstimateFormatted?.total_charge_amount ?? ''}}</span>
           <div data-each="totalChargeCurrency in {{_local.claimEstimateFormatted?.mc_total_charge_amount ?? []}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
-            <span class="text-xs text-gray-500 dark:text-gray-400">{{totalChargeCurrency.formatted ?? ''}}</span>
+            <span class="text-xs text-muted">{{totalChargeCurrency.formatted ?? ''}}</span>
           </div>
         </div>
       </div>
@@ -161,7 +161,7 @@ PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포�
     <!-- 축2 결제 수단 — '환불금에서 차감' 을 고르면 낼 돈이 없어 이 칸이 쓰이지 않으므로 **감춘다**(2026-09-21 세션B 실측 S-B-D6 · 운영 결정). 종전에는 회색 + disabled 로 남겼으나, 비활성이어도 칸이 서 있으면 '카드로 결제해야 하나' 로 읽힌다. -->
     <div data-if="{{_local.claimEditMode !== true &amp;&amp; _local.claimType !== 'refund' &amp;&amp; (_local.claimEstimate?.charge_method ?? _local.claimChargeMethod) !== 'deduct_from_refund' &amp;&amp; ((_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_methods ?? []).length > 0}}" class="pt-3 border-t border-gray-200 dark:border-gray-700">
       <!-- 안쪽의 `_local.claimChargeMethod === 'deduct_from_refund'` 분기(제목 회색 · 라디오 disabled · 라벨 회색)는 죽은 코드가 아니다 — 바깥 가드는 **서버 미리보기 값을 우선**(`claimEstimate?.charge_method ?? claimChargeMethod`)하고 안쪽은 **화면 선택값**만 본다. 사용자가 '환불금에서 차감' 을 고른 직후 미리보기 응답이 아직 이전 방식을 들고 있는 왕복 구간에서 이 블록이 한 프레임 더 서고, 그때 회색으로 전환되어 곧 사라진다. 지우면 그 구간에 활성처럼 보였다가 통째로 없어져 깜빡임이 커진다. -->
-      <p class="{{_local.claimChargeMethod === 'deduct_from_refund' ? 'text-sm font-medium text-gray-500 dark:text-gray-400 mb-2' : 'text-sm font-medium text-gray-900 dark:text-white mb-2'}}">$t:claim.apply.payment_method_title</p>
+      <p class="{{_local.claimChargeMethod === 'deduct_from_refund' ? 'text-sm font-medium text-muted mb-2' : 'text-sm font-medium text-gray-900 dark:text-white mb-2'}}">$t:claim.apply.payment_method_title</p>
       <!-- 라디오 사이 간격은 부모가 준다(축1과 같은 규칙). -->
       <div class="space-y-1">
         <label data-each="chargePaymentMethod in {{(_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_methods ?? []}}" class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -179,7 +179,7 @@ PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포�
     <p data-if="{{!!_local.claimFieldErrors?.payment_method}}" class="text-xs text-red-600 dark:text-red-400 mt-1">{{_local.claimFieldErrors?.payment_method ?? ''}}</p>
     <!-- 수정 화면의 청구 방식 — 읽기 전용이다. 접수 때 고른 방식이 그대로 남으므로 값은 보이되 바꿀 수는 없다(§6-3). -->
     <div data-if="{{_local.claimEditMode === true &amp;&amp; _local.claimType !== 'refund' &amp;&amp; !!_local.claimEditSnapshot?.charge_method_label}}" class="flex items-center justify-between text-sm pt-3 border-t border-gray-200 dark:border-gray-700">
-      <span class="text-gray-500 dark:text-gray-400">$t:claim.apply.charge_method_title</span>
+      <span class="text-muted">$t:claim.apply.charge_method_title</span>
       <span class="text-gray-900 dark:text-white">{{_local.claimEditSnapshot?.charge_method_label ?? ''}}</span>
     </div>
     <!-- 재발송지를 바꿔 배송비가 다시 계산된 결과의 차액 (D14). 접수 시점 청구액과의 차이이며, 더 내야 하면 저장 뒤 결제창이 열리고 돌려받을 금액이면 이미 받은 추가결제에서 환급된다. 이 줄이 없으면 구매자는 얼마가 달라지는지 모른 채 저장하게 되고, 그 사실은 저장 뒤에야 드러난다. -->

@@ -751,6 +751,7 @@ _단건 응답: `data` 객체의 필드._
 | payment | object | `{"id":1,"payment_status":"paid","payment_status_label":"P…` | 대표 결제 정보 (OrderPaymentResource — 결제수단·결제상태·금액). 무통장 결제행은 현금영수증 발급 프로바이더 `cash_receipt_provider`(id)와 그 현재 언어 표시명 `cash_receipt_provider_label`(등록 항목의 `name_key` 번역 → `name` → id 순)을 함께 싣는다. `has_cash_to_return`(bool)은 이 주문에 돌려줄 현금이 남아 있는지(주문 장부·결제행 수납액 기준 — [입금확인]에서 입금만 기록한 결제 전 주문도 포함) — 취소 창의 환불 계좌 칸 노출 근거 |
 | payments | array | `[{"id":1,"payment_status":"paid","payment_status_label":"…` | 결제 이력 목록 (OrderPaymentResource 배열 — 다회 결제/부분결제 포함) |
 | payments[].cancelled_vat_amount | integer | `0` | 취소·환불로 줄어든 부가세 누적(재계산 전 − 후, 승인 부가세 `vat_amount` 상한). 승인 부가세는 바꾸지 않는다 (1.3.3). `_formatted` 동반 |
+| payment.payment_method_display_label · payments[].payment_method_display_label | string\|null | `카카오페이 (토스페이먼츠)` | 화면 표시용 결제수단 이름. 결제 플러그인이 필터 훅 `sirsoft-ecommerce.order.filter_payment_method_display_label` 로 채우는 간편결제 원 수단 이름(주문 목록과 같은 값, `OrderPayment::paymentMethodDisplayLabel()`). 채우는 플러그인이 없으면 `null` — 화면은 `payment_method_label` 을 쓴다 (1.4.1) |
 | cash_receipt | null | `null` | 현재 유효한 현금영수증 (CashReceiptResource — 취소되지 않은 발급 건, 없으면 null) |
 | cash_receipts | array | `[]` | 현금영수증 발급·취소 이력 전체 (CashReceiptResource 배열 — 취소된 건 포함) |
 | shippings | array | `[]` | 배송 이력 목록 (OrderShippingResource 배열 — 배송유형·택배사·송장번호) |

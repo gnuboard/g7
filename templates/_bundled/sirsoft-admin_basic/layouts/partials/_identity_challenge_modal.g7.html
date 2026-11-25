@@ -23,7 +23,7 @@
       <div class="flex-between text-xs" role="status" aria-live="polite">
         <span data-if="{{(_global.identityChallenge?.remainingSeconds ?? 0) > 0}}" class="text-secondary">$t:admin.identity.challenge.remaining_time|minutes={{Math.floor((_global.identityChallenge?.remainingSeconds ?? 0) / 60)}}|seconds={{String((_global.identityChallenge?.remainingSeconds ?? 0) % 60).padStart(2, '0')}}</span>
         <span data-if="{{(_global.identityChallenge?.remainingSeconds ?? 0) <= 0 &amp;&amp; _global.identityChallenge?.expires_at}}" class="text-red-600 dark:text-red-400">$t:admin.identity.challenge.expired</span>
-        <span class="text-gray-500 dark:text-gray-400">$t:admin.identity.challenge.remaining_attempts|count={{Math.max(0, (_global.identityChallenge?.maxAttempts ?? 0) - (_global.identityChallenge?.attempts ?? 0))}}</span>
+        <span class="text-muted">$t:admin.identity.challenge.remaining_attempts|count={{Math.max(0, (_global.identityChallenge?.maxAttempts ?? 0) - (_global.identityChallenge?.attempts ?? 0))}}</span>
       </div>
     </div>
     <!-- 코어 기본 UI (link) — 코어 mail provider 또는 provider_id 미지정 케이스의 link 렌더힌트 -->

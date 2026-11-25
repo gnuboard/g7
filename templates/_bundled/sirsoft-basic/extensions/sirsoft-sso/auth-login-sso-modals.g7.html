@@ -73,7 +73,7 @@
             <span data-if="{{!!_global.ssoPending?.email}}" class="sso:col-span-2 sso:min-w-0 sso:break-all sso:text-gray-900 sso:dark:text-white">{{_global.ssoPending?.email}}</span>
           </div>
           <!-- 회원 항목을 받는 동안의 안내 줄 -->
-          <p data-if="{{_global.ssoFieldsState === 'loading'}}" data-ref="sso_consent_fields_loading" class="text-sm text-gray-500 dark:text-gray-400">$t:common.loading</p>
+          <p data-if="{{_global.ssoFieldsState === 'loading'}}" data-ref="sso_consent_fields_loading" class="text-sm text-muted">$t:common.loading</p>
           <!-- 회원 항목 — 이름, 닉네임, 연락처, 언어와 운영자가 추가한 항목. 어떤 칸을 어떤 순서로 받고 무엇이 필수인지는 환경설정 > 회원 > 가입 항목이 정한다(코어 가입 화면과 같은 항목). 회사 계정이 관리하는 칸은 읽기 전용이고 값을 보내도 서버가 회사 계정의 값을 쓴다. 값은 전역 폼 ssoFieldForm 에 자동 바인딩된다. 아래 묶음 노드는 공용 조각 partials/member/_member_fields 를 옮겨 적은 것이다 -->
           <div data-if="{{_global.ssoFieldsState === 'ready'}}" data-key="_global.ssoFieldForm" data-ref="sso_consent_member_fields">
             <div data-each="memberFieldGroup in {{[{ key: 'signup', fields: _global.ssoFields ?? [] }]}}" data-ref="sso_member_fields_each_{{memberFieldGroup.key}}">
@@ -81,12 +81,12 @@
                 <responsive on="portable" class="{{memberFieldGroup?.portableClassName ?? memberFieldGroup?.className ?? 'space-y-4'}}"/>
                 <div data-each="field in {{(memberFieldGroup?.fields ?? []).filter(function(f) { return !!memberFieldGroup?.includeAgreements || (f.ui?.group ?? '') !== 'agreements'; })}}" data-ref="sso_field_{{field.key}}" class="{{field.ui?.parent ? 'ml-6' : ''}}">
                   <!-- 라벨과 필수 별표 — 예/아니오 칸은 체크박스 옆 문구가 라벨 노릇을 하므로 옆 문구를 따로 정한 경우에만 위 라벨을 둔다. -->
-                  <label data-if="{{field.type !== 'boolean' || !!field.constraints?.inline_label}}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">
+                  <label data-if="{{field.type !== 'boolean' || !!field.constraints?.inline_label}}" class="form-label break-words">
                     <span>{{field.label}}</span>
                     <span data-if="{{field.required}}" class="text-red-600 dark:text-red-400 ml-1">*</span>
                   </label>
                   <!-- 가입 화면에서 받지 않는 유형(파일, 이미지) — 안내 줄만 둔다. 가입 뒤 내 정보에서 올린다. -->
-                  <p data-if="{{field.deferred}}" data-ref="sso_mf_deferred_{{field.key}}" class="text-sm text-gray-500 dark:text-gray-400">$t:member.fields.upload_after_signup</p>
+                  <p data-if="{{field.deferred}}" data-ref="sso_mf_deferred_{{field.key}}" class="text-sm text-muted">$t:member.fields.upload_after_signup</p>
                   <!-- 주소 — 우편번호, 기본 주소, 상세 주소 세 칸. 이 창에는 주소 검색 단추가 없어 세 칸 모두 직접 적는다(검색 단추는 고른 주소를 화면 지역 상태에 쓰는데 이 창의 폼 값은 전역 상태다). 잠긴 항목이면 세 칸 모두 읽기 전용(회색)이다. -->
                   <div data-if="{{!field.deferred &amp;&amp; field.renderer === 'address'}}" class="space-y-2">
                     <div class="flex flex-wrap gap-2">
@@ -101,20 +101,20 @@
                   <member-field-input data-type="composite" data-if="{{!field.deferred &amp;&amp; field.renderer !== 'address' &amp;&amp; field.renderer !== 'extension' &amp;&amp; field.renderer !== 'file'}}" field="{{field}}" name="{{field.name}}" disabled="{{!!_global.ssoBusy}}" error="{{Object.entries(_global.ssoErrors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}" errorId="sso_mf_error_{{field.key}}"/>
                   <!-- 동의 항목(약관 묶음)의 필수 여부와 약관 보기 링크 — 체크박스 옆 문구에는 별표가 없으므로 「(필수)」「(선택)」을 글자로 알린다.
                        약관 문서 링크는 그 문서를 서빙하는 모듈이 켜져 있을 때만 그린다(새 창). 하위 동의(ui.parent)는 들여 쓴다. -->
-                  <p data-if="{{(field.ui?.group ?? '') === 'agreements'}}" data-ref="sso_mf_agreement_meta_{{field.key}}" class="ml-6 text-xs text-gray-500 dark:text-gray-400">
+                  <p data-if="{{(field.ui?.group ?? '') === 'agreements'}}" data-ref="sso_mf_agreement_meta_{{field.key}}" class="ml-6 text-xs text-muted">
                     <span>{{field.required ? $t('member.fields.agreement_required') : $t('member.fields.agreement_optional')}}</span>
                     <a data-if="{{!!field.ui?.link?.url &amp;&amp; (!field.ui?.link?.requires_module || (_global.activeModules?.includes(field.ui?.link?.requires_module) ?? true))}}" data-ref="sso_mf_agreement_link_{{field.key}}" href="{{field.ui?.link?.url}}" target="_blank" rel="noopener noreferrer" aria-label="{{field.ui?.link?.title ?? field.label}}" class="ml-2 text-blue-600 dark:text-blue-400 hover:underline">{{field.ui?.link?.label ?? ''}}</a>
                   </p>
                   <!-- 잠긴 항목의 사유 안내 — 사유마다 문구가 다르고 한 번에 하나만 보인다. 회사 계정이 잠근 칸의 문구와 모양은 예전 내 정보 수정 화면 그대로다. -->
-                  <p data-if="{{!!field.readonly &amp;&amp; field.locked_reason === 'sso'}}" data-ref="sso_mf_locked_sso_{{field.key}}" class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:mypage.profile.locked_by_company</p>
-                  <p data-if="{{!!field.readonly &amp;&amp; field.locked_reason === 'identity'}}" data-ref="sso_mf_locked_identity_{{field.key}}" class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:member.fields.locked_identity</p>
-                  <p data-if="{{!!field.readonly &amp;&amp; field.locked_reason === 'admin_only'}}" data-ref="sso_mf_locked_admin_only_{{field.key}}" class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:member.fields.locked_admin_only</p>
-                  <p data-if="{{!!field.readonly &amp;&amp; field.locked_reason === 'nickname_interval' &amp;&amp; !!field.locked_until}}" data-ref="sso_mf_locked_nickname_interval_{{field.key}}" class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:member.fields.locked_until|date={{field.locked_until}}</p>
-                  <p data-if="{{!!field.readonly &amp;&amp; ['sso', 'identity', 'admin_only'].indexOf(field.locked_reason) === -1 &amp;&amp; !(field.locked_reason === 'nickname_interval' &amp;&amp; !!field.locked_until)}}" data-ref="sso_mf_locked_other_{{field.key}}" class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:member.fields.locked_generic</p>
+                  <p data-if="{{!!field.readonly &amp;&amp; field.locked_reason === 'sso'}}" data-ref="sso_mf_locked_sso_{{field.key}}" class="mt-1 text-xs text-muted">$t:mypage.profile.locked_by_company</p>
+                  <p data-if="{{!!field.readonly &amp;&amp; field.locked_reason === 'identity'}}" data-ref="sso_mf_locked_identity_{{field.key}}" class="mt-1 text-xs text-muted">$t:member.fields.locked_identity</p>
+                  <p data-if="{{!!field.readonly &amp;&amp; field.locked_reason === 'admin_only'}}" data-ref="sso_mf_locked_admin_only_{{field.key}}" class="mt-1 text-xs text-muted">$t:member.fields.locked_admin_only</p>
+                  <p data-if="{{!!field.readonly &amp;&amp; field.locked_reason === 'nickname_interval' &amp;&amp; !!field.locked_until}}" data-ref="sso_mf_locked_nickname_interval_{{field.key}}" class="mt-1 text-xs text-muted">$t:member.fields.locked_until|date={{field.locked_until}}</p>
+                  <p data-if="{{!!field.readonly &amp;&amp; ['sso', 'identity', 'admin_only'].indexOf(field.locked_reason) === -1 &amp;&amp; !(field.locked_reason === 'nickname_interval' &amp;&amp; !!field.locked_until)}}" data-ref="sso_mf_locked_other_{{field.key}}" class="mt-1 text-xs text-muted">$t:member.fields.locked_generic</p>
                   <!-- 운영자가 적은 안내 문구 -->
-                  <p data-if="{{field.help}}" class="mt-1 text-xs text-gray-500 dark:text-gray-400 break-words">{{field.help}}</p>
+                  <p data-if="{{field.help}}" class="mt-1 text-xs text-muted break-words">{{field.help}}</p>
                   <!-- 이 칸의 검증 오류 — 묶음 유형(주소, 기간, 여러 개 선택)은 하위 경로의 오류도 이 줄에 모은다. -->
-                  <span data-if="{{Object.keys(_global.ssoErrors ?? {}).some(function(k) { return k === field.name || k.indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(k) !== -1; })}}" data-ref="sso_mf_error_{{field.key}}" class="block text-red-600 dark:text-red-400 text-xs mt-1">{{Object.entries(_global.ssoErrors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(entry[0]) !== -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}</span>
+                  <span data-if="{{Object.keys(_global.ssoErrors ?? {}).some(function(k) { return k === field.name || k.indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(k) !== -1; })}}" data-ref="sso_mf_error_{{field.key}}" class="form-error">{{Object.entries(_global.ssoErrors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(entry[0]) !== -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}</span>
                 </div>
               </div>
             </div>
@@ -146,12 +146,12 @@
                 <responsive on="portable" class="{{memberFieldGroup?.portableClassName ?? memberFieldGroup?.className ?? 'space-y-4'}}"/>
                 <div data-each="field in {{(memberFieldGroup?.fields ?? []).filter(function(f) { return !!memberFieldGroup?.includeAgreements || (f.ui?.group ?? '') !== 'agreements'; })}}" data-ref="sso_field_{{field.key}}" class="{{field.ui?.parent ? 'ml-6' : ''}}">
                   <!-- 라벨과 필수 별표 — 예/아니오 칸은 체크박스 옆 문구가 라벨 노릇을 하므로 옆 문구를 따로 정한 경우에만 위 라벨을 둔다. -->
-                  <label data-if="{{field.type !== 'boolean' || !!field.constraints?.inline_label}}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">
+                  <label data-if="{{field.type !== 'boolean' || !!field.constraints?.inline_label}}" class="form-label break-words">
                     <span>{{field.label}}</span>
                     <span data-if="{{field.required}}" class="text-red-600 dark:text-red-400 ml-1">*</span>
                   </label>
                   <!-- 가입 화면에서 받지 않는 유형(파일, 이미지) — 안내 줄만 둔다. 가입 뒤 내 정보에서 올린다. -->
-                  <p data-if="{{field.deferred}}" data-ref="sso_mf_deferred_{{field.key}}" class="text-sm text-gray-500 dark:text-gray-400">$t:member.fields.upload_after_signup</p>
+                  <p data-if="{{field.deferred}}" data-ref="sso_mf_deferred_{{field.key}}" class="text-sm text-muted">$t:member.fields.upload_after_signup</p>
                   <!-- 주소 — 우편번호, 기본 주소, 상세 주소 세 칸. 이 창에는 주소 검색 단추가 없어 세 칸 모두 직접 적는다(검색 단추는 고른 주소를 화면 지역 상태에 쓰는데 이 창의 폼 값은 전역 상태다). 잠긴 항목이면 세 칸 모두 읽기 전용(회색)이다. -->
                   <div data-if="{{!field.deferred &amp;&amp; field.renderer === 'address'}}" class="space-y-2">
                     <div class="flex flex-wrap gap-2">
@@ -166,20 +166,20 @@
                   <member-field-input data-type="composite" data-if="{{!field.deferred &amp;&amp; field.renderer !== 'address' &amp;&amp; field.renderer !== 'extension' &amp;&amp; field.renderer !== 'file'}}" field="{{field}}" name="{{field.name}}" disabled="{{!!_global.ssoBusy}}" error="{{Object.entries(_global.ssoErrors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}" errorId="sso_mf_error_{{field.key}}"/>
                   <!-- 동의 항목(약관 묶음)의 필수 여부와 약관 보기 링크 — 체크박스 옆 문구에는 별표가 없으므로 「(필수)」「(선택)」을 글자로 알린다.
                        약관 문서 링크는 그 문서를 서빙하는 모듈이 켜져 있을 때만 그린다(새 창). 하위 동의(ui.parent)는 들여 쓴다. -->
-                  <p data-if="{{(field.ui?.group ?? '') === 'agreements'}}" data-ref="sso_mf_agreement_meta_{{field.key}}" class="ml-6 text-xs text-gray-500 dark:text-gray-400">
+                  <p data-if="{{(field.ui?.group ?? '') === 'agreements'}}" data-ref="sso_mf_agreement_meta_{{field.key}}" class="ml-6 text-xs text-muted">
                     <span>{{field.required ? $t('member.fields.agreement_required') : $t('member.fields.agreement_optional')}}</span>
                     <a data-if="{{!!field.ui?.link?.url &amp;&amp; (!field.ui?.link?.requires_module || (_global.activeModules?.includes(field.ui?.link?.requires_module) ?? true))}}" data-ref="sso_mf_agreement_link_{{field.key}}" href="{{field.ui?.link?.url}}" target="_blank" rel="noopener noreferrer" aria-label="{{field.ui?.link?.title ?? field.label}}" class="ml-2 text-blue-600 dark:text-blue-400 hover:underline">{{field.ui?.link?.label ?? ''}}</a>
                   </p>
                   <!-- 잠긴 항목의 사유 안내 — 사유마다 문구가 다르고 한 번에 하나만 보인다. 회사 계정이 잠근 칸의 문구와 모양은 예전 내 정보 수정 화면 그대로다. -->
-                  <p data-if="{{!!field.readonly &amp;&amp; field.locked_reason === 'sso'}}" data-ref="sso_mf_locked_sso_{{field.key}}" class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:mypage.profile.locked_by_company</p>
-                  <p data-if="{{!!field.readonly &amp;&amp; field.locked_reason === 'identity'}}" data-ref="sso_mf_locked_identity_{{field.key}}" class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:member.fields.locked_identity</p>
-                  <p data-if="{{!!field.readonly &amp;&amp; field.locked_reason === 'admin_only'}}" data-ref="sso_mf_locked_admin_only_{{field.key}}" class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:member.fields.locked_admin_only</p>
-                  <p data-if="{{!!field.readonly &amp;&amp; field.locked_reason === 'nickname_interval' &amp;&amp; !!field.locked_until}}" data-ref="sso_mf_locked_nickname_interval_{{field.key}}" class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:member.fields.locked_until|date={{field.locked_until}}</p>
-                  <p data-if="{{!!field.readonly &amp;&amp; ['sso', 'identity', 'admin_only'].indexOf(field.locked_reason) === -1 &amp;&amp; !(field.locked_reason === 'nickname_interval' &amp;&amp; !!field.locked_until)}}" data-ref="sso_mf_locked_other_{{field.key}}" class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:member.fields.locked_generic</p>
+                  <p data-if="{{!!field.readonly &amp;&amp; field.locked_reason === 'sso'}}" data-ref="sso_mf_locked_sso_{{field.key}}" class="mt-1 text-xs text-muted">$t:mypage.profile.locked_by_company</p>
+                  <p data-if="{{!!field.readonly &amp;&amp; field.locked_reason === 'identity'}}" data-ref="sso_mf_locked_identity_{{field.key}}" class="mt-1 text-xs text-muted">$t:member.fields.locked_identity</p>
+                  <p data-if="{{!!field.readonly &amp;&amp; field.locked_reason === 'admin_only'}}" data-ref="sso_mf_locked_admin_only_{{field.key}}" class="mt-1 text-xs text-muted">$t:member.fields.locked_admin_only</p>
+                  <p data-if="{{!!field.readonly &amp;&amp; field.locked_reason === 'nickname_interval' &amp;&amp; !!field.locked_until}}" data-ref="sso_mf_locked_nickname_interval_{{field.key}}" class="mt-1 text-xs text-muted">$t:member.fields.locked_until|date={{field.locked_until}}</p>
+                  <p data-if="{{!!field.readonly &amp;&amp; ['sso', 'identity', 'admin_only'].indexOf(field.locked_reason) === -1 &amp;&amp; !(field.locked_reason === 'nickname_interval' &amp;&amp; !!field.locked_until)}}" data-ref="sso_mf_locked_other_{{field.key}}" class="mt-1 text-xs text-muted">$t:member.fields.locked_generic</p>
                   <!-- 운영자가 적은 안내 문구 -->
-                  <p data-if="{{field.help}}" class="mt-1 text-xs text-gray-500 dark:text-gray-400 break-words">{{field.help}}</p>
+                  <p data-if="{{field.help}}" class="mt-1 text-xs text-muted break-words">{{field.help}}</p>
                   <!-- 이 칸의 검증 오류 — 묶음 유형(주소, 기간, 여러 개 선택)은 하위 경로의 오류도 이 줄에 모은다. -->
-                  <span data-if="{{Object.keys(_global.ssoErrors ?? {}).some(function(k) { return k === field.name || k.indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(k) !== -1; })}}" data-ref="sso_mf_error_{{field.key}}" class="block text-red-600 dark:text-red-400 text-xs mt-1">{{Object.entries(_global.ssoErrors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(entry[0]) !== -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}</span>
+                  <span data-if="{{Object.keys(_global.ssoErrors ?? {}).some(function(k) { return k === field.name || k.indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(k) !== -1; })}}" data-ref="sso_mf_error_{{field.key}}" class="form-error">{{Object.entries(_global.ssoErrors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(entry[0]) !== -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}</span>
                 </div>
               </div>
             </div>
@@ -281,7 +281,7 @@
           <!-- 메일 인증번호로 확인 -->
           <div data-if="{{_global.ssoLinkMethod === 'email'}}" class="sso:space-y-2">
             <button type="button" data-ref="sso_link_request_code" class="sso:w-full sso:px-3 sso:py-3 sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:text-sm sso:text-gray-700 sso:dark:text-gray-300 sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed" disabled="{{_global.ssoBusy}}">
-              <responsive on="640-" class="sso:w-full sso:px-3 sso:py-2 sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:text-sm sso:text-gray-700 sso:dark:text-gray-300 sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed"/>
+              <responsive on="640-" class-merge="sso:py-2"/>
               <on type="click">
                 <!-- 인증번호 받기 — 기존 계정 메일로 보낸다 -->
                 <sequence>

@@ -1,0 +1,18 @@
+feature: 회원 활동 기록 API — 쪽 나누기·기간·본인 활동만 (7.2.1, #952 E)
+
+description: |
+  기본 50건·관리자 작업 기록 제외·쪽·상한·기간 필터·남의 활동 미노출을 잰다.
+
+axes:
+  case:
+    - profile_activity_log_default
+    - profile_activity_log_filters
+    - profile_activity_log_ownership
+
+effects:
+  - user_activity_log_paginated
+  - user_activity_log_date_filter
+  - user_activity_log_own_only
+
+test_files:
+  - tests/Feature/Api/Profile/ActivityLogTest.php

@@ -534,6 +534,16 @@
     background-color: oklch(27.8% .033 256.848);
   }
 
+  .daumpostcode-admin-page-content {
+    background-color: oklch(98.5% .002 247.839);
+    min-height: 100vh;
+    padding: calc(.25rem * 6);
+  }
+
+  .daumpostcode-admin-page-content:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    background-color: oklch(21% .034 264.665);
+  }
+
   .daumpostcode\:\[\&_\.btn\]\:w-full .daumpostcode-btn {
     width: 100%;
   }

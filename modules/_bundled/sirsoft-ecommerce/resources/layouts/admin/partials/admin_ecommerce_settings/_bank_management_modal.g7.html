@@ -86,7 +86,7 @@
       <!-- 하단 버튼 영역 -->
       <div class="ecommerce:flex ecommerce:gap-2 ecommerce:mt-4">
         <!-- 은행 추가 버튼 -->
-        <button type="button" class="ecommerce-btn ecommerce-btn-secondary ecommerce:flex-1 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{$parent._local.bankModalSaving || $parent._computed.isReadOnly}}">
+        <button type="button" class="ecommerce-btn ecommerce-btn-secondary ecommerce:flex-1" disabled="{{$parent._local.bankModalSaving || $parent._computed.isReadOnly}}">
           <on type="click">
             <set-state target="$parent._local" form.order_settings.banks="{{[...($parent._local.form?.order_settings?.banks ?? []), { code: '', name: { ko: '', en: '' } }]}}"/>
           </on>
@@ -94,7 +94,7 @@
           <span>$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.add_bank</span>
         </button>
         <!-- 확인(저장) 버튼 -->
-        <button type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce:flex-1 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{$parent._local.bankModalSaving || $parent._computed.isReadOnly}}">
+        <button type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce:flex-1" disabled="{{$parent._local.bankModalSaving || $parent._computed.isReadOnly}}">
           <on type="click">
             <set-state target="$parent._local" :bankModalSaving="true" :bankModalErrors="null"/>
             <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/settings/banks" method="PUT" body="{{ { banks: $parent._local.form?.order_settings?.banks ?? [] } }}">

@@ -3,6 +3,9 @@
 // changelog:allow 숨김 파일 서빙 거부 문구 — 무CLI·고정 문서루트 축의 신규 키. 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재
 
 return [
+    'activity_log' => [
+        'date_range_invalid' => 'The end date must be on or after the start date.',
+    ],
     /*
     |--------------------------------------------------------------------------
     | Laravel Default Validation Messages
@@ -613,6 +616,7 @@ return [
         // Display names of multilingual fields — used as the field name in the required-locale message
         'attributes' => [
             'name' => 'menu name',
+            'icon_file' => 'icon file',
         ],
         'roles' => [
             'array' => 'The roles must be an array.',
@@ -633,6 +637,31 @@ return [
         ],
         'icon' => [
             'max' => 'The icon may not be greater than :max characters.',
+            'format' => 'The icon must be a Font Awesome class (e.g. fas fa-house). Use the icon field\'s direct input, upload or SVG code for image and SVG icons.',
+        ],
+        'icon_spec' => [
+            'array' => 'The icon value has an invalid format.',
+            'invalid_type' => 'The icon type must be class, image or svg.',
+            'class_invalid' => 'This is not a Font Awesome class (e.g. fas fa-house, fa-solid fa-house).',
+            'class_max' => 'The icon class may not be greater than :max characters.',
+            'image_source_invalid' => 'The image icon source is unknown.',
+            'site_path_invalid' => 'The image path must be a site path starting with / (no .., backslashes or question marks).',
+            'external_url' => 'External addresses cannot be used as icons. Use a site path (starting with /) or upload a file.',
+            'image_extension_invalid' => 'Image icons must be :extensions files. Add SVG icons as SVG code or by upload.',
+            'attachment_invalid' => 'The uploaded icon was not found or cannot be used for this menu. Please upload it again.',
+            'package_readonly' => 'An icon image declared by an extension cannot be changed. Pick another icon or clear it.',
+            'svg_required' => 'Please enter SVG code.',
+            'svg_too_large' => 'The SVG code must be :maxKB or smaller.',
+            'svg_unsafe' => 'Unsafe SVG: :reasons',
+        ],
+        'icon_upload' => [
+            'file_required' => 'Please choose an icon file.',
+            'file_invalid' => 'The file is not valid.',
+            'file_max' => 'The icon file must be :maxKB or smaller.',
+            'file_type' => 'Only PNG, WebP, JPG, GIF and SVG icon files can be uploaded (the file name and content must be the same format).',
+            'svg_too_large' => 'The SVG file must be :maxKB or smaller.',
+            'svg_unsafe' => 'Unsafe SVG file: :reasons',
+            'raster_unreadable' => 'The image could not be read.',
         ],
         'order' => [
             'integer' => 'The order must be an integer.',
@@ -1327,6 +1356,7 @@ return [
         'scope_invalid' => 'Scope must be one of route, hook, custom.',
         'target_required' => 'Please enter the target (route or hook name).',
         'target_max' => 'Target may not be longer than 255 characters.',
+        'custom_target_unregistered' => 'For the custom scope, the target must be a checkpoint declared by an active extension.',
         'purpose_required' => 'Please select a purpose.',
         'purpose_max' => 'Purpose may not be longer than 64 characters.',
         'provider_id_max' => 'Provider identifier may not be longer than 64 characters.',
@@ -1419,6 +1449,9 @@ return [
     'summary_more_errors' => '(and :count more errors)',
 
     'attributes' => [
+        // 회원 활동 기록 기간 조회 (7.2.1, #952)
+        'date_from' => 'start date',
+        'date_to' => 'end date',
         // 환경설정 「본문 콘텐츠」 저장 항목 (#883)
         'content_settings' => 'content settings',
         'content_allow_figure_caption' => 'allow image captions',

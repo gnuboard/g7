@@ -13,16 +13,12 @@
  * 대신 사용자가 실제로 밟는 경로 — 인증 토큰 발급 → 카트 담기 API → 체크아웃 진입 — 을 그대로 밟는다.
  * 검증 대상(현금영수증 폼)을 우회하지 않으므로 "강제 API 로 통과 선언" 에 해당하지 않는다.
  *
- * @scenario cash-receipt-ui-and-refund-bank
- * @effects checkout_slot_renders_only_inside_dbank_block,
- *          checkout_slot_hidden_when_provider_unset,
- *          checkout_fields_mount_on_request_toggle,
- *          checkout_purpose_switch_resets_invalid_identifier,
- *          checkout_identifier_type_options_by_purpose,
- *          checkout_identifier_cleared_on_type_change,
- *          checkout_state_reset_on_payment_method_change,
- *          new_ui_uses_portable_only,
- *          new_ui_has_no_tailwind_breakpoint
+ * 소유 시나리오: `cash-receipt-ui-and-refund-bank`, `cash-receipt-dead-provider` (축 매핑은 각 테스트에 있다)
+ * 효과 요약(마커 아님, 평문): checkout_slot_renders_only_inside_dbank_block,
+ *   checkout_slot_hidden_when_provider_unset, checkout_fields_mount_on_request_toggle,
+ *   checkout_purpose_switch_resets_invalid_identifier, checkout_identifier_type_options_by_purpose,
+ *   checkout_identifier_cleared_on_type_change, checkout_state_reset_on_payment_method_change,
+ *   new_ui_uses_portable_only, new_ui_has_no_tailwind_breakpoint
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 import type { Page } from '@playwright/test';
@@ -42,12 +38,13 @@ const IDENTIFIER_LABEL = {
   business: '사업자등록번호',
 } as const;
 
-const SLOT = '#ext_checkout_cash_receipt';
-const FIELDS = '#ext_checkout_cash_receipt_fields';
-const TOGGLE = '#ext_checkout_cash_receipt_toggle';
-const PURPOSE = '#ext_checkout_cash_receipt_purpose';
-const ID_TYPE = '#ext_checkout_cash_receipt_identifier_type';
-const IDENTIFIER = '#ext_checkout_cash_receipt_identifier';
+// #408 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+const SLOT = '[id^="ext_checkout_cash_receipt__"]';
+const FIELDS = '[id^="ext_checkout_cash_receipt_fields__"]';
+const TOGGLE = '[id^="ext_checkout_cash_receipt_toggle__"]';
+const PURPOSE = '[id^="ext_checkout_cash_receipt_purpose__"]';
+const ID_TYPE = '[id^="ext_checkout_cash_receipt_identifier_type__"]';
+const IDENTIFIER = '[id^="ext_checkout_cash_receipt_identifier__"]';
 
 /**
  * 카트를 비우고 상품 1건을 담은 뒤 임시주문을 생성한다.
@@ -457,7 +454,7 @@ test.describe('체크아웃 현금영수증 신청 폼 (무통장 슬롯 주입)
     expect(breakpointClasses).toEqual([]);
 
     const direction = () => page.locator(PURPOSE).evaluate((el) => getComputedStyle(el).flexDirection);
-    const columns = () => page.locator('#ext_checkout_cash_receipt_identifier_row')
+    const columns = () => page.locator('[id^="ext_checkout_cash_receipt_identifier_row__"]')
       .evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length);
 
     // 뷰포트 변경 후 responsive 오버라이드가 리렌더될 때까지 재시도한다 (즉시 읽으면 이전 값).

@@ -121,12 +121,13 @@ class UpdateReservedPaths
     /**
      * zip 배포본의 항목 이름 목록에서 예약 자리 파일을 찾습니다 (풀지 않고 판정).
      *
-     * zip 은 최상위 폴더 하나로 감싸여 있을 수 있어(`g7-7.2.0/routes/custom.php`) 첫 구간을 벗긴
-     * 경로도 함께 본다.
+     * zip 은 최상위 폴더 하나로 감싸여 있을 수 있어(`g7-7.2.0/routes/custom.php`), 모든 항목이 같은
+     * 최상위 폴더를 공유할 때만 그 폴더를 벗긴 경로로 본다. 감싸지 않은 zip 의 `resources/custom/a.php` 를
+     * 첫 구간을 벗겨 최상위 `custom/` 으로 오탐하지 않는다. 폴더 항목·역슬래시 이름·`__MACOSX/` 는 `ZipEntryIndex` 규칙.
      *
      * @param  string  $zipPath  zip 파일 경로
      * @param  int  $limit  최대 수집 개수
-     * @return array<int, string>|null 예약 자리 파일 목록, zip 을 열지 못하면 null
+     * @return array<int, string>|null 예약 자리 파일 목록(배포본 루트 기준), zip 을 열지 못하면 null
      */
     public static function findInZip(string $zipPath, int $limit = 50): ?array
     {
@@ -141,18 +142,12 @@ class UpdateReservedPaths
 
         $found = [];
         try {
-            for ($i = 0; $i < $zip->numFiles; $i++) {
-                $name = (string) $zip->getNameIndex($i);
-                if ($name === '' || str_ends_with($name, '/')) {
-                    continue;
-                }
-                $normalized = self::normalize($name);
-                $stripped = str_contains($normalized, '/') ? substr($normalized, strpos($normalized, '/') + 1) : $normalized;
-                foreach ([$normalized, $stripped] as $candidate) {
-                    if (self::contains($candidate)) {
-                        $found[] = $candidate;
-                        break;
-                    }
+            $index = ZipEntryIndex::fromArchive($zip);
+            $wrapper = $index->wrapperPrefix();
+            foreach ($index->files() as $name) {
+                $candidate = $wrapper !== '' ? substr($name, strlen($wrapper)) : $name;
+                if (self::contains($candidate)) {
+                    $found[] = $candidate;
                 }
                 if (count($found) >= $limit) {
                     break;

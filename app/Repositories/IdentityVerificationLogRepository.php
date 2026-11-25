@@ -106,6 +106,23 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
     }
 
     /**
+     * 회원에게 발급된 가장 최근의 확인 전 본인인증 요청 행을 찾습니다(목적 기준).
+     *
+     * @param  int  $userId  회원 ID
+     * @param  string  $purpose  IDV 목적
+     * @return IdentityVerificationLog|null 확인 전(requested·sent) 가장 최근 행 (없으면 null)
+     */
+    public function findLatestPendingForUser(int $userId, string $purpose): ?IdentityVerificationLog
+    {
+        return IdentityVerificationLog::query()
+            ->where('user_id', $userId)
+            ->where('purpose', $purpose)
+            ->whereIn('status', [IdentityVerificationStatus::Requested->value, IdentityVerificationStatus::Sent->value])
+            ->orderByDesc('created_at')
+            ->first();
+    }
+
+    /**
      * 같은 프로바이더·수신 대상·목적으로 주어진 시각 이후에 발행된 가장 최근 challenge 를 찾습니다.
      * 발송이 실패로 끝난 challenge 는 제외합니다.
      *

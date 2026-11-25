@@ -181,9 +181,7 @@
                     "if": "{{!!ssoMyAccounts?.data && ((ssoMyAccounts?.data?.accounts ?? []).length > 0 || (ssoMyAccounts?.data?.linkable ?? []).length > 0)}}",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "sso:bg-white sso:dark:bg-gray-800 sso:rounded-lg sso:shadow-sm sso:border sso:border-gray-200 sso:dark:border-gray-700 sso:p-4"
-                            }
+                            "classMerge": "sso:p-4"
                         }
                     },
                     "props": {
@@ -222,7 +220,7 @@
                             "name": "P",
                             "if": "{{(ssoMyAccounts?.data?.accounts ?? []).length === 0}}",
                             "props": {
-                                "className": "sso:py-2 sso:text-sm sso:text-gray-500 sso:dark:text-gray-400"
+                                "className": "sso:py-2 sso:text-sm sso-text-muted"
                             },
                             "text": "$t:sirsoft-sso.mypage.empty"
                         },
@@ -273,7 +271,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
+                                                        "className": "sso:text-xs sso-text-muted"
                                                     },
                                                     "children": [
                                                         {
@@ -292,7 +290,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
+                                                        "className": "sso:text-xs sso-text-muted"
                                                     },
                                                     "children": [
                                                         {
@@ -364,13 +362,11 @@
                                             "if": "{{!!account.unlink_block}}",
                                             "responsive": {
                                                 "768-": {
-                                                    "props": {
-                                                        "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:max-w-xs"
-                                                    }
+                                                    "classMerge": "sso:max-w-xs"
                                                 }
                                             },
                                             "props": {
-                                                "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
+                                                "className": "sso:text-xs sso-text-muted"
                                             },
                                             "text": "{{$t('sirsoft-sso.mypage.unlink_block.' + account.unlink_block)}}"
                                         }

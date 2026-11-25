@@ -71,6 +71,11 @@ const CASES: Case[] = [
   { screen: '마이페이지 · 주문', file: 'partials/mypage/orders/_list.json', find: { ifIncludes: 'orders.data.data.length === 0' }, source: 'orders', kind: 'node', empty: page([]), rows: page([{ id: 1 }]) },
   { screen: '마이페이지 · 스크랩', file: 'partials/mypage/scrap/_list.json', find: { ifIncludes: 'scrap.data.data.length === 0' }, source: 'scrap', kind: 'node', empty: page([]), rows: page([{ id: 1 }]) },
   { screen: '마이페이지 · 찜', file: 'partials/mypage/wishlist/_list.json', find: { ifIncludes: 'wishlist.data.data.length === 0' }, source: 'wishlist', kind: 'node', empty: page([]), rows: page([{ id: 1 }]) },
+  // #952 회원 화면 — 쿠폰함·내 리뷰·활동 기록·쿠폰존
+  { screen: '마이페이지 · 쿠폰함', file: 'partials/mypage/coupons/_list.json', find: { id: 'coupon_empty' }, source: 'user_coupons', kind: 'node', empty: { data: { coupons: { data: [] } } }, rows: { data: { coupons: { data: [{ id: 1 }] } } } },
+  { screen: '마이페이지 · 내 리뷰', file: 'partials/mypage/reviews/_list.json', find: { id: 'review_empty' }, source: 'myReviews', kind: 'node', empty: page([]), rows: page([{ id: 1 }]) },
+  { screen: '마이페이지 · 활동 기록', file: 'partials/mypage/activity/_list.json', find: { id: 'activity_empty' }, source: 'myActivity', kind: 'node', empty: { data: { activities: [] } }, rows: { data: { activities: [{ id: 1 }] } } },
+  { screen: '쿠폰존', file: 'partials/shop/coupons/_grid.json', find: { id: 'coupon_zone_empty' }, source: 'couponZone', kind: 'node', empty: { data: { data: [] } }, rows: { data: { data: [{ id: 1 }] } } },
   { screen: '장바구니', file: 'partials/shop/_cart_list.json', find: { ifIncludes: 'cartItems.data.items.length === 0' }, source: 'cartItems', kind: 'node', empty: { data: { items: [] } }, rows: { data: { items: [{ id: 1 }] } } },
   { screen: '상품 목록', file: 'partials/shop/list/_product_grid.json', find: { ifIncludes: 'products?.data?.data ?? []).length === 0' }, source: 'products', kind: 'node', empty: page([]), rows: page([{ id: 1 }]) },
   { screen: '상품 상세 · 문의 탭', file: 'partials/shop/detail/_tab_qna.json', find: { ifIncludes: 'qna.data.items.length === 0' }, source: 'qna', kind: 'node', empty: { data: { items: [] } }, rows: { data: { items: [{ id: 1 }] } } },

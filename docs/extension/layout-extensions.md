@@ -642,7 +642,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 ```html
 <layout name="admin_user_form" version="1.0.0">
   <div data-ref="user_form_container">
-    <extension-point name="user_form_additional_fields">
+    <extension-point name="user_form_additional_fields" data-ref="ext_user_form_additional_fields">
       <prop name="readOnlyFields">
         <item>zipcode</item>
         <item>address</item>
@@ -668,6 +668,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
       "name": "Div",
       "children": [
         {
+          "id": "ext_user_form_additional_fields",
           "type": "extension_point",
           "name": "user_form_additional_fields",
           "default": [],
@@ -735,6 +736,18 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 }
 ```
 
+#### 확장점 호스트 id 와 조각의 DOM id (engine-v1.99.0+)
+
+확장점 호스트에는 비어 있지 않은 노드 id(`data-ref`)를 반드시 답니다. 반복 안의 확장점이면 그 반복의 변수로 보간합니다(`data-ref="ext_board_post_row_badges_{{post.id}}"`). 감사 규칙이 호스트 id 누락을 오류로 막습니다.
+
+같은 조각이 한 화면의 여러 확장점에 주입될 수 있으므로(게시글 본문과 답글마다의 확장점, 목록 행마다의 확장점), 엔진은 **조각의 정적 노드 id 를 DOM 에서 `{원래 id}__{호스트 id}` 로 출력합니다.** 위 예시의 `custom_field_section` 은 DOM 에서 `custom_field_section__ext_user_form_additional_fields` 가 됩니다.
+
+- 보간한 노드 id(`{{…}}`)와 조각이 직접 지정한 `id` 속성(마크업 `id="…"`)은 바뀌지 않습니다.
+- 서버의 `target_id` 주입, 슬롯 등록, 레이아웃 편집기는 원본 id 를 씁니다.
+- 조각 요소를 DOM 으로 찾아야 하면 접두어 셀렉터(`[id^="custom_field_section__"]`)를 쓰거나, 화면에 한 번만 나오는 요소라면 조각이 `id` 속성을 직접 지정합니다. 예: 팝업 플러그인이 위치를 재는 GDPR 쿠키 배너는 `id="gdpr_cookie_banner"` 를 직접 답니다.
+- `target_layout` 조각(Overlay 주입·모달)은 확장점 호스트 아래가 아니므로 바뀌지 않습니다.
+- 확장점의 기본 내용(`default`, 주입이 없을 때 그려지는 레이아웃 쪽 노드)도 호스트 아래에서 그려지므로 같은 규칙이 적용됩니다. 예: 첨부 업로더 확장점 기본 내용의 `pc_image_uploader` 는 DOM 에서 `pc_image_uploader__pc_image_uploader_slot` 입니다.
+
 ### JSON 스키마
 
 | 필드 | 필수 | 타입 | 설명 |
@@ -764,12 +777,12 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 ```html
 <extension extension-point="admin_user_list_filters" mode="append" priority="200">
   <div data-ref="ext_vendor_point_filter_row" class="vendormodule:flex vendormodule:flex-col vendormodule:gap-2">
-    <responsive on="768-" class="vendormodule:flex vendormodule:flex-row vendormodule:items-center vendormodule:gap-2"/>
+    <responsive on="768-" class-merge="vendormodule:flex-row vendormodule:items-center"/>
     <permissions>
       <permission>vendor-module.points.read</permission>
     </permissions>
     <span class="vendormodule:block vendormodule:mb-2 vendormodule:w-32 vendormodule:text-sm vendormodule:text-gray-600 vendormodule:dark:text-gray-400 vendormodule:shrink-0">
-      <responsive on="768-" class="vendormodule:block vendormodule:mb-0 vendormodule:w-32 vendormodule:text-sm vendormodule:text-gray-600 vendormodule:dark:text-gray-400 vendormodule:shrink-0"/>
+      <responsive on="768-" class-merge="vendormodule:mb-0"/>
       $t:vendor-module.admin.user_filter.points
     </span>
     <input type="number" name="vendorPointMin" class="vendor-module-input vendormodule:w-32" value="{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('vendor-module.point_min=')) || '').slice('vendor-module.point_min='.length)}}">
@@ -785,7 +798,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 </extension>
 ```
 
-- 클래스는 모두 이 모듈의 앞글자를 붙여 모듈 자기 CSS 로 싣는다 — 이 예는 `assets.css.namespace` 를 `vendor-module` 로 선언한 경우로, 접두 빌드 클래스는 `vendormodule:…`, 손으로 쓴 의미 클래스는 `vendor-module-input` 이다. 템플릿의 `input` 같은 의미 클래스나 앞글자 없는 Tailwind 클래스는 그 템플릿 CSS 에 있을 때만 그려진다([확장 CSS 자기 공급 규약](module-assets.md#확장-css-자기-공급-규약)). 화면 폭에 따른 배치는 Tailwind 반응형 접두(`md:flex-row` 등) 대신 `<responsive on="768-">` 구간에 그 폭의 클래스 전체를 둔다([반응형 레이아웃](../frontend/responsive-layout.md)). 관리자 템플릿의 필터 행 클래스(`filter-row`·`filter-field-label`)는 그 템플릿 CSS 에만 있어, 다른 관리자 템플릿에 주입되면 행 배치가 무너진다.
+- 클래스는 모두 이 모듈의 앞글자를 붙여 모듈 자기 CSS 로 싣는다 — 이 예는 `assets.css.namespace` 를 `vendor-module` 로 선언한 경우로, 접두 빌드 클래스는 `vendormodule:…`, 손으로 쓴 의미 클래스는 `vendor-module-input` 이다. 템플릿의 `input` 같은 의미 클래스나 앞글자 없는 Tailwind 클래스는 그 템플릿 CSS 에 있을 때만 그려진다([확장 CSS 자기 공급 규약](module-assets.md#확장-css-자기-공급-규약)). 화면 폭에 따른 배치는 Tailwind 반응형 접두(`md:flex-row` 등) 대신 `<responsive on="768-" class-merge="…">` 구간에 그 폭에서 바뀌는 클래스만 둔다(코어 7.2.1, [바뀐 클래스만 덧붙이기](../frontend/responsive-layout.md#바뀐-클래스만-덧붙이기-class-merge)). 반복되는 흐린 글자, 버튼, 카드 묶음은 의미 클래스의 확장 사본으로 쓴다([레이아웃 의미 클래스](../frontend/semantic-classes.md)). 관리자 템플릿의 필터 행 클래스(`filter-row`·`filter-field-label`)는 그 템플릿 CSS 에만 있어, 다른 관리자 템플릿에 주입되면 행 배치가 무너진다.
 - 값 조립 핸들러는 모듈이 자기 네임스페이스로 등록한다(`vendor-module.setUserFilterExt` — 같은 키 교체, 빈 값 제거, `{확장id}.{키}={값}` 원소). 관리자 템플릿의 `setUserFilterExt` 는 그 템플릿 화면용이라 다른 관리자 템플릿에는 없다 — 조각이 부르면 그 템플릿에서 값이 검색에 실리지 않는다. 구현 예: `modules/_bundled/sirsoft-ecommerce/resources/js/handlers/userListFilterExtHandlers.ts`.
 - 표시값은 같은 배열(`_local.userFilterExtraQuery`)에서 되읽는다 — 새로고침·뒤로가기에서 URL 의 `ext_filters[]` 로 복원된다.
 - 코어의 필터 초기화는 이 배열을 비운다.

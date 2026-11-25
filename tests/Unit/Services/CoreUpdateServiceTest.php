@@ -11,6 +11,7 @@ use App\Services\StorageLeftoverPruneService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+use Tests\Concerns\BuildsZipFixtures;
 use Tests\TestCase;
 
 /**
@@ -27,6 +28,8 @@ use Tests\TestCase;
  */
 class CoreUpdateServiceTest extends TestCase
 {
+    use BuildsZipFixtures;
+
     private CoreUpdateService $service;
 
     /**
@@ -1692,6 +1695,46 @@ MD;
         $result = $this->service->extractZipToPending($zipPath);
         $this->assertStringEndsWith('g7-core-abc123', $result);
         $this->assertTrue(File::exists($result.DIRECTORY_SEPARATOR.'composer.json'));
+    }
+
+    /**
+     * GitHub 모양(감싼 폴더의 폴더 항목이 맨 앞)에 Mac 재압축 부속 폴더(`__MACOSX/`)까지 붙은 ZIP 도 감싼 폴더를 벗긴 루트를 돌려주는지 확인합니다.
+     *
+     * 부속 폴더가 함께 풀리면 해제 결과 최상위가 폴더 둘이 되어 래퍼 판정이 실패하고, `core:update --zip` 이
+     * 「잘못된 패키지」로 멈췄다(#971).
+     *
+     * @effects extractZipToPending_returns_package_root_for_flat_and_wrapped_zip
+     *
+     * @return void 반환값 없음
+     */
+    public function test_extract_zip_to_pending_unwraps_github_and_mac_shaped_zip(): void
+    {
+        if (! class_exists(\ZipArchive::class)) {
+            $this->markTestSkipped('ZipArchive not available');
+        }
+
+        $pendingBase = storage_path('test_core_zip_pending_mac_'.uniqid());
+        $this->tempDirs[] = $pendingBase;
+        File::ensureDirectoryExists($pendingBase);
+        config(['app.update.pending_path' => $pendingBase]);
+
+        $zipDir = storage_path('test_core_zip_mac_src_'.uniqid());
+        $this->tempDirs[] = $zipDir;
+        File::ensureDirectoryExists($zipDir);
+        $zipPath = $zipDir.DIRECTORY_SEPARATOR.'g7-7.2.0.zip';
+
+        $this->makeZipFixture($zipPath, [
+            'composer.json' => '{"name":"g7/core"}',
+            'app/.gitkeep' => '',
+            'config/app.php' => "<?php
+return ['version' => '7.2.0'];",
+        ], ['wrapper' => 'g7-7.2.0', 'directoryEntries' => true, 'macosx' => true]);
+
+        $result = $this->service->extractZipToPending($zipPath);
+
+        $this->assertStringEndsWith('g7-7.2.0', $result);
+        $this->assertTrue(File::exists($result.DIRECTORY_SEPARATOR.'composer.json'));
+        $this->assertDirectoryDoesNotExist(dirname($result).DIRECTORY_SEPARATOR.'__MACOSX', '부속 폴더가 함께 풀렸다');
     }
 
     /**

@@ -738,7 +738,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _modal_notification_identity_definition_delete.g7.html (알림 설정 > 본인인증 — 정책별 문구 삭제)
 │           ├── _modal_notification_channel_off_confirm.g7.html (알림 설정 [저장] — 메일 채널 끄기 확인)
 │           ├── _modal_identity_policy_delete.g7.html
-│           ├── _modal_identity_policy_form.g7.html
+│           ├── _modal_identity_policy_form.g7.html (본인인증 정책 창 — 사용자 지정 대상은 확장 지점 목록, 미선언 현재 대상은 「연결된 확장 지점 없음 (키)」)
 │           └── _modal_notification_definition_reset.g7.html
 │
 ├── 모듈 관리

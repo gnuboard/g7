@@ -37,6 +37,23 @@ import quantityModal from '../../../layouts/admin/partials/admin_ecommerce_claim
 import activityLog from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_activity_log.json';
 import adminRoutes from '../../../routes/admin.json';
 
+/** 확장 생성 CSS — 의미 클래스 사본(`ecommerce-btn` 등)의 실제 정의를 확인한다 (#399 R-1) */
+const EXT_CSS = fs.readFileSync(path.resolve(__dirname, '../../../css/g7-extension.generated.css'), 'utf8');
+
+/**
+ * 꺼진 단추 모양 — 인라인 `disabled:opacity-50 disabled:cursor-not-allowed` 는 `ecommerce-btn` 과 함께 쓸 때
+ * 뺐다(#399 R-1 P7, `.ecommerce-btn:disabled` 가 이미 준다). 그 정의를 생성 CSS 에서 확인한다.
+ */
+function expectDisabledLook(className: unknown): void {
+  const value = String(className ?? '');
+  if (value.split(/\s+/).includes('ecommerce-btn')) {
+    expect(EXT_CSS).toMatch(/\.ecommerce-btn:disabled[^{]*\{[^}]*cursor:\s*not-allowed[^}]*opacity:\s*\.5/);
+    return;
+  }
+  expect(value).toContain('disabled:opacity-50');
+  expect(value).toContain('disabled:cursor-not-allowed');
+}
+
 const MODULE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
 type Node = Record<string, any>;
@@ -1707,7 +1724,7 @@ describe('#599 상품 행 송장 — 진행 방식(선교환) 줄', () => {
 
     expect(setAdvance.if).toBe('{{claim?.data?.claim?.is_advance_exchange !== true}}');
     expect(String(setAdvance.props.disabled)).toContain('exchange_mode_abilities?.can_set_advance !== true');
-    expect(String(setAdvance.props.className)).toContain('disabled:opacity-50');
+    expectDisabledLook(setAdvance.props.className);
     expect(blocked.if).toBe('{{!!claim?.data?.exchange_mode_abilities?.blocked_reason}}');
   });
 });

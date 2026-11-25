@@ -235,7 +235,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "fa-solid fa-search",
-                                                    "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"
+                                                    "className": "absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm pointer-events-none"
                                                 }
                                             },
                                             {
@@ -471,7 +471,7 @@
                                                             "name": "Span",
                                                             "if": "{{!row.user && !row.user_id}}",
                                                             "props": {
-                                                                "className": "text-gray-500 dark:text-gray-400"
+                                                                "className": "text-muted"
                                                             },
                                                             "text": "-"
                                                         },
@@ -542,7 +542,7 @@
                                                                             "name": "Icon",
                                                                             "props": {
                                                                                 "name": "fa-regular fa-user",
-                                                                                "className": "text-gray-500 dark:text-gray-400 flex-shrink-0",
+                                                                                "className": "text-muted flex-shrink-0",
                                                                                 "aria-hidden": "true"
                                                                             }
                                                                         },
@@ -701,6 +701,7 @@
                     },
                     {
                         "comment": "확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API).",
+                        "id": "ext_analytics_visitors_widgets",
                         "type": "extension_point",
                         "name": "analytics_visitors_widgets",
                         "props": {

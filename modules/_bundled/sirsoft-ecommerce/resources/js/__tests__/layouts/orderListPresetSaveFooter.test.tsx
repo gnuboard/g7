@@ -55,10 +55,12 @@ function setupRegistry(): ComponentRegistry {
   return registry;
 }
 
+/** 저장 단추는 관리자 주 버튼 사본 의미 클래스(`ecommerce-btn-primary`)를 쓴다 — 파랑 인라인에서 바뀌었다(#399 R-1 P3, D2) */
+const isPrimary = (b: Element) => b.className.split(/\s+/).includes('ecommerce-btn-primary');
 const saveButton = () =>
-  Array.from(document.querySelectorAll('.modal-footer-bar button')).find((b) => b.className.includes('bg-blue-600')) as HTMLButtonElement | undefined;
+  Array.from(document.querySelectorAll('.modal-footer-bar button')).find(isPrimary) as HTMLButtonElement | undefined;
 const cancelButton = () =>
-  Array.from(document.querySelectorAll('.modal-footer-bar button')).find((b) => !b.className.includes('bg-blue-600')) as HTMLButtonElement | undefined;
+  Array.from(document.querySelectorAll('.modal-footer-bar button')).find((b) => !isPrimary(b)) as HTMLButtonElement | undefined;
 
 describe('주문 목록 프리셋 저장 창 — 고정 하단 (#869 P1)', () => {
   let testUtils: ReturnType<typeof createLayoutTest> | null = null;

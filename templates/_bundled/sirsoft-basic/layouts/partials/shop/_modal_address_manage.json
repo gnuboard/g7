@@ -109,7 +109,7 @@
                             "name": "Div",
                             "if": "{{!(userAddresses?.data?.addresses?.data ?? []).length}}",
                             "props": {
-                                "className": "text-center py-8 text-gray-500 dark:text-gray-400"
+                                "className": "text-center py-8 text-muted"
                             },
                             "children": [
                                 {
@@ -250,7 +250,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-gray-500 dark:text-gray-400 mr-1"
+                                                                "className": "text-muted mr-1"
                                                             },
                                                             "text": "({{addr.zipcode}})"
                                                         },
@@ -535,7 +535,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        "className": "form-label"
                                     },
                                     "children": [
                                         {
@@ -598,7 +598,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        "className": "form-label"
                                     },
                                     "text": "$t:shop.checkout.shipping_country"
                                 },
@@ -650,7 +650,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                "className": "form-label"
                                             },
                                             "children": [
                                                 {
@@ -712,7 +712,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                "className": "form-label"
                                             },
                                             "children": [
                                                 {
@@ -777,7 +777,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        "className": "form-label"
                                     },
                                     "children": [
                                         {
@@ -1042,7 +1042,7 @@
                                     "name": "Span",
                                     "if": "{{_global.checkoutAddressModal?.errors?.address_line_1 || _global.checkoutAddressModal?.errors?.intl_city || _global.checkoutAddressModal?.errors?.intl_postal_code}}",
                                     "props": {
-                                        "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
+                                        "className": "form-error"
                                     },
                                     "text": "{{_global.checkoutAddressModal?.errors?.address_line_1?.[0] ?? _global.checkoutAddressModal?.errors?.intl_city?.[0] ?? _global.checkoutAddressModal?.errors?.intl_postal_code?.[0] ?? ''}}"
                                 }
@@ -1058,7 +1058,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        "className": "form-label"
                                     },
                                     "text": "$t:mypage.addresses.form.detail_address"
                                 },
@@ -1248,7 +1248,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+                                        "className": "btn btn-primary flex gap-2",
                                         "disabled": "{{_global.checkoutAddressModal?.isSaving ?? false}}"
                                     },
                                     "children": [

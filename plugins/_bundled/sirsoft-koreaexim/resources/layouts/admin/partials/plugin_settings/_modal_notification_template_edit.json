@@ -454,7 +454,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "koreaexim:text-sm koreaexim:text-gray-500 koreaexim:dark:text-gray-400"
+                                        "className": "koreaexim:text-sm koreaexim-text-muted"
                                     },
                                     "text": "·"
                                 },
@@ -500,6 +500,7 @@
                                     },
                                     "children": [
                                         {
+                                            "comment": "audit:allow layout-inline-semantic-duplicate reason: 환율 알림 템플릿 편집 창의 수신자 규칙 한 건 상자, 보라 테두리와 여백 p-3 space-y-2 로 카드와 다름",
                                             "type": "basic",
                                             "name": "Div",
                                             "iteration": {
@@ -941,7 +942,7 @@
                                                             "name": "P",
                                                             "if": "{{rcpt.type === 'site_admin_email'}}",
                                                             "props": {
-                                                                "className": "koreaexim:text-xs koreaexim:text-gray-500 koreaexim:dark:text-gray-400"
+                                                                "className": "koreaexim:text-xs koreaexim-text-muted"
                                                             },
                                                             "text": "$t:admin.settings.notification_definitions.recipients.site_admin_email_hint"
                                                         },
@@ -1048,7 +1049,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{(_global.koreaexim_notification_template_form_modal?.editLang ?? $locale) === loc ? 'koreaexim:border-b-2 koreaexim:border-indigo-500 koreaexim:dark:border-indigo-400 koreaexim:text-indigo-600 koreaexim:dark:text-indigo-400' : 'koreaexim:text-gray-500 koreaexim:dark:text-gray-400 koreaexim:hover:text-gray-700 koreaexim:dark:hover:text-gray-300'}} koreaexim:px-4 koreaexim:py-2 koreaexim:text-sm koreaexim:font-medium koreaexim:focus:outline-none"
+                                        "className": "{{(_global.koreaexim_notification_template_form_modal?.editLang ?? $locale) === loc ? 'koreaexim:border-b-2 koreaexim:border-indigo-500 koreaexim:dark:border-indigo-400 koreaexim:text-indigo-600 koreaexim:dark:text-indigo-400' : 'koreaexim-text-muted koreaexim:hover:text-gray-700 koreaexim:dark:hover:text-gray-300'}} koreaexim:px-4 koreaexim:py-2 koreaexim:text-sm koreaexim:font-medium koreaexim:focus:outline-none"
                                     },
                                     "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
                                 }
@@ -1105,8 +1106,7 @@
                                             ],
                                             "props": {
                                                 "type": "text",
-                                                "value": "{{_global.koreaexim_notification_template_form_modal?.template?.subject?.[_global.koreaexim_notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
-                                                "className": ""
+                                                "value": "{{_global.koreaexim_notification_template_form_modal?.template?.subject?.[_global.koreaexim_notification_template_form_modal?.editLang ?? $locale] ?? ''}}"
                                             }
                                         }
                                     ]

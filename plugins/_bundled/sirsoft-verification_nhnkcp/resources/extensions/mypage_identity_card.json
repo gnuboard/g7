@@ -26,9 +26,7 @@
                     "if": "{{nhnkcpRecord?.data}}",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "verificationnhnkcp:bg-white verificationnhnkcp:dark:bg-gray-800 verificationnhnkcp:rounded-lg verificationnhnkcp:shadow-sm verificationnhnkcp:border verificationnhnkcp:border-gray-200 verificationnhnkcp:dark:border-gray-700 verificationnhnkcp:p-4"
-                            }
+                            "classMerge": "verificationnhnkcp:p-4"
                         }
                     },
                     "props": {
@@ -66,9 +64,7 @@
                             "name": "Div",
                             "responsive": {
                                 "640-": {
-                                    "props": {
-                                        "className": "verificationnhnkcp:grid verificationnhnkcp:grid-cols-2 verificationnhnkcp:gap-y-3 verificationnhnkcp:gap-x-6 verificationnhnkcp:text-sm"
-                                    }
+                                    "classMerge": "verificationnhnkcp:grid-cols-2"
                                 }
                             },
                             "props": {
@@ -86,7 +82,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "verificationnhnkcp:text-gray-500 verificationnhnkcp:dark:text-gray-400"
+                                                "className": "verification-nhnkcp-text-muted"
                                             },
                                             "text": "$t:sirsoft-verification_nhnkcp.card.method"
                                         },
@@ -111,7 +107,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "verificationnhnkcp:text-gray-500 verificationnhnkcp:dark:text-gray-400"
+                                                "className": "verification-nhnkcp-text-muted"
                                             },
                                             "text": "$t:sirsoft-verification_nhnkcp.card.verified_at"
                                         },
@@ -136,7 +132,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "verificationnhnkcp:text-gray-500 verificationnhnkcp:dark:text-gray-400"
+                                                "className": "verification-nhnkcp-text-muted"
                                             },
                                             "text": "$t:sirsoft-verification_nhnkcp.card.name"
                                         },
@@ -161,7 +157,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "verificationnhnkcp:text-gray-500 verificationnhnkcp:dark:text-gray-400"
+                                                "className": "verification-nhnkcp-text-muted"
                                             },
                                             "text": "$t:sirsoft-verification_nhnkcp.card.birthday"
                                         },
@@ -180,7 +176,7 @@
                                             "name": "Span",
                                             "if": "{{!nhnkcpRecord?.data?.is_adult_known}}",
                                             "props": {
-                                                "className": "verificationnhnkcp:text-gray-500 verificationnhnkcp:dark:text-gray-400"
+                                                "className": "verification-nhnkcp-text-muted"
                                             },
                                             "text": "$t:sirsoft-verification_nhnkcp.card.not_provided"
                                         }
@@ -197,7 +193,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "verificationnhnkcp:text-gray-500 verificationnhnkcp:dark:text-gray-400"
+                                                "className": "verification-nhnkcp-text-muted"
                                             },
                                             "text": "$t:sirsoft-verification_nhnkcp.card.phone"
                                         },
@@ -222,7 +218,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "verificationnhnkcp:text-gray-500 verificationnhnkcp:dark:text-gray-400"
+                                                "className": "verification-nhnkcp-text-muted"
                                             },
                                             "text": "$t:sirsoft-verification_nhnkcp.card.is_adult.label"
                                         },
@@ -266,7 +262,7 @@
                                             "name": "Span",
                                             "if": "{{!nhnkcpRecord?.data?.is_adult_known}}",
                                             "props": {
-                                                "className": "verificationnhnkcp:text-gray-500 verificationnhnkcp:dark:text-gray-400"
+                                                "className": "verification-nhnkcp-text-muted"
                                             },
                                             "text": "$t:sirsoft-verification_nhnkcp.card.is_adult.unknown"
                                         }
@@ -283,9 +279,7 @@
                     "if": "{{nhnkcpRecord !== undefined && nhnkcpRecord !== null && (!nhnkcpRecord?.data)}}",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "verificationnhnkcp:bg-white verificationnhnkcp:dark:bg-gray-800 verificationnhnkcp:rounded-lg verificationnhnkcp:shadow-sm verificationnhnkcp:border verificationnhnkcp:border-gray-200 verificationnhnkcp:dark:border-gray-700 verificationnhnkcp:p-4"
-                            }
+                            "classMerge": "verificationnhnkcp:p-4"
                         }
                     },
                     "props": {
@@ -334,7 +328,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "verificationnhnkcp:text-xs verificationnhnkcp:text-gray-500 verificationnhnkcp:dark:text-gray-400"
+                                                "className": "verificationnhnkcp:text-xs verification-nhnkcp-text-muted"
                                             },
                                             "text": "$t:sirsoft-verification_nhnkcp.card.pending.hint"
                                         }
@@ -352,9 +346,7 @@
                     "if": "{{nhnkcpRecord === null}}",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "verificationnhnkcp:bg-white verificationnhnkcp:dark:bg-gray-800 verificationnhnkcp:rounded-lg verificationnhnkcp:shadow-sm verificationnhnkcp:border verificationnhnkcp:border-gray-200 verificationnhnkcp:dark:border-gray-700 verificationnhnkcp:p-4"
-                            }
+                            "classMerge": "verificationnhnkcp:p-4"
                         }
                     },
                     "props": {

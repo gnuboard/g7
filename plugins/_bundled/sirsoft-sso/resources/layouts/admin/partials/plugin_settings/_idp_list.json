@@ -361,7 +361,7 @@
             "name": "P",
             "if": "{{!ssoIdps?.data}}",
             "props": {
-                "className": "sso:text-sm sso:text-gray-500 sso:dark:text-gray-400"
+                "className": "sso:text-sm sso-text-muted"
             },
             "text": "$t:common.loading"
         },
@@ -411,7 +411,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
+                                            "className": "sso:text-xs sso-text-muted"
                                         },
                                         "text": "{{row.key}}"
                                     }
@@ -528,7 +528,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "{{row.last_error_at ? 'sso:text-red-700 sso:dark:text-red-300' : 'sso:text-gray-500 sso:dark:text-gray-400'}}"
+                                            "className": "{{row.last_error_at ? 'sso:text-red-700 sso:dark:text-red-300' : 'sso-text-muted'}}"
                                         },
                                         "text": "{{$t('sirsoft-sso.admin.settings.idp.last_error')}}: {{row.last_error_at | datetime | default('-')}}{{row.last_error_at && row.last_error_code ? ' (' + row.last_error_code + ')' : ''}}"
                                     }

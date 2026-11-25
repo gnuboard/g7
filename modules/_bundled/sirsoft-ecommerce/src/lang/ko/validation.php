@@ -24,6 +24,7 @@ return [
 
     // 커스텀 검증 메시지
     'settings' => [
+        'birthday_field_invalid' => '생일로 쓸 회원 항목은 날짜 유형 회원 항목 중에서 골라야 합니다.',
         'key_required' => '설정 키는 필수입니다.',
         'value_present' => '설정 값은 필수입니다.',
         'key_unknown' => '저장할 수 없는 설정 키입니다: :key',
@@ -563,6 +564,9 @@ return [
 
     // 쿠폰 검증 메시지
     'coupon' => [
+        'auto_condition_invalid' => '자동발급은 회원가입·첫구매·생일 중 하나를 골라야 합니다.',
+        'manual_condition_required' => '직접발급·다운로드 쿠폰의 발급조건은 수동발급이어야 합니다.',
+        'first_purchase_trigger_required' => '첫구매 쿠폰은 발급 시점을 골라야 합니다.',
         'name' => [
             'required' => '쿠폰명을 입력해주세요.',
         ],
@@ -2019,13 +2023,6 @@ return [
             ],
             'free_shipping_enabled' => [
                 'boolean' => '무료배송 사용여부는 참/거짓 값이어야 합니다.',
-            ],
-            'address_validation_enabled' => [
-                'boolean' => '주소검증 사용여부는 참/거짓 값이어야 합니다.',
-            ],
-            'address_api_provider' => [
-                'string' => '주소검증 API 제공자는 문자열이어야 합니다.',
-                'max' => '주소검증 API 제공자는 최대 50자까지 입력 가능합니다.',
             ],
             'types' => [
                 'duplicate_code' => '중복된 배송유형 코드가 있습니다.',

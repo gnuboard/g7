@@ -74,7 +74,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "{{account.is_default ? 'circle-dot' : 'circle'}}",
-                                                "className": "{{account.is_default ? 'ecommerce:text-blue-600 ecommerce:dark:text-blue-400' : 'ecommerce:text-gray-500 ecommerce:dark:text-gray-400'}}"
+                                                "className": "{{account.is_default ? 'ecommerce:text-blue-600 ecommerce:dark:text-blue-400' : 'ecommerce-text-muted'}}"
                                             }
                                         }
                                     ]

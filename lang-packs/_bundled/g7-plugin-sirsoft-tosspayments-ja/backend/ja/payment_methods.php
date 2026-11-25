@@ -37,4 +37,16 @@ return [
         'name' => 'Samsung Pay (Toss Payments)',
         'description' => 'Samsung Pay簡便決済 — Toss Paymentsを通じて処理',
     ],
+    'toss_applepay' => [
+        'name' => 'Apple Pay (Toss Payments)',
+        'description' => 'Apple Pay簡便決済 — Toss Paymentsを通じて処理 · iPhone・iPadでのみ表示されます',
+    ],
+    'toss_lpay' => [
+        'name' => 'L.'."\u{200B}".'pay (Toss Payments)',
+        'description' => 'L.'."\u{200B}".'pay簡便決済 — Toss Paymentsを通じて処理',
+    ],
+    'toss_ssgpay' => [
+        'name' => 'SSG Pay (Toss Payments)',
+        'description' => 'SSG Pay簡便決済 — Toss Paymentsを通じて処理',
+    ],
 ];

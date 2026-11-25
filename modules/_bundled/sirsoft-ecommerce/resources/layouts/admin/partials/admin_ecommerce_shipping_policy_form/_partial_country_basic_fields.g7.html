@@ -23,7 +23,7 @@
               </on>
             </select>
             <span data-if="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method']}}" class="ecommerce-form-error-xs ecommerce:mt-0.5">{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method']?.[0]}}</span>
-            <div data-if="{{_computed.activeCountrySetting?.shipping_method === 'custom'}}" class="">
+            <div data-if="{{_computed.activeCountrySetting?.shipping_method === 'custom'}}">
               <label class="ecommerce-text-secondary ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce:mb-1">$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name</label>
               <multilingual-input data-type="composite" ariaLabel="$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name" value="{{_computed.activeCountrySetting?.custom_shipping_name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name_placeholder" error="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.custom_shipping_name.' + ($locale || 'ko')]?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
                 <on type="change">

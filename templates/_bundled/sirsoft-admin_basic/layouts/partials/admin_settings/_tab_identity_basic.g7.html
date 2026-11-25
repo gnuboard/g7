@@ -7,7 +7,7 @@
       <h3 class="card-title">$t:admin.settings.identity.basic.title</h3>
       <div class="card-description">$t:admin.settings.identity.basic.desc</div>
       <div class="row-stack">
-        <div data-ref="field_identity_default_provider" class="">
+        <div data-ref="field_identity_default_provider">
           <label class="form-label">$t:admin.settings.identity.basic.default_provider</label>
           <select name="identity.default_provider" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['identity.default_provider'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}" options="{{(identityProviders?.data ?? []).map(function(p) { return { value: p.id, label: p.label }; })}}">
             <responsive on="768-" class="{{_local.errors?.['identity.default_provider'] ? 'w-72 px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'w-72 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"/>
@@ -15,7 +15,7 @@
           <span data-if="{{_local.errors?.['identity.default_provider']}}" class="form-error">{{_local.errors?.['identity.default_provider']?.[0] ?? ''}}</span>
           <p class="text-hint mt-1">$t:admin.settings.identity.basic.default_provider_desc</p>
         </div>
-        <div data-ref="field_identity_ttl" class="">
+        <div data-ref="field_identity_ttl">
           <label class="form-label">
             <span>$t:admin.settings.identity.basic.challenge_ttl_minutes</span>
             <span class="text-red-600 dark:text-red-400 ml-1">*</span>
@@ -26,7 +26,7 @@
           <span data-if="{{_local.errors?.['identity.challenge_ttl_minutes']}}" class="form-error">{{_local.errors?.['identity.challenge_ttl_minutes']?.[0] ?? ''}}</span>
           <p class="text-hint mt-1">$t:admin.settings.identity.basic.challenge_ttl_desc</p>
         </div>
-        <div data-ref="field_identity_max_attempts" class="">
+        <div data-ref="field_identity_max_attempts">
           <label class="form-label">
             <span>$t:admin.settings.identity.basic.max_attempts</span>
             <span class="text-red-600 dark:text-red-400 ml-1">*</span>

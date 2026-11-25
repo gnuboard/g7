@@ -41,14 +41,14 @@
             <icon name="fa-regular fa-user" class="ecommerce:text-gray-400 ecommerce:dark:text-gray-500 ecommerce:flex-shrink-0"/>
             <div class="ecommerce:flex ecommerce:flex-col ecommerce:min-w-0">
               <span class="ecommerce-text-body ecommerce:font-medium ecommerce:truncate">{{row.requester?.name ?? '-'}}</span>
-              <span data-if="{{row.requester?.email}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:truncate">{{row.requester?.email}}</span>
+              <span data-if="{{row.requester?.email}}" class="ecommerce:text-xs ecommerce-text-muted ecommerce:truncate">{{row.requester?.email}}</span>
             </div>
           </div>
         </action-menu>
         <!-- 회원이 탈퇴·삭제돼 연결이 끊긴 요청자는 요청 때 남긴 이름만 글자로 보인다 -->
         <div data-if="{{!row.requester?.uuid}}" class="ecommerce:flex ecommerce:flex-col ecommerce:min-w-0">
           <span class="ecommerce-text-body ecommerce:truncate">{{row.requester?.name ?? '-'}}</span>
-          <span data-if="{{row.requester?.email}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:truncate">{{row.requester?.email}}</span>
+          <span data-if="{{row.requester?.email}}" class="ecommerce:text-xs ecommerce-text-muted ecommerce:truncate">{{row.requester?.email}}</span>
         </div>
       </cell>
     </column>
@@ -78,7 +78,7 @@
           </button>
           <span data-if="{{!(row.abilities?.can_download === true &amp;&amp; row.file_name)}}" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:break-all ecommerce-break-all">{{row.file_name ?? $t('sirsoft-ecommerce.admin.export.table.file_waiting')}}</span>
           <span data-if="{{row.contains_personal_data}}" class="ecommerce:inline-flex ecommerce:items-center ecommerce:px-1.5 ecommerce:py-0.5 ecommerce:rounded ecommerce:text-xs ecommerce:bg-red-100 ecommerce:text-red-800 ecommerce:dark:bg-red-900/30 ecommerce:dark:text-red-300">$t:sirsoft-ecommerce.admin.export.table.personal_badge</span>
-          <button data-if="{{row.abilities?.can_view_downloads === true}}" type="button" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:hover:underline ecommerce:whitespace-nowrap">
+          <button data-if="{{row.abilities?.can_view_downloads === true}}" type="button" class="ecommerce:text-xs ecommerce-text-muted ecommerce:hover:underline ecommerce:whitespace-nowrap">
             <on type="click">
               <!-- 다운로드 횟수 — 누르면 이 작업의 다운로드 이력 창을 연다(창이 열릴 때 이력을 받는다. 서버가 「이력 조회」 활동 로그를 남긴다). -->
               <sequence>
@@ -108,9 +108,9 @@
                 </prop>
               </div>
             </div>
-            <span class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{row.progress_percent ?? 0}}%</span>
+            <span class="ecommerce:text-xs ecommerce-text-muted">{{row.progress_percent ?? 0}}%</span>
           </div>
-          <span data-if="{{row.status === 'completed'}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:defer:sirsoft-ecommerce.admin.export.table.rows|count={{(row.processed_rows ?? 0).toLocaleString()}}</span>
+          <span data-if="{{row.status === 'completed'}}" class="ecommerce:text-xs ecommerce-text-muted">$t:defer:sirsoft-ecommerce.admin.export.table.rows|count={{(row.processed_rows ?? 0).toLocaleString()}}</span>
           <span data-if="{{row.status === 'failed' &amp;&amp; row.error_message}}" class="ecommerce:text-xs ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:whitespace-normal">{{row.error_message}}</span>
         </div>
       </cell>
@@ -124,24 +124,24 @@
     </prop>
     <sub-row>
       <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-x-6 ecommerce:gap-y-1.5">
-        <span class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.sub_row.scope</span><span>{{row.summary?.scope}}</span></span>
+        <span class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.export.sub_row.scope</span><span>{{row.summary?.scope}}</span></span>
         <span data-if="{{row.summary?.selected_count > 0}}">$t:defer:sirsoft-ecommerce.admin.export.sub_row.selected_count|count={{row.summary?.selected_count}}</span>
-        <span class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.sub_row.period</span><span>{{row.summary?.period}}</span></span>
-        <span class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.sub_row.row_unit</span><span>{{row.summary?.row_unit}}</span></span>
-        <span class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.sub_row.fields</span><span>$t:defer:sirsoft-ecommerce.admin.export.sub_row.field_count|count={{row.summary?.field_count ?? 0}}</span></span>
-        <span class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.sub_row.locale_mode</span><span>{{row.summary?.locale_mode}}</span></span>
-        <span class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.sub_row.totals</span><span>{{row.summary?.include_totals ? $t('sirsoft-ecommerce.admin.export.sub_row.yes') : $t('sirsoft-ecommerce.admin.export.sub_row.no')}}</span></span>
-        <span data-if="{{row.cutoff_at}}" class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.sub_row.cutoff_at</span><span>{{row.cutoff_at}}</span></span>
-        <span data-if="{{row.completed_at}}" class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.sub_row.completed_at</span><span>{{row.completed_at}}</span></span>
-        <span data-if="{{row.file_size_label}}" class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.sub_row.file_size</span><span>{{row.file_size_label}}</span></span>
-        <span data-if="{{row.expires_at}}" class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.sub_row.expires_at</span><span>{{row.expires_at}}</span></span>
+        <span class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.export.sub_row.period</span><span>{{row.summary?.period}}</span></span>
+        <span class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.export.sub_row.row_unit</span><span>{{row.summary?.row_unit}}</span></span>
+        <span class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.export.sub_row.fields</span><span>$t:defer:sirsoft-ecommerce.admin.export.sub_row.field_count|count={{row.summary?.field_count ?? 0}}</span></span>
+        <span class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.export.sub_row.locale_mode</span><span>{{row.summary?.locale_mode}}</span></span>
+        <span class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.export.sub_row.totals</span><span>{{row.summary?.include_totals ? $t('sirsoft-ecommerce.admin.export.sub_row.yes') : $t('sirsoft-ecommerce.admin.export.sub_row.no')}}</span></span>
+        <span data-if="{{row.cutoff_at}}" class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.export.sub_row.cutoff_at</span><span>{{row.cutoff_at}}</span></span>
+        <span data-if="{{row.completed_at}}" class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.export.sub_row.completed_at</span><span>{{row.completed_at}}</span></span>
+        <span data-if="{{row.file_size_label}}" class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.export.sub_row.file_size</span><span>{{row.file_size_label}}</span></span>
+        <span data-if="{{row.expires_at}}" class="ecommerce:flex ecommerce:gap-1"><span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.export.sub_row.expires_at</span><span>{{row.expires_at}}</span></span>
       </div>
-      <div data-if="{{row.reason}}" class="ecommerce:mt-2 ecommerce:flex ecommerce:gap-1"><span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:shrink-0">$t:sirsoft-ecommerce.admin.export.sub_row.reason</span><span class="ecommerce:whitespace-pre-line ecommerce:break-all ecommerce-break-all">{{row.reason}}</span></div>
+      <div data-if="{{row.reason}}" class="ecommerce:mt-2 ecommerce:flex ecommerce:gap-1"><span class="ecommerce-text-muted ecommerce:shrink-0">$t:sirsoft-ecommerce.admin.export.sub_row.reason</span><span class="ecommerce:whitespace-pre-line ecommerce:break-all ecommerce-break-all">{{row.reason}}</span></div>
       <div data-if="{{(row.warnings ?? []).length > 0}}" class="ecommerce:mt-2 ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap">
-        <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.sub_row.warnings</span>
+        <span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.export.sub_row.warnings</span>
         <span data-each="warning in row.warnings ?? []" class="ecommerce:inline-flex ecommerce:items-center ecommerce:px-1.5 ecommerce:py-0.5 ecommerce:rounded ecommerce:text-xs ecommerce:bg-yellow-100 ecommerce:text-yellow-800 ecommerce:dark:bg-yellow-900/30 ecommerce:dark:text-yellow-300">{{warning.label}}</span>
       </div>
-      <div data-if="{{row.error_message}}" class="ecommerce:mt-2 ecommerce:flex ecommerce:gap-1"><span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:shrink-0">$t:sirsoft-ecommerce.admin.export.sub_row.error</span><span class="ecommerce:text-red-600 ecommerce:dark:text-red-400">{{row.error_message}}</span></div>
+      <div data-if="{{row.error_message}}" class="ecommerce:mt-2 ecommerce:flex ecommerce:gap-1"><span class="ecommerce-text-muted ecommerce:shrink-0">$t:sirsoft-ecommerce.admin.export.sub_row.error</span><span class="ecommerce:text-red-600 ecommerce:dark:text-red-400">{{row.error_message}}</span></div>
     </sub-row>
     <on type="change" event="onSelectionChange">
       <!-- 체크한 작업 id 묶음 — 일괄 작업 줄과 확인 창이 함께 보므로 지역이 아니라 전역에 둔다. -->

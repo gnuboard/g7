@@ -2,9 +2,14 @@
 
 namespace App\Seo;
 
+use App\Extension\ModuleManager;
+use App\Extension\PluginManager;
 use App\Support\AssetUrl;
 use App\Support\SiteUrl;
+use App\Support\Style\ClassMerger;
+use App\Support\Style\ExtensionClassPrefixes;
 use App\Thumbnails\ThumbnailUrl;
+use Illuminate\Support\Facades\Log;
 
 class ComponentHtmlMapper
 {
@@ -83,6 +88,13 @@ class ComponentHtmlMapper
      * 템플릿 제공 컴포넌트 매핑 (seo-config.json의 component_map)
      */
     private array $componentMap = [];
+
+    /**
+     * 활성 확장 앞글자 목록 캐시 (classMerge 병합용, null 이면 아직 계산 전)
+     *
+     * @var list<string>|null
+     */
+    private ?array $extensionClassPrefixes = null;
 
     /**
      * 템플릿 제공 렌더 모드 정의 (seo-config.json의 render_modes)
@@ -325,6 +337,11 @@ class ComponentHtmlMapper
             $component = $this->resolveClassMap($component, $context, $evaluator);
         }
 
+        // responsive 구간 classMerge: classMap 까지 해석된 className 에 덧붙인다 (7.2.1, engine-v1.98.0 짝)
+        if (isset($component['__classMerge'])) {
+            $component = $this->applyResponsiveClassMerge($component, $context, $evaluator);
+        }
+
         $name = $component['name'] ?? '';
 
         // component_map에서 매핑 조회
@@ -467,13 +484,91 @@ class ComponentHtmlMapper
         if (isset($override['props'])) {
             $component['props'] = array_merge($component['props'] ?? [], $override['props']);
         }
-        foreach (['if', 'text', 'children', 'iteration'] as $key) {
+        // classMap: 구간 classMap 은 기본 classMap 을 대신한다 — 종전에는 무시돼 구간 클래스가 빠졌다 (7.2.1, engine-v1.98.0 짝)
+        foreach (['if', 'text', 'children', 'iteration', 'classMap'] as $key) {
             if (isset($override[$key])) {
                 $component[$key] = $override[$key];
             }
         }
 
+        // classMerge: 바인딩·classMap 해석이 끝난 className 에 바뀐 토큰만 덧붙인다(renderComponent 에서 적용)
+        if (isset($override['classMerge']) && is_string($override['classMerge']) && trim($override['classMerge']) !== '') {
+            $component['__classMerge'] = $override['classMerge'];
+        }
+
         return $component;
+    }
+
+    /**
+     * 구간 classMerge 를 해석된 className 에 덧붙입니다 (엔진 applyResponsiveClassMerge 와 같은 규칙).
+     *
+     * 엔진 적용 순서와 같다: props 얕은 병합 → 바인딩 해석 → classMap → classMerge.
+     *
+     * @param  array  $component  컴포넌트 정의 (`__classMerge` 포함)
+     * @param  array  $context  데이터 컨텍스트
+     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     * @return array className 에 병합 결과가 들어간 컴포넌트
+     */
+    private function applyResponsiveClassMerge(array $component, array $context, ExpressionEvaluator $evaluator): array
+    {
+        $classMerge = (string) $component['__classMerge'];
+        unset($component['__classMerge']);
+
+        if (str_contains($classMerge, '{{')) {
+            $resolved = $evaluator->evaluate($classMerge, $context);
+            $classMerge = is_string($resolved) ? $resolved : '';
+        }
+
+        $className = $component['props']['className'] ?? '';
+        if (is_string($className) && str_contains($className, '{{')) {
+            $resolvedClass = $evaluator->evaluate($className, $context);
+            $className = is_string($resolvedClass) ? $resolvedClass : '';
+        }
+
+        $component['props']['className'] = ClassMerger::applyResponsive(
+            is_string($className) ? $className : '',
+            $classMerge,
+            $this->extensionClassPrefixes()
+        );
+
+        return $component;
+    }
+
+    /**
+     * 활성 확장 앞글자 목록 (요청 안에서 한 번만 계산).
+     *
+     * 브라우저의 `G7Config.extensionClassPrefixes` 와 같은 계산이다. 조회에 실패하면 앞글자 없이 병합한다.
+     *
+     * @return list<string> 앞글자 목록
+     */
+    private function extensionClassPrefixes(): array
+    {
+        if ($this->extensionClassPrefixes !== null) {
+            return $this->extensionClassPrefixes;
+        }
+
+        try {
+            $this->extensionClassPrefixes = ExtensionClassPrefixes::collect([
+                app(ModuleManager::class)->getActiveModules(),
+                app(PluginManager::class)->getActivePlugins(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('[SEO] 확장 앞글자 목록 조회 실패 — 앞글자 없이 classMerge 를 병합합니다: '.$e->getMessage());
+            $this->extensionClassPrefixes = [];
+        }
+
+        return $this->extensionClassPrefixes;
+    }
+
+    /**
+     * 앞글자 목록을 직접 정한다 (시험·이미 목록을 가진 호출자용).
+     *
+     * @param  list<string>  $prefixes  앞글자 목록
+     * @return void 반환값 없음
+     */
+    public function setExtensionClassPrefixes(array $prefixes): void
+    {
+        $this->extensionClassPrefixes = array_values($prefixes);
     }
 
     /**

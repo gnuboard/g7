@@ -12,6 +12,7 @@
   </inject>
   <inject target-id="extension_tab_content" position="append_child">
     <div data-ref="ext_marketing_content" id="ext_marketing" class="marketing:scroll-mt-32">
+      <!-- audit:allow layout-inline-semantic-duplicate reason: 회원 수정 화면 확장 탭에 주입하는 마케팅 동의 구역 상자, 그 화면의 다른 구역과 맞춘 여백 p-6 이라 카드(p-4)와 다름 -->
       <div data-ref="section_marketing_consent" class="marketing:bg-white marketing:dark:bg-gray-800 marketing:border marketing:border-gray-200 marketing:dark:border-gray-700 marketing:rounded-lg marketing:p-6 marketing:mb-6">
         <div class="marketing-flex-between marketing:mb-4">
           <div class="marketing:flex marketing:items-center marketing:gap-2">
@@ -24,7 +25,7 @@
         <div>
           <h3 class="marketing:text-gray-900 marketing:dark:text-white marketing:text-sm marketing:font-semibold marketing:mb-3">$t:admin.users.detail.consent_history</h3>
           <!-- 이력이 없는 경우 -->
-          <div data-if="{{user !== undefined &amp;&amp; user !== null &amp;&amp; (!user?.data?.consent_histories || user?.data?.consent_histories?.length === 0)}}" class="marketing:text-sm marketing:text-gray-500 marketing:dark:text-gray-400 marketing:py-4 marketing:text-center">$t:sirsoft-marketing.no_consent_history</div>
+          <div data-if="{{user !== undefined &amp;&amp; user !== null &amp;&amp; (!user?.data?.consent_histories || user?.data?.consent_histories?.length === 0)}}" class="marketing:text-sm marketing-text-muted marketing:py-4 marketing:text-center">$t:sirsoft-marketing.no_consent_history</div>
           <!-- 이력 테이블 -->
           <div data-if="{{user?.data?.consent_histories?.length > 0}}" class="marketing:max-h-60 marketing:overflow-y-auto marketing:overflow-x-auto">
             <table class="marketing-divider-list marketing:min-w-full">
@@ -43,7 +44,7 @@
                   <td class="marketing:px-2 marketing:py-1.5 marketing:text-xs">
                     <span class="{{history?.action === 'granted' ? 'marketing:text-green-700 marketing:dark:text-green-400' : 'marketing:text-red-600 marketing:dark:text-red-400'}}">{{history?.action === 'granted' ? '$t:sirsoft-marketing.action_granted' : '$t:sirsoft-marketing.action_revoked'}}</span>
                   </td>
-                  <td class="marketing:px-2 marketing:py-1.5 marketing:text-xs marketing:text-gray-500 marketing:dark:text-gray-400">{{history?.source === 'register' ? '$t:sirsoft-marketing.source_register' : history?.source === 'admin' ? '$t:sirsoft-marketing.source_admin' : '$t:sirsoft-marketing.source_profile'}}</td>
+                  <td class="marketing:px-2 marketing:py-1.5 marketing:text-xs marketing-text-muted">{{history?.source === 'register' ? '$t:sirsoft-marketing.source_register' : history?.source === 'admin' ? '$t:sirsoft-marketing.source_admin' : '$t:sirsoft-marketing.source_profile'}}</td>
                 </tr>
               </tbody>
             </table>

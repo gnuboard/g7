@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (741)
+- [코어](#코어) (745)
 - [기본 제공 확장](#기본-제공-확장) (19)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -214,6 +214,7 @@
 | `core.identity.before_verify` | action | 3 |  |
 | `core.identity.challenge_expired` | action | 1 |  |
 | `core.identity.claim_validation_rules` | filter | 2 |  |
+| `core.identity.filter_checkpoints` | filter | 1 |  |
 | `core.identity.filter_default_message_definitions` | filter | 2 |  |
 | `core.identity.filter_verified_claims` | filter | 3 |  |
 | `core.identity.message.after_send` | action | 1 |  |
@@ -370,6 +371,7 @@
 | `core.menu.list_validation_rules` | filter | 2 |  |
 | `core.menu.update_order_validation_rules` | filter | 2 |  |
 | `core.menu.update_validation_rules` | filter | 2 |  |
+| `core.menu.upload_icon_validation_rules` | filter | 2 |  |
 | `core.menus.config` | filter | 1 |  |
 | `core.module.activate_validation_rules` | filter | 2 |  |
 | `core.module.deactivate_validation_rules` | filter | 2 |  |
@@ -444,6 +446,7 @@
 | `core.notification_definition.before_toggle_active` | action | 1 |  |
 | `core.notification_definition.before_update` | action | 2 |  |
 | `core.notification_definition.filter_create_data` | filter | 1 |  |
+| `core.notification_definition.filter_hidden_type_prefixes` | filter | 2 |  |
 | `core.notification_definition.filter_update_data` | filter | 2 |  |
 | `core.notification_definition.index_validation_rules` | filter | 1 |  |
 | `core.notification_definition.store_validation_rules` | filter | 2 |  |
@@ -702,6 +705,7 @@
 | `core.thumbnail.stats_validation_rules` | filter | 2 |  |
 | `core.unique_id.after_generate` | action | 2 |  |
 | `core.unique_id.before_generate` | action | 1 |  |
+| `core.user.activity_log_validation_rules` | filter | 2 |  |
 | `core.user.admin_form_fields_validation_rules` | filter | 2 |  |
 | `core.user.after_block` | action | 2 |  |
 | `core.user.after_bulk_update_roles` | action | 4 |  |

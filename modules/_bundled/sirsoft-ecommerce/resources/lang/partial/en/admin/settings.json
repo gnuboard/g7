@@ -20,7 +20,8 @@
     "identity_policies": "Identity Policies",
     "mileage": "Mileage",
     "privacy_retention": "Privacy Retention",
-    "schedules": "Schedules"
+    "schedules": "Schedules",
+    "promotion": "Coupons"
   },
   "save_success": "Settings saved successfully.",
   "save_error": "Failed to save settings.",
@@ -929,5 +930,22 @@
     "effective": "Currently shown as {{kind}}.",
     "effective_with_source": "Currently shown as {{kind}}. (Set by {{source}})",
     "requires_nickname_hint": "This kind needs a nickname. After saving, the nickname member field may be fixed to enabled and required."
+  },
+  "promotion": {
+    "birthday": {
+      "title": "Birthday Coupons",
+      "field_label": "Member field used as birthday",
+      "none": "Not used",
+      "field_hint": "Only date-type member fields can be selected. Birthday coupons are not issued unless a field is set.",
+      "no_candidates": "There are no date-type member fields. Add a date-type member field first.",
+      "go_member_fields": "Open member field settings"
+    },
+    "expiry": {
+      "title": "Coupon Expiry Notice",
+      "enabled": "Send expiry notices",
+      "enabled_hint": "Notify members when their coupons are about to expire (once per issued coupon).",
+      "days_before": "Notice timing",
+      "template_hint": "Edit the message and channels under \"Coupons Expiring Soon\" in the Notifications tab."
+    }
   }
 }

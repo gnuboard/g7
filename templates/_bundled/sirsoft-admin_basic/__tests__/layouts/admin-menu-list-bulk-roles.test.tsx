@@ -12,6 +12,7 @@ import fs from 'fs';
 import path from 'path';
 import { describe, it, expect } from 'vitest';
 import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
+import { expandSemanticTokens } from './support/semanticClasses';
 
 const read = (relative: string) => JSON.parse(fs.readFileSync(path.resolve(__dirname, relative), 'utf-8'));
 
@@ -126,8 +127,10 @@ describe('메뉴 관리 — 일괄 역할·행 역할 배지 (#708)', () => {
     expect(disabled([11], [])).toBe(true);
     expect(disabled(undefined, undefined)).toBe(true);
     expect(disabled([11], [7])).toBe(false);
-    expect(apply.props.className).toContain('disabled:opacity-50');
-    expect(apply.props.className).toContain('disabled:cursor-not-allowed');
+    // #399 R-1 — 꺼짐 모양은 `btn` 의미 클래스 정의(semantic.css)가 갖는다. 이름만 보지 않고 정의를 펼쳐 같은 유틸을 확인한다
+    expect(String(apply.props.className).split(/\s+/)).toContain('btn');
+    expect(expandSemanticTokens(apply.props.className)).toContain('disabled:opacity-50');
+    expect(expandSemanticTokens(apply.props.className)).toContain('disabled:cursor-not-allowed');
 
     const open = collect(actionsOf(apply), (n) => n.handler === 'openModal')[0];
     expect(open.target).toBe('bulk_roles_confirm_modal');

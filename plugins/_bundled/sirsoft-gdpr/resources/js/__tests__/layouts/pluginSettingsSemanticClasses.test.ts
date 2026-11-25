@@ -12,6 +12,7 @@
 
 import { describe, it, expect } from 'vitest';
 import pluginSettingsLayout from '../../../layouts/admin/plugin_settings.json';
+import { applyResponsiveClassMerge } from '@core/template-engine/helpers/StyleHelpers';
 
 /** 의미 클래스는 이 플러그인 접두 판본이다 — 템플릿 CSS 가 아니라 플러그인 CSS(`@layer g7-extension`)가 정의한다 */
 const NS = 'gdpr-';
@@ -21,7 +22,7 @@ type LayoutNode = {
     name?: string;
     text?: string;
     props?: { className?: string };
-    responsive?: Record<string, { props?: { className?: string } }>;
+    responsive?: Record<string, { props?: { className?: string }; classMerge?: string }>;
     children?: LayoutNode[];
 };
 
@@ -55,9 +56,30 @@ const cls = (n: LayoutNode) => (typeof n.props?.className === 'string' ? n.props
  * 폭 미디어를 품은 옛 의미 클래스(`grid-3col-responsive`)는 쓰지 않는다.
  */
 const GRID3_BASE = 'gdpr:grid gdpr:grid-cols-1 gdpr:gap-4 gdpr:items-start';
-const isGrid3col = (n: { props?: { className?: string }; responsive?: Record<string, { props?: { className?: string } }> }) =>
-    (typeof n.props?.className === 'string' ? n.props.className : '').startsWith(GRID3_BASE) &&
-    String(n.responsive?.['1024-']?.props?.className ?? '').split(/\s+/).includes('gdpr:grid-cols-3');
+/**
+ * 폭 갈래의 실효 className — 갈래 class(있으면 통째 교체) 위에 갈래 class-merge 를 엔진 규칙으로 덧붙인 값 (engine-v1.98.0).
+ * 접두 토큰(`gdpr:grid-cols-1`)끼리 충돌 교체가 되도록 서버가 내려 주는 접두 목록을 계산하는 동안만 세운다.
+ */
+const rangeClassName = (n: { props?: { className?: string }; responsive?: Record<string, { props?: { className?: string }; classMerge?: string }> }, on: string): string => {
+    const range = n.responsive?.[on];
+    if (!range) return '';
+    const g = globalThis as { window?: { G7Config?: Record<string, unknown> } };
+    const created = g.window === undefined;
+    if (created) g.window = {};
+    const prev = g.window!.G7Config;
+    g.window!.G7Config = { ...(prev ?? {}), extensionClassPrefixes: ['gdpr'] };
+    try {
+        return applyResponsiveClassMerge(range.props?.className ?? n.props?.className, range.classMerge);
+    } finally {
+        if (created) delete g.window;
+        else g.window!.G7Config = prev;
+    }
+};
+const isGrid3col = (n: { props?: { className?: string }; responsive?: Record<string, { props?: { className?: string }; classMerge?: string }> }) => {
+    const wide = rangeClassName(n, '1024-').split(/\s+/);
+    return (typeof n.props?.className === 'string' ? n.props.className : '').startsWith(GRID3_BASE) &&
+        wide.includes('gdpr:grid-cols-3') && !wide.includes('gdpr:grid-cols-1');
+};
 const HEADINGS = ['H2', 'H3', 'H4'];
 
 describe('GDPR 환경설정 — 의미 클래스 위치', () => {
@@ -69,8 +91,8 @@ describe('GDPR 환경설정 — 의미 클래스 위치', () => {
     it('라벨(1칸)·입력(2칸)으로 나뉜 입력 줄은 3열 그리드 클래스를 쓴다', () => {
         // 칸 나눔은 넓은 화면(responsive desktop 구간)에서만 붙는다
         const wideCls = (n: LayoutNode) => {
-            const c = n.responsive?.desktop?.props?.className;
-            return typeof c === 'string' ? c.split(/\s+/) : [];
+            const c = rangeClassName(n, 'desktop');
+            return c !== '' ? c.split(/\s+/) : [];
         };
         const rows = nodes.filter((n) => {
             const kids = Array.isArray(n.children) ? n.children : [];

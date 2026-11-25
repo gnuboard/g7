@@ -12,25 +12,25 @@
     <!-- 접수 시점 주문금액 비교(전/후) — 저장 스냅샷(calculation_comparison). PC 3열 / 모바일 kv "원값 → 변경값". 구형 신청서(스냅샷 없음)는 안내 한 줄. -->
     <div class="mb-4 pb-4 border-b border-gray-100 dark:border-gray-700" data-testid="claim-detail-comparison">
       <span class="text-sm font-semibold text-gray-900 dark:text-white block mb-2">$t:claim.detail.comparison.title</span>
-      <p data-if="{{!claim.data?.claim?.calculation_comparison?.original}}" class="text-sm text-gray-500 dark:text-gray-400" data-testid="claim-detail-comparison-empty">$t:claim.detail.comparison.empty</p>
+      <p data-if="{{!claim.data?.claim?.calculation_comparison?.original}}" class="text-sm text-muted" data-testid="claim-detail-comparison-empty">$t:claim.detail.comparison.empty</p>
       <!-- 주문금액 비교표 (§4-1 1~16행) — 금액은 서버 formatted 직독, 후열은 전열과 다를 때만 강조색. 클라이언트 포맷·합산 금지. -->
       <div data-if="{{!!claim.data?.claim?.calculation_comparison?.original}}" class="text-xs" data-testid="claim-detail-comparison-table">
         <!-- 표 머리글 — 열 라벨은 유형별 키(취소 전/후 · 환불 전/후 · 반품 전/후 · 교환 전/후) -->
         <div class="grid grid-cols-3 gap-x-3 pb-1 mb-1 border-b border-gray-200 dark:border-gray-700">
           <responsive on="portable" class="hidden"/>
-          <span class="text-xs font-medium text-gray-500 dark:text-gray-400">$t:claim.detail.comparison.col_item</span>
-          <span class="text-xs font-medium text-gray-500 dark:text-gray-400 text-right">{{claim.data?.claim?.claim_type === 'exchange' ? $t('claim.detail.comparison.col_before_exchange') : (claim.data?.claim?.claim_type === 'return' ? $t('claim.detail.comparison.col_before_return') : (claim.data?.claim?.claim_type === 'cancel' ? $t('claim.detail.comparison.col_before_cancel') : $t('claim.detail.comparison.col_before_refund')))}}</span>
-          <span class="text-xs font-medium text-gray-500 dark:text-gray-400 text-right">{{claim.data?.claim?.claim_type === 'exchange' ? $t('claim.detail.comparison.col_after_exchange') : (claim.data?.claim?.claim_type === 'return' ? $t('claim.detail.comparison.col_after_return') : (claim.data?.claim?.claim_type === 'cancel' ? $t('claim.detail.comparison.col_after_cancel') : $t('claim.detail.comparison.col_after_refund')))}}</span>
+          <span class="text-xs font-medium text-muted">$t:claim.detail.comparison.col_item</span>
+          <span class="text-xs font-medium text-muted text-right">{{claim.data?.claim?.claim_type === 'exchange' ? $t('claim.detail.comparison.col_before_exchange') : (claim.data?.claim?.claim_type === 'return' ? $t('claim.detail.comparison.col_before_return') : (claim.data?.claim?.claim_type === 'cancel' ? $t('claim.detail.comparison.col_before_cancel') : $t('claim.detail.comparison.col_before_refund')))}}</span>
+          <span class="text-xs font-medium text-muted text-right">{{claim.data?.claim?.claim_type === 'exchange' ? $t('claim.detail.comparison.col_after_exchange') : (claim.data?.claim?.claim_type === 'return' ? $t('claim.detail.comparison.col_after_return') : (claim.data?.claim?.claim_type === 'cancel' ? $t('claim.detail.comparison.col_after_cancel') : $t('claim.detail.comparison.col_after_refund')))}}</span>
         </div>
         <!-- row_item_count — item_count -->
         <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="item_count">
           <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="item_count"/>
-          <span class="text-sm text-gray-500 dark:text-gray-400 break-keep">$t:claim.detail.comparison.row_item_count</span>
+          <span class="text-sm text-muted break-keep">$t:claim.detail.comparison.row_item_count</span>
           <div class="text-right">
             <span class="text-sm text-gray-900 dark:text-white">{{(claim.data?.claim?.calculation_comparison?.original?.item_count ?? 0)}}$t:claim.detail.comparison.unit_count</span>
           </div>
           <span class="hidden">
-            <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+            <responsive on="portable" class="text-xs text-muted"/>
             →
           </span>
           <div class="text-right">
@@ -40,54 +40,54 @@
         <!-- row_list_price — total_list_price_amount -->
         <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_list_price_amount">
           <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_list_price_amount"/>
-          <span class="text-sm text-gray-500 dark:text-gray-400 break-keep">$t:claim.detail.comparison.row_list_price</span>
+          <span class="text-sm text-muted break-keep">$t:claim.detail.comparison.row_list_price</span>
           <div class="text-right">
             <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.calculation_comparison?.original?.formatted?.total_list_price_amount ?? ''}}</span>
             <div data-if="{{!!claim.data?.claim?.calculation_comparison?.mc_original?.mc_total_list_price_amount_formatted}}" class="mt-0.5">
-              <span data-each="mc in {{Object.entries(claim.data?.claim?.calculation_comparison?.mc_original?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (claim.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-500 dark:text-gray-400 block">{{mc[1]}}</span>
+              <span data-each="mc in {{Object.entries(claim.data?.claim?.calculation_comparison?.mc_original?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (claim.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-muted block">{{mc[1]}}</span>
             </div>
           </div>
           <span class="hidden">
-            <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+            <responsive on="portable" class="text-xs text-muted"/>
             →
           </span>
           <div class="text-right">
             <span class="{{(claim.data?.claim?.calculation_comparison?.original?.total_list_price_amount ?? 0) !== (claim.data?.claim?.calculation_comparison?.recalculated?.total_list_price_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-white'}}">{{claim.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_list_price_amount ?? ''}}</span>
             <div data-if="{{!!claim.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_list_price_amount_formatted}}" class="mt-0.5">
-              <span data-each="mc in {{Object.entries(claim.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (claim.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-500 dark:text-gray-400 block">{{mc[1]}}</span>
+              <span data-each="mc in {{Object.entries(claim.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (claim.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-muted block">{{mc[1]}}</span>
             </div>
           </div>
         </div>
         <!-- row_subtotal — subtotal_amount -->
         <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="subtotal_amount">
           <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="subtotal_amount"/>
-          <span class="text-sm text-gray-500 dark:text-gray-400 break-keep">$t:claim.detail.comparison.row_subtotal</span>
+          <span class="text-sm text-muted break-keep">$t:claim.detail.comparison.row_subtotal</span>
           <div class="text-right">
             <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.calculation_comparison?.original?.formatted?.subtotal_amount ?? ''}}</span>
             <div data-if="{{!!claim.data?.claim?.calculation_comparison?.mc_original?.mc_subtotal_amount_formatted}}" class="mt-0.5">
-              <span data-each="mc in {{Object.entries(claim.data?.claim?.calculation_comparison?.mc_original?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (claim.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-500 dark:text-gray-400 block">{{mc[1]}}</span>
+              <span data-each="mc in {{Object.entries(claim.data?.claim?.calculation_comparison?.mc_original?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (claim.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-muted block">{{mc[1]}}</span>
             </div>
           </div>
           <span class="hidden">
-            <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+            <responsive on="portable" class="text-xs text-muted"/>
             →
           </span>
           <div class="text-right">
             <span class="{{(claim.data?.claim?.calculation_comparison?.original?.subtotal_amount ?? 0) !== (claim.data?.claim?.calculation_comparison?.recalculated?.subtotal_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-white'}}">{{claim.data?.claim?.calculation_comparison?.recalculated?.formatted?.subtotal_amount ?? ''}}</span>
             <div data-if="{{!!claim.data?.claim?.calculation_comparison?.mc_recalculated?.mc_subtotal_amount_formatted}}" class="mt-0.5">
-              <span data-each="mc in {{Object.entries(claim.data?.claim?.calculation_comparison?.mc_recalculated?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (claim.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-500 dark:text-gray-400 block">{{mc[1]}}</span>
+              <span data-each="mc in {{Object.entries(claim.data?.claim?.calculation_comparison?.mc_recalculated?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (claim.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-muted block">{{mc[1]}}</span>
             </div>
           </div>
         </div>
         <!-- row_product_coupon — total_product_coupon_discount_amount -->
         <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_product_coupon_discount_amount">
           <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_product_coupon_discount_amount"/>
-          <span class="text-sm text-gray-500 dark:text-gray-400 break-keep">$t:claim.detail.comparison.row_product_coupon</span>
+          <span class="text-sm text-muted break-keep">$t:claim.detail.comparison.row_product_coupon</span>
           <div class="text-right">
             <span class="text-sm text-gray-900 dark:text-white">{{(claim.data?.claim?.calculation_comparison?.original?.total_product_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim.data?.claim?.calculation_comparison?.original?.formatted?.total_product_coupon_discount_amount ?? ''}}</span>
           </div>
           <span class="hidden">
-            <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+            <responsive on="portable" class="text-xs text-muted"/>
             →
           </span>
           <div class="text-right">
@@ -97,12 +97,12 @@
         <!-- row_order_coupon — total_order_coupon_discount_amount -->
         <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_order_coupon_discount_amount">
           <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_order_coupon_discount_amount"/>
-          <span class="text-sm text-gray-500 dark:text-gray-400 break-keep">$t:claim.detail.comparison.row_order_coupon</span>
+          <span class="text-sm text-muted break-keep">$t:claim.detail.comparison.row_order_coupon</span>
           <div class="text-right">
             <span class="text-sm text-gray-900 dark:text-white">{{(claim.data?.claim?.calculation_comparison?.original?.total_order_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim.data?.claim?.calculation_comparison?.original?.formatted?.total_order_coupon_discount_amount ?? ''}}</span>
           </div>
           <span class="hidden">
-            <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+            <responsive on="portable" class="text-xs text-muted"/>
             →
           </span>
           <div class="text-right">
@@ -112,12 +112,12 @@
         <!-- row_code_discount — total_code_discount_amount -->
         <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_code_discount_amount">
           <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_code_discount_amount"/>
-          <span class="text-sm text-gray-500 dark:text-gray-400 break-keep">$t:claim.detail.comparison.row_code_discount</span>
+          <span class="text-sm text-muted break-keep">$t:claim.detail.comparison.row_code_discount</span>
           <div class="text-right">
             <span class="text-sm text-gray-900 dark:text-white">{{(claim.data?.claim?.calculation_comparison?.original?.total_code_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim.data?.claim?.calculation_comparison?.original?.formatted?.total_code_discount_amount ?? ''}}</span>
           </div>
           <span class="hidden">
-            <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+            <responsive on="portable" class="text-xs text-muted"/>
             →
           </span>
           <div class="text-right">
@@ -127,12 +127,12 @@
         <!-- row_shipping_coupon — shipping_discount_amount -->
         <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="shipping_discount_amount">
           <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="shipping_discount_amount"/>
-          <span class="text-sm text-gray-500 dark:text-gray-400 break-keep">$t:claim.detail.comparison.row_shipping_coupon</span>
+          <span class="text-sm text-muted break-keep">$t:claim.detail.comparison.row_shipping_coupon</span>
           <div class="text-right">
             <span class="text-sm text-gray-900 dark:text-white">{{(claim.data?.claim?.calculation_comparison?.original?.shipping_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim.data?.claim?.calculation_comparison?.original?.formatted?.shipping_discount_amount ?? ''}}</span>
           </div>
           <span class="hidden">
-            <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+            <responsive on="portable" class="text-xs text-muted"/>
             →
           </span>
           <div class="text-right">
@@ -142,12 +142,12 @@
         <!-- row_base_shipping — base_shipping_amount -->
         <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="base_shipping_amount">
           <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="base_shipping_amount"/>
-          <span class="text-sm text-gray-500 dark:text-gray-400 break-keep">$t:claim.detail.comparison.row_base_shipping</span>
+          <span class="text-sm text-muted break-keep">$t:claim.detail.comparison.row_base_shipping</span>
           <div class="text-right">
             <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.calculation_comparison?.original?.formatted?.base_shipping_amount ?? ''}}</span>
           </div>
           <span class="hidden">
-            <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+            <responsive on="portable" class="text-xs text-muted"/>
             →
           </span>
           <div class="text-right">
@@ -157,12 +157,12 @@
         <!-- row_extra_shipping — extra_shipping_amount -->
         <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="extra_shipping_amount">
           <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="extra_shipping_amount"/>
-          <span class="text-sm text-gray-500 dark:text-gray-400 break-keep">$t:claim.detail.comparison.row_extra_shipping</span>
+          <span class="text-sm text-muted break-keep">$t:claim.detail.comparison.row_extra_shipping</span>
           <div class="text-right">
             <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.calculation_comparison?.original?.formatted?.extra_shipping_amount ?? ''}}</span>
           </div>
           <span class="hidden">
-            <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+            <responsive on="portable" class="text-xs text-muted"/>
             →
           </span>
           <div class="text-right">
@@ -172,12 +172,12 @@
         <!-- row_points_used — total_points_used_amount -->
         <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_points_used_amount">
           <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_points_used_amount"/>
-          <span class="text-sm text-gray-500 dark:text-gray-400 break-keep">$t:claim.detail.comparison.row_points_used</span>
+          <span class="text-sm text-muted break-keep">$t:claim.detail.comparison.row_points_used</span>
           <div class="text-right">
             <span class="text-sm text-gray-900 dark:text-white">{{(claim.data?.claim?.calculation_comparison?.original?.total_points_used_amount ?? 0) > 0 ? '-' : ''}}{{claim.data?.claim?.calculation_comparison?.original?.formatted?.total_points_used_amount ?? ''}}</span>
           </div>
           <span class="hidden">
-            <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+            <responsive on="portable" class="text-xs text-muted"/>
             →
           </span>
           <div class="text-right">
@@ -187,12 +187,12 @@
         <!-- row_taxable — total_tax_amount -->
         <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_tax_amount">
           <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_tax_amount"/>
-          <span class="text-sm text-gray-500 dark:text-gray-400 break-keep">$t:claim.detail.comparison.row_taxable</span>
+          <span class="text-sm text-muted break-keep">$t:claim.detail.comparison.row_taxable</span>
           <div class="text-right">
             <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.calculation_comparison?.original?.formatted?.total_tax_amount ?? ''}}</span>
           </div>
           <span class="hidden">
-            <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+            <responsive on="portable" class="text-xs text-muted"/>
             →
           </span>
           <div class="text-right">
@@ -202,12 +202,12 @@
         <!-- row_vat — total_vat_amount -->
         <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_vat_amount">
           <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_vat_amount"/>
-          <span class="text-sm text-gray-500 dark:text-gray-400 break-keep">$t:claim.detail.comparison.row_vat</span>
+          <span class="text-sm text-muted break-keep">$t:claim.detail.comparison.row_vat</span>
           <div class="text-right">
             <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.calculation_comparison?.original?.formatted?.total_vat_amount ?? ''}}</span>
           </div>
           <span class="hidden">
-            <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+            <responsive on="portable" class="text-xs text-muted"/>
             →
           </span>
           <div class="text-right">
@@ -217,33 +217,33 @@
         <!-- row_total_paid — total_paid_amount -->
         <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_paid_amount">
           <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_paid_amount"/>
-          <span class="text-sm text-gray-500 dark:text-gray-400 break-keep font-semibold">$t:claim.detail.comparison.row_total_paid</span>
+          <span class="text-sm text-muted break-keep font-semibold">$t:claim.detail.comparison.row_total_paid</span>
           <div class="text-right">
             <span class="text-sm text-gray-900 dark:text-white font-semibold">{{claim.data?.claim?.calculation_comparison?.original?.formatted?.total_paid_amount ?? ''}}</span>
             <div data-if="{{!!claim.data?.claim?.calculation_comparison?.mc_original?.mc_total_paid_amount_formatted}}" class="mt-0.5">
-              <span data-each="mc in {{Object.entries(claim.data?.claim?.calculation_comparison?.mc_original?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (claim.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-500 dark:text-gray-400 block">{{mc[1]}}</span>
+              <span data-each="mc in {{Object.entries(claim.data?.claim?.calculation_comparison?.mc_original?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (claim.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-muted block">{{mc[1]}}</span>
             </div>
           </div>
           <span class="hidden">
-            <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+            <responsive on="portable" class="text-xs text-muted"/>
             →
           </span>
           <div class="text-right">
             <span class="{{(claim.data?.claim?.calculation_comparison?.original?.total_paid_amount ?? 0) !== (claim.data?.claim?.calculation_comparison?.recalculated?.total_paid_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-white font-semibold'}}">{{claim.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_paid_amount ?? ''}}</span>
             <div data-if="{{!!claim.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_paid_amount_formatted}}" class="mt-0.5">
-              <span data-each="mc in {{Object.entries(claim.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (claim.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-500 dark:text-gray-400 block">{{mc[1]}}</span>
+              <span data-each="mc in {{Object.entries(claim.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (claim.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-muted block">{{mc[1]}}</span>
             </div>
           </div>
         </div>
         <!-- row_earned_points — total_earned_points_amount. 단위 표기(P)는 서버 `total_earned_points_amount_formatted` 가 정본이다(주문 리소스와 같은 formatEarnedPoints). 화면의 `toLocaleString() + 'P'` 는 그 필드를 싣지 않는 옛 응답·스냅샷을 위한 폴백일 뿐이다. -->
         <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_earned_points_amount">
           <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_earned_points_amount"/>
-          <span class="text-sm text-gray-500 dark:text-gray-400 break-keep">$t:claim.detail.comparison.row_earned_points</span>
+          <span class="text-sm text-muted break-keep">$t:claim.detail.comparison.row_earned_points</span>
           <div class="text-right">
             <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.calculation_comparison?.original?.total_earned_points_amount_formatted ?? ((claim.data?.claim?.calculation_comparison?.original?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}</span>
           </div>
           <span class="hidden">
-            <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+            <responsive on="portable" class="text-xs text-muted"/>
             →
           </span>
           <div class="text-right">
@@ -252,7 +252,7 @@
         </div>
         <!-- row_substituted — 교환만. 치환 근거 행(상품별 old→new). 서버 substituted_items 를 그대로 옮긴다. -->
         <div data-if="{{claim.data?.claim?.claim_type === 'exchange' &amp;&amp; (claim.data?.claim?.calculation_comparison?.substituted_items ?? []).length > 0}}" class="pt-1 mt-1 border-t border-dashed border-gray-200 dark:border-gray-700" data-row="substituted">
-          <span class="text-sm text-gray-500 dark:text-gray-400 break-keep block mb-0.5">$t:claim.detail.comparison.row_substituted</span>
+          <span class="text-sm text-muted break-keep block mb-0.5">$t:claim.detail.comparison.row_substituted</span>
           <div data-each="row in {{claim.data?.claim?.calculation_comparison?.substituted_items ?? []}}" class="flex flex-wrap items-baseline justify-between gap-x-2" data-substituted-item="{{row.order_option_id}}">
             <span class="text-sm text-gray-900 dark:text-white min-w-0 break-keep">{{row.option_label ?? ''}} × {{row.quantity ?? 0}}</span>
             <span class="text-sm text-gray-900 dark:text-white whitespace-nowrap">{{row.unit_price_formatted ?? ''}} → {{row.new_unit_price_formatted ?? ''}}</span>
@@ -263,56 +263,54 @@
     <!-- 대비표 헤더 (PC 전용) — 모바일은 각 행이 '원값 → 변경값' 한 줄이라 머리글이 필요 없다. -->
     <div class="grid grid-cols-3 gap-2 pb-2 mb-2 border-b border-gray-100 dark:border-gray-700">
       <responsive on="portable" class="hidden"/>
-      <span class="text-xs font-medium text-gray-500 dark:text-gray-400">$t:claim.detail.compare_item</span>
-      <span class="text-xs font-medium text-gray-500 dark:text-gray-400 text-right">$t:claim.detail.compare_original</span>
-      <span class="text-xs font-medium text-gray-500 dark:text-gray-400 text-right">$t:claim.detail.compare_claim</span>
+      <span class="text-xs font-medium text-muted">$t:claim.detail.compare_item</span>
+      <span class="text-xs font-medium text-muted text-right">$t:claim.detail.compare_original</span>
+      <span class="text-xs font-medium text-muted text-right">$t:claim.detail.compare_claim</span>
     </div>
     <!-- 대비 행 1 — 배송비. 교환은 왕복, 반품은 회수 편도, 환불·취소는 배송비 환불액이 그 자리에 온다. -->
     <div class="grid grid-cols-3 gap-2 py-1.5">
       <responsive on="portable" class="flex items-baseline justify-between gap-2 py-1.5"/>
-      <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.compare_shipping</span>
+      <span class="text-sm text-muted">$t:claim.detail.compare_shipping</span>
       <span class="text-sm text-gray-600 dark:text-gray-400 text-right">{{order.data?.total_shipping_amount_formatted ?? '—'}}</span>
       <span class="text-sm font-medium text-gray-900 dark:text-white text-right">
-        <responsive on="portable" class="text-sm font-medium text-gray-900 dark:text-white text-right"/>
         {{(claim.data?.claim?.claim_type === 'exchange' || claim.data?.claim?.claim_type === 'return') ? (claim.data?.claim?.claim_shipping_fee_formatted ?? '—') : (claim.data?.claim?.refund_shipping_amount_formatted ?? '—')}}
       </span>
     </div>
     <!-- 보조 통화 — 바로 위 배송비 대비 행과 같은 값의 다른 표기다. 읽는 필드는 그 줄의 분기와 **같아야 한다**: 교환·반품은 `mc_claim_shipping_fee`, 환불은 `mc_refund_shipping_amount`. 취소는 그 자리가 '—' 라 짝이 없고 체인이 비어 줄도 서지 않는다. -->
     <div data-each="currency in {{Object.entries(((claim.data?.claim?.claim_type === 'exchange' || claim.data?.claim?.claim_type === 'return') ? claim.data?.claim?.mc_claim_shipping_fee : claim.data?.claim?.mc_refund_shipping_amount) ?? {}).filter(([code]) => code !== (claim.data?.claim?.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
-      <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted ?? ''}}</span>
+      <span class="text-xs text-muted">{{currency[1]?.formatted ?? ''}}</span>
     </div>
     <!-- 대비 행 2 — 결제/환불. 왼쪽은 원 주문의 최종 결제금액, 오른쪽은 이 클레임으로 더 내거나 돌려받는 금액이다. -->
     <div class="grid grid-cols-3 gap-2 py-1.5">
       <responsive on="portable" class="flex items-baseline justify-between gap-2 py-1.5"/>
-      <span class="text-sm text-gray-500 dark:text-gray-400">{{(claim.data?.claim?.claim_type === 'exchange' || claim.data?.claim?.claim_type === 'return') ? $t('claim.detail.compare_charge') : $t('claim.detail.compare_refund')}}</span>
+      <span class="text-sm text-muted">{{(claim.data?.claim?.claim_type === 'exchange' || claim.data?.claim?.claim_type === 'return') ? $t('claim.detail.compare_charge') : $t('claim.detail.compare_refund')}}</span>
       <span class="text-sm text-gray-600 dark:text-gray-400 text-right">{{order.data?.total_amount_formatted ?? '—'}}</span>
       <span class="text-sm font-bold text-gray-900 dark:text-white text-right">
-        <responsive on="portable" class="text-sm font-bold text-gray-900 dark:text-white text-right"/>
         {{(claim.data?.claim?.claim_type === 'exchange' || claim.data?.claim?.claim_type === 'return') ? ('+' + (claim.data?.claim?.total_charge_amount_formatted ?? '')) : ('−' + (claim.data?.claim?.refund_total_formatted ?? claim.data?.claim?.refund_amount_formatted ?? ''))}}
       </span>
     </div>
     <!-- 보조 통화 — 바로 위 기준 통화 줄과 **같은 값의 다른 표기**다. 환불은 기준 줄이 현금+마일리지 합(`refund_total_formatted`)이므로 합계 필드(`mc_refund_total`)를 읽는다 — 현금분만인 `mc_refund_amount` 를 읽으면 마일리지가 섞인 환불에서 두 줄이 다른 금액이 되는데 둘 다 정상 서식이라 흔적이 남지 않는다(2026-09-01 3차 검증). 취소는 기준 줄이 현금분이라 `mc_refund_amount` 로 떨어진다. 기본 통화와 같은 코드는 빼고 나열한다. -->
     <div data-each="currency in {{Object.entries(claim.data?.claim?.mc_total_charge_amount ?? claim.data?.claim?.mc_refund_total ?? claim.data?.claim?.mc_refund_amount ?? {}).filter(([code]) => code !== (claim.data?.claim?.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
-      <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted ?? ''}}</span>
+      <span class="text-xs text-muted">{{currency[1]?.formatted ?? ''}}</span>
     </div>
     <!-- 추가결제 — 교환·반품에서 청구가 있을 때. 청구 방식(언제 내는가)과 결제 내역, 아직 남은 금액을 함께 둔다. -->
     <div data-if="{{(claim.data?.claim?.claim_type === 'exchange' || claim.data?.claim?.claim_type === 'return') &amp;&amp; (claim.data?.claim?.total_charge_amount ?? 0) > 0}}" class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
       <p class="text-sm font-semibold text-gray-900 dark:text-white">$t:claim.detail.additional_payment_title</p>
       <div data-if="{{!!claim.data?.claim?.charge_method_label}}" class="flex items-baseline justify-between gap-2">
-        <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.charge_method</span>
+        <span class="text-sm text-muted">$t:claim.detail.charge_method</span>
         <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.charge_method_label}}</span>
       </div>
       <!-- 결제 내역 — 신청서에 붙은 추가결제 건. 상세 응답에만 실린다(목록은 행마다 결제 건을 조회하지 않는다). 결제 건 사이 간격은 부모(space-y-2)가 준다 — 반복 노드 자신의 space-y 는 형제 사이에 걸리지 않는다. -->
         <div data-each="payment in {{claim.data?.claim?.payments ?? []}}" class="flex items-baseline justify-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900">
           <div class="min-w-0">
             <p class="text-sm text-gray-900 dark:text-white truncate">{{payment.payment_method_label ?? payment.payment_method ?? ''}}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">{{payment.payment_number ?? ''}}{{payment.paid_at_formatted ? ' · ' + payment.paid_at_formatted : ''}}</p>
+            <p class="text-xs text-muted">{{payment.payment_number ?? ''}}{{payment.paid_at_formatted ? ' · ' + payment.paid_at_formatted : ''}}</p>
           </div>
           <div class="flex flex-col items-end gap-0.5 flex-shrink-0">
             <span class="text-sm font-medium text-gray-900 dark:text-white">{{payment.total_amount_formatted ?? ''}}</span>
             <!-- 보조 통화 — 바로 위 결제 금액과 같은 값의 다른 표기다. `mc_amount` 는 결제 수단(카드·마일리지)과 무관하게 **청구액 전체**로 만들어지므로(카드분·마일리지분은 배타적이다) 합계인 `total_amount_formatted` 와 같은 값이다. -->
             <div data-each="currency in {{Object.entries(payment.mc_amount ?? {}).filter(([code]) => code !== (claim.data?.claim?.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
-              <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted ?? ''}}</span>
+              <span class="text-xs text-muted">{{currency[1]?.formatted ?? ''}}</span>
             </div>
             <span>
               <class-map base="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" key="{{payment.payment_status_variant}}" default="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
@@ -336,12 +334,12 @@
       <div data-if="{{!!claim.data?.claim?.pending_payment?.payment_number &amp;&amp; (claim.data?.claim?.outstanding_amount ?? 0) > 0}}" class="pt-2 space-y-2">
         <!-- 고를 수단이 하나뿐이면 표시만 한다 — 선택지가 한 칸인 라디오는 고르는 시늉만 시킨다. -->
         <div data-if="{{!!claim.data?.claim?.pending_payment?.payment_method_label &amp;&amp; (claim.data?.claim?.available_payment_methods ?? []).length &lt; 2}}" class="flex items-baseline justify-between gap-2">
-          <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.pay_method</span>
+          <span class="text-sm text-muted">$t:claim.detail.pay_method</span>
           <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.pending_payment?.payment_method_label ?? ''}}</span>
         </div>
         <!-- 수단이 둘 이상이면 **다시 고를 수 있어야 한다.** 대기 건의 수단은 접수 때 확정되지만 그 뒤에 낼 수 없게 될 수 있다 — 마일리지 잔액이 모자라거나, 운영자가 그 수단을 `claim.charge_payment_methods` 에서 내리거나. 두 경우 모두 서버가 거절하는데 고를 자리가 없으면 사용자는 「미수납 ○○원 + 결제하기」를 보면서 누를 때마다 같은 거절을 받고, 빠져나갈 길이 신청서 철회뿐이다(#599 실측). 선택지는 서버가 `available_payment_methods` 로 준다 — 화면 옵션 ⊆ 게이트 ⊆ 서비스라 고를 수 있는데 누르면 막히는 칸이 생기지 않는다. -->
         <div data-if="{{(claim.data?.claim?.available_payment_methods ?? []).length &gt;= 2}}" class="space-y-1">
-          <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.pay_method</span>
+          <span class="text-sm text-muted">$t:claim.detail.pay_method</span>
           <div data-each="claimPayMethodOption in {{claim.data?.claim?.available_payment_methods ?? []}}">
             <label class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
               <!-- 처음 그릴 때는 서버가 확정해 둔 수단이 골라져 있다 — 사용자가 바꾸기 전까지 화면이 안내하는 값과 실제로 나가는 값이 같아야 한다. -->
@@ -371,33 +369,33 @@
     <div data-if="{{claim.data?.claim?.claim_type === 'refund' || claim.data?.claim?.claim_type === 'cancel' || !!claim.data?.claim?.refund_bank_code}}" class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
       <p class="text-sm font-semibold text-gray-900 dark:text-white">$t:claim.detail.refund_title</p>
       <div data-if="{{!!claim.data?.claim?.refund_method_label}}" class="flex items-baseline justify-between gap-2">
-        <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.refund_method</span>
+        <span class="text-sm text-muted">$t:claim.detail.refund_method</span>
         <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.refund_method_label}}</span>
       </div>
       <div data-if="{{(claim.data?.claim?.refund_points_amount ?? 0) > 0}}" class="flex items-baseline justify-between gap-2">
-        <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.refund_points_amount</span>
+        <span class="text-sm text-muted">$t:claim.detail.refund_points_amount</span>
         <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.refund_points_amount_formatted ?? ''}}</span>
       </div>
       <!-- 교환 차액 환급 — 교환으로 받은 상품을 반품·환불하면 그 교환 때 낸 상위 옵션 차액을 낸 수단 그대로(카드는 카드 취소, 마일리지는 마일리지) 돌려준다(S2·Q9). -->
       <div data-ref="claim_exchange_difference_refund" data-if="{{(claim.data?.claim?.exchange_difference_refund_total ?? 0) > 0}}" class="flex items-baseline justify-between gap-2">
-        <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.exchange_difference_refund</span>
+        <span class="text-sm text-muted">$t:claim.detail.exchange_difference_refund</span>
         <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.exchange_difference_refunds_formatted ?? claim.data?.claim?.exchange_difference_refund_total_formatted ?? ''}}</span>
       </div>
       <!-- 「마일리지로 환불」로 완료된 현금 환불액 — 카드·계좌가 아니라 회원 마일리지로 지급됐고 유효기간이 없다는 사실을 함께 알린다(D1·Q2). 완료 전에는 서버가 0 을 준다. -->
       <div data-ref="claim_refund_mileage_credit" data-if="{{(claim.data?.claim?.refund_mileage_credit_amount ?? 0) > 0}}" class="space-y-1">
         <div class="flex items-baseline justify-between gap-2">
-          <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.refund_mileage_credit_amount</span>
+          <span class="text-sm text-muted">$t:claim.detail.refund_mileage_credit_amount</span>
           <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.refund_mileage_credit_amount_formatted ?? ''}}</span>
         </div>
-        <p class="text-xs text-gray-500 dark:text-gray-400">$t:claim.detail.refund_mileage_credit_hint</p>
+        <p class="text-xs text-muted">$t:claim.detail.refund_mileage_credit_hint</p>
       </div>
       <!-- 환불 계좌 —계좌번호·예금주는 서버가 마스킹해 내려준다(MasksRefundBankAccount). 화면이 원문을 요구하지 않는다. -->
       <div data-if="{{!!claim.data?.claim?.refund_bank_code}}" class="flex items-start justify-between gap-2">
-        <span class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">$t:claim.detail.refund_account</span>
+        <span class="text-sm text-muted flex-shrink-0">$t:claim.detail.refund_account</span>
         <span class="text-sm text-gray-900 dark:text-white text-right break-all">{{claim.data?.claim?.refund_bank_name ?? claim.data?.claim?.refund_bank_code}} {{claim.data?.claim?.refund_bank_account ?? ''}} {{claim.data?.claim?.refund_bank_holder ?? ''}}</span>
       </div>
       <div data-if="{{!!claim.data?.claim?.refunded_at_formatted}}" class="flex items-baseline justify-between gap-2">
-        <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.refunded_at</span>
+        <span class="text-sm text-muted">$t:claim.detail.refunded_at</span>
         <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.refunded_at_formatted}}</span>
       </div>
     </div>
@@ -405,7 +403,7 @@
     <div data-ref="claim_linked_refunds" data-if="{{['exchange', 'return'].includes(claim.data?.claim?.claim_type ?? '') || !!claim.data?.linked_claims?.source}}" class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
       <p class="text-sm font-semibold text-gray-900 dark:text-white">$t:claim.detail.linked_title</p>
       <div data-ref="claim_linked_source" data-if="{{!!claim.data?.linked_claims?.source}}" class="flex items-baseline justify-between gap-2">
-        <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.linked_source</span>
+        <span class="text-sm text-muted">$t:claim.detail.linked_source</span>
         <a data-if="{{!_local.isGuest}}" href="{{claim.data.linked_claims.source.detail_url}}" :mergeQuery="true" class="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
           <on type="click">
             <!-- 앞 신청서의 결제 오류 문구를 지우고 원 신청서로 옮긴다 -->
@@ -428,7 +426,7 @@
           {{(claim.data?.linked_claims?.source?.claim_type_label ?? '') + ' ' + (claim.data?.linked_claims?.source?.claim_number ?? '')}}
         </button>
       </div>
-      <p data-ref="claim_linked_refunds_empty" data-if="{{['exchange', 'return'].includes(claim.data?.claim?.claim_type ?? '') &amp;&amp; (claim.data?.linked_claims?.refunds ?? []).length === 0}}" class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.linked_empty</p>
+      <p data-ref="claim_linked_refunds_empty" data-if="{{['exchange', 'return'].includes(claim.data?.claim?.claim_type ?? '') &amp;&amp; (claim.data?.linked_claims?.refunds ?? []).length === 0}}" class="text-sm text-muted">$t:claim.detail.linked_empty</p>
       <div data-each="linkedRefund in {{claim.data?.linked_claims?.refunds ?? []}}" class="flex items-baseline justify-between gap-2 flex-wrap">
         <div class="flex items-center gap-2">
           <a data-if="{{!_local.isGuest}}" href="{{linkedRefund.detail_url}}" :mergeQuery="true" class="inline-flex items-center justify-center text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">

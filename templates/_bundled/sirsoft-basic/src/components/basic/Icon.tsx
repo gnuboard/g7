@@ -1,5 +1,6 @@
 import React from 'react';
 import { IconName, IconStyle, IconSize, iconNameMap } from './IconTypes';
+import { parseIconName } from './iconNameParser';
 
 export interface IconProps extends Omit<React.HTMLAttributes<HTMLElement>, 'style'> {
   /**
@@ -110,18 +111,23 @@ export const Icon: React.FC<IconProps> = ({
     brands: 'fab',
   };
 
-  // 아이콘 이름 처리: iconNameMap을 사용하여 Lucide 스타일 이름을 FontAwesome으로 변환
+  // 아이콘 이름 처리: iconNameMap 정확 일치를 먼저 본다(맨 이름 출력 바이트 보존).
   const rawName = typeof name === 'string' ? name : String(name);
   const mappedName = iconNameMap[rawName];
-  // 매핑된 이름이 있으면 사용, 없으면 원본 사용 후 'fa-' 접두사 제거
+
+  // 매핑이 없을 때만 스타일 토큰을 해석한다 — `fas fa-x`·`far fa-x`·`fa-regular fa-x` 를 모두 읽는다.
+  // 종전에는 접두를 해석하지 않아 `fas fa-x` 가 `fas fa-fas fa-x` 로 조합됐다(#381).
+  const parsed = mappedName ? null : parseIconName(rawName);
+  const resolvedStyle: IconStyle = parsed?.style ?? iconStyle;
   const iconName = mappedName
     ? String(mappedName).replace(/^fa-/, '')
-    : rawName.replace(/^fa-/, '');
+    : (parsed?.glyph ?? rawName.replace(/^fa-/, ''));
 
   // 클래스 조합
   const classes = [
-    styleClassMap[iconStyle],
+    styleClassMap[resolvedStyle],
     `fa-${iconName}`,
+    ...(parsed?.extraClasses ?? []),
     size && `fa-${size}`,
     spin && 'fa-spin',
     pulse && 'fa-pulse',

@@ -338,7 +338,7 @@
                                     "if": "{{item.type === 'module'}}",
                                     "props": {
                                         "name": "cube",
-                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                        "className": "text-base text-muted",
                                         "aria-hidden": "true"
                                     }
                                 },
@@ -348,7 +348,7 @@
                                     "if": "{{item.type === 'plugin'}}",
                                     "props": {
                                         "name": "puzzle-piece",
-                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                        "className": "text-base text-muted",
                                         "aria-hidden": "true"
                                     }
                                 },
@@ -358,7 +358,7 @@
                                     "if": "{{item.type === 'template'}}",
                                     "props": {
                                         "name": "palette",
-                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                        "className": "text-base text-muted",
                                         "aria-hidden": "true"
                                     }
                                 },
@@ -515,6 +515,7 @@
                             ]
                         },
                         {
+                            "comment": "audit:allow layout-inline-semantic-duplicate reason: 템플릿 삭제 창에서 지워질 확장 디렉토리 경로 한 줄 상자, ml-6 로 들여쓰고 줄이 px-3 py-1.5 를 가져 카드 여백을 쓰지 않음",
                             "type": "basic",
                             "name": "Div",
                             "props": {
@@ -573,7 +574,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "folder-open",
-                                "className": "text-base text-gray-500 dark:text-gray-400"
+                                "className": "text-base text-muted"
                             }
                         },
                         {
@@ -595,6 +596,7 @@
                     "text": "$t:admin.templates.modals.preserved_desc"
                 },
                 {
+                    "comment": "audit:allow layout-inline-semantic-duplicate reason: 템플릿 삭제 창의 남겨 둔 백업 파일 이름 목록 상자, 회색 안내 상자 안에서 mt-3 간격만 두는 줄 목록 테두리",
                     "type": "basic",
                     "name": "Div",
                     "props": {

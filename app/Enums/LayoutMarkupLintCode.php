@@ -164,6 +164,14 @@ enum LayoutMarkupLintCode: string
     case EntryOnlyKeyIgnored = 'entry_only_key_ignored';
 
     /**
+     * responsive 구간 `class-merge`(classMerge) 값에 Tailwind 폭 변형(`sm:`·`md:`·`max-md:`·`min-[..]:` 등)을 적음 (engine-v1.98.0).
+     *
+     * 구간 자체가 폭 조건이라 그 안에서 다시 폭 변형을 쓰면 두 체계의 경계가 갈라진다(#869 와 같은 문제).
+     * 레이아웃 클래스 값의 폭 변형 금지 규칙(감사 `layout-no-tailwind-breakpoint-variant`)과 같은 판정이다.
+     */
+    case ClassMergeBreakpointVariant = 'class_merge_breakpoint_variant';
+
+    /**
      * 다국어 경고 본문을 반환합니다.
      *
      * @param  array<string, string|int>  $params  메시지 치환 파라미터

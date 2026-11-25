@@ -32,7 +32,7 @@
                             "name": "Div",
                             "if": "{{!language_pack_detail?.data}}",
                             "props": {
-                                "className": "p-8 text-center text-gray-500 dark:text-gray-400"
+                                "className": "p-8 text-center text-muted"
                             },
                             "text": "$t:admin.language_packs.modal.detail.loading"
                         },
@@ -946,7 +946,7 @@
                                                                                     "props": {
                                                                                         "className": "text-secondary text-xs"
                                                                                     },
-                                                                                    "text": "• {{changeItem}}"
+                                                                                    "text": "• {{String(changeItem ?? '').split('**').join('').split('`').join('')}}"
                                                                                 }
                                                                             ]
                                                                         }
@@ -982,7 +982,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
+                                "className": "btn btn-primary"
                             },
                             "children": [
                                 {

@@ -25,7 +25,7 @@
             <span class="ecommerce:font-medium">{{_global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}</span>
             <!-- 접힘 상태 요약 ② 현재 배송국가명 (해외배송 활성 + 국가 2개 이상일 때만). -->
             <span data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="ecommerce:text-gray-600 ecommerce:dark:text-gray-300">· {{(_global.availableShippingCountries ?? []).find(c => c.code === (_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'))?.name ?? (_global.preferredShippingCountry ?? 'KR')}}</span>
-            <icon name="chevron-down" class="{{_local.showCurrencyDropdown ? 'ecommerce:rotate-180' : ''}} ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200"/>
+            <icon name="chevron-down" class="{{_local.showCurrencyDropdown ? 'ecommerce:rotate-180' : ''}} ecommerce:text-xs ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200"/>
           </span>
         </responsive>
         <on type="click">
@@ -66,7 +66,7 @@
           </sequence>
         </on>
         <!-- 섹션 라벨 '통화'. portable 에서는 아코디언 트리거 행이 이미 '통화' 라벨을 달고 있어 중복이므로 숨긴다(배송국가 라벨은 두 번째 섹션을 구분해야 하므로 유지). -->
-        <div class="ecommerce:px-4 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:uppercase ecommerce:tracking-wide">
+        <div class="ecommerce:px-4 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-semibold ecommerce-text-muted ecommerce:uppercase ecommerce:tracking-wide">
           <responsive on="portable" data-if="{{false}}"/>
           $t:sirsoft-ecommerce.common.currency_label
         </div>
@@ -103,8 +103,8 @@
         <div data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="ecommerce:my-1 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700"/>
         <!-- ── 배송국가 섹션 (표시 전용) ── -->
         <div data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}">
-          <div class="ecommerce:px-4 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:uppercase ecommerce:tracking-wide">
-            <responsive on="portable" class="ecommerce:py-1 ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:uppercase"/>
+          <div class="ecommerce:px-4 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-semibold ecommerce-text-muted ecommerce:uppercase ecommerce:tracking-wide">
+            <responsive on="portable" class="ecommerce:py-1 ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted ecommerce:uppercase"/>
             $t:sirsoft-ecommerce.common.shipping_country_label
           </div>
           <!-- 옵션 래퍼. portable 에서만 가로 칩 나열(flex-wrap). 데스크톱은 무클래스 블록. -->

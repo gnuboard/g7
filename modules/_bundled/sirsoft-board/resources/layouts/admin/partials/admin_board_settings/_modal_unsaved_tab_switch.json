@@ -37,7 +37,7 @@
                 "props": {
                     "type": "button",
                     "data-testid": "board-settings-unsaved-tab-stay",
-                    "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
+                    "className": "board-btn board-btn-secondary"
                 },
                 "text": "$t:sirsoft-board.admin.settings.unsaved_tab_modal.btn_stay"
             },

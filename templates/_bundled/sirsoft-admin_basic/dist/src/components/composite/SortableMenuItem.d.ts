@@ -1,10 +1,14 @@
 import { default as React } from 'react';
+import { MenuIconSpecData } from './MenuIcon';
 export interface MenuItemData {
     id: number;
     name: string;
     slug: string;
     url: string;
-    icon: string;
+    /** 호환 문자열 아이콘 — 메뉴는 FA 클래스(이미지·SVG 면 null), 이커머스 브랜드·카테고리는 맨 이름(`tag`·`folder`) */
+    icon: string | null;
+    /** 구조형 아이콘 (#381) — 없으면 icon 을 class 로 그린다 */
+    iconSpec?: MenuIconSpecData | null;
     isActive: boolean;
     isModuleMenu: boolean;
     moduleName?: string;

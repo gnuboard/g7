@@ -56,7 +56,7 @@ describe('plugin_settings — 결제 방식 섹션', () => {
    * @scenario use_escrow=on
    * @effects admin_payment_methods_layout_contract
    */
-  it('결제수단 9종 체크박스가 method_* name 으로 존재한다', () => {
+  it('결제수단 12종 체크박스가 method_* name 으로 존재한다', () => {
     const checkboxes = collect(pluginSettingsLayout, (n) => n.name === 'Checkbox');
     const names = checkboxes.map(nameOf).filter((s) => s.startsWith('method_'));
 
@@ -71,16 +71,19 @@ describe('plugin_settings — 결제 방식 섹션', () => {
         'method_naverpay',
         'method_payco',
         'method_samsungpay',
+        'method_applepay',
+        'method_lpay',
+        'method_ssgpay',
       ])
     );
-    expect(names).toHaveLength(9);
+    expect(names).toHaveLength(12);
   });
 
   /**
    * @scenario use_escrow=on
    * @effects admin_payment_methods_layout_contract
    */
-  it('결제수단 9종의 라벨이 Label 래핑 + Span 텍스트로 렌더된다', () => {
+  it('결제수단 12종의 라벨이 Label 래핑 + Span 텍스트로 렌더된다', () => {
     // Checkbox 컴포넌트는 label prop 을 렌더하지 않는다 (부모 Label 이 처리).
     // label prop 에만 의존하면 화면에 라벨이 표시되지 않으므로 사용을 금지한다.
     const checkboxes = collect(pluginSettingsLayout, (n) => n.name === 'Checkbox');
@@ -93,7 +96,7 @@ describe('plugin_settings — 결제 방식 섹션', () => {
       const children = n.children as Record<string, unknown>[];
       return children.some((c) => c.name === 'Checkbox' && nameOf(c).startsWith('method_'));
     });
-    expect(wrappers).toHaveLength(9);
+    expect(wrappers).toHaveLength(12);
 
     for (const wrapper of wrappers) {
       const children = wrapper.children as Record<string, unknown>[];
@@ -102,6 +105,26 @@ describe('plugin_settings — 결제 방식 섹션', () => {
       expect(span, `${nameOf(checkbox)} 라벨 Span 누락`).toBeDefined();
       expect(String(span!.text)).toBe(`$t:sirsoft-tosspayments.settings.${nameOf(checkbox)}`);
     }
+  });
+
+  /**
+   * 애플페이는 iOS 주문서에서만 보인다는 안내를 토글 바로 아래에 둔다 (#933).
+   *
+   * @scenario payment_method=toss_applepay, device=non_ios
+   * @effects admin_payment_methods_layout_contract
+   */
+  it('애플페이 토글 아래에 iOS 전용 안내(method_applepay_hint)가 있다', () => {
+    const holders = collect(pluginSettingsLayout, (n) => {
+      if (!Array.isArray(n.children)) return false;
+      const children = n.children as Record<string, unknown>[];
+      const hasApplePayLabel = children.some((c) => c.name === 'Label' && Array.isArray(c.children)
+        && (c.children as Record<string, unknown>[]).some((cc) => cc.name === 'Checkbox' && nameOf(cc) === 'method_applepay'));
+      return hasApplePayLabel;
+    });
+    expect(holders).toHaveLength(1);
+
+    const hint = (holders[0].children as Record<string, unknown>[]).find((c) => c.name === 'Span' && String(c.text).endsWith('method_applepay_hint'));
+    expect(String(hint?.text)).toBe('$t:sirsoft-tosspayments.settings.method_applepay_hint');
   });
 
   /**
@@ -115,7 +138,7 @@ describe('plugin_settings — 결제 방식 섹션', () => {
     // 서버가 그것을 null 로 저장하면 defaults(false) 를 덮어 영구 고착된다.
     // → 레이아웃이 boolean 을 직접 보장해야 한다.
     const checkboxes = collect(pluginSettingsLayout, (n) => n.name === 'Checkbox' && nameOf(n).startsWith('method_'));
-    expect(checkboxes).toHaveLength(9);
+    expect(checkboxes).toHaveLength(12);
 
     for (const box of checkboxes) {
       const name = nameOf(box);

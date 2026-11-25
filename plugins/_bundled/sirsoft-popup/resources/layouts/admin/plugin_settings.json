@@ -82,7 +82,7 @@
                 "responsive": {
                     "640-1023": {
                         "props": {
-                            "className": "gpp:p-6 gpp:min-h-screen gpp:bg-gray-50 gpp:dark:bg-gray-900"
+                            "className": "g7pp-admin-page-content"
                         }
                     },
                     "1024-": {
@@ -131,7 +131,7 @@
                         "type": "basic",
                         "name": "P",
                         "props": {
-                            "className": "gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400 gpp:mb-1"
+                            "className": "gpp:text-xs g7pp-text-muted gpp:mb-1"
                         },
                         "text": "$t:sirsoft-popup.settings.breadcrumb"
                     },
@@ -193,9 +193,7 @@
                                 "name": "Div",
                                 "responsive": {
                                     "desktop": {
-                                        "props": {
-                                            "className": "gpp:col-span-2 gpp:flex gpp:flex-col gpp:gap-6"
-                                        }
+                                        "classMerge": "gpp:col-span-2"
                                     }
                                 },
                                 "props": {

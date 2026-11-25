@@ -46,7 +46,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "board:text-xs board:text-gray-500 board:dark:text-gray-400 board:mb-2"
+                        "className": "board:text-xs board-text-muted board:mb-2"
                     },
                     "text": "$t:sirsoft-board.admin.posts.form.attachments_desc|count={{form_meta?.data?.board?.max_file_count ?? 5}}|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}"
                 },

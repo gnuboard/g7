@@ -110,7 +110,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1"
+                                                        "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.user_ecommerce_data.wishlist"
                                                 },
@@ -136,7 +136,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1"
+                                                        "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.user_ecommerce_data.cart"
                                                 },
@@ -162,7 +162,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1"
+                                                        "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.user_ecommerce_data.address"
                                                 },
@@ -188,7 +188,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1"
+                                                        "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.user_ecommerce_data.inquiry"
                                                 },
@@ -227,7 +227,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-2"
+                                                "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mb-2"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.user_ecommerce_data.saved_addresses"
                                         },
@@ -238,7 +238,7 @@
                                             "name": "Span",
                                             "if": "{{(user?.data?.ecommerce_data?.addresses ?? []).length === 0}}",
                                             "props": {
-                                                "className": "ecommerce:block ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                "className": "ecommerce:block ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg ecommerce:text-sm ecommerce-text-muted"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.user_ecommerce_data.address_empty"
                                         },
@@ -292,7 +292,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{address.label}}",
                                                                     "props": {
-                                                                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                        "className": "ecommerce:text-xs ecommerce-text-muted"
                                                                     },
                                                                     "text": "{{address.label}}"
                                                                 }
@@ -311,7 +311,7 @@
                                                             "name": "Span",
                                                             "if": "{{address.recipient_phone}}",
                                                             "props": {
-                                                                "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5"
+                                                                "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mt-0.5"
                                                             },
                                                             "text": "{{address.recipient_phone}}"
                                                         }
@@ -324,7 +324,7 @@
                                             "name": "Span",
                                             "if": "{{(user?.data?.ecommerce_data?.address_count ?? 0) > (user?.data?.ecommerce_data?.addresses ?? []).length}}",
                                             "props": {
-                                                "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-2"
+                                                "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mt-2"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.user_ecommerce_data.address_more|count={{(user?.data?.ecommerce_data?.address_count ?? 0) - (user?.data?.ecommerce_data?.addresses ?? []).length}}"
                                         }
@@ -344,7 +344,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-2"
+                                                "className": "ecommerce:block ecommerce:text-xs ecommerce-text-muted ecommerce:mb-2"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.user_ecommerce_data.search_history · $t:sirsoft-ecommerce.admin.user_ecommerce_data.count_unit|count={{((user?.data?.search_history?.scopes ?? {})['sirsoft-ecommerce.products']?.items ?? []).length}}"
                                         },
@@ -354,7 +354,7 @@
                                             "name": "Span",
                                             "if": "{{((user?.data?.search_history?.scopes ?? {})['sirsoft-ecommerce.products']?.items ?? []).length === 0}}",
                                             "props": {
-                                                "className": "ecommerce:block ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                "className": "ecommerce:block ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg ecommerce:text-sm ecommerce-text-muted"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.user_ecommerce_data.search_history_empty"
                                         },
@@ -390,7 +390,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:whitespace-nowrap"
+                                                                "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:whitespace-nowrap"
                                                             },
                                                             "text": "{{history.searched_at ?? '-'}}"
                                                         }
@@ -422,7 +422,7 @@
                                             "props": {
                                                 "href": "/admin/ecommerce/wishlists?user_uuid={{user?.data?.uuid ?? ''}}",
                                                 "data-testid": "user-wishlists-link",
-                                                "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:cursor-pointer"
+                                                "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:gap-1.5 ecommerce:px-3"
                                             },
                                             "children": [
                                                 {
@@ -454,7 +454,7 @@
                                             "props": {
                                                 "href": "/admin/ecommerce/carts?user_uuid={{user?.data?.uuid ?? ''}}",
                                                 "data-testid": "user-carts-link",
-                                                "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:cursor-pointer"
+                                                "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:gap-1.5 ecommerce:px-3"
                                             },
                                             "children": [
                                                 {
@@ -486,7 +486,7 @@
                                             "props": {
                                                 "href": "/admin/ecommerce/user-addresses?user_uuids[]={{user?.data?.uuid ?? ''}}",
                                                 "data-testid": "user-addresses-link",
-                                                "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:cursor-pointer"
+                                                "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:gap-1.5 ecommerce:px-3"
                                             },
                                             "children": [
                                                 {
@@ -518,7 +518,7 @@
                                             "props": {
                                                 "href": "/admin/ecommerce/inquiries?user_uuid={{user?.data?.uuid ?? ''}}",
                                                 "data-testid": "user-inquiries-link",
-                                                "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:cursor-pointer"
+                                                "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:gap-1.5 ecommerce:px-3"
                                             },
                                             "children": [
                                                 {

@@ -98,7 +98,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-gray-500 dark:text-gray-400"
+                        "className": "text-muted"
                     },
                     "text": "$t:shop.cart.select_items_message"
                 }
@@ -205,7 +205,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-muted"
                                                     },
                                                     "text": "$t:shop.cart.taxable_amount"
                                                 },
@@ -231,7 +231,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-muted"
                                                     },
                                                     "text": "$t:shop.cart.tax_free_amount"
                                                 },
@@ -258,7 +258,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-muted"
                                                     },
                                                     "text": "$t:shop.cart.zero_rated_amount"
                                                 },
@@ -327,7 +327,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-muted"
                                                     },
                                                     "text": "$t:shop.cart.coupon_discount"
                                                 },
@@ -353,7 +353,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-muted"
                                                     },
                                                     "text": "$t:shop.cart.code_discount"
                                                 },
@@ -379,7 +379,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-muted"
                                                     },
                                                     "text": "$t:shop.cart.order_discount"
                                                 },
@@ -452,7 +452,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-muted"
                                                     },
                                                     "text": "$t:shop.cart.base_shipping"
                                                 },
@@ -478,7 +478,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-muted"
                                                     },
                                                     "text": "$t:shop.cart.extra_shipping"
                                                 },
@@ -504,7 +504,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-muted"
                                                     },
                                                     "text": "$t:shop.cart.shipping_discount"
                                                 },
@@ -626,7 +626,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                        "className": "text-xs text-muted"
                                     },
                                     "text": "{{currency[1]?.final_amount_formatted}}"
                                 }

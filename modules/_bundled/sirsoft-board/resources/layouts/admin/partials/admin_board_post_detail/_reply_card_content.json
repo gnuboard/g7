@@ -95,7 +95,7 @@
                                             "if": "{{item.has_attachment}}",
                                             "props": {
                                                 "name": "paperclip",
-                                                "className": "board:text-base board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"
+                                                "className": "board:text-base board-text-muted board:flex-shrink-0"
                                             }
                                         },
                                         {
@@ -374,7 +374,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "{{_local.expandedReplyAttachments?.[item.id] ? 'chevron-up' : 'chevron-down'}}",
-                                "className": "board:text-base board:text-gray-500 board:dark:text-gray-400"
+                                "className": "board:text-base board-text-muted"
                             }
                         }
                     ]
@@ -432,7 +432,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "download",
-                                                "className": "board:text-base board:text-gray-500 board:dark:text-gray-400 board:group-hover:text-blue-600 board-attachment-icon board:transition-colors board:flex-shrink-0"
+                                                "className": "board:text-base board-text-muted board:group-hover:text-blue-600 board-attachment-icon board:transition-colors board:flex-shrink-0"
                                             }
                                         },
                                         {

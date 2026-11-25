@@ -78,8 +78,10 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 하므로 확보를 기다리지 않습니다.
 
 **검색 → 필드 채움**: 사용자가 버튼을 누름 → `openPostcode` 핸들러가 설정
-(클릭 시점 화면 폭이 엔진 반응형 `portable` 상한 1023px 이하면 `display_mode_mobile`: 펼치기/전체 화면, 넘으면
-`display_mode_pc`: 팝업/레이어/펼치기, 크기, 테마 색상)대로 검색 창을 엶 → 주소를 고르면, 조각이
+(클릭 시점 엔진이 정한 화면 폭 `G7Core.ResponsiveManager.getWidth()`(없으면 `innerWidth`)이 엔진 반응형 `portable`
+상한 1023px 이하면 `display_mode_mobile`: 펼치기/전체 화면, 넘으면 `display_mode_pc`: 팝업/레이어/펼치기, 크기, 테마 색상)대로
+검색 창을 엶(1.2.3 — `innerWidth` 를 직접 읽으면 휴대폰 화면 축소로 부푼 값(980 등) 때문에 엔진이 모바일 화면을 그리는데도
+PC 방식으로 열렸다) → 주소를 고르면, 조각이
 `callbackAction` 레이아웃 액션을 넘겼으면 그 액션만 실행하고(주소 값은 액션이 받아 직접 씀), 넘기지
 않았으면 `targetFields`(없으면 플러그인 설정 `target_fields`)가 가리키는 필드들에 값을 씁니다.
 

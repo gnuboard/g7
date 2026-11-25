@@ -490,7 +490,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "page:text-sm page:text-gray-500 page:dark:text-gray-400 page:font-mono"
+                                                    "className": "page:text-sm page-text-muted page:font-mono"
                                                 },
                                                 "text": "{{page?.data?.slug ?? ''}}"
                                             },
@@ -538,9 +538,7 @@
                                 "name": "Div",
                                 "responsive": {
                                     "768-": {
-                                        "props": {
-                                            "className": "page:grid page:grid-cols-2 page:gap-4 page:pt-4 page:border-t page:border-gray-200 page:dark:border-gray-700"
-                                        }
+                                        "classMerge": "page:grid-cols-2"
                                     }
                                 },
                                 "props": {
@@ -878,7 +876,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "file",
-                                                            "className": "page:text-lg page:text-gray-500 page:dark:text-gray-400"
+                                                            "className": "page:text-lg page-text-muted"
                                                         }
                                                     }
                                                 ]
@@ -913,7 +911,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "download",
-                                                    "className": "page:text-gray-500 page:dark:text-gray-400 page:group-hover:text-blue-500 page-attachment-icon page:transition-colors"
+                                                    "className": "page-text-muted page:group-hover:text-blue-500 page-attachment-icon page:transition-colors"
                                                 }
                                             }
                                         ]
@@ -1164,7 +1162,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "page:text-sm page:text-gray-500 page:dark:text-gray-400"
+                                                        "className": "page:text-sm page-text-muted"
                                                     },
                                                     "text": "{{row.created_at ?? '-'}}"
                                                 }
@@ -1179,7 +1177,7 @@
                                                     "name": "Span",
                                                     "if": "{{row.version === 1}}",
                                                     "props": {
-                                                        "className": "page:text-sm page:text-gray-500 page:dark:text-gray-400 page:italic"
+                                                        "className": "page:text-sm page-text-muted page:italic"
                                                     },
                                                     "text": "$t:sirsoft-page.admin.page.detail.versions.initial"
                                                 },
@@ -1208,7 +1206,7 @@
                                                     "name": "Span",
                                                     "if": "{{row.version !== 1 && (!row.changes_summary || !row.changes_summary?.changed_fields?.length) && !row.changes_summary?.restored_from}}",
                                                     "props": {
-                                                        "className": "page:text-sm page:text-gray-500 page:dark:text-gray-400"
+                                                        "className": "page:text-sm page-text-muted"
                                                     },
                                                     "text": "-"
                                                 }

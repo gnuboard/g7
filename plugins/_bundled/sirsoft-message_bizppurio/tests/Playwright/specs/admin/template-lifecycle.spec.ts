@@ -27,6 +27,9 @@
  */
 import { test, expect, authenticatePage } from '../../fixtures/bizppurio-auth';
 
+// 편집 모달 test 는 화면 진입, 모달 열기, 강조 유형 네 번 전환, 버튼 추가까지 단계가 많아 기본 30초 안에 끝나지 않는다.
+test.setTimeout(90_000);
+
 const SETTINGS_URL = '/admin/settings?tab=notification_definitions&channel=alimtalk';
 const MANAGE_URL = '/admin/plugins/sirsoft-message_bizppurio/settings?tab=templates';
 
@@ -36,28 +39,36 @@ test.describe('비즈뿌리오 통합 탭 (코어 알림 설정)', () => {
   // @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, tab_visible_when_any_of_tab_channels_active
   test('채널 활성 저장 시 서브탭에 비즈뿌리오 단일 탭이 노출되고 문자·알림톡 개별 탭은 없다', async ({ page, messagingManageToken }) => {
     await authenticatePage(page, messagingManageToken);
-    await page.goto(SETTINGS_URL);
-    await page.waitForLoadState('networkidle', { timeout: 30_000 });
+    const isSettingsLoad = (r: { request(): { method(): string }; url(): string }) =>
+      r.request().method() === 'GET' && new URL(r.url()).pathname === '/api/admin/settings';
+    const [settingsResponse] = await Promise.all([page.waitForResponse(isSettingsLoad, { timeout: 30_000 }), page.goto(SETTINGS_URL)]);
+    const channels: Array<{ id: string; is_active: boolean }> = (await settingsResponse.json()).data?.notifications?.channels ?? [];
 
     const tabBar = page.locator('#channel_sub_tabs');
     await expect(tabBar).toBeVisible({ timeout: 30_000 });
 
     // 확장 채널은 opt-in(미저장=OFF)이라 통합 탭은 tab_channels 중 하나라도 활성 저장돼야
-    // 노출된다. 미노출 상태면 알림톡 토글 카드를 켜고 저장해 활성화한다(멱등 — 이미 켜져
-    // 있으면 이 분기를 타지 않는다).
-    if (!(await tabBar.innerText()).includes('비즈뿌리오')) {
+    // 노출된다. 꺼져 있으면 알림톡 토글 카드를 켜고 저장해 활성화한다(멱등).
+    // 판단은 서버 설정값으로 한다 — 화면은 서버 값을 받기 전에 탭이 덜 그려지고 스위치가 기본값(꺼짐)으로 먼저 보여,
+    // 화면으로 판단하면 이미 켜진 채널을 눌러 꺼 버린다.
+    if (!channels.some((c) => c.id === 'alimtalk' && c.is_active)) {
       const card = page
         .locator('#channel_toggles')
         .locator('div.flex-between', { hasText: '비즈뿌리오 알림톡' })
         .first();
       await expect(card).toBeVisible({ timeout: 15_000 });
-      await card.locator('[role="switch"]').click();
-
-      await page.locator('#save_button').click();
-      await page.waitForLoadState('networkidle', { timeout: 30_000 });
+      const toggle = card.locator('[role="switch"]');
+      await expect(toggle).toHaveAttribute('aria-checked', 'false');
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-checked', 'true');
+      await Promise.all([
+        page.waitForResponse((r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/admin/settings', { timeout: 30_000 }),
+        page.locator('#save_button').click(),
+      ]);
       await page.goto(SETTINGS_URL);
-      await page.waitForLoadState('networkidle', { timeout: 30_000 });
+      await expect(tabBar).toBeVisible({ timeout: 30_000 });
     }
+    await expect(tabBar).toContainText('비즈뿌리오', { timeout: 30_000 });
 
     // 채널 탭은 링크(#757) — 단추만 보면 빈 목록이 된다
     const tabTexts = await tabBar.locator(':is(a, button)').allInnerTexts();
@@ -111,9 +122,10 @@ test.describe('비즈뿌리오 통합 탭 (코어 알림 설정)', () => {
     await editButton.click();
 
     const dialog = page.getByRole('dialog');
-    const modal = dialog.locator('#bizppurio_tpl_sections');
+    // #408 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+    const modal = dialog.locator('[id^="bizppurio_tpl_sections__"]');
     await expect(modal).toBeVisible({ timeout: 15_000 });
-    await expect(dialog.locator('#bizppurio_tpl_sms_section')).toBeVisible();
+    await expect(dialog.locator('[id^="bizppurio_tpl_sms_section__"]')).toBeVisible();
     // 코어 제목/본문 입력은 hidden_template_editor 게이트로 숨는다 — 본문 입력은 알림톡 섹션 하나뿐
     await expect(dialog.locator('#template_body_input')).toHaveCount(0);
     await expect(dialog.getByRole('button', { name: '저장', exact: true })).toHaveCount(1);

@@ -446,7 +446,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "fa-regular fa-user",
-                                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:flex-shrink-0"
+                                                    "className": "ecommerce-text-muted ecommerce:flex-shrink-0"
                                                 }
                                             },
                                             {
@@ -473,7 +473,7 @@
                                                             "data-testid": "real-name-sub",
                                                             "role": "note",
                                                             "aria-label": "{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.member?.real_name })}}",
-                                                            "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:truncate ecommerce:block"
+                                                            "className": "ecommerce:text-xs ecommerce-text-muted ecommerce:truncate ecommerce:block"
                                                         },
                                                         "text": "{{row.member?.real_name}}"
                                                     },

@@ -75,7 +75,7 @@
         <p data-if="{{_computed.archiveFreshness != null &amp;&amp; (_computed.archiveFreshness?.last_run_at == null)}}" class="text-warning-soft flex-1 min-w-0">$t:admin.analytics.alerts.archive_never</p>
         <!-- 「지금 집계」 — 오늘치를 그 자리에서 다시 계산한다(진단 화면의 같은 버튼과 같은 API). 설정을 바꿀 수 있는 계정만
           누를 수 있다(`core.analytics.update`) — 보기 전용 계정에게는 문구만 남긴다. 끝나면 이 화면의 소스와 상태를 다시 받는다. -->
-        <button data-ref="alert_archive_now_button" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.update'))}}" type="button" class="btn btn-secondary btn-sm flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.archiveNowRunning === true}}">
+        <button data-ref="alert_archive_now_button" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.update'))}}" type="button" class="btn btn-secondary btn-sm flex-center gap-1.5" disabled="{{_local.archiveNowRunning === true}}">
           <on type="click">
             <sequence>
               <set-state target="local" :archiveNowRunning="true"/>
@@ -108,7 +108,7 @@
         <p class="text-warning-soft flex-1 min-w-0">$t:admin.analytics.alerts.on_view_too_many|max={{(_computed.archiveFreshness?.on_view?.max_visits ?? 0) | number}}|at={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16) || '-'}}</p>
         <!-- 「지금 집계」 — 오늘치를 그 자리에서 다시 계산한다(진단 화면의 같은 버튼과 같은 API). 설정을 바꿀 수 있는 계정만
           누를 수 있다(`core.analytics.update`) — 보기 전용 계정에게는 문구만 남긴다. 끝나면 이 화면의 소스와 상태를 다시 받는다. -->
-        <button data-ref="alert_too_many_archive_now_button" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.update'))}}" type="button" class="btn btn-secondary btn-sm flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.archiveNowRunning === true}}">
+        <button data-ref="alert_too_many_archive_now_button" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.update'))}}" type="button" class="btn btn-secondary btn-sm flex-center gap-1.5" disabled="{{_local.archiveNowRunning === true}}">
           <on type="click">
             <sequence>
               <set-state target="local" :archiveNowRunning="true"/>

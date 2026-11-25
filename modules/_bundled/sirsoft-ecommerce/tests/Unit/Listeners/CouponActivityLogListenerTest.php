@@ -26,6 +26,11 @@ class CouponActivityLogListenerTest extends ModuleTestCase
 
     private $logChannel;
 
+    /**
+     * 요청·리스너와 활동 로그 채널 목을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -42,11 +47,23 @@ class CouponActivityLogListenerTest extends ModuleTestCase
     // getSubscribedHooks
     // ═══════════════════════════════════════════
 
+    /**
+     * 구독 훅 8종(자동발급·자동발급 회수 포함)을 선언하고, before 훅은 구독하지 않는다.
+     *
+     * @scenario case=subscribed_hooks
+     *
+     * @effects coupon_activity_hooks_declared
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_subscribed_hooks_returns_all_hooks(): void
     {
         $hooks = CouponActivityLogListener::getSubscribedHooks();
 
-        $this->assertCount(6, $hooks);
+        // 자동발급·자동발급 회수 2종이 더해졌다 (#952)
+        $this->assertCount(8, $hooks);
+        $this->assertArrayHasKey('sirsoft-ecommerce.coupon.after_auto_issue', $hooks);
+        $this->assertArrayHasKey('sirsoft-ecommerce.coupon.after_auto_issue_revoke', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.coupon.after_create', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.coupon.after_update', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.coupon.after_delete', $hooks);
@@ -61,6 +78,15 @@ class CouponActivityLogListenerTest extends ModuleTestCase
     // 이벤트 핸들러 테스트
     // ═══════════════════════════════════════════
 
+    /**
+     * 쿠폰을 만든 뒤 활동 로그를 남긴다.
+     *
+     * @scenario case=after_create
+     *
+     * @effects coupon_activity_logged
+     *
+     * @return void 반환값 없음
+     */
     public function test_handle_after_create_logs_activity(): void
     {
         $coupon = $this->createCouponMock(10, 'Summer Sale');
@@ -80,6 +106,15 @@ class CouponActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleAfterCreate($coupon, ['name' => 'Summer Sale']);
     }
 
+    /**
+     * 쿠폰을 고친 뒤 바뀐 칸과 함께 활동 로그를 남긴다.
+     *
+     * @scenario case=after_update_with_changes
+     *
+     * @effects coupon_activity_logged
+     *
+     * @return void 반환값 없음
+     */
     public function test_handle_after_update_logs_activity_with_changes(): void
     {
         $coupon = $this->createCouponMock(10, 'Summer Sale Updated');
@@ -101,6 +136,15 @@ class CouponActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleAfterUpdate($coupon, ['name' => 'Summer Sale Updated'], $snapshot);
     }
 
+    /**
+     * 수정 전 스냅샷이 없어도 활동 로그를 남긴다.
+     *
+     * @scenario case=after_update_without_snapshot
+     *
+     * @effects coupon_activity_logged
+     *
+     * @return void 반환값 없음
+     */
     public function test_handle_after_update_without_snapshot(): void
     {
         $coupon = $this->createCouponMock(99, 'No Snapshot');
@@ -116,6 +160,15 @@ class CouponActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleAfterUpdate($coupon, ['name' => 'No Snapshot']);
     }
 
+    /**
+     * 쿠폰을 지운 뒤 활동 로그를 남긴다.
+     *
+     * @scenario case=after_delete
+     *
+     * @effects coupon_activity_logged
+     *
+     * @return void 반환값 없음
+     */
     public function test_handle_after_delete_logs_activity(): void
     {
         $couponId = 15;
@@ -134,6 +187,15 @@ class CouponActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleAfterDelete($couponId);
     }
 
+    /**
+     * 일괄 상태 변경(Enum 값)을 활동 로그로 남긴다.
+     *
+     * @scenario case=bulk_status_backed_enum
+     *
+     * @effects coupon_activity_logged
+     *
+     * @return void 반환값 없음
+     */
     public function test_handle_after_bulk_status_logs_activity_with_backed_enum(): void
     {
         $coupons = collect([
@@ -163,6 +225,15 @@ class CouponActivityLogListenerTest extends ModuleTestCase
         $this->assertCount(3, $loggedActions);
     }
 
+    /**
+     * 일괄 상태 변경(문자열 값)을 활동 로그로 남긴다.
+     *
+     * @scenario case=bulk_status_plain_value
+     *
+     * @effects coupon_activity_logged
+     *
+     * @return void 반환값 없음
+     */
     public function test_handle_after_bulk_status_logs_activity_with_non_backed_enum(): void
     {
         $coupons = collect([
@@ -194,6 +265,15 @@ class CouponActivityLogListenerTest extends ModuleTestCase
     // 에러 핸들링 테스트
     // ═══════════════════════════════════════════
 
+    /**
+     * 활동 로그 기록이 실패해도 예외를 삼키고 오류 로그를 남긴다.
+     *
+     * @scenario case=log_failure
+     *
+     * @effects coupon_activity_failure_swallowed
+     *
+     * @return void 반환값 없음
+     */
     public function test_log_activity_catches_exception_and_logs_error(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -215,6 +295,15 @@ class CouponActivityLogListenerTest extends ModuleTestCase
     // handle 기본 핸들러 테스트
     // ═══════════════════════════════════════════
 
+    /**
+     * 기본 handle 은 아무것도 하지 않는다.
+     *
+     * @scenario case=handle_noop
+     *
+     * @effects coupon_activity_handle_noop
+     *
+     * @return void 반환값 없음
+     */
     public function test_handle_does_nothing(): void
     {
         $this->listener->handle('arg1', 'arg2');
@@ -225,6 +314,13 @@ class CouponActivityLogListenerTest extends ModuleTestCase
     // 헬퍼 메서드
     // ═══════════════════════════════════════════
 
+    /**
+     * 활동 로그에 넘길 쿠폰 목을 만듭니다.
+     *
+     * @param  int  $id  쿠폰 ID
+     * @param  string|null  $name  쿠폰명 (없으면 null)
+     * @return Coupon 쿠폰 목
+     */
     private function createCouponMock(int $id, ?string $name = null): Coupon
     {
         $coupon = Mockery::mock(Coupon::class)->makePartial();

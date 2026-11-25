@@ -1,6 +1,6 @@
 <!-- 글 결과 목록(글 탭 전용) — 각 줄에 어느 게시판 글인지를 배지로 단다(검색은 게시판을 가로지르므로 그 표시가 없으면 어디서 온 글인지 알 수 없다). -->
 <partial description="게시글 탭 - 단순 리스트 (게시판명 배지 + 페이지네이션)">
-  <div data-if="{{searchResults?.data?.posts?.items &amp;&amp; searchResults?.data?.posts?.items?.length > 0}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+  <div data-if="{{searchResults?.data?.posts?.items &amp;&amp; searchResults?.data?.posts?.items?.length > 0}}" class="card-plain overflow-hidden">
     <!-- 게시글 리스트 -->
     <div data-each="post, idx in {{searchResults?.data?.posts?.items ?? []}}">
       <!-- 구분선 (첫 번째 아이템 제외) -->
@@ -20,12 +20,12 @@
           <!-- 제목 (HTML 하이라이트 지원) -->
           <html-content data-type="composite" content="{{post?.title_highlighted ?? post?.title}}" class="min-w-0 wrap-anywhere font-medium text-gray-900 dark:text-white [&amp;_mark]:bg-yellow-200 [&amp;_mark]:dark:bg-yellow-500/40 [&amp;_mark]:px-0.5 [&amp;_mark]:rounded"/>
           <!-- 확장 자리 — 확장이 글마다 배지를 붙인다(#149). 조각은 extensionPointProps.postId 등으로 이 결과의 글을 읽는다 -->
-          <extension-point name="board_post_row_badges" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post?.id}}" boardSlug="{{post?.board_slug}}" context="search_posts"/>
+          <extension-point name="board_post_row_badges" data-ref="ext_board_post_row_badges_search_posts_{{post.id}}" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post?.id}}" boardSlug="{{post?.board_slug}}" context="search_posts"/>
         </div>
         <!-- 발췌 내용 (HTML 하이라이트 지원, 텍스트 모드 분기) -->
         <html-content data-type="composite" data-if="{{post?.content_preview}}" content="{{post?.content_preview_highlighted ?? post?.content_preview}}" isHtml="{{post?.content_preview_highlighted ? true : (post?.content_mode ?? 'text') === 'html'}}" class="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2 [&amp;_mark]:bg-yellow-200 [&amp;_mark]:dark:bg-yellow-500/40 [&amp;_mark]:px-0.5 [&amp;_mark]:rounded"/>
         <!-- 메타 정보 -->
-        <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+        <div class="flex items-center gap-3 text-xs text-muted">
           <span>{{post?.author_name}}</span>
           <span title="{{post?.created_at ?? ''}}">{{post?.created_at_formatted ?? ''}}</span>
           <span data-if="{{(post?.view_count ?? 0) > 0}}" class="flex items-center gap-1">

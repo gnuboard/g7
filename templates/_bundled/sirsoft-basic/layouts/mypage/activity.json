@@ -1,0 +1,120 @@
+{
+    "comment": "마이페이지 «활동 기록» 탭 (#952) — 내가 한 일(로그인·정보 수정·주문 등)의 기록. 관리자 화면에서 한 작업은 싣지 않는다(코어 API 가 거른다).\n     기간·쪽은 URL 쿼리에 있다 — [조회]는 입력해 둔 기간을 쿼리로 옮기고 1쪽으로 돌아간다.",
+    "version": "1.0.0",
+    "layout_name": "mypage/activity",
+    "extends": "_user_base",
+    "data_sources": [
+        {
+            "id": "myActivity",
+            "label_key": "$t:editor.data_source.myActivity",
+            "type": "api",
+            "endpoint": "/api/user/profile/activity-log",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "blur_until_loaded": true,
+            "params": {
+                "page": "{{query.page ?? 1}}",
+                "per_page": 20,
+                "date_from": "{{query.date_from ?? ''}}",
+                "date_to": "{{query.date_to ?? ''}}"
+            },
+            "comment": "활동 기록 — 응답은 `data.activities[]` + `data.pagination`"
+        }
+    ],
+    "computed": {
+        "currentTab": "activity"
+    },
+    "permissions": [],
+    "transition_overlay": {
+        "enabled": true,
+        "style": "spinner",
+        "target": "mypage_tab_content",
+        "fallback_target": "main_content_area",
+        "spinner": {
+            "component": "PageLoading"
+        }
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "activityFrom": "{{query.date_from ?? ''}}",
+                "activityTo": "{{query.date_to ?? ''}}"
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
+                },
+                "children": [
+                    {
+                        "type": "layout",
+                        "name": "Container",
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "py-4"
+                                }
+                            }
+                        },
+                        "props": {
+                            "className": "py-8"
+                        },
+                        "children": [
+                            {
+                                "comment": "페이지 제목",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "user",
+                                            "size": "xl",
+                                            "className": "text-gray-900 dark:text-white"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:mypage.title"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "탭 네비게이션",
+                                "partial": "partials/mypage/_tab_navigation.json"
+                            },
+                            {
+                                "comment": "탭 컨텐츠 영역 (스켈레톤 타겟)",
+                                "id": "mypage_tab_content",
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "partial": "partials/mypage/activity/_list.json"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

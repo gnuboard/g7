@@ -28,7 +28,7 @@
         </on>
         <span>$t:admin.analytics.modals.retro.skip</span>
       </button>
-      <button data-ref="retro_apply_button" type="button" class="btn btn-primary flex-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.analyticsRetroConfirm !== true || _global.analyticsRetroRunning}}">
+      <button data-ref="retro_apply_button" type="button" class="btn btn-primary flex-center gap-2" disabled="{{_global.analyticsRetroConfirm !== true || _global.analyticsRetroRunning}}">
         <on type="click">
           <!-- 저장한 설정의 마스킹 폭·해시 여부를 그대로 소급한다. 둘 중 하나는 반드시 실려야 서버가 받는다(422). -->
           <sequence>

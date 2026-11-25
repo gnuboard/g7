@@ -184,7 +184,7 @@
         <p data-ref="visitors_daily_sum_note" class="text-label-subtle mt-3">$t:admin.analytics.overview.visitors_daily_sum_note</p>
       </div>
       <div data-ref="quality_row" data-if="{{analytics_overview?.unavailable !== true}}" class="grid grid-cols-2 auto-rows-fr gap-4 mb-4">
-        <responsive on="desktop" class="grid grid-cols-4 auto-rows-fr gap-4 mb-4"/>
+        <responsive on="desktop" class-merge="grid-cols-4"/>
         <blur-until-loaded sources="analytics_overview"/>
         <stat-card data-type="composite" data-ref="quality_bounce" value="{{(function(pts) { const v = pts.reduce((s, p) => s + (p.visits ?? 0), 0); const b = pts.reduce((s, p) => s + (p.bounces ?? 0), 0); return v > 0 ? (Math.round(b / v * 1000) / 10) + '%' : '0%'; })(analytics_overview?.data?.series?.points ?? [])}}" label="$t:admin.analytics.overview.quality.bounce_rate" iconName="arrow-right-from-bracket"/>
         <stat-card data-type="composite" data-ref="quality_time" value="{{(function(pts) { const v = pts.reduce((s, p) => s + (p.visits ?? 0), 0); const t = pts.reduce((s, p) => s + ((p.avg_time ?? 0) * (p.visits ?? 0)), 0); const avg = v > 0 ? Math.round(t / v) : 0; return Math.floor(avg / 60) + ':' + String(avg % 60).padStart(2, '0'); })(analytics_overview?.data?.series?.points ?? [])}}" label="$t:admin.analytics.overview.quality.avg_time" iconName="clock"/>
@@ -309,7 +309,7 @@
         </div>
       </div>
       <!-- 확장이 개요에 자기 위젯(전환 요약 등)을 덧붙이는 자리 -->
-      <extension-point name="analytics_overview_widgets" class="space-y-4">
+      <extension-point name="analytics_overview_widgets" data-ref="ext_analytics_overview_widgets" class="space-y-4">
         <default/>
       </extension-point>
     </div>

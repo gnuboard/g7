@@ -19,6 +19,7 @@
 import { sitePath } from '../apiUrl';
 import { buildGuestOwnershipHeaders } from '../guestOrderToken';
 import { rememberPendingClose } from '../paymentCloseReport';
+import { applePayUnsupportedMessage, isIosMobileDevice, isTossApplePayMethod } from '../support/applePayDevice';
 
 interface EscrowProduct {
     id: string;
@@ -195,57 +196,89 @@ async function loadScript(src: string): Promise<void> {
 }
 
 /**
- * 토스페이먼츠 결제창 호출 핸들러
+ * 결제창에 쓸 결제수단 id 를 정합니다.
  *
- * ActionDispatcher는 커스텀 핸들러를 (action, context) 시그니처로 호출합니다.
- * params는 action.params에서 접근해야 합니다.
+ * 선택 순서:
+ *   1. 액션 인자(`paymentMethod`)
+ *   2. 클레임 추가결제가 아니고 주문서 화면 상태(`_local.paymentMethod`)가 `toss_` 로 시작하면 그 값
+ *   3. 서버가 저장한 결제수단(`payment_method`)
  *
- * @param action 액션 정의 (handler, params 등)
- * @param _context 액션 컨텍스트
+ * 서버는 주문서에서 고른 `toss_*` 를 코어 값(`card`·`vbank`)으로 바꿔 저장한다. 그래서 서버 값만 보면 간편결제 종류가
+ * 사라져 `card` 의 첫 항목(`toss_card`)으로 풀리고, 카카오페이를 골라도 카드 통합결제창이 열렸다(#933 A0).
+ * 클레임 추가결제 화면의 상태는 주문서 선택이 아니므로 보지 않는다. 화면 값과 서버 값이 어긋나면 `resolveMethod` 가
+ * 서버 값으로 다시 찾는다(서버 우선).
+ *
+ * @param paramId 액션 인자로 받은 결제수단 id
+ * @param serverId 서버가 결제 데이터에 실어 준 결제수단 id
+ * @param localId 주문서 화면 상태의 결제수단 id (`_local.paymentMethod`)
+ * @param isClaim 클레임 추가결제 여부
+ * @returns 결제수단 id (모두 비어 있으면 undefined)
  */
+export function resolveSelectedMethodId(
+    paramId?: string | null,
+    serverId?: string | null,
+    localId?: string | null,
+    isClaim = false,
+): string | undefined {
+    if (paramId) {
+        return paramId;
+    }
+
+    if (!isClaim && typeof localId === 'string' && localId.startsWith('toss_')) {
+        return localId;
+    }
+
+    return serverId || undefined;
+}
+
 /**
- * 선택된 결제수단 id 를 SDK 파라미터로 변환합니다.
+ * 결제수단 항목을 찾습니다 — toss_* id 를 먼저, 없으면 core_payment_method 로 찾습니다.
+ *
+ * @param methods 서버가 내려준 enabled_methods
+ * @param id 찾을 id (toss_* 또는 코어 id)
+ * @returns 찾은 항목 (없으면 undefined)
+ */
+function findEnabledMethod(methods: EnabledMethod[], id: string): EnabledMethod | undefined {
+    return methods.find((m) => m.id === id) ?? methods.find((m) => m.core_payment_method === id);
+}
+
+/**
+ * 선택된 결제수단 id 를 SDK method / easyPay provider 로 바꿉니다.
  *
  * 서버가 내려준 enabled_methods 에서 선택 id 를 찾아 SDK method / easyPay provider 를
  * 결정한다. 프론트는 결제수단 매핑을 하드코딩하지 않는다 (서버가 SSoT).
  * order_sheet_mode 가 off 이거나 선택 id 를 못 찾으면 통합결제창 카드(CARD)로 처리한다.
  *
  * 선택 id 는 두 가지로 온다 — 주문서에서 toss_* 항목을 직접 고르면 그 id(`toss_virtual_account`)
- * 가, 코어 카탈로그의 결제수단(신용카드·가상계좌)을 고르면 **코어 id**(`card`·`vbank`)가
- * `_local.paymentMethod` 에 담긴다. 코어 id 를 못 찾고 CARD 로 강하하면 **가상계좌 주문에
- * 카드 결제창이 열린다**(S1-D1). 그래서 toss_* id 를 먼저 찾고, 없으면 core_payment_method
- * 로 한 번 더 찾는다. 순서가 중요하다 — toss_kakaopay 의 core 는 card 라 코어를 먼저 맞추면
- * 간편결제 자체창(easyPay)이 사라진다.
+ * 가, 코어 카탈로그의 결제수단(신용카드·가상계좌)을 고르면 **코어 id**(`card`·`vbank`)가 온다.
+ * 코어 id 를 못 찾고 CARD 로 강하하면 **가상계좌 주문에 카드 결제창이 열린다**(S1-D1). 그래서 toss_* id 를
+ * 먼저 찾고, 없으면 core_payment_method 로 한 번 더 찾는다. 순서가 중요하다 — toss_kakaopay 의 core 는
+ * card 라 코어를 먼저 맞추면 간편결제 자체창(easyPay)이 사라진다.
+ *
+ * 화면에서 고른 항목이 서버가 저장한 결제수단과 맞지 않으면(`entry.id !== serverId && entry.core_payment_method !== serverId`)
+ * 그 항목을 버리고 서버 값으로 다시 찾는다 — 가상계좌로 저장된 주문에 간편결제 창이 열리면 안 된다.
  *
  * @param config 클라이언트 설정 (enabled_methods 포함)
  * @param selectedId 선택된 결제수단 id (toss_* 또는 코어 id)
+ * @param serverId 서버가 저장한 결제수단 id
  * @returns SDK method 와 easyPay provider
  */
-/**
- * 결제창에 쓸 결제수단 id 를 정합니다.
- *
- * 액션 인자가 있으면 그 값, 없으면 서버가 저장한 결제수단(payment_method)이다. 화면 상태(`_local.paymentMethod`)는
- * 보지 않는다 — 주문서가 아닌 화면(클레임 추가결제 등)에서는 비거나 서버와 다른 값일 수 있다.
- *
- * @param paramId 액션 인자로 받은 결제수단 id
- * @param serverId 서버가 결제 데이터에 실어 준 결제수단 id
- * @returns 결제수단 id (둘 다 비어 있으면 undefined)
- */
-export function resolveSelectedMethodId(
-    paramId?: string | null,
+function resolveMethod(
+    config: ClientConfig,
+    selectedId?: string,
     serverId?: string | null,
-): string | undefined {
-    return paramId || serverId || undefined;
-}
-
-function resolveMethod(config: ClientConfig, selectedId?: string): { method: string; easyPay: string | null } {
+): { method: string; easyPay: string | null } {
     if (!config.order_sheet_mode || !selectedId) {
         return { method: 'CARD', easyPay: null };
     }
 
     const methods = config.enabled_methods ?? [];
-    const entry = methods.find((m) => m.id === selectedId)
-        ?? methods.find((m) => m.core_payment_method === selectedId);
+    let entry = findEnabledMethod(methods, selectedId);
+
+    if (entry && serverId && entry.id !== serverId && entry.core_payment_method !== serverId) {
+        entry = findEnabledMethod(methods, serverId);
+    }
+
     if (!entry) {
         return { method: 'CARD', easyPay: null };
     }
@@ -355,6 +388,15 @@ function reportPaymentError(G7Core: any, pgPaymentData: PgPaymentData, message: 
     G7Core?.modal?.open?.('tosspayments_payment_error_modal');
 }
 
+/**
+ * 토스페이먼츠 결제창 호출 핸들러
+ *
+ * ActionDispatcher는 커스텀 핸들러를 (action, context) 시그니처로 호출합니다.
+ * params는 action.params에서 접근해야 합니다.
+ *
+ * @param action 액션 정의 (handler, params 등)
+ * @param _context 액션 컨텍스트
+ */
 export async function requestPaymentHandler(action: any, _context?: any): Promise<void> {
     const params = (action.params || {}) as RequestPaymentParams;
     const { pgPaymentData } = params;
@@ -366,7 +408,24 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
 
     const G7Core = (window as any).G7Core;
 
-    const selectedMethodId = resolveSelectedMethodId(params.paymentMethod, pgPaymentData.payment_method);
+    const selectedMethodId = resolveSelectedMethodId(
+        params.paymentMethod,
+        pgPaymentData.payment_method,
+        G7Core?.state?.getLocal?.()?.paymentMethod,
+        isClaimPayment(pgPaymentData),
+    );
+
+    // 애플페이는 iOS 기기에서만 결제된다. 주문서가 `requires_ios` 로 숨기지만 화면 상태를 조작해 골랐다면 결제 설정 조회·SDK 호출
+    // 전에 멈춘다(토스 자체창은 iOS 밖에서 「지원되지 않는 간편결제 수단」 오류창을 띄운다). 서버 값이 card 가 아니면(가상계좌 등)
+    // 결제창 결정에서 서버가 이기므로 막지 않는다.
+    if (
+        isTossApplePayMethod(selectedMethodId)
+        && (!pgPaymentData.payment_method || pgPaymentData.payment_method === 'card')
+        && !isIosMobileDevice()
+    ) {
+        reportPaymentError(G7Core, pgPaymentData, applePayUnsupportedMessage());
+        return;
+    }
 
     try {
         // 1. Client Config API 호출
@@ -404,7 +463,7 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
 
         // 4. 결제수단 결정 + 비KRW 차단
         const currency = pgPaymentData.currency ?? 'KRW';
-        const { method, easyPay } = resolveMethod(config, selectedMethodId);
+        const { method, easyPay } = resolveMethod(config, selectedMethodId, pgPaymentData.payment_method);
 
         // 토스 국내 전용 수단(가상계좌·계좌이체·휴대폰·간편결제)은 비KRW 결제 불가. 카드만 허용.
         const domesticOnly = method !== 'CARD' || easyPay !== null;

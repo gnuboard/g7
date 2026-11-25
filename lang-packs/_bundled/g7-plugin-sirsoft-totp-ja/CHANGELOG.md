@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.5] - 2026-11-25
+
+### Added
+
+- 마이페이지 보안 카드의 2단계 인증 칸 문구(`user.security.*`)의 일본어 번역을 추가했습니다.
+
 ## [1.0.4] - 2026-11-20
 
 ### Changed

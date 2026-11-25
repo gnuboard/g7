@@ -10,12 +10,12 @@
     "responsive": {
         "portable": {
             "props": {
-                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                "className": "card-plain p-4"
             }
         }
     },
     "props": {
-        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
+        "className": "card-plain p-6"
     },
     "children": [
         {
@@ -182,7 +182,7 @@
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        "className": "form-label mb-2"
                     },
                     "children": [
                         {
@@ -207,9 +207,7 @@
                     "name": "Select",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
-                            }
+                            "classMerge": "px-3 text-sm"
                         }
                     },
                     "actions": [
@@ -322,7 +320,7 @@
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        "className": "form-label mb-2"
                     },
                     "children": [
                         {
@@ -347,9 +345,7 @@
                     "name": "Select",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
-                            }
+                            "classMerge": "px-3 text-sm"
                         }
                     },
                     "actions": [
@@ -451,7 +447,7 @@
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        "className": "form-label mb-2"
                     },
                     "text": "$t:shop.checkout.discount_code"
                 },
@@ -467,9 +463,7 @@
                             "name": "Input",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
-                                    }
+                                    "classMerge": "px-3 text-sm"
                                 }
                             },
                             "actions": [
@@ -498,9 +492,7 @@
                             "name": "Button",
                             "responsive": {
                                 "portable": {
-                                    "props": {
-                                        "className": "px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"
-                                    }
+                                    "classMerge": "px-3 text-sm"
                                 }
                             },
                             "actions": [

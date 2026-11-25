@@ -33,7 +33,7 @@
     <div data-if="{{_global.languagePackPreviewResult}}" class="mt-4 space-y-3">
       <div data-if="{{_global.languagePackPreviewResult?.manifest}}" class="p-3 bg-gray-50 dark:bg-gray-900 rounded text-sm">
         <span class="font-semibold text-gray-700 dark:text-gray-300">{{_global.languagePackPreviewResult?.manifest?.identifier}} v{{_global.languagePackPreviewResult?.manifest?.version}}</span>
-        <span class="ml-2 text-gray-500 dark:text-gray-400">({{_global.languagePackPreviewResult?.manifest?.scope}} / {{_global.languagePackPreviewResult?.manifest?.locale}})</span>
+        <span class="ml-2 text-muted">({{_global.languagePackPreviewResult?.manifest?.scope}} / {{_global.languagePackPreviewResult?.manifest?.locale}})</span>
       </div>
       <!-- 아이콘 규격 검사 결과 — 모듈·플러그인·템플릿 서랍과 같은 자리. 서버가 `icon` 을 실어 주는데 이 서랍만
            그리지 않아 언어팩 아이콘 경고가 보이지 않았다(#736 F 실측). 규격 위반은 설치를 막지 않는다. -->

@@ -353,7 +353,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+                                                        "className": "text-xs font-medium text-muted uppercase"
                                                     },
                                                     "text": "$t:admin.language"
                                                 },
@@ -1092,7 +1092,6 @@
                                                         "logoutText": "$t:admin.logout",
                                                         "languageText": "$t:admin.language",
                                                         "availableLocales": "{{_global.appConfig.supportedLocales ?? $locales}}",
-                                                        "className": "",
                                                         "showAvatar": false,
                                                         "showName": false,
                                                         "dropdownOnly": true,

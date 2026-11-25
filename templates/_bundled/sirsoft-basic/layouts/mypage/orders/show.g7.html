@@ -151,7 +151,7 @@
               <span>$t:mypage.order_detail.continue_shopping</span>
             </a>
             <!-- 재주문 버튼 - 취소된 주문만 표시 -->
-            <a href="{{_global.shopBase}}/reorder/{{order.data.id ?? ''}}" data-if="{{order.data.order_status === 'cancelled'}}" class="flex-1 flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer">
+            <a href="{{_global.shopBase}}/reorder/{{order.data.id ?? ''}}" data-if="{{order.data.order_status === 'cancelled'}}" class="flex-1 flex btn btn-outline gap-2 px-6 py-3 dark:hover:bg-gray-800 cursor-pointer">
               <on type="click">
                 <!-- audit:allow layout-list-context-navigate-merge-query 재주문 — 주문서 작성 흐름으로 넘어가는 이동이므로 주문 목록 상태를 물려주지 않는다. -->
                 <navigate/>

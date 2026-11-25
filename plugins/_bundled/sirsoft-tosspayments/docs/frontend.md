@@ -21,7 +21,7 @@
 하나뿐입니다 — 체크아웃·주문상세의 결제 UI는 이 플러그인 소유가 아니라 §레이아웃 확장
 (다른 확장/템플릿 레이아웃에 주입되는 조각)으로 존재합니다.
 
-화면 폭에 따라 달라지는 배치는 Tailwind 반응형 접두(`sm:`·`md:`·`lg:`)를 쓰지 않고 엔진 `responsive` 로 씁니다(예: `<responsive on="desktop" class="…"/>`, `on="640-"`). 갈래의 `class` 는 기본 `class` 를 통째로 바꾸므로 그 폭에서 필요한 토큰을 모두 적습니다.
+화면 폭에 따라 달라지는 배치는 Tailwind 반응형 접두(`sm:`·`md:`·`lg:`)를 쓰지 않고 엔진 `responsive` 로 씁니다(예: `<responsive on="desktop" class="…"/>`, `on="640-"`). 갈래의 `class` 는 기본 `class` 를 통째로 바꾸므로 `class` 를 쓰는 갈래에는 그 폭에서 필요한 토큰을 모두 적습니다. 코어 7.2.1 부터는 `class-merge` 로 바뀐 토큰만 적을 수 있습니다(코어 `docs/frontend/responsive-layout.md` 「바뀐 클래스만 덧붙이기」). 이 플러그인은 코어 7.2.0 부터 지원하므로 지금 레이아웃은 갈래 `class` 만 씁니다. `class-merge` 로 옮기려면 `plugin.json` 의 `g7_version` 을 `>=7.2.1` 로 올립니다.
 
 폭 미디어를 품은 의미 클래스 사본(`pay-tosspayments-grid-3col-responsive`·`pay-tosspayments-grid-2col-responsive`·`pay-tosspayments-page-title`·`pay-tosspayments-admin-page-content-responsive` 등)도 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="paytosspayments:grid paytosspayments:grid-cols-1 paytosspayments:gap-4 paytosspayments:items-start"` 에 `<responsive on="1024-" class="paytosspayments:grid paytosspayments:grid-cols-3 paytosspayments:gap-4 paytosspayments:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`paytosspayments:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->
@@ -41,9 +41,20 @@
 결제 핸들러가 `requestPayment` 하나뿐인 이유는 이 플러그인이 통합결제창 SDK 호출 이후를 전부 브라우저
 리다이렉트에 위임하기 때문입니다(§AGENTS.md "1. 이 확장은 무엇인가") — 다른 PG처럼 결제
 수단 선택 UI를 DOM으로 직접 조작할 필요가 없습니다. `order_sheet_mode`에 따라 통합결제창
-하나(카드 한 장)를 열지, 사용자가 고른 개별 토스 결제수단(`params.paymentMethodId`)을
-지정해 열지가 갈리지만(`params.paymentMethod`, 미지정 시 `_local.paymentMethod` 참조) 그
+하나(카드 한 장)를 열지, 사용자가 고른 개별 토스 결제수단을 지정해 열지가 갈리지만 그
 분기도 이 핸들러 하나 안에서 처리합니다.
+
+결제수단 id 는 ① 액션 인자 `params.paymentMethod` ② (클레임 추가결제가 아니고) 주문서 화면의
+`_local.paymentMethod` 가 `toss_` 로 시작하면 그 값 ③ 서버가 저장한 `pg_payment_data.payment_method`
+순서로 정합니다. 서버는 `toss_kakaopay` 같은 선택을 코어 값(`card`)으로 바꿔 저장하므로, 서버 값만 보면
+간편결제 종류가 사라져 카드 통합결제창이 열립니다 — 주문서 선택을 먼저 보는 이유입니다. 화면 값이 서버 값과
+맞지 않으면(예: 화면은 카카오페이, 서버는 `vbank`) 서버 값으로 다시 찾습니다. 클레임 추가결제 화면의 상태는
+주문서 선택이 아니므로 보지 않습니다.
+
+애플페이(`toss_applepay`)는 iOS 기기에서만 결제됩니다. 주문서는 카탈로그 `requires_ios` 로 iOS 가 아니면
+항목을 숨기고, 이 핸들러는 결제 순간에 한 번 더 확인해 iOS 가 아니면 결제 설정 조회·SDK 호출 없이 오류
+모달(「애플페이는 iOS 기기(아이폰·아이패드)에서만 결제할 수 있습니다.」)을 띄웁니다
+(`resources/js/support/applePayDevice.ts`, KCP 와 같은 판정).
 
 구매자가 결제창을 닫으면(`USER_CANCEL`) 이 핸들러가 이커머스 모듈의 결제 취소 기록
 엔드포인트(`orders/{orderNumber}/cancel-payment`)를 부릅니다. 이 엔드포인트는 회원과

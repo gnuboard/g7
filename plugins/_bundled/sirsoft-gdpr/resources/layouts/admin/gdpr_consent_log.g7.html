@@ -105,7 +105,7 @@
               </on>
             </select>
             <div class="gdpr:relative gdpr:flex-1">
-              <icon name="search" class="gdpr:absolute gdpr:left-3 gdpr:top-1/2 gdpr:-translate-y-1/2 gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:text-sm gdpr:leading-none gdpr:pointer-events-none"/>
+              <icon name="search" class="gdpr:absolute gdpr:left-3 gdpr:top-1/2 gdpr:-translate-y-1/2 gdpr-text-muted gdpr:text-sm gdpr:leading-none gdpr:pointer-events-none"/>
               <input name="search" type="text" placeholder="$t:sirsoft-gdpr.admin.consent_log.search_placeholder" class="gdpr-input gdpr:pl-10" value="{{_local.filter.search || ''}}">
                 <on type="change">
                   <!-- 검색어 입력 — Enter 로 검색 액션이 실행된다 -->
@@ -116,7 +116,7 @@
                 </on>
               </input>
             </div>
-            <button type="button" class="gdpr:px-4 gdpr:py-2.5 gdpr:bg-blue-600 gdpr:dark:bg-blue-600 gdpr:hover:bg-blue-700 gdpr:dark:hover:bg-blue-700 gdpr:text-white gdpr:text-sm gdpr:font-medium gdpr:rounded-xl">
+            <button type="button" class="gdpr-btn gdpr-btn-primary gdpr:py-2.5 gdpr:rounded-xl">
               <on type="click">
                 <action-ref name="searchConsentLogs"/>
               </on>
@@ -359,16 +359,16 @@ $t:sirsoft-gdpr.admin.consent_log.filter.source_label</span>
             <div class="gdpr:grid gdpr:grid-cols-1 gdpr:gap-4">
               <responsive on="768-" class="gdpr:grid gdpr:grid-cols-2 gdpr:gap-4"/>
               <div>
-                <span class="gdpr:block gdpr:text-xs gdpr:font-semibold gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:uppercase gdpr:tracking-wide">$t:sirsoft-gdpr.admin.consent_log.detail.session_id_label</span>
+                <span class="gdpr:block gdpr:text-xs gdpr:font-semibold gdpr-text-muted gdpr:uppercase gdpr:tracking-wide">$t:sirsoft-gdpr.admin.consent_log.detail.session_id_label</span>
                 <span class="gdpr:block gdpr:text-xs gdpr:font-mono gdpr:text-gray-700 gdpr:dark:text-gray-300 gdpr:break-all gdpr-break-all gdpr:mt-0.5">{{row.session_id ?? '-'}}</span>
               </div>
               <div>
-                <span class="gdpr:block gdpr:text-xs gdpr:font-semibold gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:uppercase gdpr:tracking-wide">$t:sirsoft-gdpr.admin.consent_log.detail.user_agent_label</span>
+                <span class="gdpr:block gdpr:text-xs gdpr:font-semibold gdpr-text-muted gdpr:uppercase gdpr:tracking-wide">$t:sirsoft-gdpr.admin.consent_log.detail.user_agent_label</span>
                 <span class="gdpr:block gdpr:text-xs gdpr:text-gray-700 gdpr:dark:text-gray-300 gdpr:break-all gdpr-break-all gdpr:mt-0.5">{{row.user_agent ?? '-'}}</span>
               </div>
               <div data-if="{{(row.categories_snapshot?.length ?? 0) > 0}}">
                 <responsive on="768-" class="gdpr:col-span-2"/>
-                <span class="gdpr:block gdpr:text-xs gdpr:font-semibold gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:uppercase gdpr:tracking-wide gdpr:mb-1">$t:sirsoft-gdpr.admin.consent_log.detail.categories_label</span>
+                <span class="gdpr:block gdpr:text-xs gdpr:font-semibold gdpr-text-muted gdpr:uppercase gdpr:tracking-wide gdpr:mb-1">$t:sirsoft-gdpr.admin.consent_log.detail.categories_label</span>
                 <span class="gdpr:block gdpr-text-tertiary gdpr:mb-2">$t:sirsoft-gdpr.admin.consent_log.detail.categories_hint</span>
                 <div class="gdpr:bg-white gdpr:dark:bg-gray-800 gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:rounded gdpr:divide-y gdpr:divide-gray-200 gdpr:dark:divide-gray-700">
                   <div data-each="snapshot_item in row.categories_snapshot" class="gdpr-flex-between gdpr:gap-3 gdpr:px-3 gdpr:py-2 gdpr:text-xs">

@@ -17,13 +17,13 @@
       <div data-ref="bulk_members_confirm_error" data-if="{{!!_global.boardBulkMembers?.error}}" class="board-alert-danger board:text-sm">{{_global.boardBulkMembers?.error}}</div>
     </div>
     <footer>
-      <button type="button" disabled="{{_global.boardBulkMembers?.isApplying === true}}" class="board-btn board-btn-secondary board:disabled:opacity-50 board:disabled:cursor-not-allowed">
+      <button type="button" disabled="{{_global.boardBulkMembers?.isApplying === true}}" class="board-btn board-btn-secondary">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button data-ref="bulk_members_confirm_button" type="button" disabled="{{_global.boardBulkMembers?.isApplying === true}}" class="board-flex-center board:gap-1.5 board:px-4 board:py-2 board:bg-gray-900 board:dark:bg-white board:text-white board:dark:text-gray-900 board:rounded-lg board:hover:bg-gray-800 board:dark:hover:bg-gray-100 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed">
+      <button data-ref="bulk_members_confirm_button" type="button" disabled="{{_global.boardBulkMembers?.isApplying === true}}" class="board-flex-center board:gap-1.5 board-btn board-btn-primary">
         <on type="click">
           <!-- 일괄 지정 실행. 진행 표시는 성공·실패·403 어느 갈래에서든 끈다. 버튼 잠금만으로는 같은 틱의 두 번째 클릭을 못 막아 300ms 디바운스로 연타를 한 번으로 모은다 -->
           <sequence :debounce="300">

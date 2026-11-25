@@ -8,7 +8,7 @@
     "name": "Div",
     "if": "{{_global.activeModules?.includes('sirsoft-page') ?? true}}",
     "props": {
-        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+        "className": "card-plain overflow-hidden"
     },
     "children": [
         {
@@ -33,7 +33,7 @@
                             "props": {
                                 "name": "file-alt",
                                 "size": "sm",
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             }
                         },
                         {
@@ -162,7 +162,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "text-xs text-muted"
                             },
                             "text": "$t:search.page_published_at|date={{page.published_at ?? ''}}"
                         }
@@ -176,7 +176,7 @@
             "name": "Div",
             "if": "{{(!searchResults?.data?.pages?.items || searchResults?.data?.pages?.items?.length === 0) && !(searchResults?.data?.categories_failed?.pages ?? false)}}",
             "props": {
-                "className": "px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400"
+                "className": "px-4 py-6 text-center text-sm text-muted"
             },
             "children": [
                 {
@@ -192,7 +192,7 @@
             "name": "Div",
             "if": "{{searchResults?.data?.categories_failed?.pages ?? false}}",
             "props": {
-                "className": "px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400"
+                "className": "px-4 py-6 text-center text-sm text-muted"
             },
             "children": [
                 {
@@ -222,7 +222,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                        "className": "mt-1 text-xs text-muted"
                     },
                     "text": "$t:search.failed.suggestion"
                 }

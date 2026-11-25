@@ -1496,6 +1496,7 @@
       "review_settings": "Review settings tab",
       "product_display": "Product display tab",
       "mileage": "Mileage tab",
+      "promotion": "Coupons tab",
       "deposit": "Deposit tab",
       "template_user": "User templates tab",
       "template_admin": "Admin templates tab",
@@ -1792,6 +1793,7 @@
     "memberFieldDefs": "Member Field Definitions",
     "memberFields": "Member Fields",
     "memberNicknameRecompute": "Nickname Duplicate Check Preparation Status",
-    "extensionTrustKeys": "Extension trust keys"
+    "extensionTrustKeys": "Extension trust keys",
+    "identityCheckpoints": "Identity checkpoints"
   }
 }

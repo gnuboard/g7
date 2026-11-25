@@ -8,13 +8,13 @@
       <p data-ref="policy_version_snapshot_load_failed" data-if="{{gdprPolicyVersionSnapshot === null}}" role="alert" class="gdpr:text-sm gdpr:text-red-600 gdpr:dark:text-red-400">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.load_failed</p>
       <!-- 메타 — 발행일시 + 발행자 + 변경사유 + 변경 종류 (좁은 폭 2칸, 640 이상 4칸). 라벨 칸을 맞춰 값이 한 줄로 시작하게 gdpr-kv-list 격자에 담고, 640 이상의 4칸 열 값은 responsive 구간에 적는다. -->
       <div data-if="{{gdprPolicyVersionSnapshot?.data?.data}}" class="gdpr-kv-list gdpr:gap-y-2 gdpr:text-xs gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:rounded-md gdpr:p-3 gdpr:bg-gray-50 gdpr:dark:bg-gray-900">
-        <responsive on="640-" class="gdpr-kv-list gdpr:grid-cols-[max-content_minmax(0,1fr)_max-content_minmax(0,1fr)] gdpr:gap-y-2 gdpr:text-xs gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:rounded-md gdpr:p-3 gdpr:bg-gray-50 gdpr:dark:bg-gray-900"/>
+        <responsive on="640-" class-merge="gdpr:grid-cols-[max-content_minmax(0,1fr)_max-content_minmax(0,1fr)]"/>
         <div class="gdpr-kv-row">
-          <span class="gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:flex-shrink-0">$t:sirsoft-gdpr.settings.policy_version.published_at_label</span>
+          <span class="gdpr-text-muted gdpr:flex-shrink-0">$t:sirsoft-gdpr.settings.policy_version.published_at_label</span>
           <span class="gdpr:text-gray-900 gdpr:dark:text-gray-100">{{gdprPolicyVersionSnapshot?.data?.data?.created_at ?? '-'}}</span>
         </div>
         <div class="gdpr-kv-row">
-          <span class="gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:flex-shrink-0">$t:sirsoft-gdpr.settings.policy_version.publisher_label</span>
+          <span class="gdpr-text-muted gdpr:flex-shrink-0">$t:sirsoft-gdpr.settings.policy_version.publisher_label</span>
           <!-- 값 칸 하나에 이름과 실명 보조 줄을 함께 담는다(행이 display:contents 라 자식 하나가 격자 칸 하나다) -->
           <div class="gdpr:min-w-0">
             <span class="gdpr:text-gray-900 gdpr:dark:text-gray-100">{{gdprPolicyVersionSnapshot?.data?.data?.publisher?.name ? (gdprPolicyVersionSnapshot?.data?.data?.publisher?.email ? gdprPolicyVersionSnapshot.data.data.publisher.name + ' (' + gdprPolicyVersionSnapshot.data.data.publisher.email + ')' : gdprPolicyVersionSnapshot.data.data.publisher.name) : (gdprPolicyVersionSnapshot?.data?.data?.publisher?.email ?? '$t:sirsoft-gdpr.settings.policy_version.publisher_system')}}</span>
@@ -23,11 +23,11 @@
           </div>
         </div>
         <div class="gdpr-kv-row">
-          <span class="gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:flex-shrink-0">$t:sirsoft-gdpr.settings.policy_version.history.col.change_type</span>
+          <span class="gdpr-text-muted gdpr:flex-shrink-0">$t:sirsoft-gdpr.settings.policy_version.history.col.change_type</span>
           <span class="gdpr:text-gray-900 gdpr:dark:text-gray-100">{{gdprPolicyVersionSnapshot?.data?.data?.change_type === 'material' ? '$t:sirsoft-gdpr.settings.policy_version.change_type.material' : (gdprPolicyVersionSnapshot?.data?.data?.change_type === 'initial' ? '$t:sirsoft-gdpr.settings.policy_version.change_type.initial' : '$t:sirsoft-gdpr.settings.policy_version.change_type.non_material')}}</span>
         </div>
         <div class="gdpr-kv-row">
-          <span class="gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:flex-shrink-0">$t:sirsoft-gdpr.settings.policy_version.memo_label</span>
+          <span class="gdpr-text-muted gdpr:flex-shrink-0">$t:sirsoft-gdpr.settings.policy_version.memo_label</span>
           <span class="gdpr:text-gray-900 gdpr:dark:text-gray-100 gdpr:truncate">{{gdprPolicyVersionSnapshot?.data?.data?.memo ?? '-'}}</span>
         </div>
       </div>
@@ -54,7 +54,7 @@
             <div class="gdpr:flex gdpr:items-baseline gdpr:gap-2">
               <span class="gdpr:font-mono gdpr:text-gray-900 gdpr:dark:text-gray-100 gdpr:font-semibold">{{category?.key ?? '?'}}</span>
               <!-- 라벨 — 다국어 객체 또는 plain 문자열 양쪽 호환. 객체일 때 현재 로케일 우선 추출(없으면 사이트 기본 언어→영어), 아니면 그대로. -->
-              <span class="gdpr:text-gray-500 gdpr:dark:text-gray-400">{{(category?.label &amp;&amp; typeof category.label === 'object') ? ($localized(category.label) || '-') : (category?.label ?? '-')}}</span>
+              <span class="gdpr-text-muted">{{(category?.label &amp;&amp; typeof category.label === 'object') ? ($localized(category.label) || '-') : (category?.label ?? '-')}}</span>
               <span data-if="{{category?.required === true}}" class="gdpr:ml-auto gdpr:px-2 gdpr:py-0.5 gdpr:text-[10px] gdpr:font-medium gdpr:bg-amber-100 gdpr:dark:bg-amber-900/40 gdpr-tone-warning-strong gdpr:rounded">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.category_required_badge</span>
             </div>
             <!-- 설명 — 다국어 객체 (ko/en) 또는 plain 문자열 양쪽 호환. 라벨과 같이 현재 로케일 우선(없으면 사이트 기본 언어→영어). -->
@@ -77,7 +77,7 @@
       </div>
       <!-- 닫기 버튼 — 일반 dismiss 모달이지만 명시 닫기 버튼 추가 (UX) -->
       <div class="gdpr:flex gdpr:justify-end gdpr:pt-2">
-        <button type="button" class="gdpr:px-4 gdpr:py-2 gdpr:text-xs gdpr:font-medium gdpr:text-gray-700 gdpr:dark:text-gray-200 gdpr:bg-white gdpr:dark:bg-gray-800 gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:rounded gdpr:hover:bg-gray-50 gdpr:dark:hover:bg-gray-700 gdpr:transition-colors">
+        <button type="button" class="gdpr-btn gdpr-btn-secondary gdpr:text-xs gdpr:rounded">
           <on type="click">
             <close-modal/>
           </on>

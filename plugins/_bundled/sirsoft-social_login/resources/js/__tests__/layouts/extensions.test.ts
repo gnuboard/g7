@@ -7,11 +7,33 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { applyResponsiveClassMerge } from '@core/template-engine/helpers/StyleHelpers';
 
 const ROOT = path.resolve(__dirname, '../../../..');
 const EXT = path.join(ROOT, 'resources/extensions');
 const load = (name: string): any => JSON.parse(fs.readFileSync(path.join(EXT, `${name}.json`), 'utf8'));
 const lang = (locale: string): any => JSON.parse(fs.readFileSync(path.join(ROOT, `resources/lang/${locale}.json`), 'utf8'));
+
+/**
+ * 폭 구간의 실효 className — 구간 class(있으면 통째 교체) 위에 구간 class-merge 를 엔진 규칙으로 덧붙인 값 (engine-v1.98.0).
+ * 접두 토큰(`sl:py-3`)끼리 충돌 교체가 되도록 서버가 내려 주는 접두 목록을 잠시 세운다.
+ *
+ * @param node 레이아웃 노드
+ * @param key 구간 키
+ * @returns 구간 실효 className (구간이 없으면 빈 문자열)
+ */
+function rangeClassName(node: any, key: string): string {
+  const range = node?.responsive?.[key];
+  if (!range) return '';
+  const w = window as any;
+  const prev = w.G7Config;
+  w.G7Config = { ...(prev ?? {}), extensionClassPrefixes: ['sl'] };
+  try {
+    return applyResponsiveClassMerge(range.props?.className ?? node?.props?.className, range.classMerge);
+  } finally {
+    w.G7Config = prev;
+  }
+}
 
 /**
  * 노드·액션 트리를 평탄화합니다.
@@ -307,7 +329,7 @@ describe('사용자 화면 확장 조각', () => {
     for (const b of buttons) {
       // 기본(640px 미만)은 손가락 크기 py-3, 640px 이상 구간(responsive 640-)에서만 py-2 로 줄어든다
       const cls = String(b.props.className);
-      const wide = String(b.responsive?.['640-']?.props?.className ?? '');
+      const wide = rangeClassName(b, '640-');
       const label = b.props?.['data-ref'] ?? cls;
       expect(cls, label).toMatch(/(^|\s)sl:py-3(\s|$)/);
       expect(cls, label).not.toMatch(/(^|\s)sl:py-2(\s|$)/);

@@ -32,7 +32,7 @@
  *
  * 소유 시나리오: `admin-claim-detail` · `admin-claim-detail-payment` (축 매핑은 각 테스트에 있다)
  * @axes claim_type=exchange|return|refund|cancel
- * @effects detail_tab_nav_stays_visible_on_scroll, detail_completion_button_follows_completable_count, detail_header_select_has_no_logistics_or_completion, detail_item_logistics_opens_prefilled_tracking, detail_tab_click_scrolls_to_section, detail_scroll_syncs_active_tab, detail_tabs_collapse_to_select_on_mobile, detail_items_amount_pairs_subtotal, detail_items_price_difference_shows_amount, claim_progress_cells_uniform_width_with_chevrons, claim_progress_wraps_on_mobile_without_scroll, claim_detail_cancel_is_read_only, claim_detail_cancel_info_card_rendered
+ * 효과 요약(마커 아님 — 평문, 각 효과는 그것을 재는 test 주석에 있다): detail_tab_nav_stays_visible_on_scroll, detail_completion_button_follows_completable_count, detail_header_select_has_no_logistics_or_completion, detail_item_logistics_opens_prefilled_tracking, detail_tab_click_scrolls_to_section, detail_scroll_syncs_active_tab, detail_tabs_collapse_to_select_on_mobile, detail_items_amount_pairs_subtotal, detail_items_price_difference_shows_amount, claim_progress_cells_uniform_width_with_chevrons, claim_progress_wraps_on_mobile_without_scroll, claim_detail_cancel_is_read_only, claim_detail_cancel_info_card_rendered
  */
 import { test, expect, authenticatePage, CLAIM_SEED_MARK } from '../../fixtures/claim-detail-seed';
 
@@ -284,10 +284,25 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
     await page.waitForTimeout(1_500);
 
     const after = await sectionTop();
+    // 섹션 아래 내용이 짧으면(활동 로그 0건 등) 스크롤이 끝에 닿아 섹션이 위쪽까지 올라오지 못한다 — 그때는
+    // 스크롤 컨테이너가 끝까지 내려갔는지로 「그 섹션 쪽으로 최대한 갔다」 를 판정한다.
+    const scrolledToEnd = await page.evaluate(() => {
+      let node = document.getElementById('section_activity_log')?.parentElement ?? null;
+      while (node && node !== document.body) {
+        const style = getComputedStyle(node);
+        if (/(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight) {
+          return node.scrollTop + node.clientHeight >= node.scrollHeight - 2;
+        }
+        node = node.parentElement;
+      }
+      const root = document.scrollingElement ?? document.documentElement;
+
+      return root.scrollTop + root.clientHeight >= root.scrollHeight - 2;
+    });
 
     expect(after).toBeLessThan(before);
     // 도착 지점이 그 섹션이다 — 스크롤만 움직이고 다른 곳에 서면 클릭이 무의미하다.
-    expect(Math.abs(after)).toBeLessThan(260);
+    expect(Math.abs(after) < 260 || scrolledToEnd, `섹션 위치 ${after}px, 스크롤 끝 도달 ${scrolledToEnd}`).toBe(true);
   });
 
   /**

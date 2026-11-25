@@ -319,6 +319,9 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 
 <!-- @generated:end -->
 
+> **간편결제 id 로 저장된 결제의 라벨** — 주문서에서 고른 KCP 간편결제는 결제수단 칸에 자기 id(예: `nhnkcp_kakaopay`)로 저장될 수 있다. 이때 `payment_method_label` 은 원시 id 가 아니라 PG 이름 `NHN KCP` 이고, `payment_method_display_label` 은 `카카오페이 (NHN KCP)` 다. 결제 메타·`embedded_pg_provider` 가 비어도 결제수단 id 로 간편결제 제공자(`kakaopay`)를 찾는다.
+
+
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 

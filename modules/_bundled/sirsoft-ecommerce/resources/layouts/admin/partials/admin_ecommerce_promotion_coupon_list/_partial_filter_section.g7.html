@@ -124,7 +124,7 @@ $t:sirsoft-ecommerce.admin.promotion_coupon.filter.created_at</span>
                 <set-state target="_local" filter.createdStartDate="{{$event.target.value}}" filter.createdDateQuick=""/>
               </on>
             </input>
-            <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">~</span>
+            <span class="ecommerce-text-muted">~</span>
             <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.created_at')}}" type="date" name="createdEndDate" value="{{_local.filter.createdEndDate || ''}}" class="ecommerce-input ecommerce:w-36">
               <on type="change">
                 <!-- 만든 날 종료. 시작일과 같은 이유로 빠른 기간 표시를 지운다. -->
@@ -215,14 +215,14 @@ $t:sirsoft-ecommerce.admin.promotion_coupon.filter.benefit_amount</span>
               <set-state target="_local" filter.minBenefitAmount="{{$event.target.value}}"/>
             </on>
           </input>
-          <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">~</span>
+          <span class="ecommerce-text-muted">~</span>
           <input type="number" name="maxBenefitAmount" class="ecommerce-input ecommerce:w-28" placeholder="$t:sirsoft-ecommerce.common.max" value="{{_local.filter.maxBenefitAmount || ''}}">
             <on type="change">
               <!-- 혜택 최대값. 한쪽만 넣어도 서버는 열린 구간으로 받는다. -->
               <set-state target="_local" filter.maxBenefitAmount="{{$event.target.value}}"/>
             </on>
           </input>
-          <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{(_local.filter.discountType || 'all') === 'rate' ? '%' : '$t:sirsoft-ecommerce.common.currency.won'}}</span>
+          <span class="ecommerce-text-muted">{{(_local.filter.discountType || 'all') === 'rate' ? '%' : '$t:sirsoft-ecommerce.common.currency.won'}}</span>
         </div>
       </div>
       <div data-ref="issue_method_filter_row" data-slot="{{(_local.visibleFilters || []).includes('issueMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
@@ -352,7 +352,7 @@ $t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount</span>
               <set-state target="_local" filter.minOrderAmount="{{$event.target.value}}"/>
             </on>
           </input>
-          <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount_suffix</span>
+          <span class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount_suffix</span>
         </div>
       </div>
       <div data-ref="valid_period_filter_row" data-slot="{{(_local.visibleFilters || []).includes('validPeriod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
@@ -374,7 +374,7 @@ $t:sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period</span>
               <set-state target="_local" filter.validStartDate="{{$event.target.value}}"/>
             </on>
           </input>
-          <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">~</span>
+          <span class="ecommerce-text-muted">~</span>
           <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period')}}" type="date" name="validEndDate" value="{{_local.filter.validEndDate || ''}}" class="ecommerce-input ecommerce:w-36">
             <on type="change">
               <!-- 사용 가능 기간 종료. 지난 쿠폰을 찾을 때 쓴다. -->
@@ -402,7 +402,7 @@ $t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period</span>
               <set-state target="_local" filter.issueStartDate="{{$event.target.value}}"/>
             </on>
           </input>
-          <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">~</span>
+          <span class="ecommerce-text-muted">~</span>
           <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period')}}" type="date" name="issueEndDate" value="{{_local.filter.issueEndDate || ''}}" class="ecommerce-input ecommerce:w-36">
             <on type="change">
               <!-- 발급 기간 종료. -->
@@ -441,7 +441,7 @@ $t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator</span>
               <set-state target="local" filter.createdBy="{{$args[0]}}"/>
             </on>
           </searchable-dropdown>
-          <button data-if="{{!!_local.filter.createdBy}}" type="button" class="ecommerce:text-gray-500 ecommerce:hover:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-gray-300" aria-label="$t:sirsoft-ecommerce.common.remove">
+          <button data-if="{{!!_local.filter.createdBy}}" type="button" class="ecommerce-text-muted ecommerce:hover:text-gray-600 ecommerce:dark:hover:text-gray-300" aria-label="$t:sirsoft-ecommerce.common.remove">
             <on type="click">
               <!-- 고른 사람 지우기. 선택과 검색 결과를 함께 비워, 지운 뒤에도 이전 후보 목록이 남지 않게 한다. -->
               <set-state target="local" filter.createdBy="" :creatorSearchResults="[]"/>
@@ -514,7 +514,7 @@ $t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator</span>
           </on>
         </column-selector>
         <button type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce-flex-center ecommerce:gap-2">
-          <responsive on="portable" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-outline ecommerce:justify-center ecommerce:gap-2 ecommerce:w-full"/>
+          <responsive on="portable" class-merge="ecommerce:justify-center ecommerce:w-full"/>
           <on type="click">
             <!-- 상세 필터 펼침/접힘. 편집모드를 켜면 아래 검색편집 버튼이 이 값을 강제로 참으로 만든다. -->
             <set-state target="_local" showDetailFilter="{{!_local.showDetailFilter}}"/>
@@ -546,7 +546,7 @@ $t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator</span>
         <div class="ecommerce-flex-center ecommerce:justify-center ecommerce:gap-2 ecommerce:flex-1">
           <responsive on="portable" class="ecommerce:contents"/>
           <button data-ref="search_button" type="button" class="ecommerce-btn ecommerce-btn-primary">
-            <responsive on="portable" class="ecommerce-btn ecommerce-btn-primary ecommerce:flex-1"/>
+            <responsive on="portable" class-merge="ecommerce:flex-1"/>
             <on type="click">
               <action-ref name="searchCoupons"/>
             </on>

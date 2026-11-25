@@ -30,7 +30,8 @@
         "products": "상품",
         "cart": "장바구니",
         "mypage": "마이페이지",
-        "reviews": "리뷰"
+        "reviews": "리뷰",
+        "coupons": "쿠폰존"
     },
     "footer": {
         "info": "정보",
@@ -75,7 +76,10 @@
         "claims_description": "교환·반품·환불·취소 신청 내역을 확인하고 수정하거나 철회합니다.",
         "claim_detail_title": "신청 상세",
         "claim_detail_description": "신청서의 상품·배송·금액·사유를 확인합니다.",
-        "claim_edit_title": "신청 내용 수정"
+        "claim_edit_title": "신청 내용 수정",
+        "coupons_title": "쿠폰함",
+        "reviews_title": "내 리뷰",
+        "activity_title": "활동 기록"
     },
     "identity": {
         "challenge": {
@@ -141,7 +145,8 @@
         "order_complete_title": "주문 완료",
         "guest_order_form_title": "비회원 주문 조회",
         "guest_order_show_title": "비회원 주문 상세",
-        "reviews_title": "리뷰 모아보기"
+        "reviews_title": "리뷰 모아보기",
+        "coupons_title": "쿠폰존"
     },
     "search": {
         "page_title": "검색"
@@ -197,7 +202,8 @@
             "modal_write_review": "리뷰 작성"
         },
         "mypage_profile": {
-            "withdrawModal": "회원 탈퇴 확인"
+            "withdrawModal": "회원 탈퇴 확인",
+            "logoutAllDevicesModal": "모든 기기 로그아웃 확인"
         },
         "identity_challenge_modal": "본인인증",
         "notification_delete_all_confirm_modal": "알림 전체 삭제 확인",
@@ -222,6 +228,9 @@
             "detail_progress": "진행 단계",
             "detail_reason": "신청 사유",
             "image_viewer_modal": "첨부 사진 보기"
+        },
+        "mypage_reviews": {
+            "reviewDeleteModal": "리뷰 삭제 확인"
         }
     }
 }

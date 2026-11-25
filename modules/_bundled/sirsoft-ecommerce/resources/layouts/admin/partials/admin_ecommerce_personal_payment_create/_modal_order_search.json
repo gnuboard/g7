@@ -168,7 +168,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "file-text",
-                                        "className": "ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce:text-xl ecommerce-text-muted"
                                     }
                                 }
                             ]
@@ -260,7 +260,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "file-text",
-                                        "className": "ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce:text-xl ecommerce-text-muted"
                                     }
                                 }
                             ]
@@ -352,7 +352,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "file-text",
-                                        "className": "ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce:text-xl ecommerce-text-muted"
                                     }
                                 }
                             ]
@@ -444,7 +444,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "file-text",
-                                        "className": "ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce:text-xl ecommerce-text-muted"
                                     }
                                 }
                             ]

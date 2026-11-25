@@ -96,7 +96,7 @@
             <span class="text-label">$t:admin.analytics.realtime.count_label|minutes={{analytics_realtime?.data?.window_minutes ?? 5}}</span>
           </div>
           <div class="flex-center gap-2">
-            <span class="filter-field-label"><responsive on="768-" class="filter-field-label mb-0 w-14 shrink-0 flex items-center"/>$t:admin.analytics.realtime.window_label</span>
+            <span class="filter-field-label"><responsive on="768-" class-merge="mb-0 w-14 shrink-0 flex items-center"/>$t:admin.analytics.realtime.window_label</span>
             <select data-ref="window_select" name="analytics_realtime_minutes" class="w-24" value="{{String(query.minutes || analytics_realtime?.data?.window_minutes || 5)}}">
               <options>
                 <option value="1">1</option>
@@ -135,7 +135,7 @@
           </div>
         </div>
         <div data-ref="realtime_visitors_card" class="admin-card">
-          <responsive on="desktop" class="admin-card col-span-2"/>
+          <responsive on="desktop" class-merge="col-span-2"/>
           <h2 class="section-heading mb-3">$t:admin.analytics.realtime.visitors_title</h2>
           <div class="overflow-x-auto">
             <data-grid data-type="composite" data-ref="realtime_visitors_grid" data="{{analytics_realtime?.data?.visitors ?? []}}" :pagination="false" idField="visitor_key" :selectable="false" :sortable="false" emptyMessage="{{analytics_realtime === undefined ? '' : $t('admin.analytics.realtime.empty')}}">
@@ -184,7 +184,7 @@
         </div>
       </div>
       <!-- 확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API). -->
-      <extension-point name="analytics_realtime_widgets" class="space-y-4 mt-4">
+      <extension-point name="analytics_realtime_widgets" data-ref="ext_analytics_realtime_widgets" class="space-y-4 mt-4">
         <default/>
       </extension-point>
     </div>

@@ -3,6 +3,7 @@
 namespace App\Extension\Custom;
 
 use App\Extension\Helpers\UpdateReservedPaths;
+use App\Extension\Helpers\ZipEntryIndex;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -170,7 +171,10 @@ class CustomUpdatePreflight
     }
 
     /**
-     * zip 안의 파일 하나를 읽습니다 (최상위 폴더 하나로 감싼 zip 도 지원).
+     * zip 안의 파일 하나를 배포본 루트 기준으로 읽습니다 (최상위 폴더 하나로 감싼 zip·역슬래시 이름 zip 도 지원).
+     *
+     * 배포본 루트는 `config/app.php` 위치로 정하고, 그 표식이 없으면 모든 항목이 공유하는 감싼 폴더로 정한다.
+     * 아무 1단계 폴더의 같은 이름 파일(`docs/config/app.php`)은 읽지 않는다.
      *
      * @param  string  $zipPath  zip 경로
      * @param  string  $relative  배포본 루트 기준 슬래시 경로
@@ -187,20 +191,12 @@ class CustomUpdatePreflight
         }
 
         try {
-            $raw = $zip->getFromName($relative);
-            if ($raw === false) {
-                $pattern = '#^[^/]+/'.preg_quote($relative, '#').'$#';
-                for ($i = 0; $i < $zip->numFiles; $i++) {
-                    if (preg_match($pattern, (string) $zip->getNameIndex($i)) === 1) {
-                        $raw = $zip->getFromIndex($i);
-                        break;
-                    }
-                }
-            }
+            $index = ZipEntryIndex::fromArchive($zip);
+            $root = $index->prefixFor('config/app.php') ?? $index->wrapperPrefix();
+
+            return $index->read($root.$relative);
         } finally {
             $zip->close();
         }
-
-        return is_string($raw) ? $raw : null;
     }
 }

@@ -168,6 +168,17 @@ interface IdentityVerificationLogRepositoryInterface
     public function findLatestVerifiedForUser(int $userId, string $providerId): ?IdentityVerificationLog;
 
     /**
+     * 회원에게 발급된 가장 최근의 확인 전 본인인증 요청 행을 찾습니다(목적 기준).
+     *
+     * 가입 후 본인인증 정책이 가입 직후 발급한 건을 가입 응답에 실어 화면이 코드 입력 화면을 열게 한다(7.2.1).
+     *
+     * @param  int  $userId  회원 ID
+     * @param  string  $purpose  IDV 목적
+     * @return IdentityVerificationLog|null 확인 전(requested·sent) 가장 최근 행 (없으면 null)
+     */
+    public function findLatestPendingForUser(int $userId, string $purpose): ?IdentityVerificationLog;
+
+    /**
      * 특정 토큰(verification_token) 으로 verified 상태의 challenge 를 찾습니다.
      * IdvTokenRule 이 register 검증 시 사용합니다.
      *

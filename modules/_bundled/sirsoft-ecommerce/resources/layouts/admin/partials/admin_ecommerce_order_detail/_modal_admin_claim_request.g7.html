@@ -60,7 +60,7 @@
       <!-- 재발송지 (교환만) — 주문 배송지로 미리 채운다. 우편번호가 바뀌면 배송비가 다시 계산된다(도서산간). 국가는 바꿀 수 없다(교환 해외배송 미지원). -->
       <div data-ref="acr_006_redelivery" data-if="{{_global.adminClaimRequest?.type === 'exchange'}}" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-2">
         <responsive on="portable" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-2"/>
-        <span class="ecommerce-form-label"><responsive on="768-" class="ecommerce-form-label ecommerce:col-span-2"/>$t:sirsoft-ecommerce.admin.order.claim_request.redelivery_address</span>
+        <span class="ecommerce-form-label"><responsive on="768-" class-merge="ecommerce:col-span-2"/>$t:sirsoft-ecommerce.admin.order.claim_request.redelivery_address</span>
         <input type="text" class="ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.order.claim_request.recipient_name" value="{{_global.adminClaimRequest?.redelivery?.recipient_name ?? ''}}">
           <on type="change">
             <!-- 교환 재발송지 — 받는 사람 -->
@@ -86,7 +86,7 @@
           </on>
         </input>
         <input type="text" class="ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.order.claim_request.address2" value="{{_global.adminClaimRequest?.redelivery?.address2 ?? ''}}">
-          <responsive on="768-" class="ecommerce:col-span-2 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg"/>
+          <responsive on="768-" class-merge="ecommerce:col-span-2"/>
           <on type="change">
             <!-- 교환 재발송지 — 상세 주소 -->
             <action handler="sirsoft-ecommerce.setAdminClaimRequestField" field="redelivery.address2" value="{{$event.target.value}}"/>
@@ -139,7 +139,7 @@
       <!-- 환불 우선순위 (반품만) — 종전 취소 창과 같은 조건: PG 환불이 걸리는 주문에서만 서고, 포인트를 쓰지 않았으면 배분 순서가 무의미하므로 선택을 막는다. 바꾸면 환불 예상액을 다시 받는다. -->
       <div data-ref="acr_013_refund_priority" data-if="{{_global.adminClaimRequest?.type === 'return' &amp;&amp; order.data?.payment?.requires_pg_cancellation === true}}">
         <span class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_label</span>
-        <span data-if="{{(order.data?.total_points_used_amount ?? 0) <= 0}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:block ecommerce:mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_no_points_hint</span>
+        <span data-if="{{(order.data?.total_points_used_amount ?? 0) <= 0}}" class="ecommerce:text-xs ecommerce-text-muted ecommerce:block ecommerce:mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_no_points_hint</span>
         <div class="ecommerce:flex ecommerce:gap-3">
           <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:p-2 ecommerce:rounded-lg ecommerce:border {{(order.data?.total_points_used_amount ?? 0) <= 0 ? 'ecommerce:cursor-not-allowed ecommerce:opacity-50 ecommerce:border-gray-200 ecommerce:dark:border-gray-700' : ((_global.adminClaimRequest?.refundPriority ?? 'pg_first') === 'pg_first' ? 'ecommerce:cursor-pointer ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:border-blue-500 ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/20' : 'ecommerce:cursor-pointer ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:border-gray-200 ecommerce:dark:border-gray-700')}}">
             <input type="radio" name="adminClaimRefundPriority" value="pg_first" checked="{{(_global.adminClaimRequest?.refundPriority ?? 'pg_first') === 'pg_first'}}" disabled="{{(order.data?.total_points_used_amount ?? 0) <= 0}}" class="ecommerce-radio">
@@ -179,7 +179,7 @@
           <div data-ref="acr_015_refund_estimate" data-if="{{_global.adminClaimRequest?.type === 'return' &amp;&amp; !!_global.adminClaimRequest?.previewFormatted?.refund_total}}">$t:sirsoft-ecommerce.admin.order.claim_request.refund_estimate|amount={{_global.adminClaimRequest?.previewFormatted?.refund_total ?? ''}}</div>
         </div>
         <p data-if="{{!!_global.adminClaimRequest?.previewError}}" class="ecommerce:text-xs ecommerce:text-red-600 ecommerce:dark:text-red-400">{{_global.adminClaimRequest?.previewError}}</p>
-        <p data-if="{{(_global.adminClaimRequest?.reasonCode ?? '') === ''}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.preview_needs_reason</p>
+        <p data-if="{{(_global.adminClaimRequest?.reasonCode ?? '') === ''}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.claim_request.preview_needs_reason</p>
       </div>
       <!-- 「접수와 함께 승인」(D6) — 기본 켜짐. 추가결제가 필요한 건은 승인 대신 결제대기로 간다. 승인은 상태 변경 권한(claims.update-status)의 일이라, 그 권한이 없으면 꺼진 채 잠그고 제출에도 싣지 않는다(서버도 403). -->
       <label data-ref="acr_009_approve" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300 {{claimRequestContext?.data?.abilities?.can_update_status === true ? 'ecommerce:cursor-pointer' : 'ecommerce:cursor-not-allowed ecommerce:opacity-60'}}">
@@ -192,10 +192,10 @@
         <span>$t:sirsoft-ecommerce.admin.order.claim_request.approve</span>
       </label>
       <p data-ref="acr_009_approve_no_permission" data-if="{{claimRequestContext !== undefined &amp;&amp; (claimRequestContext?.data?.abilities?.can_update_status !== true)}}" class="ecommerce:text-xs ecommerce:text-amber-700 ecommerce:dark:text-amber-400">$t:sirsoft-ecommerce.admin.order.claim_request.approve_no_permission</p>
-      <p class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.customer_notice</p>
+      <p class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.order.claim_request.customer_notice</p>
     </div>
     <footer>
-      <button data-ref="acr_010_cancel" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors">
+      <button data-ref="acr_010_cancel" type="button" class="ecommerce-btn ecommerce-btn-secondary">
         <on type="click">
           <!-- 타이머 정리가 창 닫기보다 먼저다 — 입력 직후 닫으면 예약된 미리보기가 닫힌 뒤에 나간다(형제 취소 창과 같은 규율). -->
           <sequence>
@@ -206,7 +206,7 @@
         </on>
         $t:common.cancel
       </button>
-      <button data-ref="acr_011_submit" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.adminClaimRequest?.submitting === true || (_global.adminClaimRequest?.reasonCode ?? '') === ''}}">
+      <button data-ref="acr_011_submit" type="button" class="ecommerce-btn ecommerce-btn-primary" disabled="{{_global.adminClaimRequest?.submitting === true || (_global.adminClaimRequest?.reasonCode ?? '') === ''}}">
         <on type="click">
           <!-- 직권 신청서를 제출한다 — 입력값은 창을 여는 핸들러가 채운 _global.adminClaimRequest 에서 모은다 -->
           <action handler="sirsoft-ecommerce.submitAdminClaimRequest" canApprove="{{claimRequestContext?.data?.abilities?.can_update_status === true}}">

@@ -550,15 +550,6 @@
                                                             "layout": "tabs",
                                                             "error": "{{_global.formErrors?.name || _global.formErrors?.name_raw}}"
                                                         }
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "if": "{{_global.formErrors?.name || _global.formErrors?.name_raw}}",
-                                                        "props": {
-                                                            "className": "text-red-600 dark:text-red-400 text-xs"
-                                                        },
-                                                        "text": "{{_global.formErrors?.name?.[0] ?? _global.formErrors?.name_raw?.[0] ?? ''}}"
                                                     }
                                                 ]
                                             },
@@ -608,7 +599,7 @@
                                                         "name": "Span",
                                                         "if": "{{_global.formErrors?.identifier}}",
                                                         "props": {
-                                                            "className": "text-red-600 dark:text-red-400 text-xs mt-1"
+                                                            "className": "form-error"
                                                         },
                                                         "text": "{{_global.formErrors?.identifier?.[0] ?? ''}}"
                                                     },
@@ -657,15 +648,6 @@
                                                             "layout": "tabs",
                                                             "error": "{{_global.formErrors?.description || _global.formErrors?.description_raw}}"
                                                         }
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "if": "{{_global.formErrors?.description || _global.formErrors?.description_raw}}",
-                                                        "props": {
-                                                            "className": "text-red-600 dark:text-red-400 text-xs"
-                                                        },
-                                                        "text": "{{_global.formErrors?.description?.[0] ?? _global.formErrors?.description_raw?.[0] ?? ''}}"
                                                     }
                                                 ]
                                             },
@@ -914,7 +896,7 @@
                                                                 "name": "Div",
                                                                 "if": "{{(permissions?.data?.data?.permissions?.[permType]?.permissions ?? []).length === 0}}",
                                                                 "props": {
-                                                                    "className": "text-center py-8 text-gray-500 dark:text-gray-400"
+                                                                    "className": "text-center py-8 text-muted"
                                                                 },
                                                                 "text": "$t:admin.roles.form.no_permissions_in_type"
                                                             }
@@ -1048,7 +1030,7 @@
                                     "type": "submit",
                                     "form": "role_form",
                                     "disabled": "{{_global.isSaving}}",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"
+                                    "className": "flex-center btn btn-primary"
                                 },
                                 "children": [
                                     {
@@ -1124,7 +1106,7 @@
                                     "type": "submit",
                                     "form": "role_form",
                                     "disabled": "{{_global.isSaving}}",
-                                    "className": "flex-center flex-1 justify-center gap-2 px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg disabled:opacity-50"
+                                    "className": "flex-center flex-1 btn btn-primary py-3"
                                 },
                                 "children": [
                                     {

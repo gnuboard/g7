@@ -11,7 +11,7 @@
             <span data-ref="category_badge_prefix_{{item.id}}" data-if="{{item.category}}" class="board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-blue-100 board:text-blue-800 board:dark:bg-blue-900 board:dark:text-blue-200">{{item.category}}</span>
             <span data-ref="notice_prefix_{{item.id}}" data-if="{{item.is_notice}}" class="board:text-blue-600 board:dark:text-blue-400">$t:sirsoft-board.admin.posts.badge.notice</span>
             <span data-ref="title_text_{{item.id}}">{{item.title}}</span>
-            <icon data-ref="reply_attachment_icon_{{item.id}}" data-if="{{item.has_attachment}}" name="paperclip" class="board:text-base board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"/>
+            <icon data-ref="reply_attachment_icon_{{item.id}}" data-if="{{item.has_attachment}}" name="paperclip" class="board:text-base board-text-muted board:flex-shrink-0"/>
             <span data-ref="new_badge_{{item.id}}" data-if="{{item.is_new}}" class="board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:text-xs board:font-bold board:bg-red-100 board:text-red-800 board:dark:bg-red-900 board:dark:text-red-200">$t:sirsoft-board.common.new</span>
             <icon data-ref="secret_icon_{{item.id}}" data-if="{{item.is_secret}}" name="lock" class="board:text-xl board:text-yellow-700 board:dark:text-yellow-400 board:flex-shrink-0"/>
             <span data-ref="status_badge_blinded_{{item.id}}" data-if="{{item.status === 'blinded'}}" class="board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-orange-100 board:text-orange-800 board:dark:bg-orange-900 board:dark:text-orange-200">$t:sirsoft-board.admin.posts.detail.status_blinded</span>
@@ -68,7 +68,7 @@
           <icon name="paperclip" class="board:text-base"/>
           <span>$t:sirsoft-board.admin.posts.detail.attachments|count={{item.attachment_count ?? 0}}</span>
         </span>
-        <icon name="{{_local.expandedReplyAttachments?.[item.id] ? 'chevron-up' : 'chevron-down'}}" class="board:text-base board:text-gray-500 board:dark:text-gray-400"/>
+        <icon name="{{_local.expandedReplyAttachments?.[item.id] ? 'chevron-up' : 'chevron-down'}}" class="board:text-base board-text-muted"/>
       </button>
       <!-- 펼침 토글의 aria-controls 가 가리키는 목록 묶음. 이 조각은 답글마다 반복되므로 id 에 답글 식별자를 넣어 답글끼리 겹치지 않게 한다 -->
       <div data-ref="reply_attachments_list_{{item.id}}">
@@ -82,7 +82,7 @@
                 </fail>
               </action>
             </on>
-            <icon name="download" class="board:text-base board:text-gray-500 board:dark:text-gray-400 board:group-hover:text-blue-600 board-attachment-icon board:transition-colors board:flex-shrink-0"/>
+            <icon name="download" class="board:text-base board-text-muted board:group-hover:text-blue-600 board-attachment-icon board:transition-colors board:flex-shrink-0"/>
             <span class="board-text-primary board:text-sm board:truncate board:flex-1">{{attachment.original_filename}} ({{attachment.size_formatted}})</span>
           </button>
         </div>

@@ -40,7 +40,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white underline-offset-2 hover:underline",
+                        "className": "text-xs text-muted hover:text-gray-900 dark:hover:text-white underline-offset-2 hover:underline",
                         "aria-expanded": "{{_local.claimComparisonOpen === true}}",
                         "aria-controls": "claim-comparison-body",
                         "data-testid": "claim-comparison-toggle"
@@ -55,7 +55,7 @@
             "name": "Div",
             "if": "{{_local.claimEstimateLoading === true}}",
             "props": {
-                "className": "flex items-center gap-2 py-2 text-xs text-gray-500 dark:text-gray-400"
+                "className": "flex items-center gap-2 py-2 text-xs text-muted"
             },
             "children": [
                 {
@@ -69,9 +69,6 @@
                 {
                     "type": "basic",
                     "name": "Span",
-                    "props": {
-                        "className": ""
-                    },
                     "text": "$t:claim.apply.estimate_loading"
                 }
             ]
@@ -82,7 +79,7 @@
             "name": "P",
             "if": "{{_local.claimEstimateLoading !== true && !_local.claimEstimate && _local.claimEditMode === true}}",
             "props": {
-                "className": "text-xs text-gray-500 dark:text-gray-400"
+                "className": "text-xs text-muted"
             },
             "text": "$t:claim.apply.comparison.empty_hint"
         },
@@ -116,7 +113,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-[11px] font-semibold text-gray-500 dark:text-gray-400"
+                                        "className": "text-[11px] font-semibold text-muted"
                                     },
                                     "text": "$t:claim.apply.comparison.col_item"
                                 },
@@ -124,7 +121,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-[11px] font-semibold text-gray-500 dark:text-gray-400 text-right"
+                                        "className": "text-[11px] font-semibold text-muted text-right"
                                     },
                                     "text": "{{_local.claimType === 'exchange' ? $t('claim.apply.comparison.col_before_exchange') : (_local.claimType === 'return' ? $t('claim.apply.comparison.col_before_return') : ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.comparison.col_before_cancel') : $t('claim.apply.comparison.col_before_refund')))}}"
                                 },
@@ -132,7 +129,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-[11px] font-semibold text-gray-500 dark:text-gray-400 text-right"
+                                        "className": "text-[11px] font-semibold text-muted text-right"
                                     },
                                     "text": "{{_local.claimType === 'exchange' ? $t('claim.apply.comparison.col_after_exchange') : (_local.claimType === 'return' ? $t('claim.apply.comparison.col_after_return') : ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.comparison.col_after_cancel') : $t('claim.apply.comparison.col_after_refund')))}}"
                                 }
@@ -239,7 +236,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400 block"
+                                                        "className": "text-[11px] text-muted block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -278,7 +275,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400 block"
+                                                        "className": "text-[11px] text-muted block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -336,7 +333,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400 block"
+                                                        "className": "text-[11px] text-muted block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -375,7 +372,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400 block"
+                                                        "className": "text-[11px] text-muted block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -910,7 +907,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400 block"
+                                                        "className": "text-[11px] text-muted block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -949,7 +946,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400 block"
+                                                        "className": "text-[11px] text-muted block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -1226,7 +1223,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400"
+                                                        "className": "text-[11px] text-muted"
                                                     },
                                                     "text": "{{mc.formatted ?? ''}}"
                                                 }
@@ -1249,7 +1246,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 break-keep"
+                                        "className": "text-muted break-keep"
                                     },
                                     "text": "$t:claim.apply.comparison.refund_cash"
                                 },
@@ -1283,7 +1280,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400"
+                                                        "className": "text-[11px] text-muted"
                                                     },
                                                     "text": "{{mc.formatted ?? ''}}"
                                                 }
@@ -1307,7 +1304,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 break-keep"
+                                        "className": "text-muted break-keep"
                                     },
                                     "text": "$t:claim.apply.comparison.refund_points"
                                 },
@@ -1341,7 +1338,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400"
+                                                        "className": "text-[11px] text-muted"
                                                     },
                                                     "text": "{{mc.formatted ?? ''}}"
                                                 }
@@ -1364,7 +1361,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 break-keep"
+                                        "className": "text-muted break-keep"
                                     },
                                     "text": "$t:claim.apply.comparison.remaining_pg"
                                 },
@@ -1398,7 +1395,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400"
+                                                        "className": "text-[11px] text-muted"
                                                     },
                                                     "text": "{{mc.formatted ?? ''}}"
                                                 }
@@ -1421,7 +1418,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 break-keep"
+                                        "className": "text-muted break-keep"
                                     },
                                     "text": "$t:claim.apply.comparison.remaining_points"
                                 },
@@ -1455,7 +1452,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400"
+                                                        "className": "text-[11px] text-muted"
                                                     },
                                                     "text": "{{mc.formatted ?? ''}}"
                                                 }
@@ -1516,7 +1513,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                        "className": "text-xs text-muted mt-1"
                                     },
                                     "text": "$t:claim.apply.comparison.restored_coupons_notice"
                                 }

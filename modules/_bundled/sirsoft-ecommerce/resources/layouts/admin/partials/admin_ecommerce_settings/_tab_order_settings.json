@@ -371,9 +371,7 @@
                     "name": "Div",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "ecommerce:w-full ecommerce-stack-tight ecommerce:max-h-[70vh] ecommerce:overflow-y-auto ecommerce:pr-1"
-                            },
+                            "classMerge": "ecommerce:max-h-[70vh]",
                             "children": [
                                 {
                                     "partial": "_payment_methods_cards.json"
@@ -457,7 +455,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "ecommerce-btn ecommerce-btn-outline ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "className": "ecommerce-btn ecommerce-btn-outline",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "children": [
@@ -493,7 +491,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "className": "ecommerce-btn ecommerce-btn-secondary",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "children": [

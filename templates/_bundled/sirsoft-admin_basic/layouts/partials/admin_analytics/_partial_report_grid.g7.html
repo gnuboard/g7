@@ -14,7 +14,7 @@
   <div data-ref="analytics_report_section" class="admin-card">
     <div data-ref="report_toolbar" class="flex-between flex-wrap gap-3 mb-4">
       <div class="relative flex-1 min-w-[200px]">
-        <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"/>
+        <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm pointer-events-none"/>
         <input data-ref="report_search" name="analytics_report_q" type="text" placeholder="$t:admin.analytics.common.search_placeholder" class="input pl-10" value="{{query.q || ''}}">
           <on type="keydown" key="Enter">
             <!-- 라벨 부분 검색. Enter 로만 보낸다 — 타이핑마다 다녀오면 표가 깜박인다. -->
@@ -119,7 +119,7 @@
           <cell>
             <span data-if="{{row.extra?.no_result !== undefined}}" class="text-label" title="$t:admin.analytics.actions.no_result">{{$t('admin.analytics.actions.no_result')}}: {{(row.extra?.no_result ?? 0) | number}}</span>
             <span data-if="{{row.extra?.revenue_cents !== undefined}}" class="text-label" title="$t:admin.analytics.actions.revenue">{{$t('admin.analytics.actions.revenue')}}: {{(Number(row.extra?.revenue_cents ?? 0) / 100) | number}}</span>
-            <span data-if="{{row.extra?.no_result === undefined &amp;&amp; row.extra?.revenue_cents === undefined}}" class="text-gray-500 dark:text-gray-400">-</span>
+            <span data-if="{{row.extra?.no_result === undefined &amp;&amp; row.extra?.revenue_cents === undefined}}" class="text-muted">-</span>
           </cell>
         </column>
         <column field="trend" header="" width="56px" align="center">

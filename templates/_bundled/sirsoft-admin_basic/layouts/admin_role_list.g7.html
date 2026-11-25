@@ -65,7 +65,7 @@
       <!-- 보호 역할 안내 — 행 메뉴의 삭제·수정과 사용 여부 스위치가 왜 잠겨 있는지 알려 준다.
            잠금 자체는 서버가 행마다 실어 준 `abilities` 가 정한다(코어·확장 역할 삭제 불가,
            수정·토글은 슈퍼 관리자만 — 서버 가드와 같은 판정). -->
-      <p data-ref="protected_roles_hint" class="text-xs text-gray-500 dark:text-gray-400 mb-2">$t:admin.roles.protected_roles_hint</p>
+      <p data-ref="protected_roles_hint" class="text-xs text-muted mb-2">$t:admin.roles.protected_roles_hint</p>
       <div data-ref="search_bar_wrapper" class="flex justify-end gap-2 mb-6">
         <responsive on="portable" class="flex flex-col gap-2 mb-6"/>
         <select data-ref="extension_type_filter" name="extension_type" class="w-40" value="{{query.extension_type || ''}}" aria-label="$t:admin.roles.filters.extension_type">

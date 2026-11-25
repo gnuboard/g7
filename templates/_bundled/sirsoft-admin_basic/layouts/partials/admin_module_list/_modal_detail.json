@@ -516,7 +516,7 @@
                                                                     "if": "{{dep.type === 'module'}}",
                                                                     "props": {
                                                                         "name": "cube",
-                                                                        "className": "text-base text-gray-500 dark:text-gray-400"
+                                                                        "className": "text-base text-muted"
                                                                     }
                                                                 },
                                                                 {
@@ -525,7 +525,7 @@
                                                                     "if": "{{dep.type === 'plugin'}}",
                                                                     "props": {
                                                                         "name": "puzzle-piece",
-                                                                        "className": "text-base text-gray-500 dark:text-gray-400"
+                                                                        "className": "text-base text-muted"
                                                                     }
                                                                 },
                                                                 {
@@ -809,7 +809,7 @@
                                                             "if": "{{item.type === 'module'}}",
                                                             "props": {
                                                                 "name": "cube",
-                                                                "className": "text-base text-gray-500 dark:text-gray-400",
+                                                                "className": "text-base text-muted",
                                                                 "aria-hidden": "true"
                                                             }
                                                         },
@@ -819,7 +819,7 @@
                                                             "if": "{{item.type === 'plugin'}}",
                                                             "props": {
                                                                 "name": "puzzle-piece",
-                                                                "className": "text-base text-gray-500 dark:text-gray-400",
+                                                                "className": "text-base text-muted",
                                                                 "aria-hidden": "true"
                                                             }
                                                         },
@@ -829,7 +829,7 @@
                                                             "if": "{{item.type === 'template'}}",
                                                             "props": {
                                                                 "name": "palette",
-                                                                "className": "text-base text-gray-500 dark:text-gray-400",
+                                                                "className": "text-base text-muted",
                                                                 "aria-hidden": "true"
                                                             }
                                                         },
@@ -1315,7 +1315,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                                                                "className": "form-label mb-1.5"
                                                             },
                                                             "text": "{{$localized(category.name)}}"
                                                         },
@@ -1568,7 +1568,7 @@
                                                                                     "props": {
                                                                                         "className": "text-secondary text-xs"
                                                                                     },
-                                                                                    "text": "• {{changeItem}}"
+                                                                                    "text": "• {{String(changeItem ?? '').split('**').join('').split('`').join('')}}"
                                                                                 }
                                                                             ]
                                                                         }
@@ -1604,7 +1604,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
+                                "className": "btn btn-primary"
                             },
                             "children": [
                                 {

@@ -64,7 +64,7 @@
                             "name": "Span",
                             "if": "{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.requested_at_date_formatted}}",
                             "props": {
-                                "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400"
+                                "className": "bizppurio:text-xs bizppurio-text-muted"
                             },
                             "text": "$t:sirsoft-message_bizppurio.template.row.requested_on|date={{(bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.requested_at_date_formatted ?? '').slice(5)}}"
                         },
@@ -73,7 +73,7 @@
                             "name": "Span",
                             "if": "{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.last_synced_at_date_formatted}}",
                             "props": {
-                                "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400"
+                                "className": "bizppurio:text-xs bizppurio-text-muted"
                             },
                             "text": "$t:sirsoft-message_bizppurio.template.row.synced_on|date={{(bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.last_synced_at_date_formatted ?? '').slice(5)}}"
                         },
@@ -82,7 +82,7 @@
                             "name": "Span",
                             "if": "{{(bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.has_content === true) && (bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.alimtalk_enabled === false)}}",
                             "props": {
-                                "className": "bizppurio:text-xs bizppurio:px-1.5 bizppurio:py-0.5 bizppurio:rounded bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-500 bizppurio:dark:text-gray-400"
+                                "className": "bizppurio:text-xs bizppurio:px-1.5 bizppurio:py-0.5 bizppurio:rounded bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio-text-muted"
                             },
                             "text": "$t:sirsoft-message_bizppurio.template.row.alimtalk_disabled"
                         }
@@ -100,7 +100,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "comment-sms",
-                                "className": "bizppurio:text-sm bizppurio:leading-none bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:flex-shrink-0"
+                                "className": "bizppurio:text-sm bizppurio:leading-none bizppurio-text-muted bizppurio:flex-shrink-0"
                             }
                         },
                         {
@@ -124,7 +124,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400"
+                                        "className": "bizppurio:text-xs bizppurio-text-muted"
                                     },
                                     "text": "$t:sirsoft-message_bizppurio.template.row.fallback_sms"
                                 },
@@ -152,7 +152,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400"
+                                        "className": "bizppurio:text-xs bizppurio-text-muted"
                                     },
                                     "text": "$t:sirsoft-message_bizppurio.template.row.sms_only"
                                 },
@@ -172,7 +172,7 @@
                             "name": "Span",
                             "if": "{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.has_sms_body === true}}",
                             "props": {
-                                "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:truncate bizppurio:max-w-md"
+                                "className": "bizppurio:text-xs bizppurio-text-muted bizppurio:truncate bizppurio:max-w-md"
                             },
                             "text": "{{$t('sirsoft-message_bizppurio.template.row.sms_body_prefix') + ' ' + (bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.sms_body_preview ?? '')}}"
                         },
@@ -183,7 +183,7 @@
                             "name": "Span",
                             "if": "{{bizppurioTemplates !== undefined && (bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.has_sms_body !== true)}}",
                             "props": {
-                                "className": "bizppurio:text-xs bizppurio:px-1.5 bizppurio:py-0.5 bizppurio:rounded bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:flex-shrink-0"
+                                "className": "bizppurio:text-xs bizppurio:px-1.5 bizppurio:py-0.5 bizppurio:rounded bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio-text-muted bizppurio:flex-shrink-0"
                             },
                             "text": "$t:sirsoft-message_bizppurio.template.row.sms_body_missing"
                         }

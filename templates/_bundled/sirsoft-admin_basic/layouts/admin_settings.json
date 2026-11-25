@@ -821,6 +821,23 @@
             "comment": "본인인증 정책별 문구가 이미 있는 정책 — 「정책별 문구 추가」 창이 선택지에서 빼는 데만 쓴다(알림 설정 탭).\n       서버의 중복 판정(type `identity.policy.{정책 키}`)과 같은 기준이다. 위 `notificationDefinitions` 는 분류·페이지가\n       걸려 있어 그것으로 거르면 다른 페이지의 정의가 빠진다. 운영자 정책 목록과 같은 한도(100건)로 한 번에 받는다."
         },
         {
+            "id": "identityCheckpoints",
+            "label_key": "$t:editor.data_source.identityCheckpoints",
+            "type": "api",
+            "endpoint": "/api/admin/identity/checkpoints",
+            "method": "GET",
+            "if": "{{['identity', 'notification_definitions'].includes(query.tab || _global.activeSettingsTab || 'general')}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "fallback": {
+                "data": {
+                    "checkpoints": []
+                }
+            },
+            "comment": "본인인증 「사용자 지정」 범위의 확장 지점 목록 (7.2.1, #952) — 정책 창이 「사용자 지정」 옵션과 대상 select 를 이 목록으로 그린다. 받지 못하면 빈 목록(옵션 숨김)"
+        },
+        {
             "id": "adminIdentityPolicies",
             "label_key": "$t:editor.data_source.adminIdentityPolicies",
             "type": "api",
@@ -1368,7 +1385,7 @@
                 "responsive": {
                     "640-1023": {
                         "props": {
-                            "className": "p-6 min-h-screen bg-gray-50 dark:bg-gray-900"
+                            "className": "admin-page-content"
                         }
                     },
                     "1024-": {
@@ -1499,14 +1516,10 @@
                         "name": "Div",
                         "responsive": {
                             "640-1023": {
-                                "props": {
-                                    "className": "sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
-                                }
+                                "classMerge": "-mx-6 px-6"
                             },
                             "1024-": {
-                                "props": {
-                                    "className": "sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
-                                }
+                                "classMerge": "-mx-8 px-8"
                             }
                         },
                         "props": {
@@ -1519,14 +1532,10 @@
                                 "name": "TabNavigation",
                                 "responsive": {
                                     "640-1023": {
-                                        "props": {
-                                            "className": "sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
-                                        }
+                                        "classMerge": "-mx-6 px-6"
                                     },
                                     "1024-": {
-                                        "props": {
-                                            "className": "sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
-                                        }
+                                        "classMerge": "-mx-8 px-8"
                                     }
                                 },
                                 "actions": [
@@ -1685,14 +1694,10 @@
                                 "if": "{{(_global.activeSettingsTab || query.tab) === 'identity'}}",
                                 "responsive": {
                                     "640-1023": {
-                                        "props": {
-                                            "className": "bg-white dark:bg-gray-800 flex gap-1 px-8"
-                                        }
+                                        "classMerge": "px-8"
                                     },
                                     "1024-": {
-                                        "props": {
-                                            "className": "bg-white dark:bg-gray-800 flex gap-1 px-10"
-                                        }
+                                        "classMerge": "px-10"
                                     }
                                 },
                                 "props": {
@@ -1730,14 +1735,10 @@
                                 "if": "{{(_global.activeSettingsTab || query.tab) === 'member'}}",
                                 "responsive": {
                                     "640-1023": {
-                                        "props": {
-                                            "className": "bg-white dark:bg-gray-800 flex gap-1 px-8"
-                                        }
+                                        "classMerge": "px-8"
                                     },
                                     "1024-": {
-                                        "props": {
-                                            "className": "bg-white dark:bg-gray-800 flex gap-1 px-10"
-                                        }
+                                        "classMerge": "px-10"
                                     }
                                 },
                                 "props": {

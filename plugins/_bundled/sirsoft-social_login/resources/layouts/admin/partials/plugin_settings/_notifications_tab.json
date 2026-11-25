@@ -181,7 +181,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "{{ch.icon ?? 'bell'}}",
-                                                        "className": "sl:text-gray-500 sl:dark:text-gray-400"
+                                                        "className": "sl-text-muted"
                                                     }
                                                 },
                                                 {
@@ -338,7 +338,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "sl-btn sl-btn-primary sl-flex-center sl:gap-1.5 sl:text-sm sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
+                                                "className": "sl-btn sl-btn-primary sl-flex-center sl:gap-1.5 sl:text-sm",
                                                 "disabled": "{{_computed.isNotificationReadOnly || _local.slSavingChannels !== null && _local.slSavingChannels !== undefined || !(JSON.stringify([...(_local.slChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())) || (_local.slChannels?.[def.id] ?? def.channels ?? []).length === 0}}"
                                             },
                                             "children": [
@@ -388,7 +388,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "sl-btn sl-btn-secondary sl:text-sm sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
+                                                "className": "sl-btn sl-btn-secondary sl:text-sm",
                                                 "disabled": "{{_local.slSavingChannels !== null && _local.slSavingChannels !== undefined}}"
                                             },
                                             "children": [
@@ -578,7 +578,7 @@
                             "name": "Div",
                             "if": "{{slNotificationDefinitions === undefined && !_local.slNotificationDefinitionsError}}",
                             "props": {
-                                "className": "sl:text-sm sl:text-gray-500 sl:dark:text-gray-400"
+                                "className": "sl:text-sm sl-text-muted"
                             },
                             "text": "$t:common.loading"
                         },
@@ -589,7 +589,7 @@
                             "name": "P",
                             "if": "{{slNotificationDefinitions !== undefined && (slNotificationDefinitions?.data?.data ?? []).length === 0 && !_local.slNotificationDefinitionsError}}",
                             "props": {
-                                "className": "sl:text-sm sl:text-gray-500 sl:dark:text-gray-400"
+                                "className": "sl:text-sm sl-text-muted"
                             },
                             "text": "$t:sirsoft-social_login.admin.notifications.empty_message"
                         },

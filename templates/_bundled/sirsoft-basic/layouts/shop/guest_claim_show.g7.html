@@ -100,8 +100,8 @@
                   <span>{{claim.data?.claim?.status_label ?? ''}}</span>
                 </span>
               </div>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{claim.data?.claim?.claim_number ?? ''}}</p>
-              <p data-if="{{!!claim.data?.claim?.requested_at_formatted}}" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:claim.list.requested_at|at={{claim.data?.claim?.requested_at_formatted ?? ''}}</p>
+              <p class="text-sm text-muted mt-1">{{claim.data?.claim?.claim_number ?? ''}}</p>
+              <p data-if="{{!!claim.data?.claim?.requested_at_formatted}}" class="text-xs text-muted mt-0.5">$t:claim.list.requested_at|at={{claim.data?.claim?.requested_at_formatted ?? ''}}</p>
               <!-- 원 주문으로 — 신청서에서 주문을 되짚어 볼 수 있어야 한다. 비회원의 주문 상세는 조회 토큰으로 열리며 같은 토큰이 이 화면도 열었다. -->
               <button data-if="{{!!claim.data?.claim?.order_number}}" type="button" class="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline mt-1 cursor-pointer">
                 <on type="click">

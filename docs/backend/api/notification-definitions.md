@@ -30,6 +30,7 @@
 | search | query | string | 아니오 | max 255 | 검색어 (지정한 검색 대상 필드에서 부분 일치) |
 | extension_type | query | string | 아니오 | `core`, `module`, `plugin` | 확장 유형 (core/module/plugin/template) |
 | extension_identifier | query | string | 아니오 | max 100 | 확장 식별자 |
+| include_hidden | query | boolean | 아니오 | — | 확장이 숨긴 알림 종류(필터 `core.notification_definition.filter_hidden_type_prefixes`)도 함께 받기 (7.2.1) |
 | category | query | string | 아니오 | `general`, `identity` | 분류 필터 — `identity` 는 본인인증 메일 문구(7.1.0~), `general` 은 그 밖의 알림(분류 값이 비어 있는 정의 포함). 생략하면 전체 |
 | channel | query | string | 아니오 | max 50 | 채널 필터 — 활성 채널(`channels`) 배열에 이 채널을 포함하는 정의만 조회 (mail, database 등) |
 | template_channel | query | string | 아니오 | max 50 | 목록에 실을 템플릿을 한 채널로 좁힙니다. `channel` 과 달리 정의 행은 그대로 두고 각 행의 `templates` 만 좁힙니다. **지정하지 않으면 `templates` 키 자체가 응답에 없습니다** — 정의 하나당 채널 × 로케일만큼의 제목·본문이 실리는 것을 막기 위한 기본값입니다. `all` 을 주면 좁히지 않고 전 채널 템플릿을 싣습니다. 켠 채널을 한 목록에 함께 그리는 화면(확장 설정 등)을 위한 값이며, 응답이 커지므로 정의를 좁혀 부르는 호출자만 쓰세요. 정의 한 건의 전 채널 템플릿만 필요하면 단건 조회가 더 낫습니다 |
@@ -131,7 +132,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 등록된 알림 정의 목록을 페이지네이션으로 조회합니다. 인증(`auth:sanctum`)과 `core.settings.read` 권한이 필요합니다. `search`, `extension_type`, `extension_identifier`, `category`, `channel`, `is_active` 로 필터링하고 `sort_by`/`sort_order` 로 정렬하며, 확장이 `core.notification_definition.index_validation_rules` 훅으로 필터를 추가할 수 있습니다. 관리자 알림 정의 관리 목록 화면을 렌더링할 때 사용합니다.
+**설명** 등록된 알림 정의 목록을 페이지네이션으로 조회합니다. 인증(`auth:sanctum`)과 `core.settings.read` 권한이 필요합니다. `search`, `extension_type`, `extension_identifier`, `category`, `channel`, `is_active` 로 필터링하고 `sort_by`/`sort_order` 로 정렬하며, 확장이 `core.notification_definition.index_validation_rules` 훅으로 필터를 추가할 수 있습니다. 확장이 자기 화면에서만 다루는 알림 종류(예: 쇼핑몰 쿠폰별 발급 알림 `coupon_issued.{id}`)는 `core.notification_definition.filter_hidden_type_prefixes`(인자: 접두 문자열 배열 — 처음엔 빈 배열, 목록 조회 조건 배열)가 돌려준 접두로 시작하는 종류(`type`)가 목록에서 빠지고, `include_hidden=1` 이면 함께 받습니다(7.2.1). 숨긴 종류도 단건 조회·수정·미리보기·기본값 복원은 그대로 됩니다. 관리자 알림 정의 관리 목록 화면을 렌더링할 때 사용합니다.
 
 
 ### POST /api/admin/notification-definitions

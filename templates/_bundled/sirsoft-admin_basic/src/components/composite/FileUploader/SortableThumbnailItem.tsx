@@ -324,7 +324,7 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
         <P className="text-xs font-medium text-gray-900 dark:text-white truncate" title={file.original_filename}>
           {file.original_filename}
         </P>
-        <P className="text-xs text-gray-500 dark:text-gray-400">
+        <P className="text-xs text-muted">
           {isPending ? (file as PendingFile).size_formatted : (file as Attachment).size_formatted}
         </P>
       </Div>

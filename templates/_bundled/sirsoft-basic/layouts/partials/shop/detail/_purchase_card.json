@@ -8,7 +8,7 @@
     "name": "Div",
     "if": "{{product.data?.sales_status === 'on_sale'}}",
     "props": {
-        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5"
+        "className": "card-plain p-5"
     },
     "children": [
         {
@@ -124,7 +124,7 @@
                             "props": {
                                 "name": "info-circle",
                                 "size": "sm",
-                                "className": "text-gray-500 dark:text-gray-400 mt-0.5 shrink-0"
+                                "className": "text-muted mt-0.5 shrink-0"
                             }
                         },
                         {
@@ -143,9 +143,7 @@
                     "name": "Div",
                     "responsive": {
                         "768-": {
-                            "props": {
-                                "className": "grid grid-cols-2 gap-2"
-                            }
+                            "classMerge": "grid-cols-2"
                         }
                     },
                     "props": {

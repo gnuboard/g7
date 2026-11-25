@@ -13,7 +13,7 @@
             <p class="ecommerce:mt-1">{{$t('sirsoft-ecommerce.admin.export.warnings.' + code + '.message')}}</p>
           </div>
         </div>
-        <div data-if="{{!_global.ecommerceExportCatalog}}" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:py-8 ecommerce:justify-center ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">
+        <div data-if="{{!_global.ecommerceExportCatalog}}" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:py-8 ecommerce:justify-center ecommerce:text-sm ecommerce-text-muted">
           <icon name="spinner" class="ecommerce-spinner-sm"/>
           <span>$t:sirsoft-ecommerce.admin.export.modal.loading</span>
         </div>
@@ -111,7 +111,7 @@
                 </div>
               </div>
               <div data-each="group in [...(_global.ecommerceExportCatalog?.screen_columns ?? []), { key: 'extra', label: $t('sirsoft-ecommerce.admin.export.modal.group_extra') }].filter(g => (_global.ecommerceExportCatalog?.fields?.[_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit] ?? []).some(f => f.group === g.key))" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-1.5">
-                <span class="ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{group.label}}</span>
+                <span class="ecommerce:text-xs ecommerce:font-semibold ecommerce-text-muted">{{group.label}}</span>
                 <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-x-4 ecommerce:gap-y-1.5">
                   <label data-each="field in (_global.ecommerceExportCatalog?.fields?.[_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit] ?? []).filter(f => f.group === group.key)" class="ecommerce-inline-clickable">
                     <input type="checkbox" class="ecommerce-checkbox" checked="{{(_global.ecommerceExportForm?.fields ?? []).includes(field.key)}}">
@@ -359,7 +359,7 @@
             <span data-if="{{!_global.ecommerceExportIsEstimating &amp;&amp; (_global.ecommerceExportEstimate ?? 0) > 50000}}" class="ecommerce:text-amber-700 ecommerce:dark:text-amber-300">$t:sirsoft-ecommerce.admin.export.modal.estimate_large</span>
             <span data-if="{{!_global.ecommerceExportIsEstimating &amp;&amp; _global.ecommerceExportEstimate === 0}}" class="ecommerce:text-amber-700 ecommerce:dark:text-amber-300">$t:sirsoft-ecommerce.admin.export.modal.estimate_empty</span>
             <div class="ecommerce:flex-1"/>
-            <button type="button" class="ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.ecommerceExportIsEstimating}}">
+            <button type="button" class="ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm" disabled="{{_global.ecommerceExportIsEstimating}}">
               <on type="click">
                 <!-- 다시 계산 — 목록 레이아웃의 예상 건수 데이터 소스를 지금 입력값으로 다시 부른다 -->
                 <sequence>
@@ -373,13 +373,13 @@
         </div>
       </div>
       <footer>
-        <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.ecommerceExportIsRequesting}}">
+        <button type="button" class="ecommerce-btn ecommerce-btn-secondary" disabled="{{_global.ecommerceExportIsRequesting}}">
           <on type="click">
             <close-modal/>
           </on>
           $t:sirsoft-ecommerce.admin.export.modal.close
         </button>
-        <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-500 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-600 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{!_global.ecommerceExportCatalog || _global.ecommerceExportIsRequesting || _global.ecommerceExportIsEstimating === true || _global.ecommerceExportEstimate === 0 || _global.ecommerceExportEstimateFailed === true}}">
+        <button type="button" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-primary" disabled="{{!_global.ecommerceExportCatalog || _global.ecommerceExportIsRequesting || _global.ecommerceExportIsEstimating === true || _global.ecommerceExportEstimate === 0 || _global.ecommerceExportEstimateFailed === true}}">
           <on type="click">
             <!-- 내보내기 요청 — 중복 방지 키는 창을 열 때 만든 것을 그대로 보낸다(연속 클릭·재시도가 같은 작업을 돌려받는다).
                  검증 오류는 창 위에 모아 보이고, 접수되면 안내를 띄우고 창을 닫는다. 진행 깃발은 성공·실패 양쪽에서 푼다. -->

@@ -80,7 +80,8 @@ test('등록 화면에서 저장을 빠르게 두 번 눌러도 배너는 한 �
   await expect(page.locator('#footer_save_button')).toBeVisible({ timeout: 30_000 });
   await page.locator('[name="title[ko]"]').fill(title);
   const uploaded = page.waitForResponse((r) => r.url().includes(`${API}/admin/banner-images`) && r.request().method() === 'POST');
-  await page.locator('#pc_image_uploader input[type="file"]').setInputFiles({ name: 'e2e-pc.png', mimeType: 'image/png', buffer: PNG_1X1 });
+  // #408 엔진 스코프: 확장점 호스트 아래(기본 내용 포함)의 정적 노드 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+  await page.locator('[id^="pc_image_uploader__"] input[type="file"]').setInputFiles({ name: 'e2e-pc.png', mimeType: 'image/png', buffer: PNG_1X1 });
   expect((await uploaded).status()).toBe(201);
   await expect(page.locator('#footer_save_button')).toBeEnabled();
 
@@ -117,7 +118,7 @@ for (const viewport of ['desktop', 'mobile'] as const) {
 
       await page.locator('[name="title[ko]"]').fill(title);
       const uploaded = page.waitForResponse((r) => r.url().includes(`${API}/admin/banner-images`) && r.request().method() === 'POST');
-      await page.locator('#pc_image_uploader input[type="file"]').setInputFiles({ name: 'e2e-pc.png', mimeType: 'image/png', buffer: PNG_1X1 });
+      await page.locator('[id^="pc_image_uploader__"] input[type="file"]').setInputFiles({ name: 'e2e-pc.png', mimeType: 'image/png', buffer: PNG_1X1 });
       expect((await uploaded).status()).toBe(201);
       // 1x1 이미지는 권장 크기와 달라 안내가 뜨지만 저장은 막지 않는다
       await expect(page.locator('#pc_size_warning')).toBeVisible();
@@ -271,11 +272,11 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       await page.goto(`${ADMIN_LIST}/${id}/edit`);
       await expect(page.locator('#footer_save_button')).toBeEnabled({ timeout: 30_000 });
       // PC 업로더는 1장이 차 있으면 올리기 칸이 없다 — 운영자처럼 [삭제]로 화면에서 뺀 뒤 새로 올린다(서버는 아직 그대로)
-      await page.locator('#pc_image_uploader').getByRole('button', { name: '삭제' }).click();
+      await page.locator('[id^="pc_image_uploader__"]').getByRole('button', { name: '삭제' }).click();
       await expect(page.locator('#footer_save_button')).toBeDisabled();
       expect(await publicImage()).toBe(before);
       const uploaded = page.waitForResponse((r) => r.url().includes(`${API}/admin/banner-images`) && r.request().method() === 'POST');
-      await page.locator('#pc_image_uploader input[type="file"]').setInputFiles({ name: 'e2e-pc-new.png', mimeType: 'image/png', buffer: PNG_1X1 });
+      await page.locator('[id^="pc_image_uploader__"] input[type="file"]').setInputFiles({ name: 'e2e-pc-new.png', mimeType: 'image/png', buffer: PNG_1X1 });
       const upload = await uploaded;
       expect(upload.status()).toBe(201);
       const next = (await upload.json()).data.url as string;

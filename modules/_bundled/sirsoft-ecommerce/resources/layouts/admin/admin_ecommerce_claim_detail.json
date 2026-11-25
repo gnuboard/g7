@@ -240,7 +240,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce-text-muted"
                                                         },
                                                         "text": "|"
                                                     },
@@ -265,7 +265,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce-text-muted"
                                                         },
                                                         "text": "|"
                                                     },
@@ -314,7 +314,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce-text-muted"
                                                         },
                                                         "text": "|"
                                                     },
@@ -339,7 +339,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce-text-muted"
                                                         },
                                                         "text": "|"
                                                     },
@@ -397,7 +397,7 @@
                                                         "name": "Span",
                                                         "if": "{{claim?.data?.claim?.request_source === 'admin' && !!claim?.data?.claim?.requested_by_admin_name}}",
                                                         "props": {
-                                                            "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce:text-xs ecommerce-text-muted"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.claim.detail.requested_by_admin|name={{claim?.data?.claim?.requested_by_admin_name}}"
                                                     },
@@ -407,7 +407,7 @@
                                                         "name": "Span",
                                                         "if": "{{!!claim?.data?.claim?.withdrawn_by_admin_name}}",
                                                         "props": {
-                                                            "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce:text-xs ecommerce-text-muted"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.claim.detail.withdrawn_by_admin|name={{claim?.data?.claim?.withdrawn_by_admin_name}}"
                                                     }
@@ -593,7 +593,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                            "className": "ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm",
                                             "disabled": "{{claim?.data?.abilities?.can_update_status !== true || claim?.data?.exchange_mode_abilities?.can_set_advance !== true}}"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.set_advance"
@@ -617,7 +617,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                            "className": "ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm",
                                             "disabled": "{{claim?.data?.abilities?.can_update_status !== true || claim?.data?.exchange_mode_abilities?.can_set_standard !== true}}"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.set_standard"
@@ -628,7 +628,7 @@
                                         "name": "Span",
                                         "if": "{{!!claim?.data?.exchange_mode_abilities?.blocked_reason}}",
                                         "props": {
-                                            "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                            "className": "ecommerce:text-xs ecommerce-text-muted"
                                         },
                                         "text": "{{claim?.data?.exchange_mode_abilities?.blocked_reason ?? ''}}"
                                     }

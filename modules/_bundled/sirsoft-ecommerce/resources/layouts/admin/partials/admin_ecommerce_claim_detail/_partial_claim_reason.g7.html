@@ -30,7 +30,7 @@
       <div data-ref="cr_005_images_block" data-if="{{(claim?.data?.claim?.claim_type ?? '') !== 'cancel'}}" class="ecommerce:mt-4">
         <div class="ecommerce-text-label-subtle ecommerce:mb-2">$t:sirsoft-ecommerce.admin.claim.detail.reason.images_label</div>
         <!-- 상한 안내는 서버 봉투(attachment_settings)를 읽는다. 리터럴로 적으면 운영자가 설정을 바꾼 순간 화면과 서버가 갈리고, 사용자에게는 이유 없는 422 만 남는다. -->
-        <div data-ref="cr_005b_images_hint" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-2">$t:sirsoft-ecommerce.admin.claim.detail.reason.images_hint|count={{claim?.data?.attachment_settings?.max_images ?? 0}}|max={{claim?.data?.attachment_settings?.max_images ?? 0}}&amp;size={{(claim?.data?.attachment_settings?.image_max_size_mb ?? '-') + 'MB'}}&amp;types={{(claim?.data?.attachment_settings?.allowed_extensions ?? []).join(', ')}}</div>
+        <div data-ref="cr_005b_images_hint" class="ecommerce:text-xs ecommerce-text-muted ecommerce:mb-2">$t:sirsoft-ecommerce.admin.claim.detail.reason.images_hint|count={{claim?.data?.attachment_settings?.max_images ?? 0}}|max={{claim?.data?.attachment_settings?.max_images ?? 0}}&amp;size={{(claim?.data?.attachment_settings?.image_max_size_mb ?? '-') + 'MB'}}&amp;types={{(claim?.data?.attachment_settings?.allowed_extensions ?? []).join(', ')}}</div>
         <!-- 첨부 업로더 확장점 — 운영자 대리 업로드. 고르는 즉시 신청서로 올라가고 정렬 API 가 없어 정렬 주소는 null 이다.
              동시 업로드 1 은 서버의 개수 상한 판정 때문이므로 대체 업로더도 지켜야 한다 -->
         <extension-point name="attachment_uploader" data-ref="cr_006_images_uploader_slot" class="ecommerce:contents">
@@ -108,8 +108,8 @@
           <div data-ref="cr_007_image_origin_{{originIdx}}" data-each="originImage, originIdx in {{claim?.data?.claim?.images ?? []}}" class="ecommerce:flex ecommerce:items-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:text-xs ecommerce:text-gray-600 ecommerce:dark:text-gray-300">
             <badge data-type="composite" data-if="{{!!originImage.uploader_type_label}}" color="{{originImage.uploader_type === 'admin' ? 'purple' : 'blue'}}" size="sm" text="{{originImage.uploader_type_label ?? ''}}"/>
             <span class="ecommerce:font-medium">{{originImage.original_name ?? ''}}</span>
-            <span data-if="{{!!originImage.uploader_name}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{originImage.uploader_name ?? ''}}</span>
-            <span data-if="{{!!originImage.created_at}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.reason.image_origin_uploaded_at|at={{originImage.created_at ?? ''}}</span>
+            <span data-if="{{!!originImage.uploader_name}}" class="ecommerce-text-muted">{{originImage.uploader_name ?? ''}}</span>
+            <span data-if="{{!!originImage.created_at}}" class="ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.detail.reason.image_origin_uploaded_at|at={{originImage.created_at ?? ''}}</span>
           </div>
         </div>
         <!-- 첨부 일괄 정리 (F6). 개별 삭제는 업로더가 하고, 이 버튼은 반려·종결 건을 한 번에 비울 때 쓴다. -->
@@ -155,7 +155,7 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
           <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.reactivated_at</span>
           <span data-ref="cc_005_reactivated_at" class="ecommerce:text-gray-900 ecommerce:dark:text-gray-100">$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.reactivated_value|at={{claim?.data?.claim?.reactivated_at_formatted ?? '-'}}|quantity={{claim?.data?.claim?.reactivated_quantity ?? 0}}|total={{claim?.data?.claim?.total_cancel_quantity ?? 0}}</span>
         </div>
-        <p data-ref="cc_006_reactivated_hint" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-1">$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.reactivated_hint</p>
+        <p data-ref="cc_006_reactivated_hint" class="ecommerce:text-xs ecommerce-text-muted ecommerce:mt-1">$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.reactivated_hint</p>
       </div>
     </div>
     <div data-ref="claim_memo_card" class="ecommerce-admin-card">

@@ -326,7 +326,7 @@
                                                         "name": "Span",
                                                         "if": "{{(row.refund_progress.count ?? 0) > 1}}",
                                                         "props": {
-                                                            "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce:text-xs ecommerce-text-muted"
                                                         },
                                                         "text": "$t:defer:sirsoft-ecommerce.admin.claim.column.refund_progress_more|count={{(row.refund_progress.count ?? 1) - 1}}"
                                                     }
@@ -370,7 +370,7 @@
                                         "name": "Span",
                                         "if": "{{!row.order_number}}",
                                         "props": {
-                                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                            "className": "ecommerce-text-muted"
                                         },
                                         "text": "-"
                                     },
@@ -418,7 +418,7 @@
                                                         "name": "Span",
                                                         "if": "{{(row.item_summary?.item_count ?? 0) > 1}}",
                                                         "props": {
-                                                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:font-normal ecommerce:ml-1"
+                                                            "className": "ecommerce-text-muted ecommerce:font-normal ecommerce:ml-1"
                                                         },
                                                         "text": "$t:defer:sirsoft-ecommerce.admin.claim.column.item_more|count={{(row.item_summary?.item_count ?? 1) - 1}}"
                                                     }
@@ -464,7 +464,7 @@
                                                 "name": "Span",
                                                 "if": "{{row.is_guest_request}}",
                                                 "props": {
-                                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce:text-xs ecommerce-text-muted"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.claim.column.guest_badge"
                                             },
@@ -576,7 +576,7 @@
                                                 "name": "Span",
                                                 "if": "{{row.total_charge_amount_formatted == null && row.refund_total_formatted == null}}",
                                                 "props": {
-                                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce-text-muted"
                                                 },
                                                 "text": "-"
                                             }
@@ -617,7 +617,7 @@
                                                         "name": "Span",
                                                         "if": "{{(row.tracking_summary?.collection?.count ?? 0) > 1}}",
                                                         "props": {
-                                                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce-text-muted"
                                                         },
                                                         "text": "$t:defer:sirsoft-ecommerce.admin.claim.column.tracking_more|more={{(row.tracking_summary?.collection?.count ?? 0) - 1}}"
                                                     }
@@ -641,7 +641,7 @@
                                                         "name": "Span",
                                                         "if": "{{(row.tracking_summary?.redelivery?.count ?? 0) > 1}}",
                                                         "props": {
-                                                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                            "className": "ecommerce-text-muted"
                                                         },
                                                         "text": "$t:defer:sirsoft-ecommerce.admin.claim.column.tracking_more|more={{(row.tracking_summary?.redelivery?.count ?? 0) - 1}}"
                                                     }
@@ -652,7 +652,7 @@
                                                 "name": "Span",
                                                 "if": "{{!row.tracking_summary?.collection?.first && !row.tracking_summary?.redelivery?.first}}",
                                                 "props": {
-                                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce-text-muted"
                                                 },
                                                 "text": "-"
                                             }

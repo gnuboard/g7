@@ -426,7 +426,7 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
 
       {/* 에러 메시지 */}
       {error && (
-        <Span className="text-xs text-red-600 dark:text-red-400 mt-1">
+        <Span className="form-error">
           {error}
         </Span>
       )}
@@ -446,7 +446,7 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
                   <Span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-16">
                     {getLocaleNameByCode(locale)}
                   </Span>
-                  <Span className="text-xs text-gray-500 dark:text-gray-400">
+                  <Span className="text-xs text-muted">
                     ({locale.toUpperCase()})
                   </Span>
                 </Div>

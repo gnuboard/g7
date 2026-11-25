@@ -45,7 +45,32 @@
                             }
                         },
                         {
+                            "comment": "가입 후 본인인증 정책이 인증 건을 돌려주면(7.2.1) 로그인 화면 대신 코드 입력 화면으로 간다 — 확인을 마치면 로그인 화면으로 돌아온다.\n                 그 화면은 비회원이라 대상을 세션에서 얻지 못하므로 [코드 다시 받기] 가 쓸 가입 이메일을 먼저 보관한다.",
+                            "handler": "sirsoft-basic.stashIdentityTarget",
+                            "if": "{{!!response?.data?.identity_challenge?.id}}",
+                            "params": {
+                                "purpose": "signup",
+                                "email": "{{_local.registerForm?.email ?? ''}}"
+                            }
+                        },
+                        {
                             "handler": "navigate",
+                            "if": "{{!!response?.data?.identity_challenge?.id}}",
+                            "params": {
+                                "path": "/identity/challenge",
+                                "query": {
+                                    "challenge_id": "{{response.data.identity_challenge.id}}",
+                                    "purpose": "signup",
+                                    "render_hint": "{{response.data.identity_challenge.render_hint ?? 'text_code'}}",
+                                    "expires_at": "{{response.data.identity_challenge.expires_at ?? ''}}",
+                                    "max_attempts": "{{response.data.identity_challenge.max_attempts ?? ''}}",
+                                    "return_url": "/login"
+                                }
+                            }
+                        },
+                        {
+                            "handler": "navigate",
+                            "if": "{{!response?.data?.identity_challenge?.id}}",
                             "params": {
                                 "path": "/login"
                             }
@@ -180,7 +205,7 @@
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                        "className": "form-label"
                     },
                     "children": [
                         {
@@ -216,7 +241,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.email}}",
                     "props": {
-                        "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
+                        "className": "form-error"
                     },
                     "text": "{{_local.errors?.email?.[0] ?? ''}}"
                 }
@@ -231,7 +256,7 @@
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                        "className": "form-label"
                     },
                     "children": [
                         {
@@ -271,7 +296,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.password}}",
                     "props": {
-                        "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
+                        "className": "form-error"
                     },
                     "text": "{{_local.errors?.password?.[0] ?? ''}}"
                 },
@@ -281,7 +306,7 @@
                     "name": "P",
                     "if": "{{!!_global.settings?.security?.password_block_identifier || !!_global.settings?.security?.password_block_repeated_chars || !!_global.settings?.security?.password_block_sequential_chars}}",
                     "props": {
-                        "className": "mt-2 flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400"
+                        "className": "mt-2 flex flex-wrap gap-x-1 text-xs text-muted"
                     },
                     "children": [
                         {
@@ -320,7 +345,7 @@
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                        "className": "form-label"
                     },
                     "children": [
                         {
@@ -358,7 +383,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.password_confirmation}}",
                     "props": {
-                        "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
+                        "className": "form-error"
                     },
                     "text": "{{_local.errors?.password_confirmation?.[0] ?? ''}}"
                 }
@@ -398,7 +423,7 @@
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                        "className": "form-label"
                     },
                     "text": "$t:member.display_name.label"
                 },
@@ -452,7 +477,7 @@
                     "name": "P",
                     "if": "{{((_local.displayNamePreviews ?? {})[$computed.displayNameSelected?.value] ?? $computed.displayNameSelected?.preview ?? '') !== ''}}",
                     "props": {
-                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400 break-words"
+                        "className": "mt-1 text-xs text-muted break-words"
                     },
                     "text": "{{$t(!_local.displayNamePreviews && registerFields?.data?.display_name?.preview_is_sample === true ? 'member.display_name.preview_sample' : 'member.display_name.preview', { name: ((_local.displayNamePreviews ?? {})[$computed.displayNameSelected?.value] ?? $computed.displayNameSelected?.preview ?? '') })}}"
                 },
@@ -462,7 +487,7 @@
                     "name": "P",
                     "if": "{{$computed.displayNameSelected?.requires_nickname === true}}",
                     "props": {
-                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400 break-words"
+                        "className": "mt-1 text-xs text-muted break-words"
                     },
                     "text": "$t:member.display_name.requires_nickname"
                 },

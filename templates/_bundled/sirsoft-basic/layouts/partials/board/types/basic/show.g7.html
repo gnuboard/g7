@@ -27,7 +27,7 @@
             <!-- 카테고리 배지 — 줄지 않는 배지 묶음 안이라 폭 상한(max-w-32) + 한 줄 … . 상한이 없던 때 띄어쓰기 없는 긴 분류 이름이 카드 밖으로 나가 390px 에서 문서가 628px 로 넓어졌다(7.1.1). -->
             <span data-if="{{post?.data?.category}}" class="px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded truncate max-w-32" title="{{post.data.category}}">{{post.data.category}}</span>
             <!-- 비밀글 아이콘 -->
-            <icon data-if="{{post?.data?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+            <icon data-if="{{post?.data?.is_secret}}" name="lock" size="sm" class="text-muted flex-shrink-0"/>
             <!-- 블라인드 아이콘 -->
             <icon data-if="{{post?.data?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-600 dark:text-orange-400 flex-shrink-0"/>
           </div>
@@ -36,7 +36,7 @@
             <!-- 제목 -->
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere">{{post?.data?.title ?? ''}}</h1>
             <!-- 확장 자리 — 확장이 제목 옆에 배지를 붙인다(#149). 이 파일은 게시판 유형 세 갈래에 include 되므로 data-ref 로 지목하면 basic 에만 닿는다 — 이 확장점은 세 갈래 모두에 들어간다 -->
-            <extension-point name="board_post_header_badges" class="contents" data-extension-point="board_post_header_badges" post="{{post?.data}}" postId="{{post?.data?.id}}" boardSlug="{{route?.slug}}" context="board_show"/>
+            <extension-point name="board_post_header_badges" data-ref="ext_board_post_header_badges" class="contents" data-extension-point="board_post_header_badges" post="{{post?.data}}" postId="{{post?.data?.id}}" boardSlug="{{route?.slug}}" context="board_show"/>
             <!-- 삭제됨 배지 -->
             <span data-if="{{post?.data?.deleted_at}}" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
             <!-- 새글 배지 (제목 바로 옆) -->
@@ -51,7 +51,7 @@
             <user-info data-type="composite" author="{{post?.data?.author}}"/>
           </div>
           <!-- 날짜/조회수/댓글수 -->
-          <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+          <div class="flex items-center gap-4 text-sm text-muted">
             <!-- 작성일 -->
             <span title="{{post?.data?.created_at ?? ''}}">{{post?.data?.created_at_formatted ?? ''}}</span>
             <span data-if="{{post?.data?.board?.show_view_count !== false &amp;&amp; post?.data?.view_count !== undefined}}" class="flex items-center gap-1">
@@ -73,19 +73,19 @@
         <div class="flex items-center justify-between mb-2 text-sm">
           <!-- 왼쪽: 아이콘 + 라벨 -->
           <div class="flex items-center gap-2">
-            <icon name="message-square" size="sm" class="text-gray-500 dark:text-gray-400"/>
+            <icon name="message-square" size="sm" class="text-muted"/>
             <span class="font-semibold text-gray-700 dark:text-gray-300">$t:board.parent_post</span>
           </div>
           <!-- 오른쪽: 작성자 + 날짜 -->
           <div class="flex items-center gap-2">
-            <span class="text-gray-500 dark:text-gray-400">{{post?.data?.parent?.author?.name || $t('board.unknown_author')}}</span>
-            <span class="text-gray-500 dark:text-gray-400" title="{{post?.data?.parent?.created_at ?? ''}}">{{post?.data?.parent?.created_at_formatted ?? ''}}</span>
+            <span class="text-muted">{{post?.data?.parent?.author?.name || $t('board.unknown_author')}}</span>
+            <span class="text-muted" title="{{post?.data?.parent?.created_at ?? ''}}">{{post?.data?.parent?.created_at_formatted ?? ''}}</span>
           </div>
         </div>
         <!-- 2줄: 제목 (클릭 시 원글로 이동) -->
         <div class="flex items-center gap-2 mb-2">
           <!-- 비밀글 아이콘 -->
-          <icon data-if="{{post?.data?.parent?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-400"/>
+          <icon data-if="{{post?.data?.parent?.is_secret}}" name="lock" size="sm" class="text-muted"/>
           <!-- 카테고리 배지 -->
           <span data-if="{{post?.data?.parent?.category}}" class="shrink-0 truncate max-w-32 px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" title="{{post?.data?.parent?.category ?? ''}}">{{post?.data?.parent?.category ?? ''}}</span>
           <!-- 제목 (클릭 가능, 굵게) -->
@@ -98,7 +98,7 @@
           <!-- 블라인드 처리된 경우 -->
           <span data-if="{{post?.data?.parent?.status === 'blinded'}}" class="italic text-orange-700 dark:text-orange-400">$t:board.blinded_post</span>
           <!-- 비밀글인 경우 -->
-          <span data-if="{{post?.data?.parent?.status !== 'blinded' &amp;&amp; post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null}}" class="text-gray-500 dark:text-gray-400 italic">$t:board.posts.detail.reply_secret_content</span>
+          <span data-if="{{post?.data?.parent?.status !== 'blinded' &amp;&amp; post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null}}" class="text-muted italic">$t:board.posts.detail.reply_secret_content</span>
           <!-- 일반 글인 경우 - 내용 (접힘 상태의 이미지·표 숨김은 !hidden — _reply_section 과 같은 이유) -->
           <extension-point name="html_content" data-ref="parent_post_html_content" data-if="{{post?.data?.parent?.status !== 'blinded' &amp;&amp; !(post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null)}}" content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentContentExpanded ? 'prose dark:prose-invert max-w-none' : '[&amp;_img]:!hidden [&amp;_table]:!hidden'}}">
             <default>
@@ -108,7 +108,7 @@
         </div>
         <!-- 4줄: 더보기/접기 토글 버튼 (왼쪽 정렬, 화살표 아이콘) - 200자 이상이고 블라인드 아닌 경우만 표시 -->
         <div data-if="{{post?.data?.parent?.status !== 'blinded' &amp;&amp; (post?.data?.parent?.content ?? '').length > 200}}" class="flex justify-start">
-          <button type="button" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-transparent border-0 p-0 cursor-pointer flex items-center gap-1">
+          <button type="button" class="text-sm text-muted hover:text-gray-700 dark:hover:text-gray-200 bg-transparent border-0 p-0 cursor-pointer flex items-center gap-1">
             <on type="click">
               <!-- 원글 인용 펼치기·접기 — 답글을 볼 때 위에 붙는 원글 미리보기 얘기다(아래 답글 목록의 같은 이름 토글과 다른 값). -->
               <set-state target="local" parentContentExpanded="{{!_local?.parentContentExpanded}}"/>
@@ -141,12 +141,12 @@
           </button>
         </div>
         <!-- 블라인드 게시글 원본 내용 표시 -->
-        <div data-if="{{post?.data?.status === 'blinded' &amp;&amp; _local?.showBlindedPostContent &amp;&amp; post?.data?.content}}" class="mt-4 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div data-if="{{post?.data?.status === 'blinded' &amp;&amp; _local?.showBlindedPostContent &amp;&amp; post?.data?.content}}" class="mt-4 p-4 card-plain">
           <div class="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
-            <icon name="file-lines" size="sm" class="text-gray-500 dark:text-gray-400"/>
+            <icon name="file-lines" size="sm" class="text-muted"/>
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:board.original_content</span>
           </div>
-          <extension-point name="html_content" content="{{post?.data?.content ?? ''}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none">
+          <extension-point name="html_content" data-ref="ext_html_content_blinded" content="{{post?.data?.content ?? ''}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none">
             <default>
               <html-content data-type="composite" content="{{post?.data?.content ?? ''}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none"/>
             </default>
@@ -263,7 +263,7 @@
           </form>
         </div>
         <!-- 게시글 내용 (정상) -->
-        <extension-point name="html_content" data-if="{{post?.data?.status !== 'blinded' &amp;&amp; post?.data?.content !== null}}" content="{{post?.data?.content ?? ''}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none mb-6">
+        <extension-point name="html_content" data-ref="ext_html_content_body" data-if="{{post?.data?.status !== 'blinded' &amp;&amp; post?.data?.content !== null}}" content="{{post?.data?.content ?? ''}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none mb-6">
           <default>
             <html-content data-type="composite" content="{{post?.data?.content ?? ''}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none mb-6"/>
           </default>
@@ -428,7 +428,7 @@
     <div data-if="{{post?.data?.board?.use_comment &amp;&amp; !post?.data?.abilities?.can_read_comments &amp;&amp; (!post?.data?.is_secret || post?.data?.content !== null)}}" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow">
       <div class="px-6 py-8 text-center">
         <icon name="lock" size="xl" class="mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
-        <p class="text-gray-500 dark:text-gray-400">$t:board.no_comment_read_permission</p>
+        <p class="text-muted">$t:board.no_comment_read_permission</p>
       </div>
     </div>
     <!-- 댓글 섹션 (댓글 기능 활성화 + 댓글 조회 권한) - 비밀글 미검증 시 숨김 -->

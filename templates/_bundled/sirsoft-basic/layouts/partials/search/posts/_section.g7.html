@@ -1,10 +1,10 @@
 <!-- 글 결과 묶음(전체 탭) — 다섯 건만 보이고 나머지는 글 탭으로 넘긴다. 그 탭의 전체 목록은 _list 조각이 맡는다. 게시판 모듈이 꺼져 있으면 묶음째 숨긴다. -->
 <partial description="전체 탭 - 게시글 섹션 (단순 리스트 5개 + 전체보기)">
-  <div data-if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mt-4">
+  <div data-if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" class="card-plain overflow-hidden mt-4">
     <!-- 섹션 헤더 -->
     <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
       <div class="flex items-center gap-2">
-        <icon name="file-text" size="sm" class="text-gray-500 dark:text-gray-400"/>
+        <icon name="file-text" size="sm" class="text-muted"/>
         <span class="font-medium text-gray-900 dark:text-white">$t:search.tabs.posts</span>
         <span class="text-sm text-blue-600 dark:text-blue-400">{{(searchResults?.data?.posts_count ?? 0) | number}}</span>
       </div>
@@ -39,12 +39,12 @@
           <!-- 제목 (HTML 하이라이트 지원) -->
           <html-content data-type="composite" content="{{post?.title_highlighted ?? post?.title}}" class="min-w-0 wrap-anywhere font-medium text-gray-900 dark:text-white [&amp;_mark]:bg-yellow-200 [&amp;_mark]:dark:bg-yellow-500/40 [&amp;_mark]:px-0.5 [&amp;_mark]:rounded"/>
           <!-- 확장 자리 — 확장이 글마다 배지를 붙인다(#149). 조각은 extensionPointProps.postId 등으로 이 결과의 글을 읽는다 -->
-          <extension-point name="board_post_row_badges" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post?.id}}" boardSlug="{{post?.board_slug}}" context="search_all"/>
+          <extension-point name="board_post_row_badges" data-ref="ext_board_post_row_badges_search_all_{{post.id}}" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post?.id}}" boardSlug="{{post?.board_slug}}" context="search_all"/>
         </div>
         <!-- 발췌 내용 (HTML 하이라이트 지원) -->
         <html-content data-type="composite" data-if="{{post?.content_preview}}" content="{{post?.content_preview_highlighted ?? post?.content_preview}}" class="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2 [&amp;_mark]:bg-yellow-200 [&amp;_mark]:dark:bg-yellow-500/40 [&amp;_mark]:px-0.5 [&amp;_mark]:rounded"/>
         <!-- 메타 정보 -->
-        <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+        <div class="flex items-center gap-3 text-xs text-muted">
           <span>{{post?.author_name}}</span>
           <span title="{{post?.created_at ?? ''}}">{{post?.created_at_formatted ?? ''}}</span>
           <span data-if="{{(post?.view_count ?? 0) > 0}}" class="flex items-center gap-1">
@@ -59,16 +59,16 @@
       </div>
     </div>
     <!-- 결과 없음 안내 (검색 실패는 결과 없음이 아니다 — categories_failed 로 구분, 키 부재(구버전 코어)는 종전 렌더 유지) -->
-    <div data-if="{{(!searchResults?.data?.posts?.items || searchResults?.data?.posts?.items?.length === 0) &amp;&amp; !(searchResults?.data?.categories_failed?.posts ?? false)}}" class="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+    <div data-if="{{(!searchResults?.data?.posts?.items || searchResults?.data?.posts?.items?.length === 0) &amp;&amp; !(searchResults?.data?.categories_failed?.posts ?? false)}}" class="px-4 py-6 text-center text-sm text-muted">
       <span>$t:search.empty.posts_in_all</span>
     </div>
     <!-- 검색 실패 안내 -->
-    <div data-if="{{searchResults?.data?.categories_failed?.posts ?? false}}" class="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+    <div data-if="{{searchResults?.data?.categories_failed?.posts ?? false}}" class="px-4 py-6 text-center text-sm text-muted">
       <div class="flex items-center justify-center gap-2">
         <icon name="triangle-exclamation" size="sm" class="text-red-500 dark:text-red-400"/>
         <span>$t:search.failed.title</span>
       </div>
-      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:search.failed.suggestion</p>
+      <p class="mt-1 text-xs text-muted">$t:search.failed.suggestion</p>
     </div>
   </div>
 </partial>

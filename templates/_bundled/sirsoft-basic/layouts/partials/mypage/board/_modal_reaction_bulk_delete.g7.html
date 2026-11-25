@@ -5,7 +5,7 @@
   <modal data-type="composite" data-ref="reaction_bulk_delete_modal" id="reaction_bulk_delete_modal" title="$t:mypage.board_activities.reactions.bulk_delete_title" icon="trash" iconClassName="text-red-500" size="sm">
     <div data-testid="reaction-bulk-delete-modal" class="space-y-4">
       <p class="text-gray-600 dark:text-gray-400">$t:mypage.board_activities.reactions.bulk_delete_confirm|count={{(_global.myReactionsSelectedIds ?? []).length}}</p>
-      <p class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.board_activities.reactions.delete_notice</p>
+      <p class="text-sm text-muted">$t:mypage.board_activities.reactions.delete_notice</p>
     </div>
     <footer>
       <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">

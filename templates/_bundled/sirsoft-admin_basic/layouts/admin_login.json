@@ -199,14 +199,10 @@
             "name": "Div",
             "responsive": {
                 "640-1023": {
-                    "props": {
-                        "className": "flex-center min-h-screen justify-center bg-gray-50 dark:bg-gray-900 px-6"
-                    }
+                    "classMerge": "px-6"
                 },
                 "desktop": {
-                    "props": {
-                        "className": "flex-center min-h-screen justify-center bg-gray-50 dark:bg-gray-900 px-8"
-                    }
+                    "classMerge": "px-8"
                 }
             },
             "lifecycle": {
@@ -744,7 +740,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white transition-colors duration-200 justify-center gap-2 cursor-pointer"
+                                                "className": "flex-center w-full btn btn-primary py-3"
                                             },
                                             "children": [
                                                 {
@@ -779,7 +775,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "w-full text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer"
+                                                "className": "w-full text-sm text-muted hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer"
                                             },
                                             "text": "$t:auth.login.external.use_other_email"
                                         }
@@ -865,7 +861,7 @@
                                     "if": "{{!_local.twoFactor?.required && !_local.passwordChange?.required && _global.adminLoginDiscovery?.method !== 'external'}}",
                                     "props": {
                                         "type": "submit",
-                                        "className": "flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2",
+                                        "className": "flex-center w-full btn btn-primary py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900",
                                         "disabled": "{{_local.isLoggingIn}}"
                                     },
                                     "children": [
@@ -1032,7 +1028,7 @@
                                                     "name": "P",
                                                     "if": "{{_local.twoFactor?.expires_at}}",
                                                     "props": {
-                                                        "className": "mt-2 text-sm text-gray-500 dark:text-gray-400"
+                                                        "className": "mt-2 text-sm text-muted"
                                                     },
                                                     "text": "$t:auth.login.two_factor.valid_until|until={{_local.twoFactor?.expires_at | datetime}}"
                                                 },
@@ -1042,7 +1038,7 @@
                                                     "name": "P",
                                                     "if": "{{_local.twoFactor?.provider_id === 'totp'}}",
                                                     "props": {
-                                                        "className": "mt-2 text-sm text-gray-500 dark:text-gray-400"
+                                                        "className": "mt-2 text-sm text-muted"
                                                     },
                                                     "text": "$t:auth.login.two_factor.backup_hint"
                                                 }
@@ -1055,7 +1051,7 @@
                                             "name": "Button",
                                             "props": {
                                                 "type": "submit",
-                                                "className": "flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2",
+                                                "className": "flex-center w-full btn btn-primary py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900",
                                                 "disabled": "{{!_local.twoFactor?.code || _local.twoFactor.code.length < 4 || _local.isLoggingIn}}"
                                             },
                                             "children": [
@@ -1159,7 +1155,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "flex-1 px-4 py-3 rounded-lg font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer",
+                                                        "className": "flex-1 btn btn-secondary py-3",
                                                         "disabled": "{{_local.twoFactor?.resending || _local.isLoggingIn}}"
                                                     },
                                                     "text": "$t:auth.login.two_factor.resend"
@@ -1183,7 +1179,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "flex-1 px-4 py-3 rounded-lg font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer",
+                                                        "className": "flex-1 btn btn-secondary py-3",
                                                         "disabled": "{{_local.isLoggingIn}}"
                                                     },
                                                     "text": "$t:auth.login.two_factor.restart"
@@ -1327,7 +1323,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "mt-2 flex flex-wrap gap-x-1 text-sm text-gray-500 dark:text-gray-400"
+                                                        "className": "mt-2 flex flex-wrap gap-x-1 text-sm text-muted"
                                                     },
                                                     "children": [
                                                         {
@@ -1450,7 +1446,7 @@
                                             "name": "Button",
                                             "props": {
                                                 "type": "submit",
-                                                "className": "flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2",
+                                                "className": "flex-center w-full btn btn-primary py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900",
                                                 "disabled": "{{_local.isLoggingIn}}"
                                             },
                                             "children": [
@@ -1580,7 +1576,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "flex-1 px-4 py-3 rounded-lg font-medium whitespace-nowrap border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer",
+                                                        "className": "flex-1 btn btn-secondary py-3 whitespace-nowrap",
                                                         "disabled": "{{_local.isLoggingIn}}"
                                                     },
                                                     "text": "$t:auth.login.password_change.postpone"
@@ -1605,7 +1601,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "flex-1 px-4 py-3 rounded-lg font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer",
+                                                        "className": "flex-1 btn btn-secondary py-3",
                                                         "disabled": "{{_local.isLoggingIn}}"
                                                     },
                                                     "text": "$t:auth.login.two_factor.restart"
@@ -1644,7 +1640,7 @@
                                     ],
                                     "props": {
                                         "href": "/admin/login?local=1",
-                                        "className": "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer"
+                                        "className": "text-muted hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer"
                                     },
                                     "text": "$t:auth.login.external.other_method"
                                 }
@@ -1708,7 +1704,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{_global.theme === 'light' ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}",
+                                                "className": "{{_global.theme === 'light' ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-muted hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}",
                                                 "title": "$t:admin.theme.light"
                                             },
                                             "children": [
@@ -1737,7 +1733,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{_global.theme === 'dark' ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}",
+                                                "className": "{{_global.theme === 'dark' ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-muted hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}",
                                                 "title": "$t:admin.theme.dark"
                                             },
                                             "children": [
@@ -1766,7 +1762,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{_global.theme === 'auto' || !_global.theme ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}",
+                                                "className": "{{_global.theme === 'auto' || !_global.theme ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-muted hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}",
                                                 "title": "$t:admin.theme.auto"
                                             },
                                             "children": [

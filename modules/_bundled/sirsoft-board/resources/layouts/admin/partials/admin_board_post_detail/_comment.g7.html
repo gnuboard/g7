@@ -3,7 +3,7 @@
   <div>
     <div data-ref="comment_header_{{comment.id}}" class="board-flex-start board:justify-between board:gap-1">
       <div data-ref="comment_left_section_{{comment.id}}" class="board-flex-start board:gap-2 board:flex-1 board:min-w-0">
-        <span data-ref="depth_indicator_{{comment.id}}" data-if="{{comment.depth > 0}}" class="board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0 board:text-sm">↳</span>
+        <span data-ref="depth_indicator_{{comment.id}}" data-if="{{comment.depth > 0}}" class="board-text-muted board:flex-shrink-0 board:text-sm">↳</span>
         <div class="board:flex-1 board:min-w-0">
           <div class="board-flex-center board:gap-2">
             <action-menu data-type="composite" data-ref="author_name_menu_{{comment.id}}" data-if="{{!comment?.author?.is_guest &amp;&amp; comment?.author?.uuid}}" triggerLabel="{{comment?.author?.name}}" triggerIconName="" triggerClassName="board:font-semibold board:text-gray-900 board:dark:text-white" position="right">
@@ -125,7 +125,7 @@
       <div data-ref="blinded_comment_content_{{comment.id}}" data-if="{{comment?.status === 'blinded' &amp;&amp; !comment?.deleted_at}}" class="board:mt-1.5 board:px-4">
         <div class="board-flex-center board:flex-wrap board:gap-x-4 board:gap-y-2 board-text-label-subtle">
           <div class="board-flex-center board:flex-wrap board:gap-2">
-            <icon name="eye-slash" class="board:text-sm board:text-gray-500 board:dark:text-gray-400"/>
+            <icon name="eye-slash" class="board:text-sm board-text-muted"/>
             <span>$t:sirsoft-board.admin.posts.detail.blinded_comment_notice</span>
             <span data-if="{{comment?.abilities?.can_manage &amp;&amp; (comment?.action_logs ?? []).filter(log => log.action === 'blind').length > 0}}" class="board:text-amber-700 board:dark:text-amber-400">($t:sirsoft-board.admin.posts.detail.blind_reason_label {{(comment?.action_logs ?? []).filter(log => log.action === 'blind').slice(-1)[0]?.reason ?? '-'}})</span>
           </div>
@@ -141,7 +141,7 @@
       </div>
       <!-- 비밀 댓글 (열람 권한 없음) — 서버가 원문을 null 로 가려 보낸다. 비밀글 조회·게시판 관리 권한이 없는 관리자 역할에게만 해당하며, 안내가 없으면 빈 칸으로 보인다 -->
       <div data-ref="secret_comment_content_{{comment.id}}" data-if="{{comment?.status !== 'blinded' &amp;&amp; (!comment?.deleted_at || comment?.is_cascade_deleted) &amp;&amp; comment?.is_secret &amp;&amp; comment?.content === null}}" class="board:mt-1.5 board:px-4 board-flex-center board:gap-2 board-text-label-subtle">
-        <icon name="lock" class="board:text-sm board:text-gray-500 board:dark:text-gray-400"/>
+        <icon name="lock" class="board:text-sm board-text-muted"/>
         <span>$t:sirsoft-board.admin.posts.detail.secret_comment_notice</span>
       </div>
       <div data-ref="normal_comment_content_{{comment.id}}" data-if="{{comment?.status !== 'blinded' &amp;&amp; (!comment?.deleted_at || comment?.is_cascade_deleted) &amp;&amp; !(comment?.is_secret &amp;&amp; comment?.content === null)}}" class="board:mt-1.5 board:px-4 board-text-body board:whitespace-pre-line board:leading-relaxed">{{comment.content}}</div>
@@ -171,7 +171,7 @@
           </on>
           <span>$t:sirsoft-board.admin.posts.detail.cancel</span>
         </button>
-        <button type="button" class="board:px-3 board:py-1.5 board:text-sm board:bg-blue-600 board:dark:bg-blue-600 board:text-white board:rounded-lg board:hover:bg-blue-700 board:dark:hover:bg-blue-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed" disabled="{{_local.editSubmitting === true || !(comment?.abilities?.can_write === true &amp;&amp; (comment?.is_author || comment?.abilities?.can_manage === true))}}">
+        <button type="button" class="board-btn board-btn-primary board-btn-sm" disabled="{{_local.editSubmitting === true || !(comment?.abilities?.can_write === true &amp;&amp; (comment?.is_author || comment?.abilities?.can_manage === true))}}">
           <on type="click">
             <!-- 편집 저장 — 버튼이 잠겨 있어도 조건을 한 번 더 본다(`if`). 이 조각은 댓글마다 되풀이돼 저장 상태를 한 값으로 나눠 쓰므로, 잠금만 믿으면 다른 줄에서 저장이 도는 사이에 이 줄이 함께 나갈 수 있다 -->
             <sequence if="{{_local.editSubmitting !== true}}">

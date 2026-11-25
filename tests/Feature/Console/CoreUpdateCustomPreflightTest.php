@@ -153,6 +153,67 @@ class CoreUpdateCustomPreflightTest extends TestCase
     }
 
     /**
+     * 항목 이름을 역슬래시로 저장한 zip(Windows 압축 도구)도 zip 안의 새 코어 버전으로 문구·기록을 남깁니다.
+     *
+     * 원본 이름(`g7-7.9.0\config\app.php`)과 다른 정규화 이름으로 읽으면 버전을 못 읽고 현재 버전으로 남겨,
+     * 관리자 확인 창에 충돌 표가 뜨지 않았다(#971).
+     *
+     * @scenario case=command_blocks_zip_with_new_version
+     *
+     * @effects update_not_started_before_maintenance, preflight_result_recorded_for_admin
+     *
+     * @return void 반환값 없음
+     */
+    public function test_backslash_zip_release_block_records_version_inside_zip(): void
+    {
+        $this->writeFixture($this->release, 'config/app.php', "<?php return ['version' => env('APP_VERSION', '7.9.0')];");
+        $this->writeFixture($this->release, 'routes/custom.php', '<?php // shipped by mistake');
+        $zipPath = $this->root.DIRECTORY_SEPARATOR.'release.zip';
+        $zip = new \ZipArchive;
+        $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $zip->addFromString('g7-7.9.0\\', '');
+        foreach (File::allFiles($this->release) as $file) {
+            $zip->addFile($file->getPathname(), 'g7-7.9.0\\'.str_replace('/', '\\', $file->getRelativePathname()));
+        }
+        $zip->close();
+
+        $service = $this->mockService();
+        $service->shouldReceive('checkSystemRequirements')->andReturn(['valid' => true, 'errors' => [], 'available_methods' => ['ZipArchive']]);
+        $service->shouldNotReceive('enableMaintenanceMode');
+        $service->shouldNotReceive('extractZipToPending');
+
+        $this->artisan('core:update', ['--zip' => $zipPath, '--bundled-sources' => 'none'])
+            ->expectsQuestion(self::CONFIRM, 'yes')
+            ->expectsOutputToContain('새 코어 7.9.0 업데이트를 시작하지 않았습니다')
+            ->assertExitCode(1);
+
+        $this->assertSame('7.9.0', CustomUpdatePreflight::lastRecord()['to_version'] ?? null);
+    }
+
+    /**
+     * zip 안 파일 읽기는 배포본 루트(`config/app.php` 위치)를 기준으로 하고, 감싼 폴더가 아닌 아무 1단계 폴더의 같은 이름 파일을 읽지 않습니다.
+     *
+     * @scenario case=command_blocks_zip_with_new_version
+     *
+     * @effects preflight_result_recorded_for_admin
+     *
+     * @return void 반환값 없음
+     */
+    public function test_zip_version_is_read_from_release_root_not_any_first_level_folder(): void
+    {
+        $zipPath = $this->root.DIRECTORY_SEPARATOR.'mixed.zip';
+        $zip = new \ZipArchive;
+        $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        // 엉뚱한 1단계 폴더의 같은 이름 파일이 먼저 놓인다 — 배포본 루트의 파일은 Windows 이름(역슬래시)이다.
+        $zip->addFromString('docs/config/app.php', "<?php return ['version' => env('APP_VERSION', '0.0.1')];");
+        $zip->addFromString('composer.json', '{}');
+        $zip->addFromString('config\\app.php', "<?php return ['version' => env('APP_VERSION', '7.9.0')];");
+        $zip->close();
+
+        $this->assertSame('7.9.0', CustomUpdatePreflight::readVersionFromZip($zipPath));
+    }
+
+    /**
      * 개발자 패키지가 새 코어 패키지 제약과 맞지 않으면 vendor 모드와 무관하게 같은 판정으로 멈추고 충돌 표를 보여 줍니다.
      *
      * @scenario case=command_blocks_package_conflict

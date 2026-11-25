@@ -1,0 +1,52 @@
+feature: sirsoft-admin_basic 관리자 메뉴 아이콘 — FA 클래스 · 이미지 · 인라인 SVG 구조형 값(icon_spec) 렌더·편집 (#381)
+
+description: |
+  메뉴 API 가 내려주는 구조형 아이콘(icon_spec: class·image·svg)을 사이드바·메뉴 관리 목록·보기 판·편집 필드가
+  같은 렌더러(MenuIcon)로 그린다. spec 이 없는 종전 메뉴는 호환 문자열 icon 을 class 로 그리고, 깨진 이미지·형식 오류는
+  대체 아이콘(사이드바 fas fa-circle, 목록·보기 판 file)으로 바뀐다. SVG 는 화이트리스트 정제 뒤 인라인으로 그려 글자색을
+  따른다. 편집 필드(MenuIconField)는 선택·직접 입력·업로드·SVG 코드 탭에서 고른 값을 엔진 폼 바인딩용 가짜 이벤트
+  (`{target:{name:'icon_spec', value}}`)로 내보내고, 메뉴 관리 레이아웃은 그 값을 저장 본문 icon_spec 으로 싣는다.
+
+axes:
+  surface: [sidebar, sortable_list, view_panel, form_field]
+  icon_type: [class, image, svg, legacy_string]
+
+exclusions:
+  - { surface: form_field, icon_type: legacy_string, reason: 편집 필드는 구조형 값(icon_spec)만 다룬다 — 종전 문자열 메뉴도 서버가 class spec 으로 내려주므로 필드에 문자열 icon 입력 경로가 없다 }
+
+effects:
+  - structured_icon_renders_per_type          # class 는 <i class>, image 는 <img>, svg 는 span.menu-icon-media 안 인라인 svg 로 그린다
+  - broken_image_falls_back_to_circle         # 이미지가 깨지면(onError) 대체 아이콘(사이드바·미리보기 fas fa-circle, 목록 file)으로 바뀐다
+  - svg_sanitized_inline                      # 인라인 SVG 에서 script·이벤트 처리기가 빠지고 svg 하나만 남는다
+  - legacy_icon_string_still_renders          # spec 없는 호환 문자열 icon(fas fa-home · 맨 이름 home)이 종전처럼 그려진다
+  - invalid_icon_falls_back                   # 형식 오류 class·주소 없는 이미지·비는 SVG 는 대체 아이콘을, 대체도 없으면 아무것도 그리지 않는다
+  - form_initial_tab_matches_value            # 필드의 첫 탭이 값 유형(선택 목록·직접 입력·업로드·SVG)을 따른다
+  - form_emits_icon_spec_event                # 선택·직접 입력·SVG 탭이 {target:{name:'icon_spec', value}} 를 내보낸다
+  - form_clear_emits_null                     # 지우기 단추가 null 을 내보낸다
+  - upload_returns_icon_spec                  # 업로드가 FormData(file)를 업로드 주소로 보내고 응답 icon_spec 을 내보낸다
+  - upload_failure_shows_message              # 업로드 실패는 서버 message(없으면 실패 문구)를 보이고 아무것도 내보내지 않는다
+  - upload_input_reset_after_attempt          # 업로드가 끝나면(성공·실패) 파일 칸을 비워 같은 파일을 다시 골라도 업로드된다
+  - external_url_blocked_in_direct_input      # 직접 입력의 외부 주소(http·https·//·data·javascript)는 오류 문구만 보이고 내보내지 않는다
+  - form_inputs_follow_external_value         # 값이 바깥에서 바뀌면(다른 메뉴 편집) 직접 입력·SVG 칸이 새 값으로 다시 맞춰지고, 자기가 내보낸 값의 메아리는 친 글자를 지우지 않는다 — 한 칸에서 친 값은 다른 칸을 새 값에 맞춘다
+  - upload_in_progress_blocks_save            # 업로드 동안 전역 menuIconUploading 을 켜 저장 단추가 잠기고, 끝나거나 필드가 사라지면 끈다(늦은 결과는 버림)
+  - form_preview_waits_for_typing_pause       # 직접 입력으로 사이트 이미지 경로를 치는 동안 미리보기는 입력이 멈춘 뒤에만 바뀌고(글자마다 요청 0), 주소에 마운트 접두가 붙는다
+  - package_icon_previewed                    # 확장 패키지 이미지 아이콘이 미리보기 이미지와 「확장 이미지 · 경로」 라벨로 보인다
+  - layout_form_posts_icon_spec               # 메뉴 폼이 MenuIconField(name=icon_spec)를 두고 저장 본문에 icon_spec 을 싣는다(icon 없음), 새 메뉴 초기값은 fas fa-home class spec
+  - layout_edit_switch_copies_icon_spec       # 보기 판 [수정] 전환이 선택 메뉴의 icon_spec 을 폼으로 옮긴다
+  - layout_view_panel_renders_menu_icon       # 보기 판이 MenuIcon 으로 icon_spec(없으면 icon)을 그리고 유형 라벨을 보인다
+  - structured_menu_icons_render              # 사이드바 네 렌더 분기가 모두 구조형 아이콘을 그린다 (admin-sidebar-menu.yaml 과 공유)
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/MenuIcon.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/MenuIconField.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/AdminSidebar.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/SortableMenuItem.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-menu-icon-field.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-menu-icon.spec.ts
+
+notes: |
+  e2e_browser=covered — `tests/Playwright/specs/admin/admin-menu-icon.spec.ts` 가 실제 브라우저에서 SVG 아이콘 사이드바·보기 판
+  렌더, 이중 접두 0, 키보드로 친 외부 주소의 입력 전 값 복원을 잰다. 나머지 렌더 분기·필드 이벤트·업로드 응답 처리는 컴포넌트 단위(jsdom, Vitest)로, 메뉴 관리 화면의
+  배선은 굽기 산출 JSON 대조로 잠근다. 업로드 API·서버 검증(MenuIconSpec·MenuIconSvgValidator)은 백엔드 시험이 맡는다.
+  보기 판(view_panel) 조합은 보기 판이 MenuIcon 에 넘기는 속성(fallbackIcon=file, className)을 그대로 쓴 MenuIcon 시험과
+  레이아웃 JSON 대조가 함께 떠받친다.

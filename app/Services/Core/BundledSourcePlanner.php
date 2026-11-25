@@ -8,6 +8,7 @@ use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\FilePermissionHelper;
+use App\Extension\Helpers\ZipEntryIndex;
 use App\Support\ExtensionIntegrations;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -102,7 +103,8 @@ class BundledSourcePlanner
     /**
      * 배포본 zip 을 풀지 않고 항목명만 읽어 릴리스 인벤토리를 만듭니다.
      *
-     * 최상위 래퍼 폴더(`g7-7.1.1/…`)는 `config/app.php` 위치로 접두사를 판정한다.
+     * 최상위 래퍼 폴더(`g7-7.1.1/…`)는 `config/app.php` 위치로 접두사를 판정한다. 이름 정규화·원본 인덱스 읽기·
+     * `__MACOSX/` 제외는 `ZipEntryIndex` 가 맡는다(역슬래시 이름 zip 도 읽는다).
      * `ZipArchive` 가 없거나 zip 을 열 수 없으면 null 을 돌려준다 — 호출자는 추출 뒤로 미룬다.
      *
      * @param  string  $zipPath  배포본 zip 경로
@@ -120,13 +122,10 @@ class BundledSourcePlanner
         }
 
         try {
-            $names = [];
-            for ($i = 0; $i < $zip->numFiles; $i++) {
-                $name = (string) $zip->getNameIndex($i);
-                $names[] = str_replace('\\', '/', $name);
-            }
+            $index = ZipEntryIndex::fromArchive($zip);
+            $names = $index->files();
 
-            $prefix = $this->detectZipPrefix($names);
+            $prefix = $index->prefixFor('config/app.php');
             if ($prefix === null) {
                 return null;
             }
@@ -144,7 +143,7 @@ class BundledSourcePlanner
                     continue;
                 }
 
-                $data = json_decode((string) $zip->getFromName($name), true);
+                $data = json_decode((string) $index->read($name), true);
                 if (! is_array($data) || $data === []) {
                     continue;
                 }
@@ -161,7 +160,7 @@ class BundledSourcePlanner
             $entries = self::inheritHiddenFromTargets($entries);
             ksort($entries, SORT_STRING);
 
-            $config = $zip->getFromName($prefix.'config/app.php');
+            $config = $index->read($prefix.'config/app.php');
             $coreVersion = is_string($config) ? self::parseCoreVersion($config) : null;
 
             return new BundledInventory($coreVersion, $entries);
@@ -178,28 +177,6 @@ class BundledSourcePlanner
     protected function zipArchiveAvailable(): bool
     {
         return class_exists(\ZipArchive::class);
-    }
-
-    /**
-     * zip 항목명 목록에서 배포본 루트 접두사를 찾습니다.
-     *
-     * @param  array<int, string>  $names  슬래시 정규화된 zip 항목명 목록
-     * @return string|null 접두사(`''` 또는 `wrapper/`), 배포본이 아니면 null
-     */
-    private function detectZipPrefix(array $names): ?string
-    {
-        $candidates = [];
-        foreach ($names as $name) {
-            if (preg_match('#^((?:[^/]+/)?)config/app\.php$#', $name, $m)) {
-                $candidates[] = $m[1];
-            }
-        }
-
-        if ($candidates === []) {
-            return null;
-        }
-
-        return in_array('', $candidates, true) ? '' : $candidates[0];
     }
 
     /**

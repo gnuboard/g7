@@ -82,7 +82,7 @@
         </div>
         <div class="flex-between gap-2 mt-2">
           <span class="form-label">$t:admin.settings.content.embed.custom</span>
-          <button data-ref="content_embed_add" type="button" disabled="{{_computed.isReadOnly}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <button data-ref="content_embed_add" type="button" disabled="{{_computed.isReadOnly}}" class="flex-center gap-1.5 btn btn-secondary btn-sm">
             <on type="click">
               <!-- 서비스 추가 창 열기 — 창 상태를 통째로 만들고 지금 목록 사본을 넘긴다(row_index=null 이면 추가) -->
               <sequence>
@@ -130,7 +130,7 @@
                   <set-state target="local" form.content.embed_custom_providers="{{(_local.form?.content?.embed_custom_providers ?? []).map((p, i) => i === idx ? {...p, enabled: !(p.enabled !== false)} : p)}}" :hasChanges="true"/>
                 </on>
               </toggle>
-              <button data-ref="content_embed_edit_{{idx}}" type="button" disabled="{{_computed.isReadOnly}}" class="text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700">
+              <button data-ref="content_embed_edit_{{idx}}" type="button" disabled="{{_computed.isReadOnly}}" class="btn btn-primary btn-sm rounded-md">
                 <on type="click">
                   <!-- 수정 창 열기 — 그 행 값으로 채우고 row_index 에 행 번호 -->
                   <sequence>

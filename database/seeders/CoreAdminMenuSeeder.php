@@ -8,6 +8,7 @@ use App\Extension\HookManager;
 use App\Models\Menu;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\MenuIcon\MenuIconDeclaration;
 use Illuminate\Database\Seeder;
 
 class CoreAdminMenuSeeder extends Seeder
@@ -36,7 +37,23 @@ class CoreAdminMenuSeeder extends Seeder
      */
     private function deleteExistingCoreMenus(): void
     {
+        // 묶음 삭제는 모델 deleted 이벤트를 내지 않는다 — 업로드 아이콘 첨부 정리를 커밋 뒤로 직접 예약한다 (#381).
+        // 코어 메뉴 아래 운영자가 만든 메뉴는 parent_id FK 연쇄로 함께 지워지므로 그 하위 메뉴들도 정리 대상에 넣는다
+        $ids = Menu::where('extension_type', ExtensionOwnerType::Core)->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $frontier = $ids;
+        while ($frontier !== []) {
+            $frontier = array_values(array_diff(
+                Menu::whereIn('parent_id', $frontier)->pluck('id')->map(fn ($id) => (int) $id)->all(),
+                $ids
+            ));
+            $ids = array_merge($ids, $frontier);
+        }
+
         $deletedCount = Menu::where('extension_type', ExtensionOwnerType::Core)->delete();
+
+        // 시더는 트랜잭션 밖에서 돌아 「커밋 뒤」 예약이 곧바로 실행된다 — 삭제가 끝난 뒤에 예약해야 삭제가 실패했을 때
+        // 메뉴는 남고 아이콘 파일만 사라지는 일이 없다(대상 ID 는 행이 있을 때 위에서 모았다)
+        Menu::purgeIconAttachmentsAfterCommit($ids);
 
         if ($deletedCount > 0) {
             $this->command->info(__('common.console.seeders.core_admin_menu.deleted', ['count' => $deletedCount]));
@@ -84,6 +101,16 @@ class CoreAdminMenuSeeder extends Seeder
     {
         $children = $menuData['children'] ?? [];
         unset($menuData['children']);
+
+        // 선언 아이콘 정규화 — 업데이트 경로(ExtensionMenuSyncHelper::syncMenu)와 같은 규칙 (#381)
+        if (array_key_exists('icon', $menuData)) {
+            $menuData['icon'] = MenuIconDeclaration::normalize(
+                $menuData['icon'],
+                ExtensionOwnerType::Core,
+                'core',
+                (string) ($menuData['slug'] ?? '')
+            );
+        }
 
         $menu = Menu::create(array_merge($menuData, [
             'parent_id' => $parentId ?? ($menuData['parent_id'] ?? null),

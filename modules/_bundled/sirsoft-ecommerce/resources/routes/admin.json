@@ -200,33 +200,6 @@
       }
     },
     {
-      "path": "*/admin/ecommerce/promotion-discount-codes",
-      "layout": "admin_ecommerce_promotion_discount_code_index",
-      "auth_required": true,
-      "permission": "sirsoft-ecommerce.promotion-coupon.read",
-      "meta": {
-        "title": "$t:sirsoft-ecommerce.admin.promotion_discount_code.title"
-      }
-    },
-    {
-      "path": "*/admin/ecommerce/promotion-discount-code-create",
-      "layout": "admin_ecommerce_promotion_discount_code_create",
-      "auth_required": true,
-      "permission": "sirsoft-ecommerce.promotion-coupon.create",
-      "meta": {
-        "title": "$t:sirsoft-ecommerce.admin.promotion_discount_code.create.title"
-      }
-    },
-    {
-      "path": "*/admin/ecommerce/main-banners",
-      "layout": "admin_ecommerce_main_banner_index",
-      "auth_required": true,
-      "permission": "sirsoft-ecommerce.settings.read",
-      "meta": {
-        "title": "$t:sirsoft-ecommerce.admin.main_banner.title"
-      }
-    },
-    {
       "path": "*/admin/ecommerce/orders",
       "layout": "admin_ecommerce_order_list",
       "auth_required": true,

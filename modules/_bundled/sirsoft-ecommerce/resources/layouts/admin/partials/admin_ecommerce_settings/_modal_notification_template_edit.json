@@ -453,7 +453,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce:text-sm ecommerce-text-muted"
                                     },
                                     "text": "·"
                                 },
@@ -511,6 +511,7 @@
                                     },
                                     "children": [
                                         {
+                                            "comment": "audit:allow layout-inline-semantic-duplicate reason: 쇼핑몰 알림 템플릿 편집 창의 수신자 규칙 한 건 상자, 보라 테두리와 p-3 space-y-2 여백이라 카드와 다름",
                                             "type": "basic",
                                             "name": "Div",
                                             "iteration": {
@@ -949,7 +950,7 @@
                                                             "name": "P",
                                                             "if": "{{rcpt.type === 'site_admin_email'}}",
                                                             "props": {
-                                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                "className": "ecommerce:text-xs ecommerce-text-muted"
                                                             },
                                                             "text": "$t:admin.settings.notification_definitions.recipients.site_admin_email_hint"
                                                         },
@@ -1056,7 +1057,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{(_global.ecommerce_notification_template_form_modal?.editLang ?? $locale) === loc ? 'ecommerce:border-b-2 ecommerce:border-indigo-500 ecommerce:dark:border-indigo-400 ecommerce:text-indigo-600 ecommerce:dark:text-indigo-400' : 'ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300'}} ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:focus:outline-none"
+                                        "className": "{{(_global.ecommerce_notification_template_form_modal?.editLang ?? $locale) === loc ? 'ecommerce:border-b-2 ecommerce:border-indigo-500 ecommerce:dark:border-indigo-400 ecommerce:text-indigo-600 ecommerce:dark:text-indigo-400' : 'ecommerce-text-muted ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300'}} ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:focus:outline-none"
                                     },
                                     "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
                                 }
@@ -1110,8 +1111,7 @@
                                             ],
                                             "props": {
                                                 "type": "text",
-                                                "value": "{{_global.ecommerce_notification_template_form_modal?.template?.subject?.[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
-                                                "className": ""
+                                                "value": "{{_global.ecommerce_notification_template_form_modal?.template?.subject?.[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale] ?? ''}}"
                                             }
                                         }
                                     ]

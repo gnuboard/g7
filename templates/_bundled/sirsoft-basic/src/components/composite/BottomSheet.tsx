@@ -145,7 +145,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({ open = false, title, c
             data-bottom-sheet-close=""
             aria-label={closeLabel ?? t('common.close')}
             onClick={() => onClose?.()}
-            className="shrink-0 w-9 h-9 inline-flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+            className="shrink-0 w-9 h-9 inline-flex items-center justify-center rounded-lg text-muted hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
           >
             <Icon name="x" />
           </Button>

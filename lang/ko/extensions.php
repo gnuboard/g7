@@ -31,7 +31,7 @@ return [
         'github_check_http_status' => 'GitHub 최신 판 조회에 실패했습니다 (HTTP :status). 요청 한도 초과(403)라면 .env 의 G7_UPDATE_GITHUB_TOKEN 을 설정하거나 잠시 뒤 다시 시도하세요.',
         'update_preview_unknown_type' => '미리보기할 수 없는 확장 종류입니다: :type',
         'state_contract_conflict' => "':name' 상태 계약은 이미 :owner 확장이 소유하고 있어 :extension 확장에서 같은 이름을 선언할 수 없습니다.",
-        'core_version_mismatch' => ':extension (:type)에는 그누보드7 코어 버전 :required 이상이 필요합니다. (현재: :installed)',
+        'core_version_mismatch' => ':extension (:type)에는 그누보드7 코어 버전 조건 :required 이(가) 필요합니다. (현재: :installed)',
         'php_extension_missing' => ':name 확장을 쓰려면 서버에 PHP 확장(:extensions) 설치가 필요합니다. 설치 후 다시 시도하세요.',
         'version_check_failed' => '버전 검증에 실패했습니다.',
         'operation_in_progress' => '":name"에 대해 진행 중인 작업(:status)이 있어 요청을 처리할 수 없습니다.',

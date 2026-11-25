@@ -19,7 +19,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "ecommerce:max-w-7xl ecommerce:mx-auto ecommerce:px-4 ecommerce:py-5 ecommerce:flex ecommerce:flex-wrap ecommerce:gap-x-4 ecommerce:gap-y-1 ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                        "className": "ecommerce:max-w-7xl ecommerce:mx-auto ecommerce:px-4 ecommerce:py-5 ecommerce:flex ecommerce:flex-wrap ecommerce:gap-x-4 ecommerce:gap-y-1 ecommerce:text-xs ecommerce-text-muted"
                     },
                     "children": [
                         {

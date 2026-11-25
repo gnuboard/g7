@@ -79,7 +79,7 @@
                                 "type": "submit",
                                 "form": "brand_form",
                                 "disabled": "{{_local?.isSaving || (_global.panelMode === 'edit' && brands?.data?.abilities?.can_update !== true)}}",
-                                "className": "ecommerce-flex-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                                "className": "ecommerce-flex-center ecommerce:gap-1.5 ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm"
                             },
                             "children": [
                                 {
@@ -458,8 +458,7 @@
                                                 "type": "url",
                                                 "name": "website",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.brand.form.website_placeholder",
-                                                "disabled": "{{_global.panelMode === 'edit' && brands?.data?.abilities?.can_update !== true}}",
-                                                "className": ""
+                                                "disabled": "{{_global.panelMode === 'edit' && brands?.data?.abilities?.can_update !== true}}"
                                             }
                                         },
                                         {

@@ -90,7 +90,14 @@ describe('푸터 사업자 정보 조각 (#434)', () => {
     it('문구는 번역 키, 클래스는 모듈 앞글자(ecommerce:)만 쓴다', () => {
         const classes = all.map((n) => n.props?.className).filter((c): c is string => typeof c === 'string');
         expect(classes.length).toBeGreaterThan(5);
-        classes.forEach((className) => className.split(/\s+/).filter(Boolean).forEach((token) => expect(token.startsWith('ecommerce:'), token).toBe(true)));
+        // 모듈 자기 CSS 만 쓴다 — 접두 유틸(`ecommerce:`) 또는 모듈 이름공간 의미 클래스 사본(`ecommerce-*`, #399 R-2).
+        // 템플릿 의미 클래스(`text-muted`)나 접두 없는 Tailwind 는 쓰지 않는다.
+        // 사본은 이름만 보지 않고 모듈 생성 CSS 에 그 클래스 규칙이 실제로 있는지까지 본다(정의 없는 사본은 화면에서 모양이 빠진다).
+        const generatedCss = fs.readFileSync(path.join(ROOT, 'resources/css/g7-extension.generated.css'), 'utf8');
+        const definedInModuleCss = (token: string) =>
+            new RegExp(`\\.${token.replace(/[-/\\^$*+?.()|[\]{}:]/g, '\\$&')}(?![\\w-])`).test(generatedCss);
+        classes.forEach((className) => className.split(/\s+/).filter(Boolean).forEach((token) =>
+            expect(token.startsWith('ecommerce:') || (token.startsWith('ecommerce-') && definedInModuleCss(token)), token).toBe(true)));
         expect(JSON.stringify(fragment)).toContain('$t:sirsoft-ecommerce.shop.footer_business_info.company');
     });
 });

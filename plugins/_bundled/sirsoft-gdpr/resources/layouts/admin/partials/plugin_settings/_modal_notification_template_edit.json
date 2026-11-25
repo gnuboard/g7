@@ -454,7 +454,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "gdpr:text-sm gdpr:text-gray-500 gdpr:dark:text-gray-400"
+                                        "className": "gdpr:text-sm gdpr-text-muted"
                                     },
                                     "text": "·"
                                 },
@@ -500,6 +500,7 @@
                                     },
                                     "children": [
                                         {
+                                            "comment": "audit:allow layout-inline-semantic-duplicate reason: GDPR 알림 템플릿 편집 창의 수신자 규칙 한 건 상자, 보라 테두리에 p-3 space-y-2 를 써서 카드 여백을 따르지 않음",
                                             "type": "basic",
                                             "name": "Div",
                                             "iteration": {
@@ -941,7 +942,7 @@
                                                             "name": "P",
                                                             "if": "{{rcpt.type === 'site_admin_email'}}",
                                                             "props": {
-                                                                "className": "gdpr:text-xs gdpr:text-gray-500 gdpr:dark:text-gray-400"
+                                                                "className": "gdpr:text-xs gdpr-text-muted"
                                                             },
                                                             "text": "$t:admin.settings.notification_definitions.recipients.site_admin_email_hint"
                                                         },
@@ -1048,7 +1049,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{(_global.gdpr_notification_template_form_modal?.editLang ?? $locale) === loc ? 'gdpr:border-b-2 gdpr:border-indigo-500 gdpr:dark:border-indigo-400 gdpr:text-indigo-600 gdpr:dark:text-indigo-400' : 'gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:hover:text-gray-700 gdpr:dark:hover:text-gray-300'}} gdpr:px-4 gdpr:py-2 gdpr:text-sm gdpr:font-medium gdpr:focus:outline-none"
+                                        "className": "{{(_global.gdpr_notification_template_form_modal?.editLang ?? $locale) === loc ? 'gdpr:border-b-2 gdpr:border-indigo-500 gdpr:dark:border-indigo-400 gdpr:text-indigo-600 gdpr:dark:text-indigo-400' : 'gdpr-text-muted gdpr:hover:text-gray-700 gdpr:dark:hover:text-gray-300'}} gdpr:px-4 gdpr:py-2 gdpr:text-sm gdpr:font-medium gdpr:focus:outline-none"
                                     },
                                     "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
                                 }
@@ -1106,8 +1107,7 @@
                                             "props": {
                                                 "type": "text",
                                                 "aria-label": "$t:sirsoft-gdpr.notification_definitions.edit_modal.subject",
-                                                "value": "{{_global.gdpr_notification_template_form_modal?.template?.subject?.[_global.gdpr_notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
-                                                "className": ""
+                                                "value": "{{_global.gdpr_notification_template_form_modal?.template?.subject?.[_global.gdpr_notification_template_form_modal?.editLang ?? $locale] ?? ''}}"
                                             }
                                         }
                                     ]

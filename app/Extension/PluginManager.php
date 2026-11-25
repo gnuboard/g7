@@ -5350,9 +5350,9 @@ class PluginManager implements PluginManagerInterface
                 // - 외부 ZIP / GitHub / _bundled 모두 staging manifest 가 SSoT
                 // - force=true 또는 코어 업데이트 spawn 컨텍스트에서는 스킵
                 if ($stagingPath && ! $force && ! CoreServiceProvider::isCoreUpdateInProgress()) {
-                    $stagedManifest = (new Vendor\VendorIntegrityChecker)->readManifest($stagingPath);
+                    // 확장 manifest 의 g7_version 제약 — vendor-bundle.json 의 g7_version 은 번들을 만든 코어 판이라 쓰지 않는다
                     CoreVersionChecker::validateExtension(
-                        $stagedManifest['g7_version'] ?? null,
+                        ExtensionPendingHelper::readStagedCoreConstraint($stagingPath, 'plugin.json'),
                         $identifier,
                         'plugin'
                     );

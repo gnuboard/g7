@@ -56,7 +56,7 @@
           <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.settings.shipping.countries.title</h3>
           <div class="ecommerce-card-description">$t:sirsoft-ecommerce.admin.settings.shipping.countries.description</div>
         </div>
-        <button data-ref="add_country_button" data-if="{{!_local.isAddingCountry &amp;&amp; (_local.form?.shipping?.international_shipping_enabled ?? false)}}" type="button" class="ecommerce-flex-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+        <button data-ref="add_country_button" data-if="{{!_local.isAddingCountry &amp;&amp; (_local.form?.shipping?.international_shipping_enabled ?? false)}}" type="button" class="ecommerce-flex-center ecommerce:gap-1.5 ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm" disabled="{{_computed.isReadOnly}}">
           <on type="click">
             <!-- 신규 국가의 name 은 활성 언어팩($locales) 전체에 대한 빈 문자열 맵으로 시드한다. 언어팩이 추가되면 입력칸도 함께 늘어나야 하므로 로케일을 리터럴로 열거하지 않는다. -->
             <set-state target="local" :isAddingCountry="true" newCountry="{{ { code: '', name: Object.fromEntries(($locales ?? []).map(l => [l, ''])), is_active: true } }}"/>
@@ -90,7 +90,7 @@
           </div>
           <div class="ecommerce:flex ecommerce:gap-2">
             <!-- 활성 조건: 국가코드 + 최소 하나의 로케일 이름. StoreEcommerceSettingsRequest 의 available_countries.*.name 규칙이 array 만 요구하고 특정 로케일 키를 강제하지 않으므로, 프론트도 ko 를 필수로 두지 않는다. -->
-            <button type="button" disabled="{{_computed.isReadOnly || !(_local.newCountry?.code ?? '').trim() || !Object.values(_local.newCountry?.name ?? {}).some(v => (v ?? '').trim() !== '')}}" class="ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
+            <button type="button" disabled="{{_computed.isReadOnly || !(_local.newCountry?.code ?? '').trim() || !Object.values(_local.newCountry?.name ?? {}).some(v => (v ?? '').trim() !== '')}}" class="ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm">
               <on type="click">
                 <sequence>
                   <!-- 입력하지 않은 로케일의 빈 문자열은 저장본에 남기지 않는다 — 부재 로케일은 언어팩(settings.countries.{code}.name)이 보강하거나, 운영자가 나중에 채운다. -->

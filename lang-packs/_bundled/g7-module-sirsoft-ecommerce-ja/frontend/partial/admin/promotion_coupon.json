@@ -136,6 +136,10 @@
       "creator": "登録者",
       "created_by": "登録者",
       "actions": "操作"
+    },
+    "badge": {
+      "birthday_field_missing": "誕生日項目なし",
+      "notify_enabled": "通知オン"
     }
   },
   "modal": {
@@ -279,7 +283,8 @@
       "basic_info": "基本情報",
       "benefit_settings": "特典設定",
       "issue_settings": "発行設定",
-      "usage_conditions": "使用条件設定"
+      "usage_conditions": "使用条件設定",
+      "notification": "発行通知"
     },
     "field": {
       "target_type": "適用対象",
@@ -297,7 +302,10 @@
       "reissue": "再発行（重複ダウンロード）",
       "coupon_overlap": "他のクーポンとの重複使用",
       "apply_target": "適用対象",
-      "per_user_limit_label": "会員あたりの発行上限"
+      "per_user_limit_label": "会員あたりの発行上限",
+      "first_purchase_trigger": "発行タイミング",
+      "notify_enabled": "発行通知を使用",
+      "notify_marketing_only": "広告性のお知らせ"
     },
     "option": {
       "target_type_product_amount": "商品金額",
@@ -322,7 +330,12 @@
       "combinable_no": "不可能",
       "target_scope_all": "制限なし",
       "target_scope_products": "特定商品",
-      "target_scope_categories": "特定カテゴリ"
+      "target_scope_categories": "特定カテゴリ",
+      "first_purchase_trigger_payment_complete": "決済完了",
+      "first_purchase_trigger_preparing": "商品準備中",
+      "first_purchase_trigger_shipping": "配送中",
+      "first_purchase_trigger_delivered": "配送完了",
+      "first_purchase_trigger_confirmed": "購入確定"
     },
     "placeholder": {
       "coupon_name": "クーポン名を入力してください",
@@ -337,7 +350,16 @@
       "unit_quantity": "枚",
       "per_user": "会員当たり",
       "unit_times": "回",
-      "direct_issue_guide": "直接発行クーポンは登録後、クーポン一覧から該当クーポンの[直接発行]ボタンを押して特定の会員に発行できます。"
+      "direct_issue_guide": "直接発行クーポンは登録後、クーポン一覧から該当クーポンの[直接発行]ボタンを押して特定の会員に発行できます。",
+      "first_purchase_trigger": "会員の注文のうち、初めてこの状態以降に到達した注文1件に発行します。購入確定より早いタイミングの場合、その注文がすべてキャンセル・返品されると未使用のクーポンを回収します。",
+      "signup_issue_guide": "自分で登録した会員に1回発行します。本人認証待ちで登録した場合は有効化時に発行し、管理者が作成した会員には発行しません。",
+      "birthday_field_missing": "誕生日として使う会員項目が指定されていないため、このクーポンは発行されません。",
+      "birthday_issue_guide": "誕生日当日(サイトのタイムゾーン)に毎年1回発行します。2月29日生まれの会員は平年は2月28日に受け取ります。",
+      "auto_issue_limit": "自動発行クーポンは条件ごとに1回(誕生日は毎年1回)発行されるため、会員ごとの再発行制限は使いません。",
+      "notify_enabled": "クーポンが発行されたら会員に通知します。チャネルと文言は保存後に下のカードで編集します。",
+      "notify_marketing_only": "オンにすると、メール・SMS・アラートトークはマーケティング受信同意者にのみ送り、未同意者にはサイト通知のみ送ります。既定の件名の {ad_prefix} に「【広告】」が付きます。",
+      "notification_save_first": "保存すると、このクーポンの通知文言を編集できます。",
+      "notification_card": "チャネルのオン/オフはすぐに反映されます。文言は[編集]で変更します。"
     },
     "search": {
       "products": "商品検索",
@@ -368,7 +390,8 @@
     "button": {
       "cancel": "キャンセル",
       "save": "保存",
-      "saving": "保存中..."
+      "saving": "保存中...",
+      "open_coupon_settings": "クーポン設定を開く"
     }
   }
 }

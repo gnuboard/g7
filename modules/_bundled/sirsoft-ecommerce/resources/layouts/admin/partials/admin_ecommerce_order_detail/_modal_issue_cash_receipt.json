@@ -41,7 +41,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mb-1"
+                                "className": "ecommerce-form-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.purpose"
                         },
@@ -146,7 +146,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mb-1"
+                                "className": "ecommerce-form-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.identifier_type"
                         },
@@ -184,7 +184,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mb-1"
+                                "className": "ecommerce-form-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.identifier"
                         },
@@ -270,7 +270,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:rounded-lg ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
+                                "className": "ecommerce-btn ecommerce-btn-secondary"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel"
                         },
@@ -345,7 +345,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:rounded-lg ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:text-white ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                "className": "ecommerce-btn ecommerce-btn-primary",
                                 "disabled": "{{!(_global.adminCashReceiptForm?.identifier ?? '') || _global.isCashReceiptBusy === true || order?.data?.abilities?.can_update !== true}}"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.issue"

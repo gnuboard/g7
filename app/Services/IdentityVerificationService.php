@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\IdentityVerificationStatus;
+use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
@@ -44,6 +45,29 @@ class IdentityVerificationService
         protected IdentityVerificationLogRepositoryInterface $logRepository,
         protected UserRepositoryInterface $userRepository,
     ) {}
+
+    /**
+     * 로그인하지 않은 화면이 보낸 인증 대상을 정합니다.
+     *
+     * 가입 후 본인인증 정책으로 인증 대기가 된 회원이 다른 브라우저·다음 날 [코드 다시 받기] 를 누르면 화면은 이메일만 싣는다.
+     * 그 이메일이 인증 대기 회원이면 그 회원을 대상으로 삼아야 확인 뒤 계정이 활성화된다(7.2.1). 그 밖에는 받은 대상을 그대로 쓴다 —
+     * 응답은 어느 쪽이든 같아서 계정이 있는지 드러나지 않는다.
+     *
+     * @param  string  $purpose  IDV 목적
+     * @param  array<string, mixed>  $target  화면이 보낸 대상(email·phone)
+     * @return User|array<string, mixed> 인증 대기 회원 또는 받은 대상
+     */
+    public function resolveGuestTarget(string $purpose, array $target): User|array
+    {
+        $email = is_string($target['email'] ?? null) ? trim($target['email']) : '';
+        if ($purpose !== 'signup' || $email === '') {
+            return $target;
+        }
+
+        $user = $this->userRepository->findByEmail($email);
+
+        return $user !== null && $user->status === UserStatus::PendingVerification->value ? $user : $target;
+    }
 
     /**
      * Challenge 를 시작합니다.

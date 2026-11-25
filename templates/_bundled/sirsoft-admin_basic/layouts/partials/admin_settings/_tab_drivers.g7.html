@@ -12,7 +12,7 @@
       <h3 class="card-title">$t:admin.settings.drivers.storage.title</h3>
       <div class="card-description">$t:admin.settings.drivers.storage.desc</div>
       <div class="row-stack">
-        <div data-ref="field_storage_driver" class="">
+        <div data-ref="field_storage_driver">
           <label class="form-label">
             <span>$t:admin.settings.drivers.storage.driver</span>
             <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.storage_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
@@ -100,7 +100,7 @@
             <p class="text-hint mt-1">$t:admin.settings.drivers.storage.s3_url_desc</p>
           </div>
           <div data-ref="s3_test_section" class="flex-center py-3 gap-4">
-            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 's3')}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
+            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 's3')}}" class="btn btn-primary flex-center">
               <on type="click">
                 <!-- S3 연결 시험. **직전 결과를 먼저 지운다** — 안 지우면 새 시험이 도는 동안 옛 성공
                      표시가 남아 저장 버튼이 풀린 것처럼 보인다(잠금 판정이 이 결과를 읽는다).
@@ -146,7 +146,7 @@
       <h3 class="card-title">$t:admin.settings.drivers.public_asset.title</h3>
       <div class="card-description">$t:admin.settings.drivers.public_asset.desc</div>
       <div class="row-stack">
-        <div data-ref="field_public_asset_disk" class="">
+        <div data-ref="field_public_asset_disk">
           <label class="form-label">$t:admin.settings.drivers.public_asset.disk</label>
           <div class="w-full">
             <responsive on="768-" class="w-64"/>
@@ -159,8 +159,8 @@
             </p>
           </div>
         </div>
-        <div data-ref="public_asset_s3_help" data-if="{{_local.form?.drivers?.public_asset_disk === 's3'}}" class="text-sm text-gray-500 dark:text-gray-400 mt-2">$t:admin.settings.drivers.public_asset.s3_help</div>
-        <div data-ref="field_public_asset_extensions" class="">
+        <div data-ref="public_asset_s3_help" data-if="{{_local.form?.drivers?.public_asset_disk === 's3'}}" class="text-sm text-muted mt-2">$t:admin.settings.drivers.public_asset.s3_help</div>
+        <div data-ref="field_public_asset_extensions">
           <label class="form-label">$t:admin.settings.drivers.public_asset.extensions</label>
           <input type="text" name="drivers.public_asset_extensions" placeholder="jpg,jpeg,png,gif,webp,avif" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['drivers.public_asset_extensions'] ? 'input-error' : ''}}"/>
           <p class="form-hint">$t:admin.settings.drivers.public_asset.extensions_hint</p>
@@ -184,7 +184,7 @@
       <h3 class="card-title">$t:admin.settings.drivers.private_attachment.title</h3>
       <div class="card-description">$t:admin.settings.drivers.private_attachment.desc</div>
       <div class="row-stack">
-        <div data-ref="field_private_attachment_disk" class="">
+        <div data-ref="field_private_attachment_disk">
           <label class="form-label">$t:admin.settings.drivers.private_attachment.disk</label>
           <div class="w-full">
             <responsive on="768-" class="w-64"/>
@@ -198,7 +198,7 @@
           </div>
         </div>
         <p data-ref="private_attachment_same_disk_warning" data-if="{{!['', 'default'].includes(_local.form?.drivers?.private_attachment_disk ?? '') &amp;&amp; !['', 'none'].includes(_local.form?.drivers?.public_asset_disk ?? '') &amp;&amp; _local.form?.drivers?.private_attachment_disk === _local.form?.drivers?.public_asset_disk}}" class="text-warning-soft" data-testid="private-attachment-same-disk-warning">$t:admin.settings.drivers.private_attachment.same_disk_warning</p>
-        <div data-ref="private_attachment_s3_help" data-if="{{_local.form?.drivers?.private_attachment_disk === 's3'}}" class="text-sm text-gray-500 dark:text-gray-400">$t:admin.settings.drivers.private_attachment.s3_help</div>
+        <div data-ref="private_attachment_s3_help" data-if="{{_local.form?.drivers?.private_attachment_disk === 's3'}}" class="text-sm text-muted">$t:admin.settings.drivers.private_attachment.s3_help</div>
         <div data-ref="private_attachment_pins" data-if="{{(_local.form?._meta?.private_attachment?.pins ?? []).length > 0}}" class="row-stack" data-testid="private-attachment-pins">
           <span class="text-secondary text-sm font-medium">$t:admin.settings.drivers.private_attachment.pins_title</span>
           <div data-each="pin in _local.form._meta.private_attachment.pins" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
@@ -219,7 +219,7 @@
       <h3 class="card-title">$t:admin.settings.drivers.file_delegation.title</h3>
       <div class="card-description">$t:admin.settings.drivers.file_delegation.desc</div>
       <div class="row-stack">
-        <div data-ref="field_file_delegation" class="">
+        <div data-ref="field_file_delegation">
           <label class="form-label">
             <span>$t:admin.settings.drivers.file_delegation.mode</span>
             <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.file_delegation'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
@@ -275,7 +275,7 @@
         <div data-ref="file_delegation_check_section" data-if="{{(_local.form?.drivers?.file_delegation ?? 'none') !== 'none' || (_local.form?._meta?.file_delegation?.mode ?? 'none') !== 'none'}}" class="py-3 space-y-3">
           <p class="text-hint">$t:admin.settings.drivers.file_delegation.test_hint</p>
           <div class="flex-center gap-4 flex-wrap">
-            <button type="button" data-testid="file-delegation-test-button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'file_delegation')}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
+            <button type="button" data-testid="file-delegation-test-button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'file_delegation')}}" class="btn btn-primary flex-center">
               <on type="click">
                 <!-- 1단계 정적 판정. 직전 결과를 먼저 지운다(S3 시험과 같은 형태). 결과 문구가 판정 사유라 그대로 보인다. -->
                 <sequence>
@@ -363,7 +363,7 @@
       <h3 class="card-title">$t:admin.settings.drivers.cache.title</h3>
       <div class="card-description">$t:admin.settings.drivers.cache.desc</div>
       <div class="row-stack">
-        <div data-ref="field_cache_driver" class="">
+        <div data-ref="field_cache_driver">
           <label class="form-label">
             <span>$t:admin.settings.drivers.cache.driver</span>
             <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.cache_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
@@ -426,7 +426,7 @@
             </div>
           </div>
           <div data-ref="redis_test_section" class="flex-center py-3 gap-4">
-            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'redis')}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
+            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'redis')}}" class="btn btn-primary flex-center">
               <on type="click">
                 <!-- Redis 연결 시험 — S3 시험과 같은 형태다. 이 결과 하나를 **캐시·세션·큐 세 자리**가
                      함께 읽는다(셋 다 redis 를 고를 수 있다). -->
@@ -484,7 +484,7 @@
             </div>
           </div>
           <div data-ref="memcached_test_section" class="flex-center py-3 gap-4">
-            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'memcached')}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
+            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'memcached')}}" class="btn btn-primary flex-center">
               <on type="click">
                 <!-- Memcached 연결 시험 — 캐시 드라이버에서만 쓰인다. -->
                 <sequence>
@@ -526,7 +526,7 @@
       <h3 class="card-title">$t:admin.settings.drivers.search_engine.title</h3>
       <div class="card-description">$t:admin.settings.drivers.search_engine.desc</div>
       <div class="row-stack">
-        <div data-ref="field_search_engine_driver" class="">
+        <div data-ref="field_search_engine_driver">
           <label class="form-label">
             <span>$t:admin.settings.drivers.search_engine.driver</span>
             <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.search_engine_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
@@ -556,7 +556,7 @@
       <h3 class="card-title">$t:admin.settings.drivers.image.title</h3>
       <div class="card-description">$t:admin.settings.drivers.image.desc</div>
       <div class="row-stack">
-        <div data-ref="field_image_driver" class="">
+        <div data-ref="field_image_driver">
           <label class="form-label">
             <span>$t:admin.settings.drivers.image.driver</span>
             <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.image_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
@@ -583,7 +583,7 @@
       <h3 class="card-title">$t:admin.settings.drivers.session.title</h3>
       <div class="card-description">$t:admin.settings.drivers.session.desc</div>
       <div class="row-stack">
-        <div data-ref="field_session_driver" class="">
+        <div data-ref="field_session_driver">
           <label class="form-label">
             <span>$t:admin.settings.drivers.session.driver</span>
             <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.session_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
@@ -603,7 +603,7 @@
             <span>$t:admin.settings.drivers.session.redis_shared_notice</span>
           </p>
         </div>
-        <div data-ref="field_session_lifetime" class="">
+        <div data-ref="field_session_lifetime">
           <label class="form-label">
             <span>$t:admin.settings.drivers.session.lifetime</span>
             <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.session_lifetime'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
@@ -620,7 +620,7 @@
       <h3 class="card-title">$t:admin.settings.drivers.queue.title</h3>
       <div class="card-description">$t:admin.settings.drivers.queue.desc</div>
       <div>
-        <div data-ref="field_queue_driver" class="">
+        <div data-ref="field_queue_driver">
           <label class="form-label">
             <span>$t:admin.settings.drivers.queue.driver</span>
             <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.queue_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
@@ -669,8 +669,8 @@
               <p class="form-hint">$t:admin.settings.drivers.queue.worker.queues.desc</p>
               <span data-if="{{(_computed.queueErrors?.namesRoot ?? []).length > 0}}" data-testid="queue-names-root-error" class="form-error">{{_computed.queueErrors?.namesRoot?.[0] ?? ''}}</span>
               <div data-each="conn in _computed.queueConnectionList" data-testid="{{'queue-names-' + conn}}" class="flex flex-col gap-2 py-2 border-l-2 border-blue-200 dark:border-blue-800 pl-3 mt-2">
-                <responsive on="768-" class="flex flex-row items-start gap-2 py-2 border-l-2 border-blue-200 dark:border-blue-800 pl-3 mt-2"/>
-                <span class="text-sm font-mono text-gray-700 dark:text-gray-300 shrink-0 break-all"><responsive on="768-" class="text-sm font-mono text-gray-700 dark:text-gray-300 w-40 shrink-0 break-all"/>{{conn}}</span>
+                <responsive on="768-" class-merge="flex-row items-start"/>
+                <span class="text-sm font-mono text-gray-700 dark:text-gray-300 shrink-0 break-all"><responsive on="768-" class-merge="w-40"/>{{conn}}</span>
                 <div class="flex-1 min-w-0">
                   <tag-input data-type="composite" aria-label="$t:common.row_cell|row={{conn}}|column={{$t('admin.settings.drivers.queue.worker.queues.label')}}" value="{{_local.form?.drivers?.queue_names?.[conn] ?? (conn.endsWith('-long') ? ['long'] : ['default'])}}" :creatable="true" placeholder="$t:admin.settings.drivers.queue.worker.queues.placeholder" class="w-full" defaultVariant="green" disabled="{{_computed.isReadOnly}}">
                     <on type="change">
@@ -788,7 +788,7 @@
               </div>
             </div>
             <div data-ref="queue_long_worker" data-testid="queue-long-worker" data-if="{{!!queueStatus?.data?.long_worker}}" class="flex-start gap-2 text-sm">
-              <icon name="info-circle" class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 flex-shrink-0"/>
+              <icon name="info-circle" class="text-sm text-muted mt-0.5 flex-shrink-0"/>
               <div class="row-stack">
                 <div class="flex-center gap-2 flex-wrap">
                   <span class="font-medium text-gray-800 dark:text-gray-200">$t:admin.settings.drivers.queue.worker.long.title</span>
@@ -854,7 +854,7 @@
       <h3 class="card-title">$t:admin.settings.drivers.log.title</h3>
       <div class="card-description">$t:admin.settings.drivers.log.desc</div>
       <div class="row-stack">
-        <div data-ref="field_log_driver" class="">
+        <div data-ref="field_log_driver">
           <label class="form-label">
             <span>$t:admin.settings.drivers.log.driver</span>
             <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.log_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
@@ -870,7 +870,7 @@
             </p>
           </div>
         </div>
-        <div data-ref="field_log_level" class="">
+        <div data-ref="field_log_level">
           <label class="form-label">
             <span>$t:admin.settings.drivers.log.level</span>
             <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.log_level'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
@@ -1035,7 +1035,7 @@
             </div>
           </div>
           <div data-ref="websocket_test_section" class="flex-center py-3 gap-4">
-            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'websocket')}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
+            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'websocket')}}" class="btn btn-primary flex-center">
               <on type="click">
                 <!-- 웹소켓 연결 시험 — 다른 셋과 달리 드라이버 선택이 아니라 **켜기/끄기**에 걸린다
                      (켜 두고 시험을 통과하지 못하면 저장이 잠긴다). -->

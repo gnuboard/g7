@@ -400,9 +400,7 @@
                                 "name": "A",
                                 "responsive": {
                                     "portable": {
-                                        "props": {
-                                            "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-2 text-sm cursor-pointer"
-                                        }
+                                        "classMerge": "mb-2"
                                     }
                                 },
                                 "actions": [
@@ -516,6 +514,7 @@
                         ]
                     },
                     {
+                        "id": "ext_shop_checkout_extensions",
                         "type": "extension_point",
                         "name": "shop_checkout_extensions",
                         "default": []

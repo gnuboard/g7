@@ -24,6 +24,7 @@ return [
 
     // Custom validation messages
     'settings' => [
+        'birthday_field_invalid' => 'The birthday field must be one of the date-type member fields.',
         'key_required' => 'The settings key is required.',
         'value_present' => 'The settings value is required.',
         'key_unknown' => 'The settings key cannot be saved: :key',
@@ -563,6 +564,9 @@ return [
 
     // Coupon validation messages
     'coupon' => [
+        'auto_condition_invalid' => 'Automatic issuing requires signup, first purchase or birthday as the condition.',
+        'manual_condition_required' => 'Direct and download coupons must use the manual condition.',
+        'first_purchase_trigger_required' => 'Choose when the first purchase coupon is issued.',
         'name' => [
             'required' => 'Please enter the coupon name.',
         ],
@@ -2019,13 +2023,6 @@ return [
             ],
             'free_shipping_enabled' => [
                 'boolean' => 'Free shipping option must be true or false.',
-            ],
-            'address_validation_enabled' => [
-                'boolean' => 'Address validation option must be true or false.',
-            ],
-            'address_api_provider' => [
-                'string' => 'Address API provider must be a string.',
-                'max' => 'Address API provider must not exceed 50 characters.',
             ],
             'types' => [
                 'duplicate_code' => 'Duplicate shipping type code found.',

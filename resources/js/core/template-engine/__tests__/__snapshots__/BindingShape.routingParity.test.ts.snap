@@ -101,7 +101,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy
 ]
 `;
 
-exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `1405`;
+exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `1410`;
 
 exports[`BindingShape 라우팅 diff 하네스 > 판정이 갈리는 식의 분류별 건수 요약 1`] = `
 {
@@ -296,6 +296,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
     "expr": "[1,2,3,4,5]",
     "files": [
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_review_index/_modal_image_preview.json",
+      "templates/_bundled/sirsoft-basic/layouts/partials/mypage/reviews/_list.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_modal_review_image.json",
     ],
     "old": {
@@ -432,22 +433,26 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
       "templates/_bundled/sirsoft-basic/layouts/partials/board/types/basic/index.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/board/types/card/index.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/board/types/gallery/index.json",
+      "templates/_bundled/sirsoft-basic/layouts/partials/mypage/activity/_list.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_my_comments.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_my_posts.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_my_reactions.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_my_reports.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/claims/_apply_reason.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/claims/_list.json",
+      "templates/_bundled/sirsoft-basic/layouts/partials/mypage/coupons/_list.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/inquiries/_list.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/mileage/_list.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/notifications/_list.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_list.json",
+      "templates/_bundled/sirsoft-basic/layouts/partials/mypage/reviews/_list.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/scrap/_list.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/wishlist/_list.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/search/_search_input.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/shop/_cart_item.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_cart_option_change.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_quick_option.json",
+      "templates/_bundled/sirsoft-basic/layouts/partials/shop/coupons/_grid.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_purchase_options.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_tab_qna.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_tab_reviews.json",

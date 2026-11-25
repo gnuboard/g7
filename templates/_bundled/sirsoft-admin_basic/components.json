@@ -13,14 +13,13 @@
           "variant": {
             "type": "string",
             "required": false,
-            "default": "primary",
-            "description": "버튼 변형 (primary | secondary | danger | success)"
+            "description": "버튼 모양 (primary | secondary | danger | success | ghost | outline) — 적으면 btn btn-{variant} 의미 클래스를 붙인다. 생략하면 className 만 쓴다."
           },
           "size": {
             "type": "string",
             "required": false,
             "default": "md",
-            "description": "버튼 크기 (sm | md | lg)"
+            "description": "버튼 크기 (sm | md | lg) — sm 은 btn-sm, lg 는 btn-lg 를 붙인다. md 는 붙이지 않는다"
           },
           "lockRepeatClick": {
             "type": "boolean",
@@ -1108,6 +1107,102 @@
             "type": "string",
             "required": false,
             "description": "hidden input name 속성"
+          }
+        }
+      },
+      {
+        "name": "MenuIcon",
+        "type": "composite",
+        "description": "관리자 메뉴 아이콘 렌더러 — FA 클래스·이미지·인라인 SVG(정제, 글자색 따름). 그릴 수 없으면 fallbackIcon",
+        "path": "src/components/composite/MenuIcon.tsx",
+        "props": {
+          "spec": {
+            "type": "object",
+            "required": false,
+            "description": "구조형 아이콘 icon_spec ({type:'class',value} | {type:'image',source,url,…} | {type:'svg',value}) — 있으면 icon 보다 우선"
+          },
+          "icon": {
+            "type": "string",
+            "required": false,
+            "description": "호환 문자열 아이콘 (FA 클래스 또는 맨 이름) — spec 이 없을 때 class 로 해석"
+          },
+          "fallbackIcon": {
+            "type": "string",
+            "required": false,
+            "description": "그릴 수 없을 때(깨진 이미지·형식 오류) 대신 그릴 FA 클래스/이름. 없으면 아무것도 그리지 않음"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "아이콘 크기·색 클래스"
+          }
+        }
+      },
+      {
+        "name": "MenuIconField",
+        "type": "composite",
+        "description": "관리자 메뉴 아이콘 입력 필드 — 미리보기·유형 라벨 + 선택/직접 입력/업로드/SVG 코드 탭. 값은 icon_spec 객체",
+        "path": "src/components/composite/MenuIconField.tsx",
+        "props": {
+          "value": {
+            "type": "object",
+            "required": false,
+            "description": "현재 icon_spec 값 (null 이면 아이콘 없음)"
+          },
+          "onChange": {
+            "type": "function",
+            "required": false,
+            "description": "값 변경 시 콜백 — { target: { name, value } } 이벤트 모양"
+          },
+          "name": {
+            "type": "string",
+            "required": false,
+            "default": "icon_spec",
+            "description": "폼 필드 이름"
+          },
+          "options": {
+            "type": "array",
+            "required": false,
+            "description": "「선택」 탭 아이콘 옵션 배열 (기본 20개)"
+          },
+          "placeholder": {
+            "type": "string",
+            "required": false,
+            "description": "「선택」 탭 플레이스홀더"
+          },
+          "searchPlaceholder": {
+            "type": "string",
+            "required": false,
+            "description": "「선택」 탭 검색 플레이스홀더"
+          },
+          "noResultsText": {
+            "type": "string",
+            "required": false,
+            "description": "「선택」 탭 검색 결과 없음 문구"
+          },
+          "uploadEndpoint": {
+            "type": "string",
+            "required": false,
+            "default": "/api/admin/menus/icon-upload",
+            "description": "아이콘 업로드 API 주소"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성화 상태"
+          },
+          "error": {
+            "type": "string",
+            "required": false,
+            "description": "서버 검증 오류 문구 (필드 아래 표시)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
           }
         }
       },

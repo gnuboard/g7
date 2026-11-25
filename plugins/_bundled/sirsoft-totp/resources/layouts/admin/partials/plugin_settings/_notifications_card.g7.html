@@ -16,7 +16,7 @@
     <p class="totp-form-label totp:mt-3">$t:sirsoft-totp.admin.notifications.channels</p>
     <div data-each="ch, chIdx in {{totpNotificationChannels?.data?.channels ?? []}}" data-ref="totp_channel_row_{{defIdx}}_{{chIdx}}" class="totp-flex-between totp:p-3 totp:bg-gray-50 totp:dark:bg-gray-900 totp:border totp:border-gray-200 totp:dark:border-gray-700 totp:rounded-lg totp:my-2">
       <div class="totp-flex-center totp:gap-2">
-        <icon name="{{ch.icon ?? 'fas fa-bell'}}" class="totp:text-gray-500 totp:dark:text-gray-400"/>
+        <icon name="{{ch.icon ?? 'fas fa-bell'}}" class="totp-text-muted"/>
         <div>
           <span class="totp-text-heading">{{ch.name ?? ch.id}}</span>
           <span data-if="{{ch.source &amp;&amp; ch.source !== 'core'}}" class="totp-text-hint totp:block">{{ch.source_label ?? ch.source}}</span>
@@ -34,7 +34,7 @@
     </div>
     <div class="totp-flex-center totp:gap-2 totp:my-2">
       <!-- 채널을 모두 끄면 알림이 사라지므로 코어가 min:1 로 거절한다 — 버튼에서 먼저 막는다. -->
-      <button type="button" data-ref="totp_save_channels_{{defIdx}}" class="totp-btn totp-btn-primary totp:disabled:opacity-50 totp:disabled:cursor-not-allowed" disabled="{{_computed.isNotificationReadOnly || _local.totpSavingChannels !== null &amp;&amp; _local.totpSavingChannels !== undefined || !(JSON.stringify([...(_local.totpChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())) || (_local.totpChannels?.[def.id] ?? def.channels ?? []).length === 0}}">
+      <button type="button" data-ref="totp_save_channels_{{defIdx}}" class="totp-btn totp-btn-primary" disabled="{{_computed.isNotificationReadOnly || _local.totpSavingChannels !== null &amp;&amp; _local.totpSavingChannels !== undefined || !(JSON.stringify([...(_local.totpChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())) || (_local.totpChannels?.[def.id] ?? def.channels ?? []).length === 0}}">
         <on type="click">
           <sequence>
             <set-state target="local" totpSavingChannels="{{def.id}}"/>
@@ -63,7 +63,7 @@
         <icon data-if="{{_local.totpSavingChannels === def.id}}" name="spinner" class="totp-spinner-sm"/>
         <span>$t:sirsoft-totp.admin.notifications.save_channels</span>
       </button>
-      <button type="button" data-ref="totp_cancel_channels_{{defIdx}}" data-if="{{JSON.stringify([...(_local.totpChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())}}" class="totp-btn totp-btn-secondary totp:disabled:opacity-50 totp:disabled:cursor-not-allowed" disabled="{{_local.totpSavingChannels !== null &amp;&amp; _local.totpSavingChannels !== undefined}}">
+      <button type="button" data-ref="totp_cancel_channels_{{defIdx}}" data-if="{{JSON.stringify([...(_local.totpChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())}}" class="totp-btn totp-btn-secondary" disabled="{{_local.totpSavingChannels !== null &amp;&amp; _local.totpSavingChannels !== undefined}}">
         <on type="click">
           <!-- 취소 — 폼의 임시 채널 값을 전부 버려 저장된 def.channels 로 되돌린다(이 버튼은 저장값과 다를 때만 보인다).
                기본 병합(deep)은 빈 객체 {} 로 기존 키를 지우지 않으므로 먼저 null 로 덮고 다시 {} 로 쓴다(형제 환율과 같은 규약) -->

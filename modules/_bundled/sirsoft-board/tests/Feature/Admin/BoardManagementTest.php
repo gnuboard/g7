@@ -5,6 +5,8 @@ namespace Modules\Sirsoft\Board\Tests\Feature\Admin;
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../../ModuleTestCase.php';
 
+use App\Http\Resources\MenuResource;
+use App\Models\Menu;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -883,6 +885,35 @@ class BoardManagementTest extends ModuleTestCase
         // Then: slug 가 정상 해석되어 메뉴가 추가됨 (route-model binding 성공)
         $response->assertStatus(200);
         $this->assertNotNull($response->json('data.menu'));
+    }
+
+    /**
+     * 게시판을 관리자 메뉴에 추가하면 아이콘이 코어 메뉴 아이콘 정규형(FA 클래스 평문)으로 저장되고,
+     * 사이드바 응답은 호환 icon 문자열과 구조형 icon_spec 을 함께 싣는다 (코어 7.2.1 구조형 메뉴 아이콘 경유 확인).
+     *
+     * @scenario case=add_to_menu_icon_class
+     *
+     * @effects add_to_menu_stores_class_icon
+     *
+     * @return void 반환값 없음
+     */
+    public function test_add_to_admin_menu_stores_class_icon(): void
+    {
+        $board = Board::factory()->create([
+            'slug' => 'test-'.substr(md5(microtime().'addmenuicon'), 0, 8),
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->adminUser)
+            ->postJson("/api/modules/sirsoft-board/admin/boards/{$board->slug}/add-to-menu")
+            ->assertStatus(200);
+
+        $menu = Menu::where('slug', 'board-'.$board->slug)->firstOrFail();
+        $this->assertSame('fas fa-clipboard-list', $menu->getRawOriginal('icon'));
+
+        $payload = (new MenuResource($menu))->toNavigationArray();
+        $this->assertSame('fas fa-clipboard-list', $payload['icon']);
+        $this->assertSame(['type' => 'class', 'value' => 'fas fa-clipboard-list'], $payload['icon_spec']);
     }
 
     /**

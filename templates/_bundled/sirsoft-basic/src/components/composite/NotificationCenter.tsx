@@ -391,7 +391,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
           </Div>
           <Div ref={scrollRef} className="max-h-96 overflow-y-auto">
             {notifications.length === 0 && !loading ? (
-              <Div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+              <Div className="px-4 py-8 text-center text-muted">
                 <Span>{emptyText}</Span>
               </Div>
             ) : (
@@ -431,12 +431,12 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                         </Div>
                         <Div
                           className={`text-sm mt-1 line-clamp-2 ${
-                            isUnread ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400'
+                            isUnread ? 'text-gray-700 dark:text-gray-300' : 'text-muted'
                           }`}
                         >
                           {notification.message}
                         </Div>
-                        <Div className="text-gray-500 dark:text-gray-400 text-xs mt-1 font-mono">
+                        <Div className="text-muted text-xs mt-1 font-mono">
                           {notification.time}
                         </Div>
                       </Div>
@@ -483,7 +483,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                               e.stopPropagation();
                               onDelete(notification);
                             }}
-                            className="p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="p-1 text-muted hover:text-red-600 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
                             aria-label={tOr('common.delete_notification', 'Delete notification')}
                           >
                             <Icon name={IconName.Trash} className="w-4 h-4" />
@@ -497,15 +497,15 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                 {hasMore && (
                   <Div ref={sentinelRef} className="px-4 py-3 text-center">
                     {loading ? (
-                      <Span className="text-sm text-gray-500 dark:text-gray-400">...</Span>
+                      <Span className="text-sm text-muted">...</Span>
                     ) : (
-                      <Span className="text-sm text-gray-500 dark:text-gray-400" />
+                      <Span className="text-sm text-muted" />
                     )}
                   </Div>
                 )}
                 {loading && !hasMore && notifications.length > 0 && (
                   <Div className="px-4 py-2 text-center">
-                    <Span className="text-sm text-gray-500 dark:text-gray-400">...</Span>
+                    <Span className="text-sm text-muted">...</Span>
                   </Div>
                 )}
               </>

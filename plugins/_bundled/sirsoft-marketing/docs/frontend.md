@@ -39,7 +39,7 @@
 우연히 겹칠 수 있어 저장 맵만 씁니다. 동의 칸의 이름은 회원 항목 계약의 `label`(서버가 요청 언어로 푼 값)로
 옵니다.
 
-화면 폭에 따라 달라지는 배치는 Tailwind 반응형 접두(`sm:`·`md:`·`lg:`)를 쓰지 않고 엔진 `responsive` 로 씁니다(예: `<responsive on="desktop" class="…"/>`, `on="640-"`). 갈래의 `class` 는 기본 `class` 를 통째로 바꾸므로 그 폭에서 필요한 토큰을 모두 적습니다. 확장 유틸리티는 화면에 층 없이 실려 의미 클래스 칸(`@layer g7-extension`)을 이깁니다 — 채널 표의 슬러그 칸처럼 의미 클래스 `marketing-hidden` 를 단 노드를 넓은 화면에서 보이려면 그 갈래에 `marketing:block`·`marketing:inline` 같은 표시 유틸리티를 함께 적어야 하고, 이것을 빼면 넓은 화면에서도 숨습니다.
+화면 폭에 따라 달라지는 배치는 Tailwind 반응형 접두(`sm:`·`md:`·`lg:`)를 쓰지 않고 엔진 `responsive` 로 씁니다(예: `<responsive on="desktop" class="…"/>`, `on="640-"`). 갈래의 `class` 는 기본 `class` 를 통째로 바꾸므로 `class` 를 쓰는 갈래에는 그 폭에서 필요한 토큰을 모두 적습니다. 기본 클래스 일부만 바뀌는 갈래는 `class-merge` 로 바뀐 토큰만 적습니다(코어 7.2.1 이상, 예: `<responsive on="desktop" class-merge="…"/>`, 코어 `docs/frontend/responsive-layout.md` 「바뀐 클래스만 덧붙이기」). 확장 유틸리티는 화면에 층 없이 실려 의미 클래스 칸(`@layer g7-extension`)을 이깁니다 — 채널 표의 슬러그 칸처럼 의미 클래스 `marketing-hidden` 를 단 노드를 넓은 화면에서 보이려면 그 갈래에 `marketing:block`·`marketing:inline` 같은 표시 유틸리티를 함께 적어야 하고, 이것을 빼면 넓은 화면에서도 숨습니다.
 
 폭 미디어를 품은 의미 클래스 사본(`marketing-grid-3col-responsive`·`marketing-grid-2col-responsive`·`marketing-page-title`·`marketing-admin-page-content-responsive` 등)도 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="marketing:grid marketing:grid-cols-1 marketing:gap-4 marketing:items-start"` 에 `<responsive on="1024-" class="marketing:grid marketing:grid-cols-3 marketing:gap-4 marketing:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`marketing:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->

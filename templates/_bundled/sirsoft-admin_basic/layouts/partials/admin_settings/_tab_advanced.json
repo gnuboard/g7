@@ -113,9 +113,6 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1790,9 +1787,7 @@
                                                     "name": "Input",
                                                     "responsive": {
                                                         "768-": {
-                                                            "props": {
-                                                                "className": "flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"
-                                                            }
+                                                            "classMerge": "flex-1"
                                                         }
                                                     },
                                                     "props": {
@@ -1808,9 +1803,7 @@
                                                     "name": "Button",
                                                     "responsive": {
                                                         "768-": {
-                                                            "props": {
-                                                                "className": "w-auto px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
-                                                            }
+                                                            "classMerge": "w-auto"
                                                         }
                                                     },
                                                     "actions": [
@@ -1860,7 +1853,7 @@
                                                     "props": {
                                                         "type": "button",
                                                         "disabled": "{{_computed.isReadOnly || _local.geoipUpdating === true}}",
-                                                        "className": "w-full px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                                                        "className": "w-full btn btn-primary whitespace-nowrap"
                                                     },
                                                     "text": "{{_local.geoipUpdating === true ? $t('admin.settings.advanced.geoip_updating') : $t('admin.settings.advanced.geoip_manual_update')}}"
                                                 }

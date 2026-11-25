@@ -27,6 +27,8 @@ return [
         'delete_all' => '전체 삭제',
         'direct_issue' => '직접 발급',
         'issue_cancel' => '발급 취소',
+        'auto_issue' => '자동 발급',
+        'auto_issue_revoke' => '자동 발급 회수',
         'download' => '다운로드',
         'earn' => '적립',
         'partial_cancel' => '부분 취소',
@@ -89,6 +91,8 @@ return [
     ],
 
     'description' => [
+        'coupon_auto_issue' => '쿠폰 자동발급 (쿠폰 #:coupon_id → 회원 #:user_id, :source)',
+        'coupon_auto_issue_revoke' => '첫구매 쿠폰 회수 (쿠폰 #:coupon_id, 회원 #:user_id, 주문 #:order_id 전체 취소·반품)',
         // 상품 관리 (Admin)
         'product_index' => '상품 목록 조회',
         'product_show' => '상품 상세 조회 (ID: :product_id)',
@@ -340,6 +344,9 @@ return [
     ],
 
     'fields' => [
+        'first_purchase_trigger_status' => '첫구매 발급 시점',
+        'notify_enabled' => '발급 알림 사용',
+        'notify_marketing_only' => '광고성 안내',
         // 공통
         'is_active' => '활성 여부',
         'is_default' => '기본값',

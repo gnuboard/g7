@@ -137,6 +137,9 @@ class DeclarativeSurfaceCollector
 
                 try {
                     $values[$getter] = $instance->{$getter}();
+                    if ($getter === 'getNotificationDefinitions' && is_array($values[$getter])) {
+                        $values[$getter] = self::staticNotificationDefinitions($values[$getter]);
+                    }
                 } catch (Throwable $e) {
                     $errors[$getter] = $e->getMessage();
                 }
@@ -152,6 +155,27 @@ class DeclarativeSurfaceCollector
             'errors' => $errors,
             'endpoints' => $this->countEndpoints($values['getRoutes'] ?? []),
         ];
+    }
+
+    /**
+     * 알림 정의 선언에서 레코드마다 생기는 정의(`종류.{숫자 id}`)를 뺍니다.
+     *
+     * 쇼핑몰은 발급 알림을 켠 쿠폰마다 `coupon_issued.{쿠폰ID}` 정의를 선언에 싣습니다(업데이트의 「선언에 없는
+     * 정의 정리」가 지우지 않게). 문서는 확장의 고정 선언을 적는 곳이라, 그 값을 그대로 쓰면 개발 DB 의 데이터에 따라
+     * 생성 문서가 바뀌고(드리프트) 데이터 id 가 커밋 문서에 남습니다. 그런 정의 묶음은 서술 문서가 설명합니다.
+     *
+     * @param  array<int|string, mixed>  $definitions  `getNotificationDefinitions()` 반환값
+     * @return array<int|string, mixed> 레코드별 정의를 뺀 목록(목록 배열이면 키를 다시 매김)
+     */
+    public static function staticNotificationDefinitions(array $definitions): array
+    {
+        $kept = array_filter($definitions, static function ($definition): bool {
+            $type = is_array($definition) ? ($definition['type'] ?? null) : null;
+
+            return ! (is_string($type) && preg_match('/\.\d+$/', $type) === 1);
+        });
+
+        return array_is_list($definitions) ? array_values($kept) : $kept;
     }
 
     /**

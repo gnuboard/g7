@@ -1,0 +1,159 @@
+{
+    "comment": "모든 기기에서 로그아웃 확인 창 (#952) — 이 기기를 포함한 모든 로그인(토큰)을 끊는다. 상태는 창 고유 전역 이름 공간\n     `_global.logoutAllDevicesModal`(isProcessing)에 있고 여는 쪽이 매번 비운다(탈퇴 창과 같은 방식).\n     성공하면 이 기기의 세션도 끊겼으므로 알림 뒤 엔진 로그아웃으로 정리한다.",
+    "meta": {
+        "is_partial": true,
+        "description": "모든 기기 로그아웃 확인 모달",
+        "editor_label": "$t:user.modal_label.mypage_profile.logoutAllDevicesModal"
+    },
+    "id": "logoutAllDevicesModal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:mypage.security.logout_all.modal_title",
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                    "disabled": "{{_global.logoutAllDevicesModal?.isProcessing === true}}"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "id": "logout_all_devices_confirm",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "모든 기기 로그아웃 — 버튼을 잠그고, 성공하면 알린 뒤 이 기기도 로그아웃 처리한다(실패하면 잠금을 푼다)",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "logoutAllDevicesModal.isProcessing": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/user/auth/logout-all-devices",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "POST"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "logoutAllDevicesModal.isProcessing": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:mypage.security.logout_all.success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "logout"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "logoutAllDevicesModal.isProcessing": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message ?? '$t:mypage.security.logout_all.failed'}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_global.logoutAllDevicesModal?.isProcessing === true}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.logoutAllDevicesModal?.isProcessing === true}}",
+                        "props": {
+                            "name": "spinner",
+                            "size": "sm",
+                            "className": "animate-spin"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:mypage.security.logout_all.confirm_button"
+                    }
+                ]
+            }
+        ]
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "text-center py-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "right-from-bracket",
+                                "size": "2x",
+                                "className": "text-gray-600 dark:text-gray-300"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "$t:mypage.security.logout_all.confirm_message"
+                }
+            ]
+        }
+    ]
+}

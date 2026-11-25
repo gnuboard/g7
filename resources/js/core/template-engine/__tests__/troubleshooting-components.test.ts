@@ -17,6 +17,34 @@ import { hasPipes } from '../PipeRegistry';
 import { DataBindingEngine } from '../DataBindingEngine';
 import { deepMergeState } from '../DynamicRenderer';
 
+/**
+ * 화면 폭 환경을 바꾼다 — innerWidth(보이는 영역), clientWidth(레이아웃 기준), CSS 폭(미디어 쿼리 기준).
+ *
+ * @param env iw · cw · css
+ * @return 원래대로 되돌리는 함수
+ */
+function stubViewport(env: { iw: number; cw: number; css: number }): () => void {
+  const originalInnerWidth = Object.getOwnPropertyDescriptor(window, 'innerWidth');
+  const originalMatchMedia = window.matchMedia;
+
+  Object.defineProperty(window, 'innerWidth', { configurable: true, get: () => env.iw });
+  Object.defineProperty(document.documentElement, 'clientWidth', { configurable: true, get: () => env.cw });
+  (window as any).matchMedia = (query: string) => {
+    const min = /min-width:\s*([\d.]+)px/.exec(query);
+    const max = /max-width:\s*([\d.]+)px/.exec(query);
+
+    return { matches: (min ? env.css >= Number(min[1]) : true) && (max ? env.css <= Number(max[1]) : true) };
+  };
+
+  return () => {
+    if (originalInnerWidth) {
+      Object.defineProperty(window, 'innerWidth', originalInnerWidth);
+    }
+    delete (document.documentElement as any).clientWidth;
+    (window as any).matchMedia = originalMatchMedia;
+  };
+}
+
 describe('트러블슈팅 회귀 테스트 - flex 압착(shrink)', () => {
   /**
    * 사례: 텍스트가 길어질수록 형제 버튼이 좁아지는데 오버플로 검사로는 안 잡힘
@@ -53,37 +81,33 @@ describe('트러블슈팅 회귀 테스트 - flex 압착(shrink)', () => {
     });
 
     /**
-     * 사례: 안내 문구는 "페이지로 이동" 인데 실제로는 팝업이 열림 (경계 폭 1px)
+     * 사례 1: 안내 문구는 "페이지로 이동" 인데 실제로는 팝업이 열림 (경계 폭 1px)
      *
      * 확장이 화면 폭으로 동작을 고를 때 엔진과 같은 값을 읽어야 문구와 동작이 일치한다.
-     * 엔진이 `window.innerWidth` 를 본다는 전제가 깨지면(예: matchMedia 로 교체) 규정을 따른
-     * 모든 확장이 경계 폭에서 동시에 어긋나므로, 그 전제를 여기서 고정한다.
+     * 화면 확대·축소가 없으면 엔진 폭은 `window.innerWidth` 다 — PC 에서 세로 스크롤 막대(레이아웃 폭 1006)나
+     * 소수 배율(CSS 폭 1023.00004)이 있어도 1023 을 그대로 쓴다. 이 전제가 깨지면 규정을 따른 모든 확장이
+     * 경계 폭에서 동시에 어긋나므로 여기서 고정한다.
      *
-     * 배경: 내부 트러블슈팅 사례 「확장 코드의 화면 폭 판정 관련 이슈」
+     * 배경: 내부 트러블슈팅 사례 「확장 코드의 화면 폭 판정 관련 이슈」 사례 1
      * @see docs/frontend/responsive-layout.md "확장 코드에서 같은 경계를 판정할 때"
      */
     // @scenario case=responsive_scope_boundary
     // @effects responsive_scope_matches_width_range
-    it('엔진은 window.innerWidth 로 현재 폭을 정한다 (matchMedia 아님)', () => {
+    it('확대·축소가 없으면 엔진 폭은 innerWidth 다 (소수 배율 경계 포함)', () => {
       vi.useFakeTimers();
-      const matchMedia = vi.fn(() => ({ matches: false }));
-      vi.stubGlobal('matchMedia', matchMedia);
-      const original = window.innerWidth;
+      const restore = stubViewport({ iw: 1023, cw: 1006, css: 1023.00004 });
 
       try {
-        Object.defineProperty(window, 'innerWidth', { value: 1023, configurable: true });
         // resize 를 태워 현재 폭을 다시 읽게 한다 (debounce 150ms)
         window.dispatchEvent(new Event('resize'));
         vi.advanceTimersByTime(200);
 
         expect(responsiveManager.getWidth()).toBe(1023);
         expect(responsiveManager.matches('portable')).toBe(true);
-        expect(matchMedia).not.toHaveBeenCalled();
       } finally {
-        Object.defineProperty(window, 'innerWidth', { value: original, configurable: true });
+        restore();
         window.dispatchEvent(new Event('resize'));
         vi.advanceTimersByTime(200);
-        vi.unstubAllGlobals();
         vi.useRealTimers();
       }
     });
@@ -99,6 +123,58 @@ describe('트러블슈팅 회귀 테스트 - flex 압착(shrink)', () => {
       expect(responsiveManager.getMatchingKey(responsive, 390)).toBe('mobile');
       // 태블릿 구간에서는 mobile 이 매칭되지 않으므로 portable 로 폴백
       expect(responsiveManager.getMatchingKey(responsive, 900)).toBe('portable');
+    });
+  });
+});
+
+describe('트러블슈팅 회귀 테스트 - 화면 폭 판정', () => {
+  /**
+   * 사례 2: 휴대폰에서 다른 앱(카카오톡 등)을 다녀오면 사이트가 PC 화면으로 축소되어 굳음 (engine-v1.97.1)
+   *
+   * PC 화면이 한 번 그려지면 모바일 브라우저가 화면 전체가 보이도록 축소해 `innerWidth`(보이는 영역 폭)가
+   * 부푼다(390 → 909·980). 엔진이 resize 때 그 값을 다시 읽어 PC·태블릿 폭에 머물렀다. 엔진은 CSS 폭이
+   * `innerWidth` 와 어긋나고 레이아웃 기준 폭(`clientWidth`)과 맞으면 레이아웃 기준 폭을 쓴다.
+   *
+   * 배경: 내부 트러블슈팅 사례 「확장 코드의 화면 폭 판정 관련 이슈」 사례 2
+   */
+  describe('[case:components-misc-hidden-load-viewport-width-stuck] [사례 2] 앱 전환 복귀 후 PC 배율', () => {
+    // @scenario case=zoomed_out_viewport_width
+    // @effects responsive_engine_width_ignores_zoomed_out_inner_width
+    it('부푼 innerWidth(980) 대신 레이아웃 폭(390)으로 resize 를 판정한다', () => {
+      vi.useFakeTimers();
+      const restore = stubViewport({ iw: 980, cw: 390, css: 390 });
+
+      try {
+        window.dispatchEvent(new Event('resize'));
+        vi.advanceTimersByTime(200);
+
+        expect(responsiveManager.getWidth()).toBe(390);
+        expect(responsiveManager.matches('mobile')).toBe(true);
+      } finally {
+        restore();
+        window.dispatchEvent(new Event('resize'));
+        vi.advanceTimersByTime(200);
+        vi.useRealTimers();
+      }
+    });
+
+    // @scenario case=zoomed_out_viewport_width
+    // @effects responsive_engine_width_ignores_zoomed_out_inner_width
+    it('화면이 다시 보이면(visibilitychange) resize 없이도 다시 잰다', () => {
+      vi.useFakeTimers();
+      responsiveManager._setWidthForTesting(1280);
+      const restore = stubViewport({ iw: 390, cw: 390, css: 390 });
+
+      try {
+        document.dispatchEvent(new Event('visibilitychange'));
+
+        expect(responsiveManager.getWidth()).toBe(390);
+      } finally {
+        restore();
+        window.dispatchEvent(new Event('resize'));
+        vi.advanceTimersByTime(300);
+        vi.useRealTimers();
+      }
     });
   });
 });

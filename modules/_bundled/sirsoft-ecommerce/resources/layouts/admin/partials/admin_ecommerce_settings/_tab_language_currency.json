@@ -263,7 +263,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                "className": "ecommerce-btn ecommerce-btn-secondary",
                                 "disabled": "{{_computed.isReadOnly || _local.isAddingCurrency === true}}"
                             },
                             "children": [

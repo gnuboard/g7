@@ -36,6 +36,7 @@ import { EditEntryFabHost } from './template-engine/layout-editor/components/Edi
 import { isEditEntryButtonEnabled } from './template-engine/layout-editor/hooks/useEditEntryFab';
 import { documentTitle } from './routing/DocumentTitle';
 import { loadScriptWithRetry } from './template-engine/networkResilience';
+import { startDuplicateIdMonitor } from './template-engine/devDuplicateIdMonitor';
 // LayoutEditorChrome 은 정적 import 하지 않는다 — 편집기는 별도 lazy 번들
 // (layout-editor.min.js)로 분리되어 `/admin/layout-editor/*` 진입 시에만 로드된다.
 // @since engine-v1.51.0
@@ -158,6 +159,13 @@ const pendingDataUpdates: Array<{ data: Record<string, any>; options?: UpdateOpt
  * 떠난 화면의 `_local` 이 새 화면에 흘러든다. 다음 `renderTemplate` 이 시작하면 끈다.
  */
 let rootReleased = false;
+
+/**
+ * 디버그 모드 중복 DOM id 감시 해제 함수 (engine-v1.99.0, #408)
+ *
+ * 디버그 모드에서만 첫 renderTemplate 때 만든다. 운영(디버그 꺼짐)에서는 observer 를 만들지 않는다.
+ */
+let stopDuplicateIdMonitor: (() => void) | null = null;
 
 /**
  * 템플릿 메타데이터 로드
@@ -502,6 +510,12 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
       if (!state.reactRoot) {
         container.replaceChildren();
       }
+    }
+
+    // 디버그 모드 중복 DOM id 경고 — 앱 루트가 정해진 뒤 한 번만 시작한다 (engine-v1.99.0, #408, 결정 D5).
+    // 모달·토스트는 body 로 포털되므로 컨테이너가 속한 문서의 body 를 본다.
+    if (debugMode && !stopDuplicateIdMonitor) {
+      stopDuplicateIdMonitor = startDuplicateIdMonitor(container.ownerDocument?.body ?? container);
     }
 
     // 전역 변수 생성
@@ -1041,6 +1055,12 @@ function destroyTemplate(): void {
 
     // 루트 반납 표식도 거둔다 — 남기면 재초기화 뒤 첫 렌더 전 업데이트가 큐 대신 버려진다 (engine-v1.79.0)
     rootReleased = false;
+
+    // 디버그 모드 중복 DOM id 감시 해제 (engine-v1.99.0, #408)
+    if (stopDuplicateIdMonitor) {
+      stopDuplicateIdMonitor();
+      stopDuplicateIdMonitor = null;
+    }
 
     // 상태 초기화
     state.templateId = null;

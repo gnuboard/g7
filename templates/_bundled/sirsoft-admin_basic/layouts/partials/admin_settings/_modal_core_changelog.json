@@ -18,7 +18,7 @@
             "name": "Div",
             "if": "{{!$parent._local.coreChangelog || $parent._local.coreChangelog.length === 0}}",
             "props": {
-                "className": "text-center py-8 text-gray-500 dark:text-gray-400"
+                "className": "text-center py-8 text-muted"
             },
             "text": "$t:admin.settings.info.no_changelog"
         },
@@ -106,7 +106,7 @@
                                             "props": {
                                                 "className": "text-label"
                                             },
-                                            "text": "{{changeItem}}"
+                                            "text": "{{String(changeItem ?? '').split('**').join('').split('`').join('')}}"
                                         }
                                     ]
                                 }

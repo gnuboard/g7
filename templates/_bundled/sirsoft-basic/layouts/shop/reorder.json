@@ -90,7 +90,7 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "spinner",
-                                    "className": "text-4xl animate-spin text-gray-500 dark:text-gray-400"
+                                    "className": "text-4xl animate-spin text-muted"
                                 }
                             },
                             {
@@ -174,7 +174,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-gray-500 dark:text-gray-400 ml-2"
+                                                    "className": "text-muted ml-2"
                                                 },
                                                 "text": "— {{item.reason ?? ''}}"
                                             }
@@ -215,7 +215,7 @@
                                         ],
                                         "props": {
                                             "href": "/mypage/orders",
-                                            "className": "inline-flex items-center justify-center flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                                            "className": "btn btn-outline flex-1 py-2.5 dark:hover:bg-gray-800 cursor-pointer"
                                         },
                                         "text": "$t:shop.reorder.back_to_orders"
                                     }
@@ -273,7 +273,7 @@
                                 ],
                                 "props": {
                                     "href": "/mypage/orders",
-                                    "className": "inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                                    "className": "btn btn-outline py-2.5 dark:hover:bg-gray-800 cursor-pointer"
                                 },
                                 "text": "$t:shop.reorder.back_to_orders"
                             }

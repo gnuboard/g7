@@ -31,7 +31,7 @@ return [
         'github_check_http_status' => 'Failed to check the latest version on GitHub (HTTP :status). If the request limit was exceeded (403), set G7_UPDATE_GITHUB_TOKEN in .env or try again later.',
         'update_preview_unknown_type' => 'Unknown extension type for preview: :type',
         'state_contract_conflict' => "The ':name' state contract is owned by :owner. :extension cannot declare the same name.",
-        'core_version_mismatch' => ':extension (:type) requires Gnuboard7 core version :required or higher. (Current: :installed)',
+        'core_version_mismatch' => ':extension (:type) requires Gnuboard7 core version :required. (Current: :installed)',
         'php_extension_missing' => 'The :name extension requires these PHP extensions on the server: :extensions. Install them and try again.',
         'version_check_failed' => 'Version check failed.',
         'operation_in_progress' => 'Cannot process the request because ":name" has an operation in progress (:status).',

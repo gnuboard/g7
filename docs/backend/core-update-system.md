@@ -218,6 +218,9 @@ php artisan core:bundled-sources prune --force --include-modified  # 배포본�
 - ZipArchive (PHP zip 확장) 필수 — 없으면 추출 실패. unzip 명령 폴백 없음 (7.1.3 에서 제거)
 - 항목 이름의 \ 를 / 로 정규화한 뒤, 압축 밖 경로(..)·절대 경로·드라이브·UNC·널 문자·심볼릭 링크
   항목이 하나라도 있으면 아무것도 풀지 않고 전체 거부
+- __MACOSX/ 와 그 아래 항목(macOS Finder 압축의 부산물)은 풀지 않고 건너뜀 (7.2.1+)
+- 풀린 결과가 폴더 하나뿐이고 파일이 없으면 그 폴더를 소스 루트로 사용
+  (GitHub 소스 ZIP 의 owner-repo-hash/ 래퍼 — resolveExtractedRoot)
 
 v접두사 자동 감지 (resolveGithubArchiveUrl):
 1. "v{version}" 태그로 HEAD 요청 시도 (예: v7.0.0-alpha.15)

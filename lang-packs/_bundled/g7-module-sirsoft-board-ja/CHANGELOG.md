@@ -4,6 +4,16 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.2.1] - 2026-11-25
+
+### Added
+
+- 게시판 1.3.1 의 본인인증 정책 창 「사용자 지정」 안내 문구의 일본어 번역을 추가했습니다.
+
+### Removed
+
+- 게시판 1.3.1 에서 지운 신고 알림 채널 검증 문구의 번역을 뺐습니다.
+
 ## [1.2.0] - 2026-11-20
 
 ### Added

@@ -70,7 +70,8 @@
             "exports": "Export list",
             "ecommerceExportCatalog": "Export options (catalog)",
             "exportDownloads": "Export download history",
-            "ecommerceExportEstimateSource": "Export estimate"
+            "ecommerceExportEstimateSource": "Export estimate",
+            "identityCheckpoints": "Identity checkpoints"
         }
     },
     "common": {
@@ -106,9 +107,6 @@
         },
         "order": {
             "$partial": "partial/en/admin/order.json"
-        },
-        "main_banner": {
-            "$partial": "partial/en/admin/main_banner.json"
         },
         "product_review": {
             "$partial": "partial/en/admin/product_review.json"
@@ -166,9 +164,6 @@
         },
         "deposit": {
             "$partial": "partial/en/admin/deposit.json"
-        },
-        "promotion_discount_code": {
-            "$partial": "partial/en/admin/promotion_discount_code.json"
         },
         "sample": {
             "$partial": "partial/en/admin/sample.json"

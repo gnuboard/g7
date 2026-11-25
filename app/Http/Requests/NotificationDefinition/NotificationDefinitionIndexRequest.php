@@ -46,6 +46,8 @@ class NotificationDefinitionIndexRequest extends FormRequest
             // 화면을 위한 값이다. 응답이 커지므로 정의를 좁혀 부르는 호출자만 쓴다.
             'template_channel' => ['nullable', 'string', 'max:50'],
             'is_active' => ['nullable', 'boolean'],
+            // 확장이 목록에서 숨긴 알림 종류(예: 쿠폰별 발급 알림)도 싣는다 — 그 확장 화면이 자기 종류를 읽을 때만 쓴다 (7.2.1, #952)
+            'include_hidden' => ['nullable', 'boolean'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'sort_by' => ['nullable', 'string', 'in:id,type,extension_type,is_active,created_at,updated_at'],
             'sort_order' => ['nullable', 'string', 'in:asc,desc'],

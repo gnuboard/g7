@@ -61,7 +61,8 @@ test('로그인 화면에 회사 계정 묶음이 소셜보다 위에 그려지�
 
   const button = page.locator(`#sso_login_button_${MOCK_OIDC}`);
   await expect(button).toBeVisible({ timeout: 15_000 });
-  await expect(button).toHaveAttribute('aria-label', /\(으\)로 로그인$/);
+  // 문구 키 sirsoft-sso.login.login_with = "{{idp}} 계정으로 로그인"
+  await expect(button).toHaveAttribute('aria-label', /계정으로 로그인$/);
   await expect(page.locator('body')).not.toContainText('$t:');
 
   await Promise.all([page.waitForURL(/\/mock\/oidc\/authorize\?/), button.click()]);
@@ -83,7 +84,9 @@ test('처음 보는 회사 계정은 동의 모달을 거쳐 비밀번호 없는
   await decideMockOidc(page, { email: jitEmail, sub: jitSub, name: '신규직원' });
 
   await expect(page).toHaveURL(/\/login\?sso_pending=/);
-  await expect(page.locator('#sso_consent_form')).toContainText('신규직원');
+  // 사용자 템플릿 판본의 동의 창은 회사 계정이 준 이름을 회원 항목 입력 칸의 초기값으로 받는다(글자가 아니라 칸 값).
+  await expect(page.locator('#sso_consent_form')).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('#sso_field_name input').first()).toHaveValue('신규직원');
   const result = await completeConsent(page);
   expect(result).toEqual({ complete: 200, handoff: 200 });
   await expectLoggedIn(page);
@@ -152,7 +155,8 @@ test('IdP 목록 요청이 실패하면 회사 계정 묶음만 빠지고 비밀
   await page.goto('/login');
   await dismissCookieBanner(page);
   await expect(page.locator('input[name="password"]')).toBeVisible({ timeout: 15_000 });
-  await expect(page.locator('#sso_login_buttons_section')).toHaveCount(0);
+  // #408 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+  await expect(page.locator('[id^="sso_login_buttons_section__"]')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 

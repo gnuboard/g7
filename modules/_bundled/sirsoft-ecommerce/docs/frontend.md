@@ -9,11 +9,11 @@
 완료 요약의 선택 변경은 debounce 예약 시점부터 이전 응답을 무효화한다. 다음 요청이 아직 전송되지 않았더라도 이전 성공/실패 응답이 최신 선택이나 실행 잠금을 바꾸면 안 된다. 반응형 버튼 라벨은 내부 `Span.responsive`에 둔다. Button 자체의 `responsive.text`는 `children`보다 우선하므로 함께 둔 스피너를 가린다. 회귀 검증은 예약 사이 응답 경합과 desktop/portable의 대기 표시·기존 라벨을 포함한다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 266개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 256개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 266개 |
+| `admin` | 256개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -26,7 +26,6 @@
 | `admin_ecommerce_excel_download_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_export_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_inquiry_index` | `admin` | 화면 | `_admin_base` |
-| `admin_ecommerce_main_banner_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_mileage_transaction_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_order_detail` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_order_index` | `admin` | 화면 | `_admin_base` |
@@ -42,8 +41,6 @@
 | `admin_ecommerce_product_review_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_promotion_coupon_form` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_promotion_coupon_list` | `admin` | 화면 | `_admin_base` |
-| `admin_ecommerce_promotion_discount_code_create` | `admin` | 화면 | `_admin_base` |
-| `admin_ecommerce_promotion_discount_code_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_settings` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_shipping_policy_form` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_shipping_policy_list` | `admin` | 화면 | `_admin_base` |
@@ -97,13 +94,6 @@
 | `_partial_datagrid` | `admin` | partial | - |
 | `_partial_filter` | `admin` | partial | - |
 | `_partial_warnings` | `admin` | partial | - |
-| `_modal_delete_confirm` | `admin` | partial | - |
-| `_modal_edit_cancel` | `admin` | partial | - |
-| `_modal_status_change` | `admin` | partial | - |
-| `_partial_banner_detail` | `admin` | partial | - |
-| `_partial_banner_form` | `admin` | partial | - |
-| `_partial_banner_list` | `admin` | partial | - |
-| `_partial_preview_slider` | `admin` | partial | - |
 | `_filters` | `admin` | partial | - |
 | `_modal_edit_transaction` | `admin` | partial | - |
 | `_modal_extend_expiry` | `admin` | partial | - |
@@ -198,6 +188,7 @@
 | `_partial_basic_info` | `admin` | partial | - |
 | `_partial_benefit_settings` | `admin` | partial | - |
 | `_partial_issue_settings` | `admin` | partial | - |
+| `_partial_notification_settings` | `admin` | partial | - |
 | `_partial_usage_conditions` | `admin` | partial | - |
 | `_modal_cancel_issue_confirm` | `admin` | partial | - |
 | `_modal_delete_confirm` | `admin` | partial | - |
@@ -206,8 +197,6 @@
 | `_modal_status_change_confirm` | `admin` | partial | - |
 | `_partial_coupon_datagrid` | `admin` | partial | - |
 | `_partial_filter_section` | `admin` | partial | - |
-| `_modal_delete_confirm` | `admin` | partial | - |
-| `_modal_status_change` | `admin` | partial | - |
 | `_bank_accounts_cards` | `admin` | partial | - |
 | `_bank_accounts_table` | `admin` | partial | - |
 | `_bank_management_modal` | `admin` | partial | - |
@@ -258,6 +247,7 @@
 | `_tab_order_settings` | `admin` | partial | - |
 | `_tab_privacy_retention` | `admin` | partial | - |
 | `_tab_product_display` | `admin` | partial | - |
+| `_tab_promotion` | `admin` | partial | - |
 | `_tab_review_settings` | `admin` | partial | - |
 | `_tab_schedules` | `admin` | partial | - |
 | `_tab_seo` | `admin` | partial | - |
@@ -284,6 +274,8 @@
 | `_partial_address_datagrid` | `admin` | partial | - |
 | `_partial_filter_section` | `admin` | partial | - |
 <!-- @generated:layouts END -->
+
+정책 창의 범위가 「사용자 지정」이면 대상 칸은 확장 지점 선택 목록입니다. 저장된 대상이 지금 선언되지 않은 지점이면 목록 끝에 「연결된 확장 지점 없음 (키)」(관리자 템플릿 키 `admin.identity.policies.checkpoint_missing`)로 남겨 창에서 현재 대상이 보이게 합니다(7.2.1).
 
 <!-- @intent START -->
 206개가 **전부 `admin` 그룹**입니다(화면 25 + 부분 레이아웃 181). `resources/layouts/user/`

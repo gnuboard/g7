@@ -515,7 +515,7 @@
                         "type": "basic",
                         "name": "P",
                         "props": {
-                            "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:mb-6"
+                            "className": "hs:text-xs hs-text-muted hs:mb-6"
                         },
                         "text": "$t:sirsoft-hero_section.admin.position.hint"
                     },
@@ -527,7 +527,7 @@
                         "if": "{{!_computed.positionsReady && !_computed.positionsFailed && !_computed.positionsMissing}}",
                         "props": {
                             "role": "status",
-                            "className": "hs:py-6 hs:text-center hs:text-sm hs:text-gray-500 hs:dark:text-gray-400"
+                            "className": "hs:py-6 hs:text-center hs:text-sm hs-text-muted"
                         },
                         "text": "$t:sirsoft-hero_section.admin.position.loading"
                     },
@@ -778,7 +778,7 @@
                                 "name": "Span",
                                 "if": "{{!!_computed.currentTarget}}",
                                 "props": {
-                                    "className": "hs:text-sm hs:text-gray-500 hs:dark:text-gray-400 hs:tabular-nums"
+                                    "className": "hs:text-sm hs-text-muted hs:tabular-nums"
                                 },
                                 "text": "$t:sirsoft-hero_section.admin.target.count|count={{_computed.placementCount}}"
                             }
@@ -916,16 +916,14 @@
                         },
                         "children": [
                             {
-                                "comment": "대상 목록 — 동적 위치에서 대상을 고르기 전. 배너가 있는 대상을 최근 수정 순으로, 전체·노출 중 건수와 관리 진입·사이트 주소를 보인다.\n          지워진 대상도 배너가 남았으면 「없는 대상」으로 남아 관리로 들어간다(사이트에 나가지 않으므로 노출 중은 0). 위치 전체 배너 수와 대상 수는 머리에 따로 적는다.\n          배너가 없어도 대상 설정이 남은 대상은 그 뒤에 건수 0으로 이어 보여(지워진 대상 포함) 들어가 되돌릴 수 있게 하고, 대상 설정이 있는 행에는 표식을 붙인다.\n          「관리」 주소는 저장 키를 인코딩해 싣고(외부 확장 키에 `&`·`=` 가 있어도 갈라지지 않게) 지금 쪽을 이고 간다",
+                                "comment": "대상 목록 — 동적 위치에서 대상을 고르기 전. 배너가 있는 대상을 최근 수정 순으로, 전체·노출 중 건수와 관리 진입·사이트 주소를 보인다.\n          지워진 대상도 배너가 남았으면 「없는 대상」으로 남아 관리로 들어간다(사이트에 나가지 않으므로 노출 중은 0). 위치 전체 배너 수와 대상 수는 머리에 따로 적는다.\n          배너가 없어도 대상 설정이 남은 대상은 그 뒤에 건수 0으로 이어 보여(지워진 대상 포함) 들어가 되돌릴 수 있게 하고, 대상 설정이 있는 행에는 표식을 붙인다.\n          「관리」 주소는 저장 키를 인코딩해 싣고(외부 확장 키에 `&`·`=` 가 있어도 갈라지지 않게) 지금 쪽을 이고 간다\n          audit:allow layout-inline-semantic-duplicate reason: 대상 목록 상자, 위쪽 3칸 격자(top_cards)의 칸이라 간격은 격자 gap-4 가 주고 아래 여백(mb-6)과 flex-col 을 쓰지 않음",
                                 "id": "target_list_card",
                                 "type": "basic",
                                 "name": "Section",
                                 "if": "{{_computed.showTargetList}}",
                                 "responsive": {
                                     "desktop": {
-                                        "props": {
-                                            "className": "hs:col-span-2 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4"
-                                        }
+                                        "classMerge": "hs:col-span-2"
                                     }
                                 },
                                 "props": {
@@ -955,7 +953,7 @@
                                                 "name": "Span",
                                                 "if": "{{_computed.placementList != null}}",
                                                 "props": {
-                                                    "className": "hs:text-sm hs:text-gray-500 hs:dark:text-gray-400 hs:tabular-nums"
+                                                    "className": "hs:text-sm hs-text-muted hs:tabular-nums"
                                                 },
                                                 "text": "$t:sirsoft-hero_section.admin.target_list.summary|banners={{_computed.placementList?.summary?.banners ?? 0}}|targets={{_computed.placementList?.summary?.targets ?? 0}}"
                                             }
@@ -968,7 +966,7 @@
                                         "if": "{{_computed.placementList == null && !_computed.placementsFailed}}",
                                         "props": {
                                             "role": "status",
-                                            "className": "hs:py-6 hs:text-center hs:text-sm hs:text-gray-500 hs:dark:text-gray-400"
+                                            "className": "hs:py-6 hs:text-center hs:text-sm hs-text-muted"
                                         },
                                         "text": "$t:sirsoft-hero_section.admin.target_list.loading"
                                     },
@@ -1083,7 +1081,7 @@
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:tabular-nums"
+                                                                    "className": "hs:text-xs hs-text-muted hs:tabular-nums"
                                                                 },
                                                                 "text": "$t:sirsoft-hero_section.admin.target_list.counts|total={{item.total}}|active={{item.active}}"
                                                             },
@@ -1191,16 +1189,14 @@
                                 ]
                             },
                             {
-                                "comment": "미리보기 — 지금 노출 중인 배너를 사용자 슬라이더 그대로 그린다. 응답은 관리자 상세 모양(다국어 원본 객체)이라 문구 네 칸을 지금 화면 언어 글자로 바꿔 넘긴다(객체를 그대로 넘기면 슬라이더가 그리다 깨진다)",
+                                "comment": "미리보기 — 지금 노출 중인 배너를 사용자 슬라이더 그대로 그린다. 응답은 관리자 상세 모양(다국어 원본 객체)이라 문구 네 칸을 지금 화면 언어 글자로 바꿔 넘긴다(객체를 그대로 넘기면 슬라이더가 그리다 깨진다)\n          audit:allow layout-inline-semantic-duplicate reason: 미리보기 상자, 3칸 격자의 칸으로 col-span-2 를 차지하며 여백은 p-4 뿐이고 아래 여백은 격자가 가짐",
                                 "id": "preview_card",
                                 "type": "basic",
                                 "name": "Section",
                                 "if": "{{_computed.positionsReady && !_computed.showTargetList}}",
                                 "responsive": {
                                     "desktop": {
-                                        "props": {
-                                            "className": "hs:col-span-2 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4"
-                                        }
+                                        "classMerge": "hs:col-span-2"
                                     }
                                 },
                                 "props": {
@@ -1335,7 +1331,7 @@
                                 ]
                             },
                             {
-                                "comment": "슬라이더 설정 — 이 위치에만 적용. 위치 설정이 오기 전에는 그리지 않는다(기본값에서 고쳐 저장하면 실제 설정을 덮는다)",
+                                "comment": "슬라이더 설정 — 이 위치에만 적용. 위치 설정이 오기 전에는 그리지 않는다(기본값에서 고쳐 저장하면 실제 설정을 덮는다)\n          audit:allow layout-inline-semantic-duplicate reason: 슬라이더 설정 상자, 격자 칸이라 mb-6 이 없고 안쪽 간격 gap-4 를 쓰는 세로 쌓기라 카드 여백과 다름",
                                 "id": "slider_card",
                                 "type": "basic",
                                 "name": "Section",
@@ -1364,7 +1360,7 @@
                                                 "name": "P",
                                                 "if": "{{!_computed.isDynamic}}",
                                                 "props": {
-                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:mt-1"
+                                                    "className": "hs:text-xs hs-text-muted hs:mt-1"
                                                 },
                                                 "text": "$t:sirsoft-hero_section.admin.slider.scope|position={{_computed.positionLabel}}"
                                             },
@@ -1375,7 +1371,7 @@
                                                 "name": "P",
                                                 "if": "{{_computed.isDynamic}}",
                                                 "props": {
-                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:mt-1"
+                                                    "className": "hs:text-xs hs-text-muted hs:mt-1"
                                                 },
                                                 "text": "$t:sirsoft-hero_section.admin.slider.scope_dynamic|position={{_computed.positionLabel}}|target={{_computed.targetTypeLabel}}"
                                             }
@@ -1595,7 +1591,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                    "className": "hs:text-xs hs-text-muted"
                                                 },
                                                 "text": "$t:sirsoft-hero_section.admin.slider.pagination_hint"
                                             }
@@ -1650,7 +1646,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                    "className": "hs:text-xs hs-text-muted"
                                                 },
                                                 "text": "$t:sirsoft-hero_section.admin.slider.width_hint"
                                             }
@@ -1778,7 +1774,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                    "className": "hs:text-xs hs-text-muted"
                                                 },
                                                 "text": "$t:sirsoft-hero_section.admin.slider.max_height_hint|min={{_computed.maxHeightLimits.min}}|max={{_computed.maxHeightLimits.max}}"
                                             },
@@ -1838,7 +1834,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                            "className": "hs:text-xs hs-text-muted"
                                         },
                                         "text": "$t:sirsoft-hero_section.admin.slider.header_overlay_hint"
                                     },
@@ -1967,7 +1963,7 @@
                                 ]
                             },
                             {
-                                "comment": "이 대상 설정 — 동적 위치에서 대상을 골랐을 때만. 항목마다 「이 대상만 따로」를 켠 것만 저장하고(빠진 항목 =\n          위치 기본값 상속), 끈 항목은 위치 기본값을 따라 바뀐다. 처음 열어도 위치 값을 복제해 저장하지 않는다. 자동 재생 끔·최대 높이 비움(제한 없음)도\n          이 대상만의 명시값이다. 「위치 기본값으로 되돌리기」는 이 대상의 재정의만 지운다(배너·위치 기본값·다른 대상은 그대로)",
+                                "comment": "이 대상 설정 — 동적 위치에서 대상을 골랐을 때만. 항목마다 「이 대상만 따로」를 켠 것만 저장하고(빠진 항목 =\n          위치 기본값 상속), 끈 항목은 위치 기본값을 따라 바뀐다. 처음 열어도 위치 값을 복제해 저장하지 않는다. 자동 재생 끔·최대 높이 비움(제한 없음)도\n          이 대상만의 명시값이다. 「위치 기본값으로 되돌리기」는 이 대상의 재정의만 지운다(배너·위치 기본값·다른 대상은 그대로)\n          audit:allow layout-inline-semantic-duplicate reason: 이 대상 설정 상자, 슬라이더 설정과 같은 격자 칸 구성으로 p-4 flex-col gap-4 만 쓰고 아래 여백이 없음",
                                 "id": "target_settings_card",
                                 "type": "basic",
                                 "name": "Section",
@@ -1995,7 +1991,7 @@
                                                 "type": "basic",
                                                 "name": "P",
                                                 "props": {
-                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:mt-1"
+                                                    "className": "hs:text-xs hs-text-muted hs:mt-1"
                                                 },
                                                 "text": "$t:sirsoft-hero_section.admin.target_settings.scope|position={{_computed.positionLabel}}|target={{_computed.selectedTarget?.label ?? _computed.currentTarget}}"
                                             }
@@ -2008,7 +2004,7 @@
                                         "if": "{{!_computed.targetData && !_computed.targetSettingsFailed}}",
                                         "props": {
                                             "role": "status",
-                                            "className": "hs:text-sm hs:text-gray-500 hs:dark:text-gray-400"
+                                            "className": "hs:text-sm hs-text-muted"
                                         },
                                         "text": "$t:sirsoft-hero_section.admin.target_settings.loading"
                                     },
@@ -2135,7 +2131,7 @@
                                                 "name": "Span",
                                                 "props": {
                                                     "id": "hero_target_source_autoplay",
-                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                    "className": "hs:text-xs hs-text-muted"
                                                 },
                                                 "text": "{{_computed.targetOverridden.includes('autoplay') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}"
                                             }
@@ -2230,7 +2226,7 @@
                                                 "name": "Span",
                                                 "props": {
                                                     "id": "hero_target_source_interval_seconds",
-                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                    "className": "hs:text-xs hs-text-muted"
                                                 },
                                                 "text": "{{_computed.targetOverridden.includes('interval_seconds') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}"
                                             }
@@ -2341,7 +2337,7 @@
                                                 "name": "Span",
                                                 "props": {
                                                     "id": "hero_target_source_effect",
-                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                    "className": "hs:text-xs hs-text-muted"
                                                 },
                                                 "text": "{{_computed.targetOverridden.includes('effect') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}"
                                             }
@@ -2432,7 +2428,7 @@
                                                 "name": "Span",
                                                 "props": {
                                                     "id": "hero_target_source_width",
-                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                    "className": "hs:text-xs hs-text-muted"
                                                 },
                                                 "text": "{{_computed.targetOverridden.includes('width') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}"
                                             }
@@ -2514,7 +2510,7 @@
                                                 "name": "Span",
                                                 "props": {
                                                     "id": "hero_target_source_header_overlay",
-                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                    "className": "hs:text-xs hs-text-muted"
                                                 },
                                                 "text": "{{_computed.targetOverridden.includes('header_overlay') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}"
                                             }
@@ -2617,7 +2613,7 @@
                                                 "name": "Span",
                                                 "props": {
                                                     "id": "hero_target_source_pagination",
-                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                    "className": "hs:text-xs hs-text-muted"
                                                 },
                                                 "text": "{{_computed.targetOverridden.includes('pagination') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}"
                                             }
@@ -2704,7 +2700,7 @@
                                                 "name": "Span",
                                                 "props": {
                                                     "id": "hero_target_source_max_height_pc",
-                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                    "className": "hs:text-xs hs-text-muted"
                                                 },
                                                 "text": "{{_computed.targetOverridden.includes('max_height_pc') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}"
                                             }
@@ -2791,7 +2787,7 @@
                                                 "name": "Span",
                                                 "props": {
                                                     "id": "hero_target_source_max_height_mobile",
-                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                    "className": "hs:text-xs hs-text-muted"
                                                 },
                                                 "text": "{{_computed.targetOverridden.includes('max_height_mobile') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}"
                                             }
@@ -3409,7 +3405,7 @@
                         ]
                     },
                     {
-                        "comment": "첫 배너 안내 — 이 위치에 배너가 하나도 없을 때만. 조건으로 걸러 0건인 것과 구분한다(그때는 표 빈 문구)",
+                        "comment": "첫 배너 안내 — 이 위치에 배너가 하나도 없을 때만. 조건으로 걸러 0건인 것과 구분한다(그때는 표 빈 문구)\n        audit:allow layout-inline-semantic-duplicate reason: 첫 배너 안내 상자, 점선 테두리에 가운데 정렬과 px-4 py-8 mb-4 를 쓰는 빈 상태 안내라 카드 모양과 여백이 다름",
                         "id": "empty_position_card",
                         "type": "basic",
                         "name": "Div",
@@ -4403,7 +4399,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "hs:w-6 hs:text-right hs:text-sm hs:tabular-nums hs:text-gray-500 hs:dark:text-gray-400"
+                                                    "className": "hs:w-6 hs:text-right hs:text-sm hs:tabular-nums hs-text-muted"
                                                 },
                                                 "text": "{{row._idx + 1}}"
                                             },
@@ -4456,7 +4452,7 @@
                                                     "data-testid": "hero-reorder-up-{{row.id}}",
                                                     "type": "button",
                                                     "aria-label": "{{$t('sirsoft-hero_section.admin.reorder.move_up', { name: row.title })}}",
-                                                    "className": "hs-flex-center hs:w-10 hs:h-10 hs:shrink-0 hs:text-gray-500 hs:hover:text-gray-800 hs:dark:text-gray-400 hs:dark:hover:text-gray-100 hs:rounded hs:hover:bg-gray-100 hs:dark:hover:bg-gray-700 hs:disabled:opacity-40 hs:disabled:cursor-not-allowed",
+                                                    "className": "hs-flex-center hs:w-10 hs:h-10 hs:shrink-0 hs-text-muted hs:hover:text-gray-800 hs:dark:hover:text-gray-100 hs:rounded hs:hover:bg-gray-100 hs:dark:hover:bg-gray-700 hs:disabled:opacity-40 hs:disabled:cursor-not-allowed",
                                                     "disabled": "{{_global.reorderSaving || row._idx === 0}}"
                                                 },
                                                 "children": [
@@ -4489,7 +4485,7 @@
                                                     "data-testid": "hero-reorder-down-{{row.id}}",
                                                     "type": "button",
                                                     "aria-label": "{{$t('sirsoft-hero_section.admin.reorder.move_down', { name: row.title })}}",
-                                                    "className": "hs-flex-center hs:w-10 hs:h-10 hs:shrink-0 hs:text-gray-500 hs:hover:text-gray-800 hs:dark:text-gray-400 hs:dark:hover:text-gray-100 hs:rounded hs:hover:bg-gray-100 hs:dark:hover:bg-gray-700 hs:disabled:opacity-40 hs:disabled:cursor-not-allowed",
+                                                    "className": "hs-flex-center hs:w-10 hs:h-10 hs:shrink-0 hs-text-muted hs:hover:text-gray-800 hs:dark:hover:text-gray-100 hs:rounded hs:hover:bg-gray-100 hs:dark:hover:bg-gray-700 hs:disabled:opacity-40 hs:disabled:cursor-not-allowed",
                                                     "disabled": "{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}"
                                                 },
                                                 "children": [

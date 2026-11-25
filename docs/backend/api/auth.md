@@ -1719,6 +1719,7 @@ _단건 응답: `data` 객체의 필드 (`AuthService::register()` 이 반환한
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동","status":"active", …}` | 생성된 사용자 정보 (`UserResource`. `status` 는 `active`, 가입 후 본인인증 정책이 걸린 경우 `pending_verification`) |
 | token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 가입 즉시 발급되는 Sanctum 접근 토큰 평문 (가입 직후 로그인 상태로 이어짐) |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
+| identity_challenge | object \| null | `{"id":"01a2…","purpose":"signup","render_hint":"text_code","provider_id":"g7:core.mail","expires_at":"2026-11-25T06:15:00+09:00","max_attempts":5}` | 가입 후 본인인증 정책(`core.auth.signup_after_create`)으로 인증 대기가 된 회원에게 발급한 인증 건. 화면은 이 값으로 가입 직후 코드 입력 화면(`/identity/challenge`)을 연다. 정책이 꺼졌거나 발송이 실패했으면 null (7.2.1) |
 
 **응답 예시**
 

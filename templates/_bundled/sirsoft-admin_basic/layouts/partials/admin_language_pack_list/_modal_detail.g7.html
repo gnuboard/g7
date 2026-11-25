@@ -7,7 +7,7 @@
   <modal data-type="composite" data-ref="language_pack_detail_modal" title="$t:admin.language_packs.modal.detail.title" size="medium">
     <div class="flex flex-col max-h-[70vh]">
       <div class="flex-1 overflow-y-auto min-h-0 pr-2">
-        <div data-if="{{!language_pack_detail?.data}}" class="p-8 text-center text-gray-500 dark:text-gray-400">$t:admin.language_packs.modal.detail.loading</div>
+        <div data-if="{{!language_pack_detail?.data}}" class="p-8 text-center text-muted">$t:admin.language_packs.modal.detail.loading</div>
         <div data-if="{{language_pack_detail?.data}}" class="row-stack">
           <div data-ref="built_in_notice" data-if="{{language_pack_detail?.data?.source_type === 'built_in'}}" class="alert-info">
             <icon name="fas fa-info-circle" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
@@ -163,7 +163,7 @@
                   <div>
                     <span class="text-secondary text-xs font-medium">{{category.name}}</span>
                     <div data-each="changeItem, itemIdx in category.items" class="ml-3 space-y-0.5">
-                      <div class="text-secondary text-xs">• {{changeItem}}</div>
+                      <div class="text-secondary text-xs">• {{String(changeItem ?? '').split('**').join('').split('`').join('')}}</div>
                     </div>
                   </div>
                 </div>
@@ -173,7 +173,7 @@
         </div>
       </div>
       <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0">
-        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
+        <button type="button" class="btn btn-primary">
           <on type="click">
             <close-modal/>
           </on>

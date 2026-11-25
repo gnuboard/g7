@@ -73,7 +73,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['spam_security.post_cooldown_seconds']}}",
                                             "props": {
-                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block"
+                                                "className": "board-form-error"
                                             },
                                             "text": "{{(Array.isArray(_local.errors?.['spam_security.post_cooldown_seconds']) ? _local.errors['spam_security.post_cooldown_seconds'][0] : _local.errors?.['spam_security.post_cooldown_seconds']) ?? ''}}"
                                         },
@@ -123,7 +123,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['spam_security.comment_cooldown_seconds']}}",
                                             "props": {
-                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block"
+                                                "className": "board-form-error"
                                             },
                                             "text": "{{(Array.isArray(_local.errors?.['spam_security.comment_cooldown_seconds']) ? _local.errors['spam_security.comment_cooldown_seconds'][0] : _local.errors?.['spam_security.comment_cooldown_seconds']) ?? ''}}"
                                         },
@@ -141,9 +141,6 @@
                                     "id": "field_view_count_cache_ttl",
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": ""
-                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -180,7 +177,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.errors?.['spam_security.view_count_cache_ttl']}}",
                                                     "props": {
-                                                        "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block"
+                                                        "className": "board-form-error"
                                                     },
                                                     "text": "{{(Array.isArray(_local.errors?.['spam_security.view_count_cache_ttl']) ? _local.errors['spam_security.view_count_cache_ttl'][0] : _local.errors?.['spam_security.view_count_cache_ttl']) ?? ''}}"
                                                 },

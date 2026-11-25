@@ -21,7 +21,7 @@
           </on>
           $t:sirsoft-ecommerce.common.cancel
         </button>
-        <button type="submit" form="template_form" disabled="{{_local?.isSaving || (_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true)}}" class="ecommerce-flex-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
+        <button type="submit" form="template_form" disabled="{{_local?.isSaving || (_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true)}}" class="ecommerce-flex-center ecommerce:gap-1.5 ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm">
           <icon data-if="{{!_local.isSaving}}" name="save" class="ecommerce:text-base"/>
           <icon data-if="{{_local.isSaving}}" name="spinner" class="ecommerce-spinner-sm"/>
           <span data-if="{{!_local.isSaving}}">$t:sirsoft-ecommerce.common.save</span>
@@ -81,7 +81,7 @@
         <div>
           <div class="ecommerce-flex-between">
             <h4 class="ecommerce-text-body ecommerce:font-medium">$t:sirsoft-ecommerce.admin.product_notice_template.form.fields_title</h4>
-            <button type="button" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true}}" class="ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
+            <button type="button" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true}}" class="ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm ecommerce:text-xs">
               <on type="click">
                 <!-- [상세 참조로 채우기] — 지금 폼 값을 전역에 잡아 두고 확인 창을 연다. 확인 창은 이 값을 그대로 되돌려 보내므로, 여기서 잡아 두지 않으면 돌아올 값이 없다. -->
                 <sequence>
@@ -92,7 +92,7 @@
               $t:sirsoft-ecommerce.admin.product_notice_template.form.fill_detail_ref
             </button>
           </div>
-          <multilingual-tab-panel data-type="composite" data-ref="fields_tab_panel" variant="underline" class="">
+          <multilingual-tab-panel data-type="composite" data-ref="fields_tab_panel" variant="underline">
             <dynamic-field-list data-type="composite" data-ref="fields_editor" name="fields" items="{{_local.form.fields ?? []}}" addLabel="$t:sirsoft-ecommerce.admin.product_notice_template.form.add_field" :enableDrag="true" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true}}" readOnly="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true}}" :minItems="1" emptyMessage="$t:sirsoft-ecommerce.admin.product_notice_template.form.empty_fields" errors="{{_local.errors}}">
               <prop name="columns">
                 <item key="name" type="multilingual" label="$t:sirsoft-ecommerce.admin.product_notice_template.fields.name" placeholder="$t:sirsoft-ecommerce.admin.product_notice_template.form.field_name_placeholder"/>

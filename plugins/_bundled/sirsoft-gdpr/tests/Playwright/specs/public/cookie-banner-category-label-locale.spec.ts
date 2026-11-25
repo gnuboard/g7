@@ -26,7 +26,8 @@
 import { test, expect } from '@playwright/test';
 
 const BANNER = '#gdpr_cookie_banner';
-const PREFERENCES_TOGGLE = '#gdpr_preferences_toggle_button';
+// #408 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+const PREFERENCES_TOGGLE = '[id^="gdpr_preferences_toggle_button__"]';
 const SETTINGS_ENDPOINT = '/api/plugins/sirsoft-gdpr/settings';
 
 interface CategoryLabels {

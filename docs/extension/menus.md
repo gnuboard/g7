@@ -233,7 +233,7 @@ class EcommerceMenuSeeder extends Seeder
             'name' => ['ko' => '이커머스', 'en' => 'Ecommerce'],
             'slug' => 'sirsoft-ecommerce',
             'url' => '/admin/sirsoft-ecommerce',
-            'icon' => 'fa-shopping-cart',
+            'icon' => 'fas fa-shopping-cart',
             'module_id' => $module->id,
         ]);
 
@@ -426,18 +426,40 @@ $role->menus()->wherePivot('permission_type', 'write')->get();
 ### 핵심 정책
 
 - **row 존재 여부**: config 기준 (user_overrides 무관 삭제)
-- **필드 값 (유지 row)**: user_overrides 에 등록된 필드 (`name`, `icon`, `order`, `url`, `is_active`) 보존, 나머지 갱신
+- **필드 값 (유지 row)**: user_overrides 에 등록된 필드 (`name`, `icon`, `order`, `url`, `is_active`, `parent_id`) 보존, 나머지 갱신
 - **`is_active`**: config/manifest 정의값 채택 (기본 `true`). `is_active: false` 로 명시 정의된 메뉴는 sync 시에도 비활성 상태 유지. 운영자가 UI 에서 토글한 경우 `user_overrides` 에 `'is_active'` 가 마킹되어 재시드 시 운영자 선택 보존
 - **role-menu 매핑**: 메뉴 삭제 시 `role_menus` 피벗은 FK cascade 로 자동 정리
 - **user_overrides 검사**: 다국어 컬럼(`name`)은 column-level (`'name'`, legacy) + dot-path sub-key (`'name.ko'` / `'name.en'`, beta.4 도입) 양쪽 호환. 어느 형태로든 마킹되어 있으면 컬럼 전체를 보존 대상으로 간주
 
 ### 사용자 수정 기록
 
-`Menu` 모델은 `HasUserOverrides` trait + `$trackableFields = ['name', 'icon', 'order', 'url']` 적용. 사용자가 UI/API 로 수정하면 trait 이 자동으로 user_overrides 에 누적 기록합니다 (mass update 포함).
+`Menu` 모델은 `HasUserOverrides` trait + `$trackableFields = ['name', 'icon', 'order', 'url', 'is_active', 'parent_id']` 적용. 사용자가 UI/API 로 수정하면 trait 이 자동으로 user_overrides 에 누적 기록합니다 (mass update 포함).
+
+`icon` 은 정규형으로 비교합니다 — 레거시 문자열 `'fas fa-users'` 와 구조형 `['type' => 'class', 'value' => 'fas fa-users']`, 공백만 다른 `' fas  fa-users '` 는 모두 같은 값이라, 같은 아이콘을 다시 저장해도 수정으로 기록되지 않고 이후 확장 업데이트의 아이콘 갱신이 계속 들어옵니다.
 
 ### Helper (권장)
 
 직접 Model 조작 금지. `ExtensionMenuSyncHelper` 를 통해 sync/cleanup 수행. 자세한 사용법은 [data-sync-helpers.md](../backend/data-sync-helpers.md#3-extensionmenusynchelper) 참조.
+
+## 메뉴 아이콘 지정
+
+`getAdminMenus()`(플러그인도 같음)·`config/core.php` 의 `icon` 은 세 형태를 받습니다(코어 7.2.1).
+
+```php
+'icon' => 'fas fa-folder',                                   // Font Awesome 클래스 (fa-solid fa-folder 도 같음)
+'icon' => ['type' => 'class', 'value' => 'fa-regular fa-star'],
+'icon' => ['type' => 'image', 'path' => 'assets/menu.png'],  // 확장 루트 기준 상대경로 — png·webp·jpg·jpeg·gif
+'icon' => ['type' => 'svg', 'path' => 'assets/menu.svg'],    // 설치·업데이트 때 읽어 검사한 뒤 인라인 SVG 코드로 저장
+'icon' => ['type' => 'svg', 'value' => '<svg viewBox="0 0 24 24"><path fill="currentColor" d="…"/></svg>'],
+```
+
+- **클래스**: 스타일까지 적은 완전한 클래스(`fas fa-x`·`fa-solid fa-x`·`far`·`fab`)를 씁니다. 스타일 없는 `fa-x` 는 쓰지 않습니다.
+- **이미지**: 자기 패키지 안 파일만 됩니다. 응답 시점에 확장 자산 주소(버전 쿼리 포함)로 바뀌어 하위 폴더 설치·정적 캐시에서도 그대로 보입니다. `/` 절대경로·`http(s)://`·`//`·`data:`·`..`·역슬래시·`.svg` 는 거부합니다.
+- **SVG**: 32KB 이하, 허용한 요소만 쓸 수 있습니다 — `svg`·`g`·`defs`·`title`·`desc`·`rect`·`circle`·`ellipse`·`line`·`polyline`·`polygon`·`path`·`text`·`tspan`·`linearGradient`·`radialGradient`·`stop`·`clipPath`. 그 밖의 요소(`style`·`use`·`image`·`foreignObject`·`mask`·`pattern`·`filter`·`symbol`·애니메이션 등)와 스크립트·`on*` 속성·외부 `href` 는 거부합니다. 화면은 한 번 더 정제해서 기본 도형 속성만 남기고 그리므로(`style`·`class` 같은 속성은 지워짐) 색은 `fill`·`stroke` 속성으로 주세요. `fill="currentColor"` 를 쓰면 메뉴 글자색(라이트·다크)을 따릅니다. 같은 SVG 가 여러 메뉴에 있으면 `id` 가 겹쳐 그라디언트 참조가 엉킬 수 있으니 단색·`currentColor` 를 권장합니다.
+- **잘못된 선언**(없는 파일·금지 경로·위험 SVG·알 수 없는 형)은 설치·업데이트를 막지 않습니다. 그 메뉴만 아이콘 없이 저장하고, 로그(`메뉴 아이콘 선언 무시`)와 라이프사이클 경고 `menu_icon`(관리자 결과 창 「메뉴 아이콘」)으로 알립니다.
+- 운영자가 관리자 화면에서 아이콘을 바꾸면(업로드 포함) `user_overrides` 에 `icon` 이 기록되어 이후 업데이트가 덮지 않습니다.
+- 메뉴 API 는 `icon`(클래스일 때만 문자열, 이미지·SVG 면 null — 외부 관리자 템플릿 호환)과 `icon_spec`(구조형)을 함께 내려 줍니다 — [admin-template-contract.md](admin-template-contract.md).
+- `core.menu.*` 훅이 넘기는 메뉴 모델의 `icon` 값은 클래스 아이콘이면 클래스 문자열, 이미지·SVG 아이콘이면 구조형 JSON 문자열입니다. 서버 코드에서 해석할 때는 `MenuIconSpec::fromStored($menu->icon)` 을 쓰고, 화면에 쓸 값은 메뉴 API 의 `icon_spec` 을 씁니다.
 
 ---
 

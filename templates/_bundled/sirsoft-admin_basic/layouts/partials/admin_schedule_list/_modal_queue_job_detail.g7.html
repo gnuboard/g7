@@ -13,7 +13,7 @@
         <div>
           <span class="text-label-subtle">$t:admin.schedules.queue.columns.job</span>
           <p class="text-body font-medium break-all">{{_global.queueJobDetail?.display_name ?? '-'}}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 font-mono break-all">{{_global.queueJobDetail?.job_class ?? ''}}</p>
+          <p class="text-xs text-muted font-mono break-all">{{_global.queueJobDetail?.job_class ?? ''}}</p>
         </div>
         <div>
           <span class="text-label-subtle">$t:admin.schedules.queue.detail.uuid</span>
@@ -72,7 +72,7 @@
         </on>
         $t:common.close
       </button>
-      <button data-ref="queue_job_detail_delete" data-if="{{_global.queueJobDetailKind === 'failed'}}" type="button" class="btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.queueJobDetail?.abilities?.can_delete !== true}}">
+      <button data-ref="queue_job_detail_delete" data-if="{{_global.queueJobDetailKind === 'failed'}}" type="button" class="btn btn-danger" disabled="{{_global.queueJobDetail?.abilities?.can_delete !== true}}">
         <on type="click">
           <!-- 상세에서 바로 삭제 — 이 창을 닫고 같은 한 건을 확인 창에 담아 연다(창 두 개를 겹치지 않는다). -->
           <sequence>
@@ -90,7 +90,7 @@
         </on>
         $t:common.delete
       </button>
-      <button data-ref="queue_job_detail_retry" data-if="{{_global.queueJobDetailKind === 'failed'}}" type="button" class="btn btn-info disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.queueJobDetail?.abilities?.can_retry !== true}}">
+      <button data-ref="queue_job_detail_retry" data-if="{{_global.queueJobDetailKind === 'failed'}}" type="button" class="btn btn-info" disabled="{{_global.queueJobDetail?.abilities?.can_retry !== true}}">
         <on type="click">
           <!-- 상세에서 바로 재시도 — 삭제와 같이 확인 창으로 넘긴다. -->
           <sequence>

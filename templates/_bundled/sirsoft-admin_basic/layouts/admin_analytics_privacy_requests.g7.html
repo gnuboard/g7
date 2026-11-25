@@ -91,7 +91,7 @@
         <div class="filter-grid">
           <div class="flex flex-col gap-2">
             <responsive on="768-" class="flex flex-row gap-2 items-center"/>
-            <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.analytics.privacy_requests.search.subject_label</span>
+            <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.analytics.privacy_requests.search.subject_label</span>
             <radio-group data-type="composite" name="analytics_subject_type" value="{{_local.search?.subject || 'ip'}}" :inline="true">
               <prop name="options">
                 <item label="$t:admin.analytics.privacy_requests.search.subject_ip" value="ip"/>
@@ -106,7 +106,7 @@
           </div>
           <div class="flex flex-col gap-2">
             <responsive on="768-" class="flex flex-row gap-2 items-center"/>
-            <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.analytics.privacy_requests.search.value_label</span>
+            <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.analytics.privacy_requests.search.value_label</span>
             <input data-ref="subject_value" name="analytics_subject_value" type="text" class="input w-80" placeholder="{{(_local.search?.subject || 'ip') === 'ip' ? $t('admin.analytics.privacy_requests.search.placeholder_ip') : ((_local.search?.subject === 'user_id') ? $t('admin.analytics.privacy_requests.search.placeholder_user') : $t('admin.analytics.privacy_requests.search.placeholder_key'))}}" value="{{_local.search?.value || ''}}">
               <on type="change">
                 <!-- 입력값을 폼에 담아 둔다. 조회하지 않는다 — 주소에 올릴 때까지 결과 카드는 앞선 검색 그대로다. -->
@@ -129,7 +129,7 @@
           </div>
           <div class="flex flex-col gap-2">
             <responsive on="768-" class="flex flex-row gap-2 items-center"/>
-            <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.analytics.privacy_requests.search.period_label</span>
+            <span class="filter-field-label w-32"><responsive on="768-" class-merge="mb-0 shrink-0 flex items-center"/>$t:admin.analytics.privacy_requests.search.period_label</span>
             <div class="flex-center gap-2 flex-wrap">
               <input name="analytics_subject_from" type="date" aria-label="$t:common.range_start|label={{$t('admin.analytics.privacy_requests.search.period_label')}}" class="input w-40" value="{{_local.search?.from || ''}}">
                 <on type="change">
@@ -137,7 +137,7 @@
                   <set-state target="local" search.from="{{$event.target.value}}"/>
                 </on>
               </input>
-              <span class="text-gray-500 dark:text-gray-400">~</span>
+              <span class="text-muted">~</span>
               <input name="analytics_subject_to" type="date" aria-label="$t:common.range_end|label={{$t('admin.analytics.privacy_requests.search.period_label')}}" class="input w-40" value="{{_local.search?.to || ''}}">
                 <on type="change">
                   <!-- 기간 끝을 폼에 담는다. 시작과 마찬가지로 비워 두면 끝 키 없이 보낸다. -->

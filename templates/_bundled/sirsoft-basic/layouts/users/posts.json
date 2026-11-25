@@ -110,7 +110,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2"
+                                            "className": "flex items-center gap-2 text-sm text-muted mb-2"
                                         },
                                         "children": [
                                             {
@@ -183,7 +183,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-sm text-gray-500 dark:text-gray-400 mt-1 block text-right"
+                                                    "className": "text-sm text-muted mt-1 block text-right"
                                                 },
                                                 "text": "$t:user.profile.total_posts|count={{userPosts.data?.total ?? 0}}"
                                             }
@@ -219,7 +219,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "text-gray-500 dark:text-gray-400"
+                                                            "className": "text-muted"
                                                         },
                                                         "text": "$t:user.profile.no_posts"
                                                     }
@@ -232,13 +232,11 @@
                                                 "if": "{{userPosts.data?.data?.length > 0}}",
                                                 "responsive": {
                                                     "768-": {
-                                                        "props": {
-                                                            "className": "grid grid-cols-12 gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                                                        }
+                                                        "classMerge": "grid"
                                                     }
                                                 },
                                                 "props": {
-                                                    "className": "hidden grid-cols-12 gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                    "className": "hidden grid-cols-12 gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 text-xs font-medium text-muted uppercase tracking-wider"
                                                 },
                                                 "children": [
                                                     {
@@ -293,9 +291,7 @@
                                                         },
                                                         "responsive": {
                                                             "768-": {
-                                                                "props": {
-                                                                    "className": "w-full text-left grid grid-cols-12 gap-2 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer items-center"
-                                                                }
+                                                                "classMerge": "grid-cols-12"
                                                             }
                                                         },
                                                         "actions": [
@@ -315,9 +311,7 @@
                                                                 "name": "Div",
                                                                 "responsive": {
                                                                     "768-": {
-                                                                        "props": {
-                                                                            "className": "block col-span-2 text-sm text-gray-600 dark:text-gray-400 truncate"
-                                                                        }
+                                                                        "classMerge": "block"
                                                                     }
                                                                 },
                                                                 "props": {
@@ -331,9 +325,7 @@
                                                                 "name": "Div",
                                                                 "responsive": {
                                                                     "768-": {
-                                                                        "props": {
-                                                                            "className": "col-span-6 flex items-center gap-2 min-w-0 overflow-hidden"
-                                                                        }
+                                                                        "classMerge": "col-span-6"
                                                                     }
                                                                 },
                                                                 "props": {
@@ -346,9 +338,7 @@
                                                                         "name": "Span",
                                                                         "responsive": {
                                                                             "768-": {
-                                                                                "props": {
-                                                                                    "className": "hidden flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap truncate max-w-32"
-                                                                                }
+                                                                                "classMerge": "hidden"
                                                                             }
                                                                         },
                                                                         "props": {
@@ -407,6 +397,7 @@
                                                                             },
                                                                             {
                                                                                 "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다",
+                                                                                "id": "ext_board_post_row_badges_{{post.id}}",
                                                                                 "type": "extension_point",
                                                                                 "name": "board_post_row_badges",
                                                                                 "props": {
@@ -438,13 +429,11 @@
                                                                 "name": "Div",
                                                                 "responsive": {
                                                                     "768-": {
-                                                                        "props": {
-                                                                            "className": "flex col-span-1 justify-center items-center gap-1 text-sm text-gray-500 dark:text-gray-400"
-                                                                        }
+                                                                        "classMerge": "flex"
                                                                     }
                                                                 },
                                                                 "props": {
-                                                                    "className": "hidden col-span-1 justify-center items-center gap-1 text-sm text-gray-500 dark:text-gray-400"
+                                                                    "className": "hidden col-span-1 justify-center items-center gap-1 text-sm text-muted"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -468,13 +457,11 @@
                                                                 "name": "Span",
                                                                 "responsive": {
                                                                     "768-": {
-                                                                        "props": {
-                                                                            "className": "block col-span-3 text-right text-sm text-gray-500 dark:text-gray-400"
-                                                                        }
+                                                                        "classMerge": "block"
                                                                     }
                                                                 },
                                                                 "props": {
-                                                                    "className": "hidden col-span-3 text-right text-sm text-gray-500 dark:text-gray-400",
+                                                                    "className": "hidden col-span-3 text-right text-sm text-muted",
                                                                     "title": "{{post.created_at ?? ''}}"
                                                                 },
                                                                 "text": "{{post.created_at_formatted ?? ''}}"
@@ -485,13 +472,11 @@
                                                                 "name": "Div",
                                                                 "responsive": {
                                                                     "768-": {
-                                                                        "props": {
-                                                                            "className": "hidden items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1"
-                                                                        }
+                                                                        "classMerge": "hidden"
                                                                     }
                                                                 },
                                                                 "props": {
-                                                                    "className": "flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                                    "className": "flex items-center gap-3 text-xs text-muted mt-1"
                                                                 },
                                                                 "children": [
                                                                     {

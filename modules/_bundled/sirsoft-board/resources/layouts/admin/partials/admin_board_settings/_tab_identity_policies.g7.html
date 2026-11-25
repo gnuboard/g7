@@ -15,7 +15,7 @@
         <span class="board:text-xs board-tone-warning">$t:sirsoft-board.admin.settings.identity.read_only_notice</span>
       </div>
       <div class="board-card-description">$t:sirsoft-board.admin.settings.identity.purposes_section_description</div>
-      <div data-ref="page_header" class="board:flex board:flex-col board:gap-2 board:mb-6">
+      <div data-ref="identity_policies_header" class="board:flex board:flex-col board:gap-2 board:mb-6">
         <responsive on="768-" class="board:flex board:gap-2 board:flex-row board:items-center board:justify-between board:mb-6"/>
         <div>
           <h3 class="board-section-title">$t:admin.identity.policies.page_title</h3>
@@ -72,10 +72,10 @@
         </div>
       </div>
       <div data-ref="filter_card" class="board:bg-gray-50 board:dark:bg-gray-900 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-lg board:p-4 board:mb-6 board:flex board:flex-col board:gap-2">
-        <responsive on="768-" class="board:bg-gray-50 board:dark:bg-gray-900 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-lg board:p-4 board:mb-6 board:flex board:gap-2 board:flex-row board:items-center"/>
+        <responsive on="768-" class-merge="board:flex-row board:items-center"/>
         <!-- 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 실측). 값은 쿼리로만 다룬다. -->
         <select name="filter.scope" aria-label="$t:admin.identity.policies.col.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="board:text-gray-700 board:dark:text-gray-200 board:w-full board:px-3 board:py-2 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800 board:text-sm">
-          <responsive on="768-" class="board:text-gray-700 board:dark:text-gray-200 board:w-40 board:px-3 board:py-2 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800 board:text-sm"/>
+          <responsive on="768-" class-merge="board:w-40"/>
           <options>
             <option value="">$t:admin.identity.policies.all_scopes</option>
             <option value="route">$t:admin.identity.policies.scope.route</option>
@@ -97,7 +97,7 @@
         </select>
         <!-- 검색칸도 설정 폼의 일부가 아니다 — 입력 중인 검색어는 로컬 상태에만 담고(자동바인딩 대신 직접 받는다), 조회는 Enter 나 검색 버튼이 쿼리로 실어 낸다. 코어 환경설정과 같은 방식. -->
         <input type="text" name="filter.search" :autoBinding="false" value="{{_local.identityPolicySearch ?? query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="board-input">
-          <responsive on="768-" class="board-input board:flex-1 board:min-w-[200px]"/>
+          <responsive on="768-" class-merge="board:flex-1 board:min-w-[200px]"/>
           <on type="change">
             <!-- 입력 중인 검색어를 로컬 상태에 받아 둔다 — 조회는 Enter 나 검색 버튼이 이 값을 쿼리로 실어 낸다 -->
             <set-state target="local" identityPolicySearch="{{$event.target.value}}"/>
@@ -115,7 +115,7 @@
             </navigate>
           </on>
         </input>
-        <button type="button" class="board:px-4 board:py-2 board:text-sm board:font-medium board:bg-gray-900 board:dark:bg-white board:text-white board:dark:text-gray-900 board:rounded-lg board:hover:bg-gray-800 board:dark:hover:bg-gray-100">
+        <button type="button" class="board-btn board-btn-primary">
           <on type="click">
             <!-- Enter 키와 같이 입력값을 쿼리로 실어 옮긴다 — 다시 받기만 하면 입력 중인 검색어가 반영되지 않는다. -->
             <navigate path="/admin/boards/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="boardIdentityPolicies">
@@ -130,7 +130,7 @@
           </on>
           <span>$t:common.search</span>
         </button>
-        <button data-if="{{(query.scope ?? '') !== '' || (query.search ?? '') !== ''}}" type="button" class="board:px-4 board:py-2 board:text-sm board:font-medium board:bg-white board:dark:bg-gray-800 board:border board:border-gray-300 board:dark:border-gray-600 board:text-gray-700 board:dark:text-gray-200 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
+        <button data-if="{{(query.scope ?? '') !== '' || (query.search ?? '') !== ''}}" type="button" class="board-btn board-btn-secondary">
           <on type="click">
             <!-- 입력창의 미제출 검색어도 함께 비운다 — 상태만 남으면 초기화가 안 된 것으로 보인다. -->
             <set-state target="local" identityPolicySearch=""/>
@@ -170,7 +170,7 @@
             <tbody>
               <tr data-each="policy in boardIdentityPolicies?.data?.data ?? []" class="board:border-t board:border-gray-200 board:dark:border-gray-700 board:hover:bg-gray-50 board:dark:hover:bg-gray-700/30">
                 <td class="board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300 board:font-mono board:text-xs">{{policy.key ?? ''}}</td>
-                <td class="board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300">$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</td>
+                <td class="board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300"><span>$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</span><span data-if="{{policy.scope === 'custom' &amp;&amp; policy.checkpoint_registered === false}}" class="board:ml-1 board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-amber-100 board:text-amber-800 board:dark:bg-amber-900/30 board:dark:text-amber-300">$t:admin.identity.policies.checkpoint_missing</span></td>
                 <td class="board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300 board:font-mono board:text-xs board:truncate board:max-w-xs">{{policy.target ?? ''}}</td>
                 <td class="board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300">{{(boardIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}</td>
                 <td class="board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300 board:text-right">{{policy.grace_minutes ?? 0}}</td>
@@ -261,8 +261,8 @@
               <div class="board:flex-1 board:min-w-0">
                 <div class="board-text-primary board:font-mono board:text-xs board:break-all board-break-all">{{policy.key ?? ''}}</div>
                 <div class="board-form-hint">
-                  <span>$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</span>
-                  <span class="board:mx-1.5 board:text-gray-500 board:dark:text-gray-400">·</span>
+                  <span>$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</span><span data-if="{{policy.scope === 'custom' &amp;&amp; policy.checkpoint_registered === false}}" class="board:ml-1 board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-amber-100 board:text-amber-800 board:dark:bg-amber-900/30 board:dark:text-amber-300">$t:admin.identity.policies.checkpoint_missing</span>
+                  <span class="board:mx-1.5 board-text-muted">·</span>
                   <span class="board:font-mono board:break-all board-break-all">{{policy.target ?? ''}}</span>
                 </div>
               </div>
@@ -271,10 +271,10 @@
             <div class="board-flex-between board:gap-3">
               <div class="board-text-tertiary">
                 <span>{{(boardIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}</span>
-                <span class="board:mx-1.5 board:text-gray-500 board:dark:text-gray-400">·</span>
+                <span class="board:mx-1.5 board-text-muted">·</span>
                 <span>$t:admin.identity.policies.col.grace_minutes</span>
                 <span class="board:ml-1 board:font-medium board:text-gray-700 board:dark:text-gray-300">{{policy.grace_minutes ?? 0}}</span>
-                <span class="board:mx-1.5 board:text-gray-500 board:dark:text-gray-400">·</span>
+                <span class="board:mx-1.5 board-text-muted">·</span>
                 <span>$t:admin.identity.policies.col.priority</span>
                 <span class="board:ml-1 board:font-medium board:text-gray-700 board:dark:text-gray-300 board:tabular-nums">{{policy.priority ?? 100}}</span>
               </div>

@@ -209,7 +209,7 @@
                         ],
                         "props": {
                             "type": "button",
-                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                            "className": "board-btn board-btn-secondary",
                             "disabled": "{{_global.isSaving}}"
                         },
                         "children": [

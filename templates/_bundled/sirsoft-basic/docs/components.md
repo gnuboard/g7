@@ -143,7 +143,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | `Textarea` | 텍스트 영역 | label, error | - |
 | `Checkbox` | 체크박스 | label | checked |
 | `PasswordInput` | 비밀번호 입력 (보기/숨기기, 조건 검증, 확인 일치) | label, error, showToggle, showValidation, isConfirmField, confirmTarget, showRules, ... | - |
-| `Button` | 버튼 | variant, size | - |
+| `Button` | 버튼 | variant (`primary`\|`secondary`\|`danger`\|`success`\|`ghost`\|`outline`\|`accent` — 적으면 `btn btn-{variant}` 를 붙이고, 생략하면 className 만 쓴다. accent 는 포인트 색), size (`sm`\|`md`\|`lg` — sm 은 `btn-sm`, lg 는 `btn-lg`) | - |
 
 #### 미디어
 
@@ -180,11 +180,11 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
-| `Header` | 사이트 헤더 (로고, 네비게이션, 검색, 사용자 메뉴). 탭 줄은 `menu`(템플릿 설정 `header.menu` 를 `_user_base` 계산값 `siteMenu` 로 거른 값) 순서대로 그리고, 하위 메뉴가 있는 링크는 펼침 메뉴(Esc·바깥 누르기로 닫힘), 자동 항목 `home`·`popular`·`shop`·`boards` 는 그 자리에서 편다 | siteName, menu, boards, maxVisibleBoards, boardEnabled, shopEnabled, searchEnabled, seoMenuLinks(봇 화면 전용) |
+| `Header` | 사이트 헤더 (로고, 네비게이션, 검색, 사용자 메뉴). 탭 줄은 `menu`(템플릿 설정 `header.menu` 를 `_user_base` 계산값 `siteMenu` 로 거른 값) 순서대로 그리고, 하위 메뉴가 있는 링크는 펼침 메뉴(Esc·바깥 누르기로 닫힘), 자동 항목 `home`·`popular`·`shop`·`coupons`(쿠폰존 — 쇼핑 주소 아래 `/coupons`, 쇼핑몰 모듈이 꺼지면 숨김, 1.4.1)·`boards` 는 그 자리에서 편다. `coupons` 는 헤더 메뉴 편집기의 자동 항목에만 있고 기본 메뉴에는 들어 있지 않다 | siteName, menu, boards, maxVisibleBoards, boardEnabled, shopEnabled, searchEnabled, seoMenuLinks(봇 화면 전용) |
 | `Footer` | 사이트 푸터 (저작권, 링크, 소셜, 사업자 정보) — `businessInfo` 의 값 있는 항목만 「라벨: 값」 줄로, 모두 비거나 `null` 이면 블록째 숨김 | siteName, boardEnabled, pageEnabled, businessInfo |
 | `MobileNav` | 모바일 네비게이션 드로어 — 번들 레이아웃은 쓰지 않는다(모바일 서랍은 `_user_base` 레이아웃 노드). 상점 링크가 `/shop` 고정이고 모듈 활성 props 가 없다 | - |
 
-- **모듈 활성 props(1.3.0)**: `Header` 의 `boardEnabled`(인기글·게시판 탭)·`shopEnabled`(쇼핑 탭·장바구니·회원 메뉴의 주문내역·위시리스트·비회원 주문조회)·`searchEnabled`(검색칸), `Footer` 의 `boardEnabled`(커뮤니티 묶음)·`pageEnabled`(정보·정책 묶음)는 `false` 일 때 그 항목을 그리지 않는다. 기본값은 모두 `true` 다 — `_user_base` 는 `{{_global.activeModules?.includes('sirsoft-board') ?? true}}` 식으로 넘기고(검색칸은 게시판·쇼핑몰·페이지 중 하나라도), 새 바인딩이 없는 옛 레이아웃(keep 업데이트)에서는 지금처럼 보인다. `Footer` 에 `linkGroups` 를 직접 넘기면 플래그와 무관하게 그대로 그린다. 측정용 표식: 장바구니 `data-testid="header-cart"`, 검색칸 `data-testid="header-search"`, 탭 `nav-home`·`nav-popular`·`nav-shop`. 회귀 테스트: `__tests__/components/HeaderFooterModuleFlags.test.tsx`.
+- **모듈 활성 props(1.3.0)**: `Header` 의 `boardEnabled`(인기글·게시판 탭)·`shopEnabled`(쇼핑 탭·장바구니·회원 메뉴의 주문내역·위시리스트·비회원 주문조회)·`searchEnabled`(검색칸), `Footer` 의 `boardEnabled`(커뮤니티 묶음)·`pageEnabled`(정보·정책 묶음)는 `false` 일 때 그 항목을 그리지 않는다. 기본값은 모두 `true` 다 — `_user_base` 는 `{{_global.activeModules?.includes('sirsoft-board') ?? true}}` 식으로 넘기고(검색칸은 게시판·쇼핑몰·페이지 중 하나라도), 새 바인딩이 없는 옛 레이아웃(keep 업데이트)에서는 지금처럼 보인다. `Footer` 에 `linkGroups` 를 직접 넘기면 플래그와 무관하게 그대로 그린다. 측정용 표식: 장바구니 `data-testid="header-cart"`, 검색칸 `data-testid="header-search"`, 탭 `nav-home`·`nav-popular`·`nav-shop`·`nav-coupons`. 회귀 테스트: `__tests__/components/HeaderFooterModuleFlags.test.tsx`.
 
 - **`Header` 언어 메뉴와 장바구니 단추**: 언어 단추는 `aria-haspopup="listbox"` 와 펼쳤을 때 `aria-controls` 로 목록을 가리키고, 목록은 `role="listbox"`(이름 = 언어), 항목은 `role="option"` + `aria-selected` 다. 단추에서 ↓/↑·Enter·Space 로 열면 현재 언어 항목에 초점이 가고, 목록 안에서 ↓/↑·Home·End 로 옮기며 Enter 로 고른다. Esc 는 닫고 단추로 초점을 돌리고, 고른 뒤에도 초점은 단추로 돌아온다. 아이콘만 있는 장바구니 단추의 이름은 `nav.cart_with_count`(담긴 수 포함), 좁은 폭에서 그리는 메뉴 단추의 이름은 `user.menu` 다. 회귀 테스트: `src/components/composite/__tests__/HeaderLanguageListbox.test.tsx`.
 - **모바일 머리글(`_user_base` 레이아웃)**: 아이콘만 있는 단추는 다국어 `aria-label` 을 갖는다 — 장바구니 `nav.cart_with_count`(담긴 수), 사용자 `common.mypage`/`common.login`(로그인 여부는 `_global.currentUser?.uuid` 로 가린다 — 비회원의 `currentUser` 는 빈 값이어도 참으로 읽힌다), 메뉴 `user.menu` + `aria-expanded`(드로어 열림), 드로어 닫기 `nav.close_menu`. 드로어 언어 칩(`role="option"`)을 감싼 목록은 `role="listbox"`(이름 `common.language`)다. 회귀 테스트: `__tests__/layouts/user-base-mobile-header-a11y.test.ts`.

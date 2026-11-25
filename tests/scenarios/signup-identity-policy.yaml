@@ -9,7 +9,7 @@ description: |
 coverage_strategy: pairwise
 
 axes:
-  case: [no_policy, before_submit_no_token, before_submit_mail_token, before_submit_non_mail_token, before_submit_token_past_grace, before_submit_target_mismatch, after_create_pending, after_create_mail_verify, after_create_generic_enforcer, repository_mark_twice, before_submit_mark_fails, before_submit_input_errors_first]
+  case: [no_policy, before_submit_no_token, before_submit_mail_token, before_submit_non_mail_token, before_submit_token_past_grace, before_submit_target_mismatch, after_create_pending, after_create_mail_verify, after_create_generic_enforcer, after_create_response_challenge, after_create_guest_resend, repository_mark_twice, before_submit_mark_fails, before_submit_input_errors_first]
 
 effects:
   - signup_without_policy_active_email_unverified
@@ -20,6 +20,8 @@ effects:
   - signup_token_bypasses_grace_window
   - signup_token_target_mismatch_blocked
   - signup_after_create_pending_with_challenge
+  - signup_after_create_response_carries_challenge
+  - signup_after_create_resend_binds_pending_user
   - signup_after_create_verify_activates_and_marks_email
   - after_register_not_enforced_by_generic_listener
   - mark_email_verified_records_once

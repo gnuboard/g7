@@ -53,7 +53,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | name | object | `{"ko":"대시보드","en":"Dashboard","ja":"ダッシュボード"}` | 메뉴 이름 (다국어 JSON) |
 | slug | string | `admin-dashboard` | 메뉴 슬러그 |
 | url | string | `/admin/dashboard` | 메뉴 URL |
-| icon | string | `fas fa-tachometer-alt` | 메뉴 아이콘 |
+| icon | string \| null | `fas fa-tachometer-alt` | 호환 아이콘 — Font Awesome 클래스일 때만 문자열, 이미지·SVG 아이콘이면 null (구조형은 `icon_spec`) |
+| icon_spec | object \| null | `{"type":"class","value":"fas fa-users"}` | 구조형 아이콘 — class·image(`url` 은 응답 시점에 만든 표시 주소)·svg. 아이콘이 없으면 null |
 | order | integer | `1` | 메뉴 순서 |
 | is_active | boolean | `true` | active 여부 |
 | parent_id | null | `null` | 상위 메뉴 ID |
@@ -204,7 +205,8 @@ HTTP/1.1 200
 | name | body | string | 예 | — | 대상의 이름/명칭 |
 | slug | body | string | 예 | max 255 | URL 친화 식별자 (slug) |
 | url | body | string | 아니오 | max 500 | URL |
-| icon | body | string | 아니오 | max 100 | 아이콘 |
+| icon | body | string | 아니오 | max 100, Font Awesome 클래스 형식만 | 아이콘 — Font Awesome 클래스(`fas fa-house`). 이미지 경로·SVG·외부 주소는 422 (`icon_spec` 사용) |
+| icon_spec | body | object \| null | 아니오 | `type`: `class`·`image`·`svg` | 구조형 아이콘 — 있으면(null 포함) `icon` 보다 우선. `{type:"class",value}` / `{type:"image",source:"site",path:"/…png"}` / `{type:"image",source:"attachment",attachment_id}` / `{type:"svg",value:"<svg…"}`. null 이면 아이콘 지우기 |
 | parent_id | body | integer | 아니오 | — | parent 식별자 |
 | order | body | integer | 아니오 | min 0 | 표시 정렬 순서 값 (작을수록 우선) |
 | is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
@@ -249,7 +251,8 @@ _단건 응답: `data` 객체의 필드._
 | name | object | `{"ko":"실측 예시값","en":"실측 예시값"}` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
 | slug | string | `probe_6a71e0d4afdbc` | URL 친화 식별자 (slug) |
 | url | string | `https://example.com` | 메뉴 URL |
-| icon | string | `실측 예시값` | 아이콘 식별자 (아이콘 클래스/이름) |
+| icon | string \| null | `fas fa-users` | 호환 아이콘 — Font Awesome 클래스일 때만 문자열, 이미지·SVG 아이콘이면 null (구조형은 `icon_spec`) |
+| icon_spec | object \| null | `{"type":"class","value":"fas fa-users"}` | 구조형 아이콘 — class·image(`url` 은 응답 시점에 만든 표시 주소)·svg. 아이콘이 없으면 null |
 | order | integer | `1` | 메뉴 순서 |
 | is_active | boolean | `true` | active 여부 |
 | parent_id | integer | `1` | parent 식별자 (연관 리소스 참조) |
@@ -338,6 +341,83 @@ HTTP/1.1 201
 
 새 메뉴를 생성한다. `name` 은 다국어 값(문자열로 보내면 지원 로케일 전체에 동일 값으로 자동 확장)이며 `slug` 는 `menus` 테이블 내 유일해야 한다. `parent_id` 로 하위 메뉴를 만들 수 있고, `roles` 배열로 이 메뉴 노출을 허용할 역할 ID 를 지정한다. 성공 시 `201` 과 함께 생성된 메뉴(관계 eager-load 포함)를 `MenuResource` 로 반환한다. 관리자 메뉴 관리 화면의 메뉴 추가 폼에서 소비된다. 인증 계약: `auth:sanctum` + `permission:core.menus.create`. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「메뉴 이름의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the menu name field is required.").
 
+메뉴 아이콘은 `icon`(Font Awesome 클래스 문자열, 종전 호환) 또는 `icon_spec`(구조형)으로 보낸다. `icon_spec` 이 있으면 `icon` 은 무시된다. 이미지는 `/` 로 시작하는 사이트 안 경로(png·webp·jpg·gif)나 업로드 응답의 첨부만 받고, 외부 주소(`http(s)://`·`//`·`data:`)·SVG 확장자 이미지·다른 메뉴에 묶인 첨부는 422 다. SVG 코드는 32KB 이하이고 스크립트·이벤트 속성·외부 참조·`style`·`use`·`image`·애니메이션 요소가 없어야 한다. 확장이 선언한 이미지(`source: package`)는 수정 화면이 그대로 되돌려 보내는 경우만 통과한다. 저장값은 키 사전순 정규형이라 같은 아이콘을 다른 모양으로 다시 보내도 사용자 수정으로 기록되지 않는다. 수정 요청에 `icon_spec` 없이 `icon: null` 만 보내면 — 아이콘 칸을 모르는 화면이 응답의 `icon`(이미지·SVG 아이콘이면 null)을 그대로 되돌려 보내는 경우 — 이미지·SVG 아이콘은 그대로 두고, Font Awesome 클래스 아이콘은 종전대로 지운다. 아이콘 종류와 상관없이 지우려면 `icon_spec: null` 을 보낸다.
+
+
+### POST /api/admin/menus/icon-upload
+<!-- @generated:start:api.admin.menus.icon-upload -->
+- **라우트명**: `api.admin.menus.icon-upload`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\MenuController@uploadIcon`
+- **인증/권한**: `auth:sanctum` + `permission:core.menus.create|core.menus.update` (둘 중 하나)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| file | body | file | 예 | png·webp·jpg·jpeg·gif(1MB 이하) / svg(32KB 이하, 안전 검사) | 메뉴 아이콘 파일 (multipart/form-data) |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.menu.upload_icon_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/admin/menus/icon-upload HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: multipart/form-data; boundary=----g7
+
+------g7
+Content-Disposition: form-data; name="file"; filename="menu.png"
+Content-Type: image/png
+
+(binary)
+------g7--
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| icon_spec | object | `{"type":"image","source":"attachment","attachment_id":12,"hash":"…","url":"/api/attachment/…"}` | 메뉴 저장 요청의 `icon_spec` 에 그대로 실어 보낼 구조형 아이콘. 래스터는 첨부(`source: attachment`), SVG 는 파일 없이 `{type:"svg",value}` |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "아이콘을 올렸습니다. 메뉴를 저장해야 반영됩니다.",
+    "data": {
+        "icon_spec": {
+            "type": "image",
+            "source": "attachment",
+            "attachment_id": 12,
+            "hash": "aB3dE5fG7hI9",
+            "url": "/api/attachment/aB3dE5fG7hI9"
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | `core.menus.create`·`core.menus.update` 어느 권한도 없는 경우 |
+| 422 | Unprocessable Entity | 형식 밖 파일, 1MB 초과, 이름과 내용 형식 불일치(`.png` 로 이름 바꾼 SVG), 안전하지 않은 SVG(스크립트·외부 참조·style 등), 32KB 초과 SVG |
+
+<!-- @generated:end -->
+
+
+
+**설명**
+
+메뉴 아이콘 파일을 받아 메뉴 저장에 쓸 `icon_spec` 을 돌려준다. 이 호출만으로는 어느 메뉴에도 반영되지 않으며, 메뉴 생성·수정 요청의 `icon_spec` 에 응답 값을 실어 저장해야 그 메뉴에 묶인다. PNG·WebP·JPG·GIF 는 코어 첨부(collection `menu_icons`)로 저장되고 `<img>` 로 그려진다. SVG 파일은 첨부 SVG 가 내려받기로만 서빙되는 정책 때문에 파일로 저장하지 않고, 내용을 검사한 뒤 인라인 SVG 코드(`{type:"svg",value}`)로 돌려준다. 올리고 저장하지 않은 래스터는 미연결 첨부로 남아 남는 첨부 정리(`attachments:prune-orphans`, 환경설정에서 켰을 때)가 지운다. 업로드 이미지는 해시 주소로 공개 서빙되므로 민감한 이미지를 올리지 않는다. 인증 계약: `auth:sanctum` + `permission:core.menus.create|core.menus.update`(OR).
 
 ### GET /api/admin/menus/active
 <!-- @generated:start:api.admin.menus.active -->
@@ -366,7 +446,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | name | object | `{"ko":"대시보드","en":"Dashboard","ja":"ダッシュボード"}` | 메뉴 이름 (다국어 JSON) |
 | slug | string | `admin-dashboard` | 메뉴 슬러그 |
 | url | string | `/admin/dashboard` | 메뉴 URL |
-| icon | string | `fas fa-tachometer-alt` | 메뉴 아이콘 |
+| icon | string \| null | `fas fa-tachometer-alt` | 호환 아이콘 — Font Awesome 클래스일 때만 문자열, 이미지·SVG 아이콘이면 null (구조형은 `icon_spec`) |
+| icon_spec | object \| null | `{"type":"class","value":"fas fa-users"}` | 구조형 아이콘 — class·image(`url` 은 응답 시점에 만든 표시 주소)·svg. 아이콘이 없으면 null |
 | order | integer | `1` | 메뉴 순서 |
 | is_active | boolean | `true` | active 여부 |
 | children | array | `[]` | 하위 항목 배열 (계층 트리 — children 관계 파생) |
@@ -495,7 +576,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + 컬렉션 레벨 `data.a
 | name | object | `{"ko":"게시판 관리","en":"Board Management"}` | 메뉴 이름 (다국어 JSON) |
 | slug | string | `sirsoft-board` | 메뉴 슬러그 |
 | url | string \| null | `null` | 메뉴 URL (그룹 메뉴는 null) |
-| icon | string \| null | `fas fa-clipboard-list` | 메뉴 아이콘 (Font Awesome 클래스) |
+| icon | string \| null | `fas fa-clipboard-list` | 호환 아이콘 — Font Awesome 클래스일 때만 문자열, 이미지·SVG 아이콘이면 null (구조형은 `icon_spec`) |
+| icon_spec | object \| null | `{"type":"class","value":"fas fa-users"}` | 구조형 아이콘 — class·image(`url` 은 응답 시점에 만든 표시 주소)·svg. 아이콘이 없으면 null |
 | order | integer | `30` | 메뉴 순서 (작을수록 우선 — `order` 오름차순 정렬) |
 | is_active | boolean | `true` | 활성 여부 |
 | parent_id | integer \| null | `null` | 상위 메뉴 ID (최상위는 null) |
@@ -623,7 +705,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | name | object | `{"ko":"대시보드","en":"Dashboard","ja":"ダッシュボード"}` | 메뉴 이름 (다국어 JSON) |
 | slug | string | `admin-dashboard` | 메뉴 슬러그 |
 | url | string | `/admin/dashboard` | 메뉴 URL |
-| icon | string | `fas fa-tachometer-alt` | 메뉴 아이콘 |
+| icon | string \| null | `fas fa-tachometer-alt` | 호환 아이콘 — Font Awesome 클래스일 때만 문자열, 이미지·SVG 아이콘이면 null (구조형은 `icon_spec`) |
+| icon_spec | object \| null | `{"type":"class","value":"fas fa-users"}` | 구조형 아이콘 — class·image(`url` 은 응답 시점에 만든 표시 주소)·svg. 아이콘이 없으면 null |
 | order | integer | `1` | 메뉴 순서 |
 | is_active | boolean | `true` | active 여부 |
 | children | array | `[]` | 하위 항목 배열 (계층 트리 — children 관계 파생) |
@@ -926,7 +1009,8 @@ _단건 응답: `data` 객체의 필드._
 | name | object | `{"ko":"게시판 관리","en":"Board Management"}` | 메뉴 이름 (다국어 JSON) |
 | slug | string | `sirsoft-board` | 메뉴 슬러그 |
 | url | string | `/admin/dashboard` | 메뉴 URL |
-| icon | string | `fas fa-clipboard-list` | 메뉴 아이콘 |
+| icon | string \| null | `fas fa-clipboard-list` | 호환 아이콘 — Font Awesome 클래스일 때만 문자열, 이미지·SVG 아이콘이면 null (구조형은 `icon_spec`) |
+| icon_spec | object \| null | `{"type":"class","value":"fas fa-users"}` | 구조형 아이콘 — class·image(`url` 은 응답 시점에 만든 표시 주소)·svg. 아이콘이 없으면 null |
 | order | integer | `30` | 메뉴 순서 |
 | is_active | boolean | `true` | active 여부 |
 | parent_id | null | `null` | 상위 메뉴 ID |
@@ -1072,7 +1156,8 @@ HTTP/1.1 200
 | name | body | string | 아니오 | — | 대상의 이름/명칭 |
 | slug | body | string | 예 | max 255 | URL 친화 식별자 (slug) |
 | url | body | string | 아니오 | max 500 | URL |
-| icon | body | string | 아니오 | max 100 | 아이콘 |
+| icon | body | string | 아니오 | max 100, Font Awesome 클래스 형식만 | 아이콘 — Font Awesome 클래스(`fas fa-house`). 이미지 경로·SVG·외부 주소는 422 (`icon_spec` 사용) |
+| icon_spec | body | object \| null | 아니오 | `type`: `class`·`image`·`svg` | 구조형 아이콘 — 있으면(null 포함) `icon` 보다 우선. `{type:"class",value}` / `{type:"image",source:"site",path:"/…png"}` / `{type:"image",source:"attachment",attachment_id}` / `{type:"svg",value:"<svg…"}`. null 이면 아이콘 지우기 |
 | parent_id | body | integer | 아니오 | — | parent 식별자 |
 | order | body | integer | 아니오 | min 0 | 표시 정렬 순서 값 (작을수록 우선) |
 | is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
@@ -1117,7 +1202,8 @@ _단건 응답: `data` 객체의 필드 (갱신된 메뉴를 `MenuResource` 로 
 | name | object | `{"ko":"API 문서 샘플 메뉴","en":"API Doc Sample Menu"}` | 메뉴 이름 (다국어 JSON) |
 | slug | string | `apidoc-sample-menu` | 메뉴 슬러그 |
 | url | string \| null | `/admin/apidoc-sample` | 메뉴 URL |
-| icon | string \| null | `fas fa-book` | 메뉴 아이콘 |
+| icon | string \| null | `fas fa-book` | 호환 아이콘 — Font Awesome 클래스일 때만 문자열, 이미지·SVG 아이콘이면 null (구조형은 `icon_spec`) |
+| icon_spec | object \| null | `{"type":"class","value":"fas fa-users"}` | 구조형 아이콘 — class·image(`url` 은 응답 시점에 만든 표시 주소)·svg. 아이콘이 없으면 null |
 | order | integer | `35` | 메뉴 순서 |
 | is_active | boolean | `true` | 활성 여부 |
 | parent_id | integer \| null | `null` | 상위 메뉴 ID |
@@ -1202,6 +1288,8 @@ HTTP/1.1 200
 
 기존 메뉴 정보를 수정한다. `{menu}` 는 라우트 모델 바인딩으로 해석되며, 전달된 필드만 갱신한다. `slug` 는 여전히 유일해야 하고, `roles` 배열을 보내면 이 메뉴 노출이 허용된 역할 목록을 교체한다. 성공 시 갱신된 메뉴를 관계 eager-load 포함해 `MenuResource` 로 반환하고, 실패 시 `menu.update_failed`(422 검증 오류 포함)를 반환한다. 관리자 메뉴 관리 화면의 메뉴 편집 폼 저장에서 소비된다. 인증 계약: `auth:sanctum` + `permission:core.menus.update`. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「메뉴 이름의 한국어(ko) 값은 필수입니다.」).
 
+메뉴 아이콘은 `icon`(Font Awesome 클래스 문자열, 종전 호환) 또는 `icon_spec`(구조형)으로 보낸다. `icon_spec` 이 있으면 `icon` 은 무시된다. 이미지는 `/` 로 시작하는 사이트 안 경로(png·webp·jpg·gif)나 업로드 응답의 첨부만 받고, 외부 주소(`http(s)://`·`//`·`data:`)·SVG 확장자 이미지·다른 메뉴에 묶인 첨부는 422 다. SVG 코드는 32KB 이하이고 스크립트·이벤트 속성·외부 참조·`style`·`use`·`image`·애니메이션 요소가 없어야 한다. 확장이 선언한 이미지(`source: package`)는 수정 화면이 그대로 되돌려 보내는 경우만 통과한다. 수정에서 현재 저장값을 그대로 되돌려 보낸 `icon`·`icon_spec` 은 형식 검사를 하지 않는다(예전에 저장된 비클래스 값이 남은 메뉴의 이름만 고치는 경우). 저장값은 키 사전순 정규형이라 같은 아이콘을 다른 모양으로 다시 보내도 사용자 수정으로 기록되지 않는다.
+
 `parent_id` 에는 자기 자신이나 자신의 하위 메뉴를 지정할 수 없다. 순환이 만들어지는 요청은 422(`parent_id`)로 거절되며, 순서 변경 엔드포인트(`PUT /api/admin/menus/order`)와 동일한 기준이 적용된다.
 
 
@@ -1236,7 +1324,8 @@ _단건 응답: `data` 객체의 필드._
 | name | object | `{"ko":"게시판 관리","en":"Board Management"}` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
 | slug | string | `sirsoft-board` | URL 친화 식별자 (slug) |
 | url | string | `/admin/dashboard` | 메뉴 URL |
-| icon | string | `fas fa-clipboard-list` | 아이콘 식별자 (아이콘 클래스/이름) |
+| icon | string \| null | `fas fa-clipboard-list` | 호환 아이콘 — Font Awesome 클래스일 때만 문자열, 이미지·SVG 아이콘이면 null (구조형은 `icon_spec`) |
+| icon_spec | object \| null | `{"type":"class","value":"fas fa-users"}` | 구조형 아이콘 — class·image(`url` 은 응답 시점에 만든 표시 주소)·svg. 아이콘이 없으면 null |
 | order | integer | `30` | 메뉴 순서 |
 | is_active | boolean | `false` | active 여부 |
 | parent_id | null | `null` | parent 식별자 (연관 리소스 참조) |

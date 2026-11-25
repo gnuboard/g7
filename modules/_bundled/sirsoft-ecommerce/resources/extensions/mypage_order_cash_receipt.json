@@ -61,7 +61,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                "className": "ecommerce:text-sm ecommerce-text-muted"
                             },
                             "text": "$t:sirsoft-ecommerce.order.cash_receipt.awaiting_deposit"
                         },
@@ -97,7 +97,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                "className": "ecommerce:text-sm ecommerce-text-muted"
                             },
                             "text": "$t:sirsoft-ecommerce.order.cash_receipt.none"
                         },
@@ -107,9 +107,9 @@
                             "name": "Button",
                             "responsive": {
                                 "portable": {
+                                    "classMerge": "ecommerce:w-full ecommerce:py-2",
                                     "props": {
-                                        "type": "button",
-                                        "className": "ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:rounded-lg ecommerce:bg-blue-600 ecommerce:hover:bg-blue-700 ecommerce:text-white"
+                                        "type": "button"
                                     }
                                 }
                             },
@@ -162,7 +162,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce:text-sm ecommerce-text-muted"
                                     },
                                     "text": "$t:sirsoft-ecommerce.order.cash_receipt.issued_at"
                                 },
@@ -187,7 +187,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce:text-sm ecommerce-text-muted"
                                     },
                                     "text": "$t:sirsoft-ecommerce.order.cash_receipt.purpose"
                                 },
@@ -212,7 +212,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                        "className": "ecommerce:text-sm ecommerce-text-muted"
                                     },
                                     "text": "$t:sirsoft-ecommerce.order.cash_receipt.identifier"
                                 },
@@ -248,11 +248,11 @@
                                     "name": "A",
                                     "responsive": {
                                         "portable": {
+                                            "classMerge": "ecommerce:w-full ecommerce:py-2",
                                             "props": {
                                                 "href": "{{order.data.cash_receipt?.receipt_url}}",
                                                 "target": "_blank",
-                                                "rel": "noopener noreferrer",
-                                                "className": "ecommerce:inline-flex ecommerce:w-full ecommerce:items-center ecommerce:justify-center ecommerce:gap-1 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:rounded-lg ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
+                                                "rel": "noopener noreferrer"
                                             }
                                         }
                                     },
@@ -356,7 +356,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mb-1"
+                                        "className": "ecommerce-user-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.order.cash_receipt.purpose"
                                 },
@@ -461,7 +461,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mb-1"
+                                        "className": "ecommerce-user-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.order.cash_receipt.identifier_type"
                                 },
@@ -499,7 +499,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mb-1"
+                                        "className": "ecommerce-user-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.order.cash_receipt.identifier"
                                 },
@@ -541,7 +541,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                "className": "ecommerce:text-xs ecommerce-text-muted"
                             },
                             "text": "$t:sirsoft-ecommerce.order.cash_receipt.immutable_help"
                         },

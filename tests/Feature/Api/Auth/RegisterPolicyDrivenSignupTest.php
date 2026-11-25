@@ -623,6 +623,99 @@ class RegisterPolicyDrivenSignupTest extends TestCase
     }
 
     /**
+     * 가입 후 인증 정책이 켜지면 가입 응답이 발급된 인증 건(id·만료·표시 방식)을 함께 돌려주고, 꺼져 있으면 싣지 않습니다.
+     * 화면은 이 값으로 가입 직후 코드 입력 화면을 연다(7.2.1).
+     *
+     * @scenario case=after_create_response_challenge
+     *
+     * @effects signup_after_create_response_carries_challenge
+     *
+     * @return void 반환값 없음
+     */
+    public function test_register_response_carries_after_create_challenge(): void
+    {
+        $off = $this->postJson('/api/auth/register', $this->plainBody('off@example.com'))->assertStatus(201);
+        $this->assertNull($off->json('data.identity_challenge'));
+
+        $this->enablePolicy('core.auth.signup_after_create');
+        // 발송이 성공한 건만 싣는다 — 발송부가 성공을 돌려주게 한다(발송 실패면 화면은 종전처럼 로그인 화면으로 간다)
+        $this->mock(\App\Services\IdentityMessageDispatcher::class, fn ($mock) => $mock->shouldReceive('dispatch')->andReturn(true));
+        $on = $this->postJson('/api/auth/register', $this->plainBody('on@example.com'))->assertStatus(201);
+
+        $user = User::where('email', 'on@example.com')->first();
+        $log = IdentityVerificationLog::where('user_id', $user->id)->where('purpose', 'signup')->first();
+        $this->assertNotNull($log);
+        $this->assertSame($log->id, $on->json('data.identity_challenge.id'));
+        $this->assertSame('signup', $on->json('data.identity_challenge.purpose'));
+        $this->assertNotEmpty($on->json('data.identity_challenge.expires_at'));
+        $this->assertNotEmpty($on->json('data.identity_challenge.render_hint'));
+    }
+
+    /**
+     * 비회원 화면의 [코드 다시 받기](대상 이메일만 실음)가 인증 대기 회원의 이메일이면 그 회원에게 묶여, 새 코드로 확인하면 계정이 활성화됩니다.
+     * 없는 이메일은 회원에 묶지 않습니다(응답은 같아 계정 존재가 드러나지 않음).
+     *
+     * @scenario case=after_create_guest_resend
+     *
+     * @effects signup_after_create_resend_binds_pending_user
+     *
+     * @return void 반환값 없음
+     */
+    public function test_guest_resend_binds_to_pending_user_and_activates(): void
+    {
+        $this->enablePolicy('core.auth.signup_after_create');
+        $this->postJson('/api/auth/register', $this->plainBody('pend@example.com'))->assertStatus(201);
+        $user = User::where('email', 'pend@example.com')->first();
+        $this->assertSame(UserStatus::PendingVerification->value, $user->status);
+
+        // 메일 발송 자체는 이 시험의 대상이 아니다 — 발송부가 성공을 돌려주게 한다(재요청이 회원에 묶이는지만 본다)
+        $this->mock(\App\Services\IdentityMessageDispatcher::class, fn ($mock) => $mock->shouldReceive('dispatch')->andReturn(true));
+
+        // 다음 날 다른 브라우저로 돌아온 회원 — 가입 때 열린 세션 없이(비회원) 코드를 다시 받는다
+        $this->flushSession();
+        $this->app['auth']->forgetGuards();
+        $this->travel(20)->minutes();
+
+        $resend = $this->postJson('/api/identity/challenges', ['purpose' => 'signup', 'target' => ['email' => 'pend@example.com']]);
+        $resend->assertStatus(201);
+        $newId = $resend->json('data.id');
+        $log = IdentityVerificationLog::find($newId);
+        $this->assertSame($user->id, $log->user_id, '대기 회원의 재요청은 그 회원에 묶여야 확인 뒤 활성화된다');
+
+        $this->app->make(IdentityVerificationLogRepositoryInterface::class)->updateById($newId, [
+            'metadata' => ['code_hash' => Hash::make('654321')],
+            'status' => IdentityVerificationStatus::Sent->value,
+        ]);
+        $this->postJson("/api/identity/challenges/{$newId}/verify", ['code' => '654321'])->assertStatus(200);
+        $this->assertSame(UserStatus::Active->value, $user->refresh()->status);
+
+        // 없는 이메일은 회원에 묶이지 않는다(응답은 같은 201 이라 계정 존재가 드러나지 않음)
+        $this->flushSession();
+        $this->app['auth']->forgetGuards();
+        $this->travel(20)->minutes();
+        $none = $this->postJson('/api/identity/challenges', ['purpose' => 'signup', 'target' => ['email' => 'nobody@example.com']])->assertStatus(201);
+        $this->assertNull(IdentityVerificationLog::find($none->json('data.id'))->user_id);
+    }
+
+    /**
+     * 약관 동의만 담은 가입 본문을 만듭니다.
+     *
+     * @param  string  $email  가입 이메일
+     * @return array<string, mixed> 가입 요청 본문
+     */
+    private function plainBody(string $email): array
+    {
+        return [
+            'name' => '테스트',
+            'email' => $email,
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'agree_terms' => true,
+            'agree_privacy' => true,
+        ];
+    }
+
+    /**
      * 시드된 정책의 enabled 를 true 로 토글합니다.
      *
      * @param  string  $key  켤 정책 키

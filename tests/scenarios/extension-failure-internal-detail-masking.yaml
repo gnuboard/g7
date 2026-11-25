@@ -7,7 +7,7 @@ description: |
   남긴다. 디버그 모드와 확장이 일부러 던진 사용자용 사유는 종전대로 보인다.
 
 axes:
-  case: [production_masks_db_exception, debug_keeps_raw_detail, domain_reason_kept, seeder_failure_keeps_seeder_name]
+  case: [production_masks_db_exception, debug_keeps_raw_detail, domain_reason_kept, seeder_failure_keeps_seeder_name, core_version_mismatch_kept]
 
 effects:
   - extension_failure_hides_internal_detail

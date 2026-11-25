@@ -17,17 +17,20 @@ import { editorPath as resolveEditorPath } from '../../fixtures/layout-editor';
 // 저장까지 수행하는 테스트는 제품 화면을 오염시키지 않도록 E2E 전용 시드 화면을 쓴다.
 import { SANDBOX_ROOT_ID, sandboxRouteParam } from '../../fixtures/seed-layout';
 
-/** 로그인 카드(Div) — 본문 루트 기준 상대 경로 */
-const CARD_REL = 'children.5.children.0.children.0.children.1';
-
-// 절대 경로의 첫 세그먼트는 베이스 레이아웃 루트 인덱스라 베이스에 컴포넌트가 추가되면 밀린다.
-// 리터럴로 두지 않고 openEditorLogin 이 본문 루트 id 로 해석해 채운다 (사용처는 그대로 읽는다).
+/**
+ * 편집 대상 카드(Div) — E2E 전용 시드 화면의 본문 컨테이너(`e2e_sandbox_root`).
+ *
+ * 종전에는 사용자 템플릿 로그인 화면의 로그인 카드를 썼다. 그 카드는 「로그인한 사용자면 숨김」 조건을 갖는데
+ * 편집기는 관리자 로그인 상태로 미리보기를 그리므로 카드가 그려지지 않아 대상 노드를 찾지 못했다. 시드 화면
+ * 컨테이너는 조건부 숨김이 없고, 로그인 카드처럼 토큰 여러 개를 가진 flex 아닌 Div 라 아래 단언이 그대로 성립한다.
+ * 저장하는 시험은 T15 하나이고 마지막에 돈다 — 그 앞 시험들은 저장하지 않으므로 시드 화면을 바꾸지 않는다.
+ */
 let CARD = '';
 
-async function openEditorLogin(page: Page): Promise<void> {
+async function openEditorSandbox(page: Page): Promise<void> {
   const token = issueToken('core.templates.layouts.edit');
   await authenticatePage(page, token);
-  await page.goto('/admin/layout-editor/sirsoft-basic?route=%2Flogin');
+  await page.goto(`/admin/layout-editor/sirsoft-basic?route=${sandboxRouteParam()}`);
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
   await page.waitForSelector('[data-testid="g7le-preview-frame"]', { timeout: 30_000 });
   await page.waitForFunction(
@@ -35,7 +38,7 @@ async function openEditorLogin(page: Page): Promise<void> {
     { timeout: 20_000 },
   );
 
-  CARD = await resolveEditorPath(page, CARD_REL);
+  CARD = await resolveEditorPath(page, '', SANDBOX_ROOT_ID);
 }
 
 async function openPropsFor(page: Page, editorPath: string): Promise<void> {
@@ -61,7 +64,7 @@ function classOf(page: Page, path: string): Promise<string> {
 test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', () => {
   /** @effects modal_scope_snapshots_toolbar_on_open */
   test('T1: 모달 열면 색 모드 + 디바이스 세부탭 노출(기본 공통/라이트 스냅샷)', async ({ page }) => {
-    await openEditorLogin(page);
+    await openEditorSandbox(page);
     await openPropsFor(page, CARD);
 
     await expect(page.getByTestId('g7le-style-scope-tabs')).toBeVisible();
@@ -78,13 +81,13 @@ test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', (
 
   /** @effects device_scope_writes_responsive_breakpoint_props_base_unchanged */
   test('T2: 디바이스 탭에서 textAlign 변경 → 기본값 className 시드되어 base 토큰 보존(B안)', async ({ page }) => {
-    await openEditorLogin(page);
+    await openEditorSandbox(page);
     await openPropsFor(page, CARD);
 
     // 기본값(공통) 탭으로 전환 후 base className 스냅샷
     await page.getByTestId('g7le-style-bp-base').click();
     const baseClass = await classOf(page, CARD);
-    expect(baseClass.split(/\s+/).length).toBeGreaterThan(2); // 로그인 카드는 여러 토큰
+    expect(baseClass.split(/\s+/).length).toBeGreaterThan(2); // 대상 카드는 여러 토큰
 
     // 태블릿 탭에서 textAlign 변경 — 시드로 base 토큰 전부 보존 + text-center 추가
     await page.getByTestId('g7le-style-bp-tablet').click();
@@ -94,7 +97,7 @@ test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', (
       // 태블릿 폭에서 렌더되도록 상단 디바이스를 태블릿으로
       await page.getByTestId('g7le-device-tablet').click();
       await expect.poll(() => classOf(page, CARD)).toContain('text-center');
-      // base 토큰(예: 로그인 카드의 bg/rounded 등)이 살아있어야 함 — 시드 보존
+      // base 토큰(예: 대상 카드의 bg/rounded 등)이 살아있어야 함 — 시드 보존
       const tabletClass = await classOf(page, CARD);
       const baseTokens = baseClass.split(/\s+/).filter((t) => !t.startsWith('text-'));
       for (const tok of baseTokens) {
@@ -105,7 +108,7 @@ test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', (
 
   /** @effects scope_without_override_shows_base_inherited_value_as_placeholder */
   test('T2b: 디바이스 override 후 "기본값으로 초기화" → 표시점/override 제거', async ({ page }) => {
-    await openEditorLogin(page);
+    await openEditorSandbox(page);
     await openPropsFor(page, CARD);
 
     await page.getByTestId('g7le-style-bp-tablet').click();
@@ -123,7 +126,7 @@ test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', (
 
   /** @effects dark_inline_control_readonly_value_never_overwritten */
   test('T3: 다크 세부탭에서 인라인 색상 컨트롤은 읽기전용 안내', async ({ page }) => {
-    await openEditorLogin(page);
+    await openEditorSandbox(page);
     await openPropsFor(page, CARD);
 
     await page.getByTestId('g7le-style-scheme-dark').click();
@@ -139,7 +142,7 @@ test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', (
 
   /** @effects dark_classToken_coexists_with_light_token_in_one_className */
   test('T3b: 색 컨트롤 classToken — 라이트 프리셋 적용 + 다크 프리셋 dark: 토큰 공존', async ({ page }) => {
-    await openEditorLogin(page);
+    await openEditorSandbox(page);
     await openPropsFor(page, CARD);
 
     // 라이트(기본값) 탭에서 배경색 프리셋 적용 → bg-* classToken
@@ -169,7 +172,7 @@ test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', (
 
   /** @effects custom_range_scope_writes_responsive_range_key */
   test('T6: 커스텀 크기 탭 추가 → 600-900 탭 활성 + 우선순위 안내', async ({ page }) => {
-    await openEditorLogin(page);
+    await openEditorSandbox(page);
     await openPropsFor(page, CARD);
 
     await page.getByTestId('g7le-style-bp-add-custom').click();
@@ -181,8 +184,9 @@ test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', (
     await expect(page.getByTestId('g7le-style-custom-priority-note')).toBeVisible();
   });
 
+  /** @effects visibility_tab_shows_device_subtabs_only_without_color_scheme_row */
   test('T7: 표시조건 탭은 디바이스 세부탭만(색 모드 줄 숨김, D9)', async ({ page }) => {
-    await openEditorLogin(page);
+    await openEditorSandbox(page);
     await openPropsFor(page, CARD);
 
     // visibility 탭으로 전환(있을 때만)
@@ -196,7 +200,7 @@ test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', (
 
   /** @effects preview_color_scheme_toggle_applies_dark_wrapper_to_preview_frame_only */
   test('T12: 툴바 라이트/다크 토글 → 프리뷰 프레임만.g7le-preview-dark (편집기 chrome 비다크 격리)', async ({ page }) => {
-    await openEditorLogin(page);
+    await openEditorSandbox(page);
 
     // 다크 토글 — 프리뷰 프레임에 격리 마커(.g7le-preview-dark) 부여(종전.dark 대체).
     await page.getByTestId('g7le-toolbar-scheme-dark').click();
@@ -225,7 +229,7 @@ test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', (
    */
   /** @effects modal_scope_independent_after_toolbar_change */
   test('T13: 모달 연 뒤 툴바 디바이스를 바꿔도 모달 세부탭은 따라가지 않는다', async ({ page }) => {
-    await openEditorLogin(page);
+    await openEditorSandbox(page);
     await openPropsFor(page, CARD);
 
     // 모달 세부탭을 태블릿으로 고정 (툴바 스냅샷값과 다르게 만든다)
@@ -257,7 +261,7 @@ test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', (
    */
   /** @effects device_flex_disable_writes_explicit_off_token_breaking_base_inheritance */
   test('T14: 디바이스 탭에서 정렬 박스 해제 → 공통 상속을 끊는 명시 해제 토큰이 기록된다', async ({ page }) => {
-    await openEditorLogin(page);
+    await openEditorSandbox(page);
     await openPropsFor(page, CARD);
 
     // 공통(base) 탭에서 정렬 박스를 켠다 — 이 화면 카드가 flex 가 아닐 수 있으므로 전제를 만든다.

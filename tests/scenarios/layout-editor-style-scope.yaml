@@ -37,14 +37,16 @@ exclusions:
 
 effects:
   # 위치 결정 + 무손실
+  # #399 (engine-v1.98.0) — 디바이스 탭 className 편집은 기본 대비 바뀐 토큰만 responsive.{bp}.classMerge 로 저장(종전 B안 시드 대체). 덧붙이기로 못 나타내는 삭제 편집·기존 props.className 구간은 통째 교체 유지
+  - device_scope_class_edit_writes_only_changed_tokens_as_class_merge
   - base_scope_writes_node_props_byte_identical_to_pre_scope
   - device_scope_writes_responsive_breakpoint_props_base_unchanged
   - custom_range_scope_writes_responsive_range_key
   - empty_override_prunes_responsive_branch_keeping_code_authored_keys
-  # B안 시드 + 초기화 + 표시점
-  - device_scope_seeds_base_className_so_base_tokens_survive_shallow_merge
+  # 기본 토큰 보존(engine-v1.98.0 — 종전 B안 시드 대체: 바뀐 토큰만 classMerge) + 초기화 + 표시점
+  - device_scope_keeps_base_tokens_via_class_merge
   - seeded_base_tokens_render_as_placeholder_only_user_changes_are_solid
-  - device_override_is_copy_independent_of_later_base_changes
+  - device_class_merge_follows_later_base_changes_full_replace_branch_stays_copy
   - reset_to_base_clears_device_override_restoring_inheritance
   - reset_dark_clears_only_dark_tokens_keeping_light
   - override_dot_shown_only_when_scope_differs_from_base_not_for_seed_only
@@ -63,6 +65,7 @@ effects:
   # 표시조건
   - device_visibility_if_writes_responsive_breakpoint_if
   - base_if_unchanged_when_device_if_edited
+  - visibility_tab_shows_device_subtabs_only_without_color_scheme_row   # 표시조건 탭에는 디바이스 세부탭만 있고 색 모드 줄은 없다(D9)
   # 스냅샷 독립
   - modal_scope_snapshots_toolbar_on_open
   - modal_scope_independent_after_toolbar_change
@@ -75,6 +78,26 @@ effects:
   - preview_color_scheme_toggle_applies_dark_wrapper_to_preview_frame_only
   # 2026-10-31 issue609 테스트 매핑 부채 정리: 레이아웃 편집기 단위 테스트가 실제로 재는 효과 (메서드 단위 마킹)
   - dark_scope_classToken_control_stays_editable   # 다크 scope 에서도 classToken 컨트롤은 읽기 전용이 아니라 편집된다
+  # #399 선행 마킹 정리: styleScope.test.ts, recipeEngine.scope.test.ts 의 시험마다 재는 효과
+  - scoped_props_read_from_scope_container          # getScopedProps 는 scope 가 가리키는 컨테이너(base props, responsive[bp].props, 범위 키)만 읽고 없으면 빈 객체
+  - scoped_edit_never_mutates_input_node            # scope 편집 함수(withScopedProps, setScopedIf, applyRecipe)는 입력 노드를 바꾸지 않고 복제본을 돌려준다
+  - empty_style_pruned_from_scoped_props            # 편집 뒤 빈 style 객체는 props 에서 지운다
+  - device_scope_edit_leaves_other_breakpoint_branches_untouched  # 한 디바이스 편집이 다른 breakpoint 브랜치를 건드리지 않는다
+  - base_scope_visibility_if_reads_writes_node_if   # 기본 scope 의 표시조건은 node.if 를 읽고 쓴다
+  - cleared_visibility_if_prunes_key_keeping_branch_props  # 표시조건을 비우면 if 키와 빈 브랜치를 지우되 같은 브랜치의 props 는 남긴다
+  - effective_device_visibility_if_falls_back_to_base_only_when_key_absent  # 디바이스 탭 표시조건은 그 브랜치에 if 키가 없을 때만 base if 로 폴백한다(빈 문자열은 명시값)
+  - dark_prefix_helpers_detect_strip_add_idempotently  # dark: 접두 판정, 제거, 멱등 추가 도우미
+  - dark_editable_only_for_classToken_apply_type    # 다크 편집 가능 판정은 classToken 적용 방식만 참이다
+  - scope_breakpoint_validation_accepts_base_preset_and_ordered_range  # scope breakpoint 는 base, preset, min<=max 범위만 유효하다
+  - device_maps_to_scope_breakpoint_preset_or_matching_custom_range  # 미리보기 디바이스를 동명 preset 키나 폭이 맞는 커스텀 범위 키로, 못 찾으면 base 로 바꾼다
+  - reset_on_light_base_scope_returns_node_unchanged  # 라이트 기본값 scope 초기화는 노드를 그대로 돌려준다
+  - branch_separation_merges_only_exact_range_children_branch  # 디바이스 분리 판정은 같은 범위의 children 분기가 있을 때만 해제(merge)다
+  - branch_separation_creates_current_device_branch_with_covering_source_key  # 그 밖에는 현재 디바이스 전용 분기를 만들고(separate) 포괄 분기가 있으면 복제 원본(sourceKey)으로 건넨다
+  - props_only_branch_not_counted_as_separation     # children 없는 props 전용 분기는 분리로 치지 않는다
+  - reverse_resolve_reads_value_from_selected_scope_container  # 역해석은 선택한 scope 컨테이너(base props, responsive 키, dark: 토큰)에서만 값을 읽는다
+  - color_preset_token_replaces_same_group_keeping_other_text_tokens  # 색 프리셋 토큰은 같은 group 토큰만 바꾸고 글자 크기, 정렬 토큰은 둔다
+  - free_hex_color_writes_arbitrary_value_class_token  # 자유 HEX 색은 text-[#hex] 임의값 토큰으로 쓴다
+  - color_class_token_reverse_resolves_preset_and_hex  # 색 classToken 역해석이 프리셋 토큰과 자유 HEX 를 모두 값으로 돌려준다
 
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/spec/styleScope.test.ts

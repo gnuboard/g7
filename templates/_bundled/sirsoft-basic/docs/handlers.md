@@ -5,7 +5,7 @@
 ## 템플릿 전용 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 43개 (정의: `src/handlers/index.ts`).
+핸들러 44개 (정의: `src/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -30,6 +30,7 @@
 | `markLocalOnce` | `sirsoft-basic.markLocalOnce` |
 | `rememberIdentityClaim` | `sirsoft-basic.rememberIdentityClaim` |
 | `restoreIdentityTarget` | `sirsoft-basic.restoreIdentityTarget` |
+| `stashIdentityTarget` | `sirsoft-basic.stashIdentityTarget` |
 | `toggleCartItemSelection` | (템플릿 전용 — 네임스페이스 없음) |
 | `selectAllCartItems` | (템플릿 전용 — 네임스페이스 없음) |
 | `setCartOption` | (템플릿 전용 — 네임스페이스 없음) |

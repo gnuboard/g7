@@ -202,7 +202,6 @@
                 <span class="text-red-600 dark:text-red-400 ml-1">*</span>
               </label>
               <multilingual-input data-type="composite" name="name_raw" placeholder="$t:admin.roles.form.name_placeholder" :maxLength="100" :required="true" layout="tabs" error="{{_global.formErrors?.name || _global.formErrors?.name_raw}}"/>
-              <span data-if="{{_global.formErrors?.name || _global.formErrors?.name_raw}}" class="text-red-600 dark:text-red-400 text-xs">{{_global.formErrors?.name?.[0] ?? _global.formErrors?.name_raw?.[0] ?? ''}}</span>
             </div>
             <div data-ref="identifier_field">
               <label class="form-label">
@@ -210,14 +209,13 @@
                 <span data-if="{{!route?.id}}" class="text-red-600 dark:text-red-400 ml-1">*</span>
               </label>
               <input name="identifier" type="text" placeholder="$t:admin.roles.form.identifier_placeholder" :maxLength="100" disabled="{{!!route?.id}}" error="{{_global.formErrors?.identifier}}" class="input {{_global.formErrors?.identifier ? 'input-error' : ''}}"/>
-              <span data-if="{{_global.formErrors?.identifier}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_global.formErrors?.identifier?.[0] ?? ''}}</span>
+              <span data-if="{{_global.formErrors?.identifier}}" class="form-error">{{_global.formErrors?.identifier?.[0] ?? ''}}</span>
               <span data-if="{{!route?.id}}" class="text-tertiary mt-1">$t:admin.roles.form.identifier_hint</span>
               <span data-if="{{!!route?.id}}" class="text-tertiary mt-1">$t:admin.roles.form.identifier_readonly_hint</span>
             </div>
             <div data-ref="description_field">
               <label class="form-label">$t:admin.roles.form.description</label>
               <multilingual-input data-type="composite" name="description_raw" placeholder="$t:admin.roles.form.description_placeholder" :maxLength="500" inputType="textarea" :rows="3" layout="tabs" error="{{_global.formErrors?.description || _global.formErrors?.description_raw}}"/>
-              <span data-if="{{_global.formErrors?.description || _global.formErrors?.description_raw}}" class="text-red-600 dark:text-red-400 text-xs">{{_global.formErrors?.description?.[0] ?? _global.formErrors?.description_raw?.[0] ?? ''}}</span>
             </div>
             <!-- 비밀번호 만료(#736) — 이 역할을 가진 회원에게 사이트 적용 범위와 다르게 만료를 적용하거나 뺀다. 우선순위는
                  회원 개별 > 역할 > 사이트 범위이고, 한 회원의 역할끼리 부딪치면 「적용」이 이긴다(보안 우선). -->
@@ -277,7 +275,7 @@
                     </set-state>
                   </on>
                 </permission-tree>
-                <div data-if="{{(permissions?.data?.data?.permissions?.[permType]?.permissions ?? []).length === 0}}" class="text-center py-8 text-gray-500 dark:text-gray-400">$t:admin.roles.form.no_permissions_in_type</div>
+                <div data-if="{{(permissions?.data?.data?.permissions?.[permType]?.permissions ?? []).length === 0}}" class="text-center py-8 text-muted">$t:admin.roles.form.no_permissions_in_type</div>
               </div>
             </div>
           </div>
@@ -309,7 +307,7 @@
           </on>
           $t:common.cancel
         </a>
-        <button data-ref="footer_save_button" type="submit" form="role_form" disabled="{{_global.isSaving}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50">
+        <button data-ref="footer_save_button" type="submit" form="role_form" disabled="{{_global.isSaving}}" class="flex-center btn btn-primary">
           <icon data-if="{{!_global.isSaving}}" name="save" size="sm"/>
           <icon data-if="{{_global.isSaving}}" name="spinner" size="sm" :spin="true"/>
           <span>{{_global.isSaving ? $t:common.saving : $t:common.save}}</span>
@@ -324,7 +322,7 @@
           </on>
           $t:common.cancel
         </a>
-        <button type="submit" form="role_form" disabled="{{_global.isSaving}}" class="flex-center flex-1 justify-center gap-2 px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg disabled:opacity-50">
+        <button type="submit" form="role_form" disabled="{{_global.isSaving}}" class="flex-center flex-1 btn btn-primary py-3">
           <icon data-if="{{_global.isSaving}}" name="spinner" size="sm" :spin="true"/>
           <span>{{_global.isSaving ? $t:common.saving : $t:common.save}}</span>
         </button>

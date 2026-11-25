@@ -23,7 +23,7 @@
         </on>
       </select>
       <div class="ecommerce:flex-1"/>
-      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50" disabled="{{!(_local.selectedItems || []).length || !_local.bulkIssueStatus || coupons?.data?.abilities?.can_update !== true}}">
+      <button type="button" class="ecommerce-btn ecommerce-btn-primary" disabled="{{!(_local.selectedItems || []).length || !_local.bulkIssueStatus || coupons?.data?.abilities?.can_update !== true}}">
         <on type="click">
           <!-- 일괄변경 확인 창 열기. 고른 쿠폰과 바꿀 방향을 _global 로 옮겨 담고 연다 — 창은 별도 컨텍스트라 이 목록의 _local 을 보지 못한다. -->
           <sequence>
@@ -135,7 +135,13 @@
       </column>
       <column field="issue_condition_label" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_condition" width="80px">
         <cell>
-          <badge data-type="composite" color="{{row.issue_condition_badge_color}}" text="{{row.issue_condition_label}}"/>
+          <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-1">
+            <badge data-type="composite" color="{{row.issue_condition_badge_color}}" text="{{row.issue_condition_label}}"/>
+            <!-- 생일 쿠폰인데 생일로 쓸 회원 항목이 지정되지 않았다 — 발급되지 않는다(#952) -->
+            <badge data-type="composite" data-ref="birthday_field_missing_badge" data-if="{{row.issue_condition === 'birthday' &amp;&amp; row.birthday_field_configured === false}}" color="yellow" text="$t:sirsoft-ecommerce.admin.promotion_coupon.table.badge.birthday_field_missing"/>
+            <!-- 발급 알림을 켠 쿠폰(#952) -->
+            <badge data-type="composite" data-ref="notify_enabled_badge" data-if="{{row.notify_enabled === true}}" color="purple" text="$t:sirsoft-ecommerce.admin.promotion_coupon.table.badge.notify_enabled"/>
+          </div>
         </cell>
       </column>
       <column field="issue_status_label" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_status" width="80px">
@@ -146,7 +152,7 @@
       <column field="created_at" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.created_at" width="100px"/>
       <column field="created_by_name" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.created_by" width="150px">
         <cell>
-          <span data-if="{{!row.created_by}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">-</span>
+          <span data-if="{{!row.created_by}}" class="ecommerce-text-muted">-</span>
           <action-menu data-type="composite" data-if="{{!!row.created_by}}" position="right">
             <prop name="items">
               <item id="view_member" href="/admin/users/{{row.created_by}}" target="_blank" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member" iconName="user" if="{{!!row.created_by}}"/>
@@ -164,7 +170,7 @@
               </switch>
             </on>
             <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:rounded-lg ecommerce:px-1 ecommerce:py-0.5 ecommerce:transition-colors">
-              <icon name="fa-regular fa-user" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:flex-shrink-0"/>
+              <icon name="fa-regular fa-user" class="ecommerce-text-muted ecommerce:flex-shrink-0"/>
               <div class="ecommerce:min-w-0 ecommerce:flex-1">
                 <span class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:truncate ecommerce:block">{{row.created_by_name}}</span>
                 <span data-if="{{!!row.created_by_email}}" class="ecommerce-text-tertiary ecommerce:truncate ecommerce:block">({{row.created_by_email}})</span>

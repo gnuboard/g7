@@ -87,9 +87,7 @@
                                 "if": "{{page?.data}}",
                                 "responsive": {
                                     "portable": {
-                                        "props": {
-                                            "className": "bg-white dark:bg-gray-800 rounded-lg shadow p-5"
-                                        }
+                                        "classMerge": "p-5"
                                     }
                                 },
                                 "props": {
@@ -125,9 +123,7 @@
                                         "name": "Div",
                                         "responsive": {
                                             "portable": {
-                                                "props": {
-                                                    "className": "flex flex-wrap items-center justify-between gap-2 mb-3"
-                                                }
+                                                "classMerge": "mb-3"
                                             }
                                         },
                                         "props": {
@@ -147,9 +143,7 @@
                                                         "name": "H1",
                                                         "responsive": {
                                                             "portable": {
-                                                                "props": {
-                                                                    "className": "text-xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere"
-                                                                }
+                                                                "classMerge": "text-xl"
                                                             }
                                                         },
                                                         "props": {
@@ -202,12 +196,12 @@
                                         "responsive": {
                                             "portable": {
                                                 "props": {
-                                                    "className": "text-sm text-gray-500 dark:text-gray-400 mb-4"
+                                                    "className": "text-sm text-muted mb-4"
                                                 }
                                             }
                                         },
                                         "props": {
-                                            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+                                            "className": "text-sm text-muted mb-6"
                                         },
                                         "text": "$t:user.page.published_at: {{page?.data?.published_at | date}}"
                                     },
@@ -253,7 +247,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "paperclip",
-                                                            "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                                            "className": "text-muted text-sm"
                                                         }
                                                     },
                                                     {
@@ -322,7 +316,7 @@
                                                                         "if": "{{!att_item.is_image}}",
                                                                         "props": {
                                                                             "name": "file",
-                                                                            "className": "text-gray-500 dark:text-gray-400 text-sm flex-shrink-0"
+                                                                            "className": "text-muted text-sm flex-shrink-0"
                                                                         }
                                                                     },
                                                                     {
@@ -406,7 +400,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-gray-500 dark:text-gray-400 mb-6"
+                                            "className": "text-muted mb-6"
                                         },
                                         "text": "$t:user.page.not_found_description"
                                     },

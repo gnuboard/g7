@@ -14,18 +14,18 @@
       </div>
     </div>
     <!-- 확장 자리 — 글쓰기 맨 위(검증 오류 상자 아래)에 확장이 입력칸을 붙인다(#149). 이 폼은 게시판 유형 세 갈래에 include 되므로 data-ref 로 지목하면 basic 에만 닿는다 — 이 확장점은 세 갈래 모두에 들어간다. 조각이 _local.form.<키> 에 쓰면 저장 요청 본문에 함께 실린다 -->
-    <extension-point name="board_post_form_top" class="contents" data-extension-point="board_post_form_top" mode="{{route.id ? 'edit' : ((form_data?.data?.parent_id || query?.parent_id) ? 'reply' : 'create')}}" boardSlug="{{route.slug}}" postId="{{route.id ?? null}}" board="{{form_meta?.data?.board}}"/>
+    <extension-point name="board_post_form_top" data-ref="ext_board_post_form_top" class="contents" data-extension-point="board_post_form_top" mode="{{route.id ? 'edit' : ((form_data?.data?.parent_id || query?.parent_id) ? 'reply' : 'create')}}" boardSlug="{{route.slug}}" postId="{{route.id ?? null}}" board="{{form_meta?.data?.board}}"/>
     <!-- 수정 모드일 때 작성자 정보 표시 (Avatar + UserInfo) -->
     <div data-if="{{route.id &amp;&amp; form_data?.data?.author}}" class="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
       <avatar data-type="composite" author="{{form_data?.data?.author}}" size="md"/>
       <div>
         <user-info data-type="composite" userId="{{form_data?.data?.author?.uuid}}" name="{{form_data?.data?.author?.name}}" isGuest="{{!form_data?.data?.author?.uuid}}" :showDropdown="false" :clickable="false" class="text-sm font-medium"/>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:board.created_at: {{form_data?.data?.created_at}}</p>
+        <p class="text-xs text-muted mt-0.5">$t:board.created_at: {{form_data?.data?.created_at}}</p>
       </div>
     </div>
     <!-- 새 글을 쓰는 회원에게 이 게시판에서 보이는 이름을 미리 알린다 — 게시판마다 작성자 표시 이름의 종류(닉네임, 가린 이름 등)가 다를 수 있다. 서버가 보이는 이름을 준 경우에만 그린다(비회원, 수정 화면에는 없다). 종류 이름이 없으면 이름만 적는다 -->
     <div data-if="{{!route.id &amp;&amp; !!_global.currentUser?.uuid &amp;&amp; !!form_meta?.data?.author_display_name}}" data-ref="board_author_display_notice" class="flex items-start gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
-      <icon name="user" size="sm" class="mt-0.5 shrink-0 text-gray-500 dark:text-gray-400"/>
+      <icon name="user" size="sm" class="mt-0.5 shrink-0 text-muted"/>
       <span class="min-w-0 wrap-anywhere">{{form_meta?.data?.author_display_kind_label ? $t('board.author_display.notice', { name: form_meta?.data?.author_display_name, kind: form_meta?.data?.author_display_kind_label }) : $t('board.author_display.notice_without_kind', { name: form_meta?.data?.author_display_name })}}</span>
     </div>
     <!-- 게시글 옵션 (공지사항/비밀글) — 공지는 게시판 관리 또는 공지 등록 권한, 비밀글은 게시판 비밀글 모드가 켜진 경우에만 카드가 생긴다 -->
@@ -33,7 +33,7 @@
       <div class="grid grid-cols-1 gap-4">
         <responsive on="768-" class="grid grid-cols-2 gap-4"/>
         <!-- 공지사항 카드 (게시판 관리 권한 또는 공지 등록 권한 보유자 전용 — 서버도 같은 권한으로 판정한다) -->
-        <label data-if="{{(form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.user_abilities?.can_write_notice) &amp;&amp; !_local.form?.parent_id}}" class="block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <label data-if="{{(form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.user_abilities?.can_write_notice) &amp;&amp; !_local.form?.parent_id}}" class="block card-plain p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <div class="flex items-start gap-3">
             <input type="checkbox" name="is_notice" class="mt-0.5 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"/>
             <div class="flex-1">
@@ -46,7 +46,7 @@
           </div>
         </label>
         <!-- 비밀글 카드 (enabled 모드) -->
-        <label data-if="{{form_meta?.data?.board?.secret_mode === 'enabled'}}" class="block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <label data-if="{{form_meta?.data?.board?.secret_mode === 'enabled'}}" class="block card-plain p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <div class="flex items-start gap-3">
             <input type="checkbox" name="is_secret" class="mt-0.5 w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 rounded focus:ring-amber-500 dark:focus:ring-amber-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"/>
             <div class="flex-1">
@@ -78,7 +78,7 @@
     <div data-if="{{form_meta?.data &amp;&amp; _global.currentUser !== undefined &amp;&amp; !_global.currentUser?.uuid &amp;&amp; !route.id}}" data-ref="board_guest_fixed_fields" class="grid grid-cols-1 gap-4">
       <responsive on="640-" class="grid grid-cols-2 gap-4"/>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label class="form-label">
           <span>$t:board.guest_author_name</span>
           <span data-if="{{form_meta?.data?.board?.guest_fields?.fixed?.author_name?.required ?? true}}" data-ref="board_guest_author_name_required" class="text-red-600 dark:text-red-400 ml-1">*</span>
         </label>
@@ -86,7 +86,7 @@
         <p data-if="{{_local.errors?.author_name}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.author_name?.[0] ?? _local.errors?.author_name}}</p>
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label class="form-label">
           <span>$t:board.guest_password</span>
           <span data-if="{{form_meta?.data?.board?.guest_fields?.fixed?.password?.required ?? true}}" data-ref="board_guest_password_required" class="text-red-600 dark:text-red-400 ml-1">*</span>
         </label>
@@ -100,7 +100,7 @@
     </div>
     <!-- 카테고리 선택 (카테고리가 있는 게시판만) -->
     <div data-if="{{form_meta?.data?.board?.categories?.length > 0}}">
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:board.form.category</label>
+      <label class="form-label">$t:board.form.category</label>
       <select name="category" aria-label="$t:board.form.category" value="{{_local.form?.category ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" options="{{[{value: '', label: $t('board.form.select_category')}, ...(form_meta?.data?.board?.categories ?? []).map(c => ({value: c, label: c}))]}}">
         <on event="change">
           <!-- 분류 선택 — 값을 담으면서 «고친 것이 있다» 표시도 함께 세운다(그 표시를 이탈 경고가 본다). -->
@@ -114,7 +114,7 @@
     </div>
     <!-- 제목 입력 -->
     <div>
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      <label class="form-label">
         <span>$t:board.form.title</span>
         <span class="text-red-600 dark:text-red-400 ml-1">*</span>
       </label>
@@ -144,11 +144,11 @@
     <p data-if="{{_local.errors?.content}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.content?.[0] ?? _local.errors?.content}}</p>
     <!-- 파일 첨부 (게시판 설정 + 권한 체크) -->
     <div data-if="{{form_meta?.data?.board?.use_file_upload === true &amp;&amp; form_meta?.data?.board?.user_abilities?.can_upload}}">
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      <label class="form-label">
         <icon name="paperclip" size="sm" class="inline mr-1"/>
         <span>$t:board.form.attachments</span>
       </label>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">$t:board.form.attachments_desc|count={{form_meta?.data?.board?.max_file_count ?? 5}}|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}</p>
+      <p class="text-xs text-muted mb-2">$t:board.form.attachments_desc|count={{form_meta?.data?.board?.max_file_count ?? 5}}|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}</p>
       <!-- 첨부 업로더 확장점 — 업로더 플러그인이 mode="replace" 로 이 자리를 바꾼다. 표시 조건(파일 첨부 사용 + 업로드 권한)은 위 감싸는 칸에 있어
            대체 업로더도 권한 없는 회원에게는 그려지지 않는다. 계약(uploader)은 기본 업로더에 넘기는 값과 같고, 새 글은 정렬 주소가 없다.
            저장 버튼의 upload:board_attachments 신호와 결과(_eventResult) 모양은 그대로다. -->
@@ -225,7 +225,7 @@
       </extension-point>
     </div>
     <!-- 확장 자리 — 글쓰기 맨 아래(취소·저장 단추 바로 위)에 확장이 동의 문구·부가 입력칸을 붙인다(#149). props 는 맨 위 자리와 같다 -->
-    <extension-point name="board_post_form_bottom" class="contents" data-extension-point="board_post_form_bottom" mode="{{route.id ? 'edit' : ((form_data?.data?.parent_id || query?.parent_id) ? 'reply' : 'create')}}" boardSlug="{{route.slug}}" postId="{{route.id ?? null}}" board="{{form_meta?.data?.board}}"/>
+    <extension-point name="board_post_form_bottom" data-ref="ext_board_post_form_bottom" class="contents" data-extension-point="board_post_form_bottom" mode="{{route.id ? 'edit' : ((form_data?.data?.parent_id || query?.parent_id) ? 'reply' : 'create')}}" boardSlug="{{route.slug}}" postId="{{route.id ?? null}}" board="{{form_meta?.data?.board}}"/>
     <!-- 버튼 영역 -->
     <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
       <!-- 취소 버튼 (등록: 목록, 수정: 상세) -->

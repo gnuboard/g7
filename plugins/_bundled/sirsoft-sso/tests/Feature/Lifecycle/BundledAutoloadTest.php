@@ -31,7 +31,11 @@ class BundledAutoloadTest extends PluginTestCase
      */
     public function test_bundled_vendor_loader_runs_before_composer_loaders(): void
     {
-        $this->assertEqualsCanonicalizing(['OneLogin\\', 'Firebase\\JWT\\', 'RobRichards\\XMLSecLibs\\'], BundledVendorLoader::prefixes());
+        // SAML 라이브러리가 서명 검증에 phpseclib·paragonie 를 함께 쓴다(vendor-bundle.json 의 패키지 5종).
+        $this->assertEqualsCanonicalizing(
+            ['OneLogin\\', 'Firebase\\JWT\\', 'RobRichards\\XMLSecLibs\\', 'phpseclib3\\', 'ParagonIE\\ConstantTime\\'],
+            BundledVendorLoader::prefixes(),
+        );
 
         $mine = null;
         $firstComposer = null;

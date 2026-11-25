@@ -81,7 +81,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                "className": "ecommerce-text-muted"
                             },
                             "text": "~"
                         },

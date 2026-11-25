@@ -316,14 +316,14 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
           <Div className="max-h-80 overflow-auto">
             {/* 초기 안내 메시지 */}
             {showInitialMessage && (
-              <Div className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">
+              <Div className="px-4 py-6 text-center text-muted">
                 {initialText}
               </Div>
             )}
 
             {/* 결과 없음 메시지 */}
             {showNoResults && (
-              <Div className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">
+              <Div className="px-4 py-6 text-center text-muted">
                 {noResultsText}
               </Div>
             )}

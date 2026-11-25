@@ -5,8 +5,8 @@
      결제 통화에서 고를 수 없는 수단(예: 엔화 결제의 일부 PG 수단)은 서버가 체크아웃 응답 `allowed_payment_methods` 로 알려 주고
      주문서 계산값 `selectablePaymentMethods` 가 그 목록으로 거른다(#639 D17) — 예전처럼 플러그인이 그려진 버튼을 찾아 숨기지 않는다. 주문 생성 검증도 같은 판정이다. -->
 <partial _e2e_allow="e2e:allow S4-D14 — 결제수단 칸·빈 목록 안내의 목록식을 고객 선택 가능 계산값으로 바꿨다. 대체 검증: Vitest 구조·식 평가(checkout-payment-method-selectable) + 전용 Chrome 실측(EXCL 창). 결제수단 설정을 바꾸는 전역 배타 상태가 필요해 공용 Playwright E2E 로 두지 않는다." description="결제 방법 선택 섹션 (PC/모바일 반응형) - 환경설정 활성 결제수단을 동적 렌더링">
-  <div data-ref="checkout_payment_method_section" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-    <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"/>
+  <div data-ref="checkout_payment_method_section" class="card-plain p-6">
+    <responsive on="portable" class="card-plain p-4"/>
     <!-- 섹션 헤더 -->
     <div class="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
       <responsive on="portable" class="flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"/>
@@ -43,11 +43,11 @@
           </icon>
           <div>
             <p class="font-medium text-gray-900 dark:text-white">
-              <responsive on="portable" class="font-medium text-sm text-gray-900 dark:text-white"/>
+              <responsive on="portable" class-merge="text-sm"/>
               {{$localized(method._cached_name) ?? method.id}}
             </p>
-            <p data-if="{{$localized(method._cached_description)}}" class="text-sm text-gray-500 dark:text-gray-400">
-              <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+            <p data-if="{{$localized(method._cached_description)}}" class="text-sm text-muted">
+              <responsive on="portable" class="text-xs text-muted"/>
               {{$localized(method._cached_description)}}
             </p>
           </div>
@@ -77,9 +77,9 @@
       <!-- 입금자명 입력 -->
       <div class="mt-4">
         <responsive on="portable" class="mt-3"/>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:shop.checkout.depositor_name</label>
+        <label class="form-label">$t:shop.checkout.depositor_name</label>
         <input aria-label="$t:shop.checkout.depositor_name" type="text" name="depositor_name" value="{{_local.depositorName ?? _local.orderer?.name ?? ''}}" placeholder="$t:shop.checkout.depositor_name_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-          <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
+          <responsive on="portable" class-merge="px-3 text-sm"/>
           <on type="change">
             <!-- 가상계좌 입금자명. 비워 두면 주문자 이름이 초깃값으로 보이지만, 실제 송금인이 다를 수 있어 고칠 수 있게 둔다 -->
             <set-state target="local" depositorName="{{$event.target.value}}"/>
@@ -89,19 +89,19 @@
       <!-- 환불 계좌 (선택 입력) — 가상계좌 입금완료 건의 환불은 PG(토스 등)가 refundReceiveAccount 를 필수로 요구한다. 여기서 미입력이면 관리자 취소 모달에서 다시 받는다. 3필드 중 하나라도 채우면 나머지도 필수(CreateOrderRequest::withValidator 의 required_with). -->
       <div data-ref="checkout_refund_bank_vbank" class="mt-4 pt-4 border-t border-blue-200 dark:border-blue-800">
         <responsive on="portable" class="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800"/>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:shop.checkout.refund_bank_title</label>
+        <label class="form-label mb-2">$t:shop.checkout.refund_bank_title</label>
         <!-- 은행 / 계좌번호 2열 → portable 1열 (마크업 구조 변경이므로 responsive 속성 사용, Tailwind breakpoint 금지) -->
         <div class="grid grid-cols-2 gap-3">
           <responsive on="portable" class="grid grid-cols-1 gap-3"/>
           <select name="refund_bank_code" aria-label="$t:shop.checkout.bank" value="{{_local.refundBankCode ?? ''}}" options="{{[{ value: '', label: $t('shop.checkout.refund_bank_select') }, ...((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))]}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-            <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
+            <responsive on="portable" class-merge="px-3 text-sm"/>
             <on type="change">
               <!-- 환불 계좌 은행(넓은 화면). 무통장 주문은 취소 시 돈을 돌려줄 계좌가 필요해 결제 단계에서 미리 받아 둔다 -->
               <set-state target="local" refundBankCode="{{$event.target.value}}"/>
             </on>
           </select>
           <input type="text" name="refund_bank_account" value="{{_local.refundBankAccount ?? ''}}" placeholder="$t:shop.checkout.refund_bank_account_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-            <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
+            <responsive on="portable" class-merge="px-3 text-sm"/>
             <on type="change">
               <!-- 환불 계좌번호 -->
               <set-state target="local" refundBankAccount="{{$event.target.value}}"/>
@@ -109,7 +109,7 @@
           </input>
         </div>
         <input type="text" name="refund_bank_holder" value="{{_local.refundBankHolder ?? ''}}" placeholder="$t:shop.checkout.refund_bank_holder_placeholder" class="w-full mt-3 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-          <responsive on="portable" class="w-full mt-3 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
+          <responsive on="portable" class-merge="px-3 text-sm"/>
           <on type="change">
             <!-- 예금주. 은행이 대조하는 값이라 계좌 주인과 다르면 환불이 막힌다 -->
             <set-state target="local" refundBankHolder="{{$event.target.value}}"/>
@@ -127,7 +127,7 @@
       </p>
       <!-- 계좌 선택 -->
       <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label class="form-label mb-2">
           <span>$t:shop.checkout.dbank_select_account</span>
           <span class="text-red-600 dark:text-red-300 ml-1">*</span>
         </label>
@@ -141,7 +141,7 @@
               <!-- 라디오 스타일 — 왼쪽에 선택/비선택 동그라미, 오른쪽에 은행명/계좌번호. 결제수단 선택 카드(상단)와 시각적 일관성을 맞추되, 무통장 계좌는 다중 선택 가능성이 있어 명시적 라디오 표시 유지 -->
               <div class="flex items-center gap-3">
                 <!-- 라디오 아이콘 — 선택: 채워진 체크 동그라미 / 비선택: 빈 동그라미 -->
-                <icon name="{{_local.selectedDbank?.bank_code === bank.bank_code ? 'circle-check' : 'circle'}}" iconStyle="{{_local.selectedDbank?.bank_code === bank.bank_code ? 'solid' : 'regular'}}" class="{{_local.selectedDbank?.bank_code === bank.bank_code ? 'text-xl text-blue-500 dark:text-blue-400 flex-shrink-0' : 'text-xl text-gray-500 dark:text-gray-400 flex-shrink-0'}}"/>
+                <icon name="{{_local.selectedDbank?.bank_code === bank.bank_code ? 'circle-check' : 'circle'}}" iconStyle="{{_local.selectedDbank?.bank_code === bank.bank_code ? 'solid' : 'regular'}}" class="{{_local.selectedDbank?.bank_code === bank.bank_code ? 'text-xl text-blue-500 dark:text-blue-400 flex-shrink-0' : 'text-xl text-muted flex-shrink-0'}}"/>
                 <div class="flex-1">
                   <p class="font-medium text-gray-900 dark:text-white">{{$localized(bank.bank_name) || bank.bank_code}}</p>
                   <p class="text-sm text-gray-600 dark:text-gray-300">{{bank.account_number}} ({{bank.account_holder}})</p>
@@ -150,12 +150,12 @@
             </button>
           </div>
         </div>
-        <span data-if="{{_local.errors?.['dbank.bank_code']}}" class="text-red-600 dark:text-red-300 text-xs mt-1 block">{{_local.errors?.['dbank.bank_code']?.[0] ?? ''}}</span>
+        <span data-if="{{_local.errors?.['dbank.bank_code']}}" class="form-error dark:text-red-300">{{_local.errors?.['dbank.bank_code']?.[0] ?? ''}}</span>
       </div>
       <!-- 입금자명 입력 -->
       <div class="mt-4">
         <responsive on="portable" class="mt-3"/>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label class="form-label">
           <span>$t:shop.checkout.depositor_name</span>
           <span class="text-red-600 dark:text-red-300 ml-1">*</span>
         </label>
@@ -166,24 +166,24 @@
             <set-state target="local" depositorName="{{$event.target.value}}"/>
           </on>
         </input>
-        <span data-if="{{_local.errors?.depositor_name}}" class="text-red-600 dark:text-red-300 text-xs mt-1 block">{{_local.errors?.depositor_name?.[0] ?? ''}}</span>
+        <span data-if="{{_local.errors?.depositor_name}}" class="form-error dark:text-red-300">{{_local.errors?.depositor_name?.[0] ?? ''}}</span>
       </div>
       <!-- 환불 계좌 (선택 입력) — 무통장은 PG 를 경유하지 않아 관리자가 수동 이체한다. 여기 입력된 계좌가 그 대상이다. 3필드 중 하나라도 채우면 나머지도 필수(CreateOrderRequest::withValidator 의 required_with). -->
       <div data-ref="checkout_refund_bank_dbank" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
         <responsive on="portable" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600"/>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:shop.checkout.refund_bank_title</label>
+        <label class="form-label mb-2">$t:shop.checkout.refund_bank_title</label>
         <!-- 은행 / 계좌번호 2열 → portable 1열 (마크업 구조 변경이므로 responsive 속성 사용, Tailwind breakpoint 금지) -->
         <div class="grid grid-cols-2 gap-3">
           <responsive on="portable" class="grid grid-cols-1 gap-3"/>
           <select name="refund_bank_code" aria-label="$t:shop.checkout.bank" value="{{_local.refundBankCode ?? ''}}" options="{{[{ value: '', label: $t('shop.checkout.refund_bank_select') }, ...((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))]}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-            <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
+            <responsive on="portable" class-merge="px-3 text-sm"/>
             <on type="change">
               <!-- 환불 계좌 은행(좁은 화면). 위와 같은 값을 쓰며 반응형 배치만 다르다 -->
               <set-state target="local" refundBankCode="{{$event.target.value}}"/>
             </on>
           </select>
           <input type="text" name="refund_bank_account" value="{{_local.refundBankAccount ?? ''}}" placeholder="$t:shop.checkout.refund_bank_account_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-            <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
+            <responsive on="portable" class-merge="px-3 text-sm"/>
             <on type="change">
               <!-- 환불 계좌번호 -->
               <set-state target="local" refundBankAccount="{{$event.target.value}}"/>
@@ -191,16 +191,16 @@
           </input>
         </div>
         <input type="text" name="refund_bank_holder" value="{{_local.refundBankHolder ?? ''}}" placeholder="$t:shop.checkout.refund_bank_holder_placeholder" class="w-full mt-3 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-          <responsive on="portable" class="w-full mt-3 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
+          <responsive on="portable" class-merge="px-3 text-sm"/>
           <on type="change">
             <!-- 예금주 -->
             <set-state target="local" refundBankHolder="{{$event.target.value}}"/>
           </on>
         </input>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">$t:shop.checkout.refund_bank_partial_notice</p>
+        <p class="text-xs text-muted mt-2">$t:shop.checkout.refund_bank_partial_notice</p>
       </div>
       <!-- 현금영수증 신청 폼 확장 슬롯 — 이커머스 모듈이 resources/extensions/checkout_cash_receipt.json 으로 주입한다. 슬롯이 dbank 블록 내부에 있으므로 결제수단이 무통장일 때만 렌더되며 별도 if 가 필요 없다. 발급 프로바이더는 PG 플러그인이 담당하지만 신청 폼 자체는 PG 비종속이라 모듈이 소유한다(플러그인이 주입하면 두 PG 동시 활성 시 폼이 2개 렌더된다). 주입된 폼은 _local.checkoutExtraPayload 에 자기 필드를 써야 주문 생성 payload 에 실린다 — _checkout_summary.json 의 body 확장 병합 칸 참조. -->
-      <extension-point name="shop_checkout_cash_receipt_slot">
+      <extension-point name="shop_checkout_cash_receipt_slot" data-ref="ext_shop_checkout_cash_receipt_slot">
         <default/>
       </extension-point>
       <!-- 입금 기한 안내 — 가상계좌 안내와 동일 규칙(서버 resolveAutoCancelDays 일치). 빈 문자열/0/음수/비숫자는 기본치 3 으로 되돌린다. -->

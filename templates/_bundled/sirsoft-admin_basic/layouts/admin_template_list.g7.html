@@ -104,7 +104,7 @@
             <refetch-data-source dataSourceId="templates"/>
           </on>
         </icon-button>
-        <button data-ref="check_updates_button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isCheckingTemplateUpdates || templates?.data?.abilities?.can_install !== true}}" type="button">
+        <button data-ref="check_updates_button" class="flex-center btn btn-secondary" disabled="{{_global.isCheckingTemplateUpdates || templates?.data?.abilities?.can_install !== true}}" type="button">
           <responsive on="portable" class="hidden"/>
           <on type="click">
             <!-- 업데이트 확인 — 서버가 저장소를 훑어 최신 버전을 갱신하므로 끝나면 목록을 다시 받는다.
@@ -132,7 +132,7 @@
           <icon data-if="{{_global.isCheckingTemplateUpdates}}" name="spinner" size="sm" class="animate-spin"/>
           <span>$t:admin.templates.actions.check_updates</span>
         </button>
-        <button type="button" data-ref="manual_install_button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{templates?.data?.abilities?.can_install !== true || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
+        <button type="button" data-ref="manual_install_button" class="flex-center btn btn-secondary" disabled="{{templates?.data?.abilities?.can_install !== true || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
           <responsive on="portable" class="hidden"/>
           <on type="click">
             <open-modal target="template_manual_install_modal"/>
@@ -140,7 +140,7 @@
           <icon name="upload" class="text-xl"/>
           <span>$t:admin.templates.manual_install</span>
         </button>
-        <button type="button" data-ref="marketplace_button" data-if="{{false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+        <button type="button" data-ref="marketplace_button" data-if="{{false}}" class="flex-center btn btn-primary">
           <responsive on="portable" class="hidden"/>
           <icon name="globe" class="text-xl"/>
           <span>$t:admin.templates.marketplace</span>
@@ -148,14 +148,14 @@
       </page-header>
       <div data-ref="mobile_action_buttons" class="hidden">
         <responsive on="portable" class="flex-center gap-2 -mt-4 mb-4"/>
-        <button type="button" data-ref="mobile_manual_install_button" class="flex-center flex-1 justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{templates?.data?.abilities?.can_install !== true || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
+        <button type="button" data-ref="mobile_manual_install_button" class="flex-center flex-1 btn btn-secondary" disabled="{{templates?.data?.abilities?.can_install !== true || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
           <on type="click">
             <open-modal target="template_manual_install_modal"/>
           </on>
           <icon name="upload" class="text-xl"/>
           <span>$t:admin.templates.manual_install</span>
         </button>
-        <button type="button" data-ref="mobile_marketplace_button" data-if="{{false}}" class="flex-center flex-1 justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+        <button type="button" data-ref="mobile_marketplace_button" data-if="{{false}}" class="flex-center flex-1 btn btn-primary">
           <icon name="globe" class="text-xl"/>
           <span>$t:admin.templates.marketplace</span>
         </button>
@@ -233,8 +233,8 @@
         </div>
       </div>
       <div data-ref="tab_navigation_wrapper" class="sticky top-0 z-40 -mx-4 px-4 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700">
-        <responsive on="640-1023" class="sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
-        <responsive on="1024-" class="sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
+        <responsive on="640-1023" class-merge="-mx-6 px-6"/>
+        <responsive on="1024-" class-merge="-mx-8 px-8"/>
         <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeTemplateTab || route.type || 'user'}}" variant="default">
           <prop name="tabs">
             <item id="user" href="/admin/templates/user{{query.include_hidden === '1' ? '?include_hidden=1' : ''}}" label="$t:admin.templates.tabs.user"/>

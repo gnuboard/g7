@@ -142,7 +142,7 @@
                 </on>
                 {{row.post_title}}
               </a>
-              <span data-if="{{row.is_deleted || !row.board}}" class="board:font-medium board:truncate board:line-through board:text-gray-500 board:dark:text-gray-400">{{row.post_title}}</span>
+              <span data-if="{{row.is_deleted || !row.board}}" class="board:font-medium board:truncate board:line-through board-text-muted">{{row.post_title}}</span>
               <badge data-type="composite" data-if="{{row.is_deleted}}" color="red" size="sm">$t:sirsoft-board.admin.scraps.badges.deleted_post</badge>
             </div>
           </cell>
@@ -221,7 +221,7 @@
         <p class="board-text-body">$t:sirsoft-board.admin.scraps.modals.delete_confirm</p>
       </div>
       <footer>
-        <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
+        <button type="button" class="board-btn board-btn-secondary">
           <on type="click">
             <close-modal/>
           </on>
@@ -266,7 +266,7 @@
         <p class="board-text-body">$t:sirsoft-board.admin.scraps.modals.bulk_delete_confirm|count={{(_global.selectedIds || []).length}}</p>
       </div>
       <footer>
-        <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
+        <button type="button" class="board-btn board-btn-secondary">
           <on type="click">
             <close-modal/>
           </on>

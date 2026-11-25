@@ -13,5 +13,6 @@
   "cart_with_count": "Cart ({{count}} items)",
   "cart_with_count_one": "Cart ({{count}} item)",
   "close_menu": "Close menu",
-  "reviews": "Reviews"
+  "reviews": "Reviews",
+  "coupons": "Coupons"
 }

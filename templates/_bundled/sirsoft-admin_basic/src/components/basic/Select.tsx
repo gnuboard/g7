@@ -522,7 +522,7 @@ export const Select: React.FC<SelectProps> = ({
           )}
           <Div className="py-2 max-h-60 overflow-auto" style={{ scrollbarGutter: 'stable' }}>
             {visibleOptions && visibleOptions.length === 0 && (
-              <Div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+              <Div className="px-4 py-3 text-sm text-muted text-center">
                 {searchTerm ? selectNoResults() : ''}
               </Div>
             )}

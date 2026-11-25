@@ -212,7 +212,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                "className": "ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm",
                                 "disabled": "{{_local.isSaving || (_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true)}}"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.common_info.button.save"

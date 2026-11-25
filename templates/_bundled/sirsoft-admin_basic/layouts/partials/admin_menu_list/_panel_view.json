@@ -152,20 +152,24 @@
                                             },
                                             "children": [
                                                 {
-                                                    "type": "basic",
-                                                    "name": "Icon",
+                                                    "id": "view_menu_icon",
+                                                    "type": "composite",
+                                                    "name": "MenuIcon",
                                                     "props": {
-                                                        "name": "{{_global.selectedMenu?.icon || 'file'}}",
+                                                        "spec": "{{_global.selectedMenu?.icon_spec ?? null}}",
+                                                        "icon": "{{_global.selectedMenu?.icon ?? null}}",
+                                                        "fallbackIcon": "file",
                                                         "className": "text-base text-secondary"
                                                     }
                                                 },
                                                 {
+                                                    "id": "view_menu_icon_label",
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-primary text-sm"
+                                                        "className": "text-primary text-sm break-all"
                                                     },
-                                                    "text": "{{_global.selectedMenu?.icon}}"
+                                                    "text": "{{_global.selectedMenu?.icon_spec?.type === 'svg' ? '$t:admin.menus.icon_field.type_svg' : (_global.selectedMenu?.icon_spec?.source === 'attachment' ? '$t:admin.menus.icon_field.uploaded_image' : (_global.selectedMenu?.icon_spec?.type === 'image' ? _global.selectedMenu?.icon_spec?.path : (_global.selectedMenu?.icon ?? '')))}}"
                                                 }
                                             ]
                                         }
@@ -669,7 +673,7 @@
                                                     "name": "{{_global.selectedMenu?.name}}",
                                                     "slug": "{{_global.selectedMenu?.slug}}",
                                                     "url": "{{_global.selectedMenu?.url}}",
-                                                    "icon": "{{_global.selectedMenu?.icon}}",
+                                                    "icon_spec": "{{_global.selectedMenu?.icon_spec ?? null}}",
                                                     "parent_id": "{{_global.selectedMenu?.parent_id}}",
                                                     "extension_type": "{{_global.selectedMenu?.extension_type}}",
                                                     "extension_identifier": "{{_global.selectedMenu?.extension_identifier}}",

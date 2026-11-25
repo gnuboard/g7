@@ -15,7 +15,7 @@
       </on>
       <!-- 배송지명 -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label class="form-label">
           <span>$t:mypage.addresses.form.label</span>
           <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
         </label>
@@ -31,7 +31,7 @@
       <!-- 배송국가 (D10 — 해외배송 활성 시에만 표시. _global.editingAddress.country_code 저장. 선택에 따라 국내/해외 주소 입력 분기. 체크아웃 배송지 관리 모달과 동형.)
            선택 칸과 주소 칸이 같은 값(editingAddress.country_code, 없으면 KR)을 본다 — 새 배송지의 기본 국가는 「추가」 버튼이 채운다(#703). -->
       <div data-if="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:shop.checkout.shipping_country</label>
+        <label class="form-label">$t:shop.checkout.shipping_country</label>
         <select name="country_code" aria-label="$t:shop.checkout.shipping_country" value="{{_global.editingAddress?.country_code ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}" class="w-full">
           <on type="change">
             <!-- 배송 국가 — 이 값이 아래 주소 칸을 국내형/해외형으로 갈라 놓는다. 주문서와 달리 여기서는
@@ -45,7 +45,7 @@
         <responsive on="portable" class="grid grid-cols-1 gap-3"/>
         <!-- 받는 분 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label class="form-label">
             <span>$t:mypage.addresses.form.recipient</span>
             <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
           </label>
@@ -60,7 +60,7 @@
         </div>
         <!-- 연락처 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label class="form-label">
             <span>$t:mypage.addresses.form.phone</span>
             <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
           </label>
@@ -76,7 +76,7 @@
       </div>
       <!-- 주소 검색 - sirsoft-daum_postcode 플러그인 연동 (국내 KR — 해외배송 OFF 또는 KR 선택 시 표시) -->
       <div data-if="{{(_global.editingAddress?.country_code ?? 'KR') === 'KR'}}">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label class="form-label">
           <span>$t:mypage.addresses.form.address</span>
           <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
         </label>
@@ -112,7 +112,7 @@
       </div>
       <!-- 해외 주소 입력 (D10 — KR 외 국가 선택 시. 체크아웃 배송지 관리 모달과 동일 필드: address_line_1/2, intl_city/state/postal_code. UserAddress 컬럼 매핑은 백엔드 MapsAddressBookFields 트레이트가 처리.) -->
       <div data-if="{{(_global.editingAddress?.country_code ?? 'KR') !== 'KR'}}" class="space-y-2">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label class="form-label mb-1">
           <span>$t:mypage.addresses.form.address</span>
           <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
         </label>
@@ -149,11 +149,11 @@
             <set-state target="global" editingAddress.intl_postal_code="{{$event.target.value}}"/>
           </on>
         </input>
-        <span data-if="{{_local.addressErrors?.address_line_1 || _local.addressErrors?.intl_city || _local.addressErrors?.intl_postal_code}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{_local.addressErrors?.address_line_1?.[0] ?? _local.addressErrors?.intl_city?.[0] ?? _local.addressErrors?.intl_postal_code?.[0] ?? ''}}</span>
+        <span data-if="{{_local.addressErrors?.address_line_1 || _local.addressErrors?.intl_city || _local.addressErrors?.intl_postal_code}}" class="form-error">{{_local.addressErrors?.address_line_1?.[0] ?? _local.addressErrors?.intl_city?.[0] ?? _local.addressErrors?.intl_postal_code?.[0] ?? ''}}</span>
       </div>
       <!-- 상세 주소 (국내 KR 전용 — 해외는 address_line_2 사용) -->
       <div data-if="{{(_global.editingAddress?.country_code ?? 'KR') === 'KR'}}">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:mypage.addresses.form.detail_address</label>
+        <label class="form-label">$t:mypage.addresses.form.detail_address</label>
         <input aria-label="$t:mypage.addresses.form.detail_address" type="text" name="address_detail" value="{{_global.editingAddress?.address_detail ?? ''}}" placeholder="$t:mypage.addresses.form.detail_placeholder" class="{{_local.addressErrors?.address_detail ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}">
           <responsive on="portable" type="text" name="address_detail" placeholder="$t:mypage.addresses.form.detail_placeholder" class="{{_local.addressErrors?.address_detail ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors text-base' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-base'}}"/>
           <on type="change">
@@ -177,7 +177,7 @@
         <responsive on="-640" class="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"/>
         <responsive on="641-1023" class="flex gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"/>
         <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-          <responsive on="portable" type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"/>
+          <responsive on="portable" type="button" class-merge="flex-1 py-2.5"/>
           <on type="click">
             <!-- 취소 — 쓰던 값과 오류 표시를 버린다. 창 자신의 오류(_local)는 닫기 전에, 편집 대상(전역)은 닫은 뒤 비운다
                  (모달 문맥 규칙). 닫기 단추·Esc 는 이 동작을 타지 않으므로 여는 쪽도 매번 비운다(7.1.1) -->
@@ -189,8 +189,8 @@
           </on>
           $t:common.cancel
         </button>
-        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{_local.isSaving ?? false}}">
-          <responsive on="portable" type="button" class="flex-1 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"/>
+        <button type="button" class="btn btn-primary flex gap-2" disabled="{{_local.isSaving ?? false}}">
+          <responsive on="portable" type="button" class-merge="flex-1 py-2.5"/>
           <on type="click">
             <!-- 저장 — `editingAddress.id` 유무로 보낼 곳과 메서드가 갈린다. 먼저 버튼을 잠가 두 번 눌러
                  배송지가 둘 생기는 것을 막는다 -->

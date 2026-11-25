@@ -7,12 +7,16 @@ use App\Enums\ExtensionOwnerType;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Extension\Helpers\ExtensionRoleSyncHelper;
 use App\Extension\Helpers\NotificationSyncHelper;
+use App\Models\Attachment;
 use App\Models\Menu;
 use App\Models\NotificationDefinition;
 use App\Models\NotificationTemplate;
 use App\Models\Role;
+use App\Services\MenuIconService;
 use App\Services\MenuService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -245,5 +249,71 @@ class ExtensionSyncUserOverridesTest extends TestCase
         $this->assertFalse((bool) NotificationTemplate::find($template->id)->is_default, '수정본의 「기본」 표시가 되살아났다');
         $this->assertFalse((bool) NotificationDefinition::find($definition->id)->is_default);
         $this->assertSame('운영자 본문', NotificationTemplate::find($template->id)->body['ko']);
+    }
+
+    /**
+     * 확장 메뉴 하나를 주어진 선언 아이콘으로 동기화합니다.
+     *
+     * @param  string  $slug  슬러그(접미어 제외)
+     * @param  mixed  $icon  선언 아이콘
+     * @return Menu 동기화된 메뉴
+     */
+    private function syncMenuIcon(string $slug, mixed $icon): Menu
+    {
+        return app(ExtensionMenuSyncHelper::class)->syncMenu(
+            "{$slug}-{$this->suffix}",
+            ExtensionOwnerType::Module,
+            "probe-{$this->suffix}",
+            ['name' => ['ko' => $slug, 'en' => $slug], 'url' => "/admin/{$slug}", 'icon' => $icon, 'order' => 1, 'is_active' => true]
+        );
+    }
+
+    /**
+     * 운영자가 레거시 아이콘을 같은 뜻의 구조형으로 다시 저장해도 표식이 생기지 않아, 확장의 새 아이콘이 계속 들어온다 (#381).
+     *
+     * @scenario icon_type=legacy_string, entry=extension_sync
+     *
+     * @effects sync_respects_override, same_value_not_marked, extension_menu_sync_respects_operator_edits
+     *
+     * @return void 반환값 없음
+     */
+    public function test_structured_resave_of_legacy_icon_keeps_extension_updates_flowing(): void
+    {
+        $menu = $this->syncMenuIcon('icon-flow', 'fas fa-circle');
+
+        app(MenuService::class)->updateMenu($menu->fresh(), ['icon_spec' => ['type' => 'class', 'value' => ' fas  fa-circle ']]);
+        $this->assertNotContains('icon', $menu->fresh()->user_overrides ?? [], '같은 아이콘 재저장이 「수정됨」 으로 기록됐다');
+
+        $synced = $this->syncMenuIcon('icon-flow', 'fas fa-star');
+
+        $this->assertSame('fas fa-star', $synced->getRawOriginal('icon'), '확장의 새 아이콘이 들어오지 않았다');
+    }
+
+    /**
+     * 운영자가 업로드한 아이콘은 표식되고, 이후 확장 동기화가 선언 아이콘으로 덮지 않는다 (#381).
+     *
+     * @scenario surface=menu
+     *
+     * @effects sync_respects_override, change_marked, attachment_bound, extension_menu_sync_respects_operator_edits
+     *
+     * @return void 반환값 없음
+     */
+    public function test_operator_uploaded_icon_survives_sync(): void
+    {
+        Storage::fake(config('attachment.disk', 'attachments'));
+        $menu = $this->syncMenuIcon('icon-upload', 'fas fa-circle');
+        $spec = app(MenuIconService::class)->upload(UploadedFile::fake()->image('menu.png', 16, 16));
+
+        app(MenuService::class)->updateMenu($menu->fresh(), [
+            'icon_spec' => ['type' => 'image', 'source' => 'attachment', 'attachment_id' => $spec['attachment_id']],
+        ]);
+        $operatorIcon = $menu->fresh()->getRawOriginal('icon');
+        $this->assertContains('icon', $menu->fresh()->user_overrides ?? []);
+        $this->assertSame($menu->id, (int) Attachment::findOrFail($spec['attachment_id'])->attachmentable_id);
+
+        $synced = $this->syncMenuIcon('icon-upload', 'fas fa-star');
+
+        $this->assertSame($operatorIcon, $synced->getRawOriginal('icon'), '운영자가 올린 아이콘이 확장 선언으로 덮였다');
+        $this->assertSame('attachment', $synced->iconSpec()?->source);
     }
 }

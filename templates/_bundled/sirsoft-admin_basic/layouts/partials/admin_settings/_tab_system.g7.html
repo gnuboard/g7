@@ -200,7 +200,7 @@
                     <p class="text-xs text-gray-900 dark:text-gray-100 truncate">{{entry.name ?? ''}}</p>
                     <p data-if="{{entry.error_output}}" class="text-xs text-red-600 dark:text-red-400 truncate">{{entry.error_output ?? ''}}</p>
                   </div>
-                  <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{String(entry.started_at ?? '').replace('T', ' ').slice(0, 19) + ' · ' + $t('admin.settings.system.cron_history_duration', { seconds: entry.duration ?? 0 })}}</span>
+                  <span class="text-xs text-muted whitespace-nowrap">{{String(entry.started_at ?? '').replace('T', ' ').slice(0, 19) + ' · ' + $t('admin.settings.system.cron_history_duration', { seconds: entry.duration ?? 0 })}}</span>
                   <span data-ref="cron_history_status_{{$hidx}}" class="{{entry.status === 'failed' ? 'text-xs text-red-600 dark:text-red-400 whitespace-nowrap' : (entry.status === 'running' ? 'text-xs text-yellow-600 dark:text-yellow-400 whitespace-nowrap' : 'text-xs text-green-600 dark:text-green-400 whitespace-nowrap')}}">{{entry.status === 'failed' ? '$t:admin.settings.system.cron_history_failed' : (entry.status === 'running' ? '$t:admin.schedules.result.running' : '$t:admin.settings.system.cron_history_success')}}</span>
                 </div>
               </div>

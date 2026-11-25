@@ -7,6 +7,7 @@ description: |
   - 옵션 변경 교환(수량 2, 상위 옵션) — 교환 전후 소계가 단가와 갈리는 것은 수량 2 이상, 차액 줄은 차액 ≠ 0 에서만 드러난다.
   - 상품 1건짜리 승인 반품(송장 없음) — 상품 칸 선택지에 회수중이 서고, 송장 미리 채움이 빈 값으로 선다.
   - 계좌가 빈 승인 환불신청서(입금된 가상계좌 주문, 저장 현금 > 0) — 계좌 환불이면 현금이 있을 때 계좌를 요구한다.
+  - 수량 2 신청 환불신청서 — 환불·첨부 spec 이 한 개만 승인해 신청 잔여를 남기는 부분 승인 왕복을 잰다.
 
   주문은 실제 계산 경로(`OrderCalculationService`)로 만든다 — 상세 응답의 정산 미리보기가 주문을 다시 계산하므로 금액을 손으로
   박으면 재계산과 어긋난다. 신청서는 팩토리·모델 생성으로 목표 상태에 바로 세운다 — 접수·전이 서비스는 라이브 사이트에 알림을
@@ -30,6 +31,7 @@ effects:
   - seeds_option_change_exchange_with_quantity_two
   - seeds_collectable_single_item_return
   - seeds_approved_refund_without_account
+  - seeds_requested_refund_with_quantity_two
   - reseed_same_tag_replaces_previous_set
   - teardown_by_tag_keeps_other_tags
   - teardown_without_tag_sweeps_every_seed_only

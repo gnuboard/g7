@@ -420,7 +420,7 @@
                                                     "if": "{{depItem.type === 'module'}}",
                                                     "props": {
                                                         "name": "cube",
-                                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                                        "className": "text-base text-muted",
                                                         "aria-hidden": "true"
                                                     }
                                                 },
@@ -430,7 +430,7 @@
                                                     "if": "{{depItem.type === 'plugin'}}",
                                                     "props": {
                                                         "name": "puzzle-piece",
-                                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                                        "className": "text-base text-muted",
                                                         "aria-hidden": "true"
                                                     }
                                                 },
@@ -526,7 +526,7 @@
                                                     "if": "{{intItem.type === 'module'}}",
                                                     "props": {
                                                         "name": "cube",
-                                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                                        "className": "text-base text-muted",
                                                         "aria-hidden": "true"
                                                     }
                                                 },
@@ -536,7 +536,7 @@
                                                     "if": "{{intItem.type === 'plugin'}}",
                                                     "props": {
                                                         "name": "puzzle-piece",
-                                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                                        "className": "text-base text-muted",
                                                         "aria-hidden": "true"
                                                     }
                                                 },
@@ -546,7 +546,7 @@
                                                     "if": "{{intItem.type === 'template'}}",
                                                     "props": {
                                                         "name": "palette",
-                                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                                        "className": "text-base text-muted",
                                                         "aria-hidden": "true"
                                                     }
                                                 },
@@ -723,7 +723,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400"
+                                        "className": "text-muted"
                                     },
                                     "text": "$t:admin.templates.modals.field_version"
                                 },
@@ -748,7 +748,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400"
+                                        "className": "text-muted"
                                     },
                                     "text": "$t:admin.templates.modals.field_vendor"
                                 },
@@ -773,7 +773,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400"
+                                        "className": "text-muted"
                                     },
                                     "text": "$t:admin.templates.modals.field_update_source"
                                 },
@@ -892,7 +892,7 @@
                                                                     "props": {
                                                                         "className": "text-secondary text-xs"
                                                                     },
-                                                                    "text": "• {{changeItem}}"
+                                                                    "text": "• {{String(changeItem ?? '').split('**').join('').split('`').join('')}}"
                                                                 }
                                                             ]
                                                         }

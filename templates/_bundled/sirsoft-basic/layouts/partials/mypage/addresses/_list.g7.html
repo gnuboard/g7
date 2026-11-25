@@ -8,7 +8,7 @@
     <!-- 헤더: 새 주소 추가 버튼 -->
     <div class="flex justify-end mb-4">
       <button type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
-        <responsive on="portable" class="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"/>
+        <responsive on="portable" class-merge="gap-1.5 px-3"/>
         <on type="click">
           <!-- 새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다).
                앞서 연 창의 값을 먼저 null 로 지운다 — 기본(deep) 병합은 이번 객체에 없는 키(id·이름·주소·입력해 둔 칸)를 남겨,
@@ -34,8 +34,8 @@
     <div data-if="{{(addresses?.data?.addresses?.data ?? []).length > 0}}" class="space-y-3">
       <responsive on="portable" class="space-y-2"/>
       <!-- 배송지 카드 -->
-      <div data-each="address, addressIdx in {{addresses?.data?.addresses?.data ?? []}}" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800" data-testid="address-card">
-        <responsive on="portable" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800"/>
+      <div data-each="address, addressIdx in {{addresses?.data?.addresses?.data ?? []}}" class="card-plain p-4" data-testid="address-card">
+        <responsive on="portable" class="card-plain p-3"/>
         <!-- 헤더: 라벨 + 기본배송지 뱃지 + 수정/삭제 버튼 -->
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-2 flex-wrap">
@@ -97,11 +97,11 @@
     </div>
     <!-- 빈 상태 - 배송지 없음 -->
     <div data-if="{{!(addresses?.data?.addresses?.data ?? []).length}}" class="bg-white dark:bg-gray-800 rounded-lg p-12 text-center">
-      <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg p-8 text-center"/>
+      <responsive on="portable" class-merge="p-8"/>
       <icon name="map-pin" class="text-6xl mx-auto text-gray-500 dark:text-gray-500 mb-4">
         <responsive on="portable" name="map-pin" class="text-5xl mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
       </icon>
-      <p class="text-gray-500 dark:text-gray-400 mb-4">$t:mypage.addresses.empty</p>
+      <p class="text-muted mb-4">$t:mypage.addresses.empty</p>
       <button type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
         <on type="click">
           <!-- 새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다).

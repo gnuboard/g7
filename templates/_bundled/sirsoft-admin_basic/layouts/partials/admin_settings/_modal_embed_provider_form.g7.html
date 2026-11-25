@@ -118,7 +118,7 @@
             </on>
           </input>
           <!-- 확인은 서버 왕복이라 응답이 올 때까지 단추를 잠그고 돌린다 — 없으면 연타가 그대로 여러 번의 호출이 되고 늦게 온 응답이 결과를 덮는다. 플래그는 창 상태(전역)에 두어 창을 다시 열면 함께 비워지고, 성공·실패 양쪽에서 끈다. -->
-          <button data-ref="embed_provider_sample_check" type="button" disabled="{{_global.embed_provider_form_modal?.previewing === true}}" class="flex-center gap-2 px-3 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+          <button data-ref="embed_provider_sample_check" type="button" disabled="{{_global.embed_provider_form_modal?.previewing === true}}" class="flex-center btn btn-secondary px-3">
             <on type="click">
               <!-- 예시 주소 확인 — 저장 때와 같은 서버 컴파일 규칙으로 꺼낸 id·플레이어 주소를 받는다(저장하지 않음) -->
               <sequence>
@@ -148,13 +148,13 @@
       </div>
     </div>
     <div data-ref="embed_provider_form_footer" class="flex-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
-      <button type="button" class="px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+      <button type="button" class="btn btn-secondary">
         <on type="click">
           <close-modal target="embed_provider_form_modal"/>
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button data-ref="embed_provider_apply_button" type="button" class="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg">
+      <button data-ref="embed_provider_apply_button" type="button" class="btn btn-primary">
         <on type="click">
           <!-- 적용 — 빈 칸(이름·식별자·주소 형식·플레이어 주소)이 있으면 막고, 아니면 목록 사본에 넣거나 바꿔 폼에 두 번 쓰고 닫는다 -->
           <sequence>

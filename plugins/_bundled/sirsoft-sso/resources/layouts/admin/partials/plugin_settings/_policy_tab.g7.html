@@ -68,8 +68,8 @@
           <div class="sso:flex-1 sso:min-w-0">
             <p class="sso:text-sm sso:text-gray-900 sso:dark:text-white">{{emergency.name}}</p>
             <!-- 실명 보조 줄 — 이름은 관리자 영역 표시 이름이고, 회원 조회 권한이 있으며 실명이 다를 때만 응답에 실린다(#490) -->
-            <span data-if="{{!!emergency.real_name}}" data-testid="emergency-real-name-sub" role="note" aria-label="{{$t('sirsoft-sso.admin.common.real_name_sub', { name: emergency.real_name })}}" class="sso:block sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">{{emergency.real_name}}</span>
-            <p class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:break-all sso-break-all">{{emergency.email ?? ''}}</p>
+            <span data-if="{{!!emergency.real_name}}" data-testid="emergency-real-name-sub" role="note" aria-label="{{$t('sirsoft-sso.admin.common.real_name_sub', { name: emergency.real_name })}}" class="sso:block sso:text-xs sso-text-muted">{{emergency.real_name}}</span>
+            <p class="sso:text-xs sso-text-muted sso:break-all sso-break-all">{{emergency.email ?? ''}}</p>
             <p data-if="{{emergency.has_password === false}}" class="sso:text-xs sso:text-red-600 sso:dark:text-red-400">$t:sirsoft-sso.admin.settings.policy.emergency_no_password</p>
           </div>
           <button data-ref="remove_emergency_{{emergency.id}}" type="button" class="sso-btn-icon" title="$t:sirsoft-sso.admin.common.remove_row" aria-label="$t:sirsoft-sso.admin.settings.policy.remove_emergency|name={{emergency.name}}" disabled="{{!_computed.canUpdate || _local.policyForm?.abilities?.is_super !== true || (_local.policyForm?.policy?.emergency_user_ids ?? []).length &lt;= 1}}">
@@ -110,8 +110,8 @@
           <div class="sso:flex-1 sso:min-w-0">
             <p class="sso:text-sm sso:text-gray-900 sso:dark:text-white">{{candidate.name}}</p>
             <!-- 후보는 코어 회원 목록 응답 — 같은 규칙의 실명 보조 값이 온다 -->
-            <span data-if="{{!!candidate.real_name}}" data-testid="emergency-candidate-real-name-sub" role="note" aria-label="{{$t('sirsoft-sso.admin.common.real_name_sub', { name: candidate.real_name })}}" class="sso:block sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">{{candidate.real_name}}</span>
-            <p class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:break-all sso-break-all">{{candidate.email ?? ''}}</p>
+            <span data-if="{{!!candidate.real_name}}" data-testid="emergency-candidate-real-name-sub" role="note" aria-label="{{$t('sirsoft-sso.admin.common.real_name_sub', { name: candidate.real_name })}}" class="sso:block sso:text-xs sso-text-muted">{{candidate.real_name}}</span>
+            <p class="sso:text-xs sso-text-muted sso:break-all sso-break-all">{{candidate.email ?? ''}}</p>
           </div>
           <button type="button" class="sso-btn sso-btn-secondary sso:text-xs" disabled="{{(_local.policyForm?.policy?.emergency_user_ids ?? []).includes(candidate.id)}}">
             <on type="click">

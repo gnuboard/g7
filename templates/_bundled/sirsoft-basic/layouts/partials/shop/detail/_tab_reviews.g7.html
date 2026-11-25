@@ -10,17 +10,17 @@
         <span class="text-4xl font-bold text-gray-900 dark:text-white">{{reviews.data?.rating_stats?.avg ?? 0}}</span>
         <div class="flex items-center justify-center gap-0.5 my-1">
           <span data-each="star in {{_local.starList}}">
-            <icon name="star" size="sm" class="{{star <= (reviews.data?.rating_stats?.avg ?? 0) ? 'text-yellow-700 dark:text-yellow-600' : 'text-gray-500 dark:text-gray-400'}}"/>
+            <icon name="star" size="sm" class="{{star <= (reviews.data?.rating_stats?.avg ?? 0) ? 'text-yellow-700 dark:text-yellow-600' : 'text-muted'}}"/>
           </span>
         </div>
-        <span class="text-xs text-gray-500 dark:text-gray-400">$t:shop.product.rating_out_of_5|count={{reviews.data?.total_count ?? 0}}|total={{reviews.data?.total_count ?? 0}}</span>
+        <span class="text-xs text-muted">$t:shop.product.rating_out_of_5|count={{reviews.data?.total_count ?? 0}}|total={{reviews.data?.total_count ?? 0}}</span>
       </div>
       <!-- 구분선 -->
       <div class="w-px h-16 bg-gray-200 dark:bg-gray-600 shrink-0"/>
       <!-- 별점 분포 바 (우측) -->
       <div class="flex-1 space-y-4">
         <div data-each="starNum in {{_local.starNums}}" class="flex items-center gap-2">
-          <span class="text-xs text-gray-500 dark:text-gray-400 w-3 shrink-0 text-right">{{starNum}}</span>
+          <span class="text-xs text-muted w-3 shrink-0 text-right">{{starNum}}</span>
           <icon name="star" size="sm" class="text-yellow-700 dark:text-yellow-400 shrink-0"/>
           <div class="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
             <div class="bg-yellow-400 dark:bg-yellow-400 h-2 rounded-full">
@@ -29,7 +29,7 @@
               </prop>
             </div>
           </div>
-          <span class="text-xs text-gray-500 dark:text-gray-400 w-5 text-right shrink-0">{{reviews.data?.rating_stats?.[starNum + '']?.count ?? 0}}</span>
+          <span class="text-xs text-muted w-5 text-right shrink-0">{{reviews.data?.rating_stats?.[starNum + '']?.count ?? 0}}</span>
         </div>
       </div>
     </div>
@@ -112,7 +112,7 @@
          읽는다(조건 단추·칸은 묶음 밖이라 누른 상태가 또렷하다). 종전에는 단추만 바로 켜지고 앞 목록이 그대로 보이다 바뀌었다 -->
     <div data-ref="review_tab_list" data-blur-until-loaded="{{_local.reviewsLoading ?? false}}">
       <!-- 리뷰 목록 (이미지3: 카드 레이아웃 수정) -->
-      <div data-each="review in {{reviews.data?.reviews?.data ?? []}}" class="">
+      <div data-each="review in {{reviews.data?.reviews?.data ?? []}}">
         <include src="partials/shop/detail/_review_card.g7.html"/>
       </div>
       <!-- 리뷰 없음 -->

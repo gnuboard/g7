@@ -84,7 +84,7 @@
     <div data-ref="popup_list_content" class="g7pp-admin-page-content">
       <div data-ref="page_header" class="g7pp-flex-between gpp:flex-wrap gpp:gap-3 gpp:mb-6">
         <div>
-          <p class="gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400 gpp:mb-1">$t:sirsoft-popup.admin.breadcrumb</p>
+          <p class="gpp:text-xs g7pp-text-muted gpp:mb-1">$t:sirsoft-popup.admin.breadcrumb</p>
           <h1 class="gpp:text-xl gpp:font-semibold gpp:text-gray-900 gpp:dark:text-white"><responsive on="640-" class="gpp:text-2xl gpp:font-semibold gpp:text-gray-900 gpp:dark:text-white"/>$t:sirsoft-popup.admin.title</h1>
           <p class="g7pp-text-label-subtle gpp:mt-1">$t:sirsoft-popup.admin.description</p>
         </div>
@@ -109,15 +109,16 @@
           </a>
         </div>
       </div>
-      <!-- 지금 노출 중 — 캐러셀 순서대로. 경로·대상·기기는 방문자마다 달라 기기 표시만 단다(결정 R10) -->
-      <section data-ref="summary_card" aria-labelledby="popup_summary_heading" class="gpp:bg-white gpp:dark:bg-gray-800 gpp:rounded-lg gpp:border gpp:border-gray-200 gpp:dark:border-gray-700 gpp:p-4 gpp:mb-6 gpp:flex gpp:flex-col gpp:gap-4">
+      <!-- 지금 노출 중 — 캐러셀 순서대로. 경로·대상·기기는 방문자마다 달라 기기 표시만 단다(결정 R10)
+        audit:allow layout-inline-semantic-duplicate reason: 지금 노출 중 요약 상자의 데스크톱 구간, 기본은 admin-card 사본인데 넓은 화면에서 가로 배치(flex-row items-center)로 바꾸려고 구간 class 를 통째로 적어 flex-col 인 카드와 배치가 다름 -->
+      <section data-ref="summary_card" aria-labelledby="popup_summary_heading" class="g7pp-admin-card gpp:gap-4">
         <responsive on="desktop" class="gpp:bg-white gpp:dark:bg-gray-800 gpp:rounded-lg gpp:border gpp:border-gray-200 gpp:dark:border-gray-700 gpp:p-4 gpp:mb-6 gpp:flex gpp:flex-row gpp:items-center gpp:gap-4"/>
         <div class="gpp:shrink-0">
-          <responsive on="desktop" class="gpp:w-1/5 gpp:shrink-0"/>
+          <responsive on="desktop" class-merge="gpp:w-1/5"/>
           <h2 id="popup_summary_heading" class="gpp:text-base gpp:font-semibold gpp:text-gray-900 gpp:dark:text-white">$t:sirsoft-popup.admin.summary.title|count={{(summary?.data?.data ?? []).length}}</h2>
-          <p class="gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400 gpp:mt-1">$t:sirsoft-popup.admin.summary.order_hint</p>
+          <p class="gpp:text-xs g7pp-text-muted gpp:mt-1">$t:sirsoft-popup.admin.summary.order_hint</p>
         </div>
-        <p data-if="{{summary !== undefined &amp;&amp; (summary?.data?.data ?? []).length === 0}}" class="gpp:text-sm gpp:text-gray-500 gpp:dark:text-gray-400 gpp:flex-1">$t:sirsoft-popup.admin.summary.empty</p>
+        <p data-if="{{summary !== undefined &amp;&amp; (summary?.data?.data ?? []).length === 0}}" class="gpp:text-sm g7pp-text-muted gpp:flex-1">$t:sirsoft-popup.admin.summary.empty</p>
         <!-- 많으면 처음 8개만(휴대폰 폭은 한 줄 3개) — 검색·목록이 화면 아래로 밀려나지 않게. 번호는 전체 순서 그대로다 -->
         <ol id="popup_summary_items" data-ref="summary_items" data-if="{{(summary?.data?.data ?? []).length &gt; 0}}" class="gpp:flex gpp:flex-wrap gpp:items-start gpp:gap-3 gpp:flex-1">
           <li data-each="item, idx in (summary?.data?.data ?? []).slice(0, _local.summaryExpanded === true ? undefined : 8)" class="gpp:w-20 {{idx &gt;= 3 &amp;&amp; _local.summaryExpanded !== true ? 'gpp:hidden' : ''}}">
@@ -333,7 +334,7 @@
           <cell>
             <!-- 팝업 이미지는 세로가 조금 긴 칸(64×80 이하)에 덮어 그린다 — 정사각 자르기 sm(160) -->
             <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail?.url}}" thumbPreset="sm" decoding="async" alt="" class="gpp:w-12 gpp:h-14 gpp:object-cover gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700" loading="lazy"/>
-            <span data-if="{{!row.thumbnail}}" class="gpp:w-12 gpp:h-14 g7pp-flex-center gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700 gpp:bg-white gpp:dark:bg-gray-800 gpp:text-[10px] gpp:text-gray-500 gpp:dark:text-gray-400 gpp:text-center">$t:sirsoft-popup.admin.content_type.html_short</span>
+            <span data-if="{{!row.thumbnail}}" class="gpp:w-12 gpp:h-14 g7pp-flex-center gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700 gpp:bg-white gpp:dark:bg-gray-800 gpp:text-[10px] g7pp-text-muted gpp:text-center">$t:sirsoft-popup.admin.content_type.html_short</span>
           </cell>
         </column>
         <column field="title" header="$t:sirsoft-popup.admin.list.column.title">
@@ -345,7 +346,7 @@
                 </on>
                 {{row.title}}
               </a>
-              <span class="gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400">{{$t('sirsoft-popup.admin.content_type.' + row.content_type)}}{{(row.filled_locales ?? []).length &gt; 0 ? ' · ' + (row.filled_locales ?? []).map(l =&gt; _global.appConfig?.localeNames?.[l] ?? l.toUpperCase()).join(' · ') : ''}}</span>
+              <span class="gpp:text-xs g7pp-text-muted">{{$t('sirsoft-popup.admin.content_type.' + row.content_type)}}{{(row.filled_locales ?? []).length &gt; 0 ? ' · ' + (row.filled_locales ?? []).map(l =&gt; _global.appConfig?.localeNames?.[l] ?? l.toUpperCase()).join(' · ') : ''}}</span>
             </div>
           </cell>
         </column>
@@ -354,7 +355,7 @@
             <span data-if="{{row.page_scope !== 'routes'}}" class="gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300">$t:sirsoft-popup.admin.page_scope.all</span>
             <div data-if="{{row.page_scope === 'routes'}}" class="gpp:flex gpp:flex-wrap gpp:gap-1">
               <code data-each="route in (row.routes ?? []).slice(0, 3)" class="gpp:px-1.5 gpp:py-0.5 gpp:text-xs gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-600 gpp:bg-gray-50 gpp:dark:bg-gray-700 gpp:text-gray-800 gpp:dark:text-gray-200">{{route}}</code>
-              <span data-if="{{(row.routes ?? []).length &gt; 3}}" class="gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400">$t:sirsoft-popup.admin.list.more_routes|count={{(row.routes ?? []).length - 3}}</span>
+              <span data-if="{{(row.routes ?? []).length &gt; 3}}" class="gpp:text-xs g7pp-text-muted">$t:sirsoft-popup.admin.list.more_routes|count={{(row.routes ?? []).length - 3}}</span>
             </div>
           </cell>
         </column>
@@ -580,19 +581,19 @@
                   <responsive on="768-" class="gpp:flex gpp:cursor-grab gpp:text-gray-400 gpp:hover:text-gray-600 gpp:dark:text-gray-500 gpp:dark:hover:text-gray-300"/>
                   <icon name="fa-solid fa-grip-vertical" class="gpp:text-sm"/>
                 </div>
-                <span class="gpp:w-6 gpp:text-right gpp:text-sm gpp:tabular-nums gpp:text-gray-500 gpp:dark:text-gray-400">{{row._idx + 1}}</span>
+                <span class="gpp:w-6 gpp:text-right gpp:text-sm gpp:tabular-nums g7pp-text-muted">{{row._idx + 1}}</span>
                 <!-- 팝업 이미지는 세로가 조금 긴 칸(64×80 이하)에 덮어 그린다 — 정사각 자르기 sm(160) -->
                 <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="gpp:w-8 gpp:h-10 gpp:object-cover gpp:rounded"/>
                 <span class="gpp:truncate gpp:flex-1 gpp:font-medium gpp:text-gray-900 gpp:dark:text-gray-100">{{row.title}}</span>
                 <status-badge data-type="composite" status="{{row.status === 'active' ? 'success' : (row.status === 'scheduled' ? 'info' : (row.status === 'ended' ? 'default' : 'danger'))}}" label="{{$t('sirsoft-popup.admin.status.' + row.status)}}" :showIcon="false"/>
-                <button data-testid="popup-reorder-up-{{row.id}}" type="button" aria-label="{{$t('sirsoft-popup.admin.reorder.move_up', { name: row.title })}}" class="g7pp-flex-center gpp:w-10 gpp:h-10 gpp:shrink-0 gpp:text-gray-500 gpp:hover:text-gray-800 gpp:dark:text-gray-400 gpp:dark:hover:text-gray-100 gpp:rounded gpp:hover:bg-gray-100 gpp:dark:hover:bg-gray-700 gpp:disabled:opacity-40 gpp:disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === 0}}">
+                <button data-testid="popup-reorder-up-{{row.id}}" type="button" aria-label="{{$t('sirsoft-popup.admin.reorder.move_up', { name: row.title })}}" class="g7pp-flex-center gpp:w-10 gpp:h-10 gpp:shrink-0 g7pp-text-muted gpp:hover:text-gray-800 gpp:dark:hover:text-gray-100 gpp:rounded gpp:hover:bg-gray-100 gpp:dark:hover:bg-gray-700 gpp:disabled:opacity-40 gpp:disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === 0}}">
                   <on type="click">
                     <!-- 한 칸 위로 — 바로 위 항목과 자리를 바꾸고 직전 오류를 지운다(저장 전) -->
                     <set-state target="global" reorderItems="{{(_global.reorderItems ?? []).map((r, i, a) =&gt; i === row._idx - 1 ? a[row._idx] : (i === row._idx ? a[row._idx - 1] : r))}}" :reorderError="null"/>
                   </on>
                   <icon name="fa-solid fa-chevron-up" class="gpp:text-xs"/>
                 </button>
-                <button data-testid="popup-reorder-down-{{row.id}}" type="button" aria-label="{{$t('sirsoft-popup.admin.reorder.move_down', { name: row.title })}}" class="g7pp-flex-center gpp:w-10 gpp:h-10 gpp:shrink-0 gpp:text-gray-500 gpp:hover:text-gray-800 gpp:dark:text-gray-400 gpp:dark:hover:text-gray-100 gpp:rounded gpp:hover:bg-gray-100 gpp:dark:hover:bg-gray-700 gpp:disabled:opacity-40 gpp:disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}">
+                <button data-testid="popup-reorder-down-{{row.id}}" type="button" aria-label="{{$t('sirsoft-popup.admin.reorder.move_down', { name: row.title })}}" class="g7pp-flex-center gpp:w-10 gpp:h-10 gpp:shrink-0 g7pp-text-muted gpp:hover:text-gray-800 gpp:dark:hover:text-gray-100 gpp:rounded gpp:hover:bg-gray-100 gpp:dark:hover:bg-gray-700 gpp:disabled:opacity-40 gpp:disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}">
                   <on type="click">
                     <!-- 한 칸 아래로 — 바로 아래 항목과 자리를 바꾸고 직전 오류를 지운다(저장 전) -->
                     <set-state target="global" reorderItems="{{(_global.reorderItems ?? []).map((r, i, a) =&gt; i === row._idx ? a[row._idx + 1] : (i === row._idx + 1 ? a[row._idx] : r))}}" :reorderError="null"/>

@@ -7,7 +7,7 @@
 ```text
 1. 유형: 템플릿 (sirsoft-admin_basic) — 코어·모든 번들 확장의 관리자 화면을 그리는 유일한 admin 템플릿
 2. 확장 방식: 필수 컴포넌트(35개, config/template.php)만 써서 레이아웃 JSON 작성 — 다른 admin 템플릿으로 교체돼도 동작 보장
-3. 건드리면 안 되는 것: `Icon` 컴포넌트로 AdminSidebar 아이콘 렌더(반드시 `I`+FontAwesome 클래스), `_admin_base` 슬롯 구조를 임의로 재배치
+3. 건드리면 안 되는 것: AdminSidebar 아이콘은 `MenuIcon`(FA 클래스는 `I`+원문 클래스, 이미지·SVG 는 `icon_spec`)으로만 렌더, `_admin_base` 슬롯 구조를 임의로 재배치
 4. 작업 위치: `templates/_bundled/sirsoft-admin_basic` — 활성 디렉토리 직접 수정 금지
 5. 반영: `php artisan template:update sirsoft-admin_basic --force`
 ```
@@ -78,7 +78,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 제공 컴포넌트 | 135개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
+| 제공 컴포넌트 | 137개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
 | 레이아웃 | 223개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
 | 전용 핸들러 | 29개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 0개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
@@ -131,7 +131,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 |---|---|---|
 | 받은 뒤에만 뜻이 있는 안내·경고를 `!ds?.data?.x`·`ds?.data?.y !== true`·`(_local.form?.z ?? []).length === 0` 만으로 판정 | `{{ds !== undefined && (…)}}`(폼 값이면 폼을 채우는 소스로 가드), `?? 0` 숫자는 그 소스를 기다리는 `blur_until_loaded` 아래 | 화면이 먼저 그려진 뒤 받는 데이터는 받기 전 `undefined` 다 — 「잠금 아님」·「권한 없음」·「sync 드라이버」·「0건」이 먼저 보였다가 바뀐다(#915, `__tests__/layouts/loadingNegativeState.test.tsx` 가 전수로 잠근다) |
 | 링크 컴포넌트에 주소 구독 훅·내부 링크 판정·새 창 rel 규칙을 따로 구현 | `G7Core.navigation.useLocationSearch`·`resolveInternalHref`·`mergeRelForTarget` 를 부르고(engine-v1.83.0), 그 API 가 없는 옛 코어에만 짧은 대체를 둔다(내부 링크는 `/` 경로와 경로가 `//` 로 시작하지 않는 같은 출처 `http(s)://` 주소 — 7.1.2 템플릿과 같은 결과라 알림·메뉴의 전체 주소가 새 탭으로 열리지 않는다) | 템플릿마다 사본이 갈라져 엔진 수정을 템플릿마다 옮겨야 했고, 같은 출처 `//다른호스트` 주소를 내부 링크로 본 사본이 생겼다(7.1.3) |
-| `AdminSidebar` 메뉴 아이콘을 `Icon name="home"` 식으로 렌더 | `I` 컴포넌트 + FontAwesome 클래스 문자열(`icon` 필드가 이미 `"fas fa-home"` 형태) | 메뉴 API 가 클래스 문자열을 내려주므로 `Icon`(IconName enum) 으로 받으면 렌더되지 않는다 |
+| `AdminSidebar`·메뉴 관리 화면의 메뉴 아이콘을 `<I className={item.icon}>`·`Icon name=…` 으로 직접 렌더 | `MenuIcon spec={item.icon_spec} icon={item.icon} fallbackIcon=…` — FA 클래스는 `I`+원문 클래스(종전 출력과 같다), 이미지·SVG 는 `icon_spec` 으로 그린다 | 메뉴 API 의 `icon` 은 FA 클래스일 때만 값이고 이미지·SVG 메뉴는 `null` 이다(코어 7.2.1). 직접 렌더하면 그 메뉴들이 빈 칸이 되고, SVG 는 정제 없이 그리면 XSS 경로가 된다 |
 | 필수 컴포넌트 목록 밖의 이 템플릿 전용 컴포넌트를 모듈 레이아웃에서 사용 | 필수 컴포넌트(config/template.php) 만 사용 | 다른 admin 템플릿으로 교체 시 그 화면만 깨진다 |
 | 사이드바 접힘 상태를 레이아웃 `init_actions` 로 매번 복원 | 템플릿 부트스트랩(`src/index.ts`)에서 1회 복원 | `init_actions` 는 화면 진입마다 재실행되어 불필요한 반복 처리가 된다 |
 | `_admin_base` 를 상속하는데 로그인 화면처럼 `initTheme`/메뉴 초기화를 다시 호출 | `_admin_base` 상속 화면은 이미 초기화된 전역 상태를 그대로 사용 | 중복 호출은 낭비이며, 두 초기화 지점의 결과가 어긋나면 화면 간 상태 불일치가 생긴다 |
@@ -201,9 +201,9 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 583개 | `vitest.config.ts` |
-| Playwright | 41개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 225개 | `tests/scenarios` |
+| Vitest | 596개 | `vitest.config.ts` |
+| Playwright | 42개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 232개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

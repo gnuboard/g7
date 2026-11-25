@@ -190,7 +190,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400"
+                                "className": "paytosspayments:text-sm pay-tosspayments-text-muted"
                             },
                             "text": "$t:sirsoft-tosspayments.user.payment_type_label"
                         },
@@ -215,7 +215,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400"
+                                "className": "paytosspayments:text-sm pay-tosspayments-text-muted"
                             },
                             "text": "$t:sirsoft-tosspayments.user.receipt_label"
                         },
@@ -246,7 +246,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400"
+                        "className": "paytosspayments:text-sm pay-tosspayments-text-muted"
                     },
                     "text": "$t:sirsoft-tosspayments.user.cash_receipt_label"
                 },

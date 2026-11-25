@@ -585,12 +585,12 @@
             "responsive": {
                 "640-": {
                     "props": {
-                        "className": "block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto"
+                        "className": "block card-plain overflow-x-auto"
                     }
                 }
             },
             "props": {
-                "className": "hidden bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto"
+                "className": "hidden card-plain overflow-x-auto"
             },
             "children": [
                 {
@@ -646,7 +646,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 w-28"
+                                                "className": "px-4 py-3 text-left text-xs font-medium text-muted w-28"
                                             },
                                             "text": "$t:mypage.board_activities.reactions.table.type"
                                         },
@@ -654,7 +654,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 w-20"
+                                                "className": "px-4 py-3 text-left text-xs font-medium text-muted w-20"
                                             },
                                             "text": "$t:mypage.board_activities.reactions.table.target"
                                         },
@@ -662,7 +662,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400"
+                                                "className": "px-4 py-3 text-left text-xs font-medium text-muted"
                                             },
                                             "text": "$t:mypage.board_activities.reactions.table.title"
                                         },
@@ -670,7 +670,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 w-32"
+                                                "className": "px-4 py-3 text-left text-xs font-medium text-muted w-32"
                                             },
                                             "text": "$t:mypage.board_activities.reactions.table.board"
                                         },
@@ -678,7 +678,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 w-32"
+                                                "className": "px-4 py-3 text-left text-xs font-medium text-muted w-32"
                                             },
                                             "text": "$t:mypage.board_activities.reactions.table.reacted_at"
                                         },
@@ -686,7 +686,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-20"
+                                                "className": "px-4 py-3 text-center text-xs font-medium text-muted w-20"
                                             },
                                             "text": "$t:mypage.board_activities.reactions.table.manage"
                                         }
@@ -843,7 +843,7 @@
                                                             "name": "Span",
                                                             "if": "{{reaction.target_type === 'comment' && !!reaction.title}}",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400 truncate"
+                                                                "className": "text-xs text-muted truncate"
                                                             },
                                                             "text": "{{reaction.title}}"
                                                         }
@@ -862,7 +862,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                        "className": "text-sm text-muted"
                                                     },
                                                     "text": "{{reaction.board_name ?? ''}}"
                                                 }
@@ -879,7 +879,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                        "className": "text-sm text-muted"
                                                     },
                                                     "text": "{{reaction.reacted_at ?? ''}}"
                                                 }
@@ -1391,9 +1391,7 @@
             "if": "{{(myReactions?.data?.data ?? []).length > 0}}",
             "responsive": {
                 "640-": {
-                    "props": {
-                        "className": "hidden space-y-3"
-                    }
+                    "classMerge": "hidden"
                 }
             },
             "props": {
@@ -1409,7 +1407,7 @@
                     },
                     "props": {
                         "data-testid": "my-reaction-row-m-{{reaction.id}}",
-                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 {{reaction.target_deleted || !reaction.reaction_enabled || reaction.board_deleted ? 'opacity-75' : ''}}"
+                        "className": "card-plain p-4 {{reaction.target_deleted || !reaction.reaction_enabled || reaction.board_deleted ? 'opacity-75' : ''}}"
                     },
                     "children": [
                         {
@@ -1629,7 +1627,7 @@
             "if": "{{myReactions !== undefined && (myReactions?.data?.data ?? []).length === 0}}",
             "props": {
                 "data-testid": "my-reactions-empty",
-                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center"
+                "className": "card-plain p-8 text-center"
             },
             "children": [
                 {
@@ -1647,7 +1645,7 @@
                     "name": "P",
                     "if": "{{!(!!_global.myReactionsSearchApplied || !!_global.myReactionsBoard || !!_global.myReactionsTypeId || !!_global.myReactionsTargetType)}}",
                     "props": {
-                        "className": "text-gray-500 dark:text-gray-400"
+                        "className": "text-muted"
                     },
                     "text": "$t:mypage.board_activities.reactions.empty"
                 },
@@ -1656,7 +1654,7 @@
                     "name": "P",
                     "if": "{{!!_global.myReactionsSearchApplied || !!_global.myReactionsBoard || !!_global.myReactionsTypeId || !!_global.myReactionsTargetType}}",
                     "props": {
-                        "className": "text-gray-500 dark:text-gray-400"
+                        "className": "text-muted"
                     },
                     "text": "$t:board.no_search_results"
                 },

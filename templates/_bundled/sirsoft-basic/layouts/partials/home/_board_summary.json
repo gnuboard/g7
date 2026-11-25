@@ -101,7 +101,7 @@
                                             "if": "{{post.is_secret}}",
                                             "props": {
                                                 "name": "lock",
-                                                "className": "text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                                                "className": "text-sm text-muted shrink-0"
                                             }
                                         },
                                         {
@@ -121,6 +121,7 @@
                                         },
                                         {
                                             "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 게시판 묶음 안의 글이라 게시판은 item.slug 에서 온다",
+                                            "id": "ext_board_post_row_badges_home_board_summary_{{post.id}}",
                                             "type": "extension_point",
                                             "name": "board_post_row_badges",
                                             "props": {
@@ -180,7 +181,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400 shrink-0",
+                                        "className": "text-xs text-muted shrink-0",
                                         "title": "{{post.created_at ?? ''}}"
                                     },
                                     "text": "{{post.created_at_formatted ?? ''}}"
@@ -194,7 +195,7 @@
                     "name": "Div",
                     "if": "{{!item.recent_posts || item.recent_posts.length === 0}}",
                     "props": {
-                        "className": "py-10 my-1 text-center text-sm text-gray-500 dark:text-gray-400"
+                        "className": "py-10 my-1 text-center text-sm text-muted"
                     },
                     "children": [
                         {

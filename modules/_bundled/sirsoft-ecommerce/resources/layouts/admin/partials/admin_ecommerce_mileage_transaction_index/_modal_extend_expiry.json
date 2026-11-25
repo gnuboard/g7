@@ -24,7 +24,7 @@
                 "props": {
                     "type": "button",
                     "disabled": "{{_global.mileageExtend?.isSaving ?? false}}",
-                    "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                    "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:text-sm"
                 },
                 "children": [
                     {
@@ -115,7 +115,7 @@
                 "props": {
                     "type": "button",
                     "disabled": "{{_global.mileageExtend?.isSaving || !(Number(_global.mileageExtend?.days ?? 0) > 0) || (_global.mileageExtend?.lotIds ?? []).length === 0}}",
-                    "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce-btn ecommerce-btn-primary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                    "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce-btn ecommerce-btn-primary ecommerce:text-sm"
                 },
                 "children": [
                     {

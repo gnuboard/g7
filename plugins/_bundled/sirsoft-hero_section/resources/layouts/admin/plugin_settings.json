@@ -79,7 +79,7 @@
                 "responsive": {
                     "640-1023": {
                         "props": {
-                            "className": "hs:p-6 hs:min-h-screen hs:bg-gray-50 hs:dark:bg-gray-900"
+                            "className": "hs-admin-page-content"
                         }
                     },
                     "1024-": {

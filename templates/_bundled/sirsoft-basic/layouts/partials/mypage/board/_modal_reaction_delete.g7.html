@@ -7,7 +7,7 @@
     <div data-testid="reaction-delete-modal" class="space-y-4">
       <p data-if="{{!_global.reactionDeleteModal?.isDeleted}}" class="text-gray-600 dark:text-gray-400">$t:mypage.board_activities.reactions.delete_confirm|title={{_global.reactionDeleteModal?.title ?? ''}}</p>
       <p data-if="{{_global.reactionDeleteModal?.isDeleted}}" class="text-gray-600 dark:text-gray-400">$t:mypage.board_activities.reactions.delete_confirm_deleted</p>
-      <p class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.board_activities.reactions.delete_notice</p>
+      <p class="text-sm text-muted">$t:mypage.board_activities.reactions.delete_notice</p>
     </div>
     <footer>
       <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">

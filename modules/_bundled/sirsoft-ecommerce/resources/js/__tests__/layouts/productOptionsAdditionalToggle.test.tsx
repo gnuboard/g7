@@ -25,6 +25,7 @@ import productForm from '../../../layouts/admin/admin_ecommerce_product_form.jso
 import clearModal from '../../../layouts/admin/partials/admin_ecommerce_product_form/_modal_additional_options_clear.json';
 import saveTemplateModal from '../../../layouts/admin/partials/admin_ecommerce_product_form/_modal_save_template.json';
 import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
+import { applyResponsiveClassMerge } from '@core/template-engine/helpers/StyleHelpers';
 
 const serialize = (obj: unknown) => JSON.stringify(obj);
 
@@ -42,9 +43,26 @@ const findInChildren = (root: any, pred: (n: any) => boolean): any => {
     return null;
 };
 
-/** 640px 이상 구간(엔진 responsive `640-`)에서 쓰이는 className. 그 구간 덮어쓰기가 없으면 기본 className. */
-const wideClass = (node: any): string =>
-    String(node?.responsive?.['640-']?.props?.className ?? node?.props?.className ?? '');
+/**
+ * 640px 이상 구간(엔진 responsive `640-`)에서 쓰이는 className. 그 구간 덮어쓰기가 없으면 기본 className.
+ * 구간 실효값 = 구간 class(있으면 통째 교체) 위에 구간 class-merge 를 엔진 규칙으로 덧붙인 값 (engine-v1.98.0).
+ * 접두 토큰(`ecommerce:items-end`)끼리 충돌 교체가 되도록 서버가 내려 주는 접두 목록을 잠시 세운다.
+ */
+const wideClass = (node: any): string => {
+    const range = node?.responsive?.['640-'];
+    if (!range) return String(node?.props?.className ?? '');
+    const g = globalThis as { window?: { G7Config?: Record<string, unknown> } };
+    const created = g.window === undefined;
+    if (created) g.window = {};
+    const prev = g.window!.G7Config;
+    g.window!.G7Config = { ...(prev ?? {}), extensionClassPrefixes: ['ecommerce'] };
+    try {
+        return applyResponsiveClassMerge(range.props?.className ?? node?.props?.className, range.classMerge);
+    } finally {
+        if (created) delete g.window;
+        else g.window!.G7Config = prev;
+    }
+};
 
 /** Button 노드를 children 트리에서 텍스트로 찾는다. */
 const findButtonByText = (root: any, text: string): any =>

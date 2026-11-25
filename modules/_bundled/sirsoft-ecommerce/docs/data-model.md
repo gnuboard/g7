@@ -15,8 +15,8 @@
 | `ClaimPayment` | `ecommerce_claim_payments` | 18 | payable→?, order→Order, mileageTransactions→MileageTransaction | - |
 | `ClaimReason` | `ecommerce_claim_reasons` | 10 | creator→User, updater→User | HasUserOverrides |
 | `ContentMedia` | `ecommerce_attachments` | - | - | - |
-| `Coupon` | `ecommerce_promotion_coupons` | 22 | issues→CouponIssue, products→Product, includedProducts→Product, excludedProducts→Product, categories→Category, includedCategories→Category, 외 2개 | SoftDeletes, 검색 색인 |
-| `CouponIssue` | `ecommerce_promotion_coupon_issues` | 9 | coupon→Coupon, user→User, order→Order | - |
+| `Coupon` | `ecommerce_promotion_coupons` | 25 | issues→CouponIssue, products→Product, includedProducts→Product, excludedProducts→Product, categories→Category, includedCategories→Category, 외 2개 | SoftDeletes, 검색 색인 |
+| `CouponIssue` | `ecommerce_promotion_coupon_issues` | 13 | coupon→Coupon, user→User, sourceOrder→Order, order→Order | - |
 | `EcommerceAttachment` | `ecommerce_attachments` | 14 | - | SoftDeletes |
 | `EcommerceStat` | `ecommerce_stats` | 4 | - | - |
 | `EcommerceUserProfile` | `ecommerce_user_profiles` | 3 | user→User | - |
@@ -206,6 +206,21 @@
 `ecommerce_product_reviews.active_order_option_key`(가상 생성, 유니크)는 지워지지 않은 후기의 `order_option_id` 입니다 — 주문 옵션
 하나에 살아 있는 후기는 하나뿐이고, 지운 뒤에는 다시 쓸 수 있습니다. 과거 활성 중복은 가장 먼저 쓴 1건만 남기고 소프트 삭제합니다(id 는
 로그). 이 제약 때문에 나뉜 주문 옵션 두 줄에 후기가 하나씩 있으면 두 줄을 합치지 않습니다(`OrderOptionService` 병합 가드).
+
+### 쿠폰 자동발급 (1.4.1)
+
+가입·첫구매·생일 자동발급의 「회원당 한 번(생일은 해마다 한 번)」은 조회가 아니라 **DB 유니크** `uq_coupon_issue_auto_key(coupon_id, user_id, auto_issue_key)` 가 정합니다 — 같은 회원의 가입 훅 두 개·동시 주문이 겹쳐도 두 번째 발급은 유니크 위반으로 막히고, 발급 서비스는 그 위반을 「이미 받음」으로 흡수합니다. NULL 은 서로 다른 값이라 다운로드·직접발급 행(키 null)은 이 제약에 걸리지 않습니다.
+
+| 테이블 · 컬럼 | 뜻 |
+|---|---|
+| `ecommerce_promotion_coupons.first_purchase_trigger_status` | 첫구매 쿠폰의 발급 시점 주문 상태(`CouponFirstPurchaseTrigger`). null 이면 구매확정으로 본다 |
+| `ecommerce_promotion_coupons.notify_enabled` · `notify_marketing_only` | 발급 알림 사용 · 광고성 안내. 알림을 켠 쿠폰마다 알림 종류 `coupon_issued.{id}` 가 따로 있다(채널·문구는 알림 템플릿에 저장) |
+| `ecommerce_promotion_coupon_issues.issue_source` | 발급 경로(`CouponIssueSource`). 1.4.1 이전 행은 null 이고 화면은 코드 접두(DL/DR)로 추정한다. 자동발급 코드는 `AU-` |
+| `ecommerce_promotion_coupon_issues.auto_issue_key` | `signup` · `first_purchase` · `birthday:{연도}`. 첫구매 쿠폰을 회수(원천 주문 전체 취소·반품)하면 null 로 바꿔 다음 주문이 다시 받을 수 있게 한다 |
+| `ecommerce_promotion_coupon_issues.source_order_id` | 첫구매 쿠폰을 발급하게 한 주문(FK, 주문 삭제 시 null). 쿠폰을 쓴 주문 `order_id` 와 다르다 |
+| `ecommerce_promotion_coupon_issues.expiry_notified_at` | 만료 임박 알림을 보낸 시각 — 한 발급 건에 한 번만 알린다 |
+
+자동발급 쿠폰의 `per_user_limit` 은 0 으로 고정합니다(횟수는 위 키가 정한다). 자동발급 쿠폰을 직접발급하면 같은 키로 발급해 한도를 공유합니다 — 이미 자동으로 받은 회원은 사유 `auto_issue_already_issued` 로 건너뜁니다.
 <!-- @intent END -->
 
 ## 소유 테이블
@@ -316,7 +331,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 137개.
+마이그레이션 139개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -457,6 +472,8 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 | `2026_11_13_000001_add_active_slot_keys_to_ecommerce_order_cash_receipts_table.php` | - | - | ✅ |
 | `2026_11_13_000002_add_unique_active_review_per_order_option_to_ecommerce_product_reviews_table.php` | - | - | ✅ |
 | `2026_11_15_000001_add_disk_to_ecommerce_exports_table.php` | - | `ecommerce_exports` | ✅ |
+| `2026_11_21_000001_add_auto_issue_columns_to_ecommerce_promotion_coupons_table.php` | - | - | ✅ |
+| `2026_11_21_000002_add_auto_issue_columns_to_ecommerce_promotion_coupon_issues_table.php` | - | - | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -515,9 +532,11 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 | `ClaimTypeEnum` | `string` | 4 | `exchange`, `return`, `refund`, `cancel` |
 | `ContentMediaOwnerType` | `string` | 2 | `product`, `common_info` |
 | `CouponDiscountType` | `string` | 2 | `fixed`, `rate` |
+| `CouponFirstPurchaseTrigger` | `string` | 5 | `payment_complete`, `preparing`, `shipping`, `delivered`, `confirmed` |
 | `CouponIssueCondition` | `string` | 4 | `manual`, `signup`, `first_purchase`, `birthday` |
 | `CouponIssueMethod` | `string` | 3 | `direct`, `download`, `auto` |
 | `CouponIssueRecordStatus` | `string` | 4 | `available`, `used`, `expired`, `cancelled` |
+| `CouponIssueSource` | `string` | 5 | `download`, `direct`, `signup`, `first_purchase`, `birthday` |
 | `CouponIssueStatus` | `string` | 2 | `issuing`, `stopped` |
 | `CouponTargetScope` | `string` | 3 | `all`, `products`, `categories` |
 | `CouponTargetType` | `string` | 3 | `product_amount`, `order_amount`, `shipping_fee` |
@@ -596,6 +615,8 @@ Enum 49종이 이 도메인의 **어휘 전체**입니다. 상태·분류를 문
 <!-- @generated:repositories START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 클래스 | 종류 | 설명 |
 |---|---|---|
+| `BirthdayMemberRepository` | 구현 | 생일 회원 조회 Repository 구현체 (#952) |
+| `BirthdayMemberRepositoryInterface` | 인터페이스 | 생일 회원 조회 Repository 인터페이스 (#952) |
 | `BrandRepository` | 구현 | 브랜드 Repository 구현체 |
 | `BrandRepositoryInterface` | 인터페이스 | 브랜드 Repository 인터페이스 |
 | `CartRepository` | 구현 | 장바구니 Repository 구현체 |

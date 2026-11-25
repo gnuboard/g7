@@ -749,6 +749,29 @@
       ]
     },
     {
+      "comment": "내 리뷰 삭제 확인 창(#952) — 본문이 지울 리뷰의 상품명을 전역 상태로 읽는다. 목록 행의 삭제 단추가 담는 값이라 편집기에서는 이 상태로 채운다.",
+      "scope": {
+        "kind": "modal",
+        "match": "reviewDeleteModal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "reviewDeleteModal": {
+                "reviewId": 9001,
+                "productName": "기본 티셔츠",
+                "isDeleting": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "comment": "모달 본문이 읽는 전역 상태(guestPasswordModal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",

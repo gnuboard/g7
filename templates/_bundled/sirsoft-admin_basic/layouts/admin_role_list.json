@@ -184,7 +184,7 @@
                         "type": "basic",
                         "name": "P",
                         "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400 mb-2"
+                            "className": "text-xs text-muted mb-2"
                         },
                         "text": "$t:admin.roles.protected_roles_hint"
                     },

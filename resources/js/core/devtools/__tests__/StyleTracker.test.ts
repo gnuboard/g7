@@ -52,6 +52,8 @@ describe('StyleTracker 반응형 안내', () => {
     const suggestion = String(issue!.suggestion);
     expect(suggestion).toContain('responsive');
     expect(suggestion).toContain('<responsive on=');
+    // 구간에서 바뀐 클래스만 덧붙이는 class-merge 를 권한다(engine-v1.98.0 — 종전 「className 통째 교체」 안내 대체)
+    expect(suggestion).toContain('class-merge=');
     expect(suggestion).not.toMatch(/(?:^|[\s,(])(?:sm|md|lg|xl|2xl|desktop|portable|mobile|tablet):[a-z]/);
   });
 

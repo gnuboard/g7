@@ -785,7 +785,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "className": "flex-center btn btn-primary h-10",
                                     "disabled": "{{schedules?.data?.abilities?.can_create !== true}}"
                                 },
                                 "children": [
@@ -813,14 +813,10 @@
                         "name": "Div",
                         "responsive": {
                             "640-1023": {
-                                "props": {
-                                    "className": "sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
-                                }
+                                "classMerge": "-mx-6 px-6"
                             },
                             "1024-": {
-                                "props": {
-                                    "className": "sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
-                                }
+                                "classMerge": "-mx-8 px-8"
                             }
                         },
                         "props": {

@@ -35,7 +35,7 @@
 | receipt_url | string | KCP 매출전표 URL. 휴대폰결제는 `mcash_bill`, 그 밖(카드·계좌이체·가상계좌)은 `card_bill` 명령으로 거래번호·주문번호·금액을 실어 만든다 |
 | cash_receipt_url | string \| null | 현금영수증 URL. 계좌이체·가상계좌만 채워지고 그 밖은 `null` |
 | is_test_mode | boolean | 테스트 모드 여부. URL 의 호스트(테스트/운영 관리자)가 이 값으로 갈린다 |
-| payment_method_label · payment_method_display_label · selected_payment_method · embedded_pg_provider · embedded_pg_provider_label | string \| null | 화면 표기용 결제수단·간편결제 라벨 |
+| payment_method_label · payment_method_display_label · selected_payment_method · embedded_pg_provider · embedded_pg_provider_label | string \| null | 화면 표기용 결제수단·간편결제 라벨. 자기 간편결제 id(예: `nhnkcp_kakaopay`)로 저장된 결제는 `payment_method_label` 이 PG 이름 `NHN KCP`, 표시 라벨이 `카카오페이 (NHN KCP)` 다 |
 
 ```json
 {

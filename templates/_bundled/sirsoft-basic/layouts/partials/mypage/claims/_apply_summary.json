@@ -55,7 +55,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "mt-2 text-sm text-gray-500 dark:text-gray-400"
+                        "className": "mt-2 text-sm text-muted"
                     },
                     "text": "$t:claim.apply.estimate_loading"
                 }
@@ -118,7 +118,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-sm text-muted"
                     },
                     "text": "$t:claim.apply.estimate_pending"
                 }
@@ -146,7 +146,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "{{_local.claimType === 'exchange' ? $t('claim.apply.round_trip_shipping_fee') : $t('claim.apply.one_way_shipping_fee')}}"
                         },
@@ -181,7 +181,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             },
                                             "text": "{{shippingFeeCurrency.formatted ?? ''}}"
                                         }
@@ -208,7 +208,7 @@
                                 "item_var": "shippingGroup"
                             },
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "text-xs text-muted"
                             },
                             "children": [
                                 {
@@ -238,7 +238,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:claim.apply.option_price_difference"
                         },
@@ -273,7 +273,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             },
                                             "text": "{{priceDifferenceCurrency.formatted ?? ''}}"
                                         }
@@ -307,7 +307,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 truncate pr-2"
+                                        "className": "text-muted truncate pr-2"
                                     },
                                     "text": "{{(summaryItem.product_name ?? '') + ' → ' + (summaryItem.exchange_mode === 'change' ? (summaryItem.new_option_label ?? '') : $t('claim.apply.exchange_same_option'))}}"
                                 },
@@ -315,7 +315,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "{{(summaryItem.price_difference ?? 0) > 0 ? 'text-blue-600 dark:text-blue-400 flex-shrink-0' : ((summaryItem.price_difference ?? 0) < 0 ? 'text-red-600 dark:text-red-400 flex-shrink-0' : 'text-gray-500 dark:text-gray-400 flex-shrink-0')}}"
+                                        "className": "{{(summaryItem.price_difference ?? 0) > 0 ? 'text-blue-600 dark:text-blue-400 flex-shrink-0' : ((summaryItem.price_difference ?? 0) < 0 ? 'text-red-600 dark:text-red-400 flex-shrink-0' : 'text-muted flex-shrink-0')}}"
                                     },
                                     "text": "{{(summaryItem.price_difference ?? 0) === 0 ? $t('claim.apply.no_price_difference') : (((summaryItem.price_difference ?? 0) > 0 ? '+' : '-') + (summaryItem.price_difference_formatted ?? ''))}}"
                                 }
@@ -336,7 +336,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:claim.apply.refund_expected"
                         },
@@ -371,7 +371,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             },
                                             "text": "{{refundTotalCurrency.formatted ?? ''}}"
                                         }
@@ -394,7 +394,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:claim.apply.collection_fee_deducted"
                         },
@@ -430,7 +430,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             },
                                             "text": "{{'-' + (deductedFeeCurrency.formatted ?? '')}}"
                                         }
@@ -487,7 +487,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             },
                                             "text": "{{refundFinalCurrency.formatted ?? ''}}"
                                         }
@@ -545,7 +545,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-muted"
                                             },
                                             "text": "{{totalChargeCurrency.formatted ?? ''}}"
                                         }
@@ -805,7 +805,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "{{_local.claimChargeMethod === 'deduct_from_refund' ? 'text-sm font-medium text-gray-500 dark:text-gray-400 mb-2' : 'text-sm font-medium text-gray-900 dark:text-white mb-2'}}"
+                        "className": "{{_local.claimChargeMethod === 'deduct_from_refund' ? 'text-sm font-medium text-muted mb-2' : 'text-sm font-medium text-gray-900 dark:text-white mb-2'}}"
                     },
                     "text": "$t:claim.apply.payment_method_title"
                 },
@@ -887,7 +887,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-gray-500 dark:text-gray-400"
+                        "className": "text-muted"
                     },
                     "text": "$t:claim.apply.charge_method_title"
                 },

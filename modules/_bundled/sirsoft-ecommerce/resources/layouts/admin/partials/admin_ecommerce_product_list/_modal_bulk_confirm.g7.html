@@ -21,7 +21,7 @@
         <ul class="ecommerce:space-y-1 ecommerce-text-label">
           <li data-each="product in _global.bulkConfirmData.products" class="ecommerce:flex ecommerce:justify-between">
             <span>{{product.name}}</span>
-            <span class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{product.changes}}</span>
+            <span class="ecommerce:text-xs ecommerce-text-muted">{{product.changes}}</span>
           </li>
         </ul>
       </div>
@@ -31,7 +31,7 @@
           <li data-each="option in _global.bulkConfirmData.options" class="ecommerce:flex ecommerce:justify-between">
             <span data-if="{{option.aggregate !== true}}">{{option.productName}} > {{option.optionName}}</span>
             <span data-if="{{option.aggregate === true}}">$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.options_aggregate|product={{option.productName}}|count={{option.optionCount}}</span>
-            <span class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{option.changes}}</span>
+            <span class="ecommerce:text-xs ecommerce-text-muted">{{option.changes}}</span>
           </li>
         </ul>
       </div>

@@ -28,10 +28,10 @@ import type { ComponentLookup } from './ComponentRegistry';
 import { DataBindingEngine } from './DataBindingEngine';
 import { TranslationEngine, TranslationContext } from './TranslationEngine';
 import { ActionDispatcher, ActionDefinition } from './ActionDispatcher';
-import { resolveIterationSource, evaluateRenderCondition, bindComponentActions, resolveClassMap, buildExtensionPointHostProps } from './helpers/RenderHelpers';
+import { resolveIterationSource, evaluateRenderCondition, bindComponentActions, resolveClassMap, buildExtensionPointHostProps, resolveResponsiveClassMergeValue } from './helpers/RenderHelpers';
 import { hasPipes } from './PipeRegistry';
 import { evaluateComputedDefinitions, isInheritableDefinitions } from './helpers/ComputedEvaluator';
-import { splitExtensionClassPrefix } from './helpers/StyleHelpers';
+import { splitExtensionClassPrefix, applyResponsiveClassMerge } from './helpers/StyleHelpers';
 import { makeLayoutListenerResult } from './helpers/componentEventResult';
 import { toExpressionData } from './helpers/expressionData';
 import { getEngineFlags } from './EngineFlags';
@@ -262,6 +262,7 @@ function resolveTranslationsInValue(
 import { responsiveManager } from './ResponsiveManager';
 import { FormProvider, FormContextValue, useFormContext, getNestedValue, setNestedValue } from './FormContext';
 import { SlotContext } from './SlotContext';
+import { ExtensionIdScopeContext, scopeExtensionNodeId } from './ExtensionIdScope';
 import { IsolatedStateProvider, useIsolatedState } from './IsolatedStateContext';
 import { SortableContainer, SortableItemWrapper, useSortableContext, type SortableStrategy } from './sortable';
 import { useParentContext } from './ParentContextProvider';
@@ -1065,6 +1066,14 @@ export interface ComponentDefinition {
         item_var: string;
         index_var?: string;
       };
+      /**
+       * 구간에서 바뀐 클래스만 기본 className 에 덧붙인다 (충돌 교체형, `mergeClasses` 규칙).
+       * 바인딩을 해석한 뒤 합친다. `props.className` 구간 값이 있으면 그 위에 덧붙인다.
+       * @since engine-v1.98.0
+       */
+      classMerge?: string;
+      /** 구간에서 기본 classMap 대신 쓸 classMap (@since engine-v1.98.0 — 종전에는 무시됐다) */
+      classMap?: ComponentDefinition['classMap'];
     };
   };
 
@@ -1543,6 +1552,10 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     // 단, 첫 렌더 패스에는 전역 값이 아직 없다(SlotProvider 가 useLayoutEffect 로 연다) — 렌더 시점 「제자리 건너뛰기」 판정만
     // React 문맥 값도 함께 본다(engine-v1.81.1, 7.1.1). 훅은 최상위에 무조건 둔다.
     const slotContextForRender = useContext(SlotContext);
+
+    // 가장 가까운 확장점 호스트의 DOM id — 주입 조각의 정적 노드 id 를 DOM 에서 구분하는 데 쓴다 (engine-v1.99.0, #408).
+    // 훅은 최상위에 무조건 둔다.
+    const extensionIdScope = useContext(ExtensionIdScopeContext);
 
     // 컴포넌트 동적 상태 관리 (loadingActions, apiError, 기타 동적 속성)
     const [localDynamicState, setLocalDynamicState] = useState<Record<string, any>>({
@@ -2126,6 +2139,10 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         text: override.text ?? baseDef.text,
         if: override.if ?? baseDef.if,
         iteration: override.iteration ?? baseDef.iteration,
+        // 구간 classMap 은 기본 classMap 을 대신한다 — 종전에는 읽지 않아 구간 classMap 클래스가 조용히 빠졌다 (engine-v1.98.0)
+        classMap: override.classMap ?? baseDef.classMap,
+        // 구간 classMerge 는 바인딩·classMap 해석이 끝난 className 에 덧붙인다(props 메모 4-1단계) (engine-v1.98.0)
+        __responsiveClassMerge: typeof override.classMerge === 'string' ? override.classMerge : undefined,
         // 편집기 path 발급용 — 자식이 **분기 children 으로 교체**된 경우에만 분기 키를
         // 남긴다(자식 path 에 `.responsive.{key}` prefix 를 끼워 base children 과 구분).
         // props-만 오버라이드(override.children 부재)는 base children 그대로라 base path
@@ -3301,6 +3318,16 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         }
       }
 
+      // 4-1. responsive 구간 classMerge (engine-v1.98.0) — 바인딩·classMap 까지 해석된 className 에 바뀐 토큰만 덧붙인다
+      const responsiveClassMerge = (effectiveComponentDef as any).__responsiveClassMerge as string | undefined;
+      // className 이 문자열이 아닌 값(배열·객체 — 컴포넌트가 직접 해석하는 형식)이면 건드리지 않는다
+      if (responsiveClassMerge && (props.className === undefined || typeof props.className === 'string')) {
+        props.className = applyResponsiveClassMerge(
+          typeof props.className === 'string' ? props.className : '',
+          resolveResponsiveClassMergeValue(responsiveClassMerge, extendedDataContext, bindingEngine)
+        );
+      }
+
       // 5. 인라인 스타일 적용
       if (effectiveComponentDef.style) {
         props.style = effectiveComponentDef.style;
@@ -3355,6 +3382,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       effectiveComponentDef.actions,
       effectiveComponentDef.style,
       effectiveComponentDef.classMap,
+      (effectiveComponentDef as any).__responsiveClassMerge,
       effectiveComponentDef.id,
       // 이 메모가 읽는 정의 필드 전부 — 편집기가 props 참조는 그대로 두고 아래 필드만 바꾼 정의를 끼우면 종전에는
       // 이전 결과(컴포넌트 문맥 전달 여부·component_layout·skipBindingKeys)를 그대로 썼다. children 은 개수 유무만 읽으므로
@@ -3411,15 +3439,18 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * `{{` 가 포함된 경우에만 extendedDataContext($idx 등 iteration 변수 포함)로
      * 문자열 보간한다. 표현식이 없는 정적 id 는 원본을 그대로 반환하여 비용을 회피한다.
      * 이 값은 DOM 출력 전용이며, slot 등록·DevTools 등 내부 식별에는 원본 id 를 계속 사용한다.
+     *
+     * 확장점 호스트 아래의 정적 id 는 `{id}__{호스트 DOM id}` 로 스코프한다 (engine-v1.99.0, #408 D2·D3).
+     * 같은 조각이 호스트 여러 곳에 주입돼도 DOM id 가 겹치지 않는다. 보간 id 와 명시 props.id 는 그대로다.
      */
     const resolvedComponentId = useMemo(() => {
       const rawId = effectiveComponentDef.id;
       if (typeof rawId !== 'string' || !rawId.includes('{{')) {
-        return rawId;
+        return scopeExtensionNodeId(rawId, extensionIdScope) as typeof rawId;
       }
       const resolved = bindingEngine.resolveBindings(rawId, extendedDataContext, { skipCache: true });
       return typeof resolved === 'string' ? resolved : rawId;
-    }, [effectiveComponentDef.id, extendedDataContext, bindingEngine]);
+    }, [effectiveComponentDef.id, extendedDataContext, bindingEngine, extensionIdScope]);
 
     /**
      * 자식에게 전달할 FormContext
@@ -5082,13 +5113,19 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         // className·data-*·aria-* 의 `{{…}}` 가 식 원문 그대로 붙었다(게시판 관리자 글 상세 본문 래퍼, engine-v1.94.0).
         const host = buildExtensionPointHostProps(stableResolvedProps);
 
+        // 주입 조각의 정적 노드 id 는 이 호스트 id 로 스코프한다 (engine-v1.99.0, #408).
+        // 호스트 id 가 없으면 Provider 를 두지 않아 바깥 scope 를 그대로 물려준다. 중첩 확장점은 가장 가까운 호스트가 이긴다.
         return (
           <div
             id={resolvedComponentId}
             className={host.className}
             {...host.attrs}
           >
-            {renderChildren}
+            {resolvedComponentId ? (
+              <ExtensionIdScopeContext.Provider value={resolvedComponentId}>
+                {renderChildren}
+              </ExtensionIdScopeContext.Provider>
+            ) : renderChildren}
           </div>
         );
       }
@@ -5324,6 +5361,8 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       effectiveComponentDef.type,
       effectiveComponentDef.name,
       effectiveComponentDef.id,
+      // DOM id (보간·확장점 scope 반영) — scope 가 바뀌면 다시 그린다 (engine-v1.99.0, #408)
+      resolvedComponentId,
       effectiveComponentDef.props,
       effectiveComponentDef.isolatedState,
       effectiveComponentDef.isolatedScopeId,

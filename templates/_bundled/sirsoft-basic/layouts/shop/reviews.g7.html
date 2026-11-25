@@ -81,7 +81,7 @@
             <img data-if="{{!!review.product?.thumbnail_url}}" src="{{review.product?.thumbnail_url}}" thumbPreset="sm" alt="" class="w-10 h-10 shrink-0 rounded object-cover border border-gray-200 dark:border-gray-700"/>
             <!-- 그림을 올리지 않은 상품 — 깨진 그림 대신 같은 크기의 아이콘 칸 -->
             <div data-if="{{!review.product?.thumbnail_url}}" class="w-10 h-10 shrink-0 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-              <icon name="image" size="sm" class="text-gray-500 dark:text-gray-400"/>
+              <icon name="image" size="sm" class="text-muted"/>
             </div>
             <span class="font-medium truncate">{{review.product?.name}}</span>
           </a>

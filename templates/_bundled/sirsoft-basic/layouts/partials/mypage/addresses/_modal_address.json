@@ -48,7 +48,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "form-label"
                             },
                             "children": [
                                 {
@@ -122,7 +122,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "form-label"
                             },
                             "text": "$t:shop.checkout.shipping_country"
                         },
@@ -174,7 +174,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        "className": "form-label"
                                     },
                                     "children": [
                                         {
@@ -248,7 +248,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        "className": "form-label"
                                     },
                                     "children": [
                                         {
@@ -325,7 +325,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "form-label"
                             },
                             "children": [
                                 {
@@ -459,7 +459,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "form-label mb-1"
                             },
                             "children": [
                                 {
@@ -613,7 +613,7 @@
                             "name": "Span",
                             "if": "{{_local.addressErrors?.address_line_1 || _local.addressErrors?.intl_city || _local.addressErrors?.intl_postal_code}}",
                             "props": {
-                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
+                                "className": "form-error"
                             },
                             "text": "{{_local.addressErrors?.address_line_1?.[0] ?? _local.addressErrors?.intl_city?.[0] ?? _local.addressErrors?.intl_postal_code?.[0] ?? ''}}"
                         }
@@ -629,7 +629,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "form-label"
                             },
                             "text": "$t:mypage.addresses.form.detail_address"
                         },
@@ -734,9 +734,9 @@
                             "name": "Button",
                             "responsive": {
                                 "portable": {
+                                    "classMerge": "flex-1 py-2.5",
                                     "props": {
-                                        "type": "button",
-                                        "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                        "type": "button"
                                     }
                                 }
                             },
@@ -777,9 +777,9 @@
                             "name": "Button",
                             "responsive": {
                                 "portable": {
+                                    "classMerge": "flex-1 py-2.5",
                                     "props": {
-                                        "type": "button",
-                                        "className": "flex-1 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        "type": "button"
                                     }
                                 }
                             },
@@ -867,7 +867,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+                                "className": "btn btn-primary flex gap-2",
                                 "disabled": "{{_local.isSaving ?? false}}"
                             },
                             "children": [

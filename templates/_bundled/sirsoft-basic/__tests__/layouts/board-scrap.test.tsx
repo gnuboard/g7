@@ -11,11 +11,9 @@
  * - partials/mypage/scrap/_modal_scrap_delete.json — 해제 확인 모달(DELETE)
  * - partials/mypage/_tab_navigation.json — 스크랩 탭 추가
  *
- * @scenario action=toggle_add,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
- * @scenario action=toggle_remove,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
- * @scenario action=mypage_delete,actor=owner,board_setting=use_scrap_on,post_state=soft_deleted,post_scope=same_board
- * @scenario action=mypage_search,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
- * @effects detail_button_reflects_is_scraped,detail_shows_scrap_count,guest_toggle_rejected_401,mypage_list_includes_deleted_post,mypage_delete_requires_ownership,mypage_list_deleted_post_exposes_board_and_author,mypage_list_notice_banner_shown,mypage_list_search_filters_by_title
+ * 소유 매니페스트: modules/_bundled/sirsoft-board/tests/scenarios/post-scrap.yaml
+ * 효과 요약(마커 아님, 평문): 상세 버튼의 담김 상태와 수치, 비회원 로그인 유도, 마이페이지 목록의 삭제 원글 표시와
+ * 게시판명 작성자 노출, 개별 해제의 소유 확인, 상시 안내 배너 제거, 제목 검색. 조합과 효과는 각 시험 주석에 단다.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -23,6 +21,7 @@ import { describe, it, expect } from 'vitest';
 import basicShow from '../../layouts/partials/board/types/basic/show.json';
 import scrapPage from '../../layouts/mypage/scrap.json';
 import scrapList from '../../layouts/partials/mypage/scrap/_list.json';
+import { expandSemanticClassName } from './support/semanticClasses';
 import scrapDeleteModal from '../../layouts/partials/mypage/scrap/_modal_scrap_delete.json';
 import scrapBulkDeleteModal from '../../layouts/partials/mypage/scrap/_modal_scrap_bulk_delete.json';
 import tabNavigation from '../../layouts/partials/mypage/_tab_navigation.json';
@@ -261,7 +260,7 @@ describe('이슈 #524 — 스크랩 목록 표/카드 (_list.json)', () => {
     });
 
     // @scenario action=mypage_list,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
-    // @effects mypage_list_search_filters_by_title
+    // @effects mypage_list_search_filters_by_title, mypage_list_notice_banner_removed
     it('회귀: 상시 안내 배너는 제거되어 검색 영역이 헤더 바로 아래에 온다 (배너 제거 결정)', () => {
         const str = serialized(scrapList);
         expect(str).not.toContain('mypage.scrap.notice"');
@@ -383,7 +382,9 @@ describe('이슈 #524 — 스크랩 목록 표/카드 (_list.json)', () => {
     // @effects mypage_list_empty_state_uses_card_box
     it('회귀: 빈 상태는 마이페이지 마일리지 탭과 동일하게 카드 박스(테두리+배경)로 감싸진다 (배경에 텍스트만 떠 있지 않도록)', () => {
         const empty = findByComment(scrapList, '스크랩 목록 없음')[0];
-        const className = String((empty as any).props?.className ?? '');
+        // #399 R-1 — 카드 상자 묶음이 의미 클래스 `card-plain` 으로 바뀌었다. 템플릿 CSS 정의까지 펼쳐 같은 배경·테두리·모서리를 확인한다
+        expect(String((empty as any).props?.className ?? '').split(/\s+/)).toContain('card-plain');
+        const className = expandSemanticClassName((empty as any).props?.className);
         expect(className).toContain('bg-white');
         expect(className).toContain('dark:bg-gray-800');
         expect(className).toContain('border');

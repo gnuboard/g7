@@ -218,11 +218,11 @@ describe('드래그 손잡이는 읽기 전용이면 숨는다', () => {
      * @effects admin_drag_handles_hidden
      */
     it.each([
-        ['partials/admin_ecommerce_settings/_payment_methods_list.json', 'payment_method_drag_handle_list', '_computed.isReadOnly'],
-        ['partials/admin_ecommerce_settings/_payment_methods_cards.json', 'payment_method_drag_handle_card', '_computed.isReadOnly'],
-        ['partials/admin_ecommerce_settings/_shipping_type_section.json', 'shipping_type_drag_handle', '_computed.isReadOnly'],
-        ['partials/admin_ecommerce_settings/_shipping_carrier_section.json', 'shipping_carrier_drag_handle', '_computed.isReadOnly'],
-        ['partials/admin_ecommerce_product_form/_partial_product_options.json', 'additional_option_drag_handle', '!_computed.isReadOnly'],
+        ['partials/admin_ecommerce_settings/_payment_methods_list.json', 'payment_method_drag_handle_list_{{$methodIndex}}', '_computed.isReadOnly'],
+        ['partials/admin_ecommerce_settings/_payment_methods_cards.json', 'payment_method_drag_handle_card_{{$methodIndex}}', '_computed.isReadOnly'],
+        ['partials/admin_ecommerce_settings/_shipping_type_section.json', 'shipping_type_drag_handle_{{$tIdx}}', '_computed.isReadOnly'],
+        ['partials/admin_ecommerce_settings/_shipping_carrier_section.json', 'shipping_carrier_drag_handle_{{$cIdx}}', '_computed.isReadOnly'],
+        ['partials/admin_ecommerce_product_form/_partial_product_options.json', 'additional_option_drag_handle_{{addIdx}}', '!_computed.isReadOnly'],
     ])('%s', (file, id, expr) => {
         const handle = byId(layout(file), id);
         expect(handle).not.toBeNull();
@@ -528,9 +528,6 @@ describe('라우트 정의와 골격 화면 권한은 실재 식별자다', () =
         ['admin_ecommerce_personal_payment_detail.json', 'sirsoft-ecommerce.orders.read'],
         ['admin_ecommerce_payment_failure_history.json', 'sirsoft-ecommerce.orders.read'],
         ['admin_ecommerce_excel_download_index.json', 'sirsoft-ecommerce.orders.read'],
-        ['admin_ecommerce_main_banner_index.json', 'sirsoft-ecommerce.settings.read'],
-        ['admin_ecommerce_promotion_discount_code_index.json', 'sirsoft-ecommerce.promotion-coupon.read'],
-        ['admin_ecommerce_promotion_discount_code_create.json', 'sirsoft-ecommerce.promotion-coupon.create'],
         ['admin_ecommerce_deposit_index.json', 'sirsoft-ecommerce.mileage.read'],
     ])('%s 의 화면 permissions 가 %s 다', (file, permission) => {
         expect(layout(file).permissions).toEqual([permission]);

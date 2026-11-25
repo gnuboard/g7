@@ -171,6 +171,34 @@ class PlaywrightSeedClaimDetailCommandTest extends ModuleTestCase
     }
 
     /**
+     * 부분 승인 왕복용 신청 환불이 선다 — 헤더·상품 행 모두 `requested`, 수량 2, 상품 칸 선택지에 승인.
+     * 수량 2 여야 한 개만 승인하고 나머지를 신청으로 남기는 부분 승인이 성립한다(환불·첨부 spec 의 [환불하기] 잠금 축).
+     *
+     * @scenario op=seed, tag=valid
+     *
+     * @effects seeds_requested_refund_with_quantity_two
+     *
+     * @return void 반환값 없음
+     */
+    public function test_seed_builds_a_requested_refund_with_quantity_two_for_partial_approval(): void
+    {
+        [$code, $seed] = $this->runSeed(['--tag' => 'w0t1']);
+
+        $this->assertSame(0, $code, Artisan::output());
+        $this->assertArrayHasKey('refund_requested_number', $seed);
+        $this->assertStringContainsString('E2ECLM', $seed['refund_requested_number']);
+
+        $refund = $this->detail($seed['refund_requested_number']);
+        $this->assertSame('refund', $refund['claim']['claim_type']);
+        $this->assertSame('requested', $refund['claim']['status']);
+        $items = $refund['claim']['items'];
+        $this->assertCount(1, $items);
+        $this->assertSame(2, $items[0]['quantity']);
+        $this->assertSame('requested', $items[0]['status'] ?? $items[0]['option_status']);
+        $this->assertContains('approved', array_column($items[0]['transition_options'], 'value'));
+    }
+
+    /**
      * 같은 tag 로 다시 시드하면 앞 벌을 지우고 한 벌만 남는다.
      *
      * @scenario op=reseed, tag=valid
@@ -186,7 +214,7 @@ class PlaywrightSeedClaimDetailCommandTest extends ModuleTestCase
 
         $this->assertSame(0, $code);
         $this->assertSame(
-            ['orders' => 3, 'exchanges' => 1, 'returns' => 1, 'refunds' => 1, 'products' => 1, 'policies' => 1],
+            ['orders' => 4, 'exchanges' => 1, 'returns' => 1, 'refunds' => 2, 'products' => 1, 'policies' => 1],
             $this->countsFor('w0t1'),
         );
     }
@@ -208,13 +236,13 @@ class PlaywrightSeedClaimDetailCommandTest extends ModuleTestCase
         [$code, $result] = $this->runSeed(['--tag' => 'w0t1', '--teardown' => true]);
 
         $this->assertSame(0, $code);
-        $this->assertSame(3, $result['deleted_orders']);
+        $this->assertSame(4, $result['deleted_orders']);
         $this->assertSame(
             ['orders' => 0, 'exchanges' => 0, 'returns' => 0, 'refunds' => 0, 'products' => 0, 'policies' => 0],
             $this->countsFor('w0t1'),
         );
         $this->assertSame(
-            ['orders' => 3, 'exchanges' => 1, 'returns' => 1, 'refunds' => 1, 'products' => 1, 'policies' => 1],
+            ['orders' => 4, 'exchanges' => 1, 'returns' => 1, 'refunds' => 2, 'products' => 1, 'policies' => 1],
             $this->countsFor('w1t1'),
         );
     }
@@ -237,7 +265,7 @@ class PlaywrightSeedClaimDetailCommandTest extends ModuleTestCase
         [$code, $result] = $this->runSeed(['--teardown' => true]);
 
         $this->assertSame(0, $code);
-        $this->assertSame(6, $result['deleted_orders']);
+        $this->assertSame(8, $result['deleted_orders']);
         $this->assertSame(2, $result['deleted_products']);
         $this->assertSame(0, Order::withTrashed()->where('order_number', 'like', 'E2E-CLM-%')->count());
         $this->assertSame(0, Product::withTrashed()->where('product_code', 'like', 'E2ECLM%')->count());

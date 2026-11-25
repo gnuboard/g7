@@ -11,6 +11,8 @@ use App\Extension\Helpers\Concerns\RecordsSyncDeletion;
 use App\Extension\Support\LifecycleWarnings;
 use App\Models\Menu;
 use App\Models\Role;
+use App\Services\MenuIconService;
+use App\Support\MenuIcon\MenuIconDeclaration;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -58,6 +60,10 @@ class ExtensionMenuSyncHelper
         array $newAttributes,
         ?int $parentId = null,
     ): Menu {
+        // 선언 아이콘 정규화 — 문자열(FA 클래스)·구조형(class·image 상대경로·svg path/value)을 저장 정규형으로.
+        // 잘못된 선언은 설치를 막지 않고 null + 라이프사이클 경고(menu_icon) 로 남긴다 (#381)
+        $icon = MenuIconDeclaration::normalize($newAttributes['icon'] ?? null, $extensionType, $extensionIdentifier, $slug);
+
         $existing = $this->menuRepository->findBySlugAndExtension($slug, $extensionType, $extensionIdentifier);
 
         if (! $existing) {
@@ -71,7 +77,7 @@ class ExtensionMenuSyncHelper
                 [
                     'name' => $newAttributes['name'] ?? [],
                     'url' => $newAttributes['url'] ?? null,
-                    'icon' => $newAttributes['icon'] ?? null,
+                    'icon' => $icon,
                     'order' => $newAttributes['order'] ?? 0,
                     'parent_id' => $parentId,
                     'is_active' => (bool) ($newAttributes['is_active'] ?? true),
@@ -125,7 +131,7 @@ class ExtensionMenuSyncHelper
         }
 
         if (! $isFieldOverridden('icon')) {
-            $updateData['icon'] = $newAttributes['icon'] ?? null;
+            $updateData['icon'] = $icon;
         }
 
         if (! $isFieldOverridden('order')) {
@@ -142,13 +148,22 @@ class ExtensionMenuSyncHelper
         // 등 trackable 필드가 dirty 로 잡혀 user_overrides 에 자동 추가되어, 이후 sync 가 차단되는
         // 결함이 발생한다.
         app()->instance('user_overrides.seeding', true);
+        $previousIcon = $existing->getRawOriginal('icon');
+
         try {
             $this->menuRepository->update($existing, $updateData);
         } finally {
             app()->forgetInstance('user_overrides.seeding');
         }
 
-        return $existing->fresh();
+        $fresh = $existing->fresh();
+
+        // 선언값이 운영자 업로드 아이콘을 덮었으면 그 첨부를 커밋 뒤 지운다 — 저장 경로(MenuService)와 같은 정리 (#381)
+        if ($fresh !== null && array_key_exists('icon', $updateData) && $fresh->getRawOriginal('icon') !== $previousIcon) {
+            app(MenuIconService::class)->syncAttachmentBinding($fresh, $previousIcon);
+        }
+
+        return $fresh;
     }
 
     /**

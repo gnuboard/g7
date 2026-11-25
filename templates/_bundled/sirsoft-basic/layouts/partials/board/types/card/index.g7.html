@@ -22,7 +22,7 @@
       <responsive on="640-" class="flex flex-row items-center justify-between gap-3 mb-4"/>
       <!-- 카테고리 필터 (카테고리가 있을 때만 표시) -->
       <select data-if="{{posts?.data?.board?.categories &amp;&amp; posts?.data?.board?.categories.length > 0}}" aria-label="$t:board.form.category" value="{{query.category || 'all'}}" class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" options="{{[{value:'all', label:'$t:board.filter.category_all'},{value:'unclassified', label:'$t:board.filter.category_unclassified'}].concat((posts?.data?.board?.categories ?? []).map(function(c){return{value:c,label:c};}))}}">
-        <responsive on="640-" class="w-auto min-w-48 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm"/>
+        <responsive on="640-" class-merge="w-auto min-w-48"/>
         <on type="change">
           <navigate path="/board/{{route.slug}}" :mergeQuery="true">
             <query category="{{$event.target.value === 'all' ? '' : $event.target.value}}" :page="1"/>
@@ -86,7 +86,7 @@
           <img data-if="{{post?.thumbnail}}" src="{{post?.thumbnail}}" thumbPreset="md" loading="lazy" decoding="async" alt="{{post?.title}}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"/>
           <!-- 이미지가 없는 경우 플레이스홀더 -->
           <div data-if="{{!post?.thumbnail}}" class="w-full h-full flex items-center justify-center gap-2 bg-gray-200 dark:bg-gray-700">
-            <icon name="image" class="text-gray-500 dark:text-gray-400"/>
+            <icon name="image" class="text-muted"/>
             <span class="text-xs text-gray-600 dark:text-gray-300">$t:userinfo.no_image</span>
           </div>
           <!-- 블라인드/삭제됨 반투명 오버레이 -->
@@ -120,16 +120,16 @@
             <span data-if="{{post?.is_reply}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 flex-shrink-0">RE</span>
             <!-- 비밀글 아이콘 (제목 앞) -->
             <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-500 flex-shrink-0"/>
-            <h3 class="text-lg font-bold truncate min-w-0 transition-colors {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400'}}">{{post?.title ?? ''}}</h3>
+            <h3 class="text-lg font-bold truncate min-w-0 transition-colors {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-muted' : 'text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400'}}">{{post?.title ?? ''}}</h3>
             <!-- 확장 자리 — 확장이 글마다 배지를 붙인다(#149). 카드 전체 링크(z-10)가 위에 덮이므로 누르는 조각은 relative z-20 으로 올린다 -->
-            <extension-point name="board_post_row_badges" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post?.id}}" boardSlug="{{route?.slug}}" context="board_list"/>
+            <extension-point name="board_post_row_badges" data-ref="ext_board_post_row_badges_{{post.id}}" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post?.id}}" boardSlug="{{route?.slug}}" context="board_list"/>
             <!-- 첨부파일 아이콘 (제목 뒤) -->
             <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-gray-500 dark:text-gray-500 flex-shrink-0"/>
             <!-- 삭제됨 배지 (제목 뒤) -->
             <span data-if="{{post?.deleted_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
           </div>
           <!-- 본문 요약 (비밀글 미열람/블라인드/삭제됨 제외) -->
-          <html-content data-type="composite" data-if="{{post?.content_preview &amp;&amp; !(post?.is_secret &amp;&amp; !(post?.is_author || posts?.data?.abilities?.can_read_secret || posts?.data?.abilities?.can_manage))}}" content="{{post?.content_preview ?? ''}}" :isHtml="false" class="text-sm mt-1.5 line-clamp-2 overflow-hidden !whitespace-normal {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'}}"/>
+          <html-content data-type="composite" data-if="{{post?.content_preview &amp;&amp; !(post?.is_secret &amp;&amp; !(post?.is_author || posts?.data?.abilities?.can_read_secret || posts?.data?.abilities?.can_manage))}}" content="{{post?.content_preview ?? ''}}" :isHtml="false" class="text-sm mt-1.5 line-clamp-2 overflow-hidden !whitespace-normal {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-muted' : 'text-muted'}}"/>
         </div>
         <!-- 구분선 -->
         <div class="border-t border-gray-200 dark:border-gray-700"/>
@@ -138,18 +138,18 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2 min-w-0">
               <avatar data-type="composite" author="{{post?.author}}" size="xs" class="{{(post?.status === 'blinded' || post?.deleted_at) ? 'opacity-40' : ''}}"/>
-              <user-info data-type="composite" author="{{post?.author}}" :showDropdown="true" :stopPropagation="true" class="relative z-20 text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}}"/>
-              <span class="text-xs text-gray-500 dark:text-gray-400">·</span>
-              <span class="text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'}}" title="{{post?.created_at ?? ''}}">{{post?.created_at_formatted ?? ''}}</span>
+              <user-info data-type="composite" author="{{post?.author}}" :showDropdown="true" :stopPropagation="true" class="relative z-20 text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-muted' : 'text-gray-700 dark:text-gray-300'}}"/>
+              <span class="text-xs text-muted">·</span>
+              <span class="text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-muted' : 'text-muted'}}" title="{{post?.created_at ?? ''}}">{{post?.created_at_formatted ?? ''}}</span>
             </div>
             <div class="flex items-center gap-3 flex-shrink-0">
               <!-- 조회수 -->
-              <span data-if="{{posts?.data?.board?.settings?.show_view_count !== false}}" class="inline-flex items-center gap-1 text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'}}">
+              <span data-if="{{posts?.data?.board?.settings?.show_view_count !== false}}" class="inline-flex items-center gap-1 text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-muted' : 'text-muted'}}">
                 <icon name="eye" size="sm"/>
                 <span>{{post?.view_count ?? 0}}</span>
               </span>
               <!-- 댓글수 -->
-              <span data-if="{{post?.comment_count > 0}}" class="inline-flex items-center gap-1 text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-500 dark:text-gray-400' : 'text-blue-600 dark:text-blue-400'}}">
+              <span data-if="{{post?.comment_count > 0}}" class="inline-flex items-center gap-1 text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-muted' : 'text-blue-600 dark:text-blue-400'}}">
                 <icon name="message" size="sm"/>
                 <span>{{post?.comment_count ?? 0}}</span>
               </span>

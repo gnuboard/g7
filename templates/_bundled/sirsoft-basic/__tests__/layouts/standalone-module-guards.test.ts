@@ -408,9 +408,10 @@ describe('마이페이지 탭·회원 프로필·상품 문의 탭', () => {
 
     // @scenario surface=mypage_tabs
     // @effects mypage_tabs_follow_active_modules
-    it('게시판만 켜진 사이트는 주문·클레임·위시리스트·배송지·적립금·문의 탭을 숨긴다', () => {
+    it('게시판만 켜진 사이트는 주문·클레임·위시리스트·배송지·적립금·문의·쿠폰함·내 리뷰 탭을 숨긴다', () => {
         const hidden = evaluate(tabs.props.hiddenTabIds, { _global: { modules: settings, activeModules: ['sirsoft-board'] }, _computed: {} });
-        expect([...hidden].sort()).toEqual(['addresses', 'claims', 'inquiries', 'mileage', 'orders', 'wishlist']);
+        // #952 쿠폰함·내 리뷰도 쇼핑몰 탭이다(활동 기록은 코어라 남는다)
+        expect([...hidden].sort()).toEqual(['addresses', 'claims', 'coupons', 'inquiries', 'mileage', 'orders', 'reviews', 'wishlist']);
     });
 
     // @scenario surface=mypage_tabs

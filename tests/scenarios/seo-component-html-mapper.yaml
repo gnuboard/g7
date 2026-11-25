@@ -41,6 +41,9 @@ effects:
   - img_thumb_preset_responsive_uses_desktop_breakpoint
   - img_thumb_preset_responsive_custom_ranges_follow_desktop_width
   - img_thumb_preset_responsive_node_grammar_on_bot_html
+  # #399 — responsive 구간 classMerge 가 봇 화면에서도 기본 className 에 덧붙고, 구간 classMap 이 기본 classMap 을 대신한다 (engine-v1.98.0 짝)
+  - responsive_class_merge_and_class_map_apply_on_bot_html
 
 test_files:
   - tests/Unit/Seo/ComponentHtmlMapperTest.php
+  - tests/Unit/Seo/ComponentHtmlMapperResponsiveClassMergeTest.php

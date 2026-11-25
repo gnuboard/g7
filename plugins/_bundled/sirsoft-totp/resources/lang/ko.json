@@ -120,5 +120,56 @@
             }
         }
     },
-    "plugin_read_only": "이 플러그인 설정을 수정할 권한이 없어 읽기 전용으로 표시됩니다."
+    "plugin_read_only": "이 플러그인 설정을 수정할 권한이 없어 읽기 전용으로 표시됩니다.",
+    "user": {
+        "security": {
+            "title": "인증 앱 등록",
+            "description": "인증 앱이 만드는 6자리 코드로 로그인 2단계 인증을 받습니다.",
+            "intro": {
+                "title": "인증 앱 등록하기",
+                "description": "휴대폰의 인증 앱을 이 계정에 연결하면, 로그인할 때 비밀번호에 더해 앱의 코드를 한 번 더 확인합니다.",
+                "step_install": "휴대폰에 인증 앱(Google Authenticator, Authy, 1Password 등)을 설치합니다.",
+                "step_scan": "화면에 나오는 QR 코드를 앱으로 읽거나, 키를 직접 입력합니다.",
+                "step_confirm": "앱에 표시된 6자리 코드를 입력해 등록을 마칩니다.",
+                "password_label": "현재 비밀번호",
+                "password_placeholder": "현재 비밀번호를 입력하세요",
+                "password_hint": "본인 확인을 위해 등록을 시작할 때 현재 비밀번호를 다시 확인합니다.",
+                "start": "등록 시작"
+            },
+            "enroll": {
+                "title": "인증 앱에 연결",
+                "description": "앱에 계정을 추가한 뒤, 앱이 보여 주는 6자리 코드를 입력해주세요. 코드는 30초마다 바뀝니다.",
+                "qr_hint": "인증 앱의 «QR 코드 스캔» 으로 읽어주세요.",
+                "manual_label": "직접 입력할 키",
+                "manual_hint": "카메라를 쓸 수 없다면 이 키를 앱에 직접 입력해도 됩니다.",
+                "code_label": "인증 앱 코드",
+                "code_placeholder": "6자리 숫자",
+                "confirm": "등록 완료",
+                "cancel": "취소"
+            },
+            "enrolled": {
+                "title": "인증 앱이 등록되어 있습니다",
+                "description": "로그인할 때 인증 앱의 코드를 확인합니다. 등록을 해제하거나 백업 코드를 새로 만들려면 현재 코드가 필요합니다.",
+                "since": "{{at}} 에 등록",
+                "backup_remaining": "남은 백업 코드 {{count}}개",
+                "code_label": "현재 코드",
+                "code_placeholder": "6자리 코드 또는 백업 코드",
+                "code_hint": "휴대폰을 쓸 수 없다면 백업 코드를 입력해도 됩니다.",
+                "regenerate": "백업 코드 새로 만들기",
+                "disable": "등록 해제"
+            },
+            "backup": {
+                "title": "백업 코드",
+                "warning": "이 코드는 지금 한 번만 보여 드립니다. 안전한 곳에 옮겨 적어두세요. 휴대폰을 잃어버렸을 때 로그인할 수 있는 유일한 수단이며, 한 번 쓴 코드는 사라집니다.",
+                "copy": "전체 복사",
+                "copied": "백업 코드를 복사했습니다. 안전한 곳에 붙여넣어 보관하세요.",
+                "done": "보관했습니다"
+            },
+            "section_title": "2단계 인증(인증 앱)",
+            "status_enabled": "사용 중",
+            "status_disabled": "사용 안 함",
+            "password_required": "2단계 인증을 쓰려면 비밀번호를 먼저 설정하세요.",
+            "set_password": "비밀번호 설정하기"
+        }
+    }
 }

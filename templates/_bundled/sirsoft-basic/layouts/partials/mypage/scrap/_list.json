@@ -48,7 +48,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-sm text-muted"
                     },
                     "text": "$t:mypage.scrap.count|count={{scrap.data.pagination.total ?? 0}}"
                 }
@@ -191,7 +191,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+                        "className": "btn btn-primary text-sm flex gap-2",
                         "disabled": "{{(_local.scrapSearching || _local.scrapResetting) ?? false}}"
                     },
                     "children": [
@@ -260,7 +260,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+                        "className": "btn btn-outline text-sm flex gap-2",
                         "disabled": "{{(_local.scrapSearching || _local.scrapResetting) ?? false}}"
                     },
                     "children": [
@@ -307,9 +307,7 @@
                     "name": "Label",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer"
-                            }
+                            "classMerge": "flex"
                         }
                     },
                     "props": {
@@ -350,7 +348,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-sm text-muted"
                     },
                     "text": "$t:mypage.scrap.selected_count|count={{(_local.scrapSelectedIds ?? []).length}}"
                 },
@@ -421,7 +419,7 @@
                                                     "type": "basic",
                                                     "name": "Th",
                                                     "props": {
-                                                        "className": "px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 w-10"
+                                                        "className": "px-4 py-3 text-left font-medium text-muted w-10"
                                                     },
                                                     "children": [
                                                         {
@@ -452,7 +450,7 @@
                                                     "type": "basic",
                                                     "name": "Th",
                                                     "props": {
-                                                        "className": "px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 w-32"
+                                                        "className": "px-4 py-3 text-left font-medium text-muted w-32"
                                                     },
                                                     "text": "$t:mypage.scrap.table.board"
                                                 },
@@ -460,7 +458,7 @@
                                                     "type": "basic",
                                                     "name": "Th",
                                                     "props": {
-                                                        "className": "px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400"
+                                                        "className": "px-4 py-3 text-left font-medium text-muted"
                                                     },
                                                     "text": "$t:mypage.scrap.table.title"
                                                 },
@@ -468,7 +466,7 @@
                                                     "type": "basic",
                                                     "name": "Th",
                                                     "props": {
-                                                        "className": "px-4 py-3 text-center font-medium text-gray-500 dark:text-gray-400 w-24"
+                                                        "className": "px-4 py-3 text-center font-medium text-muted w-24"
                                                     },
                                                     "text": "$t:mypage.scrap.table.author"
                                                 },
@@ -476,7 +474,7 @@
                                                     "type": "basic",
                                                     "name": "Th",
                                                     "props": {
-                                                        "className": "px-4 py-3 text-center font-medium text-gray-500 dark:text-gray-400 w-20"
+                                                        "className": "px-4 py-3 text-center font-medium text-muted w-20"
                                                     },
                                                     "text": "$t:mypage.scrap.table.comments"
                                                 },
@@ -484,7 +482,7 @@
                                                     "type": "basic",
                                                     "name": "Th",
                                                     "props": {
-                                                        "className": "px-4 py-3 text-center font-medium text-gray-500 dark:text-gray-400 w-24"
+                                                        "className": "px-4 py-3 text-center font-medium text-muted w-24"
                                                     },
                                                     "text": "$t:mypage.scrap.table.scrapped_at"
                                                 },
@@ -492,7 +490,7 @@
                                                     "type": "basic",
                                                     "name": "Th",
                                                     "props": {
-                                                        "className": "px-4 py-3 text-center font-medium text-gray-500 dark:text-gray-400 w-24"
+                                                        "className": "px-4 py-3 text-center font-medium text-muted w-24"
                                                     },
                                                     "text": "$t:mypage.scrap.table.manage"
                                                 }
@@ -601,6 +599,7 @@
                                                         },
                                                         {
                                                             "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 정상 글 행에만 둔다. item.id 는 스크랩 id 라 글 id 는 item.post_id 다",
+                                                            "id": "ext_board_post_row_badges_desktop_{{item.id}}",
                                                             "type": "extension_point",
                                                             "name": "board_post_row_badges",
                                                             "props": {
@@ -1027,7 +1026,7 @@
                             },
                             "props": {
                                 "data-testid": "scrap-card-m-{{item.id}}",
-                                "className": "flex items-start gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3"
+                                "className": "flex items-start gap-3 card-plain p-3"
                             },
                             "children": [
                                 {
@@ -1112,6 +1111,7 @@
                                                         },
                                                         {
                                                             "comment": "확장 자리 — 모바일 카드의 글 배지 자리(#149). PC 표와 같은 이름이라 조각이 두 번 렌더되고 화면 폭에 따라 한쪽만 보인다",
+                                                            "id": "ext_board_post_row_badges_mobile_{{item.id}}",
                                                             "type": "extension_point",
                                                             "name": "board_post_row_badges",
                                                             "props": {
@@ -1129,7 +1129,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "flex items-center gap-3 text-xs text-muted"
                                                     },
                                                     "children": [
                                                         {
@@ -1146,7 +1146,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-gray-500 dark:text-gray-400"
+                                                                "className": "text-muted"
                                                             },
                                                             "text": "{{item.scrapped_at ?? ''}}"
                                                         }
@@ -1272,7 +1272,7 @@
                                                             "type": "basic",
                                                             "name": "H3",
                                                             "props": {
-                                                                "className": "shrink-0 text-sm font-medium text-gray-500 dark:text-gray-400 italic"
+                                                                "className": "shrink-0 text-sm font-medium text-muted italic"
                                                             },
                                                             "text": "$t:mypage.scrap.deleted_post"
                                                         },
@@ -1290,7 +1290,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "flex items-center gap-3 text-xs text-muted"
                                                     },
                                                     "children": [
                                                         {
@@ -1364,13 +1364,11 @@
                     "if": "{{scrap !== undefined && (!scrap.data.data || scrap.data.data.length === 0)}}",
                     "responsive": {
                         "portable": {
-                            "props": {
-                                "className": "flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center"
-                            }
+                            "classMerge": "p-6"
                         }
                     },
                     "props": {
-                        "className": "flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center"
+                        "className": "flex flex-col items-center justify-center card-plain p-8 text-center"
                     },
                     "children": [
                         {
@@ -1388,7 +1386,7 @@
                             "name": "P",
                             "if": "{{!(!!_local.scrapSearchApplied)}}",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:mypage.scrap.empty"
                         },
@@ -1397,7 +1395,7 @@
                             "name": "P",
                             "if": "{{!!_local.scrapSearchApplied}}",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "text-muted"
                             },
                             "text": "$t:board.no_search_results"
                         }

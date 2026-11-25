@@ -8,19 +8,19 @@
       </div>
       <div data-ref="tosspayments_payment_rows" class="paytosspayments:space-y-2">
         <div data-ref="tosspayments_escrow_row" data-if="{{!!order.data?.payment?.is_escrow}}" class="pay-tosspayments-flex-between paytosspayments:text-sm">
-          <span class="paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400">$t:sirsoft-tosspayments.admin.escrow_label</span>
+          <span class="paytosspayments:text-sm pay-tosspayments-text-muted">$t:sirsoft-tosspayments.admin.escrow_label</span>
           <span class="paytosspayments:inline-flex paytosspayments:items-center paytosspayments:gap-1 paytosspayments:px-2 paytosspayments:py-0.5 paytosspayments:rounded-full paytosspayments:text-xs paytosspayments:font-semibold paytosspayments:bg-blue-100 paytosspayments:text-blue-800 paytosspayments:dark:bg-blue-900/30 paytosspayments:dark:text-blue-300">$t:sirsoft-tosspayments.admin.escrow_yes</span>
         </div>
         <div data-ref="tosspayments_vbank_row" data-if="{{!!order.data?.payment?.vbank_number}}" class="pay-tosspayments-flex-between paytosspayments:text-sm">
-          <span class="paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400">$t:sirsoft-tosspayments.admin.vbank_label</span>
+          <span class="paytosspayments:text-sm pay-tosspayments-text-muted">$t:sirsoft-tosspayments.admin.vbank_label</span>
           <span class="paytosspayments:text-gray-900 paytosspayments:dark:text-white paytosspayments:font-medium">{{(order.data?.payment?.vbank_name ?? '') + ' ' + (order.data?.payment?.vbank_number ?? '') + ' (' + (order.data?.payment?.vbank_holder ?? '') + ')'}}</span>
         </div>
         <div data-ref="tosspayments_vbank_due_row" data-if="{{!!order.data?.payment?.vbank_due_at_formatted}}" class="pay-tosspayments-flex-between paytosspayments:text-sm">
-          <span class="paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400">$t:sirsoft-tosspayments.admin.vbank_due_label</span>
+          <span class="paytosspayments:text-sm pay-tosspayments-text-muted">$t:sirsoft-tosspayments.admin.vbank_due_label</span>
           <span class="paytosspayments:text-gray-900 paytosspayments:dark:text-white paytosspayments:font-medium">{{order.data?.payment?.vbank_due_at_formatted ?? ''}}</span>
         </div>
         <div data-ref="tosspayments_receipt_row" data-if="{{!!order.data?.payment?.pg_receipt_url}}" class="pay-tosspayments-flex-between paytosspayments:text-sm">
-          <span class="paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400">$t:sirsoft-tosspayments.admin.receipt_label</span>
+          <span class="paytosspayments:text-sm pay-tosspayments-text-muted">$t:sirsoft-tosspayments.admin.receipt_label</span>
           <a data-ref="tosspayments_receipt_link" href="{{order.data.payment.pg_receipt_url}}" target="_blank" rel="noopener noreferrer" class="paytosspayments:text-sm paytosspayments:text-blue-600 paytosspayments:dark:text-blue-400 paytosspayments:hover:underline">$t:sirsoft-tosspayments.admin.receipt_view</a>
         </div>
       </div>

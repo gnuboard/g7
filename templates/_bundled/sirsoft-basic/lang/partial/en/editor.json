@@ -1230,6 +1230,10 @@
     "claims": "Claim requests",
     "claim": "Claim request",
     "relatedProducts": "How about these?",
-    "reviewFeed": "All reviews"
+    "reviewFeed": "All reviews",
+    "user_coupons": "My coupon list",
+    "couponZone": "Coupon zone list",
+    "myReviews": "My reviews",
+    "myActivity": "My activity log"
   }
 }

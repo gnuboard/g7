@@ -142,7 +142,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "totp:text-sm totp:text-gray-500 totp:dark:text-gray-400"
+                                        "className": "totp:text-sm totp-text-muted"
                                     },
                                     "text": "·"
                                 },
@@ -188,6 +188,7 @@
                                     },
                                     "children": [
                                         {
+                                            "comment": "audit:allow layout-inline-semantic-duplicate reason: TOTP 알림 템플릿 편집 창의 수신자 규칙 한 건 상자, 보라 테두리와 p-3 space-y-2 여백을 써서 카드 여백과 다름",
                                             "type": "basic",
                                             "name": "Div",
                                             "iteration": {
@@ -725,7 +726,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{(_global.totp_notification_template_form_modal?.editLang ?? $locale) === loc ? 'totp:border-b-2 totp:border-indigo-500 totp:dark:border-indigo-400 totp:text-indigo-600 totp:dark:text-indigo-400' : 'totp:text-gray-500 totp:dark:text-gray-400 totp:hover:text-gray-700 totp:dark:hover:text-gray-300'}} totp:px-4 totp:py-2 totp:text-sm totp:font-medium totp:focus:outline-none"
+                                        "className": "{{(_global.totp_notification_template_form_modal?.editLang ?? $locale) === loc ? 'totp:border-b-2 totp:border-indigo-500 totp:dark:border-indigo-400 totp:text-indigo-600 totp:dark:text-indigo-400' : 'totp-text-muted totp:hover:text-gray-700 totp:dark:hover:text-gray-300'}} totp:px-4 totp:py-2 totp:text-sm totp:font-medium totp:focus:outline-none"
                                     },
                                     "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
                                 }
@@ -783,8 +784,7 @@
                                             "props": {
                                                 "type": "text",
                                                 "aria-label": "$t:sirsoft-totp.admin.notifications.edit_modal.subject",
-                                                "value": "{{_global.totp_notification_template_form_modal?.template?.subject?.[_global.totp_notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
-                                                "className": ""
+                                                "value": "{{_global.totp_notification_template_form_modal?.template?.subject?.[_global.totp_notification_template_form_modal?.editLang ?? $locale] ?? ''}}"
                                             }
                                         }
                                     ]

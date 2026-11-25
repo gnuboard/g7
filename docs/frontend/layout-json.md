@@ -789,6 +789,9 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 | `iteration` | object | ❌ | 반복 렌더링 설정 (source, item_var, index_var) |
 | `actions` | array | ❌ | 액션 핸들러 정의 (클릭, 키보드, 폼 제출 등) |
 | `lifecycle` | object | ❌ | 생명주기 핸들러 (onMount, onUnmount) |
+| `classMap` | object | ❌ | 조건부 클래스 (`base`, `variants`, `key`, `default`). className 과 병합된다 |
+| `responsive` | object | ❌ | 화면 폭 구간별 오버라이드. 키는 프리셋(`mobile`/`tablet`/`desktop`/`portable`) 또는 커스텀 구간(`768-1023` 등), 값에는 `props`(얕은 병합, `className` 은 통째 교체), `classMap`(기본 classMap 대신 씀), `classMerge`, `children`, `text`, `if`, `iteration` 을 둔다 |
+| `responsive.{key}.classMerge` | string | ❌ | 그 구간에서 바뀐 클래스만 기본 className 에 덧붙인다. 같은 축, 같은 변형의 기본 토큰만 교체된다(engine-v1.98.0, 코어 7.2.1). 바인딩과 classMap 을 해석한 뒤 적용된다 |
 | ~~`data_binding`~~ | object | — | **사어(死語)** — 렌더러가 타입만 선언하고 읽지 않으며 코퍼스 사용 0건이다. 마크업 태그로 승격되지 않는다([layout-markup.md 명명 3순위](layout-markup.md)). 데이터는 props 표현식(`value="{{data.field}}"`)으로 바인딩한다 |
 | `blur_until_loaded` | boolean \| string | ❌ | 데이터 로딩 중 blur 효과 적용 (boolean 또는 표현식 문자열) |
 | `component_layout` | object | ❌ | 컴포넌트 내부 커스텀 렌더링 레이아웃 정의 (RichSelect 등에서 사용) |
@@ -802,6 +805,9 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 > - `lifecycle`: [layout-json-components.md](layout-json-components.md#컴포넌트-생명주기-lifecycle)
 > - `actions`: [layout-json-features.md](layout-json-features.md#액션-시스템-actions)
 > - `isolatedState`: [아래 섹션](#격리된-상태-isolatedstate)
+> - `classMap`: [layout-json-features-styling.md](layout-json-features-styling.md)
+> - `responsive`, `classMerge`: [responsive-layout.md](responsive-layout.md#바뀐-클래스만-덧붙이기-class-merge)
+> - 검색 봇 화면의 노드 키 지원 범위(`responsive.*.classMerge`, `responsive.*.classMap` 포함): [seo-system.md "SEO 렌더러 지원 노드 키"](../backend/seo-system.md#seo-렌더러-지원-노드-키-ssot)
 
 ### `comment` / `_comment` — 화면 렌더 응답에서 제거
 
@@ -1314,6 +1320,38 @@ const renderChildren = useMemo(() => {
 전달된 값은 주입 컴포넌트와 그 자손 전체에서 참조할 수 있습니다.
 
 검색 봇용 화면에서는 `extensionPointProps` 만 해석되고 `extensionPointCallbacks` 는 해석되지 않습니다. 색인되어야 할 내용은 `props` 로 전달하세요. 사용자 작성 콘텐츠를 넘길 때는 평문/HTML 판정 값(`isHtml`)을 함께 전달합니다 — 두 화면 모두 이 값에 따라 이스케이프하거나 위험 요소를 제거한 뒤 출력합니다. 봇 화면의 노드 문법 지원 범위는 [seo-system.md "SEO 렌더러 지원 노드 키"](../backend/seo-system.md), 정화 규칙은 같은 문서의 "봇 화면의 HTML 정화" 를 참조하세요.
+
+---
+
+## 화면 단위 id 유일성
+
+레이아웃 노드 id(마크업 `data-ref`, JSON `id`)는 대부분 그대로 DOM `id` 로 출력됩니다. HTML 의 `id` 는 한 문서에 하나여야 하므로, 한 화면에 동시에 그려지는 DOM 에 같은 `id` 가 두 번 나오면 안 됩니다. 겹치면 `getElementById`·`<label for>`·`aria-*` 연결과 확장 주입(`target_id`)이 첫 요소에만 걸립니다.
+
+```text
+✅ 한 화면(메인 레이아웃 + include 되는 partial + 열린 모달)에 같은 노드 id 를 두지 않는다
+✅ 탭 partial·형제 partial·모달은 부모 화면의 id 를 다시 쓰지 않는다
+   예: 탭 partial 머리 → identity_policies_header (메인의 page_header 와 구분)
+   예: 모달 안 카드 목록 → bulk_match_mobile_card_list (본문의 mobile_card_list 와 구분)
+✅ 반복(iteration)·정렬 목록(sortable itemTemplate) 안의 노드 id 는 그 반복이 선언한 변수로 보간한다
+   예: <sortable ... index-var="$tIdx"> 안 → data-ref="shipping_type_drag_handle_{{$tIdx}}"
+✅ 확장점(extension-point) 호스트에는 비어 있지 않은 노드 id 를 반드시 단다
+   한 번이면 data-ref="ext_{확장점 name}", 같은 화면에 두 번 이상이면 위치 의미를 붙이고,
+   반복 안이면 반복 변수로 보간한다 → data-ref="ext_board_post_row_badges_{{post.id}}"
+✅ 같은 partial 을 두 곳에서 include 하면 partial 안 노드에는 id 대신 data-testid 를 쓴다
+   (include 는 매개변수를 받지 않아 id 를 다르게 만들 수 없다)
+```
+
+확장점 호스트 id 가 필요한 이유: 엔진은 확장점에 주입된 조각 안의 정적 노드 id 를 DOM 에 `{원래 id}__{호스트 DOM id}` 로 출력합니다(engine-v1.99.0). 같은 조각이 여러 호스트에 들어가도 겹치지 않게 하는 장치이고, 호스트 id 가 기준이므로 호스트 id 가 없으면 스코프되지 않습니다. 자세한 규칙은 [layout-json-components-rendering.md](layout-json-components-rendering.md) 의 iteration id 보간 절을 봅니다.
+
+정적 검사는 감사 규칙 두 개가 맡습니다(반복·sortable 안 정적 id, 확장점 호스트 id 누락). 모달·시트 열림처럼 상호작용으로만 생기는 상태는 정적 검사가 보지 못하므로, 디버그 모드(환경설정 > 고급 > 디버그 모드)에서 같은 DOM id 가 생기면 콘솔에 `[G7] 같은 DOM id 가 화면에 여러 개 있습니다` 경고가 뜹니다.
+
+전 화면 DOM 크롤 E2E 는 활성 라우트 전체를 1440px·390px 로 열어 중복 id 와 보간 잔재(`{{` 가 남은 id)를 셉니다. 기본 Playwright 실행에는 끼지 않고 환경 변수로만 돕니다.
+
+```powershell
+$env:G7_E2E_ID_CRAWL='1'; npx playwright test tests/Playwright/specs/id-duplicate/all-routes-dom-id-unique.spec.ts
+```
+
+결과는 화면, 폭, 중복 목록, 건너뜀과 사유를 담은 JSON 보고서로 남습니다.
 
 ---
 

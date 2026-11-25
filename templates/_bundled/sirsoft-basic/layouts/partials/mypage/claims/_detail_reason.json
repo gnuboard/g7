@@ -106,7 +106,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                "className": "text-sm text-muted flex-shrink-0"
                             },
                             "text": "$t:claim.detail.reason_label"
                         },
@@ -133,7 +133,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                "className": "text-sm text-muted flex-shrink-0"
                             },
                             "text": "$t:claim.detail.fault_type"
                         },
@@ -159,7 +159,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "text-sm text-muted"
                             },
                             "text": "$t:claim.detail.reason_detail"
                         },
@@ -188,7 +188,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400 mb-2"
+                        "className": "text-sm text-muted mb-2"
                     },
                     "text": "$t:claim.detail.images"
                 },

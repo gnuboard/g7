@@ -24,7 +24,7 @@
             <span class="ecommerce:font-medium">{{_global.preferredCurrency ?? _global.defaultCurrency}}</span>
             <!-- 접힘 상태 요약 ② 현재 배송국가명 (해외배송 활성 + 국가 2개 이상일 때만). 통화와 시각적으로 구분되도록 옅은 색. -->
             <span data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="ecommerce:text-gray-600 ecommerce:dark:text-gray-300">· {{(_global.availableShippingCountries ?? []).find(c => c.code === (_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'))?.name ?? (_global.preferredShippingCountry ?? 'KR')}}</span>
-            <icon name="chevron-down" class="{{_local.showCurrencyDropdown ? 'ecommerce:rotate-180' : ''}} ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200"/>
+            <icon name="chevron-down" class="{{_local.showCurrencyDropdown ? 'ecommerce:rotate-180' : ''}} ecommerce:text-xs ecommerce-text-muted ecommerce:transition-transform ecommerce:duration-200"/>
           </span>
         </responsive>
         <on type="click">
@@ -55,7 +55,7 @@
       </button>
       <!-- 드롭다운 메뉴 (통화 + 배송국가 2섹션). portable(0~1023px) 에서는 absolute 팝오버가 드로어 스크롤 경계에서 잘리므로 static 인라인 목록으로 전환한다. 표시 여부는 데스크톱과 동일하게 _local.showCurrencyDropdown 이 결정한다(responsive 에 if 를 두지 않으면 base if 를 그대로 상속) → 기본 접힘. -->
       <div data-if="{{_local.showCurrencyDropdown}}" class="ecommerce:absolute ecommerce:right-0 ecommerce:top-full ecommerce:mt-2 ecommerce:w-52 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:shadow-lg ecommerce:z-50 ecommerce:py-1 ecommerce:overflow-hidden" role="listbox">
-        <responsive on="portable" class="ecommerce:static ecommerce:w-full ecommerce:mt-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:py-1" role="listbox"/>
+        <responsive on="portable" class="ecommerce:static ecommerce:w-full ecommerce:mt-2 ecommerce-card-plain ecommerce:py-1" role="listbox"/>
         <on type="keydown" key="Escape">
           <!-- 목록 안 항목에서 Esc — 초점을 트리거 단추로 먼저 옮기고(항목이 사라지면 초점이 문서 몸통으로 떨어진다) 목록을 닫는다. 같은 조각이 헤더·서랍에 둘 그려질 수 있어 이 상자(data-currency-selector — 슬롯이 root id 를 {id}__{컨테이너 id} 로 바꾸므로 id 로는 못 찾는다) 안의 트리거를 찾는다. 바깥(사용자 서랍) Esc 로 올라가지 않게 전파를 막는다 -->
           <sequence :stopPropagation="true">
@@ -66,7 +66,7 @@
         <!-- ── 통화 섹션 ── -->
         <div data-if="{{(_global.availableCurrencies ?? []).length > 0}}">
           <!-- 섹션 라벨 '통화'. portable 에서는 아코디언 트리거 행이 이미 '통화' 라벨을 달고 있어 중복이므로 숨긴다(배송국가 라벨은 두 번째 섹션을 구분해야 하므로 유지). -->
-          <div class="ecommerce:px-4 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:uppercase ecommerce:tracking-wide">
+          <div class="ecommerce:px-4 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-semibold ecommerce-text-muted ecommerce:uppercase ecommerce:tracking-wide">
             <responsive on="portable" data-if="{{false}}"/>
             $t:sirsoft-ecommerce.common.currency_label
           </div>
@@ -117,8 +117,8 @@
         <div data-if="{{(_global.availableCurrencies ?? []).length > 0 &amp;&amp; (_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="ecommerce:my-1 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700"/>
         <!-- ── 배송국가 섹션 ── (해외배송 활성 + 활성 국가 2개 이상) -->
         <div data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}">
-          <div class="ecommerce:px-4 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:uppercase ecommerce:tracking-wide">
-            <responsive on="portable" class="ecommerce:px-3 ecommerce:py-1 ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:uppercase"/>
+          <div class="ecommerce:px-4 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-semibold ecommerce-text-muted ecommerce:uppercase ecommerce:tracking-wide">
+            <responsive on="portable" class="ecommerce:px-3 ecommerce:py-1 ecommerce:text-xs ecommerce:font-medium ecommerce-text-muted ecommerce:uppercase"/>
             $t:sirsoft-ecommerce.common.shipping_country_label
           </div>
           <!-- 옵션 래퍼. portable 에서만 가로 칩 나열(flex-wrap). 데스크톱은 무클래스 블록. -->

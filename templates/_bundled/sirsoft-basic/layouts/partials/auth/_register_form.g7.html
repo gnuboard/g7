@@ -13,7 +13,13 @@
           <success>
             <set-state target="local" :isRegistering="false"/>
             <toast type="success" message="$t:auth.register_success"/>
-            <navigate path="/login"/>
+            <!-- 가입 후 본인인증 정책이 인증 건을 돌려주면(7.2.1) 로그인 화면 대신 코드 입력 화면으로 간다 — 확인을 마치면 로그인 화면으로 돌아온다.
+                 그 화면은 비회원이라 대상을 세션에서 얻지 못하므로 [코드 다시 받기] 가 쓸 가입 이메일을 먼저 보관한다. -->
+            <action if="{{!!response?.data?.identity_challenge?.id}}" handler="sirsoft-basic.stashIdentityTarget" purpose="signup" email="{{_local.registerForm?.email ?? ''}}"/>
+            <navigate if="{{!!response?.data?.identity_challenge?.id}}" path="/identity/challenge">
+              <query challenge_id="{{response.data.identity_challenge.id}}" purpose="signup" render_hint="{{response.data.identity_challenge.render_hint ?? 'text_code'}}" expires_at="{{response.data.identity_challenge.expires_at ?? ''}}" max_attempts="{{response.data.identity_challenge.max_attempts ?? ''}}" return_url="/login"/>
+            </navigate>
+            <navigate if="{{!response?.data?.identity_challenge?.id}}" path="/login"/>
           </success>
           <fail>
             <set-state if="{{(error.response?.error_code ?? error.error_code) !== 'fields_changed'}}" target="local" :isRegistering="false" errors="{{error.response?.errors ?? error.errors}}" registerError="{{Object.keys(error.response?.errors ?? error.errors ?? {}).length > 0 ? null : (error.response?.message ?? error.message)}}"/>
@@ -41,25 +47,25 @@
     </div>
     <!-- 이메일 필드 -->
     <div>
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      <label class="form-label">
         <span>$t:auth.email</span>
         <span class="text-red-600 dark:text-red-400 ml-1">*</span>
       </label>
       <input aria-label="$t:auth.email" type="email" name="email" placeholder="$t:auth.email_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :required="true" disabled="{{_local?.isRegistering}}"/>
-      <span data-if="{{_local.errors?.email}}" class="block text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.email?.[0] ?? ''}}</span>
+      <span data-if="{{_local.errors?.email}}" class="form-error">{{_local.errors?.email?.[0] ?? ''}}</span>
     </div>
     <!-- 비밀번호 필드 -->
     <div>
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      <label class="form-label">
         <span>$t:auth.password</span>
         <span class="text-red-600 dark:text-red-400 ml-1">*</span>
       </label>
       <!-- 규칙·자리표시 숫자는 보안 환경설정 값을 따른다(#736) — 8 을 박아 두면 운영자가 최소 길이를 올려도 화면이 옛 규칙을 안내한다. -->
       <password-input aria-label="$t:auth.password" name="password" placeholder="$t:auth.register.password_placeholder|count={{_global.settings?.security?.password_min_length ?? 8}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :required="true" disabled="{{_local?.isRegistering}}" :showToggle="true" :showValidation="true" enableRules="{{['minLength:' + (_global.settings?.security?.password_min_length ?? 8)].concat(_global.settings?.security?.require_password_special_char ? ['hasSpecial'] : [], _global.settings?.security?.password_require_char_types ? ['minTypes:2'] : [])}}"/>
       <!-- 칸 아래 서버 오류 — 비밀번호 입력 컴포넌트의 자체 오류 줄(error 속성)은 글자가 한 단계 커서(text-sm) 다른 칸(text-xs)과 크기가 달랐다. 이 폼의 다른 칸과 같은 줄로 그린다. -->
-      <span data-if="{{_local.errors?.password}}" class="block text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.password?.[0] ?? ''}}</span>
+      <span data-if="{{_local.errors?.password}}" class="form-error">{{_local.errors?.password?.[0] ?? ''}}</span>
       <!-- 화면이 미리 확인할 수 없는 규칙(서버만 판정)은 작은 글로 알린다 — 켜진 것만 보인다(#736). -->
-      <p data-if="{{!!_global.settings?.security?.password_block_identifier || !!_global.settings?.security?.password_block_repeated_chars || !!_global.settings?.security?.password_block_sequential_chars}}" class="mt-2 flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400">
+      <p data-if="{{!!_global.settings?.security?.password_block_identifier || !!_global.settings?.security?.password_block_repeated_chars || !!_global.settings?.security?.password_block_sequential_chars}}" class="mt-2 flex flex-wrap gap-x-1 text-xs text-muted">
         <span>$t:auth.password_rules.server_intro</span>
         <span data-if="{{!!_global.settings?.security?.password_block_identifier}}">$t:auth.password_rules.identifier</span>
         <span data-if="{{!!_global.settings?.security?.password_block_repeated_chars}}">$t:auth.password_rules.repeated|count={{_global.settings?.security?.password_repeated_chars_length ?? 4}}</span>
@@ -68,12 +74,12 @@
     </div>
     <!-- 비밀번호 확인 필드 -->
     <div>
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      <label class="form-label">
         <span>$t:auth.password_confirm</span>
         <span class="text-red-600 dark:text-red-400 ml-1">*</span>
       </label>
       <password-input aria-label="$t:auth.password_confirm" name="password_confirmation" placeholder="$t:auth.password_confirm_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :required="true" disabled="{{_local?.isRegistering}}" :showToggle="true" :isConfirmField="true" confirmTarget="{{_local.registerForm?.password ?? ''}}"/>
-      <span data-if="{{_local.errors?.password_confirmation}}" class="block text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.password_confirmation?.[0] ?? ''}}</span>
+      <span data-if="{{_local.errors?.password_confirmation}}" class="form-error">{{_local.errors?.password_confirmation?.[0] ?? ''}}</span>
     </div>
     <!-- 회원 항목 — 이름, 닉네임, 연락처, 언어와 운영자가 추가한 항목. 어떤 칸을 어떤 순서로 받고 무엇이 필수인지는 환경설정 > 회원 > 가입 항목이 정하고, 가입 화면은 받은 항목 계약(registerFields)대로 그린다. -->
     <div data-ref="member_fields_root">
@@ -87,7 +93,7 @@
          종류를 바꾸면 그때 입력해 둔 이름, 닉네임, 이메일로 서버에 다시 계산을 맡긴다(가림 규칙이 서버 한 곳에 있어 화면이 흉내 내지 않는다. 글자를 칠 때마다 묻지 않고 종류를 바꿀 때만 묻는다).
          고른 종류가 닉네임이 필요한 종류면 닉네임을 입력해야 한다고 알린다(비워 두면 서버가 닉네임 칸 아래에 오류를 준다). -->
     <div data-if="{{registerFields?.data?.display_name?.can_choose === true}}" data-ref="register_display_name_field">
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:member.display_name.label</label>
+      <label class="form-label">$t:member.display_name.label</label>
       <select data-ref="register_display_name_select" name="display_name_kind" :autoBinding="false" aria-label="$t:member.display_name.label" value="{{_local.registerForm?.display_name_kind ?? ''}}" disabled="{{_local?.isRegistering}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" options="{{[{ value: '', label: $t('member.display_name.option_default', { label: registerFields?.data?.display_name?.default_kind_label ?? '' }) }].concat((registerFields?.data?.display_name?.options ?? []).map(function(o) { return { value: o.value, label: o.label }; }))}}">
         <on type="change">
           <!-- 고른 종류를 폼 상태에 담고, 지금 입력해 둔 이름, 닉네임, 이메일로 종류별 미리보기 이름을 서버에서 다시 받아 둔다. -->
@@ -101,8 +107,8 @@
           </sequence>
         </on>
       </select>
-      <p data-ref="register_display_name_preview" data-if="{{((_local.displayNamePreviews ?? {})[$computed.displayNameSelected?.value] ?? $computed.displayNameSelected?.preview ?? '') !== ''}}" class="mt-1 text-xs text-gray-500 dark:text-gray-400 break-words">{{$t(!_local.displayNamePreviews &amp;&amp; registerFields?.data?.display_name?.preview_is_sample === true ? 'member.display_name.preview_sample' : 'member.display_name.preview', { name: ((_local.displayNamePreviews ?? {})[$computed.displayNameSelected?.value] ?? $computed.displayNameSelected?.preview ?? '') })}}</p>
-      <p data-ref="register_display_name_nickname_required" data-if="{{$computed.displayNameSelected?.requires_nickname === true}}" class="mt-1 text-xs text-gray-500 dark:text-gray-400 break-words">$t:member.display_name.requires_nickname</p>
+      <p data-ref="register_display_name_preview" data-if="{{((_local.displayNamePreviews ?? {})[$computed.displayNameSelected?.value] ?? $computed.displayNameSelected?.preview ?? '') !== ''}}" class="mt-1 text-xs text-muted break-words">{{$t(!_local.displayNamePreviews &amp;&amp; registerFields?.data?.display_name?.preview_is_sample === true ? 'member.display_name.preview_sample' : 'member.display_name.preview', { name: ((_local.displayNamePreviews ?? {})[$computed.displayNameSelected?.value] ?? $computed.displayNameSelected?.preview ?? '') })}}</p>
+      <p data-ref="register_display_name_nickname_required" data-if="{{$computed.displayNameSelected?.requires_nickname === true}}" class="mt-1 text-xs text-muted break-words">$t:member.display_name.requires_nickname</p>
       <span data-if="{{_local.errors?.display_name_kind}}" data-ref="register_display_name_error" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.display_name_kind?.[0] ?? ''}}</span>
     </div>
     <!-- 확장 주입 앵커 — 확장이 layout_extensions 로 가입 폼에 자기 칸을 붙이는 자리. 붙인 확장이 없으면 빈 슬롯(렌더 영향 없음). -->

@@ -216,9 +216,7 @@
                                 "name": "Span",
                                 "responsive": {
                                     "768-": {
-                                        "props": {
-                                            "className": "filter-field-label mb-0 w-14 shrink-0 flex items-center"
-                                        }
+                                        "classMerge": "mb-0 w-14 shrink-0 flex items-center"
                                     }
                                 },
                                 "props": {
@@ -379,6 +377,7 @@
                     },
                     {
                         "comment": "확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API).",
+                        "id": "ext_analytics_patterns_widgets",
                         "type": "extension_point",
                         "name": "analytics_patterns_widgets",
                         "props": {

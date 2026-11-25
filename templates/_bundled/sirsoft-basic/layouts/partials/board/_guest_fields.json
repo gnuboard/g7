@@ -28,7 +28,7 @@
                     "name": "Label",
                     "if": "{{field.type !== 'boolean' || !!field.constraints?.inline_label}}",
                     "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words"
+                        "className": "form-label break-words"
                     },
                     "children": [
                         {
@@ -158,7 +158,7 @@
                     "name": "P",
                     "if": "{{field.help}}",
                     "props": {
-                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400 break-words"
+                        "className": "mt-1 text-xs text-muted break-words"
                     },
                     "text": "{{field.help}}"
                 },
@@ -169,7 +169,7 @@
                     "name": "Span",
                     "if": "{{Object.keys(boardGuestFieldGroup?.errors ?? {}).some(function(k) { return k === field.name || k.indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(k) !== -1; })}}",
                     "props": {
-                        "className": "block text-red-600 dark:text-red-400 text-xs mt-1 break-words"
+                        "className": "form-error break-words"
                     },
                     "text": "{{Object.entries(boardGuestFieldGroup?.errors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(entry[0]) !== -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}"
                 }

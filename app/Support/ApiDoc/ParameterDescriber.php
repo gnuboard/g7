@@ -126,6 +126,7 @@ class ParameterDescriber
         'collection' => '첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default)',
         'avatar' => '아바타 이미지',
         'icon' => '아이콘',
+        'icon_spec' => '구조형 아이콘 (type: class·image·svg) — 있으면 icon 보다 우선, null 이면 지우기',
         'value' => '값',
         'values' => '값 배열',
         'username' => '사용자명 (로그인/인증 아이디)',

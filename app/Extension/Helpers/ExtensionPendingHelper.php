@@ -1009,6 +1009,29 @@ class ExtensionPendingHelper
     }
 
     /**
+     * 스테이징한 새 판의 확장 manifest 에서 코어 버전 제약(`g7_version`)을 읽습니다.
+     *
+     * 업데이트 사전 검증은 확장 manifest(module.json·plugin.json·template.json)의 제약을 봐야 한다 —
+     * vendor 번들 무결성 파일(vendor-bundle.json)의 `g7_version` 은 번들을 만든 코어 판(연산자 없음)이라 제약이 아니다.
+     *
+     * @param  string  $stagingPath  스테이징 디렉토리
+     * @param  string  $manifestName  manifest 파일명 (module.json / plugin.json / template.json)
+     * @return string|null 제약 문자열 (파일·값이 없거나 읽지 못하면 null — 검사 건너뜀)
+     */
+    public static function readStagedCoreConstraint(string $stagingPath, string $manifestName): ?string
+    {
+        $path = $stagingPath.DIRECTORY_SEPARATOR.$manifestName;
+        if (! File::exists($path)) {
+            return null;
+        }
+
+        $data = json_decode((string) File::get($path), true);
+        $constraint = is_array($data) ? ($data['g7_version'] ?? null) : null;
+
+        return is_string($constraint) && trim($constraint) !== '' ? trim($constraint) : null;
+    }
+
+    /**
      * 소스를 스테이징 디렉토리로 복사합니다.
      *
      * FilePermissionHelper를 사용하여 퍼미션/소유자/소유그룹을 보존합니다.
