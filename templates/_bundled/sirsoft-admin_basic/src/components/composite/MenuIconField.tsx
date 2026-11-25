@@ -464,7 +464,7 @@ export const MenuIconField: React.FC<MenuIconFieldProps> = ({
               {directHintKey ? t(directHintKey) : t('input_hint')}
             </P>
             {directError && (
-              <P className="text-xs text-red-600 dark:text-red-400" role="alert">
+              <P className="form-error" role="alert">
                 {t(directError)}
               </P>
             )}
@@ -483,7 +483,7 @@ export const MenuIconField: React.FC<MenuIconFieldProps> = ({
             />
             <P className="text-xs text-muted">{t('upload_hint')}</P>
             {uploadError && (
-              <P className="text-xs text-red-600 dark:text-red-400" role="alert">
+              <P className="form-error" role="alert">
                 {uploadError}
               </P>
             )}
@@ -510,7 +510,7 @@ export const MenuIconField: React.FC<MenuIconFieldProps> = ({
       </Div>
 
       {error && (
-        <P className="text-xs text-red-600 dark:text-red-400" role="alert" data-ref="menu_icon_error">
+        <P className="form-error" role="alert" data-ref="menu_icon_error">
           {error}
         </P>
       )}

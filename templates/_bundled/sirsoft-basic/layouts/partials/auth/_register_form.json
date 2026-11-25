@@ -45,7 +45,32 @@
                             }
                         },
                         {
+                            "comment": "가입 후 본인인증 정책이 인증 건을 돌려주면(7.2.1) 로그인 화면 대신 코드 입력 화면으로 간다 — 확인을 마치면 로그인 화면으로 돌아온다.\n                 그 화면은 비회원이라 대상을 세션에서 얻지 못하므로 [코드 다시 받기] 가 쓸 가입 이메일을 먼저 보관한다.",
+                            "handler": "sirsoft-basic.stashIdentityTarget",
+                            "if": "{{!!response?.data?.identity_challenge?.id}}",
+                            "params": {
+                                "purpose": "signup",
+                                "email": "{{_local.registerForm?.email ?? ''}}"
+                            }
+                        },
+                        {
                             "handler": "navigate",
+                            "if": "{{!!response?.data?.identity_challenge?.id}}",
+                            "params": {
+                                "path": "/identity/challenge",
+                                "query": {
+                                    "challenge_id": "{{response.data.identity_challenge.id}}",
+                                    "purpose": "signup",
+                                    "render_hint": "{{response.data.identity_challenge.render_hint ?? 'text_code'}}",
+                                    "expires_at": "{{response.data.identity_challenge.expires_at ?? ''}}",
+                                    "max_attempts": "{{response.data.identity_challenge.max_attempts ?? ''}}",
+                                    "return_url": "/login"
+                                }
+                            }
+                        },
+                        {
+                            "handler": "navigate",
+                            "if": "{{!response?.data?.identity_challenge?.id}}",
                             "params": {
                                 "path": "/login"
                             }

@@ -147,7 +147,7 @@ const CellRenderer: React.FC<{
     <Div className="w-full">
       {inputElement}
       {hasError && (
-        <Span className="text-xs text-red-600 dark:text-red-400 mt-1 block">
+        <Span className="form-error">
           {error}
         </Span>
       )}

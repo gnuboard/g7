@@ -7,10 +7,12 @@ axes:
   case:
     - identity_policy_modal_custom_option
     - identity_policy_modal_checkpoint_target
+    - identity_policy_modal_unregistered_target
 
 effects:
   - identity_custom_scope_offered_only_with_checkpoints
   - identity_custom_target_is_checkpoint_select
+  - identity_custom_unregistered_target_visible
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/identity-policy-custom-checkpoint.test.ts

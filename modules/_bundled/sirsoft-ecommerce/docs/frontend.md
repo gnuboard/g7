@@ -275,6 +275,8 @@
 | `_partial_filter_section` | `admin` | partial | - |
 <!-- @generated:layouts END -->
 
+정책 창의 범위가 「사용자 지정」이면 대상 칸은 확장 지점 선택 목록입니다. 저장된 대상이 지금 선언되지 않은 지점이면 목록 끝에 「연결된 확장 지점 없음 (키)」(관리자 템플릿 키 `admin.identity.policies.checkpoint_missing`)로 남겨 창에서 현재 대상이 보이게 합니다(7.2.1).
+
 <!-- @intent START -->
 206개가 **전부 `admin` 그룹**입니다(화면 25 + 부분 레이아웃 181). `resources/layouts/user/`
 디렉토리는 있지만 비어 있습니다 — 이 모듈이 방문자 쇼핑 화면을 소유하지 않는다는 설계가

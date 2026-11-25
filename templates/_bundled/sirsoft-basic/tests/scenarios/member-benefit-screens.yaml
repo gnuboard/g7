@@ -21,6 +21,7 @@ axes:
     - mypage_activity_data_source
     - mypage_activity_rows
     - mypage_activity_paging
+    - mypage_activity_period_input
     - mypage_profile_security_card
     - mypage_profile_logout_all
     - guest_browser

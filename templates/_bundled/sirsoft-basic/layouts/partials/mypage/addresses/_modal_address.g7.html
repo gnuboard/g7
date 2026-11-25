@@ -112,7 +112,7 @@
       </div>
       <!-- 해외 주소 입력 (D10 — KR 외 국가 선택 시. 체크아웃 배송지 관리 모달과 동일 필드: address_line_1/2, intl_city/state/postal_code. UserAddress 컬럼 매핑은 백엔드 MapsAddressBookFields 트레이트가 처리.) -->
       <div data-if="{{(_global.editingAddress?.country_code ?? 'KR') !== 'KR'}}" class="space-y-2">
-        <label class="form-label">
+        <label class="form-label mb-1">
           <span>$t:mypage.addresses.form.address</span>
           <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
         </label>

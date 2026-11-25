@@ -459,7 +459,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "form-label mb-1"
                             },
                             "children": [
                                 {

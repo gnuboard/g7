@@ -200,9 +200,22 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Input",
+                                                "actions": [
+                                                    {
+                                                        "comment": "입력한 코드를 화면 상태에 담는다 — [확인] 은 이 값의 길이로 켜진다(종전에는 담지 않아 버튼이 늘 꺼져 있었다)",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "code": "{{$event.target.value}}",
+                                                            "error": null
+                                                        }
+                                                    }
+                                                ],
                                                 "props": {
                                                     "type": "text",
                                                     "name": "code",
+                                                    "value": "{{_local.code ?? ''}}",
                                                     "inputMode": "numeric",
                                                     "autoComplete": "one-time-code",
                                                     "placeholder": "$t:user.identity.challenge.code_placeholder",

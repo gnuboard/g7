@@ -46,6 +46,14 @@
     <!-- 실패하면 앞 쿠폰·앞 쪽의 행이 남아 있으므로 비우고, 빈 문구와 흐림도 끈다(실패 안내가 대신한다) -->
     <data-grid data-type="composite" data="{{_global.issueHistoryLoadFailed === true ? [] : (couponIssues?.data?.data || [])}}" emptyMessage="{{couponIssues === undefined || _global.issueHistoryLoadFailed === true ? '' : $t('sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.empty')}}" data-blur-until-loaded="{{couponIssues === undefined &amp;&amp; _global.issueHistoryLoadFailed !== true}}">
       <column field="issued_at" header="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.issued_at" width="180px"/>
+      <column comment="발급 경로(가입·첫구매·생일·직접발급·다운로드)와 쿠폰 코드 — 자동발급은 AU- 로 시작한다" field="issue_source_label" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_method" width="150px">
+        <cell>
+          <div class="ecommerce:flex ecommerce:flex-col ecommerce:items-start ecommerce:gap-0.5">
+            <span class="ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-white">{{row.issue_source_label ?? '-'}}</span>
+            <span data-if="{{!!row.coupon_code}}" class="ecommerce:font-mono ecommerce:text-xs ecommerce-text-muted">{{row.coupon_code}}</span>
+          </div>
+        </cell>
+      </column>
       <column field="user_info" header="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.user" width="200px">
         <cell>
           <div class="ecommerce:group ecommerce-flex-between">

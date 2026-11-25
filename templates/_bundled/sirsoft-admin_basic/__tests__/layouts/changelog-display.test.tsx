@@ -330,16 +330,22 @@ function findChangelogApiCalls(nodes: any[]): any[] {
 // ==============================
 
 describe('Changelog - 업데이트 모달 크기 검증', () => {
+  // @scenario case=changelog_display_structure
+  // @effects changelog_display_renders_entries
   it('모듈 업데이트 모달 크기가 medium으로 설정되어 있다', () => {
     const layout = loadPartial('admin_module_list/_modal_update.json');
     expect(layout.props.size).toBe('medium');
   });
 
+  // @scenario case=changelog_display_structure
+  // @effects changelog_display_renders_entries
   it('플러그인 업데이트 모달 크기가 medium으로 설정되어 있다', () => {
     const layout = loadPartial('admin_plugin_list/_modal_update.json');
     expect(layout.props.size).toBe('medium');
   });
 
+  // @scenario case=changelog_display_structure
+  // @effects changelog_display_renders_entries
   it('템플릿 업데이트 모달 크기가 medium으로 설정되어 있다', () => {
     const layout = loadPartial('admin_template_list/_modal_update.json');
     expect(layout.props.size).toBe('medium');
@@ -362,6 +368,8 @@ describe('Changelog - 업데이트 모달 인라인 changelog 구조', () => {
   });
 
   describe('모듈 업데이트 모달', () => {
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('인라인 changelog 섹션이 updateChangelog 조건부로 존재한다', () => {
       const changelogSection = findInTree(moduleUpdateModal.children, (node: any) =>
         node.if?.includes('_global.updateChangelog') && node.if?.includes('length > 0'),
@@ -369,6 +377,8 @@ describe('Changelog - 업데이트 모달 인라인 changelog 구조', () => {
       expect(changelogSection).toBeDefined();
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('changelog 타이틀이 올바른 i18n 키를 사용한다', () => {
       const changelogSection = findInTree(moduleUpdateModal.children, (node: any) =>
         node.if?.includes('_global.updateChangelog') && node.if?.includes('length > 0'),
@@ -379,6 +389,8 @@ describe('Changelog - 업데이트 모달 인라인 changelog 구조', () => {
       expect(titleDiv).toBeDefined();
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('changelog 엔트리를 _global.updateChangelog로 iteration한다', () => {
       const iterationDiv = findInTree(moduleUpdateModal.children, (node: any) =>
         node.iteration?.source === '_global.updateChangelog',
@@ -387,6 +399,8 @@ describe('Changelog - 업데이트 모달 인라인 changelog 구조', () => {
       expect(iterationDiv.iteration.item_var).toBe('entry');
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('카테고리를 entry.categories로 중첩 iteration한다', () => {
       const categoryIteration = findInTree(moduleUpdateModal.children, (node: any) =>
         node.iteration?.source === 'entry.categories',
@@ -395,6 +409,8 @@ describe('Changelog - 업데이트 모달 인라인 changelog 구조', () => {
       expect(categoryIteration.iteration.item_var).toBe('category');
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('개별 항목을 category.items로 3단 중첩 iteration한다', () => {
       const itemIteration = findInTree(moduleUpdateModal.children, (node: any) =>
         node.iteration?.source === 'category.items',
@@ -403,13 +419,17 @@ describe('Changelog - 업데이트 모달 인라인 changelog 구조', () => {
       expect(itemIteration.iteration.item_var).toBe('changeItem');
     });
 
+    // @scenario case=changelog_item_plain_text
+    // @effects changelog_item_markdown_markers_hidden
     it('changelog 항목에 불릿(•)이 포함된 텍스트 바인딩이 있다', () => {
       const bulletItem = findInTree(moduleUpdateModal.children, (node: any) =>
-        node.text === '• {{changeItem}}',
+        typeof node.text === 'string' && node.text.startsWith('• {{') && node.text.includes('changeItem'),
       );
       expect(bulletItem).toBeDefined();
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('버전과 날짜 텍스트 바인딩이 올바르다', () => {
       // 버전 노드: text 가 'v{{entry.version}}' 인 Span
       const versionText = findInTree(moduleUpdateModal.children, (node: any) =>
@@ -423,6 +443,8 @@ describe('Changelog - 업데이트 모달 인라인 changelog 구조', () => {
       expect(dateText).toBeDefined();
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('blue 배경 스타일이 적용되어 있다', () => {
       const changelogSection = findInTree(moduleUpdateModal.children, (node: any) =>
         node.if?.includes('_global.updateChangelog') && node.if?.includes('length > 0'),
@@ -431,6 +453,8 @@ describe('Changelog - 업데이트 모달 인라인 changelog 구조', () => {
       expect(changelogSection.props.className).toContain('dark:bg-blue-900/20');
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('github_changelog_url 외부 링크가 조건부로 존재한다', () => {
       const linkSection = findInTree(moduleUpdateModal.children, (node: any) =>
         node.if === '{{_global.selectedModule.github_changelog_url}}',
@@ -445,6 +469,8 @@ describe('Changelog - 업데이트 모달 인라인 changelog 구조', () => {
   });
 
   describe('플러그인 업데이트 모달', () => {
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('인라인 changelog 섹션이 updateChangelog 조건부로 존재한다', () => {
       const changelogSection = findInTree(pluginUpdateModal.children, (node: any) =>
         node.if?.includes('_global.updateChangelog') && node.if?.includes('length > 0'),
@@ -452,6 +478,8 @@ describe('Changelog - 업데이트 모달 인라인 changelog 구조', () => {
       expect(changelogSection).toBeDefined();
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('changelog 타이틀이 플러그인 i18n 키를 사용한다', () => {
       const changelogSection = findInTree(pluginUpdateModal.children, (node: any) =>
         node.if?.includes('_global.updateChangelog') && node.if?.includes('length > 0'),
@@ -462,6 +490,8 @@ describe('Changelog - 업데이트 모달 인라인 changelog 구조', () => {
       expect(titleDiv).toBeDefined();
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('github_changelog_url 외부 링크가 조건부로 존재한다', () => {
       const linkSection = findInTree(pluginUpdateModal.children, (node: any) =>
         node.if === '{{_global.selectedPlugin.github_changelog_url}}',
@@ -471,6 +501,8 @@ describe('Changelog - 업데이트 모달 인라인 changelog 구조', () => {
   });
 
   describe('템플릿 업데이트 모달', () => {
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('인라인 changelog 섹션이 updateChangelog 조건부로 존재한다', () => {
       const changelogSection = findInTree(templateUpdateModal.children, (node: any) =>
         node.if?.includes('_global.updateChangelog') && node.if?.includes('length > 0'),
@@ -478,6 +510,8 @@ describe('Changelog - 업데이트 모달 인라인 changelog 구조', () => {
       expect(changelogSection).toBeDefined();
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('changelog 타이틀이 템플릿 i18n 키를 사용한다', () => {
       const changelogSection = findInTree(templateUpdateModal.children, (node: any) =>
         node.if?.includes('_global.updateChangelog') && node.if?.includes('length > 0'),
@@ -488,6 +522,8 @@ describe('Changelog - 업데이트 모달 인라인 changelog 구조', () => {
       expect(titleDiv).toBeDefined();
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('github_changelog_url 외부 링크가 조건부로 존재한다', () => {
       const linkSection = findInTree(templateUpdateModal.children, (node: any) =>
         node.if === '{{_global.selectedTemplate.github_changelog_url}}',
@@ -513,6 +549,8 @@ describe('Changelog - 상세 모달 changelog 섹션 구조', () => {
   });
 
   describe('모듈 상세 모달', () => {
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('changelog_section이 존재한다', () => {
       const changelogSection = findInTree(moduleDetailModal.children, (node: any) =>
         node.id === 'changelog_section',
@@ -520,6 +558,8 @@ describe('Changelog - 상세 모달 changelog 섹션 구조', () => {
       expect(changelogSection).toBeDefined();
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('changelog 아이콘이 clock-rotate-left이다', () => {
       const changelogSection = findInTree(moduleDetailModal.children, (node: any) =>
         node.id === 'changelog_section',
@@ -530,6 +570,8 @@ describe('Changelog - 상세 모달 changelog 섹션 구조', () => {
       expect(icon).toBeDefined();
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('changelog 제목이 올바른 i18n 키를 사용한다', () => {
       const changelogSection = findInTree(moduleDetailModal.children, (node: any) =>
         node.id === 'changelog_section',
@@ -540,6 +582,8 @@ describe('Changelog - 상세 모달 changelog 섹션 구조', () => {
       expect(title).toBeDefined();
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('empty state가 moduleChangelog 비어있을 때 조건부로 표시된다', () => {
       const changelogSection = findInTree(moduleDetailModal.children, (node: any) =>
         node.id === 'changelog_section',
@@ -550,6 +594,8 @@ describe('Changelog - 상세 모달 changelog 섹션 구조', () => {
       expect(emptyState).toBeDefined();
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('changelog 리스트가 moduleChangelog로 iteration한다', () => {
       const changelogSection = findInTree(moduleDetailModal.children, (node: any) =>
         node.id === 'changelog_section',
@@ -561,6 +607,8 @@ describe('Changelog - 상세 모달 changelog 섹션 구조', () => {
       expect(iterationDiv.iteration.item_var).toBe('entry');
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('changelog 리스트에 스크롤 가능한 max-h-64 스타일이 있다', () => {
       const changelogSection = findInTree(moduleDetailModal.children, (node: any) =>
         node.id === 'changelog_section',
@@ -575,6 +623,8 @@ describe('Changelog - 상세 모달 changelog 섹션 구조', () => {
       expect(scrollWrapper.props.className).toContain('overflow-y-auto');
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('3단 중첩 iteration 구조가 올바르다 (entry → categories → items)', () => {
       const changelogSection = findInTree(moduleDetailModal.children, (node: any) =>
         node.id === 'changelog_section',
@@ -602,6 +652,8 @@ describe('Changelog - 상세 모달 changelog 섹션 구조', () => {
   });
 
   describe('플러그인 상세 모달', () => {
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('changelog_section이 존재한다', () => {
       const changelogSection = findInTree(pluginDetailModal.children, (node: any) =>
         node.id === 'changelog_section',
@@ -609,6 +661,8 @@ describe('Changelog - 상세 모달 changelog 섹션 구조', () => {
       expect(changelogSection).toBeDefined();
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('pluginChangelog를 참조한다 (moduleChangelog 아님)', () => {
       const changelogSection = findInTree(pluginDetailModal.children, (node: any) =>
         node.id === 'changelog_section',
@@ -625,6 +679,8 @@ describe('Changelog - 상세 모달 changelog 섹션 구조', () => {
       expect(emptyState).toBeDefined();
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('플러그인 i18n 키를 사용한다', () => {
       const changelogSection = findInTree(pluginDetailModal.children, (node: any) =>
         node.id === 'changelog_section',
@@ -637,6 +693,8 @@ describe('Changelog - 상세 모달 changelog 섹션 구조', () => {
   });
 
   describe('템플릿 상세 모달', () => {
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('changelog_section이 존재한다', () => {
       const changelogSection = findInTree(templateDetailModal.children, (node: any) =>
         node.id === 'changelog_section',
@@ -644,6 +702,8 @@ describe('Changelog - 상세 모달 changelog 섹션 구조', () => {
       expect(changelogSection).toBeDefined();
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('templateChangelog를 참조한다 (moduleChangelog 아님)', () => {
       const changelogSection = findInTree(templateDetailModal.children, (node: any) =>
         node.id === 'changelog_section',
@@ -660,6 +720,8 @@ describe('Changelog - 상세 모달 changelog 섹션 구조', () => {
       expect(emptyState).toBeDefined();
     });
 
+    // @scenario case=changelog_display_structure
+    // @effects changelog_display_renders_entries
     it('템플릿 i18n 키를 사용한다', () => {
       const changelogSection = findInTree(templateDetailModal.children, (node: any) =>
         node.id === 'changelog_section',
@@ -677,6 +739,8 @@ describe('Changelog - 상세 모달 changelog 섹션 구조', () => {
 // ==============================
 
 describe('Changelog - 메인 리스트 changelog fetch 액션 검증', () => {
+  // @scenario case=changelog_display_structure
+  // @effects changelog_display_renders_entries
   it('모듈 리스트에서 changelog API 호출 액션이 존재한다', () => {
     const layout = loadLayout('admin_module_list.json');
     const components = layout.slots?.content ?? layout.components ?? [];
@@ -689,6 +753,8 @@ describe('Changelog - 메인 리스트 changelog fetch 액션 검증', () => {
     expect(hasModuleChangelog).toBe(true);
   });
 
+  // @scenario case=changelog_display_structure
+  // @effects changelog_display_renders_entries
   it('플러그인 리스트에서 changelog API 호출 액션이 존재한다', () => {
     const layout = loadLayout('admin_plugin_list.json');
     const components = layout.slots?.content ?? layout.components ?? [];
@@ -701,6 +767,8 @@ describe('Changelog - 메인 리스트 changelog fetch 액션 검증', () => {
     expect(hasPluginChangelog).toBe(true);
   });
 
+  // @scenario case=changelog_display_structure
+  // @effects changelog_display_renders_entries
   it('템플릿 리스트 (admin 탭)에서 changelog API 호출 액션이 존재한다', () => {
     const layout = loadPartial('admin_template_list/_tab_admin.json');
     const components = layout.children ? [layout] : [];
@@ -713,6 +781,8 @@ describe('Changelog - 메인 리스트 changelog fetch 액션 검증', () => {
     expect(hasTemplateChangelog).toBe(true);
   });
 
+  // @scenario case=changelog_display_structure
+  // @effects changelog_display_renders_entries
   it('모듈 리스트의 update용 changelog 호출에 버전 범위 파라미터가 포함된다', () => {
     const layout = loadLayout('admin_module_list.json');
     const components = layout.slots?.content ?? layout.components ?? [];
@@ -725,6 +795,8 @@ describe('Changelog - 메인 리스트 changelog fetch 액션 검증', () => {
     expect(updateCall.target).toContain('source=');
   });
 
+  // @scenario case=changelog_display_structure
+  // @effects changelog_display_renders_entries
   it('모듈 리스트의 detail용 changelog 호출은 전체 조회 (버전 범위 없음)이다', () => {
     const layout = loadLayout('admin_module_list.json');
     const components = layout.slots?.content ?? layout.components ?? [];
@@ -742,6 +814,8 @@ describe('Changelog - 메인 리스트 changelog fetch 액션 검증', () => {
 // ==============================
 
 describe('Changelog - 전역 상태 변수명 검증', () => {
+  // @scenario case=changelog_display_structure
+  // @effects changelog_display_renders_entries
   it('플러그인 상세 모달은 _global.pluginChangelog를 참조한다', () => {
     const layout = loadPartial('admin_plugin_list/_modal_detail.json');
     const content = JSON.stringify(layout);
@@ -749,6 +823,8 @@ describe('Changelog - 전역 상태 변수명 검증', () => {
     expect(content).not.toContain('_global.moduleChangelog');
   });
 
+  // @scenario case=changelog_display_structure
+  // @effects changelog_display_renders_entries
   it('템플릿 상세 모달은 _global.templateChangelog를 참조한다', () => {
     const layout = loadPartial('admin_template_list/_modal_detail.json');
     const content = JSON.stringify(layout);
@@ -756,6 +832,8 @@ describe('Changelog - 전역 상태 변수명 검증', () => {
     expect(content).not.toContain('_global.moduleChangelog');
   });
 
+  // @scenario case=changelog_display_structure
+  // @effects changelog_display_renders_entries
   it('모듈 상세 모달은 _global.moduleChangelog를 참조한다', () => {
     const layout = loadPartial('admin_module_list/_modal_detail.json');
     const content = JSON.stringify(layout);
@@ -763,6 +841,8 @@ describe('Changelog - 전역 상태 변수명 검증', () => {
     expect(content).not.toContain('_global.pluginChangelog');
   });
 
+  // @scenario case=changelog_display_structure
+  // @effects changelog_display_renders_entries
   it('모든 업데이트 모달은 공통으로 _global.updateChangelog를 참조한다', () => {
     const modalPaths = [
       'admin_module_list/_modal_update.json',
@@ -794,6 +874,8 @@ describe('Changelog - changelog 데이터 렌더링 검증', () => {
     if (testUtils) testUtils.cleanup();
   });
 
+  // @scenario case=changelog_display_structure
+  // @effects changelog_display_renders_entries
   it('updateChangelog가 있으면 인라인 changelog 항목이 렌더링된다', async () => {
     const layout = {
       version: '1.0.0',
@@ -897,6 +979,8 @@ describe('Changelog - changelog 데이터 렌더링 검증', () => {
     expect(screen.getByText('• 버그 C 수정')).toBeTruthy();
   });
 
+  // @scenario case=changelog_display_structure
+  // @effects changelog_display_renders_entries
   it('여러 버전의 changelog가 모두 렌더링된다', async () => {
     const layout = {
       version: '1.0.0',
@@ -988,6 +1072,8 @@ describe('Changelog - changelog 데이터 렌더링 검증', () => {
     expect(screen.getByText('• 버그 W 수정')).toBeTruthy();
   });
 
+  // @scenario case=changelog_display_structure
+  // @effects changelog_display_renders_entries
   it('updateChangelog가 빈 배열이면 changelog 섹션이 렌더링되지 않는다', async () => {
     const layout = {
       version: '1.0.0',
@@ -1030,6 +1116,8 @@ describe('Changelog - changelog 데이터 렌더링 검증', () => {
     expect(screen.queryByText('이 업데이트의 변경사항')).toBeNull();
   });
 
+  // @scenario case=changelog_display_structure
+  // @effects changelog_display_renders_entries
   it('상세 모달의 changelog empty state가 올바르게 렌더링된다', async () => {
     const layout = {
       version: '1.0.0',
@@ -1084,6 +1172,8 @@ describe('Changelog - changelog 데이터 렌더링 검증', () => {
     expect(screen.queryByTestId('changelog-list')).toBeNull();
   });
 
+  // @scenario case=changelog_display_structure
+  // @effects changelog_display_renders_entries
   it('github_changelog_url 외부 링크가 렌더링된다', async () => {
     const layout = {
       version: '1.0.0',
@@ -1144,6 +1234,8 @@ describe('Changelog - changelog 데이터 렌더링 검증', () => {
     expect(screen.getByTestId('icon-external-link')).toBeTruthy();
   });
 
+  // @scenario case=changelog_display_structure
+  // @effects changelog_display_renders_entries
   it('github_changelog_url이 null이면 외부 링크가 렌더링되지 않는다', async () => {
     const layout = {
       version: '1.0.0',

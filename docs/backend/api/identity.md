@@ -1236,6 +1236,8 @@ HTTP/1.1 201
 **발송 실패는 성공으로 포장하지 않습니다(#599 세션A).** challenge 생성과 코드 전달은 다른 일이라, 전달이 실패해도 challenge 행은 남습니다. 그대로 201 을 주면 화면이 「전송된 코드를 입력하세요」와 카운트다운을 띄워 사용자가 오지 않을 코드를 기다리게 됩니다. 그래서 생성 직후 `IdentityVerificationService::getStatus()`(공개 폴링과 같은 판정)로 상태를 확인하고, `failed` 이면 **502** 와 `identity.errors.challenge_dispatch_failed` 를 반환합니다. 요청 자체는 올바르고 권한도 있으므로 4xx 가 아니라 바깥 전달 경로의 실패를 뜻하는 5xx 를 씁니다.
 
 
+**가입 인증 재요청의 대상(7.2.1).** 비로그인 화면이 `purpose=signup` 과 `target.email` 만 보냈을 때 그 이메일이 가입 후 본인인증 대기(`pending_verification`) 회원이면 그 회원을 대상으로 challenge 를 만든다 — 확인하면 계정이 활성화된다(다른 브라우저·다음 날 [코드 다시 받기]). 그 밖의 이메일은 종전처럼 받은 대상 그대로이고, 응답은 어느 쪽이든 같아 계정 존재가 드러나지 않는다.
+
 ### GET /api/identity/challenges/{challenge}
 <!-- @generated:start:api.identity.challenges.show -->
 - **라우트명**: `api.identity.challenges.show`

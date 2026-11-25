@@ -4943,8 +4943,8 @@ class Module extends AbstractModule
      *
      * 코어 self-gate 게이트가 요청 시점에 targets 패턴 매칭으로 실행합니다.
      *
-     * - DetectDevice: 무명 User SSR 셸 catch-all(routes/web.php)에 라우트명이 없어 URI 패턴 '/' 로
-     *   타게팅(모든 web 요청 = 기존 web 그룹 append 와 동등). InjectAppConfigDeviceListener 가
+     * - DetectDevice: 무명 User SSR 셸 catch-all(routes/web.php)에 라우트명이 없어 'everything'(op=always)으로
+     *   web 그룹 전체에 건다(기존 web 그룹 append 와 동등). URI 패턴 '/' 는 루트 주소만 맞는다. InjectAppConfigDeviceListener 가
      *   appConfig.isIos 로 주입(체크아웃 애플페이 iOS 게이팅).
      * - ResolveShippingCountry: 상품/장바구니/체크아웃/주문생성 라우트에만 부착 (배송국가 해석).
      * - VerifyGuestOrderToken: 비회원 주문 후속 액션 라우트에 부착 (취소·환불예상·배송지수정·구매확정
@@ -4963,7 +4963,8 @@ class Module extends AbstractModule
             [
                 'class' => DetectDevice::class,
                 'groups' => ['web'],
-                'targets' => ['/'],
+                // 무명 SSR 셸의 모든 web 요청 — 'uri' 술어 '/' 는 루트 주소만 맞아(Str::is) 주문서로 바로 들어오면 iOS 판정이 빠졌다(7.2.1)
+                'targets' => ['everything'],
             ],
             [
                 'class' => ResolveShippingCountry::class,

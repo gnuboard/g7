@@ -341,7 +341,7 @@ HTTP/1.1 201
 
 새 메뉴를 생성한다. `name` 은 다국어 값(문자열로 보내면 지원 로케일 전체에 동일 값으로 자동 확장)이며 `slug` 는 `menus` 테이블 내 유일해야 한다. `parent_id` 로 하위 메뉴를 만들 수 있고, `roles` 배열로 이 메뉴 노출을 허용할 역할 ID 를 지정한다. 성공 시 `201` 과 함께 생성된 메뉴(관계 eager-load 포함)를 `MenuResource` 로 반환한다. 관리자 메뉴 관리 화면의 메뉴 추가 폼에서 소비된다. 인증 계약: `auth:sanctum` + `permission:core.menus.create`. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「메뉴 이름의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the menu name field is required.").
 
-메뉴 아이콘은 `icon`(Font Awesome 클래스 문자열, 종전 호환) 또는 `icon_spec`(구조형)으로 보낸다. `icon_spec` 이 있으면 `icon` 은 무시된다. 이미지는 `/` 로 시작하는 사이트 안 경로(png·webp·jpg·gif)나 업로드 응답의 첨부만 받고, 외부 주소(`http(s)://`·`//`·`data:`)·SVG 확장자 이미지·다른 메뉴에 묶인 첨부는 422 다. SVG 코드는 32KB 이하이고 스크립트·이벤트 속성·외부 참조·`style`·`use`·`image`·애니메이션 요소가 없어야 한다. 확장이 선언한 이미지(`source: package`)는 수정 화면이 그대로 되돌려 보내는 경우만 통과한다. 저장값은 키 사전순 정규형이라 같은 아이콘을 다른 모양으로 다시 보내도 사용자 수정으로 기록되지 않는다.
+메뉴 아이콘은 `icon`(Font Awesome 클래스 문자열, 종전 호환) 또는 `icon_spec`(구조형)으로 보낸다. `icon_spec` 이 있으면 `icon` 은 무시된다. 이미지는 `/` 로 시작하는 사이트 안 경로(png·webp·jpg·gif)나 업로드 응답의 첨부만 받고, 외부 주소(`http(s)://`·`//`·`data:`)·SVG 확장자 이미지·다른 메뉴에 묶인 첨부는 422 다. SVG 코드는 32KB 이하이고 스크립트·이벤트 속성·외부 참조·`style`·`use`·`image`·애니메이션 요소가 없어야 한다. 확장이 선언한 이미지(`source: package`)는 수정 화면이 그대로 되돌려 보내는 경우만 통과한다. 저장값은 키 사전순 정규형이라 같은 아이콘을 다른 모양으로 다시 보내도 사용자 수정으로 기록되지 않는다. 수정 요청에 `icon_spec` 없이 `icon: null` 만 보내면 — 아이콘 칸을 모르는 화면이 응답의 `icon`(이미지·SVG 아이콘이면 null)을 그대로 되돌려 보내는 경우 — 이미지·SVG 아이콘은 그대로 두고, Font Awesome 클래스 아이콘은 종전대로 지운다. 아이콘 종류와 상관없이 지우려면 `icon_spec: null` 을 보낸다.
 
 
 ### POST /api/admin/menus/icon-upload

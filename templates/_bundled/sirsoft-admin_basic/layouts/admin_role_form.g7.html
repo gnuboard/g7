@@ -202,7 +202,6 @@
                 <span class="text-red-600 dark:text-red-400 ml-1">*</span>
               </label>
               <multilingual-input data-type="composite" name="name_raw" placeholder="$t:admin.roles.form.name_placeholder" :maxLength="100" :required="true" layout="tabs" error="{{_global.formErrors?.name || _global.formErrors?.name_raw}}"/>
-              <span data-if="{{_global.formErrors?.name || _global.formErrors?.name_raw}}" class="form-error">{{_global.formErrors?.name?.[0] ?? _global.formErrors?.name_raw?.[0] ?? ''}}</span>
             </div>
             <div data-ref="identifier_field">
               <label class="form-label">
@@ -217,7 +216,6 @@
             <div data-ref="description_field">
               <label class="form-label">$t:admin.roles.form.description</label>
               <multilingual-input data-type="composite" name="description_raw" placeholder="$t:admin.roles.form.description_placeholder" :maxLength="500" inputType="textarea" :rows="3" layout="tabs" error="{{_global.formErrors?.description || _global.formErrors?.description_raw}}"/>
-              <span data-if="{{_global.formErrors?.description || _global.formErrors?.description_raw}}" class="form-error">{{_global.formErrors?.description?.[0] ?? _global.formErrors?.description_raw?.[0] ?? ''}}</span>
             </div>
             <!-- 비밀번호 만료(#736) — 이 역할을 가진 회원에게 사이트 적용 범위와 다르게 만료를 적용하거나 뺀다. 우선순위는
                  회원 개별 > 역할 > 사이트 범위이고, 한 회원의 역할끼리 부딪치면 「적용」이 이긴다(보안 우선). -->

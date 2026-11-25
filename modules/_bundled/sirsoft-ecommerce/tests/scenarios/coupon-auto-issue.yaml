@@ -26,6 +26,9 @@ axes:
     - issue_birthday_coupons_utc_boundary
     - schedules
     - notify_expiring_coupons
+    - issue_birthday_coupons_impossible_date
+    - notify_expiring_coupons_impossible_date
+    - issue_history_source_column
     - method_condition_pair
     - first_purchase_trigger
     - partial_update_inherits
@@ -82,6 +85,8 @@ effects:
   - birthday_coupon_uses_site_timezone
   - coupon_commands_scheduled
   - coupon_expiry_notified_once
+  - command_rejects_impossible_date
+  - coupon_issue_source_visible_to_admin
   - coupon_issue_rule_rejected
   - coupon_first_purchase_trigger_defaulted
   - coupon_issue_rule_inherits_stored
@@ -109,6 +114,7 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Coupon/AutoIssue/FirstPurchaseCouponIssueTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Console/IssueBirthdayCouponsCommandTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Console/NotifyExpiringCouponsCommandTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/couponIssueHistorySource.test.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/CouponAutoIssueValidationTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Settings/PromotionSettingsTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Migrations/CouponAutoIssueColumnsMigrationTest.php

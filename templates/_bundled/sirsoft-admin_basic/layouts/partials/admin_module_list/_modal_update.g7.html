@@ -116,7 +116,7 @@
               <div>
                 <span class="text-secondary text-xs font-medium">{{category.name}}</span>
                 <div data-each="changeItem, itemIdx in category.items" class="ml-3 space-y-0.5">
-                  <div class="text-secondary text-xs">• {{changeItem}}</div>
+                  <div class="text-secondary text-xs">• {{String(changeItem ?? '').split('**').join('').split('`').join('')}}</div>
                 </div>
               </div>
             </div>

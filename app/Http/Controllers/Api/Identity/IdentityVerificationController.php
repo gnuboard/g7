@@ -65,7 +65,8 @@ class IdentityVerificationController extends PublicBaseController
         $validated = $request->validated();
         $user = $request->user();
 
-        $target = $user ?: ($validated['target'] ?? []);
+        // 비회원 화면의 가입 인증 재요청은 인증 대기 회원에게 묶는다 — 확인 뒤 계정이 활성화된다(7.2.1)
+        $target = $user ?: $this->service->resolveGuestTarget((string) $validated['purpose'], (array) ($validated['target'] ?? []));
         if (! ($user instanceof User) && empty($target['email']) && empty($target['phone'])) {
             return $this->error('identity.errors.missing_target', 422);
         }

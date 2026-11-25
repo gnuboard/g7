@@ -550,15 +550,6 @@
                                                             "layout": "tabs",
                                                             "error": "{{_global.formErrors?.name || _global.formErrors?.name_raw}}"
                                                         }
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "if": "{{_global.formErrors?.name || _global.formErrors?.name_raw}}",
-                                                        "props": {
-                                                            "className": "form-error"
-                                                        },
-                                                        "text": "{{_global.formErrors?.name?.[0] ?? _global.formErrors?.name_raw?.[0] ?? ''}}"
                                                     }
                                                 ]
                                             },
@@ -657,15 +648,6 @@
                                                             "layout": "tabs",
                                                             "error": "{{_global.formErrors?.description || _global.formErrors?.description_raw}}"
                                                         }
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "if": "{{_global.formErrors?.description || _global.formErrors?.description_raw}}",
-                                                        "props": {
-                                                            "className": "form-error"
-                                                        },
-                                                        "text": "{{_global.formErrors?.description?.[0] ?? _global.formErrors?.description_raw?.[0] ?? ''}}"
                                                     }
                                                 ]
                                             },

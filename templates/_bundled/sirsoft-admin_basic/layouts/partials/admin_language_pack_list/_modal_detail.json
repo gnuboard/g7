@@ -946,7 +946,7 @@
                                                                                     "props": {
                                                                                         "className": "text-secondary text-xs"
                                                                                     },
-                                                                                    "text": "• {{changeItem}}"
+                                                                                    "text": "• {{String(changeItem ?? '').split('**').join('').split('`').join('')}}"
                                                                                 }
                                                                             ]
                                                                         }

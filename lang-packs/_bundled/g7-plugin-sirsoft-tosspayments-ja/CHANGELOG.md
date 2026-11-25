@@ -8,7 +8,7 @@
 
 ### Added
 
-- 토스페이먼츠에 추가된 결제수단 애플페이·L.pay·SSG페이의 이름과 설명(`toss_applepay`·`toss_lpay`·`toss_ssgpay` 「Apple Pay (Toss Payments)」 등), 환경설정 토글 이름·애플페이 안내(「iPhone・iPad(iOS)の注文書でのみ表示されます。」), iOS 가 아닌 기기에서 애플페이를 고를 때의 안내(`payment.error.applepay_ios_only`) 일본어 번역을 추가했습니다.
+- 토스페이먼츠에 추가된 결제수단 애플페이·L.pay·SSG페이의 이름과 설명(`toss_applepay`·`toss_lpay`·`toss_ssgpay` 「Apple Pay (Toss Payments)」 등), 환경설정 토글 이름·애플페이 안내(「iPhone・iPad(iOS)の注文書でのみ表示されます。」), iOS 가 아닌 기기에서 애플페이로 결제하려 할 때의 안내(`payment.error.applepay_ios_only`) 일본어 번역을 추가했습니다.
 
 ## [1.0.5] - 2026-11-20
 

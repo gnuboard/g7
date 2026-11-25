@@ -264,7 +264,7 @@
              필수인데 별표와 칸 아래 오류가 없으면 결제하기가 422 로 막혀도 어느 칸이 비었는지 찾을 수 없다. 해외 폼에는 이 칸이 없다(주소 2행이 대신한다).
              사용이 꺼지면 칸을 그리지 않고 주문 요청에도 이 값을 싣지 않는다. -->
         <div data-if="{{_computed.checkoutFields?.address_detail?.enabled !== false}}" data-ref="checkout_field_address_detail" class="space-y-2">
-          <label class="form-label">
+          <label class="form-label mb-1">
             <span>$t:shop.checkout.detail_address</span>
             <span data-if="{{!!_computed.checkoutFields?.address_detail?.required}}" data-ref="checkout_field_address_detail_required" class="text-red-600 dark:text-red-400 ml-1">*</span>
           </label>
@@ -282,7 +282,7 @@
     <!-- 해외 주소 입력 폼 (KR 이외 국가 선택 시 표시) -->
     <div data-if="{{(_local.shipping?.country_code ?? _local.checkout?.country_code ?? 'KR') !== 'KR'}}" class="mb-4 space-y-3">
       <responsive on="portable" class="mb-3 space-y-2"/>
-      <label class="form-label">
+      <label class="form-label mb-1">
         <span>$t:shop.checkout.intl_address</span>
         <span class="text-red-600 dark:text-red-400 ml-1">*</span>
       </label>

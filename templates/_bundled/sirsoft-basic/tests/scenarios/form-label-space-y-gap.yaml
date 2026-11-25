@@ -1,0 +1,14 @@
+feature: space-y 부모 아래 form-label 아래 여백 유지 (7.2.1 출시 전 실측 W5-006)
+
+description: |
+  .form-label(components 층 mb-1)이 부모 space-y-2(utilities 층)에 져 라벨 아래 여백이 4px → 8px 로 커졌다
+  (주문서 상세 주소·해외 주소, 마이페이지 배송지 창). 그 라벨은 utilities 층 mb-1 을 함께 적는다.
+
+axes:
+  case: [form_label_space_y_gap]
+
+effects:
+  - form_label_gap_kept
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/form-label-space-y-gap.test.ts

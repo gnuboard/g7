@@ -7,11 +7,21 @@
     <div data-ref="activity_filter" class="flex flex-wrap items-end gap-3 mb-4 card-plain p-4">
       <div>
         <label for="activity_date_from" class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">$t:mypage.activity.date_from</label>
-        <input id="activity_date_from" type="date" name="activityFrom" value="{{_local.activityFrom ?? ''}}" class="h-9 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"/>
+        <input id="activity_date_from" type="date" name="activityFrom" value="{{_local.activityFrom ?? ''}}" class="h-9 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
+          <on type="change">
+            <!-- 고른 날짜를 화면 상태에 담는다 — [조회]가 이 값을 쿼리로 옮긴다 -->
+            <set-state target="local" activityFrom="{{$event.target.value}}"/>
+          </on>
+        </input>
       </div>
       <div>
         <label for="activity_date_to" class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">$t:mypage.activity.date_to</label>
-        <input id="activity_date_to" type="date" name="activityTo" value="{{_local.activityTo ?? ''}}" class="h-9 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"/>
+        <input id="activity_date_to" type="date" name="activityTo" value="{{_local.activityTo ?? ''}}" class="h-9 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
+          <on type="change">
+            <!-- 고른 날짜를 화면 상태에 담는다 — [조회]가 이 값을 쿼리로 옮긴다 -->
+            <set-state target="local" activityTo="{{$event.target.value}}"/>
+          </on>
+        </input>
       </div>
       <button data-ref="activity_search_button" type="button" class="h-9 px-4 text-sm font-medium rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100">
         <on type="click">

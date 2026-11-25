@@ -434,7 +434,7 @@
                                         {
                                             "id": "mypage_totp_intro_steps",
                                             "type": "basic",
-                                            "name": "Ol",
+                                            "name": "Ul",
                                             "props": {
                                                 "className": "totp:list-decimal totp:list-inside totp:text-sm totp:text-gray-700 totp:dark:text-gray-300 totp:space-y-1 totp:mt-3"
                                             },

@@ -56,6 +56,21 @@ describe('마이페이지 활동 기록 (#952)', () => {
     expect(evaluate(empty.if, { myActivity: undefined })).toBe(false);
   });
 
+  // @scenario case=mypage_activity_period_input
+  // @effects user_activity_log_paginated
+  it('시작·끝 날짜 칸의 입력이 [조회]가 쿼리로 옮기는 화면 상태(activityFrom·activityTo)에 실린다', () => {
+    const search = collect(list, (n) => refOf(n) === 'activity_search_button')[0];
+    const searchText = JSON.stringify(search);
+    for (const [id, key] of [['activity_date_from', 'activityFrom'], ['activity_date_to', 'activityTo']] as const) {
+      const input = collect(list, (n) => n.props?.id === id)[0];
+      expect(input, `${id} 칸이 없습니다`).toBeDefined();
+      const setters = collect(input.actions ?? [], (a) => a.handler === 'setState' && a.params?.target === 'local' && key in (a.params ?? {}));
+      expect(setters.length, `${id} 입력이 _local.${key} 에 실리지 않습니다`).toBeGreaterThan(0);
+      expect(String(setters[0].params[key])).toContain('$event.target.value');
+      expect(searchText).toContain(`_local.${key}`);
+    }
+  });
+
   // @scenario case=mypage_activity_paging
   // @effects user_activity_log_paginated
   it('쪽이 하나면 쪽 나누기를 숨기고, 다음 쪽이 있으면 보인다', () => {

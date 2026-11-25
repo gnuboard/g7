@@ -737,7 +737,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
       {layout === 'compact' ? renderCompactLayout() : layout === 'tabs' ? renderTabsLayout() : renderInlineLayout()}
       {/* 에러 메시지 표시 */}
       {hasError && error && (
-        <Span className="text-xs text-red-600 dark:text-red-400 mt-1 block">
+        <Span className="form-error">
           {error}
         </Span>
       )}

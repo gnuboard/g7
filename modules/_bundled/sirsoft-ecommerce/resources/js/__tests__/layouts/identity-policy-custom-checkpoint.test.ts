@@ -70,4 +70,20 @@ describe('쇼핑몰 설정 본인인증 정책 창 — 사용자 지정 (#952)',
     expect(options.map((o: any) => o.value)).toEqual(['', 'vendor.withdraw']);
     expect(options[1].label).toContain('vendor.withdraw');
   });
+  // @scenario case=identity_policy_modal_unregistered_target
+  // @effects identity_custom_unregistered_target_visible
+  it('저장된 대상이 지금 선언되지 않은 지점이면 목록에 「연결된 확장 지점 없음 (키)」 로 남아 창에서 현재 대상이 보인다', () => {
+    const withTarget = (checkpoints: any[], target: string) => ({
+      identityCheckpoints: { data: { checkpoints } },
+      _global: { identity_policy_form_modal: { form: { scope: 'custom', target } } },
+      $t: (key: string) => key,
+    });
+    const missing = evaluate(checkpointSelect.props.options, withTarget([{ key: 'vendor.withdraw', name: '탈퇴' }], 'vendor.gone'));
+    expect(missing.map((o: any) => o.value)).toEqual(['', 'vendor.withdraw', 'vendor.gone']);
+    expect(missing[2].label).toContain('admin.identity.policies.checkpoint_missing');
+    expect(missing[2].label).toContain('vendor.gone');
+    // 등록된 지점이거나 비어 있으면 덧붙이지 않는다
+    expect(evaluate(checkpointSelect.props.options, withTarget([{ key: 'vendor.withdraw', name: '탈퇴' }], 'vendor.withdraw')).length).toBe(2);
+    expect(evaluate(checkpointSelect.props.options, withTarget([], '')).length).toBe(1);
+  });
 });

@@ -282,4 +282,28 @@ class IssueBirthdayCouponsCommandTest extends ModuleTestCase
         $this->assertSame('10 0 * * *', $schedules['notify-expiring-coupons']['expression']);
         $this->assertArrayHasKey('enabled_condition', $schedules['issue-birthday-coupons']);
     }
+
+    /**
+     * 달력에 없는 날짜(`--date=2027-02-30`)는 다음 달로 넘기지 않고 형식 오류와 같이 실패하며 아무 쿠폰도 발급하지 않는다.
+     *
+     * @scenario case=issue_birthday_coupons_impossible_date
+     *
+     * @effects command_rejects_impossible_date
+     *
+     * @return void 반환값 없음
+     */
+    public function test_impossible_date_is_rejected(): void
+    {
+        $coupon = $this->makeAutoCoupon(CouponIssueCondition::BIRTHDAY);
+        $field = $this->makeBirthField();
+        $user = $this->createUser();
+        // 굴림이면 3월 2일이 되는 날
+        $this->setBirthday($field, $user, '1990-03-02');
+        $this->writePromotionSettings(['birthday_field_key' => 'i952_birth']);
+
+        $this->artisan('sirsoft-ecommerce:issue-birthday-coupons', ['--date' => '2027-02-30'])->assertFailed();
+        $this->artisan('sirsoft-ecommerce:issue-birthday-coupons', ['--date' => '2027-13-01'])->assertFailed();
+
+        $this->assertSame(0, CouponIssue::query()->where('coupon_id', $coupon->id)->count());
+    }
 }

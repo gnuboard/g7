@@ -109,4 +109,18 @@ class NotifyExpiringCouponsCommandTest extends ModuleTestCase
         $this->assertCount(0, $calls);
         $this->assertNotNull($already->fresh()->expiry_notified_at);
     }
+
+    /**
+     * 달력에 없는 날짜(`--date=2027-02-30`)는 다음 달로 넘기지 않고 실패한다.
+     *
+     * @scenario case=notify_expiring_coupons_impossible_date
+     *
+     * @effects command_rejects_impossible_date
+     *
+     * @return void 반환값 없음
+     */
+    public function test_impossible_date_is_rejected(): void
+    {
+        $this->artisan('sirsoft-ecommerce:notify-expiring-coupons', ['--date' => '2027-02-30', '--dry-run' => true])->assertFailed();
+    }
 }

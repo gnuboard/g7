@@ -1,3 +1,4 @@
+// e2e:allow 시험 기대값만 #399 의 의미 클래스(화면 모양 같음)에 맞춘 단위 시험 수정 — 화면 변경 없음
 /**
  * sirsoft-totp 레이아웃 구조 검증 테스트
  *
@@ -181,7 +182,9 @@ describe('plugin_settings 등록 화면', () => {
         const serialized = flatten(totpSecurityLayout);
 
         // 다크 짝은 라이트와 같은 600 단계다 — 500 단계는 흰 글자 대비가 4.5:1 에 못 미친다(파랑 3.76, 빨강 3.82).
-        expect(serialized).toContain('dark:bg-blue-600');
+        // 주 버튼은 1.1.1(#399)부터 관리자 템플릿과 같은 검정(다크 흰색) 의미 클래스 totp-btn-primary 를 쓴다 — 파랑 변형이 남지 않는다.
+        expect(serialized).toContain('totp-btn-primary');
+        expect(serialized).not.toContain('bg-blue-600');
         expect(serialized).toContain('dark:bg-red-600');
         expect(serialized).not.toContain('dark:bg-blue-500');
         expect(serialized).not.toContain('dark:bg-red-500');

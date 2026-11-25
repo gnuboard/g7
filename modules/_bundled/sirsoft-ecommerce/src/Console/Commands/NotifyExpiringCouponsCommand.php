@@ -60,8 +60,13 @@ class NotifyExpiringCouponsCommand extends Command
 
         try {
             $today = is_string($dateOption) && $dateOption !== ''
-                ? CarbonImmutable::createFromFormat('Y-m-d', $dateOption, $timezone)->startOfDay()
+                ? CarbonImmutable::createFromFormat('!Y-m-d', $dateOption, $timezone)
                 : CarbonImmutable::now($timezone)->startOfDay();
+            // 달력에 없는 날짜(2027-02-30)는 Carbon 이 다음 달로 굴린다 — 되돌린 문자열이 입력과 다르면 잘못된 날짜로 본다
+            // audit:allow datetime-display-user-timezone reason: 입력 검증용 기계값 비교 — 화면·알림에 표시하지 않는다
+            if (is_string($dateOption) && $dateOption !== '' && $today->format('Y-m-d') !== $dateOption) {
+                throw new \InvalidArgumentException('invalid date');
+            }
         } catch (\Throwable) {
             $this->error(__('sirsoft-ecommerce::messages.console.issue_birthday_coupons.invalid_date'));
 

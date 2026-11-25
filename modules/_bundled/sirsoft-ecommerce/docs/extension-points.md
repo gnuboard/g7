@@ -236,7 +236,7 @@
 | `sirsoft-ecommerce.coupon.filter_show_result` | filter | — | `src/Services/CouponService.php:92` |
 | `sirsoft-ecommerce.coupon.filter_update_data` | filter | — | `src/Services/CouponService.php:179` |
 | `sirsoft-ecommerce.coupon.issues_list_validation_rules` | filter | — | `src/Http/Requests/Admin/CouponIssuesListRequest.php:37` |
-| `sirsoft-ecommerce.coupon.notify_expiring` | action | 쿠폰 만료 임박 알림 발송 (회원별 1회) | `src/Console/Commands/NotifyExpiringCouponsCommand.php:102` |
+| `sirsoft-ecommerce.coupon.notify_expiring` | action | 쿠폰 만료 임박 알림 발송 (회원별 1회) | `src/Console/Commands/NotifyExpiringCouponsCommand.php:107` |
 | `sirsoft-ecommerce.coupon.notify_issued.{쿠폰ID}` | action | 쿠폰 발급 알림 발송 (쿠폰마다 따로 있는 훅 — 알림 종류 coupon_issued.{쿠폰ID} 가 구독) | 선언 (호출 위치 미확인) |
 | `sirsoft-ecommerce.coupon.public_zone_validation_rules` | filter | — | `src/Http/Requests/Public/PublicCouponZoneRequest.php:37` |
 | `sirsoft-ecommerce.coupon.restore` | action | — | `src/Services/OrderReactivationService.php:212` 외 1곳 |
@@ -1830,7 +1830,7 @@ Repository, 설정 서비스(`EcommerceSettingsService`)는 이 모듈 내부다
 <!-- @generated:middleware START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 미들웨어 | 부착 대상(targets) | 우선순위 |
 |---|---|---|
-| `DetectDevice` | `/` | - |
+| `DetectDevice` | `everything` | - |
 | `ResolveShippingCountry` | `api.modules.sirsoft-ecommerce.products.*`, `api.modules.sirsoft-ecommerce.cart.*`, `api.modules.sirsoft-ecommerce.checkout.*`, `api.modules.sirsoft-ecommerce.user.orders.store` | - |
 | `VerifyGuestOrderToken` | `api.modules.sirsoft-ecommerce.guest.orders.cancel`, `api.modules.sirsoft-ecommerce.guest.orders.estimate-refund`, `api.modules.sirsoft-ecommerce.guest.orders.update-shipping-address`, `api.modules.sirsoft-ecommerce.guest.orders.confirm-option`, `api.modules.sirsoft-ecommerce.guest.orders.cash-receipt.*`, `api.modules.sirsoft-ecommerce.guest.orders.claimable-options`, `api.modules.sirsoft-ecommerce.guest.orders.claims.*`, `api.modules.sirsoft-ecommerce.guest.orders.exchanges.*`, `api.modules.sirsoft-ecommerce.guest.orders.returns.*`, `api.modules.sirsoft-ecommerce.guest.orders.refund-requests.*`, `api.modules.sirsoft-ecommerce.guest.orders.claim-images.*`, `api.modules.sirsoft-ecommerce.guest.orders.claim-payments.*` | - |
 <!-- @generated:middleware END -->

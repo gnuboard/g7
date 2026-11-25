@@ -79,4 +79,13 @@ describe('마이페이지 2단계 인증 칸 (#952)', () => {
     }
     expect(text).toContain('_local.totpBackupCodes');
   });
+  // @scenario case=mypage_totp_card_user_registry
+  // @effects totp_card_components_in_user_template
+  it('사용자 템플릿(sirsoft-basic) 레지스트리에 있는 컴포넌트만 쓴다 — 없는 컴포넌트는 그 노드와 자식이 그려지지 않는다', () => {
+    const registry: any = JSON.parse(fs.readFileSync(path.resolve(here, '../../../../../../../templates/_bundled/sirsoft-basic/components.json'), 'utf-8'));
+    const known = new Set<string>(Object.values(registry.components).flat().map((c: any) => String(c.name)));
+    const used = new Set<string>(collect(card, (n) => typeof n.name === 'string' && /^[A-Z]/.test(n.name) && (n.type === 'basic' || n.type === 'composite' || n.type === 'layout')).map((n) => String(n.name)));
+    expect(used.size).toBeGreaterThan(0);
+    expect([...used].filter((name) => !known.has(name))).toEqual([]);
+  });
 });

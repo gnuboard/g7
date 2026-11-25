@@ -62,7 +62,12 @@
             <span class="text-sm text-red-700 dark:text-red-300">{{_local.error ?? ''}}</span>
           </div>
           <div class="space-y-4">
-            <input type="text" name="code" inputMode="numeric" autoComplete="one-time-code" placeholder="$t:user.identity.challenge.code_placeholder" :maxLength="10" class="w-full px-4 py-3 text-center text-xl tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+            <input type="text" name="code" value="{{_local.code ?? ''}}" inputMode="numeric" autoComplete="one-time-code" placeholder="$t:user.identity.challenge.code_placeholder" :maxLength="10" class="w-full px-4 py-3 text-center text-xl tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+              <on type="change">
+                <!-- 입력한 코드를 화면 상태에 담는다 — [확인] 은 이 값의 길이로 켜진다(종전에는 담지 않아 버튼이 늘 꺼져 있었다) -->
+                <set-state target="local" code="{{$event.target.value}}" :error="null"/>
+              </on>
+            </input>
             <div class="flex items-center justify-between text-sm" role="status" aria-live="polite">
               <span data-if="{{(_local.remainingSeconds ?? 0) > 0}}" class="text-gray-600 dark:text-gray-400">$t:user.identity.challenge.remaining_time|minutes={{Math.floor((_local.remainingSeconds ?? 0) / 60)}}|seconds={{String((_local.remainingSeconds ?? 0) % 60).padStart(2, '0')}}</span>
               <span data-if="{{(_local.remainingSeconds ?? 0) <= 0 &amp;&amp; _local.expiresAt}}" class="text-red-600 dark:text-red-400">$t:user.identity.challenge.expired</span>

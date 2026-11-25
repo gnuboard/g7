@@ -81,7 +81,7 @@ export const FormField: React.FC<FormFieldProps> = ({
         )}
 
         {error && (
-          <Div className="mt-1 text-xs text-red-600 dark:text-red-400">
+          <Div className="form-error">
             {error}
           </Div>
         )}

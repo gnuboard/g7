@@ -786,7 +786,7 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       └── _modal_review_delete.g7.html (리뷰 삭제 확인)
 │   ├── activity.g7.html (활동 기록 — 기간 조회·쪽 이동)
 │   │   └── partials/mypage/activity/
-│   │       └── _list.g7.html (활동 기록 목록)
+│   │       └── _list.g7.html (활동 기록 목록 — 날짜 칸 change 가 _local.activityFrom/To 에 담고 [조회]가 쿼리로 옮긴다)
 │   ├── notifications.g7.html (알림)
 │   │   └── partials/mypage/notifications/
 │   │       └── _list.g7.html (알림 목록)

@@ -98,11 +98,11 @@
         <div data-ref="mypage_totp_intro_card" data-if="{{totpEnrollment !== undefined && !totpEnrollment?.data?.enrolled && !_local.totpSecret && !_local.totpBackupCodes}}" class="totp:mt-4">
           <h3 data-ref="mypage_totp_intro_title" class="totp-card-title">$t:sirsoft-totp.admin.security.intro.title</h3>
           <div data-ref="mypage_totp_intro_desc" class="totp-card-description">$t:sirsoft-totp.admin.security.intro.description</div>
-          <ol data-ref="mypage_totp_intro_steps" class="totp:list-decimal totp:list-inside totp:text-sm totp:text-gray-700 totp:dark:text-gray-300 totp:space-y-1 totp:mt-3">
+          <ul data-ref="mypage_totp_intro_steps" class="totp:list-decimal totp:list-inside totp:text-sm totp:text-gray-700 totp:dark:text-gray-300 totp:space-y-1 totp:mt-3">
             <li data-ref="mypage_totp_intro_step1">$t:sirsoft-totp.admin.security.intro.step_install</li>
             <li data-ref="mypage_totp_intro_step2">$t:sirsoft-totp.admin.security.intro.step_scan</li>
             <li data-ref="mypage_totp_intro_step3">$t:sirsoft-totp.admin.security.intro.step_confirm</li>
-          </ol>
+          </ul>
           <div data-ref="mypage_totp_intro_password_field" class="totp:mt-4">
             <label data-ref="mypage_totp_intro_password_label" for="mypage_totp_current_password" class="totp-form-label">$t:sirsoft-totp.admin.security.intro.password_label</label>
             <input data-ref="mypage_totp_intro_password_input" id="mypage_totp_current_password" type="password" name="mypage_totp_current_password" value="{{_local.totpCurrentPassword ?? ''}}" autoComplete="current-password" maxLength="255" placeholder="$t:sirsoft-totp.admin.security.intro.password_placeholder" class="totp-input" disabled="{{_local.totpBusy}}">

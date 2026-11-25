@@ -1,0 +1,16 @@
+feature: 관리자 변경 기록 표시 — 업데이트·상세·코어 변경 기록 창 구조와 항목 표기 기호 숨김 (7.2.1 출시 전 실측 W5-002)
+
+description: |
+  업데이트 창·상세 창·코어 변경 기록 창이 CHANGELOG 항목을 글자로 찍어 `**강조**`·백틱 코드 표기가 기호째 보였다
+  (쇼핑몰 1.4.1 「**업데이트 안내**」 경고). 표기 기호를 빼고 글자만 보인다.
+
+axes:
+  case: [changelog_item_plain_text, changelog_display_structure]
+
+effects:
+  - changelog_item_markdown_markers_hidden
+  - changelog_display_renders_entries
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/changelog-item-plain-text.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/changelog-display.test.tsx

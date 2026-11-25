@@ -46,6 +46,17 @@
                         {
                             "type": "basic",
                             "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "고른 날짜를 화면 상태에 담는다 — [조회]가 이 값을 쿼리로 옮긴다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "activityFrom": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
                             "props": {
                                 "id": "activity_date_from",
                                 "type": "date",
@@ -72,6 +83,17 @@
                         {
                             "type": "basic",
                             "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "고른 날짜를 화면 상태에 담는다 — [조회]가 이 값을 쿼리로 옮긴다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "activityTo": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
                             "props": {
                                 "id": "activity_date_to",
                                 "type": "date",
