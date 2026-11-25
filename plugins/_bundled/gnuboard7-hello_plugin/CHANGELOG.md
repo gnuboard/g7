@@ -4,11 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [0.2.3] - 2026-11-22
+## [0.2.3] - 2026-11-25
 
 ### Changed
 
 - 설정 화면의 폭별 클래스를 바뀐 클래스만 덧붙이는 방식(`class-merge`, 코어 7.2.1)으로 바꿨습니다. 화면 모양은 같고, 코어 7.2.1 이상이 필요합니다.
+- 코어 최소 버전을 7.2.1 로 올렸습니다 — 화면 폭별 덧붙이기 클래스(class-merge)가 코어 7.2.1 기능입니다.
 
 ## [0.2.2] - 2026-11-20
 
