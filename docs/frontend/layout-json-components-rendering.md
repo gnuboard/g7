@@ -26,6 +26,8 @@
 ✅ 필수: 조건이 truthy일 때만 컴포넌트가 렌더링됨
 ```
 
+> 조건이 거짓인 노드는 DOM 에 아무것도 남기지 않는다. 그 노드에 `blur_until_loaded` 가 있어도 흐림 래퍼 `<div>` 를 그리지 않는다(engine-v1.99.2). 조건이 참일 때 흐림 래퍼가 부모 flex·grid 의 자식이 되는 점은 [layout-json-components-loading.md 주의사항](layout-json-components-loading.md#주의사항)을 본다.
+
 ### 기본 사용법
 
 ```html

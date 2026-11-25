@@ -282,7 +282,7 @@
 
 | Prop | 타입 | 기본값 | 설명 |
 | ---- | ---- | ------ | ---- |
-| `value` | array \| string \| number | - | 선택된 값 |
+| `value` | array \| string \| number | - | 선택된 값. `null`·`undefined` 는 빈 값이다. 빈 문자열·공백만 있는 항목은 태그로 그리지 않고 값에서 뺀다 — 폼 자동 바인딩은 상태 값이 `null` 인 칸에 `''` 를 넘긴다. 단 `''` 가 `options` 의 값이면(단일 선택의 「전체」 등) 고른 값으로 둔다(sirsoft-admin_basic 1.2.1) |
 | `options` | TagOption[] | - | 선택 가능한 옵션 목록 |
 | `creatable` | boolean | `false` | 새 항목 추가 가능 여부 |
 | `isMulti` | boolean | `true` | 다중 선택 여부 |

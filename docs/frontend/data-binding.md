@@ -32,13 +32,13 @@
 ## 목차
 
 1. [기본 문법](#기본-문법)
-2. [데이터 바인딩 표현식 (engine-v1.1.0+)](#데이터-바인딩-표현식-v110)
-3. [Optional Chaining & Nullish Coalescing](#optional-chaining--nullish-coalescing-v110)
-4. [파이프 함수 (engine-v1.9.0+)](#파이프-함수-v190)
-5. [$get 헬퍼 함수 (engine-v1.9.0+)](#get-헬퍼-함수-v190)
-6. [$switch 표현식 (engine-v1.9.0+)](#switch-표현식-v190)
-7. [반복 컨텍스트에서의 표현식](#반복-컨텍스트에서의-표현식-v120)
-8. [text 속성 복합 바인딩](#text-속성-복합-바인딩-v120)
+2. [데이터 바인딩 표현식 (engine-v1.1.0+)](#데이터-바인딩-표현식-engine-v110)
+3. [Optional Chaining & Nullish Coalescing](#optional-chaining--nullish-coalescing-engine-v110)
+4. [파이프 함수 (engine-v1.9.0+)](#파이프-함수-engine-v190)
+5. [$get 헬퍼 함수 (engine-v1.9.0+)](#get-헬퍼-함수-engine-v190)
+6. [$switch 표현식 (engine-v1.9.0+)](#switch-표현식-engine-v190)
+7. [반복 컨텍스트에서의 표현식](#반복-컨텍스트에서의-표현식-engine-v120)
+8. [text 속성 복합 바인딩](#text-속성-복합-바인딩-engine-v120)
 
 ---
 
@@ -526,7 +526,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 현재 로케일은 컨텍스트 변수 `$locale` 이 든다. `_global.locale` 은 어디서도 세워지지 않으므로
 그 자리에 쓰면 언제나 `undefined` 로 평가되어 조용히 fallback 으로 고정된다. 세 번째 인자(fallback)에 `product.name.ko` 처럼 특정 언어를 고정하지 않는다 — `$localized()` 가 사이트 기본 언어 → en 순으로 대신한다.
 다국어 객체 하나를 그대로 표시하는 것이 목적이라면 `$localized(product.name)` 이 정본이다
-([$localized() 헬퍼](data-binding-i18n.md#localized-헬퍼-함수-v140)).
+([$localized() 헬퍼](data-binding-i18n.md#localized-헬퍼-함수-engine-v140)).
 
 **중첩 설정 접근**:
 

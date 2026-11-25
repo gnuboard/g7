@@ -513,7 +513,7 @@ $t:sirsoft-ecommerce.admin.claim.filter.charge_payment_method</span>
         </div>
       </div>
       <!-- 접수 출처·회수 지연·환불 미접수 필터 (§3-11 D8 · 선교환 · D9). 유형마다 축이 달라 게이트(`ClaimListRequest`)가 밖의 유형에서 prohibited 로 거절하므로, 아래 조회 파라미터는 그 축을 가진 유형에서만 싣는다. -->
-      <div data-ref="claimFlags_filter_row" data-slot="{{(_local.visibleFilters || []).includes('claimFlags') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="10" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+      <div data-ref="claimFlags_filter_row" data-slot="{{(_local.visibleFilters || []).includes('claimFlags') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="10" data-if="{{(query.type || 'exchange') !== 'cancel'}}" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
         <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- 편집모드 체크박스 — claimFlags -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.claim_flags" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('claimFlags')}}">

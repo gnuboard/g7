@@ -238,32 +238,36 @@
             },
             "children": [
                 {
-                    "id": "total_count",
+                    "comment": "건수 두 갈래(끝까지 셈 / 상한에 걸림)를 한 노드로 감싸 흐린다 — 갈래마다 흐리면 흐림 래퍼가 갈래마다 행의 자식으로 들어간다",
+                    "id": "total_count_group",
                     "type": "basic",
-                    "name": "Span",
-                    "if": "{{schedules?.data?.pagination?.total_is_exact !== false}}",
+                    "name": "Div",
                     "blur_until_loaded": {
                         "enabled": true,
                         "data_sources": "schedules"
                     },
-                    "props": {
-                        "className": "text-label"
-                    },
-                    "text": "$t:admin.schedules.total_count|count={{schedules?.data?.pagination?.total ?? 0}}"
-                },
-                {
-                    "id": "total_count_at_least",
-                    "type": "basic",
-                    "name": "Span",
-                    "if": "{{schedules?.data?.pagination?.total_is_exact === false}}",
-                    "blur_until_loaded": {
-                        "enabled": true,
-                        "data_sources": "schedules"
-                    },
-                    "props": {
-                        "className": "text-label"
-                    },
-                    "text": "$t:admin.schedules.total_at_least|count={{schedules?.data?.pagination?.total ?? 0}}"
+                    "children": [
+                        {
+                            "id": "total_count",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{schedules?.data?.pagination?.total_is_exact !== false}}",
+                            "props": {
+                                "className": "text-label"
+                            },
+                            "text": "$t:admin.schedules.total_count|count={{schedules?.data?.pagination?.total ?? 0}}"
+                        },
+                        {
+                            "id": "total_count_at_least",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{schedules?.data?.pagination?.total_is_exact === false}}",
+                            "props": {
+                                "className": "text-label"
+                            },
+                            "text": "$t:admin.schedules.total_at_least|count={{schedules?.data?.pagination?.total ?? 0}}"
+                        }
+                    ]
                 },
                 {
                     "id": "list_options",

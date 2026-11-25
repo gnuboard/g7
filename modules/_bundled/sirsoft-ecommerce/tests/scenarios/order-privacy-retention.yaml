@@ -75,6 +75,7 @@ effects:
   - order_anonymize_hook_failure_rolls_back
   - order_retention_targets_match_the_population
   - order_retention_target_button_wraps_on_narrow_viewports
+  - order_retention_target_button_row_hides_when_empty   # 대상 보기·지금 실행 권한이 모두 없으면 버튼 줄째로 숨는다 — 빈 줄이 좁은 화면 세로 배치에 gap 을 한 번 더 붙인다
   - order_manual_run_processes_while_off
   - order_delete_mode_manual_run_requires_order_delete_permission
   - order_delete_mode_manual_run_is_runnable_by_the_admin_role

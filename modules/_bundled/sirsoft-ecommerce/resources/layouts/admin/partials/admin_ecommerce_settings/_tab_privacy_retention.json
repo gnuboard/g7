@@ -198,8 +198,10 @@
                                                             ]
                                                         },
                                                         {
+                                                            "comment": "버튼 줄은 두 버튼 조건의 합으로 자신도 숨는다 — 대상 보기·지금 실행 권한이 모두 없는 관리자에게 빈 줄이 남으면 좁은 화면의 세로 배치에서 gap 이 한 번 더 붙는다.",
                                                             "type": "basic",
                                                             "name": "Div",
+                                                            "if": "{{ecommercePrivacyRetentionPreview?.data?.can_view_targets || privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.can_run}}",
                                                             "props": {
                                                                 "className": "ecommerce-flex-wrap-center ecommerce:gap-2"
                                                             },

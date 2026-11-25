@@ -36,7 +36,8 @@
                   <span class="ecommerce-text-heading">$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.row_label</span>
                   <span data-if="{{ecommercePrivacyRetentionPreview?.data?.orders !== null &amp;&amp; ecommercePrivacyRetentionPreview?.data?.orders !== undefined}}" class="ecommerce-badge ecommerce-badge-yellow">$t:sirsoft-ecommerce.admin.settings.privacy_retention.target_count|count={{ecommercePrivacyRetentionPreview?.data?.orders ?? 0}}</span>
                 </div>
-                <div class="ecommerce-flex-wrap-center ecommerce:gap-2">
+                <!-- 버튼 줄은 두 버튼 조건의 합으로 자신도 숨는다 — 대상 보기·지금 실행 권한이 모두 없는 관리자에게 빈 줄이 남으면 좁은 화면의 세로 배치에서 gap 이 한 번 더 붙는다. -->
+                <div data-if="{{ecommercePrivacyRetentionPreview?.data?.can_view_targets || privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.can_run}}" class="ecommerce-flex-wrap-center ecommerce:gap-2">
                   <button data-ref="view_privacy_retention_targets" data-if="{{ecommercePrivacyRetentionPreview?.data?.can_view_targets}}" type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-ghost">
                     <on type="click">
                       <!-- 대상 주문 명단 — 목록 경로·제목을 주문 핸들러로 맞추고 쪽 상태를 1쪽으로 되돌린 뒤 첫 쪽을 다시 받아 창을 연다.

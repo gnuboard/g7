@@ -7,7 +7,7 @@ description: |
   없어 기본 문구가 영어 대체 문구(「add」 등)로 나온다.
 
 axes:
-  area: [render, disabled, on_change, menu_portal, before_remove, creatable, select_only, max_items, filter, a11y_role, delimiter, no_options_prop, grouping, input_change, editor_attrs, style_csp]
+  area: [render, disabled, on_change, menu_portal, before_remove, creatable, select_only, max_items, filter, a11y_role, delimiter, no_options_prop, grouping, input_change, editor_attrs, style_csp, empty_value]
 
 effects:
   - tag_input_renders_values_and_counts
@@ -29,7 +29,12 @@ effects:
   - tag_input_emotion_rules_in_adopted_sheet
   - tag_input_creates_no_style_element
   - tag_input_emotion_fallback_without_adopted
+  # 빈 값(폼 자동 바인딩의 '' · 공백 항목)은 태그가 아니고 저장 값에도 섞이지 않는다(TagInput.emptyValue.test.tsx)
+  - tag_input_empty_value_renders_no_chip
+  - tag_input_empty_value_not_saved
+  - tag_input_empty_value_keeps_real_values
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TagInput.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TagInput.styleCsp.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TagInput.emptyValue.test.tsx

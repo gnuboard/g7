@@ -53,6 +53,7 @@ effects:
   # 게이트가 거절하는 축 (prohibited)
   - fault_axis_absent_for_cancel
   - charge_axis_absent_for_refund_and_cancel
+  - claim_flags_axis_absent_for_cancel   # 플래그 묶음 3축이 모두 취소에 없다 — 행을 남기면 라벨만 서고 컨트롤 칸이 빈 채로 gap 을 먹는다
   - search_action_omits_params_for_axes_the_type_lacks
   # 검색 드롭다운 (D27 · S3-D19)
   - search_dropdown_has_four_fields_and_no_all_option

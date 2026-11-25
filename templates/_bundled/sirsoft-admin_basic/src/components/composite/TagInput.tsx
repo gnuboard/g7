@@ -363,11 +363,14 @@ export const TagInput: React.FC<TagInputProps> = ({
   const noOptionsMessage = noOptionsMessageProp ?? tOr('common.tag_input.no_options', 'No results found');
 
   // valueProp을 내부 배열 형태로 정규화
+  // 빈 문자열·공백만 있는 항목은 태그가 아니다 — 폼 자동 바인딩은 상태 값이 null·undefined 인 칸에 '' 를 넘기므로
+  // 그대로 감싸면 내용 없는 태그가 그려지고(상품 SEO 키워드가 null 인 상품), 그 칸에 태그를 더하면 저장 배열에 '' 가 섞였다.
+  // 단, '' 가 실제 옵션 값이면(단일 선택의 「전체」 등) 고른 값으로 둔다.
   const normalizeValue = useCallback((val: typeof valueProp): (string | number)[] => {
     if (val === null || val === undefined) return [];
-    if (Array.isArray(val)) return val;
-    return [val];
-  }, []);
+    const list = Array.isArray(val) ? val : [val];
+    return list.filter((v) => typeof v !== 'string' || v.trim() !== '' || options.some((opt) => opt.value === v));
+  }, [options]);
 
   // 내부 상태로 관리 (비제어 컴포넌트 패턴)
   const [value, setValue] = useState<(string | number)[]>(() => normalizeValue(valueProp));

@@ -2,7 +2,7 @@
  * @file admin-settings-info-opcache.test.tsx
  * @description 환경설정 > 정보 탭 OPcache 상태 행/경고 블록 렌더링 테스트
  *
- * 테스트 대상 (_tab_info.json 의 OPcache 블록):
+ * 테스트 대상: 실제 `_tab_info.json` 의 OPcache 경고 블록(`opcache_warning`)과 상태 행(`card_system_specs` 안)을 그대로 렌더한다:
  * - opcache.enabled: true  → 상태 "활성화됨", 경고 블록 미표시
  * - opcache.enabled: false → 상태 "비활성화됨", 경고 블록 표시 (성능 저하 안내)
  * - opcache.enabled: null  → 상태 "확인 불가", 경고 블록 미표시 (확인 불가는 경고 아님)
@@ -15,39 +15,20 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createLayoutTest, screen } from '@core/template-engine/__tests__/utils/layoutTestUtils';
+import { findById } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
+import infoTab from '../../layouts/partials/admin_settings/_tab_info.json';
+import adminSettingsLayout from '../../layouts/admin_settings.json';
+import adminKo from '../../lang/partial/ko/admin.json';
 
-const TestDiv: React.FC<{
-  className?: string;
-  children?: React.ReactNode;
-  'data-testid'?: string;
-}> = ({ className, children, 'data-testid': testId }) => (
-  <div className={className} data-testid={testId}>{children}</div>
-);
+type Props = { className?: string; children?: React.ReactNode; text?: string };
 
-const TestSpan: React.FC<{
-  className?: string;
-  children?: React.ReactNode;
-  text?: string;
-  'data-testid'?: string;
-}> = ({ className, children, text, 'data-testid': testId }) => (
-  <span className={className} data-testid={testId}>{children || text}</span>
-);
-
-const TestP: React.FC<{
-  className?: string;
-  children?: React.ReactNode;
-  text?: string;
-  'data-testid'?: string;
-}> = ({ className, children, text, 'data-testid': testId }) => (
-  <p className={className} data-testid={testId}>{children || text}</p>
-);
-
-const TestIcon: React.FC<{
-  name?: string;
-  className?: string;
-}> = ({ name, className }) => (
-  <i className={className} data-icon={name} data-testid={`icon-${name}`} />
+const TestDiv: React.FC<Props> = ({ className, children, text }) => <div className={className}>{children || text}</div>;
+const TestSpan: React.FC<Props> = ({ className, children, text }) => <span className={className}>{children || text}</span>;
+const TestH3: React.FC<Props> = ({ className, children, text }) => <h3 className={className}>{children || text}</h3>;
+const TestP: React.FC<Props> = ({ className, children, text }) => <p className={className}>{children || text}</p>;
+const TestIcon: React.FC<{ name?: string; className?: string }> = ({ name, className }) => (
+  <i className={className} data-icon={name} />
 );
 
 // 렌더러가 컴포넌트 목록을 Fragment 로 감싸므로 반드시 등록해야 한다.
@@ -56,12 +37,14 @@ const TestFragment: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
 
 function setupTestRegistry(): ComponentRegistry {
   const registry = ComponentRegistry.getInstance();
+  const basic = (name: string, component: React.FC<any>) => ({ component, metadata: { name, type: 'basic' } });
 
   (registry as any).registry = {
-    Div: { component: TestDiv, metadata: { name: 'Div', type: 'basic' } },
-    Span: { component: TestSpan, metadata: { name: 'Span', type: 'basic' } },
-    P: { component: TestP, metadata: { name: 'P', type: 'basic' } },
-    Icon: { component: TestIcon, metadata: { name: 'Icon', type: 'basic' } },
+    Div: basic('Div', TestDiv),
+    Span: basic('Span', TestSpan),
+    H3: basic('H3', TestH3),
+    P: basic('P', TestP),
+    Icon: basic('Icon', TestIcon),
     Fragment: { component: TestFragment, metadata: { name: 'Fragment', type: 'layout' } },
   };
 
@@ -84,86 +67,43 @@ function createSystemInfoResponse(opcache?: { loaded: boolean; enabled: boolean 
   };
 }
 
-// _tab_info.json 의 OPcache 블록과 동일한 표현식.
-// 프로덕션에서는 $t:key 로 라벨을 해석하나, 테스트 레지스트리에는 i18n 이 없으므로
-// 판정 결과 자체를 문자열 리터럴로 확인한다.
-const STATUS_EXPR =
-  "{{systemInfo?.data?.opcache?.enabled === true ? 'enabled' " +
-  ": (systemInfo?.data?.opcache?.enabled === false ? 'disabled' : 'unknown')}}";
-const WARNING_IF = '{{systemInfo?.data?.opcache?.enabled === false}}';
+// 실제 `_tab_info.json` 의 OPcache 경고 블록(탭 맨 위)과 시스템 사양 카드(OPcache 상태 행 포함)를 그대로 렌더한다.
+// 손으로 옮긴 사본은 원본이 바뀌어도 옛 모양을 재므로 쓰지 않는다. 라벨은 실제 ko 언어팩으로 해석한다.
+const infoText = (adminKo as any).settings.info;
+const opcacheWarningNode = findById(infoTab, 'opcache_warning');
+const systemSpecsCard = findById(infoTab, 'card_system_specs');
+// 실제 화면의 데이터소스 정의 — 탭 조건(if)만 걷는다(이 시험은 탭 전환 없이 노드만 그린다).
+const { if: _tabCondition, ...systemInfoSource } = (adminSettingsLayout as any).data_sources.find(
+  (ds: { id: string }) => ds.id === 'systemInfo'
+);
 
 const infoLayout = {
   version: '1.0.0',
   layout_name: 'test_admin_settings_info',
-  data_sources: [
-    {
-      id: 'systemInfo',
-      type: 'api',
-      endpoint: '/api/admin/settings/system-info',
-      method: 'GET',
-      auto_fetch: true,
-      auth_required: true,
-      fallback: { data: {} },
-    },
-  ],
-  components: [
-    {
-      id: 'card_system_specs',
-      type: 'basic',
-      name: 'Div',
-      children: [
-        {
-          type: 'basic',
-          name: 'Div',
-          props: { className: 'flex-between' },
-          children: [
-            {
-              type: 'basic',
-              name: 'Span',
-              props: { className: 'text-label', 'data-testid': 'opcache-label' },
-              text: 'OPcache',
-            },
-            {
-              type: 'basic',
-              name: 'Span',
-              props: { className: 'text-heading', 'data-testid': 'opcache-value' },
-              text: STATUS_EXPR,
-            },
-          ],
-        },
-        {
-          if: WARNING_IF,
-          type: 'basic',
-          name: 'Div',
-          props: { className: 'alert-warning', 'data-testid': 'opcache-warning' },
-          children: [
-            {
-              type: 'basic',
-              name: 'Div',
-              props: { className: 'flex-center gap-3' },
-              children: [
-                {
-                  type: 'basic',
-                  name: 'Icon',
-                  props: {
-                    name: 'triangle-exclamation',
-                    className: 'text-xl text-amber-600 dark:text-amber-400 flex-shrink-0',
-                  },
-                },
-                {
-                  type: 'basic',
-                  name: 'P',
-                  props: { className: 'text-warning-soft' },
-                  text: 'OPcache가 비활성화되어 있습니다.',
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-  ],
+  data_sources: [systemInfoSource],
+  components: [opcacheWarningNode, systemSpecsCard],
 };
+
+function createTest() {
+  return createLayoutTest(infoLayout as any, {
+    translations: { admin: adminKo },
+    templateId: 'sirsoft-admin_basic',
+    locale: 'ko',
+  });
+}
+
+/** OPcache 상태 행의 값 칸 글자 (행 = 라벨을 담은 flex 양 끝 정렬 컨테이너, 값 = 마지막 자식) */
+function opcacheValue(): string | null | undefined {
+  const row = screen.getByText(infoText.opcache, { selector: 'span' }).closest('.flex-between');
+  expect(row).not.toBeNull();
+
+  return row!.lastElementChild?.textContent;
+}
+
+/** OPcache 경고 블록 (없으면 null) */
+function opcacheWarning(container: HTMLElement): HTMLElement | null {
+  return container.querySelector('.alert-warning');
+}
 
 describe('admin-settings 정보 탭 — OPcache 상태', () => {
   let registry: ComponentRegistry;
@@ -180,29 +120,31 @@ describe('admin-settings 정보 탭 — OPcache 상태', () => {
     // @scenario opcache_state=enabled, surface=admin_info_row
     // @effects admin_info_row_shows_enabled_disabled_unknown
     it('상태가 활성화됨으로 표시되어야 한다', async () => {
-      const testUtils = createLayoutTest(infoLayout);
+      const testUtils = createTest();
       testUtils.mockApi('systemInfo', {
         response: createSystemInfoResponse({ loaded: true, enabled: true }),
       });
 
-      await testUtils.render();
+      const { container } = await testUtils.render();
 
-      expect(screen.getByTestId('opcache-value').textContent).toBe('enabled');
+      expect(opcacheValue()).toBe(infoText.opcache_enabled);
 
       testUtils.cleanup();
     });
 
+    // @scenario opcache_state=enabled, surface=admin_info_row
+    // @effects admin_info_warning_shown_only_when_disabled
     it('경고 블록이 표시되지 않아야 한다', async () => {
-      const testUtils = createLayoutTest(infoLayout);
+      const testUtils = createTest();
       testUtils.mockApi('systemInfo', {
         response: createSystemInfoResponse({ loaded: true, enabled: true }),
       });
 
-      await testUtils.render();
+      const { container } = await testUtils.render();
 
       // 긍정 앵커 — 트리가 실제로 렌더됐음을 먼저 확인해야 아래 부정 단언이 의미를 갖는다.
-      expect(screen.getByTestId('opcache-label')).toBeTruthy();
-      expect(screen.queryByTestId('opcache-warning')).toBeNull();
+      expect(screen.getByText(infoText.opcache)).toBeTruthy();
+      expect(opcacheWarning(container)).toBeNull();
 
       testUtils.cleanup();
     });
@@ -212,14 +154,14 @@ describe('admin-settings 정보 탭 — OPcache 상태', () => {
     // @scenario opcache_state=loaded_but_disabled, surface=admin_info_row
     // @effects admin_info_row_shows_enabled_disabled_unknown
     it('상태가 비활성화됨으로 표시되어야 한다', async () => {
-      const testUtils = createLayoutTest(infoLayout);
+      const testUtils = createTest();
       testUtils.mockApi('systemInfo', {
         response: createSystemInfoResponse({ loaded: true, enabled: false }),
       });
 
-      await testUtils.render();
+      const { container } = await testUtils.render();
 
-      expect(screen.getByTestId('opcache-value').textContent).toBe('disabled');
+      expect(opcacheValue()).toBe(infoText.opcache_disabled);
 
       testUtils.cleanup();
     });
@@ -227,31 +169,33 @@ describe('admin-settings 정보 탭 — OPcache 상태', () => {
     // @scenario opcache_state=loaded_but_disabled, surface=admin_info_warning_block
     // @effects admin_info_warning_shown_only_when_disabled
     it('성능 저하 경고 블록이 표시되어야 한다', async () => {
-      const testUtils = createLayoutTest(infoLayout);
+      const testUtils = createTest();
       testUtils.mockApi('systemInfo', {
         response: createSystemInfoResponse({ loaded: true, enabled: false }),
       });
 
-      await testUtils.render();
+      const { container } = await testUtils.render();
 
-      const warning = screen.getByTestId('opcache-warning');
-      expect(warning).toBeTruthy();
-      expect(warning.className).toContain('alert-warning');
-      expect(screen.getByTestId('icon-triangle-exclamation')).toBeTruthy();
+      const warning = opcacheWarning(container);
+      expect(warning).not.toBeNull();
+      expect(warning!.textContent).toBe(infoText.opcache_disabled_warning);
+      expect(warning!.querySelector('[data-icon="triangle-exclamation"]')).not.toBeNull();
 
       testUtils.cleanup();
     });
 
+    // @scenario opcache_state=loaded_but_disabled, surface=admin_info_warning_block
+    // @effects admin_info_warning_shown_only_when_disabled
     it('확장이 로드돼 있어도 enabled=false 면 경고해야 한다', async () => {
       // 확장 로드 여부만으로 판정하는 회귀 차단 (opcache.enable=0 케이스)
-      const testUtils = createLayoutTest(infoLayout);
+      const testUtils = createTest();
       testUtils.mockApi('systemInfo', {
         response: createSystemInfoResponse({ loaded: true, enabled: false }),
       });
 
-      await testUtils.render();
+      const { container } = await testUtils.render();
 
-      expect(screen.getByTestId('opcache-warning')).toBeTruthy();
+      expect(opcacheWarning(container)).not.toBeNull();
 
       testUtils.cleanup();
     });
@@ -261,14 +205,14 @@ describe('admin-settings 정보 탭 — OPcache 상태', () => {
     // @scenario opcache_state=ini_get_blocked, surface=admin_info_row
     // @effects admin_info_row_shows_enabled_disabled_unknown
     it('상태가 확인 불가로 표시되어야 한다', async () => {
-      const testUtils = createLayoutTest(infoLayout);
+      const testUtils = createTest();
       testUtils.mockApi('systemInfo', {
         response: createSystemInfoResponse({ loaded: true, enabled: null }),
       });
 
-      await testUtils.render();
+      const { container } = await testUtils.render();
 
-      expect(screen.getByTestId('opcache-value').textContent).toBe('unknown');
+      expect(opcacheValue()).toBe(infoText.opcache_unknown);
 
       testUtils.cleanup();
     });
@@ -276,16 +220,16 @@ describe('admin-settings 정보 탭 — OPcache 상태', () => {
     // @scenario opcache_state=ini_get_blocked, surface=admin_info_warning_block
     // @effects admin_info_warning_hidden_when_unknown
     it('경고 블록이 표시되지 않아야 한다 (확인 불가는 경고가 아니다)', async () => {
-      const testUtils = createLayoutTest(infoLayout);
+      const testUtils = createTest();
       testUtils.mockApi('systemInfo', {
         response: createSystemInfoResponse({ loaded: true, enabled: null }),
       });
 
-      await testUtils.render();
+      const { container } = await testUtils.render();
 
       // 긍정 앵커 — 미렌더로 인한 거짓 통과 차단
-      expect(screen.getByTestId('opcache-label')).toBeTruthy();
-      expect(screen.queryByTestId('opcache-warning')).toBeNull();
+      expect(screen.getByText(infoText.opcache)).toBeTruthy();
+      expect(opcacheWarning(container)).toBeNull();
 
       testUtils.cleanup();
     });
@@ -298,15 +242,15 @@ describe('admin-settings 정보 탭 — OPcache 상태', () => {
      * @effects admin_info_defensive_against_missing_opcache_key
      */
     it('상태가 확인 불가로 표시되고 경고 블록이 뜨지 않아야 한다', async () => {
-      const testUtils = createLayoutTest(infoLayout);
+      const testUtils = createTest();
       testUtils.mockApi('systemInfo', {
         response: createSystemInfoResponse(undefined),
       });
 
-      await testUtils.render();
+      const { container } = await testUtils.render();
 
-      expect(screen.getByTestId('opcache-value').textContent).toBe('unknown');
-      expect(screen.queryByTestId('opcache-warning')).toBeNull();
+      expect(opcacheValue()).toBe(infoText.opcache_unknown);
+      expect(opcacheWarning(container)).toBeNull();
 
       testUtils.cleanup();
     });

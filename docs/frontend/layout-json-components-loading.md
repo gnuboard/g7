@@ -363,6 +363,30 @@
 - ✅ 데이터 테이블, 그리드 등 데이터 의존 컴포넌트에 적합
 - `blocking` loading_strategy는 렌더링 전에 데이터를 로드하므로 blur가 보이지 않을 수 있음
 - 레이아웃 JSON 수정 후 DB 동기화 필요 (시더 재실행 또는 관리자 화면에서 업데이트)
+- 흐림은 대상 노드를 `<div>` 래퍼로 감싸 그린다(흐림 클래스는 래퍼에 붙는다). 흐리지 않는 동안에도 래퍼는 남는다(`blur_until_loaded: false` 만 래퍼를 만들지 않는다). 그래서 래퍼가 **부모의 자식 하나**로 세어진다. 노드 className 의 그리드·플렉스 아이템 클래스(`col-span-*`·`row-span-*`·`self-*`·`order-*`·`flex-1`·`basis-*` 등)는 래퍼에도 복사된다(engine-v1.17.6).
+- 그릴 내용이 없으면(`if` 거짓, 등록되지 않은 컴포넌트, 배열이 아닌 `iteration` 소스) 래퍼도 그리지 않는다(engine-v1.99.2). 종전에는 빈 래퍼 `<div>` 가 남아 `justify-between` 행의 값이 가운데로 밀리고 `gap` 행에 여백이 하나 더 생겼다.
+- `if` 가 참이면 래퍼가 부모 flex·grid·`space-y` 의 자식이 된다. 값을 `if` 로 여러 분기로 나눌 때는 흐림을 분기 노드 하나에 붙이지 말고 **분기들을 감싸는 노드**에 둔다. 그래야 받기 전·받은 뒤 어느 상태에서도 행의 자식 구성(라벨·값 칸 2개, 값 칸은 늘 같은 래퍼)과 값 위치가 같다. 정렬용 클래스는 래퍼가 아니라 부모 기준으로 확인한다(정적 검사가 이 조합을 경고한다). 단 감싼 노드의 흐림은 받은 뒤 다시 받는 동안(쪽 넘김·검색)에도 모든 갈래를 흐리므로, 종전에 한 갈래(받는 중 자리표시)만 흐리던 화면은 동작이 바뀐다 — 그 차이가 의도에 맞는지 확인하고 옮긴다.
+
+```json
+// ⚠️ 피한다(정적 검사 경고) — 양 끝 정렬 행의 if 분기 하나에만 흐림: 받는 중 분기가 참일 때만 래퍼가 생겨 값 칸의 모양(래퍼 div ↔ 값 요소)이 상태마다 달라진다
+{ "name": "Div", "props": { "className": "flex-between" }, "children": [
+  { "name": "Span", "text": "$t:admin.settings.info.memory" },
+  { "name": "Span", "if": "{{systemInfo?.data?.memory_usage?.percentage != null}}", "text": "{{...}}" },
+  { "name": "Span", "if": "{{systemInfo?.data == null}}",
+    "blur_until_loaded": { "enabled": true, "data_sources": "systemInfo" }, "text": "-" }
+] }
+
+// ✅ 올바름 — 분기들을 값 칸 노드 하나로 감싸고 흐림은 그 노드에: 행 자식은 늘 라벨·값 2개
+{ "name": "Div", "props": { "className": "flex-between" }, "children": [
+  { "name": "Span", "text": "$t:admin.settings.info.memory" },
+  { "name": "Span", "blur_until_loaded": { "enabled": true, "data_sources": "systemInfo" }, "children": [
+    { "name": "Span", "if": "{{systemInfo?.data?.memory_usage?.percentage != null}}", "text": "{{...}}" },
+    { "name": "Span", "if": "{{systemInfo?.data == null}}", "text": "-" }
+  ] }
+] }
+```
+
+브라우저 실측은 받기 전·받은 뒤 두 상태에서 행 자식 수와 값 오른쪽 끝 좌표를 잰다 — 텍스트만 맞으면 통과가 아니다.
 
 ---
 
