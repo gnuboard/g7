@@ -59,6 +59,7 @@ function rollbackTask(string $taskId, array $state): array
             case 'config_cache':        // bootstrap/cache 는 다음 부팅에 재생성된다
             case 'route_cache':         // 라우트 캐시는 확장 설치·변경 때 다시 굽는다
             case 'static_publish':      // 정적 게시물은 첫 방문의 자가 치유로 재생성된다
+            case 'sitemap_generate':    // 사이트맵은 첫 요청이 생성을 예약한다
                 return [
                     'success' => true,
                     'message' => lang('rollback_not_needed_recreatable'),
@@ -912,6 +913,10 @@ function getManualCommands(string $taskId, ?string $target = null): array
 
         case 'static_publish':
             $commands[] = "{$php} artisan ext-static:publish --force";
+            break;
+
+        case 'sitemap_generate':
+            $commands[] = "{$php} artisan seo:generate-sitemap --sync";
             break;
 
         case 'key_generate':

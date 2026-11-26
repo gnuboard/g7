@@ -113,6 +113,7 @@ $taskGroupByTaskId = [
     'config_cache' => 'finalize',
     'route_cache' => 'finalize',
     'static_publish' => 'finalize',
+    'sitemap_generate' => 'finalize',
 ];
 $taskGroupFallback = 'finalize';
 

@@ -180,6 +180,35 @@ if (! function_exists('g7_cli_run_install')) {
     }
 }
 
+if (! function_exists('g7_cli_best_effort_warnings')) {
+    /**
+     * 끝나지 않은 best-effort 작업(언어팩·설정/라우트 캐시·정적 게시·사이트맵)마다 완료 화면 경고를 만듭니다.
+     *
+     * 이 작업들은 실패해도 설치가 완료된다. 종전에는 경고 문구를 만드는 함수가 지워진 채 호출만 남아,
+     * 이런 작업이 하나라도 끝나지 않으면 설치 마지막에 「정의되지 않은 함수」로 멈췄다.
+     *
+     * @param  array<string, mixed>  $state  설치 상태
+     * @return array<int, string> 경고 문구 목록
+     */
+    function g7_cli_best_effort_warnings(array $state): array
+    {
+        $warnings = [];
+        $completed = $state['completed_tasks'] ?? [];
+        foreach ($state['selected_extensions']['language_packs'] ?? [] as $packId) {
+            if (! in_array('language_pack_install:'.$packId, $completed, true)) {
+                $warnings[] = lang('cli_best_effort_not_completed', ['task' => lang('task_language_pack_install').' ('.$packId.')']);
+            }
+        }
+        foreach (['config_cache', 'route_cache', 'static_publish', 'sitemap_generate'] as $taskId) {
+            if (! in_array($taskId, $completed, true)) {
+                $warnings[] = lang('cli_best_effort_not_completed', ['task' => lang('task_'.$taskId)]);
+            }
+        }
+
+        return $warnings;
+    }
+}
+
 if (! function_exists('g7_cli_begin_installation')) {
     /**
      * [5] 설치 시작 계획 확정 — 웹 설치 시작(api/install-process.php)과 같이 실행 방식을 진입 때 한 번 판정해 state 에 고정한다.
@@ -681,18 +710,7 @@ if (! function_exists('g7_cli_execute')) {
         }
 
         // 경고 — best-effort 작업(언어팩·config/route 캐시·정적 게시) 중 끝나지 않은 것
-        $warnings = [];
-        $completed = $state['completed_tasks'] ?? [];
-        foreach ($state['selected_extensions']['language_packs'] ?? [] as $packId) {
-            if (! in_array('language_pack_install:'.$packId, $completed, true)) {
-                $warnings[] = bestEffortFailureMessage('language_pack_install', (string) $packId);
-            }
-        }
-        foreach (['config_cache', 'route_cache', 'static_publish'] as $taskId) {
-            if (! in_array($taskId, $completed, true)) {
-                $warnings[] = bestEffortFailureMessage($taskId, '');
-            }
-        }
+        $warnings = g7_cli_best_effort_warnings($state);
         $appUrl = rtrim((string) ($state['config']['app_url'] ?? ''), '/');
 
         $finalize = g7_cli_finalize_env();

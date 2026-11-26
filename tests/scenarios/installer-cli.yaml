@@ -31,8 +31,10 @@ axes:
   reinstall_options: [none, delete_extensions, delete_settings, delete_uploads, delete_vendor]
   # 웹 설치 마법사 쪽 결함 정리 시험(마무리 구간 재진입·CLI 소유 안내)이 표시하는 표면
   surface: [installer]
+  case: [cli_best_effort_warnings]
 
 effects:
+  - cli_install_warns_each_unfinished_best_effort_task_without_fatal
   # 결함 ① — 사이트 언어
   - env_locale_follows_state_language_without_session
   - site_language_input_overrides_ui_language
@@ -170,6 +172,7 @@ effects:
   - installer_auto_vendor_keeps_composer_when_runnable
 
 test_files:
+  - tests/Unit/Installer/InstallerCliBestEffortWarningTest.php
   - tests/Unit/Installer/InstallerSiteLanguageTest.php
   - tests/Unit/Installer/RollbackCommandPortabilityTest.php
   - tests/Unit/Installer/InstallerThrowableCatchTest.php

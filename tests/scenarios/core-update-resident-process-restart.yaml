@@ -6,11 +6,12 @@ description: |
   멈추면 프로세스 관리자가 새 코드로 다시 띄운다.
 
 axes:
-  process: [queue_and_reverb]
+  process: [queue_and_reverb, reverb_web_request]
 
 effects:
   - core_update_restart_signal_reaches_queue_workers
   - core_update_restart_signal_reaches_reverb_server
+  - core_update_restart_signal_reaches_reverb_server_from_web_request
 
 test_files:
   - tests/Feature/CoreUpdate/CoreUpdateResidentProcessRestartTest.php

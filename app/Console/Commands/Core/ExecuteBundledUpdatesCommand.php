@@ -10,9 +10,11 @@ use App\Exceptions\ExtensionOperationLockUnavailableException;
 use App\Extension\ExtensionManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use App\Extension\Support\ExtensionBatchUpdateContext;
 use App\Extension\Support\LifecycleWarnings;
 use App\Extension\TemplateManager;
 use App\Extension\Vendor\VendorMode;
+use App\Listeners\ExtensionUpdateQueueListener;
 use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use App\Services\ExtensionStaticCacheService;
@@ -111,21 +113,29 @@ class ExecuteBundledUpdatesCommand extends Command
         }
 
         $isItemProcess = (bool) $this->option('item-process');
+        // 이 프로세스가 일괄을 시작하면 묶음 시작 시각 — 아래 시작 재굽기보다 앞서 잡아, 항목 프로세스가 「묶음 안에서 구웠다」로 본다
+        $startedAt = time();
+
+        $manifest = json_decode(File::get($manifestPath), true);
+        // 다른 프로세스가 시작한 일괄(2개 이상)의 한 항목인지 — 웹 코어 업데이트의 항목·명령줄 일괄 자식이 띄운 항목 프로세스
+        $memberOf = is_array($manifest) ? ExtensionBatchUpdateContext::fromManifest($manifest) : null;
 
         // spawn 자식 진입 시 활성 모듈/플러그인의 PSR-4 매핑을 fresh 등록 — 자세한 배경은
         // ExecuteUpgradeStepsCommand::handle 의 동일 호출 주석 참조.
         // (Artisan::call 대신 직접 메서드 호출 — nested Artisan::call 이 outer 명령의
         // output buffer 를 덮어쓰는 Laravel 동작 회피)
-        try {
-            app(ExtensionManager::class)->updateComposerAutoload();
-        } catch (\Throwable $e) {
-            Log::warning('bundled update spawn 자식: updateComposerAutoload 호출 실패', [
-                'error' => $e->getMessage(),
-            ]);
-            LifecycleWarnings::current()->add('autoload', 'autoload-extensions.php', $e->getMessage());
+        // 일괄의 항목이고 캐시가 이 묶음 안에서 구워져 지금 상태와 같으면 건너뛴다 — 직전 항목이 방금 구운 것과 같다.
+        if (! $this->startupCacheRebuildIsRedundant($memberOf, is_array($manifest) ? $manifest : [])) {
+            try {
+                app(ExtensionManager::class)->updateComposerAutoload();
+            } catch (\Throwable $e) {
+                Log::warning('bundled update spawn 자식: updateComposerAutoload 호출 실패', [
+                    'error' => $e->getMessage(),
+                ]);
+                LifecycleWarnings::current()->add('autoload', 'autoload-extensions.php', $e->getMessage());
+            }
         }
 
-        $manifest = json_decode(File::get($manifestPath), true);
         if (! is_array($manifest)) {
             $this->error(__('extensions.commands.bundled_update.manifest_parse_failed', ['path' => $manifestPath]));
 
@@ -138,7 +148,7 @@ class ExecuteBundledUpdatesCommand extends Command
         $markerHandle = $childMarker !== null ? BundledChildMarker::hold($childMarker) : null;
 
         try {
-            return $this->runManifest($manifest, $isItemProcess);
+            return $this->runManifest($manifest, $isItemProcess, $memberOf, $startedAt);
         } finally {
             if ($childMarker !== null) {
                 BundledChildMarker::release($markerHandle, $childMarker);
@@ -147,13 +157,50 @@ class ExecuteBundledUpdatesCommand extends Command
     }
 
     /**
+     * 시작 때의 확장 오토로드·훅·config 캐시 재굽기를 건너뛰어도 되는지 판정합니다.
+     *
+     * 다른 프로세스가 시작한 일괄(2개 이상)의 항목일 때만 따진다 — 확장 하나만 올리는 업데이트·표시 없는 옛 매니페스트·
+     * 일괄을 시작한 프로세스 자신은 종전대로 늘 굽는다. 같은 요청 안에서 도는 경우(무CLI 호스팅의 같은 프로세스 실행)도 굽는다 —
+     * 그 프로세스는 이 묶음 전에 부팅해 메모리가 옛 상태일 수 있다.
+     *
+     * 모듈·플러그인 항목은 캐시가 이 묶음 안에서 구워졌고({@see ExtensionBatchUpdateContext::$startedAt} 이후) 지금 상태와
+     * 같을 때 건너뛴다. 템플릿·언어팩만 담은 항목은 PHP 클래스를 들이지 않으므로(템플릿 업데이트·언어팩 갱신은 확장
+     * 오토로드를 다시 굽지 않는다) 굽은 시각은 따지지 않고 지금 상태와만 대조한다.
+     *
+     * @param  ExtensionBatchUpdateContext|null  $memberOf  매니페스트로 넘겨받은 묶음 (없으면 null)
+     * @param  array<string, mixed>  $manifest  매니페스트
+     * @return bool 건너뛰어도 되면 true
+     */
+    private function startupCacheRebuildIsRedundant(?ExtensionBatchUpdateContext $memberOf, array $manifest): bool
+    {
+        if ($memberOf === null || ! $memberOf->isBatch() || ! app()->runningInConsole()) {
+            return false;
+        }
+
+        $addsClasses = ($manifest['modules'] ?? []) !== [] || ($manifest['plugins'] ?? []) !== [];
+
+        try {
+            return app(ExtensionManager::class)->extensionCachesFreshSince($addsClasses ? $memberOf->startedAt : null);
+        } catch (\Throwable $e) {
+            Log::warning('bundled update spawn 자식: 확장 캐시 신선도 판정 실패 — 다시 굽는다', ['error' => $e->getMessage()]);
+
+            return false;
+        }
+    }
+
+    /**
      * 매니페스트의 항목들을 업데이트하고 결과 표식 라인을 출력합니다.
+     *
+     * 항목이 둘 이상이면(또는 매니페스트로 넘겨받은 일괄의 한 항목이면) 그 묶음 안에서 돌아, 확장마다의 큐 워커 재시작을
+     * 미룬다. 일괄을 시작한 프로세스는 끝에서(실패가 있어도) 한 번 보낸다.
      *
      * @param  array<string, mixed>  $manifest  매니페스트
      * @param  bool  $isItemProcess  항목 하나를 맡은 자식 프로세스인지
+     * @param  ExtensionBatchUpdateContext|null  $memberOf  매니페스트로 넘겨받은 묶음 (없으면 이 프로세스가 묶음을 시작한다)
+     * @param  int  $startedAt  이 프로세스가 묶음을 시작할 때의 시작 시각
      * @return int 1건 이상 실패 시 FAILURE, 전부 성공 시 SUCCESS
      */
-    private function runManifest(array $manifest, bool $isItemProcess): int
+    private function runManifest(array $manifest, bool $isItemProcess, ?ExtensionBatchUpdateContext $memberOf = null, ?int $startedAt = null): int
     {
         // 부모(core:update)가 운영자 선택을 매니페스트에 실어 보낸다 — 자식이 임의로 정하지 않는다
         $rebuildSearchIndex = (bool) $this->option('rebuild-search-index') || (bool) ($manifest['rebuild_search_index'] ?? false);
@@ -175,32 +222,47 @@ class ExecuteBundledUpdatesCommand extends Command
         }
 
         $items = self::flattenItems($modules, $plugins, $templates, $langPacks);
-        $outcome = null;
         $deferStaticPublish = self::defersStaticPublish($manifest);
+        // 넘겨받은 묶음이 없으면 이 프로세스가 묶음을 시작한다 — 항목이 둘 이상일 때만 일괄이다
+        $batch = $memberOf ?? ExtensionBatchUpdateContext::begin(count($items), $startedAt);
 
-        if (self::shouldRunEachItemInFreshProcess($items, $isItemProcess, $this->canSpawnProcess())) {
-            $outcome = $this->runEachItemInFreshProcess($items, $deferStaticPublish);
+        try {
+            $outcome = ExtensionBatchUpdateContext::within($batch, function () use ($items, $isItemProcess, $deferStaticPublish, $batch, $modules, $plugins, $templates, $langPacks): array {
+                $outcome = null;
+
+                if (self::shouldRunEachItemInFreshProcess($items, $isItemProcess, $this->canSpawnProcess())) {
+                    $outcome = $this->runEachItemInFreshProcess($items, $deferStaticPublish, $batch);
+                }
+
+                if ($outcome === null) {
+                    // 새 프로세스를 띄울 수 없는 서버: 같은 프로세스에서 차례로 돈다. 확장마다 config·라우트 캐시를 다시 굽는
+                    // 일회용 앱 부팅이 쌓이지 않도록 재굽기를 끝에 한 번으로 모은다. proc_open 이 없으니 그 사이 캐시를 읽는
+                    // 새 프로세스(composer·훅 캐시·언어팩 단계)도 뜨지 않는다.
+                    $runInProcess = fn () => self::shouldDeferCacheRebuilds($items, $this->canSpawnProcess())
+                        ? ConfigCacheHelper::deferRebuilds(fn () => RouteCacheHelper::deferRebuilds(
+                            fn () => $this->runItemsInProcess($modules, $plugins, $templates, $langPacks)
+                        ))
+                        : $this->runItemsInProcess($modules, $plugins, $templates, $langPacks);
+
+                    // 일괄을 시작한 쪽이 끝에서 한 번 게시한다 — 항목마다 전 로케일 문구 병합·전 템플릿 산출물 복사를 되풀이하지 않는다
+                    $outcome = $deferStaticPublish
+                        ? ExtensionStaticCacheService::withoutScheduledPublish($runInProcess)
+                        : $runInProcess();
+                }
+
+                return $outcome;
+            });
+        } finally {
+            // 일괄을 시작한 프로세스는 확장마다 미룬 큐 워커 재시작을 끝에서 한 번 보낸다(일부 항목이 실패해도 — 성공한 항목의 새 코드)
+            if ($batch->isOwnedHere() && $batch->isBatch()) {
+                app(ExtensionUpdateQueueListener::class)->restartAfterBatch($batch);
+            }
         }
 
-        if ($outcome === null) {
-            // 새 프로세스를 띄울 수 없는 서버: 같은 프로세스에서 차례로 돈다. 확장마다 config·라우트 캐시를 다시 굽는
-            // 일회용 앱 부팅이 쌓이지 않도록 재굽기를 끝에 한 번으로 모은다. proc_open 이 없으니 그 사이 캐시를 읽는
-            // 새 프로세스(composer·훅 캐시·언어팩 단계)도 뜨지 않는다.
-            $runInProcess = fn () => self::shouldDeferCacheRebuilds($items, $this->canSpawnProcess())
-                ? ConfigCacheHelper::deferRebuilds(fn () => RouteCacheHelper::deferRebuilds(
-                    fn () => $this->runItemsInProcess($modules, $plugins, $templates, $langPacks)
-                ))
-                : $this->runItemsInProcess($modules, $plugins, $templates, $langPacks);
-
-            // 일괄을 시작한 쪽이 끝에서 한 번 게시한다 — 항목마다 전 로케일 문구 병합·전 템플릿 산출물 복사를 되풀이하지 않는다
-            $outcome = $deferStaticPublish
-                ? ExtensionStaticCacheService::withoutScheduledPublish($runInProcess)
-                : $runInProcess();
-        }
-
-        // 항목 프로세스를 띄운 바깥 프로세스(명령줄 코어 업데이트의 일괄 자식)는 끝에서 한 번만 게시를 예약한다.
-        // 웹 코어 업데이트는 항목마다 이 명령을 따로 부르므로(항목 프로세스) 마무리 단계가 예약한다.
-        if ($deferStaticPublish && ! $isItemProcess) {
+        // 일괄을 시작한 프로세스(명령줄 코어 업데이트의 일괄 자식)·확장 하나짜리 실행은 끝에서 한 번 게시를 예약한다.
+        // 다른 프로세스가 시작한 일괄의 항목(웹 코어 업데이트가 항목마다 이 명령을 부른다)은 예약하지 않는다 — 시작한 쪽의
+        // 마무리 단계가 모든 확장이 안착한 뒤 한 번 예약한다. 명령줄 일괄 자식이 띄운 항목 프로세스(`--item-process`)도 같다.
+        if ($deferStaticPublish && ! $isItemProcess && ! ($memberOf?->isBatch() ?? false)) {
             ExtensionStaticCacheService::schedulePublishOnTerminate();
         }
 
@@ -393,9 +455,10 @@ class ExecuteBundledUpdatesCommand extends Command
      *
      * @param  array<int, array{type: string, identifier: string, strategy: string|null}>  $items  항목 목록
      * @param  bool  $deferStaticPublish  항목 프로세스가 정적 게시를 건너뛰게 할지 (이 프로세스가 끝에서 한 번 예약)
+     * @param  ExtensionBatchUpdateContext|null  $batch  항목 매니페스트에 실을 묶음 (일괄일 때만 싣는다)
      * @return array{success: int, failed: int, failed_items: array<int, array<string, mixed>>, skipped: int, aborted: bool, abort_reported: bool}|null 집계, 프로세스를 쓸 수 없으면 null
      */
-    private function runEachItemInFreshProcess(array $items, bool $deferStaticPublish = false): ?array
+    private function runEachItemInFreshProcess(array $items, bool $deferStaticPublish = false, ?ExtensionBatchUpdateContext $batch = null): ?array
     {
         if (! $this->canSpawnProcess()) {
             return null;
@@ -409,6 +472,11 @@ class ExecuteBundledUpdatesCommand extends Command
 
             if ($deferStaticPublish) {
                 $itemManifest['defer_static_publish'] = true;
+            }
+
+            // 항목 프로세스가 같은 묶음의 구성원임을 안다 — 시작 재굽기·확장마다의 큐 워커 재시작을 건너뛸지 판정한다
+            if ($batch !== null && $batch->isBatch()) {
+                $itemManifest[ExtensionBatchUpdateContext::MANIFEST_KEY] = $batch->toManifest();
             }
 
             $run = $this->runManifestInFreshProcess($itemManifest, ['--item-process']);

@@ -3,8 +3,10 @@
 namespace App\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Extension\Support\ExtensionBatchUpdateContext;
 use App\Support\RuntimeRole;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -67,6 +69,9 @@ class ExtensionUpdateQueueListener implements HookListenerInterface
      *
      * "업데이트할 것 없음" 조기 리턴에서도 훅이 발화하므로 결과의 success 를 확인한다.
      *
+     * 확장 2개 이상을 한꺼번에 올리는 일괄 업데이트 안에서는 확장마다 보내지 않는다 — 묶음을 시작한 쪽이 끝에서
+     * {@see restartAfterBatch()} 로 한 번 보낸다. 확장 하나만 올리면(1개짜리 묶음 포함) 종전대로 이 자리에서 보낸다.
+     *
      * @param  string  $identifier  확장 식별자
      * @param  array  $result  업데이트 결과 배열 (['success' => bool, ...])
      * @param  array|null  $info  확장 정보
@@ -79,7 +84,44 @@ class ExtensionUpdateQueueListener implements HookListenerInterface
             return;
         }
 
+        if (ExtensionBatchUpdateContext::defersPerExtensionWork()) {
+            Log::info('일괄 업데이트 중 — 큐 워커 재시작을 묶음 끝으로 미룸', ['identifier' => $identifier]);
+
+            return;
+        }
+
         $this->restartQueue($identifier, 'update');
+    }
+
+    /**
+     * 일괄 업데이트(2개 이상)가 끝났을 때 큐 워커 재시작을 한 번 보냅니다.
+     *
+     * 묶음 안의 확장 업데이트는 {@see handleAfterUpdate()} 에서 재시작을 미뤘다. 묶음을 시작한 쪽이 항목을 다 돈 뒤(일부가
+     * 실패했어도) 부른다 — 성공한 항목의 새 코드를 상주 워커가 물도록. 1개짜리 묶음은 그 자리에서 이미 보냈으므로 보내지 않는다.
+     *
+     * `queue:restart` 명령을 부르지 않고 워커가 읽는 캐시 키(`illuminate:queue:restart`)를 같은 값 형식으로 직접 쓴다. 이 메서드는
+     * 일괄 명령(`core:execute-bundled-updates`)이 끝나기 직전에 불리는데, 그 안에서 명령을 다시 부르면 바깥 명령의 출력 버퍼가
+     * 바뀌어 같은 프로세스 실행기(무CLI 호스팅의 웹 업데이트)가 결과 줄(`[BUNDLED-RESULT]`)을 읽지 못한다.
+     *
+     * @param  ExtensionBatchUpdateContext  $batch  끝난 묶음
+     * @return void 반환값 없음
+     */
+    public function restartAfterBatch(ExtensionBatchUpdateContext $batch): void
+    {
+        // 검수 서버의 재시작 신호는 공유 캐시를 거쳐 운영 서버 워커까지 재시작시킨다
+        if (! $batch->isBatch() || RuntimeRole::isStage()) {
+            return;
+        }
+
+        try {
+            // audit:allow no-cache-facade-direct reason: 큐 워커가 접두사 없는 원래 키를 기본 캐시 저장소에서 읽는다(queue:restart 명령과 같은 키·값) — CacheInterface 는 g7 접두사를 붙여 워커가 못 본다
+            Cache::forever('illuminate:queue:restart', now()->getTimestamp());
+
+            Log::info('일괄 업데이트 끝 — 큐 워커 재시작 신호 1회', ['batch' => $batch->id, 'size' => $batch->size]);
+        } catch (\Throwable $e) {
+            // 큐 재시작 실패는 확장 작업 자체에 영향을 주지 않음
+            Log::warning('일괄 업데이트 끝 큐 워커 재시작 신호 실패', ['batch' => $batch->id, 'error' => $e->getMessage()]);
+        }
     }
 
     /**
@@ -145,7 +187,7 @@ class ExtensionUpdateQueueListener implements HookListenerInterface
      * queue:restart 를 실행합니다. 실패해도 확장 작업 자체에는 영향을 주지 않습니다.
      *
      * @param  string  $identifier  확장 식별자
-     * @param  string  $event  사건 구분 (update|setup|uninstall) — 로그용
+     * @param  string  $event  사건 구분 (update|setup|uninstall|batch_update) — 로그용
      * @return void 반환값 없음
      */
     private function restartQueue(string $identifier, string $event): void

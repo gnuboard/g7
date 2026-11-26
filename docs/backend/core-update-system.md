@@ -1387,6 +1387,15 @@ SSH 를 쓸 수 없는 호스팅을 위해 관리자 화면(환경설정 > 업�
   `ExtensionStaticCacheService::withoutScheduledPublish()`), 마무리 단계가 모든 확장이 안착한 뒤 한 번 예약합니다.
   명령줄 일괄 자식도 같은 표시로 항목마다 건너뛰고 자기가 끝날 때 한 번 예약합니다. 그 사이 게시본이 옛 판이어도
   화면은 API 폴백으로 정상이고, 예약이 막히는 환경(root 실행·비운영)은 다음 웹 렌더의 자가 치유가 게시합니다.
+- **일괄 묶음(2개 이상)**: 묶음을 시작한 쪽(웹 번들 단계·명령줄 일괄 자식)이 항목 매니페스트에 `batch`
+  (`id`·`size`·`started_at`, `App\Extension\Support\ExtensionBatchUpdateContext`)를 싣습니다. 웹 항목은
+  `--item-process` 없이 불리므로, 게시 예약은 이 표시(묶음 크기 2 이상)로 건너뜁니다. 묶음 항목은 또
+  ① 시작 때 확장 오토로드·훅·config 캐시 재굽기를 `ExtensionManager::extensionCachesFreshSince()` 가 참일 때
+  건너뛰고(모듈·플러그인 항목은 `started_at` 이후에 구운 캐시만, 템플릿·언어팩 항목은 시각을 따지지 않음)
+  ② 확장 업데이트마다의 `queue:restart` 를 미루며, 시작한 쪽이 끝에서
+  `ExtensionUpdateQueueListener::restartAfterBatch()` 로 한 번 보냅니다(일부 실패해도). 크기 1 이거나 표시가
+  없는 매니페스트(확장 하나 업데이트·옛 부모)는 셋 다 종전과 같습니다. 여러 확장을 골라 한꺼번에 올리는 다른
+  진입점도 같은 문맥(`begin()` → `within()` → 끝에서 `restartAfterBatch()`)을 씁니다.
 - **되돌리기**는 ① 바꿔 끼운 vendor 다시 끼우기 ② 이번 업데이트가 덮어쓴 파일(증분 적용 목록) 먼저 복원
   ③ target 전체 덮어쓰기 ④ 신규 파일 prune ⑤ 정리 순으로 이어 갑니다(`rollback_progress`). ②를 첫 조각에서
   끝내 두므로, 나머지 조각 사이에 요청이 끊겨도 사이트는 섞인 판이 아니라 이전 판으로 뜹니다. vendor 는

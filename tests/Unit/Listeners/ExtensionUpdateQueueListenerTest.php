@@ -2,8 +2,10 @@
 
 namespace Tests\Unit\Listeners;
 
+use App\Extension\Support\ExtensionBatchUpdateContext;
 use App\Listeners\ExtensionUpdateQueueListener;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
@@ -283,5 +285,78 @@ class ExtensionUpdateQueueListenerTest extends TestCase
         Log::shouldReceive('info')->zeroOrMoreTimes();
 
         $this->listener->handleAfterUpdate('test-module', ['success' => true], ['version' => '1.2.0']);
+    }
+
+    /**
+     * 확장 2개 이상을 한꺼번에 올리는 동안에는 확장마다 재시작하지 않는다 — 묶음 끝에서 한 번만 보낸다.
+     *
+     * @effects batch_update_defers_per_extension_queue_restart
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_inside_batch_does_not_restart_per_extension(): void
+    {
+        Artisan::shouldReceive('call')->never();
+        Log::shouldReceive('info')->zeroOrMoreTimes();
+
+        ExtensionBatchUpdateContext::within(ExtensionBatchUpdateContext::begin(2), function (): void {
+            $this->listener->handleAfterUpdate('test-module', ['success' => true]);
+            $this->listener->handleAfterUpdate('test-template', ['success' => true], []);
+        });
+    }
+
+    /**
+     * 1개짜리 묶음(단일 업데이트)은 종전대로 그 자리에서 재시작한다.
+     *
+     * @effects single_update_keeps_per_extension_queue_restart
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_inside_single_item_batch_still_restarts(): void
+    {
+        Artisan::shouldReceive('call')->once()->with('queue:restart');
+        Log::shouldReceive('info')->zeroOrMoreTimes();
+
+        ExtensionBatchUpdateContext::within(ExtensionBatchUpdateContext::begin(1), function (): void {
+            $this->listener->handleAfterUpdate('test-module', ['success' => true]);
+        });
+    }
+
+    /**
+     * 미루는 것은 업데이트뿐이다 — 묶음 안의 설치·활성화·제거는 그 자리에서 재시작한다.
+     *
+     * @effects batch_update_defers_per_extension_queue_restart
+     *
+     * @return void 반환값 없음
+     */
+    public function test_setup_inside_batch_still_restarts(): void
+    {
+        Artisan::shouldReceive('call')->twice()->with('queue:restart');
+        Log::shouldReceive('info')->zeroOrMoreTimes();
+
+        ExtensionBatchUpdateContext::within(ExtensionBatchUpdateContext::begin(2), function (): void {
+            $this->listener->handleAfterSetup('test-module');
+            $this->listener->handleAfterUninstall('test-template');
+        });
+    }
+
+    /**
+     * 묶음 끝의 한 번은 일괄(2개 이상)일 때만 보낸다.
+     *
+     * @effects batch_update_restarts_queue_once_at_end
+     *
+     * @return void 반환값 없음
+     */
+    public function test_restart_after_batch_runs_once_only_for_batches(): void
+    {
+        // 명령을 다시 부르지 않는다 — 일괄 명령 안에서 부르면 바깥 명령의 출력(결과 줄)이 사라진다
+        Artisan::shouldReceive('call')->never();
+        Cache::forget('illuminate:queue:restart');
+
+        $this->listener->restartAfterBatch(ExtensionBatchUpdateContext::begin(1));
+        $this->assertNull(Cache::get('illuminate:queue:restart'), '1개짜리 묶음이 끝 재시작을 보냈다');
+
+        $this->listener->restartAfterBatch(ExtensionBatchUpdateContext::begin(2));
+        $this->assertIsInt(Cache::get('illuminate:queue:restart'), '일괄 끝 재시작 신호(워커가 읽는 키)가 없다');
     }
 }

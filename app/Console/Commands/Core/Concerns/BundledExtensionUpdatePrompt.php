@@ -7,8 +7,10 @@ use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Exceptions\ExtensionOperationLockUnavailableException;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use App\Extension\Support\ExtensionBatchUpdateContext;
 use App\Extension\TemplateManager;
 use App\Extension\Vendor\VendorMode;
+use App\Listeners\ExtensionUpdateQueueListener;
 use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
@@ -524,6 +526,9 @@ trait BundledExtensionUpdatePrompt
      * 기존 (beta.3) 흐름의 직접 호출 패턴 보존. 단 부모 메모리의 stale 코드로 인해
      * sync 메서드 누락 결함이 재현될 수 있으므로 spawn 가능 환경에서는 사용되지 않는다.
      *
+     * 항목이 둘 이상이면 일괄 묶음 안에서 돌아 확장마다의 큐 워커 재시작을 미루고, 끝에서(실패가 있어도) 한 번 보낸다.
+     * 하나뿐이면 종전대로 그 확장 자리에서 보낸다.
+     *
      * @param  ModuleManager  $moduleManager  모듈 업데이트에 사용할 매니저
      * @param  PluginManager  $pluginManager  플러그인 업데이트에 사용할 매니저
      * @param  TemplateManager  $templateManager  템플릿 업데이트에 사용할 매니저
@@ -543,13 +548,23 @@ trait BundledExtensionUpdatePrompt
         // proc_open 이 없는 서버: 확장마다 config·라우트 캐시를 다시 굽는 일회용 앱 부팅이 이 프로세스에 쌓이지 않도록
         // 재굽기를 끝에 한 번으로 모은다(그 사이 캐시를 읽는 새 프로세스는 뜰 수 없다). proc_open 은 있는데 자식을
         // 못 띄운 경우는 종전대로 항목마다 굽는다 — 그 사이 뜨는 composer 등이 옛 캐시로 부팅하지 않게.
-        if (! ExecutionEnvironment::hasFunction('proc_open')) {
-            return ConfigCacheHelper::deferRebuilds(fn () => RouteCacheHelper::deferRebuilds(fn () => $this->runBulkUpdateItemsInProcess(
+        $run = ! ExecutionEnvironment::hasFunction('proc_open')
+            ? fn () => ConfigCacheHelper::deferRebuilds(fn () => RouteCacheHelper::deferRebuilds(fn () => $this->runBulkUpdateItemsInProcess(
                 $moduleManager, $pluginManager, $templateManager, $updates, $strategies, $rebuildSearchIndex,
-            )));
-        }
+            )))
+            : fn () => $this->runBulkUpdateItemsInProcess($moduleManager, $pluginManager, $templateManager, $updates, $strategies, $rebuildSearchIndex);
 
-        return $this->runBulkUpdateItemsInProcess($moduleManager, $pluginManager, $templateManager, $updates, $strategies, $rebuildSearchIndex);
+        $batch = ExtensionBatchUpdateContext::begin(
+            count($updates['modules'] ?? []) + count($updates['plugins'] ?? []) + count($updates['templates'] ?? []) + count($updates['lang_packs'] ?? []),
+        );
+
+        try {
+            return ExtensionBatchUpdateContext::within($batch, $run);
+        } finally {
+            if ($batch->isBatch()) {
+                app(ExtensionUpdateQueueListener::class)->restartAfterBatch($batch);
+            }
+        }
     }
 
     /**

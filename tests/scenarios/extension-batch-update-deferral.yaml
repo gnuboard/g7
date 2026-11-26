@@ -1,0 +1,53 @@
+feature: 확장 일괄 업데이트(2개 이상)의 항목마다 부수 작업 끝으로 모으기
+
+description: |
+  여러 확장을 한꺼번에 올리는 일괄 업데이트(코어 업데이트 번들 단계 — 웹·명령줄)에서 항목마다 되풀이하던 세 가지를
+  묶음 끝으로 모은다. (가) 정적 게시 — 웹 항목은 예약하지 않고 마무리 단계가 한 번 예약한다. (나) 시작 때 확장
+  오토로드·훅·config 캐시 재굽기 — 묶음 안에서 구웠고 지금 상태와 같으면 건너뛴다(템플릿·언어팩 항목은 PHP 클래스를
+  들이지 않아 지금 상태와만 대조). (다) 큐 워커 재시작 — 확장 업데이트마다 보내지 않고 묶음을 시작한 쪽이 끝에서 한 번 보낸다.
+  묶음 크기는 시작한 쪽이 매니페스트 `batch` 에 싣고, 2개 이상일 때만 일괄이다. 확장 하나만 올리는 업데이트(관리 화면 단일
+  업데이트·`module:update`·1개짜리 묶음·표시 없는 옛 매니페스트)는 셋 다 종전과 같다.
+
+axes:
+  batch: [single, batch]
+  caller: [web_update, cli_batch, cli_in_process_fallback]
+
+effects:
+  - web_item_manifest_carries_batch_size
+  - web_batch_item_leaves_static_publish_to_finalize
+  - single_item_update_keeps_static_publish
+  - single_item_update_keeps_startup_autoload_rebuild
+  - batch_owner_keeps_startup_autoload_rebuild
+  - batch_update_restarts_queue_once_at_end
+  - batch_member_leaves_queue_restart_to_owner
+  - single_update_keeps_per_extension_queue_restart
+
+sub_flows:
+  - id: batch_context
+    description: 묶음 크기 2 이상만 일괄이고, 매니페스트로 넘겨받은 항목은 같은 묶음의 구성원이며, 묶음 상태는 감싼 동안만 유효하다
+    effects:
+      - batch_context_requires_two_or_more_items
+      - batch_context_round_trips_through_manifest
+      - batch_context_absent_for_legacy_manifest
+      - batch_context_scopes_deferral_to_callback
+  - id: startup_rebuild_skip
+    description: |
+      묶음 항목의 시작 재굽기 생략 판정 — 오토로드 파일이 묶음 시작 뒤에 구워졌고(템플릿·언어팩 항목은 시각 무관)
+      수집 입력·확장 파일 지문·훅 캐시·config 캐시가 지금과 같을 때만 건너뛴다. 하나라도 다르면 다시 굽는다.
+    effects:
+      - batch_item_skips_redundant_startup_autoload_rebuild
+      - batch_item_rebuilds_stale_startup_autoload
+      - batch_template_item_skips_startup_autoload_rebuild
+      - fresh_caches_detected
+      - stale_caches_detected
+  - id: listener_deferral
+    description: 묶음 안에서는 확장 업데이트의 큐 워커 재시작만 미루고(설치·활성화·제거는 그 자리), 끝 재시작은 일괄일 때만 보낸다
+    effects:
+      - batch_update_defers_per_extension_queue_restart
+
+test_files:
+  - tests/Unit/Extension/ExtensionBatchUpdateContextTest.php
+  - tests/Unit/Extension/ExtensionCachesFreshnessTest.php
+  - tests/Unit/Listeners/ExtensionUpdateQueueListenerTest.php
+  - tests/Feature/Console/BundledBatchUpdateDeferralTest.php
+  - tests/Unit/CoreUpdate/CoreUpdateBundledBatchContextTest.php

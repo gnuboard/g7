@@ -424,6 +424,7 @@ return [
     'log_language_pack_install_success' => 'Language pack installation completed',
     'warning_language_pack_install_partial' => 'Language pack install partially failed: :identifier (continuing)',
     'log_composer_unavailable_fallback_bundle' => 'Composer cannot run on this server, so the bundled package is used instead.',
+    'cli_best_effort_not_completed' => 'Step :task did not finish, but it is not required, so installation completed (see the install log)',
     'warning_best_effort_task_failed' => 'Step :task failed but is not required for installation — continuing (it will be retried on retry): :error',
     'task_vendor_bundle_extract' => 'Extract vendor bundle',
     'log_vendor_bundle_extract_start' => 'Starting vendor bundle extraction...',
