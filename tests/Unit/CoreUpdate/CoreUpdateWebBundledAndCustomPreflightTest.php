@@ -74,7 +74,8 @@ class CoreUpdateWebBundledAndCustomPreflightTest extends TestCase
         $source = (string) file_get_contents((string) (new ReflectionClass(CoreUpdateOrchestrator::class))->getFileName());
 
         $plan = $this->methodBody($source, 'stepPlan');
-        $this->assertStringContainsString('planBundledPlacement($pendingPath)', $plan);
+        // 고르는 화면(7.2.1)의 선택을 반영하려고 착수 선택을 함께 넘긴다 — 적용 단계도 같은 인자로 같은 판정을 받아야 한다
+        $this->assertStringContainsString('planBundledPlacement($pendingPath, $this->state->options())', $plan);
         // 계획 단계는 요청 시간 제한 안에서 나눠 이어 가므로 순회는 커서 판(`*Chunk`)을 쓴다. 건너뛸 경로는
         // 진행분에 실려 요청을 넘어가므로, 이어 가는 요청도 같은 목록을 넘기는지 본다.
         $this->assertMatchesRegularExpression('/collectNewFilesChunk\([^;]*\$skipPaths,/s', $plan, '신규 파일 기록에서 미배치 번들을 빼야 되돌리기가 그 경로를 지우지 않는다');
@@ -82,6 +83,7 @@ class CoreUpdateWebBundledAndCustomPreflightTest extends TestCase
         $this->assertStringContainsString("'skip_paths' => \$bundledPlan->skipPaths()", $plan, '건너뛸 경로가 진행분에 실리지 않으면 이어 가는 요청이 미배치 번들을 다시 넣는다');
 
         $apply = $this->methodBody($source, 'stepApply');
+        $this->assertStringContainsString('planBundledPlacement($pendingPath, $this->state->options())', $apply, '적용 단계가 산출 단계와 다른 배치 판정을 받으면 고른 번들이 빠지거나 미배치 번들이 새어 든다');
         $this->assertStringContainsString('skipPaths: $bundledPlan->skipPaths()', $apply);
         $this->assertStringContainsString('->writeRecord($bundledPlan', $apply, '미배치 기록이 없으면 관리자 목록 안내와 core:bundled-sources 가 근거를 잃는다');
 

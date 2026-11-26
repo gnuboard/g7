@@ -1,5 +1,5 @@
 {
-    "comment": "업데이트 탭 — 명령줄 없이 화면에서 코어를 업데이트한다. 코어 업데이트 권한(`can_core_update`)이 있을 때만 탭과 본문이 보인다.\n  상태는 넷이다: 대기(새 버전 확인·함께 할 일 고르기) → 진행 중(단계 목록·진행 막대) → 완료 → 실패(되돌림 결과).\n  진행 상태는 서버 기록(`core_update_status`, 진행 중이면 `_global.coreUpdateStatus`)이 소유하고, 화면을 새로 열어도\n  진행 중이면 자동으로 이어 받는다. 공용 저장 버튼은 이 탭에서 숨는다(저장할 설정이 없다).\n  패키지 무결성(#916): 새 버전 확인 결과에 최신 릴리스의 서명 자산 유무(`signature_available`)를 배지로 보인다(모르면 null 이라 그리지 않는다).\n  착수가 미서명(409)·서명 불일치(422)로 거절되면 착수 핸들러가 거절 내용을 전역에 싣고 공용 안내 조각이 시작 버튼 위에 그린다.\n  정책이 허용하면 시작 버튼이 「미서명으로 계속」이 되어 같은 선택에 `allow_unsigned` 만 더해 다시 착수한다.",
+    "comment": "e2e:allow 진행 중 번들 선택 창·확인 창 링크·미서명 경고는 새 판으로 올라가는 실제 코어 업데이트 도중에만 나타나 E2E 로 재현할 대상 릴리스가 없다 — 레이아웃·핸들러 단위 시험이 잠그고, 개선분이 든 시험 릴리스로 서버 재시험 때 브라우저 실측.\n  업데이트 탭 — 명령줄 없이 화면에서 코어를 업데이트한다. 코어 업데이트 권한(`can_core_update`)이 있을 때만 탭과 본문이 보인다.\n  상태는 넷이다: 대기(새 버전 확인·함께 할 일 고르기) → 진행 중(단계 목록·진행 막대) → 완료 → 실패(되돌림 결과).\n  진행 상태는 서버 기록(`core_update_status`, 진행 중이면 `_global.coreUpdateStatus`)이 소유하고, 화면을 새로 열어도\n  진행 중이면 자동으로 이어 받는다. 공용 저장 버튼은 이 탭에서 숨는다(저장할 설정이 없다).\n  패키지 무결성(#916): 새 버전 확인 결과에 최신 릴리스의 서명 자산 유무(`signature_available`)를 배지로 보인다(모르면 null 이라 그리지 않는다).\n  착수가 미서명(409)·서명 불일치(422)로 거절되면 착수 핸들러가 거절 내용을 전역에 싣고 공용 안내 조각이 시작 버튼 위에 그린다.\n  정책이 허용하면 시작 버튼이 「미서명으로 계속」이 되어 같은 선택에 `allow_unsigned` 만 더해 다시 착수한다.",
     "meta": {
         "is_partial": true,
         "description": "환경설정 업데이트 탭 콘텐츠 (코어 업데이트 웹 동선 — W6 4상태)"
@@ -728,6 +728,302 @@
                             ]
                         },
                         {
+                            "comment": "진행 중 선택(7.2.1) — 서버가 명령줄 `core:update` 와 같은 자리에서 멈춰 묻는다: 새로 들어온 미배치 공식 번들 배치(bundled_sources), 번들 확장·언어팩 업데이트 항목과 확장별 레이아웃 전략(bundled_updates). 운영자가 바꾼 값만 `_global.coreUpdateChoices` 에 두고, 바꾸지 않은 항목은 [계속] 핸들러가 기본값(업데이트는 올림·항목 전략, 미배치 번들은 배치 안 함)으로 보낸다.",
+                            "id": "core_update_selection",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_computed.coreUpdateRun?.status === 'running' && !!_computed.coreUpdateRun?.awaiting?.kind}}",
+                            "props": {
+                                "className": "rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-4 space-y-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "space-y-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "core_update_selection_title",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{_computed.coreUpdateRun?.awaiting?.kind === 'bundled_sources' ? $t('admin.settings.core_update.selection.sources_title') : $t('admin.settings.core_update.selection.updates_title')}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-secondary text-xs"
+                                            },
+                                            "text": "{{_computed.coreUpdateRun?.awaiting?.kind === 'bundled_sources' ? $t('admin.settings.core_update.selection.sources_desc') : $t('admin.settings.core_update.selection.updates_desc')}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex flex-wrap gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "core_update_selection_all",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "coreUpdateChoices": "{{Object.fromEntries((_computed.coreUpdateRun?.awaiting?.items ?? []).map(item => [item.key, Object.assign({}, (_global.coreUpdateChoices ?? {})[item.key] ?? {}, {selected: true})]))}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn btn-secondary btn-sm"
+                                            },
+                                            "text": "$t:admin.settings.core_update.selection.select_all"
+                                        },
+                                        {
+                                            "id": "core_update_selection_none",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "coreUpdateChoices": "{{Object.fromEntries((_computed.coreUpdateRun?.awaiting?.items ?? []).map(item => [item.key, Object.assign({}, (_global.coreUpdateChoices ?? {})[item.key] ?? {}, {selected: false})]))}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn btn-secondary btn-sm"
+                                            },
+                                            "text": "$t:admin.settings.core_update.selection.select_none"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "core_update_selection_items",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "space-y-1 max-h-80 overflow-y-auto"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "_computed.coreUpdateRun?.awaiting?.items ?? []",
+                                                "item_var": "choiceItem"
+                                            },
+                                            "props": {
+                                                "className": "flex flex-wrap items-center gap-2 text-sm px-2 py-1.5 bg-white dark:bg-gray-900 rounded border border-gray-100 dark:border-gray-700"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Checkbox",
+                                                            "actions": [
+                                                                {
+                                                                    "type": "change",
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "coreUpdateChoices": "{{Object.assign({}, _global.coreUpdateChoices ?? {}, {[choiceItem.key]: Object.assign({}, (_global.coreUpdateChoices ?? {})[choiceItem.key] ?? {}, {selected: $event.target.checked})})}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "autoBinding": false,
+                                                                "aria-label": "{{choiceItem.name ?? choiceItem.identifier}}",
+                                                                "checked": "{{((_global.coreUpdateChoices ?? {})[choiceItem.key]?.selected) ?? (_computed.coreUpdateRun?.awaiting?.kind === 'bundled_updates')}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "badge badge-gray"
+                                                            },
+                                                            "text": "{{$t('admin.settings.core_update.selection.types.' + choiceItem.type)}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-mono break-all text-heading"
+                                                            },
+                                                            "text": "{{choiceItem.name ?? choiceItem.identifier}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{_computed.coreUpdateRun?.awaiting?.kind === 'bundled_updates'}}",
+                                                            "props": {
+                                                                "className": "text-secondary text-xs"
+                                                            },
+                                                            "text": "{{(choiceItem.current_version ?? '') + ' → ' + (choiceItem.latest_version ?? '')}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{_computed.coreUpdateRun?.awaiting?.kind === 'bundled_sources'}}",
+                                                            "props": {
+                                                                "className": "text-secondary text-xs"
+                                                            },
+                                                            "text": "{{choiceItem.version ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{_computed.coreUpdateRun?.awaiting?.kind === 'bundled_updates' && choiceItem.has_layouts === true}}",
+                                                    "props": {
+                                                        "className": "flex flex-wrap items-center gap-3 text-xs"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Label",
+                                                            "props": {
+                                                                "className": "flex items-center gap-1 cursor-pointer"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "coreUpdateChoices": "{{Object.assign({}, _global.coreUpdateChoices ?? {}, {[choiceItem.key]: Object.assign({}, (_global.coreUpdateChoices ?? {})[choiceItem.key] ?? {}, {strategy: 'overwrite'})})}}"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "radio",
+                                                                        "autoBinding": false,
+                                                                        "name": "{{'core_update_strategy_' + choiceItem.key}}",
+                                                                        "value": "overwrite",
+                                                                        "aria-label": "$t:common.row_cell|row={{choiceItem.identifier}}|column=$t:admin.settings.core_update.layout_overwrite",
+                                                                        "checked": "{{(((_global.coreUpdateChoices ?? {})[choiceItem.key]?.strategy) ?? choiceItem.strategy ?? 'overwrite') === 'overwrite'}}",
+                                                                        "className": "radio"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:admin.settings.core_update.layout_overwrite"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Label",
+                                                            "props": {
+                                                                "className": "flex items-center gap-1 cursor-pointer"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "coreUpdateChoices": "{{Object.assign({}, _global.coreUpdateChoices ?? {}, {[choiceItem.key]: Object.assign({}, (_global.coreUpdateChoices ?? {})[choiceItem.key] ?? {}, {strategy: 'keep'})})}}"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "radio",
+                                                                        "autoBinding": false,
+                                                                        "name": "{{'core_update_strategy_' + choiceItem.key}}",
+                                                                        "value": "keep",
+                                                                        "aria-label": "$t:common.row_cell|row={{choiceItem.identifier}}|column=$t:admin.settings.core_update.layout_keep",
+                                                                        "checked": "{{(((_global.coreUpdateChoices ?? {})[choiceItem.key]?.strategy) ?? choiceItem.strategy ?? 'overwrite') === 'keep'}}",
+                                                                        "className": "radio"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:admin.settings.core_update.layout_keep"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-secondary text-xs"
+                                    },
+                                    "text": "$t:admin.settings.core_update.selection.maintenance_note"
+                                },
+                                {
+                                    "id": "core_update_selection_continue",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "submitCoreUpdateSelection"
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-primary",
+                                        "disabled": "{{_global.coreUpdateBusy === true || _global.appConfig?.runtime_role === 'stage'}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "if": "{{_global.coreUpdateBusy === true}}",
+                                            "props": {
+                                                "name": "spinner",
+                                                "className": "spinner-sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.core_update.selection.continue"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
                             "id": "core_update_completed",
                             "type": "composite",
                             "name": "Alert",
@@ -923,7 +1219,7 @@
                                     "id": "core_update_resume_button",
                                     "type": "basic",
                                     "name": "Button",
-                                    "if": "{{_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back'}}",
+                                    "if": "{{(_computed.coreUpdateRun?.status === 'running' && !_computed.coreUpdateRun?.awaiting?.kind) || _computed.coreUpdateRun?.status === 'rolling_back'}}",
                                     "actions": [
                                         {
                                             "type": "click",

@@ -1,4 +1,5 @@
-<!-- 업데이트 탭 — 명령줄 없이 화면에서 코어를 업데이트한다. 코어 업데이트 권한(`can_core_update`)이 있을 때만 탭과 본문이 보인다.
+<!-- e2e:allow 진행 중 번들 선택 창·확인 창 링크·미서명 경고는 새 판으로 올라가는 실제 코어 업데이트 도중에만 나타나 E2E 로 재현할 대상 릴리스가 없다 — 레이아웃·핸들러 단위 시험이 잠그고, 개선분이 든 시험 릴리스로 서버 재시험 때 브라우저 실측.
+  업데이트 탭 — 명령줄 없이 화면에서 코어를 업데이트한다. 코어 업데이트 권한(`can_core_update`)이 있을 때만 탭과 본문이 보인다.
   상태는 넷이다: 대기(새 버전 확인·함께 할 일 고르기) → 진행 중(단계 목록·진행 막대) → 완료 → 실패(되돌림 결과).
   진행 상태는 서버 기록(`core_update_status`, 진행 중이면 `_global.coreUpdateStatus`)이 소유하고, 화면을 새로 열어도
   진행 중이면 자동으로 이어 받는다. 공용 저장 버튼은 이 탭에서 숨는다(저장할 설정이 없다).
@@ -147,6 +148,68 @@
             <span class="{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) || _computed.coreUpdateRun?.current_step === step.key ? 'text-heading' : 'text-secondary'}}">{{step.label}}</span>
           </li>
         </ul>
+        <!-- 진행 중 선택(7.2.1) — 서버가 명령줄 `core:update` 와 같은 자리에서 멈춰 묻는다: 새로 들어온 미배치 공식 번들 배치(bundled_sources), 번들 확장·언어팩 업데이트 항목과 확장별 레이아웃 전략(bundled_updates). 운영자가 바꾼 값만 `_global.coreUpdateChoices` 에 두고, 바꾸지 않은 항목은 [계속] 핸들러가 기본값(업데이트는 올림·항목 전략, 미배치 번들은 배치 안 함)으로 보낸다. -->
+        <div data-ref="core_update_selection" data-if="{{_computed.coreUpdateRun?.status === 'running' &amp;&amp; !!_computed.coreUpdateRun?.awaiting?.kind}}" class="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-4 space-y-3">
+          <div class="space-y-1">
+            <span data-ref="core_update_selection_title" class="text-heading">{{_computed.coreUpdateRun?.awaiting?.kind === 'bundled_sources' ? $t('admin.settings.core_update.selection.sources_title') : $t('admin.settings.core_update.selection.updates_title')}}</span>
+            <p class="text-secondary text-xs">{{_computed.coreUpdateRun?.awaiting?.kind === 'bundled_sources' ? $t('admin.settings.core_update.selection.sources_desc') : $t('admin.settings.core_update.selection.updates_desc')}}</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button data-ref="core_update_selection_all" type="button" class="btn btn-secondary btn-sm">
+              <on type="click">
+                <set-state target="global" coreUpdateChoices="{{Object.fromEntries((_computed.coreUpdateRun?.awaiting?.items ?? []).map(item => [item.key, Object.assign({}, (_global.coreUpdateChoices ?? {})[item.key] ?? {}, {selected: true})]))}}"/>
+              </on>
+              $t:admin.settings.core_update.selection.select_all
+            </button>
+            <button data-ref="core_update_selection_none" type="button" class="btn btn-secondary btn-sm">
+              <on type="click">
+                <set-state target="global" coreUpdateChoices="{{Object.fromEntries((_computed.coreUpdateRun?.awaiting?.items ?? []).map(item => [item.key, Object.assign({}, (_global.coreUpdateChoices ?? {})[item.key] ?? {}, {selected: false})]))}}"/>
+              </on>
+              $t:admin.settings.core_update.selection.select_none
+            </button>
+          </div>
+          <div data-ref="core_update_selection_items" class="space-y-1 max-h-80 overflow-y-auto">
+            <div data-each="choiceItem in _computed.coreUpdateRun?.awaiting?.items ?? []" class="flex flex-wrap items-center gap-2 text-sm px-2 py-1.5 bg-white dark:bg-gray-900 rounded border border-gray-100 dark:border-gray-700">
+              <label class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
+                <checkbox :autoBinding="false" aria-label="{{choiceItem.name ?? choiceItem.identifier}}" checked="{{((_global.coreUpdateChoices ?? {})[choiceItem.key]?.selected) ?? (_computed.coreUpdateRun?.awaiting?.kind === 'bundled_updates')}}">
+                  <on type="change">
+                    <set-state target="global" coreUpdateChoices="{{Object.assign({}, _global.coreUpdateChoices ?? {}, {[choiceItem.key]: Object.assign({}, (_global.coreUpdateChoices ?? {})[choiceItem.key] ?? {}, {selected: $event.target.checked})})}}"/>
+                  </on>
+                </checkbox>
+                <span class="badge badge-gray">{{$t('admin.settings.core_update.selection.types.' + choiceItem.type)}}</span>
+                <span class="font-mono break-all text-heading">{{choiceItem.name ?? choiceItem.identifier}}</span>
+                <span data-if="{{_computed.coreUpdateRun?.awaiting?.kind === 'bundled_updates'}}" class="text-secondary text-xs">{{(choiceItem.current_version ?? '') + ' → ' + (choiceItem.latest_version ?? '')}}</span>
+                <span data-if="{{_computed.coreUpdateRun?.awaiting?.kind === 'bundled_sources'}}" class="text-secondary text-xs">{{choiceItem.version ?? ''}}</span>
+              </label>
+              <div data-if="{{_computed.coreUpdateRun?.awaiting?.kind === 'bundled_updates' &amp;&amp; choiceItem.has_layouts === true}}" class="flex flex-wrap items-center gap-3 text-xs">
+                <label class="flex items-center gap-1 cursor-pointer">
+                  <input type="radio" :autoBinding="false" name="{{'core_update_strategy_' + choiceItem.key}}" value="overwrite" aria-label="$t:common.row_cell|row={{choiceItem.identifier}}|column=$t:admin.settings.core_update.layout_overwrite" checked="{{(((_global.coreUpdateChoices ?? {})[choiceItem.key]?.strategy) ?? choiceItem.strategy ?? 'overwrite') === 'overwrite'}}" class="radio">
+                    <on type="change">
+                      <set-state target="global" coreUpdateChoices="{{Object.assign({}, _global.coreUpdateChoices ?? {}, {[choiceItem.key]: Object.assign({}, (_global.coreUpdateChoices ?? {})[choiceItem.key] ?? {}, {strategy: 'overwrite'})})}}"/>
+                    </on>
+                  </input>
+                  <span>$t:admin.settings.core_update.layout_overwrite</span>
+                </label>
+                <label class="flex items-center gap-1 cursor-pointer">
+                  <input type="radio" :autoBinding="false" name="{{'core_update_strategy_' + choiceItem.key}}" value="keep" aria-label="$t:common.row_cell|row={{choiceItem.identifier}}|column=$t:admin.settings.core_update.layout_keep" checked="{{(((_global.coreUpdateChoices ?? {})[choiceItem.key]?.strategy) ?? choiceItem.strategy ?? 'overwrite') === 'keep'}}" class="radio">
+                    <on type="change">
+                      <set-state target="global" coreUpdateChoices="{{Object.assign({}, _global.coreUpdateChoices ?? {}, {[choiceItem.key]: Object.assign({}, (_global.coreUpdateChoices ?? {})[choiceItem.key] ?? {}, {strategy: 'keep'})})}}"/>
+                    </on>
+                  </input>
+                  <span>$t:admin.settings.core_update.layout_keep</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <p class="text-secondary text-xs">$t:admin.settings.core_update.selection.maintenance_note</p>
+          <button data-ref="core_update_selection_continue" type="button" class="btn btn-primary" disabled="{{_global.coreUpdateBusy === true || _global.appConfig?.runtime_role === 'stage'}}">
+            <on type="click">
+              <action handler="submitCoreUpdateSelection"/>
+            </on>
+            <icon data-if="{{_global.coreUpdateBusy === true}}" name="spinner" class="spinner-sm"/>
+            <span>$t:admin.settings.core_update.selection.continue</span>
+          </button>
+        </div>
         <alert data-type="composite" data-ref="core_update_completed" data-if="{{_computed.coreUpdateRun?.status === 'completed'}}" type="success" message="$t:admin.settings.core_update.completed_desc|version={{_computed.coreUpdateRun?.to_version ?? ''}}"/>
         <div data-ref="core_update_failed" data-if="{{_computed.coreUpdateRun?.status === 'rolled_back' || _computed.coreUpdateRun?.status === 'rollback_failed' || _computed.coreUpdateRun?.status === 'rolling_back'}}" class="space-y-3">
           <alert data-type="composite" data-ref="core_update_failed_alert" type="error" message="$t:admin.settings.core_update.failed_title|step={{_computed.coreUpdateRun?.error?.step_label ?? ''}}|detail={{_computed.coreUpdateRun?.error?.message ?? ''}}"/>
@@ -177,7 +240,7 @@
             {{(_local.coreUpdateLogOpen ?? false) ? $t('admin.settings.core_update.hide_log') : $t('admin.settings.core_update.view_log')}}
           </button>
           <!-- 종전에는 진행 중이면 `if` 로 버튼을 **감췄다**. 사라지는 것은 「눌렸다」는 신호로 읽히지 않는다 — 착수 버튼과 같이 자리를 지킨 채 비활성·스피너로 알린다. 진행 여부는 핸들러가 `publishBusy()` 로 싣는 `_global.coreUpdateBusy` 가 소유한다. -->
-          <button data-ref="core_update_resume_button" data-if="{{_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back'}}" type="button" class="btn btn-primary" disabled="{{_global.coreUpdateBusy === true || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
+          <button data-ref="core_update_resume_button" data-if="{{(_computed.coreUpdateRun?.status === 'running' &amp;&amp; !_computed.coreUpdateRun?.awaiting?.kind) || _computed.coreUpdateRun?.status === 'rolling_back'}}" type="button" class="btn btn-primary" disabled="{{_global.coreUpdateBusy === true || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
             <on type="click">
               <action handler="resumeCoreUpdate"/>
             </on>

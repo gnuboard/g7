@@ -10,6 +10,11 @@
 
 - 메뉴 관리 아이콘 칸의 탭·미리보기·직접 입력·업로드·SVG 코드 안내 문구(`admin.menus.icon_field.*`)와 확장 작업 결과 창의 「메뉴 아이콘」 단계 이름(`extensions.lifecycle_warnings.steps.menu_icon`)의 일본어 번역을 추가했습니다.
 - 본인인증 정책 창의 「사용자 지정」 범위·확장 지점 선택 문구의 일본어 번역을 추가했습니다.
+- 환경설정 › 업데이트 탭의 진행 중 선택 창(새로 들어온 공식 번들 배치·업데이트할 번들 확장·언어팩 선택, `admin.settings.core_update.selection.*`) 문구의 일본어 번역을 추가하고, 「번들 확장·언어팩 함께 업데이트」·확장별 레이아웃 안내 문구(`together_bundled_hint`·`layout_per_extension_hint`) 번역을 새 동작에 맞게 고쳤습니다.
+
+### Changed
+
+- 환경설정 › 정보 탭 「업데이트 확인」 창의 새 버전 안내 문구(`admin.settings.info.update_available_message`) 일본어 번역을 「업데이트」 탭 안내로 고치고, [업데이트 탭으로] 버튼 이름(`admin.settings.info.go_to_update_tab`)의 일본어 번역을 추가했습니다.
 
 ## [1.2.0] - 2026-11-20
 

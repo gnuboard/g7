@@ -490,6 +490,32 @@ describe.each(UPDATE)('업데이트 창 무결성 — $type', ({ type, selected,
   });
 
   /**
+   * 회귀 가드(7.2.1 출시 전 웹 코어 업데이트 실측): 서버의 큰 문구(`message`)가 사유(`integrity.message`)를 이미 품으면
+   * 사유 문단을 다시 그리지 않는다 — 「이 패키지에는 서명 파일이 없습니다.」가 경고 상자에 두 번 보였다.
+   * 커버 축(마커 아님 — 평문): extension_type module·plugin·template / response 409_package_unsigned(사유 포함)
+   * @scenario case=update_unsigned_reason_once
+   * @effects unsigned_reason_shown_once
+   */
+  it('409 미서명의 사유가 큰 문구에 이미 들어 있으면 사유를 한 번만 그린다', async () => {
+    await render();
+    const reason = '이 패키지에는 서명 파일이 없습니다.';
+    installFetch([{
+      status: 409,
+      body: {
+        success: false,
+        message: `서명되지 않은 패키지입니다. 내용을 확인했다면 「미서명으로 계속」을 눌러 설치하세요. ${reason}`,
+        errors: { package_unsigned: true, integrity: integrity({ reason: 'no_signature', message: reason }) },
+      },
+    }]);
+
+    fireEvent.click(findButton(update));
+    await settle(testUtils, (g) => !!g.packageIntegrity);
+
+    const alert = screen.getByRole('alert');
+    expect(alert.textContent?.split(reason).length).toBe(2);
+  });
+
+  /**
    * 커버 축(마커 아님 — 평문): extension_type module·plugin·template / response 409_package_unsigned / block_unsigned true
    * @scenario case=update_unsigned_blocked
    * @effects blocked_hint_shown, no_continue_unsigned_button

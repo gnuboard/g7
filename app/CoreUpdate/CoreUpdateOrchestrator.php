@@ -31,6 +31,7 @@ use App\Extension\Vendor\VendorMode;
 use App\Services\Core\BundledPlacementPlan;
 use App\Services\Core\BundledSourcePlanner;
 use App\Services\CoreUpdateService;
+use App\Services\ExtensionStaticCacheService;
 use App\Services\LanguagePackService;
 use App\Support\ConfigCacheHelper;
 use App\Support\ExecutionEnvironment;
@@ -93,6 +94,12 @@ class CoreUpdateOrchestrator
 
     /** 점유에 기록하는 되돌리기 구간 이름 (단계 값과 겹치지 않는다). */
     public const PHASE_ROLLBACK = 'rollback';
+
+    /** 진행 중 선택 종류 — 새로 들어온 미배치 공식 번들 배치 (7.2.1, 명령줄 `--bundled-sources` 와 같은 질문). */
+    public const SELECTION_BUNDLED_SOURCES = 'bundled_sources';
+
+    /** 진행 중 선택 종류 — 번들 확장·언어팩 업데이트 항목과 확장별 레이아웃 전략 (7.2.1). */
+    public const SELECTION_BUNDLED_UPDATES = 'bundled_updates';
 
     /** 웹 경로가 업그레이드 스텝 단계에 강제하는 스폰 실패 모드 (A-7 설계 3 · §7 R26). */
     public const SPAWN_FAILURE_MODE = 'fallback';
@@ -197,6 +204,8 @@ class CoreUpdateOrchestrator
                 // 서버가 아직 어떤 단계를 돌리는 중인지 — 화면은 응답이 끊겨도 이 값으로 점유가
                 // 풀릴 때까지 기다렸다가 스스로 다시 부른다.
                 'claim' => $this->state->claimSummary(),
+                // 운영자의 선택을 기다리는 중이면 그 내용(7.2.1) — 화면은 다음 단계를 부르지 않고 선택 창을 그린다.
+                'awaiting' => $this->state->context('awaiting'),
             ],
             'steps' => $steps,
             'total_steps' => count($steps),
@@ -656,6 +665,110 @@ class CoreUpdateOrchestrator
     }
 
     /**
+     * 진행 중에 물은 선택을 받습니다 (7.2.1 — 명령줄의 코어 적용 뒤 질문과 같은 자리).
+     *
+     * 받는 것은 둘이다.
+     *  - `bundled_sources`: 새 판에 처음 들어온 미배치 공식 번들 중 배치할 것(`--bundled-sources` 와 같은 뜻). 항목마다
+     *    `selected` 만 본다.
+     *  - `bundled_updates`: 번들 확장·언어팩 중 올릴 것과 확장별 레이아웃 전략. 항목마다 `selected`·`strategy`.
+     *
+     * 기다리는 선택과 종류가 다르거나, 그 목록에 없던 항목은 받지 않는다(목록에 없던 항목은 버린다). 단계가 도는 중이면
+     * 거절한다 — 선택을 기다리는 동안 화면은 단계를 부르지 않는다.
+     *
+     * @param  string  $kind  선택 종류 (`bundled_sources`|`bundled_updates`)
+     * @param  array<int, array{key?: mixed, selected?: mixed, strategy?: mixed}>  $items  항목별 선택
+     * @return array<string, mixed> 받은 뒤 상태
+     *
+     * @throws CoreUpdateOperationException 진행 중인 실행이 없거나 그 선택을 기다리지 않는 경우
+     */
+    public function submitSelection(string $kind, array $items): array
+    {
+        $this->state->refresh();
+
+        if (! $this->state->exists() || ! $this->state->isActive()) {
+            throw new CoreUpdateOperationException('settings.core_update.web.no_active_run');
+        }
+
+        if (($this->state->claimSummary()['held'] ?? false) === true) {
+            throw new CoreUpdateOperationException('settings.core_update.web.step_in_progress');
+        }
+
+        $awaiting = $this->state->context('awaiting');
+
+        if (! is_array($awaiting) || ($awaiting['kind'] ?? null) !== $kind) {
+            throw new CoreUpdateOperationException('settings.core_update.web.selection_not_awaited');
+        }
+
+        $known = [];
+
+        foreach ((array) ($awaiting['items'] ?? []) as $candidate) {
+            if (is_array($candidate) && is_string($candidate['key'] ?? null)) {
+                $known[$candidate['key']] = $candidate;
+            }
+        }
+
+        $decision = [];
+
+        foreach ($items as $item) {
+            $key = is_array($item) && is_string($item['key'] ?? null) ? $item['key'] : null;
+
+            if ($key === null || ! isset($known[$key])) {
+                continue;
+            }
+
+            $strategy = ($item['strategy'] ?? null) === CoreUpdateOptions::LAYOUT_KEEP
+                ? CoreUpdateOptions::LAYOUT_KEEP
+                : CoreUpdateOptions::LAYOUT_OVERWRITE;
+
+            $decision[$key] = ['selected' => filter_var($item['selected'] ?? false, FILTER_VALIDATE_BOOLEAN), 'strategy' => $strategy];
+        }
+
+        $selections = (array) ($this->state->context('selections') ?? []);
+        $selections[$kind] = $decision;
+        $this->state->mergeContext(['awaiting' => null, 'selections' => $selections]);
+
+        $selectedCount = count(array_filter($decision, static fn (array $row): bool => $row['selected']));
+        $this->state->appendLog((string) __('settings.core_update.web.log_selection_received', [
+            'kind' => (string) __('settings.core_update.web.selection_kinds.'.$kind),
+            'selected' => (string) $selectedCount,
+            'total' => (string) count($known),
+        ]));
+
+        return $this->status();
+    }
+
+    /**
+     * 운영자의 선택을 기다리는 상태로 둡니다 — 화면은 다음 단계를 부르지 않고 선택 창을 그린다.
+     *
+     * @param  string  $kind  선택 종류
+     * @param  array<int, array<string, mixed>>  $items  고를 항목 (항목마다 `key` 필수)
+     * @param  array<string, mixed>  $extra  화면에 함께 줄 값 (기본 레이아웃 전략 등)
+     * @return void 반환값 없음
+     */
+    private function awaitSelection(string $kind, array $items, array $extra = []): void
+    {
+        $this->state->mergeContext(['awaiting' => ['kind' => $kind, 'items' => array_values($items)] + $extra]);
+        $this->state->appendLog((string) __('settings.core_update.web.log_selection_waiting', [
+            'kind' => (string) __('settings.core_update.web.selection_kinds.'.$kind),
+            'count' => (string) count($items),
+        ]));
+        $this->repeatCurrentStep = true;
+    }
+
+    /**
+     * 받은 선택을 돌려줍니다.
+     *
+     * @param  string  $kind  선택 종류
+     * @return array<string, array{selected: bool, strategy: string}>|null 받은 선택 (아직 없으면 null)
+     */
+    private function selection(string $kind): ?array
+    {
+        $selections = (array) ($this->state->context('selections') ?? []);
+
+        return is_array($selections[$kind] ?? null) ? $selections[$kind] : null;
+    }
+
+    /**
      * 끝난 실행의 기록을 지웁니다 (운영자가 결과를 확인한 뒤).
      *
      * @return array<string, mixed> 지운 뒤 상태
@@ -968,18 +1081,56 @@ class CoreUpdateOrchestrator
      * 공식 번들 배치 판정 (#146) — 받은 배포본의 `_bundled` 중 이 사이트가 설치했거나 디스크에 둔 번들과 그 의존만
      * 배치하고, 나머지(미배치)는 파일 적용, 신규 파일 기록, 증분 목록에서 건너뛴다.
      *
-     * 웹에는 운영자에게 물을 자리가 없으므로 CLI 의 비대화 기본값(`--bundled-sources` 없음)과 같은 판정이다. 미배치 번들은
-     * 관리자 확장 목록 안내와 `core:bundled-sources` 로 나중에 배치한다. 계획 단계와 적용 단계가 따로 부르지만 그 사이
-     * 설치 상태가 바뀌지 않으므로 같은 결과다.
+     * 묻지 않는 화면(표식 `ask_bundled_selection` 없음)은 CLI 의 비대화 기본값(`--bundled-sources` 없음)과 같은 판정이다. 미배치
+     * 번들은 관리자 확장 목록 안내와 `core:bundled-sources` 로 나중에 배치한다. 고르는 화면(7.2.1)이면 미배치 번들이 있을 때
+     * 운영자의 선택을 기다리고(null 반환), 받은 뒤에는 고른 것까지 배치한다. 계획 단계와 적용 단계가 같은 인자로 따로 부르지만
+     * 그 사이 설치 상태·선택이 바뀌지 않으므로 같은 결과다.
      *
      * @param  string  $pendingPath  받은 배포본 경로
-     * @return BundledPlacementPlan 판정 결과
+     * @param  CoreUpdateOptions|null  $options  착수 선택 (null 이면 묻지 않는 판정)
+     * @return BundledPlacementPlan|null 판정 결과 (운영자의 선택을 기다리면 null)
      */
-    private function planBundledPlacement(string $pendingPath): BundledPlacementPlan
+    private function planBundledPlacement(string $pendingPath, ?CoreUpdateOptions $options = null): ?BundledPlacementPlan
     {
         $planner = app(BundledSourcePlanner::class);
+        $inventory = $planner->readInventoryFromDirectory($pendingPath);
 
-        return $planner->plan($planner->readInventoryFromDirectory($pendingPath));
+        // 종전(묻지 않는 화면) — 새로 들어온 공식 번들은 배치하지 않는다(명령줄 비대화형 `--bundled-sources=none` 과 같다)
+        if ($options === null || ! $options->askBundledSelection) {
+            return $planner->plan($inventory);
+        }
+
+        $selection = $this->selection(self::SELECTION_BUNDLED_SOURCES);
+
+        if ($selection !== null) {
+            $keys = array_keys(array_filter($selection, static fn (array $row): bool => $row['selected']));
+
+            return $planner->plan($inventory, array_values($keys));
+        }
+
+        $plan = $planner->plan($inventory);
+
+        if ($plan->unplaced === []) {
+            return $plan;
+        }
+
+        $locale = app()->getLocale();
+        $items = [];
+
+        foreach ($plan->unplaced as $key => $entry) {
+            $name = $entry['name'] ?? ($entry['identifier'] ?? $key);
+            $items[] = [
+                'key' => (string) $key,
+                'type' => (string) ($entry['type'] ?? ''),
+                'identifier' => (string) ($entry['identifier'] ?? ''),
+                'name' => is_array($name) ? (string) ($name[$locale] ?? reset($name) ?: $key) : (string) $name,
+                'version' => (string) ($entry['version'] ?? ''),
+            ];
+        }
+
+        $this->awaitSelection(self::SELECTION_BUNDLED_SOURCES, $items);
+
+        return null;
     }
 
     /**
@@ -1118,7 +1269,13 @@ class CoreUpdateOrchestrator
         }
 
         if (! is_array($progress['skip_paths'] ?? null)) {
-            $bundledPlan = $this->planBundledPlacement($pendingPath);
+            $bundledPlan = $this->planBundledPlacement($pendingPath, $this->state->options());
+
+            // 새로 들어온 미배치 공식 번들을 배치할지 운영자에게 묻는 중 — 고를 때까지 이 단계에 머문다
+            if ($bundledPlan === null) {
+                return;
+            }
+
             $progress = ['phase' => 'manifest', 'skip_paths' => $bundledPlan->skipPaths(), 'manifest' => [], 'apply' => []];
             $this->state->appendLog((string) __('settings.core_update.web.log_bundled_placement', [
                 'placed' => (string) count($bundledPlan->placed),
@@ -1284,7 +1441,13 @@ class CoreUpdateOrchestrator
             throw new CoreUpdateOperationException('settings.core_update.web.missing_pending_path');
         }
 
-        $bundledPlan = $this->planBundledPlacement($pendingPath);
+        // 적용 대상 산출 단계와 같은 판정이어야 한다 — 운영자가 고른 미배치 번들을 여기서도 배치한다
+        $bundledPlan = $this->planBundledPlacement($pendingPath, $this->state->options());
+
+        if ($bundledPlan === null) {
+            // 산출 단계가 선택을 받은 뒤에만 이 단계에 온다 — 선택 없이 오면 판정이 갈린 것이다
+            throw new CoreUpdateOperationException('settings.core_update.web.selection_not_awaited');
+        }
 
         // 반환값이 계약이다 — 게터는 반환값을 손에 쥘 수 없는 자리의 편의일 뿐이다.
         $result = $this->service->applyUpdate(
@@ -1478,6 +1641,27 @@ class CoreUpdateOrchestrator
                 $this->state->appendLog((string) __('settings.core_update.web.log_bundled_none'));
 
                 return;
+            }
+
+            // 고르는 화면이면 무엇을 어떤 레이아웃 전략으로 올릴지 묻는다(명령줄의 확인 질문·확장별 전략 예외와 같은 자리)
+            if ($options->askBundledSelection) {
+                $selection = $this->selection(self::SELECTION_BUNDLED_UPDATES);
+
+                if ($selection === null) {
+                    $this->awaitSelection(self::SELECTION_BUNDLED_UPDATES, $this->bundledUpdateCandidates($options), [
+                        'default_strategy' => $options->layoutStrategy,
+                    ]);
+
+                    return;
+                }
+
+                $manifest = self::applyBundledSelection($manifest, $selection);
+
+                if ($manifest === null) {
+                    $this->state->appendLog((string) __('settings.core_update.web.log_bundled_none_selected'));
+
+                    return;
+                }
             }
 
             $items = ExecuteBundledUpdatesCommand::flattenItems(
@@ -1884,6 +2068,8 @@ class CoreUpdateOrchestrator
         // 항목 하나짜리 매니페스트 모양은 명령 쪽이 소유한다 — 같은 함수를 써서 두 곳이 갈리지 않게 한다.
         $manifest = ExecuteBundledUpdatesCommand::manifestForItem($item);
         $manifest['rebuild_search_index'] = $rebuildSearchIndex;
+        // 항목마다 정적 게시(전 로케일 문구 병합·전 템플릿 산출물 복사)를 되풀이하지 않는다 — 마무리 단계가 한 번 예약한다
+        $manifest['defer_static_publish'] = true;
 
         if ($childMarker !== null) {
             $manifest['child_marker'] = $childMarker;
@@ -1987,6 +2173,10 @@ class CoreUpdateOrchestrator
         // 반쪽 상태가 박제된다.
         ConfigCacheHelper::rebuild();
         RouteCacheHelper::rebuild();
+
+        // 번들 항목 프로세스는 정적 게시를 건너뛰었다 — 모든 확장이 안착한 지금 한 번만 예약한다(이 요청이 끝날 때 게시).
+        // 운영 환경·웹 계정일 때만 예약되고, 그 밖에는 다음 웹 렌더의 자가 치유가 같은 일을 한다.
+        ExtensionStaticCacheService::schedulePublishOnTerminate();
 
         $this->state->mergeContext(['finalize_progress' => null]);
         $this->state->appendLog((string) __('settings.core_update.web.log_finalized', ['version' => $toVersion]));
@@ -2552,10 +2742,89 @@ class CoreUpdateOrchestrator
     }
 
     /**
+     * 번들 업데이트 선택 창에 줄 항목 목록을 만듭니다 — 항목마다 지금 판·새 판과 기본 레이아웃 전략.
+     *
+     * 판정은 {@see buildBundledManifest()} 와 같은 함수를 쓴다(두 곳이 갈리지 않게).
+     *
+     * @param  CoreUpdateOptions  $options  착수 선택 (기본 레이아웃 전략)
+     * @return array<int, array{key: string, type: string, identifier: string, current_version: string, latest_version: string, has_layouts: bool, strategy: string|null}> 항목 목록
+     */
+    private function bundledUpdateCandidates(CoreUpdateOptions $options): array
+    {
+        $updates = $this->service->collectBundledExtensionUpdates();
+        $updates['lang_packs'] = app(LanguagePackService::class)->collectBundledLangPackUpdates();
+        $types = ['modules' => 'module', 'plugins' => 'plugin', 'templates' => 'template', 'lang_packs' => 'lang_pack'];
+        $items = [];
+
+        foreach ($types as $group => $type) {
+            foreach ((array) ($updates[$group] ?? []) as $entry) {
+                $identifier = (string) ($entry['identifier'] ?? '');
+
+                if ($identifier === '') {
+                    continue;
+                }
+
+                $items[] = [
+                    'key' => $type.':'.$identifier,
+                    'type' => $type,
+                    'identifier' => $identifier,
+                    'current_version' => (string) ($entry['current_version'] ?? ''),
+                    'latest_version' => (string) ($entry['latest_version'] ?? ''),
+                    // 언어팩은 레이아웃이 없어 전략을 고르지 않는다
+                    'has_layouts' => $type !== 'lang_pack',
+                    'strategy' => $type !== 'lang_pack' ? $options->layoutStrategy : null,
+                ];
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * 운영자의 번들 업데이트 선택을 매니페스트에 반영합니다 — 고른 항목만 남기고 확장별 레이아웃 전략을 적는다.
+     *
+     * 선택에 없는 항목(선택 창을 연 뒤 새로 생긴 항목)은 올리지 않는다 — 운영자가 보지 못한 것을 올리지 않는다.
+     *
+     * @param  array<string, mixed>  $manifest  {@see buildBundledManifest()} 결과
+     * @param  array<string, array{selected: bool, strategy: string}>  $selection  `{type}:{identifier}` => 선택
+     * @return array<string, mixed>|null 반영한 매니페스트 (남은 항목이 없으면 null)
+     */
+    public static function applyBundledSelection(array $manifest, array $selection): ?array
+    {
+        $types = ['modules' => 'module', 'plugins' => 'plugin', 'templates' => 'template', 'lang_packs' => 'lang_pack'];
+        $remaining = 0;
+
+        foreach ($types as $group => $type) {
+            $kept = [];
+
+            foreach ((array) ($manifest[$group] ?? []) as $entry) {
+                $choice = $selection[$type.':'.(string) ($entry['identifier'] ?? '')] ?? null;
+
+                if (! is_array($choice) || ($choice['selected'] ?? false) !== true) {
+                    continue;
+                }
+
+                if ($type !== 'lang_pack') {
+                    $entry['strategy'] = ($choice['strategy'] ?? null) === CoreUpdateOptions::LAYOUT_KEEP
+                        ? CoreUpdateOptions::LAYOUT_KEEP
+                        : CoreUpdateOptions::LAYOUT_OVERWRITE;
+                }
+
+                $kept[] = $entry;
+            }
+
+            $manifest[$group] = $kept;
+            $remaining += count($kept);
+        }
+
+        return $remaining === 0 ? null : $manifest;
+    }
+
+    /**
      * 번들 확장 일괄 업데이트 매니페스트를 만듭니다.
      *
-     * 전역 레이아웃 전략(D29)을 모든 항목에 그대로 싣는다 — 확장별 예외는 웹에 두지
-     * 않고 개별 확장 업데이트 화면으로 안내한다.
+     * 전역 레이아웃 전략(D29)을 모든 항목에 그대로 싣는다. 고르는 화면(7.2.1 `askBundledSelection`)이면 그 뒤
+     * {@see applyBundledSelection()} 이 고른 항목과 확장별 전략으로 좁힌다.
      *
      * @param  CoreUpdateOptions  $options  착수 선택
      * @return array{modules: list<array<string, string>>, plugins: list<array<string, string>>, templates: list<array<string, string>>, lang_packs: list<array<string, string>>, rebuild_search_index: bool}|null 매니페스트 (대상이 없으면 null)

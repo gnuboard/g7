@@ -42,7 +42,7 @@ axes:
   runner_strategy: [subprocess, inprocess_no_vendor, inprocess, override]
   endpoint_guard: [general, finalize_allowed, finalize_unexpected, missing]
   php_binary_source: [detected_autodetect, configured]              # D35
-  task: [composer, key_generate, env, dependency_precheck, db_cleanup, db_migrate, db_seed, template, user_template, module, plugin, language_pack, settings, cache, complete_flag, config_cache, route_cache, static_publish]   # 태스크 종류 (목록 순서는 test_task_list_order_keys_and_skippable_flags 가 고정). 살아 있는 태스크 4종(key_generate·dependency_precheck·db_cleanup·user_template)이 축에 없어 롤백 디스패치·수동 복구 안내의 모집단에서 빠져 있었다. static_publish 는 부트스트랩 리소스 정적 게시 태스크로, 목록 SSoT 로 옮겨진 뒤에도 이 축에 없어 접기 표와 어긋나 있었다. route_cache 는 7.2.0 합류 태스크(설치 끝 라우트 캐시 생성, best_effort)
+  task: [composer, key_generate, env, dependency_precheck, db_cleanup, db_migrate, db_seed, template, user_template, module, plugin, language_pack, settings, cache, complete_flag, config_cache, route_cache, static_publish, sitemap_generate]   # 태스크 종류 (목록 순서는 test_task_list_order_keys_and_skippable_flags 가 고정). 살아 있는 태스크 4종(key_generate·dependency_precheck·db_cleanup·user_template)이 축에 없어 롤백 디스패치·수동 복구 안내의 모집단에서 빠져 있었다. static_publish 는 부트스트랩 리소스 정적 게시 태스크로, 목록 SSoT 로 옮겨진 뒤에도 이 축에 없어 접기 표와 어긋나 있었다. route_cache 는 7.2.0 합류 태스크(설치 끝 라우트 캐시 생성, best_effort). sitemap_generate 는 7.2.1 합류 태스크(설치 끝 사이트맵 최초 생성, best_effort — 없으면 첫 /sitemap.xml 요청이 503)
   # 종전 마킹이 쓰던 이름을 선언으로 올린다 (선언 = 마킹, 제품 결정). 값은 실제 마킹에서 도출.
   probe_key_source: [producer_sources]                              # PHP 프로브 메시지 키 사전의 모집단 출처
   locale: [ko, en]                                                  # 프로브 키가 해석돼야 하는 기본 로케일

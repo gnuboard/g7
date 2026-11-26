@@ -5,7 +5,7 @@
 ## 템플릿 전용 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 29개 (정의: `src/handlers/index.ts`).
+핸들러 30개 (정의: `src/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -17,6 +17,7 @@
 | `autoResumeCoreUpdate` | (템플릿 전용 — 네임스페이스 없음) |
 | `dismissCoreUpdate` | (템플릿 전용 — 네임스페이스 없음) |
 | `refreshCoreUpdateStatus` | (템플릿 전용 — 네임스페이스 없음) |
+| `submitCoreUpdateSelection` | (템플릿 전용 — 네임스페이스 없음) |
 | `setTheme` | (템플릿 전용 — 네임스페이스 없음) |
 | `initTheme` | (템플릿 전용 — 네임스페이스 없음) |
 | `scrollToSection` | (템플릿 전용 — 네임스페이스 없음) |
@@ -283,6 +284,7 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 | `autoResumeCoreUpdate` | 없음 | 진행·되돌리기 중인 실행을 **조작 없이** 이어받음 (진행 블록 `lifecycle.onMount`) |
 | `dismissCoreUpdate` | 없음 | 끝난 실행의 기록 정리 |
 | `refreshCoreUpdateStatus` | 없음 | 상태만 다시 읽음 |
+| `submitCoreUpdateSelection` | 없음 | 서버가 멈춰 물은 선택(`run.awaiting` — 새로 들어온 미배치 공식 번들 배치·번들 업데이트 항목과 확장별 레이아웃 전략)을 `_global.coreUpdateChoices` 와 기본값으로 채워 보내고 이어서 진행 (7.2.1). 착수 요청은 늘 `ask_bundled_selection: true` 를 싣고, `run.awaiting` 이 있으면 반복 호출을 멈춘다 |
 
 **여기 없는 것이 규정이다** — `force`·`prune`·`no_backup`·`no_maintenance` 는 웹 동선에
 입력 표면 자체가 없다. 화면이 그 키를 실어도 서버가 받지 않지만, 그 전에 **화면이 만들지
@@ -338,7 +340,7 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 
 ---
 
-| `startCoreUpdate`, `resumeCoreUpdate`, `autoResumeCoreUpdate`, `dismissCoreUpdate`, `refreshCoreUpdateStatus` | `src/handlers/coreUpdateHandler.ts` | `startCoreUpdateHandler` |
+| `startCoreUpdate`, `resumeCoreUpdate`, `autoResumeCoreUpdate`, `dismissCoreUpdate`, `refreshCoreUpdateStatus`, `submitCoreUpdateSelection` | `src/handlers/coreUpdateHandler.ts` | `startCoreUpdateHandler` |
 
 <!-- @intent END -->
 

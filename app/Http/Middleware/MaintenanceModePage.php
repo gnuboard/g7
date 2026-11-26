@@ -36,6 +36,8 @@ class MaintenanceModePage
         'api/admin/core-update/status',
         'api/admin/core-update/advance',
         'api/admin/core-update/dismiss',
+        // 진행 중 선택 제출(7.2.1) — 업데이트가 켠 점검 모드 안에서 번들 배치·업데이트 항목을 고른다
+        'api/admin/core-update/selection',
     ];
 
     /**

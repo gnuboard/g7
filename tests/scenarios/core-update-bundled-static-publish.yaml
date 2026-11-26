@@ -1,0 +1,16 @@
+feature: 코어 업데이트 번들 단계의 정적 게시 미루기
+
+description: |
+  코어 업데이트(웹·명령줄)의 번들 확장·언어팩 단계에서 항목 프로세스가 정적 게시를 건너뛰고, 일괄을 시작한 쪽
+  (웹 마무리 단계·명령줄 일괄 자식)이 끝에서 한 번 예약하는지 잰다. 표시가 없는 옛 부모·단독 실행은 종전대로다.
+
+axes:
+  caller: [item_process, legacy_parent, web_update]
+
+effects:
+  - item_process_skips_static_publish
+  - legacy_manifest_keeps_per_item_publish
+  - web_item_manifest_defers_static_publish
+
+test_files:
+  - tests/Feature/CoreUpdate/BundledStaticPublishDeferralTest.php

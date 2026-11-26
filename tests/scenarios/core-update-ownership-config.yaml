@@ -1,0 +1,18 @@
+feature: 코어 업데이트 소유권·그룹 쓰기 복원 대상 설정
+
+description: |
+  코어 업데이트 마무리의 소유권 복원(restore_ownership)·그룹 쓰기 정상화(restore_ownership_group_writable)
+  목록과 강제 승격 목록(CoreUpdateService::FORCE_GROUP_WRITABLE_PATHS)이 업데이트가 만들고 쓰는 폴더를
+  빠짐없이 덮는지 잰다. 백업 폴더·정적 게시 트리·업데이트 기록 폴더(core_update·core-update)가 대상이다.
+
+axes:
+  directory: [backup, static_publish, update_record]
+
+effects:
+  - core_update_ownership_restores_backup_directories
+  - core_update_ownership_restores_static_publish_tree
+  - core_update_group_writable_forces_update_record_directories
+  - core_update_group_writable_includes_backup_directories
+
+test_files:
+  - tests/Unit/Config/BackupDirectoryRestoreOwnershipConfigTest.php

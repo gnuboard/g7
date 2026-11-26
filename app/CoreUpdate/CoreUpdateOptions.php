@@ -16,6 +16,10 @@ use App\Extension\Integrity\PackageIntegrityOptions;
  * 번들 확장·언어팩 일괄(D28) · 검색 인덱스 재생성 · 전역 레이아웃 전략(D29) ·
  * 수동 ZIP 소스(㉯ — D18).
  *
+ * 7.2.1 부터 `askBundledSelection` 이 더해졌다 — 명령줄이 코어 파일을 적용한 뒤 묻는 두 질문(새로 들어온 공식 번들을
+ * 배치할지 `--bundled-sources`, 번들 확장·언어팩 중 무엇을 어떤 레이아웃 전략으로 올릴지)을 웹도 같은 자리에서 묻는다.
+ * 그 선택을 그릴 수 있는 화면만 이 표식을 싣는다 — 없으면(7.2.0 화면에서 시작한 업데이트) 종전대로 묻지 않고 진행한다.
+ *
  * @since 7.1.0
  */
 final class CoreUpdateOptions
@@ -33,6 +37,7 @@ final class CoreUpdateOptions
      * @param  string|null  $zipFile  수동 ZIP 파일명 (`storage/app/core_pending` 하위, null 이면 자동 내려받기)
      * @param  bool  $allowUnsigned  미서명 배포본을 운영자가 확인하고 계속하는지 (7.2.0 — 409 경고 창의 「미서명으로 계속」)
      * @param  bool  $integrityAware  무결성을 아는 화면의 요청인지 (7.2.0 — 표식 `integrity_aware`. 없으면 옛 화면 호환으로 미서명 허용)
+     * @param  bool  $askBundledSelection  번들 배치·업데이트 항목을 진행 중에 물어 고르게 할지 (7.2.1 — 표식 `ask_bundled_selection`)
      */
     public function __construct(
         public readonly bool $updateBundledExtensions = true,
@@ -41,6 +46,7 @@ final class CoreUpdateOptions
         public readonly ?string $zipFile = null,
         public readonly bool $allowUnsigned = false,
         public readonly bool $integrityAware = false,
+        public readonly bool $askBundledSelection = false,
     ) {}
 
     /**
@@ -60,6 +66,7 @@ final class CoreUpdateOptions
             zipFile: self::normalizeZipFile($validated['zip_file'] ?? null),
             allowUnsigned: (bool) ($validated['allow_unsigned'] ?? false),
             integrityAware: (bool) ($validated['integrity_aware'] ?? false),
+            askBundledSelection: (bool) ($validated['ask_bundled_selection'] ?? false),
         );
     }
 
@@ -88,6 +95,7 @@ final class CoreUpdateOptions
             'zip_file' => $this->zipFile,
             'allow_unsigned' => $this->allowUnsigned,
             'integrity_aware' => $this->integrityAware,
+            'ask_bundled_selection' => $this->askBundledSelection,
         ];
     }
 

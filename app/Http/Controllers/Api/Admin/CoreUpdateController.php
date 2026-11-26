@@ -8,6 +8,7 @@ use App\Exceptions\CoreUpdateOperationException;
 use App\Exceptions\PackageIntegrityException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\CoreUpdate\StartCoreUpdateRequest;
+use App\Http\Requests\CoreUpdate\SubmitCoreUpdateSelectionRequest;
 use App\Http\Requests\Extension\ChangelogRequest;
 use App\Services\CoreUpdateService;
 use Illuminate\Http\JsonResponse;
@@ -152,6 +153,31 @@ class CoreUpdateController extends AdminBaseController
             return $this->error($e->errorKey, 409, null, $e->params);
         } catch (\Throwable $e) {
             return $this->error('settings.core_update.web.advance_failed', 500, $e->getMessage());
+        }
+    }
+
+    /**
+     * 진행 중에 물은 선택을 받습니다 (7.2.1 — 번들 배치·번들 업데이트 항목과 확장별 레이아웃 전략).
+     *
+     * 받은 뒤 화면이 다시 단계를 부른다. 점검 모드 중에 불리므로 진행과 같이 우회 쿠키를 싣는다.
+     *
+     * @param  SubmitCoreUpdateSelectionRequest  $request  검증된 선택
+     * @return JsonResponse 받은 뒤 상태
+     */
+    public function selection(SubmitCoreUpdateSelectionRequest $request): JsonResponse
+    {
+        try {
+            $validated = $request->validated();
+            $status = $this->orchestrator->submitSelection((string) $validated['kind'], (array) $validated['items']);
+
+            return $this->attachMaintenanceBypass(
+                $this->success('settings.core_update.web.selection_saved', $this->withScreenHints($status)),
+                $status,
+            );
+        } catch (CoreUpdateOperationException $e) {
+            return $this->error($e->errorKey, 409, null, $e->params);
+        } catch (\Throwable $e) {
+            return $this->error('settings.core_update.web.selection_failed', 500, $e->getMessage());
         }
     }
 

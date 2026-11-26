@@ -298,6 +298,8 @@ trait BundledExtensionUpdatePrompt
         $manifest = $this->buildBundledUpdateManifest($updates, $strategies);
         // 운영자의 선택을 매니페스트에 실어 spawn 자식과 in-process fallback 이 같은 결정을 따르게 한다
         $manifest['rebuild_search_index'] = $rebuildSearchIndex;
+        // 항목마다 정적 게시를 되풀이하지 않는다 — 일괄 자식이 끝에서 한 번 예약한다
+        $manifest['defer_static_publish'] = true;
         if ($this->bundledManifestIsEmpty($manifest)) {
             return ['success' => 0, 'failed' => 0, 'skipped' => 0, 'has_updates' => false];
         }

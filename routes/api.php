@@ -996,6 +996,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('dismiss', [AdminCoreUpdateController::class, 'dismiss'])
             ->middleware('permission:admin,core.system.update')
             ->middleware('deny.stage')->name('api.admin.core-update.dismiss');
+        // 진행 중 선택 제출(7.2.1) — 번들 배치·번들 업데이트 항목. 점검 모드 중에 불리므로 면제 목록과 짝이다.
+        Route::post('selection', [AdminCoreUpdateController::class, 'selection'])
+            ->middleware('permission:admin,core.system.update')
+            ->middleware('deny.stage')->name('api.admin.core-update.selection');
     });
 
     // 메뉴 관리

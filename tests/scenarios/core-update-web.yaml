@@ -58,6 +58,8 @@ effects:
   # 단계·순서
   - step_order_keeps_safety_invariants
   - every_case_appears_in_the_sequence
+  - selection_submit_validates_and_requires_a_waiting_run
+  - selection_panel_shows_only_while_awaiting
   - apply_and_upgrade_steps_live_in_different_step_methods
   - the_web_pipeline_covers_every_service_call_the_cli_makes
   - no_stale_omission_declarations_remain

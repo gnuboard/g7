@@ -97,6 +97,8 @@ describe('코어 업데이트 착수 — 패키지 무결성 거절', () => {
             rebuild_search_index: true,
             layout_strategy: 'keep',
             integrity_aware: true,
+            // 진행 중 번들 선택을 그릴 수 있는 화면의 표식(7.2.1) — 늘 싣는다
+            ask_bundled_selection: true,
             allow_unsigned: true,
         });
         expect(globals.packageIntegrity).toBeNull();

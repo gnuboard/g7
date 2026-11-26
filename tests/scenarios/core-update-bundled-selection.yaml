@@ -1,0 +1,31 @@
+feature: 웹 코어 업데이트 진행 중 번들 선택
+
+description: |
+  고르는 화면(ask_bundled_selection)이 시작한 웹 코어 업데이트가 명령줄과 같은 자리에서 멈춰 두 가지를 묻는지 잰다 —
+  새로 들어온 미배치 공식 번들 배치(적용 대상 산출 전), 번들 확장·언어팩 업데이트 항목과 확장별 레이아웃 전략(번들 단계).
+  받은 선택대로 진행하고, 기다리지 않는 선택·목록에 없던 항목은 받지 않으며, 표식이 없는 옛 화면의 실행은 묻지 않는다.
+
+axes:
+  selection: [bundled_sources, bundled_updates]
+  client: [asks, legacy]
+
+effects:
+  - bundled_step_waits_for_selection
+  - waiting_items_carry_versions_and_default_strategy
+  - selection_saved_and_waiting_cleared
+  - unknown_items_dropped
+  - selection_rejected_when_not_awaited
+  - only_selected_items_are_updated_with_their_strategy
+  - legacy_client_run_never_waits
+  - unplaced_bundles_wait_for_selection
+  - selected_unplaced_bundles_are_placed
+  # 화면(관리자 템플릿 핸들러)
+  - start_declares_selection_capable_screen
+  - drive_stops_while_awaiting_selection
+  - continue_sends_defaults_for_untouched_items
+  - continue_resumes_driving
+  - unplaced_bundles_default_to_not_placed
+
+test_files:
+  - tests/Unit/CoreUpdate/CoreUpdateBundledSelectionTest.php
+  - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/coreUpdateHandler.selection.test.ts

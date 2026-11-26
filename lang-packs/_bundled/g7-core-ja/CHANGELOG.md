@@ -12,6 +12,7 @@
 - 레이아웃 마크업 경고 「폭별 덧붙이기 클래스(`class-merge`)에 폭 변형 클래스가 있음」(`layout_markup_lint.class_merge_breakpoint_variant`)의 일본어 번역을 추가했습니다.
 - 본인인증 정책의 등록되지 않은 확장 지점 검증 문구(`validation.identity_policy.custom_target_unregistered`)와 활동 기록 기간 검증 문구(`validation.activity_log.date_range_invalid`)·기간 항목 이름(`validation.attributes.date_from`·`date_to`)의 일본어 번역을 추가했습니다.
 - 등록되지 않은 본인인증 확장 지점을 강제하려 할 때의 예외 문구(`identity.errors.checkpoint_not_registered`)의 일본어 번역을 추가했습니다.
+- 웹 코어 업데이트 진행 중 선택(새로 들어온 공식 번들 배치·번들 확장·언어팩 업데이트 항목) 문구(`settings.core_update.web.selection_*`·`log_selection_*`·`log_bundled_none_selected`·`selection_kinds.*`·항목 이름 `attributes.ask_bundled_selection`·`selection_*`)의 일본어 번역을 추가했습니다.
 
 ### Changed
 

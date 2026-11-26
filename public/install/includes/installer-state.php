@@ -2135,7 +2135,7 @@ function installerResetNeedsDbNotice(array $state): bool
  *  - db_cleanup / db_migrate / db_seed — 스키마·시드 자체
  *  - {module,plugin,template,user_template}_{install,activate} — 확장 등록 행
  *  - language_pack_install — 언어팩 등록 행
- *  - create_settings_json / complete_flag / config_cache / route_cache / static_publish —
+ *  - create_settings_json / complete_flag / config_cache / route_cache / static_publish / sitemap_generate —
  *    DB 상태를 읽어 산출물을 만드는 마무리 단계
  *
  * 보존 대상 (파일시스템·환경 효과라 DROP 과 무관):
@@ -2169,6 +2169,7 @@ function isTaskInvalidatedByDbCleanup(string $task): bool
         'config_cache' => true,
         'route_cache' => true,
         'static_publish' => true,
+        'sitemap_generate' => true,
     ];
 
     return isset($invalidated[$taskId]);

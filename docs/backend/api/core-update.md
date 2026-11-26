@@ -155,7 +155,7 @@ _단건 응답: `data` 객체의 필드._
 업그레이드 스텝은 파일 적용 **다음 요청**에서 실행돼야 한다. 진행 지점은 서버가 상태
 파일로 보관하므로 새로고침·브라우저 종료 뒤에도 이어진다.
 
-세 경로(`status` · `advance` · `dismiss`)는 **점검 모드에서도 열려 있다.** 업데이트가
+네 경로(`status` · `advance` · `selection` · `dismiss`)는 **점검 모드에서도 열려 있다.** 업데이트가
 스스로 켠 점검 모드에 진행·되돌리기가 갇히면 사이트를 세워 놓고 이어 갈 수단이 사라지기
 때문이며, `advance` 응답은 관리자 화면 접근을 위한 점검 모드 우회 쿠키를 함께 싣는다.
 
@@ -226,7 +226,8 @@ Accept: application/json
 | run.status | string | `running`·`rolling_back`·`rolled_back`·`rollback_failed`·`completed` |
 | run.from_version | string | 업데이트 이전 버전 |
 | run.to_version | string\|null | 대상 버전 (수동 ZIP 은 추출 후 결정되므로 그 전까지 `null`) |
-| run.options | object | 착수 선택 (`update_bundled_extensions`·`rebuild_search_index`·`layout_strategy`·`zip_file`·`allow_unsigned`·`integrity_aware`(7.2.0)) |
+| run.options | object | 착수 선택 (`update_bundled_extensions`·`rebuild_search_index`·`layout_strategy`·`zip_file`·`allow_unsigned`·`integrity_aware`(7.2.0)·`ask_bundled_selection`(7.2.1)) |
+| run.awaiting | object\|null | 운영자의 선택을 기다리는 중이면 그 내용 (7.2.1). `kind`(`bundled_sources`·`bundled_updates`)·`items`(항목마다 `key` = `{type}:{identifier}`, 미배치 번들은 `type`·`identifier`·`name`·`version`, 번들 업데이트는 `current_version`·`latest_version`·`has_layouts`·`strategy`)·`default_strategy`(번들 업데이트만). 값이 있으면 화면은 `advance` 를 부르지 않고 `selection` 으로 답한다 |
 | run.next_step | string\|null | 다음에 수행할 단계 키 |
 | run.completed_steps | string[] | 완료한 단계 키 |
 | run.completed_count | int | 완료 단계 수 (진행률 계산용) |
@@ -302,6 +303,7 @@ Accept: application/json
 | layout_strategy | body | string | 아니오 | `overwrite`, `keep` | 전역 레이아웃 처리 (기본 `overwrite` — 명령행 기본과 동일) |
 | zip_file | body | string | 아니오 | `<이름>.zip` | 운영자가 `storage/app/core_pending` 에 올려 둔 파일 **이름**. 경로 성분은 허용하지 않는다. 같은 자리에 `<이름>.zip.sig.json` 이 있으면 그 서명 파일로 검증한다 (7.2.0) |
 | allow_unsigned | body | boolean | 아니오 | | 서명 자산이 없는 릴리스·서명 파일이 없는 ZIP(또는 이 서버에서 서명을 검증할 수 없는 배포본)을 확인하고 계속 (7.2.0, 기본 `false`). 409 경고 창의 「미서명으로 계속」이 같은 요청을 `true` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
+| ask_bundled_selection | body | boolean | 아니오 | | 진행 중에 번들 선택을 묻는 관리자 화면의 표식 (7.2.1, 기본 `false`). `true` 면 명령줄 `core:update` 와 같은 자리에서 멈춰 묻는다 — 적용 대상 산출 전에 새로 들어온 미배치 공식 번들(있을 때만), 번들 단계에서 올릴 확장·언어팩과 확장별 레이아웃 전략. 이 칸이 없는 착수(7.2.0 화면에서 시작한 업데이트)는 묻지 않고 종전대로 진행한다 |
 | integrity_aware | body | boolean | 아니오 | | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `true` 를 보낸다. 이 칸이 없는 착수는 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 배포본을 확인 없이 진행한다(서버 경고 로그). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
 
 **요청 예시**
@@ -389,6 +391,50 @@ Accept: application/json
 `next_step` 으로 여러 번 응답한다.
 
 ---
+
+### POST /api/admin/core-update/selection
+
+- **라우트명**: `api.admin.core-update.selection`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\CoreUpdateController@selection`
+- **인증/권한**: `auth:sanctum` + `permission:core.system.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 설명 |
+| --- | --- | --- | --- | --- | --- |
+| kind | body | string | 예 | `bundled_sources`, `bundled_updates` | 답하는 선택 종류 — `run.awaiting.kind` 와 같아야 한다 |
+| items | body | array | 예 | 최대 500 | 항목별 선택 (빈 배열이면 아무것도 고르지 않음) |
+| items.*.key | body | string | 예 | | `run.awaiting.items[].key` 중 하나. 목록에 없던 키는 버린다 |
+| items.*.selected | body | boolean | 예 | | 고를지 (배치·업데이트) |
+| items.*.strategy | body | string | 아니오 | `overwrite`, `keep` | 번들 업데이트의 확장별 레이아웃 전략 (없으면 `overwrite`, 언어팩은 무시) |
+
+**요청 예시**
+
+```http
+POST /api/admin/core-update/selection HTTP/1.1
+Authorization: Bearer {token}
+Accept: application/json
+Content-Type: application/json
+
+{"kind": "bundled_updates", "items": [{"key": "plugin:sirsoft-popup", "selected": true, "strategy": "keep"}, {"key": "lang_pack:g7-core-ja", "selected": false}]}
+```
+
+**응답 필드** — `GET /api/admin/core-update/status` 와 같다 (`run.awaiting` 이 `null` 로 비워진 상태).
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | `core.system.update` 권한이 없는 경우 |
+| 409 | Conflict | 진행 중인 실행이 없거나, 그 종류의 선택을 기다리지 않거나, 다른 요청이 단계를 수행 중인 경우 |
+| 422 | Unprocessable Entity | `kind`·`items` 형식이 틀린 경우 |
+| 500 | Server Error | 선택 저장 중 예기치 못한 오류 |
+
+**설명** (7.2.1) `ask_bundled_selection` 으로 시작한 실행이 멈춰 기다리는 선택에 답한다. 명령줄 `core:update` 가 코어 파일을
+적용한 뒤 묻는 질문과 같다 — `bundled_sources` 는 새 판에 처음 들어온 미배치 공식 번들 중 배치할 것(`--bundled-sources`),
+`bundled_updates` 는 번들 확장·언어팩 중 올릴 것과 확장별 레이아웃 전략. 답을 받으면 대기를 풀고, 화면이 `advance` 를 다시 부른다.
+점검 모드 중에 불리므로 `advance` 처럼 점검 모드 우회 쿠키를 싣는다.
 
 ### POST /api/admin/core-update/dismiss
 

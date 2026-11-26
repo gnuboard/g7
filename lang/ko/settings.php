@@ -331,6 +331,9 @@ return [
             'advanced' => '단계를 수행했습니다.',
             'advance_failed' => '단계를 수행하지 못했습니다.',
             'dismissed' => '업데이트 기록을 지웠습니다.',
+            'selection_saved' => '선택을 받았습니다. 이어서 진행합니다.',
+            'selection_failed' => '선택을 저장하지 못했습니다.',
+            'selection_not_awaited' => '지금은 그 선택을 기다리고 있지 않습니다. 화면을 새로 고친 뒤 다시 확인하세요.',
             'dismiss_failed' => '업데이트 기록을 지우지 못했습니다.',
 
             // 진행 제어
@@ -354,6 +357,10 @@ return [
                 'rebuild_search_index' => '검색 인덱스 다시 만들기',
                 'layout_strategy' => '레이아웃 처리 방식',
                 'zip_file' => '직접 올린 ZIP 파일',
+                'ask_bundled_selection' => '진행 중 번들 선택 묻기',
+                'selection_kind' => '선택 종류',
+                'selection_items' => '선택 항목',
+                'selection_selected' => '선택 여부',
             ],
             'zip_not_newer' => '지정한 ZIP 의 버전(:to)이 현재 버전(:from)보다 새롭지 않습니다. 웹 업데이트는 강제 재적용을 지원하지 않습니다.',
 
@@ -416,6 +423,13 @@ return [
             'log_bundled_skipped' => '번들 확장·언어팩 함께 업데이트를 선택하지 않았습니다',
             'log_bundled_none' => '번들에 새 버전이 있는 확장·언어팩이 없습니다',
             'log_bundled_placement' => '공식 번들 배치 판정 — 배치 :placed개, 미배치 :unplaced개(설치하지 않은 번들은 이번 업데이트에서 건너뜁니다)',
+            'log_selection_waiting' => ':kind 선택을 기다립니다 (:count개) — 화면에서 고른 뒤 [계속] 을 누르세요',
+            'log_selection_received' => ':kind 선택을 받았습니다 (:total개 중 :selected개)',
+            'log_bundled_none_selected' => '올릴 번들 확장·언어팩을 고르지 않았습니다',
+            'selection_kinds' => [
+                'bundled_sources' => '새로 들어온 공식 번들 배치',
+                'bundled_updates' => '번들 확장·언어팩 업데이트',
+            ],
             'log_bundled_record_restored' => '공식 번들 배치 기록을 업데이트 전 내용으로 되돌렸습니다',
             'log_bundled' => '번들 확장·언어팩 업데이트 완료 (성공 :success, 실패 :failed)',
             'log_spawn_fallback' => '별도 프로세스 실행 불가 — 같은 요청 안에서 실행합니다 (:reason)',

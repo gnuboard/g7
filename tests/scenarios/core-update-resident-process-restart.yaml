@@ -1,0 +1,16 @@
+feature: 코어 업데이트 마무리의 상주 프로세스 재시작 신호
+
+description: |
+  코어 업데이트(웹·명령줄·업그레이드 스텝 단독 실행) 마무리가 보내는 재시작 신호가 큐 워커뿐 아니라
+  실시간 알림 서버(Reverb)에도 가는지 잰다. 두 신호 모두 캐시 키이고, 상주 프로세스가 그 키를 보고 스스로
+  멈추면 프로세스 관리자가 새 코드로 다시 띄운다.
+
+axes:
+  process: [queue_and_reverb]
+
+effects:
+  - core_update_restart_signal_reaches_queue_workers
+  - core_update_restart_signal_reaches_reverb_server
+
+test_files:
+  - tests/Feature/CoreUpdate/CoreUpdateResidentProcessRestartTest.php
